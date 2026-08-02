@@ -76,6 +76,7 @@ export default buildConfig({
     }),
     ecommercePlugin({
       customers: { slug: 'users' },
+      products: true,
       access: {
         isAdmin,
         adminOnlyFieldAccess,

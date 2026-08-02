@@ -7,7 +7,8 @@ import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
 import { GetPlatformProxyOptions } from 'wrangler'
 import { r2Storage } from '@payloadcms/storage-r2'
-import { ecommercePlugin, stripeAdapter } from '@payloadcms/plugin-ecommerce'
+import { ecommercePlugin } from '@payloadcms/plugin-ecommerce'
+import { stripeAdapter } from '@payloadcms/plugin-ecommerce/payments/stripe'
 import { payloadTotp } from 'payload-totp'
 import {
   isAdmin,

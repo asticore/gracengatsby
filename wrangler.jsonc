@@ -33,7 +33,8 @@
   "r2_buckets": [
     {
       "binding": "R2",
-      "bucket_name": "gracengatsby","preview_bucket_name": "gracengatsby",
+      "bucket_name": "gracengatsby",
+      "preview_bucket_name": "gracengatsby",
     },
     // Create a R2 binding with the binding name "NEXT_INC_CACHE_R2_BUCKET"
     // {
@@ -41,42 +42,6 @@
     //   "bucket_name": "<BUCKET_NAME>",
     // },
   ],
-
-  // Here's how to configure an additional environment
-  // It can be deployed with `CLOUDFLARE_ENV=staging pnpm run deploy`
-  // "env": {
-  //   "staging": {
-  //     "name": "my-app-staging",
-  //     "d1_databases": [
-  //       {
-  //         "binding": "D1",
-  //         "database_id": "DATABASE_ID",
-  //         "database_name": "my-app-staging",
-  //         "remote": true
-  //       }
-  //     ],
-  //     "services": [
-  //       // The service should match the "name" of your worker
-  //       // {
-  //       //   "binding": "WORKER_SELF_REFERENCE",
-  //       //   "service": "my-app-staging"
-  //       // },
-  //     ],
-  //     "r2_buckets": [
-  //       {
-  //         "binding": "R2",
-  //         "bucket_name": "my-app-staging"
-  //       }
-  //       // Create a R2 binding with the binding name "NEXT_INC_CACHE_R2_BUCKET"
-  //       // {
-  //       //   "binding": "NEXT_INC_CACHE_R2_BUCKET",
-  //       //   "bucket_name": "<BUCKET_NAME>",
-  //       // },
-  //     ]
-  //   }
-  // }
-},
-{
   "observability": {
     "enabled": false,
     "head_sampling_rate": 1,
@@ -84,12 +49,18 @@
       "enabled": true,
       "head_sampling_rate": 1,
       "persist": true,
-      "invocation_logs": true
+      "invocation_logs": true,
     },
     "traces": {
       "enabled": false,
       "persist": true,
-      "head_sampling_rate": 1
-    }
-  }
-}
+      "head_sampling_rate": 1,
+    },
+  },
+
+  // Here's how to configure an additional environment
+  // It can be deployed with `CLOUDFLARE_ENV=staging pnpm run deploy`
+  // "env": {
+  //   "staging": {
+  //     "name": "my-app-staging",
+  //

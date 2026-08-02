@@ -7,6 +7,47 @@ import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
 import { GetPlatformProxyOptions } from 'wrangler'
 import { r2Storage } from '@payloadcms/storage-r2'
+import { ecommercePlugin, stripeAdapter } from '@payloadcms/plugin-ecommerce'
+import { payloadTotp } from 'payload-totp'
+import {
+  isAdmin,
+  adminOnlyFieldAccess,
+  isAuthenticated,
+  isCustomer,
+  adminOrPublishedStatus,
+  isDocumentOwner,
+} from './access/ecommerceAccess'
+// ...inside buildConfig({...}):
+  plugins: [
+    r2Storage({
+      bucket: cloudflare.env.R2,
+      collections: { media: true },
+    }),
+    ecommercePlugin({
+      customers: { slug: 'users' },
+      access: {
+        isAdmin,
+        adminOnlyFieldAccess,
+        isAuthenticated,
+        isCustomer,
+        adminOrPublishedStatus,
+        isDocumentOwner,
+      },
+      payments: {
+        paymentMethods: [
+          stripeAdapter({
+            publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+            secretKey: process.env.STRIPE_SECRET_KEY || '',
+            webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+          }),
+        ],
+      },
+    }),
+    payloadTotp({
+      collection: 'users',
+    }),
+  ],
+
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'

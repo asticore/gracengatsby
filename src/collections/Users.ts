@@ -7,9 +7,8 @@ export const Users: CollectionConfig = {
   },
   auth: true,
   fields: [
-    // Email added by default
-    // Add more fields as needed
-    name: 'roles',
+    {
+      name: 'roles',
       type: 'select',
       hasMany: true,
       defaultValue: ['customer'],
@@ -21,19 +20,6 @@ export const Users: CollectionConfig = {
         // only admins can change roles
         update: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
       },
-  ],
-  versions: false,
-}
-
-export const Users: CollectionConfig = {
-  slug: 'users',
-  admin: {
-    useAsTitle: 'email',
-  },
-  auth: true,
-  fields: [
-    {
-      
     },
   ],
   versions: false,

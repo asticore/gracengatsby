@@ -95,9 +95,9 @@ export default buildConfig({
         ],
       },
     }),
-    payloadTotp({
-      collection: 'users',
-    }),
+    //payloadTotp({
+    //  collection: 'users',
+    //}),
   ],
 })
 

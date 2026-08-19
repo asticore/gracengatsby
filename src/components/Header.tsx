@@ -4,27 +4,45 @@ import { useCart } from '@payloadcms/plugin-ecommerce/client/react'
 import Link from 'next/link'
 import React, { useState } from 'react'
 
-const NAV_LINKS = [
+export type NavLink = { href: string; label: string; newTab?: boolean }
+
+const DEFAULT_LINKS: NavLink[] = [
   { href: '/shop', label: 'Shop' },
   { href: '/events', label: 'Events' },
   { href: '/#about', label: 'About' },
 ]
 
-export const Header: React.FC = () => {
+export const Header: React.FC<{
+  siteName?: string
+  logoUrl?: string | null
+  navLinks?: NavLink[]
+}> = ({ siteName = 'Grace & Gatsby', logoUrl, navLinks }) => {
   const [open, setOpen] = useState(false)
   const { cart } = useCart()
   const itemCount = cart?.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0
+  const links = navLinks && navLinks.length > 0 ? navLinks : DEFAULT_LINKS
 
   return (
     <header className="site-header">
       <div className="site-header__inner">
         <Link href="/" className="site-header__logo">
-          Grace &amp; Gatsby
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={siteName} className="site-header__logo-image" />
+          ) : (
+            siteName
+          )}
         </Link>
 
         <nav className={`site-header__nav ${open ? 'is-open' : ''}`}>
-          {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              target={link.newTab ? '_blank' : undefined}
+              rel={link.newTab ? 'noopener noreferrer' : undefined}
+              onClick={() => setOpen(false)}
+            >
               {link.label}
             </Link>
           ))}

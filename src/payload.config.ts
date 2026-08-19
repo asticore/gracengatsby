@@ -25,6 +25,10 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Events } from './collections/Events'
 import { EventRSVPs } from './collections/EventRSVPs'
+import { Pages } from './collections/Pages'
+import { Navigation } from './globals/Navigation'
+import { SiteSettings } from './globals/SiteSettings'
+import { Integrations } from './globals/Integrations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -65,7 +69,8 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Events, EventRSVPs],
+  collections: [Users, Media, Events, EventRSVPs, Pages],
+  globals: [Navigation, SiteSettings, Integrations],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

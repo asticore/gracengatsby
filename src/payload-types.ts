@@ -76,6 +76,7 @@ export interface Config {
     media: Media;
     events: Event;
     'event-rsvps': EventRsvp;
+    pages: Page;
     addresses: Address;
     products: Product;
     carts: Cart;
@@ -96,6 +97,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     'event-rsvps': EventRsvpsSelect<false> | EventRsvpsSelect<true>;
+    pages: PagesSelect<false> | PagesSelect<true>;
     addresses: AddressesSelect<false> | AddressesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     carts: CartsSelect<false> | CartsSelect<true>;
@@ -110,8 +112,16 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    navigation: Navigation;
+    'site-settings': SiteSetting;
+    integrations: Integration;
+  };
+  globalsSelect: {
+    navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    integrations: IntegrationsSelect<false> | IntegrationsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -309,6 +319,120 @@ export interface EventRsvp {
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Build out extra pages (About, Lookbook, Contact, etc.) from a library of sections. Add the finished page to the menu under Site Settings -> Navigation to link to it.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  title: string;
+  /**
+   * Auto-generated from the title if left blank. This becomes the page URL - e.g. "about-us" -> /about-us.
+   */
+  slug: string;
+  blocks?:
+    | (
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+      )[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -510,6 +634,10 @@ export interface PayloadLockedDocument {
         value: number | EventRsvp;
       } | null)
     | ({
+        relationTo: 'pages';
+        value: number | Page;
+      } | null)
+    | ({
         relationTo: 'addresses';
         value: number | Address;
       } | null)
@@ -650,6 +778,87 @@ export interface EventRsvpsSelect<T extends boolean = true> {
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  blocks?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              heading?: T;
+              subheading?: T;
+              backgroundImage?: T;
+              primaryCtaLabel?: T;
+              primaryCtaUrl?: T;
+              secondaryCtaLabel?: T;
+              secondaryCtaUrl?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        imageText?:
+          | T
+          | {
+              image?: T;
+              content?: T;
+              imageSide?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              limit?: T;
+              id?: T;
+              blockName?: T;
+            };
+        eventGrid?:
+          | T
+          | {
+              heading?: T;
+              showPast?: T;
+              limit?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              heading?: T;
+              images?: T;
+              id?: T;
+              blockName?: T;
+            };
+        ctaBanner?:
+          | T
+          | {
+              heading?: T;
+              text?: T;
+              buttonLabel?: T;
+              buttonUrl?: T;
+              style?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -830,6 +1039,163 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * The links shown in the header menu, in order.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation".
+ */
+export interface Navigation {
+  id: number;
+  items?:
+    | {
+        label: string;
+        linkType?: ('page' | 'custom') | null;
+        page?: (number | null) | Page;
+        /**
+         * e.g. /shop, /#about, or a full https:// link.
+         */
+        customUrl?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Site identity, theming, and footer content - changes apply everywhere immediately.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  siteName?: string | null;
+  tagline?: string | null;
+  /**
+   * Shown in the header. Leave blank to show the site name as text instead.
+   */
+  logo?: (number | null) | Media;
+  favicon?: (number | null) | Media;
+  /**
+   * Optional short banner shown at the very top of every page. Leave blank to hide it.
+   */
+  announcementBar?: string | null;
+  theme?: {
+    /**
+     * Hex color, e.g. #14110f. Main text/ink color.
+     */
+    primaryColor?: string | null;
+    /**
+     * Hex color, e.g. #b9924b. Buttons, links, highlights.
+     */
+    accentColor?: string | null;
+    /**
+     * Hex color, e.g. #f6f1e7. Page background.
+     */
+    backgroundColor?: string | null;
+    headingFont?: ('cormorant' | 'playfair' | 'cinzel') | null;
+    bodyFont?: ('jost' | 'montserrat' | 'inter') | null;
+  };
+  footer?: {
+    text?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    address?: string | null;
+    socialLinks?:
+      | {
+          platform?: ('Instagram' | 'Facebook' | 'TikTok' | 'Pinterest' | 'X') | null;
+          url?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * API keys and third-party credentials. Admin-only, encrypted at rest, and never exposed to the public site or its API.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "integrations".
+ */
+export interface Integration {
+  id: number;
+  /**
+   * Your Claude API key (console.anthropic.com). Stored encrypted at rest, visible only to admins. Not wired to any feature yet - saved here so it is ready when you build one.
+   */
+  claudeApiKey?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation_select".
+ */
+export interface NavigationSelect<T extends boolean = true> {
+  items?:
+    | T
+    | {
+        label?: T;
+        linkType?: T;
+        page?: T;
+        customUrl?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  siteName?: T;
+  tagline?: T;
+  logo?: T;
+  favicon?: T;
+  announcementBar?: T;
+  theme?:
+    | T
+    | {
+        primaryColor?: T;
+        accentColor?: T;
+        backgroundColor?: T;
+        headingFont?: T;
+        bodyFont?: T;
+      };
+  footer?:
+    | T
+    | {
+        text?: T;
+        contactEmail?: T;
+        contactPhone?: T;
+        address?: T;
+        socialLinks?:
+          | T
+          | {
+              platform?: T;
+              url?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "integrations_select".
+ */
+export interface IntegrationsSelect<T extends boolean = true> {
+  claudeApiKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

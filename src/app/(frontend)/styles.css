@@ -627,3 +627,131 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* Announcement bar */
+
+.announcement-bar {
+  background: var(--color-ink);
+  color: var(--color-cream);
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 10px 16px;
+}
+
+/* Header logo image + footer social links */
+
+.site-header__logo-image {
+  max-height: 40px;
+  width: auto;
+}
+
+.site-footer__social {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.site-footer__social a {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--color-gold-light);
+}
+
+/* Page builder blocks */
+
+.built-page .home-section:first-child {
+  padding-top: 0;
+}
+
+.built-block--hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.built-block--hero__image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.built-block--hero__image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 17, 15, 0.45);
+}
+
+.built-block--hero .hero__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.built-block--hero:has(.built-block--hero__image) {
+  color: var(--color-cream);
+}
+
+.built-block--richtext .built-block__inner {
+  max-width: 760px;
+}
+
+.built-block--imagetext__inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.built-block--imagetext-reverse .built-block--imagetext__inner {
+  direction: rtl;
+}
+
+.built-block--imagetext-reverse .built-block--imagetext__content {
+  direction: ltr;
+}
+
+.built-block--gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.built-block--gallery__item {
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.built-block--ctabanner {
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.built-block--ctabanner-dark {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.built-block--ctabanner-light {
+  background: var(--color-cream-dim);
+}
+
+.built-block--ctabanner__inner {
+  max-width: 640px;
+  padding: 0;
+}
+
+.built-block--ctabanner__inner p {
+  margin-bottom: 24px;
+  opacity: 0.85;
+}
+
+@media (max-width: 900px) {
+  .built-block--imagetext__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .built-block--imagetext-reverse .built-block--imagetext__inner {
+    direction: ltr;
+  }
+}

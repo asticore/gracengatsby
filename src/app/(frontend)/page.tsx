@@ -1,62 +1,107 @@
-import { headers as getHeaders } from 'next/headers.js'
-import Image from 'next/image'
-import { getPayload } from 'payload'
+import Link from 'next/link'
 import React from 'react'
-import { fileURLToPath } from 'url'
 
-import config from '@/payload.config'
-import './styles.css'
+import { EventCard } from '@/components/EventCard'
+import { ProductCard } from '@/components/ProductCard'
+import { getPayloadClient } from '@/lib/payload'
+
+export const revalidate = 60
 
 export default async function HomePage() {
-  const headers = await getHeaders()
-  const payloadConfig = await config
-  const payload = await getPayload({ config: payloadConfig })
-  const { user } = await payload.auth({ headers })
+  const payload = await getPayloadClient()
+  const now = new Date().toISOString()
 
-  const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
+  const [{ docs: products }, { docs: events }] = await Promise.all([
+    payload.find({
+      collection: 'products',
+      where: { _status: { equals: 'published' } },
+      sort: '-createdAt',
+      limit: 4,
+    }),
+    payload.find({
+      collection: 'events',
+      where: {
+        and: [{ _status: { equals: 'published' } }, { startDate: { greater_than_equal: now } }],
+      },
+      sort: 'startDate',
+      limit: 3,
+    }),
+  ])
 
   return (
-    <div className="home">
-      <div className="content">
-        <picture>
-          <source srcSet="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-favicon.svg" />
-          <Image
-            alt="Payload Logo"
-            height={65}
-            src="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-favicon.svg"
-            width={65}
-          />
-        </picture>
-        {!user || !('email' in user) ? (
-          <h1>Welcome to your new project.</h1>
-        ) : (
-          <h1>Welcome back, {user.email}</h1>
-        )}
-        <div className="links">
-          <a
-            className="admin"
-            href={payloadConfig.routes.admin}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Go to admin panel
-          </a>
-          <a
-            className="docs"
-            href="https://payloadcms.com/docs"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Documentation
-          </a>
+    <>
+      <section className="hero">
+        <div className="hero__inner">
+          <p className="hero__eyebrow">Brisbane, Australia</p>
+          <h1>Grace &amp; Gatsby</h1>
+          <p className="hero__tagline">
+            A curated boutique for the modern romantic - considered pieces, small-batch goods, and
+            evenings worth dressing up for.
+          </p>
+          <div className="hero__actions">
+            <Link href="/shop" className="btn btn--primary">
+              Shop the collection
+            </Link>
+            <Link href="/events" className="btn btn--ghost">
+              See what&apos;s on
+            </Link>
+          </div>
         </div>
-      </div>
-      <div className="footer">
-        <p>Update this page by editing</p>
-        <a className="codeLink" href={fileURL}>
-          <code>app/(frontend)/page.tsx</code>
-        </a>
-      </div>
-    </div>
+      </section>
+
+      <section className="home-section">
+        <div className="page-shell">
+          <div className="section-heading">
+            <h2>New arrivals</h2>
+            <Link href="/shop">View all</Link>
+          </div>
+
+          {products.length === 0 ? (
+            <p className="empty-state">
+              Your shop is ready - add products in the admin panel and they&apos;ll appear here.
+            </p>
+          ) : (
+            <div className="product-grid">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="home-section home-section--dark">
+        <div className="page-shell">
+          <div className="section-heading">
+            <h2>Upcoming events</h2>
+            <Link href="/events">View all</Link>
+          </div>
+
+          {events.length === 0 ? (
+            <p className="empty-state">
+              Nothing on the calendar yet - add an event in the admin panel to start taking RSVPs
+              and ticket sales.
+            </p>
+          ) : (
+            <div className="event-grid">
+              {events.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="home-section about-section" id="about">
+        <div className="page-shell about-section__inner">
+          <h2>Our story</h2>
+          <p>
+            Grace &amp; Gatsby began as a love letter to considered style - Art Deco glamour reimagined
+            for everyday wear. Every piece in the shop is chosen for the way it makes you feel, and
+            every event on our calendar is an excuse to wear it.
+          </p>
+        </div>
+      </section>
+    </>
   )
 }

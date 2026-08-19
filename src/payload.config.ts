@@ -18,9 +18,13 @@ import {
   adminOrPublishedStatus,
   isDocumentOwner,
 } from './access/ecommerceAccess'
+import { AUD } from './lib/currencies'
+import { formatSlugHook } from './utilities/formatSlug'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { Events } from './collections/Events'
+import { EventRSVPs } from './collections/EventRSVPs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -61,7 +65,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, Events, EventRSVPs],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -76,7 +80,80 @@ export default buildConfig({
     }),
     ecommercePlugin({
       customers: { slug: 'users' },
-      products: true,
+      currencies: {
+        defaultCurrency: 'AUD',
+        supportedCurrencies: [AUD],
+      },
+      products: {
+        // Keep the storefront simple for now - variants (size/colour) can be
+        // switched on later without losing any existing product data.
+        variants: false,
+        productsCollectionOverride: ({ defaultCollection }) => ({
+          ...defaultCollection,
+          admin: {
+            ...defaultCollection.admin,
+            useAsTitle: 'title',
+            defaultColumns: ['title', 'category', 'priceInAUD', 'inventory', '_status'],
+          },
+          fields: [
+            {
+              name: 'title',
+              type: 'text',
+              required: true,
+            },
+            {
+              name: 'slug',
+              type: 'text',
+              required: true,
+              unique: true,
+              admin: {
+                position: 'sidebar',
+                description: 'Auto-generated from the title if left blank.',
+              },
+              hooks: {
+                beforeValidate: [formatSlugHook('title')],
+              },
+            },
+            {
+              name: 'category',
+              type: 'select',
+              options: [
+                { label: 'Apparel', value: 'apparel' },
+                { label: 'Accessories', value: 'accessories' },
+                { label: 'Jewellery', value: 'jewellery' },
+                { label: 'Homeware', value: 'homeware' },
+                { label: 'Gifting', value: 'gifting' },
+              ],
+              admin: { position: 'sidebar' },
+            },
+            {
+              name: 'shortDescription',
+              type: 'textarea',
+              admin: {
+                description: 'Shown on product listing cards.',
+              },
+            },
+            {
+              name: 'description',
+              type: 'richText',
+              editor: lexicalEditor(),
+            },
+            {
+              name: 'images',
+              type: 'upload',
+              relationTo: 'media',
+              hasMany: true,
+            },
+            ...defaultCollection.fields,
+          ],
+        }),
+      },
+      carts: {
+        allowGuestCarts: true,
+      },
+      orders: true,
+      transactions: true,
+      addresses: true,
       access: {
         isAdmin,
         adminOnlyFieldAccess,

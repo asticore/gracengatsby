@@ -5,7 +5,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:importmap && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:types && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",    "deploy": "pnpm run deploy:database && pnpm run deploy:app",
+    "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:importmap && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:types && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+    "deploy": "pnpm run deploy:database && pnpm run deploy:app",
     "deploy:app": "opennextjs-cloudflare build --env=$CLOUDFLARE_ENV && opennextjs-cloudflare deploy --env=$CLOUDFLARE_ENV",
     "deploy:database": "cross-env NODE_ENV=production PAYLOAD_SECRET=ignore payload migrate && wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
@@ -31,6 +32,8 @@
     "@payloadcms/richtext-lexical": "3.87.0",
     "@payloadcms/storage-r2": "3.87.0",
     "@payloadcms/ui": "3.87.0",
+    "@stripe/react-stripe-js": "^3.10.0",
+    "@stripe/stripe-js": "^5.10.0",
     "cross-env": "10.1.0",
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",

@@ -243,6 +243,10 @@ export interface Event {
    * Leave blank for unlimited capacity.
    */
   capacity?: number | null;
+  /**
+   * Optional. If set, the "Register" button on the event page links straight to this URL (e.g. an external Eventbrite page or form) instead of the built-in RSVP/ticket flow.
+   */
+  externalRegistrationUrl?: string | null;
   rsvps?: {
     docs?: (number | EventRsvp)[];
     hasNextPage?: boolean;
@@ -628,6 +632,7 @@ export interface EventsSelect<T extends boolean = true> {
   eventType?: T;
   ticketProduct?: T;
   capacity?: T;
+  externalRegistrationUrl?: T;
   rsvps?: T;
   updatedAt?: T;
   createdAt?: T;

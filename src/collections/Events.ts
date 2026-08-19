@@ -137,6 +137,15 @@ export const Events: CollectionConfig = {
       },
     },
     {
+      name: 'externalRegistrationUrl',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Optional. If set, the "Register" button on the event page links straight to this URL (e.g. an external Eventbrite page or form) instead of the built-in RSVP/ticket flow.',
+      },
+    },
+    {
       name: 'rsvps',
       type: 'join',
       collection: 'event-rsvps',

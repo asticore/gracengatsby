@@ -72,7 +72,16 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         </div>
 
         <aside className="event-page__sidebar">
-          {event.eventType === 'paid' ? (
+          {event.externalRegistrationUrl ? (
+            <a
+              className="btn btn--primary event-page__register-link"
+              href={event.externalRegistrationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Register
+            </a>
+          ) : event.eventType === 'paid' ? (
             ticket ? (
               <div className="event-page__ticket">
                 <p className="event-page__price">{formatCurrency(ticket.priceInAUD)}</p>

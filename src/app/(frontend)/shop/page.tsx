@@ -7,7 +7,7 @@ export const metadata = {
   title: 'Shop | Grace & Gatsby',
 }
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function ShopPage() {
   const payload = await getPayloadClient()

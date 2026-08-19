@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import { getPayloadClient } from '@/lib/payload'
 import type { Media } from '@/payload-types'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params

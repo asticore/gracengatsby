@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import { getPayloadClient } from '@/lib/payload'
 import type { EventRsvp, Media, Product } from '@/payload-types'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 const dateFormatter = new Intl.DateTimeFormat('en-AU', {
   day: 'numeric',

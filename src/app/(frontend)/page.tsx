@@ -5,7 +5,7 @@ import { EventCard } from '@/components/EventCard'
 import { ProductCard } from '@/components/ProductCard'
 import { getPayloadClient } from '@/lib/payload'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const payload = await getPayloadClient()

@@ -92,6 +92,105 @@
   margin: 0 auto;
   background: #fff;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 30px rgba(0, 0, 0, 0.06);
+  transition: max-width 0.15s ease;
+}
+
+.ve-canvas--mobile {
+  max-width: 390px;
+}
+
+.ve-device-toggle {
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 2px;
+  margin-right: 8px;
+}
+
+.ve-device-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.ve-device-btn:hover {
+  opacity: 0.9;
+}
+
+.ve-device-btn--active {
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 1;
+}
+
+.ve-insert {
+  position: relative;
+  height: 1px;
+}
+
+.ve-insert__btn {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: #c9a15a;
+  color: #1d1b19;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 6;
+  opacity: 0;
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.ve-insert:hover .ve-insert__btn,
+.ve-insert--open .ve-insert__btn {
+  opacity: 1;
+}
+
+.ve-insert__btn:hover {
+  transform: translateX(-50%) scale(1.15);
+}
+
+.ve-insert__menu {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 12px 30px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 4px;
+  width: max-content;
+}
+
+.ve-insert__menu-item {
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ve-insert__menu-item:hover {
+  background: #f2f0ec;
 }
 
 .ve-canvas-block {

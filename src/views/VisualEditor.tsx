@@ -41,6 +41,8 @@ export const VisualEditorView: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'publishing' | 'published' | 'error'>('idle')
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
+  const [insertAt, setInsertAt] = useState<number | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -94,12 +96,18 @@ export const VisualEditorView: React.FC = () => {
     })
   }
 
-  const addBlock = (blockType: string) => {
+  const addBlock = (blockType: string, atIndex?: number) => {
     const def = getBlockDef(blockType)
     if (!def) return
     const block = { ...def.defaultValue(), _tempId: nextTempId() } as CanvasBlock
-    setBlocks((prev) => [...prev, block])
+    setBlocks((prev) => {
+      if (atIndex === undefined || atIndex >= prev.length) return [...prev, block]
+      const next = [...prev]
+      next.splice(atIndex, 0, block)
+      return next
+    })
     setSelectedId(block._tempId)
+    setInsertAt(null)
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -167,6 +175,26 @@ export const VisualEditorView: React.FC = () => {
           </span>
         </div>
         <div className="ve-topbar__actions">
+          <div className="ve-device-toggle" role="group" aria-label="Preview device">
+            <button
+              type="button"
+              className={`ve-device-btn ${device === 'desktop' ? 've-device-btn--active' : ''}`}
+              onClick={() => setDevice('desktop')}
+              aria-label="Desktop preview"
+              title="Desktop preview"
+            >
+              🖥️
+            </button>
+            <button
+              type="button"
+              className={`ve-device-btn ${device === 'mobile' ? 've-device-btn--active' : ''}`}
+              onClick={() => setDevice('mobile')}
+              aria-label="Mobile preview"
+              title="Mobile preview"
+            >
+              📱
+            </button>
+          </div>
           <button type="button" className="ve-btn" onClick={() => save(false)} disabled={saving === 'saving'}>
             {saving === 'saving' ? 'Saving…' : saving === 'saved' ? 'Saved ✓' : 'Save draft'}
           </button>
@@ -183,7 +211,7 @@ export const VisualEditorView: React.FC = () => {
 
       <div className="ve-body">
         <div className="ve-canvas-wrap">
-          <div className="ve-canvas">
+          <div className={`ve-canvas ve-canvas--${device}`}>
             {error && <p className="ve-error" style={{ padding: 12 }}>{error}</p>}
             <DndContext
               sensors={sensors}
@@ -195,14 +223,22 @@ export const VisualEditorView: React.FC = () => {
                 {blocks.length === 0 && (
                   <div className="ve-empty-canvas">This page has no sections yet - add one below to get started.</div>
                 )}
-                {blocks.map((block) => (
-                  <SortableBlock
-                    key={block._tempId}
-                    id={block._tempId}
-                    data={block}
-                    isSelected={block._tempId === selectedId}
-                    onSelect={() => setSelectedId(block._tempId)}
-                  />
+                <InsertPoint index={0} open={insertAt === 0} onToggle={setInsertAt} onPick={addBlock} />
+                {blocks.map((block, index) => (
+                  <React.Fragment key={block._tempId}>
+                    <SortableBlock
+                      id={block._tempId}
+                      data={block}
+                      isSelected={block._tempId === selectedId}
+                      onSelect={() => setSelectedId(block._tempId)}
+                    />
+                    <InsertPoint
+                      index={index + 1}
+                      open={insertAt === index + 1}
+                      onToggle={setInsertAt}
+                      onPick={addBlock}
+                    />
+                  </React.Fragment>
                 ))}
               </SortableContext>
               <DragOverlay>{activeBlock ? <CanvasBlockPreview data={activeBlock} /> : null}</DragOverlay>
@@ -232,5 +268,33 @@ export const VisualEditorView: React.FC = () => {
     </div>
   )
 }
+
+const InsertPoint: React.FC<{
+  index: number
+  open: boolean
+  onToggle: (index: number | null) => void
+  onPick: (blockType: string, atIndex: number) => void
+}> = ({ index, open, onToggle, onPick }) => (
+  <div className={`ve-insert ${open ? 've-insert--open' : ''}`}>
+    <button
+      type="button"
+      className="ve-insert__btn"
+      onClick={() => onToggle(open ? null : index)}
+      aria-label="Add section here"
+      title="Add section here"
+    >
+      +
+    </button>
+    {open && (
+      <div className="ve-insert__menu">
+        {VISUAL_BLOCKS.map((def) => (
+          <button key={def.slug} type="button" className="ve-insert__menu-item" onClick={() => onPick(def.slug, index)}>
+            {def.icon} {def.label}
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+)
 
 export default VisualEditorView

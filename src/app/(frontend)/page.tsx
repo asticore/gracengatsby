@@ -1,13 +1,41 @@
 import Link from 'next/link'
 import React from 'react'
+import type { Metadata } from 'next'
 
+import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { EventCard } from '@/components/EventCard'
 import { ProductCard } from '@/components/ProductCard'
 import { getPayloadClient } from '@/lib/payload'
+import { getHomepage } from '@/utilities/pagePaths'
+import { buildMetadata } from '@/utilities/seo'
 
 export const dynamic = 'force-dynamic'
 
+export async function generateMetadata(): Promise<Metadata> {
+  const homepage = await getHomepage()
+  return buildMetadata({ title: homepage?.title || 'Grace & Gatsby', seo: homepage?.seo })
+}
+
 export default async function HomePage() {
+  const homepage = await getHomepage()
+
+  // Once a Page is marked "Set as homepage" in the admin panel, it takes over
+  // "/" completely and is edited like any other built page. Until then, this
+  // curated default keeps the site looking finished out of the box.
+  if (homepage) {
+    return (
+      <div className="built-page">
+        {(homepage.blocks || []).map((block, index) => (
+          <BlockRenderer key={block.id || index} block={block} />
+        ))}
+      </div>
+    )
+  }
+
+  return <DefaultHomepage />
+}
+
+async function DefaultHomepage() {
   const payload = await getPayloadClient()
   const now = new Date().toISOString()
 

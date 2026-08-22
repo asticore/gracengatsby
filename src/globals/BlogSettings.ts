@@ -1,12 +1,19 @@
 import type { GlobalConfig } from 'payload'
 
 import { isAdmin } from '../access/ecommerceAccess'
+import { pageBuilderBlocks } from '../blocks'
 
 export const BlogSettings: GlobalConfig = {
   slug: 'blog-settings',
   admin: {
     group: 'Blog',
-    description: 'Layout for the blog archive (/blog) and individual posts. Turn the blog on/off in Settings > Features.',
+    description:
+      'Layout for the blog archive (/blog) and individual posts. Turn the blog on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.',
+    components: {
+      elements: {
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+      },
+    },
   },
   access: {
     read: () => true,
@@ -15,6 +22,15 @@ export const BlogSettings: GlobalConfig = {
   fields: [
     { name: 'archiveTitle', type: 'text', defaultValue: 'Journal' },
     { name: 'archiveIntro', type: 'textarea' },
+    {
+      name: 'introBlocks',
+      type: 'blocks',
+      labels: { singular: 'Section', plural: 'Sections' },
+      blocks: pageBuilderBlocks,
+      admin: {
+        description: 'Shown above the post grid on /blog - build it visually with "Edit visually" above.',
+      },
+    },
     {
       type: 'row',
       fields: [

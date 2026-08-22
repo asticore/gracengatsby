@@ -1,18 +1,34 @@
 import type { GlobalConfig } from 'payload'
 
 import { isAdmin } from '../access/ecommerceAccess'
+import { pageBuilderBlocks } from '../blocks'
 
 export const ShopSettings: GlobalConfig = {
   slug: 'shop-settings',
   admin: {
     group: 'Shop',
-    description: 'Layout for the shop archive (/shop) and product pages. Turn ecommerce on/off in Settings > Features.',
+    description:
+      'Layout for the shop archive (/shop) and product pages. Turn ecommerce on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.',
+    components: {
+      elements: {
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+      },
+    },
   },
   access: {
     read: () => true,
     update: isAdmin,
   },
   fields: [
+    {
+      name: 'introBlocks',
+      type: 'blocks',
+      labels: { singular: 'Section', plural: 'Sections' },
+      blocks: pageBuilderBlocks,
+      admin: {
+        description: 'Shown above the product grid on /shop - build it visually with "Edit visually" above.',
+      },
+    },
     {
       type: 'row',
       fields: [

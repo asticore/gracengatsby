@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
+import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
 import { formatSlugHook } from '../utilities/formatSlug'
 
@@ -11,7 +12,12 @@ export const Posts: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'publishedDate', '_status'],
     group: 'Blog',
-    description: 'Blog posts. Turn the blog on/off in Settings > Features.',
+    description: 'Blog posts. Turn the blog on/off in Settings > Features. Click "Edit visually" above to add extra sections on a drag-and-drop canvas.',
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+      },
+    },
   },
   access: {
     create: isAdmin,
@@ -46,6 +52,15 @@ export const Posts: CollectionConfig = {
     { name: 'featuredImage', type: 'upload', relationTo: 'media' },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Shown on the blog archive card.' } },
     { name: 'content', type: 'richText', required: true },
+    {
+      name: 'layout',
+      type: 'blocks',
+      labels: { singular: 'Section', plural: 'Sections' },
+      blocks: pageBuilderBlocks,
+      admin: {
+        description: 'Extra visually-editable sections shown below the post content (galleries, CTAs, etc).',
+      },
+    },
     seoFields,
   ],
 }

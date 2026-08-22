@@ -11,6 +11,11 @@ export const PageTemplates: CollectionConfig = {
     group: 'Site Settings',
     description:
       'Starter layouts for new pages. Build one here, then pick it from the "Start from template" field when creating a new Page - its sections get copied in.',
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+      },
+    },
   },
   access: {
     create: isAdmin,

@@ -20,6 +20,7 @@ import {
 } from './access/ecommerceAccess'
 import { AUD } from './lib/currencies'
 import { formatSlugHook } from './utilities/formatSlug'
+import { pageBuilderBlocks } from './blocks'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -76,6 +77,14 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      views: {
+        visualEditor: {
+          Component: '@/views/VisualEditor#VisualEditorView',
+          path: '/visual-editor/:mode/:slug/:id?',
+        },
+      },
+    },
   },
   collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs],
   globals: [Header, Footer, SiteSettings, Integrations, BlogSettings, FaqSettings, ShopSettings],
@@ -107,6 +116,11 @@ export default buildConfig({
             ...defaultCollection.admin,
             useAsTitle: 'title',
             defaultColumns: ['title', 'category', 'priceInAUD', 'inventory', '_status'],
+            components: {
+              edit: {
+                beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+              },
+            },
           },
           fields: [
             {
@@ -167,6 +181,15 @@ export default buildConfig({
               admin: {
                 position: 'sidebar',
                 description: 'Shown in a FAQ section on the product page.',
+              },
+            },
+            {
+              name: 'layout',
+              type: 'blocks',
+              labels: { singular: 'Section', plural: 'Sections' },
+              blocks: pageBuilderBlocks,
+              admin: {
+                description: 'Extra visually-editable sections shown below the product details (FAQs, galleries, etc).',
               },
             },
             seoFields,

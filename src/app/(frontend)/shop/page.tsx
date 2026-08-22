@@ -2,6 +2,7 @@ import Link from 'next/link'
 import React from 'react'
 import { notFound } from 'next/navigation'
 
+import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { ProductCard } from '@/components/ProductCard'
 import { getPayloadClient } from '@/lib/payload'
 import { getFeatureFlags } from '@/utilities/features'
@@ -44,10 +45,14 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="page-shell shop-page">
-      <header className="page-header">
-        <h1>Shop</h1>
-        <p>Considered pieces for the modern romantic.</p>
-      </header>
+      {settings?.introBlocks && settings.introBlocks.length > 0 ? (
+        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} />)
+      ) : (
+        <header className="page-header">
+          <h1>Shop</h1>
+          <p>Considered pieces for the modern romantic.</p>
+        </header>
+      )}
 
       {settings?.showCategoryFilters !== false && (
         <div className="shop-page__filters">

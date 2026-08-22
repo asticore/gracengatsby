@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
 
+import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getPayloadClient } from '@/lib/payload'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -36,9 +37,13 @@ export default async function BlogArchivePage() {
 
   return (
     <div className="page-shell blog-archive">
-      <div className="section-heading">
-        <h1>{settings?.archiveTitle || 'Journal'}</h1>
-      </div>
+      {settings?.introBlocks && settings.introBlocks.length > 0 ? (
+        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} />)
+      ) : (
+        <div className="section-heading">
+          <h1>{settings?.archiveTitle || 'Journal'}</h1>
+        </div>
+      )}
       {settings?.archiveIntro && <p className="blog-archive__intro">{settings.archiveIntro}</p>}
 
       {posts.length === 0 ? (

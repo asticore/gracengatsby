@@ -12,7 +12,12 @@ export const Pages: CollectionConfig = {
     defaultColumns: ['title', 'slug', 'parent', 'isHomepage', '_status'],
     group: 'Site Settings',
     description:
-      'Every page on the site, including the homepage. Build sections from the block library (drag the ⠠⟿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header.',
+      'Every page on the site, including the homepage. Build sections from the block library (drag the ⚿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header. Click "Edit visually" above to lay it out on a drag-and-drop canvas instead.',
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+      },
+    },
   },
   access: {
     create: isAdmin,

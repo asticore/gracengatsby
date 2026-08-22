@@ -4,6 +4,7 @@ import React from 'react'
 import type { Metadata } from 'next'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 
+import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getPayloadClient } from '@/lib/payload'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -62,6 +63,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <div className="blog-post__content">
         <RichText data={post.content} />
       </div>
+
+      {(post.layout || []).map((block, index) => (
+        <BlockRenderer key={block.id || index} block={block} />
+      ))}
     </article>
   )
 }

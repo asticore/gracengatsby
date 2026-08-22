@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 
 import { AddToCartButton } from '@/components/AddToCartButton'
+import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
 import { formatCurrency } from '@/lib/formatCurrency'
@@ -101,6 +102,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
         )}
       </div>
+
+      {(product.layout || []).map((block, index) => (
+        <BlockRenderer key={block.id || index} block={block} />
+      ))}
 
       {faqs.length > 0 && (
         <div className="product-page__faqs page-shell">

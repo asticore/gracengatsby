@@ -46,7 +46,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   return (
     <div className="page-shell shop-page">
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
-        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} />)
+        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (
         <header className="page-header">
           <h1>Shop</h1>

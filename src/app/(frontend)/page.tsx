@@ -26,7 +26,7 @@ export default async function HomePage() {
     return (
       <div className="built-page">
         {(homepage.blocks || []).map((block, index) => (
-          <BlockRenderer key={block.id || index} block={block} />
+          <BlockRenderer key={block.id || index} block={block} index={index} />
         ))}
       </div>
     )

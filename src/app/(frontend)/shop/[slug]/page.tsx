@@ -104,7 +104,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </div>
 
       {(product.layout || []).map((block, index) => (
-        <BlockRenderer key={block.id || index} block={block} />
+        <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
 
       {faqs.length > 0 && (

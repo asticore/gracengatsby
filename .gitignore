@@ -52,3 +52,8 @@ node_modules/
 # OpenNext
 .open-next
 .wrangler
+
+# this template doesn't pin a lockfile - Cloudflare Workers Build runs a
+# fresh `pnpm install` on every deploy, so a locally-generated lockfile
+# is just noise here
+pnpm-lock.yaml

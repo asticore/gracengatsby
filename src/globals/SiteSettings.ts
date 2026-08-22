@@ -6,7 +6,8 @@ export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   admin: {
     group: 'Site Settings',
-    description: 'Site identity, theming, and footer content - changes apply everywhere immediately.',
+    description:
+      'Site identity, theme, SEO defaults, and feature toggles. Header/menu and footer are their own sections below.',
   },
   access: {
     read: () => true,
@@ -27,7 +28,7 @@ export const SiteSettings: GlobalConfig = {
       name: 'logo',
       type: 'upload',
       relationTo: 'media',
-      admin: { description: 'Shown in the header. Leave blank to show the site name as text instead.' },
+      admin: { description: 'Used in the header and footer (each can be toggled off independently).' },
     },
     {
       name: 'favicon',
@@ -35,101 +36,124 @@ export const SiteSettings: GlobalConfig = {
       relationTo: 'media',
     },
     {
-      name: 'announcementBar',
-      type: 'text',
-      admin: {
-        description: 'Optional short banner shown at the very top of every page. Leave blank to hide it.',
-      },
-    },
-    {
       type: 'group',
       name: 'theme',
+      label: 'Theme',
       fields: [
         {
-          name: 'primaryColor',
-          type: 'text',
-          defaultValue: '#14110f',
-          admin: { description: 'Hex color, e.g. #14110f. Main text/ink color.' },
-        },
-        {
-          name: 'accentColor',
-          type: 'text',
-          defaultValue: '#b9924b',
-          admin: { description: 'Hex color, e.g. #b9924b. Buttons, links, highlights.' },
-        },
-        {
-          name: 'backgroundColor',
-          type: 'text',
-          defaultValue: '#f6f1e7',
-          admin: { description: 'Hex color, e.g. #f6f1e7. Page background.' },
-        },
-        {
-          name: 'headingFont',
-          type: 'select',
-          defaultValue: 'cormorant',
-          options: [
-            { label: 'Cormorant Garamond (elegant serif)', value: 'cormorant' },
-            { label: 'Playfair Display (bold serif)', value: 'playfair' },
-            { label: 'Cinzel (Art Deco display)', value: 'cinzel' },
+          type: 'row',
+          fields: [
+            { name: 'primaryColor', type: 'text', defaultValue: '#14110f', admin: { width: '33%', description: 'Ink / text color.' } },
+            { name: 'accentColor', type: 'text', defaultValue: '#b9924b', admin: { width: '33%', description: 'Buttons, links, highlights.' } },
+            { name: 'backgroundColor', type: 'text', defaultValue: '#f6f1e7', admin: { width: '33%', description: 'Page background.' } },
           ],
         },
         {
-          name: 'bodyFont',
-          type: 'select',
-          defaultValue: 'jost',
-          options: [
-            { label: 'Jost (geometric sans)', value: 'jost' },
-            { label: 'Montserrat', value: 'montserrat' },
-            { label: 'Inter', value: 'inter' },
+          type: 'row',
+          fields: [
+            {
+              name: 'headingFont',
+              type: 'select',
+              defaultValue: 'cormorant',
+              admin: { width: '50%' },
+              options: [
+                { label: 'Cormorant Garamond (elegant serif)', value: 'cormorant' },
+                { label: 'Playfair Display (bold serif)', value: 'playfair' },
+                { label: 'Cinzel (Art Deco display)', value: 'cinzel' },
+              ],
+            },
+            {
+              name: 'bodyFont',
+              type: 'select',
+              defaultValue: 'jost',
+              admin: { width: '50%' },
+              options: [
+                { label: 'Jost (geometric sans)', value: 'jost' },
+                { label: 'Montserrat', value: 'montserrat' },
+                { label: 'Inter', value: 'inter' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'buttonStyle',
+              type: 'select',
+              defaultValue: 'solid',
+              admin: { width: '33%' },
+              options: [
+                { label: 'Solid', value: 'solid' },
+                { label: 'Outline', value: 'outline' },
+                { label: 'Pill', value: 'pill' },
+              ],
+            },
+            {
+              name: 'cornerStyle',
+              type: 'select',
+              defaultValue: 'soft',
+              admin: { width: '33%' },
+              options: [
+                { label: 'Sharp corners', value: 'sharp' },
+                { label: 'Soft corners', value: 'soft' },
+                { label: 'Rounded', value: 'round' },
+              ],
+            },
+            {
+              name: 'hoverEffect',
+              type: 'select',
+              defaultValue: 'fade',
+              admin: { width: '33%' },
+              options: [
+                { label: 'None', value: 'none' },
+                { label: 'Fade', value: 'fade' },
+                { label: 'Underline', value: 'underline' },
+                { label: 'Color shift', value: 'color-shift' },
+                { label: 'Lift', value: 'lift' },
+              ],
+            },
           ],
         },
       ],
     },
     {
       type: 'group',
-      name: 'footer',
+      name: 'seo',
+      label: 'SEO Defaults',
+      admin: { description: 'Fallbacks used when a page/post/product does not set its own SEO fields.' },
       fields: [
         {
-          name: 'text',
-          type: 'textarea',
-          defaultValue:
-            'A curated boutique for the modern romantic - considered pieces, small-batch goods, and evenings worth dressing up for.',
-        },
-        {
-          name: 'contactEmail',
+          name: 'titleTemplate',
           type: 'text',
+          defaultValue: '%s | Grace & Gatsby',
+          admin: { description: 'Use %s where the page title should go.' },
         },
-        {
-          name: 'contactPhone',
-          type: 'text',
-        },
-        {
-          name: 'address',
-          type: 'text',
-          defaultValue: 'Brisbane, Australia',
-        },
-        {
-          name: 'socialLinks',
-          type: 'array',
-          labels: { singular: 'Social Link', plural: 'Social Links' },
-          fields: [
-            {
-              name: 'platform',
-              type: 'select',
-              options: [
-                { label: 'Instagram', value: 'Instagram' },
-                { label: 'Facebook', value: 'Facebook' },
-                { label: 'TikTok', value: 'TikTok' },
-                { label: 'Pinterest', value: 'Pinterest' },
-                { label: 'X', value: 'X' },
-              ],
-            },
-            {
-              name: 'url',
-              type: 'text',
-            },
-          ],
-        },
+        { name: 'defaultDescription', type: 'textarea' },
+        { name: 'defaultOgImage', type: 'upload', relationTo: 'media' },
+        { name: 'twitterHandle', type: 'text' },
+        { name: 'siteIndexable', type: 'checkbox', defaultValue: true, admin: { description: 'Turn off to ask search engines not to index the whole site (useful pre-launch).' } },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'features',
+      label: 'Features',
+      admin: {
+        description:
+          'Turn sections of the site on or off. Turning a feature off hides its nav links, storefront pages, and sitemap entries - it does not delete any data.',
+      },
+      fields: [
+        { type: 'row', fields: [
+          { name: 'ecommerce', type: 'checkbox', defaultValue: true, admin: { width: '33%', description: 'Shop, cart, checkout.' } },
+          { name: 'events', type: 'checkbox', defaultValue: true, admin: { width: '33%', description: 'Events calendar & RSVPs.' } },
+          { name: 'blog', type: 'checkbox', defaultValue: false, admin: { width: '33%' } },
+        ] },
+        { type: 'row', fields: [
+          { name: 'faq', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Standalone FAQ / knowledge base page.' } },
+          { name: 'accounts', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Customer accounts - coming in a later build phase.' } },
+          { name: 'lms', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Courses / LMS - coming in a later build phase.' } },
+        ] },
       ],
     },
   ],

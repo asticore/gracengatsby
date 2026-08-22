@@ -20,6 +20,15 @@
       "binding": "D1",
       "database_id": "e6aacd1e-ff7e-4658-bf8d-eeefe1c15ff8",
       "database_name": "Gracengatsby",
+      // Without this, wrangler's getPlatformProxy() (used by payload.config.ts's
+      // getCloudflareContextFromWrangler()) silently binds D1 to a fresh, throwaway
+      // LOCAL emulated database even when remoteBindings:true is passed - the
+      // top-level remoteBindings flag only starts the proxy session, each binding
+      // must opt in individually. Without this flag `payload migrate` during
+      // `npm run deploy` never touches real production D1: it runs against a local
+      // SQLite file that's discarded when the CI container exits, but still logs
+      // success because migrations genuinely succeeded against *that* throwaway DB.
+      "remote": true,
     },
   ],
   "services": [
@@ -34,6 +43,9 @@
       "binding": "R2",
       "bucket_name": "gracengatsby",
       "preview_bucket_name": "gracengatsby",
+      // Same remote-binding opt-in as D1 above - keeps media uploads pointed at
+      // the real bucket instead of a local emulated one during payload migrate.
+      "remote": true,
     },
     // Create a R2 binding with the binding name "NEXT_INC_CACHE_R2_BUCKET"
     // {

@@ -12,7 +12,7 @@ export const Pages: CollectionConfig = {
     defaultColumns: ['title', 'slug', 'parent', 'isHomepage', '_status'],
     group: 'Site Settings',
     description:
-      'Every page on the site, including the homepage. Build sections from the block library (drag the ⠿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header.',
+      'Every page on the site, including the homepage. Build sections from the block library (drag the ⠠⟿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header.',
   },
   access: {
     create: isAdmin,
@@ -34,11 +34,13 @@ export const Pages: CollectionConfig = {
     {
       name: 'slug',
       type: 'text',
-      required: true,
       admin: {
         position: 'sidebar',
         description:
-          'Auto-generated from the title if left blank. Combined with Parent to build the URL - e.g. parent "services" + slug "consulting" -> /services/consulting.',
+          'Auto-fills from the title as you type - edit it here to override. Combined with Parent to build the URL - e.g. parent "services" + slug "consulting" -> /services/consulting.',
+        components: {
+          Field: '@/fields/slug/SlugComponent#SlugComponent',
+        },
       },
       hooks: {
         beforeValidate: [formatSlugHook('title')],

@@ -25,9 +25,14 @@ export const Posts: CollectionConfig = {
     {
       name: 'slug',
       type: 'text',
-      required: true,
       unique: true,
-      admin: { position: 'sidebar', description: 'Auto-generated from the title if left blank. -> /blog/<slug>' },
+      admin: {
+        position: 'sidebar',
+        description: 'Auto-fills from the title as you type - edit it here to override. -> /blog/<slug>',
+        components: {
+          Field: '@/fields/slug/SlugComponent#SlugComponent',
+        },
+      },
       hooks: { beforeValidate: [formatSlugHook('title')] },
     },
     { name: 'publishedDate', type: 'date', defaultValue: () => new Date().toISOString(), admin: { position: 'sidebar' } },

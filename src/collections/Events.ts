@@ -30,11 +30,13 @@ export const Events: CollectionConfig = {
     {
       name: 'slug',
       type: 'text',
-      required: true,
       unique: true,
       admin: {
         position: 'sidebar',
-        description: 'Auto-generated from the title if left blank.',
+        description: 'Auto-fills from the title as you type - edit it here to override.',
+        components: {
+          Field: '@/fields/slug/SlugComponent#SlugComponent',
+        },
       },
       hooks: {
         beforeValidate: [formatSlugHook('title')],

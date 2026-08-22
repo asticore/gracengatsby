@@ -26,9 +26,17 @@ import { Media } from './collections/Media'
 import { Events } from './collections/Events'
 import { EventRSVPs } from './collections/EventRSVPs'
 import { Pages } from './collections/Pages'
-import { Navigation } from './globals/Navigation'
+import { PageTemplates } from './collections/PageTemplates'
+import { Posts } from './collections/Posts'
+import { Faqs } from './collections/Faqs'
+import { Header } from './globals/Header'
+import { Footer } from './globals/Footer'
 import { SiteSettings } from './globals/SiteSettings'
 import { Integrations } from './globals/Integrations'
+import { BlogSettings } from './globals/BlogSettings'
+import { FaqSettings } from './globals/FaqSettings'
+import { ShopSettings } from './globals/ShopSettings'
+import { seoFields } from './fields/seo'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -69,8 +77,8 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Events, EventRSVPs, Pages],
-  globals: [Navigation, SiteSettings, Integrations],
+  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs],
+  globals: [Header, Footer, SiteSettings, Integrations, BlogSettings, FaqSettings, ShopSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -149,6 +157,17 @@ export default buildConfig({
               relationTo: 'media',
               hasMany: true,
             },
+            {
+              name: 'faqs',
+              type: 'relationship',
+              relationTo: 'faqs',
+              hasMany: true,
+              admin: {
+                position: 'sidebar',
+                description: 'Shown in a FAQ section on the product page.',
+              },
+            },
+            seoFields,
             ...defaultCollection.fields,
           ],
         }),

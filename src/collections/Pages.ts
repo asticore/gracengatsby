@@ -1,23 +1,18 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
-import { formatSlugHook } from '../utilities/formatSlug'
-import { HeroBlock } from '../blocks/Hero'
-import { RichTextBlock } from '../blocks/RichTextBlock'
-import { ImageTextBlock } from '../blocks/ImageText'
-import { ProductGridBlock } from '../blocks/ProductGrid'
-import { EventGridBlock } from '../blocks/EventGrid'
-import { GalleryBlock } from '../blocks/Gallery'
-import { CtaBannerBlock } from '../blocks/CtaBanner'
+import { pageBuilderBlocks } from '../blocks'
+import { seoFields } from '../fields/seo'
+import { formatSlugHook, slugify } from '../utilities/formatSlug'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'slug', '_status'],
+    defaultColumns: ['title', 'slug', 'parent', 'isHomepage', '_status'],
     group: 'Site Settings',
     description:
-      'Build out extra pages (About, Lookbook, Contact, etc.) from a library of sections. Add the finished page to the menu under Site Settings -> Navigation to link to it.',
+      'Every page on the site, including the homepage. Build sections from the block library (drag the ⠿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header.',
   },
   access: {
     create: isAdmin,
@@ -30,38 +25,121 @@ export const Pages: CollectionConfig = {
   },
   fields: [
     {
-      name: 'title',
-      type: 'text',
-      required: true,
+      type: 'row',
+      fields: [
+        { name: 'title', type: 'text', required: true, admin: { width: '70%' } },
+        { name: 'isHomepage', type: 'checkbox', defaultValue: false, admin: { width: '30%', description: 'Serve this page at "/" instead of its slug.' } },
+      ],
     },
     {
       name: 'slug',
       type: 'text',
       required: true,
-      unique: true,
       admin: {
         position: 'sidebar',
         description:
-          'Auto-generated from the title if left blank. This becomes the page URL - e.g. "about-us" -> /about-us.',
+          'Auto-generated from the title if left blank. Combined with Parent to build the URL - e.g. parent "services" + slug "consulting" -> /services/consulting.',
       },
       hooks: {
         beforeValidate: [formatSlugHook('title')],
       },
+      validate: async (
+        value: unknown,
+        { req, data, id }: { req: PayloadRequest; data?: Record<string, unknown>; id?: unknown },
+      ) => {
+        const slug = typeof value === 'string' && value.length > 0 ? value : slugify(String(data?.title || ''))
+        if (!slug) return 'A slug or title is required.'
+
+        const parentId = data?.parent
+          ? typeof data.parent === 'object'
+            ? (data.parent as { id?: string | number }).id
+            : data.parent
+          : null
+
+        const { docs } = await req.payload.find({
+          collection: 'pages',
+          where: {
+            and: [
+              { slug: { equals: slug } },
+              parentId ? { parent: { equals: parentId } } : { parent: { exists: false } },
+              ...(id ? [{ id: { not_equals: id } }] : []),
+            ],
+          },
+          limit: 1,
+          depth: 0,
+        })
+
+        if (docs.length > 0) {
+          return 'Another page with this slug already exists under the same parent. Choose a different slug or parent.'
+        }
+
+        return true
+      },
     },
+    {
+      name: 'parent',
+      type: 'relationship',
+      relationTo: 'pages',
+      admin: {
+        position: 'sidebar',
+        description: 'Optional - nest this page under another page (controls its URL and shows page structure).',
+      },
+    },
+    {
+      name: 'template',
+      type: 'relationship',
+      relationTo: 'page-templates',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Pick a starting template - its sections are copied in only when creating a brand-new page with no sections yet.',
+      },
+    },
+    seoFields,
     {
       name: 'blocks',
       type: 'blocks',
       minRows: 1,
       labels: { singular: 'Section', plural: 'Sections' },
-      blocks: [
-        HeroBlock,
-        RichTextBlock,
-        ImageTextBlock,
-        ProductGridBlock,
-        EventGridBlock,
-        GalleryBlock,
-        CtaBannerBlock,
-      ],
+      blocks: pageBuilderBlocks,
     },
   ],
+  hooks: {
+    beforeValidate: [
+      async ({ data, operation, req }) => {
+        // Apply a starting template's blocks on create, only if none set yet.
+        if (operation === 'create' && data?.template && (!data.blocks || data.blocks.length === 0)) {
+          const templateId = typeof data.template === 'object' ? data.template.id : data.template
+          try {
+            const template = await req.payload.findByID({ collection: 'page-templates', id: templateId })
+            if (template?.blocks?.length) {
+              data.blocks = template.blocks
+            }
+          } catch {
+            // Template missing/deleted - just leave blocks empty, no hard failure.
+          }
+        }
+        return data
+      },
+    ],
+    beforeChange: [
+      async ({ data, req, originalDoc }) => {
+        // Only one page can be the homepage - unset any previous holder.
+        if (data?.isHomepage) {
+          const { docs } = await req.payload.find({
+            collection: 'pages',
+            where: {
+              and: [{ isHomepage: { equals: true } }, ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : [])],
+            },
+            limit: 50,
+            depth: 0,
+          })
+          await Promise.all(
+            docs.map((doc) => req.payload.update({ collection: 'pages', id: doc.id, data: { isHomepage: false } })),
+          )
+        }
+        return data
+      },
+    ],
+  },
 }

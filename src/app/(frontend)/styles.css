@@ -1158,3 +1158,144 @@ a {
   margin-bottom: 32px;
   opacity: 0.8;
 }
+
+/* ---------------------------------------------------------------------------
+   Page builder: Design settings, Sections/Columns, and Loop grids.
+   These back the visual editor's layout and style controls. Class names are
+   shared with the editor canvas so a block previews exactly as it ships.
+   --------------------------------------------------------------------------- */
+
+.be-block {
+  position: relative;
+}
+
+.be-block--contained > .be-block__content {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.be-block--wide > .be-block__content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.be-block--full > .be-block__content {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* A block that sets its own background/padding shouldn't also inherit the
+   default section padding from the block's own markup underneath it. */
+.be-block > .be-block__content > .built-block,
+.be-block > .be-block__content > .home-section {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.be-block__content {
+  position: relative;
+  z-index: 1;
+}
+
+.be-block__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.be-block--has-bg-image {
+  background-size: cover;
+  background-position: center;
+}
+
+/* Shape dividers */
+.be-divider {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.be-divider--top {
+  top: 0;
+}
+
+.be-divider--bottom {
+  bottom: 0;
+}
+
+.be-divider svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Sections and columns */
+.be-section {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.be-column {
+  min-width: 0;
+}
+
+.be-column--12 { grid-column: span 12; }
+.be-column--9 { grid-column: span 9; }
+.be-column--8 { grid-column: span 8; }
+.be-column--6 { grid-column: span 6; }
+.be-column--4 { grid-column: span 4; }
+.be-column--3 { grid-column: span 3; }
+
+@media (max-width: 900px) {
+  .be-column--9,
+  .be-column--8,
+  .be-column--6 {
+    grid-column: span 12;
+  }
+
+  .be-column--4,
+  .be-column--3 {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 600px) {
+  .be-column {
+    grid-column: span 12 !important;
+  }
+}
+
+/* Loop grid */
+.be-loop-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--loop-columns, 3), minmax(0, 1fr));
+  gap: 28px;
+}
+
+.be-loop-item {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .be-loop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .be-loop-grid {
+    grid-template-columns: 1fr;
+  }
+}

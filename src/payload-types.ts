@@ -77,6 +77,9 @@ export interface Config {
     events: Event;
     'event-rsvps': EventRsvp;
     pages: Page;
+    'page-templates': PageTemplate;
+    posts: Post;
+    faqs: Faq;
     addresses: Address;
     products: Product;
     carts: Cart;
@@ -98,6 +101,9 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     'event-rsvps': EventRsvpsSelect<false> | EventRsvpsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'page-templates': PageTemplatesSelect<false> | PageTemplatesSelect<true>;
+    posts: PostsSelect<false> | PostsSelect<true>;
+    faqs: FaqsSelect<false> | FaqsSelect<true>;
     addresses: AddressesSelect<false> | AddressesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     carts: CartsSelect<false> | CartsSelect<true>;
@@ -113,14 +119,22 @@ export interface Config {
   };
   fallbackLocale: null;
   globals: {
-    navigation: Navigation;
+    header: Header;
+    footer: Footer;
     'site-settings': SiteSetting;
     integrations: Integration;
+    'blog-settings': BlogSetting;
+    'faq-settings': FaqSetting;
+    'shop-settings': ShopSetting;
   };
   globalsSelect: {
-    navigation: NavigationSelect<false> | NavigationSelect<true>;
+    header: HeaderSelect<false> | HeaderSelect<true>;
+    footer: FooterSelect<false> | FooterSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     integrations: IntegrationsSelect<false> | IntegrationsSelect<true>;
+    'blog-settings': BlogSettingsSelect<false> | BlogSettingsSelect<true>;
+    'faq-settings': FaqSettingsSelect<false> | FaqSettingsSelect<true>;
+    'shop-settings': ShopSettingsSelect<false> | ShopSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -298,6 +312,22 @@ export interface Product {
     [k: string]: unknown;
   } | null;
   images?: (number | Media)[] | null;
+  /**
+   * Shown in a FAQ section on the product page.
+   */
+  faqs?: (number | Faq)[] | null;
+  /**
+   * Leave blank to fall back to the site-wide SEO defaults.
+   */
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    ogImage?: (number | null) | Media;
+    /**
+     * Ask search engines not to index this page.
+     */
+    noIndex?: boolean | null;
+  };
   inventory?: number | null;
   priceInAUDEnabled?: boolean | null;
   priceInAUD?: number | null;
@@ -305,6 +335,41 @@ export interface Product {
   createdAt: string;
   deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * Reusable Q&A entries. Show them on the site FAQ page, or drop the FAQ block into any page/product.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: number;
+  question: string;
+  answer: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * e.g. Shipping, Returns, Events. Used to group/filter FAQs.
+   */
+  category?: string | null;
+  /**
+   * Lower numbers show first.
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -321,7 +386,7 @@ export interface EventRsvp {
   createdAt: string;
 }
 /**
- * Build out extra pages (About, Lookbook, Contact, etc.) from a library of sections. Add the finished page to the menu under Site Settings -> Navigation to link to it.
+ * Every page on the site, including the homepage. Build sections from the block library (drag the ⠿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
@@ -330,9 +395,33 @@ export interface Page {
   id: number;
   title: string;
   /**
-   * Auto-generated from the title if left blank. This becomes the page URL - e.g. "about-us" -> /about-us.
+   * Serve this page at "/" instead of its slug.
+   */
+  isHomepage?: boolean | null;
+  /**
+   * Auto-generated from the title if left blank. Combined with Parent to build the URL - e.g. parent "services" + slug "consulting" -> /services/consulting.
    */
   slug: string;
+  /**
+   * Optional - nest this page under another page (controls its URL and shows page structure).
+   */
+  parent?: (number | null) | Page;
+  /**
+   * Pick a starting template - its sections are copied in only when creating a brand-new page with no sections yet.
+   */
+  template?: (number | null) | PageTemplate;
+  /**
+   * Leave blank to fall back to the site-wide SEO defaults.
+   */
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    ogImage?: (number | null) | Media;
+    /**
+     * Ask search engines not to index this page.
+     */
+    noIndex?: boolean | null;
+  };
   blocks?:
     | (
         | {
@@ -419,6 +508,18 @@ export interface Page {
             blockType: 'gallery';
           }
         | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
             heading: string;
             text?: string | null;
             buttonLabel?: string | null;
@@ -430,6 +531,188 @@ export interface Page {
           }
       )[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Starter layouts for new pages. Build one here, then pick it from the "Start from template" field when creating a new Page - its sections get copied in.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-templates".
+ */
+export interface PageTemplate {
+  id: number;
+  name: string;
+  /**
+   * Shown to help you pick the right template.
+   */
+  description?: string | null;
+  blocks?:
+    | (
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+      )[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Blog posts. Turn the blog on/off in Settings > Features.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  title: string;
+  /**
+   * Auto-generated from the title if left blank. -> /blog/<slug>
+   */
+  slug: string;
+  publishedDate?: string | null;
+  author?: (number | null) | User;
+  categories?:
+    | {
+        name?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  featuredImage?: (number | null) | Media;
+  /**
+   * Shown on the blog archive card.
+   */
+  excerpt?: string | null;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Leave blank to fall back to the site-wide SEO defaults.
+   */
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    ogImage?: (number | null) | Media;
+    /**
+     * Ask search engines not to index this page.
+     */
+    noIndex?: boolean | null;
+  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -638,6 +921,18 @@ export interface PayloadLockedDocument {
         value: number | Page;
       } | null)
     | ({
+        relationTo: 'page-templates';
+        value: number | PageTemplate;
+      } | null)
+    | ({
+        relationTo: 'posts';
+        value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'faqs';
+        value: number | Faq;
+      } | null)
+    | ({
         relationTo: 'addresses';
         value: number | Address;
       } | null)
@@ -785,7 +1080,18 @@ export interface EventRsvpsSelect<T extends boolean = true> {
  */
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
+  isHomepage?: T;
   slug?: T;
+  parent?: T;
+  template?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noIndex?: T;
+      };
   blocks?:
     | T
     | {
@@ -844,6 +1150,16 @@ export interface PagesSelect<T extends boolean = true> {
               id?: T;
               blockName?: T;
             };
+        faq?:
+          | T
+          | {
+              heading?: T;
+              source?: T;
+              category?: T;
+              faqs?: T;
+              id?: T;
+              blockName?: T;
+            };
         ctaBanner?:
           | T
           | {
@@ -859,6 +1175,138 @@ export interface PagesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-templates_select".
+ */
+export interface PageTemplatesSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  blocks?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              heading?: T;
+              subheading?: T;
+              backgroundImage?: T;
+              primaryCtaLabel?: T;
+              primaryCtaUrl?: T;
+              secondaryCtaLabel?: T;
+              secondaryCtaUrl?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        imageText?:
+          | T
+          | {
+              image?: T;
+              content?: T;
+              imageSide?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              limit?: T;
+              id?: T;
+              blockName?: T;
+            };
+        eventGrid?:
+          | T
+          | {
+              heading?: T;
+              showPast?: T;
+              limit?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              heading?: T;
+              images?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              heading?: T;
+              source?: T;
+              category?: T;
+              faqs?: T;
+              id?: T;
+              blockName?: T;
+            };
+        ctaBanner?:
+          | T
+          | {
+              heading?: T;
+              text?: T;
+              buttonLabel?: T;
+              buttonUrl?: T;
+              style?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  publishedDate?: T;
+  author?: T;
+  categories?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
+  featuredImage?: T;
+  excerpt?: T;
+  content?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noIndex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  category?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -891,6 +1339,15 @@ export interface ProductsSelect<T extends boolean = true> {
   shortDescription?: T;
   description?: T;
   images?: T;
+  faqs?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noIndex?: T;
+      };
   inventory?: T;
   priceInAUDEnabled?: T;
   priceInAUD?: T;
@@ -1041,14 +1498,31 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
- * The links shown in the header menu, in order.
+ * Everything in the header: logo, menu (with dropdowns), announcement bar, socials, and mobile/desktop layout.
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "navigation".
+ * via the `definition` "header".
  */
-export interface Navigation {
+export interface Header {
   id: number;
-  items?:
+  showLogo?: boolean | null;
+  /**
+   * Header stays visible while scrolling.
+   */
+  sticky?: boolean | null;
+  /**
+   * Only shown when the shop is turned on in Settings.
+   */
+  showCart?: boolean | null;
+  desktopLayout?: ('logo-left' | 'logo-center' | 'logo-right') | null;
+  mobileLayout?: ('slide-in' | 'fullscreen') | null;
+  announcementBar?: {
+    enabled?: boolean | null;
+    text?: string | null;
+    linkUrl?: string | null;
+    dismissible?: boolean | null;
+  };
+  menu?:
     | {
         label: string;
         linkType?: ('page' | 'custom') | null;
@@ -1058,14 +1532,94 @@ export interface Navigation {
          */
         customUrl?: string | null;
         openInNewTab?: boolean | null;
+        /**
+         * Optional - adding items here turns this into a dropdown menu.
+         */
+        children?:
+          | {
+              label: string;
+              linkType?: ('page' | 'custom') | null;
+              page?: (number | null) | Page;
+              /**
+               * e.g. /shop, /#about, or a full https:// link.
+               */
+              customUrl?: string | null;
+              openInNewTab?: boolean | null;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
+  socials?: {
+    show?: boolean | null;
+    links?:
+      | {
+          platform?: ('Instagram' | 'Facebook' | 'TikTok' | 'Pinterest' | 'X') | null;
+          url?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
 /**
- * Site identity, theming, and footer content - changes apply everywhere immediately.
+ * Footer columns, contact info, socials, and layout.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer".
+ */
+export interface Footer {
+  id: number;
+  showLogo?: boolean | null;
+  layout?: ('columns-3' | 'columns-4' | 'stacked') | null;
+  /**
+   * Short blurb shown next to the logo.
+   */
+  bottomText?: string | null;
+  /**
+   * Extra link columns, e.g. Shop / Events / Help.
+   */
+  columns?:
+    | {
+        title: string;
+        links?:
+          | {
+              label: string;
+              linkType?: ('page' | 'custom') | null;
+              page?: (number | null) | Page;
+              customUrl?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  contact?: {
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+  };
+  socials?: {
+    show?: boolean | null;
+    links?:
+      | {
+          platform?: ('Instagram' | 'Facebook' | 'TikTok' | 'Pinterest' | 'X') | null;
+          url?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Leave blank to use "© {year} {site name}. All rights reserved."
+   */
+  copyrightText?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Site identity, theme, SEO defaults, and feature toggles. Header/menu and footer are their own sections below.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings".
@@ -1075,42 +1629,70 @@ export interface SiteSetting {
   siteName?: string | null;
   tagline?: string | null;
   /**
-   * Shown in the header. Leave blank to show the site name as text instead.
+   * Used in the header and footer (each can be toggled off independently).
    */
   logo?: (number | null) | Media;
   favicon?: (number | null) | Media;
-  /**
-   * Optional short banner shown at the very top of every page. Leave blank to hide it.
-   */
-  announcementBar?: string | null;
   theme?: {
     /**
-     * Hex color, e.g. #14110f. Main text/ink color.
+     * Ink / text color.
      */
     primaryColor?: string | null;
     /**
-     * Hex color, e.g. #b9924b. Buttons, links, highlights.
+     * Buttons, links, highlights.
      */
     accentColor?: string | null;
     /**
-     * Hex color, e.g. #f6f1e7. Page background.
+     * Page background.
      */
     backgroundColor?: string | null;
     headingFont?: ('cormorant' | 'playfair' | 'cinzel') | null;
     bodyFont?: ('jost' | 'montserrat' | 'inter') | null;
+    buttonStyle?: ('solid' | 'outline' | 'pill') | null;
+    cornerStyle?: ('sharp' | 'soft' | 'round') | null;
+    hoverEffect?: ('none' | 'fade' | 'underline' | 'color-shift' | 'lift') | null;
   };
-  footer?: {
-    text?: string | null;
-    contactEmail?: string | null;
-    contactPhone?: string | null;
-    address?: string | null;
-    socialLinks?:
-      | {
-          platform?: ('Instagram' | 'Facebook' | 'TikTok' | 'Pinterest' | 'X') | null;
-          url?: string | null;
-          id?: string | null;
-        }[]
-      | null;
+  /**
+   * Fallbacks used when a page/post/product does not set its own SEO fields.
+   */
+  seo?: {
+    /**
+     * Use %s where the page title should go.
+     */
+    titleTemplate?: string | null;
+    defaultDescription?: string | null;
+    defaultOgImage?: (number | null) | Media;
+    twitterHandle?: string | null;
+    /**
+     * Turn off to ask search engines not to index the whole site (useful pre-launch).
+     */
+    siteIndexable?: boolean | null;
+  };
+  /**
+   * Turn sections of the site on or off. Turning a feature off hides its nav links, storefront pages, and sitemap entries - it does not delete any data.
+   */
+  features?: {
+    /**
+     * Shop, cart, checkout.
+     */
+    ecommerce?: boolean | null;
+    /**
+     * Events calendar & RSVPs.
+     */
+    events?: boolean | null;
+    blog?: boolean | null;
+    /**
+     * Standalone FAQ / knowledge base page.
+     */
+    faq?: boolean | null;
+    /**
+     * Customer accounts - coming in a later build phase.
+     */
+    accounts?: boolean | null;
+    /**
+     * Courses / LMS - coming in a later build phase.
+     */
+    lms?: boolean | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -1131,11 +1713,73 @@ export interface Integration {
   createdAt?: string | null;
 }
 /**
+ * Layout for the blog archive (/blog) and individual posts. Turn the blog on/off in Settings > Features.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "navigation_select".
+ * via the `definition` "blog-settings".
  */
-export interface NavigationSelect<T extends boolean = true> {
-  items?:
+export interface BlogSetting {
+  id: number;
+  archiveTitle?: string | null;
+  archiveIntro?: string | null;
+  archiveLayout?: ('grid' | 'list' | 'magazine') | null;
+  postsPerPage?: number | null;
+  showAuthor?: boolean | null;
+  showDate?: boolean | null;
+  showCategories?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * The standalone /faq knowledge-base page. Turn it on/off in Settings > Features.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq-settings".
+ */
+export interface FaqSetting {
+  id: number;
+  pageTitle?: string | null;
+  intro?: string | null;
+  layout?: ('accordion' | 'list') | null;
+  groupByCategory?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Layout for the shop archive (/shop) and product pages. Turn ecommerce on/off in Settings > Features.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-settings".
+ */
+export interface ShopSetting {
+  id: number;
+  archiveLayout?: ('grid-3' | 'grid-4' | 'list') | null;
+  showCategoryFilters?: boolean | null;
+  showRelatedProducts?: boolean | null;
+  showShortDescriptionOnCard?: boolean | null;
+  productImageAspect?: ('portrait' | 'square') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header_select".
+ */
+export interface HeaderSelect<T extends boolean = true> {
+  showLogo?: T;
+  sticky?: T;
+  showCart?: T;
+  desktopLayout?: T;
+  mobileLayout?: T;
+  announcementBar?:
+    | T
+    | {
+        enabled?: T;
+        text?: T;
+        linkUrl?: T;
+        dismissible?: T;
+      };
+  menu?:
     | T
     | {
         label?: T;
@@ -1143,39 +1787,23 @@ export interface NavigationSelect<T extends boolean = true> {
         page?: T;
         customUrl?: T;
         openInNewTab?: T;
+        children?:
+          | T
+          | {
+              label?: T;
+              linkType?: T;
+              page?: T;
+              customUrl?: T;
+              openInNewTab?: T;
+              id?: T;
+            };
         id?: T;
       };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "site-settings_select".
- */
-export interface SiteSettingsSelect<T extends boolean = true> {
-  siteName?: T;
-  tagline?: T;
-  logo?: T;
-  favicon?: T;
-  announcementBar?: T;
-  theme?:
+  socials?:
     | T
     | {
-        primaryColor?: T;
-        accentColor?: T;
-        backgroundColor?: T;
-        headingFont?: T;
-        bodyFont?: T;
-      };
-  footer?:
-    | T
-    | {
-        text?: T;
-        contactEmail?: T;
-        contactPhone?: T;
-        address?: T;
-        socialLinks?:
+        show?: T;
+        links?:
           | T
           | {
               platform?: T;
@@ -1189,10 +1817,144 @@ export interface SiteSettingsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer_select".
+ */
+export interface FooterSelect<T extends boolean = true> {
+  showLogo?: T;
+  layout?: T;
+  bottomText?: T;
+  columns?:
+    | T
+    | {
+        title?: T;
+        links?:
+          | T
+          | {
+              label?: T;
+              linkType?: T;
+              page?: T;
+              customUrl?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  contact?:
+    | T
+    | {
+        email?: T;
+        phone?: T;
+        address?: T;
+      };
+  socials?:
+    | T
+    | {
+        show?: T;
+        links?:
+          | T
+          | {
+              platform?: T;
+              url?: T;
+              id?: T;
+            };
+      };
+  copyrightText?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  siteName?: T;
+  tagline?: T;
+  logo?: T;
+  favicon?: T;
+  theme?:
+    | T
+    | {
+        primaryColor?: T;
+        accentColor?: T;
+        backgroundColor?: T;
+        headingFont?: T;
+        bodyFont?: T;
+        buttonStyle?: T;
+        cornerStyle?: T;
+        hoverEffect?: T;
+      };
+  seo?:
+    | T
+    | {
+        titleTemplate?: T;
+        defaultDescription?: T;
+        defaultOgImage?: T;
+        twitterHandle?: T;
+        siteIndexable?: T;
+      };
+  features?:
+    | T
+    | {
+        ecommerce?: T;
+        events?: T;
+        blog?: T;
+        faq?: T;
+        accounts?: T;
+        lms?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "integrations_select".
  */
 export interface IntegrationsSelect<T extends boolean = true> {
   claudeApiKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "blog-settings_select".
+ */
+export interface BlogSettingsSelect<T extends boolean = true> {
+  archiveTitle?: T;
+  archiveIntro?: T;
+  archiveLayout?: T;
+  postsPerPage?: T;
+  showAuthor?: T;
+  showDate?: T;
+  showCategories?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq-settings_select".
+ */
+export interface FaqSettingsSelect<T extends boolean = true> {
+  pageTitle?: T;
+  intro?: T;
+  layout?: T;
+  groupByCategory?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-settings_select".
+ */
+export interface ShopSettingsSelect<T extends boolean = true> {
+  archiveLayout?: T;
+  showCategoryFilters?: T;
+  showRelatedProducts?: T;
+  showShortDescriptionOnCard?: T;
+  productImageAspect?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

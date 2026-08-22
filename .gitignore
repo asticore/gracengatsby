@@ -57,3 +57,13 @@ node_modules/
 # fresh `pnpm install` on every deploy, so a locally-generated lockfile
 # is just noise here
 pnpm-lock.yaml
+
+# Drizzle schema snapshots emitted alongside migrations by `payload migrate:create`.
+# Not committed: each one is a ~500KB full-schema dump, and this project cannot
+# rely on them anyway - `payload migrate` never reaches production D1 from CI
+# (see the note on the D1 binding in wrangler.jsonc), so migrations here are
+# built by diffing the target schema against the live one and applied through
+# /api/internal-migrate. The procedure is documented in
+# src/migrations/20260822_234701_builder_sections_loops_custom_fields.ts.
+src/migrations/*.json
+!src/migrations/20250929_111647.json

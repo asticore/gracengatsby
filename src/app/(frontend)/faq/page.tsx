@@ -29,7 +29,7 @@ export default async function FaqPage() {
   return (
     <div className="page-shell faq-page">
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
-        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} />)
+        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (
         <div className="section-heading">
           <h1>{settings?.pageTitle || 'Frequently Asked Questions'}</h1>

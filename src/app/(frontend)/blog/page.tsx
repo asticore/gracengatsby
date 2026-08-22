@@ -38,7 +38,7 @@ export default async function BlogArchivePage() {
   return (
     <div className="page-shell blog-archive">
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
-        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} />)
+        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (
         <div className="section-heading">
           <h1>{settings?.archiveTitle || 'Journal'}</h1>

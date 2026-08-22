@@ -42,7 +42,7 @@ export default async function BuiltPage({ params }: { params: Promise<{ slug: st
         </nav>
       )}
       {(page.blocks || []).map((block, index) => (
-        <BlockRenderer key={block.id || index} block={block} />
+        <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
     </div>
   )

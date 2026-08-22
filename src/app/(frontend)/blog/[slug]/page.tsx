@@ -65,7 +65,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </div>
 
       {(post.layout || []).map((block, index) => (
-        <BlockRenderer key={block.id || index} block={block} />
+        <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
     </article>
   )

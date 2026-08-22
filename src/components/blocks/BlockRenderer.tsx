@@ -4,6 +4,7 @@ import type { Page } from '@/payload-types'
 
 import { CtaBannerBlock } from './CtaBannerBlock'
 import { EventGridBlock } from './EventGridBlock'
+import { FaqBlockBlock } from './FaqBlockBlock'
 import { GalleryBlock } from './GalleryBlock'
 import { HeroBlock } from './HeroBlock'
 import { ImageTextBlock } from './ImageTextBlock'
@@ -26,6 +27,10 @@ export const BlockRenderer: React.FC<{ block: PageBlock }> = ({ block }) => {
       return <EventGridBlock heading={block.heading} showPast={block.showPast} limit={block.limit} />
     case 'gallery':
       return <GalleryBlock heading={block.heading} images={block.images} />
+    case 'faq':
+      return (
+        <FaqBlockBlock heading={block.heading} source={block.source} category={block.category} faqs={block.faqs} />
+      )
     case 'ctaBanner':
       return (
         <CtaBannerBlock

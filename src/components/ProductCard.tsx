@@ -13,18 +13,22 @@ const getImageURL = (product: Product): string | null => {
   return null
 }
 
-export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+export const ProductCard: React.FC<{
+  product: Product
+  showShortDescription?: boolean
+  aspect?: 'portrait' | 'square'
+}> = ({ product, showShortDescription = false, aspect = 'portrait' }) => {
   const imageURL = getImageURL(product)
 
   return (
-    <Link href={`/shop/${product.slug}`} className="product-card">
+    <Link href={`/shop/${product.slug}`} className={`product-card product-card--${aspect}`}>
       <div className="product-card__image">
         {imageURL ? (
           <Image
             src={imageURL}
             alt={product.title}
             width={480}
-            height={600}
+            height={aspect === 'square' ? 480 : 600}
             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
           />
         ) : (
@@ -35,6 +39,9 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         <span className="product-card__category">{product.category || 'Boutique'}</span>
         <h3>{product.title}</h3>
         <p className="product-card__price">{formatCurrency(product.priceInAUD)}</p>
+        {showShortDescription && product.shortDescription && (
+          <p className="product-card__short">{product.shortDescription}</p>
+        )}
       </div>
     </Link>
   )

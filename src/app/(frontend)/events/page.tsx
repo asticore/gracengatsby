@@ -1,15 +1,21 @@
+import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { EventCard } from '@/components/EventCard'
 import { getPayloadClient } from '@/lib/payload'
+import { getFeatureFlags } from '@/utilities/features'
+import { buildMetadata } from '@/utilities/seo'
 
-export const metadata = {
-  title: 'Events | Grace & Gatsby',
+export async function generateMetadata() {
+  return buildMetadata({ title: 'Events' })
 }
 
 export const dynamic = 'force-dynamic'
 
 export default async function EventsPage() {
+  const flags = await getFeatureFlags()
+  if (!flags.events) notFound()
+
   const payload = await getPayloadClient()
 
   const now = new Date().toISOString()

@@ -7,6 +7,8 @@ import { AddToCartButton } from '@/components/AddToCartButton'
 import { RsvpForm } from '@/components/RsvpForm'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { getPayloadClient } from '@/lib/payload'
+import { getFeatureFlags } from '@/utilities/features'
+import { buildMetadata } from '@/utilities/seo'
 import type { EventRsvp, Media, Product } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
@@ -19,18 +21,30 @@ const dateFormatter = new Intl.DateTimeFormat('en-AU', {
   minute: '2-digit',
 })
 
-export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+async function getEvent(slug: string) {
   const payload = await getPayloadClient()
-
   const { docs } = await payload.find({
     collection: 'events',
     where: { slug: { equals: slug } },
     depth: 2,
     limit: 1,
   })
+  return docs[0] || null
+}
 
-  const event = docs[0]
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const event = await getEvent(slug)
+  if (!event) return {}
+  return buildMetadata({ title: event.title })
+}
+
+export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
+  const flags = await getFeatureFlags()
+  if (!flags.events) notFound()
+
+  const { slug } = await params
+  const event = await getEvent(slug)
 
   if (!event) {
     notFound()

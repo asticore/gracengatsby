@@ -4,6 +4,7 @@ import * as migration_20260819_070238_site_settings_pages_and_nav from './202608
 import * as migration_20260819_100000_event_registration_url from './20260819_100000_event_registration_url';
 import * as migration_20260822_055217_foundation_features from './20260822_055217_foundation_features';
 import * as migration_20260822_120000_seed_home_and_templates from './20260822_120000_seed_home_and_templates';
+import * as migration_20260822_120859_fix_blocks_rels_tables from './20260822_120859_fix_blocks_rels_tables';
 
 export const migrations = [
   {
@@ -29,11 +30,16 @@ export const migrations = [
   {
     up: migration_20260822_055217_foundation_features.up,
     down: migration_20260822_055217_foundation_features.down,
-    name: '20260822_055217_foundation_features'
+    name: '20260822_055217_foundation_features',
   },
   {
     up: migration_20260822_120000_seed_home_and_templates.up,
     down: migration_20260822_120000_seed_home_and_templates.down,
     name: '20260822_120000_seed_home_and_templates',
+  },
+  {
+    up: migration_20260822_120859_fix_blocks_rels_tables.up,
+    down: migration_20260822_120859_fix_blocks_rels_tables.down,
+    name: '20260822_120859_fix_blocks_rels_tables'
   },
 ];

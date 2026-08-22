@@ -77,7 +77,15 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      titleSuffix: ' - Asticore Engage',
+    },
     components: {
+      graphics: {
+        Icon: '@/components/branding/AsticoreIcon#AsticoreIcon',
+        Logo: '@/components/branding/AsticoreLogo#AsticoreLogo',
+      },
+      afterNavLinks: ['@/components/branding/AsticoreSaasComingSoon#AsticoreSaasComingSoon'],
       views: {
         visualEditor: {
           Component: '@/views/VisualEditor#VisualEditorView',
@@ -190,6 +198,7 @@ export default buildConfig({
               blocks: pageBuilderBlocks,
               admin: {
                 description: 'Extra visually-editable sections shown below the product details (FAQs, galleries, etc).',
+                initCollapsed: true,
               },
             },
             seoFields,

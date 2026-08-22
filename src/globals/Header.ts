@@ -44,7 +44,7 @@ const linkFields = (allowChildren: boolean): Field[] => [
           name: 'children',
           type: 'array' as const,
           labels: { singular: 'Dropdown Item', plural: 'Dropdown Items' },
-          admin: { description: 'Optional - adding items here turns this into a dropdown menu.' },
+          admin: { description: 'Optional - adding items here turns this into a dropdown menu.', initCollapsed: true },
           fields: linkFields(false),
         },
       ]
@@ -112,6 +112,7 @@ export const Header: GlobalConfig = {
       name: 'menu',
       type: 'array',
       labels: { singular: 'Menu Item', plural: 'Menu Items' },
+      admin: { initCollapsed: true },
       fields: linkFields(true),
     },
     {
@@ -123,7 +124,7 @@ export const Header: GlobalConfig = {
           name: 'links',
           type: 'array',
           labels: { singular: 'Social Link', plural: 'Social Links' },
-          admin: { condition: (_, s) => Boolean(s?.show) },
+          admin: { condition: (_, s) => Boolean(s?.show), initCollapsed: true },
           fields: [
             {
               name: 'platform',

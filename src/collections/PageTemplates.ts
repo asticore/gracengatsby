@@ -31,6 +31,7 @@ export const PageTemplates: CollectionConfig = {
       type: 'blocks',
       labels: { singular: 'Section', plural: 'Sections' },
       blocks: pageBuilderBlocks,
+      admin: { initCollapsed: true },
     },
   ],
 }

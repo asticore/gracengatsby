@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
 
+import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { getPayloadClient } from '@/lib/payload'
 import { getFeatureFlags } from '@/utilities/features'
@@ -27,9 +28,13 @@ export default async function FaqPage() {
 
   return (
     <div className="page-shell faq-page">
-      <div className="section-heading">
-        <h1>{settings?.pageTitle || 'Frequently Asked Questions'}</h1>
-      </div>
+      {settings?.introBlocks && settings.introBlocks.length > 0 ? (
+        settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} />)
+      ) : (
+        <div className="section-heading">
+          <h1>{settings?.pageTitle || 'Frequently Asked Questions'}</h1>
+        </div>
+      )}
       {settings?.intro && <p className="faq-page__intro">{settings.intro}</p>}
 
       {faqs.length === 0 ? (

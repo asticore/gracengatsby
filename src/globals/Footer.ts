@@ -41,13 +41,14 @@ export const Footer: GlobalConfig = {
       name: 'columns',
       type: 'array',
       labels: { singular: 'Column', plural: 'Columns' },
-      admin: { description: 'Extra link columns, e.g. Shop / Events / Help.' },
+      admin: { description: 'Extra link columns, e.g. Shop / Events / Help.', initCollapsed: true },
       fields: [
         { name: 'title', type: 'text', required: true },
         {
           name: 'links',
           type: 'array',
           labels: { singular: 'Link', plural: 'Links' },
+          admin: { initCollapsed: true },
           fields: [
             { name: 'label', type: 'text', required: true },
             {
@@ -92,7 +93,7 @@ export const Footer: GlobalConfig = {
           name: 'links',
           type: 'array',
           labels: { singular: 'Social Link', plural: 'Social Links' },
-          admin: { condition: (_, s) => Boolean(s?.show) },
+          admin: { condition: (_, s) => Boolean(s?.show), initCollapsed: true },
           fields: [
             {
               name: 'platform',

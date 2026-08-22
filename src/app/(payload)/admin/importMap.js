@@ -25,6 +25,9 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { OpenVisualEditorButton as OpenVisualEditorButton_27a3f39cf80f9138445cd476fa25bd30 } from '@/fields/visualEditor/OpenVisualEditorButton'
 import { PriceCell as PriceCell_e27bf7b8cc50640dcdd584767b8eac3c } from '@payloadcms/plugin-ecommerce/client'
 import { PriceInput as PriceInput_b91672ccd6e8b071c11142ab941fedfb } from '@payloadcms/plugin-ecommerce/rsc'
+import { AsticoreIcon as AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be } from '@/components/branding/AsticoreIcon'
+import { AsticoreLogo as AsticoreLogo_d8058b98a0709a82ff9282939ab6f374 } from '@/components/branding/AsticoreLogo'
+import { AsticoreSaasComingSoon as AsticoreSaasComingSoon_ec33b847a8516795f63253432690cf2d } from '@/components/branding/AsticoreSaasComingSoon'
 import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d } from '@payloadcms/storage-r2/client'
 import { VisualEditorView as VisualEditorView_da223d51a5f9f19f11d50591de54f372 } from '@/views/VisualEditor'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
@@ -58,6 +61,9 @@ export const importMap = {
   "@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton": OpenVisualEditorButton_27a3f39cf80f9138445cd476fa25bd30,
   "@payloadcms/plugin-ecommerce/client#PriceCell": PriceCell_e27bf7b8cc50640dcdd584767b8eac3c,
   "@payloadcms/plugin-ecommerce/rsc#PriceInput": PriceInput_b91672ccd6e8b071c11142ab941fedfb,
+  "@/components/branding/AsticoreIcon#AsticoreIcon": AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be,
+  "@/components/branding/AsticoreLogo#AsticoreLogo": AsticoreLogo_d8058b98a0709a82ff9282939ab6f374,
+  "@/components/branding/AsticoreSaasComingSoon#AsticoreSaasComingSoon": AsticoreSaasComingSoon_ec33b847a8516795f63253432690cf2d,
   "@payloadcms/storage-r2/client#R2ClientUploadHandler": R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d,
   "@/views/VisualEditor#VisualEditorView": VisualEditorView_da223d51a5f9f19f11d50591de54f372,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1

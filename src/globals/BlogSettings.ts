@@ -29,6 +29,7 @@ export const BlogSettings: GlobalConfig = {
       blocks: pageBuilderBlocks,
       admin: {
         description: 'Shown above the post grid on /blog - build it visually with "Edit visually" above.',
+        initCollapsed: true,
       },
     },
     {

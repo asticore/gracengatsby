@@ -27,6 +27,7 @@ export const ShopSettings: GlobalConfig = {
       blocks: pageBuilderBlocks,
       admin: {
         description: 'Shown above the product grid on /shop - build it visually with "Edit visually" above.',
+        initCollapsed: true,
       },
     },
     {

@@ -48,7 +48,7 @@ export const Posts: CollectionConfig = {
       relationTo: 'users',
       admin: { position: 'sidebar' },
     },
-    { name: 'categories', type: 'array', labels: { singular: 'Category', plural: 'Categories' }, fields: [{ name: 'name', type: 'text' }], admin: { position: 'sidebar' } },
+    { name: 'categories', type: 'array', labels: { singular: 'Category', plural: 'Categories' }, fields: [{ name: 'name', type: 'text' }], admin: { position: 'sidebar', initCollapsed: true } },
     { name: 'featuredImage', type: 'upload', relationTo: 'media' },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Shown on the blog archive card.' } },
     { name: 'content', type: 'richText', required: true },
@@ -59,6 +59,7 @@ export const Posts: CollectionConfig = {
       blocks: pageBuilderBlocks,
       admin: {
         description: 'Extra visually-editable sections shown below the post content (galleries, CTAs, etc).',
+        initCollapsed: true,
       },
     },
     seoFields,

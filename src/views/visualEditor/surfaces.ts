@@ -32,4 +32,11 @@ export const VISUAL_EDITOR_SURFACES: Record<string, SurfaceConfig> = {
     blocksField: 'introBlocks',
     titleField: '',
   },
+  'faq-settings': {
+    kind: 'global',
+    slug: 'faq-settings',
+    label: 'FAQ / knowledge-base intro',
+    blocksField: 'introBlocks',
+    titleField: '',
+  },
 }

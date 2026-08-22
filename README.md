@@ -1,14 +1,28 @@
-# Payload Cloudflare Template
+# Grace & Gatsby — Payload + Cloudflare Workers site
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/payloadcms/payload/tree/main/templates/with-cloudflare-d1)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/asticore/gracengatsby)
 
-**This can only be deployed on Paid Workers right now due to size limits.** This template comes configured with the bare minimum to get started on anything you need.
+A full Payload CMS site (pages, blog, FAQ, shop/ecommerce, events, header/footer globals, page builder blocks) running on Cloudflare Workers with a D1 (SQLite) database and an R2 media bucket. This repo doubles as a reusable template: clicking the button above provisions a brand-new Worker, D1 database and R2 bucket for whoever clicks it, pre-loaded with this site's full feature set.
 
-## Quick start
+**This can only be deployed on Paid Workers right now due to size limits.**
 
-This template can be deployed directly to Cloudflare Workers by clicking the button to take you to the setup screen.
+## Quick start (one-click deploy)
 
-From there you can connect your code to a git provider such Github or Gitlab, name your Workers, D1 Database and R2 Bucket as well as attach any additional environment variables or services you need.
+1. Click the **Deploy to Cloudflare** button above.
+2. Cloudflare will ask you to connect a git provider (GitHub/GitLab) — it forks/copies this repo into your own account so you have your own copy to edit.
+3. On the setup screen, name your **Worker**, **D1 database** and **R2 bucket**. Give each client/project distinct names here (e.g. `client-name-site`, `client-name-db`, `client-name-media`) — Cloudflare provisions fresh resources under those names, so this is what keeps each deployment's data isolated from every other site deployed from this template.
+4. Fill in the secrets it prompts for (see `.env.example` for the full list — `PAYLOAD_SECRET` is required, the Stripe keys are only needed if you want the shop enabled).
+5. Deploy. Cloudflare runs the build/deploy script (`pnpm run deploy`), which applies the Payload database migrations to the new D1 database and pushes the Worker.
+6. Visit `/admin` on your new deployment to create your first admin user and start configuring Header, Footer, Site Settings, Blog/FAQ/Shop settings and pages.
+
+## Reusing this as a template for other client sites
+
+Two ways to spin up a new client site from this codebase:
+
+- **Fastest**: click the Deploy to Cloudflare button above directly from this repo. Cloudflare copies the repo into your GitHub account as part of the flow and provisions a new Worker/D1/R2 for it — just make sure you give the resources unique names in step 3 above.
+- **Cleaner for ongoing client work** (recommended if you'll keep customizing each client's copy in git): mark this repo as a GitHub template repository once (Settings → General → check "Template repository"), then for each new client use GitHub's **"Use this template"** button to create a separate repo, and click Deploy to Cloudflare from that new repo. This keeps each client's code and deploy history fully separate.
+
+Either way, every deployment gets its own isolated D1 database and R2 bucket — nothing is shared with `gracengatsby.com`'s production data as long as you give each deployment distinct resource names during setup.
 
 ## Quick Start - local setup
 
@@ -16,29 +30,40 @@ To spin up this template locally, follow these steps:
 
 ### Clone
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. Cloudflare will connect your app to a git provider such as Github and you can access your code from there.
+After you click the `Deploy` button above, you'll want a standalone copy of this repo on your machine. Cloudflare will connect your app to a git provider such as GitHub and you can access your code from there.
 
 ### Local Development
+
+Copy `.env.example` to `.env` and fill in the values, then:
+
+```bash
+pnpm install
+pnpm dev
+```
 
 ## How it works
 
 Out of the box, using [`Wrangler`](https://developers.cloudflare.com/workers/wrangler/) will automatically create local bindings for you to connect to the remote services and it can even create a local mock of the services you're using with Cloudflare.
 
-We've pre-configured Payload for you with the following:
+This site is built on:
 
 ### Collections
 
 See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
 
-- #### Users (Authentication)
+- **Pages** — hierarchical (parent/child), homepage flag, starter templates, SEO fields, and a block-based page builder (hero, rich text, image+text, product grid, event grid, gallery, FAQ, CTA banner).
+- **Posts** — blog collection with categories and SEO fields.
+- **FAQs** — question/answer entries, groupable by category.
+- **Page Templates** — reusable starter block layouts for new pages.
+- **Products / Events** — ecommerce and events, via `@payloadcms/plugin-ecommerce`.
+- **Users** (Authentication) — auth-enabled collection with admin panel access. See the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+- **Media** — uploads-enabled collection, backed by R2.
 
-  Users are auth-enabled collections that have access to the admin panel.
+### Globals
 
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
-
-- #### Media
-
-  This is the uploads enabled collection.
+- **Header** / **Footer** — nav menus, socials, announcement bar, footer columns.
+- **Site Settings** — theme (button/corner/hover styles), SEO defaults, feature toggles (ecommerce, events, blog, faq, accounts, lms).
+- **Blog / FAQ / Shop settings** — per-section layout and display options.
 
 ### Image Storage (R2)
 
@@ -76,9 +101,9 @@ Then run the following command:
 pnpm run deploy
 ```
 
-This will spin up Wrangler in `production` mode, run any created migrations, build the app and then deploy the bundle up to Cloudflare.
+This will spin up Wrangler in `production` mode, run any created migrations against D1, build the app and then deploy the bundle up to Cloudflare. That's it! You can if you wish move these steps into your CI pipeline as well.
 
-That's it! You can if you wish move these steps into your CI pipeline as well.
+**Note:** if you ever apply a schema change directly against a production D1 database outside of `payload migrate` (for example via the Cloudflare dashboard's D1 console), remember to also insert a matching row into the `payload_migrations` table so Payload doesn't try to reapply it on the next deploy.
 
 ## Enabling logs
 

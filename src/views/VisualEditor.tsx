@@ -1,26 +1,32 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
-import {
-  closestCenter,
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core'
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { closestCenter, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
-import { getBlockDef, VISUAL_BLOCKS, type CanvasBlock } from './visualEditor/blockSchemas'
-import { CanvasBlockPreview } from './visualEditor/CanvasBlockPreview'
+import type { SectionNode } from '@/lib/sectionTree'
+import { defaultColumns } from '@/lib/sectionTree'
+
+import { getBlockDef } from './visualEditor/blockSchemas'
+import { CanvasNodeList, type CanvasHandlers } from './visualEditor/Canvas'
+import { ElementLibrary } from './visualEditor/ElementLibrary'
 import { FieldPanel } from './visualEditor/FieldPanel'
-import { SortableBlock } from './visualEditor/SortableBlock'
+import {
+  cloneNode,
+  getNode,
+  insertNode,
+  pathKey,
+  reorderWithin,
+  splitPath,
+  stripEditorIds,
+  updateNode,
+  type NodePath,
+} from './visualEditor/treeOps'
 import { VISUAL_EDITOR_SURFACES } from './visualEditor/surfaces'
 import './visualEditor/visualEditor.css'
 
 let idCounter = 0
-const nextTempId = () => `ve-${Date.now()}-${idCounter++}`
+const nextId = () => `ve-${Date.now()}-${idCounter++}`
 
 function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string } | null {
   if (typeof window === 'undefined') return null
@@ -29,20 +35,34 @@ function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string
   return { mode: match[1] as 'collection' | 'global', slug: match[2], id: match[3] }
 }
 
+/** Gives every node in a loaded tree a stable client id for selection and keys. */
+function withIds(nodes: SectionNode[]): SectionNode[] {
+  return nodes.map((node) => {
+    const next: SectionNode = { ...node, _id: node._id || nextId() }
+    if (node.blockType === 'section' && Array.isArray(node.columns)) {
+      next.columns = node.columns.map((column) => ({
+        ...column,
+        _id: column._id || nextId(),
+        blocks: withIds(column.blocks || []),
+      }))
+    }
+    return next
+  })
+}
+
 export const VisualEditorView: React.FC = () => {
   const route = useMemo(() => parsePath(), [])
   const surface = route ? VISUAL_EDITOR_SURFACES[route.slug] : undefined
 
   const [loading, setLoading] = useState(() => Boolean(route && surface))
   const [error, setError] = useState<string | null>(() => (route && surface ? null : 'Unknown editor target.'))
-  const [blocks, setBlocks] = useState<CanvasBlock[]>([])
+  const [blocks, setBlocks] = useState<SectionNode[]>([])
   const [docTitle, setDocTitle] = useState('')
   const [status, setStatus] = useState<string | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'publishing' | 'published' | 'error'>('idle')
-  const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
-  const [insertAt, setInsertAt] = useState<number | null>(null)
+  const [library, setLibrary] = useState<{ containerPath: NodePath; at: number } | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -52,7 +72,7 @@ export const VisualEditorView: React.FC = () => {
   }, [route, surface])
 
   useEffect(() => {
-    if (!apiUrl) return
+    if (!apiUrl || !surface) return
     fetch(`${apiUrl}?depth=0`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
@@ -60,9 +80,9 @@ export const VisualEditorView: React.FC = () => {
       })
       .then((json) => {
         const doc = json as Record<string, unknown>
-        const rawBlocks = (doc?.[surface!.blocksField] as Record<string, unknown>[] | undefined) || []
-        setBlocks(rawBlocks.map((b) => ({ ...b, _tempId: nextTempId() }) as CanvasBlock))
-        setDocTitle(surface!.titleField ? String(doc?.[surface!.titleField] || 'Untitled') : surface!.label)
+        const raw = (doc?.[surface.blocksField] as SectionNode[] | undefined) || []
+        setBlocks(withIds(raw))
+        setDocTitle(surface.titleField ? String(doc?.[surface.titleField] || 'Untitled') : surface.label)
         setStatus((doc?._status as string) || null)
         setLoading(false)
       })
@@ -72,63 +92,81 @@ export const VisualEditorView: React.FC = () => {
       })
   }, [apiUrl, surface])
 
-  const selectedIndex = blocks.findIndex((b) => b._tempId === selectedId)
-  const selectedBlock = selectedIndex >= 0 ? blocks[selectedIndex] : null
-  const selectedDef = selectedBlock ? getBlockDef(selectedBlock.blockType) : null
+  const selectedNode = selectedPath ? getNode(blocks, selectedPath) : undefined
+  const selectedDef = selectedNode ? getBlockDef(selectedNode.blockType) : undefined
 
-  const updateBlock = (tempId: string, next: Record<string, unknown>) => {
-    setBlocks((prev) => prev.map((b) => (b._tempId === tempId ? ({ ...next, _tempId: tempId } as CanvasBlock) : b)))
-  }
+  /* ---------------------------------------------------------------------- */
+  /* Tree mutations                                                          */
+  /* ---------------------------------------------------------------------- */
 
-  const deleteBlock = (tempId: string) => {
-    setBlocks((prev) => prev.filter((b) => b._tempId !== tempId))
-    setSelectedId(null)
-  }
-
-  const duplicateBlock = (tempId: string) => {
-    setBlocks((prev) => {
-      const idx = prev.findIndex((b) => b._tempId === tempId)
-      if (idx === -1) return prev
-      const copy = { ...prev[idx], _tempId: nextTempId() }
-      const next = [...prev]
-      next.splice(idx + 1, 0, copy)
-      return next
-    })
-  }
-
-  const addBlock = (blockType: string, atIndex?: number) => {
+  const addBlock = useCallback((blockType: string, containerPath: NodePath, at: number) => {
     const def = getBlockDef(blockType)
     if (!def) return
-    const block = { ...def.defaultValue(), _tempId: nextTempId() } as CanvasBlock
+
+    const node: SectionNode = { ...(def.defaultValue() as SectionNode), _id: nextId() }
+    // A brand-new section starts with two columns so it is immediately useful.
+    if (blockType === 'section') node.columns = defaultColumns(2, nextId)
+
+    setBlocks((prev) => insertNode(prev, containerPath, at, node))
+    setSelectedPath([...containerPath, at])
+    setLibrary(null)
+  }, [])
+
+  const deleteBlock = useCallback((path: NodePath) => {
+    setBlocks((prev) => updateNode(prev, path, () => null))
+    setSelectedPath(null)
+  }, [])
+
+  const duplicateBlock = useCallback((path: NodePath) => {
+    const { containerPath, index } = splitPath(path)
     setBlocks((prev) => {
-      if (atIndex === undefined || atIndex >= prev.length) return [...prev, block]
-      const next = [...prev]
-      next.splice(atIndex, 0, block)
-      return next
+      const original = getNode(prev, path)
+      if (!original) return prev
+      return insertNode(prev, containerPath, index + 1, cloneNode(original, nextId))
     })
-    setSelectedId(block._tempId)
-    setInsertAt(null)
-  }
+  }, [])
+
+  const moveBlock = useCallback((path: NodePath, direction: -1 | 1) => {
+    const { containerPath, index } = splitPath(path)
+    setBlocks((prev) => reorderWithin(prev, containerPath, index, index + direction))
+    setSelectedPath([...containerPath, index + direction])
+  }, [])
+
+  const updateSelected = useCallback(
+    (next: Record<string, unknown>) => {
+      if (!selectedPath) return
+      setBlocks((prev) => updateNode(prev, selectedPath, (node) => ({ ...(next as SectionNode), _id: node._id })))
+    },
+    [selectedPath],
+  )
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveDragId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
-    setBlocks((prev) => {
-      const oldIndex = prev.findIndex((b) => b._tempId === active.id)
-      const newIndex = prev.findIndex((b) => b._tempId === over.id)
-      if (oldIndex === -1 || newIndex === -1) return prev
-      return arrayMove(prev, oldIndex, newIndex)
-    })
+
+    const from = String(active.id).split('.').map(Number)
+    const to = String(over.id).split('.').map(Number)
+
+    // dnd-kit sorts within one SortableContext, and the top-level list is the
+    // only one registered. Guard anyway so a stray cross-container drop is a
+    // no-op rather than a corrupted tree - the up/down buttons move blocks
+    // between columns.
+    if (from.slice(0, -1).join('.') !== to.slice(0, -1).join('.')) return
+
+    const containerPath = from.slice(0, -1)
+    setBlocks((prev) => reorderWithin(prev, containerPath, from[from.length - 1], to[to.length - 1]))
+    setSelectedPath(null)
   }
+
+  /* ---------------------------------------------------------------------- */
 
   const save = async (publish: boolean) => {
     if (!apiUrl || !surface) return
     setSaving(publish ? 'publishing' : 'saving')
     try {
-      const cleaned = blocks.map(({ _tempId, ...rest }) => rest)
-      const body: Record<string, unknown> = { [surface.blocksField]: cleaned }
+      const body: Record<string, unknown> = { [surface.blocksField]: stripEditorIds(blocks) }
       if (publish) body._status = 'published'
+
       const res = await fetch(apiUrl, {
         method: 'PATCH',
         credentials: 'include',
@@ -136,6 +174,7 @@ export const VisualEditorView: React.FC = () => {
         body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+
       setSaving(publish ? 'published' : 'saved')
       if (publish) setStatus('published')
       setTimeout(() => setSaving('idle'), 2000)
@@ -161,7 +200,16 @@ export const VisualEditorView: React.FC = () => {
     )
   }
 
-  const activeBlock = activeDragId ? blocks.find((b) => b._tempId === activeDragId) : null
+  const handlers: CanvasHandlers = {
+    selectedKey: selectedPath ? pathKey(selectedPath) : null,
+    onSelect: setSelectedPath,
+    onAdd: (containerPath, at) => setLibrary({ containerPath, at }),
+    onDelete: deleteBlock,
+    onDuplicate: duplicateBlock,
+    onMove: moveBlock,
+  }
+
+  const topLevelIds = blocks.map((_, index) => pathKey([index]))
 
   return (
     <div className="ve-root">
@@ -175,6 +223,13 @@ export const VisualEditorView: React.FC = () => {
           </span>
         </div>
         <div className="ve-topbar__actions">
+          <button
+            type="button"
+            className="ve-btn ve-btn--ghost"
+            onClick={() => setLibrary({ containerPath: [], at: blocks.length })}
+          >
+            + Add element
+          </button>
           <div className="ve-device-toggle" role="group" aria-label="Preview device">
             <button
               type="button"
@@ -210,91 +265,58 @@ export const VisualEditorView: React.FC = () => {
       </div>
 
       <div className="ve-body">
-        <div className="ve-canvas-wrap">
+        <div className="ve-canvas-wrap" onClick={() => setSelectedPath(null)} role="presentation">
           <div className={`ve-canvas ve-canvas--${device}`}>
-            {error && <p className="ve-error" style={{ padding: 12 }}>{error}</p>}
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={(e) => setActiveDragId(String(e.active.id))}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={blocks.map((b) => b._tempId)} strategy={verticalListSortingStrategy}>
-                {blocks.length === 0 && (
-                  <div className="ve-empty-canvas">This page has no sections yet - add one below to get started.</div>
-                )}
-                <InsertPoint index={0} open={insertAt === 0} onToggle={setInsertAt} onPick={addBlock} />
-                {blocks.map((block, index) => (
-                  <React.Fragment key={block._tempId}>
-                    <SortableBlock
-                      id={block._tempId}
-                      data={block}
-                      isSelected={block._tempId === selectedId}
-                      onSelect={() => setSelectedId(block._tempId)}
-                    />
-                    <InsertPoint
-                      index={index + 1}
-                      open={insertAt === index + 1}
-                      onToggle={setInsertAt}
-                      onPick={addBlock}
-                    />
-                  </React.Fragment>
-                ))}
-              </SortableContext>
-              <DragOverlay>{activeBlock ? <CanvasBlockPreview data={activeBlock} /> : null}</DragOverlay>
-            </DndContext>
-          </div>
+            {error && (
+              <p className="ve-error" style={{ padding: 12 }}>
+                {error}
+              </p>
+            )}
 
-          <div className="ve-palette">
-            {VISUAL_BLOCKS.map((def) => (
-              <button key={def.slug} type="button" className="ve-palette__item" onClick={() => addBlock(def.slug)}>
-                {def.icon} + {def.label}
-              </button>
-            ))}
+            {blocks.length === 0 && (
+              <div className="ve-empty-canvas">
+                This page has no sections yet.
+                <br />
+                <button
+                  type="button"
+                  className="ve-btn ve-btn--primary"
+                  style={{ marginTop: 14 }}
+                  onClick={() => setLibrary({ containerPath: [], at: 0 })}
+                >
+                  Add your first element
+                </button>
+              </div>
+            )}
+
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={topLevelIds} strategy={verticalListSortingStrategy}>
+                <CanvasNodeList nodes={blocks} containerPath={[]} handlers={handlers} depth={0} />
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
 
-        {selectedBlock && selectedDef && (
+        {selectedNode && selectedDef && (
           <FieldPanel
             blockDef={selectedDef}
-            data={selectedBlock}
-            onChange={(next) => updateBlock(selectedBlock._tempId, next)}
-            onClose={() => setSelectedId(null)}
-            onDelete={() => deleteBlock(selectedBlock._tempId)}
-            onDuplicate={() => duplicateBlock(selectedBlock._tempId)}
+            data={selectedNode as Record<string, unknown>}
+            onChange={updateSelected}
+            onClose={() => setSelectedPath(null)}
+            onDelete={() => selectedPath && deleteBlock(selectedPath)}
+            onDuplicate={() => selectedPath && duplicateBlock(selectedPath)}
           />
         )}
       </div>
+
+      {library && (
+        <ElementLibrary
+          title={library.containerPath.length === 0 ? 'Add an element' : 'Add to this column'}
+          onPick={(blockType) => addBlock(blockType, library.containerPath, library.at)}
+          onClose={() => setLibrary(null)}
+        />
+      )}
     </div>
   )
 }
-
-const InsertPoint: React.FC<{
-  index: number
-  open: boolean
-  onToggle: (index: number | null) => void
-  onPick: (blockType: string, atIndex: number) => void
-}> = ({ index, open, onToggle, onPick }) => (
-  <div className={`ve-insert ${open ? 've-insert--open' : ''}`}>
-    <button
-      type="button"
-      className="ve-insert__btn"
-      onClick={() => onToggle(open ? null : index)}
-      aria-label="Add section here"
-      title="Add section here"
-    >
-      +
-    </button>
-    {open && (
-      <div className="ve-insert__menu">
-        {VISUAL_BLOCKS.map((def) => (
-          <button key={def.slug} type="button" className="ve-insert__menu-item" onClick={() => onPick(def.slug, index)}>
-            {def.icon} {def.label}
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
-)
 
 export default VisualEditorView

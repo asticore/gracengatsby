@@ -4,6 +4,7 @@ import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
 import { formatSlugHook } from '../utilities/formatSlug'
+import { customFieldsField } from '../fields/customFields'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -11,7 +12,7 @@ export const Posts: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'publishedDate', '_status'],
-    group: 'Blog',
+    group: 'Content',
     description: 'Blog posts. Turn the blog on/off in Settings > Features. Click "Edit visually" above to add extra sections on a drag-and-drop canvas.',
     components: {
       edit: {
@@ -63,5 +64,6 @@ export const Posts: CollectionConfig = {
       },
     },
     seoFields,
+    customFieldsField,
   ],
 }

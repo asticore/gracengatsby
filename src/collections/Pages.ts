@@ -4,13 +4,14 @@ import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
 import { formatSlugHook, slugify } from '../utilities/formatSlug'
+import { customFieldsField } from '../fields/customFields'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'slug', 'parent', 'isHomepage', '_status'],
-    group: 'Site Settings',
+    group: 'Content',
     description:
       'Every page on the site, including the homepage. Build sections from the block library (drag the ⚿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header. Click "Edit visually" above to lay it out on a drag-and-drop canvas instead.',
     components: {
@@ -111,6 +112,7 @@ export const Pages: CollectionConfig = {
       blocks: pageBuilderBlocks,
       admin: { initCollapsed: true },
     },
+    customFieldsField,
   ],
   hooks: {
     beforeValidate: [

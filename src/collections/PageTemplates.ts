@@ -8,7 +8,7 @@ export const PageTemplates: CollectionConfig = {
   labels: { singular: 'Page Template', plural: 'Page Templates' },
   admin: {
     useAsTitle: 'name',
-    group: 'Site Settings',
+    group: 'Content',
     description:
       'Starter layouts for new pages. Build one here, then pick it from the "Start from template" field when creating a new Page - its sections get copied in.',
     components: {

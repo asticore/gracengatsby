@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { isAdmin } from '../access/ecommerceAccess'
+import { customFieldsField } from '../fields/customFields'
 
 export const Faqs: CollectionConfig = {
   slug: 'faqs',
@@ -26,6 +27,7 @@ export const Faqs: CollectionConfig = {
       admin: { position: 'sidebar', description: 'e.g. Shipping, Returns, Events. Used to group/filter FAQs.' },
     },
     { name: 'order', type: 'number', defaultValue: 0, admin: { position: 'sidebar', description: 'Lower numbers show first.' } },
+    customFieldsField,
   ],
   defaultSort: 'order',
 }

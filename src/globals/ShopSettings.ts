@@ -6,7 +6,7 @@ import { pageBuilderBlocks } from '../blocks'
 export const ShopSettings: GlobalConfig = {
   slug: 'shop-settings',
   admin: {
-    group: 'Shop',
+    group: 'Settings',
     description:
       'Layout for the shop archive (/shop) and product pages. Turn ecommerce on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.',
     components: {

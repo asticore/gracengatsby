@@ -30,6 +30,7 @@ import { Pages } from './collections/Pages'
 import { PageTemplates } from './collections/PageTemplates'
 import { Posts } from './collections/Posts'
 import { Faqs } from './collections/Faqs'
+import { FieldGroups } from './collections/FieldGroups'
 import { Header } from './globals/Header'
 import { Footer } from './globals/Footer'
 import { SiteSettings } from './globals/SiteSettings'
@@ -38,6 +39,7 @@ import { BlogSettings } from './globals/BlogSettings'
 import { FaqSettings } from './globals/FaqSettings'
 import { ShopSettings } from './globals/ShopSettings'
 import { seoFields } from './fields/seo'
+import { customFieldsField } from './fields/customFields'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -85,7 +87,11 @@ export default buildConfig({
         Icon: '@/components/branding/AsticoreIcon#AsticoreIcon',
         Logo: '@/components/branding/AsticoreLogo#AsticoreLogo',
       },
-      afterNavLinks: ['@/components/branding/AsticoreSaasComingSoon#AsticoreSaasComingSoon'],
+      // Custom sidebar: groups every collection/global under Content / Shop /
+      // Settings (see navStructure.ts) and starts each group collapsed. The
+      // Asticore teaser button is rendered inside it, so it no longer needs an
+      // afterNavLinks entry.
+      Nav: '@/components/admin/nav/AdminNav#AdminNav',
       views: {
         visualEditor: {
           Component: '@/views/VisualEditor#VisualEditorView',
@@ -94,7 +100,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs],
+  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups],
   globals: [Header, Footer, SiteSettings, Integrations, BlogSettings, FaqSettings, ShopSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -202,6 +208,7 @@ export default buildConfig({
               },
             },
             seoFields,
+            customFieldsField,
             ...defaultCollection.fields,
           ],
         }),

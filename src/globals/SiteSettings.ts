@@ -5,7 +5,7 @@ import { isAdmin } from '../access/ecommerceAccess'
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   admin: {
-    group: 'Site Settings',
+    group: 'Settings',
     description:
       'Site identity, theme, SEO defaults, and feature toggles. Header/menu and footer are their own sections below.',
   },

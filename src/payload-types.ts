@@ -80,6 +80,7 @@ export interface Config {
     'page-templates': PageTemplate;
     posts: Post;
     faqs: Faq;
+    'field-groups': FieldGroup;
     addresses: Address;
     products: Product;
     carts: Cart;
@@ -104,6 +105,7 @@ export interface Config {
     'page-templates': PageTemplatesSelect<false> | PageTemplatesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
+    'field-groups': FieldGroupsSelect<false> | FieldGroupsSelect<true>;
     addresses: AddressesSelect<false> | AddressesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     carts: CartsSelect<false> | CartsSelect<true>;
@@ -228,9 +230,9 @@ export interface Event {
   id: number;
   title: string;
   /**
-   * Auto-generated from the title if left blank.
+   * Auto-fills from the title as you type - edit it here to override.
    */
-  slug: string;
+  slug?: string | null;
   /**
    * A short teaser shown on the events list and social previews.
    */
@@ -276,6 +278,15 @@ export interface Event {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  customFields?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -288,9 +299,9 @@ export interface Product {
   id: number;
   title: string;
   /**
-   * Auto-generated from the title if left blank.
+   * Auto-fills from the title as you type - edit it here to override.
    */
-  slug: string;
+  slug?: string | null;
   category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
   /**
    * Shown on product listing cards.
@@ -317,6 +328,273 @@ export interface Product {
    */
   faqs?: (number | Faq)[] | null;
   /**
+   * Extra visually-editable sections shown below the product details (FAQs, galleries, etc).
+   */
+  layout?:
+    | (
+        | {
+            /**
+             * The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.
+             */
+            columns?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'section';
+          }
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * The Page Template used as the card design. Use merge tags inside it - e.g. {{title}}, {{image}}, {{price}}, {{url}} - and each item fills them in.
+             */
+            template: number | PageTemplate;
+            source?: ('products' | 'posts' | 'events' | 'faqs' | 'pages') | null;
+            /**
+             * Optional - only include items in this category. Leave blank for all.
+             */
+            category?: string | null;
+            limit?: number | null;
+            columns?: number | null;
+            sortBy?: ('newest' | 'oldest' | 'title') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'loop';
+          }
+      )[]
+    | null;
+  /**
    * Leave blank to fall back to the site-wide SEO defaults.
    */
   seo?: {
@@ -328,6 +606,15 @@ export interface Product {
      */
     noIndex?: boolean | null;
   };
+  customFields?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   inventory?: number | null;
   priceInAUDEnabled?: boolean | null;
   priceInAUD?: number | null;
@@ -368,6 +655,295 @@ export interface Faq {
    * Lower numbers show first.
    */
   order?: number | null;
+  customFields?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Starter layouts for new pages. Build one here, then pick it from the "Start from template" field when creating a new Page - its sections get copied in.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-templates".
+ */
+export interface PageTemplate {
+  id: number;
+  name: string;
+  /**
+   * Shown to help you pick the right template.
+   */
+  description?: string | null;
+  blocks?:
+    | (
+        | {
+            /**
+             * The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.
+             */
+            columns?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'section';
+          }
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * The Page Template used as the card design. Use merge tags inside it - e.g. {{title}}, {{image}}, {{price}}, {{url}} - and each item fills them in.
+             */
+            template: number | PageTemplate;
+            source?: ('products' | 'posts' | 'events' | 'faqs' | 'pages') | null;
+            /**
+             * Optional - only include items in this category. Leave blank for all.
+             */
+            category?: string | null;
+            limit?: number | null;
+            columns?: number | null;
+            sortBy?: ('newest' | 'oldest' | 'title') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'loop';
+          }
+      )[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -386,7 +962,7 @@ export interface EventRsvp {
   createdAt: string;
 }
 /**
- * Every page on the site, including the homepage. Build sections from the block library (drag the ⠿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header.
+ * Every page on the site, including the homepage. Build sections from the block library (drag the ⚿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header. Click "Edit visually" above to lay it out on a drag-and-drop canvas instead.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
@@ -399,9 +975,9 @@ export interface Page {
    */
   isHomepage?: boolean | null;
   /**
-   * Auto-generated from the title if left blank. Combined with Parent to build the URL - e.g. parent "services" + slug "consulting" -> /services/consulting.
+   * Auto-fills from the title as you type - edit it here to override. Combined with Parent to build the URL - e.g. parent "services" + slug "consulting" -> /services/consulting.
    */
-  slug: string;
+  slug?: string | null;
   /**
    * Optional - nest this page under another page (controls its URL and shows page structure).
    */
@@ -425,6 +1001,35 @@ export interface Page {
   blocks?:
     | (
         | {
+            /**
+             * The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.
+             */
+            columns?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'section';
+          }
+        | {
             heading: string;
             subheading?: string | null;
             backgroundImage?: (number | null) | Media;
@@ -432,6 +1037,18 @@ export interface Page {
             primaryCtaUrl?: string | null;
             secondaryCtaLabel?: string | null;
             secondaryCtaUrl?: string | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'hero';
@@ -452,6 +1069,18 @@ export interface Page {
               };
               [k: string]: unknown;
             };
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'richText';
@@ -474,6 +1103,18 @@ export interface Page {
               [k: string]: unknown;
             };
             imageSide?: ('left' | 'right') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'imageText';
@@ -485,6 +1126,18 @@ export interface Page {
              */
             category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
             limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'productGrid';
@@ -496,6 +1149,18 @@ export interface Page {
              */
             showPast?: boolean | null;
             limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'eventGrid';
@@ -503,6 +1168,18 @@ export interface Page {
         | {
             heading?: string | null;
             images?: (number | Media)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'gallery';
@@ -515,6 +1192,18 @@ export interface Page {
              */
             category?: string | null;
             faqs?: (number | Faq)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'faq';
@@ -525,143 +1214,69 @@ export interface Page {
             buttonLabel?: string | null;
             buttonUrl?: string | null;
             style?: ('dark' | 'light') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'ctaBanner';
           }
+        | {
+            heading?: string | null;
+            /**
+             * The Page Template used as the card design. Use merge tags inside it - e.g. {{title}}, {{image}}, {{price}}, {{url}} - and each item fills them in.
+             */
+            template: number | PageTemplate;
+            source?: ('products' | 'posts' | 'events' | 'faqs' | 'pages') | null;
+            /**
+             * Optional - only include items in this category. Leave blank for all.
+             */
+            category?: string | null;
+            limit?: number | null;
+            columns?: number | null;
+            sortBy?: ('newest' | 'oldest' | 'title') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'loop';
+          }
       )[]
+    | null;
+  customFields?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
     | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Starter layouts for new pages. Build one here, then pick it from the "Start from template" field when creating a new Page - its sections get copied in.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "page-templates".
- */
-export interface PageTemplate {
-  id: number;
-  name: string;
-  /**
-   * Shown to help you pick the right template.
-   */
-  description?: string | null;
-  blocks?:
-    | (
-        | {
-            heading: string;
-            subheading?: string | null;
-            backgroundImage?: (number | null) | Media;
-            primaryCtaLabel?: string | null;
-            primaryCtaUrl?: string | null;
-            secondaryCtaLabel?: string | null;
-            secondaryCtaUrl?: string | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'hero';
-          }
-        | {
-            content: {
-              root: {
-                type: string;
-                children: {
-                  type: any;
-                  version: number;
-                  [k: string]: unknown;
-                }[];
-                direction: ('ltr' | 'rtl') | null;
-                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-                indent: number;
-                version: number;
-              };
-              [k: string]: unknown;
-            };
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'richText';
-          }
-        | {
-            image: number | Media;
-            content: {
-              root: {
-                type: string;
-                children: {
-                  type: any;
-                  version: number;
-                  [k: string]: unknown;
-                }[];
-                direction: ('ltr' | 'rtl') | null;
-                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-                indent: number;
-                version: number;
-              };
-              [k: string]: unknown;
-            };
-            imageSide?: ('left' | 'right') | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'imageText';
-          }
-        | {
-            heading?: string | null;
-            /**
-             * Leave blank to show products from every category.
-             */
-            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
-            limit?: number | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'productGrid';
-          }
-        | {
-            heading?: string | null;
-            /**
-             * Show recent past events instead of upcoming ones.
-             */
-            showPast?: boolean | null;
-            limit?: number | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'eventGrid';
-          }
-        | {
-            heading?: string | null;
-            images?: (number | Media)[] | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'gallery';
-          }
-        | {
-            heading?: string | null;
-            source?: ('category' | 'manual') | null;
-            /**
-             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
-             */
-            category?: string | null;
-            faqs?: (number | Faq)[] | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'faq';
-          }
-        | {
-            heading: string;
-            text?: string | null;
-            buttonLabel?: string | null;
-            buttonUrl?: string | null;
-            style?: ('dark' | 'light') | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'ctaBanner';
-          }
-      )[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Blog posts. Turn the blog on/off in Settings > Features.
+ * Blog posts. Turn the blog on/off in Settings > Features. Click "Edit visually" above to add extra sections on a drag-and-drop canvas.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
@@ -670,9 +1285,9 @@ export interface Post {
   id: number;
   title: string;
   /**
-   * Auto-generated from the title if left blank. -> /blog/<slug>
+   * Auto-fills from the title as you type - edit it here to override. -> /blog/<slug>
    */
-  slug: string;
+  slug?: string | null;
   publishedDate?: string | null;
   author?: (number | null) | User;
   categories?:
@@ -702,6 +1317,273 @@ export interface Post {
     [k: string]: unknown;
   };
   /**
+   * Extra visually-editable sections shown below the post content (galleries, CTAs, etc).
+   */
+  layout?:
+    | (
+        | {
+            /**
+             * The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.
+             */
+            columns?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'section';
+          }
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * The Page Template used as the card design. Use merge tags inside it - e.g. {{title}}, {{image}}, {{price}}, {{url}} - and each item fills them in.
+             */
+            template: number | PageTemplate;
+            source?: ('products' | 'posts' | 'events' | 'faqs' | 'pages') | null;
+            /**
+             * Optional - only include items in this category. Leave blank for all.
+             */
+            category?: string | null;
+            limit?: number | null;
+            columns?: number | null;
+            sortBy?: ('newest' | 'oldest' | 'title') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'loop';
+          }
+      )[]
+    | null;
+  /**
    * Leave blank to fall back to the site-wide SEO defaults.
    */
   seo?: {
@@ -713,9 +1595,68 @@ export interface Post {
      */
     noIndex?: boolean | null;
   };
+  customFields?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * Define extra fields for your content - like Advanced Custom Fields. Pick which collections they appear on, and they show up as real inputs when editing those items. Use them in templates as {{field:the_field_name}}.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "field-groups".
+ */
+export interface FieldGroup {
+  id: number;
+  /**
+   * e.g. "Product details", "Event extras".
+   */
+  name: string;
+  /**
+   * Which content types these fields appear on.
+   */
+  targetCollections: ('pages' | 'posts' | 'products' | 'events' | 'faqs')[];
+  /**
+   * Optional note shown above the fields when editing.
+   */
+  description?: string | null;
+  fields?:
+    | {
+        label: string;
+        /**
+         * Key used in merge tags: {{field:this_name}}. Lowercase, no spaces.
+         */
+        name: string;
+        type: 'text' | 'textarea' | 'number' | 'checkbox' | 'select' | 'image' | 'url' | 'date' | 'color';
+        required?: boolean | null;
+        options?:
+          | {
+              label: string;
+              value: string;
+              id?: string | null;
+            }[]
+          | null;
+        /**
+         * Shown under the input when editing.
+         */
+        helpText?: string | null;
+        /**
+         * Optional starting value.
+         */
+        defaultValue?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -933,6 +1874,10 @@ export interface PayloadLockedDocument {
         value: number | Faq;
       } | null)
     | ({
+        relationTo: 'field-groups';
+        value: number | FieldGroup;
+      } | null)
+    | ({
         relationTo: 'addresses';
         value: number | Address;
       } | null)
@@ -1057,6 +2002,7 @@ export interface EventsSelect<T extends boolean = true> {
   capacity?: T;
   externalRegistrationUrl?: T;
   rsvps?: T;
+  customFields?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1095,6 +2041,14 @@ export interface PagesSelect<T extends boolean = true> {
   blocks?:
     | T
     | {
+        section?:
+          | T
+          | {
+              columns?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
         hero?:
           | T
           | {
@@ -1105,6 +2059,7 @@ export interface PagesSelect<T extends boolean = true> {
               primaryCtaUrl?: T;
               secondaryCtaLabel?: T;
               secondaryCtaUrl?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1112,6 +2067,7 @@ export interface PagesSelect<T extends boolean = true> {
           | T
           | {
               content?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1121,6 +2077,7 @@ export interface PagesSelect<T extends boolean = true> {
               image?: T;
               content?: T;
               imageSide?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1130,6 +2087,7 @@ export interface PagesSelect<T extends boolean = true> {
               heading?: T;
               category?: T;
               limit?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1139,6 +2097,7 @@ export interface PagesSelect<T extends boolean = true> {
               heading?: T;
               showPast?: T;
               limit?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1147,6 +2106,7 @@ export interface PagesSelect<T extends boolean = true> {
           | {
               heading?: T;
               images?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1157,6 +2117,7 @@ export interface PagesSelect<T extends boolean = true> {
               source?: T;
               category?: T;
               faqs?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1168,10 +2129,26 @@ export interface PagesSelect<T extends boolean = true> {
               buttonLabel?: T;
               buttonUrl?: T;
               style?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        loop?:
+          | T
+          | {
+              heading?: T;
+              template?: T;
+              source?: T;
+              category?: T;
+              limit?: T;
+              columns?: T;
+              sortBy?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
       };
+  customFields?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1186,6 +2163,14 @@ export interface PageTemplatesSelect<T extends boolean = true> {
   blocks?:
     | T
     | {
+        section?:
+          | T
+          | {
+              columns?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
         hero?:
           | T
           | {
@@ -1196,6 +2181,7 @@ export interface PageTemplatesSelect<T extends boolean = true> {
               primaryCtaUrl?: T;
               secondaryCtaLabel?: T;
               secondaryCtaUrl?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1203,6 +2189,7 @@ export interface PageTemplatesSelect<T extends boolean = true> {
           | T
           | {
               content?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1212,6 +2199,7 @@ export interface PageTemplatesSelect<T extends boolean = true> {
               image?: T;
               content?: T;
               imageSide?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1221,6 +2209,7 @@ export interface PageTemplatesSelect<T extends boolean = true> {
               heading?: T;
               category?: T;
               limit?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1230,6 +2219,7 @@ export interface PageTemplatesSelect<T extends boolean = true> {
               heading?: T;
               showPast?: T;
               limit?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1238,6 +2228,7 @@ export interface PageTemplatesSelect<T extends boolean = true> {
           | {
               heading?: T;
               images?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1248,6 +2239,7 @@ export interface PageTemplatesSelect<T extends boolean = true> {
               source?: T;
               category?: T;
               faqs?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1259,6 +2251,21 @@ export interface PageTemplatesSelect<T extends boolean = true> {
               buttonLabel?: T;
               buttonUrl?: T;
               style?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        loop?:
+          | T
+          | {
+              heading?: T;
+              template?: T;
+              source?: T;
+              category?: T;
+              limit?: T;
+              columns?: T;
+              sortBy?: T;
+              design?: T;
               id?: T;
               blockName?: T;
             };
@@ -1284,6 +2291,116 @@ export interface PostsSelect<T extends boolean = true> {
   featuredImage?: T;
   excerpt?: T;
   content?: T;
+  layout?:
+    | T
+    | {
+        section?:
+          | T
+          | {
+              columns?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        hero?:
+          | T
+          | {
+              heading?: T;
+              subheading?: T;
+              backgroundImage?: T;
+              primaryCtaLabel?: T;
+              primaryCtaUrl?: T;
+              secondaryCtaLabel?: T;
+              secondaryCtaUrl?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        imageText?:
+          | T
+          | {
+              image?: T;
+              content?: T;
+              imageSide?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        eventGrid?:
+          | T
+          | {
+              heading?: T;
+              showPast?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              heading?: T;
+              images?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              heading?: T;
+              source?: T;
+              category?: T;
+              faqs?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        ctaBanner?:
+          | T
+          | {
+              heading?: T;
+              text?: T;
+              buttonLabel?: T;
+              buttonUrl?: T;
+              style?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        loop?:
+          | T
+          | {
+              heading?: T;
+              template?: T;
+              source?: T;
+              category?: T;
+              limit?: T;
+              columns?: T;
+              sortBy?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   seo?:
     | T
     | {
@@ -1292,6 +2409,7 @@ export interface PostsSelect<T extends boolean = true> {
         ogImage?: T;
         noIndex?: T;
       };
+  customFields?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1305,6 +2423,36 @@ export interface FaqsSelect<T extends boolean = true> {
   answer?: T;
   category?: T;
   order?: T;
+  customFields?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "field-groups_select".
+ */
+export interface FieldGroupsSelect<T extends boolean = true> {
+  name?: T;
+  targetCollections?: T;
+  description?: T;
+  fields?:
+    | T
+    | {
+        label?: T;
+        name?: T;
+        type?: T;
+        required?: T;
+        options?:
+          | T
+          | {
+              label?: T;
+              value?: T;
+              id?: T;
+            };
+        helpText?: T;
+        defaultValue?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1340,6 +2488,116 @@ export interface ProductsSelect<T extends boolean = true> {
   description?: T;
   images?: T;
   faqs?: T;
+  layout?:
+    | T
+    | {
+        section?:
+          | T
+          | {
+              columns?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        hero?:
+          | T
+          | {
+              heading?: T;
+              subheading?: T;
+              backgroundImage?: T;
+              primaryCtaLabel?: T;
+              primaryCtaUrl?: T;
+              secondaryCtaLabel?: T;
+              secondaryCtaUrl?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        imageText?:
+          | T
+          | {
+              image?: T;
+              content?: T;
+              imageSide?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        eventGrid?:
+          | T
+          | {
+              heading?: T;
+              showPast?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              heading?: T;
+              images?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              heading?: T;
+              source?: T;
+              category?: T;
+              faqs?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        ctaBanner?:
+          | T
+          | {
+              heading?: T;
+              text?: T;
+              buttonLabel?: T;
+              buttonUrl?: T;
+              style?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        loop?:
+          | T
+          | {
+              heading?: T;
+              template?: T;
+              source?: T;
+              category?: T;
+              limit?: T;
+              columns?: T;
+              sortBy?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   seo?:
     | T
     | {
@@ -1348,6 +2606,7 @@ export interface ProductsSelect<T extends boolean = true> {
         ogImage?: T;
         noIndex?: T;
       };
+  customFields?: T;
   inventory?: T;
   priceInAUDEnabled?: T;
   priceInAUD?: T;
@@ -1713,7 +2972,7 @@ export interface Integration {
   createdAt?: string | null;
 }
 /**
- * Layout for the blog archive (/blog) and individual posts. Turn the blog on/off in Settings > Features.
+ * Layout for the blog archive (/blog) and individual posts. Turn the blog on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "blog-settings".
@@ -1722,6 +2981,273 @@ export interface BlogSetting {
   id: number;
   archiveTitle?: string | null;
   archiveIntro?: string | null;
+  /**
+   * Shown above the post grid on /blog - build it visually with "Edit visually" above.
+   */
+  introBlocks?:
+    | (
+        | {
+            /**
+             * The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.
+             */
+            columns?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'section';
+          }
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * The Page Template used as the card design. Use merge tags inside it - e.g. {{title}}, {{image}}, {{price}}, {{url}} - and each item fills them in.
+             */
+            template: number | PageTemplate;
+            source?: ('products' | 'posts' | 'events' | 'faqs' | 'pages') | null;
+            /**
+             * Optional - only include items in this category. Leave blank for all.
+             */
+            category?: string | null;
+            limit?: number | null;
+            columns?: number | null;
+            sortBy?: ('newest' | 'oldest' | 'title') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'loop';
+          }
+      )[]
+    | null;
   archiveLayout?: ('grid' | 'list' | 'magazine') | null;
   postsPerPage?: number | null;
   showAuthor?: boolean | null;
@@ -1731,7 +3257,7 @@ export interface BlogSetting {
   createdAt?: string | null;
 }
 /**
- * The standalone /faq knowledge-base page. Turn it on/off in Settings > Features.
+ * The standalone /faq knowledge-base page. Turn it on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "faq-settings".
@@ -1740,19 +3266,553 @@ export interface FaqSetting {
   id: number;
   pageTitle?: string | null;
   intro?: string | null;
+  /**
+   * Shown above the FAQ list on /faq - build it visually with "Edit visually" above.
+   */
+  introBlocks?:
+    | (
+        | {
+            /**
+             * The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.
+             */
+            columns?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'section';
+          }
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * The Page Template used as the card design. Use merge tags inside it - e.g. {{title}}, {{image}}, {{price}}, {{url}} - and each item fills them in.
+             */
+            template: number | PageTemplate;
+            source?: ('products' | 'posts' | 'events' | 'faqs' | 'pages') | null;
+            /**
+             * Optional - only include items in this category. Leave blank for all.
+             */
+            category?: string | null;
+            limit?: number | null;
+            columns?: number | null;
+            sortBy?: ('newest' | 'oldest' | 'title') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'loop';
+          }
+      )[]
+    | null;
   layout?: ('accordion' | 'list') | null;
   groupByCategory?: boolean | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
 /**
- * Layout for the shop archive (/shop) and product pages. Turn ecommerce on/off in Settings > Features.
+ * Layout for the shop archive (/shop) and product pages. Turn ecommerce on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "shop-settings".
  */
 export interface ShopSetting {
   id: number;
+  /**
+   * Shown above the product grid on /shop - build it visually with "Edit visually" above.
+   */
+  introBlocks?:
+    | (
+        | {
+            /**
+             * The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.
+             */
+            columns?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'section';
+          }
+        | {
+            heading: string;
+            subheading?: string | null;
+            backgroundImage?: (number | null) | Media;
+            primaryCtaLabel?: string | null;
+            primaryCtaUrl?: string | null;
+            secondaryCtaLabel?: string | null;
+            secondaryCtaUrl?: string | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            imageSide?: ('left' | 'right') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'imageText';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Leave blank to show products from every category.
+             */
+            category?: ('apparel' | 'accessories' | 'jewellery' | 'homeware' | 'gifting') | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Show recent past events instead of upcoming ones.
+             */
+            showPast?: boolean | null;
+            limit?: number | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eventGrid';
+          }
+        | {
+            heading?: string | null;
+            images?: (number | Media)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            heading?: string | null;
+            source?: ('category' | 'manual') | null;
+            /**
+             * Matches the Category field on the FAQ entries. Leave blank to show all FAQs.
+             */
+            category?: string | null;
+            faqs?: (number | Faq)[] | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            heading: string;
+            text?: string | null;
+            buttonLabel?: string | null;
+            buttonUrl?: string | null;
+            style?: ('dark' | 'light') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'ctaBanner';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * The Page Template used as the card design. Use merge tags inside it - e.g. {{title}}, {{image}}, {{price}}, {{url}} - and each item fills them in.
+             */
+            template: number | PageTemplate;
+            source?: ('products' | 'posts' | 'events' | 'faqs' | 'pages') | null;
+            /**
+             * Optional - only include items in this category. Leave blank for all.
+             */
+            category?: string | null;
+            limit?: number | null;
+            columns?: number | null;
+            sortBy?: ('newest' | 'oldest' | 'title') | null;
+            /**
+             * Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.
+             */
+            design?:
+              | {
+                  [k: string]: unknown;
+                }
+              | unknown[]
+              | string
+              | number
+              | boolean
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'loop';
+          }
+      )[]
+    | null;
   archiveLayout?: ('grid-3' | 'grid-4' | 'list') | null;
   showCategoryFilters?: boolean | null;
   showRelatedProducts?: boolean | null;
@@ -1923,6 +3983,116 @@ export interface IntegrationsSelect<T extends boolean = true> {
 export interface BlogSettingsSelect<T extends boolean = true> {
   archiveTitle?: T;
   archiveIntro?: T;
+  introBlocks?:
+    | T
+    | {
+        section?:
+          | T
+          | {
+              columns?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        hero?:
+          | T
+          | {
+              heading?: T;
+              subheading?: T;
+              backgroundImage?: T;
+              primaryCtaLabel?: T;
+              primaryCtaUrl?: T;
+              secondaryCtaLabel?: T;
+              secondaryCtaUrl?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        imageText?:
+          | T
+          | {
+              image?: T;
+              content?: T;
+              imageSide?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        eventGrid?:
+          | T
+          | {
+              heading?: T;
+              showPast?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              heading?: T;
+              images?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              heading?: T;
+              source?: T;
+              category?: T;
+              faqs?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        ctaBanner?:
+          | T
+          | {
+              heading?: T;
+              text?: T;
+              buttonLabel?: T;
+              buttonUrl?: T;
+              style?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        loop?:
+          | T
+          | {
+              heading?: T;
+              template?: T;
+              source?: T;
+              category?: T;
+              limit?: T;
+              columns?: T;
+              sortBy?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   archiveLayout?: T;
   postsPerPage?: T;
   showAuthor?: T;
@@ -1939,6 +4109,116 @@ export interface BlogSettingsSelect<T extends boolean = true> {
 export interface FaqSettingsSelect<T extends boolean = true> {
   pageTitle?: T;
   intro?: T;
+  introBlocks?:
+    | T
+    | {
+        section?:
+          | T
+          | {
+              columns?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        hero?:
+          | T
+          | {
+              heading?: T;
+              subheading?: T;
+              backgroundImage?: T;
+              primaryCtaLabel?: T;
+              primaryCtaUrl?: T;
+              secondaryCtaLabel?: T;
+              secondaryCtaUrl?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        imageText?:
+          | T
+          | {
+              image?: T;
+              content?: T;
+              imageSide?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        eventGrid?:
+          | T
+          | {
+              heading?: T;
+              showPast?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              heading?: T;
+              images?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              heading?: T;
+              source?: T;
+              category?: T;
+              faqs?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        ctaBanner?:
+          | T
+          | {
+              heading?: T;
+              text?: T;
+              buttonLabel?: T;
+              buttonUrl?: T;
+              style?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        loop?:
+          | T
+          | {
+              heading?: T;
+              template?: T;
+              source?: T;
+              category?: T;
+              limit?: T;
+              columns?: T;
+              sortBy?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   layout?: T;
   groupByCategory?: T;
   updatedAt?: T;
@@ -1950,6 +4230,116 @@ export interface FaqSettingsSelect<T extends boolean = true> {
  * via the `definition` "shop-settings_select".
  */
 export interface ShopSettingsSelect<T extends boolean = true> {
+  introBlocks?:
+    | T
+    | {
+        section?:
+          | T
+          | {
+              columns?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        hero?:
+          | T
+          | {
+              heading?: T;
+              subheading?: T;
+              backgroundImage?: T;
+              primaryCtaLabel?: T;
+              primaryCtaUrl?: T;
+              secondaryCtaLabel?: T;
+              secondaryCtaUrl?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        imageText?:
+          | T
+          | {
+              image?: T;
+              content?: T;
+              imageSide?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        eventGrid?:
+          | T
+          | {
+              heading?: T;
+              showPast?: T;
+              limit?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              heading?: T;
+              images?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              heading?: T;
+              source?: T;
+              category?: T;
+              faqs?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        ctaBanner?:
+          | T
+          | {
+              heading?: T;
+              text?: T;
+              buttonLabel?: T;
+              buttonUrl?: T;
+              style?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+        loop?:
+          | T
+          | {
+              heading?: T;
+              template?: T;
+              source?: T;
+              category?: T;
+              limit?: T;
+              columns?: T;
+              sortBy?: T;
+              design?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   archiveLayout?: T;
   showCategoryFilters?: T;
   showRelatedProducts?: T;

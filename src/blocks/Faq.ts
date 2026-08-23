@@ -1,5 +1,7 @@
 import type { Block } from 'payload'
 
+import { blockStyleField } from './styleField'
+
 export const FaqBlock: Block = {
   slug: 'faq',
   labels: { singular: 'FAQ', plural: 'FAQ Blocks' },
@@ -29,5 +31,6 @@ export const FaqBlock: Block = {
       hasMany: true,
       admin: { condition: (_, s) => s?.source === 'manual' },
     },
+    blockStyleField,
   ],
 }

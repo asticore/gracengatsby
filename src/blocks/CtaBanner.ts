@@ -1,5 +1,7 @@
 import type { Block } from 'payload'
 
+import { blockStyleField } from './styleField'
+
 export const CtaBannerBlock: Block = {
   slug: 'ctaBanner',
   labels: { singular: 'CTA Banner', plural: 'CTA Banner Blocks' },
@@ -29,5 +31,6 @@ export const CtaBannerBlock: Block = {
         { label: 'Light background', value: 'light' },
       ],
     },
+    blockStyleField,
   ],
 }

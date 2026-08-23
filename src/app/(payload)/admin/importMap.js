@@ -22,12 +22,13 @@ import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93
 import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { CustomFieldsPanel as CustomFieldsPanel_e6c8cdabc1922c69cdfeea3fcc76e7a8 } from '@/fields/customFields/CustomFieldsPanel'
 import { OpenVisualEditorButton as OpenVisualEditorButton_27a3f39cf80f9138445cd476fa25bd30 } from '@/fields/visualEditor/OpenVisualEditorButton'
 import { PriceCell as PriceCell_e27bf7b8cc50640dcdd584767b8eac3c } from '@payloadcms/plugin-ecommerce/client'
 import { PriceInput as PriceInput_b91672ccd6e8b071c11142ab941fedfb } from '@payloadcms/plugin-ecommerce/rsc'
+import { AdminNav as AdminNav_dc4fd4746f7f98760676e52d2bbade6c } from '@/components/admin/nav/AdminNav'
 import { AsticoreIcon as AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be } from '@/components/branding/AsticoreIcon'
 import { AsticoreLogo as AsticoreLogo_d8058b98a0709a82ff9282939ab6f374 } from '@/components/branding/AsticoreLogo'
-import { AsticoreSaasComingSoon as AsticoreSaasComingSoon_ec33b847a8516795f63253432690cf2d } from '@/components/branding/AsticoreSaasComingSoon'
 import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d } from '@payloadcms/storage-r2/client'
 import { VisualEditorView as VisualEditorView_da223d51a5f9f19f11d50591de54f372 } from '@/views/VisualEditor'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
@@ -58,12 +59,13 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "@/fields/customFields/CustomFieldsPanel#CustomFieldsPanel": CustomFieldsPanel_e6c8cdabc1922c69cdfeea3fcc76e7a8,
   "@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton": OpenVisualEditorButton_27a3f39cf80f9138445cd476fa25bd30,
   "@payloadcms/plugin-ecommerce/client#PriceCell": PriceCell_e27bf7b8cc50640dcdd584767b8eac3c,
   "@payloadcms/plugin-ecommerce/rsc#PriceInput": PriceInput_b91672ccd6e8b071c11142ab941fedfb,
+  "@/components/admin/nav/AdminNav#AdminNav": AdminNav_dc4fd4746f7f98760676e52d2bbade6c,
   "@/components/branding/AsticoreIcon#AsticoreIcon": AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be,
   "@/components/branding/AsticoreLogo#AsticoreLogo": AsticoreLogo_d8058b98a0709a82ff9282939ab6f374,
-  "@/components/branding/AsticoreSaasComingSoon#AsticoreSaasComingSoon": AsticoreSaasComingSoon_ec33b847a8516795f63253432690cf2d,
   "@payloadcms/storage-r2/client#R2ClientUploadHandler": R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d,
   "@/views/VisualEditor#VisualEditorView": VisualEditorView_da223d51a5f9f19f11d50591de54f372,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1

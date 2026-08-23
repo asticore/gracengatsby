@@ -1,5 +1,7 @@
 import type { Block } from 'payload'
 
+import { blockStyleField } from './styleField'
+
 export const GalleryBlock: Block = {
   slug: 'gallery',
   labels: { singular: 'Gallery', plural: 'Gallery Blocks' },
@@ -15,5 +17,6 @@ export const GalleryBlock: Block = {
       hasMany: true,
       minRows: 1,
     },
+    blockStyleField,
   ],
 }

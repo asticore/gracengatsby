@@ -1,5 +1,7 @@
 import type { Block } from 'payload'
 
+import { blockStyleField } from './styleField'
+
 export const EventGridBlock: Block = {
   slug: 'eventGrid',
   labels: { singular: 'Event Grid', plural: 'Event Grid Blocks' },
@@ -21,5 +23,6 @@ export const EventGridBlock: Block = {
       min: 1,
       max: 24,
     },
+    blockStyleField,
   ],
 }

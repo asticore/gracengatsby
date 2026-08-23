@@ -90,7 +90,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'richText',
     label: 'Rich Text',
-    icon: '\\u{1F4C4}',
+    icon: '\u{1F4C4}',
     category: 'basic',
     description: 'A block of formatted copy.',
     fields: [{ name: 'content', label: 'Text', type: 'richText' }],
@@ -99,7 +99,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'ctaBanner',
     label: 'CTA Banner',
-    icon: '\\u{1F4E3}',
+    icon: '\u{1F4E3}',
     category: 'basic',
     description: 'A full-width call to action with a heading and button.',
     fields: [
@@ -122,7 +122,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'imageText',
     label: 'Image + Text',
-    icon: '\\u{1F5BC}️',
+    icon: '\u{1F5BC}️',
     category: 'media',
     description: 'An image beside a block of copy.',
     fields: [
@@ -143,7 +143,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'gallery',
     label: 'Gallery',
-    icon: '\\u{1F5BC}️',
+    icon: '\u{1F5BC}️',
     category: 'media',
     description: 'A grid of images.',
     fields: [
@@ -155,7 +155,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'loop',
     label: 'Loop',
-    icon: '\\u{1F501}',
+    icon: '\u{1F501}',
     category: 'dynamic',
     description: 'Repeats a Page Template once per product, post or event - use merge tags inside the template.',
     fields: [
@@ -198,7 +198,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'productGrid',
     label: 'Product Grid',
-    icon: '\\u{1F6CD}️',
+    icon: '\u{1F6CD}️',
     category: 'dynamic',
     description: 'A grid of products, filtered by category.',
     fields: [
@@ -211,7 +211,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'eventGrid',
     label: 'Event Grid',
-    icon: '\\u{1F4C5}',
+    icon: '\u{1F4C5}',
     category: 'dynamic',
     description: 'Upcoming (or past) events.',
     fields: [

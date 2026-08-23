@@ -13,7 +13,29 @@ import { seedHomeAndTemplates } from '@/seed/seedHomeAndTemplates'
 // templates (it just skips).
 
 export async function up({ payload }: MigrateUpArgs): Promise<void> {
-  await seedHomeAndTemplates(payload)
+  // Deliberately non-fatal.
+  //
+  // This step seeds through the Payload local API, and the local API always
+  // queries using the CURRENT config's schema - it selects every column the
+  // collections define today, including ones added by migrations that come
+  // AFTER this one (e.g. `custom_fields`). Replaying the migration chain from
+  // scratch therefore reaches this point with a database that does not yet
+  // have those columns, and the seed query fails with "no such column",
+  // taking the whole deploy down with it.
+  //
+  // Seeding is convenience content, not schema, and production is seeded
+  // through /api/internal-seed once the app is deployed and the schema is
+  // current. So a failure here is logged and stepped over rather than allowed
+  // to break the chain that later migrations depend on.
+  try {
+    await seedHomeAndTemplates(payload)
+  } catch (error) {
+    payload.logger.warn(
+      `[seed] Skipped seeding during migration (${String(
+        (error as Error)?.message || error,
+      )}). This is expected when replaying migrations against an older schema - /api/internal-seed handles production.`,
+    )
+  }
 }
 
 export async function down({ payload }: MigrateDownArgs): Promise<void> {

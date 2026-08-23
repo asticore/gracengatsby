@@ -1,4 +1,6 @@
 import type { Block } from 'payload'
+
+import { blockStyleField } from './styleField'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 
 export const RichTextBlock: Block = {
@@ -11,5 +13,6 @@ export const RichTextBlock: Block = {
       editor: lexicalEditor(),
       required: true,
     },
+    blockStyleField,
   ],
 }

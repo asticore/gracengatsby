@@ -12,7 +12,7 @@ export const EventRSVPs: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['event', 'name', 'email', 'guestCount', 'createdAt'],
-    group: 'Events',
+    group: 'Content',
   },
   access: {
     // Anyone can RSVP to a free event from the public site.

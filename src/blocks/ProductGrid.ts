@@ -1,5 +1,7 @@
 import type { Block } from 'payload'
 
+import { blockStyleField } from './styleField'
+
 export const ProductGridBlock: Block = {
   slug: 'productGrid',
   labels: { singular: 'Product Grid', plural: 'Product Grid Blocks' },
@@ -27,5 +29,6 @@ export const ProductGridBlock: Block = {
       min: 1,
       max: 24,
     },
+    blockStyleField,
   ],
 }

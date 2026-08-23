@@ -4,13 +4,14 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { formatSlugHook } from '../utilities/formatSlug'
+import { customFieldsField } from '../fields/customFields'
 
 export const Events: CollectionConfig = {
   slug: 'events',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'startDate', 'eventType', '_status'],
-    group: 'Events',
+    group: 'Content',
   },
   access: {
     create: isAdmin,
@@ -157,5 +158,6 @@ export const Events: CollectionConfig = {
         defaultColumns: ['name', 'email', 'guestCount', 'createdAt'],
       },
     },
+    customFieldsField,
   ],
 }

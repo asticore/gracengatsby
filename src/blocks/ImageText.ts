@@ -1,4 +1,6 @@
 import type { Block } from 'payload'
+
+import { blockStyleField } from './styleField'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 
 export const ImageTextBlock: Block = {
@@ -26,5 +28,6 @@ export const ImageTextBlock: Block = {
         { label: 'Image on right', value: 'right' },
       ],
     },
+    blockStyleField,
   ],
 }

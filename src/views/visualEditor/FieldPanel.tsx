@@ -1,13 +1,24 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+
+import { asBlockStyle, type BlockStyle } from '@/lib/blockStyle'
+import { COLUMN_WIDTH_OPTIONS, parseColumns, type SectionColumn } from '@/lib/sectionTree'
 
 import type { BlockDef, EditorField } from './blockSchemas'
+import { DesignPanel } from './DesignPanel'
 import { lexicalToPlainText, plainTextToLexical } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
+import { MergeTagPicker } from './MergeTagPicker'
 
 type MediaThumb = { id: number; url?: string | null; alt?: string | null }
+type PanelTab = 'content' | 'design'
 
+/**
+ * Right-hand panel for the selected block. Split into a Content tab (the
+ * block's own fields) and a Design tab (the shared BlockStyle settings), the
+ * same split Elementor uses, so style controls don't crowd out content.
+ */
 export const FieldPanel: React.FC<{
   blockDef: BlockDef
   data: Record<string, unknown>
@@ -16,7 +27,10 @@ export const FieldPanel: React.FC<{
   onDelete: () => void
   onDuplicate: () => void
 }> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate }) => {
+  const [tab, setTab] = useState<PanelTab>('content')
+
   const setField = (name: string, value: unknown) => onChange({ ...data, [name]: value })
+  const isSection = blockDef.slug === 'section'
 
   return (
     <div className="ve-panel">
@@ -30,20 +44,118 @@ export const FieldPanel: React.FC<{
         </button>
       </div>
 
+      <div className="ve-panel__tabs">
+        <button
+          type="button"
+          className={`ve-panel__tab ${tab === 'content' ? 've-panel__tab--active' : ''}`}
+          onClick={() => setTab('content')}
+        >
+          {isSection ? 'Layout' : 'Content'}
+        </button>
+        <button
+          type="button"
+          className={`ve-panel__tab ${tab === 'design' ? 've-panel__tab--active' : ''}`}
+          onClick={() => setTab('design')}
+        >
+          Design
+        </button>
+      </div>
+
       <div className="ve-panel__body">
-        {blockDef.fields.map((field) => (
-          <FieldInput key={field.name} field={field} value={data[field.name]} onChange={(v) => setField(field.name, v)} />
-        ))}
+        {tab === 'content' &&
+          (isSection ? (
+            <SectionLayoutFields
+              columns={parseColumns(data.columns)}
+              onChange={(columns) => setField('columns', columns)}
+            />
+          ) : blockDef.fields.length > 0 ? (
+            blockDef.fields.map((field) => (
+              <FieldInput
+                key={field.name}
+                field={field}
+                value={data[field.name]}
+                onChange={(v) => setField(field.name, v)}
+              />
+            ))
+          ) : (
+            <p className="ve-panel__empty">This element has no content settings - use the Design tab.</p>
+          ))}
+
+        {tab === 'design' && (
+          <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} />
+        )}
       </div>
 
       <div className="ve-panel__footer">
         <button type="button" className="ve-btn ve-btn--ghost" onClick={onDuplicate}>
-          Duplicate block
+          Duplicate
         </button>
         <button type="button" className="ve-btn ve-btn--danger" onClick={onDelete}>
-          Delete block
+          Delete
         </button>
       </div>
+    </div>
+  )
+}
+
+/** Column count and per-column width controls for a Section block. */
+const SectionLayoutFields: React.FC<{
+  columns: SectionColumn[]
+  onChange: (columns: SectionColumn[]) => void
+}> = ({ columns, onChange }) => {
+  const setWidth = (index: number, width: number) => {
+    onChange(columns.map((column, i) => (i === index ? { ...column, width: width as SectionColumn['width'] } : column)))
+  }
+
+  const removeColumn = (index: number) => {
+    onChange(columns.filter((_, i) => i !== index))
+  }
+
+  const addColumn = () => {
+    onChange([
+      ...columns,
+      { _id: `col-${Date.now()}-${columns.length}`, width: 6, design: {}, blocks: [] },
+    ])
+  }
+
+  return (
+    <div className="ve-section-fields">
+      <p className="ve-panel__hint">
+        Set how wide each column is. Add blocks to a column with the + button on the canvas - sections can be nested
+        inside columns for more complex layouts.
+      </p>
+
+      {columns.length === 0 && <p className="ve-panel__empty">No columns yet - add one below.</p>}
+
+      {columns.map((column, index) => (
+        <div className="ve-col-row" key={column._id || index}>
+          <span className="ve-col-row__num">{index + 1}</span>
+          <select
+            value={String(column.width ?? 12)}
+            onChange={(e) => setWidth(index, Number(e.target.value))}
+            aria-label={`Column ${index + 1} width`}
+          >
+            {COLUMN_WIDTH_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="ve-icon-btn"
+            onClick={() => removeColumn(index)}
+            aria-label={`Remove column ${index + 1}`}
+            title="Remove column"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+
+      <button type="button" className="ve-btn ve-btn--ghost" onClick={addColumn}>
+        + Add column
+      </button>
     </div>
   )
 }
@@ -56,6 +168,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
   const [pickerOpen, setPickerOpen] = useState(false)
   const [fetchedThumb, setFetchedThumb] = useState<MediaThumb | null>(null)
   const [relOptions, setRelOptions] = useState<{ id: number; label: string }[]>([])
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     if (field.type !== 'media' || typeof value !== 'number') return
@@ -79,11 +192,11 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
     if (field.type === 'relationship' && field.relationTo) {
       fetch(`/api/${field.relationTo}?limit=200&depth=0`, { credentials: 'include' })
         .then((r) => r.json())
-        .then((data: { docs?: { id: number; title?: string; question?: string }[] }) =>
+        .then((data: { docs?: { id: number; title?: string; name?: string; question?: string }[] }) =>
           setRelOptions(
             (data?.docs || []).map((d) => ({
               id: d.id,
-              label: d.title || d.question || `#${d.id}`,
+              label: d.title || d.name || d.question || `#${d.id}`,
             })),
           ),
         )
@@ -93,23 +206,56 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
 
   const widthClass = field.width === 'half' ? 've-field--half' : 've-field--full'
 
+  /** Inserts a merge tag at the caret, or appends it if the field isn't focused. */
+  const insertTag = (tag: string) => {
+    const element = inputRef.current
+    const current = typeof value === 'string' ? value : ''
+    if (!element) {
+      onChange(current + tag)
+      return
+    }
+    const start = element.selectionStart ?? current.length
+    const end = element.selectionEnd ?? current.length
+    const next = current.slice(0, start) + tag + current.slice(end)
+    onChange(next)
+    requestAnimationFrame(() => {
+      element.focus()
+      const caret = start + tag.length
+      element.setSelectionRange(caret, caret)
+    })
+  }
+
+  const labelRow = (
+    <span className="ve-field__labelrow">
+      <span>{field.label}</span>
+      {field.supportsMergeTags && <MergeTagPicker onInsert={insertTag} />}
+    </span>
+  )
+
   switch (field.type) {
     case 'text':
       return (
         <label className={`ve-field ${widthClass}`}>
-          <span>{field.label}</span>
+          {labelRow}
           <input
+            ref={inputRef as React.Ref<HTMLInputElement>}
             type="text"
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => onChange(e.target.value)}
           />
+          {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
         </label>
       )
     case 'textarea':
       return (
         <label className={`ve-field ${widthClass}`}>
-          <span>{field.label}</span>
-          <textarea rows={3} value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value)} />
+          {labelRow}
+          <textarea
+            ref={inputRef as React.Ref<HTMLTextAreaElement>}
+            rows={3}
+            value={typeof value === 'string' ? value : ''}
+            onChange={(e) => onChange(e.target.value)}
+          />
         </label>
       )
     case 'number':
@@ -146,7 +292,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
       )
     case 'richText':
       return (
-        <label className={`ve-field ve-field--full`}>
+        <label className="ve-field ve-field--full">
           <span>{field.label}</span>
           <textarea
             rows={6}
@@ -225,6 +371,31 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
       )
     }
     case 'relationship': {
+      // page-templates is a single-select (a loop has one card design); other
+      // relationships on the canvas are multi-select lists.
+      const single = field.relationTo === 'page-templates'
+
+      if (single) {
+        const current = typeof value === 'number' ? value : (value as { id?: number })?.id
+        return (
+          <label className="ve-field ve-field--full">
+            <span>{field.label}</span>
+            <select
+              value={current ? String(current) : ''}
+              onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">—</option>
+              {relOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
+          </label>
+        )
+      }
+
       const ids: number[] = Array.isArray(value)
         ? (value as unknown[]).map((v) => (typeof v === 'number' ? v : (v as { id: number })?.id)).filter(Boolean)
         : []

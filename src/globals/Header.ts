@@ -54,7 +54,7 @@ const linkFields = (allowChildren: boolean): Field[] => [
 export const Header: GlobalConfig = {
   slug: 'header',
   admin: {
-    group: 'Site Settings',
+    group: 'Settings',
     description:
       'Everything in the header: logo, menu (with dropdowns), announcement bar, socials, and mobile/desktop layout.',
   },

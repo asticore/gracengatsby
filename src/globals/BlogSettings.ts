@@ -6,7 +6,7 @@ import { pageBuilderBlocks } from '../blocks'
 export const BlogSettings: GlobalConfig = {
   slug: 'blog-settings',
   admin: {
-    group: 'Blog',
+    group: 'Settings',
     description:
       'Layout for the blog archive (/blog) and individual posts. Turn the blog on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.',
     components: {

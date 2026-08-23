@@ -5,7 +5,7 @@ import { isAdmin } from '../access/ecommerceAccess'
 export const Footer: GlobalConfig = {
   slug: 'footer',
   admin: {
-    group: 'Site Settings',
+    group: 'Settings',
     description: 'Footer columns, contact info, socials, and layout.',
   },
   access: {

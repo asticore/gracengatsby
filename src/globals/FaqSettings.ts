@@ -6,7 +6,7 @@ import { pageBuilderBlocks } from '../blocks'
 export const FaqSettings: GlobalConfig = {
   slug: 'faq-settings',
   admin: {
-    group: 'Content',
+    group: 'Settings',
     description:
       'The standalone /faq knowledge-base page. Turn it on/off in Settings > Features. Click "Edit visually" above to build the intro section on a drag-and-drop canvas.',
     components: {

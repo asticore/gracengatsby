@@ -6,7 +6,7 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
 export const Integrations: GlobalConfig = {
   slug: 'integrations',
   admin: {
-    group: 'Site Settings',
+    group: 'Settings',
     description:
       'API keys and third-party credentials. Admin-only, encrypted at rest, and never exposed to the public site or its API.',
   },

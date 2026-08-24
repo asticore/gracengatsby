@@ -26,8 +26,11 @@
       "@/*": [
         "./src/*"
       ],
+      // Alias name is fixed by the underlying CMS engine - its CLI and its Next
+      // integration both resolve the config through this exact key. Only the
+      // path it points at is ours.
       "@payload-config": [
-        "./src/payload.config.ts"
+        "./src/engage.config.ts"
       ]
     },
     "target": "ES2022",

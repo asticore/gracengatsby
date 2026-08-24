@@ -24,7 +24,9 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/', 'src/payload-types.ts', 'src/payload-generated-schema.ts'],
+    // Generated on every build from the CMS config - never hand-edited, and
+    // large enough that linting it is pure noise.
+    ignores: ['.next/', 'src/engage-types.ts'],
   },
 ]
 

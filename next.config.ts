@@ -1,3 +1,5 @@
+// `withPayload` is the CMS engine's Next.js integration wrapper - the import
+// name comes from the npm package and is not a product label.
 import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */

@@ -25,6 +25,7 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
  */
 export const EmailSettings: GlobalConfig = {
   slug: 'email-settings',
+  label: 'Email',
   dbName: 'ac_email_settings',
   admin: {
     group: 'Settings',

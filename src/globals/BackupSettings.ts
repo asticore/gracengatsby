@@ -22,6 +22,7 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
  */
 export const BackupSettings: GlobalConfig = {
   slug: 'backup-settings',
+  label: 'Backups',
   dbName: 'ac_backup_settings',
   admin: {
     group: 'Settings',

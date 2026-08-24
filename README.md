@@ -1,144 +1,195 @@
-# Grace & Gatsby — Payload + Cloudflare Workers site
+# Asticore Engage — Grace & Gatsby
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/asticore/gracengatsby)
+The public **Grace & Gatsby** website and the **Asticore Engage** content portal that runs it, deployed as a single application.
 
-A full Payload CMS site (pages, blog, FAQ, shop/ecommerce, events, header/footer globals, page builder blocks) running on Cloudflare Workers with a D1 (SQLite) database and an R2 media bucket. This repo doubles as a reusable template: clicking the button above provisions a brand-new Worker, D1 database and R2 bucket for whoever clicks it, pre-loaded with this site's full feature set.
+Editors sign in at `/admin` to build pages, run the shop, publish events and posts, and configure the site. Visitors get the storefront rendered from the same content.
 
-**This can only be deployed on Paid Workers right now due to size limits.**
+---
 
-## Quick start (one-click deploy)
+## Stack
 
-1. Click the **Deploy to Cloudflare** button above.
-2. Cloudflare will ask you to connect a git provider (GitHub/GitLab) — it forks/copies this repo into your own account so you have your own copy to edit.
-3. On the setup screen, name your **Worker**, **D1 database** and **R2 bucket**. Give each client/project distinct names here (e.g. `client-name-site`, `client-name-db`, `client-name-media`) — Cloudflare provisions fresh resources under those names, so this is what keeps each deployment's data isolated from every other site deployed from this template.
-4. Fill in the secrets it prompts for (see `.env.example` for the full list — `PAYLOAD_SECRET` is required, the Stripe keys are only needed if you want the shop enabled).
-5. Deploy. Cloudflare runs the build/deploy script (`pnpm run deploy`), which applies the Payload database migrations to the new D1 database and pushes the Worker.
-6. Visit `/admin` on your new deployment to create your first admin user and start configuring Header, Footer, Site Settings, Blog/FAQ/Shop settings and pages.
+| Layer      | What it is |
+| ---------- | ---------- |
+| Runtime    | Next.js 15 (App Router, React 19) on Cloudflare Workers via OpenNext |
+| Database   | Cloudflare D1 (SQLite), bound as `D1` |
+| Media      | Cloudflare R2, bound as `R2` |
+| Payments   | Stripe (only needed when the Shop feature is on) |
+| Language   | TypeScript throughout |
 
-## Reusing this as a template for other client sites
+Two route groups live under `src/app/`:
 
-Two ways to spin up a new client site from this codebase:
+- `(frontend)` — the public site: home, pages, blog, shop, events, FAQ, cart, checkout.
+- `(engage)` — the portal: the admin UI at `/admin`, the content API under `/api`, and two internal deploy endpoints.
 
-- **Fastest**: click the Deploy to Cloudflare button above directly from this repo. Cloudflare copies the repo into your GitHub account as part of the flow and provisions a new Worker/D1/R2 for it — just make sure you give the resources unique names in step 3 above.
-- **Cleaner for ongoing client work** (recommended if you'll keep customizing each client's copy in git): mark this repo as a GitHub template repository once (Settings → General → check "Template repository"), then for each new client use GitHub's **"Use this template"** button to create a separate repo, and click Deploy to Cloudflare from that new repo. This keeps each client's code and deploy history fully separate.
+Neither group name appears in a URL — parentheses make them organisational only.
 
-Either way, every deployment gets its own isolated D1 database and R2 bucket — nothing is shared with `gracengatsby.com`'s production data as long as you give each deployment distinct resource names during setup.
+---
 
-## Quick Start - local setup
+## Layout
 
-To spin up this template locally, follow these steps:
+```
+src/
+  engage.config.ts    single source of truth: collections, globals, plugins, admin UI
+  engage-types.ts     GENERATED from the config — never edit, never committed
+  lib/engine.ts       getEngine(): the initialised CMS client used server-side
+  collections/        Pages, Posts, Faqs, Events, EventRSVPs, PageTemplates,
+                      FieldGroups, Media, Users
+  globals/            Header, Footer, SiteSettings, Integrations + one settings
+                      global per feature (SEO, Speed, Media, Email, Backups, …)
+  blocks/             page-builder block definitions (Hero, Section, Loop, …)
+  components/blocks/  the React renderers for those blocks
+  features/           the feature registry and the Site Settings toggle field
+  fields/             reusable field sets — SEO, slug, custom fields, visual editor
+  views/              the custom Visual Editor admin view
+  migrations/         migration files + the generated schema-diff data they apply
+  seed/               idempotent starter content (Home page + page templates)
+```
 
-### Clone
+---
 
-After you click the `Deploy` button above, you'll want a standalone copy of this repo on your machine. Cloudflare will connect your app to a git provider such as GitHub and you can access your code from there.
+## Running it locally
 
-### Local Development
-
-Copy `.env.example` to `.env` and fill in the values, then:
+Requires Node ≥ 24.15 and pnpm.
 
 ```bash
+cp .env.example .env      # fill in PAYLOAD_SECRET at minimum
 pnpm install
 pnpm dev
 ```
 
-## How it works
+- Site: <http://localhost:3000>
+- Portal: <http://localhost:3000/admin>
 
-Out of the box, using [`Wrangler`](https://developers.cloudflare.com/workers/wrangler/) will automatically create local bindings for you to connect to the remote services and it can even create a local mock of the services you're using with Cloudflare.
+Wrangler creates local emulated D1 and R2 bindings automatically — no connection string, and nothing touches production. On first run, create an admin user through the portal.
 
-This site is built on:
+`pnpm devsafe` does the same after clearing `.next` and `.open-next`, which is the fix for most stale-build weirdness.
 
-### Collections
+### Environment variables
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+| Variable | Required | Notes |
+| -------- | -------- | ----- |
+| `PAYLOAD_SECRET` | yes | Signs sessions and encrypts secret settings fields. **The name is fixed by the underlying CMS engine and cannot be renamed.** Generate with `openssl rand -base64 32`. |
+| `SITE_URL` | for prod | Used by `sitemap.xml`, `robots.txt` and canonical/OG URLs. |
+| `STRIPE_*` | shop only | Leave blank to deploy with the Shop feature off. |
+| `ENGAGE_LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error`. Defaults to `info` in production. |
 
-- **Pages** — hierarchical (parent/child), homepage flag, starter templates, SEO fields, and a block-based page builder (hero, rich text, image+text, product grid, event grid, gallery, FAQ, CTA banner).
-- **Posts** — blog collection with categories and SEO fields.
-- **FAQs** — question/answer entries, groupable by category.
-- **Page Templates** — reusable starter block layouts for new pages.
-- **Products / Events** — ecommerce and events, via `@payloadcms/plugin-ecommerce`.
-- **Users** (Authentication) — auth-enabled collection with admin panel access. See the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
-- **Media** — uploads-enabled collection, backed by R2.
+### Useful scripts
 
-### Globals
+| Command | Does |
+| ------- | ---- |
+| `pnpm dev` | Local dev server |
+| `pnpm build` | Import map → types → `next build` |
+| `pnpm generate:types` | Regenerates `cloudflare-env.d.ts` and `src/engage-types.ts` |
+| `pnpm generate:importmap` | Regenerates the admin component import map |
+| `pnpm lint` | ESLint |
+| `pnpm test` | Vitest integration tests + Playwright e2e |
+| `pnpm cms <cmd>` | Passthrough to the CMS CLI (`migrate`, `migrate:create`, …) |
+| `pnpm preview` | Builds and serves the real Worker bundle locally |
 
-- **Header** / **Footer** — nav menus, socials, announcement bar, footer columns.
-- **Site Settings** — theme (button/corner/hover styles), SEO defaults, feature toggles (ecommerce, events, blog, faq, accounts, lms).
-- **Blog / FAQ / Shop settings** — per-section layout and display options.
+`src/engage-types.ts` is generated on every build and is **not** committed — the config is the single source of truth. If your editor complains about missing types after pulling, run `pnpm generate:types`.
 
-### Image Storage (R2)
+---
 
-Images will be served from an R2 bucket which you can then further configure to use a CDN to serve for your frontend directly.
-
-### D1 Database
-
-The Worker will have direct access to a D1 SQLite database which Wrangler can connect locally to, just note that you won't have a connection string as you would typically with other providers.
-
-You can enable read replicas by adding `readReplicas: 'first-primary'` in the DB adapter and then enabling it on your D1 Cloudflare dashboard. Read more about this feature on [our docs](https://payloadcms.com/docs/database/sqlite#d1-read-replicas).
-
-## Working with Cloudflare
-
-Firstly, after installing dependencies locally you need to authenticate with Wrangler by running:
-
-```bash
-pnpm wrangler login
-```
-
-This will take you to Cloudflare to login and then you can use the Wrangler CLI locally for anything, use `pnpm wrangler help` to see all available options.
-
-Wrangler is pretty smart so it will automatically bind your services for local development just by running `pnpm dev`.
-
-## Deployments
-
-When you're ready to deploy, first make sure you have created your migrations:
-
-```bash
-pnpm payload migrate:create
-```
-
-Then run the following command:
+## Deploying
 
 ```bash
 pnpm run deploy
 ```
 
-This will spin up Wrangler in `production` mode, run any created migrations against D1, build the app and then deploy the bundle up to Cloudflare. That's it! You can if you wish move these steps into your CI pipeline as well.
+That runs four steps in order, and the order matters:
 
-**Note:** if you ever apply a schema change directly against a production D1 database outside of `payload migrate` (for example via the Cloudflare dashboard's D1 console), remember to also insert a matching row into the `payload_migrations` table so Payload doesn't try to reapply it on the next deploy.
+1. **`deploy:database`** — applies migrations, then pushes four hand-built SQL files to real D1 with `wrangler d1 execute --remote`, then `PRAGMA optimize`. This step exists because the CLI's `migrate` cannot reach production D1 from CI (see below).
+2. **`deploy:app`** — `opennextjs-cloudflare build` then `deploy`. Builds the Worker bundle and ships it.
+3. **`deploy:migrate`** — `POST /api/internal-migrate` against the live deployment. This is what actually lands schema changes on production D1.
+4. **`deploy:seed`** — `POST /api/internal-seed`. Creates the starter Home page and page templates if they are missing.
 
-## Enabling logs
+Steps 3 and 4 are `curl -sf ... || echo` — a failure is reported but does not fail the deploy, because both endpoints are idempotent and safe to retry by hand.
 
-By default logs are not enabled for your API, we've made this decision because it does run against your quota so we've left it opt-in. But you can easily enable logs in one click in the Cloudflare panel, [see docs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/#enable-workers-logs).
+Both endpoints are guarded by an `x-seed-key` header. That is **not** a security boundary — neither endpoint can drop or modify data, so the header only keeps crawlers and stray requests out.
 
-### Logger Configuration
+---
 
-This template includes a custom console-based logger compatible with Cloudflare Workers. Payload's default logger uses `pino-pretty`, which relies on Node.js APIs not available in Workers and would cause `fs.write is not implemented` errors.
+## How migrations work here
 
-The custom logger in `payload.config.ts`:
+This is the least obvious part of the project. Read this before writing one.
 
-- Routes logs through `console.*` methods which Workers handles correctly
-- Outputs JSON-formatted logs for Cloudflare observability
-- Only active in production (development uses the default `pino-pretty` for better DX)
+### Why the normal path doesn't work
 
-You can control the log level via the `PAYLOAD_LOG_LEVEL` environment variable (e.g., `debug`, `info`, `warn`, `error`).
+The CLI's `migrate` command can only ever reach a **local emulated D1** in this Cloudflare Workers Build environment, never the real database. The D1 binding in `wrangler.jsonc` is deliberately **not** marked `"remote": true`: setting it breaks `next build`, because OpenNext's own context fallback (used while Next collects page data for API routes at build time) opens a remote preview session that CI cannot create.
 
-### Diagnostic Channel Errors
+So production schema changes reach D1 by two other routes: plain `wrangler d1 execute --remote` for one-off fixes, and `/api/internal-migrate` for everything additive.
 
-If you see "Failed to publish diagnostic channel message" errors in your observability logs, these typically come from the `undici` HTTP client library. The template includes `skipSafeFetch: true` in the Media collection to use native fetch instead of undici for file uploads, which helps reduce these errors.
+### Why `/api/internal-migrate` exists
 
-Cloudflare Workers runs in an [isolated environment that cannot access private IP ranges](https://developers.cloudflare.com/workers-vpc/examples/route-across-private-services/) by default, providing built-in SSRF protection. This makes `skipSafeFetch` safe to use.
+It applies additive schema changes straight against the live D1 binding **from inside the deployed Worker**. That is the one path guaranteed to hit production. It applies the same schema sets the migrations use — `src/migrations/schema/builderSchema.ts` and `settingsSchema.ts` — through the shared `applySchemaAdditions` helper, so the two can never drift.
 
-## Known issues
+Every statement is idempotent by construction:
 
-### GraphQL
+- tables and indexes use `CREATE ... IF NOT EXISTS`
+- column adds are guarded by a `PRAGMA table_info` check first, because SQLite has no `ALTER TABLE ADD COLUMN IF NOT EXISTS`
 
-We are currently waiting on some issues with GraphQL to be [fixed upstream in Workers](https://github.com/cloudflare/workerd/issues/5175) so full support for GraphQL is not currently guaranteed when deployed.
+That is what makes it safe to call on every single deploy.
 
-### Worker size limits
+### The diff-and-verify procedure
 
-We currently recommend deploying this template to the Paid Workers plan due to bundle [size limits](https://developers.cloudflare.com/workers/platform/limits/#worker-size) of 3mb. We're actively trying to reduce our bundle footprint over time to better meet this metric.
+The CLI's `migrate:create` emits a **full-schema dump, not a diff**, because this project keeps no drizzle snapshot of its current state. Running that dump against a database that already has the tables just fails. So what actually gets committed is the computed *difference* between the schema the config wants and the schema that already exists.
 
-This also applies to your own code, in the case of importing a lot of libraries you may find yourself limited by the bundle.
+To regenerate a schema set after changing the config:
 
-## Questions
+1. `pnpm cms migrate:create <name>` — produces the full-schema dump.
+2. Build a **TARGET** database: apply that dump to an empty SQLite file, first seeding any table the dump omits (it skips tables it considers unchanged) from the current database's own DDL.
+3. Diff TARGET against the current database — `.wrangler`'s local D1 tracks the same migration state as production. Collect tables, columns and indexes present only in TARGET.
+4. Emit those three lists, rewriting every `CREATE` as `IF NOT EXISTS`.
+5. **Verify**: apply the result twice to a copy of the current database. The second pass must add nothing, and the final schema must match TARGET exactly.
 
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+The canonical worked example is `src/migrations/20260822_234701_builder_sections_loops_custom_fields.ts` — start there.
+
+### Rules of thumb
+
+- **Additive only.** Down migrations for schema sets are deliberate no-ops; rolling one back would drop live content.
+- The generated `.json` snapshots next to migrations are gitignored — each is a ~500KB full-schema dump this project cannot rely on anyway.
+- If you ever apply a schema change to production D1 by hand (e.g. the Cloudflare dashboard's D1 console), **also insert a matching row into the `payload_migrations` table** so the engine does not try to reapply it on the next deploy. That table, along with `payload_preferences` and `payload_locked_documents*`, is internal engine bookkeeping — do not rename them.
+
+---
+
+## Feature toggles
+
+Optional functionality is switched on and off from **Site Settings → Features** in the portal. `src/features/registry.ts` is the single source of truth.
+
+Each entry declares its label, description, default state, the collections and globals it owns, the database tables it owns, and an `implemented` flag. Everything else reads from the registry instead of hard-coding feature names:
+
+- **Site Settings** renders one checkbox per entry (`featureToggleField.ts`), three per row.
+- **The portal sidebar** hides a feature's collections and globals while it is off (`isCollectionEnabled` / `isGlobalEnabled`).
+- **Public routes** call `getFeatureFlags()` and `notFound()` when their feature is off — so `/blog` 404s with Blog disabled.
+- **Database Cleanup** is designed to use `tables` to purge a disabled feature's data on request. The registry side is in place; the tool itself is not built yet.
+
+Adding a feature means adding one registry entry and nothing else structural.
+
+Two details worth knowing:
+
+- **`implemented: false`** means the settings screen exists and saves, but the behaviour behind it is still being built. The toggle's own description says so rather than silently doing nothing. Currently shipped end-to-end: Shop, Events, Blog, FAQs. Everything else (Forms, SEO & Analytics, Speed, Media, Email, Backups, Members, A/B testing, Security, Multilingual, Customer accounts, Courses) is settings-only for now.
+- **`tables` lists BASE table names only.** The cleanup tool expands each into its real family at runtime — the SQLite adapter also generates `<table>_rels`, `_<table>_v`, `<table>_locales` and one `<table>_blocks_<block>` child per block type. That expansion changes as blocks are added, so it is never written out by hand.
+
+Turning a feature off **hides**; it never deletes.
+
+---
+
+## Portal theming
+
+`src/app/(engage)/custom.css` carries the whole portal theme. Read its header comment before touching it — the colour system is easy to get wrong.
+
+The short version: `--color-base-0 … --color-base-1000` is **one** ramp running light → dark, not one ramp per theme. The base stylesheet maps it onto `--theme-elevation-*` and inverts that mapping for dark mode. Supplying a second, already-inverted ramp inverts twice and produces light text on light surfaces. Define the ramp once, define all 21 steps, and let the inversion happen.
+
+Override documented CSS custom properties, not class names. Declare inside `@layer payload` — that layer name is not ours to choose; the underlying CMS engine declares `@layer payload-default, payload;` and reserves the second layer for the host app, so a later layer always wins and nothing needs `!important`.
+
+Brand marks live in `src/components/branding/`, and the browser-tab identity (title, description, favicon) is set explicitly in `admin.meta` in `engage.config.ts`.
+
+---
+
+## Known constraints
+
+- **Paid Workers plan required** — the bundle exceeds the 3 MB free-tier [size limit](https://developers.cloudflare.com/workers/platform/limits/#worker-size).
+- **GraphQL** is not guaranteed when deployed, pending an [upstream workerd fix](https://github.com/cloudflare/workerd/issues/5175). The REST API is unaffected.
+- **Logging is opt-in** in the Cloudflare panel because it draws on your quota. The custom console logger in `engage.config.ts` exists because the default logger uses `pino-pretty`, which needs Node APIs Workers does not have and fails with `fs.write is not implemented`. It is production-only; dev keeps the prettier default.
+- **No image processing.** `crop` and `focalPoint` are disabled on the Media collection because `sharp` is not available on Workers. Resizing/optimisation is expected to come from Cloudflare's image pipeline instead.
+- **"Failed to publish diagnostic channel message"** entries in observability logs come from the `undici` HTTP client and are noise rather than a fault.

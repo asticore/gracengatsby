@@ -1,6 +1,6 @@
 import { FaqList } from '@/components/FaqList'
-import { getPayloadClient } from '@/lib/payload'
-import type { Faq } from '@/payload-types'
+import { getEngine } from '@/lib/engine'
+import type { Faq } from '@/engage-types'
 
 export async function FaqBlockBlock({
   heading,
@@ -13,15 +13,15 @@ export async function FaqBlockBlock({
   category?: string | null
   faqs?: (number | string | Faq)[] | null
 }) {
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
   let items: Faq[] = []
 
   if (source === 'manual' && faqs?.length) {
     const ids = faqs.map((f) => (typeof f === 'object' ? f.id : f))
-    const { docs } = await payload.find({ collection: 'faqs', where: { id: { in: ids } }, limit: 100 })
+    const { docs } = await engine.find({ collection: 'faqs', where: { id: { in: ids } }, limit: 100 })
     items = docs as Faq[]
   } else {
-    const { docs } = await payload.find({
+    const { docs } = await engine.find({
       collection: 'faqs',
       where: category ? { category: { equals: category } } : undefined,
       sort: 'order',

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { buildMergeContext, resolveTagsDeep } from '@/lib/mergeTags'
 import type { SectionNode } from '@/lib/sectionTree'
@@ -43,7 +43,7 @@ export async function LoopBlock({
   renderNode: (node: SectionNode, key: string) => React.ReactNode
 }) {
   const collection: LoopSource = (source as LoopSource) || 'products'
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
 
   // The template may arrive as an id or an already-populated doc depending on
   // the depth the parent page was fetched at.
@@ -52,7 +52,7 @@ export async function LoopBlock({
 
   let templateBlocks: SectionNode[] = []
   try {
-    const doc = await payload.findByID({ collection: 'page-templates', id: templateId as number, depth: 1 })
+    const doc = await engine.findByID({ collection: 'page-templates', id: templateId as number, depth: 1 })
     templateBlocks = (doc?.blocks as SectionNode[] | undefined) || []
   } catch {
     // A deleted template should leave a gap, not break the whole page.
@@ -67,7 +67,7 @@ export async function LoopBlock({
 
   let items: Record<string, unknown>[] = []
   try {
-    const result = await payload.find({
+    const result = await engine.find({
       collection,
       where: {
         and: [

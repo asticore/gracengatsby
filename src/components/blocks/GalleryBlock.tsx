@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import React from 'react'
 
-import type { Media } from '@/payload-types'
+import type { Media } from '@/engage-types'
 
 export const GalleryBlock: React.FC<{
   heading?: string | null

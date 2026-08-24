@@ -2,7 +2,7 @@ import Image from 'next/image'
 import React from 'react'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 
-import type { Media, Page } from '@/payload-types'
+import type { Media, Page } from '@/engage-types'
 
 type ImageTextBlockData = Extract<NonNullable<Page['blocks']>[number], { blockType: 'imageText' }>
 

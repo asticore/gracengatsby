@@ -1,5 +1,5 @@
 import { ProductCard } from '@/components/ProductCard'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 
 export async function ProductGridBlock({
   heading,
@@ -10,9 +10,9 @@ export async function ProductGridBlock({
   category?: string | null
   limit?: number | null
 }) {
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
 
-  const { docs: products } = await payload.find({
+  const { docs: products } = await engine.find({
     collection: 'products',
     where: {
       and: [

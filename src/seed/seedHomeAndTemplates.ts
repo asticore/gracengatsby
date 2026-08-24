@@ -3,10 +3,10 @@ import type { Payload } from 'payload'
 // Shared, idempotent seed logic for the starter Home page + Page Templates.
 // Used by BOTH:
 //  - the dev/local migration (src/migrations/20260822_120000_seed_home_and_templates.ts),
-//    which runs fine against a local emulated D1 via `payload migrate`
-//  - the /api/internal-seed route (see src/app/(payload)/api/internal-seed/route.ts),
+//    which runs fine against a local emulated D1 via the CLI migrate command
+//  - the /api/internal-seed route (see src/app/(engage)/api/internal-seed/route.ts),
 //    which is hit over real HTTP against the deployed Worker so it runs with genuine
-//    production D1 bindings - `payload migrate` in CI can only ever reach a local
+//    production D1 bindings - the CLI migrate command in CI can only ever reach a local
 //    emulated database (see the note on the D1 binding in wrangler.jsonc), so this is
 //    the mechanism that actually seeds real production data on deploy.
 //
@@ -34,13 +34,13 @@ export const lexicalParagraph = (text: string) => ({
 })
 
 export async function seedHomeAndTemplates(
-  payload: Payload,
+  engine: Payload,
 ): Promise<{ homeCreated: boolean; templatesCreated: boolean }> {
   let homeCreated = false
   let templatesCreated = false
 
   // ---- Home page ----
-  const { totalDocs: homepageCount } = await payload.find({
+  const { totalDocs: homepageCount } = await engine.find({
     collection: 'pages',
     where: { isHomepage: { equals: true } },
     limit: 1,
@@ -48,7 +48,7 @@ export async function seedHomeAndTemplates(
   })
 
   if (homepageCount === 0) {
-    await payload.create({
+    await engine.create({
       collection: 'pages',
       data: {
         title: 'Home',
@@ -88,21 +88,21 @@ export async function seedHomeAndTemplates(
         ],
       },
     })
-    payload.logger.info('[seed] Created and published Home page.')
+    engine.logger.info('[seed] Created and published Home page.')
     homeCreated = true
   } else {
-    payload.logger.info('[seed] Home page already exists - skipping.')
+    engine.logger.info('[seed] Home page already exists - skipping.')
   }
 
   // ---- Starter Page Templates ----
-  const { totalDocs: templateCount } = await payload.find({
+  const { totalDocs: templateCount } = await engine.find({
     collection: 'page-templates',
     limit: 1,
     depth: 0,
   })
 
   if (templateCount === 0) {
-    await payload.create({
+    await engine.create({
       collection: 'page-templates',
       data: {
         name: 'Homepage Starter',
@@ -123,7 +123,7 @@ export async function seedHomeAndTemplates(
       },
     })
 
-    await payload.create({
+    await engine.create({
       collection: 'page-templates',
       data: {
         name: 'About / Story',
@@ -141,7 +141,7 @@ export async function seedHomeAndTemplates(
       },
     })
 
-    await payload.create({
+    await engine.create({
       collection: 'page-templates',
       data: {
         name: 'Simple Landing',
@@ -153,10 +153,10 @@ export async function seedHomeAndTemplates(
       },
     })
 
-    payload.logger.info('[seed] Created 3 starter page templates.')
+    engine.logger.info('[seed] Created 3 starter page templates.')
     templatesCreated = true
   } else {
-    payload.logger.info('[seed] Page templates already exist - skipping.')
+    engine.logger.info('[seed] Page templates already exist - skipping.')
   }
 
   return { homeCreated, templatesCreated }

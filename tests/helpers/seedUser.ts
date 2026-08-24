@@ -1,8 +1,8 @@
 import { getPayload } from 'payload'
-import config from '../../src/payload.config.js'
+import config from '../../src/engage.config.js'
 
 export const testUser = {
-  email: 'dev@payloadcms.com',
+  email: 'dev@asticore.test',
   password: 'test',
 }
 
@@ -10,10 +10,10 @@ export const testUser = {
  * Seeds a test user for e2e admin tests.
  */
 export async function seedTestUser(): Promise<void> {
-  const payload = await getPayload({ config })
+  const engine = await getPayload({ config })
 
   // Delete existing test user if any
-  await payload.delete({
+  await engine.delete({
     collection: 'users',
     where: {
       email: {
@@ -23,7 +23,7 @@ export async function seedTestUser(): Promise<void> {
   })
 
   // Create fresh test user
-  await payload.create({
+  await engine.create({
     collection: 'users',
     data: testUser,
   })
@@ -33,9 +33,9 @@ export async function seedTestUser(): Promise<void> {
  * Cleans up test user after tests
  */
 export async function cleanupTestUser(): Promise<void> {
-  const payload = await getPayload({ config })
+  const engine = await getPayload({ config })
 
-  await payload.delete({
+  await engine.delete({
     collection: 'users',
     where: {
       email: {

@@ -152,7 +152,7 @@ export function cloneNode(node: SectionNode, makeId: () => string): SectionNode 
   return clone
 }
 
-/** Strips editor-only ids before the tree is written back to Payload. */
+/** Strips editor-only ids before the tree is written back to the CMS. */
 export function stripEditorIds(nodes: SectionNode[]): SectionNode[] {
   return nodes.map((node) => {
     const { _tempId: _ignored, ...rest } = node as SectionNode & { _tempId?: string }

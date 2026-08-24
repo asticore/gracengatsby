@@ -1,18 +1,18 @@
 import { getPayload, Payload } from 'payload'
-import config from '@/payload.config'
+import config from '@/engage.config'
 
 import { describe, it, beforeAll, expect } from 'vitest'
 
-let payload: Payload
+let engine: Payload
 
 describe('API', () => {
   beforeAll(async () => {
-    const payloadConfig = await config
-    payload = await getPayload({ config: payloadConfig })
+    const engineConfig = await config
+    engine = await getPayload({ config: engineConfig })
   })
 
   it('fetches users', async () => {
-    const users = await payload.find({
+    const users = await engine.find({
       collection: 'users',
     })
     expect(users).toBeDefined()

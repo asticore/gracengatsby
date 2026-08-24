@@ -6,7 +6,7 @@
  * Paragraphs are separated by a blank line. This intentionally does not
  * round-trip bold/italic/links/headings - it's a v1 tradeoff that keeps the
  * canvas fast and dependency-free. Anything that needs full rich formatting
- * can still be edited from the normal Payload admin field.
+ * can still be edited from the normal portal admin field.
  */
 
 type LexicalNode = {

@@ -6,7 +6,7 @@ import { SETTINGS_COLUMNS, SETTINGS_INDEXES, SETTINGS_TABLES } from './schema/se
 // Schema for the settings globals (SEO, Speed, Media, Email, Backups, Members,
 // Security, Languages, Payments, Forms) and the feature-toggle framework.
 //
-// As with the page-builder migration, `payload migrate:create` emits a full
+// As with the page-builder migration, the CLI's `migrate:create` emits a full
 // schema dump rather than a diff on this project, so what runs here is the
 // computed difference against the live schema: 15 new tables, 10 new columns
 // on site_settings, 12 new indexes, nothing dropped. See
@@ -32,8 +32,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   })
 }
 
-export async function down({ payload }: MigrateDownArgs): Promise<void> {
+export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
   // Intentionally a no-op. Rolling this back would drop every settings global
   // and the feature flags that decide which parts of the site are switched on.
-  payload.logger.info('[migrate] Down is a no-op - settings schema is left in place.')
+  engine.logger.info('[migrate] Down is a no-op - settings schema is left in place.')
 }

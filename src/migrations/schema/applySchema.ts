@@ -4,7 +4,7 @@ import type { SchemaColumn, SchemaIndex, SchemaTable } from './builderSchema'
  * Applies a set of additive schema changes idempotently.
  *
  * Shared by the migrations (which run against a local emulated D1 through
- * Payload's db handle) and /api/internal-migrate (which runs against the real
+ * the CMS engine's db handle) and /api/internal-migrate (which runs against the real
  * D1 binding inside the deployed Worker). Both need identical semantics, and
  * having one implementation means they cannot drift apart.
  *

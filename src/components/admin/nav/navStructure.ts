@@ -25,28 +25,6 @@ export type NavGroupDef = {
   entities: NavEntityRef[]
 }
 
-/**
- * Display-name overrides for sidebar entries.
- *
- * Inside the Settings group, every global is called "<Thing> Settings", which
- * reads as "Settings › Blog Settings". The group heading already says Settings,
- * so the suffix is dropped and only the subject is shown.
- */
-export const NAV_LABEL_OVERRIDES: Record<string, string> = {
-  'site-settings': 'General',
-  'blog-settings': 'Blog',
-  'faq-settings': 'FAQs',
-  'shop-settings': 'Shop',
-  'seo-settings': 'SEO & Analytics',
-  'speed-settings': 'Speed',
-  'media-settings': 'Media',
-  'email-settings': 'Email',
-  'backup-settings': 'Backups',
-  'member-settings': 'Members',
-  'security-settings': 'Security',
-  'language-settings': 'Languages',
-}
-
 export const NAV_STRUCTURE: NavGroupDef[] = [
   {
     label: 'Content',

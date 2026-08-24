@@ -13,7 +13,7 @@ import {
   type ResolvedNavEntity,
   type ResolvedNavGroup,
 } from './AdminNavClient'
-import { FALLBACK_GROUP_LABEL, NAV_LABEL_OVERRIDES, NAV_STRUCTURE } from './navStructure'
+import { FALLBACK_GROUP_LABEL, NAV_STRUCTURE } from './navStructure'
 import { DEFAULT_FLAGS, FEATURES, isCollectionEnabled, isGlobalEnabled, type FeatureFlags, type FeatureKey } from '@/features/registry'
 
 const baseClass = 'nav'
@@ -124,7 +124,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     if (!isCollectionEnabled(collection.slug, flags)) continue
     available.set(`collections:${collection.slug}`, {
       slug: collection.slug,
-      label: NAV_LABEL_OVERRIDES[collection.slug] ?? resolveLabel(collection),
+      label: resolveLabel(collection),
       href: formatAdminURL({ adminRoute, path: `/collections/${collection.slug}` }),
       id: `nav-${collection.slug}`,
     })
@@ -137,7 +137,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     if (!isGlobalEnabled(global.slug, flags)) continue
     available.set(`globals:${global.slug}`, {
       slug: global.slug,
-      label: NAV_LABEL_OVERRIDES[global.slug] ?? resolveLabel(global),
+      label: resolveLabel(global),
       href: formatAdminURL({ adminRoute, path: `/globals/${global.slug}` }),
       id: `nav-global-${global.slug}`,
     })

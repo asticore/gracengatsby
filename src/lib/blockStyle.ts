@@ -3,7 +3,7 @@
  * visual editor canvas so a block looks identical in both.
  *
  * Every page-builder block carries one of these under a single `style` JSON
- * column. Storing it as JSON rather than ~25 individual Payload fields keeps
+ * column. Storing it as JSON rather than ~25 individual CMS fields keeps
  * the D1 schema small (one column per block table instead of twenty-five)
  * and lets the visual editor own the editing UI, which is where these are
  * actually meant to be set.

@@ -3,7 +3,8 @@ import type { FieldHook } from 'payload'
 
 /**
  * Encrypts/decrypts sensitive text fields (API keys, tokens) at rest using
- * AES-256-GCM, keyed off PAYLOAD_SECRET. This is defense-in-depth on top of
+ * AES-256-GCM, keyed off PAYLOAD_SECRET (an engine-level env var - its name is
+ * fixed by the underlying CMS engine). This is defense-in-depth on top of
  * the field/global-level admin-only access control - even a raw DB dump
  * doesn't hand over the plaintext key.
  *

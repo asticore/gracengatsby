@@ -1,5 +1,5 @@
-import type { Page } from '@/payload-types'
-import { getPayloadClient } from '@/lib/payload'
+import type { Page } from '@/engage-types'
+import { getEngine } from '@/lib/engine'
 
 const MAX_DEPTH = 8
 
@@ -13,8 +13,8 @@ export type ResolvedPage = { page: Page; path: string[]; ancestors: Page[] }
  * memory - simple and correct for a site of this size.
  */
 export const getAllResolvedPages = async (): Promise<ResolvedPage[]> => {
-  const payload = await getPayloadClient()
-  const { docs } = await payload.find({
+  const engine = await getEngine()
+  const { docs } = await engine.find({
     collection: 'pages',
     where: { _status: { equals: 'published' } },
     limit: 0,
@@ -51,8 +51,8 @@ export const findPageByPath = async (segments: string[]): Promise<ResolvedPage |
 }
 
 export const getHomepage = async (): Promise<Page | null> => {
-  const payload = await getPayloadClient()
-  const { docs } = await payload.find({
+  const engine = await getEngine()
+  const { docs } = await engine.find({
     collection: 'pages',
     where: { and: [{ isHomepage: { equals: true } }, { _status: { equals: 'published' } }] },
     limit: 1,

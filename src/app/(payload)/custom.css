@@ -2,38 +2,47 @@
  * Asticore Engage — admin portal theme.
  *
  * Direction C ("Soft Cards"): rounded surfaces, tinted status pills, a warm
- * neutral ground and the Asticore gold as the single accent — tightened to the
- * denser sizing of Direction A so more fits on screen.
+ * neutral ground and the Asticore gold as the single accent — at a denser
+ * scale so more fits on screen.
  *
- * Two rules govern everything here:
+ * HOW THIS WORKS (important — an earlier version of this file got it wrong and
+ * produced unreadable dark mode):
  *
- *   1. Override Payload's documented CSS custom properties rather than its
- *      class names. The variables are a supported surface; the class names are
- *      internal and change between releases. Anything restyled through the
- *      variables survives a Payload upgrade.
- *   2. Declare inside `@layer payload`. Payload puts its own styles in
- *      `payload-default`, and a later layer always wins regardless of
- *      specificity — so none of this needs `!important`.
+ *   `--color-base-0 … --color-base-1000` is ONE ramp running light → dark.
+ *   It is NOT per-theme. Payload's own stylesheet maps that single ramp onto
+ *   `--theme-elevation-*` and INVERTS the mapping for dark mode
+ *   (`--theme-elevation-0: var(--color-base-900)` and so on). Supplying a
+ *   second, already-inverted ramp for dark therefore inverts twice, giving
+ *   light surfaces with light text.
  *
- * Light and dark are both defined. Payload stamps `data-theme="light"` or
- * `data-theme="dark"` on <html> when the user picks one explicitly, and stamps
- * nothing when they leave it on "Auto" — so the media query below is what makes
- * Auto follow the operating system. `admin.theme: 'all'` in payload.config.ts
- * is what exposes that three-way choice in the UI.
+ *   So: define the ramp once, define all 21 steps (0, 50, 100 … 1000 — any
+ *   step left out falls back to Payload's cool grey and mixes cool with warm),
+ *   and let Payload invert it. `--theme-bg`, `--theme-text` and
+ *   `--theme-input-bg` are derived from the ramp per theme by Payload and are
+ *   deliberately NOT overridden here.
+ *
+ * Two further rules:
+ *   - Override Payload's documented CSS custom properties, not its class
+ *     names. Variables are a supported surface; class names are internal.
+ *   - Declare inside `@layer payload`. Payload's own styles live in
+ *     `payload-default`, and a later layer always wins — so nothing here needs
+ *     `!important`.
+ *
+ * Light / Dark / Auto: Payload stamps `data-theme` on <html> for an explicit
+ * choice and stamps nothing for Auto, so the `prefers-color-scheme` block is
+ * what makes Auto follow the OS. `admin.theme: 'all'` exposes the choice.
  */
 
 @layer payload {
   /* ---------------------------------------------------------------- *
-   * Brand tokens                                                      *
+   * Brand tokens and density                                          *
    * ---------------------------------------------------------------- */
   :root {
     --ac-gold: #b9924b;
     --ac-gold-soft: #c9a15a;
-    --ac-ink: #1d1b19;
 
-    /* Density: Payload derives most spacing from --base, which is
-       calc(--base-px * 1px). Dropping it from 20 to 17 tightens padding,
-       gutters and row heights everywhere at once rather than piecemeal. */
+    /* Payload derives spacing from --base = (--base-px / --base-body-size)rem.
+       Lowering --base-px tightens padding, gutters and row heights together. */
     --base-px: 17;
     --base-body-size: 12.5;
 
@@ -44,33 +53,41 @@
     --nav-width: 250px;
     --app-header-height: 52px;
     --doc-controls-height: 56px;
-    --gutter-h: calc(var(--base) * 1.15);
+
+    /* Semantic surface roles.
+       Elevation runs in opposite directions per theme: in light, elevation-0 is
+       white and higher steps get darker; in dark, elevation-0 is the darkest
+       and higher steps get lighter. So the card/page pairing has to swap, or
+       cards end up darker than the page they sit on. */
+    --ac-surface: var(--theme-elevation-0);
+    --ac-ground: var(--theme-elevation-50);
   }
 
   /* ---------------------------------------------------------------- *
-   * Light palette — warm paper ground, near-black ink                 *
+   * The single warm ramp: light (0) → dark (1000)                     *
    * ---------------------------------------------------------------- */
-  :root,
-  [data-theme='light'] {
+  :root {
     --color-base-0: #ffffff;
     --color-base-50: #faf8f5;
-    --color-base-100: #f3efe9;
-    --color-base-150: #e9e3d9;
-    --color-base-200: #ded6c9;
-    --color-base-300: #c4baa9;
-    --color-base-400: #a89d8b;
-    --color-base-500: #8b8071;
-    --color-base-600: #6d6459;
-    --color-base-700: #514a42;
-    --color-base-800: #38332d;
-    --color-base-900: #26221e;
-    --color-base-1000: var(--ac-ink);
-
-    --theme-bg: #f6f3ee;
-    --theme-input-bg: #ffffff;
-    --theme-text: var(--ac-ink);
-    --theme-border-color: #e4ddd2;
-    --theme-overlay: rgba(29, 27, 25, 0.45);
+    --color-base-100: #f4f1ea;
+    --color-base-150: #ece7dd;
+    --color-base-200: #e2dbcd;
+    --color-base-250: #d6ccbb;
+    --color-base-300: #c8bca8;
+    --color-base-350: #b8ab95;
+    --color-base-400: #a89a83;
+    --color-base-450: #988a72;
+    --color-base-500: #877962;
+    --color-base-550: #776a54;
+    --color-base-600: #675b47;
+    --color-base-650: #584d3b;
+    --color-base-700: #4a4031;
+    --color-base-750: #3d3428;
+    --color-base-800: #322a20;
+    --color-base-850: #282119;
+    --color-base-900: #1f1a13;
+    --color-base-950: #19150f;
+    --color-base-1000: #14110f;
 
     /* Payload's de-facto accent is the blue ramp; repointing it to the
        Asticore gold recolours buttons, links and focus rings in one move. */
@@ -95,76 +112,44 @@
     --color-blue-950: #191203;
   }
 
-  /* ---------------------------------------------------------------- *
-   * Dark palette — warm charcoal, never pure black                    *
-   * ---------------------------------------------------------------- */
+  /* Dark: swap the surface roles, and lift the gold so it holds contrast
+     against a dark ground. The ramp itself is NOT redefined — Payload already
+     inverts it. */
   [data-theme='dark'] {
-    --color-base-0: #171614;
-    --color-base-50: #1e1c19;
-    --color-base-100: #24221e;
-    --color-base-150: #2d2a25;
-    --color-base-200: #37332d;
-    --color-base-300: #4a453d;
-    --color-base-400: #635c51;
-    --color-base-500: #837a6c;
-    --color-base-600: #a39a8b;
-    --color-base-700: #c0b8ab;
-    --color-base-800: #d8d2c8;
-    --color-base-900: #eae6df;
-    --color-base-1000: #f7f5f1;
+    --ac-surface: var(--theme-elevation-50);
+    --ac-ground: var(--theme-elevation-0);
 
-    --theme-bg: #131211;
-    --theme-input-bg: #1e1c19;
-    --theme-text: #f0ece5;
-    --theme-border-color: #302c26;
-    --theme-overlay: rgba(0, 0, 0, 0.65);
-
-    /* Gold needs to sit slightly brighter on dark to hold contrast. */
-    --color-blue-400: #d8b06a;
+    --color-blue-400: #dcb673;
     --color-blue-450: #d8b06a;
-    --color-blue-500: #cfa458;
-    --color-blue-550: #c0954b;
+    --color-blue-500: #d8b06a;
+    --color-blue-550: #c99f57;
+    --ac-gold: #d8b06a;
+    --ac-gold-soft: #e0bd80;
   }
 
-  /*
-   * "Auto": no data-theme attribute is set, so match the operating system.
-   * Guarded with :not([data-theme='light']) so an explicit light choice on a
-   * dark-mode machine is still respected.
-   */
+  /* Auto — no data-theme attribute, so follow the OS. Guarded so an explicit
+     light choice on a dark-mode machine still wins. */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
-      --color-base-0: #171614;
-      --color-base-50: #1e1c19;
-      --color-base-100: #24221e;
-      --color-base-150: #2d2a25;
-      --color-base-200: #37332d;
-      --color-base-300: #4a453d;
-      --color-base-400: #635c51;
-      --color-base-500: #837a6c;
-      --color-base-600: #a39a8b;
-      --color-base-700: #c0b8ab;
-      --color-base-800: #d8d2c8;
-      --color-base-900: #eae6df;
-      --color-base-1000: #f7f5f1;
+      --ac-surface: var(--theme-elevation-50);
+      --ac-ground: var(--theme-elevation-0);
 
-      --theme-bg: #131211;
-      --theme-input-bg: #1e1c19;
-      --theme-text: #f0ece5;
-      --theme-border-color: #302c26;
-      --theme-overlay: rgba(0, 0, 0, 0.65);
-
-      --color-blue-400: #d8b06a;
+      --color-blue-400: #dcb673;
       --color-blue-450: #d8b06a;
-      --color-blue-500: #cfa458;
-      --color-blue-550: #c0954b;
+      --color-blue-500: #d8b06a;
+      --color-blue-550: #c99f57;
+      --ac-gold: #d8b06a;
+      --ac-gold-soft: #e0bd80;
     }
   }
 
   /* ---------------------------------------------------------------- *
    * Soft-card surfaces                                                *
    * ---------------------------------------------------------------- */
+  html {
+    background: var(--ac-ground);
+  }
 
-  /* Document panels, list tables and cards get a raised, rounded surface. */
   .collection-list__wrap,
   .table,
   .document-fields__edit,
@@ -172,7 +157,7 @@
   .global-edit__form,
   .dashboard__card,
   .card {
-    background-color: var(--theme-elevation-0);
+    background-color: var(--ac-surface);
     border: 1px solid var(--theme-elevation-100);
     border-radius: var(--style-radius-l);
   }
@@ -187,11 +172,11 @@
   }
 
   .table thead th {
-    background-color: var(--theme-elevation-50);
+    background-color: var(--theme-elevation-100);
     font-size: 0.78rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--theme-elevation-600);
+    color: var(--theme-elevation-700);
     padding-top: calc(var(--base) * 0.42);
     padding-bottom: calc(var(--base) * 0.42);
   }
@@ -206,7 +191,6 @@
     background-color: var(--theme-elevation-50);
   }
 
-  /* Status as a tinted pill rather than bare text. */
   .pill {
     border-radius: 999px;
     font-weight: 600;
@@ -214,7 +198,8 @@
     padding: 2px 9px;
   }
 
-  /* Inputs: rounded, calm, gold focus ring. */
+  /* Inputs — let Payload's own --theme-input-bg drive the fill so it stays
+     correct in both themes; only the shape and focus ring are ours. */
   .field-type input[type='text'],
   .field-type input[type='number'],
   .field-type input[type='email'],
@@ -222,8 +207,7 @@
   .field-type textarea,
   .rs__control {
     border-radius: var(--style-radius-m);
-    border-color: var(--theme-elevation-150);
-    background-color: var(--theme-input-bg);
+    border-color: var(--theme-elevation-200);
   }
 
   .field-type input:focus,
@@ -234,29 +218,31 @@
     outline: none;
   }
 
-  /* Buttons */
   .btn {
     border-radius: var(--style-radius-m);
     font-weight: 600;
     letter-spacing: 0.01em;
   }
 
+  /* Gold is a mid-tone: it needs dark text on it in BOTH themes, so this is
+     pinned rather than derived from the elevation ramp. */
   .btn--style-primary {
     background-color: var(--ac-gold);
     border-color: var(--ac-gold);
-    color: #1d1b19;
+    color: #14110f;
   }
 
   .btn--style-primary:hover {
     background-color: var(--ac-gold-soft);
     border-color: var(--ac-gold-soft);
+    color: #14110f;
   }
 
   /* ---------------------------------------------------------------- *
    * Sidebar                                                           *
    * ---------------------------------------------------------------- */
   .nav {
-    background-color: var(--theme-elevation-50);
+    background-color: var(--ac-ground);
     border-right: 1px solid var(--theme-elevation-100);
   }
 
@@ -264,7 +250,7 @@
     font-size: 0.72rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--theme-elevation-500);
+    color: var(--theme-elevation-600);
     padding-top: calc(var(--base) * 0.3);
     padding-bottom: calc(var(--base) * 0.3);
   }
@@ -273,14 +259,15 @@
     border-radius: var(--style-radius-m);
     padding: 6px 10px;
     font-size: 0.9rem;
+    color: var(--theme-elevation-800);
   }
 
   .nav__link:hover {
     background-color: var(--theme-elevation-100);
+    color: var(--theme-elevation-1000);
     text-decoration: none;
   }
 
-  /* Top-of-sidebar link back to the dashboard. */
   .ac-nav-dashboard {
     display: flex;
     align-items: center;
@@ -288,8 +275,8 @@
     margin: 0 0 calc(var(--base) * 0.7);
     padding: 8px 11px;
     border-radius: var(--style-radius-m);
-    border: 1px solid var(--theme-elevation-150);
-    background-color: var(--theme-elevation-0);
+    border: 1px solid var(--theme-elevation-200);
+    background-color: var(--ac-surface);
     color: var(--theme-elevation-800);
     text-decoration: none;
     font-weight: 600;
@@ -308,7 +295,7 @@
   }
 
   .ac-nav-dashboard--active {
-    background-color: color-mix(in srgb, var(--ac-gold) 12%, transparent);
+    background-color: color-mix(in srgb, var(--ac-gold) 14%, transparent);
     border-color: var(--ac-gold);
     color: var(--theme-elevation-1000);
   }

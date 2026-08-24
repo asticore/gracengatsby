@@ -8,7 +8,7 @@ import { HeroBlock } from '@/components/blocks/HeroBlock'
 import { ImageTextBlock } from '@/components/blocks/ImageTextBlock'
 import { RichTextBlock } from '@/components/blocks/RichTextBlock'
 
-import type { Media } from '@/payload-types'
+import type { Media } from '@/engage-types'
 
 import { useResolvedMedia, useResolvedMediaList } from './useResolvedMedia'
 

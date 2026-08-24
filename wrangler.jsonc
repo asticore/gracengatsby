@@ -26,7 +26,7 @@
       // Next collects page data for API routes at build time) also goes through
       // getPlatformProxy() and never passes remoteBindings:false, so it tries to
       // open a real remote proxy tunnel during the Build phase too - which this
-      // Cloudflare Workers Build environment can't do. `payload migrate` itself
+      // Cloudflare Workers Build environment can't do. The CMS CLI's `migrate`
       // still only reaches a local emulated D1 during CI (a known limitation -
       // see deploy:database in package.json), so schema fixes that must land on
       // real prod D1 are applied via a plain `wrangler d1 execute --remote` step

@@ -1,34 +1,22 @@
 import { getPayloadClient } from '@/lib/payload'
+import { DEFAULT_FLAGS, FEATURES, type FeatureFlags, type FeatureKey } from '@/features/registry'
 
-export type FeatureFlags = {
-  ecommerce: boolean
-  events: boolean
-  blog: boolean
-  faq: boolean
-  accounts: boolean
-  lms: boolean
-}
+export type { FeatureFlags, FeatureKey }
 
-const DEFAULTS: FeatureFlags = {
-  ecommerce: true,
-  events: true,
-  blog: false,
-  faq: false,
-  accounts: false,
-  lms: false,
-}
-
+/**
+ * Reads the current feature flags from Site Settings, falling back to each
+ * feature's registry default when the global is unreadable or a flag has never
+ * been set. Deliberately never throws: a failure to read settings should
+ * degrade to defaults, not take the whole site down.
+ */
 export const getFeatureFlags = async (): Promise<FeatureFlags> => {
   const payload = await getPayloadClient()
   const settings = await payload.findGlobal({ slug: 'site-settings', depth: 0 }).catch((): null => null)
-  const features = settings?.features
+  const saved = (settings?.features ?? {}) as Partial<Record<FeatureKey, boolean | null | undefined>>
 
-  return {
-    ecommerce: features?.ecommerce ?? DEFAULTS.ecommerce,
-    events: features?.events ?? DEFAULTS.events,
-    blog: features?.blog ?? DEFAULTS.blog,
-    faq: features?.faq ?? DEFAULTS.faq,
-    accounts: features?.accounts ?? DEFAULTS.accounts,
-    lms: features?.lms ?? DEFAULTS.lms,
+  const flags = { ...DEFAULT_FLAGS }
+  for (const feature of FEATURES) {
+    flags[feature.key] = saved[feature.key] ?? feature.defaultEnabled
   }
+  return flags
 }

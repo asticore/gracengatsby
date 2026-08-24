@@ -71,6 +71,32 @@ export const AdminNavClient: React.FC<{
 }
 
 /**
+ * Top-of-sidebar link back to the portal dashboard. Sits above the groups so
+ * there is always a one-click route home, whatever you have drilled into.
+ */
+export const AdminNavDashboardLink: React.FC<{ href: string }> = ({ href }) => {
+  const pathname = usePathname()
+  const isActive = pathname === href || pathname === `${href}/`
+
+  return (
+    <Link
+      className={`ac-nav-dashboard ${isActive ? 'ac-nav-dashboard--active' : ''}`}
+      href={href}
+      id="nav-dashboard"
+      prefetch={false}
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
+        <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
+        <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
+        <rect x="9" y="9" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
+      </svg>
+      <span>Dashboard</span>
+    </Link>
+  )
+}
+
+/**
  * Equivalent of Payload's internal NavWrapper. Re-implemented here because
  * @payloadcms/next does not export it, but the pieces it depends on
  * (the `useNav` context) are public.

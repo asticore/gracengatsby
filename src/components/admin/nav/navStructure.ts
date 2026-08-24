@@ -25,6 +25,28 @@ export type NavGroupDef = {
   entities: NavEntityRef[]
 }
 
+/**
+ * Display-name overrides for sidebar entries.
+ *
+ * Inside the Settings group, every global is called "<Thing> Settings", which
+ * reads as "Settings › Blog Settings". The group heading already says Settings,
+ * so the suffix is dropped and only the subject is shown.
+ */
+export const NAV_LABEL_OVERRIDES: Record<string, string> = {
+  'site-settings': 'General',
+  'blog-settings': 'Blog',
+  'faq-settings': 'FAQs',
+  'shop-settings': 'Shop',
+  'seo-settings': 'SEO & Analytics',
+  'speed-settings': 'Speed',
+  'media-settings': 'Media',
+  'email-settings': 'Email',
+  'backup-settings': 'Backups',
+  'member-settings': 'Members',
+  'security-settings': 'Security',
+  'language-settings': 'Languages',
+}
+
 export const NAV_STRUCTURE: NavGroupDef[] = [
   {
     label: 'Content',
@@ -35,6 +57,10 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'events', type: 'collections' },
       { slug: 'event-rsvps', type: 'collections' },
       { slug: 'page-templates', type: 'collections' },
+      { slug: 'forms', type: 'collections' },
+      { slug: 'form-submissions', type: 'collections' },
+      { slug: 'ab-tests', type: 'collections' },
+      { slug: 'redirects', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'media', type: 'collections' },
     ],
@@ -55,9 +81,17 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'site-settings', type: 'globals' },
       { slug: 'header', type: 'globals' },
       { slug: 'footer', type: 'globals' },
+      { slug: 'seo-settings', type: 'globals' },
       { slug: 'blog-settings', type: 'globals' },
       { slug: 'faq-settings', type: 'globals' },
       { slug: 'shop-settings', type: 'globals' },
+      { slug: 'member-settings', type: 'globals' },
+      { slug: 'email-settings', type: 'globals' },
+      { slug: 'media-settings', type: 'globals' },
+      { slug: 'speed-settings', type: 'globals' },
+      { slug: 'security-settings', type: 'globals' },
+      { slug: 'language-settings', type: 'globals' },
+      { slug: 'backup-settings', type: 'globals' },
       { slug: 'integrations', type: 'globals' },
       { slug: 'users', type: 'collections' },
     ],

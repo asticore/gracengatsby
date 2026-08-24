@@ -7,12 +7,14 @@ import { AsticoreSaasComingSoon } from '@/components/branding/AsticoreSaasComing
 
 import {
   AdminNavClient,
+  AdminNavDashboardLink,
   AdminNavHamburger,
   AdminNavShell,
   type ResolvedNavEntity,
   type ResolvedNavGroup,
 } from './AdminNavClient'
-import { FALLBACK_GROUP_LABEL, NAV_STRUCTURE } from './navStructure'
+import { FALLBACK_GROUP_LABEL, NAV_LABEL_OVERRIDES, NAV_STRUCTURE } from './navStructure'
+import { DEFAULT_FLAGS, FEATURES, isCollectionEnabled, isGlobalEnabled, type FeatureFlags, type FeatureKey } from '@/features/registry'
 
 const baseClass = 'nav'
 
@@ -79,6 +81,21 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
 
   const adminRoute = payload.config.routes.admin
 
+  // Feature flags decide which collections/globals appear at all. Read straight
+  // from Site Settings rather than the helper in utilities/features, which
+  // builds its own Payload client - here we already have one.
+  const flags: FeatureFlags = { ...DEFAULT_FLAGS }
+  try {
+    const settings = await payload.findGlobal({ slug: 'site-settings', depth: 0 })
+    const saved = (settings?.features ?? {}) as Partial<Record<FeatureKey, boolean | null>>
+    for (const feature of FEATURES) {
+      flags[feature.key] = saved[feature.key] ?? feature.defaultEnabled
+    }
+  } catch {
+    // Settings unreadable (e.g. before the first migration) - fall back to
+    // defaults so the sidebar still renders rather than blanking the admin.
+  }
+
   // Labels can be a plain string, a locale-keyed record, or a function of the
   // i18n context. Resolve all three down to a display string, falling back to
   // the slug so an entity always has something readable in the sidebar.
@@ -104,9 +121,10 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     if (!visibleEntities.collections.includes(collection.slug)) continue
     if (collection.admin?.group === false) continue
     if (!permissions?.collections?.[collection.slug]?.read) continue
+    if (!isCollectionEnabled(collection.slug, flags)) continue
     available.set(`collections:${collection.slug}`, {
       slug: collection.slug,
-      label: resolveLabel(collection),
+      label: NAV_LABEL_OVERRIDES[collection.slug] ?? resolveLabel(collection),
       href: formatAdminURL({ adminRoute, path: `/collections/${collection.slug}` }),
       id: `nav-${collection.slug}`,
     })
@@ -116,9 +134,10 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     if (!visibleEntities.globals.includes(global.slug)) continue
     if (global.admin?.group === false) continue
     if (!permissions?.globals?.[global.slug]?.read) continue
+    if (!isGlobalEnabled(global.slug, flags)) continue
     available.set(`globals:${global.slug}`, {
       slug: global.slug,
-      label: resolveLabel(global),
+      label: NAV_LABEL_OVERRIDES[global.slug] ?? resolveLabel(global),
       href: formatAdminURL({ adminRoute, path: `/globals/${global.slug}` }),
       id: `nav-global-${global.slug}`,
     })
@@ -153,6 +172,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
   return (
     <AdminNavShell>
       <nav className={`${baseClass}__wrap`}>
+        <AdminNavDashboardLink href={formatAdminURL({ adminRoute, path: '' })} />
         <AdminNavClient groups={groups} openGroups={openGroups} />
         <AsticoreSaasComingSoon />
         <div className={`${baseClass}__controls`}>

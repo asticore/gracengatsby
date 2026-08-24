@@ -17,6 +17,7 @@ import { isAdmin } from '../access/ecommerceAccess'
  */
 export const SpeedSettings: GlobalConfig = {
   slug: 'speed-settings',
+  label: 'Speed',
   dbName: 'ac_speed_settings',
   admin: {
     group: 'Settings',

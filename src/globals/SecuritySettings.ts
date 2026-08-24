@@ -18,6 +18,7 @@ import { isAdmin } from '../access/ecommerceAccess'
  */
 export const SecuritySettings: GlobalConfig = {
   slug: 'security-settings',
+  label: 'Security',
   dbName: 'ac_security_settings',
   admin: {
     group: 'Settings',

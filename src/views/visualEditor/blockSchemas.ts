@@ -2,7 +2,7 @@
  * Client-side mirror of the block field configs in src/blocks/*.ts.
  *
  * These drive the element library and the auto-generated field panel in the
- * visual editor. They're kept separate from the real Payload Block configs
+ * visual editor. They're kept separate from the real CMS Block configs
  * (which live server-side and pull in server-only editor/access code) so this
  * file can be imported straight into a 'use client' bundle.
  *

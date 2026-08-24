@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
 
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 const SITE_URL = (process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/$/, '')
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
   const flags = await getFeatureFlags()
   const entries: MetadataRoute.Sitemap = [{ url: SITE_URL, changeFrequency: 'weekly', priority: 1 }]
 
@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (flags.ecommerce) {
     entries.push({ url: `${SITE_URL}/shop`, changeFrequency: 'daily' })
-    const { docs: products } = await payload.find({
+    const { docs: products } = await engine.find({
       collection: 'products',
       where: { _status: { equals: 'published' } },
       limit: 0,
@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (flags.events) {
     entries.push({ url: `${SITE_URL}/events`, changeFrequency: 'daily' })
-    const { docs: events } = await payload.find({
+    const { docs: events } = await engine.find({
       collection: 'events',
       where: { _status: { equals: 'published' } },
       limit: 0,
@@ -54,7 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (flags.blog) {
     entries.push({ url: `${SITE_URL}/blog`, changeFrequency: 'weekly' })
-    const { docs: posts } = await payload.find({
+    const { docs: posts } = await engine.find({
       collection: 'posts',
       where: { _status: { equals: 'published' } },
       limit: 0,

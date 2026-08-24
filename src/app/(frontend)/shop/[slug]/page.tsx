@@ -9,16 +9,16 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
 import { formatCurrency } from '@/lib/formatCurrency'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { Faq, Media, Product } from '@/payload-types'
+import type { Faq, Media, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 async function getProduct(slug: string) {
-  const payload = await getPayloadClient()
-  const { docs } = await payload.find({
+  const engine = await getEngine()
+  const { docs } = await engine.find({
     collection: 'products',
     where: { slug: { equals: slug } },
     limit: 1,
@@ -39,14 +39,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!flags.ecommerce) notFound()
 
   const { slug } = await params
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
   const product = await getProduct(slug)
 
   if (!product) {
     notFound()
   }
 
-  const [settings] = await Promise.all([payload.findGlobal({ slug: 'shop-settings' }).catch((): null => null)])
+  const [settings] = await Promise.all([engine.findGlobal({ slug: 'shop-settings' }).catch((): null => null)])
 
   const images = (product.images || []).filter(
     (img): img is Media => typeof img === 'object' && img !== null,
@@ -55,7 +55,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   let related: Product[] = []
   if (settings?.showRelatedProducts !== false && product.category) {
-    const { docs } = await payload.find({
+    const { docs } = await engine.find({
       collection: 'products',
       where: {
         and: [

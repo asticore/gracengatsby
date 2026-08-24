@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { ProductCard } from '@/components/ProductCard'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 
@@ -27,11 +27,11 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   if (!flags.ecommerce) notFound()
 
   const { category } = await searchParams
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
 
   const [settings, { docs: products }] = await Promise.all([
-    payload.findGlobal({ slug: 'shop-settings' }).catch((): null => null),
-    payload.find({
+    engine.findGlobal({ slug: 'shop-settings' }).catch((): null => null),
+    engine.find({
       collection: 'products',
       where: {
         and: [{ _status: { equals: 'published' } }, ...(category ? [{ category: { equals: category } }] : [])],

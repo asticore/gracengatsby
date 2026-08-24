@@ -4,9 +4,9 @@ import React from 'react'
 import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
 import { Providers } from '@/components/Providers'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
-import type { Media } from '@/payload-types'
+import type { Media } from '@/engage-types'
 
 import './styles.css'
 
@@ -77,12 +77,12 @@ type LinkSource = { label?: string | null; linkType?: string | null; page?: unkn
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
 
   const [settings, header, footer, resolvedPages] = await Promise.all([
-    payload.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null),
-    payload.findGlobal({ slug: 'header', depth: 1 }).catch((): null => null),
-    payload.findGlobal({ slug: 'footer', depth: 1 }).catch((): null => null),
+    engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null),
+    engine.findGlobal({ slug: 'header', depth: 1 }).catch((): null => null),
+    engine.findGlobal({ slug: 'footer', depth: 1 }).catch((): null => null),
     getAllResolvedPages().catch((): ResolvedPage[] => []),
   ])
 

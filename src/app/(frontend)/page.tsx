@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { EventCard } from '@/components/EventCard'
 import { ProductCard } from '@/components/ProductCard'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getHomepage } from '@/utilities/pagePaths'
 import { buildMetadata } from '@/utilities/seo'
 
@@ -36,17 +36,17 @@ export default async function HomePage() {
 }
 
 async function DefaultHomepage() {
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
   const now = new Date().toISOString()
 
   const [{ docs: products }, { docs: events }] = await Promise.all([
-    payload.find({
+    engine.find({
       collection: 'products',
       where: { _status: { equals: 'published' } },
       sort: '-createdAt',
       limit: 4,
     }),
-    payload.find({
+    engine.find({
       collection: 'events',
       where: {
         and: [{ _status: { equals: 'published' } }, { startDate: { greater_than_equal: now } }],

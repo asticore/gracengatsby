@@ -38,6 +38,16 @@ import { Integrations } from './globals/Integrations'
 import { BlogSettings } from './globals/BlogSettings'
 import { FaqSettings } from './globals/FaqSettings'
 import { ShopSettings } from './globals/ShopSettings'
+import { SeoSettings } from './globals/SeoSettings'
+import { SpeedSettings } from './globals/SpeedSettings'
+import { MediaSettings } from './globals/MediaSettings'
+import { EmailSettings } from './globals/EmailSettings'
+import { BackupSettings } from './globals/BackupSettings'
+import { MemberSettings } from './globals/MemberSettings'
+import { SecuritySettings } from './globals/SecuritySettings'
+import { LanguageSettings } from './globals/LanguageSettings'
+import { PaymentSettings } from './globals/PaymentSettings'
+import { FormSettings } from './globals/FormSettings'
 import { seoFields } from './fields/seo'
 import { customFieldsField } from './fields/customFields'
 
@@ -101,7 +111,25 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups],
-  globals: [Header, Footer, SiteSettings, Integrations, BlogSettings, FaqSettings, ShopSettings],
+  globals: [
+    Header,
+    Footer,
+    SiteSettings,
+    Integrations,
+    BlogSettings,
+    FaqSettings,
+    ShopSettings,
+    SeoSettings,
+    SpeedSettings,
+    MediaSettings,
+    EmailSettings,
+    BackupSettings,
+    MemberSettings,
+    SecuritySettings,
+    LanguageSettings,
+    PaymentSettings,
+    FormSettings,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

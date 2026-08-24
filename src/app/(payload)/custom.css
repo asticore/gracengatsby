@@ -1,0 +1,53 @@
+/*
+ * Asticore Engage — admin portal styling.
+ *
+ * Payload wraps its own styles in the `payload-default` cascade layer and
+ * leaves the `payload` layer for consumers, so anything declared here wins
+ * without needing !important. Overriding Payload's documented CSS custom
+ * properties (rather than targeting its class names) means the portal restyles
+ * cleanly and survives Payload upgrades.
+ *
+ * The full brand restyle lands once a direction is chosen from
+ * mockups/portal-directions.html. For now this file carries only the pieces
+ * that are already agreed: the sidebar dashboard link and feature-aware nav.
+ */
+
+@layer payload {
+  /* Top-of-sidebar link back to the dashboard. */
+  .ac-nav-dashboard {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 var(--base);
+    padding: 10px 12px;
+    border-radius: var(--style-radius-m);
+    border: 1px solid var(--theme-elevation-150);
+    color: var(--theme-elevation-800);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition:
+      background-color 100ms ease,
+      border-color 100ms ease,
+      color 100ms ease;
+  }
+
+  .ac-nav-dashboard:hover {
+    background-color: var(--theme-elevation-50);
+    border-color: var(--theme-elevation-250);
+    color: var(--theme-elevation-1000);
+    text-decoration: none;
+  }
+
+  .ac-nav-dashboard--active {
+    background-color: var(--theme-elevation-100);
+    border-color: var(--theme-elevation-300);
+    color: var(--theme-elevation-1000);
+  }
+
+  .ac-nav-dashboard svg {
+    flex-shrink: 0;
+    opacity: 0.75;
+  }
+}

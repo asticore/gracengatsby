@@ -14,7 +14,7 @@
  * Adding a feature means adding one entry here and nothing else structural.
  *
  * `tables` deliberately lists the BASE table names only. The cleanup tool
- * expands each into its real family at runtime - Payload's SQLite adapter also
+ * expands each into its real family at runtime - the CMS engine's SQLite adapter also
  * generates `<table>_rels`, `_<table>_v`, `<table>_locales` and one
  * `<table>_blocks_<block>` child per block type - because that expansion
  * changes as blocks are added and would rot if it were written out by hand.

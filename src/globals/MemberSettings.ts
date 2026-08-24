@@ -8,7 +8,7 @@ import { isAdmin } from '../access/ecommerceAccess'
  *
  * `defaultTier` is a plain text field holding a tier slug rather than a
  * relationship, because the Membership tiers collection does not exist in this
- * project yet. A relationship pointing at a collection Payload cannot find
+ * project yet. A relationship pointing at a collection the CMS cannot find
  * fails config validation at boot, which would take the whole admin down. Swap
  * this for `{ type: 'relationship', relationTo: 'membership-tiers' }` in the
  * same breath as adding that collection.

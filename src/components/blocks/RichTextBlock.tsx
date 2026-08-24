@@ -1,7 +1,7 @@
 import React from 'react'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 
-import type { Page } from '@/payload-types'
+import type { Page } from '@/engage-types'
 
 type RichTextBlockData = Extract<NonNullable<Page['blocks']>[number], { blockType: 'richText' }>
 

@@ -1,6 +1,6 @@
 import React from 'react'
 
-/** Replaces the Payload wordmark on the login screen with the Asticore Engage mark. */
+/** Replaces the stock CMS wordmark on the login screen with the Asticore Engage mark. */
 export const AsticoreLogo: React.FC = () => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

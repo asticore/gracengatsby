@@ -30,6 +30,6 @@ export const contentBlocks = [
  * The full page-builder block library, shared by Pages, Posts, Products and
  * Page Templates. Section is a layout container and only ever appears at the
  * top level of this list - the columns it holds are stored as JSON, so nesting
- * a section inside a section needs no extra Payload schema.
+ * a section inside a section needs no extra CMS schema.
  */
 export const pageBuilderBlocks = [SectionBlock, ...contentBlocks]

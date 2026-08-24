@@ -4,7 +4,7 @@ import type { Field } from 'payload'
  * The per-block "Design" settings, stored as one JSON column.
  *
  * Every page-builder block gets this appended (see `withBlockStyle` below).
- * It is JSON rather than ~25 discrete Payload fields on purpose: as discrete
+ * It is JSON rather than ~25 discrete CMS fields on purpose: as discrete
  * fields it would add twenty-five columns to every block table across Pages,
  * Posts, Products, Page Templates and the three settings globals - plus each
  * of their draft-version twins - for settings that are meant to be edited on

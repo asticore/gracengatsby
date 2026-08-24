@@ -11,7 +11,7 @@ import { isAdmin } from '../access/ecommerceAccess'
  * renders real inputs bound to keys inside that JSON.
  *
  * Doing it this way means adding a field is a content change, not a schema
- * migration - which matters here because this project's `payload migrate`
+ * migration - which matters here because this project's CLI `migrate`
  * cannot reach production D1 from CI (see the note on the D1 binding in
  * wrangler.jsonc). Values are readable from templates as {{field:<name>}}.
  */

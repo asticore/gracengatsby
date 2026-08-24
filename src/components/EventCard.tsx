@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 
-import type { Event, Media } from '@/payload-types'
+import type { Event, Media } from '@/engage-types'
 
 const dateFormatter = new Intl.DateTimeFormat('en-AU', {
   day: 'numeric',

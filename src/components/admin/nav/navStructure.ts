@@ -1,7 +1,7 @@
 /**
  * The admin sidebar's group structure.
  *
- * Payload's default nav groups entities by each collection/global's own
+ * The CMS engine's default nav groups entities by each collection/global's own
  * `admin.group`, which means plugin-provided collections (products, orders,
  * carts...) land in whatever group the plugin chose, and anything without a
  * group falls into generic "Collections"/"Globals" buckets. Declaring the

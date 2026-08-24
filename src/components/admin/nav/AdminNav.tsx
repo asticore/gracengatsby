@@ -18,9 +18,9 @@ import { DEFAULT_FLAGS, FEATURES, isCollectionEnabled, isGlobalEnabled, type Fea
 
 const baseClass = 'nav'
 
-// Payload hands nav components a wide set of server props; these are the ones
-// this nav actually reads. Typed loosely on purpose so a Payload minor bump
-// that adds props doesn't break the build.
+// The CMS engine hands nav components a wide set of server props; these are
+// the ones this nav actually reads. Typed loosely on purpose so a minor engine
+// bump that adds props doesn't break the build.
 type I18nLike = { language?: string; t: (key: string) => string }
 
 type AdminNavProps = {
@@ -44,8 +44,8 @@ type NavPreferences = { groups?: Record<string, { open?: boolean } | undefined> 
 
 /**
  * Reads the signed-in user's saved nav group open/closed state. Equivalent to
- * Payload's internal getNavPrefs, re-implemented because @payloadcms/next
- * does not export it.
+ * the CMS engine's internal getNavPrefs, re-implemented because the engine's
+ * Next integration does not export it.
  */
 async function getNavPreferences(req: AdminNavProps['req']): Promise<NavPreferences | null> {
   if (!req?.user?.collection) return null
@@ -75,18 +75,18 @@ async function getNavPreferences(req: AdminNavProps['req']): Promise<NavPreferen
 }
 
 export const AdminNav: React.FC<AdminNavProps> = async (props) => {
-  const { i18n, payload, permissions, req, visibleEntities } = props
+  const { i18n, payload: engine, permissions, req, visibleEntities } = props
 
-  if (!payload?.config) return null
+  if (!engine?.config) return null
 
-  const adminRoute = payload.config.routes.admin
+  const adminRoute = engine.config.routes.admin
 
   // Feature flags decide which collections/globals appear at all. Read straight
   // from Site Settings rather than the helper in utilities/features, which
-  // builds its own Payload client - here we already have one.
+  // builds its own engine client - here we already have one.
   const flags: FeatureFlags = { ...DEFAULT_FLAGS }
   try {
-    const settings = await payload.findGlobal({ slug: 'site-settings', depth: 0 })
+    const settings = await engine.findGlobal({ slug: 'site-settings', depth: 0 })
     const saved = (settings?.features ?? {}) as Partial<Record<FeatureKey, boolean | null>>
     for (const feature of FEATURES) {
       flags[feature.key] = saved[feature.key] ?? feature.defaultEnabled
@@ -117,7 +117,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
   // Index every entity the current user is allowed to see, keyed "type:slug".
   const available = new Map<string, ResolvedNavEntity>()
 
-  for (const collection of payload.config.collections) {
+  for (const collection of engine.config.collections) {
     if (!visibleEntities.collections.includes(collection.slug)) continue
     if (collection.admin?.group === false) continue
     if (!permissions?.collections?.[collection.slug]?.read) continue
@@ -130,7 +130,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     })
   }
 
-  for (const global of payload.config.globals) {
+  for (const global of engine.config.globals) {
     if (!visibleEntities.globals.includes(global.slug)) continue
     if (global.admin?.group === false) continue
     if (!permissions?.globals?.[global.slug]?.read) continue

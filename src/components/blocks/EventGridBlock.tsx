@@ -1,5 +1,5 @@
 import { EventCard } from '@/components/EventCard'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 
 export async function EventGridBlock({
   heading,
@@ -10,10 +10,10 @@ export async function EventGridBlock({
   showPast?: boolean | null
   limit?: number | null
 }) {
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
   const now = new Date().toISOString()
 
-  const { docs: events } = await payload.find({
+  const { docs: events } = await engine.find({
     collection: 'events',
     where: {
       and: [

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import { formatCurrency } from '@/lib/formatCurrency'
-import type { Media, Product } from '@/payload-types'
+import type { Media, Product } from '@/engage-types'
 
 const getImageURL = (product: Product): string | null => {
   const first = product.images?.[0]

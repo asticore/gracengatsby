@@ -21,13 +21,13 @@ export type ResolvedNavGroup = {
 /**
  * Client half of the custom admin nav.
  *
- * Behaves like Payload's DefaultNavClient with one deliberate difference:
+ * Behaves like the CMS engine's DefaultNavClient with one deliberate difference:
  * groups start COLLAPSED unless the user has explicitly opened them before.
- * Payload passes `isOpen={prefs?.[label]?.open}` which is `undefined` for a
+ * The engine passes `isOpen={prefs?.[label]?.open}` which is `undefined` for a
  * group the user has never toggled, and NavGroup treats `undefined` as open.
  * Defaulting that to `false` is what makes every group collapsed on a fresh
  * login while still respecting whatever the user opens afterwards (NavGroup
- * writes their choice back to their Payload preferences on toggle).
+ * writes their choice back to their saved portal preferences on toggle).
  */
 export const AdminNavClient: React.FC<{
   groups: ResolvedNavGroup[]
@@ -97,8 +97,8 @@ export const AdminNavDashboardLink: React.FC<{ href: string }> = ({ href }) => {
 }
 
 /**
- * Equivalent of Payload's internal NavWrapper. Re-implemented here because
- * @payloadcms/next does not export it, but the pieces it depends on
+ * Equivalent of the CMS engine's internal NavWrapper. Re-implemented here
+ * because the engine's Next integration does not export it, but the pieces it depends on
  * (the `useNav` context) are public.
  */
 export const AdminNavShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -122,7 +122,7 @@ export const AdminNavShell: React.FC<{ children: React.ReactNode }> = ({ childre
   )
 }
 
-/** Mobile-only close button, equivalent to Payload's internal NavHamburger. */
+/** Mobile-only close button, equivalent to the CMS engine's internal NavHamburger. */
 export const AdminNavHamburger: React.FC = () => {
   const { navOpen, setNavOpen } = useNav()
 

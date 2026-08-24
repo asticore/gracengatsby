@@ -1,7 +1,7 @@
 import React from 'react'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 
-import type { Faq } from '@/payload-types'
+import type { Faq } from '@/engage-types'
 
 export const FaqList: React.FC<{ faqs: Faq[]; layout?: 'accordion' | 'list'; groupByCategory?: boolean }> = ({
   faqs,

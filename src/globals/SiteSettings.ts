@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { isAdmin } from '../access/ecommerceAccess'
+import { featureToggleField } from '../features/featureToggleField'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
@@ -135,26 +136,6 @@ export const SiteSettings: GlobalConfig = {
         { name: 'siteIndexable', type: 'checkbox', defaultValue: true, admin: { description: 'Turn off to ask search engines not to index the whole site (useful pre-launch).' } },
       ],
     },
-    {
-      type: 'group',
-      name: 'features',
-      label: 'Features',
-      admin: {
-        description:
-          'Turn sections of the site on or off. Turning a feature off hides its nav links, storefront pages, and sitemap entries - it does not delete any data.',
-      },
-      fields: [
-        { type: 'row', fields: [
-          { name: 'ecommerce', type: 'checkbox', defaultValue: true, admin: { width: '33%', description: 'Shop, cart, checkout.' } },
-          { name: 'events', type: 'checkbox', defaultValue: true, admin: { width: '33%', description: 'Events calendar & RSVPs.' } },
-          { name: 'blog', type: 'checkbox', defaultValue: false, admin: { width: '33%' } },
-        ] },
-        { type: 'row', fields: [
-          { name: 'faq', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Standalone FAQ / knowledge base page.' } },
-          { name: 'accounts', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Customer accounts - coming in a later build phase.' } },
-          { name: 'lms', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Courses / LMS - coming in a later build phase.' } },
-        ] },
-      ],
-    },
+    featureToggleField,
   ],
 }

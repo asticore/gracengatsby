@@ -1,31 +1,299 @@
 /*
- * Asticore Engage — admin portal styling.
+ * Asticore Engage — admin portal theme.
  *
- * Payload wraps its own styles in the `payload-default` cascade layer and
- * leaves the `payload` layer for consumers, so anything declared here wins
- * without needing !important. Overriding Payload's documented CSS custom
- * properties (rather than targeting its class names) means the portal restyles
- * cleanly and survives Payload upgrades.
+ * Direction C ("Soft Cards"): rounded surfaces, tinted status pills, a warm
+ * neutral ground and the Asticore gold as the single accent — tightened to the
+ * denser sizing of Direction A so more fits on screen.
  *
- * The full brand restyle lands once a direction is chosen from
- * mockups/portal-directions.html. For now this file carries only the pieces
- * that are already agreed: the sidebar dashboard link and feature-aware nav.
+ * Two rules govern everything here:
+ *
+ *   1. Override Payload's documented CSS custom properties rather than its
+ *      class names. The variables are a supported surface; the class names are
+ *      internal and change between releases. Anything restyled through the
+ *      variables survives a Payload upgrade.
+ *   2. Declare inside `@layer payload`. Payload puts its own styles in
+ *      `payload-default`, and a later layer always wins regardless of
+ *      specificity — so none of this needs `!important`.
+ *
+ * Light and dark are both defined. Payload stamps `data-theme="light"` or
+ * `data-theme="dark"` on <html> when the user picks one explicitly, and stamps
+ * nothing when they leave it on "Auto" — so the media query below is what makes
+ * Auto follow the operating system. `admin.theme: 'all'` in payload.config.ts
+ * is what exposes that three-way choice in the UI.
  */
 
 @layer payload {
+  /* ---------------------------------------------------------------- *
+   * Brand tokens                                                      *
+   * ---------------------------------------------------------------- */
+  :root {
+    --ac-gold: #b9924b;
+    --ac-gold-soft: #c9a15a;
+    --ac-ink: #1d1b19;
+
+    /* Density: Payload derives most spacing from --base, which is
+       calc(--base-px * 1px). Dropping it from 20 to 17 tightens padding,
+       gutters and row heights everywhere at once rather than piecemeal. */
+    --base-px: 17;
+    --base-body-size: 12.5;
+
+    --style-radius-s: 5px;
+    --style-radius-m: 8px;
+    --style-radius-l: 14px;
+
+    --nav-width: 250px;
+    --app-header-height: 52px;
+    --doc-controls-height: 56px;
+    --gutter-h: calc(var(--base) * 1.15);
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Light palette — warm paper ground, near-black ink                 *
+   * ---------------------------------------------------------------- */
+  :root,
+  [data-theme='light'] {
+    --color-base-0: #ffffff;
+    --color-base-50: #faf8f5;
+    --color-base-100: #f3efe9;
+    --color-base-150: #e9e3d9;
+    --color-base-200: #ded6c9;
+    --color-base-300: #c4baa9;
+    --color-base-400: #a89d8b;
+    --color-base-500: #8b8071;
+    --color-base-600: #6d6459;
+    --color-base-700: #514a42;
+    --color-base-800: #38332d;
+    --color-base-900: #26221e;
+    --color-base-1000: var(--ac-ink);
+
+    --theme-bg: #f6f3ee;
+    --theme-input-bg: #ffffff;
+    --theme-text: var(--ac-ink);
+    --theme-border-color: #e4ddd2;
+    --theme-overlay: rgba(29, 27, 25, 0.45);
+
+    /* Payload's de-facto accent is the blue ramp; repointing it to the
+       Asticore gold recolours buttons, links and focus rings in one move. */
+    --color-blue-50: #fdf8ef;
+    --color-blue-100: #f7ecd6;
+    --color-blue-150: #f0e0bf;
+    --color-blue-200: #e6cf9f;
+    --color-blue-250: #dcbd7e;
+    --color-blue-300: #d2ab5e;
+    --color-blue-350: #c79c4f;
+    --color-blue-400: var(--ac-gold-soft);
+    --color-blue-450: var(--ac-gold);
+    --color-blue-500: var(--ac-gold);
+    --color-blue-550: #a9833f;
+    --color-blue-600: #977435;
+    --color-blue-650: #85652c;
+    --color-blue-700: #735623;
+    --color-blue-750: #61481b;
+    --color-blue-800: #4f3a14;
+    --color-blue-850: #3d2c0e;
+    --color-blue-900: #2b1f08;
+    --color-blue-950: #191203;
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Dark palette — warm charcoal, never pure black                    *
+   * ---------------------------------------------------------------- */
+  [data-theme='dark'] {
+    --color-base-0: #171614;
+    --color-base-50: #1e1c19;
+    --color-base-100: #24221e;
+    --color-base-150: #2d2a25;
+    --color-base-200: #37332d;
+    --color-base-300: #4a453d;
+    --color-base-400: #635c51;
+    --color-base-500: #837a6c;
+    --color-base-600: #a39a8b;
+    --color-base-700: #c0b8ab;
+    --color-base-800: #d8d2c8;
+    --color-base-900: #eae6df;
+    --color-base-1000: #f7f5f1;
+
+    --theme-bg: #131211;
+    --theme-input-bg: #1e1c19;
+    --theme-text: #f0ece5;
+    --theme-border-color: #302c26;
+    --theme-overlay: rgba(0, 0, 0, 0.65);
+
+    /* Gold needs to sit slightly brighter on dark to hold contrast. */
+    --color-blue-400: #d8b06a;
+    --color-blue-450: #d8b06a;
+    --color-blue-500: #cfa458;
+    --color-blue-550: #c0954b;
+  }
+
+  /*
+   * "Auto": no data-theme attribute is set, so match the operating system.
+   * Guarded with :not([data-theme='light']) so an explicit light choice on a
+   * dark-mode machine is still respected.
+   */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --color-base-0: #171614;
+      --color-base-50: #1e1c19;
+      --color-base-100: #24221e;
+      --color-base-150: #2d2a25;
+      --color-base-200: #37332d;
+      --color-base-300: #4a453d;
+      --color-base-400: #635c51;
+      --color-base-500: #837a6c;
+      --color-base-600: #a39a8b;
+      --color-base-700: #c0b8ab;
+      --color-base-800: #d8d2c8;
+      --color-base-900: #eae6df;
+      --color-base-1000: #f7f5f1;
+
+      --theme-bg: #131211;
+      --theme-input-bg: #1e1c19;
+      --theme-text: #f0ece5;
+      --theme-border-color: #302c26;
+      --theme-overlay: rgba(0, 0, 0, 0.65);
+
+      --color-blue-400: #d8b06a;
+      --color-blue-450: #d8b06a;
+      --color-blue-500: #cfa458;
+      --color-blue-550: #c0954b;
+    }
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Soft-card surfaces                                                *
+   * ---------------------------------------------------------------- */
+
+  /* Document panels, list tables and cards get a raised, rounded surface. */
+  .collection-list__wrap,
+  .table,
+  .document-fields__edit,
+  .collection-edit__form,
+  .global-edit__form,
+  .dashboard__card,
+  .card {
+    background-color: var(--theme-elevation-0);
+    border: 1px solid var(--theme-elevation-100);
+    border-radius: var(--style-radius-l);
+  }
+
+  .table {
+    overflow: hidden;
+  }
+
+  .table table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .table thead th {
+    background-color: var(--theme-elevation-50);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--theme-elevation-600);
+    padding-top: calc(var(--base) * 0.42);
+    padding-bottom: calc(var(--base) * 0.42);
+  }
+
+  .table tbody td {
+    padding-top: calc(var(--base) * 0.38);
+    padding-bottom: calc(var(--base) * 0.38);
+    border-top: 1px solid var(--theme-elevation-100);
+  }
+
+  .table tbody tr:hover td {
+    background-color: var(--theme-elevation-50);
+  }
+
+  /* Status as a tinted pill rather than bare text. */
+  .pill {
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 2px 9px;
+  }
+
+  /* Inputs: rounded, calm, gold focus ring. */
+  .field-type input[type='text'],
+  .field-type input[type='number'],
+  .field-type input[type='email'],
+  .field-type input[type='password'],
+  .field-type textarea,
+  .rs__control {
+    border-radius: var(--style-radius-m);
+    border-color: var(--theme-elevation-150);
+    background-color: var(--theme-input-bg);
+  }
+
+  .field-type input:focus,
+  .field-type textarea:focus,
+  .rs__control--is-focused {
+    border-color: var(--ac-gold);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac-gold) 22%, transparent);
+    outline: none;
+  }
+
+  /* Buttons */
+  .btn {
+    border-radius: var(--style-radius-m);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .btn--style-primary {
+    background-color: var(--ac-gold);
+    border-color: var(--ac-gold);
+    color: #1d1b19;
+  }
+
+  .btn--style-primary:hover {
+    background-color: var(--ac-gold-soft);
+    border-color: var(--ac-gold-soft);
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Sidebar                                                           *
+   * ---------------------------------------------------------------- */
+  .nav {
+    background-color: var(--theme-elevation-50);
+    border-right: 1px solid var(--theme-elevation-100);
+  }
+
+  .nav-group__toggle {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--theme-elevation-500);
+    padding-top: calc(var(--base) * 0.3);
+    padding-bottom: calc(var(--base) * 0.3);
+  }
+
+  .nav__link {
+    border-radius: var(--style-radius-m);
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+
+  .nav__link:hover {
+    background-color: var(--theme-elevation-100);
+    text-decoration: none;
+  }
+
   /* Top-of-sidebar link back to the dashboard. */
   .ac-nav-dashboard {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 0 0 var(--base);
-    padding: 10px 12px;
+    gap: 9px;
+    margin: 0 0 calc(var(--base) * 0.7);
+    padding: 8px 11px;
     border-radius: var(--style-radius-m);
     border: 1px solid var(--theme-elevation-150);
+    background-color: var(--theme-elevation-0);
     color: var(--theme-elevation-800);
     text-decoration: none;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1;
     transition:
       background-color 100ms ease,
@@ -34,20 +302,19 @@
   }
 
   .ac-nav-dashboard:hover {
-    background-color: var(--theme-elevation-50);
-    border-color: var(--theme-elevation-250);
+    border-color: var(--ac-gold);
     color: var(--theme-elevation-1000);
     text-decoration: none;
   }
 
   .ac-nav-dashboard--active {
-    background-color: var(--theme-elevation-100);
-    border-color: var(--theme-elevation-300);
+    background-color: color-mix(in srgb, var(--ac-gold) 12%, transparent);
+    border-color: var(--ac-gold);
     color: var(--theme-elevation-1000);
   }
 
   .ac-nav-dashboard svg {
     flex-shrink: 0;
-    opacity: 0.75;
+    color: var(--ac-gold);
   }
 }

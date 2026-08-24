@@ -6,6 +6,7 @@ import * as migration_20260822_055217_foundation_features from './20260822_05521
 import * as migration_20260822_120000_seed_home_and_templates from './20260822_120000_seed_home_and_templates';
 import * as migration_20260822_120859_fix_blocks_rels_tables from './20260822_120859_fix_blocks_rels_tables';
 import * as migration_20260822_234701_builder_sections_loops_custom_fields from './20260822_234701_builder_sections_loops_custom_fields';
+import * as migration_20260824_020721_settings_globals_and_features from './20260824_020721_settings_globals_and_features';
 
 export const migrations = [
   {
@@ -46,6 +47,11 @@ export const migrations = [
   {
     up: migration_20260822_234701_builder_sections_loops_custom_fields.up,
     down: migration_20260822_234701_builder_sections_loops_custom_fields.down,
-    name: '20260822_234701_builder_sections_loops_custom_fields'
+    name: '20260822_234701_builder_sections_loops_custom_fields',
+  },
+  {
+    up: migration_20260824_020721_settings_globals_and_features.up,
+    down: migration_20260824_020721_settings_globals_and_features.down,
+    name: '20260824_020721_settings_globals_and_features'
   },
 ];

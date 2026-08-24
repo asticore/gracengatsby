@@ -1,5 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
 
+import { applySchemaAdditions } from './schema/applySchema'
 import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from './schema/builderSchema'
 
 // Schema for the page-builder upgrade: the Section and Loop blocks, the shared
@@ -32,35 +33,18 @@ import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from './schema/builderSchema'
 //      the second pass must add nothing and the final schema must match target.
 
 export async function up({ db }: MigrateUpArgs): Promise<void> {
-  for (const entry of NEW_TABLES) {
-    await db.run(sql.raw(entry.sql))
-  }
-
-  const seen = new Map<string, Set<string>>()
-
-  for (const entry of NEW_COLUMNS) {
-    let present = seen.get(entry.table)
-
-    if (!present) {
-      present = new Set<string>()
-      try {
-        const info = (await db.all(sql.raw(`PRAGMA table_info(\`${entry.table}\`)`))) as { name: string }[]
-        for (const row of info) present.add(row.name)
-      } catch {
-        // Table missing entirely - the ADD below will surface the real problem.
-      }
-      seen.set(entry.table, present)
-    }
-
-    if (present.has(entry.column)) continue
-
-    await db.run(sql.raw(entry.sql))
-    present.add(entry.column)
-  }
-
-  for (const entry of NEW_INDEXES) {
-    await db.run(sql.raw(entry.sql))
-  }
+  await applySchemaAdditions({
+    tables: NEW_TABLES,
+    columns: NEW_COLUMNS,
+    indexes: NEW_INDEXES,
+    run: async (statement) => {
+      await db.run(sql.raw(statement))
+    },
+    columnsOf: async (table) => {
+      const info = (await db.all(sql.raw(`PRAGMA table_info(\`${table}\`)`))) as { name: string }[]
+      return info.map((row) => row.name)
+    },
+  })
 }
 
 export async function down({ payload }: MigrateDownArgs): Promise<void> {

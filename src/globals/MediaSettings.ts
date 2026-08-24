@@ -19,6 +19,7 @@ import { isAdmin } from '../access/ecommerceAccess'
  */
 export const MediaSettings: GlobalConfig = {
   slug: 'media-settings',
+  label: 'Media',
   dbName: 'ac_media_settings',
   admin: {
     group: 'Settings',

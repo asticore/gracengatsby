@@ -19,6 +19,7 @@ import { isAdmin } from '../access/ecommerceAccess'
  */
 export const MemberSettings: GlobalConfig = {
   slug: 'member-settings',
+  label: 'Members',
   dbName: 'ac_member_settings',
   admin: {
     group: 'Settings',

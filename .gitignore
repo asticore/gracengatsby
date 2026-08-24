@@ -73,3 +73,9 @@ src/migrations/*.json
 # It is also large enough (~170KB) to be awkward to transfer reliably. Excluded
 # so the config stays the single source of truth for these types.
 src/payload-types.ts
+
+# Local design scratch (theme mockups, layout comparisons). These are delivered
+# to review directly rather than kept in the repo - the direction that gets
+# chosen ends up implemented in src/app/(payload)/custom.css, which is the
+# thing worth version-controlling.
+/mockups/

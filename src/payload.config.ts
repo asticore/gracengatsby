@@ -92,6 +92,10 @@ export default buildConfig({
     meta: {
       titleSuffix: ' - Asticore Engage',
     },
+    // 'all' exposes the Light / Dark / Auto choice in the account menu. Auto
+    // sets no data-theme attribute, which is what lets the prefers-color-scheme
+    // block in custom.css follow the operating system.
+    theme: 'all',
     components: {
       graphics: {
         Icon: '@/components/branding/AsticoreIcon#AsticoreIcon',

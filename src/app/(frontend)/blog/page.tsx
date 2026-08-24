@@ -5,16 +5,16 @@ import React from 'react'
 import type { Metadata } from 'next'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { Media } from '@/payload-types'
+import type { Media } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const payload = await getPayloadClient()
-  const settings = await payload.findGlobal({ slug: 'blog-settings' }).catch((): null => null)
+  const engine = await getEngine()
+  const settings = await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)
   return buildMetadata({ title: settings?.archiveTitle || 'Journal' })
 }
 
@@ -22,10 +22,10 @@ export default async function BlogArchivePage() {
   const flags = await getFeatureFlags()
   if (!flags.blog) notFound()
 
-  const payload = await getPayloadClient()
-  const settings = await payload.findGlobal({ slug: 'blog-settings' }).catch((): null => null)
+  const engine = await getEngine()
+  const settings = await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)
 
-  const { docs: posts } = await payload.find({
+  const { docs: posts } = await engine.find({
     collection: 'posts',
     where: { _status: { equals: 'published' } },
     sort: '-publishedDate',

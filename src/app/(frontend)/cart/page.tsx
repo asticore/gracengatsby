@@ -4,7 +4,7 @@ import { useCart, useCurrency } from '@payloadcms/plugin-ecommerce/client/react'
 import Link from 'next/link'
 import React from 'react'
 
-import type { Product } from '@/payload-types'
+import type { Product } from '@/engage-types'
 
 export default function CartPage() {
   const { cart, decrementItem, incrementItem, removeItem, isLoading } = useCart()

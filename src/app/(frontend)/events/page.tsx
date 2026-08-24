@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { EventCard } from '@/components/EventCard'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 
@@ -16,12 +16,12 @@ export default async function EventsPage() {
   const flags = await getFeatureFlags()
   if (!flags.events) notFound()
 
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
 
   const now = new Date().toISOString()
 
   const [{ docs: upcoming }, { docs: past }] = await Promise.all([
-    payload.find({
+    engine.find({
       collection: 'events',
       where: {
         and: [{ _status: { equals: 'published' } }, { startDate: { greater_than_equal: now } }],
@@ -29,7 +29,7 @@ export default async function EventsPage() {
       sort: 'startDate',
       limit: 100,
     }),
-    payload.find({
+    engine.find({
       collection: 'events',
       where: {
         and: [{ _status: { equals: 'published' } }, { startDate: { less_than: now } }],

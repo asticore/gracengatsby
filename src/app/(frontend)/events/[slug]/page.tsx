@@ -6,10 +6,10 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import { AddToCartButton } from '@/components/AddToCartButton'
 import { RsvpForm } from '@/components/RsvpForm'
 import { formatCurrency } from '@/lib/formatCurrency'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { EventRsvp, Media, Product } from '@/payload-types'
+import type { EventRsvp, Media, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,8 +22,8 @@ const dateFormatter = new Intl.DateTimeFormat('en-AU', {
 })
 
 async function getEvent(slug: string) {
-  const payload = await getPayloadClient()
-  const { docs } = await payload.find({
+  const engine = await getEngine()
+  const { docs } = await engine.find({
     collection: 'events',
     where: { slug: { equals: slug } },
     depth: 2,

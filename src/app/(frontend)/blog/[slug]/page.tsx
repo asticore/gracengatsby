@@ -5,16 +5,16 @@ import type { Metadata } from 'next'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { Media, User } from '@/payload-types'
+import type { Media, User } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 async function getPost(slug: string) {
-  const payload = await getPayloadClient()
-  const { docs } = await payload.find({
+  const engine = await getEngine()
+  const { docs } = await engine.find({
     collection: 'posts',
     where: { slug: { equals: slug } },
     limit: 1,

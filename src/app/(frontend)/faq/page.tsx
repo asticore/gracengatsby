@@ -4,15 +4,15 @@ import type { Metadata } from 'next'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
-import { getPayloadClient } from '@/lib/payload'
+import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const payload = await getPayloadClient()
-  const settings = await payload.findGlobal({ slug: 'faq-settings' }).catch((): null => null)
+  const engine = await getEngine()
+  const settings = await engine.findGlobal({ slug: 'faq-settings' }).catch((): null => null)
   return buildMetadata({ title: settings?.pageTitle || 'FAQ' })
 }
 
@@ -20,10 +20,10 @@ export default async function FaqPage() {
   const flags = await getFeatureFlags()
   if (!flags.faq) notFound()
 
-  const payload = await getPayloadClient()
+  const engine = await getEngine()
   const [settings, { docs: faqs }] = await Promise.all([
-    payload.findGlobal({ slug: 'faq-settings' }).catch((): null => null),
-    payload.find({ collection: 'faqs', sort: 'order', limit: 200 }),
+    engine.findGlobal({ slug: 'faq-settings' }).catch((): null => null),
+    engine.find({ collection: 'faqs', sort: 'order', limit: 200 }),
   ])
 
   return (

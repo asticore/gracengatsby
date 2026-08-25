@@ -1,6 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
 
-// Payload's `layout`/`introBlocks` blocks fields were added to Products,
+// The `layout`/`introBlocks` blocks fields were added to Products,
 // Posts, ShopSettings, BlogSettings, and FaqSettings in earlier migrations,
 // but the block-child tables and top-level `_rels` tables those fields
 // actually need (one table per block type, e.g. `products_blocks_hero`,
@@ -8,7 +8,7 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
 // inside blocks like Gallery and FAQ) were never created. Querying any of
 // these collections/globals therefore failed in production with a generic
 // "Something went wrong" (D1 "no such table"). This migration adds exactly
-// those missing tables - generated via `payload migrate:create` against a
+// those missing tables - generated via the CLI's `migrate:create` against a
 // freshly-migrated local D1, then hand-filtered down to only the tables
 // that don't already exist (the raw output tries to recreate the entire
 // schema, same caveat noted in 20260822_055217_foundation_features.ts).

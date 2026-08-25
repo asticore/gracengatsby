@@ -23,7 +23,7 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
 export const FormSettings: GlobalConfig = {
   slug: 'form-settings',
   label: 'Forms',
-  dbName: 'ac_form_settings',
+  dbName: 'eg_form_settings',
   admin: {
     group: 'Settings',
     description:

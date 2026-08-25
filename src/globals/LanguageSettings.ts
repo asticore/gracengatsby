@@ -36,7 +36,7 @@ const LOCALE_OPTIONS = [
 export const LanguageSettings: GlobalConfig = {
   slug: 'language-settings',
   label: 'Languages',
-  dbName: 'ac_language_settings',
+  dbName: 'eg_language_settings',
   admin: {
     group: 'Settings',
     description:

@@ -1,6 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
 
-// Hand-authored (not the raw `payload migrate:create` output) so this only
+// Hand-authored (not the raw `migrate:create` CLI output) so this only
 // contains the true incremental delta against production. The local dev D1
 // used to generate the raw diff didn't have migrations 2-4 applied, so the
 // auto-generated file tried to recreate tables (pages, products, site_settings,

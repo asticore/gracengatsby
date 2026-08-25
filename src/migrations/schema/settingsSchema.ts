@@ -4,7 +4,7 @@
  * GENERATED, then committed - do not hand-edit. Produced by the same
  * diff-and-verify procedure documented in
  * src/migrations/20260822_234701_builder_sections_loops_custom_fields.ts:
- * build the schema Payload wants, diff it against the schema production has,
+ * build the schema the CMS config wants, diff it against the schema production has,
  * and keep only the additions. Purely additive - 15 tables, 10 columns,
  * 12 indexes, nothing dropped or rewritten.
  *

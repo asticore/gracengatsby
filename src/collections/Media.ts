@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  dbName: 'eg_media',
   admin: {
     group: 'Content',
   },

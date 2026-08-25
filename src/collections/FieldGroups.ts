@@ -17,6 +17,7 @@ import { isAdmin } from '../access/ecommerceAccess'
  */
 export const FieldGroups: CollectionConfig = {
   slug: 'field-groups',
+  dbName: 'eg_field_groups',
   labels: { singular: 'Field Group', plural: 'Field Groups' },
   admin: {
     useAsTitle: 'name',

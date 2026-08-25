@@ -8,6 +8,7 @@ import { customFieldsField } from '../fields/customFields'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
+  dbName: 'eg_posts',
   labels: { singular: 'Post', plural: 'Posts' },
   admin: {
     useAsTitle: 'title',

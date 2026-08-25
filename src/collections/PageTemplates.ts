@@ -5,6 +5,7 @@ import { pageBuilderBlocks } from '../blocks'
 
 export const PageTemplates: CollectionConfig = {
   slug: 'page-templates',
+  dbName: 'eg_page_templates',
   labels: { singular: 'Page Template', plural: 'Page Templates' },
   admin: {
     useAsTitle: 'name',

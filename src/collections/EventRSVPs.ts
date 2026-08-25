@@ -5,6 +5,7 @@ import { checkEventCapacity } from '../hooks/checkEventCapacity'
 
 export const EventRSVPs: CollectionConfig = {
   slug: 'event-rsvps',
+  dbName: 'eg_event_rsvps',
   labels: {
     singular: 'Event RSVP',
     plural: 'Event RSVPs',

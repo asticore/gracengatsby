@@ -8,6 +8,7 @@ import { customFieldsField } from '../fields/customFields'
 
 export const Events: CollectionConfig = {
   slug: 'events',
+  dbName: 'eg_events',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'startDate', 'eventType', '_status'],

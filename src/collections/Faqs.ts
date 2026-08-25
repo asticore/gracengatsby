@@ -5,6 +5,7 @@ import { customFieldsField } from '../fields/customFields'
 
 export const Faqs: CollectionConfig = {
   slug: 'faqs',
+  dbName: 'eg_faqs',
   labels: { singular: 'FAQ', plural: 'FAQs' },
   admin: {
     useAsTitle: 'question',

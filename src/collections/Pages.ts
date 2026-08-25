@@ -8,6 +8,7 @@ import { customFieldsField } from '../fields/customFields'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
+  dbName: 'eg_pages',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'slug', 'parent', 'isHomepage', '_status'],

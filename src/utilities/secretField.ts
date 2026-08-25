@@ -3,10 +3,16 @@ import type { FieldHook } from 'payload'
 
 /**
  * Encrypts/decrypts sensitive text fields (API keys, tokens) at rest using
- * AES-256-GCM, keyed off PAYLOAD_SECRET (an engine-level env var - its name is
- * fixed by the underlying CMS engine). This is defense-in-depth on top of
- * the field/global-level admin-only access control - even a raw DB dump
- * doesn't hand over the plaintext key.
+ * AES-256-GCM, keyed off the same secret the app config uses: ENGAGE_SECRET
+ * when set, otherwise PAYLOAD_SECRET (the engine-level env var whose name is
+ * fixed by the underlying CMS engine). Keeping the order identical to
+ * src/engage.config.ts matters - if the two ever disagreed, a deploy could
+ * sign sessions with one key and decrypt stored secrets with another.
+ *
+ * This is defense-in-depth on top of the field/global-level admin-only access
+ * control - even a raw DB dump doesn't hand over the plaintext key. Note the
+ * consequence: changing the secret makes existing encrypted values
+ * undecryptable, so they must be re-entered.
  *
  * Format stored in the DB: `enc:v1:<iv-hex>:<authTag-hex>:<ciphertext-hex>`
  */
@@ -14,7 +20,7 @@ import type { FieldHook } from 'payload'
 const PREFIX = 'enc:v1:'
 
 const getKey = (): Buffer => {
-  const secret = process.env.PAYLOAD_SECRET || ''
+  const secret = process.env.ENGAGE_SECRET || process.env.PAYLOAD_SECRET || ''
   return crypto.createHash('sha256').update(secret).digest()
 }
 

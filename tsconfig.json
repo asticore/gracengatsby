@@ -26,9 +26,18 @@
       "@/*": [
         "./src/*"
       ],
-      // Alias name is fixed by the underlying CMS engine - its CLI and its Next
-      // integration both resolve the config through this exact key. Only the
-      // path it points at is ours.
+      // Two aliases, one file, on purpose:
+      //
+      // "@engage-config" is ours - every file in src/ imports the config
+      // through this name.
+      //
+      // "@payload-config" must stay: the underlying CMS engine's own config
+      // discovery (its CLI and its Next integration) reads this exact key out
+      // of tsconfig to locate the config file. Removing it breaks them, even
+      // though nothing in src/ imports it any more.
+      "@engage-config": [
+        "./src/engage.config.ts"
+      ],
       "@payload-config": [
         "./src/engage.config.ts"
       ]

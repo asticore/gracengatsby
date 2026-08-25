@@ -7,6 +7,7 @@ import * as migration_20260822_120000_seed_home_and_templates from './20260822_1
 import * as migration_20260822_120859_fix_blocks_rels_tables from './20260822_120859_fix_blocks_rels_tables';
 import * as migration_20260822_234701_builder_sections_loops_custom_fields from './20260822_234701_builder_sections_loops_custom_fields';
 import * as migration_20260824_020721_settings_globals_and_features from './20260824_020721_settings_globals_and_features';
+import * as migration_20260825_033000_rename_tables_eg_prefix from './20260825_033000_rename_tables_eg_prefix';
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20260824_020721_settings_globals_and_features.up,
     down: migration_20260824_020721_settings_globals_and_features.down,
     name: '20260824_020721_settings_globals_and_features'
+  },
+  {
+    up: migration_20260825_033000_rename_tables_eg_prefix.up,
+    down: migration_20260825_033000_rename_tables_eg_prefix.down,
+    name: '20260825_033000_rename_tables_eg_prefix',
   },
 ];

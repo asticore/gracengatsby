@@ -1,7 +1,7 @@
 -- Part 2 of 4 - idempotent copy of 20260822_120859_fix_blocks_rels_tables.ts's
 -- up() migration, applied directly to real production D1 via
 -- `wrangler d1 execute --remote` in deploy:database (see package.json),
--- because payload migrate's Cloudflare binding proxy only reaches a local
+-- because the CMS CLI's migrate Cloudflare binding proxy only reaches a local
 -- emulated D1 during CI, not the real one. Safe to re-run every deploy:
 -- every statement uses IF NOT EXISTS. Split into 4 files to keep each one
 -- small enough to review/edit reliably.

@@ -19,7 +19,7 @@ import { isAdmin } from '../access/ecommerceAccess'
 export const SeoSettings: GlobalConfig = {
   slug: 'seo-settings',
   label: 'SEO & Analytics',
-  dbName: 'ac_seo_settings',
+  dbName: 'eg_seo_settings',
   admin: {
     group: 'Settings',
     description:

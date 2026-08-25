@@ -1,4 +1,4 @@
-import config from '@payload-config'
+import config from '@engage-config'
 import { getPayload } from 'payload'
 import { NextResponse } from 'next/server'
 

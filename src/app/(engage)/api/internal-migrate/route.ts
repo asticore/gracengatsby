@@ -1,9 +1,13 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { NextResponse } from 'next/server'
 
+import type { SchemaColumn, SchemaIndex, SchemaTable } from '@/migrations/schema/builderSchema'
+
+import { renameTables } from '@/migrations/schema/applyRenames'
 import { applySchemaAdditions } from '@/migrations/schema/applySchema'
 import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from '@/migrations/schema/builderSchema'
 import { SETTINGS_COLUMNS, SETTINGS_INDEXES, SETTINGS_TABLES } from '@/migrations/schema/settingsSchema'
+import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
 
 // Applies every additive schema change straight against the live D1 binding,
 // from inside the deployed Worker.
@@ -30,6 +34,37 @@ const SCHEMA_SETS = [
   { name: 'settings', tables: SETTINGS_TABLES, columns: SETTINGS_COLUMNS, indexes: SETTINGS_INDEXES },
 ]
 
+/**
+ * Pulls the table an index is created on out of its `CREATE INDEX ... ON
+ * \`table\` (...)` statement, so index entries can be filtered by table like
+ * the table and column entries already are.
+ */
+const indexTarget = (statement: string): string =>
+  statement.match(/\sON\s+`([^`]+)`/)?.[1] ?? ''
+
+/**
+ * The schema sets above were generated before the rename and still name the
+ * pre-`eg_` tables. Once a table has been renamed, its old name must not be
+ * touched again: `CREATE TABLE IF NOT EXISTS \`pages_blocks_hero\`` would
+ * happily create a second, empty table under the retired name.
+ *
+ * So every entry whose table has already moved is dropped. That is not a loss -
+ * the rename carried those tables, columns and indexes over intact, so the
+ * additions are already present under the new name. Entries for tables that
+ * have NOT been renamed yet (a database still mid-upgrade) are left in, and the
+ * next deploy renames them.
+ */
+function withoutRenamedTables<T extends { tables: SchemaTable[]; columns: SchemaColumn[]; indexes: SchemaIndex[] }>(
+  set: T,
+  renamedAway: Set<string>,
+): Pick<T, 'tables' | 'columns' | 'indexes'> {
+  return {
+    tables: set.tables.filter((entry) => !renamedAway.has(entry.table)),
+    columns: set.columns.filter((entry) => !renamedAway.has(entry.table)),
+    indexes: set.indexes.filter((entry) => !renamedAway.has(indexTarget(entry.sql))),
+  }
+}
+
 export async function POST(request: Request): Promise<Response> {
   if (request.headers.get(GUARD_HEADER) !== GUARD_VALUE) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -45,7 +80,42 @@ export async function POST(request: Request): Promise<Response> {
   const results: Record<string, unknown> = {}
   let errorCount = 0
 
-  for (const set of SCHEMA_SETS) {
+  const tableExists = async (table: string): Promise<boolean> => {
+    const result = await db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
+      .bind(table)
+      .all()
+    return (result.results?.length ?? 0) > 0
+  }
+
+  // Renames run FIRST: every additive step below has to see the final table
+  // names. Idempotent - a pair is only moved when the old table is still there
+  // and the new one is not (see applyRenames), so this is a no-op on an
+  // already-renamed database. SQLite carries each table's indexes across the
+  // rename; their names keep the old text, which is cosmetic and left alone.
+  const renameReport = await renameTables({
+    renames: TABLE_RENAMES,
+    exists: tableExists,
+    rename: (from, to) => db.prepare(`ALTER TABLE \`${from}\` RENAME TO \`${to}\``).run(),
+  })
+
+  errorCount += renameReport.errors.length
+  results['table-renames'] = renameReport
+
+  // Which old names are now gone for good, so the pre-rename schema sets below
+  // can skip them instead of recreating them empty.
+  const present = new Set(
+    (
+      (await db.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all())
+        .results as { name: string }[]
+    ).map((row) => row.name),
+  )
+  const renamedAway = new Set(
+    TABLE_RENAMES.filter((entry) => present.has(entry.to)).map((entry) => entry.from),
+  )
+
+  for (const rawSet of SCHEMA_SETS) {
+    const set = withoutRenamedTables(rawSet, renamedAway)
     const report = await applySchemaAdditions({
       tables: set.tables,
       columns: set.columns,
@@ -58,7 +128,7 @@ export async function POST(request: Request): Promise<Response> {
     })
 
     errorCount += report.errors.length
-    results[set.name] = report
+    results[rawSet.name] = report
   }
 
   return NextResponse.json({ ok: errorCount === 0, ...results }, { status: errorCount === 0 ? 200 : 500 })

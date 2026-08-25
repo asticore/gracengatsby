@@ -3,11 +3,11 @@
  * per-block `design` settings, and Field Groups (custom fields).
  *
  * GENERATED, then committed - do not hand-edit. Produced by diffing the schema
- * Payload wants against the schema production actually has, so it contains only
+ * the CMS config wants against the schema production actually has, so it contains only
  * additions: 24 new tables, 90 new columns, 79 new indexes, and nothing
  * destructive.
  *
- * This exists as data rather than a .sql file because `payload migrate` cannot
+ * This exists as data rather than a .sql file because the CLI's `migrate` cannot
  * reach production D1 from this CI environment (see the note on the D1 binding
  * in wrangler.jsonc), and `ALTER TABLE ADD COLUMN` has no `IF NOT EXISTS` form
  * in SQLite - so a plain SQL file could not safely be re-run on every deploy.

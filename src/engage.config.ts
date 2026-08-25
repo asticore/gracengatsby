@@ -167,8 +167,12 @@ export default buildConfig({
     FormSettings,
   ],
   editor: lexicalEditor(),
-  // Engine-level env var - the name is fixed by the underlying CMS engine.
-  secret: process.env.PAYLOAD_SECRET || '',
+  // ENGAGE_SECRET is the preferred name; PAYLOAD_SECRET is kept as a fallback
+  // so deployments that already set it keep working. The engine's own CLI
+  // (`migrate`, `generate:*`) still reads PAYLOAD_SECRET directly before this
+  // config is ever evaluated, so that variable must remain set for those
+  // commands - see .env.example and the package.json scripts.
+  secret: process.env.ENGAGE_SECRET || process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'engage-types.ts'),
   },
@@ -191,6 +195,7 @@ export default buildConfig({
         variants: false,
         productsCollectionOverride: ({ defaultCollection }) => ({
           ...defaultCollection,
+          dbName: 'eg_products',
           admin: {
             ...defaultCollection.admin,
             useAsTitle: 'title',
@@ -278,12 +283,37 @@ export default buildConfig({
           ],
         }),
       },
+      // The remaining shop collections are created by the ecommerce plugin
+      // rather than by us, so their table names can only be set through the
+      // per-collection override hooks the plugin exposes. Each one spreads the
+      // plugin's own default collection untouched and only adds `dbName`.
+      // Passing an object here (instead of `true`) still enables the
+      // collection - the plugin treats any truthy value as enabled.
       carts: {
         allowGuestCarts: true,
+        cartsCollectionOverride: ({ defaultCollection }) => ({
+          ...defaultCollection,
+          dbName: 'eg_carts',
+        }),
       },
-      orders: true,
-      transactions: true,
-      addresses: true,
+      orders: {
+        ordersCollectionOverride: ({ defaultCollection }) => ({
+          ...defaultCollection,
+          dbName: 'eg_orders',
+        }),
+      },
+      transactions: {
+        transactionsCollectionOverride: ({ defaultCollection }) => ({
+          ...defaultCollection,
+          dbName: 'eg_transactions',
+        }),
+      },
+      addresses: {
+        addressesCollectionOverride: ({ defaultCollection }) => ({
+          ...defaultCollection,
+          dbName: 'eg_addresses',
+        }),
+      },
       access: {
         isAdmin,
         adminOnlyFieldAccess,

@@ -20,7 +20,7 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
 export const PaymentSettings: GlobalConfig = {
   slug: 'payment-settings',
   label: 'Payments',
-  dbName: 'ac_payment_settings',
+  dbName: 'eg_payment_settings',
   admin: {
     group: 'Settings',
     description:

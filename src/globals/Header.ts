@@ -53,6 +53,7 @@ const linkFields = (allowChildren: boolean): Field[] => [
 
 export const Header: GlobalConfig = {
   slug: 'header',
+  dbName: 'eg_header',
   label: 'Header',
   admin: {
     group: 'Settings',

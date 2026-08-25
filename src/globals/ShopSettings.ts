@@ -5,6 +5,7 @@ import { pageBuilderBlocks } from '../blocks'
 
 export const ShopSettings: GlobalConfig = {
   slug: 'shop-settings',
+  dbName: 'eg_shop_settings',
   label: 'Shop',
   admin: {
     group: 'Settings',

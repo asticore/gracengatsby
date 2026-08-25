@@ -5,6 +5,7 @@ import { featureToggleField } from '../features/featureToggleField'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
+  dbName: 'eg_site_settings',
   label: 'General',
   admin: {
     group: 'Settings',

@@ -5,6 +5,7 @@ import { pageBuilderBlocks } from '../blocks'
 
 export const FaqSettings: GlobalConfig = {
   slug: 'faq-settings',
+  dbName: 'eg_faq_settings',
   label: 'FAQs',
   admin: {
     group: 'Settings',

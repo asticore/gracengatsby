@@ -5,6 +5,7 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
 
 export const Integrations: GlobalConfig = {
   slug: 'integrations',
+  dbName: 'eg_integrations',
   label: 'Integrations',
   admin: {
     group: 'Settings',

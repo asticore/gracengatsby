@@ -30,6 +30,7 @@ import { AdminNav as AdminNav_dc4fd4746f7f98760676e52d2bbade6c } from '@/compone
 import { AsticoreIcon as AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be } from '@/components/branding/AsticoreIcon'
 import { AsticoreLogo as AsticoreLogo_d8058b98a0709a82ff9282939ab6f374 } from '@/components/branding/AsticoreLogo'
 import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d } from '@payloadcms/storage-r2/client'
+import { Dashboard as Dashboard_14459cdb650c64c2bbd9c605e8597da4 } from '@/views/dashboard/Dashboard'
 import { VisualEditorView as VisualEditorView_da223d51a5f9f19f11d50591de54f372 } from '@/views/VisualEditor'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -67,6 +68,7 @@ export const importMap = {
   "@/components/branding/AsticoreIcon#AsticoreIcon": AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be,
   "@/components/branding/AsticoreLogo#AsticoreLogo": AsticoreLogo_d8058b98a0709a82ff9282939ab6f374,
   "@payloadcms/storage-r2/client#R2ClientUploadHandler": R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d,
+  "@/views/dashboard/Dashboard#Dashboard": Dashboard_14459cdb650c64c2bbd9c605e8597da4,
   "@/views/VisualEditor#VisualEditorView": VisualEditorView_da223d51a5f9f19f11d50591de54f372,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

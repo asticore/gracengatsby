@@ -196,6 +196,11 @@ const config = buildConfig({
       // afterNavLinks entry.
       Nav: '@/components/admin/nav/AdminNav#AdminNav',
       views: {
+        // Replaces the engine's default card grid. See views/dashboard for
+        // what it does differently and why.
+        dashboard: {
+          Component: '@/views/dashboard/Dashboard#Dashboard',
+        },
         visualEditor: {
           Component: '@/views/VisualEditor#VisualEditorView',
           path: '/visual-editor/:mode/:slug/:id?',

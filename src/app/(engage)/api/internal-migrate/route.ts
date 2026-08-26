@@ -6,6 +6,7 @@ import type { SchemaColumn, SchemaIndex, SchemaTable } from '@/migrations/schema
 import { renameTables } from '@/migrations/schema/applyRenames'
 import { applySchemaAdditions } from '@/migrations/schema/applySchema'
 import { bootstrapEngineTables } from '@/migrations/schema/engineBootstrap'
+import { ENGINE_TABLE_RENAMES } from '@/migrations/schema/engineTables'
 import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from '@/migrations/schema/builderSchema'
 import { SETTINGS_COLUMNS, SETTINGS_INDEXES, SETTINGS_TABLES } from '@/migrations/schema/settingsSchema'
 import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
@@ -139,8 +140,13 @@ export async function POST(request: Request): Promise<Response> {
         .results as { name: string }[]
     ).map((row) => row.name),
   )
+  // Engine renames count here too: the schema sets were generated when the
+  // locking table was still `payload_locked_documents_rels`, and any entry
+  // naming it now targets a table that no longer exists.
   const renamedAway = new Set(
-    TABLE_RENAMES.filter((entry) => present.has(entry.to)).map((entry) => entry.from),
+    [...TABLE_RENAMES, ...ENGINE_TABLE_RENAMES]
+      .filter((entry) => present.has(entry.to))
+      .map((entry) => entry.from),
   )
 
   for (const rawSet of SCHEMA_SETS) {

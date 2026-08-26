@@ -13,11 +13,10 @@
  * typed by hand. It must be run against a database that has not yet been
  * renamed. See the script's own header for the full procedure.
  *
- * Deliberately absent: payload_migrations, payload_preferences,
- * payload_preferences_rels, payload_locked_documents,
- * payload_locked_documents_rels and payload_kv (the engine's own bookkeeping -
- * renaming them breaks migration tracking and admin state), and Cloudflare's
- * own _cf_METADATA.
+ * Absent here, but NOT left alone: the engine's own bookkeeping tables
+ * (migration history, preferences, document locks, KV) are renamed separately
+ * by migrations/schema/engineTables.ts, together with the relationship columns
+ * that had to move with them. Only Cloudflare's own _cf_METADATA is untouched.
  */
 
 export const TABLE_RENAMES: { from: string; to: string }[] = [

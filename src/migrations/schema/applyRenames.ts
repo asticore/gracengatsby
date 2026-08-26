@@ -60,3 +60,65 @@ export async function renameTables(options: RenameOptions): Promise<RenameReport
 
   return report
 }
+
+export type ColumnRename = { table: string; from: string; to: string }
+
+export type RenameColumnOptions = {
+  columns: ColumnRename[]
+  /** Returns the column names of a table, or an empty array when it is absent. */
+  columnsOf: (table: string) => Promise<string[]>
+  renameColumn: (table: string, from: string, to: string) => Promise<unknown>
+  throwOnError?: boolean
+}
+
+/**
+ * Renames columns idempotently, on the same terms as renameTables above: the
+ * old column has to still be there and the new one must not be. A missing
+ * table is simply skipped, so the same list can be pointed at both the old and
+ * the new name of a table that may or may not have been renamed yet.
+ *
+ * `ALTER TABLE ... RENAME COLUMN` has been in SQLite since 3.25 and works on
+ * D1. It rewrites references in indexes and foreign keys for us, which is why
+ * this is worth doing instead of the copy-table dance.
+ */
+export async function renameColumns(options: RenameColumnOptions): Promise<RenameReport> {
+  const { columns, columnsOf, renameColumn, throwOnError = false } = options
+
+  const report: RenameReport = { renamed: 0, skipped: 0, errors: [] }
+
+  // One PRAGMA per table rather than per column.
+  const cache = new Map<string, string[]>()
+  const columnsForTable = async (table: string): Promise<string[]> => {
+    const cached = cache.get(table)
+    if (cached) return cached
+    const found = await columnsOf(table).catch((): string[] => [])
+    cache.set(table, found)
+    return found
+  }
+
+  for (const entry of columns) {
+    try {
+      const existing = await columnsForTable(entry.table)
+      if (!existing.includes(entry.from) || existing.includes(entry.to)) {
+        report.skipped++
+        continue
+      }
+
+      await renameColumn(entry.table, entry.from, entry.to)
+      // Keep the cache honest for any later entry on the same table.
+      cache.set(
+        entry.table,
+        existing.map((name) => (name === entry.from ? entry.to : name)),
+      )
+      report.renamed++
+    } catch (error) {
+      if (throwOnError) throw error
+      report.errors.push({
+        statement: `${entry.table}.${entry.from} -> ${entry.to}`,
+        error: String((error as Error)?.message || error),
+      })
+    }
+  }
+
+  return report
+}

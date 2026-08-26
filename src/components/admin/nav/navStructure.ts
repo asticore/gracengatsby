@@ -69,6 +69,8 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'speed-settings', type: 'globals' },
       { slug: 'security-settings', type: 'globals' },
       { slug: 'language-settings', type: 'globals' },
+      { slug: 'payment-settings', type: 'globals' },
+      { slug: 'form-settings', type: 'globals' },
       { slug: 'backup-settings', type: 'globals' },
       { slug: 'integrations', type: 'globals' },
       { slug: 'users', type: 'collections' },

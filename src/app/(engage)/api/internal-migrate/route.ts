@@ -5,6 +5,7 @@ import type { SchemaColumn, SchemaIndex, SchemaTable } from '@/migrations/schema
 
 import { renameTables } from '@/migrations/schema/applyRenames'
 import { applySchemaAdditions } from '@/migrations/schema/applySchema'
+import { bootstrapEngineTables } from '@/migrations/schema/engineBootstrap'
 import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from '@/migrations/schema/builderSchema'
 import { SETTINGS_COLUMNS, SETTINGS_INDEXES, SETTINGS_TABLES } from '@/migrations/schema/settingsSchema'
 import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
@@ -93,6 +94,34 @@ export async function POST(request: Request): Promise<Response> {
   // and the new one is not (see applyRenames), so this is a no-op on an
   // already-renamed database. SQLite carries each table's indexes across the
   // rename; their names keep the old text, which is cosmetic and left alone.
+  const columnsOf = async (table: string): Promise<string[]> => {
+    if (!(await tableExists(table))) return []
+    const result = await db.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+    return (result.results as { name: string }[]).map((row) => row.name)
+  }
+
+  // The engine's own bookkeeping goes first, and with it the relationship
+  // columns inside the locking and preferences `_rels` tables. Those columns
+  // are named after the TABLE of the collection they point at, so they had to
+  // move when the collections did - leaving them behind is what took the
+  // portal down. See migrations/schema/engineBootstrap.ts.
+  const engineReport = await bootstrapEngineTables({
+    exists: tableExists,
+    listTables: async () => {
+      const result = await db.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all()
+      return (result.results as { name: string }[]).map((row) => row.name)
+    },
+    columnsOf,
+    run: (statement) => db.prepare(statement).run(),
+    countRows: async (table) => {
+      const result = await db.prepare(`SELECT COUNT(*) AS n FROM \`${table}\``).all()
+      return ((result.results?.[0] as { n: number } | undefined)?.n ?? 0)
+    },
+  })
+
+  errorCount += engineReport.columns.errors.length + engineReport.tables.errors.length
+  results['engine-tables'] = engineReport
+
   const renameReport = await renameTables({
     renames: TABLE_RENAMES,
     exists: tableExists,
@@ -121,10 +150,7 @@ export async function POST(request: Request): Promise<Response> {
       columns: set.columns,
       indexes: set.indexes,
       run: (statement) => db.prepare(statement).run(),
-      columnsOf: async (table) => {
-        const result = await db.prepare(`PRAGMA table_info(\`${table}\`)`).all()
-        return (result.results as { name: string }[]).map((row) => row.name)
-      },
+      columnsOf,
     })
 
     errorCount += report.errors.length

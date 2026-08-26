@@ -46,7 +46,12 @@ import config from '@engage-config'
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outFile = path.join(projectRoot, 'src/migrations/schema/tableRenames.ts')
 
-/** Never renamed: the engine's own bookkeeping, plus Cloudflare's metadata table. */
+/**
+ * Excluded from THIS generator's output. The engine's bookkeeping tables are
+ * renamed too, but by hand in src/migrations/schema/engineTables.ts, because
+ * their config side needs a matching `dbName` patch that this script cannot
+ * infer. _cf_METADATA is Cloudflare's own and is never touched.
+ */
 const LEAVE_ALONE = new Set([
   'payload_migrations',
   'payload_preferences',
@@ -164,11 +169,10 @@ const header = `/**
  * typed by hand. It must be run against a database that has not yet been
  * renamed. See the script's own header for the full procedure.
  *
- * Deliberately absent: payload_migrations, payload_preferences,
- * payload_preferences_rels, payload_locked_documents,
- * payload_locked_documents_rels and payload_kv (the engine's own bookkeeping -
- * renaming them breaks migration tracking and admin state), and Cloudflare's
- * own _cf_METADATA.
+ * Absent here, but NOT left alone: the engine's own bookkeeping tables
+ * (migration history, preferences, document locks, KV) are renamed separately
+ * by migrations/schema/engineTables.ts, together with the relationship columns
+ * that had to move with them. Only Cloudflare's own _cf_METADATA is untouched.
  */
 
 export const TABLE_RENAMES: { from: string; to: string }[] = [

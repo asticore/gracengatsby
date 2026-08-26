@@ -85,7 +85,70 @@ const cloudflare =
     ? await getCloudflareContextFromWrangler()
     : await getCloudflareContext({ async: true })
 
-export default buildConfig({
+/**
+ * The engine builds four collections of its own - migration history, admin
+ * preferences, document locks and the KV store - and names their tables after
+ * itself. They are not exposed as config options, so their `dbName` is set on
+ * the sanitized config below, before the database adapter reads it to build
+ * the schema.
+ *
+ * Mirrored by ENGINE_COLLECTION_TABLES in src/migrations/schema/engineTables.ts,
+ * which is what actually moves the tables. Change one, change the other.
+ */
+const ENGINE_COLLECTION_TABLES: Record<string, string> = {
+  'payload-migrations': 'eg_migrations',
+  'payload-preferences': 'eg_preferences',
+  'payload-locked-documents': 'eg_locked_documents',
+  'payload-kv': 'eg_kv',
+}
+
+/**
+ * The database adapter, with one probe corrected.
+ *
+ * Before running anything, the migration runner checks whether a migration
+ * history table exists - and it builds that check from a hardcoded literal
+ * rather than from the collection's `dbName`. So once the history table is
+ * called `eg_migrations`, the check answers "no history table" against a
+ * database that plainly has one, and the runner cheerfully replays the entire
+ * chain from migration one. Which fails, loudly, on the first CREATE TABLE.
+ *
+ * Every other query the runner makes goes through the collection and so
+ * already uses the right name; this is the single place the old name is baked
+ * in. Rewriting just that one statement is far less invasive than keeping an
+ * empty `payload_migrations` table around as a decoy, and it fails safe: if a
+ * future version stops emitting this exact probe, the replacement simply never
+ * matches and nothing changes.
+ */
+const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
+
+const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
+  const base = sqliteD1Adapter(options)
+
+  return {
+    ...base,
+    init: (initArgs) => {
+      const adapter = base.init(initArgs)
+      const execute = adapter.execute.bind(adapter)
+
+      adapter.execute = (opts) => {
+        if (typeof opts?.raw === 'string' && opts.raw.includes(MIGRATION_TABLE_PROBE)) {
+          return execute({
+            ...opts,
+            raw: opts.raw.replace(
+              MIGRATION_TABLE_PROBE,
+              `name = '${ENGINE_COLLECTION_TABLES['payload-migrations']}'`,
+            ),
+          })
+        }
+        return execute(opts)
+      }
+
+      return adapter
+    },
+  }
+}
+
+const config = buildConfig({
   admin: {
     user: Users.slug,
     importMap: {
@@ -176,7 +239,18 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'engage-types.ts'),
   },
-  db: sqliteD1Adapter({ binding: cloudflare.env.D1 }),
+  db: engageD1Adapter({
+    binding: cloudflare.env.D1,
+    // Schema changes here go through migrations, always - production has no
+    // other route, since the CLI cannot reach the real D1 from CI (see the
+    // note on the binding in wrangler.jsonc). Leaving dev push on meant local
+    // ran a different mechanism from production, which is exactly where the
+    // eg_ rename came unstuck: push saw the renamed tables, decided columns
+    // and indexes needed creating, and either prompted for input no one could
+    // give or collided with what was already there. Off, dev matches
+    // production: run `payload migrate` after changing the schema.
+    push: false,
+  }),
   logger: isProduction ? cloudflareLogger : undefined,
   plugins: [
     r2Storage({
@@ -336,6 +410,19 @@ export default buildConfig({
     //  collection: 'users',
     //}),
   ],
+})
+
+export default config.then((sanitized) => {
+  // Runs once, at module load, before the adapter's `init` walks
+  // `config.collections` to build the schema - so setting `dbName` here has
+  // exactly the same effect as setting it on a collection we own.
+  for (const collection of sanitized.collections) {
+    const dbName = ENGINE_COLLECTION_TABLES[collection.slug]
+    if (dbName) {
+      collection.dbName = dbName
+    }
+  }
+  return sanitized
 })
 
 // Adapted from https://github.com/opennextjs/opennextjs-cloudflare/blob/d00b3a13e42e65aad76fba41774815726422cc39/packages/cloudflare/src/api/cloudflare-context.ts#L328C36-L328C46

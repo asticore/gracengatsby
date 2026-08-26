@@ -9,11 +9,11 @@ import { TABLE_RENAMES } from './schema/tableRenames'
 // `_eg_posts_v_rels`, and so on. The mapping itself is generated - see
 // ./schema/tableRenames.ts and scripts/generateTableRenames.mts.
 //
-// Deliberately NOT renamed: payload_migrations, payload_preferences,
-// payload_preferences_rels, payload_locked_documents,
-// payload_locked_documents_rels and payload_kv. Those are the engine's own
-// bookkeeping - renaming them breaks migration tracking and admin state.
-// Cloudflare's _cf_METADATA is left alone for the same reason.
+// Not handled here: the engine's own bookkeeping tables (migration history,
+// preferences, document locks, KV) and the relationship columns that point at
+// renamed collections. Those move in 20260826_090000_rename_engine_tables,
+// which also explains why the column half was not optional. Cloudflare's
+// _cf_METADATA is the only table left alone.
 //
 // Idempotent by construction, because this also runs on every deploy through
 // /api/internal-migrate: SQLite has no `ALTER TABLE ... RENAME IF EXISTS`, so

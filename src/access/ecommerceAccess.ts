@@ -16,6 +16,20 @@ export const adminOrPublishedStatus: Access = ({ req }) => {
   return { _status: { equals: 'published' } }
 }
 
+/**
+ * An admin, or the signed-in user asking about their own record.
+ *
+ * Needed because the Users collection is shared: the shop plugin maps
+ * customers onto it, so "any signed-in user" includes every customer who has
+ * ever checked out. Without this, the engine's default (anyone signed in) let
+ * a customer change an admin's email and password and then log in as them.
+ */
+export const isAdminOrSelf: Access = ({ req }) => {
+  if (checkRole(['admin'], req.user)) return true
+  if (!req.user) return false
+  return { id: { equals: req.user.id } }
+}
+
 export const isDocumentOwner: Access = ({ req }) => {
   if (checkRole(['admin'], req.user)) return true
   if (!req.user) return false

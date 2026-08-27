@@ -118,7 +118,7 @@ export const FEATURES: FeatureDef[] = [
     collections: ['redirects'],
     globals: ['seo-settings'],
     tables: ['redirects'],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'speed',
@@ -128,7 +128,7 @@ export const FEATURES: FeatureDef[] = [
     collections: [],
     globals: ['speed-settings'],
     tables: [],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'media',
@@ -138,7 +138,7 @@ export const FEATURES: FeatureDef[] = [
     collections: [],
     globals: ['media-settings'],
     tables: [],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'email',
@@ -148,7 +148,7 @@ export const FEATURES: FeatureDef[] = [
     collections: [],
     globals: ['email-settings'],
     tables: [],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'backups',
@@ -188,7 +188,7 @@ export const FEATURES: FeatureDef[] = [
     collections: [],
     globals: ['security-settings'],
     tables: [],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'multilingual',

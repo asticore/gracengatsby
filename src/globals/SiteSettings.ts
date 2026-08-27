@@ -3,10 +3,33 @@ import type { GlobalConfig } from 'payload'
 import { isAdmin } from '../access/ecommerceAccess'
 import { featureToggleField } from '../features/featureToggleField'
 
+/**
+ * The sidebar and dashboard are server-rendered from these feature flags, so a
+ * save has to drop whatever Next has cached for the admin route or the old menu
+ * survives until the next hard navigation. Imported lazily and swallowed on
+ * failure because the same hook runs from seeds and the CLI, where there is no
+ * request scope for `revalidatePath` to act on.
+ */
+const revalidateAdmin = async (adminRoute: string): Promise<void> => {
+  try {
+    const { revalidatePath } = await import('next/cache')
+    revalidatePath(adminRoute || '/admin', 'layout')
+  } catch {
+    // Not inside a request - nothing is cached to drop.
+  }
+}
+
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   dbName: 'eg_site_settings',
   label: 'General',
+  hooks: {
+    afterChange: [
+      async ({ req }) => {
+        await revalidateAdmin(req?.payload?.config?.routes?.admin ?? '/admin')
+      },
+    ],
+  },
   admin: {
     group: 'Settings',
     description:

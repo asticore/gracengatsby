@@ -31,6 +31,7 @@ import { PageTemplates } from './collections/PageTemplates'
 import { Posts } from './collections/Posts'
 import { Faqs } from './collections/Faqs'
 import { FieldGroups } from './collections/FieldGroups'
+import { AuditLog } from './features/security'
 import { Header } from './globals/Header'
 import { Footer } from './globals/Footer'
 import { SiteSettings } from './globals/SiteSettings'
@@ -214,7 +215,7 @@ const config = buildConfig({
       },
     },
   },
-  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups],
+  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog],
   globals: [
     Header,
     Footer,

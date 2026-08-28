@@ -8,6 +8,9 @@ import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
 import type { Media } from '@/engage-types'
 
+import { SeoBodyScripts, SeoJsonLd, SeoScripts } from '@/features/seo'
+import { SpeedHead } from '@/features/speed'
+
 import './styles.css'
 
 const cormorant = Cormorant_Garamond({
@@ -59,11 +62,9 @@ const RADIUS_VALUES: Record<string, string> = {
   round: '999px',
 }
 
-export const metadata = {
-  title: 'Grace & Gatsby',
-  description:
-    'Grace & Gatsby is a Brisbane boutique for considered style - shop the collection and see what is on.',
-}
+// Titles, descriptions, canonicals, Open Graph and the rest now come from the
+// SEO settings rather than being fixed here - see features/seo.
+export { generateSeoMetadata as generateMetadata } from '@/features/seo'
 
 // The root layout reads Header/Footer/Site Settings from the DB on every
 // request (so menu/theme edits show up immediately, no rebuild). That means
@@ -145,7 +146,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       data-btn={theme?.buttonStyle || 'solid'}
       data-hover={theme?.hoverEffect || 'fade'}
     >
+      <head>
+        <SpeedHead />
+      </head>
       <body>
+        <SeoScripts />
+        <SeoJsonLd />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${themeVars} }` }} />
         <Providers>
           <Header
@@ -175,6 +181,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             copyrightText={footer?.copyrightText}
           />
         </Providers>
+        <SeoBodyScripts />
       </body>
     </html>
   )

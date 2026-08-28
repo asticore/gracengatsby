@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import type { Payload, SanitizedCollectionConfig, SanitizedGlobalConfig } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 
@@ -61,8 +62,14 @@ type I18nLike = { language?: string; t: (key: never) => string }
  * Reads the feature flags from Site Settings using an engine client the caller
  * already has. Never throws: settings may be unreadable before the first
  * migration, and that should degrade to defaults rather than blank the admin.
+ *
+ * Memoised per request because the sidebar and the dashboard both need the
+ * flags and both render in the same pass, which otherwise means reading the
+ * same global twice - two D1 round trips for one answer. Keyed on the engine
+ * instance, which is a per-request singleton, so a miss only costs the query
+ * that would have run anyway.
  */
-export async function readFeatureFlags(engine: Payload): Promise<FeatureFlags> {
+export const readFeatureFlags = cache(async (engine: Payload): Promise<FeatureFlags> => {
   const flags: FeatureFlags = { ...DEFAULT_FLAGS }
   try {
     const settings = await engine.findGlobal({ slug: 'site-settings', depth: 0 })
@@ -74,7 +81,7 @@ export async function readFeatureFlags(engine: Payload): Promise<FeatureFlags> {
     // Defaults it is.
   }
   return flags
-}
+})
 
 /**
  * Labels come in three shapes - a plain string, a locale-keyed record, or a

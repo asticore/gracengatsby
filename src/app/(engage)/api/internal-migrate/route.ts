@@ -10,6 +10,7 @@ import { ENGINE_TABLE_RENAMES } from '@/migrations/schema/engineTables'
 import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from '@/migrations/schema/builderSchema'
 import { SETTINGS_COLUMNS, SETTINGS_INDEXES, SETTINGS_TABLES } from '@/migrations/schema/settingsSchema'
 import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
+import { hasInternalRouteKey } from '@/utilities/internalRouteGuard'
 
 // Applies every additive schema change straight against the live D1 binding,
 // from inside the deployed Worker.
@@ -24,11 +25,10 @@ import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
 // on an already-migrated database is a no-op - which is what makes it safe to
 // call on every deploy.
 //
-// Not a real secret: this only ever adds tables, columns and indexes and can
-// never drop or modify existing data, so the header is a guard against
-// accidental or crawler hits rather than a security boundary.
-const GUARD_HEADER = 'x-seed-key'
-const GUARD_VALUE = 'gracengatsby-seed'
+// Guarded by INTERNAL_ROUTE_KEY (see utilities/internalRouteGuard). It only
+// ever adds tables, columns and indexes and can never drop or modify existing
+// data - but each call runs unbounded D1 work, so it is not something to leave
+// open to the internet.
 
 /** Schema sets are applied in order; later sets may depend on earlier ones. */
 const SCHEMA_SETS = [
@@ -68,7 +68,7 @@ function withoutRenamedTables<T extends { tables: SchemaTable[]; columns: Schema
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (request.headers.get(GUARD_HEADER) !== GUARD_VALUE) {
+  if (!hasInternalRouteKey(request)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 

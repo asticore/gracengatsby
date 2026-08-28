@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { NextResponse } from 'next/server'
 
 import { seedHomeAndTemplates } from '@/seed/seedHomeAndTemplates'
+import { hasInternalRouteKey } from '@/utilities/internalRouteGuard'
 
 // Idempotent seed endpoint, hit over real HTTP against the deployed Worker
 // (see `deploy:seed` in package.json, run right after `deploy:app`) so it
@@ -13,11 +14,9 @@ import { seedHomeAndTemplates } from '@/seed/seedHomeAndTemplates'
 // starter content and is a full no-op once a Home page/templates exist, so
 // the header is just a guard against accidental/crawler hits rather than a
 // security boundary.
-const SEED_GUARD_HEADER = 'x-seed-key'
-const SEED_GUARD_VALUE = 'gracengatsby-seed'
 
 export async function POST(request: Request): Promise<Response> {
-  if (request.headers.get(SEED_GUARD_HEADER) !== SEED_GUARD_VALUE) {
+  if (!hasInternalRouteKey(request)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 

@@ -13,10 +13,12 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
  * and password are. Every other option below talks to its provider over an
  * ordinary web request instead, which Workers can do.
  *
- * The SMTP option is still listed rather than hidden, because someone
- * migrating from another host will look for it and needs to be told why it is
- * not an option - a missing entry reads as an oversight, a labelled one reads
- * as an answer.
+ * SMTP is therefore no longer offered as a provider - leaving it selectable
+ * meant a site could be configured into a state where nothing was ever sent and
+ * nothing said so. The SMTP fields themselves are kept, but only appear once a
+ * database already holds SMTP details, so an operator migrating from another
+ * host can still read their old settings off this screen while they move
+ * across. Nothing new is ever written there and nothing is ever sent from it.
  *
  * API keys are encrypted at rest in the database and readable only by admins,
  * so they can still be rotated from this screen. Treat these keys as you would
@@ -52,7 +54,6 @@ export const EmailSettings: GlobalConfig = {
         { label: 'Postmark', value: 'postmark' },
         { label: 'SendGrid', value: 'sendgrid' },
         { label: 'Cloudflare Email', value: 'cloudflare' },
-        { label: 'SMTP (not supported on Cloudflare Workers)', value: 'smtp' },
       ],
     },
     {
@@ -293,11 +294,14 @@ export const EmailSettings: GlobalConfig = {
     {
       type: 'group',
       name: 'smtp',
-      label: 'SMTP',
+      label: 'SMTP (old settings, cannot send)',
       admin: {
-        condition: (_, s) => s?.provider === 'smtp',
+        // Shown only where SMTP details already exist. A fresh install never
+        // sees this group at all; a site migrating in keeps its old details
+        // readable until it clears them.
+        condition: (_, s) => Boolean(s?.smtp?.host || s?.smtp?.username),
         description:
-          'SMTP cannot send email from this site. Cloudflare Workers, which this site runs on, cannot make the direct connection SMTP needs, so these details will be saved but no email will go out. Choose a different provider above. These fields are here so you can keep a record of your old settings while you migrate.',
+          'These are your old SMTP details, kept for reference only. Nothing is ever sent through them. This site runs on Cloudflare Workers, which cannot make the kind of direct connection SMTP needs, so pick one of the providers above and use the API key it gives you. Once you have moved across you can clear these fields.',
       },
       fields: [
         {
@@ -346,6 +350,17 @@ export const EmailSettings: GlobalConfig = {
           admin: {
             description:
               'Where the test message is sent. Use an inbox you can actually open, and check the spam folder if nothing arrives.',
+          },
+        },
+        {
+          // A ui field: it renders the send button and stores nothing, so no
+          // schema change comes with it.
+          name: 'sendTest',
+          type: 'ui',
+          admin: {
+            components: {
+              Field: '@/features/email/admin/SendTestEmailButton#SendTestEmailButton',
+            },
           },
         },
       ],

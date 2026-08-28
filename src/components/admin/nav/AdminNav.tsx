@@ -14,6 +14,7 @@ import {
   type ResolvedNavGroup,
 } from './AdminNavClient'
 import { readFeatureFlags, resolveEntityGroups } from '@/components/admin/shared/resolveEntities'
+import { SettingsRefresh } from '@/components/admin/shared/SettingsRefresh'
 
 const baseClass = 'nav'
 
@@ -100,6 +101,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
 
   return (
     <AdminNavShell>
+      <SettingsRefresh />
       <nav className={`${baseClass}__wrap`}>
         <AdminNavDashboardLink href={formatAdminURL({ adminRoute, path: '' })} />
         <AdminNavClient groups={groups} openGroups={openGroups} />

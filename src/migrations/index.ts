@@ -9,6 +9,7 @@ import * as migration_20260822_234701_builder_sections_loops_custom_fields from 
 import * as migration_20260824_020721_settings_globals_and_features from './20260824_020721_settings_globals_and_features';
 import * as migration_20260825_033000_rename_tables_eg_prefix from './20260825_033000_rename_tables_eg_prefix';
 import * as migration_20260826_090000_rename_engine_tables from './20260826_090000_rename_engine_tables';
+import * as migration_20260827_100000_security_audit_log from './20260827_100000_security_audit_log';
 
 export const migrations = [
   {
@@ -65,5 +66,10 @@ export const migrations = [
     up: migration_20260826_090000_rename_engine_tables.up,
     down: migration_20260826_090000_rename_engine_tables.down,
     name: '20260826_090000_rename_engine_tables',
+  },
+  {
+    up: migration_20260827_100000_security_audit_log.up,
+    down: migration_20260827_100000_security_audit_log.down,
+    name: '20260827_100000_security_audit_log',
   },
 ];

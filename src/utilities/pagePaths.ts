@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import type { Page } from '@/engage-types'
 import { getEngine } from '@/lib/engine'
 
@@ -11,8 +13,14 @@ export type ResolvedPage = { page: Page; path: string[]; ancestors: Page[] }
  * would need cascading updates whenever an ancestor's slug changes), we fetch
  * every published page once per request and walk each one's parent chain in
  * memory - simple and correct for a site of this size.
+ *
+ * Memoised per request because a single page render asks for this three times
+ * over - the root layout builds the nav from it, generateMetadata resolves the
+ * path, then the page itself resolves the same path again. Uncached that is
+ * three full scans of the pages table, and on Workers each one is its own D1
+ * round trip.
  */
-export const getAllResolvedPages = async (): Promise<ResolvedPage[]> => {
+export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
   const engine = await getEngine()
   const { docs } = await engine.find({
     collection: 'pages',
@@ -42,7 +50,7 @@ export const getAllResolvedPages = async (): Promise<ResolvedPage[]> => {
   }
 
   return docs.map((doc) => resolve(doc as Page))
-}
+})
 
 export const findPageByPath = async (segments: string[]): Promise<ResolvedPage | null> => {
   const all = await getAllResolvedPages()

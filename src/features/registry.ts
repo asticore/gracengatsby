@@ -108,7 +108,7 @@ export const FEATURES: FeatureDef[] = [
     collections: ['forms', 'form-submissions'],
     globals: [],
     tables: ['forms', 'form_submissions'],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'seo',
@@ -158,7 +158,7 @@ export const FEATURES: FeatureDef[] = [
     collections: ['backups'],
     globals: ['backup-settings'],
     tables: ['backups'],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'members',
@@ -195,10 +195,10 @@ export const FEATURES: FeatureDef[] = [
     label: 'Multilingual',
     description: 'Translate content into additional languages.',
     defaultEnabled: false,
-    collections: [],
+    collections: ['translations'],
     globals: ['language-settings'],
-    tables: [],
-    implemented: false,
+    tables: ['translations'],
+    implemented: true,
   },
   {
     key: 'accounts',

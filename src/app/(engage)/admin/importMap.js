@@ -27,11 +27,14 @@ import { OpenVisualEditorButton as OpenVisualEditorButton_27a3f39cf80f9138445cd4
 import { PriceCell as PriceCell_e27bf7b8cc50640dcdd584767b8eac3c } from '@payloadcms/plugin-ecommerce/client'
 import { PriceInput as PriceInput_b91672ccd6e8b071c11142ab941fedfb } from '@payloadcms/plugin-ecommerce/rsc'
 import { SendTestEmailButton as SendTestEmailButton_7ac16a5f70e74b6b38bca197ba3d6256 } from '@/features/email/admin/SendTestEmailButton'
+import { BackupPanel as BackupPanel_0645cad9a6770ce8d137ad2971387380 } from '@/features/backups/admin/BackupPanel'
 import { AdminNav as AdminNav_dc4fd4746f7f98760676e52d2bbade6c } from '@/components/admin/nav/AdminNav'
 import { AsticoreIcon as AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be } from '@/components/branding/AsticoreIcon'
 import { AsticoreLogo as AsticoreLogo_d8058b98a0709a82ff9282939ab6f374 } from '@/components/branding/AsticoreLogo'
 import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d } from '@payloadcms/storage-r2/client'
 import { Dashboard as Dashboard_14459cdb650c64c2bbd9c605e8597da4 } from '@/views/dashboard/Dashboard'
+import { TranslationsView as TranslationsView_c41315083d66c2f4bf042b5656a82057 } from '@/features/multilingual/views/TranslationsView'
+import { DatabaseView as DatabaseView_6633bb59b9d3764fee4759d8759ea351 } from '@/features/cleanup/DatabaseView'
 import { VisualEditorView as VisualEditorView_da223d51a5f9f19f11d50591de54f372 } from '@/views/VisualEditor'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -66,11 +69,14 @@ export const importMap = {
   "@payloadcms/plugin-ecommerce/client#PriceCell": PriceCell_e27bf7b8cc50640dcdd584767b8eac3c,
   "@payloadcms/plugin-ecommerce/rsc#PriceInput": PriceInput_b91672ccd6e8b071c11142ab941fedfb,
   "@/features/email/admin/SendTestEmailButton#SendTestEmailButton": SendTestEmailButton_7ac16a5f70e74b6b38bca197ba3d6256,
+  "@/features/backups/admin/BackupPanel#BackupPanel": BackupPanel_0645cad9a6770ce8d137ad2971387380,
   "@/components/admin/nav/AdminNav#AdminNav": AdminNav_dc4fd4746f7f98760676e52d2bbade6c,
   "@/components/branding/AsticoreIcon#AsticoreIcon": AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be,
   "@/components/branding/AsticoreLogo#AsticoreLogo": AsticoreLogo_d8058b98a0709a82ff9282939ab6f374,
   "@payloadcms/storage-r2/client#R2ClientUploadHandler": R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d,
   "@/views/dashboard/Dashboard#Dashboard": Dashboard_14459cdb650c64c2bbd9c605e8597da4,
+  "@/features/multilingual/views/TranslationsView#TranslationsView": TranslationsView_c41315083d66c2f4bf042b5656a82057,
+  "@/features/cleanup/DatabaseView#DatabaseView": DatabaseView_6633bb59b9d3764fee4759d8759ea351,
   "@/views/VisualEditor#VisualEditorView": VisualEditorView_da223d51a5f9f19f11d50591de54f372,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

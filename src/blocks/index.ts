@@ -8,6 +8,7 @@ import { LoopBlock } from './Loop'
 import { ProductGridBlock } from './ProductGrid'
 import { RichTextBlock } from './RichTextBlock'
 import { SectionBlock } from './Section'
+import { FormBlock } from '../features/forms/block'
 
 /**
  * Content blocks - the things that actually draw something. These are what can
@@ -24,6 +25,7 @@ export const contentBlocks = [
   FaqBlock,
   CtaBannerBlock,
   LoopBlock,
+  FormBlock,
 ]
 
 /**

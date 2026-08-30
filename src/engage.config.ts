@@ -32,6 +32,9 @@ import { Posts } from './collections/Posts'
 import { Faqs } from './collections/Faqs'
 import { FieldGroups } from './collections/FieldGroups'
 import { AuditLog } from './features/security'
+import { Forms, FormSubmissions } from './features/forms'
+import { Backups } from './features/backups'
+import { Translations } from './features/multilingual/translationsCollection'
 import { Header } from './globals/Header'
 import { Footer } from './globals/Footer'
 import { SiteSettings } from './globals/SiteSettings'
@@ -202,6 +205,22 @@ const config = buildConfig({
         dashboard: {
           Component: '@/views/dashboard/Dashboard#Dashboard',
         },
+        translations: {
+          Component: '@/features/multilingual/views/TranslationsView#TranslationsView',
+          path: '/translations',
+          meta: {
+            title: 'Translations',
+            description: 'Write every translation in one table.',
+          },
+        },
+        database: {
+          Component: '@/features/cleanup/DatabaseView#DatabaseView',
+          path: '/database',
+          meta: {
+            title: 'Database',
+            description: 'Per-feature table usage and cleanup.',
+          },
+        },
         visualEditor: {
           Component: '@/views/VisualEditor#VisualEditorView',
           path: '/visual-editor/:mode/:slug/:id?',
@@ -215,7 +234,7 @@ const config = buildConfig({
       },
     },
   },
-  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog],
+  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog, Forms, FormSubmissions, Backups, Translations],
   globals: [
     Header,
     Footer,

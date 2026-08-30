@@ -171,6 +171,24 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
   for (const groupDef of NAV_STRUCTURE) {
     const entities: ResolvedEntity[] = []
     for (const ref of groupDef.entities) {
+      // A custom screen has no collection or global behind it, so there is
+      // nothing to look up and no read permission to check - reaching the
+      // admin at all is the permission. Its label and path come from the nav
+      // structure itself.
+      if (ref.type === 'view') {
+        if (!ref.href) continue
+        entities.push({
+          slug: ref.slug,
+          type: 'collections',
+          label: ref.label || ref.slug,
+          singular: ref.label || ref.slug,
+          href: formatAdminURL({ adminRoute, path: ref.href as `/${string}` }),
+          createHref: null,
+          id: `nav-view-${ref.slug}`,
+        })
+        continue
+      }
+
       const key = `${ref.type}:${ref.slug}`
       const entity = available.get(key)
       if (!entity) continue

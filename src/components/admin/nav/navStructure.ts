@@ -16,8 +16,17 @@
 
 export type NavEntityRef = {
   slug: string
-  /** 'collections' links to /admin/collections/<slug>, 'globals' to /admin/globals/<slug>. */
-  type: 'collections' | 'globals'
+  /**
+   * 'collections' links to /admin/collections/<slug>, 'globals' to
+   * /admin/globals/<slug>, and 'view' to a custom screen at /admin/<href> -
+   * the translations table and the database tool are screens rather than
+   * documents, so they have no collection to hang off.
+   */
+  type: 'collections' | 'globals' | 'view'
+  /** Required for type 'view': the path under /admin. */
+  href?: string
+  /** Required for type 'view': there is no config entity to read a label from. */
+  label?: string
 }
 
 export type NavGroupDef = {
@@ -73,6 +82,8 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'form-settings', type: 'globals' },
       { slug: 'backup-settings', type: 'globals' },
       { slug: 'integrations', type: 'globals' },
+      { slug: 'translations', type: 'view', href: '/translations', label: 'Translations' },
+      { slug: 'database', type: 'view', href: '/database', label: 'Database' },
       { slug: 'users', type: 'collections' },
     ],
   },

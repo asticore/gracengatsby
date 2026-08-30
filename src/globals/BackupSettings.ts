@@ -349,5 +349,19 @@ export const BackupSettings: GlobalConfig = {
         },
       ],
     },
+    {
+      // Sits below the destination on purpose: both controls act on the SAVED
+      // settings, so putting them under the fields they depend on is the order
+      // an operator works in - fill in a destination, save, then prove it works
+      // before trusting the schedule to it.
+      name: 'runAndRestore',
+      type: 'ui',
+      label: 'Run and restore',
+      admin: {
+        components: {
+          Field: '@/features/backups/admin/BackupPanel#BackupPanel',
+        },
+      },
+    },
   ],
 }

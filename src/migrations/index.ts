@@ -10,6 +10,9 @@ import * as migration_20260824_020721_settings_globals_and_features from './2026
 import * as migration_20260825_033000_rename_tables_eg_prefix from './20260825_033000_rename_tables_eg_prefix';
 import * as migration_20260826_090000_rename_engine_tables from './20260826_090000_rename_engine_tables';
 import * as migration_20260827_100000_security_audit_log from './20260827_100000_security_audit_log';
+import * as migration_20260828_110000_forms from './20260828_110000_forms';
+import * as migration_20260828_120000_multilingual from './20260828_120000_multilingual';
+import * as migration_20260828_130000_backups from './20260828_130000_backups';
 
 export const migrations = [
   {
@@ -71,5 +74,20 @@ export const migrations = [
     up: migration_20260827_100000_security_audit_log.up,
     down: migration_20260827_100000_security_audit_log.down,
     name: '20260827_100000_security_audit_log',
+  },
+  {
+    up: migration_20260828_110000_forms.up,
+    down: migration_20260828_110000_forms.down,
+    name: '20260828_110000_forms',
+  },
+  {
+    up: migration_20260828_120000_multilingual.up,
+    down: migration_20260828_120000_multilingual.down,
+    name: '20260828_120000_multilingual',
+  },
+  {
+    up: migration_20260828_130000_backups.up,
+    down: migration_20260828_130000_backups.down,
+    name: '20260828_130000_backups',
   },
 ];

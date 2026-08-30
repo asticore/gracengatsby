@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { isAdmin } from '../access/ecommerceAccess'
+import { DEFAULT_LOCALE, LOCALE_OPTIONS } from '../features/multilingual/locales'
 
 /**
  * Multilingual content settings.
@@ -14,24 +15,12 @@ import { isAdmin } from '../access/ecommerceAccess'
  * Hence the warning on the group rather than buried on a field: the decision
  * costs nothing on day one and a great deal on day four hundred.
  *
- * The locale list is intentionally short and shared between the default and
- * the active list, so the two can never drift apart.
+ * The locale list is shared between the default and the active list, so the
+ * two can never drift apart. It lives in the feature folder rather than here
+ * because the switcher, the URL parser and the translation table all need the
+ * same codes and the same native names, and a second copy of a locale list is
+ * a second copy that goes stale.
  */
-
-const LOCALE_OPTIONS = [
-  { label: 'English (Australia)', value: 'en-AU' },
-  { label: 'English (United Kingdom)', value: 'en-GB' },
-  { label: 'English (United States)', value: 'en-US' },
-  { label: 'French', value: 'fr' },
-  { label: 'German', value: 'de' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'Italian', value: 'it' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Chinese', value: 'zh' },
-  { label: 'Japanese', value: 'ja' },
-  { label: 'Korean', value: 'ko' },
-  { label: 'Arabic', value: 'ar' },
-]
 
 export const LanguageSettings: GlobalConfig = {
   slug: 'language-settings',
@@ -68,7 +57,7 @@ export const LanguageSettings: GlobalConfig = {
             {
               name: 'defaultLocale',
               type: 'select',
-              defaultValue: 'en-AU',
+              defaultValue: DEFAULT_LOCALE,
               admin: {
                 width: '50%',
                 description: 'Your primary language. This is what visitors get when nothing else fits, and what you write in first.',
@@ -82,7 +71,7 @@ export const LanguageSettings: GlobalConfig = {
               admin: {
                 width: '50%',
                 description:
-                  'Every language your site is offered in, including the primary one. Add languages sparingly - each is a full copy of your content that somebody has to write and keep current.',
+                  'Every language your site is offered in, including the primary one. Each one gets a column on the Translations screen at /admin/translations, where the writing is actually done. Add languages sparingly - each is a full copy of your content that somebody has to write and keep current.',
               },
               options: LOCALE_OPTIONS,
             },

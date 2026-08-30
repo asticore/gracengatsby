@@ -168,7 +168,7 @@ export const FEATURES: FeatureDef[] = [
     collections: ['membership-tiers', 'memberships'],
     globals: ['member-settings'],
     tables: ['membership_tiers', 'memberships'],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'abTesting',
@@ -185,9 +185,9 @@ export const FEATURES: FeatureDef[] = [
     label: 'Security',
     description: 'Login protection, headers, rate limiting and an audit log.',
     defaultEnabled: true,
-    collections: [],
+    collections: ['membership-tiers', 'memberships'],
     globals: ['security-settings'],
-    tables: [],
+    tables: ['membership_tiers', 'memberships'],
     implemented: true,
   },
   {
@@ -215,10 +215,10 @@ export const FEATURES: FeatureDef[] = [
     label: 'Courses',
     description: 'Course content and student progress.',
     defaultEnabled: false,
-    collections: [],
+    collections: ['courses', 'lessons', 'enrolments', 'lesson-progress'],
     globals: [],
-    tables: [],
-    implemented: false,
+    tables: ['courses', 'lessons', 'enrolments', 'lesson_progress'],
+    implemented: true,
   },
 ]
 

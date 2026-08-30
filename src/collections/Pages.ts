@@ -5,6 +5,7 @@ import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
 import { formatSlugHook, slugify } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
+import { membersOnlyField } from '@/features/members'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -114,6 +115,7 @@ export const Pages: CollectionConfig = {
       admin: { initCollapsed: true },
     },
     customFieldsField,
+    membersOnlyField,
   ],
   hooks: {
     beforeValidate: [

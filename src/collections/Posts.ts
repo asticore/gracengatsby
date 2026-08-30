@@ -5,6 +5,7 @@ import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
 import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
+import { membersOnlyField } from '@/features/members'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -66,5 +67,6 @@ export const Posts: CollectionConfig = {
     },
     seoFields,
     customFieldsField,
+    membersOnlyField,
   ],
 }

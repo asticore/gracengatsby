@@ -13,6 +13,8 @@ import * as migration_20260827_100000_security_audit_log from './20260827_100000
 import * as migration_20260828_110000_forms from './20260828_110000_forms';
 import * as migration_20260828_120000_multilingual from './20260828_120000_multilingual';
 import * as migration_20260828_130000_backups from './20260828_130000_backups';
+import * as migration_20260830_110000_members from './20260830_110000_members';
+import * as migration_20260830_120000_courses from './20260830_120000_courses';
 
 export const migrations = [
   {
@@ -89,5 +91,15 @@ export const migrations = [
     up: migration_20260828_130000_backups.up,
     down: migration_20260828_130000_backups.down,
     name: '20260828_130000_backups',
+  },
+  {
+    up: migration_20260830_110000_members.up,
+    down: migration_20260830_110000_members.down,
+    name: '20260830_110000_members',
+  },
+  {
+    up: migration_20260830_120000_courses.up,
+    down: migration_20260830_120000_courses.down,
+    name: '20260830_120000_courses',
   },
 ];

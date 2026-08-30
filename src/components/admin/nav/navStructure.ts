@@ -63,6 +63,22 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     ],
   },
   {
+    label: 'Members',
+    entities: [
+      { slug: 'membership-tiers', type: 'collections' },
+      { slug: 'memberships', type: 'collections' },
+    ],
+  },
+  {
+    label: 'Courses',
+    entities: [
+      { slug: 'courses', type: 'collections' },
+      { slug: 'lessons', type: 'collections' },
+      { slug: 'enrolments', type: 'collections' },
+      { slug: 'lesson-progress', type: 'collections' },
+    ],
+  },
+  {
     label: 'Settings',
     entities: [
       { slug: 'site-settings', type: 'globals' },

@@ -35,6 +35,9 @@ import { AuditLog } from './features/security'
 import { Forms, FormSubmissions } from './features/forms'
 import { Backups } from './features/backups'
 import { Translations } from './features/multilingual/translationsCollection'
+import { MembershipTiers, Memberships } from './features/members'
+import { membershipWebhooks } from './features/members/webhooks'
+import { Courses, Lessons, Enrolments, LessonProgress } from './features/courses'
 import { Header } from './globals/Header'
 import { Footer } from './globals/Footer'
 import { SiteSettings } from './globals/SiteSettings'
@@ -234,7 +237,7 @@ const config = buildConfig({
       },
     },
   },
-  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog, Forms, FormSubmissions, Backups, Translations],
+  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog, Forms, FormSubmissions, Backups, Translations, MembershipTiers, Memberships, Courses, Lessons, Enrolments, LessonProgress],
   globals: [
     Header,
     Footer,
@@ -427,6 +430,7 @@ const config = buildConfig({
             publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
             secretKey: process.env.STRIPE_SECRET_KEY || '',
             webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+            webhooks: membershipWebhooks,
           }),
         ],
       },

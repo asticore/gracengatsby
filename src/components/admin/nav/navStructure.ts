@@ -47,6 +47,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'forms', type: 'collections' },
       { slug: 'form-submissions', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },
+      { slug: 'ab-test-results', type: 'view', href: '/ab-test-results', label: 'A/B results' },
       { slug: 'redirects', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'media', type: 'collections' },

@@ -122,6 +122,11 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       .filter((link): link is NavLink => Boolean(link))
 
   const navLinks = buildLinks(header?.menu)
+
+
+  // The account area adds one header link of its own, only while it is on.
+
+  if (features?.accounts) navLinks.push({ href: '/account', label: 'Account' })
   const footerColumns = (footer?.columns || []).map((column) => ({
     title: column.title,
     links: buildLinks(column.links).map((l) => ({ href: l.href, label: l.label })),

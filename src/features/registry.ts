@@ -178,7 +178,7 @@ export const FEATURES: FeatureDef[] = [
     collections: ['ab-tests'],
     globals: [],
     tables: ['ab_tests'],
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'security',
@@ -207,8 +207,8 @@ export const FEATURES: FeatureDef[] = [
     defaultEnabled: false,
     collections: [],
     globals: [],
-    tables: [],
-    implemented: false,
+    tables: ['ab_tests', 'ab_events', 'ab_stats'],
+    implemented: true,
   },
   {
     key: 'lms',

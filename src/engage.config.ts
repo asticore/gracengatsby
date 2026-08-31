@@ -38,6 +38,7 @@ import { Translations } from './features/multilingual/translationsCollection'
 import { MembershipTiers, Memberships } from './features/members'
 import { membershipWebhooks } from './features/members/webhooks'
 import { Courses, Lessons, Enrolments, LessonProgress } from './features/courses'
+import { ABTests } from './features/abTesting'
 import { Header } from './globals/Header'
 import { Footer } from './globals/Footer'
 import { SiteSettings } from './globals/SiteSettings'
@@ -224,6 +225,14 @@ const config = buildConfig({
             description: 'Per-feature table usage and cleanup.',
           },
         },
+        abTestResults: {
+          Component: '@/features/abTesting/components/ABResultsView#ABResultsView',
+          path: '/ab-test-results',
+          meta: {
+            title: 'A/B test results',
+            description: 'Per-variant visitors, conversions and confidence.',
+          },
+        },
         visualEditor: {
           Component: '@/views/VisualEditor#VisualEditorView',
           path: '/visual-editor/:mode/:slug/:id?',
@@ -237,7 +246,7 @@ const config = buildConfig({
       },
     },
   },
-  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog, Forms, FormSubmissions, Backups, Translations, MembershipTiers, Memberships, Courses, Lessons, Enrolments, LessonProgress],
+  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog, Forms, FormSubmissions, Backups, Translations, MembershipTiers, Memberships, Courses, Lessons, Enrolments, LessonProgress, ABTests],
   globals: [
     Header,
     Footer,

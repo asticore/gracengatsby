@@ -84,7 +84,7 @@ export const ElementLibrary: React.FC<{
         </div>
 
         <div className="ve-modal__body">
-          {results.length === 0 && <p className="ve-library__empty">No elements match "{query}".</p>}
+          {results.length === 0 && <p className="ve-library__empty">No elements match &quot;{query}&quot;.</p>}
 
           {BLOCK_CATEGORIES.map((cat) => {
             const blocks = grouped.get(cat.key)

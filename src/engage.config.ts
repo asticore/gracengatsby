@@ -203,6 +203,11 @@ const config = buildConfig({
       // Asticore teaser button is rendered inside it, so it no longer needs an
       // afterNavLinks entry.
       Nav: '@/components/admin/nav/AdminNav#AdminNav',
+      // Guards document-edit views against a browser-extension DOM crash
+      // (password managers injecting nodes into form fields) that otherwise
+      // leaves the whole edit screen blank - see the component for the full
+      // story. Wraps every admin screen; harmless everywhere else.
+      providers: ['@/components/admin/ExtensionDomSafety#ExtensionDomSafetyProvider'],
       views: {
         // Replaces the engine's default card grid. See views/dashboard for
         // what it does differently and why.

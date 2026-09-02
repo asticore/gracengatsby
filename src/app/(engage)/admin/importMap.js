@@ -31,6 +31,7 @@ import { BackupPanel as BackupPanel_0645cad9a6770ce8d137ad2971387380 } from '@/f
 import { AdminNav as AdminNav_dc4fd4746f7f98760676e52d2bbade6c } from '@/components/admin/nav/AdminNav'
 import { AsticoreIcon as AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be } from '@/components/branding/AsticoreIcon'
 import { AsticoreLogo as AsticoreLogo_d8058b98a0709a82ff9282939ab6f374 } from '@/components/branding/AsticoreLogo'
+import { ExtensionDomSafetyProvider as ExtensionDomSafetyProvider_72aa38666336299b69edd74fb220a14e } from '@/components/admin/ExtensionDomSafety'
 import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d } from '@payloadcms/storage-r2/client'
 import { Dashboard as Dashboard_14459cdb650c64c2bbd9c605e8597da4 } from '@/views/dashboard/Dashboard'
 import { TranslationsView as TranslationsView_c41315083d66c2f4bf042b5656a82057 } from '@/features/multilingual/views/TranslationsView'
@@ -74,6 +75,7 @@ export const importMap = {
   "@/components/admin/nav/AdminNav#AdminNav": AdminNav_dc4fd4746f7f98760676e52d2bbade6c,
   "@/components/branding/AsticoreIcon#AsticoreIcon": AsticoreIcon_77a78a59e4ba7a3a06e256a2905c61be,
   "@/components/branding/AsticoreLogo#AsticoreLogo": AsticoreLogo_d8058b98a0709a82ff9282939ab6f374,
+  "@/components/admin/ExtensionDomSafety#ExtensionDomSafetyProvider": ExtensionDomSafetyProvider_72aa38666336299b69edd74fb220a14e,
   "@payloadcms/storage-r2/client#R2ClientUploadHandler": R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d,
   "@/views/dashboard/Dashboard#Dashboard": Dashboard_14459cdb650c64c2bbd9c605e8597da4,
   "@/features/multilingual/views/TranslationsView#TranslationsView": TranslationsView_c41315083d66c2f4bf042b5656a82057,

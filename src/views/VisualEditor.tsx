@@ -7,12 +7,12 @@ import { defaultColumns } from '@/lib/sectionTree'
 
 import { getBlockDef } from './visualEditor/blockSchemas'
 import { CANVAS_ORIGIN, isBridgeMessage, type FrameToParentMessage } from './visualEditor/canvasBridge'
-import { ElementLibrary } from './visualEditor/ElementLibrary'
-import { FieldPanel } from './visualEditor/FieldPanel'
+import { EditorDock, type DockTab } from './visualEditor/EditorDock'
 import {
   cloneNode,
   getNode,
   insertNode,
+  insertNodes,
   reorderWithin,
   splitPath,
   stripEditorIds,
@@ -58,8 +58,15 @@ export const VisualEditorView: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null)
   const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'publishing' | 'published' | 'error'>('idle')
-  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
-  const [library, setLibrary] = useState<{ containerPath: NodePath; at: number } | null>(null)
+  const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [dockTab, setDockTab] = useState<DockTab>('elements')
+  // Where the next element/template pick lands. Always defined (unlike the
+  // old popup's open/closed state) since the dock is always visible now -
+  // defaults to the end of the page until a specific "+" sets it.
+  const [insertTarget, setInsertTarget] = useState<{ containerPath: NodePath; at: number }>({
+    containerPath: [],
+    at: 0,
+  })
   const [dirty, setDirty] = useState(false)
   const [frameReady, setFrameReady] = useState(false)
 
@@ -80,7 +87,9 @@ export const VisualEditorView: React.FC = () => {
       .then((json) => {
         const doc = json as Record<string, unknown>
         const raw = (doc?.[surface.blocksField] as SectionNode[] | undefined) || []
-        setBlocks(withIds(raw))
+        const withStableIds = withIds(raw)
+        setBlocks(withStableIds)
+        setInsertTarget({ containerPath: [], at: withStableIds.length })
         setDocTitle(surface.titleField ? String(doc?.[surface.titleField] || 'Untitled') : surface.label)
         setStatus((doc?._status as string) || null)
         setLoading(false)
@@ -109,19 +118,38 @@ export const VisualEditorView: React.FC = () => {
   /* Tree mutations                                                          */
   /* ---------------------------------------------------------------------- */
 
-  const addBlock = useCallback((blockType: string, containerPath: NodePath, at: number) => {
-    const def = getBlockDef(blockType)
-    if (!def) return
+  const addBlock = useCallback(
+    (blockType: string) => {
+      const def = getBlockDef(blockType)
+      if (!def) return
+      const { containerPath, at } = insertTarget
 
-    const node: SectionNode = { ...(def.defaultValue() as SectionNode), _id: nextId() }
-    // A brand-new section starts with two columns so it is immediately useful.
-    if (blockType === 'section') node.columns = defaultColumns(2, nextId)
+      const node: SectionNode = { ...(def.defaultValue() as SectionNode), _id: nextId() }
+      // A brand-new section starts with two columns so it is immediately useful.
+      if (blockType === 'section') node.columns = defaultColumns(2, nextId)
 
-    setBlocks((prev) => insertNode(prev, containerPath, at, node))
-    setSelectedPath([...containerPath, at])
-    setLibrary(null)
-    setDirty(true)
-  }, [])
+      setBlocks((prev) => insertNode(prev, containerPath, at, node))
+      setSelectedPath([...containerPath, at])
+      setDockTab('settings')
+      setDirty(true)
+    },
+    [insertTarget],
+  )
+
+  /** Templates (a curated preset or a saved Page Template) insert several blocks at once. */
+  const addTemplateBlocks = useCallback(
+    (templateBlocks: SectionNode[]) => {
+      if (templateBlocks.length === 0) return
+      const { containerPath, at } = insertTarget
+      const withFreshIds = templateBlocks.map((node) => cloneNode({ ...node, _id: undefined }, nextId))
+
+      setBlocks((prev) => insertNodes(prev, containerPath, at, withFreshIds))
+      setSelectedPath([...containerPath, at])
+      setDockTab('settings')
+      setDirty(true)
+    },
+    [insertTarget],
+  )
 
   const deleteBlock = useCallback((path: NodePath) => {
     setBlocks((prev) => updateNode(prev, path, () => null))
@@ -181,9 +209,11 @@ export const VisualEditorView: React.FC = () => {
           break
         case 'select':
           setSelectedPath(msg.path)
+          setDockTab(msg.path ? 'settings' : 'elements')
           break
         case 'add':
-          setLibrary({ containerPath: msg.containerPath, at: msg.at })
+          setInsertTarget({ containerPath: msg.containerPath, at: msg.at })
+          setDockTab('elements')
           break
         case 'delete':
           deleteBlock(msg.path)
@@ -282,7 +312,10 @@ export const VisualEditorView: React.FC = () => {
           <button
             type="button"
             className="ve-btn ve-btn--ghost"
-            onClick={() => setLibrary({ containerPath: [], at: blocks.length })}
+            onClick={() => {
+              setInsertTarget({ containerPath: [], at: blocks.length })
+              setDockTab('elements')
+            }}
           >
             + Add element
           </button>
@@ -292,9 +325,18 @@ export const VisualEditorView: React.FC = () => {
               className={`ve-device-btn ${device === 'desktop' ? 've-device-btn--active' : ''}`}
               onClick={() => setDevice('desktop')}
               aria-label="Desktop preview"
-              title="Desktop preview"
+              title="Desktop preview - full width"
             >
               Desktop
+            </button>
+            <button
+              type="button"
+              className={`ve-device-btn ${device === 'tablet' ? 've-device-btn--active' : ''}`}
+              onClick={() => setDevice('tablet')}
+              aria-label="Tablet preview"
+              title="Tablet preview"
+            >
+              Tablet
             </button>
             <button
               type="button"
@@ -321,6 +363,23 @@ export const VisualEditorView: React.FC = () => {
       </div>
 
       <div className="ve-body">
+        <EditorDock
+          tab={dockTab}
+          onTabChange={setDockTab}
+          targetLabel={insertTarget.containerPath.length === 0 ? 'the page' : 'this column'}
+          onPickBlock={addBlock}
+          onPickTemplate={addTemplateBlocks}
+          selectedNode={selectedNode as Record<string, unknown> | undefined}
+          selectedDef={selectedDef}
+          onChangeSelected={updateSelected}
+          onCloseSelected={() => {
+            setSelectedPath(null)
+            setDockTab('elements')
+          }}
+          onDeleteSelected={() => selectedPath && deleteBlock(selectedPath)}
+          onDuplicateSelected={() => selectedPath && duplicateBlock(selectedPath)}
+        />
+
         <div className="ve-canvas-wrap" role="presentation">
           {error && (
             <p className="ve-error" style={{ padding: 12 }}>
@@ -350,26 +409,7 @@ export const VisualEditorView: React.FC = () => {
             />
           </div>
         </div>
-
-        {selectedNode && selectedDef && (
-          <FieldPanel
-            blockDef={selectedDef}
-            data={selectedNode as Record<string, unknown>}
-            onChange={updateSelected}
-            onClose={() => setSelectedPath(null)}
-            onDelete={() => selectedPath && deleteBlock(selectedPath)}
-            onDuplicate={() => selectedPath && duplicateBlock(selectedPath)}
-          />
-        )}
       </div>
-
-      {library && (
-        <ElementLibrary
-          title={library.containerPath.length === 0 ? 'Add an element' : 'Add to this column'}
-          onPick={(blockType) => addBlock(blockType, library.containerPath, library.at)}
-          onClose={() => setLibrary(null)}
-        />
-      )}
     </div>
   )
 }

@@ -4,13 +4,77 @@
  * directly under plain Node/tsx, which has no loader for .css files and
  * crashes with ERR_UNKNOWN_FILE_EXTENSION. A plain JS string sidesteps
  * that entirely while keeping the same scoped styles.
+ *
+ * Colors are CSS custom properties on .ve-root, not hardcoded hex, for two
+ * reasons: Payload's own dark mode (it sets data-theme="dark" on <html>,
+ * checked directly in node_modules/@payloadcms/ui) was leaking through
+ * unstyled before, and a couple of buttons (.ve-btn--ghost, specifically)
+ * hardcoded dark text that went invisible against the always-dark topbar -
+ * every color below is one of these tokens so that bug class can't recur.
+ * Filled buttons always pair --ve-*-contrast against its own --ve-* fill, so
+ * a button's text is deliberately the opposite lightness of its background;
+ * outline/ghost buttons never set their own color and just inherit --ve-text
+ * from whatever surface they sit on, which is themed to contrast that
+ * surface already.
  */
 export const VISUAL_EDITOR_CSS = `
 .ve-root {
+  /* Light theme (default) - warm/gold, matches the site's own boutique brand. */
+  --ve-bg: #f2f0ec;
+  --ve-surface: #ffffff;
+  --ve-surface-alt: #f7f5f1;
+  --ve-surface-hover: #fdfbf7;
+  --ve-border: #e2ded4;
+  --ve-border-strong: #d8d3c8;
+  --ve-text: #1d1b19;
+  --ve-text-muted: #8a8378;
+  --ve-text-faint: #a39d90;
+  --ve-accent: #c9a15a;
+  --ve-accent-hover: #d9b06a;
+  --ve-accent-contrast: #1d1b19;
+  --ve-danger: #b3453a;
+  --ve-danger-contrast: #ffffff;
+  --ve-checker-a: #f7f5f1;
+  --ve-checker-b: #f0ede6;
+  --ve-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 30px rgba(0, 0, 0, 0.06);
+  --ve-shadow-pop: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 12px 30px rgba(0, 0, 0, 0.14);
+  /* The topbar and node/toolbar chrome stay dark in both themes on purpose -
+     it's editor chrome, not page surface, same as Elementor's always-dark
+     toolbar - so these two are fixed rather than swapped per theme. */
+  --ve-chrome-bg: #1d1b19;
+  --ve-chrome-text: #ffffff;
+
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f2f0ec;
+  background: var(--ve-bg);
+  color: var(--ve-text);
+}
+
+/* Dark mode: blue, not the inverse of the gold light theme - a deliberate
+   navy palette, picked (not auto-inverted) so it reads as designed rather
+   than "light theme with the lights off". */
+html[data-theme='dark'] .ve-root {
+  --ve-bg: #0a1120;
+  --ve-surface: #111b2f;
+  --ve-surface-alt: #172441;
+  --ve-surface-hover: #1c2b4c;
+  --ve-border: #24334f;
+  --ve-border-strong: #2f4368;
+  --ve-text: #e7edf9;
+  --ve-text-muted: #93a4c7;
+  --ve-text-faint: #6b7ba0;
+  --ve-accent: #4e8dff;
+  --ve-accent-hover: #72a2ff;
+  --ve-accent-contrast: #06101f;
+  --ve-danger: #e8695c;
+  --ve-danger-contrast: #200a07;
+  --ve-checker-a: #111b2f;
+  --ve-checker-b: #172441;
+  --ve-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 12px 30px rgba(0, 0, 0, 0.45);
+  --ve-shadow-pop: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(0, 0, 0, 0.55);
+  --ve-chrome-bg: #050a15;
+  --ve-chrome-text: #e7edf9;
 }
 
 .ve-topbar {
@@ -18,9 +82,10 @@ export const VISUAL_EDITOR_CSS = `
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: #1d1b19;
-  color: #fff;
+  background: var(--ve-chrome-bg);
+  color: var(--ve-chrome-text);
   gap: 16px;
+  flex-shrink: 0;
 }
 
 .ve-topbar__left {
@@ -44,6 +109,7 @@ export const VISUAL_EDITOR_CSS = `
 
 .ve-topbar__actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-shrink: 0;
 }
@@ -64,48 +130,61 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-btn--primary {
-  background: #c9a15a;
-  border-color: #c9a15a;
-  color: #1d1b19;
+  background: var(--ve-accent);
+  border-color: var(--ve-accent);
+  color: var(--ve-accent-contrast);
 }
 
 .ve-btn--primary:hover {
-  background: #d9b06a;
+  background: var(--ve-accent-hover);
+  border-color: var(--ve-accent-hover);
 }
 
 .ve-btn--danger {
-  border-color: #b3453a;
-  color: #b3453a;
+  border-color: var(--ve-danger);
+  color: var(--ve-danger);
 }
 
+/* Ghost buttons deliberately set no color of their own - they show up on the
+   dark topbar AND inside light/dark panels, and inheriting --ve-text (or the
+   topbar's own white) is what keeps them readable in both instead of a
+   color baked in for one context going invisible in the other. */
 .ve-btn--ghost {
-  border-color: #d8d3c8;
-  color: #1d1b19;
+  border-color: var(--ve-border-strong);
 }
 
 .ve-body {
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0;
 }
 
 .ve-canvas-wrap {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
+  min-width: 0;
 }
 
 .ve-canvas {
-  max-width: 1100px;
+  max-width: 100%;
   /* The wrap already scrolls; the canvas fills its height so the iframe -
      which scrolls its own document, not this one - gets a real height to
      size against instead of collapsing to 0. */
   height: calc(100% - 1px);
   margin: 0 auto;
   background: #fff;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--ve-shadow);
   transition: max-width 0.15s ease;
   position: relative;
+}
+
+/* Desktop is full width - the canvas fills the available space, same as the
+   real page does. Tablet and mobile clamp to real device widths so the
+   site's actual media queries kick in at the right breakpoints. */
+.ve-canvas--tablet {
+  max-width: 820px;
 }
 
 .ve-canvas--mobile {
@@ -126,7 +205,7 @@ export const VISUAL_EDITOR_CSS = `
   justify-content: center;
   height: 100%;
   font-size: 14px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
 .ve-device-toggle {
@@ -173,8 +252,8 @@ export const VISUAL_EDITOR_CSS = `
   height: 22px;
   border-radius: 50%;
   border: none;
-  background: #c9a15a;
-  color: #1d1b19;
+  background: var(--ve-accent);
+  color: var(--ve-accent-contrast);
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
@@ -184,7 +263,8 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-insert:hover .ve-insert__btn,
-.ve-insert--open .ve-insert__btn {
+.ve-insert--open .ve-insert__btn,
+.ve-insert--always .ve-insert__btn {
   opacity: 1;
 }
 
@@ -192,129 +272,74 @@ export const VISUAL_EDITOR_CSS = `
   transform: translateX(-50%) scale(1.15);
 }
 
-.ve-insert__menu {
-  position: absolute;
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 7;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 12px 30px rgba(0, 0, 0, 0.12);
-  padding: 6px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 1fr));
-  gap: 4px;
-  width: max-content;
-}
-
-.ve-insert__menu-item {
-  border: none;
-  background: transparent;
-  padding: 6px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.ve-insert__menu-item:hover {
-  background: #f2f0ec;
-}
-
-.ve-canvas-block {
-  position: relative;
-  cursor: pointer;
-  outline: 2px solid transparent;
-  outline-offset: -2px;
-}
-
-.ve-canvas-block:hover {
-  outline-color: #c9a15a88;
-}
-
-.ve-canvas-block--selected {
-  outline-color: #c9a15a;
-}
-
-.ve-canvas-block__toolbar {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #1d1b19;
-  color: #fff;
-  border-radius: 5px;
-  padding: 3px 8px;
-  font-size: 11px;
-  opacity: 0;
-  transition: opacity 0.1s;
-  pointer-events: none;
-}
-
-.ve-canvas-block:hover .ve-canvas-block__toolbar,
-.ve-canvas-block--selected .ve-canvas-block__toolbar {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.ve-drag-handle {
-  cursor: grab;
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 14px;
-  padding: 0 2px;
-}
-
-.ve-canvas-block__label {
-  white-space: nowrap;
-}
-
-.ve-canvas-block__preview {
-  pointer-events: none;
-}
-
 .ve-empty-canvas {
   padding: 80px 24px;
   text-align: center;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
-.ve-palette {
-  padding: 16px 24px 40px;
+/* ---------------------------------------------------------------------------
+   Left dock: persistent Elements/Settings panel (replaces the old add-element
+   popup and the separate right-hand field panel - one Elementor-style dock).
+   --------------------------------------------------------------------------- */
+
+.ve-dock {
+  width: 340px;
+  flex-shrink: 0;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  border-right: 1px solid var(--ve-border);
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  background: #ece8e0;
-  border-top: 1px dashed #d8d3c8;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.ve-palette__item {
-  border: 1px solid #d8d3c8;
-  background: #fff;
-  padding: 8px 12px;
-  border-radius: 6px;
+.ve-dock__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--ve-border);
+  flex-shrink: 0;
+}
+
+.ve-dock__tab {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--ve-text-muted);
+  padding: 13px 8px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.ve-palette__item:hover {
-  border-color: #c9a15a;
+.ve-dock__tab--active {
+  color: var(--ve-text);
+  border-bottom-color: var(--ve-accent);
+}
+
+.ve-dock__body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Settings tab: nothing selected yet. */
+.ve-dock__empty {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--ve-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .ve-panel {
-  width: 340px;
-  flex-shrink: 0;
-  background: #fff;
-  border-left: 1px solid #e2ded4;
   display: flex;
   flex-direction: column;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -323,7 +348,8 @@ export const VISUAL_EDITOR_CSS = `
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #e2ded4;
+  border-bottom: 1px solid var(--ve-border);
+  flex-shrink: 0;
 }
 
 .ve-panel__icon {
@@ -342,9 +368,10 @@ export const VISUAL_EDITOR_CSS = `
 
 .ve-panel__footer {
   padding: 12px 16px;
-  border-top: 1px solid #e2ded4;
+  border-top: 1px solid var(--ve-border);
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .ve-field {
@@ -353,7 +380,7 @@ export const VISUAL_EDITOR_CSS = `
   gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #4a463d;
+  color: var(--ve-text-muted);
 }
 
 .ve-field--full {
@@ -371,9 +398,11 @@ export const VISUAL_EDITOR_CSS = `
   font-weight: 400;
   font-size: 13px;
   padding: 7px 9px;
-  border: 1px solid #d8d3c8;
+  border: 1px solid var(--ve-border-strong);
   border-radius: 5px;
   font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
 }
 
 .ve-field--checkbox {
@@ -406,19 +435,19 @@ export const VISUAL_EDITOR_CSS = `
   height: 56px;
   object-fit: cover;
   border-radius: 5px;
-  border: 1px solid #e2ded4;
+  border: 1px solid var(--ve-border);
 }
 
 .ve-media-field__empty {
   width: 56px;
   height: 56px;
   border-radius: 5px;
-  border: 1px dashed #d8d3c8;
+  border: 1px dashed var(--ve-border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  color: #a39d90;
+  color: var(--ve-text-faint);
   text-align: center;
 }
 
@@ -445,7 +474,7 @@ export const VISUAL_EDITOR_CSS = `
   height: 100%;
   object-fit: cover;
   border-radius: 5px;
-  border: 1px solid #e2ded4;
+  border: 1px solid var(--ve-border);
 }
 
 .ve-media-multi__item button {
@@ -456,8 +485,8 @@ export const VISUAL_EDITOR_CSS = `
   height: 18px;
   border-radius: 50%;
   border: none;
-  background: #b3453a;
-  color: #fff;
+  background: var(--ve-danger);
+  color: var(--ve-danger-contrast);
   font-size: 10px;
   cursor: pointer;
 }
@@ -466,13 +495,15 @@ export const VISUAL_EDITOR_CSS = `
   width: 56px;
   height: 56px;
   border-radius: 5px;
-  border: 1px dashed #d8d3c8;
+  border: 1px dashed var(--ve-border-strong);
   background: none;
   cursor: pointer;
   font-size: 11px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
+/* Still a real modal - used by the media picker, which is a one-off image
+   chooser, not the "adding elements" flow that moved into the dock. */
 .ve-modal-overlay {
   position: fixed;
   inset: 0;
@@ -484,7 +515,8 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-modal {
-  background: #fff;
+  background: var(--ve-surface);
+  color: var(--ve-text);
   width: min(720px, 92vw);
   max-height: 80vh;
   border-radius: 8px;
@@ -498,7 +530,7 @@ export const VISUAL_EDITOR_CSS = `
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid #e2ded4;
+  border-bottom: 1px solid var(--ve-border);
 }
 
 .ve-modal__body {
@@ -514,12 +546,12 @@ export const VISUAL_EDITOR_CSS = `
 
 .ve-media-grid__item {
   aspect-ratio: 1;
-  border: 1px solid #e2ded4;
+  border: 1px solid var(--ve-border);
   border-radius: 5px;
   overflow: hidden;
   padding: 0;
   cursor: pointer;
-  background: #f7f5f1;
+  background: var(--ve-surface-alt);
 }
 
 .ve-media-grid__item img {
@@ -529,7 +561,7 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-media-grid__item:hover {
-  border-color: #c9a15a;
+  border-color: var(--ve-accent);
 }
 
 .ve-dynamic-placeholder {
@@ -537,9 +569,9 @@ export const VISUAL_EDITOR_CSS = `
   align-items: center;
   gap: 16px;
   padding: 40px 24px;
-  background: repeating-linear-gradient(45deg, #f7f5f1, #f7f5f1 10px, #f0ede6 10px, #f0ede6 20px);
-  border-top: 1px dashed #d8d3c8;
-  border-bottom: 1px dashed #d8d3c8;
+  background: repeating-linear-gradient(45deg, var(--ve-checker-a), var(--ve-checker-a) 10px, var(--ve-checker-b) 10px, var(--ve-checker-b) 20px);
+  border-top: 1px dashed var(--ve-border-strong);
+  border-bottom: 1px dashed var(--ve-border-strong);
 }
 
 .ve-dynamic-placeholder__icon {
@@ -549,16 +581,16 @@ export const VISUAL_EDITOR_CSS = `
 .ve-dynamic-placeholder p {
   margin: 2px 0 0;
   font-size: 12px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
 .ve-unknown-block {
   padding: 20px;
-  color: #b3453a;
+  color: var(--ve-danger);
 }
 
 .ve-error {
-  color: #b3453a;
+  color: var(--ve-danger);
 }
 
 .ve-loading-screen {
@@ -567,7 +599,7 @@ export const VISUAL_EDITOR_CSS = `
   justify-content: center;
   height: 100vh;
   font-size: 14px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
 /* ---------------------------------------------------------------------------
@@ -588,11 +620,11 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-node:hover {
-  outline-color: #c9a15a66;
+  outline-color: color-mix(in srgb, var(--ve-accent) 55%, transparent);
 }
 
 .ve-node--selected {
-  outline: 2px solid #c9a15a;
+  outline: 2px solid var(--ve-accent);
   outline-offset: -2px;
 }
 
@@ -605,8 +637,8 @@ export const VISUAL_EDITOR_CSS = `
   display: flex;
   align-items: center;
   gap: 4px;
-  background: #1d1b19;
-  color: #fff;
+  background: var(--ve-chrome-bg);
+  color: var(--ve-chrome-text);
   border-radius: 5px;
   padding: 2px 6px;
   font-size: 11px;
@@ -653,7 +685,7 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-node__act--danger:hover:not(:disabled) {
-  background: #b3453a;
+  background: var(--ve-danger);
 }
 
 /* Block previews shouldn't swallow clicks meant for selection, but a nested
@@ -678,7 +710,7 @@ export const VISUAL_EDITOR_CSS = `
   position: relative;
   min-width: 0;
   min-height: 70px;
-  border: 1px dashed #d8d3c8;
+  border: 1px dashed var(--ve-border-strong);
   border-radius: 4px;
   padding: 18px 6px 6px;
 }
@@ -697,7 +729,7 @@ export const VISUAL_EDITOR_CSS = `
   font-size: 10px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #a39d90;
+  color: var(--ve-text-faint);
   pointer-events: none;
 }
 
@@ -705,33 +737,37 @@ export const VISUAL_EDITOR_CSS = `
   padding: 30px 20px;
   text-align: center;
   font-size: 13px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
-.ve-insert--always .ve-insert__btn {
-  opacity: 1;
-}
+/* ---------------------------------------------------------------------------
+   Elements tab (blocks + templates) - lives in the dock now, not a popup.
+   --------------------------------------------------------------------------- */
 
-/* Element library */
 .ve-library {
-  width: min(780px, 94vw);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .ve-library__controls {
-  padding: 12px 18px;
-  border-bottom: 1px solid #e2ded4;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ve-border);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .ve-library__search {
   width: 100%;
   font-size: 14px;
   padding: 9px 12px;
-  border: 1px solid #d8d3c8;
+  border: 1px solid var(--ve-border-strong);
   border-radius: 6px;
   font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
 }
 
 .ve-library__tabs {
@@ -741,8 +777,9 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-library__tab {
-  border: 1px solid #d8d3c8;
-  background: #fff;
+  border: 1px solid var(--ve-border-strong);
+  background: var(--ve-surface);
+  color: var(--ve-text);
   padding: 5px 12px;
   border-radius: 999px;
   cursor: pointer;
@@ -750,9 +787,41 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-library__tab--active {
-  background: #1d1b19;
-  border-color: #1d1b19;
-  color: #fff;
+  background: var(--ve-chrome-bg);
+  border-color: var(--ve-chrome-bg);
+  color: var(--ve-chrome-text);
+}
+
+.ve-library__source-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--ve-surface-alt);
+  border-radius: 7px;
+  padding: 3px;
+}
+
+.ve-library__source-tab {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--ve-text-muted);
+  padding: 7px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ve-library__source-tab--active {
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  box-shadow: 0 0 0 1px var(--ve-border);
+}
+
+.ve-library__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 24px;
 }
 
 .ve-library__group {
@@ -764,12 +833,12 @@ export const VISUAL_EDITOR_CSS = `
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
 .ve-library__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
 }
 
@@ -779,16 +848,17 @@ export const VISUAL_EDITOR_CSS = `
   gap: 4px;
   align-items: flex-start;
   text-align: left;
-  border: 1px solid #e2ded4;
-  background: #fff;
+  border: 1px solid var(--ve-border);
+  background: var(--ve-surface);
+  color: var(--ve-text);
   border-radius: 8px;
   padding: 12px;
   cursor: pointer;
 }
 
 .ve-library__card:hover {
-  border-color: #c9a15a;
-  background: #fdfbf7;
+  border-color: var(--ve-accent);
+  background: var(--ve-surface-hover);
 }
 
 .ve-library__card-icon {
@@ -802,19 +872,65 @@ export const VISUAL_EDITOR_CSS = `
 
 .ve-library__card-desc {
   font-size: 11px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
   line-height: 1.35;
 }
 
 .ve-library__empty {
-  color: #8a8378;
+  color: var(--ve-text-muted);
   font-size: 13px;
 }
 
-/* Panel tabs */
+.ve-library__hint {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--ve-text-muted);
+  line-height: 1.5;
+}
+
+/* Template cards get a bit more room (they represent a whole page/section, a
+   preset name is more useful than an icon here). */
+.ve-template-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.ve-template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  border: 1px solid var(--ve-border);
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.ve-template-card:hover {
+  border-color: var(--ve-accent);
+  background: var(--ve-surface-hover);
+}
+
+.ve-template-card__name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.ve-template-card__desc {
+  font-size: 11px;
+  color: var(--ve-text-muted);
+}
+
+/* Panel tabs (Settings tab: Content/Design sub-tabs) */
 .ve-panel__tabs {
   display: flex;
-  border-bottom: 1px solid #e2ded4;
+  border-bottom: 1px solid var(--ve-border);
+  flex-shrink: 0;
 }
 
 .ve-panel__tab {
@@ -825,19 +941,19 @@ export const VISUAL_EDITOR_CSS = `
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  color: #8a8378;
+  color: var(--ve-text-muted);
   border-bottom: 2px solid transparent;
 }
 
 .ve-panel__tab--active {
-  color: #1d1b19;
-  border-bottom-color: #c9a15a;
+  color: var(--ve-text);
+  border-bottom-color: var(--ve-accent);
 }
 
 .ve-panel__empty,
 .ve-panel__hint {
   font-size: 12px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
   margin: 0 0 10px;
   width: 100%;
   line-height: 1.45;
@@ -852,7 +968,7 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-acc {
-  border-bottom: 1px solid #eceae4;
+  border-bottom: 1px solid var(--ve-border);
 }
 
 .ve-acc__head {
@@ -862,15 +978,15 @@ export const VISUAL_EDITOR_CSS = `
   justify-content: space-between;
   background: none;
   border: none;
+  color: var(--ve-text-muted);
   padding: 10px 2px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  color: #4a463d;
 }
 
 .ve-acc__chev {
-  color: #a39d90;
+  color: var(--ve-text-faint);
 }
 
 .ve-acc__body {
@@ -886,7 +1002,7 @@ export const VISUAL_EDITOR_CSS = `
   gap: 4px;
   font-size: 11px;
   font-weight: 600;
-  color: #4a463d;
+  color: var(--ve-text-muted);
 }
 
 .ve-row--check {
@@ -902,7 +1018,7 @@ export const VISUAL_EDITOR_CSS = `
 .ve-row__help {
   font-weight: 400;
   font-size: 10px;
-  color: #a39d90;
+  color: var(--ve-text-faint);
 }
 
 .ve-row input[type='text'],
@@ -911,10 +1027,12 @@ export const VISUAL_EDITOR_CSS = `
   font-weight: 400;
   font-size: 12px;
   padding: 6px 8px;
-  border: 1px solid #d8d3c8;
+  border: 1px solid var(--ve-border-strong);
   border-radius: 5px;
   font-family: inherit;
   width: 100%;
+  background: var(--ve-surface);
+  color: var(--ve-text);
 }
 
 .ve-color {
@@ -928,7 +1046,7 @@ export const VISUAL_EDITOR_CSS = `
   height: 30px;
   flex-shrink: 0;
   padding: 0;
-  border: 1px solid #d8d3c8;
+  border: 1px solid var(--ve-border-strong);
   border-radius: 5px;
   background: none;
   cursor: pointer;
@@ -939,7 +1057,7 @@ export const VISUAL_EDITOR_CSS = `
   background: none;
   cursor: pointer;
   font-size: 11px;
-  color: #a39d90;
+  color: var(--ve-text-faint);
   padding: 2px 4px;
 }
 
@@ -949,7 +1067,7 @@ export const VISUAL_EDITOR_CSS = `
   gap: 8px;
   padding-bottom: 10px;
   margin-bottom: 4px;
-  border-bottom: 1px dashed #eceae4;
+  border-bottom: 1px dashed var(--ve-border);
 }
 
 /* Section layout tab */
@@ -971,16 +1089,18 @@ export const VISUAL_EDITOR_CSS = `
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 700;
-  color: #a39d90;
+  color: var(--ve-text-faint);
 }
 
 .ve-col-row select {
   flex: 1;
   font-size: 12px;
   padding: 6px 8px;
-  border: 1px solid #d8d3c8;
+  border: 1px solid var(--ve-border-strong);
   border-radius: 5px;
   font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
 }
 
 /* Merge tag picker */
@@ -994,7 +1114,7 @@ export const VISUAL_EDITOR_CSS = `
 .ve-field__help {
   font-weight: 400;
   font-size: 10px;
-  color: #a39d90;
+  color: var(--ve-text-faint);
 }
 
 .ve-tagpicker {
@@ -1002,19 +1122,19 @@ export const VISUAL_EDITOR_CSS = `
 }
 
 .ve-tagpicker__btn {
-  border: 1px solid #d8d3c8;
-  background: #fff;
+  border: 1px solid var(--ve-border-strong);
+  background: var(--ve-surface);
+  color: var(--ve-text-muted);
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 10px;
   font-family: monospace;
   cursor: pointer;
-  color: #8a8378;
 }
 
 .ve-tagpicker__btn:hover {
-  border-color: #c9a15a;
-  color: #1d1b19;
+  border-color: var(--ve-accent);
+  color: var(--ve-text);
 }
 
 .ve-tagpicker__scrim {
@@ -1032,9 +1152,10 @@ export const VISUAL_EDITOR_CSS = `
   width: 260px;
   max-height: 320px;
   overflow-y: auto;
-  background: #fff;
+  background: var(--ve-surface);
+  color: var(--ve-text);
   border-radius: 8px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 12px 30px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--ve-shadow-pop);
   padding: 8px;
 }
 
@@ -1042,7 +1163,7 @@ export const VISUAL_EDITOR_CSS = `
   margin: 0 0 8px;
   font-size: 10px;
   font-weight: 400;
-  color: #8a8378;
+  color: var(--ve-text-muted);
   line-height: 1.4;
 }
 
@@ -1051,7 +1172,7 @@ export const VISUAL_EDITOR_CSS = `
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #a39d90;
+  color: var(--ve-text-faint);
 }
 
 .ve-tagpicker__item {
@@ -1062,32 +1183,33 @@ export const VISUAL_EDITOR_CSS = `
   text-align: left;
   border: none;
   background: none;
+  color: inherit;
   padding: 5px 6px;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .ve-tagpicker__item:hover {
-  background: #f2f0ec;
+  background: var(--ve-surface-alt);
 }
 
 .ve-tagpicker__item code {
   font-size: 11px;
-  color: #1d1b19;
+  color: var(--ve-text);
 }
 
 .ve-tagpicker__item span {
   font-size: 10px;
   font-weight: 400;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
 /* Loop preview */
 .ve-loop-preview {
   padding: 26px 24px;
-  background: repeating-linear-gradient(45deg, #f7f5f1, #f7f5f1 10px, #f0ede6 10px, #f0ede6 20px);
-  border-top: 1px dashed #d8d3c8;
-  border-bottom: 1px dashed #d8d3c8;
+  background: repeating-linear-gradient(45deg, var(--ve-checker-a), var(--ve-checker-a) 10px, var(--ve-checker-b) 10px, var(--ve-checker-b) 20px);
+  border-top: 1px dashed var(--ve-border-strong);
+  border-bottom: 1px dashed var(--ve-border-strong);
 }
 
 .ve-loop-preview__head {
@@ -1104,7 +1226,7 @@ export const VISUAL_EDITOR_CSS = `
 .ve-loop-preview__head p {
   margin: 2px 0 0;
   font-size: 12px;
-  color: #8a8378;
+  color: var(--ve-text-muted);
 }
 
 .ve-loop-preview__grid {
@@ -1117,6 +1239,6 @@ export const VISUAL_EDITOR_CSS = `
   height: 64px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.75);
-  border: 1px solid #e2ded4;
+  border: 1px solid var(--ve-border);
 }
 `

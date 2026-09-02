@@ -115,6 +115,26 @@ export function insertNode(
   })
 }
 
+/** Inserts several nodes at once (a template preset), preserving their order. */
+export function insertNodes(
+  blocks: SectionNode[],
+  containerPath: NodePath,
+  at: number,
+  nodes: SectionNode[],
+): SectionNode[] {
+  if (containerPath.length === 0) {
+    const next = [...blocks]
+    next.splice(Math.min(at, next.length), 0, ...nodes)
+    return next
+  }
+
+  return updateColumn(blocks, containerPath, (column) => {
+    const list = [...(column.blocks || [])]
+    list.splice(Math.min(at, list.length), 0, ...nodes)
+    return { ...column, blocks: list }
+  })
+}
+
 /** Moves a block within its own list. Cross-container drags are not supported. */
 export function reorderWithin(
   blocks: SectionNode[],

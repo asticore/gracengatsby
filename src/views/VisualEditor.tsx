@@ -1,21 +1,18 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { closestCenter, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
 import { defaultColumns } from '@/lib/sectionTree'
 
 import { getBlockDef } from './visualEditor/blockSchemas'
-import { CanvasNodeList, type CanvasHandlers } from './visualEditor/Canvas'
+import { CANVAS_ORIGIN, isBridgeMessage, type FrameToParentMessage } from './visualEditor/canvasBridge'
 import { ElementLibrary } from './visualEditor/ElementLibrary'
 import { FieldPanel } from './visualEditor/FieldPanel'
 import {
   cloneNode,
   getNode,
   insertNode,
-  pathKey,
   reorderWithin,
   splitPath,
   stripEditorIds,
@@ -64,8 +61,9 @@ export const VisualEditorView: React.FC = () => {
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const [library, setLibrary] = useState<{ containerPath: NodePath; at: number } | null>(null)
   const [dirty, setDirty] = useState(false)
+  const [frameReady, setFrameReady] = useState(false)
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const apiUrl = useMemo(() => {
     if (!route || !surface) return null
@@ -157,26 +155,64 @@ export const VisualEditorView: React.FC = () => {
     [selectedPath],
   )
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const from = String(active.id).split('.').map(Number)
-    const to = String(over.id).split('.').map(Number)
-
-    // dnd-kit sorts within one SortableContext, and the top-level list is the
-    // only one registered. Guard anyway so a stray cross-container drop is a
-    // no-op rather than a corrupted tree - the up/down buttons move blocks
-    // between columns.
-    if (from.slice(0, -1).join('.') !== to.slice(0, -1).join('.')) return
-
-    const containerPath = from.slice(0, -1)
-    setBlocks((prev) => reorderWithin(prev, containerPath, from[from.length - 1], to[to.length - 1]))
+  const reorderBlock = useCallback((containerPath: NodePath, from: number, to: number) => {
+    setBlocks((prev) => reorderWithin(prev, containerPath, from, to))
     setSelectedPath(null)
     setDirty(true)
-  }
+  }, [])
 
   /* ---------------------------------------------------------------------- */
+  /* Canvas iframe bridge - see visualEditor/canvasBridge.ts                */
+  /* ---------------------------------------------------------------------- */
+
+  // Handles every request the canvas iframe sends up. The frame never
+  // mutates its own copy of the tree for these (only local selection state) -
+  // it waits for the "blocks"/"selected" push below, same as every other
+  // consumer of this state.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== iframeRef.current?.contentWindow) return
+      const data: unknown = event.data
+      if (!isBridgeMessage(data)) return
+      const msg = data as FrameToParentMessage
+      switch (msg.type) {
+        case 'ready':
+          setFrameReady(true)
+          break
+        case 'select':
+          setSelectedPath(msg.path)
+          break
+        case 'add':
+          setLibrary({ containerPath: msg.containerPath, at: msg.at })
+          break
+        case 'delete':
+          deleteBlock(msg.path)
+          break
+        case 'duplicate':
+          duplicateBlock(msg.path)
+          break
+        case 'move':
+          moveBlock(msg.path, msg.direction)
+          break
+        case 'reorder':
+          reorderBlock(msg.containerPath, msg.from, msg.to)
+          break
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [deleteBlock, duplicateBlock, moveBlock, reorderBlock])
+
+  // Pushes the current tree + selection down to the frame whenever either
+  // changes (including every keystroke made in the field panel), and once
+  // more as soon as the frame announces it has mounted and can receive it.
+  useEffect(() => {
+    if (!frameReady) return
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: 've-canvas', type: 'init', blocks, selectedPath },
+      CANVAS_ORIGIN(),
+    )
+  }, [frameReady, blocks, selectedPath])
 
   const save = async (publish: boolean) => {
     if (!apiUrl || !surface) return
@@ -218,17 +254,6 @@ export const VisualEditorView: React.FC = () => {
       </div>
     )
   }
-
-  const handlers: CanvasHandlers = {
-    selectedKey: selectedPath ? pathKey(selectedPath) : null,
-    onSelect: setSelectedPath,
-    onAdd: (containerPath, at) => setLibrary({ containerPath, at }),
-    onDelete: deleteBlock,
-    onDuplicate: duplicateBlock,
-    onMove: moveBlock,
-  }
-
-  const topLevelIds = blocks.map((_, index) => pathKey([index]))
 
   return (
     <div className="ve-root">
@@ -296,34 +321,33 @@ export const VisualEditorView: React.FC = () => {
       </div>
 
       <div className="ve-body">
-        <div className="ve-canvas-wrap" onClick={() => setSelectedPath(null)} role="presentation">
+        <div className="ve-canvas-wrap" role="presentation">
+          {error && (
+            <p className="ve-error" style={{ padding: 12 }}>
+              {error}
+            </p>
+          )}
+
+          {/*
+            The canvas itself is a same-origin iframe on the real front-end
+            layout (real styles.css, fonts, Header/Footer) so what's shown
+            here is pixel-exact with the live page - see
+            visualEditor/canvasBridge.ts for why a same-document canvas
+            can't do that safely, and what crosses the postMessage bridge.
+            Sized by CSS alone (the ve-canvas--desktop/mobile width below);
+            the iframe's own viewport width is what makes the site's real
+            responsive breakpoints kick in, so no "device" value needs to be
+            sent into the frame at all.
+          */}
           <div className={`ve-canvas ve-canvas--${device}`}>
-            {error && (
-              <p className="ve-error" style={{ padding: 12 }}>
-                {error}
-              </p>
-            )}
-
-            {blocks.length === 0 && (
-              <div className="ve-empty-canvas">
-                This page has no sections yet.
-                <br />
-                <button
-                  type="button"
-                  className="ve-btn ve-btn--primary"
-                  style={{ marginTop: 14 }}
-                  onClick={() => setLibrary({ containerPath: [], at: 0 })}
-                >
-                  Add your first element
-                </button>
-              </div>
-            )}
-
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={topLevelIds} strategy={verticalListSortingStrategy}>
-                <CanvasNodeList nodes={blocks} containerPath={[]} handlers={handlers} depth={0} />
-              </SortableContext>
-            </DndContext>
+            {!frameReady && <div className="ve-canvas__loading">Loading canvas</div>}
+            <iframe
+              ref={iframeRef}
+              src="/visual-editor-canvas"
+              title="Page canvas"
+              className="ve-canvas__frame"
+              style={{ display: frameReady ? 'block' : 'none' }}
+            />
           </div>
         </div>
 

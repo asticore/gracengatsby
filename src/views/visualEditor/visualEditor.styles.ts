@@ -97,14 +97,36 @@ export const VISUAL_EDITOR_CSS = `
 
 .ve-canvas {
   max-width: 1100px;
+  /* The wrap already scrolls; the canvas fills its height so the iframe -
+     which scrolls its own document, not this one - gets a real height to
+     size against instead of collapsing to 0. */
+  height: calc(100% - 1px);
   margin: 0 auto;
   background: #fff;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 30px rgba(0, 0, 0, 0.06);
   transition: max-width 0.15s ease;
+  position: relative;
 }
 
 .ve-canvas--mobile {
   max-width: 390px;
+}
+
+.ve-canvas__frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #fff;
+}
+
+.ve-canvas__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 14px;
+  color: #8a8378;
 }
 
 .ve-device-toggle {
@@ -552,7 +574,8 @@ export const VISUAL_EDITOR_CSS = `
    Nested canvas: nodes, sections, columns, insertion points
    --------------------------------------------------------------------------- */
 
-.ve-canvas-wrap {
+.ve-frame-root {
+  min-height: 100%;
   padding-bottom: 120px;
 }
 

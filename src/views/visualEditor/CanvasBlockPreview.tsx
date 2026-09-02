@@ -54,6 +54,8 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
       return <DynamicPlaceholder icon="📅" label="Event Grid" data={data} detail={gridDetail(data, 'events')} />
     case 'faq':
       return <DynamicPlaceholder icon="❓" label="FAQ" data={data} detail="Pulls in your FAQ entries." />
+    case 'form':
+      return <DynamicPlaceholder icon="📝" label="Form" data={data} detail={formDetail(data)} />
     case 'loop':
       return <LoopPlaceholder data={data} />
     default:
@@ -67,6 +69,15 @@ const gridDetail = (data: Record<string, unknown>, noun: string): string => {
   return [limit ? `${limit} ${noun}` : `All ${noun}`, category ? `in ${category}` : null]
     .filter(Boolean)
     .join(' ')
+}
+
+const formDetail = (data: Record<string, unknown>): string => {
+  const form = data.form
+  const name =
+    form && typeof form === 'object' && 'title' in form ? ((form as { title?: string }).title ?? null) : null
+  if (name) return `Form: ${name}`
+  if (typeof form === 'number' || typeof form === 'string') return `Form #${form}`
+  return 'Pick a form in the panel to finish setting this up.'
 }
 
 const HeroPreview: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {

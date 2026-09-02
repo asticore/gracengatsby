@@ -7,7 +7,7 @@ import { COLUMN_WIDTH_OPTIONS, parseColumns, type SectionColumn } from '@/lib/se
 
 import type { BlockDef, EditorField } from './blockSchemas'
 import { DesignPanel } from './DesignPanel'
-import { lexicalToPlainText, plainTextToLexical } from './richTextUtil'
+import { hasRichFormatting, lexicalToPlainText, plainTextToLexical } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
 
@@ -291,6 +291,23 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
         </label>
       )
     case 'richText':
+      if (hasRichFormatting(value)) {
+        return (
+          <label className="ve-field ve-field--full">
+            <span>{field.label}</span>
+            <textarea
+              rows={6}
+              readOnly
+              value={lexicalToPlainText(value)}
+              className="ve-field--readonly"
+            />
+            <small>
+              This field has formatting that can&apos;t be edited here yet - edit it from the normal admin page
+              instead.
+            </small>
+          </label>
+        )
+      }
       return (
         <label className="ve-field ve-field--full">
           <span>{field.label}</span>

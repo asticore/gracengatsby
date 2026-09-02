@@ -120,6 +120,20 @@ export const VISUAL_BLOCKS: BlockDef[] = [
     defaultValue: () => ({ blockType: 'ctaBanner', heading: 'New call to action', style: 'dark' }),
   },
   {
+    slug: 'form',
+    label: 'Form',
+    icon: '\u{1F4DD}',
+    category: 'basic',
+    description: 'Embeds a form built under Content > Forms.',
+    fields: [
+      { name: 'form', label: 'Form', type: 'relationship', relationTo: 'forms' },
+      { name: 'heading', label: 'Heading (overrides form name)', type: 'text', supportsMergeTags: true },
+      { name: 'showTitle', label: "Show the form's name above it", type: 'checkbox' },
+      { name: 'intro', label: 'Intro text', type: 'textarea', supportsMergeTags: true },
+    ],
+    defaultValue: () => ({ blockType: 'form', showTitle: true }),
+  },
+  {
     slug: 'imageText',
     label: 'Image + Text',
     icon: '\u{1F5BC}️',
@@ -248,9 +262,3 @@ export const VISUAL_BLOCKS: BlockDef[] = [
 export function getBlockDef(blockType: string): BlockDef | undefined {
   return VISUAL_BLOCKS.find((b) => b.slug === blockType)
 }
-
-/** Blocks offered inside a Section column - everything except Section itself is
- * allowed, and Section is allowed too so layouts can nest. */
-export const NESTABLE_BLOCKS = VISUAL_BLOCKS
-
-export type CanvasBlock = Record<string, unknown> & { blockType: string; _tempId: string }

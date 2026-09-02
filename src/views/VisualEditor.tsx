@@ -63,6 +63,7 @@ export const VisualEditorView: React.FC = () => {
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'publishing' | 'published' | 'error'>('idle')
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const [library, setLibrary] = useState<{ containerPath: NodePath; at: number } | null>(null)
+  const [dirty, setDirty] = useState(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -92,6 +93,17 @@ export const VisualEditorView: React.FC = () => {
       })
   }, [apiUrl, surface])
 
+  // Warns before a tab close/refresh discards unsaved edits.
+  useEffect(() => {
+    if (!dirty) return
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty])
+
   const selectedNode = selectedPath ? getNode(blocks, selectedPath) : undefined
   const selectedDef = selectedNode ? getBlockDef(selectedNode.blockType) : undefined
 
@@ -110,11 +122,13 @@ export const VisualEditorView: React.FC = () => {
     setBlocks((prev) => insertNode(prev, containerPath, at, node))
     setSelectedPath([...containerPath, at])
     setLibrary(null)
+    setDirty(true)
   }, [])
 
   const deleteBlock = useCallback((path: NodePath) => {
     setBlocks((prev) => updateNode(prev, path, () => null))
     setSelectedPath(null)
+    setDirty(true)
   }, [])
 
   const duplicateBlock = useCallback((path: NodePath) => {
@@ -124,18 +138,21 @@ export const VisualEditorView: React.FC = () => {
       if (!original) return prev
       return insertNode(prev, containerPath, index + 1, cloneNode(original, nextId))
     })
+    setDirty(true)
   }, [])
 
   const moveBlock = useCallback((path: NodePath, direction: -1 | 1) => {
     const { containerPath, index } = splitPath(path)
     setBlocks((prev) => reorderWithin(prev, containerPath, index, index + direction))
     setSelectedPath([...containerPath, index + direction])
+    setDirty(true)
   }, [])
 
   const updateSelected = useCallback(
     (next: Record<string, unknown>) => {
       if (!selectedPath) return
       setBlocks((prev) => updateNode(prev, selectedPath, (node) => ({ ...(next as SectionNode), _id: node._id })))
+      setDirty(true)
     },
     [selectedPath],
   )
@@ -156,6 +173,7 @@ export const VisualEditorView: React.FC = () => {
     const containerPath = from.slice(0, -1)
     setBlocks((prev) => reorderWithin(prev, containerPath, from[from.length - 1], to[to.length - 1]))
     setSelectedPath(null)
+    setDirty(true)
   }
 
   /* ---------------------------------------------------------------------- */
@@ -177,6 +195,7 @@ export const VisualEditorView: React.FC = () => {
 
       setSaving(publish ? 'published' : 'saved')
       if (publish) setStatus('published')
+      setDirty(false)
       setTimeout(() => setSaving('idle'), 2000)
     } catch (err) {
       setSaving('error')
@@ -217,7 +236,17 @@ export const VisualEditorView: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
       <div className="ve-topbar">
         <div className="ve-topbar__left">
-          <a href={backHref} className="ve-btn ve-btn--ghost">
+          <a
+            href={backHref}
+            className="ve-btn ve-btn--ghost"
+            onClick={(event) => {
+              if (!dirty) return
+              event.preventDefault()
+              if (window.confirm('You have unsaved changes. Leave without saving?')) {
+                window.location.href = backHref
+              }
+            }}
+          >
             Back
           </a>
           <span className="ve-topbar__title">

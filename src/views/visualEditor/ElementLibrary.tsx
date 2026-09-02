@@ -16,16 +16,13 @@ export const ElementLibrary: React.FC<{
   onClose: () => void
   /** Heading shown at the top, e.g. "Add to column 2". */
   title?: string
-  /** Block slugs to hide (used to stop a section nesting itself when unwanted). */
-  exclude?: string[]
-}> = ({ onPick, onClose, title = 'Add an element', exclude = [] }) => {
+}> = ({ onPick, onClose, title = 'Add an element' }) => {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('all')
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return VISUAL_BLOCKS.filter((block) => {
-      if (exclude.includes(block.slug)) return false
       if (category !== 'all' && block.category !== category) return false
       if (!needle) return true
       return (
@@ -34,7 +31,7 @@ export const ElementLibrary: React.FC<{
         block.slug.toLowerCase().includes(needle)
       )
     })
-  }, [query, category, exclude])
+  }, [query, category])
 
   const grouped = useMemo(() => {
     const map = new Map<string, BlockDef[]>()
@@ -87,7 +84,7 @@ export const ElementLibrary: React.FC<{
         </div>
 
         <div className="ve-modal__body">
-          {results.length === 0 && <p className="ve-library__empty">No elements match “{query}”.</p>}
+          {results.length === 0 && <p className="ve-library__empty">No elements match "{query}".</p>}
 
           {BLOCK_CATEGORIES.map((cat) => {
             const blocks = grouped.get(cat.key)

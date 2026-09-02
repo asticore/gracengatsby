@@ -155,13 +155,16 @@ export function cloneNode(node: SectionNode, makeId: () => string): SectionNode 
 /** Strips editor-only ids before the tree is written back to the CMS. */
 export function stripEditorIds(nodes: SectionNode[]): SectionNode[] {
   return nodes.map((node) => {
-    const { _tempId: _ignored, ...rest } = node as SectionNode & { _tempId?: string }
+    const { _id: _ignored, ...rest } = node as SectionNode & { _id?: string }
     const cleaned: SectionNode = { ...rest }
     if (Array.isArray(node.columns)) {
-      cleaned.columns = node.columns.map((column) => ({
-        ...column,
-        blocks: stripEditorIds(column.blocks || []),
-      }))
+      cleaned.columns = node.columns.map((column) => {
+        const { _id: _ignoredColumnId, ...restColumn } = column as SectionColumn & { _id?: string }
+        return {
+          ...restColumn,
+          blocks: stripEditorIds(column.blocks || []),
+        }
+      })
     }
     return cleaned
   })

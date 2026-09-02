@@ -26,6 +26,31 @@ type LexicalRoot = {
   }
 }
 
+/**
+ * True when a Lexical value carries formatting the plain-text bridge above
+ * cannot round-trip - bold/italic/underline/etc. (a non-zero `format` bitmask
+ * on a text node), or any node type besides a plain paragraph of text (a
+ * heading, list, link, quote, code block, and so on).
+ *
+ * Used to stop `plainTextToLexical` from silently flattening a value that
+ * already has real formatting: a field that fails this check is safe to
+ * edit as plain text and write back losslessly, one that passes it is not.
+ */
+export function hasRichFormatting(value: unknown): boolean {
+  const root = (value as LexicalRoot | null | undefined)?.root
+  if (!root?.children?.length) return false
+  return root.children.some(nodeHasFormatting)
+}
+
+function nodeHasFormatting(node: LexicalNode): boolean {
+  if (node.type === 'text') {
+    return typeof node.format === 'number' && node.format !== 0
+  }
+  if (node.type !== 'paragraph') return true
+  const children = (node.children as LexicalNode[] | undefined) || []
+  return children.some(nodeHasFormatting)
+}
+
 export function lexicalToPlainText(value: unknown): string {
   const root = (value as LexicalRoot | null | undefined)?.root
   if (!root?.children?.length) return ''

@@ -3,6 +3,8 @@ import React from 'react'
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { CtaBannerBlock } from './CtaBannerBlock'
+import { FormBlockRenderer } from '@/features/forms'
+
 import { EventGridBlock } from './EventGridBlock'
 import { FaqBlockBlock } from './FaqBlockBlock'
 import { GalleryBlock } from './GalleryBlock'
@@ -79,6 +81,16 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
           source={get('source')}
           category={get('category')}
           faqs={get('faqs')}
+        />
+      )
+
+    case 'form':
+      return (
+        <FormBlockRenderer
+          form={get('form')}
+          heading={get('heading')}
+          showTitle={get('showTitle')}
+          intro={get('intro')}
         />
       )
 

@@ -5,7 +5,7 @@ import { useDocumentInfo, useField } from '@payloadcms/ui'
 
 import { CustomFieldInput } from './CustomFieldInput'
 import { fetchFieldGroups, type CustomFieldValues, type FieldGroupDoc } from './types'
-import './customFields.css'
+import { CUSTOM_FIELDS_CSS } from './customFields.styles'
 
 /**
  * The native-admin editor for a collection's custom fields.
@@ -60,6 +60,8 @@ export const CustomFieldsPanel: React.FC<{ path?: string }> = ({ path = 'customF
 
   return (
     <div className="cf-panel">
+      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+      <style dangerouslySetInnerHTML={{ __html: CUSTOM_FIELDS_CSS }} />
       {groups.map((group) => (
         <div className="cf-group" key={group.id}>
           <h3 className="cf-group__title">{group.name}</h3>

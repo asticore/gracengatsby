@@ -35,6 +35,7 @@ import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff3
 import { Dashboard as Dashboard_14459cdb650c64c2bbd9c605e8597da4 } from '@/views/dashboard/Dashboard'
 import { TranslationsView as TranslationsView_c41315083d66c2f4bf042b5656a82057 } from '@/features/multilingual/views/TranslationsView'
 import { DatabaseView as DatabaseView_6633bb59b9d3764fee4759d8759ea351 } from '@/features/cleanup/DatabaseView'
+import { ABResultsView as ABResultsView_9f8748d2bf3a71fc27def5875567b131 } from '@/features/abTesting/components/ABResultsView'
 import { VisualEditorView as VisualEditorView_da223d51a5f9f19f11d50591de54f372 } from '@/views/VisualEditor'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -77,6 +78,7 @@ export const importMap = {
   "@/views/dashboard/Dashboard#Dashboard": Dashboard_14459cdb650c64c2bbd9c605e8597da4,
   "@/features/multilingual/views/TranslationsView#TranslationsView": TranslationsView_c41315083d66c2f4bf042b5656a82057,
   "@/features/cleanup/DatabaseView#DatabaseView": DatabaseView_6633bb59b9d3764fee4759d8759ea351,
+  "@/features/abTesting/components/ABResultsView#ABResultsView": ABResultsView_9f8748d2bf3a71fc27def5875567b131,
   "@/views/VisualEditor#VisualEditorView": VisualEditorView_da223d51a5f9f19f11d50591de54f372,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

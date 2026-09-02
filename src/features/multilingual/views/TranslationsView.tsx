@@ -4,7 +4,7 @@ import type { AdminViewServerProps } from 'payload'
 import { getMultilingualSettings } from '../settings'
 import { TranslationsTable } from './TranslationsTable'
 import { getTranslationsPageData } from './translationsData'
-import './translations.css'
+import { TRANSLATIONS_CSS } from './translations.styles'
 
 /**
  * `/admin/translations` - the one screen where a person writes translations.
@@ -41,6 +41,8 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   if (!settings.enabled) {
     return (
       <div className="eg-translations eg-translations--notice">
+        {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+        <style dangerouslySetInnerHTML={{ __html: TRANSLATIONS_CSS }} />
         <h1>Translations</h1>
         <p>
           Multiple languages are switched off, so there is nothing to translate yet. Turn them on under Settings →
@@ -55,6 +57,8 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   if (targets.length === 0) {
     return (
       <div className="eg-translations eg-translations--notice">
+        {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+        <style dangerouslySetInnerHTML={{ __html: TRANSLATIONS_CSS }} />
         <h1>Translations</h1>
         <p>
           Only your primary language is switched on. Add at least one more language under Settings → Languages and each
@@ -77,17 +81,21 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   })
 
   return (
-    <TranslationsTable
-      rows={data.rows}
-      targetLocales={data.targetLocales}
-      sourceLocale={settings.defaultLocale}
-      progress={data.progress}
-      collections={data.collections}
-      documents={data.documents}
-      scope={scope}
-      documentId={documentId}
-      group={group}
-      apiBase={apiBase}
-    />
+    <>
+      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+      <style dangerouslySetInnerHTML={{ __html: TRANSLATIONS_CSS }} />
+      <TranslationsTable
+        rows={data.rows}
+        targetLocales={data.targetLocales}
+        sourceLocale={settings.defaultLocale}
+        progress={data.progress}
+        collections={data.collections}
+        documents={data.documents}
+        scope={scope}
+        documentId={documentId}
+        group={group}
+        apiBase={apiBase}
+      />
+    </>
   )
 }

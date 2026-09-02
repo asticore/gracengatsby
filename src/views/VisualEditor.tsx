@@ -23,7 +23,7 @@ import {
   type NodePath,
 } from './visualEditor/treeOps'
 import { VISUAL_EDITOR_SURFACES } from './visualEditor/surfaces'
-import './visualEditor/visualEditor.css'
+import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
 
 let idCounter = 0
 const nextId = () => `ve-${Date.now()}-${idCounter++}`
@@ -190,7 +190,7 @@ export const VisualEditorView: React.FC = () => {
       : `/admin/collections/${surface.slug}/${route?.id}`
     : '/admin'
 
-  if (loading) return <div className="ve-loading-screen">Loading visual editor…</div>
+  if (loading) return <div className="ve-loading-screen">Loading visual editor</div>
 
   if (error && blocks.length === 0) {
     return (
@@ -213,10 +213,12 @@ export const VisualEditorView: React.FC = () => {
 
   return (
     <div className="ve-root">
+      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+      <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
       <div className="ve-topbar">
         <div className="ve-topbar__left">
           <a href={backHref} className="ve-btn ve-btn--ghost">
-            ← Back
+            Back
           </a>
           <span className="ve-topbar__title">
             Visual editor - {docTitle} {status && <span className="ve-topbar__status">({status})</span>}
@@ -238,7 +240,7 @@ export const VisualEditorView: React.FC = () => {
               aria-label="Desktop preview"
               title="Desktop preview"
             >
-              🖥️
+              Desktop
             </button>
             <button
               type="button"
@@ -247,11 +249,11 @@ export const VisualEditorView: React.FC = () => {
               aria-label="Mobile preview"
               title="Mobile preview"
             >
-              📱
+              Mobile
             </button>
           </div>
           <button type="button" className="ve-btn" onClick={() => save(false)} disabled={saving === 'saving'}>
-            {saving === 'saving' ? 'Saving…' : saving === 'saved' ? 'Saved ✓' : 'Save draft'}
+            {saving === 'saving' ? 'Saving' : saving === 'saved' ? 'Saved' : 'Save draft'}
           </button>
           <button
             type="button"
@@ -259,7 +261,7 @@ export const VisualEditorView: React.FC = () => {
             onClick={() => save(true)}
             disabled={saving === 'publishing'}
           >
-            {saving === 'publishing' ? 'Publishing…' : saving === 'published' ? 'Published ✓' : 'Publish'}
+            {saving === 'publishing' ? 'Publishing' : saving === 'published' ? 'Published' : 'Publish'}
           </button>
         </div>
       </div>

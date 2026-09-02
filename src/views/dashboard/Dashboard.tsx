@@ -15,7 +15,7 @@ import {
   getStatTiles,
   greetingFor,
 } from './dashboardData'
-import './dashboard.css'
+import { DASHBOARD_CSS } from './dashboard.styles'
 
 /**
  * The portal's landing page.
@@ -89,6 +89,8 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
 
   return (
     <div className={baseClass}>
+      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+      <style dangerouslySetInnerHTML={{ __html: DASHBOARD_CSS }} />
       <header className={`${baseClass}__header`}>
         <div>
           <h1 className={`${baseClass}__greeting`}>

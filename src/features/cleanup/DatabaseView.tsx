@@ -8,7 +8,7 @@ import { getCleanupDb } from './guard'
 import { planIndexRenames } from './indexNames'
 import { formatBytes } from './size'
 import { surveyDatabase } from './survey'
-import './database.css'
+import { DATABASE_CSS } from './database.styles'
 
 /**
  * The Database screen: one section per feature showing what it owns and what
@@ -28,6 +28,8 @@ export const DatabaseView: React.FC<AdminViewServerProps> = async () => {
   if (!db) {
     return (
       <div className={baseClass}>
+        {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+        <style dangerouslySetInnerHTML={{ __html: DATABASE_CSS }} />
         <h1 className={`${baseClass}__title`}>Database</h1>
         <p className={`${baseClass}__empty`}>
           No database binding is available in this environment, so there is nothing to survey.
@@ -45,6 +47,8 @@ export const DatabaseView: React.FC<AdminViewServerProps> = async () => {
 
   return (
     <div className={baseClass}>
+      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+      <style dangerouslySetInnerHTML={{ __html: DATABASE_CSS }} />
       <header className={`${baseClass}__header`}>
         <h1 className={`${baseClass}__title`}>Database</h1>
         <p className={`${baseClass}__subtitle`}>

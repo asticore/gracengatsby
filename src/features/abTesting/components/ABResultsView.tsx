@@ -9,7 +9,7 @@ import { buildResults } from '../results'
 import { abTestingEnabled } from '../settings'
 import { AB_TESTS_SLUG } from '../slugs'
 import type { ActiveTest, GoalResult } from '../types'
-import './abResults.css'
+import { AB_RESULTS_CSS } from './abResults.styles'
 
 /**
  * The results screen.
@@ -126,6 +126,8 @@ export const ABResultsView: React.FC<AdminViewServerProps> = async () => {
 
   return (
     <div className={baseClass}>
+      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+      <style dangerouslySetInnerHTML={{ __html: AB_RESULTS_CSS }} />
       <header>
         <h1 className={`${baseClass}__title`}>A/B test results</h1>
         <p className={`${baseClass}__subtitle`}>

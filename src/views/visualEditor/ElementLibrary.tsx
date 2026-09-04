@@ -197,7 +197,7 @@ const TemplateSource: React.FC<{ onPickTemplate: (blocks: SectionNode[]) => void
         {!error && docs === null && <p className="ve-library__empty">Loading…</p>}
         {!error && docs !== null && docs.length === 0 && (
           <p className="ve-library__empty">
-            No page templates yet - build one under Content > Page Templates, then it shows up here.
+            No page templates yet - build one under Content {'>'} Page Templates, then it shows up here.
           </p>
         )}
         {!error && docs && docs.length > 0 && (

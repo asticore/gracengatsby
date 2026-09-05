@@ -70,8 +70,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="page-shell product-page">
-      <div className="product-page__gallery">
+    <div className="page-shell grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">
+      <div className="grid gap-4">
         {images.length > 0 ? (
           images.map((img) => (
             <Image
@@ -84,20 +84,31 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             />
           ))
         ) : (
-          <div className="product-page__placeholder" aria-hidden />
+          <div
+            className="aspect-[4/5] bg-[image:linear-gradient(135deg,var(--color-cream-dim),var(--color-gold-light))]"
+            aria-hidden
+          />
         )}
       </div>
 
-      <div className="product-page__details">
-        {product.category && <span className="product-page__category">{product.category}</span>}
-        <h1>{product.title}</h1>
-        <p className="product-page__price">{formatCurrency(product.priceInAUD)}</p>
-        {product.shortDescription && <p className="product-page__short">{product.shortDescription}</p>}
+      <div>
+        {product.category && (
+          <span className="text-[0.75rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">
+            {product.category}
+          </span>
+        )}
+        <h1 className="text-[2.75rem]">{product.title}</h1>
+        <p className="mb-4 font-[family-name:var(--font-display)] text-[1.5rem]">
+          {formatCurrency(product.priceInAUD)}
+        </p>
+        {product.shortDescription && (
+          <p className="mb-6 text-[rgba(20,17,15,0.7)]">{product.shortDescription}</p>
+        )}
 
         <AddToCartButton productID={product.id} />
 
         {product.description && (
-          <div className="product-page__description">
+          <div className="mt-8 border-t border-[var(--color-line)] pt-6">
             <RichText data={product.description} />
           </div>
         )}
@@ -108,14 +119,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       ))}
 
       {faqs.length > 0 && (
-        <div className="product-page__faqs page-shell">
+        <div className="page-shell col-span-full mt-16">
           <h2>Questions about this piece</h2>
           <FaqList faqs={faqs} layout="accordion" />
         </div>
       )}
 
       {related.length > 0 && (
-        <div className="product-page__related page-shell">
+        <div className="page-shell col-span-full mt-16">
           <div className="section-heading">
             <h2>You might also like</h2>
           </div>

@@ -18,8 +18,8 @@ export const AddToCartButton: React.FC<{ productID: number; label?: string }> = 
 
   if (added) {
     return (
-      <div className="add-to-cart-confirm">
-        <p>Added to your cart.</p>
+      <div>
+        <p className="mb-3">Added to your cart.</p>
         <Link href="/cart" className="btn btn--primary">
           View cart
         </Link>

@@ -64,31 +64,33 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     typeof event.capacity === 'number' ? Math.max(event.capacity - guestsSoFar, 0) : null
 
   return (
-    <div className="page-shell event-page">
+    <div className="page-shell">
       {cover?.url && (
-        <div className="event-page__cover">
+        <div className="relative mb-12 aspect-[16/6] w-full bg-[var(--color-cream-dim)]">
           <Image src={cover.url} alt={cover.alt || event.title} fill style={{ objectFit: 'cover' }} />
         </div>
       )}
 
-      <div className="event-page__layout">
-        <div className="event-page__main">
-          <span className="event-page__date">{dateFormatter.format(new Date(event.startDate))}</span>
-          <h1>{event.title}</h1>
-          {event.location?.venueName && <p className="event-page__venue">{event.location.venueName}</p>}
-          {event.location?.address && <p className="event-page__address">{event.location.address}</p>}
+      <div className="grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">
+        <div>
+          <span className="text-[0.75rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">
+            {dateFormatter.format(new Date(event.startDate))}
+          </span>
+          <h1 className="text-[2.75rem]">{event.title}</h1>
+          {event.location?.venueName && <p className="font-medium">{event.location.venueName}</p>}
+          {event.location?.address && <p className="text-[rgba(20,17,15,0.6)]">{event.location.address}</p>}
 
           {event.description && (
-            <div className="event-page__description">
+            <div className="mt-6">
               <RichText data={event.description} />
             </div>
           )}
         </div>
 
-        <aside className="event-page__sidebar">
+        <aside className="self-start border border-[var(--color-line)] bg-white p-8">
           {event.externalRegistrationUrl ? (
             <a
-              className="btn btn--primary event-page__register-link"
+              className="btn btn--primary"
               href={event.externalRegistrationUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -97,8 +99,10 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             </a>
           ) : event.eventType === 'paid' ? (
             ticket ? (
-              <div className="event-page__ticket">
-                <p className="event-page__price">{formatCurrency(ticket.priceInAUD)}</p>
+              <div>
+                <p className="mb-4 font-[family-name:var(--font-display)] text-[1.5rem]">
+                  {formatCurrency(ticket.priceInAUD)}
+                </p>
                 <AddToCartButton productID={ticket.id} label="Buy ticket" />
               </div>
             ) : (
@@ -108,7 +112,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <RsvpForm eventID={event.id} />
           )}
 
-          {spotsRemaining !== null && <p className="event-page__spots">{spotsRemaining} spot(s) remaining</p>}
+          {spotsRemaining !== null && (
+            <p className="mt-4 text-[0.85rem] text-[rgba(20,17,15,0.6)]">{spotsRemaining} spot(s) remaining</p>
+          )}
         </aside>
       </div>
     </div>

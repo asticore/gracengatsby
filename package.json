@@ -4,6 +4,7 @@
   "description": "Asticore Engage - the Grace & Gatsby website and content portal, running on Next.js and Cloudflare Workers with D1 and R2.",
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:importmap && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:types && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "deploy": "pnpm run deploy:database && pnpm run deploy:app && pnpm run deploy:migrate && pnpm run deploy:seed",

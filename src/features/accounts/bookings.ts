@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload } from '@/engine'
 import type { EventRsvp } from '@/engage-types'
 
 import type { AccountUser } from './session'

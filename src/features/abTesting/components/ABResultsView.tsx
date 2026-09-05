@@ -1,5 +1,5 @@
 import React from 'react'
-import type { AdminViewServerProps, CollectionSlug } from 'payload'
+import type { AdminViewServerProps, CollectionSlug } from '@/engine'
 
 import { getEngine } from '@/lib/engine'
 

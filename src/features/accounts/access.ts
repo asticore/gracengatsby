@@ -1,4 +1,4 @@
-import type { Access } from 'payload'
+import type { Access } from '@/engine'
 
 /**
  * Read access for event RSVPs: an admin, or the person whose address is on the

@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload } from '@/engine'
 
 import { sendAlreadyRegisteredEmail, sendResetEmail, sendWelcomeEmail } from './emails'
 import { USERS_SLUG } from './types'

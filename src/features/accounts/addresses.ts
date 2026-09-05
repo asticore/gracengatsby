@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload } from '@/engine'
 import type { Address } from '@/engage-types'
 
 import { readPreferences, writePreferences } from './preferences'

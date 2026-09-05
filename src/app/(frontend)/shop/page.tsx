@@ -43,8 +43,13 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   const layout = settings?.archiveLayout || 'grid-4'
 
+  const filterLinkClassName = (active: boolean) =>
+    `border-b hover:border-[var(--color-gold)] hover:opacity-100 ${
+      active ? 'border-[var(--color-gold)] opacity-100' : 'border-transparent opacity-60'
+    }`
+
   return (
-    <div className="page-shell shop-page">
+    <div className="page-shell">
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
         settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (
@@ -55,12 +60,16 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       )}
 
       {settings?.showCategoryFilters !== false && (
-        <div className="shop-page__filters">
-          <Link href="/shop" className={!category ? 'is-active' : ''}>
+        <div className="mb-8 flex flex-wrap gap-4 text-[0.8rem] uppercase tracking-[0.06em]">
+          <Link href="/shop" className={filterLinkClassName(!category)}>
             All
           </Link>
           {CATEGORIES.map((cat) => (
-            <Link key={cat.value} href={`/shop?category=${cat.value}`} className={category === cat.value ? 'is-active' : ''}>
+            <Link
+              key={cat.value}
+              href={`/shop?category=${cat.value}`}
+              className={filterLinkClassName(category === cat.value)}
+            >
               {cat.label}
             </Link>
           ))}

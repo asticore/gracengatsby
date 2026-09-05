@@ -440,48 +440,14 @@ a {
   }
 }
 
-/* ---- Breadcrumbs ---- */
-
-.breadcrumbs {
-  padding: 16px 24px 0;
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  color: rgba(20, 17, 15, 0.6);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.breadcrumbs__sep {
-  opacity: 0.5;
-}
-
-.breadcrumbs__current {
-  color: var(--color-ink);
-}
-
-/* ---- Shop: category filters, layout variants ---- */
-
-.shop-page__filters {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 32px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.shop-page__filters a {
-  opacity: 0.6;
-  border-bottom: 1px solid transparent;
-}
-
-.shop-page__filters a.is-active,
-.shop-page__filters a:hover {
-  opacity: 1;
-  border-color: var(--color-gold);
-}
+/*
+ * ---- Shop: archive layout variants ----
+ * grid-3 / grid-4 / list are chosen at runtime from Shop settings
+ * (archiveLayout) in the CMS, and "list" also reaches into ProductCard's
+ * markup (.product-grid--list .product-card) - the same reason
+ * .product-card/.product-card__image were kept as real classes rather than
+ * folded into ProductCard.tsx. Not convertible to static utility classNames.
+ */
 
 .product-grid--grid-3 {
   grid-template-columns: repeat(3, 1fr);

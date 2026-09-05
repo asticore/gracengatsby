@@ -29,16 +29,19 @@ export default async function BuiltPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="built-page">
       {ancestors.length > 0 && (
-        <nav className="breadcrumbs page-shell" aria-label="Breadcrumb">
+        <nav
+          className="mx-auto flex max-w-[var(--max-width)] flex-wrap gap-2 px-6 pt-4 text-[0.8rem] tracking-[0.04em] text-[rgba(20,17,15,0.6)]"
+          aria-label="Breadcrumb"
+        >
           <Link href="/">Home</Link>
           {ancestors.map((ancestor) => (
             <React.Fragment key={ancestor.id}>
-              <span className="breadcrumbs__sep">/</span>
+              <span className="opacity-50">/</span>
               <span>{ancestor.title}</span>
             </React.Fragment>
           ))}
-          <span className="breadcrumbs__sep">/</span>
-          <span className="breadcrumbs__current">{page.title}</span>
+          <span className="opacity-50">/</span>
+          <span className="text-[var(--color-ink)]">{page.title}</span>
         </nav>
       )}
       {(page.blocks || []).map((block, index) => (

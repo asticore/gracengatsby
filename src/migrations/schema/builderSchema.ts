@@ -45,6 +45,31 @@ export const NEW_TABLES: SchemaTable[] = [
   { table: "products_blocks_section", sql: "CREATE TABLE IF NOT EXISTS `products_blocks_section` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `columns` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE cascade )" },
   { table: "shop_settings_blocks_loop", sql: "CREATE TABLE IF NOT EXISTS `shop_settings_blocks_loop` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `heading` text, `template_id` integer NOT NULL, `source` text DEFAULT 'products', `category` text, `limit` numeric DEFAULT 6, `columns` numeric DEFAULT 3, `sort_by` text DEFAULT 'newest', `design` text, `block_name` text, FOREIGN KEY (`template_id`) REFERENCES `page_templates`(`id`) ON UPDATE no action ON DELETE set null, FOREIGN KEY (`_parent_id`) REFERENCES `shop_settings`(`id`) ON UPDATE no action ON DELETE cascade )" },
   { table: "shop_settings_blocks_section", sql: "CREATE TABLE IF NOT EXISTS `shop_settings_blocks_section` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `columns` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `shop_settings`(`id`) ON UPDATE no action ON DELETE cascade )" },
+
+  // --- Added later, for the `element` block (src/blocks/Element.ts) ---
+  // Everything above this line predates the `eg_` table-prefix rename and
+  // targets the old names on purpose - see the `withoutRenamedTables` filter
+  // in the internal-migrate route, which drops each one once its rename has
+  // landed. These eleven are new, not renamed, so they are written directly
+  // against the CURRENT (`eg_`-prefixed) parent tables and need no such filter.
+  // One `element` table per existing page-builder parent (eight), plus the
+  // three that get a versioned twin (Pages, Posts, Products) - same 11-table
+  // shape the `element` block's own file comment explains. Column shape and
+  // exact table names were confirmed against the live schema (each parent's
+  // real `CREATE TABLE` and the equivalent block tables already added for
+  // Lessons in 20260830_120000_courses.ts) rather than the usual diff tool,
+  // which cannot produce a clean diff against this project's local D1 state.
+  { table: "eg_pages_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_pages_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_pages`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "eg_posts_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_posts_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_posts`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "eg_products_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_products_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_products`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "eg_page_templates_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_page_templates_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_page_templates`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "eg_blog_settings_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_blog_settings_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_blog_settings`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "eg_shop_settings_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_shop_settings_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_shop_settings`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "eg_faq_settings_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_faq_settings_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_faq_settings`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "eg_lessons_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `eg_lessons_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` text PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `eg_lessons`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "_eg_pages_v_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `_eg_pages_v_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` integer PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `_uuid` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `_eg_pages_v`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "_eg_posts_v_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `_eg_posts_v_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` integer PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `_uuid` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `_eg_posts_v`(`id`) ON UPDATE no action ON DELETE cascade )" },
+  { table: "_eg_products_v_blocks_element", sql: "CREATE TABLE IF NOT EXISTS `_eg_products_v_blocks_element` ( `_order` integer NOT NULL, `_parent_id` integer NOT NULL, `_path` text NOT NULL, `id` integer PRIMARY KEY NOT NULL, `element_type` text NOT NULL, `props` text, `design` text, `_uuid` text, `block_name` text, FOREIGN KEY (`_parent_id`) REFERENCES `_eg_products_v`(`id`) ON UPDATE no action ON DELETE cascade )" },
 ]
 
 export const NEW_COLUMNS: SchemaColumn[] = [
@@ -220,4 +245,39 @@ export const NEW_INDEXES: SchemaIndex[] = [
   { index: "shop_settings_blocks_section_order_idx", sql: "CREATE INDEX IF NOT EXISTS `shop_settings_blocks_section_order_idx` ON `shop_settings_blocks_section` (`_order`)" },
   { index: "shop_settings_blocks_section_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `shop_settings_blocks_section_parent_id_idx` ON `shop_settings_blocks_section` (`_parent_id`)" },
   { index: "shop_settings_blocks_section_path_idx", sql: "CREATE INDEX IF NOT EXISTS `shop_settings_blocks_section_path_idx` ON `shop_settings_blocks_section` (`_path`)" },
+
+  // --- Added later, alongside the `element` tables in NEW_TABLES above ---
+  { index: "eg_pages_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_pages_blocks_element_order_idx` ON `eg_pages_blocks_element` (`_order`)" },
+  { index: "eg_pages_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_pages_blocks_element_parent_id_idx` ON `eg_pages_blocks_element` (`_parent_id`)" },
+  { index: "eg_pages_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_pages_blocks_element_path_idx` ON `eg_pages_blocks_element` (`_path`)" },
+  { index: "eg_posts_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_posts_blocks_element_order_idx` ON `eg_posts_blocks_element` (`_order`)" },
+  { index: "eg_posts_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_posts_blocks_element_parent_id_idx` ON `eg_posts_blocks_element` (`_parent_id`)" },
+  { index: "eg_posts_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_posts_blocks_element_path_idx` ON `eg_posts_blocks_element` (`_path`)" },
+  { index: "eg_products_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_products_blocks_element_order_idx` ON `eg_products_blocks_element` (`_order`)" },
+  { index: "eg_products_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_products_blocks_element_parent_id_idx` ON `eg_products_blocks_element` (`_parent_id`)" },
+  { index: "eg_products_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_products_blocks_element_path_idx` ON `eg_products_blocks_element` (`_path`)" },
+  { index: "eg_page_templates_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_page_templates_blocks_element_order_idx` ON `eg_page_templates_blocks_element` (`_order`)" },
+  { index: "eg_page_templates_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_page_templates_blocks_element_parent_id_idx` ON `eg_page_templates_blocks_element` (`_parent_id`)" },
+  { index: "eg_page_templates_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_page_templates_blocks_element_path_idx` ON `eg_page_templates_blocks_element` (`_path`)" },
+  { index: "eg_blog_settings_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_blog_settings_blocks_element_order_idx` ON `eg_blog_settings_blocks_element` (`_order`)" },
+  { index: "eg_blog_settings_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_blog_settings_blocks_element_parent_id_idx` ON `eg_blog_settings_blocks_element` (`_parent_id`)" },
+  { index: "eg_blog_settings_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_blog_settings_blocks_element_path_idx` ON `eg_blog_settings_blocks_element` (`_path`)" },
+  { index: "eg_shop_settings_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_shop_settings_blocks_element_order_idx` ON `eg_shop_settings_blocks_element` (`_order`)" },
+  { index: "eg_shop_settings_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_shop_settings_blocks_element_parent_id_idx` ON `eg_shop_settings_blocks_element` (`_parent_id`)" },
+  { index: "eg_shop_settings_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_shop_settings_blocks_element_path_idx` ON `eg_shop_settings_blocks_element` (`_path`)" },
+  { index: "eg_faq_settings_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_faq_settings_blocks_element_order_idx` ON `eg_faq_settings_blocks_element` (`_order`)" },
+  { index: "eg_faq_settings_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_faq_settings_blocks_element_parent_id_idx` ON `eg_faq_settings_blocks_element` (`_parent_id`)" },
+  { index: "eg_faq_settings_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_faq_settings_blocks_element_path_idx` ON `eg_faq_settings_blocks_element` (`_path`)" },
+  { index: "eg_lessons_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_lessons_blocks_element_order_idx` ON `eg_lessons_blocks_element` (`_order`)" },
+  { index: "eg_lessons_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_lessons_blocks_element_parent_id_idx` ON `eg_lessons_blocks_element` (`_parent_id`)" },
+  { index: "eg_lessons_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `eg_lessons_blocks_element_path_idx` ON `eg_lessons_blocks_element` (`_path`)" },
+  { index: "_eg_pages_v_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_pages_v_blocks_element_order_idx` ON `_eg_pages_v_blocks_element` (`_order`)" },
+  { index: "_eg_pages_v_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_pages_v_blocks_element_parent_id_idx` ON `_eg_pages_v_blocks_element` (`_parent_id`)" },
+  { index: "_eg_pages_v_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_pages_v_blocks_element_path_idx` ON `_eg_pages_v_blocks_element` (`_path`)" },
+  { index: "_eg_posts_v_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_posts_v_blocks_element_order_idx` ON `_eg_posts_v_blocks_element` (`_order`)" },
+  { index: "_eg_posts_v_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_posts_v_blocks_element_parent_id_idx` ON `_eg_posts_v_blocks_element` (`_parent_id`)" },
+  { index: "_eg_posts_v_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_posts_v_blocks_element_path_idx` ON `_eg_posts_v_blocks_element` (`_path`)" },
+  { index: "_eg_products_v_blocks_element_order_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_products_v_blocks_element_order_idx` ON `_eg_products_v_blocks_element` (`_order`)" },
+  { index: "_eg_products_v_blocks_element_parent_id_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_products_v_blocks_element_parent_id_idx` ON `_eg_products_v_blocks_element` (`_parent_id`)" },
+  { index: "_eg_products_v_blocks_element_path_idx", sql: "CREATE INDEX IF NOT EXISTS `_eg_products_v_blocks_element_path_idx` ON `_eg_products_v_blocks_element` (`_path`)" },
 ]

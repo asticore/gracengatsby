@@ -4,7 +4,6 @@ import type { AdminViewServerProps } from '@/engine'
 import { getMultilingualSettings } from '../settings'
 import { TranslationsTable } from './TranslationsTable'
 import { getTranslationsPageData } from './translationsData'
-import { TRANSLATIONS_CSS } from './translations.styles'
 
 /**
  * `/admin/translations` - the one screen where a person writes translations.
@@ -25,6 +24,10 @@ const first = (value: unknown): string | null => {
   return null
 }
 
+const noticeClassName =
+  'flex flex-col gap-[calc(var(--base)*1.25)] px-[var(--gutter-h)] pt-[calc(var(--base)*1.5)] pb-[calc(var(--base)*3)]'
+const noticeTextClassName = 'max-w-[60ch] text-[var(--theme-elevation-600)]'
+
 export const TranslationsView: React.FC<AdminViewServerProps> = async (props) => {
   const engine = props.payload
   if (!engine?.config) return null
@@ -40,11 +43,9 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
 
   if (!settings.enabled) {
     return (
-      <div className="eg-translations eg-translations--notice">
-        {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
-        <style dangerouslySetInnerHTML={{ __html: TRANSLATIONS_CSS }} />
+      <div className={noticeClassName}>
         <h1>Translations</h1>
-        <p>
+        <p className={noticeTextClassName}>
           Multiple languages are switched off, so there is nothing to translate yet. Turn them on under Settings →
           Languages, choose the languages you want to offer, then come back here.
         </p>
@@ -56,11 +57,9 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
 
   if (targets.length === 0) {
     return (
-      <div className="eg-translations eg-translations--notice">
-        {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
-        <style dangerouslySetInnerHTML={{ __html: TRANSLATIONS_CSS }} />
+      <div className={noticeClassName}>
         <h1>Translations</h1>
-        <p>
+        <p className={noticeTextClassName}>
           Only your primary language is switched on. Add at least one more language under Settings → Languages and each
           one gets a column here.
         </p>
@@ -81,21 +80,17 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   })
 
   return (
-    <>
-      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
-      <style dangerouslySetInnerHTML={{ __html: TRANSLATIONS_CSS }} />
-      <TranslationsTable
-        rows={data.rows}
-        targetLocales={data.targetLocales}
-        sourceLocale={settings.defaultLocale}
-        progress={data.progress}
-        collections={data.collections}
-        documents={data.documents}
-        scope={scope}
-        documentId={documentId}
-        group={group}
-        apiBase={apiBase}
-      />
-    </>
+    <TranslationsTable
+      rows={data.rows}
+      targetLocales={data.targetLocales}
+      sourceLocale={settings.defaultLocale}
+      progress={data.progress}
+      collections={data.collections}
+      documents={data.documents}
+      scope={scope}
+      documentId={documentId}
+      group={group}
+      apiBase={apiBase}
+    />
   )
 }

@@ -39,6 +39,15 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 const cellKey = (rowKey: string, locale: string): string => `${rowKey}::${locale}`
 
+const filterLabelClassName = 'flex flex-col gap-[calc(var(--base)*0.25)]'
+const cellBaseClassName = 'border-b border-[var(--theme-elevation-100)] p-[calc(var(--base)*0.5)] text-left align-top'
+const headClassName = `${cellBaseClassName} sticky top-0 z-[2] bg-[var(--theme-elevation-50)]`
+const rowHeaderClassName = `${cellBaseClassName} min-w-[200px] max-w-[280px]`
+const sourceCellClassName = `${cellBaseClassName} min-w-[200px] max-w-[280px] whitespace-pre-wrap text-[var(--theme-elevation-700)]`
+const inputClassName =
+  'w-full min-w-[180px] rounded-[var(--style-radius-s)] border border-[var(--theme-elevation-150)] bg-[var(--theme-input-bg,var(--theme-base-0))] p-[calc(var(--base)*0.35)] text-inherit [font:inherit]'
+const staleInputStyle: React.CSSProperties = { borderLeft: '3px solid var(--theme-warning-500)' }
+
 /** Rewrites the current URL's filters without a client-side router. */
 function setParams(next: Record<string, string | null>): void {
   const url = new URL(window.location.href)
@@ -138,22 +147,22 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
   }, [apiBase, dirtyCount, draft, rows])
 
   return (
-    <div className="eg-translations">
-      <header className="eg-translations__head">
+    <div className="flex flex-col gap-[calc(var(--base)*1.25)] px-[var(--gutter-h)] pt-[calc(var(--base)*1.5)] pb-[calc(var(--base)*3)]">
+      <header className="flex flex-wrap items-start justify-between gap-[var(--base)]">
         <div>
           <h1>Translations</h1>
-          <p className="eg-translations__sub">
+          <p className="mt-[calc(var(--base)*0.25)] mx-0 mb-0 text-[var(--theme-elevation-600)]">
             Everything written in {localeLabel(sourceLocale)} on the left, one column per language to fill in.
           </p>
         </div>
-        <div className="eg-translations__actions">
-          <label className="eg-translations__toggle">
+        <div className="flex items-center gap-[var(--base)]">
+          <label className="inline-flex items-center gap-[calc(var(--base)*0.4)] whitespace-nowrap">
             <input type="checkbox" checked={missingOnly} onChange={(event) => setMissingOnly(event.target.checked)} />
             Missing only
           </label>
           <button
             type="button"
-            className="eg-translations__save"
+            className="cursor-pointer rounded-[var(--style-radius-s)] border border-[var(--theme-elevation-150)] bg-[var(--theme-success-500)] px-[var(--base)] py-[calc(var(--base)*0.5)] text-[var(--theme-base-0)] disabled:cursor-default disabled:bg-[var(--theme-elevation-100)] disabled:text-[var(--theme-elevation-500)]"
             disabled={dirtyCount === 0 || state === 'saving'}
             onClick={onSave}
           >
@@ -163,22 +172,30 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
       </header>
 
       {message ? (
-        <p className={`eg-translations__message eg-translations__message--${state}`}>{message}</p>
+        <p
+          className={`m-0 rounded-[var(--style-radius-s)] px-[var(--base)] py-[calc(var(--base)*0.5)] ${
+            state === 'error'
+              ? 'bg-[color-mix(in_srgb,var(--theme-error-500)_12%,transparent)] text-[var(--theme-error-600)]'
+              : 'bg-[var(--theme-elevation-50)]'
+          }`}
+        >
+          {message}
+        </p>
       ) : null}
 
-      <section className="eg-translations__progress" aria-label="Progress per language">
+      <section className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-[var(--base)]" aria-label="Progress per language">
         {progress.map((entry) => {
           const percent = entry.total > 0 ? Math.round((entry.translated / entry.total) * 100) : 0
           return (
-            <div key={entry.locale} className="eg-translations__meter">
-              <div className="eg-translations__meter-label">
+            <div key={entry.locale} className="flex flex-col gap-[calc(var(--base)*0.25)] rounded-[var(--style-radius-m)] border border-[var(--theme-elevation-100)] p-[calc(var(--base)*0.6)]">
+              <div className="flex justify-between font-semibold">
                 <span>{localeLabel(entry.locale)}</span>
                 <span>{percent}%</span>
               </div>
-              <div className="eg-translations__meter-track">
-                <div className="eg-translations__meter-fill" style={{ width: `${percent}%` }} />
+              <div className="h-[6px] overflow-hidden rounded-[3px] bg-[var(--theme-elevation-100)]">
+                <div className="h-full bg-[var(--theme-success-500)]" style={{ width: `${percent}%` }} />
               </div>
-              <span className="eg-translations__meter-count">
+              <span className="text-[0.85em] text-[var(--theme-elevation-500)]">
                 {entry.translated} of {entry.total} strings
               </span>
             </div>
@@ -186,8 +203,8 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
         })}
       </section>
 
-      <div className="eg-translations__filters">
-        <label>
+      <div className="flex flex-wrap gap-[var(--base)]">
+        <label className={filterLabelClassName}>
           What
           <select value={scope} onChange={(event) => setParams({ scope: event.target.value, doc: null, group: null })}>
             <option value="interface">Interface strings</option>
@@ -200,7 +217,7 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
         </label>
 
         {scope === 'interface' ? (
-          <label>
+          <label className={filterLabelClassName}>
             Area
             <select value={group ?? ''} onChange={(event) => setParams({ group: event.target.value || null })}>
               <option value="">All areas</option>
@@ -212,7 +229,7 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
             </select>
           </label>
         ) : (
-          <label>
+          <label className={filterLabelClassName}>
             Item
             <select value={documentId ?? ''} onChange={(event) => setParams({ doc: event.target.value || null })}>
               <option value="">Choose an item…</option>
@@ -227,7 +244,7 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
       </div>
 
       {visibleRows.length === 0 ? (
-        <p className="eg-translations__empty">
+        <p className="rounded-[var(--style-radius-m)] border border-dashed border-[var(--theme-elevation-150)] p-[calc(var(--base)*2)] text-center text-[var(--theme-elevation-600)]">
           {scope !== 'interface' && !documentId
             ? 'Pick an item above to see its translatable fields.'
             : missingOnly
@@ -235,16 +252,22 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
               : 'Nothing to translate in this view.'}
         </p>
       ) : (
-        <div className="eg-translations__scroll">
-          <table className="eg-translations__table">
+        <div className="overflow-x-auto rounded-[var(--style-radius-m)] border border-[var(--theme-elevation-100)]">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th scope="col">String</th>
-                <th scope="col">{localeLabel(sourceLocale)}</th>
+                <th className={headClassName} scope="col">
+                  String
+                </th>
+                <th className={headClassName} scope="col">
+                  {localeLabel(sourceLocale)}
+                </th>
                 {targetLocales.map((locale) => (
-                  <th key={locale} scope="col" lang={locale}>
+                  <th key={locale} className={headClassName} scope="col" lang={locale}>
                     <span>{localeLabel(locale)}</span>
-                    <small>{localeNativeName(locale)}</small>
+                    <small className="block font-normal text-[var(--theme-elevation-500)]">
+                      {localeNativeName(locale)}
+                    </small>
                   </th>
                 ))}
               </tr>
@@ -252,20 +275,23 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
             <tbody>
               {visibleRows.map((row) => (
                 <tr key={row.key}>
-                  <th scope="row">
-                    <span className="eg-translations__label">{row.label}</span>
-                    <small className="eg-translations__hint">{row.hint}</small>
+                  <th className={rowHeaderClassName} scope="row">
+                    <span className="block text-[0.85em] [font-family:var(--font-mono,monospace)]">{row.label}</span>
+                    <small className="block text-[0.8em] font-normal text-[var(--theme-elevation-500)]">{row.hint}</small>
                   </th>
-                  <td className="eg-translations__source">{row.sourceText}</td>
+                  <td className={sourceCellClassName}>{row.sourceText}</td>
                   {row.cells.map((cell) => {
                     const current = valueOf(row.key, cell.locale, cell.value)
                     const dirty = cellKey(row.key, cell.locale) in draft
+                    const stale = cell.stale && !dirty
                     return (
-                      <td key={cell.locale} className={cell.stale && !dirty ? 'is-stale' : undefined}>
+                      <td key={cell.locale} className={cellBaseClassName}>
                         {row.multiline ? (
                           <textarea
+                            className={inputClassName}
                             lang={cell.locale}
                             rows={3}
+                            style={stale ? staleInputStyle : undefined}
                             value={current}
                             placeholder="Not translated"
                             onChange={(event) =>
@@ -274,8 +300,10 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
                           />
                         ) : (
                           <input
+                            className={inputClassName}
                             lang={cell.locale}
                             type="text"
+                            style={stale ? staleInputStyle : undefined}
                             value={current}
                             placeholder="Not translated"
                             onChange={(event) =>
@@ -283,8 +311,10 @@ export const TranslationsTable: React.FC<TranslationsTableProps> = ({
                             }
                           />
                         )}
-                        {cell.stale && !dirty ? (
-                          <small className="eg-translations__stale">Source has changed since this was written.</small>
+                        {stale ? (
+                          <small className="block text-[0.8em] font-normal text-[var(--theme-elevation-500)]">
+                            Source has changed since this was written.
+                          </small>
                         ) : null}
                       </td>
                     )

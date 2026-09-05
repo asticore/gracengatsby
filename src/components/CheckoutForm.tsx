@@ -97,10 +97,16 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
 
   if (!clientSecret) {
     return (
-      <form className="checkout-form" onSubmit={handleInitiate}>
-        <label>
+      <form className="flex flex-col gap-4" onSubmit={handleInitiate}>
+        <label className="flex flex-col gap-1.5 text-[0.85rem] uppercase tracking-[0.06em]">
           Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border border-[var(--color-line)] bg-[var(--color-cream)] p-3 font-[family-name:var(--font-body)] text-base"
+          />
         </label>
         {error && <p className="form-error">{error}</p>}
         <button type="submit" className="btn btn--primary" disabled={isLoading}>
@@ -133,7 +139,7 @@ const PaymentStep: React.FC<{
   }
 
   return (
-    <form className="checkout-form" onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <PaymentElement />
       {error && <p className="form-error">{error}</p>}
       <button type="submit" className="btn btn--primary" disabled={!stripe || submitting}>

@@ -42,33 +42,37 @@ export const RsvpForm: React.FC<{ eventID: string | number }> = ({ eventID }) =>
     }
   }
 
+  const inputClassName =
+    'border border-[var(--color-line)] bg-[var(--color-cream)] p-3 font-[family-name:var(--font-body)] text-base'
+  const labelClassName = 'flex flex-col gap-1.5 text-[0.85rem] uppercase tracking-[0.06em]'
+
   if (status === 'success') {
     return (
-      <div className="rsvp-form rsvp-form--success">
-        <h3>You&apos;re on the list.</h3>
+      <div className="flex flex-col gap-4">
+        <h3 className="mb-2">You&apos;re on the list.</h3>
         <p>We&apos;ve saved your RSVP - see you there.</p>
       </div>
     )
   }
 
   return (
-    <form className="rsvp-form" onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <h3>RSVP</h3>
-      <label>
+      <label className={labelClassName}>
         Name
-        <input name="name" type="text" required />
+        <input name="name" type="text" required className={inputClassName} />
       </label>
-      <label>
+      <label className={labelClassName}>
         Email
-        <input name="email" type="email" required />
+        <input name="email" type="email" required className={inputClassName} />
       </label>
-      <label>
+      <label className={labelClassName}>
         Guests (including yourself)
-        <input name="guestCount" type="number" min={1} defaultValue={1} />
+        <input name="guestCount" type="number" min={1} defaultValue={1} className={inputClassName} />
       </label>
-      <label>
+      <label className={labelClassName}>
         Notes (optional)
-        <textarea name="notes" rows={3} />
+        <textarea name="notes" rows={3} className={inputClassName} />
       </label>
       {error && <p className="form-error">{error}</p>}
       <button type="submit" className="btn btn--primary" disabled={status === 'submitting'}>

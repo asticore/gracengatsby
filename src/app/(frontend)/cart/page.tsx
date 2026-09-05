@@ -13,7 +13,7 @@ export default function CartPage() {
   const items = cart?.items || []
 
   return (
-    <div className="page-shell cart-page">
+    <div className="page-shell">
       <h1>Your cart</h1>
 
       {items.length === 0 ? (
@@ -22,29 +22,42 @@ export default function CartPage() {
         </p>
       ) : (
         <>
-          <ul className="cart-list">
+          <ul className="mb-8 list-none border-t border-[var(--color-line)] p-0">
             {items.map((item) => {
               const product = item.product as Product
               return (
-                <li key={item.id} className="cart-list__item">
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-6 border-b border-[var(--color-line)] py-5"
+                >
                   <div>
                     <h3>{typeof product === 'object' ? product.title : 'Item'}</h3>
                     <p>
                       {typeof product === 'object' ? formatCurrency(product.priceInAUD) : ''}
                     </p>
                   </div>
-                  <div className="cart-list__qty">
-                    <button type="button" onClick={() => decrementItem(item.id)} disabled={isLoading}>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="h-7 w-7 cursor-pointer border border-[var(--color-ink)] bg-transparent"
+                      onClick={() => decrementItem(item.id)}
+                      disabled={isLoading}
+                    >
                       -
                     </button>
                     <span>{item.quantity}</span>
-                    <button type="button" onClick={() => incrementItem(item.id)} disabled={isLoading}>
+                    <button
+                      type="button"
+                      className="h-7 w-7 cursor-pointer border border-[var(--color-ink)] bg-transparent"
+                      onClick={() => incrementItem(item.id)}
+                      disabled={isLoading}
+                    >
                       +
                     </button>
                   </div>
                   <button
                     type="button"
-                    className="cart-list__remove"
+                    className="cursor-pointer border-none bg-none text-[0.85rem] underline"
                     onClick={() => removeItem(item.id)}
                     disabled={isLoading}
                   >
@@ -55,7 +68,7 @@ export default function CartPage() {
             })}
           </ul>
 
-          <div className="cart-summary">
+          <div className="flex items-center justify-between">
             <p>
               Subtotal: <strong>{formatCurrency(cart?.subtotal)}</strong>
             </p>

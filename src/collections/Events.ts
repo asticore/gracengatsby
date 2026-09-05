@@ -1,6 +1,6 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig } from '@/engine'
 
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { lexicalEditor } from '@/engine/editor'
 
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { formatSlugHook } from '../utilities/formatSlug'

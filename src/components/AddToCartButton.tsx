@@ -1,6 +1,6 @@
 'use client'
 
-import { useCart } from '@payloadcms/plugin-ecommerce/client/react'
+import { useCart } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React, { useState } from 'react'
 

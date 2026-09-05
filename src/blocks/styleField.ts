@@ -1,4 +1,4 @@
-import type { Field } from 'payload'
+import type { Field } from '@/engine'
 
 /**
  * The per-block "Design" settings, stored as one JSON column.

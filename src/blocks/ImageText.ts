@@ -1,7 +1,7 @@
-import type { Block } from 'payload'
+import type { Block } from '@/engine'
 
 import { blockStyleField } from './styleField'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { lexicalEditor } from '@/engine/editor'
 
 export const ImageTextBlock: Block = {
   slug: 'imageText',

@@ -36,7 +36,7 @@ export default async function BlogArchivePage() {
   const layout = settings?.archiveLayout || 'grid'
 
   return (
-    <div className="page-shell blog-archive">
+    <div className="page-shell">
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
         settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (
@@ -44,7 +44,9 @@ export default async function BlogArchivePage() {
           <h1>{settings?.archiveTitle || 'Journal'}</h1>
         </div>
       )}
-      {settings?.archiveIntro && <p className="blog-archive__intro">{settings.archiveIntro}</p>}
+      {settings?.archiveIntro && (
+        <p className="mb-8 max-w-[640px] opacity-80">{settings.archiveIntro}</p>
+      )}
 
       {posts.length === 0 ? (
         <p className="empty-state">No posts published yet - add one in the admin panel.</p>
@@ -53,20 +55,24 @@ export default async function BlogArchivePage() {
           {posts.map((post) => {
             const image = post.featuredImage && typeof post.featuredImage === 'object' ? (post.featuredImage as Media) : null
             return (
-              <Link key={post.id} href={`/blog/${post.slug}`} className="blog-card">
+              <Link key={post.id} href={`/blog/${post.slug}`} className="blog-card block">
                 {image?.url && (
-                  <div className="blog-card__image">
+                  <div className="blog-card__image mb-4 overflow-hidden">
                     <Image src={image.url} alt={post.title} width={640} height={420} style={{ width: '100%', height: 'auto', objectFit: 'cover' }} />
                   </div>
                 )}
-                <div className="blog-card__body">
+                <div>
                   {settings?.showCategories !== false && post.categories?.length ? (
-                    <span className="blog-card__category">{post.categories[0]?.name}</span>
+                    <span className="uppercase text-[0.7rem] tracking-[0.08em] text-[var(--color-gold)]">
+                      {post.categories[0]?.name}
+                    </span>
                   ) : null}
                   <h2>{post.title}</h2>
                   {post.excerpt && <p>{post.excerpt}</p>}
                   {settings?.showDate !== false && post.publishedDate && (
-                    <time dateTime={post.publishedDate}>{new Date(post.publishedDate).toLocaleDateString()}</time>
+                    <time dateTime={post.publishedDate} className="mt-2 block text-[0.75rem] opacity-60">
+                      {new Date(post.publishedDate).toLocaleDateString()}
+                    </time>
                   )}
                 </div>
               </Link>

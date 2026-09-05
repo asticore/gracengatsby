@@ -42,25 +42,27 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const author = post.author && typeof post.author === 'object' ? (post.author as User) : null
 
   return (
-    <article className="page-shell blog-post">
-      <header className="blog-post__header">
+    <article className="page-shell">
+      <header className="mx-auto mb-8 max-w-[720px] text-center">
         {post.categories?.length ? (
-          <span className="blog-card__category">{post.categories.map((c) => c.name).join(', ')}</span>
+          <span className="uppercase text-[0.7rem] tracking-[0.08em] text-[var(--color-gold)]">
+            {post.categories.map((c) => c.name).join(', ')}
+          </span>
         ) : null}
         <h1>{post.title}</h1>
-        <p className="blog-post__meta">
+        <p className="flex justify-center gap-3 text-[0.8rem] opacity-65">
           {author?.email ? <span>{author.email}</span> : null}
           {post.publishedDate && <time dateTime={post.publishedDate}>{new Date(post.publishedDate).toLocaleDateString()}</time>}
         </p>
       </header>
 
       {image?.url && (
-        <div className="blog-post__image">
+        <div className="mb-10 overflow-hidden">
           <Image src={image.url} alt={post.title} width={1200} height={700} style={{ width: '100%', height: 'auto', objectFit: 'cover' }} />
         </div>
       )}
 
-      <div className="blog-post__content">
+      <div className="mx-auto max-w-[720px]">
         <RichText data={post.content} />
       </div>
 

@@ -475,13 +475,16 @@ a {
   aspect-ratio: 1;
 }
 
-/* ---- Blog ---- */
-
-.blog-archive__intro {
-  max-width: 640px;
-  margin-bottom: 32px;
-  opacity: 0.8;
-}
+/*
+ * ---- Blog ---- (archive layout variants, same reasoning as Shop above)
+ * .blog-archive__grid/magazine/list are chosen at runtime from Blog
+ * settings (archiveLayout). .blog-card and .blog-card__image stay as real
+ * classes too - selector hooks for the [data-hover=...] theme variant, the
+ * shared corner-radius rule, and .blog-archive__list's own override, same
+ * as .product-card/.product-card__image. Their own static box-model/
+ * typography styling is inline utility classNames in blog/page.tsx and
+ * blog/[slug]/page.tsx now.
+ */
 
 .blog-archive__grid,
 .blog-archive__magazine {
@@ -504,53 +507,6 @@ a {
 
 .blog-archive__magazine > a:first-child {
   grid-column: 1 / -1;
-}
-
-.blog-card {
-  display: block;
-}
-
-.blog-card__image {
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-
-.blog-card__category {
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  color: var(--color-gold);
-}
-
-.blog-card time {
-  display: block;
-  margin-top: 8px;
-  font-size: 0.75rem;
-  opacity: 0.6;
-}
-
-.blog-post__header {
-  max-width: 720px;
-  margin: 0 auto 32px;
-  text-align: center;
-}
-
-.blog-post__meta {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  font-size: 0.8rem;
-  opacity: 0.65;
-}
-
-.blog-post__image {
-  margin-bottom: 40px;
-  overflow: hidden;
-}
-
-.blog-post__content {
-  max-width: 720px;
-  margin: 0 auto;
 }
 
 @media (max-width: 900px) {

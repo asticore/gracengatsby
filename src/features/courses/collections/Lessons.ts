@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig, Where } from 'payload'
+import type { Access, CollectionConfig, Where } from '@/engine'
 
 import { isAdmin } from '@/access/ecommerceAccess'
 import { pageBuilderBlocks } from '@/blocks'

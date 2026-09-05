@@ -1,4 +1,4 @@
-import type { Payload, TypedUser, Where } from 'payload'
+import type { Payload, TypedUser, Where } from '@/engine'
 
 import type { FeatureFlags } from '@/features/registry'
 

@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 import type { EventRsvp } from '@/engage-types'
 
 import type { AccountUser } from './session'
@@ -23,7 +23,7 @@ export type Booking = EventRsvp & {
 type EventLike = { title?: string | null; startDate?: string | null; date?: string | null; slug?: string | null }
 
 export const bookingsForCustomer = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
 ): Promise<Booking[]> => {
   const email = typeof user.email === 'string' ? user.email : ''

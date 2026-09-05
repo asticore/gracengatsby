@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 import {
   DEFAULT_SECURITY_SETTINGS,
@@ -36,7 +36,7 @@ export type Attempt = 'sign-in' | 'reset' | 'register'
 export type Guard = { allowed: boolean; retryAfterSeconds?: number }
 
 export const guardAttempt = async (
-  engine: Payload,
+  engine: Engine,
   attempt: Attempt,
   address: string,
 ): Promise<Guard> => {

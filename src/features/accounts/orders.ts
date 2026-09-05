@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 import type { Order } from '@/engage-types'
 
 import type { AccountUser } from './session'
@@ -19,7 +19,7 @@ import { ORDERS_SLUG } from './types'
  */
 
 export const ordersForCustomer = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   limit = 50,
 ): Promise<Order[]> => {
@@ -38,7 +38,7 @@ export const ordersForCustomer = async (
 }
 
 export const orderForCustomer = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   id: string,
 ): Promise<Order | null> => {

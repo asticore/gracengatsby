@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers'
-import type { Payload, TypedUser } from '@/engine'
+import type { Engine, TypedUser } from '@/engine'
 
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
@@ -18,7 +18,7 @@ import { SESSION_COOKIE, loginProtectionAuth } from '@/features/security'
 export type AccountUser = TypedUser
 
 export type AccountContext = {
-  engine: Payload
+  engine: Engine
   flags: FeatureFlags
   user: AccountUser | null
 }

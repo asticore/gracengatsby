@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 import { sendAlreadyRegisteredEmail, sendResetEmail, sendWelcomeEmail } from './emails'
 import { USERS_SLUG } from './types'
@@ -40,7 +40,7 @@ const SIGN_IN_FAILED = 'Those details do not match an account.'
 export type SignInResult = { ok: boolean; token?: string; message?: string }
 
 export const signIn = async (
-  engine: Payload,
+  engine: Engine,
   email: string,
   password: string,
 ): Promise<SignInResult> => {
@@ -72,7 +72,7 @@ export const signIn = async (
  * trying to guess their way into changing the password.
  */
 export const verifyPassword = async (
-  engine: Payload,
+  engine: Engine,
   email: string,
   password: string,
 ): Promise<boolean> => {
@@ -104,7 +104,7 @@ export type RegistrationOutcome = { created: boolean; userId: number | string | 
  * never mint an admin.
  */
 export const registerCustomer = async (
-  engine: Payload,
+  engine: Engine,
   email: string,
   password: string,
   urls: { signIn: string; forgotPassword: string; account: string },
@@ -151,7 +151,7 @@ export const registerCustomer = async (
  * that response timing is the only difference and no wording is.
  */
 export const requestPasswordReset = async (
-  engine: Payload,
+  engine: Engine,
   email: string,
   resetUrlFor: (token: string) => string,
 ): Promise<void> => {
@@ -179,7 +179,7 @@ export const requestPasswordReset = async (
 export type ResetResult = { ok: boolean; message?: string }
 
 export const completePasswordReset = async (
-  engine: Payload,
+  engine: Engine,
   token: string,
   password: string,
 ): Promise<ResetResult> => {

@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 import type { AccountUser } from './session'
 import {
@@ -47,7 +47,7 @@ const asPreferences = (value: unknown): AccountPreferences => {
 
 type Row = { id: number | string; value?: unknown }
 
-const ownRow = async (engine: Payload, user: AccountUser): Promise<Row | null> => {
+const ownRow = async (engine: Engine, user: AccountUser): Promise<Row | null> => {
   const { docs } = await engine
     .find({
       collection: PREFERENCES_SLUG,
@@ -65,12 +65,12 @@ const ownRow = async (engine: Payload, user: AccountUser): Promise<Row | null> =
 }
 
 export const readPreferences = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
 ): Promise<AccountPreferences> => asPreferences((await ownRow(engine, user))?.value)
 
 export const writePreferences = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   changes: Partial<AccountPreferences>,
 ): Promise<AccountPreferences> => {

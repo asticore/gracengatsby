@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 import { emailProblem, passwordProblem, signIn, verifyPassword } from './auth'
 import { writePreferences } from './preferences'
@@ -28,7 +28,7 @@ export type ProfileOutcome = { ok: boolean; token?: string; message: string }
 const CURRENT_PASSWORD_WRONG = 'That is not your current password.'
 
 export const changeName = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   name: string,
 ): Promise<ProfileOutcome> => {
@@ -45,7 +45,7 @@ export const changeName = async (
  * customer is signed out by their own successful change.
  */
 export const changeEmail = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   nextEmail: string,
   currentPassword: string,
@@ -92,7 +92,7 @@ export const changeEmail = async (
  * that was issued under the previous password.
  */
 export const changePassword = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   currentPassword: string,
   nextPassword: string,

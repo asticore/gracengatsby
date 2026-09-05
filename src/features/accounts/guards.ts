@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 import { accountContext, type AccountUser } from './session'
 import type { FeatureFlags } from '@/features/registry'
@@ -18,7 +18,7 @@ import type { FeatureFlags } from '@/features/registry'
  * `safeNext` in actions.ts.
  */
 
-export type SignedIn = { engine: Payload; flags: FeatureFlags; user: AccountUser }
+export type SignedIn = { engine: Engine; flags: FeatureFlags; user: AccountUser }
 
 export const requireFeature = async () => {
   const context = await accountContext()

@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 import type { Address } from '@/engage-types'
 
 import { readPreferences, writePreferences } from './preferences'
@@ -36,7 +36,7 @@ export type AddressInput = Partial<Record<(typeof ADDRESS_FIELDS)[number], strin
 export type SavedAddress = Address & { isDefault: boolean }
 
 export const addressesForCustomer = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
 ): Promise<SavedAddress[]> => {
   const [{ docs }, preferences] = await Promise.all([
@@ -61,7 +61,7 @@ export const addressesForCustomer = async (
 }
 
 export const addressForCustomer = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   id: string | number,
 ): Promise<Address | null> => {
@@ -99,7 +99,7 @@ const missingField = (input: AddressInput): string | null => {
 }
 
 export const createAddress = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   input: AddressInput,
 ): Promise<AddressOutcome> => {
@@ -122,7 +122,7 @@ export const createAddress = async (
 }
 
 export const updateAddress = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   id: number,
   input: AddressInput,
@@ -147,7 +147,7 @@ export const updateAddress = async (
 }
 
 export const deleteAddress = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   id: number,
 ): Promise<AddressOutcome> => {
@@ -174,7 +174,7 @@ export const deleteAddress = async (
  * otherwise be a way to read one back through the checkout later.
  */
 export const setDefaultAddress = async (
-  engine: Payload,
+  engine: Engine,
   user: AccountUser,
   id: number,
 ): Promise<AddressOutcome> => {

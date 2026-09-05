@@ -10,7 +10,7 @@
     "deploy:app": "opennextjs-cloudflare build --env=$CLOUDFLARE_ENV && opennextjs-cloudflare deploy --env=$CLOUDFLARE_ENV",
     "deploy:migrate": "curl -sf -X POST https://gracengatsby.com/api/internal-migrate -H \"x-seed-key: gracengatsby-seed\" || echo 'Schema call failed (non-fatal) - check /api/internal-migrate manually.'",
     "deploy:seed": "curl -sf -X POST https://gracengatsby.com/api/internal-seed -H \"x-seed-key: gracengatsby-seed\" || echo 'Seed call failed (non-fatal) - check /api/internal-seed manually.'",
-    "deploy:database": "pnpm run prepare:engine-tables && cross-env NODE_ENV=production PAYLOAD_SECRET=ignore payload migrate && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part1.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part2.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part3.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part4.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",
+    "deploy:database": "wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part1.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part2.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part3.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part4.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && rm -rf .open-next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
@@ -25,7 +25,8 @@
     "test": "pnpm run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
-    "prepare:engine-tables": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/prepareEngineTables.mts"
+    "prepare:engine-tables": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/prepareEngineTables.mts",
+    "db:local": "pnpm run prepare:engine-tables && cross-env NODE_ENV=production PAYLOAD_SECRET=ignore pnpm run cms migrate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -41,11 +42,9 @@
     "@stripe/react-stripe-js": "^3.10.0",
     "@stripe/stripe-js": "^5.10.0",
     "cross-env": "10.1.0",
-    "dotenv": "16.4.7",
     "graphql": "^16.8.1",
     "next": "15.4.11",
     "payload": "3.87.0",
-    "payload-totp": "^3.0.1",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "stripe": "^18.0.0"
@@ -57,6 +56,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.5.2",
+    "dotenv": "16.4.7",
     "eslint": "^9.16.0",
     "eslint-config-next": "16.2.7",
     "jsdom": "28.0.0",

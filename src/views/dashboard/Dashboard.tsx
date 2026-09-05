@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import type { AdminViewServerProps } from 'payload'
+import type { AdminViewServerProps } from '@/engine'
 
 import {
   readFeatureFlags,

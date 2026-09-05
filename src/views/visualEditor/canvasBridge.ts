@@ -27,12 +27,16 @@ const SOURCE = 've-canvas' as const
 export type ParentToFrameMessage =
   | { source: typeof SOURCE; type: 'init'; blocks: SectionNode[]; selectedPath: NodePath | null }
   | { source: typeof SOURCE; type: 'selected'; selectedPath: NodePath | null }
+  /** Highlights the insert slot a library-card drag is currently over (or clears it with null).
+   *  The parent resolves the target itself via elementFromPoint - see VisualEditor.tsx - since
+   *  native dragover/drop listeners placed inside the iframe's own document don't reliably fire
+   *  for a drag that started in the parent document (a known cross-iframe HTML5 DnD limitation). */
+  | { source: typeof SOURCE; type: 'dragHover'; key: string | null }
 
 export type FrameToParentMessage =
   | { source: typeof SOURCE; type: 'ready' }
   | { source: typeof SOURCE; type: 'select'; path: NodePath | null }
   | { source: typeof SOURCE; type: 'add'; containerPath: NodePath; at: number }
-  | { source: typeof SOURCE; type: 'drop'; containerPath: NodePath; at: number; blockType: string }
   | { source: typeof SOURCE; type: 'delete'; path: NodePath }
   | { source: typeof SOURCE; type: 'duplicate'; path: NodePath }
   | { source: typeof SOURCE; type: 'move'; path: NodePath; direction: -1 | 1 }

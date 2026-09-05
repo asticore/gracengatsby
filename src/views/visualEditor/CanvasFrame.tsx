@@ -27,6 +27,7 @@ const post = (message: FrameToParentMessage) => {
 export const CanvasFrame: React.FC = () => {
   const [blocks, setBlocks] = useState<SectionNode[]>([])
   const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
+  const [dragHoverKey, setDragHoverKey] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -41,6 +42,8 @@ export const CanvasFrame: React.FC = () => {
         setSelectedPath(msg.selectedPath)
       } else if (msg.type === 'selected') {
         setSelectedPath(msg.selectedPath)
+      } else if (msg.type === 'dragHover') {
+        setDragHoverKey(msg.key)
       }
     }
     window.addEventListener('message', onMessage)
@@ -50,13 +53,12 @@ export const CanvasFrame: React.FC = () => {
 
   const handlers: CanvasHandlers = {
     selectedKey: selectedPath ? pathKey(selectedPath) : null,
+    dragHoverKey,
     onSelect: (path) => {
       setSelectedPath(path)
       post({ source: 've-canvas', type: 'select', path })
     },
     onAdd: (containerPath, at) => post({ source: 've-canvas', type: 'add', containerPath, at }),
-    onDropBlock: (containerPath, at, blockType) =>
-      post({ source: 've-canvas', type: 'drop', containerPath, at, blockType }),
     onDelete: (path) => post({ source: 've-canvas', type: 'delete', path }),
     onDuplicate: (path) => post({ source: 've-canvas', type: 'duplicate', path }),
     onMove: (path, direction) => post({ source: 've-canvas', type: 'move', path, direction }),

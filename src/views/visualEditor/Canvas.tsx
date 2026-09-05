@@ -19,9 +19,15 @@ export type CanvasHandlers = {
   onDelete: (path: NodePath) => void
   onDuplicate: (path: NodePath) => void
   onMove: (path: NodePath, direction: -1 | 1) => void
-  /** A block dragged in from the element library was dropped at this slot. */
-  onDropBlock: (containerPath: NodePath, at: number, blockType: string) => void
+  /** Key (see slotKey below) of the insert slot a library-card drag is currently over, or null.
+   *  Driven by the parent's 'dragHover' bridge message - the parent resolves drop targets
+   *  itself via elementFromPoint, so this is purely for visual feedback. */
+  dragHoverKey: string | null
 }
+
+/** Stable identity for an insert slot, matched against data-ve-container/data-ve-at by the
+ *  parent's elementFromPoint lookup - see VisualEditor.tsx. */
+export const slotKey = (containerPath: NodePath, at: number): string => `${pathKey(containerPath)}|${at}`
 
 /**
  * Renders one level of the block tree. Sections recurse back into this
@@ -39,7 +45,7 @@ export const CanvasNodeList: React.FC<{
       containerPath={containerPath}
       at={0}
       onAdd={handlers.onAdd}
-      onDropBlock={handlers.onDropBlock}
+      dragHoverKey={handlers.dragHoverKey}
       subtle={nodes.length > 0}
     />
     {nodes.map((node, index) => {
@@ -51,7 +57,7 @@ export const CanvasNodeList: React.FC<{
             containerPath={containerPath}
             at={index + 1}
             onAdd={handlers.onAdd}
-            onDropBlock={handlers.onDropBlock}
+            dragHoverKey={handlers.dragHoverKey}
             subtle
           />
         </React.Fragment>
@@ -227,40 +233,28 @@ const SectionColumns: React.FC<{
 /**
  * The hover "+" that opens the element library at a specific position -
  * Elementor's circular add button between/around blocks. Also doubles as a
- * drop target: dragging a card out of the library (see ElementLibrary.tsx)
- * sets `application/x-ve-block` on the native dataTransfer, which any slot
- * along the drag path can accept directly (no cross-iframe coordinate math
- * needed - the browser's own native DnD already delivers dragover/drop to
- * whatever element the pointer is over, iframe boundary included, since
- * it's one browser-level drag session).
+ * drop target for a card dragged out of the library (see ElementLibrary.tsx):
+ * it carries data-ve-container/data-ve-at/data-ve-slot so the parent
+ * document can find it via elementFromPoint and resolve a drop, since a
+ * native dragover/drop listener attached here (inside the iframe's own
+ * document) doesn't reliably fire for a drag that started in the parent
+ * document - see VisualEditor.tsx and canvasBridge.ts's 'dragHover' message.
  */
 const InsertSlot: React.FC<{
   containerPath: NodePath
   at: number
   onAdd: (containerPath: NodePath, at: number) => void
-  onDropBlock: (containerPath: NodePath, at: number, blockType: string) => void
+  dragHoverKey: string | null
   subtle?: boolean
-}> = ({ containerPath, at, onAdd, onDropBlock, subtle }) => {
-  const [dragOver, setDragOver] = React.useState(false)
+}> = ({ containerPath, at, onAdd, dragHoverKey, subtle }) => {
+  const isOver = dragHoverKey === slotKey(containerPath, at)
 
   return (
     <div
-      className={`ve-insert ${subtle ? '' : 've-insert--always'} ${dragOver ? 've-insert--drag-over' : ''}`}
-      onDragOver={(e) => {
-        if (!e.dataTransfer.types.includes('application/x-ve-block')) return
-        e.preventDefault()
-        e.dataTransfer.dropEffect = 'copy'
-        if (!dragOver) setDragOver(true)
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        const blockType = e.dataTransfer.getData('application/x-ve-block')
-        setDragOver(false)
-        if (!blockType) return
-        e.preventDefault()
-        e.stopPropagation()
-        onDropBlock(containerPath, at, blockType)
-      }}
+      className={`ve-insert ${subtle ? '' : 've-insert--always'} ${isOver ? 've-insert--drag-over' : ''}`}
+      data-ve-slot="1"
+      data-ve-container={JSON.stringify(containerPath)}
+      data-ve-at={at}
     >
       <button
         type="button"

@@ -25,6 +25,41 @@ import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
 let idCounter = 0
 const nextId = () => `ve-${Date.now()}-${idCounter++}`
 
+const VE_BLOCK_MIME = 'application/x-ve-block'
+
+/**
+ * Resolves an insert slot under a page-relative point by reaching into the
+ * (same-origin) iframe's own document with elementFromPoint - see
+ * canvasBridge.ts's 'dragHover' message for why this lives here rather than
+ * as dragover/drop listeners inside the frame itself.
+ */
+function resolveDropSlot(
+  iframe: HTMLIFrameElement,
+  clientX: number,
+  clientY: number,
+): { containerPath: NodePath; at: number; key: string } | null {
+  const doc = iframe.contentDocument
+  if (!doc) return null
+  const rect = iframe.getBoundingClientRect()
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+  if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null
+
+  const el = doc.elementFromPoint(x, y)
+  const slotEl = el?.closest('[data-ve-slot]') as HTMLElement | null
+  if (!slotEl) return null
+
+  let containerPath: NodePath = []
+  try {
+    containerPath = JSON.parse(slotEl.dataset.veContainer || '[]')
+  } catch {
+    return null
+  }
+  const at = Number(slotEl.dataset.veAt || '0')
+  if (!Number.isFinite(at)) return null
+  return { containerPath, at, key: `${containerPath.join('.')}|${at}` }
+}
+
 function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string } | null {
   if (typeof window === 'undefined') return null
   const match = window.location.pathname.match(/\/admin\/visual-editor\/(collection|global)\/([^/]+)(?:\/([^/]+))?/)
@@ -72,6 +107,7 @@ export const VisualEditorView: React.FC = () => {
   const [frameReady, setFrameReady] = useState(false)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const lastHoverKey = useRef<string | null>(null)
 
   const apiUrl = useMemo(() => {
     if (!route || !surface) return null
@@ -248,9 +284,6 @@ export const VisualEditorView: React.FC = () => {
         case 'reorder':
           reorderBlock(msg.containerPath, msg.from, msg.to)
           break
-        case 'drop':
-          addBlockAt(msg.blockType, msg.containerPath, msg.at)
-          break
       }
     }
     window.addEventListener('message', onMessage)
@@ -267,6 +300,54 @@ export const VisualEditorView: React.FC = () => {
       CANVAS_ORIGIN(),
     )
   }, [frameReady, blocks, selectedPath])
+
+  const sendDragHover = useCallback((key: string | null) => {
+    if (lastHoverKey.current === key) return
+    lastHoverKey.current = key
+    iframeRef.current?.contentWindow?.postMessage({ source: 've-canvas', type: 'dragHover', key }, CANVAS_ORIGIN())
+  }, [])
+
+  /* A card dragged out of the element library (ElementLibrary.tsx) carries a native HTML5
+   * dataTransfer, which is shared across the whole browser-level drag session regardless of
+   * which document a listener sits in - but a listener placed *inside* the iframe's own
+   * document (as the old InsertSlot did) doesn't reliably receive dragover/drop for a drag
+   * that started in the parent document. Handling it here instead, on the wrapper that sits
+   * over the iframe in the parent document, sidesteps that entirely; elementFromPoint (above)
+   * finds which insert slot the pointer is actually over inside the frame. */
+  const onCanvasDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      if (!event.dataTransfer.types.includes(VE_BLOCK_MIME)) return
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'copy'
+      const iframe = iframeRef.current
+      const slot = iframe ? resolveDropSlot(iframe, event.clientX, event.clientY) : null
+      sendDragHover(slot?.key ?? null)
+    },
+    [sendDragHover],
+  )
+
+  const onCanvasDragLeave = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      // Only clear once the pointer has actually left the wrapper (not just moved onto a
+      // child), otherwise the highlight flickers off between adjacent slots.
+      if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
+      sendDragHover(null)
+    },
+    [sendDragHover],
+  )
+
+  const onCanvasDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      const blockType = event.dataTransfer.getData(VE_BLOCK_MIME)
+      const iframe = iframeRef.current
+      const slot = iframe ? resolveDropSlot(iframe, event.clientX, event.clientY) : null
+      sendDragHover(null)
+      if (!blockType || !slot) return
+      event.preventDefault()
+      addBlockAt(blockType, slot.containerPath, slot.at)
+    },
+    [addBlockAt, sendDragHover],
+  )
 
   const save = async (publish: boolean) => {
     if (!apiUrl || !surface) return
@@ -422,7 +503,12 @@ export const VisualEditorView: React.FC = () => {
             responsive breakpoints kick in, so no "device" value needs to be
             sent into the frame at all.
           */}
-          <div className={`ve-canvas ve-canvas--${device}`}>
+          <div
+            className={`ve-canvas ve-canvas--${device}`}
+            onDragOver={onCanvasDragOver}
+            onDragLeave={onCanvasDragLeave}
+            onDrop={onCanvasDrop}
+          >
             {!frameReady && <div className="ve-canvas__loading">Loading canvas</div>}
             <iframe
               ref={iframeRef}

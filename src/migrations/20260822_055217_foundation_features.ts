@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 // Hand-authored (not the raw `migrate:create` CLI output) so this only
 // contains the true incremental delta against production. The local dev D1

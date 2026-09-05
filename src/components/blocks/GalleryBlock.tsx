@@ -12,16 +12,16 @@ export const GalleryBlock: React.FC<{
   if (media.length === 0) return null
 
   return (
-    <section className="home-section built-block built-block--gallery">
+    <section className="home-section built-block">
       <div className="page-shell">
         {heading && (
           <div className="section-heading">
             <h2>{heading}</h2>
           </div>
         )}
-        <div className="built-block--gallery__grid">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
           {media.map((img) => (
-            <div key={img.id} className="built-block--gallery__item">
+            <div key={img.id} className="aspect-square overflow-hidden">
               <Image
                 src={img.url || ''}
                 alt={img.alt || ''}

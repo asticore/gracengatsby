@@ -9,8 +9,8 @@ export const RichTextBlock: React.FC<{ content: RichTextBlockData['content'] }> 
   if (!content) return null
 
   return (
-    <section className="built-block built-block--richtext">
-      <div className="page-shell built-block__inner">
+    <section className="built-block">
+      <div className="mx-auto max-w-[760px] px-6 py-16">
         <RichText data={content} />
       </div>
     </section>

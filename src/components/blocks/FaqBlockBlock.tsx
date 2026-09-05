@@ -34,7 +34,7 @@ export async function FaqBlockBlock({
 
   return (
     <section className="built-block built-block--faq">
-      <div className="page-shell built-block__inner">
+      <div className="page-shell">
         {heading && <h2>{heading}</h2>}
         <FaqList faqs={items} layout="accordion" />
       </div>

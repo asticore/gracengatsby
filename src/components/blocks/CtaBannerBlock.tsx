@@ -10,13 +10,13 @@ export const CtaBannerBlock: React.FC<{
 }> = ({ heading, text, buttonLabel, buttonUrl, style }) => {
   return (
     <section
-      className={`built-block built-block--ctabanner ${
-        style === 'light' ? 'built-block--ctabanner-light' : 'built-block--ctabanner-dark'
+      className={`built-block px-6 py-20 text-center ${
+        style === 'light' ? 'bg-[var(--color-cream-dim)]' : 'bg-[var(--color-ink)] text-[var(--color-cream)]'
       }`}
     >
-      <div className="page-shell built-block--ctabanner__inner">
+      <div className="mx-auto max-w-[640px]">
         <h2>{heading}</h2>
-        {text && <p>{text}</p>}
+        {text && <p className="mb-6 opacity-85">{text}</p>}
         {buttonLabel && buttonUrl && (
           <Link href={buttonUrl} className="btn btn--primary">
             {buttonLabel}

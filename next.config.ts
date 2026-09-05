@@ -1,6 +1,7 @@
-// `withPayload` is the CMS engine's Next.js integration wrapper - the import
-// name comes from the npm package and is not a product label.
-import { withPayload } from '@payloadcms/next/withPayload'
+// The engine's Next.js integration wrapper, reached through the engine seam
+// (src/engine/) like every other vendor symbol. Relative path rather than the
+// `@/` alias because this file sits at the repo root, outside src/.
+import { withEngine } from './src/engine/next/config'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -27,4 +28,4 @@ const nextConfig = {
   },
 }
 
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+export default withEngine(nextConfig, { devBundleServerPackages: false })

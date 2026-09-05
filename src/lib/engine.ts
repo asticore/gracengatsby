@@ -1,15 +1,14 @@
-import { getPayload } from 'payload'
-
-import config from '@/engage.config'
-
 /**
- * Returns the initialised CMS engine instance for this request.
+ * Re-export shim for the engine client accessor.
  *
- * Everything that reads or writes content server-side goes through here -
- * frontend pages, sitemap/robots, the feature-toggle lookups and the block
- * components that fetch their own data.
+ * `getEngine` now lives in the engine seam (src/engine/index.ts) alongside the
+ * rest of the vendor boundary. This file stays because ~40 modules import it
+ * from here, and the seam repoint was kept to specifier changes only so it
+ * could land as a zero-risk mechanical commit.
+ *
+ * Not deprecated - `@/lib/engine` is a perfectly good name for this and the
+ * indirection costs nothing. Import from either.
  */
-export const getEngine = async () => {
-  const engineConfig = await config
-  return getPayload({ config: engineConfig })
-}
+
+export { getEngine } from '@/engine'
+export type { Engine } from '@/engine'

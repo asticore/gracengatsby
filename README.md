@@ -4,6 +4,10 @@ The public **Grace & Gatsby** website and the **Asticore Engage** content portal
 
 Editors sign in at `/admin` to build pages, run the shop, publish events and posts, and configure the site. Visitors get the storefront rendered from the same content.
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/asticore/gracengatsby)
+
+Cloudflare provisions the Worker, D1 database and R2 bucket from `wrangler.jsonc` and walks you through the environment variables below. After the first deploy finishes, run the four steps under [Deploying](#deploying) once by hand (`pnpm run deploy`, with your local `.env` filled in and pointed at the new database) so the page-builder schema and starter content land - the button's own build only ships the app, it doesn't run `deploy:database`, `deploy:migrate` or `deploy:seed`.
+
 ---
 
 ## Stack

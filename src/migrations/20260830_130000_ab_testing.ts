@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 // Creates the A/B testing tables: the `eg_ab_tests` collection family, and the
 // two tables the visitor path writes to.

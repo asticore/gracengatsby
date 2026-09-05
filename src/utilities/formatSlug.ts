@@ -1,4 +1,4 @@
-import type { FieldHook } from 'payload'
+import type { FieldHook } from '@/engine'
 
 export const slugify = (value: string): string =>
   value

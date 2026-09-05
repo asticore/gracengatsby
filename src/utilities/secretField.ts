@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import type { FieldHook } from 'payload'
+import type { FieldHook } from '@/engine'
 
 /**
  * Encrypts/decrypts sensitive text fields (API keys, tokens) at rest using

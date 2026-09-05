@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload } from '@/engine'
 
 // Shared, idempotent seed logic for the starter Home page + Page Templates.
 // Used by BOTH:

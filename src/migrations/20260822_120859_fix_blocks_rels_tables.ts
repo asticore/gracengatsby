@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 // The `layout`/`introBlocks` blocks fields were added to Products,
 // Posts, ShopSettings, BlogSettings, and FaqSettings in earlier migrations,

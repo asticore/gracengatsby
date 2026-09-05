@@ -231,68 +231,16 @@ a {
   @apply grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-8;
 }
 
-.product-card,
-.event-card {
-  display: block;
-  background: #fff;
-  border: 1px solid var(--color-line);
-}
-
-.product-card__image,
-.event-card__image {
-  aspect-ratio: 4 / 5;
-  background: var(--color-cream-dim);
-  overflow: hidden;
-  position: relative;
-}
-
-.event-card__image {
-  aspect-ratio: 3 / 2;
-}
-
-.product-card__placeholder,
-.event-card__placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, var(--color-cream-dim), var(--color-gold-light));
-}
-
-.product-card__body,
-.event-card__body {
-  padding: 20px;
-}
-
-.product-card__category {
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.7rem;
-  color: var(--color-gold);
-}
-
-.product-card__price {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  margin: 4px 0 0;
-}
-
-.event-card__tag {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: var(--color-ink);
-  color: var(--color-cream);
-  padding: 4px 12px;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.event-card__date {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.7rem;
-  color: var(--color-gold);
-}
+/*
+ * .product-card and .product-card__image stay as real classes (rather than
+ * folding into ProductCard.tsx's inline utilities) purely as selector hooks
+ * for things elsewhere in this file that can't be static utility classNames:
+ * the [data-hover=...] theme variants a few sections down, the
+ * .product-grid--list layout override, the .product-card--square aspect
+ * override, and the shared corner-radius theme rule. Their own box-model/
+ * colour/typography styling is inline in ProductCard.tsx and EventCard.tsx
+ * now (event-card needed none of those hooks, so it's fully inline).
+ */
 
 /* Product detail page */
 
@@ -746,12 +694,6 @@ a {
 
 .product-card--square .product-card__image {
   aspect-ratio: 1;
-}
-
-.product-card__short {
-  font-size: 0.85rem;
-  opacity: 0.75;
-  margin-top: 6px;
 }
 
 .product-page__faqs,

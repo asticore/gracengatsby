@@ -21,8 +21,8 @@ export const EventCard: React.FC<{ event: Event }> = ({ event }) => {
   const imageURL = getImageURL(event)
 
   return (
-    <Link href={`/events/${event.slug}`} className="event-card">
-      <div className="event-card__image">
+    <Link href={`/events/${event.slug}`} className="block border border-[var(--color-line)] bg-white">
+      <div className="relative aspect-[3/2] overflow-hidden bg-[var(--color-cream-dim)]">
         {imageURL ? (
           <Image
             src={imageURL}
@@ -32,12 +32,19 @@ export const EventCard: React.FC<{ event: Event }> = ({ event }) => {
             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
           />
         ) : (
-          <div className="event-card__placeholder" aria-hidden />
+          <div
+            className="h-full w-full bg-[image:linear-gradient(135deg,var(--color-cream-dim),var(--color-gold-light))]"
+            aria-hidden
+          />
         )}
-        <span className="event-card__tag">{event.eventType === 'paid' ? 'Ticketed' : 'RSVP'}</span>
+        <span className="absolute left-3 top-3 bg-[var(--color-ink)] px-3 py-1 text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-cream)]">
+          {event.eventType === 'paid' ? 'Ticketed' : 'RSVP'}
+        </span>
       </div>
-      <div className="event-card__body">
-        <span className="event-card__date">{dateFormatter.format(new Date(event.startDate))}</span>
+      <div className="p-5">
+        <span className="text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-gold)]">
+          {dateFormatter.format(new Date(event.startDate))}
+        </span>
         <h3>{event.title}</h3>
         {event.location?.venueName && <p>{event.location.venueName}</p>}
       </div>

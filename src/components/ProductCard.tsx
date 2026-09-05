@@ -21,8 +21,11 @@ export const ProductCard: React.FC<{
   const imageURL = getImageURL(product)
 
   return (
-    <Link href={`/shop/${product.slug}`} className={`product-card product-card--${aspect}`}>
-      <div className="product-card__image">
+    <Link
+      href={`/shop/${product.slug}`}
+      className={`product-card product-card--${aspect} block border border-[var(--color-line)] bg-white`}
+    >
+      <div className="product-card__image relative aspect-[4/5] overflow-hidden bg-[var(--color-cream-dim)]">
         {imageURL ? (
           <Image
             src={imageURL}
@@ -32,15 +35,22 @@ export const ProductCard: React.FC<{
             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
           />
         ) : (
-          <div className="product-card__placeholder" aria-hidden />
+          <div
+            className="h-full w-full bg-[image:linear-gradient(135deg,var(--color-cream-dim),var(--color-gold-light))]"
+            aria-hidden
+          />
         )}
       </div>
-      <div className="product-card__body">
-        <span className="product-card__category">{product.category || 'Boutique'}</span>
+      <div className="p-5">
+        <span className="text-[0.7rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">
+          {product.category || 'Boutique'}
+        </span>
         <h3>{product.title}</h3>
-        <p className="product-card__price">{formatCurrency(product.priceInAUD)}</p>
+        <p className="mt-1 font-[family-name:var(--font-display)] text-[1.25rem]">
+          {formatCurrency(product.priceInAUD)}
+        </p>
         {showShortDescription && product.shortDescription && (
-          <p className="product-card__short">{product.shortDescription}</p>
+          <p className="mt-1.5 text-[0.85rem] opacity-75">{product.shortDescription}</p>
         )}
       </div>
     </Link>

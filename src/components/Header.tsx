@@ -50,7 +50,7 @@ export const Header: React.FC<{
   const logo =
     showLogo && logoUrl ? (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={logoUrl} alt={siteName} className="site-header__logo-image" />
+      <img src={logoUrl} alt={siteName} className="max-h-10 w-auto" />
     ) : (
       siteName
     )
@@ -58,37 +58,52 @@ export const Header: React.FC<{
   return (
     <>
       {announcementBar?.enabled && announcementBar.text && !dismissed && (
-        <div className="announcement-bar">
-          {announcementBar.linkUrl ? <a href={announcementBar.linkUrl}>{announcementBar.text}</a> : announcementBar.text}
+        <div className="relative bg-[var(--color-ink)] px-10 py-2.5 text-center text-[0.8rem] tracking-[0.04em] text-[var(--color-cream)]">
+          {announcementBar.linkUrl ? (
+            <a href={announcementBar.linkUrl} className="text-[var(--color-gold-light)]">
+              {announcementBar.text}
+            </a>
+          ) : (
+            announcementBar.text
+          )}
           {announcementBar.dismissible !== false && (
-            <button type="button" className="announcement-bar__dismiss" aria-label="Dismiss" onClick={() => setDismissed(true)}>
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent text-base text-inherit"
+              aria-label="Dismiss"
+              onClick={() => setDismissed(true)}
+            >
               &times;
             </button>
           )}
         </div>
       )}
 
-      <header className={`site-header site-header--${desktopLayout} ${sticky ? 'is-sticky' : ''}`}>
-        <div className="site-header__inner">
+      <header
+        className={`z-20 border-b border-[var(--color-line)] bg-[var(--color-cream)] ${sticky ? 'sticky top-0' : 'static'}`}
+      >
+        <div
+          className={`mx-auto flex max-w-[var(--max-width)] items-center px-6 py-5 ${desktopLayout === 'logo-center' ? 'justify-center gap-12' : 'justify-between'}`}
+        >
           {desktopLayout === 'logo-right' ? (
             <>
               <HeaderNav links={links} onNavigate={() => setOpen(false)} />
-              <Link href="/" className="site-header__logo">
+              <Link href="/" className="font-[family-name:var(--font-display)] text-[1.6rem] font-semibold tracking-[0.02em]">
                 {logo}
               </Link>
             </>
           ) : (
             <>
-              <Link href="/" className="site-header__logo">
+              <Link href="/" className="font-[family-name:var(--font-display)] text-[1.6rem] font-semibold tracking-[0.02em]">
                 {logo}
               </Link>
               <HeaderNav links={links} onNavigate={() => setOpen(false)} className={open ? 'is-open' : ''} mobileLayout={mobileLayout} />
             </>
           )}
 
-          <div className="site-header__actions">
+          <div className="flex items-center gap-6">
             {socials?.show && socialLinks.length > 0 && (
-              <div className="site-header__socials">
+              <div className="flex gap-3 text-[0.75rem] uppercase tracking-[0.06em]">
                 {socialLinks.map((link, index) => (
                   <a key={index} href={link.url || '#'} target="_blank" rel="noopener noreferrer">
                     {link.platform}
@@ -97,20 +112,28 @@ export const Header: React.FC<{
               </div>
             )}
             {showCart && (
-              <Link href="/cart" className="site-header__cart" aria-label="View cart">
+              <Link
+                href="/cart"
+                className="relative text-[0.85rem] uppercase tracking-[0.08em]"
+                aria-label="View cart"
+              >
                 Cart
-                {itemCount > 0 && <span className="site-header__cart-count">{itemCount}</span>}
+                {itemCount > 0 && (
+                  <span className="absolute -right-4 -top-2.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[var(--color-gold)] text-[0.65rem] text-[var(--color-ink)]">
+                    {itemCount}
+                  </span>
+                )}
               </Link>
             )}
             <button
               type="button"
-              className="site-header__toggle"
+              className="flex flex-col gap-[5px] border-none bg-none cursor-pointer md:hidden"
               aria-label="Toggle navigation"
               onClick={() => setOpen((prev) => !prev)}
             >
-              <span />
-              <span />
-              <span />
+              <span className="h-[1.5px] w-[22px] bg-[var(--color-ink)]" />
+              <span className="h-[1.5px] w-[22px] bg-[var(--color-ink)]" />
+              <span className="h-[1.5px] w-[22px] bg-[var(--color-ink)]" />
             </button>
           </div>
         </div>
@@ -125,9 +148,11 @@ const HeaderNav: React.FC<{
   className?: string
   mobileLayout?: 'slide-in' | 'fullscreen'
 }> = ({ links, onNavigate, className = '', mobileLayout = 'slide-in' }) => (
-  <nav className={`site-header__nav site-header__nav--${mobileLayout} ${className}`}>
+  <nav
+    className={`site-header__nav site-header__nav--${mobileLayout} flex gap-8 text-[0.85rem] uppercase tracking-[0.08em] ${className}`}
+  >
     {links.map((link) => (
-      <div key={link.href} className={`site-header__nav-item ${link.children?.length ? 'has-dropdown' : ''}`}>
+      <div key={link.href} className="group relative inline-block">
         <Link
           href={link.href}
           target={link.newTab ? '_blank' : undefined}
@@ -137,7 +162,7 @@ const HeaderNav: React.FC<{
           {link.label}
         </Link>
         {link.children && link.children.length > 0 && (
-          <div className="site-header__dropdown">
+          <div className="absolute left-0 top-full z-30 hidden min-w-[180px] border border-[var(--color-line)] bg-[var(--color-cream)] py-2 normal-case tracking-normal group-hover:block">
             {link.children.map((child) => (
               <Link
                 key={child.href}
@@ -145,6 +170,7 @@ const HeaderNav: React.FC<{
                 target={child.newTab ? '_blank' : undefined}
                 rel={child.newTab ? 'noopener noreferrer' : undefined}
                 onClick={onNavigate}
+                className="block px-[18px] py-2.5"
               >
                 {child.label}
               </Link>

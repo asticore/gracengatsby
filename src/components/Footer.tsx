@@ -42,21 +42,34 @@ export const Footer: React.FC<{
     ],
   }
 
+  const columnsClass =
+    layout === 'columns-4'
+      ? 'grid grid-cols-4 gap-6 max-[900px]:grid-cols-2'
+      : `grid grid-cols-3 gap-6 ${layout === 'stacked' ? 'justify-center' : ''}`
+
   return (
-    <footer className={`site-footer site-footer--${layout}`} id="about">
-      <div className="site-footer__inner">
-        <div className="site-footer__brand">
+    <footer className="bg-[var(--color-ink)] px-6 pb-6 pt-16 text-[var(--color-cream)]" id="about">
+      <div
+        className={`mx-auto grid max-w-[var(--max-width)] grid-cols-[1.4fr_1fr] gap-12 max-[900px]:grid-cols-1 ${layout === 'stacked' ? 'text-center' : ''}`}
+      >
+        <div>
           {showLogo && logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={siteName} className="site-footer__logo-image" />
+            <img src={logoUrl} alt={siteName} className="max-h-10 w-auto" />
           ) : (
-            <h2>{siteName}</h2>
+            <h2 className="text-[1.75rem]">{siteName}</h2>
           )}
-          <p>{bottomText}</p>
+          <p className="max-w-[40ch] text-[rgba(246,241,231,0.7)]">{bottomText}</p>
           {socials?.show && socialLinks.length > 0 && (
-            <div className="site-footer__social">
+            <div className="mt-4 flex gap-4">
               {socialLinks.map((link, index) => (
-                <a key={index} href={link.url || '#'} target="_blank" rel="noopener noreferrer">
+                <a
+                  key={index}
+                  href={link.url || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[0.75rem] uppercase tracking-[0.08em] text-[var(--color-gold-light)]"
+                >
                   {link.platform}
                 </a>
               ))}
@@ -64,10 +77,12 @@ export const Footer: React.FC<{
           )}
         </div>
 
-        <div className="site-footer__columns">
+        <div className={columnsClass}>
           {[...columns, contactColumn].map((column, index) => (
             <div key={index}>
-              <h3>{column.title}</h3>
+              <h3 className="mb-3 font-[family-name:var(--font-body)] text-[0.75rem] uppercase tracking-[0.08em] text-[var(--color-gold-light)]">
+                {column.title}
+              </h3>
               {column.links.map((link, linkIndex) =>
                 link.href === '#' ? (
                   <p key={linkIndex}>{link.label}</p>
@@ -82,7 +97,7 @@ export const Footer: React.FC<{
         </div>
       </div>
 
-      <div className="site-footer__bottom">
+      <div className="mx-auto mt-12 max-w-[var(--max-width)] border-t border-[rgba(246,241,231,0.15)] pt-6 text-[0.8rem] text-[rgba(246,241,231,0.5)]">
         <p>{copyrightText || `© ${year} ${siteName}. All rights reserved.`}</p>
       </div>
     </footer>

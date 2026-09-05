@@ -35,22 +35,27 @@ export const CourseListScreen: React.FC = async () => {
           {courses.map((course) => {
             const cover = course.coverImage && typeof course.coverImage === 'object' ? (course.coverImage as Media) : null
             return (
-              <Link key={course.id} href={`/courses/${course.slug}`} className="product-card">
-                {cover?.url ? (
-                  <div className="product-card__image">
+              <Link key={course.id} href={`/courses/${course.slug}`} className="product-card block">
+                <div className="product-card__image relative aspect-[4/5] overflow-hidden bg-[var(--color-cream-dim)]">
+                  {cover?.url ? (
                     <Image
                       src={cover.url}
                       alt={course.title}
                       width={640}
                       height={420}
-                      style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-                  </div>
-                ) : (
-                  <div className="product-card__placeholder" />
-                )}
-                <div className="product-card__body">
-                  <span className="product-card__category">{ACCESS_LABEL[course.accessType ?? 'free']}</span>
+                  ) : (
+                    <div
+                      className="h-full w-full bg-[image:linear-gradient(135deg,var(--color-cream-dim),var(--color-gold-light))]"
+                      aria-hidden
+                    />
+                  )}
+                </div>
+                <div className="p-5">
+                  <span className="text-[0.7rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">
+                    {ACCESS_LABEL[course.accessType ?? 'free']}
+                  </span>
                   <h2>{course.title}</h2>
                   {course.description && <p>{course.description}</p>}
                 </div>

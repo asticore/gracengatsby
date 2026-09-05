@@ -105,7 +105,7 @@ export const CourseScreen: React.FC<{ slug: string }> = async ({ slug }) => {
       {course.description && <p>{course.description}</p>}
 
       {cover?.url && (
-        <div className="event-page__cover">
+        <div className="relative mb-12 aspect-[16/6] w-full bg-[var(--color-cream-dim)]">
           <Image
             src={cover.url}
             alt={course.title}

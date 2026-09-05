@@ -1,4 +1,4 @@
-import type { GlobalConfig } from 'payload'
+import type { GlobalConfig } from '@/engine'
 
 import { isAdmin } from '../access/ecommerceAccess'
 

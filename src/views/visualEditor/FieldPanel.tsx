@@ -46,7 +46,7 @@ export const FieldPanel: React.FC<{
           <strong>{blockDef.label}</strong>
         </div>
         <button type="button" className="ve-icon-btn" onClick={onClose} aria-label="Close panel">
-          ✗
+          ✕
         </button>
       </div>
 
@@ -227,7 +227,7 @@ const SectionLayoutFields: React.FC<{
               aria-label={`Remove column ${index + 1}`}
               title="Remove column"
             >
-              ✗
+              ✕
             </button>
           </div>
         )
@@ -535,7 +535,7 @@ const MultiThumb: React.FC<{ id: number; onRemove: () => void }> = ({ id, onRemo
         <span>…</span>
       )}
       <button type="button" onClick={onRemove} aria-label="Remove image">
-        ✗
+        ✕
       </button>
     </div>
   )

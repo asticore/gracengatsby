@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 // Shared, idempotent seed logic for the starter Home page + Page Templates.
 // Used by BOTH:
@@ -34,7 +34,7 @@ export const lexicalParagraph = (text: string) => ({
 })
 
 export async function seedHomeAndTemplates(
-  engine: Payload,
+  engine: Engine,
 ): Promise<{ homeCreated: boolean; templatesCreated: boolean }> {
   let homeCreated = false
   let templatesCreated = false

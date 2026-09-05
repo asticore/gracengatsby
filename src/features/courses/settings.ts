@@ -1,4 +1,4 @@
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 import { DEFAULT_FLAGS, FEATURES, type FeatureFlags, type FeatureKey } from '@/features/registry'
 
@@ -13,7 +13,7 @@ import { DEFAULT_FLAGS, FEATURES, type FeatureFlags, type FeatureKey } from '@/f
  * Never throws: an unreadable settings global degrades to the registry
  * defaults, and `lms` defaults to off.
  */
-export const flagsFrom = async (engine: Payload): Promise<FeatureFlags> => {
+export const flagsFrom = async (engine: Engine): Promise<FeatureFlags> => {
   const settings = await engine.findGlobal({ slug: 'site-settings', depth: 0 }).catch((): null => null)
   const saved = (settings?.features ?? {}) as Partial<Record<FeatureKey, boolean | null | undefined>>
 

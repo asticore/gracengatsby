@@ -1,4 +1,4 @@
-import type { Payload, TypedUser, Where } from '@/engine'
+import type { Engine, TypedUser, Where } from '@/engine'
 
 import type { FeatureFlags } from '@/features/registry'
 
@@ -27,7 +27,7 @@ export const EMPTY_PROGRESS: CourseProgress = {
  * lowers the denominator without stranding anyone above 100%.
  */
 export const progressForCourse = async (
-  engine: Payload,
+  engine: Engine,
   user: MaybeUser,
   courseId: number,
 ): Promise<CourseProgress> => {
@@ -86,7 +86,7 @@ export type MarkOutcome = { ok: true; progress: CourseProgress } | { ok: false; 
  * anything.
  */
 export const markLessonComplete = async (
-  engine: Payload,
+  engine: Engine,
   user: MaybeUser,
   flags: FeatureFlags,
   lessonId: number,

@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload } from '@/engine'
+import type { CollectionSlug, Engine } from '@/engine'
 
 /**
  * The two collection slugs this feature owns, cast once.
@@ -22,5 +22,5 @@ export const SUBMISSIONS_SLUG = 'form-submissions' as CollectionSlug
  * form entry. The two writes in this feature are cast through these, and the
  * casts disappear with the two slugs.
  */
-export type CreateArgs = Parameters<Payload['create']>[0]
-export type UpdateArgs = Parameters<Payload['update']>[0]
+export type CreateArgs = Parameters<Engine['create']>[0]
+export type UpdateArgs = Parameters<Engine['update']>[0]

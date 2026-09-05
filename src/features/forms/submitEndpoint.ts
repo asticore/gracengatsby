@@ -1,4 +1,4 @@
-import type { Endpoint, PayloadRequest } from '@/engine'
+import type { Endpoint, EngineRequest } from '@/engine'
 
 import { HONEYPOT_FIELD, RENDERED_AT_FIELD, TURNSTILE_FIELD } from './spam'
 
@@ -34,7 +34,7 @@ const json = (body: unknown, status: number, headers?: Record<string, string>): 
  * the way a Media item is - and that access model is a decision about Media,
  * not about forms. Marked here rather than silently dropped.
  */
-const readBody = async (req: PayloadRequest): Promise<Record<string, unknown>> => {
+const readBody = async (req: EngineRequest): Promise<Record<string, unknown>> => {
   const contentType = req.headers.get('content-type') || ''
 
   if (contentType.includes('application/json')) {
@@ -61,7 +61,7 @@ const readBody = async (req: PayloadRequest): Promise<Record<string, unknown>> =
 export const submitEndpoint: Endpoint = {
   path: '/:id/submit',
   method: 'post',
-  handler: async (req: PayloadRequest): Promise<Response> => {
+  handler: async (req: EngineRequest): Promise<Response> => {
     const formID = (req.routeParams?.id ?? '') as string
     if (!formID) return json({ ok: false, message: 'Not found' }, 404)
 

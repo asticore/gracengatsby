@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import type { PayloadRequest } from '@/engine'
+import type { EngineRequest } from '@/engine'
 
 import type { EngineSignup } from './signup'
 import type { MembershipDoc, MembershipStatus } from './types'
@@ -26,9 +26,9 @@ import { MEMBERSHIPS_SLUG } from './slugs'
  * about a failed payment.
  */
 
-type HandlerArgs = { event: Stripe.Event; req: PayloadRequest; stripe: Stripe }
+type HandlerArgs = { event: Stripe.Event; req: EngineRequest; stripe: Stripe }
 
-const engineOf = (req: PayloadRequest): EngineSignup => req.payload as unknown as EngineSignup
+const engineOf = (req: EngineRequest): EngineSignup => req.payload as unknown as EngineSignup
 
 /**
  * Stripe's subscription states, mapped onto ours.
@@ -76,7 +76,7 @@ const findBySubscription = async (
 }
 
 const applySubscription = async (
-  req: PayloadRequest,
+  req: EngineRequest,
   subscription: Stripe.Subscription,
   membership: MembershipDoc | null,
 ): Promise<void> => {

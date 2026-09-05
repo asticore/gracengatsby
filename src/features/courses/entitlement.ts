@@ -1,4 +1,4 @@
-import type { Payload, TypedUser, Where } from '@/engine'
+import type { Engine, TypedUser, Where } from '@/engine'
 
 import type { FeatureFlags } from '@/features/registry'
 
@@ -52,7 +52,7 @@ const PAID_ORDER_STATUSES = ['processing', 'completed']
  * is used, and anything unrecognised counts as no tier rather than an error.
  */
 export const heldTierSlugs = async (
-  engine: Payload,
+  engine: Engine,
   user: MaybeUser,
   flags: FeatureFlags,
 ): Promise<string[] | null> => {
@@ -91,7 +91,7 @@ export const heldTierSlugs = async (
 }
 
 /** True when the learner has a paid order containing the course's product. */
-const hasPurchased = async (engine: Payload, user: MaybeUser, productId: number): Promise<boolean> => {
+const hasPurchased = async (engine: Engine, user: MaybeUser, productId: number): Promise<boolean> => {
   if (!user) return false
   try {
     const { totalDocs } = await engine.find({
@@ -114,7 +114,7 @@ const hasPurchased = async (engine: Payload, user: MaybeUser, productId: number)
 }
 
 /** True when an active enrolment row already grants the course. */
-const hasEnrolment = async (engine: Payload, user: MaybeUser, courseId: number): Promise<boolean> => {
+const hasEnrolment = async (engine: Engine, user: MaybeUser, courseId: number): Promise<boolean> => {
   if (!user) return false
   try {
     const { totalDocs } = await engine.find({
@@ -144,7 +144,7 @@ const hasEnrolment = async (engine: Payload, user: MaybeUser, courseId: number):
  * exactly one place where the rule lives and exactly one place to get it wrong.
  */
 export const entitlementFor = async (
-  engine: Payload,
+  engine: Engine,
   course: CourseLike,
   user: MaybeUser,
   flags: FeatureFlags,
@@ -189,7 +189,7 @@ export const entitlementFor = async (
  * cost of listing lessons grow with the size of the catalogue.
  */
 export const accessibleCourseIds = async (
-  engine: Payload,
+  engine: Engine,
   user: MaybeUser,
   flags: FeatureFlags,
 ): Promise<number[]> => {

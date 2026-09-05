@@ -1,4 +1,4 @@
-import type { Endpoint, PayloadRequest } from '@/engine'
+import type { Endpoint, EngineRequest } from '@/engine'
 
 import type { FormDoc } from './types'
 
@@ -27,7 +27,7 @@ const MAX_ROWS = 50_000
 export const exportEndpoint: Endpoint = {
   path: '/export',
   method: 'get',
-  handler: async (req: PayloadRequest): Promise<Response> => {
+  handler: async (req: EngineRequest): Promise<Response> => {
     const roles = (req.user as { roles?: string[] } | null)?.roles || []
     if (!roles.includes('admin')) {
       return new Response(JSON.stringify({ error: 'Not found' }), {

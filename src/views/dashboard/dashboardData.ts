@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload, PayloadRequest } from '@/engine'
+import type { CollectionSlug, Engine, EngineRequest } from '@/engine'
 
 import type { ResolvedEntity, ResolvedGroup } from '@/components/admin/shared/resolveEntities'
 
@@ -48,9 +48,9 @@ const findEntity = (groups: ResolvedGroup[], slug: string): ResolvedEntity | und
  * D1 round trip, and six in series is a visible pause on first paint.
  */
 export async function getStatTiles(
-  engine: Payload,
+  engine: Engine,
   groups: ResolvedGroup[],
-  req?: PayloadRequest,
+  req?: EngineRequest,
 ): Promise<StatTile[]> {
   const targets = STAT_SLUGS.map((slug) => findEntity(groups, slug)).filter(
     (entity): entity is ResolvedEntity => Boolean(entity),
@@ -82,10 +82,10 @@ export async function getStatTiles(
  * of: a card grid tells you what exists, not what changed.
  */
 export async function getRecentActivity(
-  engine: Payload,
+  engine: Engine,
   groups: ResolvedGroup[],
   limit: number,
-  req?: PayloadRequest,
+  req?: EngineRequest,
 ): Promise<ActivityRow[]> {
   const targets = ACTIVITY_SLUGS.map((slug) => findEntity(groups, slug)).filter(
     (entity): entity is ResolvedEntity => Boolean(entity),

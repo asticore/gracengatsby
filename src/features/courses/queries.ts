@@ -1,5 +1,5 @@
 import { headers as nextHeaders } from 'next/headers'
-import type { Payload, TypedUser, Where } from '@/engine'
+import type { Engine, TypedUser, Where } from '@/engine'
 
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
@@ -30,7 +30,7 @@ export type CourseDoc = CourseLike & {
 
 /** The engine, the flags and the signed-in learner, resolved once per request. */
 export type LearnerContext = {
-  engine: Payload
+  engine: Engine
   flags: FeatureFlags
   user: MaybeUser
 }
@@ -44,7 +44,7 @@ export const learnerContext = async (): Promise<LearnerContext> => {
   return { engine, flags, user: auth.user }
 }
 
-export const publishedCourses = async (engine: Payload): Promise<CourseDoc[]> => {
+export const publishedCourses = async (engine: Engine): Promise<CourseDoc[]> => {
   const { docs } = await engine.find({
     collection: COURSES_SLUG as 'users',
     where: { _status: { equals: 'published' } } as Where,
@@ -56,7 +56,7 @@ export const publishedCourses = async (engine: Payload): Promise<CourseDoc[]> =>
   return docs as unknown as CourseDoc[]
 }
 
-export const courseBySlug = async (engine: Payload, slug: string): Promise<CourseDoc | null> => {
+export const courseBySlug = async (engine: Engine, slug: string): Promise<CourseDoc | null> => {
   const { docs } = await engine.find({
     collection: COURSES_SLUG as 'users',
     where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] } as Where,
@@ -75,7 +75,7 @@ export const courseBySlug = async (engine: Payload, slug: string): Promise<Cours
  * from the very outline that is meant to sell them. Nothing here can leak the
  * content: `content`, `videoUrl` and `resources` are never read.
  */
-export const curriculumFor = async (engine: Payload, courseId: number): Promise<CurriculumEntry[]> => {
+export const curriculumFor = async (engine: Engine, courseId: number): Promise<CurriculumEntry[]> => {
   const { docs } = await engine.find({
     collection: LESSONS_SLUG as 'users',
     where: { course: { equals: courseId } } as Where,

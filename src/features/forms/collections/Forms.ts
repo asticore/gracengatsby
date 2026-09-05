@@ -1,4 +1,4 @@
-import type { CollectionConfig, Field } from 'payload'
+import type { CollectionConfig, Field } from '@/engine'
 
 import { isAdmin } from '@/access/ecommerceAccess'
 

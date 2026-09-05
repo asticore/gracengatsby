@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 import { applySchemaAdditions } from './schema/applySchema'
 import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from './schema/builderSchema'

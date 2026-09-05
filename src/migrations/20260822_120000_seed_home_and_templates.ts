@@ -1,4 +1,4 @@
-import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-d1-sqlite'
+import type { MigrateDownArgs, MigrateUpArgs } from '@/engine/db'
 
 import { seedHomeAndTemplates } from '@/seed/seedHomeAndTemplates'
 

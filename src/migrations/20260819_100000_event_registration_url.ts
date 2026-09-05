@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.run(sql`ALTER TABLE \`events\` ADD \`external_registration_url\` text;`)

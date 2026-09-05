@@ -1,4 +1,4 @@
-import type { CollectionBeforeChangeHook } from 'payload'
+import type { CollectionBeforeChangeHook } from '@/engine'
 
 /**
  * Prevents new RSVPs once an event's capacity has been reached.

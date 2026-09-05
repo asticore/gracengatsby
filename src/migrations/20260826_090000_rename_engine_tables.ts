@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 import { applyEngineRenames, dropEmptyLegacyTables, type EngineDb } from './schema/engineBootstrap'
 

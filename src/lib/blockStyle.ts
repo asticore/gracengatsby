@@ -13,6 +13,7 @@ export type BackgroundType = 'none' | 'color' | 'gradient' | 'image'
 export type TextAlign = 'left' | 'center' | 'right'
 export type BlockWidth = 'contained' | 'wide' | 'full'
 export type DividerShape = 'none' | 'wave' | 'tilt' | 'curve' | 'triangle' | 'arrow'
+export type BoxShadowPreset = 'none' | 'sm' | 'md' | 'lg'
 
 export type BlockStyle = {
   // Background
@@ -33,6 +34,17 @@ export type BlockStyle = {
   paddingBottom?: number
   paddingTopMobile?: number
   paddingBottomMobile?: number
+  marginTop?: number
+  marginBottom?: number
+
+  // Border
+  borderWidth?: number
+  borderStyle?: 'solid' | 'dashed' | 'dotted'
+  borderColor?: string
+  borderRadius?: number
+
+  // Shadow
+  boxShadow?: BoxShadowPreset
 
   // Typography / layout
   textColor?: string
@@ -99,12 +111,37 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
 
   if (isNum(style.paddingTop)) css.paddingTop = `${style.paddingTop}px`
   if (isNum(style.paddingBottom)) css.paddingBottom = `${style.paddingBottom}px`
+  if (isNum(style.marginTop)) css.marginTop = `${style.marginTop}px`
+  if (isNum(style.marginBottom)) css.marginBottom = `${style.marginBottom}px`
   if (isStr(style.textColor)) css.color = style.textColor
   if (style.textAlign) css.textAlign = style.textAlign
   if (isNum(style.minHeight)) css.minHeight = `${style.minHeight}px`
 
+  if (isNum(style.borderWidth) && style.borderWidth > 0) {
+    css.borderWidth = `${style.borderWidth}px`
+    css.borderStyle = style.borderStyle || 'solid'
+    css.borderColor = style.borderColor || 'currentColor'
+  }
+  if (isNum(style.borderRadius)) css.borderRadius = `${style.borderRadius}px`
+  if (style.boxShadow && style.boxShadow !== 'none') css.boxShadow = BOX_SHADOW_PRESETS[style.boxShadow]
+
   return css
 }
+
+/** Shadow presets rather than a free-form CSS box-shadow field - keeps the Design tab a
+ *  couple of clicks instead of asking anyone to hand-write shadow syntax. */
+const BOX_SHADOW_PRESETS: Record<Exclude<BoxShadowPreset, 'none'>, string> = {
+  sm: '0 1px 3px rgba(0, 0, 0, 0.12)',
+  md: '0 8px 24px rgba(0, 0, 0, 0.16)',
+  lg: '0 20px 48px rgba(0, 0, 0, 0.22)',
+}
+
+export const BOX_SHADOW_OPTIONS: { label: string; value: BoxShadowPreset }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Small', value: 'sm' },
+  { label: 'Medium', value: 'md' },
+  { label: 'Large', value: 'lg' },
+]
 
 /**
  * Emits the media-query-dependent rules that can't live in an inline style.

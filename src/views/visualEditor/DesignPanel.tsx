@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 
-import { DIVIDER_OPTIONS, type BlockStyle, type DividerShape } from '@/lib/blockStyle'
+import { BOX_SHADOW_OPTIONS, DIVIDER_OPTIONS, type BlockStyle, type DividerShape } from '@/lib/blockStyle'
 
 import { MediaPicker } from './MediaPicker'
 
@@ -100,6 +100,39 @@ export const DesignPanel: React.FC<{
           min={0}
         />
         <NumberRow label="Minimum height (px)" value={value.minHeight} onChange={(v) => set('minHeight', v)} min={0} />
+        <NumberRow label="Margin top (px)" value={value.marginTop} onChange={(v) => set('marginTop', v)} />
+        <NumberRow label="Margin bottom (px)" value={value.marginBottom} onChange={(v) => set('marginBottom', v)} />
+      </Accordion>
+
+      <Accordion title="Border & shadow">
+        <NumberRow
+          label="Border width (px)"
+          value={value.borderWidth}
+          onChange={(v) => set('borderWidth', v)}
+          min={0}
+        />
+        {Boolean(value.borderWidth) && (
+          <>
+            <SelectRow
+              label="Border style"
+              value={value.borderStyle || 'solid'}
+              options={[
+                { label: 'Solid', value: 'solid' },
+                { label: 'Dashed', value: 'dashed' },
+                { label: 'Dotted', value: 'dotted' },
+              ]}
+              onChange={(v) => set('borderStyle', v as BlockStyle['borderStyle'])}
+            />
+            <ColorRow label="Border colour" value={value.borderColor} onChange={(v) => set('borderColor', v)} />
+          </>
+        )}
+        <NumberRow label="Corner radius (px)" value={value.borderRadius} onChange={(v) => set('borderRadius', v)} min={0} />
+        <SelectRow
+          label="Shadow"
+          value={value.boxShadow || 'none'}
+          options={BOX_SHADOW_OPTIONS}
+          onChange={(v) => set('boxShadow', v === 'none' ? undefined : (v as BlockStyle['boxShadow']))}
+        />
       </Accordion>
 
       <Accordion title="Layout & text">

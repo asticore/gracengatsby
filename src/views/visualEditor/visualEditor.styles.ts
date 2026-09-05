@@ -34,6 +34,14 @@ export const VISUAL_EDITOR_CSS = `
   --ve-accent-contrast: #1d1b19;
   --ve-danger: #b3453a;
   --ve-danger-contrast: #ffffff;
+  /* Green is reserved for "selection" and "add" affordances specifically -
+     never used for anything else - so it reads as its own signal distinct
+     from --ve-accent (which still means "primary brand action"). Same value
+     in both themes on purpose: a fixed color identity, not something dark
+     mode should reinterpret. */
+  --ve-select: #22a35e;
+  --ve-select-contrast: #ffffff;
+  --ve-select-hover: #1c8a4d;
   --ve-checker-a: #f7f5f1;
   --ve-checker-b: #f0ede6;
   --ve-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 30px rgba(0, 0, 0, 0.06);
@@ -262,29 +270,33 @@ html[data-theme='dark'] .ve-root {
   right: 0;
   top: 9px;
   height: 2px;
-  background: var(--ve-accent);
+  background: var(--ve-select);
   opacity: 0;
   transition: opacity 0.1s;
 }
 
 .ve-insert:hover::before,
 .ve-insert--drag-over::before {
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
+/* Plus button: white "+" on a solid green circle, always given a shadow so
+   it reads against any section background (light or image), not just the
+   editor's own accent color which was too close to the canvas white. */
 .ve-insert__btn {
   position: absolute;
   top: 9px;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: none;
-  background: var(--ve-accent);
-  color: var(--ve-accent-contrast);
-  box-shadow: var(--ve-shadow-pop);
-  font-size: 16px;
+  border: 2px solid #ffffff;
+  background: var(--ve-select);
+  color: var(--ve-select-contrast);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  font-size: 17px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   z-index: 6;
@@ -299,12 +311,14 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-insert__btn:hover {
+  background: var(--ve-select-hover);
+  color: #ffffff;
   transform: translate(-50%, -50%) scale(1.15);
 }
 
 .ve-insert--drag-over .ve-insert__btn {
   opacity: 1;
-  background: var(--ve-accent-hover);
+  background: var(--ve-select-hover);
   transform: translate(-50%, -50%) scale(1.3);
 }
 
@@ -660,7 +674,7 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-node--selected {
-  outline: 2px solid var(--ve-accent);
+  outline: 2px solid var(--ve-select);
   outline-offset: -2px;
 }
 

@@ -277,27 +277,19 @@ html[data-theme='dark'] .ve-root {
   top: 9px;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 36px;
-  height: 36px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: none;
   background: var(--ve-accent);
   color: var(--ve-accent-contrast);
-  box-shadow: 0 2px 12px rgba(201, 161, 90, 0.3);
-  font-size: 20px;
+  box-shadow: var(--ve-shadow-pop);
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
   z-index: 6;
   opacity: 0;
-  transition: opacity 0.15s, transform 0.15s, background 0.15s, box-shadow 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-}
-
-html[data-theme='dark'] .ve-insert__btn {
-  box-shadow: 0 2px 12px rgba(78, 141, 255, 0.3);
+  transition: opacity 0.1s, transform 0.1s, background 0.1s;
 }
 
 .ve-insert:hover .ve-insert__btn,
@@ -307,23 +299,13 @@ html[data-theme='dark'] .ve-insert__btn {
 }
 
 .ve-insert__btn:hover {
-  transform: translate(-50%, -50%) scale(1.2);
-  box-shadow: 0 4px 16px rgba(201, 161, 90, 0.4);
-}
-
-html[data-theme='dark'] .ve-insert__btn:hover {
-  box-shadow: 0 4px 16px rgba(78, 141, 255, 0.4);
+  transform: translate(-50%, -50%) scale(1.15);
 }
 
 .ve-insert--drag-over .ve-insert__btn {
   opacity: 1;
   background: var(--ve-accent-hover);
-  transform: translate(-50%, -50%) scale(1.35);
-  box-shadow: 0 6px 20px rgba(201, 161, 90, 0.5);
-}
-
-html[data-theme='dark'] .ve-insert--drag-over .ve-insert__btn {
-  box-shadow: 0 6px 20px rgba(78, 141, 255, 0.5);
+  transform: translate(-50%, -50%) scale(1.3);
 }
 
 .ve-empty-canvas {
@@ -346,44 +328,6 @@ html[data-theme='dark'] .ve-insert--drag-over .ve-insert__btn {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.ve-dock__header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--ve-border);
-  flex-shrink: 0;
-}
-
-.ve-dock__back {
-  border: none;
-  background: none;
-  color: var(--ve-text);
-  padding: 6px 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border-radius: 4px;
-  transition: background 0.1s, color 0.1s;
-}
-
-.ve-dock__back:hover {
-  background: var(--ve-surface-alt);
-}
-
-.ve-dock__header-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ve-text);
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .ve-dock__tabs {

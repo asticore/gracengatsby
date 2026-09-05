@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers'
-import type { Payload, TypedUser } from 'payload'
+import type { Payload, TypedUser } from '@/engine'
 
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'

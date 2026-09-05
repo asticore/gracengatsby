@@ -1,5 +1,5 @@
 import React from 'react'
-import type { AdminViewServerProps } from 'payload'
+import type { AdminViewServerProps } from '@/engine'
 
 import { getFeatureFlags } from '@/utilities/features'
 

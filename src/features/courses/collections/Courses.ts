@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig } from '@/engine'
 
 import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
 import { seoFields } from '@/fields/seo'

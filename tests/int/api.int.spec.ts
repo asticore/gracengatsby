@@ -9,7 +9,7 @@ let engine: Payload
 describe('API', () => {
   beforeAll(async () => {
     const engineConfig = await config
-  engine = await getPayload({ config: engineConfig })
+    engine = await getPayload({ config: engineConfig })
   })
 
   it('fetches users', async () => {

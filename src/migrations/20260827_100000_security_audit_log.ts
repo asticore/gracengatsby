@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 // Creates `eg_audit_log`, the table behind the Security feature's audit trail,
 // and adds the two-step sign-in columns to `eg_users`.

@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 // Creates the Members feature's tables - `eg_membership_tiers` (plus its
 // benefits child table) and `eg_memberships` - and adds the members-only gate

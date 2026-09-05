@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { lexicalEditor } from '@/engine/editor'
+import { richTextEditor } from '@/engine/editor'
 
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { formatSlugHook } from '../utilities/formatSlug'
@@ -54,7 +54,7 @@ export const Events: CollectionConfig = {
     {
       name: 'description',
       type: 'richText',
-      editor: lexicalEditor(),
+      editor: richTextEditor(),
     },
     {
       name: 'coverImage',

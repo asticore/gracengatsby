@@ -10,6 +10,3 @@
  */
 
 export { ecommercePlugin as shopPlugin } from '@payloadcms/plugin-ecommerce'
-
-/** Deprecated vendor-named alias - call sites move to `shopPlugin`. */
-export { ecommercePlugin } from '@payloadcms/plugin-ecommerce'

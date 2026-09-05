@@ -14,6 +14,3 @@ export {
   useCurrency,
   usePayments,
 } from '@payloadcms/plugin-ecommerce/client/react'
-
-/** Deprecated vendor-named alias - call sites move to `ShopProvider`. */
-export { EcommerceProvider } from '@payloadcms/plugin-ecommerce/client/react'

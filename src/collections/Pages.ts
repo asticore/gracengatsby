@@ -1,4 +1,4 @@
-import type { CollectionConfig, PayloadRequest } from '@/engine'
+import type { CollectionConfig, EngineRequest } from '@/engine'
 
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
@@ -55,7 +55,7 @@ export const Pages: CollectionConfig = {
       },
       validate: async (
         value: unknown,
-        { req, data, id }: { req: PayloadRequest; data?: Record<string, unknown>; id?: unknown },
+        { req, data, id }: { req: EngineRequest; data?: Record<string, unknown>; id?: unknown },
       ) => {
         const slug = typeof value === 'string' && value.length > 0 ? value : slugify(String(data?.title || ''))
         if (!slug) return 'A slug or title is required.'

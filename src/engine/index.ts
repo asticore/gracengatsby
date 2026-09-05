@@ -21,10 +21,12 @@
  * 1. This directory is the ONLY place allowed to name the vendor package.
  *    Nothing under src/ outside src/engine/ may import it directly.
  * 2. Exported names are ours, not the vendor's. Where a vendor name leaks its
- *    branding it is re-exported under a neutral one (`Engine`, `EngineRequest`).
- *    The vendor-named aliases below exist only so the repoint could land
- *    without a 94-file rename in the same commit; they are deprecated and get
- *    removed once call sites are migrated to the neutral names.
+ *    branding it is re-exported under a neutral one (`Engine`, `EngineRequest`,
+ *    `richTextEditor`, `shopPlugin`, `ShopProvider`). A vendor-named alias may
+ *    exist alongside one temporarily so a specifier repoint can land as a
+ *    mechanical, zero-risk change - see ./editor.ts, ./commerce.ts and
+ *    ./commerce/react.ts - but each is deprecated and removed once call sites
+ *    move to the neutral name, as happened here for `Payload`/`PayloadRequest`.
  * 3. Anything added here should be shaped the way WE want to consume it, not
  *    mirrored from the vendor for its own sake - this is the contract our own
  *    implementation has to satisfy later, so it is worth getting right now.
@@ -71,13 +73,6 @@ export type {
   TypedUser,
   Where,
 } from 'payload'
-
-/**
- * Deprecated vendor-named aliases. Kept so the 94-file specifier repoint could
- * land as a mechanical, zero-risk change; call sites move to `Engine` and
- * `EngineRequest` in the follow-up sweep, then these two lines go.
- */
-export type { Payload, PayloadRequest } from 'payload'
 
 /* -------------------------------------------------------------------------- */
 /* Client accessor                                                             */

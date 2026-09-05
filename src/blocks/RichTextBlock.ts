@@ -1,7 +1,7 @@
 import type { Block } from '@/engine'
 
 import { blockStyleField } from './styleField'
-import { lexicalEditor } from '@/engine/editor'
+import { richTextEditor } from '@/engine/editor'
 
 export const RichTextBlock: Block = {
   slug: 'richText',
@@ -10,7 +10,7 @@ export const RichTextBlock: Block = {
     {
       name: 'content',
       type: 'richText',
-      editor: lexicalEditor(),
+      editor: richTextEditor(),
       required: true,
     },
     blockStyleField,

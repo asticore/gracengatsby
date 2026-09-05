@@ -1,6 +1,6 @@
 'use client'
 
-import { EcommerceProvider } from '@/engine/commerce/react'
+import { ShopProvider } from '@/engine/commerce/react'
 import { stripeAdapterClient } from '@/engine/commerce/stripe'
 import React from 'react'
 
@@ -8,7 +8,7 @@ import { AUD } from '@/lib/currencies'
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <EcommerceProvider
+    <ShopProvider
       currenciesConfig={{
         defaultCurrency: 'AUD',
         supportedCurrencies: [AUD],
@@ -27,6 +27,6 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
       syncLocalStorage
     >
       {children}
-    </EcommerceProvider>
+    </ShopProvider>
   )
 }

@@ -10,6 +10,3 @@
  */
 
 export { lexicalEditor as richTextEditor } from '@payloadcms/richtext-lexical'
-
-/** Deprecated vendor-named alias - call sites move to `richTextEditor`. */
-export { lexicalEditor } from '@payloadcms/richtext-lexical'

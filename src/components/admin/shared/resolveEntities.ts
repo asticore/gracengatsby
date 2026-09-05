@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import type { Payload, SanitizedCollectionConfig, SanitizedGlobalConfig } from '@/engine'
+import type { Engine, SanitizedCollectionConfig, SanitizedGlobalConfig } from '@/engine'
 import { formatAdminURL } from '@/engine/shared'
 
 import {
@@ -69,7 +69,7 @@ type I18nLike = { language?: string; t: (key: never) => string }
  * instance, which is a per-request singleton, so a miss only costs the query
  * that would have run anyway.
  */
-export const readFeatureFlags = cache(async (engine: Payload): Promise<FeatureFlags> => {
+export const readFeatureFlags = cache(async (engine: Engine): Promise<FeatureFlags> => {
   const flags: FeatureFlags = { ...DEFAULT_FLAGS }
   try {
     const settings = await engine.findGlobal({ slug: 'site-settings', depth: 0 })
@@ -106,7 +106,7 @@ function resolveLabel(
 }
 
 export type ResolveArgs = {
-  engine: Payload
+  engine: Engine
   flags: FeatureFlags
   i18n: I18nLike
   permissions?: EntityPermissions

@@ -1,4 +1,4 @@
-import type { CollectionConfig, PayloadRequest } from '@/engine'
+import type { CollectionConfig, EngineRequest } from '@/engine'
 
 import { isAdmin } from '@/access/ecommerceAccess'
 
@@ -63,7 +63,7 @@ const withKeys = <T extends { key?: string | null }>(rows: T[] | null | undefine
  * parent chain to find out. Recomputed on every save, so moving a page under a
  * new parent is picked up the next time the test is touched.
  */
-const resolveTargetPath = async (req: PayloadRequest, pageId: unknown): Promise<string> => {
+const resolveTargetPath = async (req: EngineRequest, pageId: unknown): Promise<string> => {
   if (!pageId) return ''
   const id = typeof pageId === 'object' ? (pageId as { id?: unknown }).id : pageId
   if (id === undefined || id === null) return ''

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Logout } from '@/engine/ui'
 import { PREFERENCE_KEYS, formatAdminURL } from '@/engine/shared'
-import type { Payload } from '@/engine'
+import type { Engine } from '@/engine'
 
 import { AsticoreSaasComingSoon } from '@/components/branding/AsticoreSaasComingSoon'
 
@@ -25,13 +25,13 @@ type I18nLike = { language?: string; t: (key: string) => string }
 
 type AdminNavProps = {
   i18n: I18nLike
-  payload: Payload
+  payload: Engine
   permissions?: {
     collections?: Record<string, { read?: boolean } | undefined>
     globals?: Record<string, { read?: boolean } | undefined>
   }
   req?: {
-    payload: Payload
+    payload: Engine
     user?: { collection: string; id: number | string } | null
   }
   visibleEntities: {

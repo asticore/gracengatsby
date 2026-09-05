@@ -1,13 +1,13 @@
 import fs from 'fs'
 import path from 'path'
 import { sqliteD1Adapter } from '@/engine/db'
-import { lexicalEditor } from '@/engine/editor'
+import { richTextEditor } from '@/engine/editor'
 import { buildConfig } from '@/engine'
 import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
 import { GetPlatformProxyOptions } from 'wrangler'
 import { r2Storage } from '@/engine/storage'
-import { ecommercePlugin } from '@/engine/commerce'
+import { shopPlugin } from '@/engine/commerce'
 import { stripeAdapter } from '@/engine/commerce/stripe'
 //import { payloadTotp } from 'payload-totp'
 import {
@@ -271,7 +271,7 @@ const config = buildConfig({
     PaymentSettings,
     FormSettings,
   ],
-  editor: lexicalEditor(),
+  editor: richTextEditor(),
   // ENGAGE_SECRET is the preferred name; PAYLOAD_SECRET is kept as a fallback
   // so deployments that already set it keep working. The engine's own CLI
   // (`migrate`, `generate:*`) still reads PAYLOAD_SECRET directly before this
@@ -299,7 +299,7 @@ const config = buildConfig({
       bucket: cloudflare.env.R2,
       collections: { media: true },
     }),
-    ecommercePlugin({
+    shopPlugin({
       customers: { slug: 'users' },
       currencies: {
         defaultCurrency: 'AUD',
@@ -365,7 +365,7 @@ const config = buildConfig({
             {
               name: 'description',
               type: 'richText',
-              editor: lexicalEditor(),
+              editor: richTextEditor(),
             },
             {
               name: 'images',

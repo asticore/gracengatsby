@@ -1,4 +1,4 @@
-import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { CollectionConfig, PayloadRequest } from '@/engine'
 
 import { isAdmin } from '@/access/ecommerceAccess'
 

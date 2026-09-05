@@ -1,4 +1,4 @@
-import type { Field } from 'payload'
+import type { Field } from '@/engine'
 
 /**
  * Reusable per-document SEO group. Falls back to Site Settings > SEO Defaults

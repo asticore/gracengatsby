@@ -2,7 +2,7 @@ import type {
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
   GlobalAfterChangeHook,
-} from 'payload'
+} from '@/engine'
 
 import { audit, auditContext, type AuditEntry } from './auditLog'
 import { getSecuritySettings, invalidateSecuritySettingsCache } from './settings'

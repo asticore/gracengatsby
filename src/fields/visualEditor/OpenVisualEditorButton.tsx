@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useDocumentInfo } from '@payloadcms/ui'
+import { useDocumentInfo } from '@/engine/ui'
 
 /**
  * Small "Edit Visually" link shown above the normal admin form on any

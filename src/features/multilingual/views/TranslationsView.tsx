@@ -1,5 +1,5 @@
 import React from 'react'
-import type { AdminViewServerProps } from 'payload'
+import type { AdminViewServerProps } from '@/engine'
 
 import { getMultilingualSettings } from '../settings'
 import { TranslationsTable } from './TranslationsTable'

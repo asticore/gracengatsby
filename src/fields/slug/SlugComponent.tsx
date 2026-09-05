@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { FieldLabel, TextInput, useField, useFormFields } from '@payloadcms/ui'
-import type { TextFieldClientProps } from 'payload'
+import { FieldLabel, TextInput, useField, useFormFields } from '@/engine/ui'
+import type { TextFieldClientProps } from '@/engine'
 
 import { slugify } from '@/utilities/formatSlug'
 

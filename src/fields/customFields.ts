@@ -1,4 +1,4 @@
-import type { Field } from 'payload'
+import type { Field } from '@/engine'
 
 /**
  * Storage for the values of any Field Group targeting this collection.

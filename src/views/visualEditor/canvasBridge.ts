@@ -32,6 +32,7 @@ export type FrameToParentMessage =
   | { source: typeof SOURCE; type: 'ready' }
   | { source: typeof SOURCE; type: 'select'; path: NodePath | null }
   | { source: typeof SOURCE; type: 'add'; containerPath: NodePath; at: number }
+  | { source: typeof SOURCE; type: 'drop'; containerPath: NodePath; at: number; blockType: string }
   | { source: typeof SOURCE; type: 'delete'; path: NodePath }
   | { source: typeof SOURCE; type: 'duplicate'; path: NodePath }
   | { source: typeof SOURCE; type: 'move'; path: NodePath; direction: -1 | 1 }

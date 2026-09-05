@@ -130,6 +130,15 @@ export const ElementLibrary: React.FC<{
                         key={block.slug}
                         type="button"
                         className="ve-library__card"
+                        draggable
+                        onDragStart={(e) => {
+                          // Native HTML5 DnD, not @dnd-kit - it's the only thing that
+                          // can hand a drag off across the canvas iframe boundary, since
+                          // dataTransfer belongs to the browser's drag session rather
+                          // than either document. See Canvas.tsx's InsertSlot.
+                          e.dataTransfer.setData('application/x-ve-block', block.slug)
+                          e.dataTransfer.effectAllowed = 'copy'
+                        }}
                         onClick={() => onPickBlock(block.slug)}
                         title={block.description}
                       >

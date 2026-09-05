@@ -3,7 +3,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import { asBlockStyle, type BlockStyle } from '@/lib/blockStyle'
-import { COLUMN_WIDTH_OPTIONS, parseColumns, type SectionColumn } from '@/lib/sectionTree'
+import {
+  COLUMN_WIDTH_OPTIONS,
+  parseColumns,
+  type ColumnWidthUnit,
+  type ResponsiveColumnWidth,
+  type SectionColumn,
+} from '@/lib/sectionTree'
 
 import type { BlockDef, EditorField } from './blockSchemas'
 import { DesignPanel } from './DesignPanel'
@@ -40,7 +46,7 @@ export const FieldPanel: React.FC<{
           <strong>{blockDef.label}</strong>
         </div>
         <button type="button" className="ve-icon-btn" onClick={onClose} aria-label="Close panel">
-          ✕
+          ✗
         </button>
       </div>
 
@@ -98,13 +104,33 @@ export const FieldPanel: React.FC<{
   )
 }
 
-/** Column count and per-column width controls for a Section block. */
+type WidthDevice = 'desktop' | 'tablet' | 'mobile'
+const WIDTH_KEY: Record<WidthDevice, 'widthDesktop' | 'widthTablet' | 'widthMobile'> = {
+  desktop: 'widthDesktop',
+  tablet: 'widthTablet',
+  mobile: 'widthMobile',
+}
+
+/**
+ * Column count and per-column, per-breakpoint width controls for a Section
+ * block - Elementor lets you set a column's width independently at each
+ * device size (and override the 12-based grid with a custom px/% when a
+ * neat fraction isn't the shape you want); this is that, minus the desktop
+ * default which always falls back to the legacy `width` field so documents
+ * saved before responsive widths existed keep rendering the same.
+ */
 const SectionLayoutFields: React.FC<{
   columns: SectionColumn[]
   onChange: (columns: SectionColumn[]) => void
 }> = ({ columns, onChange }) => {
-  const setWidth = (index: number, width: number) => {
-    onChange(columns.map((column, i) => (i === index ? { ...column, width: width as SectionColumn['width'] } : column)))
+  const [device, setDevice] = useState<WidthDevice>('desktop')
+  const widthKey = WIDTH_KEY[device]
+
+  const currentWidth = (column: SectionColumn): ResponsiveColumnWidth | undefined =>
+    device === 'desktop' ? (column.widthDesktop ?? { value: column.width ?? 12, unit: 'fraction' }) : column[widthKey]
+
+  const setWidth = (index: number, next: ResponsiveColumnWidth | undefined) => {
+    onChange(columns.map((column, i) => (i === index ? { ...column, [widthKey]: next } : column)))
   }
 
   const removeColumn = (index: number) => {
@@ -114,44 +140,98 @@ const SectionLayoutFields: React.FC<{
   const addColumn = () => {
     onChange([
       ...columns,
-      { _id: `col-${Date.now()}-${columns.length}`, width: 6, design: {}, blocks: [] },
+      { _id: `col-${Date.now()}-${columns.length}`, widthDesktop: { value: 6, unit: 'fraction' }, design: {}, blocks: [] },
     ])
   }
 
   return (
     <div className="ve-section-fields">
       <p className="ve-panel__hint">
-        Set how wide each column is. Add blocks to a column with the + button on the canvas - sections can be nested
-        inside columns for more complex layouts.
+        Set how wide each column is - independently per device, or add another right next to it and it floats down
+        to the next row once a row runs out of room. Add blocks to a column with the + button on the canvas - sections
+        can be nested inside columns for more complex layouts.
       </p>
+
+      <div className="ve-device-toggle ve-device-toggle--panel" role="group" aria-label="Width breakpoint">
+        {(['desktop', 'tablet', 'mobile'] as const).map((d) => (
+          <button
+            key={d}
+            type="button"
+            className={`ve-device-btn ${device === d ? 've-device-btn--active' : ''}`}
+            onClick={() => setDevice(d)}
+          >
+            {d[0].toUpperCase() + d.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {device !== 'desktop' && (
+        <p className="ve-field__help">
+          Leave a column on &quot;Match {device === 'tablet' ? 'desktop' : 'tablet'}&quot; to inherit its width from{' '}
+          {device === 'tablet' ? 'desktop' : 'tablet (or desktop, if tablet is also unset)'}.
+        </p>
+      )}
 
       {columns.length === 0 && <p className="ve-panel__empty">No columns yet - add one below.</p>}
 
-      {columns.map((column, index) => (
-        <div className="ve-col-row" key={column._id || index}>
-          <span className="ve-col-row__num">{index + 1}</span>
-          <select
-            value={String(column.width ?? 12)}
-            onChange={(e) => setWidth(index, Number(e.target.value))}
-            aria-label={`Column ${index + 1} width`}
-          >
-            {COLUMN_WIDTH_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="ve-icon-btn"
-            onClick={() => removeColumn(index)}
-            aria-label={`Remove column ${index + 1}`}
-            title="Remove column"
-          >
-            ✕
-          </button>
-        </div>
-      ))}
+      {columns.map((column, index) => {
+        const width = currentWidth(column)
+        const isCustom = width && width.unit !== 'fraction'
+
+        return (
+          <div className="ve-col-row" key={column._id || index}>
+            <span className="ve-col-row__num">{index + 1}</span>
+            <select
+              value={width ? (width.unit === 'fraction' ? String(width.value) : 'custom') : 'inherit'}
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === 'inherit') return setWidth(index, undefined)
+                if (v === 'custom') return setWidth(index, { value: isCustom ? width!.value : 50, unit: 'px' })
+                setWidth(index, { value: Number(v), unit: 'fraction' })
+              }}
+              aria-label={`Column ${index + 1} width (${device})`}
+            >
+              {device !== 'desktop' && (
+                <option value="inherit">Match {device === 'tablet' ? 'desktop' : 'tablet'}</option>
+              )}
+              {COLUMN_WIDTH_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+              <option value="custom">Custom size…</option>
+            </select>
+            {isCustom && width && (
+              <span className="ve-col-row__custom">
+                <input
+                  type="number"
+                  min={0}
+                  value={width.value}
+                  onChange={(e) => setWidth(index, { ...width, value: Number(e.target.value) })}
+                  aria-label={`Column ${index + 1} custom width value`}
+                />
+                <select
+                  value={width.unit}
+                  onChange={(e) => setWidth(index, { ...width, unit: e.target.value as ColumnWidthUnit })}
+                  aria-label={`Column ${index + 1} custom width unit`}
+                >
+                  <option value="px">px</option>
+                  <option value="percent">%</option>
+                </select>
+              </span>
+            )}
+            <button
+              type="button"
+              className="ve-icon-btn"
+              onClick={() => removeColumn(index)}
+              aria-label={`Remove column ${index + 1}`}
+              title="Remove column"
+            >
+              ✗
+            </button>
+          </div>
+        )
+      })}
 
       <button type="button" className="ve-btn ve-btn--ghost" onClick={addColumn}>
         + Add column
@@ -455,7 +535,7 @@ const MultiThumb: React.FC<{ id: number; onRemove: () => void }> = ({ id, onRemo
         <span>…</span>
       )}
       <button type="button" onClick={onRemove} aria-label="Remove image">
-        ✕
+        ✗
       </button>
     </div>
   )

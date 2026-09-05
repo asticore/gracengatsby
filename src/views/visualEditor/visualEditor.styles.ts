@@ -153,6 +153,12 @@ html[data-theme='dark'] .ve-root {
   border-color: var(--ve-border-strong);
 }
 
+.ve-btn--icon {
+  padding: 8px 10px;
+  font-size: 15px;
+  line-height: 1;
+}
+
 .ve-body {
   flex: 1;
   display: flex;
@@ -238,28 +244,52 @@ html[data-theme='dark'] .ve-root {
   opacity: 1;
 }
 
+/* Elementor-style insert slot: a thin line that only shows on hover/drag,
+   with a circular "+" riding on top of it. The hit area (via negative
+   margin) is taller than the visible 1px line so both hovering and
+   dropping a dragged block card are easy to land on. */
 .ve-insert {
   position: relative;
   height: 1px;
+  margin: -9px 0;
+  padding: 9px 0;
+}
+
+.ve-insert::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 2px;
+  background: var(--ve-accent);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.ve-insert:hover::before,
+.ve-insert--drag-over::before {
+  opacity: 0.55;
 }
 
 .ve-insert__btn {
   position: absolute;
-  top: -11px;
+  top: 9px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 22px;
-  height: 22px;
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: none;
   background: var(--ve-accent);
   color: var(--ve-accent-contrast);
-  font-size: 15px;
+  box-shadow: var(--ve-shadow-pop);
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
   z-index: 6;
   opacity: 0;
-  transition: opacity 0.1s, transform 0.1s;
+  transition: opacity 0.1s, transform 0.1s, background 0.1s;
 }
 
 .ve-insert:hover .ve-insert__btn,
@@ -269,7 +299,13 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-insert__btn:hover {
-  transform: translateX(-50%) scale(1.15);
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.ve-insert--drag-over .ve-insert__btn {
+  opacity: 1;
+  background: var(--ve-accent-hover);
+  transform: translate(-50%, -50%) scale(1.3);
 }
 
 .ve-empty-canvas {
@@ -698,10 +734,14 @@ html[data-theme='dark'] .ve-root {
   outline-style: dashed;
 }
 
-/* Sections and columns on the canvas */
+/* Sections and columns on the canvas - mirrors the real .be-section/.be-column
+   flex-wrap layout (see styles.css) so the editor floats columns exactly the
+   way the live page will: each carries the same --be-col-d/-t/-m custom
+   properties, columns sit side by side until a row runs out of room, and the
+   next one wraps down to start a new row with no limit on how many you add. */
 .ve-section {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 22px 10px 10px;
 }
@@ -710,17 +750,32 @@ html[data-theme='dark'] .ve-root {
   position: relative;
   min-width: 0;
   min-height: 70px;
+  flex: 1 1 var(--be-col-d, 100%);
+  max-width: var(--be-col-d, 100%);
   border: 1px dashed var(--ve-border-strong);
   border-radius: 4px;
   padding: 18px 6px 6px;
 }
 
-.ve-column--12 { grid-column: span 12; }
-.ve-column--9 { grid-column: span 9; }
-.ve-column--8 { grid-column: span 8; }
-.ve-column--6 { grid-column: span 6; }
-.ve-column--4 { grid-column: span 4; }
-.ve-column--3 { grid-column: span 3; }
+/* This CSS is injected into the canvas iframe's own document (CanvasFrame.tsx),
+   which has its own viewport - shrinking it via .ve-canvas--tablet/--mobile
+   on the PARENT document's wrapper div is what makes these media queries
+   fire in here, exactly the same way styles.css's matching 900px/600px
+   queries fire for the real site. Ancestor-class selectors would never match
+   across that document boundary, so these have to be real media queries. */
+@media (max-width: 900px) {
+  .ve-column {
+    flex-basis: var(--be-col-t, var(--be-col-d, 100%));
+    max-width: var(--be-col-t, var(--be-col-d, 100%));
+  }
+}
+
+@media (max-width: 600px) {
+  .ve-column {
+    flex-basis: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
+    max-width: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
+  }
+}
 
 .ve-column__tag {
   position: absolute;
@@ -1101,6 +1156,52 @@ html[data-theme='dark'] .ve-root {
   font-family: inherit;
   background: var(--ve-surface);
   color: var(--ve-text);
+}
+
+.ve-col-row__custom {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ve-col-row__custom input {
+  width: 56px;
+  font-size: 12px;
+  padding: 6px 6px;
+  border: 1px solid var(--ve-border-strong);
+  border-radius: 5px;
+  font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+}
+
+.ve-col-row__custom select {
+  flex: none;
+  width: 48px;
+  font-size: 12px;
+  padding: 6px 4px;
+  border: 1px solid var(--ve-border-strong);
+  border-radius: 5px;
+  font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+}
+
+/* Same pill toggle as the topbar's device switcher, recolored to sit inside
+   a light/dark panel instead of the always-dark topbar. */
+.ve-device-toggle--panel {
+  background: var(--ve-surface-alt);
+  margin: 0 0 4px;
+}
+
+.ve-device-toggle--panel .ve-device-btn {
+  color: var(--ve-text-muted);
+}
+
+.ve-device-toggle--panel .ve-device-btn--active {
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  box-shadow: var(--ve-shadow);
 }
 
 /* Merge tag picker */

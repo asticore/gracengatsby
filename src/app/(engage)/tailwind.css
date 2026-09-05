@@ -1,0 +1,20 @@
+/*
+ * Tailwind utilities for the admin portal's own custom views (Dashboard,
+ * A/B results, database cleanup, translations, custom fields) - the
+ * components under src/views and src/fields that we author ourselves, as
+ * opposed to the CMS engine's stock admin UI (nav, tables, buttons, inputs),
+ * which custom.css themes by overriding the engine's own documented classes
+ * and CSS variables.
+ *
+ * Deliberately NOT `@import 'tailwindcss'`: that also pulls in Preflight, a
+ * global reset (button/table/heading appearance, margins, etc.) that would
+ * reach every element the engine's stock admin UI renders too, not just ours
+ * - silently breaking the look of screens this file has no business touching.
+ * Importing only the theme and utilities layers keeps Tailwind scoped to
+ * classes we actually put on our own markup.
+ *
+ * See ./custom.css for why this lives in its own file rather than folding
+ * into it: that file is deliberately kept as plain CSS.
+ */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);

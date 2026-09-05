@@ -8,16 +8,21 @@ import type { BlockDef } from './blockSchemas'
 import { ElementLibrary } from './ElementLibrary'
 import { FieldPanel } from './FieldPanel'
 
+export type DockTab = 'elements' | 'settings'
+
 /**
- * The persistent left dock - Elementor's left sidebar, not a popup: Shows
- * either ElementLibrary (browse/search blocks and templates, click to insert)
- * or FieldPanel (the selected block's Content/Design fields) depending on
- * whether a block is selected. See VisualEditor.tsx for how selection drives
- * this - clicking a block selects it and shows settings, selecting nothing
- * shows the element browser for adding new blocks.
+ * The persistent left dock - Elementor's left sidebar, not a popup: Elements
+ * (browse/search blocks and templates, click to insert) and Settings (the
+ * selected block's Content/Design fields) share one panel with a tab
+ * switcher instead of a modal-for-adding plus a separate right-hand panel
+ * for editing. See VisualEditor.tsx for how the two tabs get driven -
+ * selecting a block on the canvas switches here automatically, and so does
+ * clicking any "+".
  */
 export const EditorDock: React.FC<{
   collapsed: boolean
+  tab: DockTab
+  onTabChange: (tab: DockTab) => void
   targetLabel: string
   onPickBlock: (blockType: string) => void
   onPickTemplate: (blocks: SectionNode[]) => void
@@ -29,6 +34,8 @@ export const EditorDock: React.FC<{
   onDuplicateSelected: () => void
 }> = ({
   collapsed,
+  tab,
+  onTabChange,
   targetLabel,
   onPickBlock,
   onPickTemplate,
@@ -47,23 +54,31 @@ export const EditorDock: React.FC<{
 
   return (
     <div className="ve-dock">
-      {selectedNode && selectedDef && (
-        <div className="ve-dock__header">
-          <button
-            type="button"
-            className="ve-dock__back"
-            onClick={onCloseSelected}
-            aria-label="Back to element browser"
-            title="Back to element browser"
-          >
-            Back
-          </button>
-          <span className="ve-dock__header-title">⚙ Settings</span>
-        </div>
-      )}
+      <div className="ve-dock__tabs" role="tablist" aria-label="Editor panel">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'elements'}
+          className={`ve-dock__tab ${tab === 'elements' ? 've-dock__tab--active' : ''}`}
+          onClick={() => onTabChange('elements')}
+        >
+          + Elements
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'settings'}
+          className={`ve-dock__tab ${tab === 'settings' ? 've-dock__tab--active' : ''}`}
+          onClick={() => onTabChange('settings')}
+        >
+          ⚙ Settings
+        </button>
+      </div>
 
       <div className="ve-dock__body">
-        {selectedNode && selectedDef ? (
+        {tab === 'elements' ? (
+          <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} />
+        ) : selectedNode && selectedDef ? (
           <FieldPanel
             blockDef={selectedDef}
             data={selectedNode}
@@ -73,7 +88,7 @@ export const EditorDock: React.FC<{
             onDuplicate={onDuplicateSelected}
           />
         ) : (
-          <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} />
+          <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>
         )}
       </div>
     </div>

@@ -7,7 +7,7 @@ import { defaultColumns } from '@/lib/sectionTree'
 
 import { getBlockDef } from './visualEditor/blockSchemas'
 import { CANVAS_ORIGIN, isBridgeMessage, type FrameToParentMessage } from './visualEditor/canvasBridge'
-import { EditorDock } from './visualEditor/EditorDock'
+import { EditorDock, type DockTab } from './visualEditor/EditorDock'
 import {
   cloneNode,
   getNode,
@@ -27,7 +27,7 @@ const nextId = () => `ve-${Date.now()}-${idCounter++}`
 
 function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string } | null {
   if (typeof window === 'undefined') return null
-  const match = window.location.pathname.match(/\/admin\/visual-editor\/(collection|global)\/([^\/]+)(?:\/([^\/]+))?/)
+  const match = window.location.pathname.match(/\/admin\/visual-editor\/(collection|global)\/([^/]+)(?:\/([^/]+))?/)
   if (!match) return null
   return { mode: match[1] as 'collection' | 'global', slug: match[2], id: match[3] }
 }
@@ -59,6 +59,7 @@ export const VisualEditorView: React.FC = () => {
   const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'publishing' | 'published' | 'error'>('idle')
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [dockTab, setDockTab] = useState<DockTab>('elements')
   // Where the next element/template pick lands. Always defined (unlike the
   // old popup's open/closed state) since the dock is always visible now -
   // defaults to the end of the page until a specific "+" sets it.
@@ -135,6 +136,7 @@ export const VisualEditorView: React.FC = () => {
 
       setBlocks((prev) => insertNode(prev, containerPath, at, node))
       setSelectedPath([...containerPath, at])
+      setDockTab('settings')
       setDirty(true)
     },
     [insertTarget, buildNode],
@@ -149,6 +151,7 @@ export const VisualEditorView: React.FC = () => {
       setBlocks((prev) => insertNode(prev, containerPath, at, node))
       setSelectedPath([...containerPath, at])
       setInsertTarget({ containerPath, at: at + 1 })
+      setDockTab('settings')
       setDirty(true)
     },
     [buildNode],
@@ -163,6 +166,7 @@ export const VisualEditorView: React.FC = () => {
 
       setBlocks((prev) => insertNodes(prev, containerPath, at, withFreshIds))
       setSelectedPath([...containerPath, at])
+      setDockTab('settings')
       setDirty(true)
     },
     [insertTarget],
@@ -226,9 +230,11 @@ export const VisualEditorView: React.FC = () => {
           break
         case 'select':
           setSelectedPath(msg.path)
+          setDockTab(msg.path ? 'settings' : 'elements')
           break
         case 'add':
           setInsertTarget({ containerPath: msg.containerPath, at: msg.at })
+          setDockTab('elements')
           break
         case 'delete':
           deleteBlock(msg.path)
@@ -382,6 +388,8 @@ export const VisualEditorView: React.FC = () => {
       <div className="ve-body">
         <EditorDock
           collapsed={dockCollapsed}
+          tab={dockTab}
+          onTabChange={setDockTab}
           targetLabel={insertTarget.containerPath.length === 0 ? 'the page' : 'this column'}
           onPickBlock={addBlock}
           onPickTemplate={addTemplateBlocks}
@@ -390,6 +398,7 @@ export const VisualEditorView: React.FC = () => {
           onChangeSelected={updateSelected}
           onCloseSelected={() => {
             setSelectedPath(null)
+            setDockTab('elements')
           }}
           onDeleteSelected={() => selectedPath && deleteBlock(selectedPath)}
           onDuplicateSelected={() => selectedPath && duplicateBlock(selectedPath)}

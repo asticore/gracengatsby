@@ -96,7 +96,7 @@ const CanvasNode: React.FC<{
     >
       <div className="ve-node__toolbar">
         <button type="button" className="ve-drag-handle" {...attributes} {...listeners} aria-label="Drag to reorder">
-          ⋿
+          ⠿
         </button>
         <span className="ve-node__label">
           {def?.icon} {def?.label || node.blockType}
@@ -138,7 +138,7 @@ const CanvasNode: React.FC<{
           aria-label="Duplicate"
           title="Duplicate"
         >
-          ⦇
+          ⧉
         </button>
         <button
           type="button"
@@ -150,7 +150,7 @@ const CanvasNode: React.FC<{
           aria-label="Delete"
           title="Delete"
         >
-          ✗
+          ✕
         </button>
       </div>
 

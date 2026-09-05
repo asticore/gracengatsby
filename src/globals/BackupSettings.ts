@@ -1,4 +1,4 @@
-import type { GlobalConfig } from 'payload'
+import type { GlobalConfig } from '@/engine'
 
 import { adminOnlyFieldAccess, isAdmin } from '../access/ecommerceAccess'
 import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'

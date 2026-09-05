@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload } from '@/engine'
 
 import { emailProblem, passwordProblem, signIn, verifyPassword } from './auth'
 import { writePreferences } from './preferences'

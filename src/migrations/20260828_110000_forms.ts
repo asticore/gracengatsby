@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 // Creates the tables behind the Forms feature: `eg_forms` and its two child
 // arrays, `eg_form_submissions`, the per-parent block tables for the Form

@@ -1,4 +1,4 @@
-import type { Access } from 'payload'
+import type { Access } from '@/engine'
 
 const isAdminUser = (user: { roles?: string[] | null } | null | undefined): boolean =>
   Boolean(user?.roles?.includes('admin'))

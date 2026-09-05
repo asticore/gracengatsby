@@ -1,4 +1,4 @@
-import type { CollectionConfig, CollectionSlug } from 'payload'
+import type { CollectionConfig, CollectionSlug } from '@/engine'
 
 import { isAdminOrMembershipOwner, isMembersAdmin } from '../access'
 import { MEMBERSHIPS_SLUG, MEMBERSHIPS_TABLE, MEMBERSHIP_TIERS_SLUG } from '../slugs'

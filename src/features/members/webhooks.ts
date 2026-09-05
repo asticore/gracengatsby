@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import type { PayloadRequest } from 'payload'
+import type { PayloadRequest } from '@/engine'
 
 import type { EngineSignup } from './signup'
 import type { MembershipDoc, MembershipStatus } from './types'

@@ -1,4 +1,4 @@
-import type { CollectionSlug, Field } from 'payload'
+import type { CollectionSlug, Field } from '@/engine'
 
 import { MEMBERSHIP_TIERS_SLUG } from './slugs'
 

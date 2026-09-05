@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
+import type { CollectionSlug, Payload, PayloadRequest } from '@/engine'
 
 import type { ResolvedEntity, ResolvedGroup } from '@/components/admin/shared/resolveEntities'
 

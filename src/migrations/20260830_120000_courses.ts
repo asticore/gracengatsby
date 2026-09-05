@@ -1,4 +1,4 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-d1-sqlite'
+import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 
 // Creates the Courses feature's tables: `eg_courses` and its version table,
 // `eg_lessons` with the twelve child tables its page-builder sections need,

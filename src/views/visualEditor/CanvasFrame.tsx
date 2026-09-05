@@ -6,7 +6,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import type { SectionNode } from '@/lib/sectionTree'
 
-import { CanvasNodeList, type CanvasHandlers } from './Canvas'
+import { CanvasNodeList, slotKey, type CanvasHandlers } from './Canvas'
 import type { FrameToParentMessage, ParentToFrameMessage } from './canvasBridge'
 import { CANVAS_ORIGIN, isBridgeMessage } from './canvasBridge'
 import { pathKey, type NodePath } from './treeOps'
@@ -28,6 +28,12 @@ export const CanvasFrame: React.FC = () => {
   const [blocks, setBlocks] = useState<SectionNode[]>([])
   const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
   const [dragHoverKey, setDragHoverKey] = useState<string | null>(null)
+  // Which "+" is currently open (Elementor-style: it stays lit, not just a hover flash, until
+  // dismissed) - purely local, since it's canvas UI state rather than document content the
+  // parent needs to know about. Cleared below whenever the parent pushes a fresh selection
+  // (a block just got added, or something else claimed the selection) or the user clicks a
+  // different node or empty canvas.
+  const [openInsertKey, setOpenInsertKey] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -40,6 +46,7 @@ export const CanvasFrame: React.FC = () => {
       if (msg.type === 'init') {
         setBlocks(msg.blocks)
         setSelectedPath(msg.selectedPath)
+        setOpenInsertKey(null)
       } else if (msg.type === 'selected') {
         setSelectedPath(msg.selectedPath)
       } else if (msg.type === 'dragHover') {
@@ -54,11 +61,19 @@ export const CanvasFrame: React.FC = () => {
   const handlers: CanvasHandlers = {
     selectedKey: selectedPath ? pathKey(selectedPath) : null,
     dragHoverKey,
+    openInsertKey,
     onSelect: (path) => {
       setSelectedPath(path)
+      setOpenInsertKey(null)
       post({ source: 've-canvas', type: 'select', path })
     },
-    onAdd: (containerPath, at) => post({ source: 've-canvas', type: 'add', containerPath, at }),
+    onAdd: (containerPath, at) => {
+      const key = slotKey(containerPath, at)
+      // A second click on the same "+" (now showing as an "x", see visualEditor.styles.ts)
+      // just closes it again, rather than opening a second picker on top of itself.
+      setOpenInsertKey((current) => (current === key ? null : key))
+      post({ source: 've-canvas', type: 'add', containerPath, at })
+    },
     onDelete: (path) => post({ source: 've-canvas', type: 'delete', path }),
     onDuplicate: (path) => post({ source: 've-canvas', type: 'duplicate', path }),
     onMove: (path, direction) => post({ source: 've-canvas', type: 'move', path, direction }),
@@ -80,6 +95,7 @@ export const CanvasFrame: React.FC = () => {
 
   const deselect = () => {
     setSelectedPath(null)
+    setOpenInsertKey(null)
     post({ source: 've-canvas', type: 'select', path: null })
   }
 

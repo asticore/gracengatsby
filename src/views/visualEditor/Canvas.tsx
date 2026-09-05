@@ -23,6 +23,11 @@ export type CanvasHandlers = {
    *  Driven by the parent's 'dragHover' bridge message - the parent resolves drop targets
    *  itself via elementFromPoint, so this is purely for visual feedback. */
   dragHoverKey: string | null
+  /** Key of the insert slot whose "+" was last clicked and hasn't been dismissed yet - stays
+   *  lit (Elementor keeps its add-panel open the same way) until a block gets added there, a
+   *  different node is selected, or the canvas is clicked elsewhere. Purely local UI state,
+   *  tracked in CanvasFrame.tsx - see openInsertKey there. */
+  openInsertKey: string | null
 }
 
 /** Stable identity for an insert slot, matched against data-ve-container/data-ve-at by the
@@ -46,6 +51,7 @@ export const CanvasNodeList: React.FC<{
       at={0}
       onAdd={handlers.onAdd}
       dragHoverKey={handlers.dragHoverKey}
+      openInsertKey={handlers.openInsertKey}
       subtle={nodes.length > 0}
     />
     {nodes.map((node, index) => {
@@ -58,6 +64,7 @@ export const CanvasNodeList: React.FC<{
             at={index + 1}
             onAdd={handlers.onAdd}
             dragHoverKey={handlers.dragHoverKey}
+            openInsertKey={handlers.openInsertKey}
             subtle
           />
         </React.Fragment>
@@ -245,13 +252,16 @@ const InsertSlot: React.FC<{
   at: number
   onAdd: (containerPath: NodePath, at: number) => void
   dragHoverKey: string | null
+  openInsertKey: string | null
   subtle?: boolean
-}> = ({ containerPath, at, onAdd, dragHoverKey, subtle }) => {
-  const isOver = dragHoverKey === slotKey(containerPath, at)
+}> = ({ containerPath, at, onAdd, dragHoverKey, openInsertKey, subtle }) => {
+  const key = slotKey(containerPath, at)
+  const isOver = dragHoverKey === key
+  const isOpen = openInsertKey === key
 
   return (
     <div
-      className={`ve-insert ${subtle ? '' : 've-insert--always'} ${isOver ? 've-insert--drag-over' : ''}`}
+      className={`ve-insert ${subtle ? '' : 've-insert--always'} ${isOver ? 've-insert--drag-over' : ''} ${isOpen ? 've-insert--open' : ''}`}
       data-ve-slot="1"
       data-ve-container={JSON.stringify(containerPath)}
       data-ve-at={at}
@@ -263,8 +273,8 @@ const InsertSlot: React.FC<{
           e.stopPropagation()
           onAdd(containerPath, at)
         }}
-        aria-label="Add an element here"
-        title="Add an element here"
+        aria-label={isOpen ? 'Close element picker' : 'Add an element here'}
+        title={isOpen ? 'Close element picker' : 'Add an element here'}
       >
         +
       </button>

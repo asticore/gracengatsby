@@ -35,6 +35,7 @@ export const ElementLibrary: React.FC<{
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return VISUAL_BLOCKS.filter((block) => {
+      if (block.hiddenFromLibrary) return false
       if (category !== 'all' && block.category !== category) return false
       if (!needle) return true
       return (

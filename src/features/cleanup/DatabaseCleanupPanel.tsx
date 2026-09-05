@@ -18,10 +18,24 @@ import type { IndexTidyReport } from './indexNames'
  * this component is a convenience, not the boundary.
  */
 
-const baseClass = 'eg-database'
-
 const sizeLabel = (bytes: number, estimated: boolean): string =>
   `${estimated && bytes > 0 ? '~' : ''}${formatBytes(bytes)}`
+
+const featureClassName =
+  'flex flex-col gap-[calc(var(--base)*0.5)] p-[var(--base)] border border-[var(--theme-elevation-150)] rounded-[4px]'
+const featureHeadClassName = 'flex items-start justify-between gap-[var(--base)]'
+const featureMetaClassName = 'mt-[calc(var(--base)*0.25)] mx-0 mb-0 text-[var(--theme-elevation-600)]'
+const actionsClassName = 'flex flex-wrap gap-[calc(var(--base)*0.5)]'
+const buttonBaseClassName =
+  'border [font-family:inherit] cursor-pointer rounded-[3px] bg-[var(--theme-elevation-0)] px-[calc(var(--base)*0.75)] py-[calc(var(--base)*0.35)] text-[0.85rem] disabled:cursor-not-allowed disabled:opacity-50'
+const buttonDefaultClassName = `${buttonBaseClassName} border-[var(--theme-elevation-250)] text-[var(--theme-elevation-800)]`
+const planClassName =
+  'flex flex-col gap-[calc(var(--base)*0.4)] rounded-[3px] border border-[var(--theme-elevation-150)] bg-[var(--theme-elevation-50)] p-[calc(var(--base)*0.75)] text-[0.85rem]'
+const planListClassName = 'm-0 max-h-[260px] overflow-y-auto pl-[calc(var(--base)*1.25)]'
+const refusalClassName = 'm-0 text-[var(--theme-error-500,var(--theme-elevation-800))]'
+const doneClassName = 'm-0 text-[var(--theme-success-500,var(--theme-elevation-800))]'
+const tableCellClassName =
+  'whitespace-nowrap border-b border-[var(--theme-elevation-100)] px-[calc(var(--base)*0.5)] py-[calc(var(--base)*0.25)] text-right'
 
 export const FeatureCleanupCard: React.FC<{
   feature: FeatureSurvey
@@ -33,6 +47,7 @@ export const FeatureCleanupCard: React.FC<{
 
   const phrase = confirmationPhraseFor(feature.key)
   const canDrop = !feature.enabled && feature.tables.length > 0
+  const confirmDisabled = busy || typed !== phrase
 
   const preview = async (): Promise<void> => {
     setBusy(true)
@@ -49,45 +64,53 @@ export const FeatureCleanupCard: React.FC<{
   }
 
   return (
-    <article className={`${baseClass}__feature`}>
-      <header className={`${baseClass}__feature-head`}>
+    <article className={featureClassName}>
+      <header className={featureHeadClassName}>
         <div>
-          <h3 className={`${baseClass}__feature-name`}>{feature.label}</h3>
-          <p className={`${baseClass}__feature-meta`}>
+          <h3 className="m-0 text-[1rem]">{feature.label}</h3>
+          <p className={featureMetaClassName}>
             {feature.tables.length === 0
               ? 'No tables of its own.'
               : `${feature.tables.length} table${feature.tables.length === 1 ? '' : 's'} · ${feature.totalRows.toLocaleString()} row${feature.totalRows === 1 ? '' : 's'} · ${sizeLabel(feature.totalBytes, estimated)}`}
           </p>
         </div>
-        <span className={`${baseClass}__pill`} data-on={feature.enabled ? 'true' : undefined}>
+        <span
+          className={`whitespace-nowrap rounded-[999px] border px-[10px] py-[2px] text-[0.75rem] ${
+            feature.enabled
+              ? 'border-[var(--theme-success-500,var(--theme-elevation-400))] text-[var(--theme-success-500,var(--theme-elevation-800))]'
+              : 'border-[var(--theme-elevation-200)] text-[var(--theme-elevation-600)]'
+          }`}
+        >
           {feature.enabled ? 'On' : 'Off'}
         </span>
       </header>
 
       {feature.tables.length > 0 && (
-        <details className={`${baseClass}__tables`}>
+        <details>
           <summary>Tables</summary>
-          <table>
+          <table className="mt-[calc(var(--base)*0.5)] w-full border-collapse text-[0.85rem]">
             <thead>
               <tr>
-                <th>Table</th>
-                <th>Rows</th>
-                <th>{estimated ? 'Size (estimate)' : 'Size'}</th>
+                <th className="border-b border-[var(--theme-elevation-100)] px-[calc(var(--base)*0.5)] py-[calc(var(--base)*0.25)] text-left">
+                  Table
+                </th>
+                <th className={tableCellClassName}>Rows</th>
+                <th className={tableCellClassName}>{estimated ? 'Size (estimate)' : 'Size'}</th>
               </tr>
             </thead>
             <tbody>
               {feature.tables.map((table) => (
                 <tr key={table.table}>
-                  <td>
+                  <td className="border-b border-[var(--theme-elevation-100)] px-[calc(var(--base)*0.5)] py-[calc(var(--base)*0.25)] text-left">
                     <code>{table.table}</code>
                     {table.alsoClaimedBy.length > 0 && (
-                      <span className={`${baseClass}__shared`}>
+                      <span className="block text-[0.75rem] text-[var(--theme-warning-500,var(--theme-elevation-600))]">
                         also used by {table.alsoClaimedBy.join(', ')}
                       </span>
                     )}
                   </td>
-                  <td>{table.rows.toLocaleString()}</td>
-                  <td>{sizeLabel(table.bytes, estimated)}</td>
+                  <td className={tableCellClassName}>{table.rows.toLocaleString()}</td>
+                  <td className={tableCellClassName}>{sizeLabel(table.bytes, estimated)}</td>
                 </tr>
               ))}
             </tbody>
@@ -96,62 +119,66 @@ export const FeatureCleanupCard: React.FC<{
       )}
 
       {canDrop && (
-        <div className={`${baseClass}__actions`}>
-          <button className={`${baseClass}__button`} disabled={busy} onClick={preview} type="button">
+        <div className={actionsClassName}>
+          <button className={buttonDefaultClassName} disabled={busy} onClick={preview} type="button">
             {plan ? 'Re-check' : 'Show what would be removed'}
           </button>
         </div>
       )}
 
       {plan && (
-        <div className={`${baseClass}__plan`}>
+        <div className={planClassName}>
           {plan.refusals.map((reason) => (
-            <p className={`${baseClass}__refusal`} key={reason}>
+            <p className={refusalClassName} key={reason}>
               {reason}
             </p>
           ))}
 
           {plan.dropped.length > 0 && (
-            <p className={`${baseClass}__done`}>
+            <p className={doneClassName}>
               Removed {plan.dropped.length} table{plan.dropped.length === 1 ? '' : 's'}. Reload to
               see the updated figures.
             </p>
           )}
 
           {plan.errors.map((error) => (
-            <p className={`${baseClass}__refusal`} key={error.statement}>
+            <p className={refusalClassName} key={error.statement}>
               {error.statement}: {error.error}
             </p>
           ))}
 
           {plan.dryRun && plan.refusals.length === 0 && plan.tables.length > 0 && (
             <>
-              <p className={`${baseClass}__plan-title`}>
+              <p className="m-0 font-semibold">
                 This will permanently delete {plan.tables.length} table
                 {plan.tables.length === 1 ? '' : 's'} and everything in {plan.tables.length === 1 ? 'it' : 'them'}. There is no undo.
               </p>
-              <ul className={`${baseClass}__plan-list`}>
+              <ul className={planListClassName}>
                 {plan.tables.map((table) => (
                   <li key={table}>
                     <code>{table}</code>
                   </li>
                 ))}
               </ul>
-              <label className={`${baseClass}__confirm`}>
+              <label className="flex max-w-[320px] flex-col gap-[calc(var(--base)*0.25)]">
                 <span>
                   Type <code>{phrase}</code> to confirm
                 </span>
                 <input
                   autoComplete="off"
+                  className="[font:inherit] rounded-[3px] border border-[var(--theme-elevation-250)] bg-[var(--theme-input-bg,var(--theme-elevation-0))] p-[calc(var(--base)*0.35)] text-inherit"
                   onChange={(event) => setTyped(event.target.value)}
                   type="text"
                   value={typed}
                 />
               </label>
               <button
-                className={`${baseClass}__button`}
-                data-danger="true"
-                disabled={busy || typed !== phrase}
+                className={`${buttonBaseClassName} ${
+                  confirmDisabled
+                    ? 'border-[var(--theme-elevation-250)] text-[var(--theme-elevation-800)]'
+                    : 'border-[var(--theme-error-500,var(--theme-elevation-800))] text-[var(--theme-error-500,var(--theme-elevation-800))]'
+                }`}
+                disabled={confirmDisabled}
                 onClick={drop}
                 type="button"
               >
@@ -176,11 +203,11 @@ export const IndexTidyCard: React.FC<{ staleCount: number }> = ({ staleCount }) 
   }
 
   return (
-    <article className={`${baseClass}__feature`}>
-      <header className={`${baseClass}__feature-head`}>
+    <article className={featureClassName}>
+      <header className={featureHeadClassName}>
         <div>
-          <h3 className={`${baseClass}__feature-name`}>Tidy index names</h3>
-          <p className={`${baseClass}__feature-meta`}>
+          <h3 className="m-0 text-[1rem]">Tidy index names</h3>
+          <p className={featureMetaClassName}>
             {staleCount === 0
               ? 'Every index is named after the table it sits on.'
               : `${staleCount} index${staleCount === 1 ? '' : 'es'} still named after a table's previous name.`}
@@ -188,28 +215,28 @@ export const IndexTidyCard: React.FC<{ staleCount: number }> = ({ staleCount }) 
         </div>
       </header>
 
-      <p className={`${baseClass}__feature-meta`}>
+      <p className={featureMetaClassName}>
         Cosmetic only, and safe to run at any time: each index is recreated under its new name
         before the old one is removed, so no table is ever left without one.
       </p>
 
-      <div className={`${baseClass}__actions`}>
-        <button className={`${baseClass}__button`} disabled={busy} onClick={() => run(false)} type="button">
+      <div className={actionsClassName}>
+        <button className={buttonDefaultClassName} disabled={busy} onClick={() => run(false)} type="button">
           Show what would change
         </button>
         {report && report.dryRun && report.renames.length > 0 && (
-          <button className={`${baseClass}__button`} disabled={busy} onClick={() => run(true)} type="button">
+          <button className={buttonDefaultClassName} disabled={busy} onClick={() => run(true)} type="button">
             Rename {report.renames.length}
           </button>
         )}
       </div>
 
       {report && (
-        <div className={`${baseClass}__plan`}>
+        <div className={planClassName}>
           {report.renames.length === 0 && <p>Nothing to rename.</p>}
-          {report.renamed.length > 0 && <p className={`${baseClass}__done`}>Renamed {report.renamed.length}.</p>}
+          {report.renamed.length > 0 && <p className={doneClassName}>Renamed {report.renamed.length}.</p>}
           {report.dryRun && (
-            <ul className={`${baseClass}__plan-list`}>
+            <ul className={planListClassName}>
               {report.renames.map((rename) => (
                 <li key={rename.from}>
                   <code>{rename.from}</code> → <code>{rename.to}</code>
@@ -218,7 +245,7 @@ export const IndexTidyCard: React.FC<{ staleCount: number }> = ({ staleCount }) 
             </ul>
           )}
           {report.errors.map((error) => (
-            <p className={`${baseClass}__refusal`} key={error.statement || error.error}>
+            <p className={refusalClassName} key={error.statement || error.error}>
               {error.error}
             </p>
           ))}

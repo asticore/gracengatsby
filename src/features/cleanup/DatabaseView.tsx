@@ -8,7 +8,6 @@ import { getCleanupDb } from './guard'
 import { planIndexRenames } from './indexNames'
 import { formatBytes } from './size'
 import { surveyDatabase } from './survey'
-import { DATABASE_CSS } from './database.styles'
 
 /**
  * The Database screen: one section per feature showing what it owns and what
@@ -20,18 +19,22 @@ import { DATABASE_CSS } from './database.styles'
  * actions.ts.
  */
 
-const baseClass = 'eg-database'
+const rootClassName =
+  'flex flex-col gap-[calc(var(--base)*1.5)] px-[var(--gutter-h)] pt-[calc(var(--base)*1.5)] pb-[calc(var(--base)*3)] max-w-[1100px]'
+const mutedParagraphClassName = 'mt-[calc(var(--base)*0.25)] mx-0 mb-0 text-[var(--theme-elevation-600)]'
+const statClassName =
+  'flex flex-col gap-[calc(var(--base)*0.15)] p-[var(--base)] border border-[var(--theme-elevation-150)] rounded-[4px]'
+const sectionTitleClassName = 'm-0 text-[1rem] uppercase tracking-[0.06em] text-[var(--theme-elevation-600)]'
+const sectionClassName = 'flex flex-col gap-[calc(var(--base)*0.5)]'
 
 export const DatabaseView: React.FC<AdminViewServerProps> = async () => {
   const db = await getCleanupDb()
 
   if (!db) {
     return (
-      <div className={baseClass}>
-        {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
-        <style dangerouslySetInnerHTML={{ __html: DATABASE_CSS }} />
-        <h1 className={`${baseClass}__title`}>Database</h1>
-        <p className={`${baseClass}__empty`}>
+      <div className={rootClassName}>
+        <h1 className="m-0">Database</h1>
+        <p className={mutedParagraphClassName}>
           No database binding is available in this environment, so there is nothing to survey.
         </p>
       </div>
@@ -46,59 +49,59 @@ export const DatabaseView: React.FC<AdminViewServerProps> = async () => {
   const reclaimable = off.reduce((sum, feature) => sum + feature.totalBytes, 0)
 
   return (
-    <div className={baseClass}>
-      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
-      <style dangerouslySetInnerHTML={{ __html: DATABASE_CSS }} />
-      <header className={`${baseClass}__header`}>
-        <h1 className={`${baseClass}__title`}>Database</h1>
-        <p className={`${baseClass}__subtitle`}>
+    <div className={rootClassName}>
+      <header>
+        <h1 className="m-0">Database</h1>
+        <p className={mutedParagraphClassName}>
           Every feature keeps its own tables. Switching a feature off hides it, but its tables stay
           where they are - this is where you get that space back.
         </p>
       </header>
 
-      <section className={`${baseClass}__summary`}>
-        <div className={`${baseClass}__stat`}>
-          <span className={`${baseClass}__stat-value`}>
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[var(--base)]">
+        <div className={statClassName}>
+          <span className="text-[1.5rem] font-semibold">
             {survey.databaseBytes === null ? 'Unknown' : formatBytes(survey.databaseBytes)}
           </span>
-          <span className={`${baseClass}__stat-label`}>Database size</span>
+          <span className="text-[0.8rem] text-[var(--theme-elevation-600)]">Database size</span>
         </div>
-        <div className={`${baseClass}__stat`}>
-          <span className={`${baseClass}__stat-value`}>
+        <div className={statClassName}>
+          <span className="text-[1.5rem] font-semibold">
             {survey.sizesAreExact ? '' : '~'}
             {formatBytes(reclaimable)}
           </span>
-          <span className={`${baseClass}__stat-label`}>In switched-off features</span>
+          <span className="text-[0.8rem] text-[var(--theme-elevation-600)]">In switched-off features</span>
         </div>
-        <div className={`${baseClass}__stat`}>
-          <span className={`${baseClass}__stat-value`}>{off.length}</span>
-          <span className={`${baseClass}__stat-label`}>Features switched off</span>
+        <div className={statClassName}>
+          <span className="text-[1.5rem] font-semibold">{off.length}</span>
+          <span className="text-[0.8rem] text-[var(--theme-elevation-600)]">Features switched off</span>
         </div>
       </section>
 
-      <p className={`${baseClass}__note`} data-estimate={survey.sizesAreExact ? undefined : 'true'}>
+      <p
+        className={`m-0 text-[0.85rem] ${
+          survey.sizesAreExact
+            ? 'text-[var(--theme-elevation-600)]'
+            : 'py-[calc(var(--base)*0.5)] px-[calc(var(--base)*0.75)] border-l-[3px] border-[var(--theme-elevation-300)] text-[var(--theme-elevation-800)]'
+        }`}
+      >
         {survey.sizeNote}
       </p>
 
-      <section className={`${baseClass}__section`}>
-        <h2 className={`${baseClass}__section-title`}>Switched off</h2>
+      <section className={sectionClassName}>
+        <h2 className={sectionTitleClassName}>Switched off</h2>
         {off.length === 0 ? (
-          <p className={`${baseClass}__empty`}>Every feature is switched on.</p>
+          <p className={mutedParagraphClassName}>Every feature is switched on.</p>
         ) : (
           off.map((feature) => (
-            <FeatureCleanupCard
-              estimated={!survey.sizesAreExact}
-              feature={feature}
-              key={feature.key}
-            />
+            <FeatureCleanupCard estimated={!survey.sizesAreExact} feature={feature} key={feature.key} />
           ))
         )}
       </section>
 
-      <section className={`${baseClass}__section`}>
-        <h2 className={`${baseClass}__section-title`}>Switched on</h2>
-        <p className={`${baseClass}__empty`}>
+      <section className={sectionClassName}>
+        <h2 className={sectionTitleClassName}>Switched on</h2>
+        <p className={mutedParagraphClassName}>
           These are in use. Switch a feature off in Site Settings before clearing its data.
         </p>
         {on.map((feature) => (
@@ -106,8 +109,8 @@ export const DatabaseView: React.FC<AdminViewServerProps> = async () => {
         ))}
       </section>
 
-      <section className={`${baseClass}__section`}>
-        <h2 className={`${baseClass}__section-title`}>Maintenance</h2>
+      <section className={sectionClassName}>
+        <h2 className={sectionTitleClassName}>Maintenance</h2>
         <IndexTidyCard staleCount={survey.staleIndexCount} />
       </section>
     </div>

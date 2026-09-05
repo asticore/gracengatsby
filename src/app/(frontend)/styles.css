@@ -51,26 +51,33 @@ a {
   text-decoration: none;
 }
 
+/*
+ * page-shell, page-header, empty-state (below) and several other classes in
+ * this file are shared verbatim across a couple dozen page/component files
+ * with no per-instance variation - the exact case Tailwind's own docs point
+ * at `@apply` for. Rewriting them as one-off inline utility classNames in
+ * every consuming file would mean touching 20+ files for zero visual change
+ * and real risk of one of them drifting from the rest; @apply keeps them on
+ * the same utilities/tokens as everything else while leaving one definition
+ * to update. Styling that's actually specific to one component (Header,
+ * Footer, forms, cards, detail pages, ...) is inline utility classNames
+ * directly in its JSX instead - see those files.
+ */
+
 .page-shell {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 64px 24px;
+  @apply mx-auto max-w-[var(--max-width)] px-6 py-16;
 }
 
 .page-header {
-  text-align: center;
-  margin-bottom: 48px;
+  @apply mb-12 text-center;
 }
 
 .page-header h1 {
-  font-size: 3rem;
+  @apply text-[3rem];
 }
 
 .empty-state {
-  border: 1px dashed var(--color-line);
-  padding: 32px;
-  text-align: center;
-  color: rgba(20, 17, 15, 0.6);
+  @apply border border-dashed border-[var(--color-line)] p-8 text-center text-[rgba(20,17,15,0.6)];
 }
 
 /* Buttons */
@@ -143,42 +150,28 @@ a {
 /* Hero */
 
 .hero {
-  background: var(--color-ink);
-  color: var(--color-cream);
-  padding: 120px 24px;
-  text-align: center;
-  background-image: radial-gradient(circle at 50% 0%, rgba(185, 146, 75, 0.18), transparent 60%);
+  @apply bg-[var(--color-ink)] px-6 py-[120px] text-center text-[var(--color-cream)];
+  @apply bg-[image:radial-gradient(circle_at_50%_0%,rgba(185,146,75,0.18),transparent_60%)];
 }
 
 .hero__inner {
-  max-width: 720px;
-  margin: 0 auto;
+  @apply mx-auto max-w-[720px];
 }
 
 .hero__eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.3em;
-  font-size: 0.75rem;
-  color: var(--color-gold-light);
-  margin-bottom: 24px;
+  @apply mb-6 text-[0.75rem] uppercase tracking-[0.3em] text-[var(--color-gold-light)];
 }
 
 .hero h1 {
-  font-size: clamp(3rem, 7vw, 5rem);
-  margin-bottom: 24px;
+  @apply mb-6 text-[clamp(3rem,7vw,5rem)];
 }
 
 .hero__tagline {
-  font-size: 1.15rem;
-  color: rgba(246, 241, 231, 0.8);
-  margin-bottom: 40px;
+  @apply mb-10 text-[1.15rem] text-[rgba(246,241,231,0.8)];
 }
 
 .hero__actions {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
+  @apply flex flex-wrap justify-center gap-4;
 }
 
 .hero .btn--primary {
@@ -200,52 +193,42 @@ a {
 /* Home sections */
 
 .home-section {
-  padding: 24px 0 40px;
+  @apply pb-10 pt-6;
 }
 
 .home-section--dark {
-  background: var(--color-cream-dim);
+  @apply bg-[var(--color-cream-dim)];
 }
 
 .section-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 32px;
+  @apply mb-8 flex items-baseline justify-between;
 }
 
 .section-heading h2 {
-  font-size: 2.25rem;
+  @apply text-[2.25rem];
 }
 
 .section-heading a {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  border-bottom: 1px solid var(--color-gold);
+  @apply border-b border-[var(--color-gold)] text-[0.8rem] uppercase tracking-[0.08em];
 }
 
 .section-subheading {
-  font-size: 1.5rem;
-  margin: 56px 0 24px;
+  @apply mb-6 mt-14 text-[1.5rem];
 }
 
 .about-section__inner {
-  max-width: 720px;
-  text-align: center;
+  @apply max-w-[720px] text-center;
 }
 
 .about-section h2 {
-  font-size: 2.25rem;
+  @apply text-[2.25rem];
 }
 
 /* Product grid / card */
 
 .product-grid,
 .event-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 32px;
+  @apply grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-8;
 }
 
 .product-card,
@@ -444,8 +427,7 @@ a {
 }
 
 .form-error {
-  color: #a3352a;
-  font-size: 0.9rem;
+  @apply text-[0.9rem] text-[#a3352a];
 }
 
 .rsvp-form--success h3 {

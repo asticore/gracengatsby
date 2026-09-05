@@ -1,4 +1,5 @@
 import { CtaBannerBlock } from './CtaBanner'
+import { ElementBlock } from './Element'
 import { EventGridBlock } from './EventGrid'
 import { FaqBlock } from './Faq'
 import { GalleryBlock } from './Gallery'
@@ -26,6 +27,7 @@ export const contentBlocks = [
   CtaBannerBlock,
   LoopBlock,
   FormBlock,
+  ElementBlock,
 ]
 
 /**

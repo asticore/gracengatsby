@@ -7,6 +7,7 @@ import { GalleryBlock } from '@/components/blocks/GalleryBlock'
 import { HeroBlock } from '@/components/blocks/HeroBlock'
 import { ImageTextBlock } from '@/components/blocks/ImageTextBlock'
 import { RichTextBlock } from '@/components/blocks/RichTextBlock'
+import { renderElement } from '@/components/blocks/elements/renderElement'
 
 import type { Media } from '@/engage-types'
 
@@ -49,7 +50,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
         />
       )
     case 'productGrid':
-      return <DynamicPlaceholder icon="🛍️" label="Product Grid" data={data} detail={gridDetail(data, 'products')} />
+      return <DynamicPlaceholder icon="🛒️" label="Product Grid" data={data} detail={gridDetail(data, 'products')} />
     case 'eventGrid':
       return <DynamicPlaceholder icon="📅" label="Event Grid" data={data} detail={gridDetail(data, 'events')} />
     case 'faq':
@@ -58,6 +59,13 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
       return <DynamicPlaceholder icon="📝" label="Form" data={data} detail={formDetail(data)} />
     case 'loop':
       return <LoopPlaceholder data={data} />
+    case 'element': {
+      const elementType = (data.elementType as string) || ''
+      const props = (data.props as Record<string, unknown>) || {}
+      return renderElement(elementType, props) ?? (
+        <DynamicPlaceholder icon="🧩" label={elementType || 'Element'} data={data} detail="Unknown element type." />
+      )
+    }
     default:
       return <div className="ve-unknown-block">Unknown block type: {blockType}</div>
   }

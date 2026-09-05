@@ -15,6 +15,7 @@ import { ProductGridBlock } from './ProductGridBlock'
 import { RichTextBlock } from './RichTextBlock'
 import { SectionBlock } from './SectionBlock'
 import { StyledBlock } from './StyledBlock'
+import { renderElement } from './elements/renderElement'
 
 /**
  * Renders one block's own markup, without the Design wrapper.
@@ -104,6 +105,9 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
           style={get('style')}
         />
       )
+
+    case 'element':
+      return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {})
 
     default:
       return null

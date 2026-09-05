@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import { asBlockStyle, type BlockStyle } from '@/lib/blockStyle'
+import { getElementDef } from '@/lib/elements/registry'
 import {
   COLUMN_WIDTH_OPTIONS,
   parseColumns,
@@ -37,6 +38,10 @@ export const FieldPanel: React.FC<{
 
   const setField = (name: string, value: unknown) => onChange({ ...data, [name]: value })
   const isSection = blockDef.slug === 'section'
+  const isElement = blockDef.slug === 'element'
+  const elementDef = isElement ? getElementDef((data.elementType as string) || '') : undefined
+  const elementProps = (data.props as Record<string, unknown>) || {}
+  const setElementProp = (name: string, value: unknown) => onChange({ ...data, props: { ...elementProps, [name]: value } })
 
   return (
     <div className="ve-panel">
@@ -74,6 +79,19 @@ export const FieldPanel: React.FC<{
               columns={parseColumns(data.columns)}
               onChange={(columns) => setField('columns', columns)}
             />
+          ) : isElement ? (
+            elementDef ? (
+              elementDef.fields.map((field) => (
+                <FieldInput
+                  key={field.name}
+                  field={field}
+                  value={elementProps[field.name]}
+                  onChange={(v) => setElementProp(field.name, v)}
+                />
+              ))
+            ) : (
+              <p className="ve-panel__empty">Unknown element type &quot;{String(data.elementType)}&quot;.</p>
+            )
           ) : blockDef.fields.length > 0 ? (
             blockDef.fields.map((field) => (
               <FieldInput

@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SectionNode } from '@/lib/sectionTree'
 import { defaultColumns } from '@/lib/sectionTree'
 
+import { getElementDef } from '@/lib/elements/registry'
+
 import { getBlockDef } from './visualEditor/blockSchemas'
 import { CANVAS_ORIGIN, isBridgeMessage, type FrameToParentMessage } from './visualEditor/canvasBridge'
 import { EditorDock, type DockTab } from './visualEditor/EditorDock'
@@ -149,14 +151,39 @@ export const VisualEditorView: React.FC = () => {
   }, [dirty])
 
   const selectedNode = selectedPath ? getNode(blocks, selectedPath) : undefined
-  const selectedDef = selectedNode ? getBlockDef(selectedNode.blockType) : undefined
+  // For an `element` node, swap in the specific element's label/icon (from
+  // the registry) so the panel header reads "Heading", not the generic
+  // "Element" - the block def itself doesn't know which element it holds.
+  const selectedDef = selectedNode
+    ? (() => {
+        const base = getBlockDef(selectedNode.blockType)
+        if (!base || selectedNode.blockType !== 'element') return base
+        const elementDef = getElementDef((selectedNode as { elementType?: string }).elementType || '')
+        return elementDef ? { ...base, label: elementDef.label, icon: elementDef.icon } : base
+      })()
+    : undefined
 
   /* ---------------------------------------------------------------------- */
   /* Tree mutations                                                          */
   /* ---------------------------------------------------------------------- */
 
-  /** A fresh node for a block type - a brand-new section starts with two columns so it is immediately useful. */
+  /**
+   * A fresh node for a block type - a brand-new section starts with two
+   * columns so it is immediately useful.
+   *
+   * "element:<type>" is a synthetic slug, not a real block: the library shows
+   * one card per src/lib/elements/registry.ts entry rather than one card for
+   * the generic `element` block (which has nothing to edit until an
+   * elementType is chosen) - see blockSchemas.ts's `element` entry.
+   */
   const buildNode = useCallback((blockType: string): SectionNode | null => {
+    if (blockType.startsWith('element:')) {
+      const elementType = blockType.slice('element:'.length)
+      const elementDef = getElementDef(elementType)
+      if (!elementDef) return null
+      return { blockType: 'element', elementType, props: elementDef.defaultProps(), _id: nextId() } as SectionNode
+    }
+
     const def = getBlockDef(blockType)
     if (!def) return null
     const node: SectionNode = { ...(def.defaultValue() as SectionNode), _id: nextId() }

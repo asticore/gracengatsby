@@ -1,7 +1,7 @@
 import React from 'react'
-import { Logout } from '@payloadcms/ui'
-import { PREFERENCE_KEYS, formatAdminURL } from 'payload/shared'
-import type { Payload } from 'payload'
+import { Logout } from '@/engine/ui'
+import { PREFERENCE_KEYS, formatAdminURL } from '@/engine/shared'
+import type { Payload } from '@/engine'
 
 import { AsticoreSaasComingSoon } from '@/components/branding/AsticoreSaasComingSoon'
 

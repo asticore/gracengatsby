@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useDocumentEvents } from '@payloadcms/ui'
+import { useDocumentEvents } from '@/engine/ui'
 import { useRouter } from 'next/navigation'
 
 /**

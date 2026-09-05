@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Hamburger, Link, NavGroup, useNav } from '@payloadcms/ui'
+import { Hamburger, Link, NavGroup, useNav } from '@/engine/ui'
 import { usePathname } from 'next/navigation'
 
 const baseClass = 'nav'

@@ -1,5 +1,5 @@
 import React from 'react'
-import { RichText } from '@payloadcms/richtext-lexical/react'
+import { RichText } from '@/engine/editor/react'
 
 import type { Page } from '@/engage-types'
 

@@ -1,6 +1,6 @@
 import { cache } from 'react'
-import type { Payload, SanitizedCollectionConfig, SanitizedGlobalConfig } from 'payload'
-import { formatAdminURL } from 'payload/shared'
+import type { Payload, SanitizedCollectionConfig, SanitizedGlobalConfig } from '@/engine'
+import { formatAdminURL } from '@/engine/shared'
 
 import {
   DEFAULT_FLAGS,

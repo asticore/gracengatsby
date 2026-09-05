@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import React from 'react'
-import { RichText } from '@payloadcms/richtext-lexical/react'
+import { RichText } from '@/engine/editor/react'
 
 import type { Media, Page } from '@/engage-types'
 

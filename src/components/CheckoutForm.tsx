@@ -1,6 +1,6 @@
 'use client'
 
-import { useAddresses, useCart, usePayments } from '@payloadcms/plugin-ecommerce/client/react'
+import { useAddresses, useCart, usePayments } from '@/engine/commerce/react'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { loadStripe, type Stripe } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'

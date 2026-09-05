@@ -1,7 +1,7 @@
 'use client'
 
-import { EcommerceProvider } from '@payloadcms/plugin-ecommerce/client/react'
-import { stripeAdapterClient } from '@payloadcms/plugin-ecommerce/payments/stripe'
+import { EcommerceProvider } from '@/engine/commerce/react'
+import { stripeAdapterClient } from '@/engine/commerce/stripe'
 import React from 'react'
 
 import { AUD } from '@/lib/currencies'

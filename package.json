@@ -34,6 +34,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@opennextjs/cloudflare": "~1.18.1",
+    "drizzle-orm": "0.45.2",
     "@payloadcms/db-d1-sqlite": "3.88.0",
     "@payloadcms/next": "3.88.0",
     "@payloadcms/plugin-ecommerce": "3.88.0",

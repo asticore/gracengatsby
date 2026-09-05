@@ -19,23 +19,31 @@ export const FaqList: React.FC<{ faqs: Faq[]; layout?: 'accordion' | 'list'; gro
       }, {})
     : { '': faqs }
 
+  const questionClassName = 'cursor-pointer font-[family-name:var(--font-display)] text-[1.05rem]'
+  const answerClassName = 'mt-3 opacity-85'
+  const itemClassName = 'faq-item mb-3 border border-[var(--color-line)] px-5 py-[18px]'
+
   return (
-    <div className={`faq-list faq-list--${layout}`}>
+    <div>
       {Object.entries(groups).map(([category, items]) => (
-        <div key={category || 'all'} className="faq-list__group">
-          {category && <h3 className="faq-list__category">{category}</h3>}
+        <div key={category || 'all'} className="mb-8">
+          {category && (
+            <h3 className="mb-3 text-[0.8rem] uppercase tracking-[0.08em] text-[var(--color-gold)]">
+              {category}
+            </h3>
+          )}
           {items.map((faq) =>
             layout === 'accordion' ? (
-              <details key={faq.id} className="faq-item">
-                <summary className="faq-item__question">{faq.question}</summary>
-                <div className="faq-item__answer">
+              <details key={faq.id} className={itemClassName}>
+                <summary className={questionClassName}>{faq.question}</summary>
+                <div className={answerClassName}>
                   <RichText data={faq.answer} />
                 </div>
               </details>
             ) : (
-              <div key={faq.id} className="faq-item faq-item--plain">
-                <h4 className="faq-item__question">{faq.question}</h4>
-                <div className="faq-item__answer">
+              <div key={faq.id} className={itemClassName}>
+                <h4 className={questionClassName}>{faq.question}</h4>
+                <div className={answerClassName}>
                   <RichText data={faq.answer} />
                 </div>
               </div>

@@ -27,7 +27,7 @@ export default async function FaqPage() {
   ])
 
   return (
-    <div className="page-shell faq-page">
+    <div className="page-shell">
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
         settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (
@@ -35,7 +35,7 @@ export default async function FaqPage() {
           <h1>{settings?.pageTitle || 'Frequently Asked Questions'}</h1>
         </div>
       )}
-      {settings?.intro && <p className="faq-page__intro">{settings.intro}</p>}
+      {settings?.intro && <p className="mb-8 max-w-[640px] opacity-80">{settings.intro}</p>}
 
       {faqs.length === 0 ? (
         <p className="empty-state">No FAQs added yet - add some in the admin panel.</p>

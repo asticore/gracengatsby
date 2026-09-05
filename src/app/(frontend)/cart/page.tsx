@@ -1,6 +1,6 @@
 'use client'
 
-import { useCart, useCurrency } from '@payloadcms/plugin-ecommerce/client/react'
+import { useCart, useCurrency } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React from 'react'
 

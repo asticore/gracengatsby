@@ -1,4 +1,4 @@
-import type { Access, FieldAccess } from 'payload'
+import type { Access, FieldAccess } from '@/engine'
 
 const checkRole = (roles: string[], user: { roles?: string[] } | null | undefined) =>
   Boolean(user?.roles?.some((role) => roles.includes(role)))

@@ -3,7 +3,7 @@
 import type { Metadata } from 'next'
 
 import config from '@engage-config'
-import { NotFoundPage, generatePageMetadata } from '@payloadcms/next/views'
+import { NotFoundPage, generatePageMetadata } from '@/engine/next/views'
 import { importMap } from '../importMap'
 
 type Args = {

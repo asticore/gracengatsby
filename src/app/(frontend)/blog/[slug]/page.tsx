@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
-import { RichText } from '@payloadcms/richtext-lexical/react'
+import { RichText } from '@/engine/editor/react'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'

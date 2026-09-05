@@ -2,8 +2,8 @@
 /* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
 import config from '@engage-config'
 import '@payloadcms/next/css'
-import type { ServerFunctionClient } from 'payload'
-import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts'
+import type { ServerFunctionClient } from '@/engine'
+import { handleServerFunctions, RootLayout } from '@/engine/next/layouts'
 import { headers } from 'next/headers'
 import React from 'react'
 

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import React from 'react'
-import { RichText } from '@payloadcms/richtext-lexical/react'
+import { RichText } from '@/engine/editor/react'
 
 import { AddToCartButton } from '@/components/AddToCartButton'
 import { RsvpForm } from '@/components/RsvpForm'

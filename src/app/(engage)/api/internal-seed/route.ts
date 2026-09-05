@@ -1,5 +1,4 @@
-import config from '@engage-config'
-import { getPayload } from 'payload'
+import { getEngine } from '@/engine'
 import { NextResponse } from 'next/server'
 
 import { seedHomeAndTemplates } from '@/seed/seedHomeAndTemplates'
@@ -20,7 +19,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const engine = await getPayload({ config })
+  const engine = await getEngine()
   const result = await seedHomeAndTemplates(engine)
 
   return NextResponse.json({ ok: true, ...result })

@@ -1,5 +1,5 @@
 import { headers as nextHeaders } from 'next/headers'
-import type { Payload, TypedUser, Where } from 'payload'
+import type { Payload, TypedUser, Where } from '@/engine'
 
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'

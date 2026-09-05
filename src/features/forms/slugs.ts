@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload } from 'payload'
+import type { CollectionSlug, Payload } from '@/engine'
 
 /**
  * The two collection slugs this feature owns, cast once.

@@ -1,4 +1,4 @@
-import type { Endpoint, PayloadRequest } from 'payload'
+import type { Endpoint, PayloadRequest } from '@/engine'
 
 import type { FormDoc } from './types'
 

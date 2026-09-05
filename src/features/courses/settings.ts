@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload } from '@/engine'
 
 import { DEFAULT_FLAGS, FEATURES, type FeatureFlags, type FeatureKey } from '@/features/registry'
 

@@ -1,4 +1,4 @@
-import type { Endpoint, PayloadRequest } from 'payload'
+import type { Endpoint, PayloadRequest } from '@/engine'
 
 import { HONEYPOT_FIELD, RENDERED_AT_FIELD, TURNSTILE_FIELD } from './spam'
 

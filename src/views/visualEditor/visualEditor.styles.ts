@@ -18,6 +18,16 @@
  * surface already.
  */
 export const VISUAL_EDITOR_CSS = `
+/* Tokens are declared on :root AS WELL AS .ve-root - this stylesheet gets injected into two
+   separate documents (VisualEditor.tsx's own page, and the canvas iframe's document via
+   CanvasFrame.tsx, which has no .ve-root element at all, only .ve-frame-root). A selector of
+   ".ve-root" alone left every var() reference inside the iframe (node outlines, the insert
+   "+", drag-over states) resolving to nothing - CSS silently falls back to that property's
+   initial value instead of erroring, which is why the outline/button looked colorless rather
+   than obviously broken. :root matches the <html> element in both documents, so this covers
+   both without changing anything for the parent page (.ve-root is still there too, redundant
+   but harmless). */
+:root,
 .ve-root {
   /* Light theme (default) - warm/gold, matches the site's own boutique brand. */
   --ve-bg: #f2f0ec;
@@ -276,8 +286,22 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-insert:hover::before,
-.ve-insert--drag-over::before {
+.ve-insert--drag-over::before,
+.ve-insert--open::before {
   opacity: 0.6;
+}
+
+/* Elementor's "+" opens and stays open - a tinted band across the whole slot,
+   not just the hover line, so it reads as "adding here" rather than a
+   passing hover state, and it stays lit until the click-away below closes it
+   (see CanvasFrame.tsx's openInsertKey - cleared on picking a block, picking
+   a different node to edit, or clicking empty canvas). */
+.ve-insert--open {
+  background: color-mix(in srgb, var(--ve-select) 12%, transparent);
+}
+
+.ve-insert--open::before {
+  opacity: 0.9;
 }
 
 /* Plus button: white "+" on a solid green circle, always given a shadow so
@@ -320,6 +344,18 @@ html[data-theme='dark'] .ve-root {
   opacity: 1;
   background: var(--ve-select-hover);
   transform: translate(-50%, -50%) scale(1.3);
+}
+
+/* Rotates to a "x" while open, the same close affordance Elementor uses - a
+   visual cue that clicking it again (or clicking away) dismisses the panel
+   instead of adding a second element. */
+.ve-insert--open .ve-insert__btn {
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--ve-select-hover);
+}
+
+.ve-insert--open .ve-insert__btn:hover {
+  transform: translate(-50%, -50%) rotate(45deg) scale(1.15);
 }
 
 .ve-empty-canvas {

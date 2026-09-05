@@ -50,6 +50,12 @@ export type BlockDef = {
   description: string
   fields: EditorField[]
   defaultValue: () => Record<string, unknown>
+  /** Kept in this array (so getBlockDef still resolves its fields for the Settings panel
+   *  and CanvasBlockPreview) but left out of the Elements library grid in ElementLibrary.tsx -
+   *  for blocks that ship as a fixed, opinionated layout rather than a composable primitive,
+   *  which only belongs in a curated Template (templatePresets.ts / Page Templates), not as
+   *  something dropped in freely block-by-block. */
+  hiddenFromLibrary?: boolean
 }
 
 const CATEGORY_OPTIONS = [
@@ -75,6 +81,13 @@ export const VISUAL_BLOCKS: BlockDef[] = [
     label: 'Hero',
     icon: '⭐',
     category: 'basic',
+    // Not offered as a plain draggable element - see hiddenFromLibrary. A fixed banner
+    // layout works against "as customisable as Elementor": building the same effect from a
+    // Section + Rich Text + buttons gives full control over columns, widths and styling,
+    // where Hero is one rigid shape. It's still available pre-composed from the Templates
+    // tab (templatePresets.ts has a couple of hero starters), and existing pages that already
+    // use it keep rendering and stay fully editable here.
+    hiddenFromLibrary: true,
     description: 'Large banner with a heading, supporting text and up to two buttons.',
     fields: [
       { name: 'heading', label: 'Heading', type: 'text', supportsMergeTags: true },

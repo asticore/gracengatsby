@@ -5,14 +5,19 @@ import React from 'react'
 import type { CustomFieldDef } from './types'
 
 /**
- * Renders one custom field as a real input. Shared deliberately between the
- * native admin panel and the visual editor's field panel so a custom field
- * looks and behaves the same wherever it is edited.
- *
- * Styling is intentionally class-based (`cf-*`), with the two surfaces
- * supplying their own CSS, rather than inline styles that would fight the
- * host's theme.
+ * Renders one custom field as a real input, used by the native admin panel
+ * (CustomFieldsPanel) to edit a collection's Field Group values.
  */
+
+const fieldClassName = 'flex min-w-0 flex-[1_1_260px] flex-col gap-[5px]'
+const fieldInlineClassName = 'flex min-w-0 flex-[1_1_100%] flex-row items-center gap-[8px]'
+const labelClassName = 'text-[12px] font-semibold'
+const helpClassName = 'm-0 text-[11px] opacity-65'
+const controlClassName =
+  'w-full rounded-[5px] border border-[var(--theme-elevation-150,#d8d3c8)] bg-[var(--theme-input-bg,#fff)] px-[9px] py-[7px] text-[13px] text-inherit [font-family:inherit]'
+const btnClassName =
+  'cursor-pointer rounded-[5px] border border-[var(--theme-elevation-150,#d8d3c8)] bg-transparent px-[10px] py-[5px] text-[12px] text-inherit hover:border-[#c9a15a]'
+
 export const CustomFieldInput: React.FC<{
   def: CustomFieldDef
   value: unknown
@@ -22,16 +27,16 @@ export const CustomFieldInput: React.FC<{
   const id = `cf-${def.name}`
 
   const label = (
-    <label className="cf-field__label" htmlFor={id}>
+    <label className={labelClassName} htmlFor={id}>
       {def.label}
-      {def.required ? <span className="cf-field__required"> *</span> : null}
+      {def.required ? <span className="text-[#b3453a]"> *</span> : null}
     </label>
   )
 
-  const help = def.helpText ? <p className="cf-field__help">{def.helpText}</p> : null
+  const help = def.helpText ? <p className={helpClassName}>{def.helpText}</p> : null
 
   const wrap = (control: React.ReactNode) => (
-    <div className="cf-field">
+    <div className={fieldClassName}>
       {label}
       {control}
       {help}
@@ -43,7 +48,7 @@ export const CustomFieldInput: React.FC<{
       return wrap(
         <textarea
           id={id}
-          className="cf-field__control"
+          className={controlClassName}
           rows={4}
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
@@ -54,7 +59,7 @@ export const CustomFieldInput: React.FC<{
       return wrap(
         <input
           id={id}
-          className="cf-field__control"
+          className={controlClassName}
           type="number"
           value={typeof value === 'number' ? value : ''}
           onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
@@ -63,7 +68,7 @@ export const CustomFieldInput: React.FC<{
 
     case 'checkbox':
       return (
-        <div className="cf-field cf-field--inline">
+        <div className={fieldInlineClassName}>
           <input id={id} type="checkbox" checked={Boolean(value)} onChange={(e) => onChange(e.target.checked)} />
           {label}
           {help}
@@ -74,7 +79,7 @@ export const CustomFieldInput: React.FC<{
       return wrap(
         <select
           id={id}
-          className="cf-field__control"
+          className={controlClassName}
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value || undefined)}
         >
@@ -91,7 +96,7 @@ export const CustomFieldInput: React.FC<{
       return wrap(
         <input
           id={id}
-          className="cf-field__control"
+          className={controlClassName}
           type="date"
           value={typeof value === 'string' ? value.slice(0, 10) : ''}
           onChange={(e) => onChange(e.target.value || undefined)}
@@ -100,15 +105,16 @@ export const CustomFieldInput: React.FC<{
 
     case 'color':
       return wrap(
-        <div className="cf-field__color">
+        <div className="flex items-center gap-[8px]">
           <input
             id={id}
+            className="h-[34px] w-[38px] cursor-pointer rounded-[5px] border border-[var(--theme-elevation-150,#d8d3c8)] p-0 [background:none]"
             type="color"
             value={typeof value === 'string' && value ? value : '#000000'}
             onChange={(e) => onChange(e.target.value)}
           />
           <input
-            className="cf-field__control"
+            className={controlClassName}
             type="text"
             placeholder="#000000"
             value={typeof value === 'string' ? value : ''}
@@ -119,21 +125,27 @@ export const CustomFieldInput: React.FC<{
 
     case 'image':
       return wrap(
-        <div className="cf-field__image">
+        <div className="flex items-center gap-[10px]">
           {typeof value === 'string' && value ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt="" className="cf-field__thumb" />
+            <img
+              src={value}
+              alt=""
+              className="h-[56px] w-[56px] rounded-[5px] border border-[var(--theme-elevation-150,#e2ded4)] object-cover"
+            />
           ) : (
-            <div className="cf-field__thumb cf-field__thumb--empty">No image</div>
+            <div className="flex h-[56px] w-[56px] items-center justify-center rounded-[5px] border border-dashed border-[var(--theme-elevation-150,#e2ded4)] text-center text-[10px] opacity-60">
+              No image
+            </div>
           )}
-          <div className="cf-field__image-actions">
+          <div className="flex flex-col gap-[4px]">
             {onPickImage && (
-              <button type="button" className="cf-btn" onClick={onPickImage}>
+              <button type="button" className={btnClassName} onClick={onPickImage}>
                 {value ? 'Change' : 'Choose image'}
               </button>
             )}
             {value ? (
-              <button type="button" className="cf-btn" onClick={() => onChange(undefined)}>
+              <button type="button" className={btnClassName} onClick={() => onChange(undefined)}>
                 Remove
               </button>
             ) : null}
@@ -147,7 +159,7 @@ export const CustomFieldInput: React.FC<{
       return wrap(
         <input
           id={id}
-          className="cf-field__control"
+          className={controlClassName}
           type={def.type === 'url' ? 'url' : 'text'}
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}

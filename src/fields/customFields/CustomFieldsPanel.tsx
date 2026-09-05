@@ -5,7 +5,6 @@ import { useDocumentInfo, useField } from '@/engine/ui'
 
 import { CustomFieldInput } from './CustomFieldInput'
 import { fetchFieldGroups, type CustomFieldValues, type FieldGroupDoc } from './types'
-import { CUSTOM_FIELDS_CSS } from './customFields.styles'
 
 /**
  * The native-admin editor for a collection's custom fields.
@@ -59,14 +58,15 @@ export const CustomFieldsPanel: React.FC<{ path?: string }> = ({ path = 'customF
   if (groups.length === 0) return null
 
   return (
-    <div className="cf-panel">
-      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
-      <style dangerouslySetInnerHTML={{ __html: CUSTOM_FIELDS_CSS }} />
+    <div className="mb-[24px] flex flex-col gap-[24px]">
       {groups.map((group) => (
-        <div className="cf-group" key={group.id}>
-          <h3 className="cf-group__title">{group.name}</h3>
-          {group.description && <p className="cf-group__description">{group.description}</p>}
-          <div className="cf-group__fields">
+        <div
+          className="rounded-[6px] border border-[var(--theme-elevation-150,#e2ded4)] bg-[var(--theme-elevation-0,#fff)] pt-[16px] px-[18px] pb-[18px]"
+          key={group.id}
+        >
+          <h3 className="mx-0 mt-0 mb-[4px] text-[15px]">{group.name}</h3>
+          {group.description && <p className="mx-0 mt-0 mb-[14px] text-[12px] opacity-70">{group.description}</p>}
+          <div className="flex flex-wrap gap-[16px]">
             {(group.fields || []).map((def) => (
               <CustomFieldInput
                 key={def.name}

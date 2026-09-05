@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
 
-import { BLOCK_CATEGORIES, VISUAL_BLOCKS, type BlockDef } from './blockSchemas'
+import { BLOCK_CATEGORIES, libraryCards, type BlockDef } from './blockSchemas'
 import { TEMPLATE_PRESETS } from './templatePresets'
 
 type Source = 'blocks' | 'templates'
@@ -34,8 +34,7 @@ export const ElementLibrary: React.FC<{
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return VISUAL_BLOCKS.filter((block) => {
-      if (block.hiddenFromLibrary) return false
+    return libraryCards().filter((block) => {
       if (category !== 'all' && block.category !== category) return false
       if (!needle) return true
       return (

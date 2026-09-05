@@ -9,37 +9,27 @@
  * If you add a field to a block in src/blocks/*.ts, mirror it here too.
  */
 
-export type EditorFieldType =
-  | 'text'
-  | 'textarea'
-  | 'richText'
-  | 'number'
-  | 'checkbox'
-  | 'select'
-  | 'media'
-  | 'mediaMulti'
-  | 'relationship'
+import type { EditorField } from '@/lib/elements/fieldTypes'
+import { ELEMENTS } from '@/lib/elements/registry'
 
-export type EditorField = {
-  name: string
-  label: string
-  type: EditorFieldType
-  options?: { label: string; value: string }[]
-  relationTo?: string
-  width?: 'full' | 'half'
-  helpText?: string
-  /** Text fields that accept {{merge tags}} show the tag picker. */
-  supportsMergeTags?: boolean
-}
+// Re-exported from src/lib/elements/fieldTypes.ts, which also backs the
+// per-element-type registry (src/lib/elements/registry.ts) - kept there
+// instead of only here so that file doesn't have to import a views/ module.
+export type { EditorField, EditorFieldType } from '@/lib/elements/fieldTypes'
 
 /** Groups the element library into browsable sections. */
-export type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic'
+export type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic' | 'elements'
 
 export const BLOCK_CATEGORIES: { key: BlockCategory; label: string }[] = [
   { key: 'layout', label: 'Layout' },
   { key: 'basic', label: 'Basic' },
   { key: 'media', label: 'Media' },
   { key: 'dynamic', label: 'Dynamic' },
+  // One flat group for now, holding every src/lib/elements/registry.ts entry -
+  // there's only Heading in it so far (Phase 2's vertical slice). Once the
+  // rest of the ~40-element library lands (Phase 4) this splits into the
+  // registry's own ELEMENT_CATEGORIES instead of one bucket.
+  { key: 'elements', label: 'Elements' },
 ]
 
 export type BlockDef = {
@@ -270,8 +260,46 @@ export const VISUAL_BLOCKS: BlockDef[] = [
     ],
     defaultValue: () => ({ blockType: 'faq', heading: 'Frequently asked questions', source: 'category' }),
   },
+  {
+    slug: 'element',
+    label: 'Element',
+    icon: '🧩',
+    category: 'basic',
+    description: 'One of the element-library items (heading, icon box, countdown, ...) - see src/lib/elements/registry.ts.',
+    // Never offered directly - the library shows one card per registry entry
+    // instead (synthetic slug "element:<type>", resolved in VisualEditor.tsx's
+    // buildNode and rendered by FieldPanel's isElement branch), so a bare
+    // "element" card with no elementType set would have nothing to edit.
+    hiddenFromLibrary: true,
+    fields: [],
+    defaultValue: () => ({ blockType: 'element', elementType: '', props: {} }),
+  },
 ]
 
 export function getBlockDef(blockType: string): BlockDef | undefined {
   return VISUAL_BLOCKS.find((b) => b.slug === blockType)
+}
+
+/**
+ * Library-only view: real blocks (minus hiddenFromLibrary ones) plus one
+ * synthetic card per src/lib/elements/registry.ts entry, slugged
+ * "element:<type>". ElementLibrary.tsx renders this instead of VISUAL_BLOCKS
+ * directly. Kept separate from VISUAL_BLOCKS/getBlockDef so those two stay
+ * block-shape lookups only - VisualEditor.tsx's buildNode is what actually
+ * turns an "element:<type>" pick into a real node, before a BlockDef lookup
+ * ever happens.
+ */
+export function libraryCards(): BlockDef[] {
+  const elementCards: BlockDef[] = ELEMENTS.map(
+    (el): BlockDef => ({
+      slug: `element:${el.type}`,
+      label: el.label,
+      icon: el.icon,
+      category: 'elements',
+      description: el.description,
+      fields: [],
+      defaultValue: () => ({ blockType: 'element', elementType: el.type, props: el.defaultProps() }),
+    }),
+  )
+  return [...VISUAL_BLOCKS.filter((b) => !b.hiddenFromLibrary), ...elementCards]
 }

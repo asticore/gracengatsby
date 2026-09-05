@@ -5,8 +5,9 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
 import { asBlockStyle, blockStyleToCss } from '@/lib/blockStyle'
-import type { SectionColumn, SectionNode } from '@/lib/sectionTree'
+import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
+import { ShapeDivider } from '@/components/blocks/StyledBlock'
 import { getBlockDef } from './blockSchemas'
 import { CanvasBlockPreview } from './CanvasBlockPreview'
 import { pathKey, type NodePath } from './treeOps'
@@ -18,6 +19,8 @@ export type CanvasHandlers = {
   onDelete: (path: NodePath) => void
   onDuplicate: (path: NodePath) => void
   onMove: (path: NodePath, direction: -1 | 1) => void
+  /** A block dragged in from the element library was dropped at this slot. */
+  onDropBlock: (containerPath: NodePath, at: number, blockType: string) => void
 }
 
 /**
@@ -32,13 +35,25 @@ export const CanvasNodeList: React.FC<{
   depth: number
 }> = ({ nodes, containerPath, handlers, depth }) => (
   <>
-    <InsertSlot containerPath={containerPath} at={0} onAdd={handlers.onAdd} subtle={nodes.length > 0} />
+    <InsertSlot
+      containerPath={containerPath}
+      at={0}
+      onAdd={handlers.onAdd}
+      onDropBlock={handlers.onDropBlock}
+      subtle={nodes.length > 0}
+    />
     {nodes.map((node, index) => {
       const path = [...containerPath, index]
       return (
         <React.Fragment key={node._id || `${pathKey(containerPath)}-${index}`}>
           <CanvasNode node={node} path={path} handlers={handlers} depth={depth} total={nodes.length} index={index} />
-          <InsertSlot containerPath={containerPath} at={index + 1} onAdd={handlers.onAdd} subtle />
+          <InsertSlot
+            containerPath={containerPath}
+            at={index + 1}
+            onAdd={handlers.onAdd}
+            onDropBlock={handlers.onDropBlock}
+            subtle
+          />
         </React.Fragment>
       )
     })}
@@ -81,7 +96,7 @@ const CanvasNode: React.FC<{
     >
       <div className="ve-node__toolbar">
         <button type="button" className="ve-drag-handle" {...attributes} {...listeners} aria-label="Drag to reorder">
-          ⠿
+          ⋿
         </button>
         <span className="ve-node__label">
           {def?.icon} {def?.label || node.blockType}
@@ -123,7 +138,7 @@ const CanvasNode: React.FC<{
           aria-label="Duplicate"
           title="Duplicate"
         >
-          ⧉
+          ⦇
         </button>
         <button
           type="button"
@@ -135,10 +150,23 @@ const CanvasNode: React.FC<{
           aria-label="Delete"
           title="Delete"
         >
-          ✕
+          ✗
         </button>
       </div>
 
+      {/* Shape dividers are real rendered SVGs on the live site (StyledBlock),
+          not a CSS style - so the wrapperStyle above (blockStyleToCss) alone
+          never showed them here. Rendering the same <ShapeDivider> around the
+          body keeps the canvas honest with what Save/Publish produces. */}
+      {design.dividerTop && (
+        <ShapeDivider
+          shape={design.dividerTop}
+          color={design.dividerTopColor}
+          height={design.dividerTopHeight}
+          flip={design.dividerTopFlip}
+          position="top"
+        />
+      )}
       <div className="ve-node__body">
         {node.blockType === 'section' ? (
           <SectionColumns columns={node.columns || []} path={path} handlers={handlers} depth={depth} />
@@ -148,6 +176,15 @@ const CanvasNode: React.FC<{
           </div>
         )}
       </div>
+      {design.dividerBottom && (
+        <ShapeDivider
+          shape={design.dividerBottom}
+          color={design.dividerBottomColor}
+          height={design.dividerBottomHeight}
+          flip={design.dividerBottomFlip}
+          position="bottom"
+        />
+      )}
     </div>
   )
 }
@@ -170,9 +207,9 @@ const SectionColumns: React.FC<{
     <div className="ve-section">
       {columns.map((column, columnIndex) => (
         <div
-          className={`ve-column ve-column--${column.width ?? 12}`}
+          className="ve-column"
           key={column._id || columnIndex}
-          style={blockStyleToCss(asBlockStyle(column.design))}
+          style={{ ...columnWidthVars(column), ...blockStyleToCss(asBlockStyle(column.design)) }}
         >
           <div className="ve-column__tag">Column {columnIndex + 1}</div>
           <CanvasNodeList
@@ -187,25 +224,56 @@ const SectionColumns: React.FC<{
   )
 }
 
-/** The hover "+" that opens the element library at a specific position. */
+/**
+ * The hover "+" that opens the element library at a specific position -
+ * Elementor's circular add button between/around blocks. Also doubles as a
+ * drop target: dragging a card out of the library (see ElementLibrary.tsx)
+ * sets `application/x-ve-block` on the native dataTransfer, which any slot
+ * along the drag path can accept directly (no cross-iframe coordinate math
+ * needed - the browser's own native DnD already delivers dragover/drop to
+ * whatever element the pointer is over, iframe boundary included, since
+ * it's one browser-level drag session).
+ */
 const InsertSlot: React.FC<{
   containerPath: NodePath
   at: number
   onAdd: (containerPath: NodePath, at: number) => void
+  onDropBlock: (containerPath: NodePath, at: number, blockType: string) => void
   subtle?: boolean
-}> = ({ containerPath, at, onAdd, subtle }) => (
-  <div className={`ve-insert ${subtle ? '' : 've-insert--always'}`}>
-    <button
-      type="button"
-      className="ve-insert__btn"
-      onClick={(e) => {
-        e.stopPropagation()
-        onAdd(containerPath, at)
+}> = ({ containerPath, at, onAdd, onDropBlock, subtle }) => {
+  const [dragOver, setDragOver] = React.useState(false)
+
+  return (
+    <div
+      className={`ve-insert ${subtle ? '' : 've-insert--always'} ${dragOver ? 've-insert--drag-over' : ''}`}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes('application/x-ve-block')) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+        if (!dragOver) setDragOver(true)
       }}
-      aria-label="Add an element here"
-      title="Add an element here"
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        const blockType = e.dataTransfer.getData('application/x-ve-block')
+        setDragOver(false)
+        if (!blockType) return
+        e.preventDefault()
+        e.stopPropagation()
+        onDropBlock(containerPath, at, blockType)
+      }}
     >
-      +
-    </button>
-  </div>
-)
+      <button
+        type="button"
+        className="ve-insert__btn"
+        onClick={(e) => {
+          e.stopPropagation()
+          onAdd(containerPath, at)
+        }}
+        aria-label="Add an element here"
+        title="Add an element here"
+      >
+        +
+      </button>
+    </div>
+  )
+}

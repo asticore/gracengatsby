@@ -25,6 +25,18 @@ export const COLUMN_WIDTH_OPTIONS: { label: string; value: ColumnWidth }[] = [
   { label: 'One quarter (25%)', value: 3 },
 ]
 
+/**
+ * A column's width at one breakpoint. `fraction` is the 12-based grid span
+ * (same numbers as ColumnWidth); `percent`/`px` are Elementor-style custom
+ * sizes for when a fraction of 12 isn't the shape you want.
+ */
+export type ColumnWidthUnit = 'fraction' | 'percent' | 'px'
+
+export type ResponsiveColumnWidth = {
+  value: number
+  unit: ColumnWidthUnit
+}
+
 /** A block sitting inside a column. `blockType: 'section'` nests another section. */
 export type SectionNode = {
   blockType: string
@@ -38,9 +50,47 @@ export type SectionNode = {
 
 export type SectionColumn = {
   _id?: string
+  /** Legacy desktop-only width - still read as the desktop fallback when widthDesktop is unset. */
   width?: ColumnWidth
+  /** Per-breakpoint overrides. Tablet/mobile cascade from the breakpoint above when unset - see columnWidthVars(). */
+  widthDesktop?: ResponsiveColumnWidth
+  widthTablet?: ResponsiveColumnWidth
+  widthMobile?: ResponsiveColumnWidth
   design?: BlockStyle
   blocks?: SectionNode[]
+}
+
+function isResponsiveWidth(value: unknown): value is ResponsiveColumnWidth {
+  if (!value || typeof value !== 'object') return false
+  const v = value as { value?: unknown; unit?: unknown }
+  return typeof v.value === 'number' && (v.unit === 'fraction' || v.unit === 'percent' || v.unit === 'px')
+}
+
+function normalizeResponsiveWidth(value: unknown): ResponsiveColumnWidth | undefined {
+  return isResponsiveWidth(value) ? value : undefined
+}
+
+/** Converts one breakpoint's width into a CSS length (percentage for fraction/percent, px as-is). */
+export function columnWidthCss(width: ResponsiveColumnWidth): string {
+  if (width.unit === 'px') return `${Math.max(0, width.value)}px`
+  if (width.unit === 'percent') return `${Math.min(100, Math.max(0, width.value))}%`
+  return `${(Math.min(12, Math.max(1, width.value)) / 12) * 100}%`
+}
+
+/**
+ * CSS custom properties driving a column's flex-basis at each breakpoint
+ * (see the `.be-column`/`.ve-column` rules, which read these with a CSS
+ * fallback chain - a breakpoint with no explicit override just inherits the
+ * one above it, so a column only needs to be set at the size where it should
+ * actually change). Desktop always has a value: widthDesktop, or the legacy
+ * `width` field for documents saved before responsive widths existed.
+ */
+export function columnWidthVars(column: SectionColumn): Record<string, string> {
+  const desktop = column.widthDesktop ?? { value: column.width ?? 12, unit: 'fraction' as const }
+  const vars: Record<string, string> = { '--be-col-d': columnWidthCss(desktop) }
+  if (column.widthTablet) vars['--be-col-t'] = columnWidthCss(column.widthTablet)
+  if (column.widthMobile) vars['--be-col-m'] = columnWidthCss(column.widthMobile)
+  return vars
 }
 
 /** Reads a section block's `columns` JSON column into a usable tree. */
@@ -53,6 +103,9 @@ function normalizeColumn(column: SectionColumn): SectionColumn {
   return {
     _id: typeof column._id === 'string' ? column._id : undefined,
     width: isColumnWidth(column.width) ? column.width : 12,
+    widthDesktop: normalizeResponsiveWidth(column.widthDesktop),
+    widthTablet: normalizeResponsiveWidth(column.widthTablet),
+    widthMobile: normalizeResponsiveWidth(column.widthMobile),
     design: asBlockStyle(column.design),
     blocks: Array.isArray(column.blocks)
       ? column.blocks

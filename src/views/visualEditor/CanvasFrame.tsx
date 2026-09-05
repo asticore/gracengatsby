@@ -55,6 +55,8 @@ export const CanvasFrame: React.FC = () => {
       post({ source: 've-canvas', type: 'select', path })
     },
     onAdd: (containerPath, at) => post({ source: 've-canvas', type: 'add', containerPath, at }),
+    onDropBlock: (containerPath, at, blockType) =>
+      post({ source: 've-canvas', type: 'drop', containerPath, at, blockType }),
     onDelete: (path) => post({ source: 've-canvas', type: 'delete', path }),
     onDuplicate: (path) => post({ source: 've-canvas', type: 'duplicate', path }),
     onMove: (path, direction) => post({ source: 've-canvas', type: 'move', path, direction }),

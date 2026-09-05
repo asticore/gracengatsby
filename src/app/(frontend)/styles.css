@@ -1239,41 +1239,41 @@ a {
   height: 100%;
 }
 
-/* Sections and columns */
+/* Sections and columns.
+   Flex-wrap rather than CSS grid: a section's columns each carry a
+   `--be-col-d/-t/-m` custom property (see columnWidthVars() in
+   sectionTree.ts) giving their width at desktop/tablet/mobile - a fraction
+   of 12, a percent, or a fixed px. Flex-wrap is what makes "just add
+   another column next to it" work with no upper limit: columns keep
+   sitting side by side until a row runs out of room, then the next one
+   floats down to start a new row on its own, same as Elementor. A
+   breakpoint with no explicit override falls back to the one above it via
+   the var()-fallback chain below, so a column only needs to be set at the
+   size where it should actually change. */
 .be-section {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 24px;
-  align-items: start;
+  align-items: flex-start;
 }
 
 .be-column {
   min-width: 0;
+  flex: 1 1 var(--be-col-d, 100%);
+  max-width: var(--be-col-d, 100%);
 }
 
-.be-column--12 { grid-column: span 12; }
-.be-column--9 { grid-column: span 9; }
-.be-column--8 { grid-column: span 8; }
-.be-column--6 { grid-column: span 6; }
-.be-column--4 { grid-column: span 4; }
-.be-column--3 { grid-column: span 3; }
-
 @media (max-width: 900px) {
-  .be-column--9,
-  .be-column--8,
-  .be-column--6 {
-    grid-column: span 12;
-  }
-
-  .be-column--4,
-  .be-column--3 {
-    grid-column: span 6;
+  .be-column {
+    flex-basis: var(--be-col-t, var(--be-col-d, 100%));
+    max-width: var(--be-col-t, var(--be-col-d, 100%));
   }
 }
 
 @media (max-width: 600px) {
   .be-column {
-    grid-column: span 12 !important;
+    flex-basis: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
+    max-width: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
   }
 }
 

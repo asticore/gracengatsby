@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { asBlockStyle, blockStyleClasses, blockStyleToCss } from '@/lib/blockStyle'
-import { parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
+import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { StyledBlock } from './StyledBlock'
 
@@ -46,12 +46,11 @@ const SectionColumnView: React.FC<{
   depth: number
 }> = ({ column, index, renderNode, depth }) => {
   const design = asBlockStyle(column.design)
-  const width = column.width ?? 12
 
   return (
     <div
-      className={`be-column be-column--${width} ${blockStyleClasses(design)}`}
-      style={blockStyleToCss(design)}
+      className={`be-column ${blockStyleClasses(design)}`}
+      style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
     >
       {(column.blocks || []).map((node, nodeIndex) => {
         const key = node._id || `${index}-${nodeIndex}`

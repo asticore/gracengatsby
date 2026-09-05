@@ -20,6 +20,7 @@ export type DockTab = 'elements' | 'settings'
  * clicking any "+".
  */
 export const EditorDock: React.FC<{
+  collapsed: boolean
   tab: DockTab
   onTabChange: (tab: DockTab) => void
   targetLabel: string
@@ -32,6 +33,7 @@ export const EditorDock: React.FC<{
   onDeleteSelected: () => void
   onDuplicateSelected: () => void
 }> = ({
+  collapsed,
   tab,
   onTabChange,
   targetLabel,
@@ -43,44 +45,52 @@ export const EditorDock: React.FC<{
   onCloseSelected,
   onDeleteSelected,
   onDuplicateSelected,
-}) => (
-  <div className="ve-dock">
-    <div className="ve-dock__tabs" role="tablist" aria-label="Editor panel">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'elements'}
-        className={`ve-dock__tab ${tab === 'elements' ? 've-dock__tab--active' : ''}`}
-        onClick={() => onTabChange('elements')}
-      >
-        + Elements
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'settings'}
-        className={`ve-dock__tab ${tab === 'settings' ? 've-dock__tab--active' : ''}`}
-        onClick={() => onTabChange('settings')}
-      >
-        ⚙ Settings
-      </button>
-    </div>
+}) => {
+  // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
+  // use the full width, same as Elementor's panel-collapse - nothing renders
+  // here at all rather than a narrow icon rail, since the canvas's own
+  // per-block "+" already covers adding elements while collapsed.
+  if (collapsed) return null
 
-    <div className="ve-dock__body">
-      {tab === 'elements' ? (
-        <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} />
-      ) : selectedNode && selectedDef ? (
-        <FieldPanel
-          blockDef={selectedDef}
-          data={selectedNode}
-          onChange={onChangeSelected}
-          onClose={onCloseSelected}
-          onDelete={onDeleteSelected}
-          onDuplicate={onDuplicateSelected}
-        />
-      ) : (
-        <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>
-      )}
+  return (
+    <div className="ve-dock">
+      <div className="ve-dock__tabs" role="tablist" aria-label="Editor panel">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'elements'}
+          className={`ve-dock__tab ${tab === 'elements' ? 've-dock__tab--active' : ''}`}
+          onClick={() => onTabChange('elements')}
+        >
+          + Elements
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'settings'}
+          className={`ve-dock__tab ${tab === 'settings' ? 've-dock__tab--active' : ''}`}
+          onClick={() => onTabChange('settings')}
+        >
+          Settings
+        </button>
+      </div>
+
+      <div className="ve-dock__body">
+        {tab === 'elements' ? (
+          <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} />
+        ) : selectedNode && selectedDef ? (
+          <FieldPanel
+            blockDef={selectedDef}
+            data={selectedNode}
+            onChange={onChangeSelected}
+            onClose={onCloseSelected}
+            onDelete={onDeleteSelected}
+            onDuplicate={onDuplicateSelected}
+          />
+        ) : (
+          <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>
+        )}
+      </div>
     </div>
-  </div>
-)
+  )
+}

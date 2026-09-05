@@ -67,6 +67,7 @@ export const VisualEditorView: React.FC = () => {
     containerPath: [],
     at: 0,
   })
+  const [dockCollapsed, setDockCollapsed] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [frameReady, setFrameReady] = useState(false)
 
@@ -118,22 +119,42 @@ export const VisualEditorView: React.FC = () => {
   /* Tree mutations                                                          */
   /* ---------------------------------------------------------------------- */
 
+  /** A fresh node for a block type - a brand-new section starts with two columns so it is immediately useful. */
+  const buildNode = useCallback((blockType: string): SectionNode | null => {
+    const def = getBlockDef(blockType)
+    if (!def) return null
+    const node: SectionNode = { ...(def.defaultValue() as SectionNode), _id: nextId() }
+    if (blockType === 'section') node.columns = defaultColumns(2, nextId)
+    return node
+  }, [])
+
   const addBlock = useCallback(
     (blockType: string) => {
-      const def = getBlockDef(blockType)
-      if (!def) return
+      const node = buildNode(blockType)
+      if (!node) return
       const { containerPath, at } = insertTarget
-
-      const node: SectionNode = { ...(def.defaultValue() as SectionNode), _id: nextId() }
-      // A brand-new section starts with two columns so it is immediately useful.
-      if (blockType === 'section') node.columns = defaultColumns(2, nextId)
 
       setBlocks((prev) => insertNode(prev, containerPath, at, node))
       setSelectedPath([...containerPath, at])
       setDockTab('settings')
       setDirty(true)
     },
-    [insertTarget],
+    [insertTarget, buildNode],
+  )
+
+  /** Same as addBlock, but for a drag-and-drop from the library that already knows its own target. */
+  const addBlockAt = useCallback(
+    (blockType: string, containerPath: NodePath, at: number) => {
+      const node = buildNode(blockType)
+      if (!node) return
+
+      setBlocks((prev) => insertNode(prev, containerPath, at, node))
+      setSelectedPath([...containerPath, at])
+      setInsertTarget({ containerPath, at: at + 1 })
+      setDockTab('settings')
+      setDirty(true)
+    },
+    [buildNode],
   )
 
   /** Templates (a curated preset or a saved Page Template) insert several blocks at once. */
@@ -227,11 +248,14 @@ export const VisualEditorView: React.FC = () => {
         case 'reorder':
           reorderBlock(msg.containerPath, msg.from, msg.to)
           break
+        case 'drop':
+          addBlockAt(msg.blockType, msg.containerPath, msg.at)
+          break
       }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [deleteBlock, duplicateBlock, moveBlock, reorderBlock])
+  }, [deleteBlock, duplicateBlock, moveBlock, reorderBlock, addBlockAt])
 
   // Pushes the current tree + selection down to the frame whenever either
   // changes (including every keystroke made in the field panel), and once
@@ -304,21 +328,20 @@ export const VisualEditorView: React.FC = () => {
           >
             Back
           </a>
+          <button
+            type="button"
+            className="ve-btn ve-btn--ghost ve-btn--icon"
+            onClick={() => setDockCollapsed((c) => !c)}
+            aria-label={dockCollapsed ? 'Show panel' : 'Collapse panel'}
+            title={dockCollapsed ? 'Show panel' : 'Collapse panel'}
+          >
+            {dockCollapsed ? '»' : '«'}
+          </button>
           <span className="ve-topbar__title">
             Visual editor - {docTitle} {status && <span className="ve-topbar__status">({status})</span>}
           </span>
         </div>
         <div className="ve-topbar__actions">
-          <button
-            type="button"
-            className="ve-btn ve-btn--ghost"
-            onClick={() => {
-              setInsertTarget({ containerPath: [], at: blocks.length })
-              setDockTab('elements')
-            }}
-          >
-            + Add element
-          </button>
           <div className="ve-device-toggle" role="group" aria-label="Preview device">
             <button
               type="button"
@@ -364,6 +387,7 @@ export const VisualEditorView: React.FC = () => {
 
       <div className="ve-body">
         <EditorDock
+          collapsed={dockCollapsed}
           tab={dockTab}
           onTabChange={setDockTab}
           targetLabel={insertTarget.containerPath.length === 0 ? 'the page' : 'this column'}

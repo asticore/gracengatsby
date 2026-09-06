@@ -1,8 +1,9 @@
 import type { CollectionConfig, Where } from '@/engine'
 
-import { and, eq, like, sql } from 'drizzle-orm'
+import { and, desc, eq, like, sql } from 'drizzle-orm'
 import type { AnySQLiteTable, SQLiteColumn } from 'drizzle-orm/sqlite-core'
 
+import { capitalize, type GroupFieldMeta } from './schema/generate'
 import { getDb } from './connect'
 import { buildWhere } from './where'
 
@@ -13,6 +14,82 @@ export type BlockTypeDef = { table: AnySQLiteTable; relsFieldTargets: Record<str
 
 /** The shared `_rels` table for a parent table - what generateRelsTable produces. */
 export type RelsTableDef = { table: AnySQLiteTable; targetColumns: Record<string, string> }
+
+/**
+ * Reconstructs `group` fields' nested-object document shape from a flat,
+ * prefixed drizzle row (`{ seoMetaTitle: ... }` -> `{ seo: { metaTitle: ... } }`)
+ * - shared by createCollectionOps (the live table) and createVersionsOps (the
+ * `_<table>_v` table), since generateVersionsTable derives the exact same
+ * groupFields metadata and JS property-key convention from the same field
+ * list, just with `version_`-prefixed columns underneath.
+ */
+function nestGroups(row: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
+  if (!groupFields.length) return row
+  const result: Record<string, unknown> = { ...row }
+  for (const { name, subFieldNames } of groupFields) {
+    const group: Record<string, unknown> = {}
+    for (const subName of subFieldNames) {
+      const jsKey = `${name}${capitalize(subName)}`
+      group[subName] = result[jsKey]
+      delete result[jsKey]
+    }
+    result[name] = group
+  }
+  return result
+}
+
+/** The reverse of nestGroups - flattens a document's nested group objects back into the prefixed JS keys the drizzle table actually has, for insert/update. */
+function flattenGroups(data: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
+  if (!groupFields.length) return data
+  const result: Record<string, unknown> = { ...data }
+  for (const { name, subFieldNames } of groupFields) {
+    if (!(name in result)) continue
+    const groupValue = (result[name] as Record<string, unknown>) ?? {}
+    delete result[name]
+    for (const subName of subFieldNames) {
+      result[`${name}${capitalize(subName)}`] = groupValue[subName]
+    }
+  }
+  return result
+}
+
+/**
+ * Read/write for the parallel `_<table>_v` versions table generateVersionsTable
+ * produces - deliberately minimal, matching what that generator supports so
+ * far (top-level scalar/group fields only, no versioned array/blocks/rels
+ * child tables yet - see ../schema/generate.ts's generateVersionsTable doc
+ * comment for why). Not folded into createCollectionOps' create/updateByID:
+ * whether every live write should also create a version row, and how
+ * `_status`/`latest`/draft-vs-published reads should behave, is an
+ * application/Payload-level policy question this data layer does not need to
+ * settle to prove the schema and the basic row shape are right - see
+ * ../index.ts.
+ */
+export function createVersionsOps(table: AnySQLiteTable, groupFields: GroupFieldMeta[] = []) {
+  const columns = table as unknown as Record<string, SQLiteColumn>
+
+  async function findLatestByParentID(parentId: number): Promise<Record<string, unknown> | null> {
+    const db = await getDb()
+    const [row] = await db.select().from(table).where(eq(columns.parentId, parentId)).orderBy(desc(columns.id)).limit(1)
+    return row ? nestGroups(row as Record<string, unknown>, groupFields) : null
+  }
+
+  async function findAllByParentID(parentId: number): Promise<Record<string, unknown>[]> {
+    const db = await getDb()
+    const rows = await db.select().from(table).where(eq(columns.parentId, parentId)).orderBy(desc(columns.id))
+    return rows.map((row) => nestGroups(row as Record<string, unknown>, groupFields))
+  }
+
+  async function createVersion(parentId: number, data: Record<string, unknown>, opts: { latest?: boolean } = {}): Promise<Record<string, unknown>> {
+    const db = await getDb()
+    const now = new Date().toISOString()
+    const values = { ...flattenGroups(data, groupFields), parentId, createdAt: now, updatedAt: now, latest: opts.latest ?? true }
+    const [row] = await db.insert(table).values(values).returning()
+    return nestGroups(row as Record<string, unknown>, groupFields)
+  }
+
+  return { findLatestByParentID, findAllByParentID, createVersion }
+}
 
 /**
  * One set of find/create/update/delete operations, generic over any table
@@ -68,13 +145,14 @@ export function createCollectionOps(
     relsTable?: RelsTableDef
     topLevelRelsFieldTargets?: Record<string, string>
     blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }>
+    groupFields?: GroupFieldMeta[]
   } = {},
 ) {
   const columns = table as unknown as Record<string, SQLiteColumn>
   const idColumn = columns.id
   const arrayFieldNames = Object.keys(arrayTables)
 
-  const { relsTable, topLevelRelsFieldTargets = {}, blocksFields = {} } = rels
+  const { relsTable, topLevelRelsFieldTargets = {}, blocksFields = {}, groupFields = [] } = rels
   const relsColumns = relsTable ? (relsTable.table as unknown as Record<string, SQLiteColumn>) : undefined
   const topLevelRelsFieldNames = Object.keys(topLevelRelsFieldTargets)
   const blocksFieldNames = Object.keys(blocksFields)
@@ -291,7 +369,8 @@ export function createCollectionOps(
   }
 
   async function attachExtras(doc: Doc): Promise<Doc> {
-    return attachBlocksFields(await attachTopLevelRels(await attachArrays(doc)))
+    const withExtras = await attachBlocksFields(await attachTopLevelRels(await attachArrays(doc)))
+    return nestGroups(withExtras, groupFields) as Doc
   }
 
   async function findMany(args: { where?: Where; limit?: number } = {}): Promise<Doc[]> {
@@ -325,7 +404,7 @@ export function createCollectionOps(
     const db = await getDb()
     const now = new Date().toISOString()
     const { scalars, arrays, topLevelRels, blocks } = splitSpecialFields(data)
-    const values = { ...defaults, ...scalars, updatedAt: now, createdAt: now }
+    const values = { ...defaults, ...flattenGroups(scalars, groupFields), updatedAt: now, createdAt: now }
     const [row] = await db.insert(table).values(values).returning()
     const id = (row as Doc).id
     await writeArrays(id, arrays)
@@ -339,7 +418,7 @@ export function createCollectionOps(
     const { scalars, arrays, topLevelRels, blocks } = splitSpecialFields(data)
     const [row] = await db
       .update(table)
-      .set({ ...scalars, updatedAt: new Date().toISOString() })
+      .set({ ...flattenGroups(scalars, groupFields), updatedAt: new Date().toISOString() })
       .where(eq(idColumn, id))
       .returning()
     if (!row) return null

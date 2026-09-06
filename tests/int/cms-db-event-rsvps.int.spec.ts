@@ -48,6 +48,12 @@ describe('cms/db - event-rsvps (proof of concept, not wired in)', () => {
     // drift pre-dating this suite, unrelated to the code under test). A raw
     // delete sidesteps that unrelated, pre-existing path entirely.
     const db = await getDb()
+    // Events has versions/drafts enabled (see cms-db-events.int.spec.ts), so
+    // engine.create() above also created a row in _eg_events_v - delete it
+    // before the live row, since the live row's delete only sets that row's
+    // parent_id to null (its FK is ON DELETE set null, not cascade) rather
+    // than removing it.
+    await db.run(sql`delete from _eg_events_v where parent_id = ${eventId}`)
     await db.run(sql`delete from eg_events where id = ${eventId}`)
   })
 

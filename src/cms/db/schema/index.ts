@@ -1,12 +1,13 @@
 import type { Field } from '@/engine'
 
 import { EventRSVPs } from '@/collections/EventRSVPs'
+import { Events } from '@/collections/Events'
 import { Faqs } from '@/collections/Faqs'
 import { Media } from '@/collections/Media'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
-import { generateArrayTable, generateBlockTables, generateRelsTable, generateTable, relationTargetSlugs, tableNameFor } from './generate'
+import { generateArrayTable, generateBlockTables, generateRelsTable, generateTable, generateVersionsTable, relationTargetSlugs, tableNameFor } from './generate'
 
 /**
  * Tables generated straight from the real collection configs, not
@@ -26,7 +27,7 @@ import { generateArrayTable, generateBlockTables, generateRelsTable, generateTab
  *    (pageTemplatesRels) rather than becoming columns of their own. See
  *    ./generate.ts's generateBlockTables/generateRelsTable doc comments for
  *    the real D1 shapes this mirrors, confirmed by creating a real document
- *    through Payload's own engine and inspecting the resulting tables.
+ *    through Payload's own engine and inspecting the resulling tables.
  */
 const faqsGenerated = generateTable(Faqs)
 export const faqs = faqsGenerated.table
@@ -84,3 +85,21 @@ function singleTargetSlug(field: Field & { name: string }): string {
   }
   return slugs[0]
 }
+
+/**
+ * Events: adds `group` fields (`location` - flattened onto this table with a
+ * `location_` column prefix, confirmed against eg_events, and reconstructed
+ * as a nested `location` object in the document shape) and `versions: {
+ * drafts: true }` (the parallel `_eg_events_v` table - see
+ * generateVersionsTable's doc comment for the real shape this mirrors).
+ * Events also has a `join` field (`rsvps`) - skipped entirely for now (see
+ * ./generate.ts's processFields doc comment), so this data layer's Events
+ * documents do not include `rsvps` yet; that is the "joins" phase, not this
+ * one, and Events was chosen over Pages/Posts/Courses specifically because
+ * it is the smallest real versioned collection that does NOT also require
+ * blocks/array-in-versions support (which generateVersionsTable does not
+ * build yet either) or a working join to be usable.
+ */
+export const eventsGenerated = generateTable(Events)
+export const events = eventsGenerated.table
+export const eventsVersions = generateVersionsTable(Events, eventsGenerated.tableName).table

@@ -5,6 +5,36 @@ import toSnakeCase from 'to-snake-case'
 
 type NamedField = Field & { name: string }
 
+/** One `group` field's reconstruction metadata - see processFields' group handling and ../generic.ts's nestGroups/flattenGroups. */
+export type GroupFieldMeta = { name: string; subFieldNames: string[] }
+
+export function capitalize(value: string): string {
+  return value.length ? value[0].toUpperCase() + value.slice(1) : value
+}
+
+/**
+ * True when a collection has drafts enabled - the only versions shape this
+ * app uses (confirmed by grep across src/collections and src/features: every
+ * other collection is `versions: false`). Checked as a truthy value, not
+ * `=== true`: every collection here is authored as `versions: { drafts: true }`,
+ * but Payload's own config sanitisation (run once, by importing
+ * @/engage.config, before anything reads these configs for real) normalises
+ * that shorthand into a full DraftsConfig OBJECT in place on the very same
+ * CollectionConfig object this module imports - so by the time a real test
+ * or the real app reads it, `.versions.drafts` is an object, not `true`.
+ * Confirmed by hitting this the hard way: a strict `=== true` check passed
+ * against the raw unsanitised module but failed at runtime once
+ * @/engage.config had run.
+ */
+export function hasDrafts(collection: CollectionConfig): boolean {
+  return typeof collection.versions === 'object' && collection.versions !== null && Boolean(collection.versions.drafts)
+}
+
+/** The implicit `_status` column Payload adds to both the live and (double-prefixed) versions table whenever drafts are enabled - confirmed against the real eg_pages/eg_events (`_status`) and _eg_pages_v/_eg_events_v (`version__status`) columns; not declared in any collection's own `fields`. */
+function statusColumn(dbNamePrefix: string) {
+  return text(`${dbNamePrefix}_status`).default('draft')
+}
+
 /**
  * Derives a drizzle table from a real Payload CollectionConfig - the
  * generalisation promised in ../index.ts, proven against real collections
@@ -20,21 +50,41 @@ type NamedField = Field & { name: string }
  *   checkbox                                            -> integer column, boolean mode
  *   relationship, upload (single target, not hasMany)   -> integer `<name>_id` column
  *   row, collapsible                                    -> flattened, fields promoted onto this table
+ *   group                                                -> flattened onto this table too, but with the group's
+ *                                                          name prefixed onto each column (`seo_meta_title`, not
+ *                                                          `meta_title`) - confirmed against eg_pages/eg_events -
+ *                                                          and reconstructed as a nested object in the document
+ *                                                          shape, unlike row/collapsible which stay flat there too
  *   array                                                -> a child table, see generateArrayTable
  *   blocks                                               -> one child table per block type, see generateBlockTables
  *   hasMany/polymorphic relationship or upload           -> bucketed as a relsField, see generateRelsTable
+ *   join                                                 -> skipped entirely, no column - Payload resolves it at
+ *                                                          query time against the related collection, which this
+ *                                                          module does not do yet (the "joins" phase - see ../index.ts)
  *
- * NOT supported yet (throws): group, tabs, join, hasMany select, and
- * `timestamps: false` (every generated table gets updatedAt/createdAt). Each
- * needs different modelling and is a later phase - see ../index.ts.
+ * `versions: { drafts: true }` on the collection adds the implicit `_status`
+ * column Payload adds itself (confirmed against eg_pages/eg_events - not a
+ * declared field), and generateVersionsTable derives the parallel
+ * `_<table>_v` table from the exact same field list.
+ *
+ * NOT supported yet (throws): tabs, hasMany select, group/array/blocks
+ * nesting inside one another or inside a hasMany-relational field's own
+ * fields, and `timestamps: false` (every generated table gets
+ * updatedAt/createdAt). Each needs different modelling - see ../index.ts.
  */
 export function generateTable(collection: CollectionConfig) {
   if (typeof collection.dbName === 'function') {
     throw new Error(`generateTable(${collection.slug}): a function dbName is not supported yet.`)
   }
   const tableName = tableNameFor(collection)
+  // A draft save must be allowed to leave required fields empty, so Payload
+  // never emits a SQL NOT NULL for `required` on a collection with drafts
+  // enabled - confirmed by inspecting real DDL: eg_faqs.question (required,
+  // no drafts) is NOT NULL, but eg_events.title / eg_events.start_date and
+  // eg_pages.title (all required, both collections have drafts) are not.
+  const suppressRequired = hasDrafts(collection)
 
-  const { columns: fieldColumns, arrayFields, blocksFields, relsFields } = processFields(collection.slug, collection.fields)
+  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collection.slug, collection.fields, '', suppressRequired)
 
   const columns: Record<string, SQLiteColumnBuilderBase> = {
     id: integer('id').primaryKey({ autoIncrement: true }),
@@ -42,8 +92,62 @@ export function generateTable(collection: CollectionConfig) {
   }
   columns.updatedAt = text('updated_at').notNull()
   columns.createdAt = text('created_at').notNull()
+  if (hasDrafts(collection)) {
+    columns._status = statusColumn('')
+  }
 
-  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields }
+  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields }
+}
+
+/**
+ * The parallel `_<table>_v` table Payload creates for a collection with
+ * `versions: { drafts: true }` - one row per saved version (not one row per
+ * document), confirmed against the real _eg_pages_v/_eg_events_v tables:
+ * every field the live table has gets a `version_`-prefixed column here (the
+ * live doc's value AT THAT VERSION), plus this row's own bookkeeping
+ * (`id`, `parent_id` - nullable, set null on the live doc's delete rather
+ * than cascading - `created_at`/`updated_at` for when the version itself was
+ * saved, and `latest`, a flag marking the current version for that parent).
+ *
+ * Deliberately narrow like the rest of this module: only top-level
+ * scalar/group fields are supported - a collection whose `blocks`/`array`
+ * fields would need their own versioned child tables (confirmed these exist
+ * too, e.g. `_eg_pages_v_blocks_hero`, with a different id scheme - integer
+ * `id` plus an extra `_uuid` column, unlike the live table's string `id`)
+ * throws rather than silently dropping that data. See ../index.ts for why
+ * this is the next real step, not the last one.
+ */
+export function generateVersionsTable(collection: CollectionConfig, mainTableName: string) {
+  if (!hasDrafts(collection)) {
+    throw new Error(`generateVersionsTable(${collection.slug}): versions.drafts is not enabled on this collection - nothing to generate.`)
+  }
+  // Always suppressed here regardless: a version row is a draft snapshot by
+  // definition, never subject to a live NOT NULL constraint even when the
+  // collection's own live table happens to have one (it never does once
+  // drafts are enabled - see generateTable - but this stays explicit rather
+  // than relying on that).
+  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collection.slug, collection.fields, 'version_', true)
+  if (arrayFields.length || blocksFields.length || relsFields.length) {
+    const [culprit] = [...arrayFields, ...blocksFields, ...relsFields]
+    throw new Error(
+      `generateVersionsTable(${collection.slug}): versioned array/blocks/hasMany-relationship child tables (e.g. "${culprit.name}") are not supported yet - only top-level scalar/group fields.`,
+    )
+  }
+
+  const tableName = `_${mainTableName}_v`
+  const columns: Record<string, SQLiteColumnBuilderBase> = {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    parentId: integer('parent_id'),
+    ...fieldColumns,
+    versionUpdatedAt: text('version_updated_at'),
+    versionCreatedAt: text('version_created_at'),
+    _status: statusColumn('version_'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+    latest: integer('latest', { mode: 'boolean' }),
+  }
+
+  return { table: sqliteTable(tableName, columns), tableName, groupFields }
 }
 
 /** The table name Payload would use for a collection - `dbName` if set, else its slug, snake-cased. */
@@ -61,7 +165,7 @@ export function tableNameFor(collection: CollectionConfig): string {
  * exactly this shape), a string `id` per array row, then the array's own
  * subfields as columns. One row per array item, not one row per document.
  */
-export function generateArrayTable(collectionSlug: string, parentTableName: string, field: NamedField) {
+export function generateArrayTable(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false) {
   if (field.type !== 'array') {
     throw new Error(`generateArrayTable(${collectionSlug}): field "${field.name}" is not an array field.`)
   }
@@ -74,7 +178,7 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
   }
 
   const subFields = (field as unknown as { fields: Field[] }).fields
-  const { columns: subColumns, arrayFields, blocksFields, relsFields } = processFields(collectionSlug, subFields)
+  const { columns: subColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collectionSlug, subFields, '', suppressRequired)
   if (arrayFields.length) {
     throw new Error(`generateArrayTable(${collectionSlug}): nested array "${arrayFields[0].name}" inside array "${field.name}" is not supported yet.`)
   }
@@ -85,6 +189,9 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
     throw new Error(
       `generateArrayTable(${collectionSlug}): hasMany/polymorphic relationship "${relsFields[0].name}" inside array "${field.name}" is not supported yet.`,
     )
+  }
+  if (groupFields.length) {
+    throw new Error(`generateArrayTable(${collectionSlug}): group field "${groupFields[0].name}" inside array "${field.name}" is not supported yet.`)
   }
   Object.assign(columns, subColumns)
 
@@ -116,7 +223,7 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
  * the same as its 1-based `_order` value, and NOT scoped to the block's own
  * table (there is no such thing as a block-level `_rels` table).
  */
-export function generateBlockTables(collectionSlug: string, parentTableName: string, field: NamedField) {
+export function generateBlockTables(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false) {
   if (field.type !== 'blocks') {
     throw new Error(`generateBlockTables(${collectionSlug}): field "${field.name}" is not a blocks field.`)
   }
@@ -124,12 +231,15 @@ export function generateBlockTables(collectionSlug: string, parentTableName: str
 
   return blockDefs.map((block) => {
     const tableName = `${parentTableName}_blocks_${toSnakeCase(block.slug)}`
-    const { columns: fieldColumns, arrayFields, blocksFields, relsFields } = processFields(collectionSlug, block.fields)
+    const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collectionSlug, block.fields, '', suppressRequired)
     if (arrayFields.length) {
       throw new Error(`generateBlockTables(${collectionSlug}): array field "${arrayFields[0].name}" inside block "${block.slug}" is not supported yet.`)
     }
     if (blocksFields.length) {
       throw new Error(`generateBlockTables(${collectionSlug}): nested blocks field inside block "${block.slug}" is not supported yet.`)
+    }
+    if (groupFields.length) {
+      throw new Error(`generateBlockTables(${collectionSlug}): group field "${groupFields[0].name}" inside block "${block.slug}" is not supported yet.`)
     }
 
     const columns: Record<string, SQLiteColumnBuilderBase> = {
@@ -212,17 +322,35 @@ function isHasManyRelational(field: NamedField): boolean {
 
 /**
  * Walks a field list (flattening row/collapsible wrappers) and buckets each
- * field into columns-to-generate, array fields, blocks fields, or
- * hasMany/polymorphic relational fields - the same triage generateTable,
- * generateArrayTable and generateBlockTables all need, factored out once.
+ * field into columns-to-generate, array fields, blocks fields,
+ * hasMany/polymorphic relational fields, or group fields - the same triage
+ * generateTable, generateArrayTable, generateBlockTables and
+ * generateVersionsTable all need, factored out once.
+ *
+ * `dbNamePrefix` is how generateVersionsTable gets `version_`-prefixed
+ * column names out of the exact same field list and the exact same JS
+ * property keys as the live table (so callers can read `.title` off either
+ * a live or a version row without caring which) - see generateVersionsTable.
+ *
+ * `join` fields are skipped entirely: Payload does not back them with a
+ * column at all (confirmed against the real eg_events table - no `rsvps`
+ * column exists for its `rsvps` join field), it resolves them at query time
+ * against the related collection's own relationship field. That
+ * query-time-join resolution is the "joins" phase in ../index.ts's roadmap,
+ * not this one - for now, a join field's data simply is not part of the
+ * document this data layer returns.
  */
-function processFields(collectionSlug: string, fields: Field[]) {
+function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '', suppressRequired = false) {
   const columns: Record<string, SQLiteColumnBuilderBase> = {}
   const arrayFields: NamedField[] = []
   const blocksFields: NamedField[] = []
   const relsFields: NamedField[] = []
+  const groupFields: GroupFieldMeta[] = []
 
   for (const field of walkFields(collectionSlug, fields)) {
+    if (field.type === 'join') {
+      continue
+    }
     if (field.type === 'array') {
       arrayFields.push(field)
       continue
@@ -231,14 +359,35 @@ function processFields(collectionSlug: string, fields: Field[]) {
       blocksFields.push(field)
       continue
     }
+    if (field.type === 'group') {
+      const subFields = (field as unknown as { fields: Field[] }).fields
+      const groupDbPrefix = `${dbNamePrefix}${toSnakeCase(field.name)}_`
+      const subFieldNames: string[] = []
+      for (const subField of walkFields(collectionSlug, subFields)) {
+        if (subField.type === 'array' || subField.type === 'blocks' || subField.type === 'group' || subField.type === 'join') {
+          throw new Error(
+            `generateTable(${collectionSlug}): group "${field.name}" may only contain plain fields - "${subField.name}" (${subField.type}) inside a group is not supported yet.`,
+          )
+        }
+        if (isHasManyRelational(subField)) {
+          throw new Error(
+            `generateTable(${collectionSlug}): hasMany/polymorphic relationship "${subField.name}" inside group "${field.name}" is not supported yet.`,
+          )
+        }
+        columns[`${field.name}${capitalize(subField.name)}`] = columnFor(collectionSlug, subField, groupDbPrefix, suppressRequired)
+        subFieldNames.push(subField.name)
+      }
+      groupFields.push({ name: field.name, subFieldNames })
+      continue
+    }
     if (isHasManyRelational(field)) {
       relsFields.push(field)
       continue
     }
-    columns[field.name] = columnFor(collectionSlug, field)
+    columns[field.name] = columnFor(collectionSlug, field, dbNamePrefix, suppressRequired)
   }
 
-  return { columns, arrayFields, blocksFields, relsFields }
+  return { columns, arrayFields, blocksFields, relsFields, groupFields }
 }
 
 /**
@@ -266,9 +415,12 @@ function* walkFields(collectionSlug: string, fields: Field[]): Generator<NamedFi
   }
 }
 
-function columnFor(collectionSlug: string, field: NamedField): SQLiteColumnBuilderBase {
-  const columnName = toSnakeCase(field.name)
-  const required = 'required' in field && field.required === true
+function columnFor(collectionSlug: string, field: NamedField, dbNamePrefix = '', suppressRequired = false): SQLiteColumnBuilderBase {
+  const columnName = `${dbNamePrefix}${toSnakeCase(field.name)}`
+  // See generateTable's suppressRequired comment: a collection with drafts
+  // enabled never gets a SQL NOT NULL from `required`, live table or version
+  // table alike - confirmed against real DDL, not assumed.
+  const required = !suppressRequired && 'required' in field && field.required === true
 
   // Typed loosely: text/numeric/integer each return a different concrete
   // builder subtype, and only the concrete subtype (not the shared

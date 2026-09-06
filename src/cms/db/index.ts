@@ -29,6 +29,22 @@
  * part of the parent document's find/create/update, matching Payload's
  * document shape.
  *
+ * Phase 4 added `blocks` fields and hasMany/polymorphic relationship/upload
+ * fields together, because in this app's real config the second only ever
+ * shows up inside the first (see src/blocks/Faq.ts's `faqs` and
+ * src/blocks/Gallery.ts's `images` - nothing here has a plain top-level
+ * hasMany field). Proven against PageTemplates, whose `blocks` field uses the
+ * full page-builder block library: one child table per block type (e.g.
+ * eg_page_templates_blocks_hero, eg_page_templates_blocks_faq - not one
+ * shared table for every block type), with `_order` sequential across every
+ * block type sharing the field, and hasMany/polymorphic subfields writing
+ * into the collection's single shared `_rels` table
+ * (eg_page_templates_rels) rather than a table of their own - confirmed by
+ * creating a real document through Payload's own engine.create() and
+ * inspecting the D1 tables it produced, not guessed. See
+ * ./schema/generate.ts's generateBlockTables/generateRelsTable doc comments
+ * for the full shape.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -36,15 +52,15 @@
  * drafts and joins for it. Running this app's actual config through
  * `payload generate:db-schema` produces over 10,000 lines of table
  * definitions alone - that is the real size of the surface a from-scratch
- * generic replacement has to cover. This app actively uses hasMany/
- * polymorphic relationships, blocks, versions, drafts and joins (see
- * src/collections/{Events,Pages,Posts}.ts and
- * src/features/courses/collections/Courses.ts) - each needs a child table
- * (`_rels`, blocks-as-child-tables, `_v` version tables) and query-side joins
- * that the generator and generic ops here do not build yet. Next up, in
- * roughly this order: hasMany/polymorphic relationships (`_rels` tables),
- * blocks, then versions/drafts, then joins - each proven against a real
- * collection with the same write-both-ways parity test before moving on.
+ * generic replacement has to cover. This app actively uses versions, drafts
+ * and joins (see src/collections/{Events,Pages,Posts}.ts and
+ * src/features/courses/collections/Courses.ts) - versions need a parallel
+ * `_<table>_v` table set (with its own id quirks - a versioned array/block
+ * child table uses an integer `id` plus an extra `_uuid` column, unlike the
+ * live table's string `id`) and joins need query-side assembly that the
+ * generator and generic ops here do not build yet. Next up: versions/drafts,
+ * then joins - each proven against a real collection with the same
+ * write-both-ways parity test before moving on.
  *
  * See src/engine/index.ts for the seam this is meant to eventually replace
  * and the rules that govern it (only src/engine/ may import the vendor
@@ -54,3 +70,4 @@
 export * from './collections/faqs'
 export * from './collections/eventRSVPs'
 export * from './collections/membershipTiers'
+export * from './collections/pageTemplates'

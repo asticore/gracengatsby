@@ -1,8 +1,12 @@
+import type { Field } from '@/engine'
+
 import { EventRSVPs } from '@/collections/EventRSVPs'
 import { Faqs } from '@/collections/Faqs'
+import { Media } from '@/collections/Media'
+import { PageTemplates } from '@/collections/PageTemplates'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
-import { generateArrayTable, generateTable } from './generate'
+import { generateArrayTable, generateBlockTables, generateRelsTable, generateTable, relationTargetSlugs, tableNameFor } from './generate'
 
 /**
  * Tables generated straight from the real collection configs, not
@@ -15,6 +19,14 @@ import { generateArrayTable, generateTable } from './generate'
  *  - MembershipTiers: adds row-wrapped fields (flattened onto this table,
  *    same as Payload's own schema does) and an array field (`benefits`,
  *    which needs its own child table - see membershipTiersBenefits below).
+ *  - PageTemplates: adds a `blocks` field (one child table per block type -
+ *    see pageTemplatesBlocks below) and, inside two of those block types
+ *    (Faq's `faqs`, Gallery's `images`), hasMany relationship/upload fields -
+ *    these write into the collection's single shared `_rels` table
+ *    (pageTemplatesRels) rather than becoming columns of their own. See
+ *    ./generate.ts's generateBlockTables/generateRelsTable doc comments for
+ *    the real D1 shapes this mirrors, confirmed by creating a real document
+ *    through Payload's own engine and inspecting the resulting tables.
  */
 const faqsGenerated = generateTable(Faqs)
 export const faqs = faqsGenerated.table
@@ -27,3 +39,48 @@ export const membershipTiers = membershipTiersGenerated.table
 
 const [benefitsField] = membershipTiersGenerated.arrayFields
 export const membershipTiersBenefits = generateArrayTable(MembershipTiers.slug, membershipTiersGenerated.tableName, benefitsField)
+
+const pageTemplatesGenerated = generateTable(PageTemplates)
+export const pageTemplates = pageTemplatesGenerated.table
+
+const [blocksField] = pageTemplatesGenerated.blocksFields
+const pageTemplatesBlockDefs = generateBlockTables(PageTemplates.slug, pageTemplatesGenerated.tableName, blocksField)
+
+export const pageTemplatesBlocks = Object.fromEntries(pageTemplatesBlockDefs.map((block) => [block.slug, block.table]))
+
+/**
+ * PageTemplates only ever references two other collections through
+ * hasMany/polymorphic fields (Faq's `faqs`, Gallery's `images`) - resolved
+ * here rather than in ./generate.ts, which does not import every collection
+ * config, only the ones a given entry in this file actually needs.
+ */
+function resolveTargetTable(slug: string): string {
+  if (slug === Faqs.slug) return tableNameFor(Faqs)
+  if (slug === Media.slug) return tableNameFor(Media)
+  throw new Error(`cms/db/schema: no known table for target collection "${slug}" - add it to resolveTargetTable in schema/index.ts.`)
+}
+
+const pageTemplatesRelsFields = [...pageTemplatesGenerated.relsFields, ...pageTemplatesBlockDefs.flatMap((block) => block.relsFields)]
+const pageTemplatesRelsGenerated = generateRelsTable(pageTemplatesGenerated.tableName, pageTemplatesRelsFields, resolveTargetTable)
+export const pageTemplatesRels = pageTemplatesRelsGenerated.table
+
+/** Block slug -> { table, relsFieldTargets } - what ../generic.ts's `blocksFields` param wants for the `blocks` field. */
+export const pageTemplatesBlockTypes = Object.fromEntries(
+  pageTemplatesBlockDefs.map((block) => [
+    block.slug,
+    {
+      table: block.table,
+      relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])),
+    },
+  ]),
+)
+
+export const pageTemplatesRelsTargetColumns = pageTemplatesRelsGenerated.targetColumns
+
+function singleTargetSlug(field: Field & { name: string }): string {
+  const slugs = relationTargetSlugs(field)
+  if (slugs.length !== 1) {
+    throw new Error(`cms/db/schema: polymorphic relationTo on field "${field.name}" is not supported yet.`)
+  }
+  return slugs[0]
+}

@@ -6,6 +6,7 @@ import { Faqs } from '@/collections/Faqs'
 import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
+import { Posts } from '@/collections/Posts'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
 import { generateArrayTable, generateBlockTables, generateRelsTable, generateTable, generateVersionsTable, relationTargetSlugs, tableNameFor } from './generate'
@@ -165,3 +166,60 @@ export const pagesVersionsBlockTypes = Object.fromEntries(
   ]),
 )
 export const pagesVersionsRelsTargetColumns = pagesVersionsRelsGenerated.targetColumns
+
+/**
+ * Posts: adds a versioned ARRAY field (`categories`) on top of everything
+ * Pages already proved (versioned `blocks`/`_rels` - Posts' `layout` field
+ * uses the same page-builder library) - the one remaining gap
+ * generateVersionsTable had. Confirmed against real
+ * `_eg_posts_v_version_categories`: table name gets a "version_" infix
+ * before the field name (`_eg_posts_v_version_categories`, not
+ * `_eg_posts_v_categories`) - unlike blocks tables, which never get that
+ * infix - while the subfield COLUMNS themselves stay unprefixed
+ * (`.name`, not `.version_name`). See generateArrayTable's `versioned`
+ * param doc comment for the full shape (integer autoincrement `id` plus an
+ * extra `_uuid` column, same scheme as versioned blocks).
+ */
+export const postsGenerated = generateTable(Posts)
+export const posts = postsGenerated.table
+
+const [postsCategoriesField] = postsGenerated.arrayFields
+export const postsCategories = generateArrayTable(Posts.slug, postsGenerated.tableName, postsCategoriesField)
+
+const [postsBlocksField] = postsGenerated.blocksFields
+const postsBlockDefs = generateBlockTables(Posts.slug, postsGenerated.tableName, postsBlocksField)
+export const postsBlocks = Object.fromEntries(postsBlockDefs.map((block) => [block.slug, block.table]))
+
+const postsRelsFields = [...postsGenerated.relsFields, ...postsBlockDefs.flatMap((block) => block.relsFields)]
+const postsRelsGenerated = generateRelsTable(postsGenerated.tableName, postsRelsFields, resolveTargetTable)
+export const postsRels = postsRelsGenerated.table
+
+export const postsBlockTypes = Object.fromEntries(
+  postsBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+export const postsRelsTargetColumns = postsRelsGenerated.targetColumns
+
+export const postsVersionsGenerated = generateVersionsTable(Posts, postsGenerated.tableName)
+export const postsVersions = postsVersionsGenerated.table
+
+const [postsVersionsCategoriesField] = postsVersionsGenerated.arrayFields
+export const postsVersionsCategories = generateArrayTable(Posts.slug, postsVersionsGenerated.tableName, postsVersionsCategoriesField, true, true)
+
+const [postsVersionsBlocksField] = postsVersionsGenerated.blocksFields
+const postsVersionsBlockDefs = generateBlockTables(Posts.slug, postsVersionsGenerated.tableName, postsVersionsBlocksField, true, true)
+export const postsVersionsBlocks = Object.fromEntries(postsVersionsBlockDefs.map((block) => [block.slug, block.table]))
+
+const postsVersionsRelsFields = [...postsVersionsGenerated.relsFields, ...postsVersionsBlockDefs.flatMap((block) => block.relsFields)]
+const postsVersionsRelsGenerated = generateRelsTable(postsVersionsGenerated.tableName, postsVersionsRelsFields, resolveTargetTable)
+export const postsVersionsRels = postsVersionsRelsGenerated.table
+
+export const postsVersionsBlockTypes = Object.fromEntries(
+  postsVersionsBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+export const postsVersionsRelsTargetColumns = postsVersionsRelsGenerated.targetColumns

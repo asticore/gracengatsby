@@ -90,6 +90,31 @@
  *    used for the live table's own id - both now share one
  *    createBlocksRelsOps implementation.
  *
+ * Phase 7 closed the last schema-generation gap: versioned ARRAY child
+ * tables. Proven against Posts (the only versioned collection with a
+ * top-level array field, `categories` - Posts also has `blocks`/nested
+ * hasMany, on top of what Pages/Phase 6 already proved, so this is the
+ * fullest single collection this data layer models yet). Confirmed against
+ * real `_eg_posts_v_version_categories`:
+ *
+ *  - The TABLE name gets a "version_" infix before the field name
+ *    (`_eg_posts_v_version_categories`, not `_eg_posts_v_categories`) -
+ *    unlike blocks tables, which never get that infix at all
+ *    (`_eg_pages_v_blocks_hero`, confirmed in Phase 6).
+ *  - The subfield COLUMNS themselves stay unprefixed regardless
+ *    (`.name`, not `.version_name`) - only the table name carries the
+ *    "version_" marker.
+ *  - Row identity is the same scheme Phase 6 established for blocks: an
+ *    integer autoincrement `id` plus an extra `_uuid` text column, instead
+ *    of the live table's string `id`, and `_parent_id` points at the
+ *    VERSION ROW's own id, not the live document's.
+ *
+ * ./schema/generate.ts's generateArrayTable gained the same `versioned`
+ * param generateBlockTables already had, and ./generic.ts's createArrayOps
+ * (extracted from createCollectionOps' formerly-inline attachArrays/
+ * writeArrays, mirroring createBlocksRelsOps' extraction in Phase 6) is what
+ * lets createVersionsOps share that logic instead of reimplementing it.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -97,15 +122,10 @@
  * drafts and joins for it. Running this app's actual config through
  * `payload generate:db-schema` produces over 10,000 lines of table
  * definitions alone - that is the real size of the surface a from-scratch
- * generic replacement has to cover. Two things remain:
+ * generic replacement has to cover. Two things remain, and neither is a
+ * schema-generation gap anymore - every field type this app's collections
+ * actually use now has a proven live AND versioned shape:
  *
- *  - Versioned ARRAY child tables (e.g. `_eg_posts_v_version_categories`,
- *    confirmed by inspection - table name is `<versionsTable>_version_<fieldName>`,
- *    with the array's own field name getting the "version_" prefix baked
- *    into the TABLE name, unlike blocks tables which never get that prefix;
- *    subfield COLUMNS do NOT get `version_`-prefixed, only the table name
- *    does) - needed before Posts (the only versioned collection with a
- *    top-level array field, `categories`) can get versions support.
  *  - `join` fields resolved for real (right now they are simply absent from
  *    the document) - query-time assembly against the related collection's
  *    own relationship/hasMany field, e.g. Events' `rsvps` against
@@ -117,9 +137,9 @@
  *    ./generic.ts's doc comment on it) - something will need to decide this
  *    before create/updateByID can be trusted on a drafts-enabled collection.
  *
- * Next up: versioned arrays (proven against Posts), then joins - each proven
- * against a real collection with the same write-both-ways parity test before
- * moving on.
+ * Next up: joins (proven against Events' `rsvps`) - then the draft/publish
+ * policy question above needs an answer before this data layer can be
+ * trusted end-to-end on any drafts-enabled collection.
  *
  * See src/engine/index.ts for the seam this is meant to eventually replace
  * and the rules that govern it (only src/engine/ may import the vendor
@@ -132,3 +152,4 @@ export * from './collections/membershipTiers'
 export * from './collections/pageTemplates'
 export * from './collections/events'
 export * from './collections/pages'
+export * from './collections/posts'

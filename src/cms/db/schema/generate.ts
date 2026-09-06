@@ -118,17 +118,17 @@ export function generateTable(collection: CollectionConfig) {
  * `_eg_pages_v_rels` - confirmed to have the exact same column shape as a
  * live `_rels` table.
  *
- * Still narrow on one thing: `array` fields. A versioned array child table
- * exists too (confirmed against real `_eg_posts_v_version_categories` -
- * table name is `<versionsTable>_version_<fieldName>`, i.e. the array's own
- * field name gets the `version_` prefix baked into the TABLE name, unlike
- * blocks tables which never get that prefix - confirmed `_eg_pages_v_blocks_hero`
- * has no "version_" in it at all - and its subfield COLUMNS do NOT get
- * `version_`-prefixed, only the table name does), but this generator throws
- * on it rather than silently dropping that data, since nothing has needed it
- * proven yet (Pages/PageTemplates, the blocks/rels proof targets, have no
- * array field - Posts does, and is the next real target for this specific
- * gap).
+ * `array` fields ARE supported too (confirmed against real
+ * `_eg_posts_v_version_categories`): the returned `arrayFields` feeds
+ * generateArrayTable(..., versioned: true) - table name is
+ * `<versionsTable>_version_<fieldName>`, i.e. the array's own field name
+ * gets the "version_" prefix baked into the TABLE name (unlike blocks
+ * tables, which never get that prefix at all - confirmed
+ * `_eg_pages_v_blocks_hero` has no "version_" in it anywhere), while its
+ * subfield COLUMNS do NOT get `version_`-prefixed - only the table name
+ * does. See generateArrayTable's `versioned` param doc comment for the rest
+ * of the shape difference (integer autoincrement `id` plus an extra
+ * `_uuid` column, same scheme as versioned blocks).
  */
 export function generateVersionsTable(collection: CollectionConfig, mainTableName: string) {
   if (!hasDrafts(collection)) {
@@ -140,11 +140,6 @@ export function generateVersionsTable(collection: CollectionConfig, mainTableNam
   // drafts are enabled - see generateTable - but this stays explicit rather
   // than relying on that).
   const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collection.slug, collection.fields, 'version_', true)
-  if (arrayFields.length) {
-    throw new Error(
-      `generateVersionsTable(${collection.slug}): versioned array child tables (e.g. "${arrayFields[0].name}") are not supported yet - only blocks and top-level scalar/group fields.`,
-    )
-  }
 
   const tableName = `_${mainTableName}_v`
   const columns: Record<string, SQLiteColumnBuilderBase> = {
@@ -159,7 +154,7 @@ export function generateVersionsTable(collection: CollectionConfig, mainTableNam
     latest: integer('latest', { mode: 'boolean' }),
   }
 
-  return { table: sqliteTable(tableName, columns), tableName, blocksFields, relsFields, groupFields }
+  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields }
 }
 
 /** The table name Payload would use for a collection - `dbName` if set, else its slug, snake-cased. */
@@ -176,17 +171,30 @@ export function tableNameFor(collection: CollectionConfig): string {
  * confirmed against the real eg_membership_tiers_benefits table, which is
  * exactly this shape), a string `id` per array row, then the array's own
  * subfields as columns. One row per array item, not one row per document.
+ *
+ * `versioned` produces the versioned shape instead (pass the VERSIONS
+ * table's own name as `parentTableName`): the table name gets a "version_"
+ * infix before the field name - `<versionsTable>_version_<fieldName>`,
+ * confirmed against real `_eg_posts_v_version_categories` - and the row
+ * identity is an integer autoincrement `id` plus an extra `_uuid` text
+ * column, instead of the live table's string `id`, the same scheme
+ * generateBlockTables' `versioned` param uses. Unlike the table name, the
+ * SUBFIELD columns themselves do NOT get "version_"-prefixed - confirmed
+ * `_eg_posts_v_version_categories.name`, not `.version_name`. `_parent_id`
+ * points at whichever row owns it - for the versioned case that is the
+ * VERSION ROW's own id, exactly like versioned blocks/rels (see
+ * ../generic.ts's createArrayOps, which threads that through).
  */
-export function generateArrayTable(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false) {
+export function generateArrayTable(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false, versioned = false) {
   if (field.type !== 'array') {
     throw new Error(`generateArrayTable(${collectionSlug}): field "${field.name}" is not an array field.`)
   }
-  const tableName = `${parentTableName}_${toSnakeCase(field.name)}`
+  const tableName = versioned ? `${parentTableName}_version_${toSnakeCase(field.name)}` : `${parentTableName}_${toSnakeCase(field.name)}`
 
   const columns: Record<string, SQLiteColumnBuilderBase> = {
     order: integer('_order').notNull(),
     parentId: integer('_parent_id').notNull(),
-    id: text('id').primaryKey(),
+    id: versioned ? integer('id').primaryKey({ autoIncrement: true }) : text('id').primaryKey(),
   }
 
   const subFields = (field as unknown as { fields: Field[] }).fields
@@ -206,6 +214,9 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
     throw new Error(`generateArrayTable(${collectionSlug}): group field "${groupFields[0].name}" inside array "${field.name}" is not supported yet.`)
   }
   Object.assign(columns, subColumns)
+  if (versioned) {
+    columns.uuid = text('_uuid')
+  }
 
   return sqliteTable(tableName, columns)
 }

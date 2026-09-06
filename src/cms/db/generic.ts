@@ -53,20 +53,90 @@ function flattenGroups(data: Record<string, unknown>, groupFields: GroupFieldMet
   return result
 }
 
-/** Pulls a version document's `blocks` field(s) out for separate handling, same idea as createCollectionOps' splitSpecialFields but scoped to just what createVersionsOps supports so far (no arrays/top-level-rels at the version level yet - see generateVersionsTable's doc comment). */
-function splitBlocksFields(
+/** Pulls a version document's `array`/`blocks` field(s) out for separate handling, same idea as createCollectionOps' splitSpecialFields but scoped to just what createVersionsOps supports (no top-level-rels at the version level yet - nothing in this app's versioned collections has one outside a block). */
+function splitVersionFields(
   data: Record<string, unknown>,
-  blocksFields: Record<string, unknown>,
-): { scalars: Record<string, unknown>; blocks: Record<string, Record<string, unknown>[]> } {
+  arrayFieldNames: string[],
+  blocksFieldNames: string[],
+): { scalars: Record<string, unknown>; arrays: Record<string, unknown[]>; blocks: Record<string, Record<string, unknown>[]> } {
   const scalars = { ...data }
+  const arrays: Record<string, unknown[]> = {}
+  for (const name of arrayFieldNames) {
+    if (name in scalars) {
+      arrays[name] = (scalars[name] as unknown[]) ?? []
+      delete scalars[name]
+    }
+  }
   const blocks: Record<string, Record<string, unknown>[]> = {}
-  for (const name of Object.keys(blocksFields)) {
+  for (const name of blocksFieldNames) {
     if (name in scalars) {
       blocks[name] = (scalars[name] as Record<string, unknown>[]) ?? []
       delete scalars[name]
     }
   }
-  return { scalars, blocks }
+  return { scalars, arrays, blocks }
+}
+
+/**
+ * The array-field read+write logic shared by createCollectionOps (the live
+ * table) and createVersionsOps (the `_<table>_v` table) - same idea as
+ * createBlocksRelsOps below, just for `array` fields: both need "fetch child
+ * rows by owning id in `_order`, replace wholesale on write", scoped to a
+ * different owning row (the live document's own id vs. the version row's
+ * own id - confirmed against real `_eg_posts_v_version_categories`, whose
+ * `_parent_id` FK points at `_eg_posts_v` itself, not the live `eg_posts`
+ * table, exactly like versioned blocks/rels).
+ *
+ * `uuidColumn` mirrors createBlocksRelsOps': a live array row's identity is
+ * its own `id` column (string, explicitly set - not autoincrement); a
+ * VERSIONED array row's identity is its `_uuid` column instead (`id` is a
+ * meaningless autoincrement integer). See ../schema/generate.ts's
+ * generateArrayTable `versioned` param doc comment for the confirmed shape.
+ */
+function createArrayOps(arrayTables: Record<string, AnySQLiteTable>, uuidColumn: boolean) {
+  const arrayFieldNames = Object.keys(arrayTables)
+
+  async function attachArrays<T extends Record<string, unknown>>(doc: T, ownerId: number): Promise<T> {
+    if (!arrayFieldNames.length) return doc
+    const db = await getDb()
+    const withArrays = { ...doc } as Record<string, unknown>
+    for (const name of arrayFieldNames) {
+      const childTable = arrayTables[name]
+      const childColumns = childTable as unknown as Record<string, SQLiteColumn>
+      const rows = await db.select().from(childTable).where(eq(childColumns.parentId, ownerId)).orderBy(childColumns.order)
+      withArrays[name] = (rows as Record<string, unknown>[]).map((row) => {
+        const { parentId: _parentId, order: _order, id: rawId, uuid, ...rest } = row as Record<string, unknown> & { uuid?: string }
+        return { ...rest, id: uuidColumn ? uuid : rawId }
+      })
+    }
+    return withArrays as T
+  }
+
+  async function writeArrays(ownerId: number, arrays: Record<string, unknown[]>): Promise<void> {
+    if (!Object.keys(arrays).length) return
+    const db = await getDb()
+    for (const [name, items] of Object.entries(arrays)) {
+      const childTable = arrayTables[name]
+      const childColumns = childTable as unknown as Record<string, SQLiteColumn>
+      await db.delete(childTable).where(eq(childColumns.parentId, ownerId))
+      if (items.length) {
+        await db.insert(childTable).values(
+          items.map((item, index) => {
+            const { id: itemId, ...rest } = item as Record<string, unknown> & { id?: string }
+            const row: Record<string, unknown> = { ...rest, order: index, parentId: ownerId }
+            if (uuidColumn) {
+              row.uuid = itemId || crypto.randomUUID()
+            } else {
+              row.id = itemId || crypto.randomUUID()
+            }
+            return row
+          }),
+        )
+      }
+    }
+  }
+
+  return { attachArrays, writeArrays }
 }
 
 /**
@@ -259,16 +329,16 @@ function createBlocksRelsOps(
 
 /**
  * Read/write for the parallel `_<table>_v` versions table generateVersionsTable
- * produces. `blocks` fields and their nested hasMany/polymorphic subfields
- * ARE supported here (pass the versioned `relsTable`/`blocksFields` - e.g.
- * pagesVersionsRels/pagesVersionsBlockTypes - same shapes createCollectionOps
- * takes, just generated against the versions table instead of the live one),
- * scoped by the version row's OWN id via createBlocksRelsOps - see its doc
- * comment. Still narrow on one thing: `array` fields at the version level
- * (generateVersionsTable itself throws before this would ever be called with
- * one), and top-level (not blocks-nested) hasMany fields at the version level
- * (nothing has needed one yet - every hasMany/polymorphic field in this app's
- * versioned collections lives inside a block).
+ * produces. `array` and `blocks` fields, and blocks' nested hasMany/polymorphic
+ * subfields, ARE supported here (pass the versioned `arrayTables`/`relsTable`/
+ * `blocksFields` - e.g. postsVersionsCategories/postsVersionsRels/
+ * postsVersionsBlockTypes - same shapes createCollectionOps takes, just
+ * generated against the versions table instead of the live one), scoped by
+ * the version row's OWN id via createArrayOps/createBlocksRelsOps - see
+ * their doc comments. Still narrow on one thing: top-level (not
+ * blocks-nested) hasMany fields at the version level (nothing has needed one
+ * yet - every hasMany/polymorphic field in this app's versioned collections
+ * lives inside a block).
  *
  * Not folded into createCollectionOps' create/updateByID: whether every live
  * write should also create a version row, and how `_status`/`latest`/
@@ -279,16 +349,24 @@ function createBlocksRelsOps(
 export function createVersionsOps(
   table: AnySQLiteTable,
   groupFields: GroupFieldMeta[] = [],
-  rels: { relsTable?: RelsTableDef; blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }> } = {},
+  rels: {
+    arrayTables?: Record<string, AnySQLiteTable>
+    relsTable?: RelsTableDef
+    blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }>
+  } = {},
 ) {
   const columns = table as unknown as Record<string, SQLiteColumn>
-  const { relsTable, blocksFields = {} } = rels
+  const { arrayTables = {}, relsTable, blocksFields = {} } = rels
+  const arrayFieldNames = Object.keys(arrayTables)
+  const blocksFieldNames = Object.keys(blocksFields)
+  const { attachArrays, writeArrays } = createArrayOps(arrayTables, true)
   // "version." (dot), not "version_" (underscore) - see createBlocksRelsOps'
   // pathPrefix doc comment; confirmed against real _eg_pages_v_rels data.
   const { attachBlocksFields, writeBlocksFields } = createBlocksRelsOps(relsTable, {}, blocksFields, true, 'version.')
 
   async function attachExtras(row: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const withBlocks = await attachBlocksFields(row, row.id as number)
+    const withArrays = await attachArrays(row, row.id as number)
+    const withBlocks = await attachBlocksFields(withArrays, row.id as number)
     return nestGroups(withBlocks, groupFields)
   }
 
@@ -307,10 +385,11 @@ export function createVersionsOps(
   async function createVersion(parentId: number, data: Record<string, unknown>, opts: { latest?: boolean } = {}): Promise<Record<string, unknown>> {
     const db = await getDb()
     const now = new Date().toISOString()
-    const { scalars, blocks } = splitBlocksFields(data, blocksFields)
+    const { scalars, arrays, blocks } = splitVersionFields(data, arrayFieldNames, blocksFieldNames)
     const values = { ...flattenGroups(scalars, groupFields), parentId, createdAt: now, updatedAt: now, latest: opts.latest ?? true }
     const [row] = await db.insert(table).values(values).returning()
     const id = (row as { id: number }).id
+    await writeArrays(id, arrays)
     await writeBlocksFields(id, blocks)
     return attachExtras(row as Record<string, unknown>)
   }
@@ -383,6 +462,7 @@ export function createCollectionOps(
   const topLevelRelsFieldNames = Object.keys(topLevelRelsFieldTargets)
   const blocksFieldNames = Object.keys(blocksFields)
   const blocksRelsOps = createBlocksRelsOps(relsTable, topLevelRelsFieldTargets, blocksFields, false)
+  const { attachArrays, writeArrays } = createArrayOps(arrayTables, false)
 
   const defaults: Record<string, unknown> = {}
   for (const field of collection.fields) {
@@ -418,44 +498,8 @@ export function createCollectionOps(
     return { scalars, arrays, topLevelRels, blocks }
   }
 
-  async function attachArrays(doc: Doc): Promise<Doc> {
-    if (!arrayFieldNames.length) return doc
-    const db = await getDb()
-    const withArrays: Doc = { ...doc }
-    for (const name of arrayFieldNames) {
-      const childTable = arrayTables[name]
-      const childColumns = childTable as unknown as Record<string, SQLiteColumn>
-      const rows = await db.select().from(childTable).where(eq(childColumns.parentId, doc.id)).orderBy(childColumns.order)
-      withArrays[name] = rows.map((row) => {
-        const { parentId: _parentId, order: _order, ...rest } = row as Record<string, unknown>
-        return rest
-      })
-    }
-    return withArrays
-  }
-
-  async function writeArrays(id: number, arrays: Record<string, unknown[]>): Promise<void> {
-    if (!Object.keys(arrays).length) return
-    const db = await getDb()
-    for (const [name, items] of Object.entries(arrays)) {
-      const childTable = arrayTables[name]
-      const childColumns = childTable as unknown as Record<string, SQLiteColumn>
-      await db.delete(childTable).where(eq(childColumns.parentId, id))
-      if (items.length) {
-        await db.insert(childTable).values(
-          items.map((item, index) => ({
-            ...(item as Record<string, unknown>),
-            id: (item as { id?: string })?.id || crypto.randomUUID(),
-            order: index,
-            parentId: id,
-          })),
-        )
-      }
-    }
-  }
-
   async function attachExtras(doc: Doc): Promise<Doc> {
-    const withArrays = await attachArrays(doc)
+    const withArrays = await attachArrays(doc, doc.id)
     const withRels = await blocksRelsOps.attachTopLevelRels(withArrays, doc.id)
     const withBlocks = await blocksRelsOps.attachBlocksFields(withRels, doc.id)
     return nestGroups(withBlocks, groupFields) as Doc

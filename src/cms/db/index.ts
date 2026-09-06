@@ -133,6 +133,52 @@
  * paging/sort/where options it deliberately does not implement (nothing in
  * this app's admin UI or API usage needs them yet).
  *
+ * Phase 9 answered the draft/publish policy question Phase 8 left open -
+ * the last thing standing between this data layer and being trustworthy
+ * end-to-end. ./generic.ts's createDraftOps composes createCollectionOps +
+ * createVersionsOps (rather than folding either apart, so every non-drafts
+ * collection keeps using createCollectionOps exactly as already proven) into
+ * the real policy, confirmed by creating/updating/publishing a real Events
+ * document through Payload's own engine and inspecting exactly what it did
+ * to both eg_events and _eg_events_v - not guessed:
+ *
+ *  - create() always writes the live row AND a mirroring version row
+ *    (latest: true). `_status` defaults to 'draft' via the live column's own
+ *    SQL default when unspecified, same as Payload's.
+ *  - updateByID(id, data) with no `draft` flag - a normal/"publish" write -
+ *    updates the live row AND creates a new version row mirroring the fresh
+ *    live state, becoming the new latest (every older version for that
+ *    parent flips to latest: false - `latest` is exclusive per parent,
+ *    confirmed empirically).
+ *  - updateByID(id, data, { draft: true }) creates a new latest version row
+ *    ONLY, defaulting its `_status` to 'draft' even when layered on top of a
+ *    published live doc. The live row is left completely untouched, not
+ *    even updatedAt - confirmed: publishing, then doing a draft:true edit,
+ *    left eg_events exactly as the publish had it.
+ *  - findByID(id) with no `draft` flag reads the live row, unchanged.
+ *  - findByID(id, { draft: true }) reads the latest version row instead -
+ *    filtering on the `latest` column itself, which is what real Payload's
+ *    own draft-resolution read does too (confirmed: it does not fall back to
+ *    version-row insertion order when investigating a case where `latest`
+ *    and insertion order briefly disagreed during testing).
+ *
+ * Proven against Events (this app's simplest drafts-enabled collection) in
+ * both directions, matching the standing write-both-ways pattern: ours
+ * writes checked through Payload's own findByID/findVersions, AND Payload's
+ * own engine.create/engine.update (including real draft: true calls) checked
+ * through findEventByID - see tests/int/cms-db-events-drafts.int.spec.ts.
+ *
+ * Getting there also surfaced a real, pre-existing bug unrelated to this
+ * data layer: eg_locked_documents_rels (Payload's own table) is missing FK
+ * columns for several collections added to this app's config after that
+ * table was last migrated (audit-log, backups, translations,
+ * membership-tiers, memberships), which makes checkDocumentLockStatus 500 on
+ * EVERY engine.update()/engine.delete() call against a lockable collection.
+ * Fixed locally to unblock this phase's testing; NOT yet applied to the
+ * remote/production D1 - see
+ * src/migrations/sql/20260906_000000_fix_locked_documents_rels_missing_columns.sql
+ * for the fix and why it hasn't been run remotely yet.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -141,23 +187,25 @@
  * `payload generate:db-schema` produces over 10,000 lines of table
  * definitions alone - that is the real size of the surface a from-scratch
  * generic replacement has to cover. Every field type this app's collections
- * actually use now has a proven live AND versioned shape, and joins resolve
- * for real - one thing remains, and it is a policy question, not a
- * schema-generation gap:
+ * actually use now has a proven live AND versioned shape, joins resolve for
+ * real, and the draft/publish policy is settled - what's left is breadth,
+ * not a gap in the approach:
  *
- *  - Draft/publish application-level semantics: whether every live write
- *    should also create a version row, and how `_status`/`latest` should
- *    govern reads, is a Payload-level policy question this data layer's
- *    createVersionsOps deliberately leaves open rather than guessing (see
- *    ./generic.ts's doc comment on it) - something will need to decide this
- *    before create/updateByID can be trusted on a drafts-enabled collection.
+ *  - createDraftOps is proven against Events only. Pages/Posts/Courses (this
+ *    app's other drafts-enabled collections) will need the same wiring
+ *    (createDraftOps(createCollectionOps(...), createVersionsOps(...))) once
+ *    src/engine/db.ts starts routing to them - nothing new to prove, just
+ *    more collections to wire up and parity-test.
+ *  - findMany does not support a `draft` flag - nothing in this app queries
+ *    a LIST of drafts today; doing that right needs a per-row "latest
+ *    version" subquery this data layer has no case to prove against yet.
  *
- * Next up: that draft/publish policy question is the last thing standing
- * between this data layer and being trustworthy end-to-end on every
- * collection in this app - once it's answered, src/engine/db.ts can start
- * being switched over collection by collection, and only then does removing
- * the Payload dependency itself, and rebuilding the admin UI in Tailwind,
- * become real next steps rather than premature ones.
+ * Next up: src/engine/db.ts can start being switched over collection by
+ * collection - non-drafts collections route straight to createCollectionOps,
+ * drafts-enabled ones wrap it in createDraftOps. Only once every collection
+ * is switched over does removing the Payload dependency itself, and
+ * rebuilding the admin UI in Tailwind, become real next steps rather than
+ * premature ones.
  *
  * See src/engine/index.ts for the seam this is meant to eventually replace
  * and the rules that govern it (only src/engine/ may import the vendor

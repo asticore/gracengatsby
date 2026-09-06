@@ -423,7 +423,19 @@ export function createVersionsOps(
 
   async function findLatestByParentID(parentId: number): Promise<Record<string, unknown> | null> {
     const db = await getDb()
-    const [row] = await db.select().from(table).where(eq(columns.parentId, parentId)).orderBy(desc(columns.id)).limit(1)
+    // Filter on `latest` itself, not just `order by id desc limit 1` - real
+    // Payload's own draft-resolution read does the same (confirmed: it does
+    // NOT fall back to version row insertion order/timestamp when
+    // `latest` disagrees with it - see createDraftOps' doc comment for how
+    // that was found). `latest` is exclusive per parent by construction (see
+    // createVersion below), so this is normally a single row; `orderBy(desc(id))`
+    // is just a tie-break if that invariant were ever violated.
+    const [row] = await db
+      .select()
+      .from(table)
+      .where(and(eq(columns.parentId, parentId), eq(columns.latest, true)))
+      .orderBy(desc(columns.id))
+      .limit(1)
     return row ? attachExtras(row as Record<string, unknown>) : null
   }
 
@@ -436,8 +448,19 @@ export function createVersionsOps(
   async function createVersion(parentId: number, data: Record<string, unknown>, opts: { latest?: boolean } = {}): Promise<Record<string, unknown>> {
     const db = await getDb()
     const now = new Date().toISOString()
+    const latest = opts.latest ?? true
+    // `latest` is exclusive per parent - confirmed against real Payload data
+    // (create a doc, save a draft, publish it, save another draft: at every
+    // step exactly one _eg_events_v row for that parent has latest=1, the
+    // previous one flips to 0 the moment a new one becomes latest). Only
+    // flip the others when THIS row is becoming latest - an explicit
+    // `latest: false` call (nothing here makes one yet) shouldn't disturb
+    // whatever the real latest version currently is.
+    if (latest) {
+      await db.update(table).set({ latest: false }).where(eq(columns.parentId, parentId))
+    }
     const { scalars, arrays, blocks } = splitVersionFields(data, arrayFieldNames, blocksFieldNames)
-    const values = { ...flattenGroups(scalars, groupFields), parentId, createdAt: now, updatedAt: now, latest: opts.latest ?? true }
+    const values = { ...flattenGroups(scalars, groupFields), parentId, createdAt: now, updatedAt: now, latest }
     const [row] = await db.insert(table).values(values).returning()
     const id = (row as { id: number }).id
     await writeArrays(id, arrays)
@@ -630,4 +653,114 @@ export function createCollectionOps(
   }
 
   return { findMany, findByID, count, create, updateByID, deleteByID }
+}
+
+/**
+ * The draft/publish application-level policy createCollectionOps and
+ * createVersionsOps deliberately leave open (see createVersionsOps' doc
+ * comment and ../index.ts) - composes the two rather than folding either
+ * apart, so every non-drafts collection (Faqs, MembershipTiers,
+ * PageTemplates, EventRSVPs) keeps using createCollectionOps exactly as
+ * proven, untouched.
+ *
+ * Confirmed by creating/updating/publishing a real Events document through
+ * Payload's own engine and inspecting exactly what it did to both eg_events
+ * and _eg_events_v (see tests/int/cms-db-events-drafts.int.spec.ts) - not
+ * guessed:
+ *
+ *  - `create()` always writes the live row (a document has to exist
+ *    somewhere) AND a mirroring version row (latest: true). The live row's
+ *    `_status` comes from the column's own SQL default ('draft') when the
+ *    caller doesn't set one - exactly what Payload's create() does too.
+ *  - `updateByID(id, data)` with no `draft` flag - a normal/"publish" write,
+ *    whatever `_status` the caller passes - updates the live row (unchanged
+ *    createCollectionOps behaviour) AND creates a new version row mirroring
+ *    the fresh live state, becoming the new latest.
+ *  - `updateByID(id, data, { draft: true })` - Payload's own "save as
+ *    draft" - creates a new latest version row ONLY, snapshotting the full
+ *    resulting document (existing live state merged with `data`, same
+ *    partial-update semantics as a live updateByID). The live row is left
+ *    completely untouched, not even `updatedAt` - confirmed empirically:
+ *    publishing, then doing a draft:true edit, left eg_events exactly as the
+ *    publish had it, while _eg_events_v gained one more latest:true row.
+ *  - `findByID(id)` with no `draft` flag reads the live row (unchanged
+ *    createCollectionOps behaviour) - whatever `_status` it currently holds
+ *    (which can be 'draft', if the document has never been published).
+ *  - `findByID(id, { draft: true })` reads the latest VERSION row instead
+ *    (whatever was most recently saved, draft or published either way),
+ *    reshaped into the same document shape a normal findByID returns.
+ *
+ * `omit` strips document keys that exist on the reconstructed Doc shape but
+ * are never a real column (live OR versioned) - concretely, a `join` field
+ * name (e.g. Events' `rsvps`): it gets attached onto every Doc
+ * createCollectionOps returns, but createVersionsOps' own table has no
+ * column for it (see createJoinOps' doc comment - joins never get a column,
+ * live or versioned), so it must never be handed to createVersion. `id` is
+ * always stripped too - it is the LIVE document's id, not the meaningless
+ * value a version row's own (separate, autoincrement) `id` should take.
+ *
+ * NOT supported yet: `findMany` with a `draft` flag. Nothing in this app
+ * queries a LIST of drafts today, and doing that right means a per-row
+ * "latest version" subquery this data layer has no real case to prove
+ * against yet - revisit if/when something needs it. A draft-mode
+ * findByID/updateByID result also does not re-attach join fields (e.g.
+ * `rsvps`) the way a live findByID does - narrower than the live shape,
+ * documented rather than guessed at.
+ */
+export function createDraftOps(
+  ops: ReturnType<typeof createCollectionOps>,
+  versionsOps: ReturnType<typeof createVersionsOps>,
+  opts: { omit?: string[] } = {},
+) {
+  const omit = new Set(['id', ...(opts.omit ?? [])])
+
+  function forVersion(doc: Doc): Record<string, unknown> {
+    const result: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(doc)) {
+      if (!omit.has(key)) result[key] = value
+    }
+    return result
+  }
+
+  /** A version row's own shape (its own `id`, `parentId`, `latest`, version timestamps) reshaped into the document shape a normal findByID/updateByID returns - the LIVE document's id, not the version row's. */
+  function fromVersion(parentId: number, version: Record<string, unknown>): Doc {
+    const { id: _versionId, parentId: _parentId, latest: _latest, versionCreatedAt: _vc, versionUpdatedAt: _vu, ...rest } = version
+    return { ...rest, id: parentId } as Doc
+  }
+
+  async function create(data: Record<string, unknown>): Promise<Doc> {
+    const created = await ops.create(data)
+    await versionsOps.createVersion(created.id, forVersion(created), { latest: true })
+    return created
+  }
+
+  async function updateByID(id: number, data: Record<string, unknown>, updateOpts: { draft?: boolean } = {}): Promise<Doc | null> {
+    if (updateOpts.draft) {
+      const current = await ops.findByID(id)
+      if (!current) return null
+      // A draft:true save defaults the new version's `_status` to 'draft'
+      // even when the live doc it's layered on top of is 'published' -
+      // confirmed against real Payload: `engine.update({..., draft: true})`
+      // with no `_status` in `data` produced a version__status of 'draft',
+      // not the live row's 'published'. An explicit `_status` in `data`
+      // still wins (untested edge case upstream, but the obvious precedent).
+      const merged = { ...current, _status: 'draft', ...data } as Doc
+      const version = await versionsOps.createVersion(id, forVersion(merged), { latest: true })
+      return fromVersion(id, version)
+    }
+    const updated = await ops.updateByID(id, data)
+    if (!updated) return null
+    await versionsOps.createVersion(id, forVersion(updated), { latest: true })
+    return updated
+  }
+
+  async function findByID(id: number, findOpts: { draft?: boolean } = {}): Promise<Doc | null> {
+    if (findOpts.draft) {
+      const version = await versionsOps.findLatestByParentID(id)
+      return version ? fromVersion(id, version) : ops.findByID(id)
+    }
+    return ops.findByID(id)
+  }
+
+  return { ...ops, create, updateByID, findByID }
 }

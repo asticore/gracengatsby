@@ -2,7 +2,7 @@ import type { Where } from '@/engine'
 
 import { Events } from '@/collections/Events'
 
-import { createCollectionOps, createVersionsOps } from '../generic'
+import { createCollectionOps, createDraftOps, createVersionsOps } from '../generic'
 import { events, eventsGenerated, eventsJoinFields, eventsVersions } from '../schema'
 
 /** Payload's document shape for the `events` collection - see src/collections/Events.ts. `rsvps` is a `join` field, resolved read-only at query time - see ../generic.ts's createJoinOps doc comment for the confirmed `{ docs, hasNextPage }` shape. */
@@ -39,11 +39,19 @@ export type EventVersion = {
   _status?: string | null
 } & Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
-const ops = createCollectionOps(events, Events, {}, { groupFields: eventsGenerated.groupFields, joinFields: eventsJoinFields })
+const baseOps = createCollectionOps(events, Events, {}, { groupFields: eventsGenerated.groupFields, joinFields: eventsJoinFields })
 const versionsOps = createVersionsOps(eventsVersions, eventsGenerated.groupFields)
+// Events has drafts enabled (versions.drafts: true) - every write also goes
+// through the draft/publish policy createDraftOps composes on top of
+// baseOps/versionsOps. See createDraftOps' doc comment for the confirmed
+// behaviour and tests/int/cms-db-events-drafts.int.spec.ts for the parity
+// proof. `rsvps` is omitted from what gets snapshotted into a version row -
+// it's a join field, never a real column on either table (see
+// createJoinOps' doc comment).
+const ops = createDraftOps(baseOps, versionsOps, { omit: ['rsvps'] })
 
 export const findEvents = ops.findMany as unknown as (args?: { where?: Where; limit?: number }) => Promise<EventDoc[]>
-export const findEventByID = ops.findByID as unknown as (id: number) => Promise<EventDoc | null>
+export const findEventByID = ops.findByID as unknown as (id: number, opts?: { draft?: boolean }) => Promise<EventDoc | null>
 export const countEvents = ops.count
 export const createEvent = ops.create as unknown as (
   data: Partial<Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt'>> & { title: string; startDate: string },
@@ -51,6 +59,7 @@ export const createEvent = ops.create as unknown as (
 export const updateEvent = ops.updateByID as unknown as (
   id: number,
   data: Partial<Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt'>>,
+  opts?: { draft?: boolean },
 ) => Promise<EventDoc | null>
 export const deleteEvent = ops.deleteByID
 

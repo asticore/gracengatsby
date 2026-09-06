@@ -2,7 +2,7 @@ import type { Where } from '@/engine'
 
 import { Pages } from '@/collections/Pages'
 
-import { createCollectionOps, createVersionsOps } from '../generic'
+import { createCollectionOps, createDraftOps, createVersionsOps } from '../generic'
 import {
   pages,
   pagesBlockTypes,
@@ -60,7 +60,7 @@ export type PageVersion = {
   _status?: string | null
 } & Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
-const ops = createCollectionOps(pages, Pages, {}, {
+const baseOps = createCollectionOps(pages, Pages, {}, {
   relsTable: { table: pagesRels, targetColumns: pagesRelsTargetColumns },
   blocksFields: { blocks: { blockTypes: pagesBlockTypes } },
   groupFields: pagesGenerated.groupFields,
@@ -71,8 +71,15 @@ const versionsOps = createVersionsOps(pagesVersions, pagesGenerated.groupFields,
   blocksFields: { blocks: { blockTypes: pagesVersionsBlockTypes } },
 })
 
+// Pages has drafts enabled (versions.drafts: true), same as Events - see
+// ../generic.ts's createDraftOps doc comment for the confirmed policy and
+// tests/int/cms-db-pages-drafts.int.spec.ts for the parity proof. Unlike
+// Events, Pages has no join field, so nothing needs to be omitted from what
+// gets snapshotted into a version row.
+const ops = createDraftOps(baseOps, versionsOps)
+
 export const findPages = ops.findMany as unknown as (args?: { where?: Where; limit?: number }) => Promise<PageDoc[]>
-export const findPageByID = ops.findByID as unknown as (id: number) => Promise<PageDoc | null>
+export const findPageByID = ops.findByID as unknown as (id: number, opts?: { draft?: boolean }) => Promise<PageDoc | null>
 export const countPages = ops.count
 export const createPage = ops.create as unknown as (
   data: Partial<Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt'>> & { title: string },
@@ -80,6 +87,7 @@ export const createPage = ops.create as unknown as (
 export const updatePage = ops.updateByID as unknown as (
   id: number,
   data: Partial<Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt'>>,
+  opts?: { draft?: boolean },
 ) => Promise<PageDoc | null>
 export const deletePage = ops.deleteByID
 

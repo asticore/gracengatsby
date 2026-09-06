@@ -191,8 +191,10 @@
  * real, and the draft/publish policy is settled - what's left is breadth,
  * not a gap in the approach:
  *
- *  - createDraftOps is proven against Events only. Pages/Posts/Courses (this
- *    app's other drafts-enabled collections) will need the same wiring
+ *  - createDraftOps is now proven against Events (has a join field, no
+ *    blocks) AND Pages (has blocks, no join field) - see
+ *    tests/int/cms-db-pages-drafts.int.spec.ts. Posts/Courses (this app's
+ *    remaining drafts-enabled collections) still need the same wiring
  *    (createDraftOps(createCollectionOps(...), createVersionsOps(...))) once
  *    src/engine/db.ts starts routing to them - nothing new to prove, just
  *    more collections to wire up and parity-test.

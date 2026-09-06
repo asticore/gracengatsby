@@ -3,29 +3,29 @@ import type { CollectionConfig, Field } from '@/engine'
 import { integer, numeric, sqliteTable, text, type SQLiteColumnBuilderBase } from 'drizzle-orm/sqlite-core'
 import toSnakeCase from 'to-snake-case'
 
+type NamedField = Field & { name: string }
+
 /**
  * Derives a drizzle table from a real Payload CollectionConfig - the
- * generalisation promised in ../index.ts, proven against two collections now
- * instead of one hand-copied table (see ./faqs.ts's history: it used to be
- * hand-written and column-matched against the live database by hand; this
- * generator produces the same table from the collection's own field list).
+ * generalisation promised in ../index.ts, proven against real collections
+ * instead of hand-copied tables.
  *
  * Deliberately narrow: throws on anything it does not yet model correctly,
- * rather than silently generating a wrong or partial column. Currently
- * supports flat top-level fields only (no row/tabs/collapsible wrappers,
- * which need recursion into nested field arrays) and these field types:
+ * rather than silently generating a wrong or partial column or table.
+ * Supports:
  *
  *   text, textarea, email, date, select (single-value) -> text column
  *   richText, json                                     -> text column, JSON mode
  *   number                                              -> numeric column
  *   checkbox                                            -> integer column, boolean mode
  *   relationship (single target, not hasMany)           -> integer `<name>_id` column
+ *   row, collapsible                                    -> flattened, fields promoted onto this table
+ *   array                                                -> a child table, see generateArrayTable
  *
- * NOT supported yet (throws): array, blocks, group, row, tabs, collapsible,
- * join, upload, hasMany/polymorphic relationship, hasMany select, and
- * `timestamps: false` (every generated table gets updatedAt/createdAt).
- * Each of those needs a child table or different modelling and is a later
- * phase - see ../index.ts.
+ * NOT supported yet (throws): blocks, group, tabs, join, upload,
+ * hasMany/polymorphic relationship, hasMany select, and `timestamps: false`
+ * (every generated table gets updatedAt/createdAt). Each needs different
+ * modelling and is a later phase - see ../index.ts.
  */
 export function generateTable(collection: CollectionConfig) {
   // dbName can be a function (computed per-args) in Payload's type, but every
@@ -38,27 +38,78 @@ export function generateTable(collection: CollectionConfig) {
   const columns: Record<string, SQLiteColumnBuilderBase> = {
     id: integer('id').primaryKey({ autoIncrement: true }),
   }
+  const arrayFields: NamedField[] = []
 
-  for (const field of collection.fields) {
-    const named = field as Field & { name?: string }
-    if (!named.name) {
-      throw new Error(
-        `generateTable(${collection.slug}): field of type "${named.type}" has no top-level name - row/tabs/collapsible wrappers aren't supported yet.`,
-      )
+  for (const field of walkFields(collection.slug, collection.fields)) {
+    if (field.type === 'array') {
+      arrayFields.push(field)
+      continue
     }
-    // Payload's Field union has per-variant required props (e.g. collapsible's
-    // `label`) that don't survive a plain narrowing cast once `name` is known
-    // - not a real type mismatch, just TS being unable to prove it structurally.
-    columns[named.name] = columnFor(collection.slug, named as unknown as Field & { name: string })
+    columns[field.name] = columnFor(collection.slug, field)
   }
 
   columns.updatedAt = text('updated_at').notNull()
   columns.createdAt = text('created_at').notNull()
 
+  return { table: sqliteTable(tableName, columns), tableName, arrayFields }
+}
+
+/**
+ * A child table for one array field - `_order` (position within the array),
+ * `_parent_id` (FK to the owning row, cascading on delete at the D1 level -
+ * confirmed against the real eg_membership_tiers_benefits table, which is
+ * exactly this shape), a string `id` per array row, then the array's own
+ * subfields as columns. One row per array item, not one row per document.
+ */
+export function generateArrayTable(collectionSlug: string, parentTableName: string, field: NamedField) {
+  if (field.type !== 'array') {
+    throw new Error(`generateArrayTable(${collectionSlug}): field "${field.name}" is not an array field.`)
+  }
+  const tableName = `${parentTableName}_${toSnakeCase(field.name)}`
+
+  const columns: Record<string, SQLiteColumnBuilderBase> = {
+    order: integer('_order').notNull(),
+    parentId: integer('_parent_id').notNull(),
+    id: text('id').primaryKey(),
+  }
+
+  const subFields = (field as unknown as { fields: Field[] }).fields
+  for (const subField of walkFields(collectionSlug, subFields)) {
+    if (subField.type === 'array') {
+      throw new Error(`generateArrayTable(${collectionSlug}): nested array "${subField.name}" inside array "${field.name}" is not supported yet.`)
+    }
+    columns[subField.name] = columnFor(collectionSlug, subField)
+  }
+
   return sqliteTable(tableName, columns)
 }
 
-function columnFor(collectionSlug: string, field: Field & { name: string }): SQLiteColumnBuilderBase {
+/**
+ * Flattens a field list: row and collapsible are pure layout in Payload's own
+ * schema (their fields land directly on the parent table, confirmed against
+ * eg_membership_tiers - its row-wrapped `name`/`active`/`price`/`interval`/
+ * `trialDays` fields are plain columns, not a child table), so this recurses
+ * into them rather than treating them as fields of their own. Anything else
+ * without a top-level `name` is a wrapper type not supported yet.
+ */
+function* walkFields(collectionSlug: string, fields: Field[]): Generator<NamedField> {
+  for (const field of fields) {
+    const named = field as Field & { name?: string; fields?: Field[] }
+    if (named.type === 'row' || named.type === 'collapsible') {
+      yield* walkFields(collectionSlug, named.fields ?? [])
+      continue
+    }
+    if (!named.name) {
+      throw new Error(`generateTable(${collectionSlug}): field of type "${named.type}" has no top-level name and is not a supported layout wrapper.`)
+    }
+    // Payload's Field union has per-variant required props (e.g. collapsible's
+    // `label`) that don't survive a plain narrowing cast once `name` is known
+    // - not a real type mismatch, just TS being unable to prove it structurally.
+    yield named as unknown as NamedField
+  }
+}
+
+function columnFor(collectionSlug: string, field: NamedField): SQLiteColumnBuilderBase {
   const columnName = toSnakeCase(field.name)
   const required = 'required' in field && field.required === true
 

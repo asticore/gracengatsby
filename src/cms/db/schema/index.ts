@@ -1,16 +1,29 @@
 import { EventRSVPs } from '@/collections/EventRSVPs'
 import { Faqs } from '@/collections/Faqs'
+import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
-import { generateTable } from './generate'
+import { generateArrayTable, generateTable } from './generate'
 
 /**
  * Tables generated straight from the real collection configs, not
- * hand-copied - see ./generate.ts. Both collections are chosen the same way
- * Faqs was in phase one: real, currently live, and the next-smallest step up
- * in field-type coverage. EventRSVPs adds one single-target relationship
- * field (`event` -> `event_id`) on top of the scalar types Faqs already
- * covers - Payload stores a non-hasMany relationship as a plain FK column on
- * the same table, not a child table, so this is still one row per document.
+ * hand-copied - see ./generate.ts. Each addition here is the next-smallest
+ * step up in field-type coverage over the last:
+ *
+ *  - Faqs: scalar fields only (phase 1/2).
+ *  - EventRSVPs: adds a single-target relationship field, still one row per
+ *    document (an `event_id` FK column, not a child table).
+ *  - MembershipTiers: adds row-wrapped fields (flattened onto this table,
+ *    same as Payload's own schema does) and an array field (`benefits`,
+ *    which needs its own child table - see membershipTiersBenefits below).
  */
-export const faqs = generateTable(Faqs)
-export const eventRSVPs = generateTable(EventRSVPs)
+const faqsGenerated = generateTable(Faqs)
+export const faqs = faqsGenerated.table
+
+const eventRSVPsGenerated = generateTable(EventRSVPs)
+export const eventRSVPs = eventRSVPsGenerated.table
+
+const membershipTiersGenerated = generateTable(MembershipTiers)
+export const membershipTiers = membershipTiersGenerated.table
+
+const [benefitsField] = membershipTiersGenerated.arrayFields
+export const membershipTiersBenefits = generateArrayTable(MembershipTiers.slug, membershipTiersGenerated.tableName, benefitsField)

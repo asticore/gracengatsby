@@ -11,19 +11,23 @@
  * PROGRESS SO FAR
  *
  * Phase 1 hand-wrote a schema and CRUD ops for one collection (Faqs) to prove
- * the approach against a real table before generalising. Phase 2 did the
- * generalising: ./schema/generate.ts now derives a drizzle table straight
- * from a real Payload CollectionConfig's own field list (see its doc comment
- * for exactly which field types it covers), and ./generic.ts provides the
- * find/create/update/delete/count operations for any table it produces - a
- * collection's own file (./collections/*.ts) is now just that factory call
- * plus the types callers see, not hand-written SQL. Faqs was regenerated
- * through this path instead of kept as the original hand-written version,
- * and EventRSVPs was added alongside it to prove the generator on a second
- * collection - one that adds a single-target relationship field (`event` ->
- * an `event_id` FK column) on top of the scalar types Faqs covers. Payload
- * stores a non-hasMany, non-polymorphic relationship as a plain column on
- * the same table, not a child table, so this is still one row per document.
+ * the approach against a real table before generalising. Phase 2 generalised
+ * it: ./schema/generate.ts derives a drizzle table straight from a real
+ * Payload CollectionConfig's own field list, and ./generic.ts provides
+ * find/create/update/delete/count for any table it produces - a collection's
+ * own file (./collections/*.ts) is now just that factory call plus the types
+ * callers see. EventRSVPs proved a single-target relationship field (`event`
+ * -> an `event_id` FK column, still one row per document - Payload only
+ * needs a child table for hasMany/polymorphic relationships).
+ *
+ * Phase 3 added row/collapsible flattening (their fields land on the parent
+ * table, same as Payload's own schema - confirmed against
+ * eg_membership_tiers) and array fields as child tables: MembershipTiers'
+ * `benefits` array generates eg_membership_tiers_benefits (`_order`,
+ * `_parent_id` cascading on delete, a string `id` per row, then the array's
+ * own subfields), and ./generic.ts assembles/replaces those child rows as
+ * part of the parent document's find/create/update, matching Payload's
+ * document shape.
  *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
@@ -33,14 +37,14 @@
  * `payload generate:db-schema` produces over 10,000 lines of table
  * definitions alone - that is the real size of the surface a from-scratch
  * generic replacement has to cover. This app actively uses hasMany/
- * polymorphic relationships, arrays, blocks, versions, drafts and joins (see
+ * polymorphic relationships, blocks, versions, drafts and joins (see
  * src/collections/{Events,Pages,Posts}.ts and
- * src/features/courses/collections/Courses.ts) - each of those needs a child
- * table (`_rels`, per-array-item tables, `_v` version tables) and query-side
- * joins that the generator and generic ops here do not build yet. Next up,
- * in roughly this order: arrays/relationships-as-child-tables, versions and
- * drafts, then joins - each proven against a real collection with the same
- * write-both-ways parity test before moving to the next.
+ * src/features/courses/collections/Courses.ts) - each needs a child table
+ * (`_rels`, blocks-as-child-tables, `_v` version tables) and query-side joins
+ * that the generator and generic ops here do not build yet. Next up, in
+ * roughly this order: hasMany/polymorphic relationships (`_rels` tables),
+ * blocks, then versions/drafts, then joins - each proven against a real
+ * collection with the same write-both-ways parity test before moving on.
  *
  * See src/engine/index.ts for the seam this is meant to eventually replace
  * and the rules that govern it (only src/engine/ may import the vendor
@@ -49,3 +53,4 @@
 
 export * from './collections/faqs'
 export * from './collections/eventRSVPs'
+export * from './collections/membershipTiers'

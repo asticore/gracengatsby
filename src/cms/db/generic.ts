@@ -328,6 +328,57 @@ function createBlocksRelsOps(
 }
 
 /**
+ * Query-time resolution for `join` fields - the last schema-generation gap
+ * (see ../schema/generate.ts's processFields doc comment: a join field never
+ * gets a column of its own). Read-only by construction: Payload itself never
+ * accepts a write through a join field, it is always resolved by querying
+ * the OTHER side's own relationship/hasMany field.
+ *
+ * Confirmed against a real Events document's `rsvps` field (Events' only
+ * join field, targeting EventRSVPs' `event` relationship column) by creating
+ * documents through Payload's own engine and inspecting its actual
+ * `findByID` response, not guessed:
+ *
+ *   { docs: [13, 12, 11, ...], hasNextPage: true }
+ *
+ * - a plain array of related ids (this data layer never resolves nested
+ * related documents for ANY relationship field, join or otherwise - see
+ * createBlocksRelsOps/createArrayOps, both of which also return bare ids -
+ * so a join field fits that same convention rather than introducing a
+ * depth concept nothing else here has) plus a `hasNextPage` flag. Confirmed
+ * default paging: sorted by id descending (newest related row first - same
+ * order `-createdAt` would give, since insertion order and id both increase
+ * together), limit 10, `hasNextPage` true once an 11th matching row exists.
+ * Payload's real page/sort/where query options on a join field are not
+ * implemented - nothing in this app's admin UI or API usage needs them yet.
+ */
+function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onColumn: string }>) {
+  const joinFieldNames = Object.keys(joinFields)
+  const JOIN_LIMIT = 10
+
+  async function attachJoins<T extends Record<string, unknown>>(doc: T, ownerId: number): Promise<T> {
+    if (!joinFieldNames.length) return doc
+    const db = await getDb()
+    const withJoins = { ...doc } as Record<string, unknown>
+    for (const name of joinFieldNames) {
+      const { table, onColumn } = joinFields[name]
+      const childColumns = table as unknown as Record<string, SQLiteColumn>
+      const rows = await db
+        .select({ id: childColumns.id })
+        .from(table)
+        .where(eq(childColumns[onColumn], ownerId))
+        .orderBy(desc(childColumns.id))
+        .limit(JOIN_LIMIT + 1)
+      const ids = (rows as { id: number }[]).map((row) => row.id)
+      withJoins[name] = { docs: ids.slice(0, JOIN_LIMIT), hasNextPage: ids.length > JOIN_LIMIT }
+    }
+    return withJoins as T
+  }
+
+  return { attachJoins }
+}
+
+/**
  * Read/write for the parallel `_<table>_v` versions table generateVersionsTable
  * produces. `array` and `blocks` fields, and blocks' nested hasMany/polymorphic
  * subfields, ARE supported here (pass the versioned `arrayTables`/`relsTable`/
@@ -437,6 +488,11 @@ export function createVersionsOps(
  *     replaces every block row and every rels row nested under this field
  *     wholesale, same "delete then reinsert" approach as arrays.
  *
+ * `joinFields` (join field name -> the related collection's own table plus
+ * the name of ITS relationship/hasMany column pointing back here) is
+ * resolved read-only at query time via createJoinOps - see its doc comment
+ * for the confirmed `{ docs: [...], hasNextPage }` shape and paging default.
+ *
  * Static `defaultValue`s from the collection config are applied on create
  * when the caller omits that field, matching what Payload's own validation
  * layer does before it ever reaches the database adapter - a function
@@ -452,17 +508,19 @@ export function createCollectionOps(
     topLevelRelsFieldTargets?: Record<string, string>
     blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }>
     groupFields?: GroupFieldMeta[]
+    joinFields?: Record<string, { table: AnySQLiteTable; onColumn: string }>
   } = {},
 ) {
   const columns = table as unknown as Record<string, SQLiteColumn>
   const idColumn = columns.id
   const arrayFieldNames = Object.keys(arrayTables)
 
-  const { relsTable, topLevelRelsFieldTargets = {}, blocksFields = {}, groupFields = [] } = rels
+  const { relsTable, topLevelRelsFieldTargets = {}, blocksFields = {}, groupFields = [], joinFields = {} } = rels
   const topLevelRelsFieldNames = Object.keys(topLevelRelsFieldTargets)
   const blocksFieldNames = Object.keys(blocksFields)
   const blocksRelsOps = createBlocksRelsOps(relsTable, topLevelRelsFieldTargets, blocksFields, false)
   const { attachArrays, writeArrays } = createArrayOps(arrayTables, false)
+  const { attachJoins } = createJoinOps(joinFields)
 
   const defaults: Record<string, unknown> = {}
   for (const field of collection.fields) {
@@ -502,7 +560,8 @@ export function createCollectionOps(
     const withArrays = await attachArrays(doc, doc.id)
     const withRels = await blocksRelsOps.attachTopLevelRels(withArrays, doc.id)
     const withBlocks = await blocksRelsOps.attachBlocksFields(withRels, doc.id)
-    return nestGroups(withBlocks, groupFields) as Doc
+    const withJoins = await attachJoins(withBlocks, doc.id)
+    return nestGroups(withJoins, groupFields) as Doc
   }
 
   async function findMany(args: { where?: Where; limit?: number } = {}): Promise<Doc[]> {

@@ -58,9 +58,9 @@ function statusColumn(dbNamePrefix: string) {
  *   array                                                -> a child table, see generateArrayTable
  *   blocks                                               -> one child table per block type, see generateBlockTables
  *   hasMany/polymorphic relationship or upload           -> bucketed as a relsField, see generateRelsTable
- *   join                                                 -> skipped entirely, no column - Payload resolves it at
- *                                                          query time against the related collection, which this
- *                                                          module does not do yet (the "joins" phase - see ../index.ts)
+ *   join                                                 -> no column - bucketed into `joinFields` for
+ *                                                          ../generic.ts's createJoinOps to resolve at query
+ *                                                          time against the related collection's own field
  *
  * `versions: { drafts: true }` on the collection adds the implicit `_status`
  * column Payload adds itself (confirmed against eg_pages/eg_events - not a
@@ -84,7 +84,7 @@ export function generateTable(collection: CollectionConfig) {
   // eg_pages.title (all required, both collections have drafts) are not.
   const suppressRequired = hasDrafts(collection)
 
-  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collection.slug, collection.fields, '', suppressRequired)
+  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields, joinFields } = processFields(collection.slug, collection.fields, '', suppressRequired)
 
   const columns: Record<string, SQLiteColumnBuilderBase> = {
     id: integer('id').primaryKey({ autoIncrement: true }),
@@ -96,7 +96,7 @@ export function generateTable(collection: CollectionConfig) {
     columns._status = statusColumn('')
   }
 
-  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields }
+  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields, joinFields }
 }
 
 /**
@@ -368,13 +368,15 @@ function isHasManyRelational(field: NamedField): boolean {
  * property keys as the live table (so callers can read `.title` off either
  * a live or a version row without caring which) - see generateVersionsTable.
  *
- * `join` fields are skipped entirely: Payload does not back them with a
- * column at all (confirmed against the real eg_events table - no `rsvps`
- * column exists for its `rsvps` join field), it resolves them at query time
- * against the related collection's own relationship field. That
- * query-time-join resolution is the "joins" phase in ../index.ts's roadmap,
- * not this one - for now, a join field's data simply is not part of the
- * document this data layer returns.
+ * `join` fields get no column of their own: Payload does not back them with
+ * one at all (confirmed against the real eg_events table - no `rsvps`
+ * column exists for its `rsvps` join field). They are bucketed into the
+ * returned `joinFields` instead, for ../generic.ts's createJoinOps to
+ * resolve at QUERY TIME against the related collection's own relationship
+ * field - see that function's doc comment and generateVersionsTable's (join
+ * fields are never part of a version snapshot; they're always resolved
+ * against the live, current related documents, regardless of which version
+ * of the parent you're looking at).
  */
 function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '', suppressRequired = false) {
   const columns: Record<string, SQLiteColumnBuilderBase> = {}
@@ -382,9 +384,11 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
   const blocksFields: NamedField[] = []
   const relsFields: NamedField[] = []
   const groupFields: GroupFieldMeta[] = []
+  const joinFields: NamedField[] = []
 
   for (const field of walkFields(collectionSlug, fields)) {
     if (field.type === 'join') {
+      joinFields.push(field)
       continue
     }
     if (field.type === 'array') {
@@ -423,8 +427,11 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
     columns[field.name] = columnFor(collectionSlug, field, dbNamePrefix, suppressRequired)
   }
 
-  return { columns, arrayFields, blocksFields, relsFields, groupFields }
+  return { columns, arrayFields, blocksFields, relsFields, groupFields, joinFields }
 }
+
+/** A `join` field's own config, as Payload declares it - `collection` is the single related collection slug (this app has no polymorphic join yet), `on` is the name of the relationship/hasMany field on THAT collection which points back here. */
+export type JoinFieldMeta = NamedField & { collection: string; on: string }
 
 /**
  * Flattens a field list: row and collapsible are pure layout in Payload's own

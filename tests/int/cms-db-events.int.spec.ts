@@ -22,10 +22,12 @@ import { getDb } from '@/cms/db/connect'
  *
  * Events was picked over Pages/Posts/Courses (this app's other versioned
  * collections) because it needs group+versions WITHOUT also needing
- * blocks/array-in-versions (generateVersionsTable doesn't build those yet)
- * or a working `join` field (Events has one, `rsvps` - skipped entirely for
- * now, see ../../src/cms/db/schema/index.ts's comment; that's the "joins"
- * phase, not this one).
+ * blocks/array-in-versions (generateVersionsTable doesn't build those yet
+ * at the time) or a working `join` field to be usable.
+ *
+ * Phase 8 (the last test below) resolves that join field for real - see
+ * ../../src/cms/db/generic.ts's createJoinOps doc comment for the confirmed
+ * `{ docs: [...ids], hasNextPage }` shape and paging default.
  *
  * Note: Payload's own `engine.update()` on this local dev D1 hits a
  * pre-existing, unrelated schema-drift bug in its own
@@ -47,7 +49,7 @@ describe('cms/db - events (proof of concept, not wired in)', () => {
     }
   })
 
-  it('reads an event written by Payload: nested group field, join field skipped', async () => {
+  it('reads an event written by Payload: nested group field, empty join field', async () => {
     engine = await getEngine()
     const created = await engine.create({
       collection: 'events',
@@ -64,7 +66,7 @@ describe('cms/db - events (proof of concept, not wired in)', () => {
     expect(viaOurs?.title).toBe('Parity event A')
     expect(viaOurs?.location).toEqual({ venueName: 'Hall A', address: '1 Main St', isOnline: false })
     expect(viaOurs?._status).toBe((created as { _status?: string })._status)
-    expect(viaOurs).not.toHaveProperty('rsvps')
+    expect(viaOurs?.rsvps).toEqual({ docs: [], hasNextPage: false })
   })
 
   it('writes an event (group field) Payload can read back', async () => {
@@ -125,5 +127,34 @@ describe('cms/db - events (proof of concept, not wired in)', () => {
     const payloadVersions = await (engine as any).findVersions({ collection: 'events', where: { parent: { equals: created.id } }, sort: '-createdAt' })
     expect(payloadVersions.docs[0].version.title).toBe('Written by clone adapter')
     expect(payloadVersions.docs[0].version.location).toEqual({ venueName: 'Clone Hall', address: null, isOnline: true })
+  })
+
+  it('resolves the rsvps join field query-time against real EventRSVPs, matching Payload for both direction and pagination', async () => {
+    const created = await createEvent({ title: `Join phase event ${Date.now()}`, startDate: new Date().toISOString(), eventType: 'free' })
+    createdIds.push(created.id)
+
+    // One more than the confirmed default page size (10) to prove hasNextPage.
+    const rsvpIds: number[] = []
+    for (let i = 0; i < 11; i++) {
+      const rsvp = await engine.create({
+        collection: 'event-rsvps',
+        data: { event: created.id, name: `RSVP ${i}`, email: `join-phase-${Date.now()}-${i}@example.com`, guestCount: 1 },
+      })
+      rsvpIds.push(rsvp.id as number)
+    }
+
+    const viaOurs = await findEventByID(created.id)
+    expect(viaOurs?.rsvps?.hasNextPage).toBe(true)
+    expect(viaOurs?.rsvps?.docs).toHaveLength(10)
+    // Newest-first (descending id) - matches Payload's own default join ordering, confirmed by inspection.
+    expect(viaOurs?.rsvps?.docs).toEqual([...rsvpIds].reverse().slice(0, 10))
+
+    const viaPayload = await engine.findByID({ collection: 'events', id: created.id, depth: 0 })
+    expect(viaPayload.rsvps).toEqual({ docs: viaOurs?.rsvps?.docs, hasNextPage: true })
+
+    const db = await getDb()
+    for (const id of rsvpIds) {
+      await db.run(sql`delete from eg_event_rsvps where id = ${id}`)
+    }
   })
 })

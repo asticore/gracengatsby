@@ -3,9 +3,9 @@ import type { Where } from '@/engine'
 import { Events } from '@/collections/Events'
 
 import { createCollectionOps, createVersionsOps } from '../generic'
-import { events, eventsGenerated, eventsVersions } from '../schema'
+import { events, eventsGenerated, eventsJoinFields, eventsVersions } from '../schema'
 
-/** Payload's document shape for the `events` collection - see src/collections/Events.ts. Does not include `rsvps` (a `join` field - see ./schema/index.ts's comment on why that's skipped for now). */
+/** Payload's document shape for the `events` collection - see src/collections/Events.ts. `rsvps` is a `join` field, resolved read-only at query time - see ../generic.ts's createJoinOps doc comment for the confirmed `{ docs, hasNextPage }` shape. */
 export type EventDoc = {
   id: number
   title: string
@@ -21,6 +21,7 @@ export type EventDoc = {
   capacity?: number | null
   externalRegistrationUrl?: string | null
   customFields?: unknown
+  rsvps?: { docs: number[]; hasNextPage: boolean }
   _status?: string | null
   updatedAt: string
   createdAt: string
@@ -38,7 +39,7 @@ export type EventVersion = {
   _status?: string | null
 } & Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
-const ops = createCollectionOps(events, Events, {}, { groupFields: eventsGenerated.groupFields })
+const ops = createCollectionOps(events, Events, {}, { groupFields: eventsGenerated.groupFields, joinFields: eventsJoinFields })
 const versionsOps = createVersionsOps(eventsVersions, eventsGenerated.groupFields)
 
 export const findEvents = ops.findMany as unknown as (args?: { where?: Where; limit?: number }) => Promise<EventDoc[]>

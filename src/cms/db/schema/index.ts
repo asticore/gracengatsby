@@ -1,5 +1,7 @@
 import type { Field } from '@/engine'
 
+import type { AnySQLiteTable } from 'drizzle-orm/sqlite-core'
+
 import { EventRSVPs } from '@/collections/EventRSVPs'
 import { Events } from '@/collections/Events'
 import { Faqs } from '@/collections/Faqs'
@@ -9,6 +11,7 @@ import { PageTemplates } from '@/collections/PageTemplates'
 import { Posts } from '@/collections/Posts'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
+import type { JoinFieldMeta } from './generate'
 import { generateArrayTable, generateBlockTables, generateRelsTable, generateTable, generateVersionsTable, relationTargetSlugs, tableNameFor } from './generate'
 
 /**
@@ -94,17 +97,42 @@ function singleTargetSlug(field: Field & { name: string }): string {
  * as a nested `location` object in the document shape) and `versions: {
  * drafts: true }` (the parallel `_eg_events_v` table - see
  * generateVersionsTable's doc comment for the real shape this mirrors).
- * Events also has a `join` field (`rsvps`) - skipped entirely for now (see
- * ./generate.ts's processFields doc comment), so this data layer's Events
- * documents do not include `rsvps` yet; that is the "joins" phase, not this
- * one, and Events was chosen over Pages/Posts/Courses specifically because
- * it is the smallest real versioned collection that does NOT also require
- * blocks/array-in-versions support (which generateVersionsTable does not
- * build yet either) or a working join to be usable.
+ * Events also has a `join` field (`rsvps`) - Phase 5 left it unresolved (see
+ * ./generate.ts's processFields doc comment at the time), and Events was
+ * chosen over Pages/Posts/Courses specifically because it is the smallest
+ * real versioned collection that does NOT also require blocks/array-in-
+ * versions support (which generateVersionsTable did not build yet either)
+ * or a working join to be usable. Phase 8 (below) resolves the join.
  */
 export const eventsGenerated = generateTable(Events)
 export const events = eventsGenerated.table
 export const eventsVersions = generateVersionsTable(Events, eventsGenerated.tableName).table
+
+/**
+ * Phase 8: `join` fields resolved for real, closing the last gap in this
+ * data layer's field-type coverage (everything else was closed by Phase 7).
+ * Events' `rsvps` is this app's only join field - it targets EventRSVPs'
+ * own `event` relationship column (confirmed: `field.collection` is
+ * `event-rsvps`/EventRSVPs.slug, `field.on` is `event`, the exact JS
+ * property key EventRSVPs' own generated table uses for that column - see
+ * eventRSVPs above and ./generate.ts's columnFor, which keys a relationship
+ * column by the field's own name, not a `<name>Id` suffix). Resolved
+ * read-only at query time by ../generic.ts's createJoinOps - see its doc
+ * comment for the confirmed `{ docs: [...ids], hasNextPage }` response shape
+ * and paging default, proven against a real Events document with 12 real
+ * EventRSVPs created through Payload's own engine.create().
+ */
+function resolveJoinTargetTable(slug: string): AnySQLiteTable {
+  if (slug === EventRSVPs.slug) return eventRSVPs
+  throw new Error(`cms/db/schema: no known table for join target collection "${slug}" - add it to resolveJoinTargetTable in schema/index.ts.`)
+}
+
+export const eventsJoinFields = Object.fromEntries(
+  eventsGenerated.joinFields.map((field) => {
+    const joinField = field as unknown as JoinFieldMeta
+    return [joinField.name, { table: resolveJoinTargetTable(joinField.collection), onColumn: joinField.on }]
+  }),
+)
 
 /**
  * Pages: adds versioned `blocks`/`_rels` child tables - the gap Events

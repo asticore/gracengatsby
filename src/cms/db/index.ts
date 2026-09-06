@@ -115,6 +115,24 @@
  * writeArrays, mirroring createBlocksRelsOps' extraction in Phase 6) is what
  * lets createVersionsOps share that logic instead of reimplementing it.
  *
+ * Phase 8 resolved `join` fields for real - the last schema-generation gap,
+ * full stop (every phase before this one was about a column/child-table
+ * SHAPE; a join field never gets a column at all). Proven against Events'
+ * `rsvps`, this app's only join field, targeting EventRSVPs' own `event`
+ * relationship column. Confirmed by creating a real Events document with 12
+ * real EventRSVPs through Payload's own engine.create() and inspecting its
+ * actual `findByID` response, not guessed: a join field resolves to
+ * `{ docs: [...ids], hasNextPage }` - a plain array of related ids (this
+ * data layer never resolves nested related documents for ANY relationship
+ * field, join or otherwise, so this fits the existing convention rather
+ * than introducing a depth concept nothing else here has), sorted by id
+ * descending (newest related row first), page size 10, `hasNextPage` true
+ * once an 11th matching row exists. ./generic.ts's createJoinOps resolves
+ * this read-only at query time (Payload never accepts a write through a
+ * join field either) - see its doc comment for the full shape and the
+ * paging/sort/where options it deliberately does not implement (nothing in
+ * this app's admin UI or API usage needs them yet).
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -122,14 +140,11 @@
  * drafts and joins for it. Running this app's actual config through
  * `payload generate:db-schema` produces over 10,000 lines of table
  * definitions alone - that is the real size of the surface a from-scratch
- * generic replacement has to cover. Two things remain, and neither is a
- * schema-generation gap anymore - every field type this app's collections
- * actually use now has a proven live AND versioned shape:
+ * generic replacement has to cover. Every field type this app's collections
+ * actually use now has a proven live AND versioned shape, and joins resolve
+ * for real - one thing remains, and it is a policy question, not a
+ * schema-generation gap:
  *
- *  - `join` fields resolved for real (right now they are simply absent from
- *    the document) - query-time assembly against the related collection's
- *    own relationship/hasMany field, e.g. Events' `rsvps` against
- *    EventRSVPs' `event`.
  *  - Draft/publish application-level semantics: whether every live write
  *    should also create a version row, and how `_status`/`latest` should
  *    govern reads, is a Payload-level policy question this data layer's
@@ -137,9 +152,12 @@
  *    ./generic.ts's doc comment on it) - something will need to decide this
  *    before create/updateByID can be trusted on a drafts-enabled collection.
  *
- * Next up: joins (proven against Events' `rsvps`) - then the draft/publish
- * policy question above needs an answer before this data layer can be
- * trusted end-to-end on any drafts-enabled collection.
+ * Next up: that draft/publish policy question is the last thing standing
+ * between this data layer and being trustworthy end-to-end on every
+ * collection in this app - once it's answered, src/engine/db.ts can start
+ * being switched over collection by collection, and only then does removing
+ * the Payload dependency itself, and rebuilding the admin UI in Tailwind,
+ * become real next steps rather than premature ones.
  *
  * See src/engine/index.ts for the seam this is meant to eventually replace
  * and the rules that govern it (only src/engine/ may import the vendor

@@ -60,8 +60,35 @@
  * eg_pages.title - both required, both have drafts - are not). Proven
  * against Events, chosen over Pages/Posts/Courses (this app's other
  * versioned collections) specifically because it needs group+versions
- * without ALSO needing blocks/array-in-versions (not built yet - see below)
+ * without ALSO needing blocks/array-in-versions (not built yet at the time)
  * or a working join to be usable at all.
+ *
+ * Phase 6 closed that gap: versioned `blocks` fields and their nested
+ * hasMany/polymorphic subfields. Proven against Pages (its `blocks` field
+ * uses the same page-builder library already proven live, not versioned,
+ * against PageTemplates in Phase 4). Confirmed by creating real documents
+ * through Payload's own engine.create() and inspecting the resulting D1
+ * tables directly:
+ *
+ *  - A versioned block table (e.g. `_eg_pages_v_blocks_hero`) has an integer
+ *    autoincrement `id` plus an extra `_uuid` text column, instead of the
+ *    live table's string `id` - see ./schema/generate.ts's generateBlockTables
+ *    `versioned` param doc comment.
+ *  - Both a versioned block row's own `_path` column and a nested hasMany
+ *    subfield's `path` in the versioned `_rels` table get a "version."
+ *    (dot) prefix the live table's equivalents never get (`_path` = "blocks"
+ *    live, "version.blocks" versioned; `path` = "blocks.0.faqs" live,
+ *    "version.blocks.0.faqs" versioned) - a different prefix scheme than the
+ *    "version_" (underscore) prefix on the versions table's own COLUMN
+ *    names. See ./generic.ts's createBlocksRelsOps `pathPrefix` doc comment.
+ *  - A versioned block/rels row's `_parent_id`/`parent_id` FK points at the
+ *    VERSION ROW's own id, not the live document's id - confirmed via the
+ *    real FOREIGN KEY clause in each table's CREATE TABLE statement, not
+ *    assumed from the live-table pattern. ./generic.ts's createVersionsOps
+ *    threads the version row's own id through as the "owner" of its blocks
+ *    and rels children, exactly the same shape createCollectionOps already
+ *    used for the live table's own id - both now share one
+ *    createBlocksRelsOps implementation.
  *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
@@ -70,13 +97,15 @@
  * drafts and joins for it. Running this app's actual config through
  * `payload generate:db-schema` produces over 10,000 lines of table
  * definitions alone - that is the real size of the surface a from-scratch
- * generic replacement has to cover. Three things remain:
+ * generic replacement has to cover. Two things remain:
  *
- *  - Versioned blocks/array child tables (e.g. `_eg_pages_v_blocks_hero`) -
- *    confirmed to have a different id scheme than their live counterparts
- *    (an integer `id` plus an extra `_uuid` column, instead of the live
- *    table's string `id`), needed before Pages/Posts (both use `blocks`) can
- *    get versions support.
+ *  - Versioned ARRAY child tables (e.g. `_eg_posts_v_version_categories`,
+ *    confirmed by inspection - table name is `<versionsTable>_version_<fieldName>`,
+ *    with the array's own field name getting the "version_" prefix baked
+ *    into the TABLE name, unlike blocks tables which never get that prefix;
+ *    subfield COLUMNS do NOT get `version_`-prefixed, only the table name
+ *    does) - needed before Posts (the only versioned collection with a
+ *    top-level array field, `categories`) can get versions support.
  *  - `join` fields resolved for real (right now they are simply absent from
  *    the document) - query-time assembly against the related collection's
  *    own relationship/hasMany field, e.g. Events' `rsvps` against
@@ -88,9 +117,9 @@
  *    ./generic.ts's doc comment on it) - something will need to decide this
  *    before create/updateByID can be trusted on a drafts-enabled collection.
  *
- * Next up: versioned blocks/arrays (proven against Pages), then joins - each
- * proven against a real collection with the same write-both-ways parity test
- * before moving on.
+ * Next up: versioned arrays (proven against Posts), then joins - each proven
+ * against a real collection with the same write-both-ways parity test before
+ * moving on.
  *
  * See src/engine/index.ts for the seam this is meant to eventually replace
  * and the rules that govern it (only src/engine/ may import the vendor
@@ -102,3 +131,4 @@ export * from './collections/eventRSVPs'
 export * from './collections/membershipTiers'
 export * from './collections/pageTemplates'
 export * from './collections/events'
+export * from './collections/pages'

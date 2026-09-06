@@ -4,6 +4,7 @@ import { EventRSVPs } from '@/collections/EventRSVPs'
 import { Events } from '@/collections/Events'
 import { Faqs } from '@/collections/Faqs'
 import { Media } from '@/collections/Media'
+import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
@@ -103,3 +104,64 @@ function singleTargetSlug(field: Field & { name: string }): string {
 export const eventsGenerated = generateTable(Events)
 export const events = eventsGenerated.table
 export const eventsVersions = generateVersionsTable(Events, eventsGenerated.tableName).table
+
+/**
+ * Pages: adds versioned `blocks`/`_rels` child tables - the gap Events
+ * (Phase 5's proof target) deliberately left open, since Events has no
+ * `blocks` field. Pages' `blocks` field uses the same page-builder library as
+ * PageTemplates (Faq's `faqs`, Gallery's `images` are its only
+ * hasMany/polymorphic fields, both already covered by resolveTargetTable
+ * above), so the live-table wiring below is a straight copy of
+ * pageTemplates'/pageTemplatesBlocks'/pageTemplatesRels' shape.
+ *
+ * The versions side is new: generateVersionsTable now returns `blocksFields`/
+ * `relsFields` too (see its doc comment), so generateBlockTables/
+ * generateRelsTable are called again against the VERSIONS table's own name
+ * (`pagesVersionsGenerated.tableName`, e.g. "_eg_pages_v") with
+ * `versioned: true` - producing e.g. `_eg_pages_v_blocks_hero` (an integer
+ * autoincrement `id` plus an extra `_uuid` column, confirmed against the real
+ * table - see generateBlockTables' `versioned` param doc comment) and
+ * `_eg_pages_v_rels` (identical shape to a live `_rels` table, just scoped to
+ * version rows instead of live document rows - confirmed by direct D1
+ * inspection, not guessed). Pages has no top-level array field, so
+ * generateVersionsTable does not throw on the one gap it still has
+ * (versioned array child tables - see its doc comment; Posts is the next
+ * real target for that specific gap).
+ */
+export const pagesGenerated = generateTable(Pages)
+export const pages = pagesGenerated.table
+
+const [pagesBlocksField] = pagesGenerated.blocksFields
+const pagesBlockDefs = generateBlockTables(Pages.slug, pagesGenerated.tableName, pagesBlocksField)
+export const pagesBlocks = Object.fromEntries(pagesBlockDefs.map((block) => [block.slug, block.table]))
+
+const pagesRelsFields = [...pagesGenerated.relsFields, ...pagesBlockDefs.flatMap((block) => block.relsFields)]
+const pagesRelsGenerated = generateRelsTable(pagesGenerated.tableName, pagesRelsFields, resolveTargetTable)
+export const pagesRels = pagesRelsGenerated.table
+
+export const pagesBlockTypes = Object.fromEntries(
+  pagesBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+export const pagesRelsTargetColumns = pagesRelsGenerated.targetColumns
+
+export const pagesVersionsGenerated = generateVersionsTable(Pages, pagesGenerated.tableName)
+export const pagesVersions = pagesVersionsGenerated.table
+
+const [pagesVersionsBlocksField] = pagesVersionsGenerated.blocksFields
+const pagesVersionsBlockDefs = generateBlockTables(Pages.slug, pagesVersionsGenerated.tableName, pagesVersionsBlocksField, true, true)
+export const pagesVersionsBlocks = Object.fromEntries(pagesVersionsBlockDefs.map((block) => [block.slug, block.table]))
+
+const pagesVersionsRelsFields = [...pagesVersionsGenerated.relsFields, ...pagesVersionsBlockDefs.flatMap((block) => block.relsFields)]
+const pagesVersionsRelsGenerated = generateRelsTable(pagesVersionsGenerated.tableName, pagesVersionsRelsFields, resolveTargetTable)
+export const pagesVersionsRels = pagesVersionsRelsGenerated.table
+
+export const pagesVersionsBlockTypes = Object.fromEntries(
+  pagesVersionsBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+export const pagesVersionsRelsTargetColumns = pagesVersionsRelsGenerated.targetColumns

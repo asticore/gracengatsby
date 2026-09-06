@@ -109,13 +109,26 @@ export function generateTable(collection: CollectionConfig) {
  * than cascading - `created_at`/`updated_at` for when the version itself was
  * saved, and `latest`, a flag marking the current version for that parent).
  *
- * Deliberately narrow like the rest of this module: only top-level
- * scalar/group fields are supported - a collection whose `blocks`/`array`
- * fields would need their own versioned child tables (confirmed these exist
- * too, e.g. `_eg_pages_v_blocks_hero`, with a different id scheme - integer
- * `id` plus an extra `_uuid` column, unlike the live table's string `id`)
- * throws rather than silently dropping that data. See ../index.ts for why
- * this is the next real step, not the last one.
+ * `blocks` fields ARE supported here (confirmed against real
+ * `_eg_pages_v_blocks_hero`): the returned `blocksFields` is the same field
+ * list generateTable's is, meant for generateBlockTables(..., versioned:
+ * true) - see that function's doc comment for the versioned id-scheme
+ * difference. Likewise `relsFields` feeds generateRelsTable exactly like the
+ * live table does, just against this table's own name, producing e.g.
+ * `_eg_pages_v_rels` - confirmed to have the exact same column shape as a
+ * live `_rels` table.
+ *
+ * Still narrow on one thing: `array` fields. A versioned array child table
+ * exists too (confirmed against real `_eg_posts_v_version_categories` -
+ * table name is `<versionsTable>_version_<fieldName>`, i.e. the array's own
+ * field name gets the `version_` prefix baked into the TABLE name, unlike
+ * blocks tables which never get that prefix - confirmed `_eg_pages_v_blocks_hero`
+ * has no "version_" in it at all - and its subfield COLUMNS do NOT get
+ * `version_`-prefixed, only the table name does), but this generator throws
+ * on it rather than silently dropping that data, since nothing has needed it
+ * proven yet (Pages/PageTemplates, the blocks/rels proof targets, have no
+ * array field - Posts does, and is the next real target for this specific
+ * gap).
  */
 export function generateVersionsTable(collection: CollectionConfig, mainTableName: string) {
   if (!hasDrafts(collection)) {
@@ -127,10 +140,9 @@ export function generateVersionsTable(collection: CollectionConfig, mainTableNam
   // drafts are enabled - see generateTable - but this stays explicit rather
   // than relying on that).
   const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collection.slug, collection.fields, 'version_', true)
-  if (arrayFields.length || blocksFields.length || relsFields.length) {
-    const [culprit] = [...arrayFields, ...blocksFields, ...relsFields]
+  if (arrayFields.length) {
     throw new Error(
-      `generateVersionsTable(${collection.slug}): versioned array/blocks/hasMany-relationship child tables (e.g. "${culprit.name}") are not supported yet - only top-level scalar/group fields.`,
+      `generateVersionsTable(${collection.slug}): versioned array child tables (e.g. "${arrayFields[0].name}") are not supported yet - only blocks and top-level scalar/group fields.`,
     )
   }
 
@@ -147,7 +159,7 @@ export function generateVersionsTable(collection: CollectionConfig, mainTableNam
     latest: integer('latest', { mode: 'boolean' }),
   }
 
-  return { table: sqliteTable(tableName, columns), tableName, groupFields }
+  return { table: sqliteTable(tableName, columns), tableName, blocksFields, relsFields, groupFields }
 }
 
 /** The table name Payload would use for a collection - `dbName` if set, else its slug, snake-cased. */
@@ -222,8 +234,20 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
  * is the block's 0-based position in the merged, _order-sorted array - NOT
  * the same as its 1-based `_order` value, and NOT scoped to the block's own
  * table (there is no such thing as a block-level `_rels` table).
+ *
+ * `versioned` produces the `_<table>_v_blocks_<slug>` shape instead (pass the
+ * VERSIONS table's own name as `parentTableName` - confirmed the table name
+ * itself never gets a "version_" infix, e.g. `_eg_pages_v_blocks_hero`, not
+ * `_eg_pages_v_blocks_version_hero`): an integer autoincrement `id` in place
+ * of the live table's string `id`, plus an extra `_uuid` text column -
+ * confirmed against that same real table. `_parent_id` there is still just
+ * an integer column pointing at whichever row owns it - for the versioned
+ * case that is the VERSION ROW's own id (confirmed via `_eg_pages_v_blocks_hero`'s
+ * FK target being `_eg_pages_v`, not the live `eg_pages` table), not the
+ * live document's id - ../generic.ts's createVersionsOps is what threads
+ * that through, not this generator.
  */
-export function generateBlockTables(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false) {
+export function generateBlockTables(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false, versioned = false) {
   if (field.type !== 'blocks') {
     throw new Error(`generateBlockTables(${collectionSlug}): field "${field.name}" is not a blocks field.`)
   }
@@ -246,8 +270,9 @@ export function generateBlockTables(collectionSlug: string, parentTableName: str
       order: integer('_order').notNull(),
       parentId: integer('_parent_id').notNull(),
       path: text('_path').notNull(),
-      id: text('id').primaryKey(),
+      id: versioned ? integer('id').primaryKey({ autoIncrement: true }) : text('id').primaryKey(),
       ...fieldColumns,
+      ...(versioned ? { uuid: text('_uuid') } : {}),
       blockName: text('block_name'),
     }
 

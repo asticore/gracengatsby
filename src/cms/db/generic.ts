@@ -53,39 +53,266 @@ function flattenGroups(data: Record<string, unknown>, groupFields: GroupFieldMet
   return result
 }
 
+/** Pulls a version document's `blocks` field(s) out for separate handling, same idea as createCollectionOps' splitSpecialFields but scoped to just what createVersionsOps supports so far (no arrays/top-level-rels at the version level yet - see generateVersionsTable's doc comment). */
+function splitBlocksFields(
+  data: Record<string, unknown>,
+  blocksFields: Record<string, unknown>,
+): { scalars: Record<string, unknown>; blocks: Record<string, Record<string, unknown>[]> } {
+  const scalars = { ...data }
+  const blocks: Record<string, Record<string, unknown>[]> = {}
+  for (const name of Object.keys(blocksFields)) {
+    if (name in scalars) {
+      blocks[name] = (scalars[name] as Record<string, unknown>[]) ?? []
+      delete scalars[name]
+    }
+  }
+  return { scalars, blocks }
+}
+
+/**
+ * The blocks/hasMany-relationship read+write logic shared by createCollectionOps
+ * (the live table) and createVersionsOps (the `_<table>_v` table) - both need
+ * exactly the same "merge every block type's rows in `_order`, re-attach each
+ * block's own hasMany subfields from the shared `_rels` table, replace
+ * wholesale on write" behaviour, just scoped to a different owning row:
+ * the live table scopes children by the live document's own id, the versions
+ * table scopes them by the VERSION ROW's own id - confirmed against real
+ * `_eg_pages_v_blocks_hero`/`_eg_pages_v_rels`, whose `_parent_id`/`parent_id`
+ * FKs point at `_eg_pages_v` itself, not the live `eg_pages` table. Neither
+ * caller needs to know that distinction - they just pass in `ownerId`.
+ *
+ * `uuidColumn` is the one real shape difference: a live block/rels-adjacent
+ * table's row identity is its own `id` column (a string, explicitly set on
+ * insert - it is not autoincrement), where a VERSIONED block table's row
+ * identity is its `_uuid` column instead (its own `id` is a meaningless
+ * autoincrement integer - never set on insert, never read back). See
+ * ../schema/generate.ts's generateBlockTables `versioned` param doc comment
+ * for the confirmed real DDL this mirrors.
+ */
+function createBlocksRelsOps(
+  relsTable: RelsTableDef | undefined,
+  topLevelRelsFieldTargets: Record<string, string>,
+  blocksFields: Record<string, { blockTypes: Record<string, BlockTypeDef> }>,
+  uuidColumn: boolean,
+  // Every `path` value (both a block row's own `_path` column and a nested
+  // hasMany subfield's `path` in `relsTable`) gets this prepended - confirmed
+  // against real data: a live block's `_path` is just "blocks", but a
+  // VERSIONED block's is "version.blocks" (dot, not underscore - distinct
+  // from the "version_" underscore prefix generateVersionsTable's columns
+  // get), and a versioned block's nested hasMany subfield writes to
+  // `_rels` with `path` = "version.blocks.<index>.<field>", not
+  // "blocks.<index>.<field>". Payload's own engine.create() produced both of
+  // these; this is not guessed.
+  pathPrefix = '',
+) {
+  const relsColumns = relsTable ? (relsTable.table as unknown as Record<string, SQLiteColumn>) : undefined
+  const topLevelRelsFieldNames = Object.keys(topLevelRelsFieldTargets)
+  const blocksFieldNames = Object.keys(blocksFields)
+
+  function relsColumnFor(targetSlug: string): string {
+    if (!relsTable) {
+      throw new Error(`createBlocksRelsOps: a relsField targets "${targetSlug}" but no relsTable was given.`)
+    }
+    const columnKey = relsTable.targetColumns[targetSlug]
+    if (!columnKey) {
+      throw new Error(`createBlocksRelsOps: relsTable has no column for target collection "${targetSlug}" - check generateRelsTable's inputs.`)
+    }
+    return columnKey
+  }
+
+  /** Reads one hasMany/polymorphic field's related ids, ordered - shared by top-level fields (`path` = field name) and blocks-nested ones (`path` = `<blocksField>.<index>.<field>`). */
+  async function readRelsIds(ownerId: number, path: string, targetColumnKey: string): Promise<number[]> {
+    if (!relsTable || !relsColumns) return []
+    const db = await getDb()
+    const rows = await db
+      .select()
+      .from(relsTable.table)
+      .where(and(eq(relsColumns.parentId, ownerId), eq(relsColumns.path, path)))
+      .orderBy(relsColumns.order)
+    return (rows as Record<string, unknown>[]).map((row) => row[targetColumnKey] as number).filter((value) => value != null)
+  }
+
+  /** Replaces one hasMany/polymorphic field's related ids wholesale - delete every row at this exact path, then reinsert in order (1-based, matching the real `eg_page_templates_rels`/`eg_faq_settings_rels` data - confirmed by inspection, not guessed). */
+  async function writeRelsIds(ownerId: number, path: string, targetColumnKey: string, ids: number[]): Promise<void> {
+    if (!relsTable || !relsColumns) return
+    const db = await getDb()
+    await db.delete(relsTable.table).where(and(eq(relsColumns.parentId, ownerId), eq(relsColumns.path, path)))
+    if (ids.length) {
+      await db.insert(relsTable.table).values(ids.map((relId, index) => ({ parentId: ownerId, path, order: index + 1, [targetColumnKey]: relId })))
+    }
+  }
+
+  async function attachTopLevelRels<T extends Record<string, unknown>>(doc: T, ownerId: number): Promise<T> {
+    if (!topLevelRelsFieldNames.length) return doc
+    const withRels = { ...doc } as Record<string, unknown>
+    for (const [fieldName, targetSlug] of Object.entries(topLevelRelsFieldTargets)) {
+      withRels[fieldName] = await readRelsIds(ownerId, `${pathPrefix}${fieldName}`, relsColumnFor(targetSlug))
+    }
+    return withRels as T
+  }
+
+  async function writeTopLevelRels(ownerId: number, topLevelRels: Record<string, number[]>): Promise<void> {
+    for (const [fieldName, ids] of Object.entries(topLevelRels)) {
+      const targetSlug = topLevelRelsFieldTargets[fieldName]
+      await writeRelsIds(ownerId, `${pathPrefix}${fieldName}`, relsColumnFor(targetSlug), ids)
+    }
+  }
+
+  /** Reconstructs every `blocks` field on a document - merges each block type's own child-table rows into one array ordered by the shared `_order` sequence, then re-attaches each block's own hasMany subfields from `relsTable`. */
+  async function attachBlocksFields<T extends Record<string, unknown>>(doc: T, ownerId: number): Promise<T> {
+    if (!blocksFieldNames.length) return doc
+    const db = await getDb()
+    const withBlocks = { ...doc } as Record<string, unknown>
+
+    for (const [fieldName, { blockTypes }] of Object.entries(blocksFields)) {
+      const perType: { slug: string; row: Record<string, unknown> }[] = []
+      for (const [slug, def] of Object.entries(blockTypes)) {
+        const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
+        const rows = await db.select().from(def.table).where(eq(blockColumns.parentId, ownerId)).orderBy(blockColumns.order)
+        for (const row of rows as Record<string, unknown>[]) perType.push({ slug, row })
+      }
+      perType.sort((a, b) => (a.row.order as number) - (b.row.order as number))
+
+      withBlocks[fieldName] = await Promise.all(
+        perType.map(async ({ slug, row }, index) => {
+          const { order: _order, parentId: _parentId, path: _path, id: rawId, uuid, ...rest } = row as Record<string, unknown> & { uuid?: string }
+          const def = blockTypes[slug]
+          for (const [subFieldName, targetSlug] of Object.entries(def.relsFieldTargets)) {
+            rest[subFieldName] = await readRelsIds(ownerId, `${pathPrefix}${fieldName}.${index}.${subFieldName}`, relsColumnFor(targetSlug))
+          }
+          return { ...rest, id: uuidColumn ? uuid : rawId, blockType: slug }
+        }),
+      )
+    }
+    return withBlocks as T
+  }
+
+  /** Replaces every `blocks` field's rows (and their nested rels rows) wholesale, same approach as writeArrays/writeRelsIds. */
+  async function writeBlocksFields(ownerId: number, blocks: Record<string, Record<string, unknown>[]>): Promise<void> {
+    if (!Object.keys(blocks).length) return
+    const db = await getDb()
+
+    for (const [fieldName, items] of Object.entries(blocks)) {
+      const { blockTypes } = blocksFields[fieldName]
+
+      for (const def of Object.values(blockTypes)) {
+        const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
+        await db.delete(def.table).where(eq(blockColumns.parentId, ownerId))
+      }
+      if (relsTable && relsColumns) {
+        await db.delete(relsTable.table).where(and(eq(relsColumns.parentId, ownerId), like(relsColumns.path, `${pathPrefix}${fieldName}.%`)))
+      }
+
+      const rowsByType = new Map<string, Record<string, unknown>[]>()
+      for (const [index, item] of items.entries()) {
+        const blockType = item.blockType as string
+        const def = blockTypes[blockType]
+        if (!def) {
+          throw new Error(`writeBlocksFields: unknown block type "${blockType}" for field "${fieldName}".`)
+        }
+        const { blockType: _blockType, id: itemId, blockName, ...fields } = item
+
+        const scalars: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(fields)) {
+          if (def.relsFieldTargets[key]) continue
+          scalars[key] = value
+        }
+
+        const row: Record<string, unknown> = {
+          ...scalars,
+          order: index + 1,
+          parentId: ownerId,
+          path: `${pathPrefix}${fieldName}`,
+          blockName: blockName ?? null,
+        }
+        if (uuidColumn) {
+          row.uuid = (itemId as string) || crypto.randomUUID()
+        } else {
+          row.id = (itemId as string) || crypto.randomUUID()
+        }
+        if (!rowsByType.has(blockType)) rowsByType.set(blockType, [])
+        rowsByType.get(blockType)!.push(row)
+
+        for (const [subFieldName, targetSlug] of Object.entries(def.relsFieldTargets)) {
+          const ids = (fields[subFieldName] as number[]) ?? []
+          if (ids.length) {
+            await db.insert(relsTable!.table).values(
+              ids.map((relId, relIndex) => ({
+                parentId: ownerId,
+                path: `${pathPrefix}${fieldName}.${index}.${subFieldName}`,
+                order: relIndex + 1,
+                [relsColumnFor(targetSlug)]: relId,
+              })),
+            )
+          }
+        }
+      }
+
+      for (const [blockType, rows] of rowsByType) {
+        await db.insert(blockTypes[blockType].table).values(rows)
+      }
+    }
+  }
+
+  return { attachTopLevelRels, writeTopLevelRels, attachBlocksFields, writeBlocksFields }
+}
+
 /**
  * Read/write for the parallel `_<table>_v` versions table generateVersionsTable
- * produces - deliberately minimal, matching what that generator supports so
- * far (top-level scalar/group fields only, no versioned array/blocks/rels
- * child tables yet - see ../schema/generate.ts's generateVersionsTable doc
- * comment for why). Not folded into createCollectionOps' create/updateByID:
- * whether every live write should also create a version row, and how
- * `_status`/`latest`/draft-vs-published reads should behave, is an
- * application/Payload-level policy question this data layer does not need to
- * settle to prove the schema and the basic row shape are right - see
- * ../index.ts.
+ * produces. `blocks` fields and their nested hasMany/polymorphic subfields
+ * ARE supported here (pass the versioned `relsTable`/`blocksFields` - e.g.
+ * pagesVersionsRels/pagesVersionsBlockTypes - same shapes createCollectionOps
+ * takes, just generated against the versions table instead of the live one),
+ * scoped by the version row's OWN id via createBlocksRelsOps - see its doc
+ * comment. Still narrow on one thing: `array` fields at the version level
+ * (generateVersionsTable itself throws before this would ever be called with
+ * one), and top-level (not blocks-nested) hasMany fields at the version level
+ * (nothing has needed one yet - every hasMany/polymorphic field in this app's
+ * versioned collections lives inside a block).
+ *
+ * Not folded into createCollectionOps' create/updateByID: whether every live
+ * write should also create a version row, and how `_status`/`latest`/
+ * draft-vs-published reads should behave, is an application/Payload-level
+ * policy question this data layer does not need to settle to prove the
+ * schema and the basic row shape are right - see ../index.ts.
  */
-export function createVersionsOps(table: AnySQLiteTable, groupFields: GroupFieldMeta[] = []) {
+export function createVersionsOps(
+  table: AnySQLiteTable,
+  groupFields: GroupFieldMeta[] = [],
+  rels: { relsTable?: RelsTableDef; blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }> } = {},
+) {
   const columns = table as unknown as Record<string, SQLiteColumn>
+  const { relsTable, blocksFields = {} } = rels
+  // "version." (dot), not "version_" (underscore) - see createBlocksRelsOps'
+  // pathPrefix doc comment; confirmed against real _eg_pages_v_rels data.
+  const { attachBlocksFields, writeBlocksFields } = createBlocksRelsOps(relsTable, {}, blocksFields, true, 'version.')
+
+  async function attachExtras(row: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const withBlocks = await attachBlocksFields(row, row.id as number)
+    return nestGroups(withBlocks, groupFields)
+  }
 
   async function findLatestByParentID(parentId: number): Promise<Record<string, unknown> | null> {
     const db = await getDb()
     const [row] = await db.select().from(table).where(eq(columns.parentId, parentId)).orderBy(desc(columns.id)).limit(1)
-    return row ? nestGroups(row as Record<string, unknown>, groupFields) : null
+    return row ? attachExtras(row as Record<string, unknown>) : null
   }
 
   async function findAllByParentID(parentId: number): Promise<Record<string, unknown>[]> {
     const db = await getDb()
     const rows = await db.select().from(table).where(eq(columns.parentId, parentId)).orderBy(desc(columns.id))
-    return rows.map((row) => nestGroups(row as Record<string, unknown>, groupFields))
+    return Promise.all(rows.map((row) => attachExtras(row as Record<string, unknown>)))
   }
 
   async function createVersion(parentId: number, data: Record<string, unknown>, opts: { latest?: boolean } = {}): Promise<Record<string, unknown>> {
     const db = await getDb()
     const now = new Date().toISOString()
-    const values = { ...flattenGroups(data, groupFields), parentId, createdAt: now, updatedAt: now, latest: opts.latest ?? true }
+    const { scalars, blocks } = splitBlocksFields(data, blocksFields)
+    const values = { ...flattenGroups(scalars, groupFields), parentId, createdAt: now, updatedAt: now, latest: opts.latest ?? true }
     const [row] = await db.insert(table).values(values).returning()
-    return nestGroups(row as Record<string, unknown>, groupFields)
+    const id = (row as { id: number }).id
+    await writeBlocksFields(id, blocks)
+    return attachExtras(row as Record<string, unknown>)
   }
 
   return { findLatestByParentID, findAllByParentID, createVersion }
@@ -153,20 +380,9 @@ export function createCollectionOps(
   const arrayFieldNames = Object.keys(arrayTables)
 
   const { relsTable, topLevelRelsFieldTargets = {}, blocksFields = {}, groupFields = [] } = rels
-  const relsColumns = relsTable ? (relsTable.table as unknown as Record<string, SQLiteColumn>) : undefined
   const topLevelRelsFieldNames = Object.keys(topLevelRelsFieldTargets)
   const blocksFieldNames = Object.keys(blocksFields)
-
-  function relsColumnFor(targetSlug: string): string {
-    if (!relsTable) {
-      throw new Error(`createCollectionOps: a relsField targets "${targetSlug}" but no relsTable was given.`)
-    }
-    const columnKey = relsTable.targetColumns[targetSlug]
-    if (!columnKey) {
-      throw new Error(`createCollectionOps: relsTable has no column for target collection "${targetSlug}" - check generateRelsTable's inputs.`)
-    }
-    return columnKey
-  }
+  const blocksRelsOps = createBlocksRelsOps(relsTable, topLevelRelsFieldTargets, blocksFields, false)
 
   const defaults: Record<string, unknown> = {}
   for (const field of collection.fields) {
@@ -238,139 +454,11 @@ export function createCollectionOps(
     }
   }
 
-  /** Reads one hasMany/polymorphic field's related ids, ordered - shared by top-level fields (`path` = field name) and blocks-nested ones (`path` = `<blocksField>.<index>.<field>`). */
-  async function readRelsIds(parentId: number, path: string, targetColumnKey: string): Promise<number[]> {
-    if (!relsTable || !relsColumns) return []
-    const db = await getDb()
-    const rows = await db
-      .select()
-      .from(relsTable.table)
-      .where(and(eq(relsColumns.parentId, parentId), eq(relsColumns.path, path)))
-      .orderBy(relsColumns.order)
-    return (rows as Record<string, unknown>[]).map((row) => row[targetColumnKey] as number).filter((value) => value != null)
-  }
-
-  /** Replaces one hasMany/polymorphic field's related ids wholesale - delete every row at this exact path, then reinsert in order (1-based, matching the real `eg_page_templates_rels`/`eg_faq_settings_rels` data - confirmed by inspection, not guessed). */
-  async function writeRelsIds(parentId: number, path: string, targetColumnKey: string, ids: number[]): Promise<void> {
-    if (!relsTable || !relsColumns) return
-    const db = await getDb()
-    await db.delete(relsTable.table).where(and(eq(relsColumns.parentId, parentId), eq(relsColumns.path, path)))
-    if (ids.length) {
-      await db.insert(relsTable.table).values(ids.map((relId, index) => ({ parentId, path, order: index + 1, [targetColumnKey]: relId })))
-    }
-  }
-
-  async function attachTopLevelRels(doc: Doc): Promise<Doc> {
-    if (!topLevelRelsFieldNames.length) return doc
-    const withRels: Doc = { ...doc }
-    for (const [fieldName, targetSlug] of Object.entries(topLevelRelsFieldTargets)) {
-      withRels[fieldName] = await readRelsIds(doc.id, fieldName, relsColumnFor(targetSlug))
-    }
-    return withRels
-  }
-
-  async function writeTopLevelRels(id: number, topLevelRels: Record<string, number[]>): Promise<void> {
-    for (const [fieldName, ids] of Object.entries(topLevelRels)) {
-      const targetSlug = topLevelRelsFieldTargets[fieldName]
-      await writeRelsIds(id, fieldName, relsColumnFor(targetSlug), ids)
-    }
-  }
-
-  /** Reconstructs every `blocks` field on a document - merges each block type's own child-table rows into one array ordered by the shared `_order` sequence, then re-attaches each block's own hasMany subfields from `relsTable`. */
-  async function attachBlocksFields(doc: Doc): Promise<Doc> {
-    if (!blocksFieldNames.length) return doc
-    const db = await getDb()
-    const withBlocks: Doc = { ...doc }
-
-    for (const [fieldName, { blockTypes }] of Object.entries(blocksFields)) {
-      const perType: { slug: string; row: Record<string, unknown> }[] = []
-      for (const [slug, def] of Object.entries(blockTypes)) {
-        const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
-        const rows = await db.select().from(def.table).where(eq(blockColumns.parentId, doc.id)).orderBy(blockColumns.order)
-        for (const row of rows as Record<string, unknown>[]) perType.push({ slug, row })
-      }
-      perType.sort((a, b) => (a.row.order as number) - (b.row.order as number))
-
-      withBlocks[fieldName] = await Promise.all(
-        perType.map(async ({ slug, row }, index) => {
-          const { order: _order, parentId: _parentId, path: _path, ...rest } = row
-          const def = blockTypes[slug]
-          for (const [subFieldName, targetSlug] of Object.entries(def.relsFieldTargets)) {
-            rest[subFieldName] = await readRelsIds(doc.id, `${fieldName}.${index}.${subFieldName}`, relsColumnFor(targetSlug))
-          }
-          return { ...rest, blockType: slug }
-        }),
-      )
-    }
-    return withBlocks
-  }
-
-  /** Replaces every `blocks` field's rows (and their nested rels rows) wholesale, same approach as writeArrays/writeRelsIds. */
-  async function writeBlocksFields(id: number, blocks: Record<string, Record<string, unknown>[]>): Promise<void> {
-    if (!Object.keys(blocks).length) return
-    const db = await getDb()
-
-    for (const [fieldName, items] of Object.entries(blocks)) {
-      const { blockTypes } = blocksFields[fieldName]
-
-      for (const def of Object.values(blockTypes)) {
-        const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
-        await db.delete(def.table).where(eq(blockColumns.parentId, id))
-      }
-      if (relsTable && relsColumns) {
-        await db.delete(relsTable.table).where(and(eq(relsColumns.parentId, id), like(relsColumns.path, `${fieldName}.%`)))
-      }
-
-      const rowsByType = new Map<string, Record<string, unknown>[]>()
-      for (const [index, item] of items.entries()) {
-        const blockType = item.blockType as string
-        const def = blockTypes[blockType]
-        if (!def) {
-          throw new Error(`writeBlocksFields: unknown block type "${blockType}" for field "${fieldName}".`)
-        }
-        const { blockType: _blockType, id: itemId, blockName, ...fields } = item
-
-        const scalars: Record<string, unknown> = {}
-        for (const [key, value] of Object.entries(fields)) {
-          if (def.relsFieldTargets[key]) continue
-          scalars[key] = value
-        }
-
-        const row = {
-          ...scalars,
-          id: (itemId as string) || crypto.randomUUID(),
-          order: index + 1,
-          parentId: id,
-          path: fieldName,
-          blockName: blockName ?? null,
-        }
-        if (!rowsByType.has(blockType)) rowsByType.set(blockType, [])
-        rowsByType.get(blockType)!.push(row)
-
-        for (const [subFieldName, targetSlug] of Object.entries(def.relsFieldTargets)) {
-          const ids = (fields[subFieldName] as number[]) ?? []
-          if (ids.length) {
-            await db.insert(relsTable!.table).values(
-              ids.map((relId, relIndex) => ({
-                parentId: id,
-                path: `${fieldName}.${index}.${subFieldName}`,
-                order: relIndex + 1,
-                [relsColumnFor(targetSlug)]: relId,
-              })),
-            )
-          }
-        }
-      }
-
-      for (const [blockType, rows] of rowsByType) {
-        await db.insert(blockTypes[blockType].table).values(rows)
-      }
-    }
-  }
-
   async function attachExtras(doc: Doc): Promise<Doc> {
-    const withExtras = await attachBlocksFields(await attachTopLevelRels(await attachArrays(doc)))
-    return nestGroups(withExtras, groupFields) as Doc
+    const withArrays = await attachArrays(doc)
+    const withRels = await blocksRelsOps.attachTopLevelRels(withArrays, doc.id)
+    const withBlocks = await blocksRelsOps.attachBlocksFields(withRels, doc.id)
+    return nestGroups(withBlocks, groupFields) as Doc
   }
 
   async function findMany(args: { where?: Where; limit?: number } = {}): Promise<Doc[]> {
@@ -408,8 +496,8 @@ export function createCollectionOps(
     const [row] = await db.insert(table).values(values).returning()
     const id = (row as Doc).id
     await writeArrays(id, arrays)
-    await writeTopLevelRels(id, topLevelRels)
-    await writeBlocksFields(id, blocks)
+    await blocksRelsOps.writeTopLevelRels(id, topLevelRels)
+    await blocksRelsOps.writeBlocksFields(id, blocks)
     return attachExtras(row as Doc)
   }
 
@@ -423,8 +511,8 @@ export function createCollectionOps(
       .returning()
     if (!row) return null
     await writeArrays(id, arrays)
-    await writeTopLevelRels(id, topLevelRels)
-    await writeBlocksFields(id, blocks)
+    await blocksRelsOps.writeTopLevelRels(id, topLevelRels)
+    await blocksRelsOps.writeBlocksFields(id, blocks)
     return attachExtras(row as Doc)
   }
 

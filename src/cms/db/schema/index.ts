@@ -10,11 +10,13 @@ import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
+import { Backups } from '@/features/backups/collection'
 import { Courses } from '@/features/courses/collections/Courses'
 import { Enrolments } from '@/features/courses/collections/Enrolments'
 import { LessonProgress } from '@/features/courses/collections/LessonProgress'
 import { Lessons } from '@/features/courses/collections/Lessons'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
+import { AuditLog } from '@/features/security/auditLogCollection'
 
 import type { JoinFieldMeta } from './generate'
 import {
@@ -431,3 +433,32 @@ export const users = usersGenerated.table
 
 const [usersRolesField] = usersGenerated.selectFields
 export const usersRoles = generateSelectHasManyTable(usersGenerated.tableName, usersRolesField)
+
+/**
+ * Phase 15: AuditLog + Backups - both read-only-through-Payload collections
+ * (create/update closed to everyone in their own `access` config; rows arrive
+ * by direct insert from the writers that log to them, not through the Local
+ * API's normal create path) but that's an access-control fact, not a schema
+ * one - Payload's Local API (`engine.create`) overrides access by default,
+ * same as every other phase's fixtures, so the usual write-both-ways parity
+ * tests still apply unchanged.
+ *
+ * Both are scalar-only (text/number/date/textarea), same shape class as Faqs
+ * - no new schema-generation capability needed. Confirmed against the real
+ * eg_audit_log/eg_backups tables via pragma table_info: both hand-migrated
+ * (see their own collection file's doc comment on why - `dbName` must keep
+ * matching the migration's columns since the two are written independently),
+ * but the column shapes line up 1:1 with what generateTable derives from
+ * their `fields` lists, so no drift to work around here (unlike the
+ * eg_locked_documents_rels gap noted in ../index.ts). A couple of columns
+ * (`status`, `size_bytes`, etc. on eg_backups) carry a SQL-level DEFAULT with
+ * no matching Payload `defaultValue` - harmless, since this data layer only
+ * ever inserts columns a caller actually supplies (same as Payload's own
+ * insert path), so an omitted column falls through to the same DB default
+ * either way.
+ */
+export const auditLogGenerated = generateTable(AuditLog)
+export const auditLog = auditLogGenerated.table
+
+export const backupsGenerated = generateTable(Backups)
+export const backups = backupsGenerated.table

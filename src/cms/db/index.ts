@@ -264,6 +264,21 @@
  * real upload (or a plain write, for collections/media.ts's own
  * create/update) produces.
  *
+ * Phase 13 closed out the Courses family: Enrolments and LessonProgress
+ * (flagged unchecked since Phase 11) needed no new capability either - every
+ * field is a single-target `relationship` (to `users`, Courses, or Lessons -
+ * a plain FK column, EventRSVPs' Phase 2 mechanism) or a plain scalar
+ * (`select`, `date`, `checkbox`). `users` itself is not modeled anywhere in
+ * this data layer (Users is `auth: true` - a materially bigger gap: login
+ * credentials, salts/hashes, lockout columns, none of it declared in the
+ * collection's own `fields` any more than Media's upload columns were,
+ * possibly its own future phase along those lines) - but a single-target FK
+ * column never needs its target table resolved at schema-generation time,
+ * only at query time if something joined against it, which nothing here
+ * does. Proven with one real user created through Payload's own auth
+ * `create()` purely as a valid FK target - see
+ * tests/int/cms-db-enrolments-lesson-progress.int.spec.ts.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -287,10 +302,9 @@
  *  - Lessons (src/features/courses/collections/Lessons.ts) is now fully
  *    built out (Phase 11) - live CRUD, `content` blocks, `resources` array.
  *    It is NOT drafts-enabled, so createDraftOps was never a question here.
- *    Its sibling collections Enrolments/LessonProgress remain unchecked -
- *    a real `eg_lesson_progress` table already exists in the live D1 (seen
- *    while inspecting table names for this phase) but nothing in this
- *    directory reads or writes it yet.
+ *    Its sibling collections Enrolments/LessonProgress are now built out too
+ *    (Phase 13) - the whole Courses family (Courses/Lessons/Enrolments/
+ *    LessonProgress) is fully covered.
  *  - findMany does not support a `draft` flag - nothing in this app queries
  *    a LIST of drafts today; doing that right needs a per-row "latest
  *    version" subquery this data layer has no case to prove against yet.
@@ -321,3 +335,5 @@ export * from './collections/pages'
 export * from './collections/posts'
 export * from './collections/courses'
 export * from './collections/lessons'
+export * from './collections/enrolments'
+export * from './collections/lessonProgress'

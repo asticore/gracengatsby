@@ -10,6 +10,8 @@ import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Posts } from '@/collections/Posts'
 import { Courses } from '@/features/courses/collections/Courses'
+import { Enrolments } from '@/features/courses/collections/Enrolments'
+import { LessonProgress } from '@/features/courses/collections/LessonProgress'
 import { Lessons } from '@/features/courses/collections/Lessons'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
@@ -366,3 +368,21 @@ export const lessonsContentBlockTypes = Object.fromEntries(
   ]),
 )
 export const lessonsRelsTargetColumns = lessonsRelsGenerated.targetColumns
+
+/**
+ * Phase 13: Enrolments and LessonProgress - Courses' remaining sibling
+ * collections (flagged unchecked since Phase 11) - close out the Courses
+ * family. Both are pure wiring, no new schema-generation capability: every
+ * field either is a single-target `relationship` (to `users`, Courses, or
+ * Lessons - a plain `<name>_id` FK column, EventRSVPs' own Phase 2
+ * mechanism; `users` itself is not modeled anywhere in this data layer, but
+ * a single-target FK column never needs its target table resolved at
+ * schema-generation time, only at query time if something joined against
+ * it, which nothing here does) or a plain scalar (`select`, `date`,
+ * `checkbox`) already proven. Neither has group/array/blocks/join/versions.
+ */
+export const enrolmentsGenerated = generateTable(Enrolments)
+export const enrolments = enrolmentsGenerated.table
+
+export const lessonProgressGenerated = generateTable(LessonProgress)
+export const lessonProgress = lessonProgressGenerated.table

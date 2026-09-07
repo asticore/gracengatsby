@@ -192,12 +192,20 @@
  * not a gap in the approach:
  *
  *  - createDraftOps is now proven against Events (has a join field, no
- *    blocks) AND Pages (has blocks, no join field) - see
- *    tests/int/cms-db-pages-drafts.int.spec.ts. Posts/Courses (this app's
- *    remaining drafts-enabled collections) still need the same wiring
- *    (createDraftOps(createCollectionOps(...), createVersionsOps(...))) once
- *    src/engine/db.ts starts routing to them - nothing new to prove, just
- *    more collections to wire up and parity-test.
+ *    blocks), Pages (has blocks, no join field), AND Posts (has a versioned
+ *    array field, no join field) - see tests/int/cms-db-pages-drafts.int.spec.ts
+ *    and tests/int/cms-db-posts-drafts.int.spec.ts. That is every
+ *    drafts-enabled collection this directory currently has schema/ops
+ *    coverage for - nothing left to wire for the collections already here.
+ *  - Courses (src/features/courses/collections/Courses.ts, versions.drafts:
+ *    true) is NOT just "wire createDraftOps onto it" - unlike Posts, this
+ *    directory has ZERO existing coverage for it: no drizzle schema
+ *    (schema/index.ts has no courses tables at all), no createCollectionOps,
+ *    no createVersionsOps. Bringing Courses in needs the full Phase 1-9
+ *    treatment this directory did for every other collection (schema
+ *    generation, live CRUD, versions, then drafts), not a one-line addition.
+ *    Same likely applies to Lessons/Enrolments/LessonProgress if those ever
+ *    need this layer too - not checked yet.
  *  - findMany does not support a `draft` flag - nothing in this app queries
  *    a LIST of drafts today; doing that right needs a per-row "latest
  *    version" subquery this data layer has no case to prove against yet.

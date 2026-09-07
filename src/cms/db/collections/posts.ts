@@ -2,7 +2,7 @@ import type { Where } from '@/engine'
 
 import { Posts } from '@/collections/Posts'
 
-import { createCollectionOps, createVersionsOps } from '../generic'
+import { createCollectionOps, createDraftOps, createVersionsOps } from '../generic'
 import {
   postsBlockTypes,
   postsCategories,
@@ -66,7 +66,7 @@ export type PostVersion = {
   _status?: string | null
 } & Omit<PostDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
-const ops = createCollectionOps(
+const baseOps = createCollectionOps(
   posts,
   Posts,
   { categories: postsCategories },
@@ -83,8 +83,15 @@ const versionsOps = createVersionsOps(postsVersions, postsGenerated.groupFields,
   blocksFields: { layout: { blockTypes: postsVersionsBlockTypes } },
 })
 
+// Posts has drafts enabled (versions.drafts: true), same policy as
+// Events/Pages - see ../generic.ts's createDraftOps doc comment and
+// tests/int/cms-db-posts-drafts.int.spec.ts for the parity proof. Posts has
+// no join field, so nothing needs to be omitted from what gets snapshotted
+// into a version row (same as Pages).
+const ops = createDraftOps(baseOps, versionsOps)
+
 export const findPosts = ops.findMany as unknown as (args?: { where?: Where; limit?: number }) => Promise<PostDoc[]>
-export const findPostByID = ops.findByID as unknown as (id: number) => Promise<PostDoc | null>
+export const findPostByID = ops.findByID as unknown as (id: number, opts?: { draft?: boolean }) => Promise<PostDoc | null>
 export const countPosts = ops.count
 export const createPost = ops.create as unknown as (
   data: Partial<Omit<PostDoc, 'id' | 'updatedAt' | 'createdAt'>> & { title: string; content: unknown },
@@ -92,6 +99,7 @@ export const createPost = ops.create as unknown as (
 export const updatePost = ops.updateByID as unknown as (
   id: number,
   data: Partial<Omit<PostDoc, 'id' | 'updatedAt' | 'createdAt'>>,
+  opts?: { draft?: boolean },
 ) => Promise<PostDoc | null>
 export const deletePost = ops.deleteByID
 

@@ -230,6 +230,40 @@
  * previously-confirmed `{ column: 'id', direction: 'desc' }` when a join
  * field declares none - Events' `rsvps` is unaffected, still id-descending.
  *
+ * Phase 12 modeled Media - a genuinely new schema-generation capability, not
+ * another wiring-only phase like Courses/Lessons: `upload: {...}` on a
+ * collection config (Media is the only one in this app) adds columns
+ * Payload generates itself, entirely outside that collection's own `fields`
+ * list, so nothing before this phase had a reason to look at
+ * `collection.upload` at all. Confirmed against the real eg_media schema
+ * (`pragma table_info`, not guessed): `url`, `thumbnailURL` (column
+ * `thumbnail_u_r_l` - `to-snake-case`, already used everywhere else in this
+ * file, happens to split each capital of "URL" into its own segment),
+ * `filename`, `mimeType`, `filesize`, `width`, `height` - all nullable, the
+ * numeric three using the same `numeric(..., {mode:'number'})` any Payload
+ * `number` field already gets, landing in real column order right after
+ * `updatedAt`/`createdAt`. ./schema/generate.ts's generateTable now checks
+ * `hasUpload(collection)` and merges in `uploadColumns()` when true.
+ *
+ * Proven against a REAL upload, not a bare `data` write: Payload's Local API
+ * `file` option (a real 1x1 PNG buffer), backed by this app's real R2
+ * binding in local dev (src/engine/storage.ts) - confirmed
+ * width/height/filesize come back exactly matching the real file, and that
+ * `thumbnailURL` is null with no `imageSizes`/`focalPoint` configured (this
+ * app's actual Media.ts sets `crop: false, focalPoint: false`, no
+ * `imageSizes`) - see tests/int/cms-db-media.int.spec.ts. Deliberately NOT
+ * modeled, and generateTable throws rather than guessing if a future
+ * collection needs them: `imageSizes` (per-size `sizes_*` columns) and
+ * `focalPoint: true` (`focalX`/`focalY` columns) - and an upload-enabled
+ * collection combined with drafts, since nothing in this app's real config
+ * exercises that combination to confirm column order/shape against.
+ *
+ * This data layer does not perform an actual file upload itself
+ * (storage/resizing stays Payload's own upload handler's job, outside any
+ * phase's scope so far) - collections/media.ts only mirrors the columns a
+ * real upload (or a plain write, for collections/media.ts's own
+ * create/update) produces.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -260,6 +294,10 @@
  *  - findMany does not support a `draft` flag - nothing in this app queries
  *    a LIST of drafts today; doing that right needs a per-row "latest
  *    version" subquery this data layer has no case to prove against yet.
+ *  - Media (Phase 12) is this app's only upload-enabled collection, so
+ *    `imageSizes` and `focalPoint: true` remain unproven (see Phase 12's own
+ *    note above) - not a gap unless a future collection actually turns
+ *    either on.
  *
  * Next up: src/engine/db.ts can start being switched over collection by
  * collection - non-drafts collections route straight to createCollectionOps,
@@ -274,6 +312,7 @@
  */
 
 export * from './collections/faqs'
+export * from './collections/media'
 export * from './collections/eventRSVPs'
 export * from './collections/membershipTiers'
 export * from './collections/pageTemplates'

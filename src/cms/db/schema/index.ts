@@ -39,6 +39,17 @@ import { generateArrayTable, generateBlockTables, generateRelsTable, generateTab
 const faqsGenerated = generateTable(Faqs)
 export const faqs = faqsGenerated.table
 
+/**
+ * Phase 12: Media, this app's only upload-enabled collection - see
+ * ./generate.ts's hasUpload/uploadColumns doc comment for the implicit
+ * column shape this adds on top of Media's own single declared field
+ * (`alt`). No group/array/blocks/join/versions, so this is otherwise the
+ * same shape as Faqs (Phase 1/2) - the smallest collection this data layer
+ * models, once the upload columns are accounted for.
+ */
+const mediaGenerated = generateTable(Media)
+export const media = mediaGenerated.table
+
 const eventRSVPsGenerated = generateTable(EventRSVPs)
 export const eventRSVPs = eventRSVPsGenerated.table
 

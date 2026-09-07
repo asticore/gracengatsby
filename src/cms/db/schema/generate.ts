@@ -35,6 +35,41 @@ function statusColumn(dbNamePrefix: string) {
   return text(`${dbNamePrefix}_status`).default('draft')
 }
 
+/** True when a collection declares `upload: {...}` - Media is the only one in this app (confirmed by grep across src/collections and src/features). */
+export function hasUpload(collection: CollectionConfig): boolean {
+  return Boolean(collection.upload)
+}
+
+/**
+ * The implicit columns Payload adds to an upload-enabled collection's table -
+ * not declared in any of the collection's own `fields`. Confirmed against
+ * the real eg_media schema (`pragma table_info`, not guessed): `url`,
+ * `thumbnailURL` (column `thumbnail_u_r_l` - `to-snake-case`, the same
+ * naming lib every other column name in this file goes through, splits each
+ * capital letter of "URL" into its own segment), `filename`, `mimeType`
+ * (`mime_type`), `filesize`, `width`, `height` - all nullable, the last
+ * three numeric (`mode: 'number'`, same as any Payload `number` field),
+ * everything else text. They land AFTER `updatedAt`/`createdAt` in real
+ * column order, confirmed by the same `pragma table_info` dump.
+ *
+ * This app's only upload-enabled collection (Media) sets
+ * `upload: { crop: false, focalPoint: false }` and no `imageSizes` - so
+ * `focalX`/`focalY` (from `focalPoint: true`) and any per-size `sizes_*`
+ * columns (from `imageSizes`) are NOT modeled here, and generateTable throws
+ * rather than silently omitting them if a future collection turns either on.
+ */
+function uploadColumns(): Record<string, SQLiteColumnBuilderBase> {
+  return {
+    url: text('url'),
+    thumbnailURL: text(toSnakeCase('thumbnailURL')),
+    filename: text('filename'),
+    mimeType: text(toSnakeCase('mimeType')),
+    filesize: numeric('filesize', { mode: 'number' }),
+    width: numeric('width', { mode: 'number' }),
+    height: numeric('height', { mode: 'number' }),
+  }
+}
+
 /**
  * Derives a drizzle table from a real Payload CollectionConfig - the
  * generalisation promised in ../index.ts, proven against real collections
@@ -67,14 +102,34 @@ function statusColumn(dbNamePrefix: string) {
  * declared field), and generateVersionsTable derives the parallel
  * `_<table>_v` table from the exact same field list.
  *
+ * `upload: {...}` on the collection (Media is this app's only one) adds
+ * Payload's own implicit upload columns (`url`, `thumbnailURL`, `filename`,
+ * `mimeType`, `filesize`, `width`, `height`) - see hasUpload/uploadColumns'
+ * doc comment for the confirmed real shape and what's deliberately NOT
+ * modeled (`imageSizes`, `focalPoint: true`).
+ *
  * NOT supported yet (throws): tabs, hasMany select, group/array/blocks
  * nesting inside one another or inside a hasMany-relational field's own
- * fields, and `timestamps: false` (every generated table gets
- * updatedAt/createdAt). Each needs different modelling - see ../index.ts.
+ * fields, `timestamps: false` (every generated table gets
+ * updatedAt/createdAt), an upload-enabled collection with drafts, and an
+ * upload-enabled collection using `imageSizes` or `focalPoint: true`. Each
+ * needs different modelling - see ../index.ts.
  */
 export function generateTable(collection: CollectionConfig) {
   if (typeof collection.dbName === 'function') {
     throw new Error(`generateTable(${collection.slug}): a function dbName is not supported yet.`)
+  }
+  if (hasUpload(collection)) {
+    const upload = collection.upload as { imageSizes?: unknown[]; focalPoint?: boolean }
+    if (upload.imageSizes && upload.imageSizes.length > 0) {
+      throw new Error(`generateTable(${collection.slug}): upload.imageSizes is not supported yet.`)
+    }
+    if (upload.focalPoint) {
+      throw new Error(`generateTable(${collection.slug}): upload.focalPoint is not supported yet.`)
+    }
+    if (hasDrafts(collection)) {
+      throw new Error(`generateTable(${collection.slug}): an upload-enabled collection with drafts is not supported yet.`)
+    }
   }
   const tableName = tableNameFor(collection)
   // A draft save must be allowed to leave required fields empty, so Payload
@@ -92,6 +147,9 @@ export function generateTable(collection: CollectionConfig) {
   }
   columns.updatedAt = text('updated_at').notNull()
   columns.createdAt = text('created_at').notNull()
+  if (hasUpload(collection)) {
+    Object.assign(columns, uploadColumns())
+  }
   if (hasDrafts(collection)) {
     columns._status = statusColumn('')
   }

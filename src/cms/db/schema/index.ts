@@ -5,6 +5,7 @@ import type { AnySQLiteTable } from 'drizzle-orm/sqlite-core'
 import { EventRSVPs } from '@/collections/EventRSVPs'
 import { Events } from '@/collections/Events'
 import { Faqs } from '@/collections/Faqs'
+import { FieldGroups } from '@/collections/FieldGroups'
 import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
@@ -16,6 +17,7 @@ import { Courses } from '@/features/courses/collections/Courses'
 import { Enrolments } from '@/features/courses/collections/Enrolments'
 import { LessonProgress } from '@/features/courses/collections/LessonProgress'
 import { Lessons } from '@/features/courses/collections/Lessons'
+import { Forms } from '@/features/forms/collections/Forms'
 import { FormSubmissions } from '@/features/forms/collections/FormSubmissions'
 import { Memberships } from '@/features/members/collections/Memberships'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
@@ -75,7 +77,7 @@ const membershipTiersGenerated = generateTable(MembershipTiers)
 export const membershipTiers = membershipTiersGenerated.table
 
 const [benefitsField] = membershipTiersGenerated.arrayFields
-export const membershipTiersBenefits = generateArrayTable(MembershipTiers.slug, membershipTiersGenerated.tableName, benefitsField)
+export const membershipTiersBenefits = generateArrayTable(MembershipTiers.slug, membershipTiersGenerated.tableName, benefitsField).table
 
 const pageTemplatesGenerated = generateTable(PageTemplates)
 export const pageTemplates = pageTemplatesGenerated.table
@@ -243,7 +245,7 @@ export const postsGenerated = generateTable(Posts)
 export const posts = postsGenerated.table
 
 const [postsCategoriesField] = postsGenerated.arrayFields
-export const postsCategories = generateArrayTable(Posts.slug, postsGenerated.tableName, postsCategoriesField)
+export const postsCategories = generateArrayTable(Posts.slug, postsGenerated.tableName, postsCategoriesField).table
 
 const [postsBlocksField] = postsGenerated.blocksFields
 const postsBlockDefs = generateBlockTables(Posts.slug, postsGenerated.tableName, postsBlocksField)
@@ -265,7 +267,7 @@ export const postsVersionsGenerated = generateVersionsTable(Posts, postsGenerate
 export const postsVersions = postsVersionsGenerated.table
 
 const [postsVersionsCategoriesField] = postsVersionsGenerated.arrayFields
-export const postsVersionsCategories = generateArrayTable(Posts.slug, postsVersionsGenerated.tableName, postsVersionsCategoriesField, true, true)
+export const postsVersionsCategories = generateArrayTable(Posts.slug, postsVersionsGenerated.tableName, postsVersionsCategoriesField, true, true).table
 
 const [postsVersionsBlocksField] = postsVersionsGenerated.blocksFields
 const postsVersionsBlockDefs = generateBlockTables(Posts.slug, postsVersionsGenerated.tableName, postsVersionsBlocksField, true, true)
@@ -367,7 +369,7 @@ export const coursesJoinFields = Object.fromEntries(
  *    no versions at all - no `_v` sibling tables here, unlike Pages/Posts.
  */
 const [lessonsResourcesField] = lessonsGenerated.arrayFields
-export const lessonsResources = generateArrayTable(Lessons.slug, lessonsGenerated.tableName, lessonsResourcesField)
+export const lessonsResources = generateArrayTable(Lessons.slug, lessonsGenerated.tableName, lessonsResourcesField).table
 
 const [lessonsContentField] = lessonsGenerated.blocksFields
 const lessonsContentBlockDefs = generateBlockTables(Lessons.slug, lessonsGenerated.tableName, lessonsContentField)
@@ -503,5 +505,64 @@ export const abTestsGenerated = generateTable(ABTests)
 export const abTests = abTestsGenerated.table
 
 const [abTestsVariantsField, abTestsGoalsField] = abTestsGenerated.arrayFields
-export const abTestsVariants = generateArrayTable(ABTests.slug, abTestsGenerated.tableName, abTestsVariantsField)
-export const abTestsGoals = generateArrayTable(ABTests.slug, abTestsGenerated.tableName, abTestsGoalsField)
+export const abTestsVariants = generateArrayTable(ABTests.slug, abTestsGenerated.tableName, abTestsVariantsField).table
+export const abTestsGoals = generateArrayTable(ABTests.slug, abTestsGenerated.tableName, abTestsGoalsField).table
+
+/**
+ * Phase 17: FieldGroups and Forms - the two collections Phase 16's sibling
+ * collections (Translations/Memberships/FormSubmissions/ABTests) were built
+ * around instead of alongside, because both need a schema-generation
+ * capability this data layer had never proven before: a nested array field
+ * living INSIDE another array's own subfields (confirmed via real
+ * `pragma table_info` dumps - not guessed - against `eg_field_groups_fields_
+ * options`/`eg_forms_fields_options`/`eg_forms_fields_conditional_rules`: a
+ * nested array's child table has a TEXT `_parent_id`, referencing the parent
+ * ARRAY ROW's own string id, unlike every other child table this module
+ * generates, which all key off an integer document/version-row id). Forms
+ * additionally needs a `group` field nested inside an array's own subfields
+ * (`calculation`/`pricing`/`conditional`, confirmed flattening onto
+ * `eg_forms_fields` exactly like a top-level group would) and, specifically
+ * for its `conditional` group, an array nested INSIDE that group
+ * (`conditional.rules`). See ../schema/generate.ts's generateArrayTable/
+ * generateNestedArrayTable doc comments, and ../generic.ts's createArrayOps
+ * (ArrayFieldDef/NestedArrayTableDef) for how they're read/written.
+ *
+ * FieldGroups: `targetCollections` is a hasMany select, the same
+ * already-proven mechanism Users' `roles` established (generateSelectHasManyTable).
+ * `fields` is an array whose own subfields are entirely plain columns except
+ * for one nested array, `options` (label/value, both plain text) - no group
+ * nesting anywhere in this collection.
+ *
+ * Forms: `fields` is an array whose own subfields include THREE groups
+ * (`calculation`, `pricing`, `conditional`) flattened onto `eg_forms_fields`,
+ * one direct nested array (`options`), and one array nested inside a group
+ * (`conditional.rules`). Forms' own top-level groups (`settings`/
+ * `notification`/`confirmation`/`spam`/`payment`) are unrelated to any of
+ * this - they flatten onto `eg_forms` itself via the already-proven
+ * top-level group mechanism (Pages' `seo` group), and `payment.product` is a
+ * single-target relationship inside a top-level group, the same already-proven
+ * mechanism Forms' own sibling collections use elsewhere in this file.
+ */
+export const fieldGroupsGenerated = generateTable(FieldGroups)
+export const fieldGroups = fieldGroupsGenerated.table
+
+const [fieldGroupsFieldsField] = fieldGroupsGenerated.arrayFields
+export const fieldGroupsFieldsGenerated = generateArrayTable(FieldGroups.slug, fieldGroupsGenerated.tableName, fieldGroupsFieldsField)
+export const fieldGroupsFields = fieldGroupsFieldsGenerated.table
+// The one nested array inside `fields`' own subfields - eg_field_groups_fields_options.
+export const fieldGroupsFieldsOptions = fieldGroupsFieldsGenerated.nestedArrayFields.find((f) => f.name === 'options')!.table
+
+const [fieldGroupsTargetCollectionsField] = fieldGroupsGenerated.selectFields
+export const fieldGroupsTargetCollections = generateSelectHasManyTable(fieldGroupsGenerated.tableName, fieldGroupsTargetCollectionsField)
+
+export const formsGenerated = generateTable(Forms)
+export const forms = formsGenerated.table
+
+const [formsFieldsField] = formsGenerated.arrayFields
+export const formsFieldsGenerated = generateArrayTable(Forms.slug, formsGenerated.tableName, formsFieldsField)
+export const formsFields = formsFieldsGenerated.table
+// The direct nested array (eg_forms_fields_options) and the one nested
+// inside the `conditional` group (eg_forms_fields_conditional_rules) - see
+// generateArrayTable's doc comment for how each table name is derived.
+export const formsFieldsOptions = formsFieldsGenerated.nestedArrayFields.find((f) => f.name === 'options')!.table
+export const formsFieldsConditionalRules = formsFieldsGenerated.nestedArrayFields.find((f) => f.name === 'rules')!.table

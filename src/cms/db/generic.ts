@@ -15,6 +15,12 @@ export type BlockTypeDef = { table: AnySQLiteTable; relsFieldTargets: Record<str
 /** The shared `_rels` table for a parent table - what generateRelsTable produces. */
 export type RelsTableDef = { table: AnySQLiteTable; targetColumns: Record<string, string> }
 
+/** One array field nested inside another array's own subfields (or one of its groups) - what generateArrayTable's own `nestedArrayFields` entries become once a collection's ops file packages them for createArrayOps. `groupName` is set when the nested array lives inside one of the parent array's groups (Forms' `conditional.rules`) rather than directly in the array's own subfields (FieldGroups'/Forms' `options`) - see createArrayOps' attachArrays/writeArrays for how that changes where the reconstructed array ends up in the document shape. */
+export type NestedArrayTableDef = { table: AnySQLiteTable; groupName?: string }
+
+/** An array field's full definition for createArrayOps/createCollectionOps - a superset of the bare table every array field used before Phase 17 needed. `groupFields` is this array's OWN groupFields (a group flattened onto the array's own child table, e.g. Forms' `calculation`/`pricing`/`conditional`); `nestedArrayTables` is keyed by the nested field's own name (e.g. "options", "rules"). See ../schema/generate.ts's generateArrayTable doc comment for the confirmed real shapes this mirrors. */
+export type ArrayFieldDef = { table: AnySQLiteTable; groupFields?: GroupFieldMeta[]; nestedArrayTables?: Record<string, NestedArrayTableDef> }
+
 /**
  * Reconstructs `group` fields' nested-object document shape from a flat,
  * prefixed drizzle row (`{ seoMetaTitle: ... }` -> `{ seo: { metaTitle: ... } }`)
@@ -26,11 +32,22 @@ export type RelsTableDef = { table: AnySQLiteTable; targetColumns: Record<string
 function nestGroups(row: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
   if (!groupFields.length) return row
   const result: Record<string, unknown> = { ...row }
-  for (const { name, subFieldNames } of groupFields) {
+  for (const { name, subFieldNames, arrayFieldNames } of groupFields) {
     const group: Record<string, unknown> = {}
     for (const subName of subFieldNames) {
       const jsKey = `${name}${capitalize(subName)}`
       group[subName] = result[jsKey]
+      delete result[jsKey]
+    }
+    // A group living inside an array's own subfields (Forms' `conditional`)
+    // can itself contain an array (`rules`) - createArrayOps' attachArrays
+    // pre-attaches that nested array's already-reconstructed rows onto this
+    // same `${name}${capitalize(arrayName)}` synthetic key before calling
+    // nestGroups, precisely so this loop can fold it in exactly like a
+    // scalar subfield - see GroupFieldMeta's doc comment.
+    for (const arrayName of arrayFieldNames ?? []) {
+      const jsKey = `${name}${capitalize(arrayName)}`
+      group[arrayName] = result[jsKey]
       delete result[jsKey]
     }
     result[name] = group
@@ -38,7 +55,7 @@ function nestGroups(row: Record<string, unknown>, groupFields: GroupFieldMeta[])
   return result
 }
 
-/** The reverse of nestGroups - flattens a document's nested group objects back into the prefixed JS keys the drizzle table actually has, for insert/update. */
+/** The reverse of nestGroups - flattens a document's nested group objects back into the prefixed JS keys the drizzle table actually has, for insert/update. Only ever called on the REMAINING scalar columns of a row that has already had any nested array fields (including one living inside a group - see createArrayOps) pulled out separately, so it only ever reads `subFieldNames`, never `arrayFieldNames` - an array field has no flat column of its own to flatten into. */
 function flattenGroups(data: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
   if (!groupFields.length) return data
   const result: Record<string, unknown> = { ...data }
@@ -92,22 +109,68 @@ function splitVersionFields(
  * VERSIONED array row's identity is its `_uuid` column instead (`id` is a
  * meaningless autoincrement integer). See ../schema/generate.ts's
  * generateArrayTable `versioned` param doc comment for the confirmed shape.
+ *
+ * An entry in `arrayTables` may be a bare drizzle table (every array field
+ * modeled before Phase 17 - Users' `roles`-shaped siblings aside, none of
+ * them needed anything more) or an ArrayFieldDef carrying this array's own
+ * `groupFields` (a group flattened onto the array's own child table, e.g.
+ * Forms' `calculation`/`pricing`/`conditional`) and/or `nestedArrayTables`
+ * (an array nested INSIDE this array's own subfields or one of its groups,
+ * e.g. FieldGroups'/Forms' `options`, Forms' `conditional.rules`) - see
+ * ../schema/generate.ts's generateArrayTable/generateNestedArrayTable doc
+ * comments for the confirmed real shapes. Never mixed with `uuidColumn: true`
+ * - nothing in this app's versioned collections needs either yet, and
+ * generateArrayTable itself throws before producing one that would.
  */
-function createArrayOps(arrayTables: Record<string, AnySQLiteTable>, uuidColumn: boolean) {
+function createArrayOps(arrayTables: Record<string, AnySQLiteTable | ArrayFieldDef>, uuidColumn: boolean) {
   const arrayFieldNames = Object.keys(arrayTables)
+
+  function defFor(name: string): ArrayFieldDef {
+    const value = arrayTables[name]
+    return value && typeof value === 'object' && 'table' in value ? (value as ArrayFieldDef) : { table: value as AnySQLiteTable }
+  }
 
   async function attachArrays<T extends Record<string, unknown>>(doc: T, ownerId: number): Promise<T> {
     if (!arrayFieldNames.length) return doc
     const db = await getDb()
     const withArrays = { ...doc } as Record<string, unknown>
     for (const name of arrayFieldNames) {
-      const childTable = arrayTables[name]
+      const { table: childTable, groupFields = [], nestedArrayTables } = defFor(name)
       const childColumns = childTable as unknown as Record<string, SQLiteColumn>
       const rows = await db.select().from(childTable).where(eq(childColumns.parentId, ownerId)).orderBy(childColumns.order)
-      withArrays[name] = (rows as Record<string, unknown>[]).map((row) => {
-        const { parentId: _parentId, order: _order, id: rawId, uuid, ...rest } = row as Record<string, unknown> & { uuid?: string }
-        return { ...rest, id: uuidColumn ? uuid : rawId }
-      })
+      withArrays[name] = await Promise.all(
+        (rows as Record<string, unknown>[]).map(async (row) => {
+          const { parentId: _parentId, order: _order, id: rawId, uuid, ...rest } = row as Record<string, unknown> & { uuid?: string }
+          const rowId = uuidColumn ? uuid : (rawId as string)
+          const withNested = { ...rest } as Record<string, unknown>
+          if (nestedArrayTables) {
+            // A nested array's `_parent_id` is TEXT, referencing THIS row's
+            // own string id - always `rawId` here, never the versioned
+            // `uuid` column: nested arrays only ever exist on a live
+            // (non-versioned) array table - see generateArrayTable's doc
+            // comment.
+            for (const [nestedName, { table: nestedTable, groupName }] of Object.entries(nestedArrayTables)) {
+              const nestedColumns = nestedTable as unknown as Record<string, SQLiteColumn>
+              const nestedRows = await db
+                .select()
+                .from(nestedTable)
+                .where(eq(nestedColumns.parentId, rawId))
+                .orderBy(nestedColumns.order)
+              const nestedItems = (nestedRows as Record<string, unknown>[]).map((nestedRow) => {
+                const { parentId: _np, order: _no, id: nestedId, ...nestedRest } = nestedRow
+                return { ...nestedRest, id: nestedId }
+              })
+              // Placed under the same `${groupName}${capitalize(nestedName)}`
+              // key nestGroups expects for a group's own arrayFieldNames -
+              // ungrouped (groupName undefined), it lands under the bare
+              // field name instead, which nestGroups leaves untouched since
+              // no groupFields entry claims it.
+              withNested[groupName ? `${groupName}${capitalize(nestedName)}` : nestedName] = nestedItems
+            }
+          }
+          return { ...nestGroups(withNested, groupFields), id: rowId }
+        }),
+      )
     }
     return withArrays as T
   }
@@ -116,22 +179,60 @@ function createArrayOps(arrayTables: Record<string, AnySQLiteTable>, uuidColumn:
     if (!Object.keys(arrays).length) return
     const db = await getDb()
     for (const [name, items] of Object.entries(arrays)) {
-      const childTable = arrayTables[name]
+      const { table: childTable, groupFields = [], nestedArrayTables } = defFor(name)
       const childColumns = childTable as unknown as Record<string, SQLiteColumn>
       await db.delete(childTable).where(eq(childColumns.parentId, ownerId))
-      if (items.length) {
-        await db.insert(childTable).values(
-          items.map((item, index) => {
-            const { id: itemId, ...rest } = item as Record<string, unknown> & { id?: string }
-            const row: Record<string, unknown> = { ...rest, order: index, parentId: ownerId }
-            if (uuidColumn) {
-              row.uuid = itemId || crypto.randomUUID()
+      if (!items.length) continue
+
+      // Each row's own id is always known BEFORE insert (explicitly set, or
+      // generated here) - unlike an autoincrement id, this lets a nested
+      // array's rows be built up front too, keyed by the same id their
+      // parent row is about to be inserted with.
+      const nestedInserts: Record<string, { parentRowId: string; order: number; row: Record<string, unknown> }[]> = {}
+      const rows = items.map((item, index) => {
+        const { id: itemId, ...rest } = item as Record<string, unknown> & { id?: string }
+        const rowId = (itemId as string) || crypto.randomUUID()
+        const flat: Record<string, unknown> = { ...rest }
+
+        if (nestedArrayTables) {
+          for (const [nestedName, { groupName }] of Object.entries(nestedArrayTables)) {
+            let nestedItems: unknown[] | undefined
+            if (groupName) {
+              const groupValue = flat[groupName] as Record<string, unknown> | undefined
+              nestedItems = groupValue ? (groupValue[nestedName] as unknown[] | undefined) : undefined
             } else {
-              row.id = itemId || crypto.randomUUID()
+              nestedItems = flat[nestedName] as unknown[] | undefined
+              delete flat[nestedName]
             }
-            return row
-          }),
-        )
+            if (!nestedItems) continue
+            if (!nestedInserts[nestedName]) nestedInserts[nestedName] = []
+            nestedItems.forEach((nestedItem, nestedOrder) => {
+              const { id: nestedId, ...nestedRest } = nestedItem as Record<string, unknown> & { id?: string }
+              nestedInserts[nestedName].push({
+                parentRowId: rowId,
+                order: nestedOrder,
+                row: { ...nestedRest, id: (nestedId as string) || crypto.randomUUID() },
+              })
+            })
+          }
+        }
+
+        const row: Record<string, unknown> = { ...flattenGroups(flat, groupFields), order: index, parentId: ownerId }
+        if (uuidColumn) {
+          row.uuid = rowId
+        } else {
+          row.id = rowId
+        }
+        return row
+      })
+      await db.insert(childTable).values(rows)
+
+      if (nestedArrayTables) {
+        for (const [nestedName, { table: nestedTable }] of Object.entries(nestedArrayTables)) {
+          const entries = nestedInserts[nestedName]
+          if (!entries?.length) continue
+          await db.insert(nestedTable).values(entries.map(({ parentRowId, order, row }) => ({ ...row, order, parentId: parentRowId })))
+        }
       }
     }
   }
@@ -596,7 +697,7 @@ export function createVersionsOps(
 export function createCollectionOps(
   table: AnySQLiteTable,
   collection: CollectionConfig,
-  arrayTables: Record<string, AnySQLiteTable> = {},
+  arrayTables: Record<string, AnySQLiteTable | ArrayFieldDef> = {},
   rels: {
     relsTable?: RelsTableDef
     topLevelRelsFieldTargets?: Record<string, string>

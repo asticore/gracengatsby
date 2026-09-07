@@ -327,6 +327,42 @@
  * inserts columns a caller actually supplies, so an omitted column falls
  * through to the same DB default either way.
  *
+ * Phase 16 modeled Translations, Memberships, FormSubmissions and ABTests -
+ * four more collections needing no new schema-generation capability,
+ * confirmed against real `pragma table_info` dumps for all four before
+ * writing any wiring:
+ *
+ *  - Translations: scalar-only, same shape class as Faqs.
+ *  - Memberships: row-wrapped scalars (Phase 3 flattening) plus two
+ *    single-target relationships (`user` -> users, `tier` ->
+ *    membership-tiers), both plain FK columns, EventRSVPs' Phase 2 mechanism.
+ *  - FormSubmissions: this app's first real use of a `json` field
+ *    (`values`/`lineItems`) - already supported by columnFor, just never
+ *    exercised before now; confirmed round-tripping as real deserialized
+ *    objects/arrays, not stringified JSON, through both this data layer and
+ *    Payload's own Local API. Also confirmed `form` (relationship -> forms)
+ *    is `required: true`/NOT NULL, unlike this phase's initial assumption -
+ *    same fix Phase 13 needed for Enrolments/LessonProgress's `user` column:
+ *    create a real target row through Payload's own engine first, since a
+ *    single-target FK column needs a valid target to satisfy the NOT NULL
+ *    constraint even though the target collection (`forms`) is not itself
+ *    modeled in this data layer yet.
+ *  - ABTests: row-wrapped scalars plus two array fields (`variants`,
+ *    `goals`), each with row-wrapped subfields and single-target
+ *    relationships living as plain FK columns on the array's own child
+ *    table - the exact mechanism Lessons' `resources` array proved in Phase
+ *    11. Its `beforeChange` hook (variant/goal key assignment, `targetPath`
+ *    recompute) runs inside Payload's own engine, not this data layer - a
+ *    document written through this layer's own `createABTest` needs those
+ *    fields set explicitly, same as every other phase where a collection's
+ *    hooks are Payload-side only.
+ *
+ * Built as four parallel sub-tasks (one agent per collection, each creating
+ * only its own ops+test files) since none of the four touch each other's
+ * files - the shared schema/index.ts and db/index.ts exports (this file)
+ * were added by hand first, then merged again after all four landed, same
+ * two-step pattern Phase 15 established.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -393,3 +429,7 @@ export * from './collections/lessonProgress'
 export * from './collections/users'
 export * from './collections/auditLog'
 export * from './collections/backups'
+export * from './collections/translations'
+export * from './collections/memberships'
+export * from './collections/formSubmissions'
+export * from './collections/abTests'

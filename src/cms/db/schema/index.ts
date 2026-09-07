@@ -10,12 +10,16 @@ import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
+import { ABTests } from '@/features/abTesting/collections/ABTests'
 import { Backups } from '@/features/backups/collection'
 import { Courses } from '@/features/courses/collections/Courses'
 import { Enrolments } from '@/features/courses/collections/Enrolments'
 import { LessonProgress } from '@/features/courses/collections/LessonProgress'
 import { Lessons } from '@/features/courses/collections/Lessons'
+import { FormSubmissions } from '@/features/forms/collections/FormSubmissions'
+import { Memberships } from '@/features/members/collections/Memberships'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
+import { Translations } from '@/features/multilingual/translationsCollection'
 import { AuditLog } from '@/features/security/auditLogCollection'
 
 import type { JoinFieldMeta } from './generate'
@@ -462,3 +466,42 @@ export const auditLog = auditLogGenerated.table
 
 export const backupsGenerated = generateTable(Backups)
 export const backups = backupsGenerated.table
+
+/**
+ * Phase 16: Translations, Memberships, FormSubmissions, ABTests - four more
+ * collections needing no new schema-generation capability, confirmed against
+ * real pragma table_info dumps for all four before writing a line of wiring:
+ *
+ *  - Translations: scalar-only (text/select/textarea), same shape class as
+ *    Faqs.
+ *  - Memberships: row-wrapped scalars (Phase 3 flattening) plus two
+ *    single-target relationships (`user` -> users, `tier` -> membership-tiers,
+ *    both plain FK columns, EventRSVPs' Phase 2 mechanism).
+ *  - FormSubmissions: scalar-only, including this app's first real use of a
+ *    `json` field (`values`/`lineItems` - already supported by columnFor,
+ *    just never exercised by an earlier phase) plus one single-target
+ *    relationship (`form` -> forms - a plain FK column; Forms itself does not
+ *    need to be modeled in this data layer for that column to exist, same
+ *    reasoning Phase 13 already established for Enrolments/LessonProgress's
+ *    `user` column pointing at Users before Users was modeled).
+ *  - ABTests: row-wrapped scalars plus two array fields (`variants`, `goals`),
+ *    each with row-wrapped subfields and single-target relationships
+ *    (`variants.page`/`variants.template`/`goals.form`) that become plain FK
+ *    columns on the array's own child table - the exact mechanism Lessons'
+ *    `resources` array proved in Phase 11 (its `file` upload->media field).
+ */
+export const translationsGenerated = generateTable(Translations)
+export const translations = translationsGenerated.table
+
+export const membershipsGenerated = generateTable(Memberships)
+export const memberships = membershipsGenerated.table
+
+export const formSubmissionsGenerated = generateTable(FormSubmissions)
+export const formSubmissions = formSubmissionsGenerated.table
+
+export const abTestsGenerated = generateTable(ABTests)
+export const abTests = abTestsGenerated.table
+
+const [abTestsVariantsField, abTestsGoalsField] = abTestsGenerated.arrayFields
+export const abTestsVariants = generateArrayTable(ABTests.slug, abTestsGenerated.tableName, abTestsVariantsField)
+export const abTestsGoals = generateArrayTable(ABTests.slug, abTestsGenerated.tableName, abTestsGoalsField)

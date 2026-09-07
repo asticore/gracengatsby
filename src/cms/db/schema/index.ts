@@ -277,23 +277,15 @@ export const postsVersionsRelsTargetColumns = postsVersionsRelsGenerated.targetC
  * other versioned collection in this file - it needs no relsTable and no
  * arrayTables/blocksFields at all.
  *
- * Lessons itself is NOT built out here beyond the bare table generateTable
- * produces (it has its own `content` blocks field and `resources` array
- * field, neither processed further below) - only enough to resolve the
- * `lessons` table + its `course` FK column for the join to read against.
- * generateTable never requires those to be resolved just to produce the
- * base table (see ./generate.ts's processFields: array/blocks fields are
- * collected into metadata, not processed inline - generateArrayTable/
- * generateBlockTables are separate calls, made only by callers that need
- * them). A full live+versions+drafts Lessons collection, if this app ever
- * needs to write to it through this data layer, is its own future proof
- * target - not required for Courses' own join to work read-only today.
+ * Lessons itself is fully built out below (Phase 11) - `content`
+ * blocks/`resources` array/rels - on top of the bare table this section
+ * needs for the join. See Phase 11's own doc comment further down.
  */
 export const coursesGenerated = generateTable(Courses)
 export const courses = coursesGenerated.table
 export const coursesVersions = generateVersionsTable(Courses, coursesGenerated.tableName).table
 
-const lessonsGenerated = generateTable(Lessons)
+export const lessonsGenerated = generateTable(Lessons)
 export const lessons = lessonsGenerated.table
 
 function resolveCoursesJoinTargetTable(slug: string): AnySQLiteTable {
@@ -326,3 +318,40 @@ export const coursesJoinFields = Object.fromEntries(
     ]
   }),
 )
+
+/**
+ * Phase 11: Lessons built out as a full live collection (no versions - the
+ * config declares none, unlike its sibling Courses). Closes the gap Phase 10
+ * deliberately left open (see Courses' own doc comment above): `lessonsGenerated`
+ * already existed for the join, but its `content` blocks field and `resources`
+ * array field were never processed beyond the bare table.
+ *
+ *  - `resources` is a plain array field (label text + `file` upload->media,
+ *    single-target so it's a plain FK column on the array's own child table,
+ *    not a rels row) - same mechanism as MembershipTiers' `benefits`.
+ *  - `content` uses the exact same page-builder block library as Pages/Posts/
+ *    PageTemplates - Faq's `faqs` (hasMany relationship->faqs) and Gallery's
+ *    `images` (hasMany upload->media) are its only hasMany/polymorphic fields,
+ *    both already covered by resolveTargetTable above, so this is a straight
+ *    copy of pageTemplates'/pageTemplatesBlocks'/pageTemplatesRels' shape.
+ *  - Lessons has no top-level array/blocks in `versions` because Lessons has
+ *    no versions at all - no `_v` sibling tables here, unlike Pages/Posts.
+ */
+const [lessonsResourcesField] = lessonsGenerated.arrayFields
+export const lessonsResources = generateArrayTable(Lessons.slug, lessonsGenerated.tableName, lessonsResourcesField)
+
+const [lessonsContentField] = lessonsGenerated.blocksFields
+const lessonsContentBlockDefs = generateBlockTables(Lessons.slug, lessonsGenerated.tableName, lessonsContentField)
+export const lessonsContentBlocks = Object.fromEntries(lessonsContentBlockDefs.map((block) => [block.slug, block.table]))
+
+const lessonsRelsFields = [...lessonsGenerated.relsFields, ...lessonsContentBlockDefs.flatMap((block) => block.relsFields)]
+const lessonsRelsGenerated = generateRelsTable(lessonsGenerated.tableName, lessonsRelsFields, resolveTargetTable)
+export const lessonsRels = lessonsRelsGenerated.table
+
+export const lessonsContentBlockTypes = Object.fromEntries(
+  lessonsContentBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+export const lessonsRelsTargetColumns = lessonsRelsGenerated.targetColumns

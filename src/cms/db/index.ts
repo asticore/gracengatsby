@@ -194,14 +194,28 @@
  * five cases proven against Events/Pages/Posts).
  *
  * Courses' `lessons` join targets Lessons' own `course` column, so
- * schema/index.ts generates a bare `lessons` table (generateTable(Lessons)
- * only - no createCollectionOps/createVersionsOps) purely so the join has
- * something to SELECT against. Lessons itself (its own `content` blocks
- * field and `resources` array field) is NOT built out - this data layer
- * cannot read or write a Lessons document yet, only resolve Courses' join
- * to a list of Lessons ids. A real Lessons collection, if this app ever
- * needs to write to it through this data layer, is its own future proof
- * target, same size of work Courses itself just was.
+ * schema/index.ts generates a bare `lessons` table (generateTable(Lessons))
+ * purely so the join has something to SELECT against - Phase 10 stopped
+ * there deliberately.
+ *
+ * Phase 11 finishes the job: Lessons is now a full live collection (no
+ * versions - the config declares none, unlike Courses). `content` (the same
+ * page-builder block library as Pages/Posts/PageTemplates) and `resources`
+ * (a plain array field, MembershipTiers' `benefits` mechanism) are both
+ * built out - schema/index.ts's lessonsResources/lessonsContentBlocks/
+ * lessonsRels, collections/lessons.ts. Proven against real Payload in
+ * tests/int/cms-db-lessons.int.spec.ts: required `course` FK column, the
+ * `resources` array, and `content` blocks mixing a hasMany relationship
+ * (Faq's `faqs`) and a hasMany upload (Gallery's `images`) into one ordered
+ * list, matching cms-db-page-templates.int.spec.ts's proof shape. One
+ * naming quirk confirmed along the way: a blocks field's child tables are
+ * always named "<dbName>_blocks_<blockSlug>" - Lessons' field is named
+ * `content`, yet its tables are `eg_lessons_blocks_*`, not
+ * `eg_lessons_content_*` (see generate.ts's generateBlockTables - already
+ * correctly implemented; Posts' `layout` field relies on the same fixed
+ * "blocks" segment for `eg_posts_blocks_hero`, so nothing needed to change,
+ * this was only a surprise when hand-writing the new test's raw-SQL cleanup
+ * query).
  *
  * Building the `lessons` join also corrected Phase 8's join-ordering claim:
  * "sorted by id descending" was only ever true because EventRSVPs' `event`
@@ -236,13 +250,13 @@
  *    tests/int/cms-db-courses-drafts.int.spec.ts. That is every
  *    drafts-enabled collection this app's config declares
  *    (Events/Pages/Posts/Courses) - nothing left needing this policy.
- *  - Lessons (src/features/courses/collections/Lessons.ts) is NOT
- *    drafts-enabled and is NOT built out here beyond the bare table Courses'
- *    `lessons` join reads against (see schema/index.ts's `lessons` export) -
- *    this data layer cannot read or write an actual Lessons document (its
- *    `content` blocks field, `resources` array field, or any of its other
- *    columns) yet. Same gap likely applies to Enrolments/LessonProgress -
- *    not checked yet.
+ *  - Lessons (src/features/courses/collections/Lessons.ts) is now fully
+ *    built out (Phase 11) - live CRUD, `content` blocks, `resources` array.
+ *    It is NOT drafts-enabled, so createDraftOps was never a question here.
+ *    Its sibling collections Enrolments/LessonProgress remain unchecked -
+ *    a real `eg_lesson_progress` table already exists in the live D1 (seen
+ *    while inspecting table names for this phase) but nothing in this
+ *    directory reads or writes it yet.
  *  - findMany does not support a `draft` flag - nothing in this app queries
  *    a LIST of drafts today; doing that right needs a per-row "latest
  *    version" subquery this data layer has no case to prove against yet.
@@ -267,3 +281,4 @@ export * from './collections/events'
 export * from './collections/pages'
 export * from './collections/posts'
 export * from './collections/courses'
+export * from './collections/lessons'

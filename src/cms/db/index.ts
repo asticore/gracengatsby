@@ -179,6 +179,43 @@
  * src/migrations/sql/20260906_000000_fix_locked_documents_rels_missing_columns.sql
  * for the fix and why it hasn't been run remotely yet.
  *
+ * Phase 10 brought Courses in from zero - the one collection Phase 9's own
+ * notes had flagged as needing the full treatment, not a one-line
+ * createDraftOps wiring. In the end it needed no NEW schema-generation
+ * capability at all: every field type Courses uses (single-target
+ * relationship/upload -> plain FK column, the same `seo` group Pages already
+ * uses, `versions: { drafts: true }`, and a `join` field targeting another
+ * collection's own relationship column) had already been proven by an
+ * earlier collection. What Courses added was its own schema/ops file
+ * (schema/index.ts's courses/coursesVersions/coursesJoinFields,
+ * collections/courses.ts) - see tests/int/cms-db-courses.int.spec.ts (live
+ * CRUD, group field, join field) and
+ * tests/int/cms-db-courses-drafts.int.spec.ts (draft/publish parity, same
+ * five cases proven against Events/Pages/Posts).
+ *
+ * Courses' `lessons` join targets Lessons' own `course` column, so
+ * schema/index.ts generates a bare `lessons` table (generateTable(Lessons)
+ * only - no createCollectionOps/createVersionsOps) purely so the join has
+ * something to SELECT against. Lessons itself (its own `content` blocks
+ * field and `resources` array field) is NOT built out - this data layer
+ * cannot read or write a Lessons document yet, only resolve Courses' join
+ * to a list of Lessons ids. A real Lessons collection, if this app ever
+ * needs to write to it through this data layer, is its own future proof
+ * target, same size of work Courses itself just was.
+ *
+ * Building the `lessons` join also corrected Phase 8's join-ordering claim:
+ * "sorted by id descending" was only ever true because EventRSVPs' `event`
+ * join field (Events' `rsvps`) declares no `defaultSort` of its own.
+ * Courses' `lessons` join field DOES declare one (`defaultSort: 'order'`,
+ * see Courses.ts), and real Payload honors THAT instead - confirmed by
+ * creating 11 real Lessons with `order` values deliberately NOT matching
+ * creation sequence and inspecting Payload's actual response: sorted by
+ * `order` ascending, not by id. ./generic.ts's createJoinOps now takes each
+ * join field's own optional sort column/direction (parsed from its
+ * `defaultSort` string in schema/index.ts's joinSortFrom), defaulting to the
+ * previously-confirmed `{ column: 'id', direction: 'desc' }` when a join
+ * field declares none - Events' `rsvps` is unaffected, still id-descending.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -191,21 +228,21 @@
  * real, and the draft/publish policy is settled - what's left is breadth,
  * not a gap in the approach:
  *
- *  - createDraftOps is now proven against Events (has a join field, no
- *    blocks), Pages (has blocks, no join field), AND Posts (has a versioned
- *    array field, no join field) - see tests/int/cms-db-pages-drafts.int.spec.ts
- *    and tests/int/cms-db-posts-drafts.int.spec.ts. That is every
- *    drafts-enabled collection this directory currently has schema/ops
- *    coverage for - nothing left to wire for the collections already here.
- *  - Courses (src/features/courses/collections/Courses.ts, versions.drafts:
- *    true) is NOT just "wire createDraftOps onto it" - unlike Posts, this
- *    directory has ZERO existing coverage for it: no drizzle schema
- *    (schema/index.ts has no courses tables at all), no createCollectionOps,
- *    no createVersionsOps. Bringing Courses in needs the full Phase 1-9
- *    treatment this directory did for every other collection (schema
- *    generation, live CRUD, versions, then drafts), not a one-line addition.
- *    Same likely applies to Lessons/Enrolments/LessonProgress if those ever
- *    need this layer too - not checked yet.
+ *  - createDraftOps is now proven against Events (join field, no blocks),
+ *    Pages (blocks, no join field), Posts (versioned array field, no join
+ *    field), AND Courses (group field + join field, no blocks/array) - see
+ *    tests/int/cms-db-pages-drafts.int.spec.ts,
+ *    tests/int/cms-db-posts-drafts.int.spec.ts, and
+ *    tests/int/cms-db-courses-drafts.int.spec.ts. That is every
+ *    drafts-enabled collection this app's config declares
+ *    (Events/Pages/Posts/Courses) - nothing left needing this policy.
+ *  - Lessons (src/features/courses/collections/Lessons.ts) is NOT
+ *    drafts-enabled and is NOT built out here beyond the bare table Courses'
+ *    `lessons` join reads against (see schema/index.ts's `lessons` export) -
+ *    this data layer cannot read or write an actual Lessons document (its
+ *    `content` blocks field, `resources` array field, or any of its other
+ *    columns) yet. Same gap likely applies to Enrolments/LessonProgress -
+ *    not checked yet.
  *  - findMany does not support a `draft` flag - nothing in this app queries
  *    a LIST of drafts today; doing that right needs a per-row "latest
  *    version" subquery this data layer has no case to prove against yet.
@@ -229,3 +266,4 @@ export * from './collections/pageTemplates'
 export * from './collections/events'
 export * from './collections/pages'
 export * from './collections/posts'
+export * from './collections/courses'

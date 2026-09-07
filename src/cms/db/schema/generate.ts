@@ -431,7 +431,7 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
 }
 
 /** A `join` field's own config, as Payload declares it - `collection` is the single related collection slug (this app has no polymorphic join yet), `on` is the name of the relationship/hasMany field on THAT collection which points back here. */
-export type JoinFieldMeta = NamedField & { collection: string; on: string }
+export type JoinFieldMeta = NamedField & { collection: string; on: string; defaultSort?: string }
 
 /**
  * Flattens a field list: row and collapsible are pure layout in Payload's own

@@ -1,6 +1,6 @@
 import type { CollectionConfig, Where } from '@/engine'
 
-import { and, desc, eq, like, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, like, sql } from 'drizzle-orm'
 import type { AnySQLiteTable, SQLiteColumn } from 'drizzle-orm/sqlite-core'
 
 import { capitalize, type GroupFieldMeta } from './schema/generate'
@@ -348,11 +348,27 @@ function createBlocksRelsOps(
  * depth concept nothing else here has) plus a `hasNextPage` flag. Confirmed
  * default paging: sorted by id descending (newest related row first - same
  * order `-createdAt` would give, since insertion order and id both increase
- * together), limit 10, `hasNextPage` true once an 11th matching row exists.
- * Payload's real page/sort/where query options on a join field are not
- * implemented - nothing in this app's admin UI or API usage needs them yet.
+ * together), limit 10, `hasNextPage` true once an 11th matching row exists -
+ * confirmed against Events' `rsvps`, whose join field declares no
+ * `defaultSort` of its own.
+ *
+ * Courses' `lessons` join (Phase 10) revealed that default isn't the whole
+ * story: its join field DOES declare its own `defaultSort: 'order'` (see
+ * src/features/courses/collections/Courses.ts), and real Payload honors
+ * that instead of the id-descending default - confirmed by creating 11 real
+ * Lessons out of id order relative to their `order` values and inspecting
+ * Payload's own `findByID` response: it came back sorted by `order`
+ * ascending, not by id at all. So each join field now carries its own
+ * optional `sort` (column + direction), read off the field's own
+ * `defaultSort` string in ../schema/index.ts (a bare name = ascending, a
+ * `-`-prefixed name = descending, matching Payload's own `sort` string
+ * convention) - falling back to `{ column: 'id', direction: 'desc' }` when a
+ * join field declares no `defaultSort`, exactly reproducing the previously-
+ * confirmed Events behaviour. Payload's real page/where query options on a
+ * join field are still not implemented - nothing in this app's admin UI or
+ * API usage needs them yet.
  */
-function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onColumn: string }>) {
+function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onColumn: string; sort?: { column: string; direction: 'asc' | 'desc' } }>) {
   const joinFieldNames = Object.keys(joinFields)
   const JOIN_LIMIT = 10
 
@@ -361,13 +377,14 @@ function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onCol
     const db = await getDb()
     const withJoins = { ...doc } as Record<string, unknown>
     for (const name of joinFieldNames) {
-      const { table, onColumn } = joinFields[name]
+      const { table, onColumn, sort = { column: 'id', direction: 'desc' } } = joinFields[name]
       const childColumns = table as unknown as Record<string, SQLiteColumn>
+      const sortColumn = childColumns[sort.column]
       const rows = await db
         .select({ id: childColumns.id })
         .from(table)
         .where(eq(childColumns[onColumn], ownerId))
-        .orderBy(desc(childColumns.id))
+        .orderBy(sort.direction === 'asc' ? asc(sortColumn) : desc(sortColumn))
         .limit(JOIN_LIMIT + 1)
       const ids = (rows as { id: number }[]).map((row) => row.id)
       withJoins[name] = { docs: ids.slice(0, JOIN_LIMIT), hasNextPage: ids.length > JOIN_LIMIT }
@@ -531,7 +548,7 @@ export function createCollectionOps(
     topLevelRelsFieldTargets?: Record<string, string>
     blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }>
     groupFields?: GroupFieldMeta[]
-    joinFields?: Record<string, { table: AnySQLiteTable; onColumn: string }>
+    joinFields?: Record<string, { table: AnySQLiteTable; onColumn: string; sort?: { column: string; direction: 'asc' | 'desc' } }>
   } = {},
 ) {
   const columns = table as unknown as Record<string, SQLiteColumn>

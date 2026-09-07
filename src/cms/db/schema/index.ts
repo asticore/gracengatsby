@@ -9,6 +9,8 @@ import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Posts } from '@/collections/Posts'
+import { Courses } from '@/features/courses/collections/Courses'
+import { Lessons } from '@/features/courses/collections/Lessons'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
 import type { JoinFieldMeta } from './generate'
@@ -251,3 +253,76 @@ export const postsVersionsBlockTypes = Object.fromEntries(
   ]),
 )
 export const postsVersionsRelsTargetColumns = postsVersionsRelsGenerated.targetColumns
+
+/**
+ * Courses: the first collection this directory covers that was NOT already
+ * covered at all before now (unlike Posts, which only needed a policy
+ * already proven elsewhere wired on). Every field type Courses actually uses
+ * was already proven by an earlier collection, so this needed no new
+ * schema-generation capability, only wiring:
+ *
+ *  - `coverImage` (upload -> media) and `product` (relationship -> products)
+ *    are both single-target, so - same as EventRSVPs' `event` (Phase 2) -
+ *    they become plain FK columns on eg_courses itself, not a child table.
+ *  - `seo` is the exact same group Pages already uses (metaTitle,
+ *    metaDescription, ogImage, noIndex) - flattened with a `seo_` column
+ *    prefix, ogImage a single-target FK column same as above (Phase 5).
+ *  - `versions: { drafts: true }` - the parallel `_eg_courses_v` table
+ *    (Phase 5).
+ *  - `lessons` is a `join` field targeting Lessons' own `course` column
+ *    (Phase 8's mechanism, same as Events' `rsvps` targeting EventRSVPs'
+ *    `event`).
+ *
+ * Courses has no top-level array/blocks/hasMany field, so - unlike every
+ * other versioned collection in this file - it needs no relsTable and no
+ * arrayTables/blocksFields at all.
+ *
+ * Lessons itself is NOT built out here beyond the bare table generateTable
+ * produces (it has its own `content` blocks field and `resources` array
+ * field, neither processed further below) - only enough to resolve the
+ * `lessons` table + its `course` FK column for the join to read against.
+ * generateTable never requires those to be resolved just to produce the
+ * base table (see ./generate.ts's processFields: array/blocks fields are
+ * collected into metadata, not processed inline - generateArrayTable/
+ * generateBlockTables are separate calls, made only by callers that need
+ * them). A full live+versions+drafts Lessons collection, if this app ever
+ * needs to write to it through this data layer, is its own future proof
+ * target - not required for Courses' own join to work read-only today.
+ */
+export const coursesGenerated = generateTable(Courses)
+export const courses = coursesGenerated.table
+export const coursesVersions = generateVersionsTable(Courses, coursesGenerated.tableName).table
+
+const lessonsGenerated = generateTable(Lessons)
+export const lessons = lessonsGenerated.table
+
+function resolveCoursesJoinTargetTable(slug: string): AnySQLiteTable {
+  if (slug === Lessons.slug) return lessons
+  throw new Error(`cms/db/schema: no known table for join target collection "${slug}" - add it to resolveCoursesJoinTargetTable in schema/index.ts.`)
+}
+
+/**
+ * Parses a Payload `sort` string (bare name = ascending, `-`-prefixed =
+ * descending - Payload's own convention) into what ../generic.ts's
+ * createJoinOps wants. Courses' `lessons` join field declares
+ * `defaultSort: 'order'` of its own (see Courses.ts) - confirmed by
+ * inspection that real Payload honors THIS, not a generic id-descending
+ * default, for a join field's read order (see createJoinOps' doc comment).
+ * Undefined (no defaultSort on the field) leaves createJoinOps' own
+ * id-descending default in place, unchanged - that's what reproduces the
+ * previously-confirmed Events `rsvps` behaviour.
+ */
+function joinSortFrom(defaultSort: string | undefined): { column: string; direction: 'asc' | 'desc' } | undefined {
+  if (!defaultSort) return undefined
+  return defaultSort.startsWith('-') ? { column: defaultSort.slice(1), direction: 'desc' } : { column: defaultSort, direction: 'asc' }
+}
+
+export const coursesJoinFields = Object.fromEntries(
+  coursesGenerated.joinFields.map((field) => {
+    const joinField = field as unknown as JoinFieldMeta
+    return [
+      joinField.name,
+      { table: resolveCoursesJoinTargetTable(joinField.collection), onColumn: joinField.on, sort: joinSortFrom(joinField.defaultSort) },
+    ]
+  }),
+)

@@ -5,8 +5,20 @@ import toSnakeCase from 'to-snake-case'
 
 type NamedField = Field & { name: string }
 
-/** One `group` field's reconstruction metadata - see processFields' group handling and ../generic.ts's nestGroups/flattenGroups. */
-export type GroupFieldMeta = { name: string; subFieldNames: string[] }
+/**
+ * One `group` field's reconstruction metadata - see processFields' group
+ * handling and ../generic.ts's nestGroups/flattenGroups.
+ *
+ * `arrayFieldNames` is only ever populated when this group itself lives
+ * inside an array's own subfields (Forms' `conditional` group, containing a
+ * `rules` array) - see processFields' `allowArrayInGroup` param. It lists,
+ * alongside the plain scalar `subFieldNames`, which of the group's subfields
+ * are themselves arrays reconstructed from their OWN child table rather than
+ * a flat column - ../generic.ts's nestGroups/flattenGroups fold them into
+ * the group object the exact same way as a scalar subfield, just sourced
+ * from a pre-attached key instead of a real drizzle column.
+ */
+export type GroupFieldMeta = { name: string; subFieldNames: string[]; arrayFieldNames?: string[] }
 
 export function capitalize(value: string): string {
   return value.length ? value[0].toUpperCase() + value.slice(1) : value
@@ -360,6 +372,37 @@ export function tableNameFor(collection: CollectionConfig): string {
  * points at whichever row owns it - for the versioned case that is the
  * VERSION ROW's own id, exactly like versioned blocks/rels (see
  * ../generic.ts's createArrayOps, which threads that through).
+ *
+ * `group` fields ARE supported directly in an array's own subfields
+ * (confirmed against real `eg_forms_fields`' `calculation_*`/`pricing_*`/
+ * `conditional_*` columns): processFields' own group branch already
+ * flattens them onto this table exactly like a top-level group would,
+ * reusing the same `groupDbPrefix` mechanism - the returned `groupFields`
+ * feeds ../generic.ts's nestGroups/flattenGroups so array ROWS reconstruct
+ * a nested group object too, not just top-level documents.
+ *
+ * A nested `array` field inside this array's own subfields, OR inside one of
+ * its groups, is ALSO supported now (confirmed against the real
+ * `eg_field_groups_fields_options`/`eg_forms_fields_options`/
+ * `eg_forms_fields_conditional_rules` tables): each becomes its own child
+ * table via generateNestedArrayTable, keyed by a TEXT `_parent_id` pointing
+ * at THIS array's own row id (a string, not the top-level document's integer
+ * id) - a different shape from every other child table this module
+ * generates, which all key off an integer document/version-row id. The
+ * returned `nestedArrayFields` names each one plus, when it lives inside a
+ * group, which group - ../generic.ts's createArrayOps consumes this to
+ * attach/write them nested one level deeper. Confirmed flat leaves in both
+ * FieldGroups and Forms - no further nesting inside a nested array table is
+ * modeled (generateNestedArrayTable itself still throws on one).
+ *
+ * Still NOT supported inside an array's own subfields: `blocks`,
+ * hasMany/polymorphic relationship, hasMany `select` - nothing in this app's
+ * real config needs any of those at this level yet. `versioned` additionally
+ * never allows a nested array or a group (nothing in this app's versioned
+ * collections needs either there yet - Posts' `version_categories` and
+ * PageTemplates' versioned blocks are this module's only versioned-array
+ * cases, and neither has one) - still throws for those, even though the live
+ * path above now supports them.
  */
 export function generateArrayTable(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false, versioned = false) {
   if (field.type !== 'array') {
@@ -374,9 +417,20 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
   }
 
   const subFields = (field as unknown as { fields: Field[] }).fields
-  const { columns: subColumns, arrayFields, blocksFields, relsFields, groupFields, selectFields } = processFields(collectionSlug, subFields, '', suppressRequired)
-  if (arrayFields.length) {
-    throw new Error(`generateArrayTable(${collectionSlug}): nested array "${arrayFields[0].name}" inside array "${field.name}" is not supported yet.`)
+  const {
+    columns: subColumns,
+    arrayFields,
+    blocksFields,
+    relsFields,
+    groupFields,
+    selectFields,
+    groupArrayFields,
+  } = processFields(collectionSlug, subFields, '', suppressRequired, !versioned)
+  if (versioned && (arrayFields.length || groupArrayFields.length)) {
+    throw new Error(`generateArrayTable(${collectionSlug}): a nested array inside a VERSIONED array "${field.name}" is not supported yet.`)
+  }
+  if (versioned && groupFields.length) {
+    throw new Error(`generateArrayTable(${collectionSlug}): group field "${groupFields[0].name}" inside a VERSIONED array "${field.name}" is not supported yet.`)
   }
   if (blocksFields.length) {
     throw new Error(`generateArrayTable(${collectionSlug}): blocks field "${blocksFields[0].name}" inside array "${field.name}" is not supported yet.`)
@@ -386,9 +440,6 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
       `generateArrayTable(${collectionSlug}): hasMany/polymorphic relationship "${relsFields[0].name}" inside array "${field.name}" is not supported yet.`,
     )
   }
-  if (groupFields.length) {
-    throw new Error(`generateArrayTable(${collectionSlug}): group field "${groupFields[0].name}" inside array "${field.name}" is not supported yet.`)
-  }
   if (selectFields.length) {
     throw new Error(`generateArrayTable(${collectionSlug}): hasMany select "${selectFields[0].name}" inside array "${field.name}" is not supported yet.`)
   }
@@ -397,7 +448,75 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
     columns.uuid = text('_uuid')
   }
 
-  return sqliteTable(tableName, columns)
+  const nestedArrayFields: { name: string; groupName?: string; table: ReturnType<typeof sqliteTable> }[] = []
+  for (const nestedField of arrayFields) {
+    const nested = generateNestedArrayTable(collectionSlug, tableName, nestedField, suppressRequired)
+    nestedArrayFields.push({ name: nestedField.name, table: nested.table })
+  }
+  for (const { groupName, groupDbPrefix, field: nestedField } of groupArrayFields) {
+    const nested = generateNestedArrayTable(collectionSlug, tableName, nestedField, suppressRequired, groupDbPrefix)
+    nestedArrayFields.push({ name: nestedField.name, groupName, table: nested.table })
+  }
+
+  return { table: sqliteTable(tableName, columns), tableName, groupFields, nestedArrayFields }
+}
+
+/**
+ * A child table for one array field nested INSIDE another array's own
+ * subfields (directly, or inside one of that array's groups) - see
+ * generateArrayTable's doc comment. Shaped like a live (non-versioned) array
+ * child table (`_order`, string `id` per row), except `_parent_id` is TEXT,
+ * not integer: it references the PARENT ARRAY ROW's own string id, not any
+ * top-level document/version-row integer id - confirmed against the real
+ * `eg_field_groups_fields_options`/`eg_forms_fields_options`/
+ * `eg_forms_fields_conditional_rules` tables via `pragma table_info`.
+ *
+ * `groupDbPrefix` reproduces the table-name half of processFields' own
+ * group-prefix mechanism (`eg_forms_fields` + `conditional_` + `rules` =
+ * `eg_forms_fields_conditional_rules`) for a nested array living inside one
+ * of the parent array's groups; omit it (default '') for one living directly
+ * in the parent array's own subfields (`eg_forms_fields` + `options` =
+ * `eg_forms_fields_options`).
+ *
+ * Confirmed a flat leaf in both FieldGroups and Forms - no further array,
+ * blocks, group, hasMany-relational or hasMany-select nesting inside a
+ * nested array's own subfields is modeled; this throws on all of them rather
+ * than guessing a shape nothing in this app's real config exercises.
+ */
+export function generateNestedArrayTable(collectionSlug: string, parentArrayTableName: string, field: NamedField, suppressRequired = false, groupDbPrefix = '') {
+  if (field.type !== 'array') {
+    throw new Error(`generateNestedArrayTable(${collectionSlug}): field "${field.name}" is not an array field.`)
+  }
+  const tableName = `${parentArrayTableName}_${groupDbPrefix}${toSnakeCase(field.name)}`
+
+  const columns: Record<string, SQLiteColumnBuilderBase> = {
+    order: integer('_order').notNull(),
+    parentId: text('_parent_id').notNull(),
+    id: text('id').primaryKey(),
+  }
+
+  const subFields = (field as unknown as { fields: Field[] }).fields
+  const { columns: subColumns, arrayFields, blocksFields, relsFields, groupFields, selectFields } = processFields(collectionSlug, subFields, '', suppressRequired)
+  if (arrayFields.length) {
+    throw new Error(`generateNestedArrayTable(${collectionSlug}): nested array "${arrayFields[0].name}" inside nested array "${field.name}" is not supported yet.`)
+  }
+  if (blocksFields.length) {
+    throw new Error(`generateNestedArrayTable(${collectionSlug}): blocks field "${blocksFields[0].name}" inside nested array "${field.name}" is not supported yet.`)
+  }
+  if (relsFields.length) {
+    throw new Error(
+      `generateNestedArrayTable(${collectionSlug}): hasMany/polymorphic relationship "${relsFields[0].name}" inside nested array "${field.name}" is not supported yet.`,
+    )
+  }
+  if (groupFields.length) {
+    throw new Error(`generateNestedArrayTable(${collectionSlug}): group field "${groupFields[0].name}" inside nested array "${field.name}" is not supported yet.`)
+  }
+  if (selectFields.length) {
+    throw new Error(`generateNestedArrayTable(${collectionSlug}): hasMany select "${selectFields[0].name}" inside nested array "${field.name}" is not supported yet.`)
+  }
+  Object.assign(columns, subColumns)
+
+  return { table: sqliteTable(tableName, columns), tableName }
 }
 
 /**
@@ -559,8 +678,17 @@ function isHasManyRelational(field: NamedField): boolean {
  * fields are never part of a version snapshot; they're always resolved
  * against the live, current related documents, regardless of which version
  * of the parent you're looking at).
+ *
+ * `allowArrayInGroup` relaxes the group-validation throw for one specific,
+ * confirmed-real shape: an `array` subfield nested inside a `group` that is
+ * itself among an ARRAY field's own subfields (Forms' `conditional` group
+ * containing a `rules` array, confirmed against the real
+ * `eg_forms_fields_conditional_rules` table). Only generateArrayTable passes
+ * this - generateTable/generateVersionsTable/generateBlockTables never do,
+ * so a top-level group-containing-array (nothing in this app's real config
+ * exercises that) still throws, exactly as before.
  */
-function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '', suppressRequired = false) {
+function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '', suppressRequired = false, allowArrayInGroup = false) {
   const columns: Record<string, SQLiteColumnBuilderBase> = {}
   const arrayFields: NamedField[] = []
   const blocksFields: NamedField[] = []
@@ -568,6 +696,7 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
   const groupFields: GroupFieldMeta[] = []
   const joinFields: NamedField[] = []
   const selectFields: NamedField[] = []
+  const groupArrayFields: GroupArrayFieldMeta[] = []
 
   for (const field of walkFields(collectionSlug, fields)) {
     if (field.type === 'join') {
@@ -590,7 +719,13 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
       const subFields = (field as unknown as { fields: Field[] }).fields
       const groupDbPrefix = `${dbNamePrefix}${toSnakeCase(field.name)}_`
       const subFieldNames: string[] = []
+      const arrayFieldNames: string[] = []
       for (const subField of walkFields(collectionSlug, subFields)) {
+        if (subField.type === 'array' && allowArrayInGroup) {
+          groupArrayFields.push({ groupName: field.name, groupDbPrefix, field: subField })
+          arrayFieldNames.push(subField.name)
+          continue
+        }
         if (subField.type === 'array' || subField.type === 'blocks' || subField.type === 'group' || subField.type === 'join') {
           throw new Error(
             `generateTable(${collectionSlug}): group "${field.name}" may only contain plain fields - "${subField.name}" (${subField.type}) inside a group is not supported yet.`,
@@ -607,7 +742,7 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
         columns[`${field.name}${capitalize(subField.name)}`] = columnFor(collectionSlug, subField, groupDbPrefix, suppressRequired)
         subFieldNames.push(subField.name)
       }
-      groupFields.push({ name: field.name, subFieldNames })
+      groupFields.push({ name: field.name, subFieldNames, arrayFieldNames: arrayFieldNames.length ? arrayFieldNames : undefined })
       continue
     }
     if (isHasManyRelational(field)) {
@@ -617,8 +752,18 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
     columns[field.name] = columnFor(collectionSlug, field, dbNamePrefix, suppressRequired)
   }
 
-  return { columns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields }
+  return { columns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields, groupArrayFields }
 }
+
+/**
+ * One nested-array-inside-a-group field found while walking an array's own
+ * subfields with `allowArrayInGroup` - see processFields. `groupDbPrefix` is
+ * the exact prefix generateArrayTable needs to reproduce the confirmed real
+ * table name (`eg_forms_fields` + `conditional_` + `rules` =
+ * `eg_forms_fields_conditional_rules`) - the same prefix processFields' own
+ * group branch already computes for that group's plain scalar columns.
+ */
+type GroupArrayFieldMeta = { groupName: string; groupDbPrefix: string; field: NamedField }
 
 /** A `join` field's own config, as Payload declares it - `collection` is the single related collection slug (this app has no polymorphic join yet), `on` is the name of the relationship/hasMany field on THAT collection which points back here. */
 export type JoinFieldMeta = NamedField & { collection: string; on: string; defaultSort?: string }

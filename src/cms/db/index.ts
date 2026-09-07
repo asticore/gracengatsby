@@ -21,7 +21,7 @@
  * needs a child table for hasMany/polymorphic relationships).
  *
  * Phase 3 added row/collapsible flattening (their fields land on the parent
- * table, same as Payload's own schema - confirmed against
+ * table, same as Payload's own schema does - confirmed against
  * eg_membership_tiers) and array fields as child tables: MembershipTiers'
  * `benefits` array generates eg_membership_tiers_benefits (`_order`,
  * `_parent_id` cascading on delete, a string `id` per row, then the array's
@@ -363,6 +363,26 @@
  * were added by hand first, then merged again after all four landed, same
  * two-step pattern Phase 15 established.
  *
+ * Phase 17 (FieldGroups, Forms) proves the one schema-generation capability
+ * Phase 16 deliberately deferred rather than delegating to a parallel
+ * sub-agent: a nested array field living INSIDE another array's own
+ * subfields - confirmed via real `pragma table_info` dumps (not guessed)
+ * against `eg_field_groups_fields_options`/`eg_forms_fields_options`/
+ * `eg_forms_fields_conditional_rules`, each keyed by a TEXT `_parent_id`
+ * pointing at the PARENT ARRAY ROW's own string id, unlike every other
+ * child table this data layer generates (all of which key off an integer
+ * document/version-row id). Forms additionally proves a `group` field nested
+ * inside an array's own subfields (`calculation`/`pricing`/`conditional`,
+ * flattening onto `eg_forms_fields` exactly like a top-level group already
+ * did) and an array nested inside THAT group (`conditional.rules`). See
+ * ../schema/generate.ts's generateArrayTable/generateNestedArrayTable doc
+ * comments and ../generic.ts's createArrayOps (ArrayFieldDef/
+ * NestedArrayTableDef) for the full mechanism - built directly, not via a
+ * parallel sub-agent, because it changes the two shared generator/ops files
+ * every other collection in this data layer depends on, and this project's
+ * standing discipline is to prove a genuinely new capability against real D1
+ * shapes before landing it, not guess at one under time pressure.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -433,3 +453,5 @@ export * from './collections/translations'
 export * from './collections/memberships'
 export * from './collections/formSubmissions'
 export * from './collections/abTests'
+export * from './collections/fieldGroups'
+export * from './collections/forms'

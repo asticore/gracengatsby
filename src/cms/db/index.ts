@@ -279,6 +279,43 @@
  * `create()` purely as a valid FK target - see
  * tests/int/cms-db-enrolments-lesson-progress.int.spec.ts.
  *
+ * Phase 14 modeled Users - `auth: true`, the collection every earlier phase's
+ * FK-fixture rows (Enrolments/LessonProgress's `user` column, etc.) had been
+ * pointing at without ever modeling itself, and the biggest single-collection
+ * gap flagged since Phase 9. Two genuinely new schema-generation capabilities:
+ *
+ *  - `auth: true`'s implicit columns - `email` plus password/reset/lockout/
+ *    two-factor columns, none declared in Users' own `fields` (which has only
+ *    `roles`) - confirmed against the real eg_users schema (`pragma
+ *    table_info`, not guessed). This data layer never writes `salt`/`hash`
+ *    itself (hashing a real password is Payload's own auth strategy, out of
+ *    scope the same way actual file storage/resize stays Payload's job for
+ *    `upload`) - collections/users.ts's create/update ops only ever touch
+ *    `email` and `roles`.
+ *  - Users' own `roles` field: a hasMany `select`, needing a child-table shape
+ *    distinct from both an array field's and a rels field's - confirmed
+ *    against the real eg_users_roles table: `order`/`parent_id` columns carry
+ *    NO underscore prefix (unlike every array/blocks child table modeled so
+ *    far), and a single `value` column holds each selected option, one row
+ *    per selection, in order. See ../schema/generate.ts's
+ *    generateSelectHasManyTable and ./generic.ts's createSelectHasManyOps.
+ *
+ * Deliberately NOT modeled: the `eg_users_sessions` child table `auth: true`
+ * (with its default `useSessions: true`) also creates - confirmed empirically
+ * that a real `engine.create()`/`findByID()` round trip through Payload's own
+ * Local API (which never logs in) always returns `sessions: []`, since a
+ * session row is only ever written during Payload's own login/token-refresh
+ * flow, which this data layer does not implement.
+ *
+ * Proven with a real user created and read back through Payload's own Local
+ * API - see tests/int/cms-db-users.int.spec.ts. Also surfaced a real,
+ * pre-existing latent bug in ./generic.ts's createCollectionOps: a
+ * `defaultValue` was merged into the flat insert `values` AFTER
+ * splitSpecialFields ran, which only ever worked because no defaultValue in
+ * this app before Users' `roles: ['customer']` targeted a special (array/
+ * rels/blocks/select) field. Fixed by merging defaults into `data` BEFORE
+ * splitting.
+ *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
  * Payload's real adapter (@payloadcms/drizzle) is a generic engine: given any
@@ -312,6 +349,11 @@
  *    `imageSizes` and `focalPoint: true` remain unproven (see Phase 12's own
  *    note above) - not a gap unless a future collection actually turns
  *    either on.
+ *  - Users (Phase 14) is this app's only auth-enabled collection, so
+ *    `eg_users_sessions` remains unmodeled (see Phase 14's own note above) -
+ *    not a gap unless this data layer ever needs to implement login/session
+ *    issuance itself, which is a Payload-auth-strategy question, not a
+ *    schema-generation one.
  *
  * Next up: src/engine/db.ts can start being switched over collection by
  * collection - non-drafts collections route straight to createCollectionOps,
@@ -337,3 +379,4 @@ export * from './collections/courses'
 export * from './collections/lessons'
 export * from './collections/enrolments'
 export * from './collections/lessonProgress'
+export * from './collections/users'

@@ -140,6 +140,50 @@ function createArrayOps(arrayTables: Record<string, AnySQLiteTable>, uuidColumn:
 }
 
 /**
+ * The hasMany-`select` field read+write logic - Users' `roles` is this app's
+ * only field of this kind. Confirmed against the real eg_users_roles table:
+ * unlike an array field's child table (createArrayOps), its row-order/
+ * parent-FK columns carry NO underscore prefix (`order`, `parent_id`, not
+ * `_order`, `_parent_id`), and there is a single nullable `value` text
+ * column holding each selected option's stored value - so unlike
+ * createArrayOps, the document shape reconstructed here is a bare array of
+ * strings (e.g. `doc.roles = ['admin', 'customer']`), not an array of
+ * `{ ...subfields }` objects. See ../schema/generate.ts's
+ * generateSelectHasManyTable doc comment for the confirmed table shape.
+ */
+function createSelectHasManyOps(selectTables: Record<string, AnySQLiteTable>) {
+  const fieldNames = Object.keys(selectTables)
+
+  async function attachSelects<T extends Record<string, unknown>>(doc: T, ownerId: number): Promise<T> {
+    if (!fieldNames.length) return doc
+    const db = await getDb()
+    const withSelects = { ...doc } as Record<string, unknown>
+    for (const name of fieldNames) {
+      const childTable = selectTables[name]
+      const childColumns = childTable as unknown as Record<string, SQLiteColumn>
+      const rows = await db.select().from(childTable).where(eq(childColumns.parentId, ownerId)).orderBy(childColumns.order)
+      withSelects[name] = (rows as Record<string, unknown>[]).map((row) => row.value)
+    }
+    return withSelects as T
+  }
+
+  async function writeSelects(ownerId: number, selects: Record<string, unknown[]>): Promise<void> {
+    if (!Object.keys(selects).length) return
+    const db = await getDb()
+    for (const [name, values] of Object.entries(selects)) {
+      const childTable = selectTables[name]
+      const childColumns = childTable as unknown as Record<string, SQLiteColumn>
+      await db.delete(childTable).where(eq(childColumns.parentId, ownerId))
+      if (values.length) {
+        await db.insert(childTable).values(values.map((value, index) => ({ order: index, parentId: ownerId, value })))
+      }
+    }
+  }
+
+  return { attachSelects, writeSelects }
+}
+
+/**
  * The blocks/hasMany-relationship read+write logic shared by createCollectionOps
  * (the live table) and createVersionsOps (the `_<table>_v` table) - both need
  * exactly the same "merge every block type's rows in `_order`, re-attach each
@@ -533,11 +577,21 @@ export function createVersionsOps(
  * resolved read-only at query time via createJoinOps - see its doc comment
  * for the confirmed `{ docs: [...], hasNextPage }` shape and paging default.
  *
+ * `selectTables` (field name -> child table, from generateSelectHasManyTable)
+ * is the same idea as `arrayTables` for a hasMany `select` field (Users'
+ * `roles` is this app's only one) - see createSelectHasManyOps' doc comment
+ * for the one real shape difference (no underscore-prefixed order/parent
+ * columns, and a bare string per row instead of a subfield object).
+ *
  * Static `defaultValue`s from the collection config are applied on create
  * when the caller omits that field, matching what Payload's own validation
  * layer does before it ever reaches the database adapter - a function
  * default (a per-request computed value) is a Payload-level concern, not the
- * database's, so those are left for the caller to resolve first.
+ * database's, so those are left for the caller to resolve first. Merged into
+ * `data` before splitSpecialFields runs, not into the flat insert `values`
+ * afterward - a default targeting a special (array/rels/blocks/select) field,
+ * like Users' `roles: ['customer']`, has to go through the exact same
+ * split/write path any other value for that field does.
  */
 export function createCollectionOps(
   table: AnySQLiteTable,
@@ -549,18 +603,21 @@ export function createCollectionOps(
     blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }>
     groupFields?: GroupFieldMeta[]
     joinFields?: Record<string, { table: AnySQLiteTable; onColumn: string; sort?: { column: string; direction: 'asc' | 'desc' } }>
+    selectTables?: Record<string, AnySQLiteTable>
   } = {},
 ) {
   const columns = table as unknown as Record<string, SQLiteColumn>
   const idColumn = columns.id
   const arrayFieldNames = Object.keys(arrayTables)
 
-  const { relsTable, topLevelRelsFieldTargets = {}, blocksFields = {}, groupFields = [], joinFields = {} } = rels
+  const { relsTable, topLevelRelsFieldTargets = {}, blocksFields = {}, groupFields = [], joinFields = {}, selectTables = {} } = rels
   const topLevelRelsFieldNames = Object.keys(topLevelRelsFieldTargets)
   const blocksFieldNames = Object.keys(blocksFields)
+  const selectFieldNames = Object.keys(selectTables)
   const blocksRelsOps = createBlocksRelsOps(relsTable, topLevelRelsFieldTargets, blocksFields, false)
   const { attachArrays, writeArrays } = createArrayOps(arrayTables, false)
   const { attachJoins } = createJoinOps(joinFields)
+  const { attachSelects, writeSelects } = createSelectHasManyOps(selectTables)
 
   const defaults: Record<string, unknown> = {}
   for (const field of collection.fields) {
@@ -593,7 +650,14 @@ export function createCollectionOps(
         delete scalars[name]
       }
     }
-    return { scalars, arrays, topLevelRels, blocks }
+    const selects: Record<string, unknown[]> = {}
+    for (const name of selectFieldNames) {
+      if (name in scalars) {
+        selects[name] = (scalars[name] as unknown[]) ?? []
+        delete scalars[name]
+      }
+    }
+    return { scalars, arrays, topLevelRels, blocks, selects }
   }
 
   async function attachExtras(doc: Doc): Promise<Doc> {
@@ -601,7 +665,8 @@ export function createCollectionOps(
     const withRels = await blocksRelsOps.attachTopLevelRels(withArrays, doc.id)
     const withBlocks = await blocksRelsOps.attachBlocksFields(withRels, doc.id)
     const withJoins = await attachJoins(withBlocks, doc.id)
-    return nestGroups(withJoins, groupFields) as Doc
+    const withSelects = await attachSelects(withJoins, doc.id)
+    return nestGroups(withSelects, groupFields) as Doc
   }
 
   async function findMany(args: { where?: Where; limit?: number } = {}): Promise<Doc[]> {
@@ -634,19 +699,29 @@ export function createCollectionOps(
   async function create(data: Record<string, unknown>): Promise<Doc> {
     const db = await getDb()
     const now = new Date().toISOString()
-    const { scalars, arrays, topLevelRels, blocks } = splitSpecialFields(data)
-    const values = { ...defaults, ...flattenGroups(scalars, groupFields), updatedAt: now, createdAt: now }
+    // Defaults are merged into `data` BEFORE splitting, not into the flat
+    // insert `values` after - Users' `roles` (defaultValue: ['customer']) is
+    // a hasMany select, a special (child-table) field, not a plain column,
+    // and would fail the insert entirely if a default for it ever landed in
+    // `values` instead of going through splitSpecialFields/writeSelects like
+    // any other roles value does. Every existing plain-column defaultValue in
+    // this app behaves identically either way, so this is not a behaviour
+    // change for them - only a correctness fix for a special-field default,
+    // which nothing exercised before Users.
+    const { scalars, arrays, topLevelRels, blocks, selects } = splitSpecialFields({ ...defaults, ...data })
+    const values = { ...flattenGroups(scalars, groupFields), updatedAt: now, createdAt: now }
     const [row] = await db.insert(table).values(values).returning()
     const id = (row as Doc).id
     await writeArrays(id, arrays)
     await blocksRelsOps.writeTopLevelRels(id, topLevelRels)
     await blocksRelsOps.writeBlocksFields(id, blocks)
+    await writeSelects(id, selects)
     return attachExtras(row as Doc)
   }
 
   async function updateByID(id: number, data: Record<string, unknown>): Promise<Doc | null> {
     const db = await getDb()
-    const { scalars, arrays, topLevelRels, blocks } = splitSpecialFields(data)
+    const { scalars, arrays, topLevelRels, blocks, selects } = splitSpecialFields(data)
     const [row] = await db
       .update(table)
       .set({ ...flattenGroups(scalars, groupFields), updatedAt: new Date().toISOString() })
@@ -656,6 +731,7 @@ export function createCollectionOps(
     await writeArrays(id, arrays)
     await blocksRelsOps.writeTopLevelRels(id, topLevelRels)
     await blocksRelsOps.writeBlocksFields(id, blocks)
+    await writeSelects(id, selects)
     return attachExtras(row as Doc)
   }
 

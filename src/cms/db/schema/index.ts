@@ -9,6 +9,7 @@ import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Posts } from '@/collections/Posts'
+import { Users } from '@/collections/Users'
 import { Courses } from '@/features/courses/collections/Courses'
 import { Enrolments } from '@/features/courses/collections/Enrolments'
 import { LessonProgress } from '@/features/courses/collections/LessonProgress'
@@ -16,7 +17,16 @@ import { Lessons } from '@/features/courses/collections/Lessons'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 
 import type { JoinFieldMeta } from './generate'
-import { generateArrayTable, generateBlockTables, generateRelsTable, generateTable, generateVersionsTable, relationTargetSlugs, tableNameFor } from './generate'
+import {
+  generateArrayTable,
+  generateBlockTables,
+  generateRelsTable,
+  generateSelectHasManyTable,
+  generateTable,
+  generateVersionsTable,
+  relationTargetSlugs,
+  tableNameFor,
+} from './generate'
 
 /**
  * Tables generated straight from the real collection configs, not
@@ -386,3 +396,38 @@ export const enrolments = enrolmentsGenerated.table
 
 export const lessonProgressGenerated = generateTable(LessonProgress)
 export const lessonProgress = lessonProgressGenerated.table
+
+/**
+ * Phase 14: Users - `auth: true`, this app's biggest remaining single-collection
+ * gap, and the last collection every other Phase's FK-fixture rows (Enrolments/
+ * LessonProgress's `user` column, EventRSVPs, etc.) had been pointing at without
+ * ever modeling itself. Two genuinely new schema-generation capabilities, not
+ * wiring-only:
+ *
+ *  - `auth: true`'s implicit columns (email, password/reset/lockout/two-factor)
+ *    - see ../schema/generate.ts's hasAuth/authColumns doc comment for the
+ *    confirmed real eg_users shape and what's deliberately NOT modeled (the
+ *    `eg_users_sessions` child table - Payload only ever writes there during
+ *    its own login flow, which this data layer does not implement).
+ *  - Users' own `roles` field: a hasMany `select`, needing its own child-table
+ *    shape distinct from both an array field's and a rels field's - see
+ *    generateSelectHasManyTable's doc comment. Confirmed against the real
+ *    eg_users_roles table: `order`/`parent_id` (no underscore prefix, unlike
+ *    every array/blocks child table in this app) and a single `value` column,
+ *    one row per selected role, in order.
+ *
+ * Proven with a real user created and read back through Payload's own Local
+ * API (`engine.create`/`engine.findByID`) - see tests/int/cms-db-users.int.spec.ts.
+ * Also surfaced a real, pre-existing latent bug in ../generic.ts's
+ * createCollectionOps: a `defaultValue` was being merged into the flat insert
+ * `values` AFTER splitSpecialFields ran, which only worked because no
+ * defaultValue in this app before Users' `roles: ['customer']` ever targeted a
+ * special (array/rels/blocks/select) field. Fixed by merging defaults into
+ * `data` BEFORE splitting, so a default for any field type goes through the
+ * same split/write path a caller-supplied value would.
+ */
+export const usersGenerated = generateTable(Users)
+export const users = usersGenerated.table
+
+const [usersRolesField] = usersGenerated.selectFields
+export const usersRoles = generateSelectHasManyTable(usersGenerated.tableName, usersRolesField)

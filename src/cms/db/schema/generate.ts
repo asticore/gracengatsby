@@ -70,6 +70,95 @@ function uploadColumns(): Record<string, SQLiteColumnBuilderBase> {
   }
 }
 
+/** True when a collection declares `auth: true` (or an auth config object) - Users is this app's only one (confirmed by grep across src/collections and src/features). */
+export function hasAuth(collection: CollectionConfig): boolean {
+  return Boolean(collection.auth)
+}
+
+/**
+ * The implicit columns Payload adds to an auth-enabled collection's table -
+ * not declared in any of the collection's own `fields` (Users' own `fields`
+ * list has only `roles`, itself a hasMany select - see
+ * generateSelectHasManyTable). Confirmed against the real eg_users schema
+ * (`pragma table_info`, not guessed): `email` (the one NOT NULL auth column),
+ * `resetPasswordToken`/`resetPasswordExpiration`, `salt`/`hash` (the
+ * password, once set), `loginAttempts` (numeric, defaults to 0),
+ * `lockUntil`, and - because this app's Users collection doesn't disable
+ * either - three two-factor columns (`twoFactorEnabled` - boolean, defaults
+ * false - `twoFactorSecret`, `twoFactorConfirmedAt`) plus
+ * `twoFactorLastUsedStep` (numeric). All nullable except `email`. They land
+ * AFTER `updatedAt`/`createdAt` in real column order - the same slot
+ * uploadColumns() uses - confirmed by the same `pragma table_info` dump.
+ *
+ * This data layer never writes `salt`/`hash` itself (hashing a real password
+ * into them is Payload's own auth strategy, out of scope the same way actual
+ * file upload/resize stays Payload's job for `upload` - see uploadColumns'
+ * doc comment) - collections/users.ts's create/update ops only ever touch
+ * `email` and `roles`.
+ *
+ * Also confirmed, and deliberately NOT modeled here: `auth: true` (with its
+ * default `useSessions: true`, which this app's Users config does not
+ * override) additionally creates an `eg_users_sessions` child table - the
+ * exact shape an array field's child table has (`_order`/`_parent_id`/string
+ * `id`, plus `created_at`/`expires_at`). Nothing in this data layer's
+ * create/update path can ever populate it: Payload only writes a session row
+ * during its own login/token-refresh flow, which this data layer does not
+ * implement (auth itself, not just its storage, stays entirely Payload's
+ * job) - confirmed empirically too: a real `engine.create()`/`findByID()`
+ * round trip through Payload's own Local API (which never logs in) returns
+ * `sessions: []` every time. So it is left ungenerated rather than modeled
+ * and never written to - the same reasoning Phase 12 used to leave
+ * `imageSizes`/`focalPoint: true` unmodeled until something actually
+ * exercises them.
+ */
+function authColumns(): Record<string, SQLiteColumnBuilderBase> {
+  return {
+    email: text('email').notNull(),
+    resetPasswordToken: text(toSnakeCase('resetPasswordToken')),
+    resetPasswordExpiration: text(toSnakeCase('resetPasswordExpiration')),
+    salt: text('salt'),
+    hash: text('hash'),
+    loginAttempts: numeric(toSnakeCase('loginAttempts'), { mode: 'number' }).default(0),
+    lockUntil: text(toSnakeCase('lockUntil')),
+    twoFactorEnabled: integer(toSnakeCase('twoFactorEnabled'), { mode: 'boolean' }).default(false),
+    twoFactorSecret: text(toSnakeCase('twoFactorSecret')),
+    twoFactorConfirmedAt: text(toSnakeCase('twoFactorConfirmedAt')),
+    twoFactorLastUsedStep: numeric(toSnakeCase('twoFactorLastUsedStep'), { mode: 'number' }),
+  }
+}
+
+/** True for a hasMany `select` field - needs its own child table (generateSelectHasManyTable), same reason a hasMany relationship/upload field needs generateRelsTable instead of a plain column. */
+function isHasManySelect(field: NamedField): boolean {
+  return field.type === 'select' && 'hasMany' in field && field.hasMany === true
+}
+
+/**
+ * A child table for one hasMany `select` field - Users' `roles` is this
+ * app's only one. Confirmed against the real eg_users_roles table: unlike an
+ * array field's child table (generateArrayTable), the row-order/parent-FK
+ * columns carry NO underscore prefix (`order`, `parent_id`, not `_order`,
+ * `_parent_id`), the row `id` is an integer autoincrement (never a string -
+ * a select option has no subfields needing an addressable row identity the
+ * way an array item's own `id` does), and there is a single nullable `value`
+ * text column holding each selected option's stored value. One row per
+ * selected option, ordered by `order` ascending - confirmed by creating a
+ * real user with `roles: ['admin', 'customer']` and reading back the exact
+ * same order via both Payload's own engine and this table directly.
+ */
+export function generateSelectHasManyTable(parentTableName: string, field: NamedField) {
+  if (!isHasManySelect(field)) {
+    throw new Error(`generateSelectHasManyTable: field "${field.name}" is not a hasMany select field.`)
+  }
+  const tableName = `${parentTableName}_${toSnakeCase(field.name)}`
+  const columns: Record<string, SQLiteColumnBuilderBase> = {
+    order: integer('order').notNull(),
+    parentId: integer('parent_id').notNull(),
+    value: text('value'),
+    id: integer('id').primaryKey({ autoIncrement: true }),
+  }
+  return sqliteTable(tableName, columns)
+}
+
 /**
  * Derives a drizzle table from a real Payload CollectionConfig - the
  * generalisation promised in ../index.ts, proven against real collections
@@ -108,12 +197,22 @@ function uploadColumns(): Record<string, SQLiteColumnBuilderBase> {
  * doc comment for the confirmed real shape and what's deliberately NOT
  * modeled (`imageSizes`, `focalPoint: true`).
  *
- * NOT supported yet (throws): tabs, hasMany select, group/array/blocks
- * nesting inside one another or inside a hasMany-relational field's own
- * fields, `timestamps: false` (every generated table gets
- * updatedAt/createdAt), an upload-enabled collection with drafts, and an
- * upload-enabled collection using `imageSizes` or `focalPoint: true`. Each
- * needs different modelling - see ../index.ts.
+ * `auth: true` on the collection (Users is this app's only one) adds
+ * Payload's own implicit auth columns (`email`, password/reset/lockout/
+ * two-factor columns) - see hasAuth/authColumns' doc comment for the
+ * confirmed real shape and what's deliberately NOT modeled (the
+ * `eg_users_sessions` child table).
+ *
+ * hasMany `select` (Users' `roles` is this app's only one) -> a child table,
+ * same idea as a hasMany relationship/upload field but its own distinct
+ * shape - see generateSelectHasManyTable.
+ *
+ * NOT supported yet (throws): tabs, group/array/blocks nesting inside one
+ * another or inside a hasMany-relational field's own fields, `timestamps:
+ * false` (every generated table gets updatedAt/createdAt), an
+ * upload-enabled collection with drafts, an upload-enabled collection using
+ * `imageSizes` or `focalPoint: true`, and an auth-enabled collection with
+ * drafts or upload. Each needs different modelling - see ../index.ts.
  */
 export function generateTable(collection: CollectionConfig) {
   if (typeof collection.dbName === 'function') {
@@ -131,6 +230,14 @@ export function generateTable(collection: CollectionConfig) {
       throw new Error(`generateTable(${collection.slug}): an upload-enabled collection with drafts is not supported yet.`)
     }
   }
+  if (hasAuth(collection)) {
+    if (hasUpload(collection)) {
+      throw new Error(`generateTable(${collection.slug}): an auth-enabled collection with upload is not supported yet.`)
+    }
+    if (hasDrafts(collection)) {
+      throw new Error(`generateTable(${collection.slug}): an auth-enabled collection with drafts is not supported yet.`)
+    }
+  }
   const tableName = tableNameFor(collection)
   // A draft save must be allowed to leave required fields empty, so Payload
   // never emits a SQL NOT NULL for `required` on a collection with drafts
@@ -139,7 +246,12 @@ export function generateTable(collection: CollectionConfig) {
   // eg_pages.title (all required, both collections have drafts) are not.
   const suppressRequired = hasDrafts(collection)
 
-  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields, joinFields } = processFields(collection.slug, collection.fields, '', suppressRequired)
+  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields } = processFields(
+    collection.slug,
+    collection.fields,
+    '',
+    suppressRequired,
+  )
 
   const columns: Record<string, SQLiteColumnBuilderBase> = {
     id: integer('id').primaryKey({ autoIncrement: true }),
@@ -150,11 +262,14 @@ export function generateTable(collection: CollectionConfig) {
   if (hasUpload(collection)) {
     Object.assign(columns, uploadColumns())
   }
+  if (hasAuth(collection)) {
+    Object.assign(columns, authColumns())
+  }
   if (hasDrafts(collection)) {
     columns._status = statusColumn('')
   }
 
-  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields, joinFields }
+  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields }
 }
 
 /**
@@ -197,7 +312,10 @@ export function generateVersionsTable(collection: CollectionConfig, mainTableNam
   // collection's own live table happens to have one (it never does once
   // drafts are enabled - see generateTable - but this stays explicit rather
   // than relying on that).
-  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collection.slug, collection.fields, 'version_', true)
+  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields, selectFields } = processFields(collection.slug, collection.fields, 'version_', true)
+  if (selectFields.length) {
+    throw new Error(`generateVersionsTable(${collection.slug}): hasMany select "${selectFields[0].name}" on a drafts-enabled collection is not supported yet.`)
+  }
 
   const tableName = `_${mainTableName}_v`
   const columns: Record<string, SQLiteColumnBuilderBase> = {
@@ -256,7 +374,7 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
   }
 
   const subFields = (field as unknown as { fields: Field[] }).fields
-  const { columns: subColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collectionSlug, subFields, '', suppressRequired)
+  const { columns: subColumns, arrayFields, blocksFields, relsFields, groupFields, selectFields } = processFields(collectionSlug, subFields, '', suppressRequired)
   if (arrayFields.length) {
     throw new Error(`generateArrayTable(${collectionSlug}): nested array "${arrayFields[0].name}" inside array "${field.name}" is not supported yet.`)
   }
@@ -270,6 +388,9 @@ export function generateArrayTable(collectionSlug: string, parentTableName: stri
   }
   if (groupFields.length) {
     throw new Error(`generateArrayTable(${collectionSlug}): group field "${groupFields[0].name}" inside array "${field.name}" is not supported yet.`)
+  }
+  if (selectFields.length) {
+    throw new Error(`generateArrayTable(${collectionSlug}): hasMany select "${selectFields[0].name}" inside array "${field.name}" is not supported yet.`)
   }
   Object.assign(columns, subColumns)
   if (versioned) {
@@ -324,7 +445,7 @@ export function generateBlockTables(collectionSlug: string, parentTableName: str
 
   return blockDefs.map((block) => {
     const tableName = `${parentTableName}_blocks_${toSnakeCase(block.slug)}`
-    const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields } = processFields(collectionSlug, block.fields, '', suppressRequired)
+    const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields, selectFields } = processFields(collectionSlug, block.fields, '', suppressRequired)
     if (arrayFields.length) {
       throw new Error(`generateBlockTables(${collectionSlug}): array field "${arrayFields[0].name}" inside block "${block.slug}" is not supported yet.`)
     }
@@ -333,6 +454,9 @@ export function generateBlockTables(collectionSlug: string, parentTableName: str
     }
     if (groupFields.length) {
       throw new Error(`generateBlockTables(${collectionSlug}): group field "${groupFields[0].name}" inside block "${block.slug}" is not supported yet.`)
+    }
+    if (selectFields.length) {
+      throw new Error(`generateBlockTables(${collectionSlug}): hasMany select "${selectFields[0].name}" inside block "${block.slug}" is not supported yet.`)
     }
 
     const columns: Record<string, SQLiteColumnBuilderBase> = {
@@ -443,6 +567,7 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
   const relsFields: NamedField[] = []
   const groupFields: GroupFieldMeta[] = []
   const joinFields: NamedField[] = []
+  const selectFields: NamedField[] = []
 
   for (const field of walkFields(collectionSlug, fields)) {
     if (field.type === 'join') {
@@ -455,6 +580,10 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
     }
     if (field.type === 'blocks') {
       blocksFields.push(field)
+      continue
+    }
+    if (isHasManySelect(field)) {
+      selectFields.push(field)
       continue
     }
     if (field.type === 'group') {
@@ -472,6 +601,9 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
             `generateTable(${collectionSlug}): hasMany/polymorphic relationship "${subField.name}" inside group "${field.name}" is not supported yet.`,
           )
         }
+        if (isHasManySelect(subField)) {
+          throw new Error(`generateTable(${collectionSlug}): hasMany select "${subField.name}" inside group "${field.name}" is not supported yet.`)
+        }
         columns[`${field.name}${capitalize(subField.name)}`] = columnFor(collectionSlug, subField, groupDbPrefix, suppressRequired)
         subFieldNames.push(subField.name)
       }
@@ -485,7 +617,7 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
     columns[field.name] = columnFor(collectionSlug, field, dbNamePrefix, suppressRequired)
   }
 
-  return { columns, arrayFields, blocksFields, relsFields, groupFields, joinFields }
+  return { columns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields }
 }
 
 /** A `join` field's own config, as Payload declares it - `collection` is the single related collection slug (this app has no polymorphic join yet), `on` is the name of the relationship/hasMany field on THAT collection which points back here. */
@@ -537,9 +669,9 @@ function columnFor(collectionSlug: string, field: NamedField, dbNamePrefix = '',
       column = text(columnName)
       break
     case 'select':
-      if ('hasMany' in field && field.hasMany) {
-        throw new Error(`generateTable(${collectionSlug}): select field "${field.name}" is hasMany - needs a child table, not supported yet.`)
-      }
+      // processFields() already routes a hasMany select field to
+      // selectFields before this is ever called (see isHasManySelect) - only
+      // a single-value select reaches here, always a plain text column.
       column = text(columnName)
       break
     case 'richText':

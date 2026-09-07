@@ -284,37 +284,48 @@
  * pointing at without ever modeling itself, and the biggest single-collection
  * gap flagged since Phase 9. Two genuinely new schema-generation capabilities:
  *
- *  - `auth: true`'s implicit columns - `email` plus password/reset/lockout/
- *    two-factor columns, none declared in Users' own `fields` (which has only
- *    `roles`) - confirmed against the real eg_users schema (`pragma
- *    table_info`, not guessed). This data layer never writes `salt`/`hash`
- *    itself (hashing a real password is Payload's own auth strategy, out of
- *    scope the same way actual file storage/resize stays Payload's job for
- *    `upload`) - collections/users.ts's create/update ops only ever touch
- *    `email` and `roles`.
- *  - Users' own `roles` field: a hasMany `select`, needing a child-table shape
- *    distinct from both an array field's and a rels field's - confirmed
- *    against the real eg_users_roles table: `order`/`parent_id` columns carry
- *    NO underscore prefix (unlike every array/blocks child table modeled so
- *    far), and a single `value` column holds each selected option, one row
- *    per selection, in order. See ../schema/generate.ts's
- *    generateSelectHasManyTable and ./generic.ts's createSelectHasManyOps.
- *
- * Deliberately NOT modeled: the `eg_users_sessions` child table `auth: true`
- * (with its default `useSessions: true`) also creates - confirmed empirically
- * that a real `engine.create()`/`findByID()` round trip through Payload's own
- * Local API (which never logs in) always returns `sessions: []`, since a
- * session row is only ever written during Payload's own login/token-refresh
- * flow, which this data layer does not implement.
+ *  - `auth: true`'s implicit columns (email, password/reset/lockout/two-factor)
+ *    - see ../schema/generate.ts's hasAuth/authColumns doc comment for the
+ *    confirmed real eg_users shape and what's deliberately NOT modeled (the
+ *    `eg_users_sessions` child table - Payload only ever writes there during
+ *    its own login flow, which this data layer does not implement).
+ *  - Users' own `roles` field: a hasMany `select`, needing its own child-table
+ *    shape distinct from both an array field's and a rels field's - see
+ *    generateSelectHasManyTable's doc comment. Confirmed against the real
+ *    eg_users_roles table: `order`/`parent_id` (no underscore prefix, unlike
+ *    every array/blocks child table in this app) and a single `value` column,
+ *    one row per selected role, in order.
  *
  * Proven with a real user created and read back through Payload's own Local
- * API - see tests/int/cms-db-users.int.spec.ts. Also surfaced a real,
- * pre-existing latent bug in ./generic.ts's createCollectionOps: a
- * `defaultValue` was merged into the flat insert `values` AFTER
- * splitSpecialFields ran, which only ever worked because no defaultValue in
- * this app before Users' `roles: ['customer']` targeted a special (array/
- * rels/blocks/select) field. Fixed by merging defaults into `data` BEFORE
- * splitting.
+ * API (`engine.create`/`engine.findByID`) - see tests/int/cms-db-users.int.spec.ts.
+ * Also surfaced a real, pre-existing latent bug in ../generic.ts's
+ * createCollectionOps: a `defaultValue` was being merged into the flat insert
+ * `values` AFTER splitSpecialFields ran, which only worked because no
+ * defaultValue in this app before Users' `roles: ['customer']` ever targeted a
+ * special (array/rels/blocks/select) field. Fixed by merging defaults into
+ * `data` BEFORE splitting, so a default for any field type goes through the
+ * same split/write path a caller-supplied value would.
+ *
+ * Phase 15 modeled AuditLog and Backups - both scalar-only (text/number/date/
+ * textarea), same shape class as Faqs, so no new schema-generation capability
+ * was needed; confirmed against the real eg_audit_log/eg_backups tables via
+ * `pragma table_info` and the columns line up 1:1 with what generateTable
+ * derives from each collection's own `fields` list (unlike the
+ * eg_locked_documents_rels drift noted below, these two hand-written
+ * migrations were never allowed to drift from their collection configs).
+ * Both collections close `access.create`/`update` to everyone, including
+ * admins, in their own Payload config - rows are meant to arrive only by
+ * direct insert from the feature code that logs to them (auditLog.ts's
+ * writer, backups' own record.ts) - but that is an access-control fact, not
+ * a schema one: Payload's Local API overrides access by default, so the
+ * usual write-both-ways parity tests apply unchanged (see
+ * tests/int/cms-db-audit-log.int.spec.ts and
+ * tests/int/cms-db-backups.int.spec.ts). One shape note worth recording:
+ * eg_backups' `status`/`size_bytes`/`tables_backed_up`/`media_objects`
+ * columns carry a SQL-level DEFAULT with no matching Payload `defaultValue` -
+ * harmless, since this data layer (like Payload's own insert path) only ever
+ * inserts columns a caller actually supplies, so an omitted column falls
+ * through to the same DB default either way.
  *
  * WHAT IS STILL OUT OF SCOPE, AND WHY IT IS HARDER
  *
@@ -380,3 +391,5 @@ export * from './collections/lessons'
 export * from './collections/enrolments'
 export * from './collections/lessonProgress'
 export * from './collections/users'
+export * from './collections/auditLog'
+export * from './collections/backups'

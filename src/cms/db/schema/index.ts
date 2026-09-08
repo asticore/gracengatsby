@@ -1,4 +1,4 @@
-import type { Field } from '@/engine'
+import type { Field, GlobalConfig } from '@/engine'
 
 import type { AnySQLiteTable } from 'drizzle-orm/sqlite-core'
 
@@ -23,7 +23,16 @@ import { Memberships } from '@/features/members/collections/Memberships'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 import { Translations } from '@/features/multilingual/translationsCollection'
 import { AuditLog } from '@/features/security/auditLogCollection'
+import { BlogSettings } from '@/globals/BlogSettings'
+import { EmailSettings } from '@/globals/EmailSettings'
 import { FaqSettings } from '@/globals/FaqSettings'
+import { FormSettings } from '@/globals/FormSettings'
+import { Integrations } from '@/globals/Integrations'
+import { MemberSettings } from '@/globals/MemberSettings'
+import { PaymentSettings } from '@/globals/PaymentSettings'
+import { SecuritySettings } from '@/globals/SecuritySettings'
+import { ShopSettings } from '@/globals/ShopSettings'
+import { SiteSettings } from '@/globals/SiteSettings'
 
 import type { JoinFieldMeta } from './generate'
 import {
@@ -608,3 +617,137 @@ export const faqSettingsBlockTypes = Object.fromEntries(
 )
 
 export const faqSettingsRelsTargetColumns = faqSettingsRelsGenerated.targetColumns
+
+/**
+ * Phase 19: nine more globals landing at once, none needing any new
+ * schema-generation capability beyond what FaqSettings (Phase 18) and every
+ * group-bearing collection (Courses' `seo`, Events' `location`) already
+ * proved - `generateTable()` alone, or with `groupFields` reconstruction, or
+ * (BlogSettings/ShopSettings) the exact same `introBlocks` blocks-field
+ * wiring as FaqSettings.
+ *
+ * BlogSettings/ShopSettings: same pageBuilderBlocks library as FaqSettings'
+ * introBlocks, so the same two hasMany/polymorphic targets (Faq's `faqs`,
+ * Gallery's `images`) - already covered by resolveTargetTable. Same
+ * pre-existing, deliberately-unfixed Form-block `form` field gap carried
+ * forward too.
+ */
+export const blogSettingsGenerated = generateTable(BlogSettings)
+export const blogSettings = blogSettingsGenerated.table
+
+const [blogSettingsIntroBlocksField] = blogSettingsGenerated.blocksFields
+const blogSettingsBlockDefs = generateBlockTables(BlogSettings.slug, blogSettingsGenerated.tableName, blogSettingsIntroBlocksField)
+export const blogSettingsBlocks = Object.fromEntries(blogSettingsBlockDefs.map((block) => [block.slug, block.table]))
+
+const blogSettingsRelsFields = [...blogSettingsGenerated.relsFields, ...blogSettingsBlockDefs.flatMap((block) => block.relsFields)]
+const blogSettingsRelsGenerated = generateRelsTable(blogSettingsGenerated.tableName, blogSettingsRelsFields, resolveTargetTable)
+export const blogSettingsRels = blogSettingsRelsGenerated.table
+
+export const blogSettingsBlockTypes = Object.fromEntries(
+  blogSettingsBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+
+export const blogSettingsRelsTargetColumns = blogSettingsRelsGenerated.targetColumns
+
+export const shopSettingsGenerated = generateTable(ShopSettings)
+export const shopSettings = shopSettingsGenerated.table
+
+const [shopSettingsIntroBlocksField] = shopSettingsGenerated.blocksFields
+const shopSettingsBlockDefs = generateBlockTables(ShopSettings.slug, shopSettingsGenerated.tableName, shopSettingsIntroBlocksField)
+export const shopSettingsBlocks = Object.fromEntries(shopSettingsBlockDefs.map((block) => [block.slug, block.table]))
+
+const shopSettingsRelsFields = [...shopSettingsGenerated.relsFields, ...shopSettingsBlockDefs.flatMap((block) => block.relsFields)]
+const shopSettingsRelsGenerated = generateRelsTable(shopSettingsGenerated.tableName, shopSettingsRelsFields, resolveTargetTable)
+export const shopSettingsRels = shopSettingsRelsGenerated.table
+
+export const shopSettingsBlockTypes = Object.fromEntries(
+  shopSettingsBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+
+export const shopSettingsRelsTargetColumns = shopSettingsRelsGenerated.targetColumns
+
+/**
+ * SiteSettings: no blocks/hasMany/rels at all - `logo`/`favicon`/
+ * `seo.defaultOgImage` are single (non-hasMany) upload fields, which
+ * columnFor treats the same as a single relationship (a plain `<name>_id` FK
+ * column, never routed through generateRelsTable - see isHasManyRelational).
+ * `theme`/`seo`/`features` are plain `group` fields, flattened by
+ * generateTable() alone and reconstructed via `groupFields` in
+ * ../globals/siteSettings.ts.
+ */
+export const siteSettingsGenerated = generateTable(SiteSettings)
+export const siteSettings = siteSettingsGenerated.table
+
+/**
+ * MemberSettings/SecuritySettings: entirely top-level `group` fields over
+ * plain scalars (row-wrapped or not) - no array/blocks/relationship/
+ * hasMany-select/join anywhere in either config. `generateTable()` +
+ * `groupFields` (the same Courses' `seo` mechanism) is the whole of it - see
+ * ../globals/memberSettings.ts and ../globals/securitySettings.ts for the
+ * full field-shape confirmation (including why SecuritySettings' two
+ * same-named `enabled` subfields in different groups don't collide).
+ */
+export const memberSettingsGenerated = generateTable(MemberSettings)
+export const memberSettings = memberSettingsGenerated.table
+
+export const securitySettingsGenerated = generateTable(SecuritySettings)
+export const securitySettings = securitySettingsGenerated.table
+
+/**
+ * Integrations: the simplest global yet - one secret `text` field
+ * (`claudeApiKey`), schema-identical to Faqs' scalar-only table. Its
+ * encrypt/decrypt hooks (src/utilities/secretField.ts) run entirely inside
+ * Payload's own field-hook pipeline, invisible to generateTable - see
+ * ../globals/integrations.ts's KNOWN GAP doc comment for what that means for
+ * a write through this layer's own raw-column ops.
+ */
+export const integrationsGenerated = generateTable(Integrations)
+export const integrations = integrationsGenerated.table
+
+/**
+ * EmailSettings: several provider `group` fields (each flattened with its
+ * own column prefix, several holding secret `text` fields - same
+ * encrypt/decrypt-hook caveat as Integrations, see
+ * ../globals/emailSettings.ts), plus a layout-only top-level `row`. Its
+ * `testing.sendTest` is a `type: 'ui'` field - the first this data layer has
+ * met. Payload backs a `ui` field with no column at all, and generateTable's
+ * columnFor has no case for it (confirmed: nothing else in this app's real
+ * config has ever needed one), so `generateTable(EmailSettings)` unmodified
+ * would throw. Rather than add a one-off `ui` branch to generate.ts's shared
+ * columnFor for a single render-only button, `ui` fields are stripped
+ * (recursively, so one nested in a group is caught too) from the field list
+ * fed to generateTable below - every OTHER consumer of this global
+ * (../globals/emailSettings.ts's createGlobalOps call, access control, the
+ * admin UI) keeps using the real, unmodified `EmailSettings` config.
+ */
+function stripUiFields(fields: Field[]): Field[] {
+  return fields
+    .filter((f) => f.type !== 'ui')
+    .map((field) => {
+      const named = field as Field & { fields?: Field[] }
+      return named.fields ? ({ ...named, fields: stripUiFields(named.fields) } as Field) : field
+    })
+}
+const emailSettingsSchemaConfig: GlobalConfig = { ...EmailSettings, fields: stripUiFields(EmailSettings.fields) }
+export const emailSettingsGenerated = generateTable(emailSettingsSchemaConfig)
+export const emailSettings = emailSettingsGenerated.table
+
+/**
+ * PaymentSettings/FormSettings: provider/spam-protection `group` fields
+ * holding a mix of plain and secret `text` fields (same encrypt/decrypt-hook
+ * caveat as Integrations/EmailSettings - see ../globals/paymentSettings.ts
+ * and ../globals/formSettings.ts). No `ui` field, no nested group-in-group,
+ * no array/blocks/relationship anywhere in either config - plain
+ * `generateTable()` + `groupFields`.
+ */
+export const paymentSettingsGenerated = generateTable(PaymentSettings)
+export const paymentSettings = paymentSettingsGenerated.table
+
+export const formSettingsGenerated = generateTable(FormSettings)
+export const formSettings = formSettingsGenerated.table

@@ -55,7 +55,32 @@ function nestGroups(row: Record<string, unknown>, groupFields: GroupFieldMeta[])
   return result
 }
 
-/** The reverse of nestGroups - flattens a document's nested group objects back into the prefixed JS keys the drizzle table actually has, for insert/update. Only ever called on the REMAINING scalar columns of a row that has already had any nested array fields (including one living inside a group - see createArrayOps) pulled out separately, so it only ever reads `subFieldNames`, never `arrayFieldNames` - an array field has no flat column of its own to flatten into. */
+/**
+ * The reverse of nestGroups - flattens a document's nested group objects back
+ * into the prefixed JS keys the drizzle table actually has, for insert/
+ * update. Only ever called on the REMAINING scalar columns of a row that has
+ * already had any nested array fields (including one living inside a group -
+ * see createArrayOps) pulled out separately, so it only ever reads
+ * `subFieldNames`, never `arrayFieldNames` - an array field has no flat
+ * column of its own to flatten into.
+ *
+ * `groupValue[subName] ?? null`, not a bare `groupValue[subName]`: found via
+ * real MemberSettings/SecuritySettings parity tests (Phase 19) submitting a
+ * group object with a subfield omitted, expecting that subfield to come back
+ * `null` (matching Payload's own real replace-the-whole-field semantics for
+ * groups - a group is one field, and Payload does not deep-merge a partial
+ * group object with the stored one). Passing a bare `undefined` through to
+ * drizzle's `.set()`/`.values()` silently OMITS that column from the SQL
+ * statement instead of writing NULL - the pre-existing wholesale-group-
+ * replace test (Events' `location`, ../.. /tests/int/cms-db-events.int.spec.ts)
+ * never caught this because its omitted subfield (`address`) happened to
+ * already be null from document creation, so "column left untouched" and
+ * "column explicitly nulled" were indistinguishable there. A boolean
+ * subfield that had previously been explicitly `true`/`false` exposed the
+ * real gap: it kept its stale value instead of nulling. `?? null` only
+ * affects `undefined`/`null` inputs, so an explicit `false`/`0`/`''` still
+ * flattens through unchanged.
+ */
 function flattenGroups(data: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
   if (!groupFields.length) return data
   const result: Record<string, unknown> = { ...data }
@@ -64,7 +89,7 @@ function flattenGroups(data: Record<string, unknown>, groupFields: GroupFieldMet
     const groupValue = (result[name] as Record<string, unknown>) ?? {}
     delete result[name]
     for (const subName of subFieldNames) {
-      result[`${name}${capitalize(subName)}`] = groupValue[subName]
+      result[`${name}${capitalize(subName)}`] = groupValue[subName] ?? null
     }
   }
   return result

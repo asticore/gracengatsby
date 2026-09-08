@@ -7,6 +7,17 @@ export const Media: CollectionConfig = {
   dbName: 'eg_media',
   admin: {
     group: 'Content',
+    // Thumbnail gallery instead of the stock row table - see the component
+    // for why "different sizes" means on-screen tile density rather than
+    // sharp-generated image variants (unavailable on this app's Workers
+    // runtime, same reason `crop`/`focalPoint` are off below).
+    components: {
+      views: {
+        list: {
+          Component: '@/views/media/MediaGalleryView#MediaGalleryView',
+        },
+      },
+    },
   },
   // Only `read` was set here, so writes fell through to the engine default of
   // "anyone signed in" - which includes every customer account. That allowed

@@ -500,18 +500,18 @@ function createBlocksRelsOps(
  * Courses' `lessons` join (Phase 10) revealed that default isn't the whole
  * story: its join field DOES declare its own `defaultSort: 'order'` (see
  * src/features/courses/collections/Courses.ts), and real Payload honors
- * that instead - confirmed by creating 11 real Lessons out of id order
- * relative to their `order` values and inspecting Payload's own `findByID`
- * response: it came back sorted by `order` ascending, not by id at all. So
- * each join field now carries its own optional `sort` (column + direction),
- * read off the field's own `defaultSort` string in ../schema/index.ts (a
- * bare name = ascending, a `-`-prefixed name = descending, matching
- * Payload's own `sort` string convention) - falling back to
- * `{ column: 'id', direction: 'desc' }` when a join field declares no
- * `defaultSort`, exactly reproducing the previously-confirmed Events
- * behaviour. Payload's real page/where query options on a join field are
- * still not implemented - nothing in this app's admin UI or API usage needs
- * them yet.
+ * that instead of the id-descending default - confirmed by creating 11 real
+ * Lessons out of id order relative to their `order` values and inspecting
+ * Payload's own `findByID` response: it came back sorted by `order`
+ * ascending, not by id at all. So each join field now carries its own
+ * optional `sort` (column + direction), read off the field's own
+ * `defaultSort` string in ../schema/index.ts (a bare name = ascending, a
+ * `-`-prefixed name = descending, matching Payload's own `sort` string
+ * convention) - falling back to `{ column: 'id', direction: 'desc' }` when a
+ * join field declares no `defaultSort`, exactly reproducing the previously-
+ * confirmed Events behaviour. Payload's real page/where query options on a
+ * join field are still not implemented - nothing in this app's admin UI or
+ * API usage needs them yet.
  */
 function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onColumn: string; sort?: { column: string; direction: 'asc' | 'desc' } }>) {
   const joinFieldNames = Object.keys(joinFields)

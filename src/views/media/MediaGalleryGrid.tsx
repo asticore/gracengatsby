@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export interface GalleryDoc {
   id: string
@@ -30,6 +30,29 @@ function formatFilesize(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function readStoredSize(): TileSize {
+  // Runs inside useState's lazy initializer (see below), not an effect -
+  // a previous version restored this via useEffect + setState, which
+  // eslint-plugin-react-hooks' set-state-in-effect rule now rejects as a
+  // build error (React 19: setState called synchronously in an effect body
+  // risks a cascading render). A lazy initializer reads the same value
+  // during the component's own first render instead, so there's no extra
+  // render to cascade from. `typeof window === 'undefined'` covers this
+  // component's server-side render pass (it has no 'use client' escape from
+  // SSR, just from Server Components); the resulting SSR-vs-client mismatch
+  // is silenced below with `suppressHydrationWarning` on the one element
+  // whose layout depends on `size`, same as any other localStorage-backed
+  // preference in a Next.js app.
+  if (typeof window === 'undefined') return 'md'
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    if (stored === 'sm' || stored === 'md' || stored === 'lg') return stored
+  } catch {
+    // localStorage can throw in locked-down browser contexts - fall through to the default.
+  }
+  return 'md'
+}
+
 /**
  * The interactive half of MediaGalleryView: a size toggle (persisted in
  * localStorage per-browser, the same idea as Payload's own list-view column
@@ -38,16 +61,7 @@ function formatFilesize(bytes?: number): string {
  * shipping the whole doc list through a client-serialization boundary twice.
  */
 export function MediaGalleryGrid({ docs }: { docs: GalleryDoc[] }) {
-  const [size, setSize] = useState<TileSize>('md')
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY)
-      if (stored === 'sm' || stored === 'md' || stored === 'lg') setSize(stored)
-    } catch {
-      // localStorage can throw in locked-down browser contexts - the default size still works.
-    }
-  }, [])
+  const [size, setSize] = useState<TileSize>(readStoredSize)
 
   const chooseSize = (next: TileSize) => {
     setSize(next)
@@ -67,6 +81,7 @@ export function MediaGalleryGrid({ docs }: { docs: GalleryDoc[] }) {
             type="button"
             onClick={() => chooseSize(option)}
             aria-pressed={size === option}
+            suppressHydrationWarning
             className={`rounded-[4px] border px-[calc(var(--base)*0.5)] py-[calc(var(--base)*0.25)] text-[calc(var(--base)*0.72)] uppercase tracking-[0.04em] [transition:border-color_0.15s_ease,color_0.15s_ease] ${
               size === option
                 ? 'border-[var(--ac-gold)] text-[var(--ac-gold)]'
@@ -81,6 +96,7 @@ export function MediaGalleryGrid({ docs }: { docs: GalleryDoc[] }) {
       <div
         className="grid gap-[calc(var(--base)*0.6)]"
         style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_WIDTH[size]}, 1fr))` }}
+        suppressHydrationWarning
       >
         {docs.map((doc) => (
           <Link

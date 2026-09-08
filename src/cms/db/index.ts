@@ -58,10 +58,10 @@
  * field's `required: true`, live table or version table alike (confirmed:
  * eg_faqs.question - required, no drafts - is NOT NULL; eg_events.title and
  * eg_pages.title - both required, both have drafts - are not). Proven
- * against Events, chosen over Pages/Posts/Courses (this app's other
- * versioned collections) specifically because it needs group+versions
- * without ALSO needing blocks/array-in-versions (not built yet at the time)
- * or a working join to be usable at all.
+ * against Events (this app's other versioned collections) specifically
+ * because it needs group+versions without ALSO needing blocks/array-in-
+ * versions (not built yet at the time) or a working join to be usable at
+ * all.
  *
  * Phase 6 closed that gap: versioned `blocks` fields and their nested
  * hasMany/polymorphic subfields. Proven against Pages (its `blocks` field
@@ -456,3 +456,12 @@ export * from './collections/abTests'
 export * from './collections/fieldGroups'
 export * from './collections/forms'
 export * from './globals/faqSettings'
+export * from './globals/blogSettings'
+export * from './globals/shopSettings'
+export * from './globals/siteSettings'
+export * from './globals/memberSettings'
+export * from './globals/securitySettings'
+export * from './globals/integrations'
+export * from './globals/emailSettings'
+export * from './globals/paymentSettings'
+export * from './globals/formSettings'

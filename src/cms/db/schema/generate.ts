@@ -6,19 +6,36 @@ import toSnakeCase from 'to-snake-case'
 type NamedField = Field & { name: string }
 
 /**
- * One `group` field's reconstruction metadata - see processFields' group
- * handling and ../generic.ts's nestGroups/flattenGroups.
+ * One `group` field's reconstruction metadata - see processGroupField and
+ * ../generic.ts's nestGroups/flattenGroups. Recursive: `groups` is this
+ * group's own nested groups (Phase 20 - BackupSettings' `destination.r2`/
+ * `s3`/`ftp`/`sftp`, confirmed against the real `ac_backup_settings` DDL: a
+ * nested group is pure flattening, chaining the SAME column-prefix and
+ * JS-key mechanism one level deeper, no child table involved at all).
  *
- * `arrayFieldNames` is only ever populated when this group itself lives
- * inside an array's own subfields (Forms' `conditional` group, containing a
- * `rules` array) - see processFields' `allowArrayInGroup` param. It lists,
- * alongside the plain scalar `subFieldNames`, which of the group's subfields
- * are themselves arrays reconstructed from their OWN child table rather than
- * a flat column - ../generic.ts's nestGroups/flattenGroups fold them into
- * the group object the exact same way as a scalar subfield, just sourced
- * from a pre-attached key instead of a real drizzle column.
+ * `arrayFieldNames`/`selectFieldNames` list which of this group's OWN
+ * subfields (at this exact nesting level) are themselves an array or
+ * hasMany-select reconstructed from their own child table rather than a flat
+ * column - ../generic.ts's nestGroups/flattenGroups fold them into the group
+ * object the same way as a scalar subfield, just sourced from a pre-attached
+ * key instead of a real drizzle column. Two distinct cases populate these,
+ * both confirmed against real DDL (see processGroupField's doc comment):
+ *
+ *  - this group lives inside an ARRAY's own subfields (Forms' `conditional`
+ *    group, containing a `rules` array) - `allowArrayInGroup` - the
+ *    reconstructed array is a NESTED child table, scoped to the array row.
+ *  - this group is a TOP-LEVEL table's own field (Header's `socials.links`,
+ *    LanguageSettings' `multilingual.activeLocales`) - `allowTopLevelGroupSpecial` -
+ *    the reconstructed array/select is a REGULAR, top-level-parented child
+ *    table, same shape as any plain top-level array/select field.
  */
-export type GroupFieldMeta = { name: string; subFieldNames: string[]; arrayFieldNames?: string[] }
+export type GroupFieldMeta = {
+  name: string
+  subFieldNames: string[]
+  arrayFieldNames?: string[]
+  selectFieldNames?: string[]
+  groups?: GroupFieldMeta[]
+}
 
 /**
  * Phase 18: a global's table is schema-identical to an ordinary
@@ -172,12 +189,19 @@ function isHasManySelect(field: NamedField): boolean {
  * selected option, ordered by `order` ascending - confirmed by creating a
  * real user with `roles: ['admin', 'customer']` and reading back the exact
  * same order via both Payload's own engine and this table directly.
+ *
+ * `groupDbPrefix` (Phase 20) reproduces processGroupField's own DB-column
+ * prefix for a hasMany select field living inside a top-level group -
+ * confirmed against the real `ac_language_settings_multilingual_active_locales`
+ * table (LanguageSettings' `multilingual.activeLocales`): identical shape to
+ * a plain top-level select field, just with the group's prefix folded into
+ * the table name the same way it already is for a column name.
  */
-export function generateSelectHasManyTable(parentTableName: string, field: NamedField) {
+export function generateSelectHasManyTable(parentTableName: string, field: NamedField, groupDbPrefix = '') {
   if (!isHasManySelect(field)) {
     throw new Error(`generateSelectHasManyTable: field "${field.name}" is not a hasMany select field.`)
   }
-  const tableName = `${parentTableName}_${toSnakeCase(field.name)}`
+  const tableName = `${parentTableName}_${groupDbPrefix}${toSnakeCase(field.name)}`
   const columns: Record<string, SQLiteColumnBuilderBase> = {
     order: integer('order').notNull(),
     parentId: integer('parent_id').notNull(),
@@ -206,7 +230,16 @@ export function generateSelectHasManyTable(parentTableName: string, field: Named
  *                                                          name prefixed onto each column (`seo_meta_title`, not
  *                                                          `meta_title`) - confirmed against eg_pages/eg_events -
  *                                                          and reconstructed as a nested object in the document
- *                                                          shape, unlike row/collapsible which stay flat there too
+ *                                                          shape, unlike row/collapsible which stay flat there too.
+ *                                                          A group MAY itself contain a nested group (Phase 20 -
+ *                                                          BackupSettings' `destination.r2` etc - pure flattening,
+ *                                                          no new shape), or an array/hasMany-select field (Phase
+ *                                                          20 - Header's `socials.links`, LanguageSettings'
+ *                                                          `multilingual.activeLocales` - a REGULAR top-level child
+ *                                                          table, reconstructed into the group same as a scalar) -
+ *                                                          see processGroupField's doc comment for the confirmed
+ *                                                          real shapes and everything still NOT supported inside a
+ *                                                          group (blocks, join, hasMany/polymorphic relationship).
  *   array                                                -> a child table, see generateArrayTable
  *   blocks                                               -> one child table per block type, see generateBlockTables
  *   hasMany/polymorphic relationship or upload           -> bucketed as a relsField, see generateRelsTable
@@ -235,12 +268,14 @@ export function generateSelectHasManyTable(parentTableName: string, field: Named
  * same idea as a hasMany relationship/upload field but its own distinct
  * shape - see generateSelectHasManyTable.
  *
- * NOT supported yet (throws): tabs, group/array/blocks nesting inside one
- * another or inside a hasMany-relational field's own fields, `timestamps:
- * false` (every generated table gets updatedAt/createdAt), an
- * upload-enabled collection with drafts, an upload-enabled collection using
- * `imageSizes` or `focalPoint: true`, and an auth-enabled collection with
- * drafts or upload. Each needs different modelling - see ../index.ts.
+ * NOT supported yet (throws): tabs, blocks/join/hasMany-relational fields
+ * nested inside a group (array and hasMany-select ARE now supported there -
+ * see processGroupField), any nesting inside a hasMany-relational field's own
+ * fields, `timestamps: false` (every generated table gets updatedAt/
+ * createdAt), an upload-enabled collection with drafts, an upload-enabled
+ * collection using `imageSizes` or `focalPoint: true`, and an auth-enabled
+ * collection with drafts or upload. Each needs different modelling - see
+ * ../index.ts.
  */
 export function generateTable(collection: SchemaSourceConfig) {
   if (typeof collection.dbName === 'function') {
@@ -274,11 +309,13 @@ export function generateTable(collection: SchemaSourceConfig) {
   // eg_pages.title (all required, both collections have drafts) are not.
   const suppressRequired = hasDrafts(collection)
 
-  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields } = processFields(
+  const { columns: fieldColumns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields, topLevelGroupFields } = processFields(
     collection.slug,
     collection.fields,
     '',
     suppressRequired,
+    false,
+    true,
   )
 
   const columns: Record<string, SQLiteColumnBuilderBase> = {
@@ -297,7 +334,7 @@ export function generateTable(collection: SchemaSourceConfig) {
     columns._status = statusColumn('')
   }
 
-  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields }
+  return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields, topLevelGroupFields }
 }
 
 /**
@@ -419,12 +456,30 @@ export function tableNameFor(collection: SchemaSourceConfig): string {
  * PageTemplates' versioned blocks are this module's only versioned-array
  * cases, and neither has one) - still throws for those, even though the live
  * path above now supports them.
+ *
+ * `groupDbPrefix` (Phase 20) is for a TOP-LEVEL array field living directly
+ * inside a top-level group (e.g. Header's `socials.links`) - not to be
+ * confused with the ALREADY-existing group-in-array-subfields case above.
+ * ../schema/index.ts passes it (from processGroupField's own
+ * `topLevelGroupFields` bucket) when calling this for such a field, so the
+ * table name reproduces the confirmed real shape (e.g.
+ * `eg_header_socials_links` = `eg_header` + `socials_` + `links`) - otherwise
+ * identical to a plain top-level array table (still parented by the
+ * document's own integer id, never a group-specific row - a group is only
+ * ever flattened columns, it has no row of its own).
  */
-export function generateArrayTable(collectionSlug: string, parentTableName: string, field: NamedField, suppressRequired = false, versioned = false) {
+export function generateArrayTable(
+  collectionSlug: string,
+  parentTableName: string,
+  field: NamedField,
+  suppressRequired = false,
+  versioned = false,
+  groupDbPrefix = '',
+) {
   if (field.type !== 'array') {
     throw new Error(`generateArrayTable(${collectionSlug}): field "${field.name}" is not an array field.`)
   }
-  const tableName = versioned ? `${parentTableName}_version_${toSnakeCase(field.name)}` : `${parentTableName}_${toSnakeCase(field.name)}`
+  const tableName = versioned ? `${parentTableName}_version_${toSnakeCase(field.name)}` : `${parentTableName}_${groupDbPrefix}${toSnakeCase(field.name)}`
 
   const columns: Record<string, SQLiteColumnBuilderBase> = {
     order: integer('_order').notNull(),
@@ -723,11 +778,27 @@ function isHasManyRelational(field: NamedField): boolean {
  * itself among an ARRAY field's own subfields (Forms' `conditional` group
  * containing a `rules` array, confirmed against the real
  * `eg_forms_fields_conditional_rules` table). Only generateArrayTable passes
- * this - generateTable/generateVersionsTable/generateBlockTables never do,
- * so a top-level group-containing-array (nothing in this app's real config
- * exercises that) still throws, exactly as before.
+ * this - generateTable/generateVersionsTable/generateBlockTables never do.
+ *
+ * `allowTopLevelGroupSpecial` relaxes the throw for a DIFFERENT confirmed-real
+ * shape: an `array` or hasMany-`select` subfield nested inside a plain
+ * top-level document group (Header/Footer's `socials.links`, SeoSettings'
+ * `schema.sameAs`, SpeedSettings' `advanced.preconnectOrigins`/
+ * `prefetchDns`, MediaSettings' `resizing.responsiveWidths`,
+ * LanguageSettings' `multilingual.activeLocales`) - confirmed via real DDL to
+ * be a plain top-level child table parented by the TOP DOCUMENT's own id
+ * (not nested inside an array row), so it is bucketed into the returned
+ * `topLevelGroupFields` instead of `groupArrayFields`. Only generateTable
+ * passes this (via processGroupField) - see that function.
  */
-function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '', suppressRequired = false, allowArrayInGroup = false) {
+function processFields(
+  collectionSlug: string,
+  fields: Field[],
+  dbNamePrefix = '',
+  suppressRequired = false,
+  allowArrayInGroup = false,
+  allowTopLevelGroupSpecial = false,
+) {
   const columns: Record<string, SQLiteColumnBuilderBase> = {}
   const arrayFields: NamedField[] = []
   const blocksFields: NamedField[] = []
@@ -736,6 +807,7 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
   const joinFields: NamedField[] = []
   const selectFields: NamedField[] = []
   const groupArrayFields: GroupArrayFieldMeta[] = []
+  const topLevelGroupFields: TopLevelGroupFieldMeta[] = []
 
   for (const field of walkFields(collectionSlug, fields)) {
     if (field.type === 'join') {
@@ -755,33 +827,19 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
       continue
     }
     if (field.type === 'group') {
-      const subFields = (field as unknown as { fields: Field[] }).fields
-      const groupDbPrefix = `${dbNamePrefix}${toSnakeCase(field.name)}_`
-      const subFieldNames: string[] = []
-      const arrayFieldNames: string[] = []
-      for (const subField of walkFields(collectionSlug, subFields)) {
-        if (subField.type === 'array' && allowArrayInGroup) {
-          groupArrayFields.push({ groupName: field.name, groupDbPrefix, field: subField })
-          arrayFieldNames.push(subField.name)
-          continue
-        }
-        if (subField.type === 'array' || subField.type === 'blocks' || subField.type === 'group' || subField.type === 'join') {
-          throw new Error(
-            `generateTable(${collectionSlug}): group "${field.name}" may only contain plain fields - "${subField.name}" (${subField.type}) inside a group is not supported yet.`,
-          )
-        }
-        if (isHasManyRelational(subField)) {
-          throw new Error(
-            `generateTable(${collectionSlug}): hasMany/polymorphic relationship "${subField.name}" inside group "${field.name}" is not supported yet.`,
-          )
-        }
-        if (isHasManySelect(subField)) {
-          throw new Error(`generateTable(${collectionSlug}): hasMany select "${subField.name}" inside group "${field.name}" is not supported yet.`)
-        }
-        columns[`${field.name}${capitalize(subField.name)}`] = columnFor(collectionSlug, subField, groupDbPrefix, suppressRequired)
-        subFieldNames.push(subField.name)
-      }
-      groupFields.push({ name: field.name, subFieldNames, arrayFieldNames: arrayFieldNames.length ? arrayFieldNames : undefined })
+      const nested = processGroupField(
+        collectionSlug,
+        field,
+        dbNamePrefix,
+        field.name,
+        suppressRequired,
+        allowArrayInGroup,
+        allowTopLevelGroupSpecial,
+      )
+      Object.assign(columns, nested.columns)
+      groupFields.push(nested.meta)
+      groupArrayFields.push(...nested.groupArrayFields)
+      topLevelGroupFields.push(...nested.topLevelGroupFields)
       continue
     }
     if (isHasManyRelational(field)) {
@@ -791,7 +849,111 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
     columns[field.name] = columnFor(collectionSlug, field, dbNamePrefix, suppressRequired)
   }
 
-  return { columns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields, groupArrayFields }
+  return { columns, arrayFields, blocksFields, relsFields, groupFields, joinFields, selectFields, groupArrayFields, topLevelGroupFields }
+}
+
+/**
+ * Processes one `group` field's own subfields, recursively - factored out of
+ * processFields so a group nested inside another group (BackupSettings'
+ * `destination.r2`/`s3`/`ftp`/`sftp`) can be handled the same way at any
+ * depth, with no new child table (confirmed via the real `ac_backup_settings`
+ * DDL to be one flat table, e.g. `destination_r2_account_id`) - pure
+ * recursive column-prefix-and-JS-key flattening.
+ *
+ * Two prefix chains are threaded separately and grow independently:
+ * `dbNamePrefix` becomes each nested group's `groupDbPrefix` (real DB column
+ * names, snake_case, e.g. `destination_r2_`), while `jsKeyPrefix` becomes
+ * each nested group's own JS property-key prefix (camelCase, e.g.
+ * `destinationR2`) - the two diverge in casing/separators but nest to the
+ * same depth in lockstep.
+ *
+ * An `array`/hasMany-`select` subfield is bucketed into `groupArrayFields`
+ * (existing convention, only ever a DIRECT child of the immediate group) when
+ * `allowArrayInGroup` is set, or into `topLevelGroupFields` (keyed by the
+ * full `jsKeyPrefix` chain, so it survives arbitrary nesting depth) when
+ * `allowTopLevelGroupSpecial` is set - see processFields' doc comment for
+ * which real fields need which. Anything else unsupported inside a group
+ * (blocks, join, hasMany/polymorphic relationship) still throws
+ * unconditionally, regardless of depth.
+ */
+function processGroupField(
+  collectionSlug: string,
+  field: NamedField,
+  dbNamePrefix: string,
+  jsKeyPrefix: string,
+  suppressRequired: boolean,
+  allowArrayInGroup: boolean,
+  allowTopLevelGroupSpecial: boolean,
+) {
+  const columns: Record<string, SQLiteColumnBuilderBase> = {}
+  const groupArrayFields: GroupArrayFieldMeta[] = []
+  const topLevelGroupFields: TopLevelGroupFieldMeta[] = []
+  const subFieldNames: string[] = []
+  const arrayFieldNames: string[] = []
+  const selectFieldNames: string[] = []
+  const groups: GroupFieldMeta[] = []
+
+  const subFields = (field as unknown as { fields: Field[] }).fields
+  const groupDbPrefix = `${dbNamePrefix}${toSnakeCase(field.name)}_`
+
+  for (const subField of walkFields(collectionSlug, subFields)) {
+    if (subField.type === 'group') {
+      const nested = processGroupField(
+        collectionSlug,
+        subField,
+        groupDbPrefix,
+        `${jsKeyPrefix}${capitalize(subField.name)}`,
+        suppressRequired,
+        false,
+        allowTopLevelGroupSpecial,
+      )
+      Object.assign(columns, nested.columns)
+      groups.push(nested.meta)
+      groupArrayFields.push(...nested.groupArrayFields)
+      topLevelGroupFields.push(...nested.topLevelGroupFields)
+      continue
+    }
+    if (subField.type === 'array' && allowArrayInGroup) {
+      groupArrayFields.push({ groupName: field.name, groupDbPrefix, field: subField })
+      arrayFieldNames.push(subField.name)
+      continue
+    }
+    if (subField.type === 'array' && allowTopLevelGroupSpecial) {
+      topLevelGroupFields.push({ topLevelKey: `${jsKeyPrefix}${capitalize(subField.name)}`, groupDbPrefix, field: subField })
+      arrayFieldNames.push(subField.name)
+      continue
+    }
+    if (subField.type === 'array' || subField.type === 'blocks' || subField.type === 'join') {
+      throw new Error(
+        `generateTable(${collectionSlug}): group "${field.name}" may only contain plain fields - "${subField.name}" (${subField.type}) inside a group is not supported yet.`,
+      )
+    }
+    if (isHasManyRelational(subField)) {
+      throw new Error(
+        `generateTable(${collectionSlug}): hasMany/polymorphic relationship "${subField.name}" inside group "${field.name}" is not supported yet.`,
+      )
+    }
+    if (isHasManySelect(subField)) {
+      if (allowTopLevelGroupSpecial) {
+        topLevelGroupFields.push({ topLevelKey: `${jsKeyPrefix}${capitalize(subField.name)}`, groupDbPrefix, field: subField })
+        selectFieldNames.push(subField.name)
+        continue
+      }
+      throw new Error(`generateTable(${collectionSlug}): hasMany select "${subField.name}" inside group "${field.name}" is not supported yet.`)
+    }
+    columns[`${jsKeyPrefix}${capitalize(subField.name)}`] = columnFor(collectionSlug, subField, groupDbPrefix, suppressRequired)
+    subFieldNames.push(subField.name)
+  }
+
+  const meta: GroupFieldMeta = {
+    name: field.name,
+    subFieldNames,
+    arrayFieldNames: arrayFieldNames.length ? arrayFieldNames : undefined,
+    selectFieldNames: selectFieldNames.length ? selectFieldNames : undefined,
+    groups: groups.length ? groups : undefined,
+  }
+
+  return { columns, meta, groupArrayFields, topLevelGroupFields }
 }
 
 /**
@@ -803,6 +965,21 @@ function processFields(collectionSlug: string, fields: Field[], dbNamePrefix = '
  * group branch already computes for that group's plain scalar columns.
  */
 type GroupArrayFieldMeta = { groupName: string; groupDbPrefix: string; field: NamedField }
+
+/**
+ * One array-or-hasMany-select field found nested directly inside a plain
+ * TOP-LEVEL document group (not inside an array's own group - see
+ * GroupArrayFieldMeta for that case) while walking with
+ * `allowTopLevelGroupSpecial` - see processFields/processGroupField.
+ * `topLevelKey` is the synthetic top-level property key the reconstructed
+ * array/select value is attached under (e.g. `socialsLinks` for Header's
+ * `socials.links`) - the same key registered in the group's own
+ * `arrayFieldNames`/`selectFieldNames` so nestGroups/flattenGroups can fold
+ * it into/out of the group generically. `groupDbPrefix` is the exact prefix
+ * generateArrayTable/generateSelectHasManyTable need to reproduce the
+ * confirmed real table name (e.g. `eg_header` + `socials_` + `links`).
+ */
+export type TopLevelGroupFieldMeta = { topLevelKey: string; groupDbPrefix: string; field: NamedField }
 
 /** A `join` field's own config, as Payload declares it - `collection` is the single related collection slug (this app has no polymorphic join yet), `on` is the name of the relationship/hasMany field on THAT collection which points back here. */
 export type JoinFieldMeta = NamedField & { collection: string; on: string; defaultSort?: string }

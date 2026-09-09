@@ -32,27 +32,54 @@ export type ArrayFieldDef = { table: AnySQLiteTable; groupFields?: GroupFieldMet
 function nestGroups(row: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
   if (!groupFields.length) return row
   const result: Record<string, unknown> = { ...row }
-  for (const { name, subFieldNames, arrayFieldNames } of groupFields) {
-    const group: Record<string, unknown> = {}
-    for (const subName of subFieldNames) {
-      const jsKey = `${name}${capitalize(subName)}`
-      group[subName] = result[jsKey]
-      delete result[jsKey]
-    }
-    // A group living inside an array's own subfields (Forms' `conditional`)
-    // can itself contain an array (`rules`) - createArrayOps' attachArrays
-    // pre-attaches that nested array's already-reconstructed rows onto this
-    // same `${name}${capitalize(arrayName)}` synthetic key before calling
-    // nestGroups, precisely so this loop can fold it in exactly like a
-    // scalar subfield - see GroupFieldMeta's doc comment.
-    for (const arrayName of arrayFieldNames ?? []) {
-      const jsKey = `${name}${capitalize(arrayName)}`
-      group[arrayName] = result[jsKey]
-      delete result[jsKey]
-    }
-    result[name] = group
+  for (const meta of groupFields) {
+    result[meta.name] = extractGroup(result, meta, meta.name)
   }
   return result
+}
+
+/**
+ * Recursively folds one group's flat, prefixed keys off `result` (mutating
+ * it as it goes) into that group's own nested object - factored out of
+ * nestGroups so a group nested inside another group (BackupSettings'
+ * `destination.r2`/`s3`/`ftp`/`sftp`, Gap B) can be handled at any depth, the
+ * same way generate.ts's processGroupField builds the matching `jsKeyPrefix`
+ * chain on the write side.
+ *
+ * `arrayFieldNames`/`selectFieldNames` fold in exactly like a scalar
+ * subfield: for a group living inside an array's own subfields (Forms'
+ * `conditional` containing `rules`), createArrayOps' attachArrays
+ * pre-attaches that nested array's already-reconstructed rows onto the
+ * `${jsKeyPrefix}${capitalize(arrayName)}` synthetic key before calling
+ * nestGroups; for an array/hasMany-select living directly inside a
+ * TOP-LEVEL document group (Header/Footer's `socials.links`, SeoSettings'
+ * `schema.sameAs`, LanguageSettings' `multilingual.activeLocales`, etc -
+ * Gap A1/A2), createCollectionOps/createGlobalOps' own attachArrays/
+ * attachSelects do the same pre-attach under that same synthetic key before
+ * nestGroups runs - either way this loop doesn't need to know which case
+ * it is, only the synthetic key. See GroupFieldMeta's doc comment.
+ */
+function extractGroup(result: Record<string, unknown>, meta: GroupFieldMeta, jsKeyPrefix: string): Record<string, unknown> {
+  const group: Record<string, unknown> = {}
+  for (const subName of meta.subFieldNames) {
+    const jsKey = `${jsKeyPrefix}${capitalize(subName)}`
+    group[subName] = result[jsKey]
+    delete result[jsKey]
+  }
+  for (const arrayName of meta.arrayFieldNames ?? []) {
+    const jsKey = `${jsKeyPrefix}${capitalize(arrayName)}`
+    group[arrayName] = result[jsKey]
+    delete result[jsKey]
+  }
+  for (const selectName of meta.selectFieldNames ?? []) {
+    const jsKey = `${jsKeyPrefix}${capitalize(selectName)}`
+    group[selectName] = result[jsKey]
+    delete result[jsKey]
+  }
+  for (const nested of meta.groups ?? []) {
+    group[nested.name] = extractGroup(result, nested, `${jsKeyPrefix}${capitalize(nested.name)}`)
+  }
+  return group
 }
 
 /**
@@ -84,13 +111,120 @@ function nestGroups(row: Record<string, unknown>, groupFields: GroupFieldMeta[])
 function flattenGroups(data: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
   if (!groupFields.length) return data
   const result: Record<string, unknown> = { ...data }
-  for (const { name, subFieldNames } of groupFields) {
-    if (!(name in result)) continue
-    const groupValue = (result[name] as Record<string, unknown>) ?? {}
-    delete result[name]
-    for (const subName of subFieldNames) {
-      result[`${name}${capitalize(subName)}`] = groupValue[subName] ?? null
+  for (const meta of groupFields) {
+    if (!(meta.name in result)) continue
+    const groupValue = (result[meta.name] as Record<string, unknown>) ?? {}
+    delete result[meta.name]
+    flattenOneGroup(result, meta, meta.name, groupValue)
+  }
+  return result
+}
+
+/**
+ * Recursively flattens one group's nested object into `result`'s prefixed
+ * flat keys (mutating it) - factored out of flattenGroups so a group nested
+ * inside another group (BackupSettings' `destination.r2`/`s3`/`ftp`/`sftp`,
+ * Gap B) flattens the same way at any depth, with no new child table
+ * (confirmed via the real `ac_backup_settings` DDL to be one flat table).
+ * Only ever reads `subFieldNames`/`groups`, never `arrayFieldNames`/
+ * `selectFieldNames` - those have no flat column of their own to flatten
+ * into, and are pulled out separately before flattenGroups ever runs (see
+ * collectGroupSpecialFields).
+ */
+function flattenOneGroup(result: Record<string, unknown>, meta: GroupFieldMeta, jsKeyPrefix: string, groupValue: Record<string, unknown>): void {
+  for (const subName of meta.subFieldNames) {
+    result[`${jsKeyPrefix}${capitalize(subName)}`] = groupValue[subName] ?? null
+  }
+  for (const nested of meta.groups ?? []) {
+    const nestedValue = (groupValue[nested.name] as Record<string, unknown>) ?? {}
+    flattenOneGroup(result, nested, `${jsKeyPrefix}${capitalize(nested.name)}`, nestedValue)
+  }
+}
+
+/**
+ * One array-or-hasMany-select field found nested directly inside a top-level
+ * document group (Gap A1/A2 - Header/Footer's `socials.links`, SeoSettings'
+ * `schema.sameAs`, LanguageSettings' `multilingual.activeLocales`, etc),
+ * derived automatically from `groupFields` by collectGroupSpecialFields.
+ * `path` is where the value lives in the incoming write payload (e.g.
+ * `['socials', 'links']`); `syntheticKey` is the top-level key it gets lifted
+ * to (e.g. `socialsLinks`) - the exact same key generate.ts's
+ * TopLevelGroupFieldMeta registers the child table under, and the same key
+ * arrayFieldNames/selectFieldNames on the group's own GroupFieldMeta names,
+ * so nestGroups' extractGroup can fold the reconstructed value back in on
+ * read with zero extra wiring.
+ */
+type GroupSpecialField = { path: string[]; syntheticKey: string }
+
+/**
+ * Walks `groupFields` (recursively, through nested groups) collecting every
+ * array/hasMany-select field declared directly inside a group, so
+ * splitSpecialFields can lift each one out of the nested write payload
+ * BEFORE flattenGroups runs - entirely derived from the existing
+ * `groupFields` parameter, no new exported parameter needed on
+ * createCollectionOps/createGlobalOps.
+ */
+function collectGroupSpecialFields(groupFields: GroupFieldMeta[], pathPrefix: string[] = [], jsKeyPrefix = ''): GroupSpecialField[] {
+  const out: GroupSpecialField[] = []
+  for (const meta of groupFields) {
+    const path = [...pathPrefix, meta.name]
+    const base = jsKeyPrefix === '' ? meta.name : `${jsKeyPrefix}${capitalize(meta.name)}`
+    for (const arrayName of meta.arrayFieldNames ?? []) {
+      out.push({ path: [...path, arrayName], syntheticKey: `${base}${capitalize(arrayName)}` })
     }
+    for (const selectName of meta.selectFieldNames ?? []) {
+      out.push({ path: [...path, selectName], syntheticKey: `${base}${capitalize(selectName)}` })
+    }
+    if (meta.groups?.length) out.push(...collectGroupSpecialFields(meta.groups, path, base))
+  }
+  return out
+}
+
+/**
+ * Lifts the value at `path` out of `container` (a shallow-copied write
+ * payload), returning `undefined` if the OUTERMOST group in the path was
+ * never touched (nothing to do - leaves the rest of `container` untouched,
+ * matching "the key is absent -> leave this field alone" everywhere else in
+ * this data layer), or the value (defaulted to `[]` if the leaf itself is
+ * missing) once the outer group IS present - matching the documented
+ * whole-group-replace contract (confirmed against Header's own
+ * `liftSocialsLinks`: touching `socials` at all replaces `socials.links`
+ * too, defaulting to empty if omitted, even if only `show` changed).
+ * Non-destructive on `container`'s own object identity at every level it
+ * touches (copies before deleting), so the caller's original nested objects
+ * are never mutated.
+ */
+function extractNestedValue(container: Record<string, unknown>, path: string[]): unknown {
+  if (!(path[0] in container)) return undefined
+  let obj: Record<string, unknown> = container
+  for (let i = 0; i < path.length - 1; i++) {
+    const key = path[i]
+    const child = { ...((obj[key] as Record<string, unknown>) ?? {}) }
+    obj[key] = child
+    obj = child
+  }
+  const leafKey = path[path.length - 1]
+  const val = obj[leafKey] ?? []
+  delete obj[leafKey]
+  return val
+}
+
+/**
+ * Lifts every group-nested array/hasMany-select value in `data` out to its
+ * synthetic top-level key (see GroupSpecialField), mutating a shallow copy
+ * and returning it - called at the top of both createCollectionOps' and
+ * createGlobalOps' own splitSpecialFields, BEFORE their existing
+ * arrayFieldNames/selectFieldNames extraction loops run, so those loops (which
+ * only check "is this key present in scalars") pick the lifted value up with
+ * no further changes needed.
+ */
+function liftGroupSpecialFields(data: Record<string, unknown>, groupFields: GroupFieldMeta[]): Record<string, unknown> {
+  const specials = collectGroupSpecialFields(groupFields)
+  if (!specials.length) return data
+  const result: Record<string, unknown> = { ...data }
+  for (const { path, syntheticKey } of specials) {
+    const val = extractNestedValue(result, path)
+    if (val !== undefined) result[syntheticKey] = val
   }
   return result
 }
@@ -753,7 +887,14 @@ export function createCollectionOps(
     }
   }
 
-  function splitSpecialFields(data: Record<string, unknown>) {
+  function splitSpecialFields(rawData: Record<string, unknown>) {
+    // Lift any group-nested array/hasMany-select value (Header/Footer's
+    // `socials.links`, SeoSettings' `schema.sameAs`, LanguageSettings'
+    // `multilingual.activeLocales`, etc - Gap A1/A2) out to its synthetic
+    // top-level key BEFORE the ordinary arrayFieldNames/selectFieldNames
+    // loops below run, so they pick it up with no further changes - see
+    // liftGroupSpecialFields.
+    const data = liftGroupSpecialFields(rawData, groupFields)
     const scalars = { ...data }
     const arrays: Record<string, unknown[]> = {}
     for (const name of arrayFieldNames) {
@@ -1063,7 +1204,14 @@ export function createGlobalOps(
     }
   }
 
-  function splitSpecialFields(data: Record<string, unknown>) {
+  function splitSpecialFields(rawData: Record<string, unknown>) {
+    // Lift any group-nested array/hasMany-select value (Header/Footer's
+    // `socials.links`, SeoSettings' `schema.sameAs`, LanguageSettings'
+    // `multilingual.activeLocales`, etc - Gap A1/A2) out to its synthetic
+    // top-level key BEFORE the ordinary arrayFieldNames/selectFieldNames
+    // loops below run, so they pick it up with no further changes - see
+    // liftGroupSpecialFields.
+    const data = liftGroupSpecialFields(rawData, groupFields)
     const scalars = { ...data }
     const arrays: Record<string, unknown[]> = {}
     for (const name of arrayFieldNames) {

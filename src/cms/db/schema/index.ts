@@ -23,18 +23,25 @@ import { Memberships } from '@/features/members/collections/Memberships'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 import { Translations } from '@/features/multilingual/translationsCollection'
 import { AuditLog } from '@/features/security/auditLogCollection'
+import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
 import { EmailSettings } from '@/globals/EmailSettings'
 import { FaqSettings } from '@/globals/FaqSettings'
+import { Footer } from '@/globals/Footer'
 import { FormSettings } from '@/globals/FormSettings'
+import { Header } from '@/globals/Header'
 import { Integrations } from '@/globals/Integrations'
+import { LanguageSettings } from '@/globals/LanguageSettings'
+import { MediaSettings } from '@/globals/MediaSettings'
 import { MemberSettings } from '@/globals/MemberSettings'
 import { PaymentSettings } from '@/globals/PaymentSettings'
 import { SecuritySettings } from '@/globals/SecuritySettings'
+import { SeoSettings } from '@/globals/SeoSettings'
 import { ShopSettings } from '@/globals/ShopSettings'
 import { SiteSettings } from '@/globals/SiteSettings'
+import { SpeedSettings } from '@/globals/SpeedSettings'
 
-import type { JoinFieldMeta } from './generate'
+import type { JoinFieldMeta, TopLevelGroupFieldMeta } from './generate'
 import {
   generateArrayTable,
   generateBlockTables,
@@ -751,3 +758,149 @@ export const paymentSettings = paymentSettingsGenerated.table
 
 export const formSettingsGenerated = generateTable(FormSettings)
 export const formSettings = formSettingsGenerated.table
+
+/**
+ * Wires up generate.ts's `topLevelGroupFields` (Phase 20 - an array or
+ * hasMany-select field declared directly inside a top-level document group,
+ * e.g. Header's `socials.links`) into actual child tables, keyed by each
+ * entry's synthetic `topLevelKey` (`socialsLinks`) - the exact same key
+ * ../generic.ts's collectGroupSpecialFields derives automatically from the
+ * generated `groupFields`, so passing the result straight into
+ * createGlobalOps'/createCollectionOps' `arrayTables`/`rels.selectTables`
+ * maps needs no further glue. Split by field type since an array field and a
+ * hasMany-select field need two different generator functions and land in
+ * two different ops-side maps.
+ */
+function wireTopLevelGroupFields(
+  collectionSlug: string,
+  parentTableName: string,
+  topLevelGroupFields: TopLevelGroupFieldMeta[],
+  suppressRequired: boolean,
+): { arrayTables: Record<string, AnySQLiteTable>; selectTables: Record<string, AnySQLiteTable> } {
+  const arrayTables: Record<string, AnySQLiteTable> = {}
+  const selectTables: Record<string, AnySQLiteTable> = {}
+  for (const { topLevelKey, groupDbPrefix, field } of topLevelGroupFields) {
+    if (field.type === 'array') {
+      arrayTables[topLevelKey] = generateArrayTable(collectionSlug, parentTableName, field, suppressRequired, false, groupDbPrefix).table
+    } else {
+      selectTables[topLevelKey] = generateSelectHasManyTable(parentTableName, field, groupDbPrefix)
+    }
+  }
+  return { arrayTables, selectTables }
+}
+
+/**
+ * Header: Phase 20's first array-in-top-level-group case (`socials.links`,
+ * confirmed against the real `eg_header_socials_links` table) plus the
+ * already-proven top-level-array-with-nested-array shape (`menu`/
+ * `menu.children` - the same mechanism FieldGroups'/Forms' `options` already
+ * uses) and a plain group (`announcementBar`, no array/select of its own).
+ */
+export const headerGenerated = generateTable(Header)
+export const header = headerGenerated.table
+export const headerGroupFields = headerGenerated.groupFields
+
+const [headerMenuField] = headerGenerated.arrayFields
+export const headerMenuGenerated = generateArrayTable(Header.slug, headerGenerated.tableName, headerMenuField)
+export const headerMenu = headerMenuGenerated.table
+export const headerMenuChildren = headerMenuGenerated.nestedArrayFields.find((f) => f.name === 'children')!.table
+
+const headerTopLevelGroupTables = wireTopLevelGroupFields(Header.slug, headerGenerated.tableName, headerGenerated.topLevelGroupFields, false)
+export const headerSocialsLinks = headerTopLevelGroupTables.arrayTables.socialsLinks
+
+/**
+ * Footer: the same two Header shapes (`columns`/`columns.links` top-level
+ * array with a nested array; `socials.links` array-in-top-level-group), plus
+ * a second plain group (`contact`) with no array/select of its own.
+ */
+export const footerGenerated = generateTable(Footer)
+export const footer = footerGenerated.table
+export const footerGroupFields = footerGenerated.groupFields
+
+const [footerColumnsField] = footerGenerated.arrayFields
+export const footerColumnsGenerated = generateArrayTable(Footer.slug, footerGenerated.tableName, footerColumnsField)
+export const footerColumns = footerColumnsGenerated.table
+export const footerColumnsLinks = footerColumnsGenerated.nestedArrayFields.find((f) => f.name === 'links')!.table
+
+const footerTopLevelGroupTables = wireTopLevelGroupFields(Footer.slug, footerGenerated.tableName, footerGenerated.topLevelGroupFields, false)
+export const footerSocialsLinks = footerTopLevelGroupTables.arrayTables.socialsLinks
+
+/**
+ * LanguageSettings: Phase 20's hasMany-select-in-top-level-group case
+ * (`multilingual.activeLocales`) - confirmed against the real
+ * `ac_language_settings_multilingual_active_locales` table to be identical
+ * to a plain top-level hasMany select field's own shape (Users' `roles`),
+ * just with the group's prefix folded into the table name.
+ */
+export const languageSettingsGenerated = generateTable(LanguageSettings)
+export const languageSettings = languageSettingsGenerated.table
+export const languageSettingsGroupFields = languageSettingsGenerated.groupFields
+
+const languageSettingsTopLevelGroupTables = wireTopLevelGroupFields(
+  LanguageSettings.slug,
+  languageSettingsGenerated.tableName,
+  languageSettingsGenerated.topLevelGroupFields,
+  false,
+)
+export const languageSettingsMultilingualActiveLocales = languageSettingsTopLevelGroupTables.selectTables.multilingualActiveLocales
+
+/**
+ * SeoSettings: six plain groups plus one array-in-top-level-group
+ * (`schema.sameAs`).
+ */
+export const seoSettingsGenerated = generateTable(SeoSettings)
+export const seoSettings = seoSettingsGenerated.table
+export const seoSettingsGroupFields = seoSettingsGenerated.groupFields
+
+const seoSettingsTopLevelGroupTables = wireTopLevelGroupFields(
+  SeoSettings.slug,
+  seoSettingsGenerated.tableName,
+  seoSettingsGenerated.topLevelGroupFields,
+  false,
+)
+export const seoSettingsSchemaSameAs = seoSettingsTopLevelGroupTables.arrayTables.schemaSameAs
+
+/**
+ * SpeedSettings: four plain groups plus one group with TWO
+ * arrays-in-top-level-group (`advanced.preconnectOrigins`/`prefetchDns`).
+ */
+export const speedSettingsGenerated = generateTable(SpeedSettings)
+export const speedSettings = speedSettingsGenerated.table
+export const speedSettingsGroupFields = speedSettingsGenerated.groupFields
+
+const speedSettingsTopLevelGroupTables = wireTopLevelGroupFields(
+  SpeedSettings.slug,
+  speedSettingsGenerated.tableName,
+  speedSettingsGenerated.topLevelGroupFields,
+  false,
+)
+export const speedSettingsAdvancedPreconnectOrigins = speedSettingsTopLevelGroupTables.arrayTables.advancedPreconnectOrigins
+export const speedSettingsAdvancedPrefetchDns = speedSettingsTopLevelGroupTables.arrayTables.advancedPrefetchDns
+
+/**
+ * MediaSettings: three plain groups plus one array-in-top-level-group
+ * (`resizing.responsiveWidths`).
+ */
+export const mediaSettingsGenerated = generateTable(MediaSettings)
+export const mediaSettings = mediaSettingsGenerated.table
+export const mediaSettingsGroupFields = mediaSettingsGenerated.groupFields
+
+const mediaSettingsTopLevelGroupTables = wireTopLevelGroupFields(
+  MediaSettings.slug,
+  mediaSettingsGenerated.tableName,
+  mediaSettingsGenerated.topLevelGroupFields,
+  false,
+)
+export const mediaSettingsResizingResponsiveWidths = mediaSettingsTopLevelGroupTables.arrayTables.resizingResponsiveWidths
+
+/**
+ * BackupSettings: Phase 20's group-in-group case (`destination.r2`/`s3`/
+ * `ftp`/`sftp`, Gap B) - confirmed against the real `ac_backup_settings` DDL
+ * to be pure flattening onto one flat table, no new child table at all. Also
+ * has a top-level `ui` field (`runAndRestore`) - stripped the same way
+ * EmailSettings' `testing.sendTest` is, see stripUiFields above.
+ */
+const backupSettingsSchemaConfig: GlobalConfig = { ...BackupSettings, fields: stripUiFields(BackupSettings.fields) }
+export const backupSettingsGenerated = generateTable(backupSettingsSchemaConfig)
+export const backupSettings = backupSettingsGenerated.table
+export const backupSettingsGroupFields = backupSettingsGenerated.groupFields

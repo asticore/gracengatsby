@@ -315,7 +315,7 @@
  * migrations were never allowed to drift from their collection configs).
  * Both collections close `access.create`/`update` to everyone, including
  * admins, in their own Payload config - rows are meant to arrive only by
- * direct insert from the feature code that logs to them (auditLog.ts's
+ * direct insert from the writers that log to them (auditLog.ts's
  * writer, backups' own record.ts) - but that is an access-control fact, not
  * a schema one: Payload's Local API overrides access by default, so the
  * usual write-both-ways parity tests apply unchanged (see
@@ -465,3 +465,10 @@ export * from './globals/integrations'
 export * from './globals/emailSettings'
 export * from './globals/paymentSettings'
 export * from './globals/formSettings'
+export * from './globals/header'
+export * from './globals/footer'
+export * from './globals/languageSettings'
+export * from './globals/seoSettings'
+export * from './globals/speedSettings'
+export * from './globals/mediaSettings'
+export * from './globals/backupSettings'

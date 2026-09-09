@@ -69,6 +69,7 @@ export type {
   SanitizedCollectionConfig,
   SanitizedGlobalConfig,
   ServerFunctionClient,
+  Sort,
   TextFieldClientProps,
   TypedUser,
   Where,

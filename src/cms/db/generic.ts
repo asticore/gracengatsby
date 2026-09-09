@@ -1,11 +1,11 @@
-import type { CollectionConfig, GlobalConfig, Where } from '@/engine'
+import type { CollectionConfig, GlobalConfig, Sort, Where } from '@/engine'
 
 import { and, asc, desc, eq, like, sql } from 'drizzle-orm'
 import type { AnySQLiteTable, SQLiteColumn } from 'drizzle-orm/sqlite-core'
 
 import { capitalize, type GroupFieldMeta } from './schema/generate'
 import { getDb } from './connect'
-import { buildWhere } from './where'
+import { applySort, buildWhere } from './where'
 
 export type Doc = Record<string, unknown> & { id: number }
 
@@ -947,6 +947,80 @@ export function createCollectionOps(
     return Promise.all(rows.map(attachExtras))
   }
 
+  /**
+   * The adapter-shaped counterpart to findMany, matching Payload's own real
+   * `find` contract (sort, page/limit, a `PaginatedDocs` return shape) - what
+   * the engine cutover's per-collection adapter intercept needs to satisfy
+   * Payload's list views and API queries, which always pass sort/pagination
+   * regardless of how simple the collection is. `findMany` itself is left
+   * untouched (still used by every existing parity test and every ops file's
+   * own `findX` alias) rather than folding pagination into it, to keep this
+   * additive and avoid touching a widely-used existing signature.
+   *
+   * `limit: 0` disables pagination entirely (returns every matching row,
+   * still sorted) - the same convention Payload's own adapter documents on
+   * its `Find` args and implements in its real `findMany` (confirmed by
+   * reading it directly: `if (limit === 0) { pagination = false; limit =
+   * undefined }`). `pagination: false` does the same regardless of `limit`.
+   */
+  async function findPaginated(
+    args: { where?: Where; sort?: Sort; limit?: number; page?: number; pagination?: boolean } = {},
+  ): Promise<{
+    docs: Doc[]
+    totalDocs: number
+    limit: number
+    totalPages: number
+    page: number
+    pagingCounter: number
+    hasPrevPage: boolean
+    hasNextPage: boolean
+    prevPage: number | null
+    nextPage: number | null
+  }> {
+    const db = await getDb()
+    const condition = buildWhere(columns, args.where)
+    const orderTerms = applySort(columns, args.sort)
+    const paginationEnabled = args.pagination !== false && args.limit !== 0
+
+    const baseQuery = db.select().from(table).where(condition)
+    const sortedQuery = orderTerms.length ? baseQuery.orderBy(...orderTerms) : baseQuery
+
+    const [rows, totalDocs] = await Promise.all([
+      paginationEnabled
+        ? (async () => {
+            const limit = args.limit ?? 10
+            const page = Math.max(1, args.page ?? 1)
+            return sortedQuery.limit(limit).offset((page - 1) * limit)
+          })()
+        : sortedQuery,
+      count({ where: args.where }),
+    ])
+    const docs = await Promise.all((rows as Doc[]).map(attachExtras))
+
+    if (!paginationEnabled) {
+      return { docs, totalDocs, limit: 0, totalPages: 1, page: 1, pagingCounter: totalDocs === 0 ? 0 : 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null }
+    }
+
+    const limit = args.limit ?? 10
+    const page = Math.max(1, args.page ?? 1)
+    const totalPages = Math.max(1, Math.ceil(totalDocs / limit))
+    const hasPrevPage = page > 1
+    const hasNextPage = page < totalPages
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      totalPages,
+      page,
+      pagingCounter: totalDocs === 0 ? 0 : (page - 1) * limit + 1,
+      hasPrevPage,
+      hasNextPage,
+      prevPage: hasPrevPage ? page - 1 : null,
+      nextPage: hasNextPage ? page + 1 : null,
+    }
+  }
+
   async function findByID(id: number): Promise<Doc | null> {
     const db = await getDb()
     const [row] = await db.select().from(table).where(eq(idColumn, id)).limit(1)
@@ -1012,7 +1086,7 @@ export function createCollectionOps(
     return result.length > 0
   }
 
-  return { findMany, findByID, count, create, updateByID, deleteByID }
+  return { findMany, findPaginated, findByID, count, create, updateByID, deleteByID }
 }
 
 /**

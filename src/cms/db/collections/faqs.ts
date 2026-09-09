@@ -18,6 +18,20 @@ export type FaqDoc = {
 const ops = createCollectionOps(faqs, Faqs)
 
 export const findFaqs = ops.findMany as unknown as (args?: { where?: import('@/engine').Where; limit?: number }) => Promise<FaqDoc[]>
+/**
+ * The adapter-shaped counterpart to findFaqs (see ../generic.ts's
+ * findPaginated doc comment) - what src/engage.config.ts's per-collection
+ * adapter intercept calls for Faqs' `find`, since Payload's own list views
+ * and API queries always pass sort/pagination, however simple the
+ * collection's fields are.
+ */
+export const findFaqsPaginated = ops.findPaginated as unknown as (args?: {
+  where?: import('@/engine').Where
+  sort?: import('@/engine').Sort
+  limit?: number
+  page?: number
+  pagination?: boolean
+}) => ReturnType<typeof ops.findPaginated>
 export const findFaqByID = ops.findByID as unknown as (id: number) => Promise<FaqDoc | null>
 export const countFaqs = ops.count
 export const createFaq = ops.create as unknown as (

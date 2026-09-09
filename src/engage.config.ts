@@ -9,6 +9,7 @@ import { GetPlatformProxyOptions } from 'wrangler'
 import { r2Storage } from '@/engine/storage'
 import { shopPlugin } from '@/engine/commerce'
 import { stripeAdapter } from '@/engine/commerce/stripe'
+import { countFaqs, createFaq, deleteFaq, findFaqByID, findFaqsPaginated, updateFaq } from '@/cms/db/collections/faqs'
 //import { payloadTotp } from 'payload-totp'
 import {
   isAdmin,
@@ -129,6 +130,39 @@ const ENGINE_COLLECTION_TABLES: Record<string, string> = {
  */
 const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
 
+/**
+ * The engine.db.ts cutover, one collection at a time.
+ *
+ * src/cms/db/ is our own from-scratch data layer, proven collection by
+ * collection against Payload's real adapter via write-both-ways parity
+ * tests (tests/int/cms-db-*.int.spec.ts) before ever touching this file.
+ * Once a collection's ops are proven, it moves from "tested from the side"
+ * to "actually serving the app" by adding its slug here - the adapter below
+ * dispatches five methods (find/findOne/create/updateOne/deleteOne) plus
+ * count to our own code for a cut-over collection's slug, and falls through
+ * to the real base adapter for everything else. Every OTHER adapter method
+ * (versions, drafts, joins, migrations, transactions, bulk update/delete,
+ * upsert, jobs, ...) still goes to the real base adapter regardless - a
+ * collection only qualifies for cutover once it needs none of those (no
+ * `versions`, no `join` field pointing at it in a way that matters, no
+ * bulk-select admin usage that would call updateMany/deleteMany). Faqs is
+ * the first: scalar fields only, no drafts, no relationships even. The next
+ * collection adds its own `if (slug === '...')` branch to each method below
+ * (each one's real shape differs enough - different ops module, different
+ * `defaultSort` field, whether it has drafts/relationships at all - that a
+ * single shared dispatch table would just be indirection over the same
+ * per-collection logic).
+ *
+ * Both sides read and write the exact same D1 tables with the exact same
+ * schema (src/cms/db/schema/ is derived from these same collection configs
+ * the real adapter also builds its schema from - see ./cms/db's own doc
+ * comment), so dispatching per METHOD CALL rather than "swap the whole
+ * adapter at once" is safe: a `find` routed through our code and an
+ * `updateOne` on the same collection still routed through the real adapter
+ * (before its slug is added here) see the same rows either way. There is no
+ * split-brain risk, only a correctness risk in OUR code, which is exactly
+ * what the parity tests below are for.
+ */
 const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
   const base = sqliteD1Adapter(options)
 
@@ -137,6 +171,12 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
     init: (initArgs) => {
       const adapter = base.init(initArgs)
       const execute = adapter.execute.bind(adapter)
+      const baseFind = adapter.find.bind(adapter)
+      const baseFindOne = adapter.findOne.bind(adapter)
+      const baseCreate = adapter.create.bind(adapter)
+      const baseUpdateOne = adapter.updateOne.bind(adapter)
+      const baseDeleteOne = adapter.deleteOne.bind(adapter)
+      const baseCount = adapter.count.bind(adapter)
 
       adapter.execute = (opts) => {
         if (typeof opts?.raw === 'string' && opts.raw.includes(MIGRATION_TABLE_PROBE)) {
@@ -149,6 +189,84 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           })
         }
         return execute(opts)
+      }
+
+      // Faqs' own `defaultSort: 'order'` (src/collections/Faqs.ts) has to be
+      // applied here, not left to ../cms/db/where.ts's applySort - the real
+      // base adapter's own `find` resolves a missing `sort` arg against the
+      // collection config the SAME way (confirmed by reading
+      // @payloadcms/drizzle's find.js directly: `sortArg ?? collectionConfig.defaultSort`)
+      // before ever reaching its own orderBy builder, and skipping that step
+      // here would silently change the admin list's default row order the
+      // moment Faqs was cut over below.
+      adapter.find = ((findArgs) => {
+        if (findArgs.collection === 'faqs') {
+          return findFaqsPaginated({
+            where: findArgs.where,
+            sort: findArgs.sort ?? Faqs.defaultSort,
+            limit: findArgs.limit,
+            page: findArgs.page,
+            pagination: findArgs.pagination,
+          })
+        }
+        return baseFind(findArgs)
+      }) as typeof baseFind
+
+      // Payload's own findByID/update-by-id/delete-by-id operations all
+      // resolve the target row through `findOne` first (confirmed by reading
+      // findByID.js/updateByID.js/deleteByID.js directly) - a plain `where`
+      // lookup, no pagination concept, so this is `findFaqsPaginated` with
+      // `limit: 1` rather than a separate code path.
+      adapter.findOne = (async (findOneArgs) => {
+        if (findOneArgs.collection === 'faqs') {
+          const { docs } = await findFaqsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        return baseFindOne(findOneArgs)
+      }) as typeof baseFindOne
+
+      adapter.create = (createArgs) => {
+        if (createArgs.collection === 'faqs') {
+          return createFaq(createArgs.data as Parameters<typeof createFaq>[0]) as ReturnType<typeof baseCreate>
+        }
+        return baseCreate(createArgs)
+      }
+
+      // The real `update` operation always passes `id` directly for a plain
+      // (non-bulk, non-version) update (confirmed by reading
+      // collections/operations/utilities/update.js directly) - the `where`
+      // branch only exists for a bulk/query-based update, which Faqs'
+      // simple admin usage doesn't exercise, so it falls through to the real
+      // adapter rather than being reimplemented here.
+      adapter.updateOne = async (updateOneArgs) => {
+        if (updateOneArgs.collection === 'faqs' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateFaq(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        return baseUpdateOne(updateOneArgs)
+      }
+
+      // The real `deleteByID` operation always passes `where: { id: { equals } }`,
+      // never a bare `id` (DeleteOneArgs has no `id` field at all - confirmed
+      // against payload's own database/types.d.ts) - resolve the row the same
+      // way findOne above does, snapshot it before deleting (deleteOne's own
+      // return value IS the deleted document), then delete by id.
+      adapter.deleteOne = async (deleteOneArgs) => {
+        if (deleteOneArgs.collection === 'faqs') {
+          const { docs } = await findFaqsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteFaq(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        return baseDeleteOne(deleteOneArgs)
+      }
+
+      adapter.count = (countArgs) => {
+        if (countArgs.collection === 'faqs') {
+          return countFaqs({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        return baseCount(countArgs)
       }
 
       return adapter

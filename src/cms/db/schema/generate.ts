@@ -212,6 +212,43 @@ export function generateSelectHasManyTable(parentTableName: string, field: Named
 }
 
 /**
+ * The implicit `<table>_sessions` child table `auth: true` (with its default
+ * `useSessions: true`, which this app's Users config does not override)
+ * creates for storing active login sessions - referenced but deliberately
+ * NOT modeled by authColumns' own doc comment (Users is this app's only
+ * auth-enabled collection, so this is only ever called for it). Confirmed
+ * against the real `eg_users_sessions` table via `wrangler d1 execute D1
+ * --local --command "SELECT sql FROM sqlite_master WHERE name =
+ * 'eg_users_sessions'"`: `_order`/`_parent_id` (integer, same shape as any
+ * other live array child table - see generateArrayTable's doc comment),
+ * `id` (TEXT primary key - Payload's own login flow assigns each session a
+ * `uuid()` before ever calling into the DB, same as a plain array item's
+ * string id), `created_at` (nullable text) and `expires_at` (text, NOT
+ * NULL).
+ *
+ * Modeled now (unlike when authColumns was written) because a real cutover
+ * of Users needs write support for this table too: Payload's login/logout
+ * flow persists a session by calling `payload.db.updateOne` with the
+ * user's ENTIRE current document, `sessions` included (see
+ * `payload/dist/auth/sessions.js`'s `addSessionToUser`/`revokeSession`) - an
+ * adapter that intercepts `updateOne` for `users` without also writing this
+ * table would silently drop every session on first login. This data layer
+ * still never GENERATES a session itself (that stays Payload's own login
+ * code, same reasoning as hash/salt) - it only stores/returns whatever
+ * Payload hands it, via ../generic.ts's ordinary createArrayOps machinery
+ * (a string-id child table it already knows how to read/write).
+ */
+export function generateAuthSessionsTable(parentTableName: string) {
+  return sqliteTable(`${parentTableName}_sessions`, {
+    order: integer('_order').notNull(),
+    parentId: integer('_parent_id').notNull(),
+    id: text('id').primaryKey(),
+    createdAt: text('created_at'),
+    expiresAt: text('expires_at').notNull(),
+  })
+}
+
+/**
  * Derives a drizzle table from a real Payload CollectionConfig - the
  * generalisation promised in ../index.ts, proven against real collections
  * instead of hand-copied tables.

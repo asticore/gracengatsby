@@ -889,11 +889,11 @@ export function createCollectionOps(
 
   function splitSpecialFields(rawData: Record<string, unknown>) {
     // Lift any group-nested array/hasMany-select value (Header/Footer's
-    // `socials.links`, SeoSettings' `schema.sameAs`, LanguageSettings'
-    // `multilingual.activeLocales`, etc - Gap A1/A2) out to its synthetic
-    // top-level key BEFORE the ordinary arrayFieldNames/selectFieldNames
-    // loops below run, so they pick it up with no further changes - see
-    // liftGroupSpecialFields.
+    // `socials.links`, SeoSettings' `schema.sameAs`,
+    // LanguageSettings' `multilingual.activeLocales`, etc - Gap A1/A2) out to
+    // its synthetic top-level key BEFORE the ordinary
+    // arrayFieldNames/selectFieldNames loops below run, so they pick it up
+    // with no further changes - see liftGroupSpecialFields.
     const data = liftGroupSpecialFields(rawData, groupFields)
     const scalars = { ...data }
     const arrays: Record<string, unknown[]> = {}
@@ -1063,9 +1063,22 @@ export function createCollectionOps(
   async function updateByID(id: number, data: Record<string, unknown>): Promise<Doc | null> {
     const db = await getDb()
     const { scalars, arrays, topLevelRels, blocks, selects } = splitSpecialFields(data)
+    // Payload's own login/session-persistence path (`addSessionToUser`/
+    // `revokeSession` in payload/dist/auth/sessions.js) explicitly sets
+    // `user.updatedAt = null` before calling `payload.db.updateOne` so that
+    // adding/removing a session doesn't bump the document's own "last
+    // modified" timestamp - the real base adapter honors that by leaving the
+    // column untouched entirely. Every other existing caller either omits
+    // `updatedAt` from `data` or has it overridden by `now()` below anyway,
+    // so this only changes behavior for the one case Payload itself sends an
+    // explicit `null` for.
+    const skipUpdatedAt = scalars.updatedAt === null
+    const values: Record<string, unknown> = flattenGroups(scalars, groupFields)
+    delete values.updatedAt
+    if (!skipUpdatedAt) values.updatedAt = new Date().toISOString()
     const [row] = await db
       .update(table)
-      .set({ ...flattenGroups(scalars, groupFields), updatedAt: new Date().toISOString() })
+      .set(values)
       .where(eq(idColumn, id))
       .returning()
     if (!row) return null
@@ -1280,11 +1293,11 @@ export function createGlobalOps(
 
   function splitSpecialFields(rawData: Record<string, unknown>) {
     // Lift any group-nested array/hasMany-select value (Header/Footer's
-    // `socials.links`, SeoSettings' `schema.sameAs`, LanguageSettings'
-    // `multilingual.activeLocales`, etc - Gap A1/A2) out to its synthetic
-    // top-level key BEFORE the ordinary arrayFieldNames/selectFieldNames
-    // loops below run, so they pick it up with no further changes - see
-    // liftGroupSpecialFields.
+    // `socials.links`, SeoSettings' `schema.sameAs`,
+    // LanguageSettings' `multilingual.activeLocales`, etc - Gap A1/A2) out to
+    // its synthetic top-level key BEFORE the ordinary
+    // arrayFieldNames/selectFieldNames loops below run, so they pick it up
+    // with no further changes - see liftGroupSpecialFields.
     const data = liftGroupSpecialFields(rawData, groupFields)
     const scalars = { ...data }
     const arrays: Record<string, unknown[]> = {}

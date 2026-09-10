@@ -415,7 +415,7 @@ export const lessonsRelsTargetColumns = lessonsRelsGenerated.targetColumns
  * a single-target FK column never needs its target table resolved at
  * schema-generation time, only at query time if something joined against
  * it, which nothing here does) or a plain scalar (`select`, `date`,
- * `checkbox`). Neither has group/array/blocks/join/versions.
+ * `checkbox`) already proven. Neither has group/array/blocks/join/versions.
  */
 export const enrolmentsGenerated = generateTable(Enrolments)
 export const enrolments = enrolmentsGenerated.table

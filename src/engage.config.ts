@@ -162,6 +162,22 @@ const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
  * (before its slug is added here) see the same rows either way. There is no
  * split-brain risk, only a correctness risk in OUR code, which is exactly
  * what the parity tests below are for.
+ *
+ * Users is a deliberate exception to "prove it, then add it here
+ * immediately": src/cms/db/collections/users.ts and
+ * tests/int/cms-db-users.int.spec.ts now prove the full auth-row shape
+ * (hash/salt/lockout/two-factor columns, plus the `eg_users_sessions` child
+ * table - see UserAuthRow's doc comment there), but this file does NOT
+ * intercept `users` yet. The reason is blast radius, not correctness doubt:
+ * Payload's own login flow reads and overwrites this exact row directly
+ * (`payload.db.findOne`/`updateOne` in payload/dist/auth/{operations/login,
+ * sessions}.js, not through any Local API method our other parity tests go
+ * through), so a subtly wrong `find`/`findOne`/`updateOne` here would not
+ * just corrupt Users' own content - it would lock every admin out of the
+ * site, with no other collection's cutover carrying that risk. Wiring it in
+ * needs its own explicit go-ahead once someone has additionally exercised
+ * `payload.login()` end-to-end against the SAME dispatch this file would
+ * use, not just against the real base adapter as the current tests do.
  */
 const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
   const base = sqliteD1Adapter(options)

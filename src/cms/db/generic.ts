@@ -889,11 +889,11 @@ export function createCollectionOps(
 
   function splitSpecialFields(rawData: Record<string, unknown>) {
     // Lift any group-nested array/hasMany-select value (Header/Footer's
-    // `socials.links`, SeoSettings' `schema.sameAs`,
-    // LanguageSettings' `multilingual.activeLocales`, etc - Gap A1/A2) out to
-    // its synthetic top-level key BEFORE the ordinary
-    // arrayFieldNames/selectFieldNames loops below run, so they pick it up
-    // with no further changes - see liftGroupSpecialFields.
+    // `socials.links`, SeoSettings' `schema.sameAs`, LanguageSettings'
+    // `multilingual.activeLocales`, etc - Gap A1/A2) out to its synthetic
+    // top-level key BEFORE the ordinary arrayFieldNames/selectFieldNames
+    // loops below run, so they pick it up with no further changes - see
+    // liftGroupSpecialFields.
     const data = liftGroupSpecialFields(rawData, groupFields)
     const scalars = { ...data }
     const arrays: Record<string, unknown[]> = {}
@@ -1293,11 +1293,11 @@ export function createGlobalOps(
 
   function splitSpecialFields(rawData: Record<string, unknown>) {
     // Lift any group-nested array/hasMany-select value (Header/Footer's
-    // `socials.links`, SeoSettings' `schema.sameAs`,
-    // LanguageSettings' `multilingual.activeLocales`, etc - Gap A1/A2) out to
-    // its synthetic top-level key BEFORE the ordinary
-    // arrayFieldNames/selectFieldNames loops below run, so they pick it up
-    // with no further changes - see liftGroupSpecialFields.
+    // `socials.links`, SeoSettings' `schema.sameAs`, LanguageSettings'
+    // `multilingual.activeLocales`, etc - Gap A1/A2) out to its synthetic
+    // top-level key BEFORE the ordinary arrayFieldNames/selectFieldNames
+    // loops below run, so they pick it up with no further changes - see
+    // liftGroupSpecialFields.
     const data = liftGroupSpecialFields(rawData, groupFields)
     const scalars = { ...data }
     const arrays: Record<string, unknown[]> = {}

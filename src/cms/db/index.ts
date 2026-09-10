@@ -286,9 +286,13 @@
  *
  *  - `auth: true`'s implicit columns (email, password/reset/lockout/two-factor)
  *    - see ../schema/generate.ts's hasAuth/authColumns doc comment for the
- *    confirmed real eg_users shape and what's deliberately NOT modeled (the
- *    `eg_users_sessions` child table - Payload only ever writes there during
- *    its own login flow, which this data layer does not implement).
+ *    confirmed real eg_users shape. `eg_users_sessions` (Payload's own
+ *    login-session child table) was initially left unmodeled here too - a
+ *    later pass (see generateAuthSessionsTable's doc comment and
+ *    UserAuthRow in ../collections/users.ts) added it once a real adapter
+ *    cutover of Users was scoped out and found login itself would break
+ *    without write support for it (`payload.db.updateOne` persists a
+ *    session by overwriting the user's ENTIRE row, `sessions` included).
  *  - Users' own `roles` field: a hasMany `select`, needing its own child-table
  *    shape distinct from both an array field's and a rels field's - see
  *    generateSelectHasManyTable's doc comment. Confirmed against the real
@@ -416,11 +420,18 @@
  *    `imageSizes` and `focalPoint: true` remain unproven (see Phase 12's own
  *    note above) - not a gap unless a future collection actually turns
  *    either on.
- *  - Users (Phase 14) is this app's only auth-enabled collection, so
- *    `eg_users_sessions` remains unmodeled (see Phase 14's own note above) -
- *    not a gap unless this data layer ever needs to implement login/session
- *    issuance itself, which is a Payload-auth-strategy question, not a
- *    schema-generation one.
+ *  - Users (Phase 14) is this app's only auth-enabled collection.
+ *    `eg_users_sessions` is now modeled and read/write-proven (see
+ *    generateAuthSessionsTable's doc comment, UserAuthRow in
+ *    ../collections/users.ts, and tests/int/cms-db-users.int.spec.ts) -
+ *    this data layer still never ISSUES a session or hashes a password
+ *    itself, which stays a Payload-auth-strategy question, not a
+ *    schema-generation one. That plus the wider `UserAuthRow` shape is what
+ *    a real adapter cutover of Users would need; the cutover itself (wiring
+ *    `find`/`findOne`/`updateOne` in engage.config.ts the way Faqs was) is
+ *    deliberately NOT done yet - see the doc comment on `engageD1Adapter`
+ *    in src/engage.config.ts for why that step needs its own explicit
+ *    go-ahead first.
  *
  * Next up: src/engine/db.ts can start being switched over collection by
  * collection - non-drafts collections route straight to createCollectionOps,

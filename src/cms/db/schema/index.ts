@@ -44,6 +44,7 @@ import { SpeedSettings } from '@/globals/SpeedSettings'
 import type { JoinFieldMeta, TopLevelGroupFieldMeta } from './generate'
 import {
   generateArrayTable,
+  generateAuthSessionsTable,
   generateBlockTables,
   generateRelsTable,
   generateSelectHasManyTable,
@@ -414,7 +415,7 @@ export const lessonsRelsTargetColumns = lessonsRelsGenerated.targetColumns
  * a single-target FK column never needs its target table resolved at
  * schema-generation time, only at query time if something joined against
  * it, which nothing here does) or a plain scalar (`select`, `date`,
- * `checkbox`) already proven. Neither has group/array/blocks/join/versions.
+ * `checkbox`). Neither has group/array/blocks/join/versions.
  */
 export const enrolmentsGenerated = generateTable(Enrolments)
 export const enrolments = enrolmentsGenerated.table
@@ -456,6 +457,11 @@ export const users = usersGenerated.table
 
 const [usersRolesField] = usersGenerated.selectFields
 export const usersRoles = generateSelectHasManyTable(usersGenerated.tableName, usersRolesField)
+
+// `sessions` - see generateAuthSessionsTable's doc comment for why this is
+// modeled separately from authColumns() despite never being a declared
+// Users field.
+export const usersSessions = generateAuthSessionsTable(usersGenerated.tableName)
 
 /**
  * Phase 15: AuditLog + Backups - both read-only-through-Payload collections

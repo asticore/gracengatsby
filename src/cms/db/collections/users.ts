@@ -1,4 +1,4 @@
-import type { Where } from '@/engine'
+import type { Sort, Where } from '@/engine'
 
 import { Users } from '@/collections/Users'
 
@@ -73,8 +73,24 @@ export const updateUser = ops.updateByID as unknown as (
 ) => Promise<UserDoc | null>
 export const deleteUser = ops.deleteByID
 
-// Full-row variants - for the auth system (a future adapter intercept,
-// tests proving login/session parity) only. Everything else in the app
-// should use the narrow exports above.
+// Full-row variants - for the auth system (the engine.db.ts cutover's
+// adapter intercept in src/engage.config.ts, and tests proving login/session
+// parity) only. Everything else in the app should use the narrow exports
+// above.
 export const findUserAuthRowByID = ops.findByID as unknown as (id: number) => Promise<UserAuthRow | null>
 export const updateUserAuthRow = ops.updateByID as unknown as (id: number, data: Record<string, unknown>) => Promise<UserAuthRow | null>
+
+// The two remaining full-row variants the adapter intercept needs -
+// `findFaqsPaginated`'s exact shape (find-many by `where` with sort/
+// pagination, for `find`/`findOne`/`deleteOne`'s own resolve-then-act) and
+// create, both re-exposing the same generic `ops` this file already builds
+// with no new logic, the same way findUserAuthRowByID/updateUserAuthRow
+// re-expose ops.findByID/ops.updateByID above.
+export const findUserAuthRowsPaginated = ops.findPaginated as unknown as (args?: {
+  where?: Where
+  sort?: Sort
+  limit?: number
+  page?: number
+  pagination?: boolean
+}) => ReturnType<typeof ops.findPaginated>
+export const createUserAuthRow = ops.create as unknown as (data: Record<string, unknown>) => Promise<UserAuthRow>

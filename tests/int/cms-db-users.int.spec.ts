@@ -12,14 +12,21 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createUser, deleteUser, findUserAuthRowByID, findUserByID, updateUser, updateUserAuthRow } from '@/cms/db'
 
 /**
- * Phase 14: Users - `auth: true`, this app's biggest remaining
- * single-collection gap (see ../../src/cms/db/index.ts's Phase 14 doc
- * comment). This data layer never writes `salt`/`hash` itself, so every case
- * here only exercises `email`/`roles` - the two things Users' own `fields`
- * list plus auth's implicit `email` column actually need this data layer to
- * get right.
+ * Phase 14: Users - `auth: true`, this app's biggest single-collection gap
+ * (see ../../src/cms/db/index.ts's Phase 14 doc comment), now cut over into
+ * src/engage.config.ts's engageD1Adapter the same way Faqs is (see that
+ * file's own doc comment for why Users needed two extra things proven first
+ * that no earlier cutover did: atomic `$inc` support in ../../src/cms/db/
+ * generic.ts's updateByID, and a real `payload.login()` lockout cycle
+ * exercised against this exact dispatch). This data layer never writes
+ * `salt`/`hash` itself, so most cases here only exercise `email`/`roles` -
+ * the two things Users' own `fields` list plus auth's implicit `email`
+ * column actually need this data layer to get right - except the lockout
+ * test near the end, which deliberately drives real wrong-password logins to
+ * prove the one path capable of locking every admin out of the site if this
+ * data layer got it wrong.
  */
-describe('cms/db - users (proof of concept, not wired in)', () => {
+describe('cms/db - users (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdUserIds: number[] = []
 
@@ -165,5 +172,123 @@ describe('cms/db - users (proof of concept, not wired in)', () => {
     const viaPayload = await engine.findByID({ collection: 'users', id })
     const sessionIds = (viaPayload.sessions as Array<{ id: string }>).map((s) => s.id)
     expect(sessionIds).toContain(newSession.id)
+  })
+
+  /**
+   * Proves ../../src/cms/db/generic.ts's applyAtomicIncrements directly,
+   * against the EXACT shape Payload's own incrementLoginAttempts.js sends
+   * (`{ loginAttempts: { $inc: 1 } }`), before the lockout test below relies
+   * on it through a real payload.login() call. Two increments, not one, to
+   * confirm each is relative to the CURRENT stored value (a naive
+   * implementation that just overwrote the column with `1` every time would
+   * pass a single-increment check but fail this one).
+   */
+  it('increments loginAttempts atomically via Payload\'s own {$inc} marker shape', async () => {
+    const email = `phase14-h-${Date.now()}@example.com`
+    const created = await createUser({ email })
+    createdUserIds.push(created.id)
+
+    const first = await updateUserAuthRow(created.id, { loginAttempts: { $inc: 1 } })
+    expect(first?.loginAttempts).toBe(1)
+
+    const second = await updateUserAuthRow(created.id, { loginAttempts: { $inc: 1 } })
+    expect(second?.loginAttempts).toBe(2)
+
+    // The increment must not disturb any other column on the same row.
+    expect(second?.email).toBe(email)
+  })
+
+  /**
+   * The test the engageD1Adapter doc comment calls for before Users could be
+   * wired in at all: a real `engine.login()` (Payload's own local-strategy
+   * login operation, payload/dist/auth/operations/login.js) driven through
+   * WRONG passwords until the account locks, then confirmed still rejected
+   * even with the CORRECT password while locked - all of it now dispatched
+   * through this data layer's own find/findOne/updateOne for `users`, not
+   * the real base adapter. Users declares no override, so Payload's real
+   * defaults apply: maxLoginAttempts 5, lockTime 600000ms (confirmed by
+   * reading payload/dist/collections/config/defaults.js directly).
+   *
+   * Asserting on loginAttempts/lockUntil read back via findUserAuthRowByID
+   * (not just "the login call rejected") is what makes this a genuine proof
+   * rather than a coincidence: a completely broken updateOne dispatch (one
+   * that silently no-ops, say) would ALSO make every login attempt fail,
+   * and could pass a test that only checked "rejects", while never actually
+   * exercising the increment/lock write path at all.
+   */
+  it('locks the account after 5 real failed payload.login() attempts, through our own adapter dispatch', async () => {
+    const email = `phase14-i-${Date.now()}@example.com`
+    const password = 'Phase14TestPassword!'
+    const created = await engine.create({ collection: 'users', data: { email, password } })
+    const id = created.id as number
+    createdUserIds.push(id)
+
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await expect(engine.login({ collection: 'users', data: { email, password: 'WrongPassword!' } })).rejects.toThrow()
+      const row = await findUserAuthRowByID(id)
+      expect(row?.loginAttempts).toBe(attempt)
+      expect(row?.lockUntil).toBeFalsy()
+    }
+
+    // The 5th wrong attempt crosses maxLoginAttempts (5) - Payload locks the
+    // account as part of THIS SAME request (login.js re-checks permission
+    // right after incrementing), so this one still rejects, just with the
+    // account now locked rather than merely "wrong password".
+    await expect(engine.login({ collection: 'users', data: { email, password: 'WrongPassword!' } })).rejects.toThrow()
+    const lockedRow = await findUserAuthRowByID(id)
+    expect(lockedRow?.loginAttempts).toBe(5)
+    expect(lockedRow?.lockUntil).toBeTruthy()
+    expect(new Date(lockedRow!.lockUntil!).getTime()).toBeGreaterThan(Date.now())
+
+    // Locked means locked - even the CORRECT password is rejected now
+    // (checkLoginPermission runs before password verification).
+    await expect(engine.login({ collection: 'users', data: { email, password } })).rejects.toThrow()
+
+    // Not permanently broken: once the lock is cleared (what a real
+    // lockTime expiry, or Payload's own unlock endpoint, does under the
+    // hood - payload/dist/auth/strategies/local/resetLoginAttempts.js clears
+    // the same two columns on the next SUCCESSFUL login), the correct
+    // password works again through this same dispatch.
+    await updateUserAuthRow(id, { lockUntil: null, loginAttempts: 0 })
+    const loggedIn = await engine.login({ collection: 'users', data: { email, password } })
+    expect(loggedIn).toBeTruthy()
+    const resetRow = await findUserAuthRowByID(id)
+    expect(resetRow?.loginAttempts).toBe(0)
+    expect(resetRow?.lockUntil).toBeFalsy()
+  })
+
+  /**
+   * Mirrors tests/int/cms-db-faqs.int.spec.ts's own "cuts over cleanly" test
+   * - proves engine.find/update/delete for `users` go through OUR adapter
+   * dispatch now, with assertions precise enough (sort order, the updated/
+   * deleted document's actual field values) that a wrong intercept can't
+   * hide behind a passing test by accident.
+   */
+  it('cuts over cleanly: engine.find/update/delete for users go through our own adapter', async () => {
+    // Lowercase - Payload's own auth email field normalizes to lowercase on
+    // write regardless of adapter (canLoginWithEmail/its beforeChange hook),
+    // so anything mixed-case here would never round-trip through Payload's
+    // own engine.create in the first place.
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'users', data: { email: `${marker}-a@example.com`, password: 'Phase14TestPassword!', roles: ['admin'] } })
+    const b = await engine.create({ collection: 'users', data: { email: `${marker}-b@example.com`, password: 'Phase14TestPassword!', roles: ['customer'] } })
+    createdUserIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findUserAuthRowsPaginated.
+    const listed = await engine.find({ collection: 'users', where: { email: { like: marker } }, sort: 'email', limit: 10 })
+    expect(listed.docs.map((d) => d.email)).toEqual([`${marker}-a@example.com`, `${marker}-b@example.com`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateUserAuthRow.
+    const updated = await engine.update({ collection: 'users', id: a.id, data: { roles: ['admin', 'customer'] } })
+    expect(updated.roles).toEqual(['admin', 'customer'])
+    const reread = await findUserByID(a.id as number)
+    expect(reread?.roles).toEqual(['admin', 'customer'])
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteUser.
+    const deletedDoc = await engine.delete({ collection: 'users', id: b.id })
+    expect(deletedDoc.email).toBe(`${marker}-b@example.com`)
+    expect(await findUserByID(b.id as number)).toBeNull()
+    createdUserIds.splice(createdUserIds.indexOf(b.id as number), 1)
   })
 })

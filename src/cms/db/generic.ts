@@ -142,6 +142,71 @@ function flattenOneGroup(result: Record<string, unknown>, meta: GroupFieldMeta, 
 }
 
 /**
+ * Translates Payload's `{ $inc: n }` atomic-increment marker into a raw SQL
+ * `column + n` expression - the same mechanism the real base adapter's own
+ * `transformForWrite` uses (confirmed by reading
+ * `@payloadcms/drizzle/dist/transform/write/traverseFields.js` directly: for
+ * a number field whose value is `{ $inc: n }` it emits
+ * `sql.raw(`${columnName} + ${value.$inc}`)`, gated behind its own
+ * `enableAtomicWrites` flag, which the id-based fast path `updateOne` always
+ * takes). This is not a Mongo-only shape: Payload's OWN login-attempt
+ * tracking sends it to `payload.db.updateOne` on every failed local-strategy
+ * login (`payload/dist/auth/strategies/local/incrementLoginAttempts.js`:
+ * `data.loginAttempts = { $inc: 1 }`) specifically so concurrent failed
+ * attempts can't race a read-then-write plain-number update into losing an
+ * increment - so Users' cutover needs this before its `updateOne` intercept
+ * can safely go through this data layer's own updateByID rather than the
+ * real base adapter. Mutates and returns `values` in place; only matches an
+ * object of EXACTLY shape `{ $inc: <number> }` on a field with a real
+ * column - anything else passes through unchanged, since nothing else in
+ * this app's own write paths sends this shape today.
+ */
+/**
+ * Coerces any `Date` INSTANCE in `row` to an ISO string, mutating and
+ * returning it - every date-typed column in this app's own schema is a
+ * SQLite `text` column (see ../schema/generate.ts's columnFor), and every
+ * OTHER write path already only ever hands one a string (this app's own
+ * `createdAt`/`updatedAt` writes always go through `new Date().toISOString()`
+ * explicitly). The one confirmed exception is Payload's OWN session-writing
+ * code (`payload/dist/auth/sessions.js`'s `addSessionToUser`): it builds a
+ * session's `createdAt`/`expiresAt` as raw `Date` objects, not strings, and
+ * hands the whole array straight to `payload.db.updateOne` - the real base
+ * adapter coerces this somewhere in its own transformForWrite; this data
+ * layer did not need to until an array field's writer could receive one from
+ * outside this app's own code, which only became possible once Users (the
+ * one collection with a caller other than this app's own tests/ops driving
+ * writes) was cut over. D1 itself rejects a raw `Date` outright
+ * (`D1_TYPE_ERROR: Type 'object' not supported`), so this is a correctness
+ * fix, not a defensive nicety - confirmed against a real
+ * `payload.login()`/session write, see tests/int/cms-db-users.int.spec.ts.
+ */
+function serializeDates<T extends Record<string, unknown>>(row: T): T {
+  for (const [key, value] of Object.entries(row)) {
+    if (value instanceof Date) (row as Record<string, unknown>)[key] = value.toISOString()
+  }
+  return row
+}
+
+function applyAtomicIncrements(values: Record<string, unknown>, columns: Record<string, SQLiteColumn>): Record<string, unknown> {
+  for (const [key, value] of Object.entries(values)) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      !(value instanceof Date) &&
+      Object.keys(value as object).length === 1 &&
+      '$inc' in (value as object)
+    ) {
+      const amount = (value as { $inc: unknown }).$inc
+      const column = columns[key]
+      if (typeof amount === 'number' && Number.isFinite(amount) && column) {
+        values[key] = sql`${column} + ${amount}`
+      }
+    }
+  }
+  return values
+}
+
+/**
  * One array-or-hasMany-select field found nested directly inside a top-level
  * document group (Gap A1/A2 - Header/Footer's `socials.links`, SeoSettings'
  * `schema.sameAs`, LanguageSettings' `multilingual.activeLocales`, etc),
@@ -382,7 +447,7 @@ function createArrayOps(arrayTables: Record<string, AnySQLiteTable | ArrayFieldD
         } else {
           row.id = rowId
         }
-        return row
+        return serializeDates(row)
       })
       await db.insert(childTable).values(rows)
 
@@ -390,7 +455,7 @@ function createArrayOps(arrayTables: Record<string, AnySQLiteTable | ArrayFieldD
         for (const [nestedName, { table: nestedTable }] of Object.entries(nestedArrayTables)) {
           const entries = nestedInserts[nestedName]
           if (!entries?.length) continue
-          await db.insert(nestedTable).values(entries.map(({ parentRowId, order, row }) => ({ ...row, order, parentId: parentRowId })))
+          await db.insert(nestedTable).values(entries.map(({ parentRowId, order, row }) => serializeDates({ ...row, order, parentId: parentRowId })))
         }
       }
     }
@@ -1076,6 +1141,7 @@ export function createCollectionOps(
     const values: Record<string, unknown> = flattenGroups(scalars, groupFields)
     delete values.updatedAt
     if (!skipUpdatedAt) values.updatedAt = new Date().toISOString()
+    applyAtomicIncrements(values, columns)
     const [row] = await db
       .update(table)
       .set(values)

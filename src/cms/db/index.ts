@@ -421,17 +421,19 @@
  *    note above) - not a gap unless a future collection actually turns
  *    either on.
  *  - Users (Phase 14) is this app's only auth-enabled collection.
- *    `eg_users_sessions` is now modeled and read/write-proven (see
+ *    `eg_users_sessions` is modeled and read/write-proven (see
  *    generateAuthSessionsTable's doc comment, UserAuthRow in
  *    ../collections/users.ts, and tests/int/cms-db-users.int.spec.ts) -
  *    this data layer still never ISSUES a session or hashes a password
  *    itself, which stays a Payload-auth-strategy question, not a
- *    schema-generation one. That plus the wider `UserAuthRow` shape is what
- *    a real adapter cutover of Users would need; the cutover itself (wiring
- *    `find`/`findOne`/`updateOne` in engage.config.ts the way Faqs was) is
- *    deliberately NOT done yet - see the doc comment on `engageD1Adapter`
- *    in src/engage.config.ts for why that step needs its own explicit
- *    go-ahead first.
+ *    schema-generation one. Users is now cut over too (`find`/`findOne`/
+ *    `create`/`updateOne`/`deleteOne`/`count` in src/engage.config.ts's
+ *    engageD1Adapter, same as Faqs) - see that file's own doc comment for
+ *    the two things proven before it was safe to: `updateByID`'s
+ *    applyAtomicIncrements (Payload's own failed-login tracking sends an
+ *    atomic `{ $inc: 1 }`, not a plain number) and a real `payload.login()`
+ *    lockout cycle exercised against this exact dispatch, not just the base
+ *    adapter.
  *
  * Next up: src/engine/db.ts can start being switched over collection by
  * collection - non-drafts collections route straight to createCollectionOps,

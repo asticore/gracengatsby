@@ -10,6 +10,7 @@ import { r2Storage } from '@/engine/storage'
 import { shopPlugin } from '@/engine/commerce'
 import { stripeAdapter } from '@/engine/commerce/stripe'
 import { countFaqs, createFaq, deleteFaq, findFaqByID, findFaqsPaginated, updateFaq } from '@/cms/db/collections/faqs'
+import { countUsers, createUserAuthRow, deleteUser, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db/collections/users'
 //import { payloadTotp } from 'payload-totp'
 import {
   isAdmin,
@@ -163,21 +164,36 @@ const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
  * split-brain risk, only a correctness risk in OUR code, which is exactly
  * what the parity tests below are for.
  *
- * Users is a deliberate exception to "prove it, then add it here
- * immediately": src/cms/db/collections/users.ts and
- * tests/int/cms-db-users.int.spec.ts now prove the full auth-row shape
- * (hash/salt/lockout/two-factor columns, plus the `eg_users_sessions` child
- * table - see UserAuthRow's doc comment there), but this file does NOT
- * intercept `users` yet. The reason is blast radius, not correctness doubt:
- * Payload's own login flow reads and overwrites this exact row directly
- * (`payload.db.findOne`/`updateOne` in payload/dist/auth/{operations/login,
- * sessions}.js, not through any Local API method our other parity tests go
- * through), so a subtly wrong `find`/`findOne`/`updateOne` here would not
- * just corrupt Users' own content - it would lock every admin out of the
- * site, with no other collection's cutover carrying that risk. Wiring it in
- * needs its own explicit go-ahead once someone has additionally exercised
- * `payload.login()` end-to-end against the SAME dispatch this file would
- * use, not just against the real base adapter as the current tests do.
+ * Users was a deliberate holdout after Faqs (see below): Payload's own login
+ * flow reads and overwrites this exact row directly (`payload.db.findOne`/
+ * `updateOne` in payload/dist/auth/{operations/login,sessions}.js, not
+ * through any Local API method the collection-cutover pattern usually gets
+ * proven against first), so a subtly wrong `find`/`findOne`/`updateOne` here
+ * would not just corrupt Users' own content - it would lock every admin out
+ * of the site. Two things had to be proven before this could be wired in,
+ * neither of which any earlier cutover needed:
+ *
+ *  - Payload's own failed-login tracking sends `{ loginAttempts: { $inc: 1 } }`
+ *    to `payload.db.updateOne` (payload/dist/auth/strategies/local/
+ *    incrementLoginAttempts.js) - an atomic increment, not a plain number,
+ *    specifically so concurrent failed attempts can't race each other into
+ *    losing an increment. ../cms/db/generic.ts's updateByID did not support
+ *    this shape at all until applyAtomicIncrements was added - see its doc
+ *    comment for the confirmed real-adapter mechanism this mirrors
+ *    (`@payloadcms/drizzle`'s own `sql.raw(`${column} + ${n}`)`).
+ *  - A real `payload.login()` had to be exercised end-to-end against THIS
+ *    dispatch (not just the real base adapter, which every earlier proof-of-
+ *    concept test used) through every attempt of a full lockout cycle -
+ *    wrong password, wrong password again, ..., locked - to prove the
+ *    increment and the eventual `lockUntil` write both land correctly and
+ *    that a locked account is actually rejected. See
+ *    tests/int/cms-db-users.int.spec.ts's lockout test.
+ *
+ * Both are now proven, so `users` is wired in below the same way Faqs is -
+ * using the FULL auth-row ops (findUserAuthRowsPaginated/createUserAuthRow/
+ * updateUserAuthRow from ../cms/db/collections/users.ts), never the narrow
+ * UserDoc-typed ones, since Payload's own auth code needs hash/salt/
+ * sessions/lockout columns round-tripped untouched on every call.
  */
 const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
   const base = sqliteD1Adapter(options)
@@ -225,6 +241,18 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
             pagination: findArgs.pagination,
           })
         }
+        // Users declares no `defaultSort` (see src/collections/Users.ts), so
+        // there is nothing to fall back to beyond whatever `findArgs.sort`
+        // already is - unlike Faqs, no config value needs resolving here.
+        if (findArgs.collection === 'users') {
+          return findUserAuthRowsPaginated({
+            where: findArgs.where,
+            sort: findArgs.sort,
+            limit: findArgs.limit,
+            page: findArgs.page,
+            pagination: findArgs.pagination,
+          })
+        }
         return baseFind(findArgs)
       }) as typeof baseFind
 
@@ -238,12 +266,33 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           const { docs } = await findFaqsPaginated({ where: findOneArgs.where, limit: 1 })
           return docs[0] ?? null
         }
+        // Payload's own login (`payload.db.findOne` by email/username, then
+        // again by id to re-check lockUntil/loginAttempts after a correct
+        // password - payload/dist/auth/operations/login.js) and session
+        // writes (payload/dist/auth/sessions.js) both go through this exact
+        // path - findUserAuthRowsPaginated returns the FULL auth row
+        // (hash/salt/lockout/sessions), never the narrow UserDoc shape.
+        if (findOneArgs.collection === 'users') {
+          const { docs } = await findUserAuthRowsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
         return baseFindOne(findOneArgs)
       }) as typeof baseFindOne
 
       adapter.create = (createArgs) => {
         if (createArgs.collection === 'faqs') {
           return createFaq(createArgs.data as Parameters<typeof createFaq>[0]) as ReturnType<typeof baseCreate>
+        }
+        // Payload hashes a supplied `password` into salt/hash BEFORE calling
+        // `payload.db.create` (the auth field's own beforeChange path), so
+        // `createArgs.data` already carries salt/hash by the time it reaches
+        // here - createUserAuthRow (unlike createUser) accepts and stores
+        // them rather than silently dropping anything outside UserDoc's
+        // narrower TS shape (which would have no runtime effect either way -
+        // TS types don't filter object keys - but the wider type keeps this
+        // callsite honest about what it actually needs to round-trip).
+        if (createArgs.collection === 'users') {
+          return createUserAuthRow(createArgs.data as Record<string, unknown>) as ReturnType<typeof baseCreate>
         }
         return baseCreate(createArgs)
       }
@@ -257,6 +306,16 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
       adapter.updateOne = async (updateOneArgs) => {
         if (updateOneArgs.collection === 'faqs' && typeof updateOneArgs.id !== 'undefined') {
           const updated = await updateFaq(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        // Every real caller here (login's session write, incrementLoginAttempts'
+        // `{ loginAttempts: { $inc: 1 } }`, resetLoginAttempts, addSessionToUser/
+        // revokeSession's `updatedAt: null`) passes a plain `id`, never a
+        // `where` - same as Faqs above. updateUserAuthRow -> ../cms/db/generic.ts's
+        // updateByID, which now honors both of those (applyAtomicIncrements,
+        // and the pre-existing `updatedAt: null` skip-touch).
+        if (updateOneArgs.collection === 'users' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateUserAuthRow(Number(updateOneArgs.id), updateOneArgs.data as Record<string, unknown>)
           return updated as Awaited<ReturnType<typeof baseUpdateOne>>
         }
         return baseUpdateOne(updateOneArgs)
@@ -275,12 +334,22 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           await deleteFaq(doc.id)
           return doc as Awaited<ReturnType<typeof baseDeleteOne>>
         }
+        if (deleteOneArgs.collection === 'users') {
+          const { docs } = await findUserAuthRowsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteUser(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
         return baseDeleteOne(deleteOneArgs)
       }
 
       adapter.count = (countArgs) => {
         if (countArgs.collection === 'faqs') {
           return countFaqs({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'users') {
+          return countUsers({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
         }
         return baseCount(countArgs)
       }

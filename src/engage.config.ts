@@ -26,6 +26,10 @@ import { countABTests, createABTest, deleteABTest, findABTestsPaginated, updateA
 import { countLessons, createLesson, deleteLesson, findLessonsPaginated, updateLesson } from '@/cms/db/collections/lessons'
 import { countEnrolments, createEnrolment, deleteEnrolment, findEnrolmentsPaginated, updateEnrolment } from '@/cms/db/collections/enrolments'
 import { countLessonProgress, createLessonProgress, deleteLessonProgress, findLessonProgressPaginated, updateLessonProgress } from '@/cms/db/collections/lessonProgress'
+import { countEvents, createEventLiveRow, deleteEvent, findEventsPaginated, updateEventLiveRow } from '@/cms/db/collections/events'
+import { countPages, createPageLiveRow, deletePage, findPagesPaginated, updatePageLiveRow } from '@/cms/db/collections/pages'
+import { countPosts, createPostLiveRow, deletePost, findPostsPaginated, updatePostLiveRow } from '@/cms/db/collections/posts'
+import { countCourses, createCourseLiveRow, deleteCourse, findCoursesPaginated, updateCourseLiveRow } from '@/cms/db/collections/courses'
 //import { payloadTotp } from 'payload-totp'
 import {
   isAdmin,
@@ -262,6 +266,51 @@ const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
  * `updateMany`/`deleteMany` usage) - the same plain shape Media/PageTemplates/
  * etc. already proved, just with `user`/`course`/`lesson` relationship columns
  * instead of the previous batch's uploads/blocks/arrays.
+ *
+ * Events, Pages, Posts and Courses are wired in last - the final four,
+ * completing all 21 collections. All four declare `versions: { drafts: true }`,
+ * which none of the collections above do, and that meant a real landmine had
+ * to be designed around rather than mechanically repeated: Payload's own
+ * create()/publish-update() operations call `payload.db.create`/
+ * `payload.db.updateOne` (the methods this dispatch already intercepts) and
+ * THEN, separately and unconditionally whenever `collectionConfig.versions`
+ * is set, call `saveVersion()` -> `payload.db.createVersion` - an adapter
+ * method this dispatch does NOT intercept, so it falls through to the real
+ * base adapter and writes the real `_eg_x_v` table itself (confirmed by
+ * reading payload/dist/collections/operations/create.js:194-221 directly).
+ * Each of these four collections' own ops file already has a
+ * createDraftOps-wrapped `create`/`updateByID` (createEvent/updateEvent etc)
+ * that ALSO writes its own version row internally (see generic.ts's
+ * createDraftOps doc comment) - wiring adapter.create/updateOne to those
+ * instead of a collection's plain baseOps would double-write a version row
+ * on every real create/publish-update. So adapter.create/updateOne below use
+ * each collection's new plain LiveRow export (createEventLiveRow/
+ * updateEventLiveRow etc, off baseOps directly) instead, leaving Payload's
+ * own separate saveVersion call as the sole writer of version rows.
+ * adapter.find/findOne use each collection's new plain findXPaginated
+ * (also off baseOps) for the same reason in reverse: Payload's real find/
+ * findOne never branch on `draft` themselves - they always read the live row
+ * via `payload.db.findOne`, and `draft: true` is handled entirely by a
+ * separate, unintercepted `payload.db.findVersions` call (confirmed by
+ * reading findByID.js directly) - so routing them through the
+ * createDraftOps-wrapped `findEventByID` etc (which DOES branch on
+ * `opts.draft`) would be both unnecessary and wrong. adapter.count and
+ * adapter.deleteOne, by contrast, reuse each collection's existing
+ * (createDraftOps-wrapped) `countEvents`/`deleteEvent` etc unchanged -
+ * createDraftOps only overrides `create`/`updateByID`/`findByID` (see its
+ * own doc comment), so those two already equal the plain baseOps methods
+ * with no wrapping to bypass. `createVersion`/`findVersions`/
+ * `deleteVersions`/`queryDrafts`/`updateVersion` are deliberately left
+ * untouched by this dispatch entirely (no branch added for any of the four
+ * collections) and keep falling through to the real base adapter, which
+ * already operates correctly against the same shared `_eg_x_v` tables.
+ * None of the four declares a `defaultSort` at its own top level (Courses'
+ * `lessons` join field has one of its own, already handled by Lessons' own
+ * cutover above, not by anything here), and Events'/Courses' `rsvps`/
+ * `lessons` join fields resolve inline against the real target tables
+ * inside baseOps.findPaginated itself regardless of which ops object is
+ * used - the same join-safety reasoning already confirmed above for
+ * Lessons/Courses applies unchanged.
  */
 const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
   const base = sqliteD1Adapter(options)
@@ -381,6 +430,22 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         if (findArgs.collection === 'lesson-progress') {
           return findLessonProgressPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
         }
+        // None of these four declares a `defaultSort` at its own top level
+        // (see each config) - findXPaginated here is the plain baseOps
+        // export, not the createDraftOps-wrapped one, per this dispatch's
+        // own doc comment above.
+        if (findArgs.collection === 'events') {
+          return findEventsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'pages') {
+          return findPagesPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'posts') {
+          return findPostsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'courses') {
+          return findCoursesPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
         return baseFind(findArgs)
       }) as typeof baseFind
 
@@ -464,6 +529,26 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           const { docs } = await findLessonProgressPaginated({ where: findOneArgs.where, limit: 1 })
           return docs[0] ?? null
         }
+        // findXPaginated here is the plain baseOps export, not the
+        // createDraftOps-wrapped findXByID - see this dispatch's own doc
+        // comment above for why (Payload's real findOne never branches on
+        // draft itself).
+        if (findOneArgs.collection === 'events') {
+          const { docs } = await findEventsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'pages') {
+          const { docs } = await findPagesPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'posts') {
+          const { docs } = await findPostsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'courses') {
+          const { docs } = await findCoursesPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
         return baseFindOne(findOneArgs)
       }) as typeof baseFindOne
 
@@ -526,6 +611,22 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (createArgs.collection === 'lesson-progress') {
           return createLessonProgress(createArgs.data as Parameters<typeof createLessonProgress>[0]) as ReturnType<typeof baseCreate>
+        }
+        // createXLiveRow here is the plain baseOps.create, deliberately NOT
+        // the createDraftOps-wrapped createEvent/createPage/etc - see this
+        // dispatch's own doc comment above for the double-write landmine
+        // this avoids.
+        if (createArgs.collection === 'events') {
+          return createEventLiveRow(createArgs.data as Parameters<typeof createEventLiveRow>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'pages') {
+          return createPageLiveRow(createArgs.data as Parameters<typeof createPageLiveRow>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'posts') {
+          return createPostLiveRow(createArgs.data as Parameters<typeof createPostLiveRow>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'courses') {
+          return createCourseLiveRow(createArgs.data as Parameters<typeof createCourseLiveRow>[0]) as ReturnType<typeof baseCreate>
         }
         return baseCreate(createArgs)
       }
@@ -609,6 +710,26 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (updateOneArgs.collection === 'lesson-progress' && typeof updateOneArgs.id !== 'undefined') {
           const updated = await updateLessonProgress(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        // updateXLiveRow here is the plain baseOps.updateByID, deliberately
+        // NOT the createDraftOps-wrapped updateEvent/updatePage/etc - same
+        // double-write landmine as adapter.create above, see this
+        // dispatch's own doc comment.
+        if (updateOneArgs.collection === 'events' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateEventLiveRow(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'pages' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updatePageLiveRow(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'posts' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updatePostLiveRow(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'courses' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateCourseLiveRow(Number(updateOneArgs.id), updateOneArgs.data)
           return updated as Awaited<ReturnType<typeof baseUpdateOne>>
         }
         return baseUpdateOne(updateOneArgs)
@@ -739,6 +860,39 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           await deleteLessonProgress(doc.id)
           return doc as Awaited<ReturnType<typeof baseDeleteOne>>
         }
+        // deleteEvent/deletePage/deletePost/deleteCourse (createDraftOps-
+        // wrapped) already equal the plain baseOps.deleteByID - createDraftOps
+        // doesn't override delete (see this dispatch's own doc comment) - so
+        // these are safe to reuse unchanged, resolved via each collection's
+        // new plain findXPaginated the same way every branch above does.
+        if (deleteOneArgs.collection === 'events') {
+          const { docs } = await findEventsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteEvent(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'pages') {
+          const { docs } = await findPagesPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deletePage(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'posts') {
+          const { docs } = await findPostsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deletePost(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'courses') {
+          const { docs } = await findCoursesPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteCourse(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
         return baseDeleteOne(deleteOneArgs)
       }
 
@@ -793,6 +947,21 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (countArgs.collection === 'lesson-progress') {
           return countLessonProgress({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        // countEvents/countPages/countPosts/countCourses (createDraftOps-
+        // wrapped) already equal the plain baseOps.count - createDraftOps
+        // doesn't override count (see this dispatch's own doc comment).
+        if (countArgs.collection === 'events') {
+          return countEvents({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'pages') {
+          return countPages({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'posts') {
+          return countPosts({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'courses') {
+          return countCourses({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
         }
         return baseCount(countArgs)
       }

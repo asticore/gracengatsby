@@ -22,7 +22,7 @@ import { getDb } from '@/cms/db/connect'
  * mechanism) and a required single-target relationship column (`course`,
  * EventRSVPs'/Courses' own `event`/`product`/`coverImage` mechanism).
  */
-describe('cms/db - lessons (proof of concept, not wired in)', () => {
+describe('cms/db - lessons (wired into engageD1Adapter)', () => {
   let engine: Engine
   let courseId: number
   let faq1Id: number
@@ -177,5 +177,30 @@ describe('cms/db - lessons (proof of concept, not wired in)', () => {
     expect((resourceRows.results as { n: number }[])[0].n).toBe(0)
     expect((blockRows.results as { n: number }[])[0].n).toBe(0)
     expect((relsRows.results as { n: number }[])[0].n).toBe(0)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for lessons go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'lessons', data: { title: `${marker}-a`, course: courseId, order: 10 } })
+    const b = await engine.create({ collection: 'lessons', data: { title: `${marker}-b`, course: courseId, order: 11 } })
+    createdLessonIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findLessonsPaginated, falling back to
+    // Lessons.defaultSort ('order') exactly like the real base adapter would.
+    const listed = await engine.find({ collection: 'lessons', where: { title: { like: marker } }, sort: 'title', limit: 10 })
+    expect(listed.docs.map((d) => d.title)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateLesson.
+    const updated = await engine.update({ collection: 'lessons', id: a.id, data: { videoUrl: 'https://example.com/cutover.mp4' } })
+    expect(updated.videoUrl).toBe('https://example.com/cutover.mp4')
+    const reread = await findLessonByID(a.id as number)
+    expect(reread?.videoUrl).toBe('https://example.com/cutover.mp4')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteLesson.
+    const deletedDoc = await engine.delete({ collection: 'lessons', id: b.id })
+    expect(deletedDoc.title).toBe(`${marker}-b`)
+    expect(await findLessonByID(b.id as number)).toBeNull()
+    createdLessonIds.splice(createdLessonIds.indexOf(b.id as number), 1)
   })
 })

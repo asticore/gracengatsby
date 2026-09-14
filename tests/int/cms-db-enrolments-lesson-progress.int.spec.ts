@@ -34,7 +34,7 @@ import {
  * valid FK target, the same way earlier suites insert a bare `eg_media` row
  * as a FK target without modeling Media's own collection.
  */
-describe('cms/db - enrolments & lesson-progress (proof of concept, not wired in)', () => {
+describe('cms/db - enrolments & lesson-progress (wired into engageD1Adapter)', () => {
   let engine: Engine
   let userId: number
   let courseId: number
@@ -113,5 +113,49 @@ describe('cms/db - enrolments & lesson-progress (proof of concept, not wired in)
 
     const viaPayload = await engine.findByID({ collection: 'lesson-progress', id: ours.id })
     expect(viaPayload.completed).toBe(true)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for enrolments go through our own adapter', async () => {
+    const a = await engine.create({ collection: 'enrolments', data: { user: userId, course: courseId, status: 'active', source: 'manual' } })
+    createdEnrolmentIds.push(a.id as number)
+
+    // engine.find -> adapter.find -> findEnrolmentsPaginated.
+    const listed = await engine.find({ collection: 'enrolments', where: { id: { equals: a.id } }, limit: 10 })
+    expect(listed.docs.map((d) => d.id)).toEqual([a.id])
+    expect(listed.totalDocs).toBe(1)
+
+    // engine.update (by id) -> adapter.updateOne -> updateEnrolment.
+    const updated = await engine.update({ collection: 'enrolments', id: a.id, data: { status: 'cancelled' } })
+    expect(updated.status).toBe('cancelled')
+    const reread = await findEnrolmentByID(a.id as number)
+    expect(reread?.status).toBe('cancelled')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteEnrolment.
+    const deletedDoc = await engine.delete({ collection: 'enrolments', id: a.id })
+    expect(deletedDoc.status).toBe('cancelled')
+    expect(await findEnrolmentByID(a.id as number)).toBeNull()
+    createdEnrolmentIds.splice(createdEnrolmentIds.indexOf(a.id as number), 1)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for lesson-progress go through our own adapter', async () => {
+    const a = await engine.create({ collection: 'lesson-progress', data: { user: userId, lesson: lessonId, course: courseId, completed: false } })
+    createdProgressIds.push(a.id as number)
+
+    // engine.find -> adapter.find -> findLessonProgressPaginated.
+    const listed = await engine.find({ collection: 'lesson-progress', where: { id: { equals: a.id } }, limit: 10 })
+    expect(listed.docs.map((d) => d.id)).toEqual([a.id])
+    expect(listed.totalDocs).toBe(1)
+
+    // engine.update (by id) -> adapter.updateOne -> updateLessonProgress.
+    const updated = await engine.update({ collection: 'lesson-progress', id: a.id, data: { completed: true } })
+    expect(updated.completed).toBe(true)
+    const reread = await findLessonProgressByID(a.id as number)
+    expect(reread?.completed).toBe(true)
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteLessonProgress.
+    const deletedDoc = await engine.delete({ collection: 'lesson-progress', id: a.id })
+    expect(deletedDoc.completed).toBe(true)
+    expect(await findLessonProgressByID(a.id as number)).toBeNull()
+    createdProgressIds.splice(createdProgressIds.indexOf(a.id as number), 1)
   })
 })

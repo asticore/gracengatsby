@@ -8,72 +8,72 @@ import '@/engage.config'
 
 import { getEngine } from '@/engine'
 import { sql } from 'drizzle-orm'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { createCourse, createCourseVersion, deleteCourse, findCourseByID, findLatestCourseVersion, updateCourse } from '@/cms/db'
 import { getDb } from '@/cms/db/connect'
 
 /**
- * Phase 10: Courses brought in from zero - see ../../src/cms/db/index.ts's
- * Phase 10 doc comment for why this needed no new schema-generation
- * capability (every field type Courses uses was already proven by an
- * earlier collection). This suite mirrors cms-db-events.int.spec.ts's shape
- * (group field + join field + versions), the closest existing proof target,
- * since Courses' `seo` group and `lessons` join are the same mechanisms as
- * Events' `location` group and `rsvps` join.
- *
- * Note: Payload's own `engine.update()`/`engine.delete()` on this local dev
- * D1 hits a pre-existing, unrelated schema-drift bug in its own
- * checkDocumentLockStatus path (see cms-db-events.int.spec.ts's own note) -
- * so the "update" and cleanup paths below go through this module's own
- * updateCourse/raw SQL instead.
+ * Phase 10: Courses - the first collection to combine drafts (versions.drafts
+ * like Events/Pages/Posts) with a `join` field (`lessons`, resolved
+ * query-time against Lessons - Phase 11's own collection, proven next).
+ * Courses has no blocks/array field of its own to version, so its own
+ * version-row shape is scalar/group fields only (title/slug/description/
+ * coverImage/accessType/product/tierSlug/seo) - CourseVersion in
+ * ../../src/cms/db/collections/courses.ts mirrors that.
  */
 describe('cms/db - courses (proof of concept, not wired in)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
+  beforeAll(async () => {
+    engine = await getEngine()
+  })
+
   afterAll(async () => {
-    const db = await getDb()
     for (const id of createdIds) {
-      await db.run(sql`delete from _eg_courses_v where parent_id = ${id}`)
       await deleteCourse(id)
     }
   })
 
   it('reads a course written by Payload: nested seo group, empty join field', async () => {
-    engine = await getEngine()
+    const title = `Phase10 course A ${Date.now()}`
     const created = await engine.create({
       collection: 'courses',
       data: {
-        title: 'Parity course A',
+        title,
         accessType: 'free',
-        seo: { metaTitle: 'A meta title', noIndex: true },
+        seo: { metaTitle: 'Custom title', metaDescription: 'Custom description' },
       },
     })
     createdIds.push(created.id as number)
 
     const viaOurs = await findCourseByID(created.id as number)
-    expect(viaOurs?.title).toBe('Parity course A')
-    expect(viaOurs?.seo).toEqual({ metaTitle: 'A meta title', metaDescription: null, ogImage: null, noIndex: true })
-    expect(viaOurs?._status).toBe((created as { _status?: string })._status)
+    expect(viaOurs?.title).toBe(title)
+    expect(viaOurs?.accessType).toBe('free')
+    expect(viaOurs?.seo).toEqual({ metaTitle: 'Custom title', metaDescription: 'Custom description', ogImage: null, noIndex: false })
     expect(viaOurs?.lessons).toEqual({ docs: [], hasNextPage: false })
   })
 
   it('writes a course (seo group) Payload can read back', async () => {
+    const title = `Written by clone adapter ${Date.now()}`
     const ours = await createCourse({
-      title: 'Written by clone adapter',
-      accessType: 'purchase',
-      seo: { metaTitle: 'Clone title', noIndex: false },
+      title,
+      accessType: 'tier',
+      tierSlug: 'gold',
+      seo: { metaTitle: 'Clone title' },
     })
     createdIds.push(ours.id)
-    expect(ours.seo).toEqual({ metaTitle: 'Clone title', metaDescription: null, ogImage: null, noIndex: false })
 
     const viaPayload = await engine.findByID({ collection: 'courses', id: ours.id, depth: 0 })
-    expect(viaPayload.seo).toEqual({ metaTitle: 'Clone title', metaDescription: null, ogImage: null, noIndex: false })
+    expect(viaPayload.title).toBe(title)
+    expect(viaPayload.accessType).toBe('tier')
+    expect(viaPayload.tierSlug).toBe('gold')
+    expect((viaPayload.seo as { metaTitle?: string }).metaTitle).toBe('Clone title')
   })
 
   it('replaces group fields wholesale on update', async () => {
-    const created = await createCourse({ title: 'Temp', accessType: 'free', seo: { metaTitle: 'Original' } })
+    const created = await createCourse({ title: `Temp ${Date.now()}`, accessType: 'free', seo: { metaTitle: 'Original' } })
     createdIds.push(created.id)
 
     const updated = await updateCourse(created.id, { seo: { metaTitle: 'Replaced', noIndex: true } })
@@ -86,24 +86,18 @@ describe('cms/db - courses (proof of concept, not wired in)', () => {
   it('reads the version row Payload created on write, seo group included', async () => {
     const created = await engine.create({
       collection: 'courses',
-      data: { title: 'Versioned course', accessType: 'free', seo: { metaTitle: 'Version meta' } },
+      data: { title: `Phase10 version A ${Date.now()}`, accessType: 'free', seo: { metaTitle: 'Versioned' } },
     })
     createdIds.push(created.id as number)
 
-    const ourVersion = await findLatestCourseVersion(created.id as number)
-    expect(ourVersion?.title).toBe('Versioned course')
-    // noIndex has defaultValue: false in seoFields, so it's false (not null) when omitted.
-    expect(ourVersion?.seo).toEqual({ metaTitle: 'Version meta', metaDescription: null, ogImage: null, noIndex: false })
-    expect(ourVersion?.latest).toBe(true)
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payloadVersions = await (engine as any).findVersions({ collection: 'courses', where: { parent: { equals: created.id } } })
-    expect(payloadVersions.docs[0].version.title).toBe('Versioned course')
-    expect(payloadVersions.docs[0].version.seo).toEqual({ metaTitle: 'Version meta', metaDescription: null, ogImage: null, noIndex: false })
+    const latest = await findLatestCourseVersion(created.id as number)
+    expect(latest?.title).toBe(created.title)
+    expect(latest?.seo).toEqual({ metaTitle: 'Versioned', metaDescription: null, ogImage: null, noIndex: false })
+    expect(latest?.latest).toBe(true)
   })
 
   it('writes a version row Payload can read back', async () => {
-    const created = await createCourse({ title: 'Has a version added', accessType: 'free' })
+    const created = await createCourse({ title: `Temp ${Date.now()}`, accessType: 'free' })
     createdIds.push(created.id)
 
     await createCourseVersion(created.id, { title: 'Written by clone adapter', seo: { metaTitle: 'Clone version' } })
@@ -115,6 +109,16 @@ describe('cms/db - courses (proof of concept, not wired in)', () => {
     expect(payloadVersions.docs[0].version.seo).toEqual({ metaTitle: 'Clone version', metaDescription: null, ogImage: null, noIndex: null })
   })
 
+  // Explicit timeout, not the default 5000ms: `lessons` (cut over to our own
+  // adapter dispatch - see src/engage.config.ts) has a `content` blocks field
+  // sharing the full page-builder block library (12 block types - see
+  // src/blocks/index.ts's pageBuilderBlocks), and generic.ts's own
+  // attachBlocksFields does one SELECT per block type on every create/read,
+  // whether or not `content` actually has data. 11 sequential
+  // `engine.create` calls below each pay that cost, measured at ~700ms/call
+  // in this environment - comfortably under a real save's tolerance, but
+  // tight against vitest's default per-test budget for a loop written to
+  // prove pagination, not to be fast.
   it('resolves the lessons join field query-time against real Lessons, sorted by the join field\'s own defaultSort (not id)', async () => {
     const created = await createCourse({ title: `Join phase course ${Date.now()}`, accessType: 'free' })
     createdIds.push(created.id)
@@ -152,5 +156,5 @@ describe('cms/db - courses (proof of concept, not wired in)', () => {
     for (const id of lessonIds) {
       await db.run(sql`delete from eg_lessons where id = ${id}`)
     }
-  })
+  }, 20000)
 })

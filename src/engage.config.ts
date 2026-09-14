@@ -23,6 +23,9 @@ import { countForms, createForm, deleteForm, findFormsPaginated, updateForm } fr
 import { countFormSubmissions, createFormSubmission, deleteFormSubmission, findFormSubmissionsPaginated, updateFormSubmission } from '@/cms/db/collections/formSubmissions'
 import { countMemberships, createMembership, deleteMembership, findMembershipsPaginated, updateMembership } from '@/cms/db/collections/memberships'
 import { countABTests, createABTest, deleteABTest, findABTestsPaginated, updateABTest } from '@/cms/db/collections/abTests'
+import { countLessons, createLesson, deleteLesson, findLessonsPaginated, updateLesson } from '@/cms/db/collections/lessons'
+import { countEnrolments, createEnrolment, deleteEnrolment, findEnrolmentsPaginated, updateEnrolment } from '@/cms/db/collections/enrolments'
+import { countLessonProgress, createLessonProgress, deleteLessonProgress, findLessonProgressPaginated, updateLessonProgress } from '@/cms/db/collections/lessonProgress'
 //import { payloadTotp } from 'payload-totp'
 import {
   isAdmin,
@@ -229,13 +232,36 @@ const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
  * dispatch special-cases - the r2Storage plugin that actually uploads files
  * runs its own hooks above the db adapter entirely (see the `plugins` array
  * below), so `media`'s branches here are as plain as every other collection's.
- * Lessons/Enrolments/LessonProgress were deliberately left out of this batch:
- * Lessons is the target of Courses' own `join` field (`Courses.lessons`,
- * itself carrying a `defaultSort: 'order'`), and Courses has drafts enabled
- * and is not yet cut over - cutting Lessons over alone first would leave that
- * join reading through two different adapters depending on which collection
- * initiated the query, so all three (plus Courses) are deferred to a single
- * later batch instead of being split.
+ * `lessons`, `enrolments` and `lesson-progress` are wired in next. Courses
+ * itself stays out: it has `versions: { drafts: true }` (same as Events/Pages/
+ * Posts, none of which are cut over yet), and this dispatch has no
+ * drafts-aware branch for any collection yet - that is its own future batch,
+ * not a mechanical repeat of this one.
+ *
+ * Cutting Lessons over first, before Courses, was the thing an earlier version
+ * of this comment worried about: Courses' own `lessons` field is a `join`
+ * (`on: 'course'`, `defaultSort: 'order'`), and the concern was that join
+ * reading through a different adapter than a direct `find` on `lessons`
+ * would leave the two inconsistent. Reading `@payloadcms/drizzle`'s own
+ * find.js/find/findMany.js/find/traverseFields.js directly settles it: a
+ * `join` field is never resolved by a recursive call back into
+ * `payload.db.find` for the target collection - it is built as a SQL join
+ * against the target's own table, inline, inside the SAME `findMany` call
+ * that is already resolving the owning document (Courses, here). So Courses'
+ * `lessons` join reads directly off the real `eg_lessons` table via the real
+ * base adapter's own SQL, exactly as it always has, regardless of whether a
+ * direct `engine.find({ collection: 'lessons' })` is now routed through
+ * `findLessonsPaginated` below - there is only one physical read path for the
+ * join, and cutting Lessons' own direct dispatch over does not touch it.
+ * Lessons' `defaultSort: 'order'` still has to be resolved the same way
+ * Faqs' is (`findArgs.sort ?? Lessons.defaultSort`) so a direct find's
+ * default ordering does not silently change.
+ *
+ * Enrolments and LessonProgress declare no `versions`, `defaultSort` or `join`
+ * pointing at them, and neither is bulk-selected anywhere in the admin (no
+ * `updateMany`/`deleteMany` usage) - the same plain shape Media/PageTemplates/
+ * etc. already proved, just with `user`/`course`/`lesson` relationship columns
+ * instead of the previous batch's uploads/blocks/arrays.
  */
 const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
   const base = sqliteD1Adapter(options)
@@ -335,6 +361,26 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         if (findArgs.collection === 'ab-tests') {
           return findABTestsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
         }
+        // Lessons' own `defaultSort: 'order'` (src/features/courses/collections/
+        // Lessons.ts) has to be resolved here the same way Faqs' is above - see
+        // this dispatch's own doc comment for why cutting Lessons over does not
+        // affect how Courses' `lessons` join is read.
+        if (findArgs.collection === 'lessons') {
+          return findLessonsPaginated({
+            where: findArgs.where,
+            sort: findArgs.sort ?? Lessons.defaultSort,
+            limit: findArgs.limit,
+            page: findArgs.page,
+            pagination: findArgs.pagination,
+          })
+        }
+        // Neither declares a `defaultSort` (see each config).
+        if (findArgs.collection === 'enrolments') {
+          return findEnrolmentsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'lesson-progress') {
+          return findLessonProgressPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
         return baseFind(findArgs)
       }) as typeof baseFind
 
@@ -406,6 +452,18 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           const { docs } = await findABTestsPaginated({ where: findOneArgs.where, limit: 1 })
           return docs[0] ?? null
         }
+        if (findOneArgs.collection === 'lessons') {
+          const { docs } = await findLessonsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'enrolments') {
+          const { docs } = await findEnrolmentsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'lesson-progress') {
+          const { docs } = await findLessonProgressPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
         return baseFindOne(findOneArgs)
       }) as typeof baseFindOne
 
@@ -459,6 +517,15 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (createArgs.collection === 'ab-tests') {
           return createABTest(createArgs.data as Parameters<typeof createABTest>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'lessons') {
+          return createLesson(createArgs.data as Parameters<typeof createLesson>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'enrolments') {
+          return createEnrolment(createArgs.data as Parameters<typeof createEnrolment>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'lesson-progress') {
+          return createLessonProgress(createArgs.data as Parameters<typeof createLessonProgress>[0]) as ReturnType<typeof baseCreate>
         }
         return baseCreate(createArgs)
       }
@@ -530,6 +597,18 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (updateOneArgs.collection === 'ab-tests' && typeof updateOneArgs.id !== 'undefined') {
           const updated = await updateABTest(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'lessons' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateLesson(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'enrolments' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateEnrolment(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'lesson-progress' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateLessonProgress(Number(updateOneArgs.id), updateOneArgs.data)
           return updated as Awaited<ReturnType<typeof baseUpdateOne>>
         }
         return baseUpdateOne(updateOneArgs)
@@ -639,6 +718,27 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           await deleteABTest(doc.id)
           return doc as Awaited<ReturnType<typeof baseDeleteOne>>
         }
+        if (deleteOneArgs.collection === 'lessons') {
+          const { docs } = await findLessonsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteLesson(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'enrolments') {
+          const { docs } = await findEnrolmentsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteEnrolment(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'lesson-progress') {
+          const { docs } = await findLessonProgressPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteLessonProgress(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
         return baseDeleteOne(deleteOneArgs)
       }
 
@@ -684,6 +784,15 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (countArgs.collection === 'ab-tests') {
           return countABTests({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'lessons') {
+          return countLessons({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'enrolments') {
+          return countEnrolments({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'lesson-progress') {
+          return countLessonProgress({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
         }
         return baseCount(countArgs)
       }

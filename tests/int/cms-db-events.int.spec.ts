@@ -37,7 +37,7 @@ import { getDb } from '@/cms/db/connect'
  * "update" and "cleanup" paths below go through this module's own
  * updateEvent/raw SQL instead, same workaround as that suite.
  */
-describe('cms/db - events (proof of concept, not wired in)', () => {
+describe('cms/db - events (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -156,5 +156,34 @@ describe('cms/db - events (proof of concept, not wired in)', () => {
     for (const id of rsvpIds) {
       await db.run(sql`delete from eg_event_rsvps where id = ${id}`)
     }
+  })
+
+  it('cuts over cleanly: engine.find/create/update/delete for events go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'events', data: { title: `${marker}-a`, startDate: new Date().toISOString(), eventType: 'free' } })
+    createdIds.push(a.id as number)
+
+    // engine.find -> adapter.find -> findEventsPaginated (plain baseOps, not createDraftOps-wrapped).
+    const listed = await engine.find({ collection: 'events', where: { title: { like: marker } }, limit: 10 })
+    expect(listed.docs.map((d) => d.id)).toEqual([a.id])
+    expect(listed.totalDocs).toBe(1)
+
+    // engine.update (by id, non-draft) -> adapter.updateOne -> updateEventLiveRow, publishing straight to the live row.
+    const updated = await engine.update({ collection: 'events', id: a.id, data: { title: `${marker}-updated`, _status: 'published' } })
+    expect(updated.title).toBe(`${marker}-updated`)
+    const reread = await findEventByID(a.id as number)
+    expect(reread?.title).toBe(`${marker}-updated`)
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id via findEventsPaginated) -> deleteEvent.
+    const deletedDoc = await engine.delete({ collection: 'events', id: a.id })
+    expect(deletedDoc.title).toBe(`${marker}-updated`)
+    expect(await findEventByID(a.id as number)).toBeNull()
+
+    // deleteEvent doesn't touch _eg_events_v (same as every other suite's
+    // afterAll here) - clean up this id's version row(s) directly since it's
+    // being removed from createdIds below.
+    const db = await getDb()
+    await db.run(sql`delete from _eg_events_v where parent_id = ${a.id}`)
+    createdIds.splice(createdIds.indexOf(a.id as number), 1)
   })
 })

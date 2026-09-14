@@ -48,7 +48,7 @@ import { getDb } from '@/cms/db/connect'
  * collection - so "update" and "cleanup" below use this module's own
  * updatePage/raw SQL instead.
  */
-describe('cms/db - pages (proof of concept, not wired in)', () => {
+describe('cms/db - pages (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -184,5 +184,33 @@ describe('cms/db - pages (proof of concept, not wired in)', () => {
     expect(latest.blocks?.length).toBe(2)
     const payloadFaqBlock = (latest.blocks as { blockType: string; faqs?: number[] }[]).find((b) => b.blockType === 'faq')
     expect(payloadFaqBlock?.faqs).toEqual([faq.id])
+  })
+
+  it('cuts over cleanly: engine.find/create/update/delete for pages go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'pages', data: { title: `${marker}-a` } })
+    createdIds.push(a.id as number)
+
+    // engine.find -> adapter.find -> findPagesPaginated (plain baseOps, not createDraftOps-wrapped).
+    const listed = await engine.find({ collection: 'pages', where: { title: { like: marker } }, limit: 10 })
+    expect(listed.docs.map((d) => d.id)).toEqual([a.id])
+    expect(listed.totalDocs).toBe(1)
+
+    // engine.update (by id, non-draft) -> adapter.updateOne -> updatePageLiveRow, publishing straight to the live row.
+    const updated = await engine.update({ collection: 'pages', id: a.id, data: { title: `${marker}-updated`, _status: 'published' } })
+    expect(updated.title).toBe(`${marker}-updated`)
+    const reread = await findPageByID(a.id as number)
+    expect(reread?.title).toBe(`${marker}-updated`)
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id via findPagesPaginated) -> deletePage.
+    const deletedDoc = await engine.delete({ collection: 'pages', id: a.id })
+    expect(deletedDoc.title).toBe(`${marker}-updated`)
+    expect(await findPageByID(a.id as number)).toBeNull()
+
+    // deletePage doesn't touch _eg_pages_v - clean up this id's version
+    // row(s) directly since it's being removed from createdIds below.
+    const db = await getDb()
+    await db.run(sql`delete from _eg_pages_v where parent_id = ${a.id}`)
+    createdIds.splice(createdIds.indexOf(a.id as number), 1)
   })
 })

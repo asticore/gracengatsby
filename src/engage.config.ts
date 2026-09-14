@@ -11,6 +11,11 @@ import { shopPlugin } from '@/engine/commerce'
 import { stripeAdapter } from '@/engine/commerce/stripe'
 import { countFaqs, createFaq, deleteFaq, findFaqByID, findFaqsPaginated, updateFaq } from '@/cms/db/collections/faqs'
 import { countUsers, createUserAuthRow, deleteUser, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db/collections/users'
+import { countEventRSVPs, createEventRSVP, deleteEventRSVP, findEventRSVPsPaginated, updateEventRSVP } from '@/cms/db/collections/eventRSVPs'
+import { countMembershipTiers, createMembershipTier, deleteMembershipTier, findMembershipTiersPaginated, updateMembershipTier } from '@/cms/db/collections/membershipTiers'
+import { countAuditLogEntries, createAuditLogEntry, deleteAuditLogEntry, findAuditLogEntriesPaginated, updateAuditLogEntry } from '@/cms/db/collections/auditLog'
+import { countBackups, createBackup, deleteBackup, findBackupsPaginated, updateBackup } from '@/cms/db/collections/backups'
+import { countTranslations, createTranslation, deleteTranslation, findTranslationsPaginated, updateTranslation } from '@/cms/db/collections/translations'
 //import { payloadTotp } from 'payload-totp'
 import {
   isAdmin,
@@ -194,6 +199,19 @@ const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
  * updateUserAuthRow from ../cms/db/collections/users.ts), never the narrow
  * UserDoc-typed ones, since Payload's own auth code needs hash/salt/
  * sessions/lockout columns round-tripped untouched on every call.
+ *
+ * `event-rsvps`, `membership-tiers`, `audit-log`, `backups` and `translations`
+ * are wired in next, all in one pass - none of the five needed anything new:
+ * each already had a proven write-both-ways parity suite from an earlier
+ * schema-generation phase (../cms/db/index.ts's Phase 2/3/15/16), none
+ * declares `versions`/drafts, `defaultSort`, or a `join` field pointing at
+ * it, and the only gap was the paginated find shape itself (each collection's
+ * own ops file gained a `findXPaginated` re-export of the same `ops` object,
+ * exactly the way Faqs'/Users' own file already did). AuditLog's and Backups'
+ * own `access.create`/`update` are `() => false` in their Payload config -
+ * nobody writes through the normal HTTP/admin API - but that is an
+ * access-control fact, not a schema one, and does not change anything this
+ * adapter dispatch does.
  */
 const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
   const base = sqliteD1Adapter(options)
@@ -253,6 +271,24 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
             pagination: findArgs.pagination,
           })
         }
+        // None of these five declare a `defaultSort` (see each config), so
+        // there is nothing to fall back to beyond `findArgs.sort` as-is -
+        // same as Users above.
+        if (findArgs.collection === 'event-rsvps') {
+          return findEventRSVPsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'membership-tiers') {
+          return findMembershipTiersPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'audit-log') {
+          return findAuditLogEntriesPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'backups') {
+          return findBackupsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'translations') {
+          return findTranslationsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
         return baseFind(findArgs)
       }) as typeof baseFind
 
@@ -276,6 +312,26 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           const { docs } = await findUserAuthRowsPaginated({ where: findOneArgs.where, limit: 1 })
           return docs[0] ?? null
         }
+        if (findOneArgs.collection === 'event-rsvps') {
+          const { docs } = await findEventRSVPsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'membership-tiers') {
+          const { docs } = await findMembershipTiersPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'audit-log') {
+          const { docs } = await findAuditLogEntriesPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'backups') {
+          const { docs } = await findBackupsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'translations') {
+          const { docs } = await findTranslationsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
         return baseFindOne(findOneArgs)
       }) as typeof baseFindOne
 
@@ -293,6 +349,21 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         // callsite honest about what it actually needs to round-trip).
         if (createArgs.collection === 'users') {
           return createUserAuthRow(createArgs.data as Record<string, unknown>) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'event-rsvps') {
+          return createEventRSVP(createArgs.data as Parameters<typeof createEventRSVP>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'membership-tiers') {
+          return createMembershipTier(createArgs.data as Parameters<typeof createMembershipTier>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'audit-log') {
+          return createAuditLogEntry(createArgs.data as Parameters<typeof createAuditLogEntry>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'backups') {
+          return createBackup(createArgs.data as Parameters<typeof createBackup>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'translations') {
+          return createTranslation(createArgs.data as Parameters<typeof createTranslation>[0]) as ReturnType<typeof baseCreate>
         }
         return baseCreate(createArgs)
       }
@@ -318,6 +389,26 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           const updated = await updateUserAuthRow(Number(updateOneArgs.id), updateOneArgs.data as Record<string, unknown>)
           return updated as Awaited<ReturnType<typeof baseUpdateOne>>
         }
+        if (updateOneArgs.collection === 'event-rsvps' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateEventRSVP(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'membership-tiers' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateMembershipTier(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'audit-log' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateAuditLogEntry(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'backups' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateBackup(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'translations' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateTranslation(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
         return baseUpdateOne(updateOneArgs)
       }
 
@@ -341,6 +432,41 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           await deleteUser(doc.id)
           return doc as Awaited<ReturnType<typeof baseDeleteOne>>
         }
+        if (deleteOneArgs.collection === 'event-rsvps') {
+          const { docs } = await findEventRSVPsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteEventRSVP(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'membership-tiers') {
+          const { docs } = await findMembershipTiersPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteMembershipTier(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'audit-log') {
+          const { docs } = await findAuditLogEntriesPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteAuditLogEntry(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'backups') {
+          const { docs } = await findBackupsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteBackup(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'translations') {
+          const { docs } = await findTranslationsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteTranslation(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
         return baseDeleteOne(deleteOneArgs)
       }
 
@@ -350,6 +476,21 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (countArgs.collection === 'users') {
           return countUsers({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'event-rsvps') {
+          return countEventRSVPs({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'membership-tiers') {
+          return countMembershipTiers({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'audit-log') {
+          return countAuditLogEntries({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'backups') {
+          return countBackups({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'translations') {
+          return countTranslations({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
         }
         return baseCount(countArgs)
       }

@@ -24,7 +24,7 @@ import { createMembership, deleteMembership, findMembershipByID, updateMembershi
  * exercise translations/form-submissions/ab-tests against the same local D1
  * database concurrently.
  */
-describe('cms/db - memberships (proof of concept, not wired in)', () => {
+describe('cms/db - memberships (wired into engageD1Adapter)', () => {
   let engine: Engine
   let userId: number
   let tierId: number
@@ -102,5 +102,29 @@ describe('cms/db - memberships (proof of concept, not wired in)', () => {
     const viaPayload = await engine.findByID({ collection: 'memberships', id: ours.id, depth: 0 })
     expect(viaPayload.status).toBe('active')
     expect(viaPayload.renewsAt).toBe(renewsAt)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for memberships go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'memberships', data: { user: userId, tier: tierId, status: 'active', externalSubscriptionId: `${marker}-a` } })
+    const b = await engine.create({ collection: 'memberships', data: { user: userId, tier: tierId, status: 'active', externalSubscriptionId: `${marker}-b` } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findMembershipsPaginated.
+    const listed = await engine.find({ collection: 'memberships', where: { externalSubscriptionId: { like: marker } }, sort: 'externalSubscriptionId', limit: 10 })
+    expect(listed.docs.map((d) => d.externalSubscriptionId)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateMembership.
+    const updated = await engine.update({ collection: 'memberships', id: a.id, data: { status: 'cancelled' } })
+    expect(updated.status).toBe('cancelled')
+    const reread = await findMembershipByID(a.id as number)
+    expect(reread?.status).toBe('cancelled')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteMembership.
+    const deletedDoc = await engine.delete({ collection: 'memberships', id: b.id })
+    expect(deletedDoc.externalSubscriptionId).toBe(`${marker}-b`)
+    expect(await findMembershipByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

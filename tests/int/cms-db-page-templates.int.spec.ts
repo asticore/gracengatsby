@@ -41,7 +41,7 @@ const richText = (text: string) => ({
  * the field, not per-type - confirmed by direct D1 inspection before writing
  * this).
  */
-describe('cms/db - page-templates (proof of concept, not wired in)', () => {
+describe('cms/db - page-templates (wired into engageD1Adapter)', () => {
   let engine: Engine
   let faq1Id: number
   let faq2Id: number
@@ -163,5 +163,29 @@ describe('cms/db - page-templates (proof of concept, not wired in)', () => {
     const relsRows = await db.run(sql`select count(*) as n from eg_page_templates_rels where parent_id = ${created.id}`)
     expect((blockRows.results as { n: number }[])[0].n).toBe(0)
     expect((relsRows.results as { n: number }[])[0].n).toBe(0)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for page-templates go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'page-templates', data: { name: `${marker}-a` } })
+    const b = await engine.create({ collection: 'page-templates', data: { name: `${marker}-b` } })
+    createdTemplateIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findPageTemplatesPaginated.
+    const listed = await engine.find({ collection: 'page-templates', where: { name: { like: marker } }, sort: 'name', limit: 10 })
+    expect(listed.docs.map((d) => d.name)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updatePageTemplate.
+    const updated = await engine.update({ collection: 'page-templates', id: a.id, data: { description: 'cutover description' } })
+    expect(updated.description).toBe('cutover description')
+    const reread = await findPageTemplateByID(a.id as number)
+    expect(reread?.description).toBe('cutover description')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deletePageTemplate.
+    const deletedDoc = await engine.delete({ collection: 'page-templates', id: b.id })
+    expect(deletedDoc.name).toBe(`${marker}-b`)
+    expect(await findPageTemplateByID(b.id as number)).toBeNull()
+    createdTemplateIds.splice(createdTemplateIds.indexOf(b.id as number), 1)
   })
 })

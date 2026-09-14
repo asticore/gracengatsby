@@ -38,7 +38,7 @@ import { createFormSubmission, deleteFormSubmission, findFormSubmissionByID, upd
  * exercise the translations/memberships/ab-tests collections against the
  * same local D1 database concurrently.
  */
-describe('cms/db - form-submissions (proof of concept, not wired in)', () => {
+describe('cms/db - form-submissions (wired into engageD1Adapter)', () => {
   let engine: Engine
   let formId: number
   const createdIds: number[] = []
@@ -122,5 +122,29 @@ describe('cms/db - form-submissions (proof of concept, not wired in)', () => {
     expect(viaPayload.paymentStatus).toBe('paid')
     expect(viaPayload.notificationStatus).toBe('sent')
     expect(viaPayload.summary).toBe(summary)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for form-submissions go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'form-submissions', data: { form: formId, values: {}, summary: `${marker}-a` } })
+    const b = await engine.create({ collection: 'form-submissions', data: { form: formId, values: {}, summary: `${marker}-b` } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findFormSubmissionsPaginated.
+    const listed = await engine.find({ collection: 'form-submissions', where: { summary: { like: marker } }, sort: 'summary', limit: 10 })
+    expect(listed.docs.map((d) => d.summary)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateFormSubmission.
+    const updated = await engine.update({ collection: 'form-submissions', id: a.id, data: { paymentStatus: 'paid' } })
+    expect(updated.paymentStatus).toBe('paid')
+    const reread = await findFormSubmissionByID(a.id as number)
+    expect(reread?.paymentStatus).toBe('paid')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteFormSubmission.
+    const deletedDoc = await engine.delete({ collection: 'form-submissions', id: b.id })
+    expect(deletedDoc.summary).toBe(`${marker}-b`)
+    expect(await findFormSubmissionByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

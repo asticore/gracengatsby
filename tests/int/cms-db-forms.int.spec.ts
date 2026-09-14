@@ -33,7 +33,7 @@ import { createForm, deleteForm, findFormByID, updateForm } from '@/cms/db'
  * This suite only touches rows it creates itself (scoped creates/reads/
  * deletes by id, never an unscoped count or delete).
  */
-describe('cms/db - forms (proof of concept, not wired in)', () => {
+describe('cms/db - forms (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -183,5 +183,29 @@ describe('cms/db - forms (proof of concept, not wired in)', () => {
     const viaPayload = await engine.findByID({ collection: 'forms', id: created.id, depth: 0 })
     const fields = viaPayload.fields as { conditional?: { rules?: { field: string }[] } }[]
     expect(fields[0].conditional?.rules?.map((r) => r.field)).toEqual(['subscribe', 'vip'])
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for forms go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'forms', data: { title: `${marker}-a` } })
+    const b = await engine.create({ collection: 'forms', data: { title: `${marker}-b` } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findFormsPaginated.
+    const listed = await engine.find({ collection: 'forms', where: { title: { like: marker } }, sort: 'title', limit: 10 })
+    expect(listed.docs.map((d) => d.title)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateForm.
+    const updated = await engine.update({ collection: 'forms', id: a.id, data: { fields: [{ type: 'text', name: 'note', label: 'Cutover note' }] } })
+    expect((updated.fields as { name?: string }[])?.[0]?.name).toBe('note')
+    const reread = await findFormByID(a.id as number)
+    expect(reread?.fields?.[0]?.name).toBe('note')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteForm.
+    const deletedDoc = await engine.delete({ collection: 'forms', id: b.id })
+    expect(deletedDoc.title).toBe(`${marker}-b`)
+    expect(await findFormByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

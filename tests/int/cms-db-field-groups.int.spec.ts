@@ -29,7 +29,7 @@ import { createFieldGroup, deleteFieldGroup, findFieldGroupByID, updateFieldGrou
  * This suite only touches rows it creates itself (scoped creates/reads/
  * deletes by id, never an unscoped count or delete).
  */
-describe('cms/db - field-groups (proof of concept, not wired in)', () => {
+describe('cms/db - field-groups (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -145,5 +145,35 @@ describe('cms/db - field-groups (proof of concept, not wired in)', () => {
     const viaPayload = await engine.findByID({ collection: 'field-groups', id: created.id, depth: 0 })
     const fields = viaPayload.fields as { options?: { value: string }[] }[]
     expect(fields[0].options?.map((o) => o.value)).toEqual(['green', 'yellow'])
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for field-groups go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    // `as never` on data: with only `name` set, TS's generated
+    // Options<'field-groups', ...> union can't resolve cleanly (the earlier
+    // tests in this file always pass a fuller `fields`/`targetCollections`
+    // object) - same class of pre-existing generated-types friction the
+    // `page-templates` suite already works around with `as never` on its own
+    // `blocks` data, not a real type problem.
+    const a = await engine.create({ collection: 'field-groups', data: { name: `${marker}-a` } as never })
+    const b = await engine.create({ collection: 'field-groups', data: { name: `${marker}-b` } as never })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findFieldGroupsPaginated.
+    const listed = await engine.find({ collection: 'field-groups', where: { name: { like: marker } }, sort: 'name', limit: 10 })
+    expect(listed.docs.map((d) => d.name)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateFieldGroup.
+    const updated = await engine.update({ collection: 'field-groups', id: a.id, data: { description: 'cutover description' } })
+    expect(updated.description).toBe('cutover description')
+    const reread = await findFieldGroupByID(a.id as number)
+    expect(reread?.description).toBe('cutover description')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteFieldGroup.
+    const deletedDoc = await engine.delete({ collection: 'field-groups', id: b.id })
+    expect(deletedDoc.name).toBe(`${marker}-b`)
+    expect(await findFieldGroupByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

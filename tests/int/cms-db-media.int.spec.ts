@@ -32,7 +32,7 @@ const onePixelPng = Buffer.from(
  * would only prove `alt` round-trips and never touch the columns Phase 12
  * actually added.
  */
-describe('cms/db - media (proof of concept, not wired in)', () => {
+describe('cms/db - media (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -105,5 +105,37 @@ describe('cms/db - media (proof of concept, not wired in)', () => {
     await expect(engine.findByID({ collection: 'media', id: ours.id })).rejects.toThrow()
 
     createdIds.splice(createdIds.indexOf(ours.id), 1)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for media go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({
+      collection: 'media',
+      data: { alt: `${marker}-a` },
+      file: { data: onePixelPng, mimetype: 'image/png', name: `${marker}-a.png`, size: onePixelPng.length },
+    })
+    const b = await engine.create({
+      collection: 'media',
+      data: { alt: `${marker}-b` },
+      file: { data: onePixelPng, mimetype: 'image/png', name: `${marker}-b.png`, size: onePixelPng.length },
+    })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findMediaPaginated.
+    const listed = await engine.find({ collection: 'media', where: { alt: { like: marker } }, sort: 'alt', limit: 10 })
+    expect(listed.docs.map((d) => d.alt)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateMedia.
+    const updated = await engine.update({ collection: 'media', id: a.id, data: { alt: `${marker}-a-updated` } })
+    expect(updated.alt).toBe(`${marker}-a-updated`)
+    const reread = await findMediaByID(a.id as number)
+    expect(reread?.alt).toBe(`${marker}-a-updated`)
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteMedia.
+    const deletedDoc = await engine.delete({ collection: 'media', id: b.id })
+    expect(deletedDoc.alt).toBe(`${marker}-b`)
+    expect(await findMediaByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

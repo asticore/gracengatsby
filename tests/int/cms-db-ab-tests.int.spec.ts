@@ -29,7 +29,7 @@ import { createABTest, createPage, deleteABTest, deletePage, findABTestByID, upd
  * exercise translations/memberships/form-submissions against the same local
  * D1 database concurrently.
  */
-describe('cms/db - ab-tests (proof of concept, not wired in)', () => {
+describe('cms/db - ab-tests (wired into engageD1Adapter)', () => {
   let engine: Engine
   let pageId: number
   const createdIds: number[] = []
@@ -147,5 +147,35 @@ describe('cms/db - ab-tests (proof of concept, not wired in)', () => {
     const variants = viaPayload.variants as { label: string; page?: number }[]
     expect(variants.map((v) => v.label)).toEqual(['Replaced control', 'Replaced challenger'])
     expect(variants[1].page).toBe(pageId)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for ab-tests go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    // `as never` on data: TS's generated Options<'ab-tests', ...> union already
+    // fails to resolve for this collection's engine.create with plain data
+    // (see the pre-existing 'reads a document written by Payload' test above,
+    // which hits the exact same TS2345 with a full data object too) - a
+    // pre-existing generated-types quirk, not something this minimal data
+    // shape introduces.
+    const a = await engine.create({ collection: 'ab-tests', data: { name: `${marker}-a`, page: pageId, scope: 'page' } as never })
+    const b = await engine.create({ collection: 'ab-tests', data: { name: `${marker}-b`, page: pageId, scope: 'page' } as never })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findABTestsPaginated.
+    const listed = await engine.find({ collection: 'ab-tests', where: { name: { like: marker } }, sort: 'name', limit: 10 })
+    expect(listed.docs.map((d) => d.name)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateABTest.
+    const updated = await engine.update({ collection: 'ab-tests', id: a.id, data: { notes: 'cutover notes' } })
+    expect(updated.notes).toBe('cutover notes')
+    const reread = await findABTestByID(a.id as number)
+    expect(reread?.notes).toBe('cutover notes')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteABTest.
+    const deletedDoc = await engine.delete({ collection: 'ab-tests', id: b.id })
+    expect(deletedDoc.name).toBe(`${marker}-b`)
+    expect(await findABTestByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

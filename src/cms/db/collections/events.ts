@@ -1,4 +1,4 @@
-import type { Where } from '@/engine'
+import type { Sort, Where } from '@/engine'
 
 import { Events } from '@/collections/Events'
 
@@ -70,3 +70,37 @@ export const createEventVersion = versionsOps.createVersion as unknown as (
   data: Partial<Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt'>>,
   opts?: { latest?: boolean },
 ) => Promise<EventVersion>
+
+// Plain baseOps exports for engageD1Adapter's dispatch - deliberately NOT the
+// createDraftOps-wrapped ops above. Payload's own create()/update() call
+// payload.db.create/payload.db.updateOne (this adapter's intercepted
+// methods) and THEN, separately and unconditionally when the collection has
+// `versions` set, call saveVersion() -> payload.db.createVersion (an adapter
+// method this dispatch does NOT intercept, so it falls through to the real
+// base adapter and writes _eg_events_v itself) - confirmed by reading
+// payload/dist/collections/operations/create.js:194-221 directly. createEvent/
+// updateEvent above (createDraftOps-wrapped) ALREADY write their own version
+// row internally (see generic.ts's createDraftOps doc comment) - wiring the
+// adapter dispatch to those instead of the plain baseOps below would
+// double-write a version row on every real create/publish-update.
+// adapter.find/findOne use findEventsPaginated below for the same reason -
+// Payload's real find/findOne never branch on draft themselves (they always
+// read the live row; draft:true is handled by a separate, unintercepted
+// payload.db.findVersions call) - but adapter.count and adapter.deleteOne
+// reuse the existing countEvents/deleteEvent above unchanged: createDraftOps
+// only overrides create/updateByID/findByID (see generic.ts), so those two
+// already equal baseOps.count/baseOps.deleteByID.
+export const findEventsPaginated = baseOps.findPaginated as unknown as (args?: {
+  where?: Where
+  sort?: Sort
+  limit?: number
+  page?: number
+  pagination?: boolean
+}) => ReturnType<typeof baseOps.findPaginated>
+export const createEventLiveRow = baseOps.create as unknown as (
+  data: Partial<Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt'>> & { title: string; startDate: string },
+) => Promise<EventDoc>
+export const updateEventLiveRow = baseOps.updateByID as unknown as (
+  id: number,
+  data: Partial<Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt'>>,
+) => Promise<EventDoc | null>

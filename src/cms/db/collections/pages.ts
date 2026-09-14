@@ -1,4 +1,4 @@
-import type { Where } from '@/engine'
+import type { Sort, Where } from '@/engine'
 
 import { Pages } from '@/collections/Pages'
 
@@ -98,3 +98,24 @@ export const createPageVersion = versionsOps.createVersion as unknown as (
   data: Partial<Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt'>>,
   opts?: { latest?: boolean },
 ) => Promise<PageVersion>
+
+// Plain baseOps exports for engageD1Adapter's dispatch - same double-write
+// landmine and fix as events.ts's own comment above its equivalent block
+// (see that comment for the full explanation, confirmed against
+// payload/dist/collections/operations/create.js:194-221). adapter.count and
+// adapter.deleteOne reuse the existing countPages/deletePage above unchanged
+// (createDraftOps doesn't override count/deleteByID).
+export const findPagesPaginated = baseOps.findPaginated as unknown as (args?: {
+  where?: Where
+  sort?: Sort
+  limit?: number
+  page?: number
+  pagination?: boolean
+}) => ReturnType<typeof baseOps.findPaginated>
+export const createPageLiveRow = baseOps.create as unknown as (
+  data: Partial<Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt'>> & { title: string },
+) => Promise<PageDoc>
+export const updatePageLiveRow = baseOps.updateByID as unknown as (
+  id: number,
+  data: Partial<Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt'>>,
+) => Promise<PageDoc | null>

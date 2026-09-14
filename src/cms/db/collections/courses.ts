@@ -1,4 +1,4 @@
-import type { Where } from '@/engine'
+import type { Sort, Where } from '@/engine'
 
 import { Courses } from '@/features/courses/collections/Courses'
 
@@ -68,3 +68,28 @@ export const createCourseVersion = versionsOps.createVersion as unknown as (
   data: Partial<Omit<CourseDoc, 'id' | 'updatedAt' | 'createdAt'>>,
   opts?: { latest?: boolean },
 ) => Promise<CourseVersion>
+
+// Plain baseOps exports for engageD1Adapter's dispatch - same double-write
+// landmine and fix as events.ts's own comment above its equivalent block
+// (see that comment for the full explanation, confirmed against
+// payload/dist/collections/operations/create.js:194-221). `lessons` (a join
+// field) resolves inline against the real eg_lessons table inside
+// baseOps.findPaginated/findByID themselves, unaffected by which ops object
+// is used here (see engage.config.ts's own join-safety doc comment).
+// adapter.count and adapter.deleteOne reuse the existing countCourses/
+// deleteCourse above unchanged (createDraftOps doesn't override count/
+// deleteByID).
+export const findCoursesPaginated = baseOps.findPaginated as unknown as (args?: {
+  where?: Where
+  sort?: Sort
+  limit?: number
+  page?: number
+  pagination?: boolean
+}) => ReturnType<typeof baseOps.findPaginated>
+export const createCourseLiveRow = baseOps.create as unknown as (
+  data: Partial<Omit<CourseDoc, 'id' | 'updatedAt' | 'createdAt'>> & { title: string; accessType: string },
+) => Promise<CourseDoc>
+export const updateCourseLiveRow = baseOps.updateByID as unknown as (
+  id: number,
+  data: Partial<Omit<CourseDoc, 'id' | 'updatedAt' | 'createdAt'>>,
+) => Promise<CourseDoc | null>

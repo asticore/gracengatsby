@@ -38,7 +38,7 @@ import { createBackup, deleteBackup, findBackupByID, updateBackup } from '@/cms/
  * normal HTTP/admin API - but Payload's Local API (`engine.create()`, used
  * here) overrides access control by default, so the pattern is unchanged.
  */
-describe('cms/db - backups (proof of concept, not wired in)', () => {
+describe('cms/db - backups (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -123,5 +123,29 @@ describe('cms/db - backups (proof of concept, not wired in)', () => {
     expect(viaPayload.status).toBe('completed')
     expect(viaPayload.finishedAt).toBe(finishedAt)
     expect(viaPayload.sizeBytes).toBe(4096)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for backups go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'backups', data: { backupId: `${marker}-a`, status: 'running' } })
+    const b = await engine.create({ collection: 'backups', data: { backupId: `${marker}-b`, status: 'running' } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findBackupsPaginated.
+    const listed = await engine.find({ collection: 'backups', where: { backupId: { like: marker } }, sort: 'backupId', limit: 10 })
+    expect(listed.docs.map((d) => d.backupId)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateBackup.
+    const updated = await engine.update({ collection: 'backups', id: a.id, data: { status: 'completed' } })
+    expect(updated.status).toBe('completed')
+    const reread = await findBackupByID(a.id as number)
+    expect(reread?.status).toBe('completed')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteBackup.
+    const deletedDoc = await engine.delete({ collection: 'backups', id: b.id })
+    expect(deletedDoc.backupId).toBe(`${marker}-b`)
+    expect(await findBackupByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

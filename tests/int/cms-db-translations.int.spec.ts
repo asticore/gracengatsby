@@ -23,7 +23,7 @@ import { createTranslation, deleteTranslation, findTranslationByID, updateTransl
  * exercise the `memberships`, `form-submissions` and `ab-tests` collections
  * against the same local D1 database concurrently.
  */
-describe('cms/db - translations (proof of concept, not wired in)', () => {
+describe('cms/db - translations (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -100,5 +100,29 @@ describe('cms/db - translations (proof of concept, not wired in)', () => {
     const viaPayload = await engine.findByID({ collection: 'translations', id: ours.id })
     expect(viaPayload.value).toBe('Configuracion del sitio')
     expect(viaPayload.fieldPath).toBe(fieldPath)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for translations go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'translations', data: { locale: 'fr', sourceKind: 'collection', sourceId: 'faqs:1', fieldPath: `${marker}-a` } })
+    const b = await engine.create({ collection: 'translations', data: { locale: 'fr', sourceKind: 'collection', sourceId: 'faqs:1', fieldPath: `${marker}-b` } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findTranslationsPaginated.
+    const listed = await engine.find({ collection: 'translations', where: { fieldPath: { like: marker } }, sort: 'fieldPath', limit: 10 })
+    expect(listed.docs.map((d) => d.fieldPath)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateTranslation.
+    const updated = await engine.update({ collection: 'translations', id: a.id, data: { value: 'cutover value' } })
+    expect(updated.value).toBe('cutover value')
+    const reread = await findTranslationByID(a.id as number)
+    expect(reread?.value).toBe('cutover value')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteTranslation.
+    const deletedDoc = await engine.delete({ collection: 'translations', id: b.id })
+    expect(deletedDoc.fieldPath).toBe(`${marker}-b`)
+    expect(await findTranslationByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

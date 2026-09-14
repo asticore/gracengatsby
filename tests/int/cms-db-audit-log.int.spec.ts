@@ -27,7 +27,7 @@ import { createAuditLogEntry, deleteAuditLogEntry, findAuditLogEntryByID, update
  * exercises the `backups` collection against the same local D1 database
  * concurrently.
  */
-describe('cms/db - audit-log (proof of concept, not wired in)', () => {
+describe('cms/db - audit-log (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -94,5 +94,29 @@ describe('cms/db - audit-log (proof of concept, not wired in)', () => {
     const viaPayload = await engine.findByID({ collection: 'audit-log', id: ours.id })
     expect(viaPayload.detail).toBe('updated')
     expect(viaPayload.action).toBe(action)
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for audit-log go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'audit-log', data: { action: `${marker}-a` } })
+    const b = await engine.create({ collection: 'audit-log', data: { action: `${marker}-b` } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findAuditLogEntriesPaginated.
+    const listed = await engine.find({ collection: 'audit-log', where: { action: { like: marker } }, sort: 'action', limit: 10 })
+    expect(listed.docs.map((d) => d.action)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateAuditLogEntry.
+    const updated = await engine.update({ collection: 'audit-log', id: a.id, data: { detail: 'cutover detail' } })
+    expect(updated.detail).toBe('cutover detail')
+    const reread = await findAuditLogEntryByID(a.id as number)
+    expect(reread?.detail).toBe('cutover detail')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteAuditLogEntry.
+    const deletedDoc = await engine.delete({ collection: 'audit-log', id: b.id })
+    expect(deletedDoc.action).toBe(`${marker}-b`)
+    expect(await findAuditLogEntryByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

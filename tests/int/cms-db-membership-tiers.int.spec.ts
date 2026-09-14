@@ -19,7 +19,7 @@ import { createMembershipTier, deleteMembershipTier, findMembershipTierByID, upd
  * flatten onto the same table, and the `benefits` array field round-trips
  * through its own child table (eg_membership_tiers_benefits) both ways.
  */
-describe('cms/db - membership-tiers (proof of concept, not wired in)', () => {
+describe('cms/db - membership-tiers (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -89,5 +89,29 @@ describe('cms/db - membership-tiers (proof of concept, not wired in)', () => {
 
     const afterDelete = await findMembershipTierByID(ours.id)
     expect(afterDelete).toBeNull()
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for membership-tiers go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'membership-tiers', data: { name: `${marker}-a`, rank: 1 } })
+    const b = await engine.create({ collection: 'membership-tiers', data: { name: `${marker}-b`, rank: 2 } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findMembershipTiersPaginated.
+    const listed = await engine.find({ collection: 'membership-tiers', where: { name: { like: marker } }, sort: 'name', limit: 10 })
+    expect(listed.docs.map((d) => d.name)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateMembershipTier.
+    const updated = await engine.update({ collection: 'membership-tiers', id: a.id, data: { benefits: [{ benefit: 'Cutover benefit' }] } })
+    expect((updated.benefits as { benefit?: string }[])?.map((benefit) => benefit.benefit)).toEqual(['Cutover benefit'])
+    const reread = await findMembershipTierByID(a.id as number)
+    expect(reread?.benefits?.map((benefit) => benefit.benefit)).toEqual(['Cutover benefit'])
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteMembershipTier.
+    const deletedDoc = await engine.delete({ collection: 'membership-tiers', id: b.id })
+    expect(deletedDoc.name).toBe(`${marker}-b`)
+    expect(await findMembershipTierByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

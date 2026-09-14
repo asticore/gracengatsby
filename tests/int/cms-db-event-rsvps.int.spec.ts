@@ -24,7 +24,7 @@ import { getDb } from '@/cms/db/connect'
  * and CRUD ops handle that column exactly like Payload's own adapter does -
  * not just the scalar-only case Faqs covers.
  */
-describe('cms/db - event-rsvps (proof of concept, not wired in)', () => {
+describe('cms/db - event-rsvps (wired into engageD1Adapter)', () => {
   let engine: Engine
   let eventId: number
   const createdIds: number[] = []
@@ -100,5 +100,29 @@ describe('cms/db - event-rsvps (proof of concept, not wired in)', () => {
     createdIds.splice(createdIds.indexOf(ours.id), 1)
 
     await expect(engine.findByID({ collection: 'event-rsvps', id: ours.id })).rejects.toThrow()
+  })
+
+  it('cuts over cleanly: engine.find/update/delete for event-rsvps go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'event-rsvps', data: { event: eventId, name: `${marker}-a`, email: 'a@example.com' } })
+    const b = await engine.create({ collection: 'event-rsvps', data: { event: eventId, name: `${marker}-b`, email: 'b@example.com' } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findEventRSVPsPaginated.
+    const listed = await engine.find({ collection: 'event-rsvps', where: { name: { like: marker } }, sort: 'name', limit: 10 })
+    expect(listed.docs.map((d) => d.name)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateEventRSVP.
+    const updated = await engine.update({ collection: 'event-rsvps', id: a.id, data: { guestCount: 5 } })
+    expect(updated.guestCount).toBe(5)
+    const reread = await findEventRSVPByID(a.id as number)
+    expect(reread?.guestCount).toBe(5)
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteEventRSVP.
+    const deletedDoc = await engine.delete({ collection: 'event-rsvps', id: b.id })
+    expect(deletedDoc.name).toBe(`${marker}-b`)
+    expect(await findEventRSVPByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
   })
 })

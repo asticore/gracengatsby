@@ -1,4 +1,4 @@
-import type { Where } from '@/engine'
+import type { Sort, Where } from '@/engine'
 
 import { EventRSVPs } from '@/collections/EventRSVPs'
 
@@ -27,3 +27,14 @@ export const createEventRSVP = ops.create as unknown as (
 ) => Promise<EventRSVPDoc>
 export const updateEventRSVP = ops.updateByID as unknown as (id: number, data: Partial<Omit<EventRSVPDoc, 'id' | 'updatedAt' | 'createdAt'>>) => Promise<EventRSVPDoc | null>
 export const deleteEventRSVP = ops.deleteByID
+
+// The paginated find shape the engine.db.ts cutover's adapter intercept needs
+// (find/findOne/deleteOne's own resolve-then-act) - same re-export pattern as
+// Faqs' findFaqsPaginated, no new logic.
+export const findEventRSVPsPaginated = ops.findPaginated as unknown as (args?: {
+  where?: Where
+  sort?: Sort
+  limit?: number
+  page?: number
+  pagination?: boolean
+}) => ReturnType<typeof ops.findPaginated>

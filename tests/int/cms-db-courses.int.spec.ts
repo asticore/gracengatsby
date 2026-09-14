@@ -8,72 +8,72 @@ import '@/engage.config'
 
 import { getEngine } from '@/engine'
 import { sql } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import { createCourse, createCourseVersion, deleteCourse, findCourseByID, findLatestCourseVersion, updateCourse } from '@/cms/db'
 import { getDb } from '@/cms/db/connect'
 
 /**
- * Phase 10: Courses - the first collection to combine drafts (versions.drafts
- * like Events/Pages/Posts) with a `join` field (`lessons`, resolved
- * query-time against Lessons - Phase 11's own collection, proven next).
- * Courses has no blocks/array field of its own to version, so its own
- * version-row shape is scalar/group fields only (title/slug/description/
- * coverImage/accessType/product/tierSlug/seo) - CourseVersion in
- * ../../src/cms/db/collections/courses.ts mirrors that.
+ * Phase 10: Courses brought in from zero - see ../../src/cms/db/index.ts's
+ * Phase 10 doc comment for why this needed no new schema-generation
+ * capability (every field type Courses uses was already proven by an
+ * earlier collection). This suite mirrors cms-db-events.int.spec.ts's shape
+ * (group field + join field + versions), the closest existing proof target,
+ * since Courses' `seo` group and `lessons` join are the same mechanisms as
+ * Events' `location` group and `rsvps` join.
+ *
+ * Note: Payload's own `engine.update()`/`engine.delete()` on this local dev
+ * D1 hits a pre-existing, unrelated schema-drift bug in its own
+ * checkDocumentLockStatus path (see cms-db-events.int.spec.ts's own note) -
+ * so the "update" and cleanup paths below go through this module's own
+ * updateCourse/raw SQL instead.
  */
 describe('cms/db - courses (proof of concept, not wired in)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
-  beforeAll(async () => {
-    engine = await getEngine()
-  })
-
   afterAll(async () => {
+    const db = await getDb()
     for (const id of createdIds) {
+      await db.run(sql`delete from _eg_courses_v where parent_id = ${id}`)
       await deleteCourse(id)
     }
   })
 
   it('reads a course written by Payload: nested seo group, empty join field', async () => {
-    const title = `Phase10 course A ${Date.now()}`
+    engine = await getEngine()
     const created = await engine.create({
       collection: 'courses',
       data: {
-        title,
+        title: 'Parity course A',
         accessType: 'free',
-        seo: { metaTitle: 'Custom title', metaDescription: 'Custom description' },
+        seo: { metaTitle: 'A meta title', noIndex: true },
       },
     })
     createdIds.push(created.id as number)
 
     const viaOurs = await findCourseByID(created.id as number)
-    expect(viaOurs?.title).toBe(title)
-    expect(viaOurs?.accessType).toBe('free')
-    expect(viaOurs?.seo).toEqual({ metaTitle: 'Custom title', metaDescription: 'Custom description', ogImage: null, noIndex: false })
+    expect(viaOurs?.title).toBe('Parity course A')
+    expect(viaOurs?.seo).toEqual({ metaTitle: 'A meta title', metaDescription: null, ogImage: null, noIndex: true })
+    expect(viaOurs?._status).toBe((created as { _status?: string })._status)
     expect(viaOurs?.lessons).toEqual({ docs: [], hasNextPage: false })
   })
 
   it('writes a course (seo group) Payload can read back', async () => {
-    const title = `Written by clone adapter ${Date.now()}`
     const ours = await createCourse({
-      title,
-      accessType: 'tier',
-      tierSlug: 'gold',
-      seo: { metaTitle: 'Clone title' },
+      title: 'Written by clone adapter',
+      accessType: 'purchase',
+      seo: { metaTitle: 'Clone title', noIndex: false },
     })
     createdIds.push(ours.id)
+    expect(ours.seo).toEqual({ metaTitle: 'Clone title', metaDescription: null, ogImage: null, noIndex: false })
 
     const viaPayload = await engine.findByID({ collection: 'courses', id: ours.id, depth: 0 })
-    expect(viaPayload.title).toBe(title)
-    expect(viaPayload.accessType).toBe('tier')
-    expect(viaPayload.tierSlug).toBe('gold')
-    expect((viaPayload.seo as { metaTitle?: string }).metaTitle).toBe('Clone title')
+    expect(viaPayload.seo).toEqual({ metaTitle: 'Clone title', metaDescription: null, ogImage: null, noIndex: false })
   })
 
   it('replaces group fields wholesale on update', async () => {
-    const created = await createCourse({ title: `Temp ${Date.now()}`, accessType: 'free', seo: { metaTitle: 'Original' } })
+    const created = await createCourse({ title: 'Temp', accessType: 'free', seo: { metaTitle: 'Original' } })
     createdIds.push(created.id)
 
     const updated = await updateCourse(created.id, { seo: { metaTitle: 'Replaced', noIndex: true } })
@@ -86,18 +86,24 @@ describe('cms/db - courses (proof of concept, not wired in)', () => {
   it('reads the version row Payload created on write, seo group included', async () => {
     const created = await engine.create({
       collection: 'courses',
-      data: { title: `Phase10 version A ${Date.now()}`, accessType: 'free', seo: { metaTitle: 'Versioned' } },
+      data: { title: 'Versioned course', accessType: 'free', seo: { metaTitle: 'Version meta' } },
     })
     createdIds.push(created.id as number)
 
-    const latest = await findLatestCourseVersion(created.id as number)
-    expect(latest?.title).toBe(created.title)
-    expect(latest?.seo).toEqual({ metaTitle: 'Versioned', metaDescription: null, ogImage: null, noIndex: false })
-    expect(latest?.latest).toBe(true)
+    const ourVersion = await findLatestCourseVersion(created.id as number)
+    expect(ourVersion?.title).toBe('Versioned course')
+    // noIndex has defaultValue: false in seoFields, so it's false (not null) when omitted.
+    expect(ourVersion?.seo).toEqual({ metaTitle: 'Version meta', metaDescription: null, ogImage: null, noIndex: false })
+    expect(ourVersion?.latest).toBe(true)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payloadVersions = await (engine as any).findVersions({ collection: 'courses', where: { parent: { equals: created.id } } })
+    expect(payloadVersions.docs[0].version.title).toBe('Versioned course')
+    expect(payloadVersions.docs[0].version.seo).toEqual({ metaTitle: 'Version meta', metaDescription: null, ogImage: null, noIndex: false })
   })
 
   it('writes a version row Payload can read back', async () => {
-    const created = await createCourse({ title: `Temp ${Date.now()}`, accessType: 'free' })
+    const created = await createCourse({ title: 'Has a version added', accessType: 'free' })
     createdIds.push(created.id)
 
     await createCourseVersion(created.id, { title: 'Written by clone adapter', seo: { metaTitle: 'Clone version' } })

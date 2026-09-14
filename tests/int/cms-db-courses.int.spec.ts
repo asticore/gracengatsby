@@ -28,7 +28,7 @@ import { getDb } from '@/cms/db/connect'
  * so the "update" and cleanup paths below go through this module's own
  * updateCourse/raw SQL instead.
  */
-describe('cms/db - courses (proof of concept, not wired in)', () => {
+describe('cms/db - courses (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -163,4 +163,32 @@ describe('cms/db - courses (proof of concept, not wired in)', () => {
       await db.run(sql`delete from eg_lessons where id = ${id}`)
     }
   }, 20000)
+
+  it('cuts over cleanly: engine.find/create/update/delete for courses go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'courses', data: { title: `${marker}-a`, accessType: 'free' } })
+    createdIds.push(a.id as number)
+
+    // engine.find -> adapter.find -> findCoursesPaginated (plain baseOps, not createDraftOps-wrapped).
+    const listed = await engine.find({ collection: 'courses', where: { title: { like: marker } }, limit: 10 })
+    expect(listed.docs.map((d) => d.id)).toEqual([a.id])
+    expect(listed.totalDocs).toBe(1)
+
+    // engine.update (by id, non-draft) -> adapter.updateOne -> updateCourseLiveRow, publishing straight to the live row.
+    const updated = await engine.update({ collection: 'courses', id: a.id, data: { title: `${marker}-updated`, _status: 'published' } })
+    expect(updated.title).toBe(`${marker}-updated`)
+    const reread = await findCourseByID(a.id as number)
+    expect(reread?.title).toBe(`${marker}-updated`)
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id via findCoursesPaginated) -> deleteCourse.
+    const deletedDoc = await engine.delete({ collection: 'courses', id: a.id })
+    expect(deletedDoc.title).toBe(`${marker}-updated`)
+    expect(await findCourseByID(a.id as number)).toBeNull()
+
+    // deleteCourse doesn't touch _eg_courses_v - clean up this id's version
+    // row(s) directly since it's being removed from createdIds below.
+    const db = await getDb()
+    await db.run(sql`delete from _eg_courses_v where parent_id = ${a.id}`)
+    createdIds.splice(createdIds.indexOf(a.id as number), 1)
+  })
 })

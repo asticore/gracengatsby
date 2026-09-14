@@ -16,6 +16,13 @@ import { countMembershipTiers, createMembershipTier, deleteMembershipTier, findM
 import { countAuditLogEntries, createAuditLogEntry, deleteAuditLogEntry, findAuditLogEntriesPaginated, updateAuditLogEntry } from '@/cms/db/collections/auditLog'
 import { countBackups, createBackup, deleteBackup, findBackupsPaginated, updateBackup } from '@/cms/db/collections/backups'
 import { countTranslations, createTranslation, deleteTranslation, findTranslationsPaginated, updateTranslation } from '@/cms/db/collections/translations'
+import { countMedia, createMedia, deleteMedia, findMediaPaginated, updateMedia } from '@/cms/db/collections/media'
+import { countPageTemplates, createPageTemplate, deletePageTemplate, findPageTemplatesPaginated, updatePageTemplate } from '@/cms/db/collections/pageTemplates'
+import { countFieldGroups, createFieldGroup, deleteFieldGroup, findFieldGroupsPaginated, updateFieldGroup } from '@/cms/db/collections/fieldGroups'
+import { countForms, createForm, deleteForm, findFormsPaginated, updateForm } from '@/cms/db/collections/forms'
+import { countFormSubmissions, createFormSubmission, deleteFormSubmission, findFormSubmissionsPaginated, updateFormSubmission } from '@/cms/db/collections/formSubmissions'
+import { countMemberships, createMembership, deleteMembership, findMembershipsPaginated, updateMembership } from '@/cms/db/collections/memberships'
+import { countABTests, createABTest, deleteABTest, findABTestsPaginated, updateABTest } from '@/cms/db/collections/abTests'
 //import { payloadTotp } from 'payload-totp'
 import {
   isAdmin,
@@ -212,6 +219,23 @@ const MIGRATION_TABLE_PROBE = "name = 'payload_migrations'"
  * nobody writes through the normal HTTP/admin API - but that is an
  * access-control fact, not a schema one, and does not change anything this
  * adapter dispatch does.
+ *
+ * `media`, `page-templates`, `field-groups`, `forms`, `form-submissions`,
+ * `memberships` and `ab-tests` are wired in next, same batch shape as the
+ * five above: each already had a proven write-both-ways parity suite, none
+ * declares `versions`/drafts or `defaultSort`, and the only gap was the same
+ * `findXPaginated` re-export. Media's upload fields (url/filename/mimeType/
+ * etc) are Payload's own implicit upload columns, not something this
+ * dispatch special-cases - the r2Storage plugin that actually uploads files
+ * runs its own hooks above the db adapter entirely (see the `plugins` array
+ * below), so `media`'s branches here are as plain as every other collection's.
+ * Lessons/Enrolments/LessonProgress were deliberately left out of this batch:
+ * Lessons is the target of Courses' own `join` field (`Courses.lessons`,
+ * itself carrying a `defaultSort: 'order'`), and Courses has drafts enabled
+ * and is not yet cut over - cutting Lessons over alone first would leave that
+ * join reading through two different adapters depending on which collection
+ * initiated the query, so all three (plus Courses) are deferred to a single
+ * later batch instead of being split.
  */
 const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
   const base = sqliteD1Adapter(options)
@@ -289,6 +313,28 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         if (findArgs.collection === 'translations') {
           return findTranslationsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
         }
+        // None of these seven declare a `defaultSort` either (see each config).
+        if (findArgs.collection === 'media') {
+          return findMediaPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'page-templates') {
+          return findPageTemplatesPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'field-groups') {
+          return findFieldGroupsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'forms') {
+          return findFormsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'form-submissions') {
+          return findFormSubmissionsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'memberships') {
+          return findMembershipsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
+        if (findArgs.collection === 'ab-tests') {
+          return findABTestsPaginated({ where: findArgs.where, sort: findArgs.sort, limit: findArgs.limit, page: findArgs.page, pagination: findArgs.pagination })
+        }
         return baseFind(findArgs)
       }) as typeof baseFind
 
@@ -332,6 +378,34 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           const { docs } = await findTranslationsPaginated({ where: findOneArgs.where, limit: 1 })
           return docs[0] ?? null
         }
+        if (findOneArgs.collection === 'media') {
+          const { docs } = await findMediaPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'page-templates') {
+          const { docs } = await findPageTemplatesPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'field-groups') {
+          const { docs } = await findFieldGroupsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'forms') {
+          const { docs } = await findFormsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'form-submissions') {
+          const { docs } = await findFormSubmissionsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'memberships') {
+          const { docs } = await findMembershipsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
+        if (findOneArgs.collection === 'ab-tests') {
+          const { docs } = await findABTestsPaginated({ where: findOneArgs.where, limit: 1 })
+          return docs[0] ?? null
+        }
         return baseFindOne(findOneArgs)
       }) as typeof baseFindOne
 
@@ -364,6 +438,27 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (createArgs.collection === 'translations') {
           return createTranslation(createArgs.data as Parameters<typeof createTranslation>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'media') {
+          return createMedia(createArgs.data as Parameters<typeof createMedia>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'page-templates') {
+          return createPageTemplate(createArgs.data as Parameters<typeof createPageTemplate>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'field-groups') {
+          return createFieldGroup(createArgs.data as Parameters<typeof createFieldGroup>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'forms') {
+          return createForm(createArgs.data as Parameters<typeof createForm>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'form-submissions') {
+          return createFormSubmission(createArgs.data as Parameters<typeof createFormSubmission>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'memberships') {
+          return createMembership(createArgs.data as Parameters<typeof createMembership>[0]) as ReturnType<typeof baseCreate>
+        }
+        if (createArgs.collection === 'ab-tests') {
+          return createABTest(createArgs.data as Parameters<typeof createABTest>[0]) as ReturnType<typeof baseCreate>
         }
         return baseCreate(createArgs)
       }
@@ -407,6 +502,34 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (updateOneArgs.collection === 'translations' && typeof updateOneArgs.id !== 'undefined') {
           const updated = await updateTranslation(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'media' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateMedia(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'page-templates' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updatePageTemplate(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'field-groups' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateFieldGroup(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'forms' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateForm(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'form-submissions' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateFormSubmission(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'memberships' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateMembership(Number(updateOneArgs.id), updateOneArgs.data)
+          return updated as Awaited<ReturnType<typeof baseUpdateOne>>
+        }
+        if (updateOneArgs.collection === 'ab-tests' && typeof updateOneArgs.id !== 'undefined') {
+          const updated = await updateABTest(Number(updateOneArgs.id), updateOneArgs.data)
           return updated as Awaited<ReturnType<typeof baseUpdateOne>>
         }
         return baseUpdateOne(updateOneArgs)
@@ -467,6 +590,55 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
           await deleteTranslation(doc.id)
           return doc as Awaited<ReturnType<typeof baseDeleteOne>>
         }
+        if (deleteOneArgs.collection === 'media') {
+          const { docs } = await findMediaPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteMedia(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'page-templates') {
+          const { docs } = await findPageTemplatesPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deletePageTemplate(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'field-groups') {
+          const { docs } = await findFieldGroupsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteFieldGroup(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'forms') {
+          const { docs } = await findFormsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteForm(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'form-submissions') {
+          const { docs } = await findFormSubmissionsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteFormSubmission(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'memberships') {
+          const { docs } = await findMembershipsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteMembership(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
+        if (deleteOneArgs.collection === 'ab-tests') {
+          const { docs } = await findABTestsPaginated({ where: deleteOneArgs.where, limit: 1 })
+          const doc = docs[0]
+          if (!doc) return null as Awaited<ReturnType<typeof baseDeleteOne>>
+          await deleteABTest(doc.id)
+          return doc as Awaited<ReturnType<typeof baseDeleteOne>>
+        }
         return baseDeleteOne(deleteOneArgs)
       }
 
@@ -491,6 +663,27 @@ const engageD1Adapter: typeof sqliteD1Adapter = (options) => {
         }
         if (countArgs.collection === 'translations') {
           return countTranslations({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'media') {
+          return countMedia({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'page-templates') {
+          return countPageTemplates({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'field-groups') {
+          return countFieldGroups({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'forms') {
+          return countForms({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'form-submissions') {
+          return countFormSubmissions({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'memberships') {
+          return countMemberships({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
+        }
+        if (countArgs.collection === 'ab-tests') {
+          return countABTests({ where: countArgs.where }).then((totalDocs) => ({ totalDocs })) as ReturnType<typeof baseCount>
         }
         return baseCount(countArgs)
       }

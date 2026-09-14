@@ -109,6 +109,16 @@ describe('cms/db - posts draft/publish policy (createDraftOps)', () => {
 
     const oursDraft = await findPostByID(id, { draft: true })
     expect(oursDraft?.title).toBe('Payload: created draft')
+
+    // The double-write proof: engine.create() -> adapter.create -> our new
+    // createPostLiveRow (plain baseOps.create, NOT the createDraftOps-wrapped
+    // createPost) writes only the live row, leaving Payload's own separate,
+    // unintercepted saveVersion() -> payload.db.createVersion call as the
+    // SOLE writer of the version row - see engage.config.ts's own doc
+    // comment above engageD1Adapter for the confirmed landmine this guards
+    // against. Exactly one version row, not two.
+    const versions = await findPostVersions(id)
+    expect(versions).toHaveLength(1)
   })
 
   it('Payload writes, ours reads: a real Payload draft:true update leaves live untouched, ours agrees', async () => {
@@ -127,5 +137,11 @@ describe('cms/db - posts draft/publish policy (createDraftOps)', () => {
 
     const oursDraft = await findPostByID(id, { draft: true })
     expect(oursDraft?.title).toBe('Payload: draft on top')
+
+    // Same double-write proof as the create test above, for engine.update():
+    // one version row from the initial create, one from this update - two
+    // total, not three.
+    const versions = await findPostVersions(id)
+    expect(versions).toHaveLength(2)
   })
 })

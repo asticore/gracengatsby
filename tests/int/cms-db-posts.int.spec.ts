@@ -44,7 +44,7 @@ const richText = (text: string) => ({ root: { children: [{ type: 'paragraph', ch
  * lockable collection - so "update" and "cleanup" below use this module's
  * own updatePost/raw SQL instead.
  */
-describe('cms/db - posts (proof of concept, not wired in)', () => {
+describe('cms/db - posts (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
@@ -170,5 +170,33 @@ describe('cms/db - posts (proof of concept, not wired in)', () => {
     expect(latest.categories?.map((c: { name: string }) => c.name)).toEqual(['Clone Version Category'])
     const payloadFaqBlock = (latest.layout as { blockType: string; faqs?: number[] }[]).find((b) => b.blockType === 'faq')
     expect(payloadFaqBlock?.faqs).toEqual([faq.id])
+  })
+
+  it('cuts over cleanly: engine.find/create/update/delete for posts go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'posts', data: { title: `${marker}-a`, content: richText('Body.') } })
+    createdIds.push(a.id as number)
+
+    // engine.find -> adapter.find -> findPostsPaginated (plain baseOps, not createDraftOps-wrapped).
+    const listed = await engine.find({ collection: 'posts', where: { title: { like: marker } }, limit: 10 })
+    expect(listed.docs.map((d) => d.id)).toEqual([a.id])
+    expect(listed.totalDocs).toBe(1)
+
+    // engine.update (by id, non-draft) -> adapter.updateOne -> updatePostLiveRow, publishing straight to the live row.
+    const updated = await engine.update({ collection: 'posts', id: a.id, data: { title: `${marker}-updated`, _status: 'published' } })
+    expect(updated.title).toBe(`${marker}-updated`)
+    const reread = await findPostByID(a.id as number)
+    expect(reread?.title).toBe(`${marker}-updated`)
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id via findPostsPaginated) -> deletePost.
+    const deletedDoc = await engine.delete({ collection: 'posts', id: a.id })
+    expect(deletedDoc.title).toBe(`${marker}-updated`)
+    expect(await findPostByID(a.id as number)).toBeNull()
+
+    // deletePost doesn't touch _eg_posts_v - clean up this id's version
+    // row(s) directly since it's being removed from createdIds below.
+    const db = await getDb()
+    await db.run(sql`delete from _eg_posts_v where parent_id = ${a.id}`)
+    createdIds.splice(createdIds.indexOf(a.id as number), 1)
   })
 })

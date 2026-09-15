@@ -98,7 +98,13 @@ const createLog =
     }
   }
 
-const cloudflareLogger = {
+// Exported so tests/int/localapi-logger.int.spec.ts can prove
+// src/localapi/logger.ts's own consoleLogger produces byte-identical JSON
+// lines to this, the app's real logger - not just assert the new module's
+// behavior in isolation. Still `as any` for now: swapping in
+// src/localapi/logger.ts's own EngineLogger type is part of the eventual
+// @/engine cutover, not this standalone stage.
+export const cloudflareLogger = {
   level: process.env.ENGAGE_LOG_LEVEL || 'info',
   trace: createLog('trace', console.debug),
   debug: createLog('debug', console.debug),

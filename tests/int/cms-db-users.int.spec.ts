@@ -9,7 +9,7 @@ import '@/engage.config'
 import { getEngine } from '@/engine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { createUser, deleteUser, findUserAuthRowByID, findUserByID, updateUser, updateUserAuthRow } from '@/cms/db'
+import { createUser, deleteUser, findUserAuthRowByID, findUserByID, findUsersPaginated, updateUser, updateUserAuthRow } from '@/cms/db'
 
 /**
  * Phase 14: Users - `auth: true`, this app's biggest single-collection gap
@@ -60,6 +60,29 @@ describe('cms/db - users (wired into engageD1Adapter)', () => {
 
     const viaOurs = await findUserByID(created.id as number)
     expect(viaOurs?.roles).toEqual(['admin', 'customer'])
+  })
+
+  it('findUsersPaginated returns the created user, filterable by where - matches findUsers/findUserByID\'s own row', async () => {
+    // Same caveat as UserDoc's own doc comment: this data layer's `ops`
+    // (`../generic.ts`'s createCollectionOps) does a plain `db.select().from
+    // (table)` under the hood, so the ROW still carries hash/salt/sessions at
+    // runtime for every export here (narrow or auth-row) - only the TS type
+    // narrows what ordinary app code is allowed to name off it. Redacting
+    // those columns before they reach a non-auth caller is a job for the
+    // read layer ABOVE this one (field-level access, see read-operations.ts),
+    // not this raw db function - so this test asserts on the fields UserDoc
+    // actually promises (email/roles), not on hash/salt being physically
+    // absent from the row.
+    const email = `phase14-paginated-${Date.now()}@example.com`
+    const created = await engine.create({ collection: 'users', data: { email, password: 'Phase14TestPassword!', roles: ['admin'] } })
+    createdUserIds.push(created.id as number)
+
+    const result = await findUsersPaginated({ where: { id: { equals: created.id as number } } })
+    expect(result.docs).toHaveLength(1)
+    expect(result.totalDocs).toBe(1)
+    expect(result.docs[0]?.id).toBe(created.id)
+    expect(result.docs[0]?.email).toBe(email)
+    expect(result.docs[0]?.roles).toEqual(['admin'])
   })
 
   it('writes and updates a user Payload can read back', async () => {

@@ -62,6 +62,23 @@ export type UserAuthRow = UserDoc & {
 const ops = createCollectionOps(users, Users, { sessions: usersSessions }, { selectTables: { roles: usersRoles } })
 
 export const findUsers = ops.findMany as unknown as (args?: { where?: Where; limit?: number }) => Promise<UserDoc[]>
+/**
+ * The narrow (UserDoc-shaped, no hash/salt/sessions) paginated-list
+ * counterpart to findUsers - same reasoning as every other collection's own
+ * findFooPaginated (see findFaqsPaginated's doc comment in faqs.ts): what a
+ * read-registry entry's own `findPaginated` needs for Users' list view.
+ * Distinct from findUserAuthRowsPaginated below, which exposes the FULL
+ * auth-row shape for the auth system only - this one is safe for ordinary
+ * app code (admin user list, membership lookups, etc.) the same way
+ * findUserByID is already narrower than findUserAuthRowByID.
+ */
+export const findUsersPaginated = ops.findPaginated as unknown as (args?: {
+  where?: Where
+  sort?: Sort
+  limit?: number
+  page?: number
+  pagination?: boolean
+}) => Promise<{ docs: UserDoc[]; totalDocs: number; limit: number; totalPages: number; page: number; pagingCounter: number; hasPrevPage: boolean; hasNextPage: boolean; prevPage: number | null; nextPage: number | null }>
 export const findUserByID = ops.findByID as unknown as (id: number) => Promise<UserDoc | null>
 export const countUsers = ops.count
 export const createUser = ops.create as unknown as (

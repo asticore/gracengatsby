@@ -138,6 +138,12 @@ describe('localapi/auth parity - real getEngine() vs src/localapi/auth.ts, same 
     expect(oursRow?.lockUntil).toBeNull()
   })
 
+  // This test drives MAX_LOGIN_ATTEMPTS * 2 real login attempts (real engine
+  // + our own login) against live D1, each one doing a full PBKDF2 verify -
+  // deliberately expensive, by design, on both sides. Vitest's default
+  // 5000ms per-test timeout is too tight for that against live D1 network
+  // latency (observed ~7.5s-18.7s wall time on a passing run) - this is a
+  // timing budget fix only, not a change to what the test asserts.
   it('lockout progression: MAX_LOGIN_ATTEMPTS wrong passwords lock both users identically, and the final attempt throws the locked-account error on both sides', async () => {
     const real = await createRealUser('lock-real')
     const ours = await createRealUser('lock-ours')
@@ -170,7 +176,7 @@ describe('localapi/auth parity - real getEngine() vs src/localapi/auth.ts, same 
     await expect(login(db, { email: ours.email, password: PASSWORD, secret })).rejects.toBeInstanceOf(LockedAuth)
     expect((await findUserAuthRowByID(real.id))?.loginAttempts).toBe(MAX_LOGIN_ATTEMPTS)
     expect((await findUserAuthRowByID(ours.id))?.loginAttempts).toBe(MAX_LOGIN_ATTEMPTS)
-  })
+  }, 30000)
 
   it('forgotPassword + resetPassword round trip: both implementations mint a usable token, the new password works, the old one no longer does, and the token is single-use', async () => {
     const real = await createRealUser('reset-real')

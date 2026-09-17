@@ -7,58 +7,205 @@ import type { RealEngine as Engine } from './helpers/realEngine'
 import '@/engage.config'
 
 import { getRealEngine as getEngine } from './helpers/realEngine'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { createForm, deleteForm, findFormByID, updateForm } from '@/cms/db'
 
 /**
- * Forms: a collection with a `relation` field that uses `hasMany` (1:N
- * relationship, not N:N like EventRsvps' `rel`) - see its own schema in
- * src/cms/db/collections/forms.ts.
+ * Phase 17: Forms - the second, harder half of the nested-array-in-array
+ * capability Field Groups proved first. `fields` is an array whose own
+ * subfields include a direct nested array (`options`, same mechanism as
+ * Field Groups'), THREE groups flattened onto the array's own child table
+ * (`calculation`/`pricing`/`conditional` - confirmed against the real
+ * `calculation_formula`/`pricing_priced`/`conditional_enabled` columns on
+ * `eg_forms_fields`), and - `conditional` specifically - an array nested
+ * INSIDE that group (`rules`, confirmed via a real
+ * `pragma table_info(eg_forms_fields_conditional_rules)` dump: same TEXT
+ * `_parent_id` scheme as a directly-nested array, pointing at the owning
+ * `eg_forms_fields` row's own string id - a group has no row/id of its own).
+ *
+ * Payload's own validation (`required: true` on choice/rules subfields
+ * etc.) and the calculation/conditional evaluators themselves are
+ * Payload-level/application concerns, not this data layer's - these cases
+ * only exercise what the database adapter itself has to get right: the
+ * columns and child-table rows round-trip correctly.
+ *
+ * This suite only touches rows it creates itself (scoped creates/reads/
+ * deletes by id, never an unscoped count or delete).
  */
-describe('cms/db - forms', () => {
+describe('cms/db - forms (wired into engageD1Adapter)', () => {
   let engine: Engine
   const createdIds: number[] = []
 
-  it('reads a form written by Payload: hasMany relation field', async () => {
+  beforeAll(async () => {
     engine = await getEngine()
-    const formRef = await engine.create({ collection: 'forms', data: { name: 'Parity form' } })
-    createdIds.push(formRef.id as number)
-
-    const submissionRef = await engine.create({
-      collection: 'form-submissions',
-      data: { form: formRef.id, data: 'test data' },
-    })
-
-    const viaOurs = await findFormByID(formRef.id as number)
-    expect(viaOurs?.id).toBe(formRef.id)
-    expect(viaOurs?.name).toBe('Parity form')
-    expect(viaOurs?.submissions).toBeDefined()
   })
 
-  it('writes a form Payload can read back', async () => {
-    const ours = await createForm({ name: 'Our form' })
+  afterAll(async () => {
+    for (const id of createdIds) {
+      // deleteForm, not engine.delete: this suite's own writes should be
+      // cleaned up by the same code under test.
+      await deleteForm(id)
+    }
+  })
+
+  it('reads a document written by Payload: a group-in-array (calculation) and an array-in-group-in-array (conditional.rules)', async () => {
+    const title = `phase17-form-a-${Date.now()}`
+    const created = await engine.create({
+      collection: 'forms',
+      data: {
+        title,
+        fields: [
+          { type: 'text', name: 'guests', label: 'Number of guests' },
+          {
+            type: 'calculation',
+            name: 'total',
+            label: 'Total',
+            calculation: { formula: '{guests} * 25', decimalPlaces: 2, prefix: '$' },
+          },
+          {
+            type: 'text',
+            name: 'notes',
+            label: 'Notes',
+            conditional: {
+              enabled: true,
+              action: 'show',
+              match: 'all',
+              rules: [{ field: 'guests', operator: 'greaterThan', value: '5' }],
+            },
+          },
+        ],
+      },
+    })
+    createdIds.push(created.id as number)
+
+    const viaOurs = await findFormByID(created.id as number)
+    expect(viaOurs).not.toBeNull()
+    expect(viaOurs?.title).toBe(title)
+    expect(viaOurs?.fields).toHaveLength(3)
+
+    const [guestsField, totalField, notesField] = viaOurs!.fields!
+    expect(guestsField.name).toBe('guests')
+
+    expect(totalField.calculation?.formula).toBe('{guests} * 25')
+    expect(totalField.calculation?.decimalPlaces).toBe(2)
+    expect(totalField.calculation?.prefix).toBe('$')
+
+    expect(notesField.conditional?.enabled).toBe(true)
+    expect(notesField.conditional?.action).toBe('show')
+    expect(notesField.conditional?.rules).toHaveLength(1)
+    expect(notesField.conditional?.rules?.[0]).toMatchObject({ field: 'guests', operator: 'greaterThan', value: '5' })
+  })
+
+  it('writes a document (options array, calculation/pricing/conditional groups, conditional.rules) Payload can read back', async () => {
+    const title = `phase17-form-b-${Date.now()}`
+    const ours = await createForm({
+      title,
+      fields: [
+        {
+          type: 'select',
+          name: 'room',
+          label: 'Room',
+          options: [
+            { label: 'Standard', value: 'standard', price: 100 },
+            { label: 'Deluxe', value: 'deluxe', price: 200 },
+          ],
+          pricing: { priced: true, unitPrice: 1 },
+        },
+        {
+          type: 'text',
+          name: 'promoCode',
+          label: 'Promo code',
+          conditional: {
+            enabled: true,
+            action: 'hide',
+            match: 'any',
+            rules: [
+              { field: 'room', operator: 'equals', value: 'standard' },
+              { field: 'guests', operator: 'isEmpty' },
+            ],
+          },
+        },
+      ],
+    })
     createdIds.push(ours.id)
-    expect(ours.name).toBe('Our form')
+
+    expect(ours.fields?.[0].options?.map((o) => o.value)).toEqual(['standard', 'deluxe'])
+    expect(ours.fields?.[0].pricing?.priced).toBe(true)
+    expect(ours.fields?.[1].conditional?.rules?.map((r) => r.field)).toEqual(['room', 'guests'])
 
     const viaPayload = await engine.findByID({ collection: 'forms', id: ours.id, depth: 0 })
-    expect(viaPayload.name).toBe('Our form')
+    const fields = viaPayload.fields as {
+      options?: { value: string; price?: number }[]
+      pricing?: { priced: boolean }
+      conditional?: { rules?: { field: string; operator: string }[] }
+    }[]
+    expect(fields[0].options?.map((o) => o.value)).toEqual(['standard', 'deluxe'])
+    expect(fields[0].options?.[1].price).toBe(200)
+    expect(fields[0].pricing?.priced).toBe(true)
+    expect(fields[1].conditional?.rules?.map((r) => r.operator)).toEqual(['equals', 'isEmpty'])
   })
 
-  it('updates a form', async () => {
-    const created = await createForm({ name: 'Original name' })
+  it('replaces fields wholesale on update, including the nested conditional.rules array', async () => {
+    const title = `phase17-form-c-${Date.now()}`
+    const created = await createForm({
+      title,
+      fields: [
+        {
+          type: 'text',
+          name: 'email',
+          conditional: { enabled: true, action: 'show', match: 'all', rules: [{ field: 'subscribe', operator: 'equals', value: 'yes' }] },
+        },
+      ],
+    })
     createdIds.push(created.id)
 
-    const updated = await updateForm(created.id, { name: 'Updated name' })
-    expect(updated?.name).toBe('Updated name')
+    const updated = await updateForm(created.id, {
+      fields: [
+        {
+          type: 'text',
+          name: 'email',
+          conditional: {
+            enabled: true,
+            action: 'show',
+            match: 'any',
+            rules: [
+              { field: 'subscribe', operator: 'equals', value: 'yes' },
+              { field: 'vip', operator: 'equals', value: 'true' },
+            ],
+          },
+        },
+      ],
+    })
+    expect(updated?.fields?.[0].conditional?.match).toBe('any')
+    expect(updated?.fields?.[0].conditional?.rules).toHaveLength(2)
 
     const viaPayload = await engine.findByID({ collection: 'forms', id: created.id, depth: 0 })
-    expect(viaPayload.name).toBe('Updated name')
+    const fields = viaPayload.fields as { conditional?: { rules?: { field: string }[] } }[]
+    expect(fields[0].conditional?.rules?.map((r) => r.field)).toEqual(['subscribe', 'vip'])
   })
 
-  afterAll = async () => {
-    for (const id of createdIds) {
-      await deleteForm(id).catch(() => {})
-    }
-  }
+  it('cuts over cleanly: engine.find/update/delete for forms go through our own adapter', async () => {
+    const marker = `adaptercutover-${Date.now()}`
+    const a = await engine.create({ collection: 'forms', data: { title: `${marker}-a` } })
+    const b = await engine.create({ collection: 'forms', data: { title: `${marker}-b` } })
+    createdIds.push(a.id as number, b.id as number)
+
+    // engine.find -> adapter.find -> findFormsPaginated.
+    const listed = await engine.find({ collection: 'forms', where: { title: { like: marker } }, sort: 'title', limit: 10 })
+    expect(listed.docs.map((d) => d.title)).toEqual([`${marker}-a`, `${marker}-b`])
+    expect(listed.totalDocs).toBe(2)
+
+    // engine.update (by id) -> adapter.updateOne -> updateForm.
+    const updated = await engine.update({ collection: 'forms', id: a.id, data: { fields: [{ type: 'text', name: 'note', label: 'Cutover note' }] } })
+    expect((updated.fields as { name?: string }[])?.[0]?.name).toBe('note')
+    const reread = await findFormByID(a.id as number)
+    expect(reread?.fields?.[0]?.name).toBe('note')
+
+    // engine.delete (by id) -> adapter.deleteOne (resolves id from `where`) -> deleteForm.
+    const deletedDoc = await engine.delete({ collection: 'forms', id: b.id })
+    expect(deletedDoc.title).toBe(`${marker}-b`)
+    expect(await findFormByID(b.id as number)).toBeNull()
+    createdIds.splice(createdIds.indexOf(b.id as number), 1)
+  })
 })

@@ -29,19 +29,19 @@ export const VISUAL_EDITOR_CSS = `
    but harmless). */
 :root,
 .ve-root {
-  /* Light theme (default) - warm/gold, matches the site's own boutique brand. */
-  --ve-bg: #f2f0ec;
+  /* Light theme (default) - blues/greys, matches the site's own brand. */
+  --ve-bg: #f5f3f5;
   --ve-surface: #ffffff;
-  --ve-surface-alt: #f7f5f1;
-  --ve-surface-hover: #fdfbf7;
-  --ve-border: #e2ded4;
-  --ve-border-strong: #d8d3c8;
-  --ve-text: #1d1b19;
-  --ve-text-muted: #8a8378;
-  --ve-text-faint: #a39d90;
-  --ve-accent: #c9a15a;
-  --ve-accent-hover: #d9b06a;
-  --ve-accent-contrast: #1d1b19;
+  --ve-surface-alt: #eeedf2;
+  --ve-surface-hover: #f8f7fa;
+  --ve-border: #dedce3;
+  --ve-border-strong: #cac7d1;
+  --ve-text: #201f26;
+  --ve-text-muted: #857c8d;
+  --ve-text-faint: #a39da8;
+  --ve-accent: #2e3192;
+  --ve-accent-hover: #3d40a8;
+  --ve-accent-contrast: #ffffff;
   --ve-danger: #b3453a;
   --ve-danger-contrast: #ffffff;
   /* Green is reserved for "selection" and "add" affordances specifically -
@@ -52,14 +52,14 @@ export const VISUAL_EDITOR_CSS = `
   --ve-select: #22a35e;
   --ve-select-contrast: #ffffff;
   --ve-select-hover: #1c8a4d;
-  --ve-checker-a: #f7f5f1;
-  --ve-checker-b: #f0ede6;
+  --ve-checker-a: #eeedf2;
+  --ve-checker-b: #e7e5ec;
   --ve-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 30px rgba(0, 0, 0, 0.06);
   --ve-shadow-pop: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 12px 30px rgba(0, 0, 0, 0.14);
   /* The topbar and node/toolbar chrome stay dark in both themes on purpose -
      it's editor chrome, not page surface, same as Elementor's always-dark
      toolbar - so these two are fixed rather than swapped per theme. */
-  --ve-chrome-bg: #1d1b19;
+  --ve-chrome-bg: #1b1d29;
   --ve-chrome-text: #ffffff;
 
   display: flex;
@@ -69,9 +69,9 @@ export const VISUAL_EDITOR_CSS = `
   color: var(--ve-text);
 }
 
-/* Dark mode: blue, not the inverse of the gold light theme - a deliberate
-   navy palette, picked (not auto-inverted) so it reads as designed rather
-   than "light theme with the lights off". */
+/* Dark mode: a deliberately distinct navy palette, not an auto-inversion of
+   the light theme, so it reads as designed rather than "light theme with the
+   lights off". */
 html[data-theme='dark'] .ve-root {
   --ve-bg: #0a1120;
   --ve-surface: #111b2f;
@@ -1392,4 +1392,3 @@ html[data-theme='dark'] .ve-root {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--ve-border);
 }
-`

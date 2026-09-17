@@ -30,7 +30,7 @@ export const OpenVisualEditorButton: React.FC = () => {
           gap: 6,
           padding: '8px 14px',
           borderRadius: 6,
-          background: '#1d1b19',
+          background: '#1b1d29',
           color: '#fff',
           fontSize: 13,
           fontWeight: 600,

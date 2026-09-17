@@ -14,9 +14,9 @@ const fieldInlineClassName = 'flex min-w-0 flex-[1_1_100%] flex-row items-center
 const labelClassName = 'text-[12px] font-semibold'
 const helpClassName = 'm-0 text-[11px] opacity-65'
 const controlClassName =
-  'w-full rounded-[5px] border border-[var(--theme-elevation-150,#d8d3c8)] bg-[var(--theme-input-bg,#fff)] px-[9px] py-[7px] text-[13px] text-inherit [font-family:inherit]'
+  'w-full rounded-[5px] border border-[var(--theme-elevation-150,#cac7d1)] bg-[var(--theme-input-bg,#fff)] px-[9px] py-[7px] text-[13px] text-inherit [font-family:inherit]'
 const btnClassName =
-  'cursor-pointer rounded-[5px] border border-[var(--theme-elevation-150,#d8d3c8)] bg-transparent px-[10px] py-[5px] text-[12px] text-inherit hover:border-[#c9a15a]'
+  'cursor-pointer rounded-[5px] border border-[var(--theme-elevation-150,#cac7d1)] bg-transparent px-[10px] py-[5px] text-[12px] text-inherit hover:border-[#2e3192]'
 
 export const CustomFieldInput: React.FC<{
   def: CustomFieldDef
@@ -108,7 +108,7 @@ export const CustomFieldInput: React.FC<{
         <div className="flex items-center gap-[8px]">
           <input
             id={id}
-            className="h-[34px] w-[38px] cursor-pointer rounded-[5px] border border-[var(--theme-elevation-150,#d8d3c8)] p-0 [background:none]"
+            className="h-[34px] w-[38px] cursor-pointer rounded-[5px] border border-[var(--theme-elevation-150,#cac7d1)] p-0 [background:none]"
             type="color"
             value={typeof value === 'string' && value ? value : '#000000'}
             onChange={(e) => onChange(e.target.value)}

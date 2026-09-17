@@ -6,7 +6,7 @@ export const AsticoreIcon: React.FC = () => (
     <rect width="24" height="24" rx="6" fill="#1a1a1a" />
     <path
       d="M12 5.5L18 18.5H15.6L14.2 15.4H9.8L8.4 18.5H6L12 5.5ZM12 9.4L10.5 12.9H13.5L12 9.4Z"
-      fill="#c9a15a"
+      fill="#2e3192"
     />
   </svg>
 )

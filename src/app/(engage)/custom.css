@@ -1,9 +1,12 @@
 /*
  * Asticore Engage — admin portal theme.
  *
- * Direction C ("Soft Cards"): rounded surfaces, tinted status pills, a warm
- * neutral ground and the Asticore gold as the single accent — at a denser
- * scale so more fits on screen.
+ * Direction C ("Soft Cards"): rounded surfaces, tinted status pills, a cool
+ * blue-grey neutral ground and a deep blue as the single accent — at a denser
+ * scale so more fits on screen. (Recolored from the original warm gold/cream
+ * palette to blues/greys — every step below is the same lightness/saturation
+ * as before, hue-shifted from warm amber to cool blue, so contrast ratios are
+ * unchanged and only the hue reads differently.)
  *
  * HOW THIS WORKS (important — an earlier version of this file got it wrong and
  * produced unreadable dark mode):
@@ -39,8 +42,18 @@
    * Brand tokens and density                                          *
    * ---------------------------------------------------------------- */
   :root {
-    --ac-gold: #b9924b;
-    --ac-gold-soft: #c9a15a;
+    --ac-gold: #2e3192;
+    --ac-gold-soft: #00a9ff;
+    /* --ac-gold is a dark navy in light theme (needs light text) but a bright
+       cyan-blue in dark theme (needs dark text); --ac-gold-soft is the
+       opposite lightness of --ac-gold in EVERY theme (it's bright cyan in
+       light theme, an even lighter cyan in dark theme) - so each needs its
+       own contrast color, computed, not assumed: white-on-#2e3192 ~10.7:1,
+       black-on-#2e3192 ~1.8:1 (fails); white-on-#00a9ff ~2.6:1 (fails),
+       black-on-#00a9ff ~7.4:1; white-on-#4fc3ff ~2:1 (fails), black-on-#4fc3ff
+       ~9.6:1. */
+    --ac-gold-contrast: #ffffff;
+    --ac-gold-soft-contrast: #0f0f14;
 
     /* The portal derives spacing from --base = (--base-px / --base-body-size)rem.
        Lowering --base-px tightens padding, gutters and row heights together. */
@@ -65,67 +78,69 @@
   }
 
   /* ---------------------------------------------------------------- *
-   * The single warm ramp: light (0) → dark (1000)                     *
+   * The single blue-grey ramp: light (0) → dark (1000)                *
    * ---------------------------------------------------------------- */
   :root {
     --color-base-0: #ffffff;
-    --color-base-50: #faf8f5;
-    --color-base-100: #f4f1ea;
-    --color-base-150: #ece7dd;
-    --color-base-200: #e2dbcd;
-    --color-base-250: #d6ccbb;
-    --color-base-300: #c8bca8;
-    --color-base-350: #b8ab95;
-    --color-base-400: #a89a83;
-    --color-base-450: #988a72;
-    --color-base-500: #877962;
-    --color-base-550: #776a54;
-    --color-base-600: #675b47;
-    --color-base-650: #584d3b;
-    --color-base-700: #4a4031;
-    --color-base-750: #3d3428;
-    --color-base-800: #322a20;
-    --color-base-850: #282119;
-    --color-base-900: #1f1a13;
-    --color-base-950: #19150f;
-    --color-base-1000: #14110f;
+    --color-base-50: #f5f3f5;
+    --color-base-100: #eaebf4;
+    --color-base-150: #dddeec;
+    --color-base-200: #cdcfe2;
+    --color-base-250: #bbbdd6;
+    --color-base-300: #a8abc8;
+    --color-base-350: #9598b8;
+    --color-base-400: #8386a8;
+    --color-base-450: #857c8d;
+    --color-base-500: #626587;
+    --color-base-550: #545777;
+    --color-base-600: #474a67;
+    --color-base-650: #3b3d58;
+    --color-base-700: #31334a;
+    --color-base-750: #282a3d;
+    --color-base-800: #202132;
+    --color-base-850: #191a28;
+    --color-base-900: #13141f;
+    --color-base-950: #0f1019;
+    --color-base-1000: #0f0f14;
 
     /* The stock de-facto accent is the blue ramp; repointing it to the
-       Asticore gold recolours buttons, links and focus rings in one move. */
-    --color-blue-50: #fdf8ef;
-    --color-blue-100: #f7ecd6;
-    --color-blue-150: #f0e0bf;
-    --color-blue-200: #e6cf9f;
-    --color-blue-250: #dcbd7e;
-    --color-blue-300: #d2ab5e;
-    --color-blue-350: #c79c4f;
+       Asticore blue recolours buttons, links and focus rings in one move. */
+    --color-blue-50: #eef1fe;
+    --color-blue-100: #d4dcf9;
+    --color-blue-150: #bbc8f4;
+    --color-blue-200: #9aabeb;
+    --color-blue-250: #778ee3;
+    --color-blue-300: #5572db;
+    --color-blue-350: #4664d0;
     --color-blue-400: var(--ac-gold-soft);
     --color-blue-450: var(--ac-gold);
     --color-blue-500: var(--ac-gold);
-    --color-blue-550: #a9833f;
-    --color-blue-600: #977435;
-    --color-blue-650: #85652c;
-    --color-blue-700: #735623;
-    --color-blue-750: #61481b;
-    --color-blue-800: #4f3a14;
-    --color-blue-850: #3d2c0e;
-    --color-blue-900: #2b1f08;
-    --color-blue-950: #191203;
+    --color-blue-550: #3751b1;
+    --color-blue-600: #2e469e;
+    --color-blue-650: #253c8c;
+    --color-blue-700: #1d3179;
+    --color-blue-750: #162766;
+    --color-blue-800: #101e53;
+    --color-blue-850: #0a1641;
+    --color-blue-900: #050e2e;
+    --color-blue-950: #01071b;
   }
 
-  /* Dark: swap the surface roles, and lift the gold so it holds contrast
+  /* Dark: swap the surface roles, and lift the blue so it holds contrast
      against a dark ground. The ramp itself is NOT redefined — the portal already
      inverts it. */
   [data-theme='dark'] {
     --ac-surface: var(--theme-elevation-50);
     --ac-ground: var(--theme-elevation-0);
 
-    --color-blue-400: #dcb673;
-    --color-blue-450: #d8b06a;
-    --color-blue-500: #d8b06a;
-    --color-blue-550: #c99f57;
-    --ac-gold: #d8b06a;
-    --ac-gold-soft: #e0bd80;
+    --color-blue-400: #6b85e4;
+    --color-blue-450: #00a9ff;
+    --color-blue-500: #00a9ff;
+    --color-blue-550: #4e6bd2;
+    --ac-gold: #00a9ff;
+    --ac-gold-soft: #4fc3ff;
+    --ac-gold-contrast: #0f0f14;
+    --ac-gold-soft-contrast: #0f0f14;
   }
 
   /* Auto — no data-theme attribute, so follow the OS. Guarded so an explicit
@@ -135,12 +150,14 @@
       --ac-surface: var(--theme-elevation-50);
       --ac-ground: var(--theme-elevation-0);
 
-      --color-blue-400: #dcb673;
-      --color-blue-450: #d8b06a;
-      --color-blue-500: #d8b06a;
-      --color-blue-550: #c99f57;
-      --ac-gold: #d8b06a;
-      --ac-gold-soft: #e0bd80;
+      --color-blue-400: #6b85e4;
+      --color-blue-450: #00a9ff;
+      --color-blue-500: #00a9ff;
+      --color-blue-550: #4e6bd2;
+      --ac-gold: #00a9ff;
+      --ac-gold-soft: #4fc3ff;
+      --ac-gold-contrast: #0f0f14;
+      --ac-gold-soft-contrast: #0f0f14;
     }
   }
 
@@ -225,18 +242,18 @@
     letter-spacing: 0.01em;
   }
 
-  /* Gold is a mid-tone: it needs dark text on it in BOTH themes, so this is
-     pinned rather than derived from the elevation ramp. */
+  /* The blue accent's contrast need flips per theme (dark navy in light mode,
+     bright cyan in dark mode) - see --ac-gold-contrast's own comment above. */
   .btn--style-primary {
     background-color: var(--ac-gold);
     border-color: var(--ac-gold);
-    color: #14110f;
+    color: var(--ac-gold-contrast);
   }
 
   .btn--style-primary:hover {
     background-color: var(--ac-gold-soft);
     border-color: var(--ac-gold-soft);
-    color: #14110f;
+    color: var(--ac-gold-soft-contrast);
   }
 
   /* ---------------------------------------------------------------- *

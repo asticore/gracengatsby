@@ -69,9 +69,9 @@ export const SiteSettings: GlobalConfig = {
         {
           type: 'row',
           fields: [
-            { name: 'primaryColor', type: 'text', defaultValue: '#14110f', admin: { width: '33%', description: 'Ink / text color.' } },
-            { name: 'accentColor', type: 'text', defaultValue: '#b9924b', admin: { width: '33%', description: 'Buttons, links, highlights.' } },
-            { name: 'backgroundColor', type: 'text', defaultValue: '#f6f1e7', admin: { width: '33%', description: 'Page background.' } },
+            { name: 'primaryColor', type: 'text', defaultValue: '#1f2230', admin: { width: '33%', description: 'Ink / text color.' } },
+            { name: 'accentColor', type: 'text', defaultValue: '#2e3192', admin: { width: '33%', description: 'Buttons, links, highlights.' } },
+            { name: 'backgroundColor', type: 'text', defaultValue: '#f5f3f5', admin: { width: '33%', description: 'Page background.' } },
           ],
         },
         {

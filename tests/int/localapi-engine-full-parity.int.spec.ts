@@ -17,11 +17,11 @@
 // hardcoded here, so this suite automatically covers every entity Stage 6a's
 // registry knows about - the same pattern `localapi-registry-parity.int.spec.ts`
 // already established.
-import type { Engine as RealEngine } from '@/engine'
+import type { RealEngine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { describe, expect, it } from 'vitest'
 
 import { readRegistry } from '@/localapi/registry'

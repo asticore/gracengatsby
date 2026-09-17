@@ -13,7 +13,7 @@
 // actually does.
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { describe, expect, it } from 'vitest'
 
 import { buildEngineCollectionEntries, buildEngineCollectionsMap, buildEngineConfig, buildEngineGlobalEntries, SHOP_PLUGIN_COLLECTION_ENTRIES } from '@/localapi/config'

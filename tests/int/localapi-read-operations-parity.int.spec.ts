@@ -19,11 +19,11 @@
 // collections'/globals' REAL, unmodified config objects (`src/collections/*`,
 // `src/globals/*`) and the REAL `src/cms/db` read functions each already
 // exports - nothing here is a rewritten stand-in.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 

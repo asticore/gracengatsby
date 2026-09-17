@@ -22,11 +22,11 @@
 //     (revalidateAdmin).
 //   - Integrations: a global with field-level beforeChange/afterRead hooks
 //     (encryptSecretHook/decryptSecretHook) and field-level access.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { createEvent, createFaq, deleteEvent, deleteEventRSVP, deleteFaq, findEventByID, findEventRSVPByID, findFaqByID, findIntegrations } from '@/cms/db'

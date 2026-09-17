@@ -14,11 +14,11 @@
 // job is proving the FACTORY's wiring (slug lookup, toLocalReq, secret
 // derivation, db.migrate plumbing) is correct at all, using one or two
 // representative entities per method.
-import type { Engine as RealEngine } from '@/engine'
+import type { RealEngine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { deleteTranslation } from '@/cms/db'

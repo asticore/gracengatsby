@@ -23,11 +23,11 @@
 //    exercised in (1)) are wired correctly too - `translations` chosen
 //    because it's a plain, non-drafts, admin-only collection not already
 //    covered by any other parity test in this project.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { deleteTranslation } from '@/cms/db'

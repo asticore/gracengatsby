@@ -9,12 +9,12 @@
 // separate vm realm breaks wrangler's bundled esbuild. The mock-hook cases
 // don't strictly need either, but live in the same file as the real-hook
 // ones for cohesion, so they inherit both.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 import type { CollectionBeforeChangeHook, FieldHook } from '@/engine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { createEvent, createEventRSVP, deleteEvent, deleteEventRSVP } from '@/cms/db'

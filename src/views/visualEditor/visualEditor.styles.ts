@@ -1392,3 +1392,4 @@ html[data-theme='dark'] .ve-root {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--ve-border);
 }
+`

@@ -17,9 +17,12 @@ import {
   LOCK_TIME_MS,
   LockedAuth,
   login,
+  logout,
   MAX_LOGIN_ATTEMPTS,
+  refreshToken,
   resetPassword,
   signJWT,
+  unlockUser,
   verifyAuth,
   verifyJWT,
   verifyPassword,
@@ -401,6 +404,124 @@ describe('localapi/auth - verifyAuth', () => {
 
     const result = await verifyAuth(db, { headers: headersFrom({ Authorization: `Bearer ${token}` }), secret: SECRET })
     expect(result).toEqual({ user: null })
+  })
+})
+
+/* -------------------------------------------------------------------------- */
+/* logout                                                                      */
+/* -------------------------------------------------------------------------- */
+
+describe('localapi/auth - logout', () => {
+  it('removes only the calling session, leaving other sessions intact', async () => {
+    const db = makeFakeAuthDb([makeUser()])
+    const first = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    const second = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    expect(db.rows[0].sessions).toHaveLength(2)
+
+    const result = await logout(db, { headers: headersFrom({ Authorization: `Bearer ${first.token}` }), secret: SECRET })
+
+    expect(result.message).toBeTruthy()
+    expect(db.rows[0].sessions).toHaveLength(1)
+    expect(db.rows[0].sessions?.[0]?.id).not.toBeUndefined()
+    // The remaining session is the second login's, not the first's.
+    const secondVerify = await verifyAuth(db, { headers: headersFrom({ Authorization: `Bearer ${second.token}` }), secret: SECRET })
+    expect(secondVerify.user).not.toBeNull()
+    const firstVerify = await verifyAuth(db, { headers: headersFrom({ Authorization: `Bearer ${first.token}` }), secret: SECRET })
+    expect(firstVerify.user).toBeNull()
+  })
+
+  it('clears every session when allSessions is true', async () => {
+    const db = makeFakeAuthDb([makeUser()])
+    const first = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    expect(db.rows[0].sessions).toHaveLength(2)
+
+    await logout(db, { headers: headersFrom({ Authorization: `Bearer ${first.token}` }), secret: SECRET, allSessions: true })
+
+    expect(db.rows[0].sessions).toHaveLength(0)
+  })
+
+  it('does not bump updatedAt for a session-only write (mirrors mintSession/refreshToken)', async () => {
+    const db = makeFakeAuthDb([makeUser({ updatedAt: '2026-01-01T00:00:00.000Z' })])
+    const { token } = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    await logout(db, { headers: headersFrom({ Authorization: `Bearer ${token}` }), secret: SECRET })
+    expect(db.rows[0].updatedAt).toBeNull()
+  })
+
+  it('never throws for a missing/invalid/already-expired token - treated as a no-op success', async () => {
+    const db = makeFakeAuthDb([makeUser()])
+    await expect(logout(db, { headers: headersFrom({}), secret: SECRET })).resolves.toEqual({ message: expect.any(String) })
+    await expect(logout(db, { headers: headersFrom({ Authorization: 'Bearer not-a-real-jwt' }), secret: SECRET })).resolves.toEqual({ message: expect.any(String) })
+  })
+})
+
+/* -------------------------------------------------------------------------- */
+/* refreshToken                                                                */
+/* -------------------------------------------------------------------------- */
+
+describe('localapi/auth - refreshToken', () => {
+  it('extends the existing session rather than minting a new one, and signs a new JWT with the same sid', async () => {
+    const db = makeFakeAuthDb([makeUser()])
+    const { token: originalToken } = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    expect(db.rows[0].sessions).toHaveLength(1)
+    const originalSid = db.rows[0].sessions?.[0]?.id
+    const originalExpiresAt = db.rows[0].sessions?.[0]?.expiresAt
+
+    const result = await refreshToken(db, { headers: headersFrom({ Authorization: `Bearer ${originalToken}` }), secret: SECRET })
+
+    expect(db.rows[0].sessions).toHaveLength(1) // same session count, not a second one minted
+    expect(db.rows[0].sessions?.[0]?.id).toBe(originalSid) // same sid
+    expect(db.rows[0].sessions?.[0]?.expiresAt).not.toBe(originalExpiresAt) // but extended
+    expect(result.setCookie).toBe(true)
+    expect(result.user.id).toBe(1)
+
+    // New token verifies and still carries the same sid's session.
+    const verified = await verifyAuth(db, { headers: headersFrom({ Authorization: `Bearer ${result.token}` }), secret: SECRET })
+    expect(verified.user).not.toBeNull()
+  })
+
+  it('does not bump updatedAt for the refresh write', async () => {
+    const db = makeFakeAuthDb([makeUser({ updatedAt: '2026-01-01T00:00:00.000Z' })])
+    const { token } = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    await refreshToken(db, { headers: headersFrom({ Authorization: `Bearer ${token}` }), secret: SECRET })
+    expect(db.rows[0].updatedAt).toBeNull()
+  })
+
+  it('throws AuthenticationError for a missing token', async () => {
+    const db = makeFakeAuthDb([makeUser()])
+    await expect(refreshToken(db, { headers: headersFrom({}), secret: SECRET })).rejects.toBeInstanceOf(AuthenticationError)
+  })
+
+  it('throws AuthenticationError when the sid is no longer a live session (revoked/logged out elsewhere)', async () => {
+    const db = makeFakeAuthDb([makeUser()])
+    const { token } = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
+    db.rows[0].sessions = []
+    await expect(refreshToken(db, { headers: headersFrom({ Authorization: `Bearer ${token}` }), secret: SECRET })).rejects.toBeInstanceOf(AuthenticationError)
+  })
+})
+
+/* -------------------------------------------------------------------------- */
+/* unlockUser                                                                  */
+/* -------------------------------------------------------------------------- */
+
+describe('localapi/auth - unlockUser', () => {
+  it('resets loginAttempts and clears lockUntil for the user matched by email', async () => {
+    const db = makeFakeAuthDb([makeUser({ loginAttempts: MAX_LOGIN_ATTEMPTS, lockUntil: new Date(Date.now() + LOCK_TIME_MS).toISOString() })])
+    const result = await unlockUser(db, { email: 'user@example.com' })
+    expect(result).toBe(true)
+    expect(db.rows[0].loginAttempts).toBe(0)
+    expect(db.rows[0].lockUntil).toBeNull()
+  })
+
+  it('normalizes email the same way login/forgotPassword do (case/whitespace insensitive)', async () => {
+    const db = makeFakeAuthDb([makeUser({ loginAttempts: MAX_LOGIN_ATTEMPTS })])
+    await unlockUser(db, { email: '  USER@EXAMPLE.COM  ' })
+    expect(db.rows[0].loginAttempts).toBe(0)
+  })
+
+  it('throws AuthenticationError for an unknown email', async () => {
+    const db = makeFakeAuthDb([makeUser()])
+    await expect(unlockUser(db, { email: 'nobody@example.com' })).rejects.toBeInstanceOf(AuthenticationError)
   })
 })
 

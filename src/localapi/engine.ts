@@ -82,7 +82,10 @@ import {
   AuthenticationError,
   forgotPassword as authForgotPassword,
   login as authLogin,
+  logout as authLogout,
+  refreshToken as authRefreshToken,
   resetPassword as authResetPassword,
+  unlockUser as authUnlockUser,
   verifyAuth,
   type AuthDbOps,
   type AuthUserDoc,
@@ -130,6 +133,9 @@ export type Engine = {
   resetPassword: (args: { collection: string; data: { password: string; token: string }; overrideAccess?: boolean }) => Promise<{ user: AuthUserDoc; token: string }>
   forgotPassword: (args: { collection: string; data: { email: string }; disableEmail?: boolean; expiration?: number }) => Promise<string | null>
   auth: (args: { headers: HeadersLike }) => Promise<{ user: AuthUserDoc | null }>
+  logout: (args: { collection: string; headers: HeadersLike; allSessions?: boolean }) => Promise<{ message: string }>
+  refreshToken: (args: { collection: string; headers: HeadersLike }) => Promise<{ exp: number; token: string; user: AuthUserDoc; setCookie: true }>
+  unlock: (args: { collection: string; data: { email: string } }) => Promise<boolean>
 }
 
 /** Real Payload's own derived JWT secret (`payload/dist/index.js`): `sha256(config.secret).hex().slice(0, 32)`, NOT the raw env var - confirmed and load-bearing since Stage 2. `engage.config.ts`'s own precedence (`ENGAGE_SECRET` preferred, `PAYLOAD_SECRET` fallback, empty-string last resort) is reproduced here so a deployment that only ever set one of the two still derives the same secret real Payload would. */
@@ -283,6 +289,9 @@ export function createEngine(): Engine {
     resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret }),
     forgotPassword: (args) => authForgotPassword(authDb, { email: args.data.email.trim().toLowerCase(), expirationMs: args.expiration ?? 60 * 60 * 1000 }),
     auth: (args) => verifyAuth(authDb, { headers: args.headers, secret }),
+    logout: (args) => authLogout(authDb, { headers: args.headers, secret, allSessions: args.allSessions }),
+    refreshToken: (args) => authRefreshToken(authDb, { headers: args.headers, secret }),
+    unlock: (args) => authUnlockUser(authDb, { email: args.data.email }),
   }
 
   return engine

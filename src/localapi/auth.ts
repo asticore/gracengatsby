@@ -674,6 +674,14 @@ export type VerifyAuthResult = { user: AuthUserDoc | null }
 /** The decoded, verified claims a real `sid`-bearing JWT for this app carries - see `getFieldsToSign` in ground-truth point 7. */
 export type JWTClaims = { id: number; collection: 'users'; email: string; sid: string; iat: number; exp: number }
 
+export type LogoutArgs = { headers: HeadersLike; secret: string; allSessions?: boolean }
+export type LogoutResult = { message: string }
+
+export type RefreshTokenArgs = { headers: HeadersLike; secret: string }
+export type RefreshTokenResult = { exp: number; token: string; user: AuthUserDoc; setCookie: true }
+
+export type UnlockArgs = { email: string }
+
 /* -------------------------------------------------------------------------- */
 /* Crypto primitives                                                           */
 /* -------------------------------------------------------------------------- */
@@ -1033,4 +1041,111 @@ export async function verifyAuth(db: AuthDbOps, args: VerifyAuthArgs): Promise<V
   if (!sessionStillLive) return { user: null }
 
   return { user: toAuthUserDoc(row) }
+}
+
+/* -------------------------------------------------------------------------- */
+/* logout                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Real Payload's `logoutOperation` (`auth/operations/logout.js`) - removes
+ * the session matching the caller's own `sid` claim from the user's
+ * `sessions` array (or clears every session when `allSessions` is true),
+ * writes it back with `updatedAt: null` (same "don't bump updatedAt for a
+ * session-only write" suppression `mintSession`/`refreshToken` use), and
+ * returns a success message. This extracts and verifies the token itself
+ * (like `verifyAuth`) rather than trusting a caller-supplied user, since the
+ * only thing logout needs from the token is its `sid` claim, and
+ * re-verifying is cheap and avoids a second, easily-desynced source of truth
+ * for "which session is this request". Never throws for "already logged
+ * out" - a missing/invalid/expired token is a no-op success, matching the
+ * only thing a client actually cares about (it wanted to not be logged in
+ * any more, and now isn't).
+ */
+export async function logout(db: AuthDbOps, args: LogoutArgs): Promise<LogoutResult> {
+  const token = extractToken(args.headers)
+  if (!token) return { message: 'Logged out successfully.' }
+
+  const decoded = verifyJWT(token, args.secret)
+  const id = decoded?.id
+  if (typeof id !== 'number') return { message: 'Logged out successfully.' }
+
+  const row = await db.findByID(id)
+  if (!row) return { message: 'Logged out successfully.' }
+
+  const sid = decoded?.sid
+  const remaining = args.allSessions ? [] : (row.sessions ?? []).filter((session) => session.id !== sid)
+
+  const { id: _id, createdAt: _createdAt, ...rest } = row
+  await db.updateByID(id, { ...rest, sessions: remaining, updatedAt: null })
+
+  return { message: 'Logged out successfully.' }
+}
+
+/* -------------------------------------------------------------------------- */
+/* refreshToken                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Real Payload's `refreshOperation` (`auth/operations/refresh.js`) - unlike
+ * `login`/`resetPassword`, this does NOT mint a new session: it extends the
+ * EXISTING session (matched by the current token's `sid` claim) to a fresh
+ * `expiresAt`, prunes any other expired sessions, writes that back with
+ * `updatedAt: null`, then signs a brand-new JWT carrying the SAME `sid`.
+ * Throws `AuthenticationError` for a missing/invalid token or a `sid` that
+ * no longer has a live session (real Payload throws `Forbidden` there - this
+ * module reuses its own single authentication-failure error class rather
+ * than adding a second one for a distinction no real call site needs to
+ * make).
+ */
+export async function refreshToken(db: AuthDbOps, args: RefreshTokenArgs): Promise<RefreshTokenResult> {
+  const token = extractToken(args.headers)
+  if (!token) throw new AuthenticationError()
+
+  const decoded = verifyJWT(token, args.secret)
+  const id = decoded?.id
+  const sid = decoded?.sid
+  if (typeof id !== 'number' || typeof sid !== 'string') throw new AuthenticationError()
+
+  const row = await db.findByID(id)
+  if (!row) throw new AuthenticationError()
+
+  const now = Date.now()
+  const existing = (row.sessions ?? []).find((session) => session.id === sid)
+  if (!existing) throw new AuthenticationError()
+
+  const refreshed: AuthSession = { ...existing, expiresAt: new Date(now + TOKEN_EXPIRATION_SECONDS * 1000).toISOString() }
+  const newSessions = [...pruneExpiredSessions(row.sessions, now).filter((session) => session.id !== sid), refreshed]
+
+  const { id: _id, createdAt: _createdAt, ...rest } = row
+  const updated = await db.updateByID(id, { ...rest, sessions: newSessions, updatedAt: null })
+  const finalRow = updated ?? { ...row, sessions: newSessions }
+
+  const { token: newToken, exp } = signJWT({ id, collection: 'users', email: finalRow.email, sid }, args.secret, TOKEN_EXPIRATION_SECONDS)
+
+  return { exp, token: newToken, user: toAuthUserDoc(finalRow), setCookie: true }
+}
+
+/* -------------------------------------------------------------------------- */
+/* unlock                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Real Payload's `unlockOperation` (`auth/operations/unlock.js`), email-only
+ * case (this app has no `loginWithUsername` - see file header). Resets
+ * `loginAttempts` to 0 and clears `lockUntil` for the user matched by email.
+ * Throws `AuthenticationError` for an unknown email - real Payload throws
+ * `Forbidden` there, same "reuse this module's one auth-failure class"
+ * reasoning as `refreshToken` above. Returns `true` on success, matching
+ * real Payload's own boolean result.
+ */
+export async function unlockUser(db: AuthDbOps, args: UnlockArgs): Promise<boolean> {
+  const normalizedEmail = (args.email || '').toLowerCase().trim()
+  if (!normalizedEmail) throw new Error('Missing email.')
+
+  const row = await db.findByEmail(normalizedEmail)
+  if (!row) throw new AuthenticationError()
+
+  await db.updateByID(row.id, { loginAttempts: 0, lockUntil: null })
+  return true
 }

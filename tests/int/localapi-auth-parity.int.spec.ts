@@ -45,10 +45,11 @@ import '@/engage.config'
 
 import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createLocalReq, logoutOperation, refreshOperation } from 'payload'
 
 import { deleteUser, findUserAuthRowByID, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db'
 import type { AuthDbOps, AuthUserRow } from '@/localapi/auth'
-import { AuthenticationError, forgotPassword, InvalidResetToken, LockedAuth, login, MAX_LOGIN_ATTEMPTS, resetPassword, verifyAuth, verifyJWT } from '@/localapi/auth'
+import { AuthenticationError, forgotPassword, InvalidResetToken, LockedAuth, login, logout, MAX_LOGIN_ATTEMPTS, refreshToken, resetPassword, unlockUser, verifyAuth, verifyJWT } from '@/localapi/auth'
 
 const PASSWORD = 'Phase15ParityPassword!'
 
@@ -246,4 +247,126 @@ describe('localapi/auth parity - real getEngine() vs src/localapi/auth.ts, same 
     expect(realVerify.user ?? null).toBeNull()
     expect(ourVerify.user).toBeNull()
   })
+
+  // logout/refreshToken/unlockUser have no real-Payload Local API equivalent
+  // (payload.js only exposes login/resetPassword/forgotPassword/unlock as
+  // direct methods - confirmed by reading node_modules/payload/dist/index.js
+  // in full: no `this.logout =` / `this.refreshToken =` anywhere). Real
+  // Payload only reaches logoutOperation/refreshOperation through a REST or
+  // GraphQL request, which builds a full PayloadRequest with req.user/_sid/
+  // _strategy already attached by its auth strategy. To parity-test against
+  // the SAME real operation code these tests build that req by hand with
+  // `createLocalReq` - the exact utility real Payload's own login/resetPassword/
+  // forgotPassword/unlock *Local wrappers use internally (see
+  // auth/operations/local/{login,unlock}.js) - passing a `user` object shaped
+  // the same way a real JWT strategy leaves it (id/collection/_sid/_strategy).
+  // `unlockOperation` DOES have a real Local API method (`engine.unlock`), so
+  // that one is exercised directly rather than via createLocalReq.
+  async function realReqAfterLogin(email: string) {
+    const realLogin = await engine.login({ collection: 'users', data: { email, password: PASSWORD } })
+    const decoded = verifyJWT(realLogin.token as string, secret)
+    if (!decoded) throw new Error('real login did not mint a verifiable token')
+    const req = await createLocalReq(
+      {
+        req: {
+          user: { ...(realLogin.user as object), collection: 'users', _sid: decoded.sid, _strategy: 'local-jwt' } as never,
+        },
+      },
+      engine,
+    )
+    return { req, sid: decoded.sid }
+  }
+
+  it('logout: real logoutOperation and our own logout() both remove only the calling session, leaving other sessions intact', async () => {
+    const real = await createRealUser('logout-real')
+    const ours = await createRealUser('logout-ours')
+
+    // A second, untouched session on each row, to prove logout is scoped to the one it's called for.
+    await engine.login({ collection: 'users', data: { email: real.email, password: PASSWORD } })
+    const ourOtherLogin = await login(db, { email: ours.email, password: PASSWORD, secret })
+
+    const { req: realReq, sid: realSid } = await realReqAfterLogin(real.email)
+    const ourLogin = await login(db, { email: ours.email, password: PASSWORD, secret })
+
+    const realResult = await logoutOperation({
+      allSessions: false,
+      collection: (engine as unknown as { collections: Record<string, { config: unknown }> }).collections.users as never,
+      req: realReq,
+    })
+    const ourResult = await logout(db, { headers: headersFrom({ Authorization: `Bearer ${ourLogin.token}` }), secret })
+
+    expect(realResult).toBe(true)
+    expect(typeof ourResult.message).toBe('string')
+
+    const realRow = await findUserAuthRowByID(real.id)
+    const oursRow = await findUserAuthRowByID(ours.id)
+    // The logged-out session is gone, the other session on the same row survives, on both sides.
+    expect(realRow?.sessions?.some((s) => s.id === realSid)).toBe(false)
+    expect(realRow?.sessions).toHaveLength(1)
+    expect(oursRow?.sessions?.some((s) => s.id === (verifyJWT(ourLogin.token, secret)?.sid))).toBe(false)
+    expect(oursRow?.sessions).toHaveLength(1)
+    expect(oursRow?.sessions?.[0]?.id).toBe(verifyJWT(ourOtherLogin.token, secret)?.sid)
+  })
+
+  it('refreshToken: real refreshOperation and our own refreshToken() both extend the SAME session (same sid, no new session minted) and mint a new verifiable token', async () => {
+    const real = await createRealUser('refresh-real')
+    const ours = await createRealUser('refresh-ours')
+
+    const { req: realReq, sid: realSidBefore } = await realReqAfterLogin(real.email)
+    const ourLogin = await login(db, { email: ours.email, password: PASSWORD, secret })
+    const ourSidBefore = verifyJWT(ourLogin.token, secret)?.sid
+
+    const realResult = await refreshOperation({
+      collection: (engine as unknown as { collections: Record<string, { config: unknown }> }).collections.users as never,
+      req: realReq,
+    })
+    const ourResult = await refreshToken(db, { headers: headersFrom({ Authorization: `Bearer ${ourLogin.token}` }), secret })
+
+    // Neither side minted a second session - same count, same sid, just a new token/expiry.
+    const realRow = await findUserAuthRowByID(real.id)
+    const oursRow = await findUserAuthRowByID(ours.id)
+    expect(realRow?.sessions).toHaveLength(1)
+    expect(oursRow?.sessions).toHaveLength(1)
+    expect(realRow?.sessions?.[0]?.id).toBe(realSidBefore)
+    expect(oursRow?.sessions?.[0]?.id).toBe(ourSidBefore)
+
+    const realDecodedNew = verifyJWT((realResult as { refreshedToken: string }).refreshedToken, secret)
+    const ourDecodedNew = verifyJWT(ourResult.token, secret)
+    expect(realDecodedNew?.sid).toBe(realSidBefore)
+    expect(ourDecodedNew?.sid).toBe(ourSidBefore)
+    expect(ourResult.setCookie).toBe(true)
+  })
+
+  it('unlockUser: real engine.unlock and our own unlockUser() both reset loginAttempts/lockUntil, letting the correct password log in again', async () => {
+    const real = await createRealUser('unlock-real')
+    const ours = await createRealUser('unlock-ours')
+
+    for (let attempt = 1; attempt <= MAX_LOGIN_ATTEMPTS; attempt++) {
+      await engine.login({ collection: 'users', data: { email: real.email, password: 'nope' } }).catch((): undefined => undefined)
+      await login(db, { email: ours.email, password: 'nope', secret }).catch((): undefined => undefined)
+    }
+    expect((await findUserAuthRowByID(real.id))?.lockUntil).not.toBeNull()
+    expect((await findUserAuthRowByID(ours.id))?.lockUntil).not.toBeNull()
+
+    // The generic auth-operations type (no generated payload-types.ts in this
+    // project) shapes `unlock`'s data the same as `login`'s, requiring a
+    // `password` field the real operation never reads (confirmed by reading
+    // unlock.js above - it only touches data.email/data.username). Harmless
+    // placeholder to satisfy the type.
+    const realUnlockResult = await engine.unlock({ collection: 'users', data: { email: real.email, password: 'unused' }, overrideAccess: true })
+    const ourUnlockResult = await unlockUser(db, { email: ours.email })
+    expect(realUnlockResult).toBe(true)
+    expect(ourUnlockResult).toBe(true)
+
+    const realRow = await findUserAuthRowByID(real.id)
+    const oursRow = await findUserAuthRowByID(ours.id)
+    expect(realRow?.loginAttempts).toBe(0)
+    expect(oursRow?.loginAttempts).toBe(0)
+    expect(realRow?.lockUntil).toBeNull()
+    expect(oursRow?.lockUntil).toBeNull()
+
+    // Correct password works again on both, now that the lock is cleared.
+    await expect(engine.login({ collection: 'users', data: { email: real.email, password: PASSWORD } })).resolves.toMatchObject({ user: expect.anything() })
+    await expect(login(db, { email: ours.email, password: PASSWORD, secret })).resolves.toMatchObject({ user: expect.anything() })
+  }, 30000)
 })

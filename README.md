@@ -104,7 +104,7 @@ pnpm run deploy
 
 That runs four steps in order, and the order matters:
 
-1. **`deploy:database`** — applies migrations, then pushes five hand-built SQL files to real D1 with `wrangler d1 execute --remote`, then `PRAGMA optimize`. This step exists because the CLI's `migrate` cannot reach production D1 from CI (see below).
+1. **`deploy:database`** — applies migrations, then pushes four hand-built SQL files to real D1 with `wrangler d1 execute --remote`, then `PRAGMA optimize`. This step exists because the CLI's `migrate` cannot reach production D1 from CI (see below).
 2. **`deploy:app`** — `opennextjs-cloudflare build` then `deploy`. Builds the Worker bundle and ships it.
 3. **`deploy:migrate`** — `POST /api/internal-migrate` against the live deployment. This is what actually lands schema changes on production D1.
 4. **`deploy:seed`** — `POST /api/internal-seed`. Creates the starter Home page and page templates if they are missing.

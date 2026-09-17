@@ -8,6 +8,7 @@ import { applySchemaAdditions } from '@/migrations/schema/applySchema'
 import { bootstrapEngineTables } from '@/migrations/schema/engineBootstrap'
 import { ENGINE_TABLE_RENAMES } from '@/migrations/schema/engineTables'
 import { NEW_COLUMNS, NEW_INDEXES, NEW_TABLES } from '@/migrations/schema/builderSchema'
+import { LOCKED_DOCUMENTS_RELS_COLUMNS } from '@/migrations/schema/lockedDocumentsRelsSchema'
 import { SETTINGS_COLUMNS, SETTINGS_INDEXES, SETTINGS_TABLES } from '@/migrations/schema/settingsSchema'
 import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
 import { hasInternalRouteKey } from '@/utilities/internalRouteGuard'
@@ -103,6 +104,7 @@ const RUNNABLE_MIGRATIONS = [
 const SCHEMA_SETS = [
   { name: 'page-builder', tables: NEW_TABLES, columns: NEW_COLUMNS, indexes: NEW_INDEXES },
   { name: 'settings', tables: SETTINGS_TABLES, columns: SETTINGS_COLUMNS, indexes: SETTINGS_INDEXES },
+  { name: 'locked-documents-rels', tables: [], columns: LOCKED_DOCUMENTS_RELS_COLUMNS, indexes: [] },
 ]
 
 /**

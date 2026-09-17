@@ -19,37 +19,21 @@
 // `getPlatformProxy({ persist: false })` gives a genuinely empty, in-memory
 // local D1 with NO tables at all - not this dev's already-migrated one, and
 // not even written to disk. Same mechanism the sibling suite already uses.
-import { readFileSync } from 'fs'
-import { join } from 'path'
-
+//
+// `deploy:database`'s raw SQL step (see `./helpers/freshInstall`'s header
+// comment for why it has to run before `runInternalMigrate`) is applied via
+// the shared `setupFreshInstall()`/`applyDeployDatabaseSql()` helpers below,
+// rather than duplicated inline here.
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPlatformProxy } from 'wrangler'
 
-// `runInternalMigrate` (this route's own DB sequence) is only ONE step of the
-// real, documented deploy pipeline (package.json's `deploy` script:
-// `deploy:database && deploy:app && deploy:migrate && deploy:seed`).
-// `deploy:database` runs FIRST, applying these 4 hand-built, `IF NOT EXISTS`
-// SQL files via `wrangler d1 execute --remote` - a step that can only ever
-// run from a CLI with wrangler credentials against the real D1, never from
-// inside the deployed Worker (see the note on the D1 binding in
-// wrangler.jsonc), which is exactly why it is a separate deploy step instead
-// of something `/api/internal-migrate` could do itself. They create the
-// `posts`/`products`/`blog_settings`/`faq_settings`/`shop_settings` block and
-// `_rels` tables that migration
-// `20260822_120859_fix_blocks_rels_tables` originally added non-idempotently
-// - `runInternalMigrate`'s own `page-builder` schema set assumes these
-// already exist (it only adds the newer `design` column and the
-// loop/section/element block types on top), so a fair fresh-install proof
-// has to run this step first too, exactly as a real `pnpm run deploy` would.
-const FIX_BLOCKS_RELS_SQL = ['part1', 'part2', 'part3', 'part4'].map((part) =>
-  readFileSync(join(process.cwd(), `src/migrations/sql/20260822_120859_fix_blocks_rels_tables_${part}.sql`), 'utf8'),
-)
-
 import { consoleLogger } from '@/localapi/logger'
 import type { Drizzle } from '@/localapi/migrate'
 import { EARLY_MIGRATIONS, LATE_MIGRATIONS, runInternalMigrate } from '@/migrations/runInternalMigrate'
+
+import { applyDeployDatabaseSql } from './helpers/freshInstall'
 
 describe('runInternalMigrate - fresh-install acceptance proof (genuinely empty D1, no persistence)', () => {
   let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ D1: D1Database }>>>
@@ -118,19 +102,7 @@ describe('runInternalMigrate - fresh-install acceptance proof (genuinely empty D
     // FOREIGN KEY's target table at CREATE TABLE time, only at the later
     // point a row is actually inserted - so this succeeds in the same order
     // production really uses it.
-    for (const fileContent of FIX_BLOCKS_RELS_SQL) {
-      const statements = fileContent
-        .split('\n')
-        .filter((line) => !line.trim().startsWith('--'))
-        .join('\n')
-        .split(';')
-        .map((statement) => statement.trim())
-        .filter(Boolean)
-
-      for (const statement of statements) {
-        await rawDb.prepare(statement).run()
-      }
-    }
+    await applyDeployDatabaseSql(rawDb)
   })
 
   it('runs the full route sequence against a fresh D1 with zero errors', async () => {

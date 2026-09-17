@@ -2,11 +2,11 @@
 // See tests/int/cms-db-faqs.int.spec.ts for why: server-only suite (jsdom
 // breaks wrangler's bundled esbuild), and @/engage.config must be the side
 // entering the @/engine <-> @/engage.config circular import.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { describe, expect, it } from 'vitest'
 
 import { findBackupSettings, updateBackupSettings } from '@/cms/db'

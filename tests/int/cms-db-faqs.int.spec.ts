@@ -7,7 +7,7 @@
 // scripts/prepareEngineTables.mts) shells out to its bundled esbuild, which
 // hits exactly that check. This suite is server-only and needs no DOM, so it
 // opts out of the project-wide jsdom environment instead of patching globals.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 // Imported first and by its own path on purpose: @/engine/index.ts and
 // @/engage.config.ts import each other (the config needs buildConfig from
@@ -19,7 +19,7 @@ import type { Engine } from '@/engine'
 // does not have this problem; this is specific to Vitest's SSR pipeline.
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { countFaqs, createFaq, deleteFaq, findFaqByID, findFaqs, findFaqsPaginated, updateFaq } from '@/cms/db'

@@ -2,11 +2,11 @@
 // See tests/int/cms-db-faqs.int.spec.ts for why: server-only suite, and
 // @/engage.config must be the side entering the @/engine <-> @/engage.config
 // circular import.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 

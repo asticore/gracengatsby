@@ -9,9 +9,9 @@
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:importmap && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:types && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "deploy": "pnpm run deploy:database && pnpm run deploy:app && pnpm run deploy:migrate && pnpm run deploy:seed",
     "deploy:app": "opennextjs-cloudflare build --env=$CLOUDFLARE_ENV && opennextjs-cloudflare deploy --env=$CLOUDFLARE_ENV",
-    "deploy:migrate": "curl -sf -X POST https://gracengatsby.com/api/internal-migrate -H \"x-seed-key: gracengatsby-seed\" || echo 'Schema call failed (non-fatal) - check /api/internal-migrate manually.'",
-    "deploy:seed": "curl -sf -X POST https://gracengatsby.com/api/internal-seed -H \"x-seed-key: gracengatsby-seed\" || echo 'Seed call failed (non-fatal) - check /api/internal-seed manually.'",
-    "deploy:database": "wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part1.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part2.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part3.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part4.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",
+    "deploy:migrate": "curl -sf -X POST https://gracengatsby.com/api/internal-migrate -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Schema call failed (non-fatal) - check /api/internal-migrate manually.'",
+    "deploy:seed": "curl -sf -X POST https://gracengatsby.com/api/internal-seed -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Seed call failed (non-fatal) - check /api/internal-seed manually.'",
+    "deploy:database": "wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part1.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part2.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part3.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part4.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260906_000000_fix_locked_documents_rels_missing_columns.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && rm -rf .open-next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
@@ -89,6 +89,30 @@
     "bindings": {
       "PAYLOAD_SECRET": {
         "description": "Generate a random string using `openssl rand -hex 32`"
+      },
+      "ENGAGE_SECRET": {
+        "description": "Same value as PAYLOAD_SECRET. Set both to the value generated with `openssl rand -hex 32`."
+      },
+      "INTERNAL_ROUTE_KEY": {
+        "description": "Guards the internal maintenance routes (migrate/seed/backup). Generate with `openssl rand -hex 32`."
+      },
+      "SITE_URL": {
+        "description": "Public site URL, e.g. https://your-domain.example. Used for sitemap.xml, robots.txt and canonical/OG URLs."
+      },
+      "STRIPE_SECRET_KEY": {
+        "description": "Stripe secret key. Leave unset to deploy with the Shop feature off."
+      },
+      "STRIPE_PUBLISHABLE_KEY": {
+        "description": "Stripe publishable key. Leave unset to deploy with the Shop feature off."
+      },
+      "STRIPE_WEBHOOK_SECRET": {
+        "description": "Stripe webhook signing secret. Leave unset to deploy with the Shop feature off."
+      },
+      "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": {
+        "description": "Same value as STRIPE_PUBLISHABLE_KEY, exposed to the browser. Leave unset to deploy with the Shop feature off."
+      },
+      "ENGAGE_LOG_LEVEL": {
+        "description": "Optional: debug | info | warn | error. Defaults to info in production."
       }
     }
   }

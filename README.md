@@ -6,7 +6,7 @@ Editors sign in at `/admin` to build pages, run the shop, publish events and pos
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/asticore/gracengatsby)
 
-Cloudflare provisions the Worker, D1 database and R2 bucket from `wrangler.jsonc` and walks you through the environment variables below. After the first deploy finishes, run the four steps under [Deploying](#deploying) once by hand (`pnpm run deploy`, with your local `.env` filled in and pointed at the new database) so the page-builder schema and starter content land - the button's own build only ships the app, it doesn't run `deploy:database`, `deploy:migrate` or `deploy:seed`.
+Cloudflare provisions the Worker, D1 database and R2 bucket from `wrangler.jsonc` and, per the `cloudflare.bindings` block in `package.json`, prompts for the secrets/vars listed in [Environment variables](#environment-variables) below. `wrangler.jsonc` currently carries this project's own live database ID and bucket name - a new deploy on a different Cloudflare account provisions its own D1/R2 resources with new IDs, per Cloudflare's standard Deploy-to-Workers behavior, but that path has not been exercised end-to-end from this repo, so treat it as unverified until someone runs it. After the first deploy finishes, run the four steps under [Deploying](#deploying) once by hand (`pnpm run deploy`, with your local `.env` filled in and pointed at the new database) so the page-builder schema and starter content land - the button's own build only ships the app, it doesn't run `deploy:database`, `deploy:migrate` or `deploy:seed`.
 
 ---
 
@@ -56,7 +56,7 @@ src/
 Requires Node ≥ 24.15 and pnpm.
 
 ```bash
-cp .env.example .env      # fill in PAYLOAD_SECRET at minimum
+cp .env.example .env      # fill in ENGAGE_SECRET and PAYLOAD_SECRET at minimum
 pnpm install
 pnpm dev
 ```
@@ -72,9 +72,11 @@ Wrangler creates local emulated D1 and R2 bindings automatically — no connecti
 
 | Variable | Required | Notes |
 | -------- | -------- | ----- |
-| `PAYLOAD_SECRET` | yes | Signs sessions and encrypts secret settings fields. **The name is fixed by the underlying CMS engine and cannot be renamed.** Generate with `openssl rand -base64 32`. |
+| `ENGAGE_SECRET` | yes | Signs sessions and encrypts secret settings fields. Generate with `openssl rand -base64 32`. |
+| `PAYLOAD_SECRET` | yes | Same value as `ENGAGE_SECRET`. **The name is fixed by the underlying CMS engine's own CLI and cannot be renamed** — `pnpm cms migrate`/`generate:*` read it directly. Set both to the same value. |
 | `SITE_URL` | for prod | Used by `sitemap.xml`, `robots.txt` and canonical/OG URLs. |
 | `STRIPE_*` | shop only | Leave blank to deploy with the Shop feature off. |
+| `INTERNAL_ROUTE_KEY` | recommended | Guards the four internal maintenance routes (`/api/internal-migrate`, `/api/internal-seed`, `/api/internal-backup-run`, `/api/internal-backup-restore`). Not a hard security boundary — none of those routes can drop or modify data — but worth setting so a stray request can't run up unbounded D1 work. Falls back to a retired default if unset, so an install that hasn't set it yet still works. Generate with `openssl rand -hex 32`. |
 | `ENGAGE_LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error`. Defaults to `info` in production. |
 
 ### Useful scripts
@@ -102,14 +104,14 @@ pnpm run deploy
 
 That runs four steps in order, and the order matters:
 
-1. **`deploy:database`** — applies migrations, then pushes four hand-built SQL files to real D1 with `wrangler d1 execute --remote`, then `PRAGMA optimize`. This step exists because the CLI's `migrate` cannot reach production D1 from CI (see below).
+1. **`deploy:database`** — applies migrations, then pushes five hand-built SQL files to real D1 with `wrangler d1 execute --remote`, then `PRAGMA optimize`. This step exists because the CLI's `migrate` cannot reach production D1 from CI (see below).
 2. **`deploy:app`** — `opennextjs-cloudflare build` then `deploy`. Builds the Worker bundle and ships it.
 3. **`deploy:migrate`** — `POST /api/internal-migrate` against the live deployment. This is what actually lands schema changes on production D1.
 4. **`deploy:seed`** — `POST /api/internal-seed`. Creates the starter Home page and page templates if they are missing.
 
 Steps 3 and 4 are `curl -sf ... || echo` — a failure is reported but does not fail the deploy, because both endpoints are idempotent and safe to retry by hand.
 
-Both endpoints are guarded by an `x-seed-key` header. That is **not** a security boundary — neither endpoint can drop or modify data, so the header only keeps crawlers and stray requests out.
+Both endpoints are guarded by an `x-seed-key` header, checked against `INTERNAL_ROUTE_KEY` (falling back to a retired default if that's unset). That is **not** a security boundary — neither endpoint can drop or modify data, so the header only keeps crawlers and stray requests out.
 
 ---
 

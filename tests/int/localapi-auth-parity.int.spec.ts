@@ -39,11 +39,11 @@
 // unknown as { secret: string }).secret`, since `Engine` (== real `Payload`)
 // exposes it at runtime but the hand-rolled `AuthDbOps`-based module has no
 // reason to declare it on its own arg types beyond a plain string.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { deleteUser, findUserAuthRowByID, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db'

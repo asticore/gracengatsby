@@ -6,11 +6,11 @@
 // the first needs no environment ceremony of its own (it never imports
 // `@/engine` at runtime, only `import type`), but the whole file shares one
 // `@vitest-environment` directive, so it takes the stricter one.
-import type { Engine } from '@/engine'
+import type { RealEngine as Engine } from './helpers/realEngine'
 
 import '@/engage.config'
 
-import { getEngine } from '@/engine'
+import { getRealEngine as getEngine } from './helpers/realEngine'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { adminOnlyFieldAccess, adminOrPublishedStatus, isAdmin, isAdminOrSelf, isDocumentOwner } from '@/access/ecommerceAccess'

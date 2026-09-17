@@ -56,7 +56,7 @@ src/
 Requires Node ≥ 24.15 and pnpm.
 
 ```bash
-cp .env.example .env      # fill in ENGAGE_SECRET and PAYLOAD_SECRET at minimum
+cp .env.example .env      # fill in ENGAGE_SECRET at minimum
 pnpm install
 pnpm dev
 ```
@@ -72,8 +72,8 @@ Wrangler creates local emulated D1 and R2 bindings automatically — no connecti
 
 | Variable | Required | Notes |
 | -------- | -------- | ----- |
-| `ENGAGE_SECRET` | yes | Signs sessions and encrypts secret settings fields. Generate with `openssl rand -base64 32`. |
-| `PAYLOAD_SECRET` | yes | Same value as `ENGAGE_SECRET`. **The name is fixed by the underlying CMS engine's own CLI and cannot be renamed** — `pnpm cms migrate`/`generate:*` read it directly. Set both to the same value. |
+| `ENGAGE_SECRET` | yes | Signs sessions and encrypts secret settings fields. Generate with `openssl rand -base64 32`. This is the only secret the Cloudflare deploy button asks for. |
+| `PAYLOAD_SECRET` | no | Legacy name for the same secret, read directly by the underlying CMS engine's own CLI (`pnpm cms migrate`/`generate:*`) — that vendor code can't be pointed at `ENGAGE_SECRET`. The `build`/`generate:*`/`cms` scripts now derive it from `ENGAGE_SECRET` automatically when it isn't set, so you don't need to set both. Only set it yourself if you want it to differ from `ENGAGE_SECRET` (not recommended). |
 | `SITE_URL` | for prod | Used by `sitemap.xml`, `robots.txt` and canonical/OG URLs. |
 | `STRIPE_*` | shop only | Leave blank to deploy with the Shop feature off. |
 | `INTERNAL_ROUTE_KEY` | recommended | Guards the four internal maintenance routes (`/api/internal-migrate`, `/api/internal-seed`, `/api/internal-backup-run`, `/api/internal-backup-restore`). Not a hard security boundary — none of those routes can drop or modify data — but worth setting so a stray request can't run up unbounded D1 work. Falls back to a retired default if unset, so an install that hasn't set it yet still works. Generate with `openssl rand -hex 32`. |

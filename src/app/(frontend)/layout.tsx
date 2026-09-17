@@ -6,7 +6,7 @@ import { Header, type NavLink } from '@/components/Header'
 import { Providers } from '@/components/Providers'
 import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
-import type { Media } from '@/engage-types'
+import type { Footer as FooterGlobal, Header as HeaderGlobal, Media, SiteSetting } from '@/engage-types'
 
 import { SeoBodyScripts, SeoJsonLd, SeoScripts } from '@/features/seo'
 import { SpeedHead } from '@/features/speed'
@@ -80,12 +80,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
   const engine = await getEngine()
 
-  const [settings, header, footer, resolvedPages] = await Promise.all([
+  const [settings, header, footer, resolvedPages] = (await Promise.all([
     engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null),
     engine.findGlobal({ slug: 'header', depth: 1 }).catch((): null => null),
     engine.findGlobal({ slug: 'footer', depth: 1 }).catch((): null => null),
     getAllResolvedPages().catch((): ResolvedPage[] => []),
-  ])
+  ])) as [SiteSetting | null, HeaderGlobal | null, FooterGlobal | null, ResolvedPage[]]
 
   const pathById = new Map(resolvedPages.map((entry) => [String(entry.page.id), entry]))
 

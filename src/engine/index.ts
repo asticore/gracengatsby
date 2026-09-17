@@ -33,12 +33,39 @@
  *
  * Subsystem modules: ./db, ./editor, ./editor/react, ./ui, ./storage,
  * ./commerce*, ./next/*, ./shared.
+ *
+ * STAGE 6e (this cutover): `getEngine()`/`Engine` are now this app's own
+ * implementation (`src/localapi/engine.ts`'s `createEngine()`/`Engine`)
+ * instead of real Payload's `getPayload()`/`Payload`. Every real call site
+ * already goes through this seam (rule 1 above), so no other file changed -
+ * `getEngine()`'s callers keep awaiting a `Promise<Engine>` exactly as before
+ * (see `createEngine()`'s own header for why wrapping a synchronous factory
+ * in an async function is a safe no-op for every existing `await getEngine()`
+ * call site).
+ *
+ * `EngineRequest` deliberately KEEPS meaning real Payload's own
+ * `PayloadRequest`, unlike `Engine` - confirmed by grepping every real
+ * consumer: all of them type a hook, `Access` function, custom Endpoint
+ * handler, or admin-view helper's `req` parameter, and every one of those is
+ * invoked by real Payload's own still-running hook/access/endpoint/admin
+ * machinery (config-authoring is out of scope for this cutover, same as
+ * `Access`/`CollectionConfig`/`Field` below) - none of them is a caller
+ * building a request to hand INTO our own `createEngine()`'s methods (that
+ * internal shape is `src/localapi/engine.ts`'s own `EngineReqLike`, used only
+ * by that module's `toLocalReq()`, never exposed through this seam). Only the
+ * client type itself (`Engine`) needed to change.
+ *
+ * The config-authoring types below (`Access`, `CollectionConfig`, `Field`,
+ * hooks, ...) still come from the real `payload` package, unchanged - this is
+ * deliberately out of scope for this cutover (a separately scoped future
+ * concern, tracked in the plan doc). The real Payload instance those types
+ * configure (`engage.config.ts`'s `buildConfig()` output) still exists and
+ * still powers `/admin` and the REST/GraphQL API, neither of which is cut over
+ * yet - only this app's own Local API usage (everything that calls
+ * `getEngine()`) changes here.
  */
 
-import { getPayload } from 'payload'
-import type { Payload } from 'payload'
-
-import config from '@engage-config'
+import { createEngine, type Engine as LocalEngine } from '@/localapi/engine'
 
 export { buildConfig } from 'payload'
 
@@ -47,8 +74,8 @@ export { buildConfig } from 'payload'
 /* -------------------------------------------------------------------------- */
 
 /** An initialised engine client. */
-export type Engine = Payload
-/** The request object handed to hooks, access rules and endpoints. */
+export type Engine = LocalEngine
+/** The request object handed to hooks, access rules and endpoints - real Payload's own type, see this file's header. */
 export type { PayloadRequest as EngineRequest } from 'payload'
 
 export type {
@@ -86,10 +113,9 @@ export type {
  * frontend pages, sitemap/robots, the feature-toggle lookups and the block
  * components that fetch their own data.
  *
- * This is the seam's most important export: when the data layer is replaced,
- * this function returns our own client instead, and no caller changes.
+ * This is the seam's most important export: it now returns this app's own
+ * `createEngine()` (see this file's header, "STAGE 6e") instead of real
+ * Payload's `getPayload()` - the from-scratch replacement built and proven
+ * across Stages 1-6d.
  */
-export const getEngine = async (): Promise<Engine> => {
-  const engineConfig = await config
-  return getPayload({ config: engineConfig })
-}
+export const getEngine = async (): Promise<Engine> => createEngine()

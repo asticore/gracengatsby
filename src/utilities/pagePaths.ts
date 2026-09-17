@@ -30,7 +30,7 @@ export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
   })
 
   const byId = new Map<string, Page>()
-  docs.forEach((doc) => byId.set(String(doc.id), doc as Page))
+  docs.forEach((doc) => byId.set(String(doc.id), doc as unknown as Page))
 
   const resolve = (page: Page): ResolvedPage => {
     const path: string[] = []
@@ -49,7 +49,7 @@ export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
     return { page, path, ancestors }
   }
 
-  return docs.map((doc) => resolve(doc as Page))
+  return docs.map((doc) => resolve(doc as unknown as Page))
 })
 
 export const findPageByPath = async (segments: string[]): Promise<ResolvedPage | null> => {
@@ -66,5 +66,5 @@ export const getHomepage = async (): Promise<Page | null> => {
     limit: 1,
     depth: 2,
   })
-  return (docs[0] as Page) || null
+  return (docs[0] as unknown as Page) || null
 }

@@ -12,18 +12,18 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { Faq, Media, Product } from '@/engage-types'
+import type { Faq, Media, Product, ShopSetting } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 async function getProduct(slug: string) {
   const engine = await getEngine()
-  const { docs } = await engine.find({
+  const { docs } = (await engine.find({
     collection: 'products',
     where: { slug: { equals: slug } },
     limit: 1,
     depth: 1,
-  })
+  })) as unknown as { docs: Product[] }
   return docs[0] || null
 }
 
@@ -46,7 +46,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     notFound()
   }
 
-  const [settings] = await Promise.all([engine.findGlobal({ slug: 'shop-settings' }).catch((): null => null)])
+  const [settings] = (await Promise.all([engine.findGlobal({ slug: 'shop-settings' }).catch((): null => null)])) as unknown as [ShopSetting | null]
 
   const images = (product.images || []).filter(
     (img): img is Media => typeof img === 'object' && img !== null,
@@ -55,7 +55,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   let related: Product[] = []
   if (settings?.showRelatedProducts !== false && product.category) {
-    const { docs } = await engine.find({
+    const { docs } = (await engine.find({
       collection: 'products',
       where: {
         and: [
@@ -65,7 +65,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         ],
       },
       limit: 4,
-    })
+    })) as unknown as { docs: Product[] }
     related = docs
   }
 

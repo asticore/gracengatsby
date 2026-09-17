@@ -8,13 +8,13 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { Media } from '@/engage-types'
+import type { BlogSetting, Media, Post } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const engine = await getEngine()
-  const settings = await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)
+  const settings = (await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)) as BlogSetting | null
   return buildMetadata({ title: settings?.archiveTitle || 'Journal' })
 }
 
@@ -23,15 +23,15 @@ export default async function BlogArchivePage() {
   if (!flags.blog) notFound()
 
   const engine = await getEngine()
-  const settings = await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)
+  const settings = (await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)) as BlogSetting | null
 
-  const { docs: posts } = await engine.find({
+  const { docs: posts } = (await engine.find({
     collection: 'posts',
     where: { _status: { equals: 'published' } },
     sort: '-publishedDate',
     limit: settings?.postsPerPage || 9,
     depth: 1,
-  })
+  })) as unknown as { docs: Post[] }
 
   const layout = settings?.archiveLayout || 'grid'
 

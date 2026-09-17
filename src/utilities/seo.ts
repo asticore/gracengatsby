@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { getEngine } from '@/lib/engine'
-import type { Media } from '@/engage-types'
+import type { Media, SiteSetting } from '@/engage-types'
 
 type SeoLike = {
   metaTitle?: string | null
@@ -21,7 +21,7 @@ const mediaUrl = (media: (number | string | Media) | null | undefined): string |
  */
 export const buildMetadata = async (opts: { title: string; seo?: SeoLike; path?: string }): Promise<Metadata> => {
   const engine = await getEngine()
-  const settings = await engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null)
+  const settings = (await engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null)) as SiteSetting | null
 
   const template = settings?.seo?.titleTemplate || '%s'
   const title = template.includes('%s') ? template.replace('%s', opts.title) : opts.title

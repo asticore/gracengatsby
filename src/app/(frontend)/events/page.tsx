@@ -5,6 +5,7 @@ import { EventCard } from '@/components/EventCard'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import type { Event } from '@/engage-types'
 
 export async function generateMetadata() {
   return buildMetadata({ title: 'Events' })
@@ -20,7 +21,7 @@ export default async function EventsPage() {
 
   const now = new Date().toISOString()
 
-  const [{ docs: upcoming }, { docs: past }] = await Promise.all([
+  const [{ docs: upcoming }, { docs: past }] = (await Promise.all([
     engine.find({
       collection: 'events',
       where: {
@@ -37,7 +38,7 @@ export default async function EventsPage() {
       sort: '-startDate',
       limit: 12,
     }),
-  ])
+  ])) as unknown as [{ docs: Event[] }, { docs: Event[] }]
 
   return (
     <div className="page-shell events-page">

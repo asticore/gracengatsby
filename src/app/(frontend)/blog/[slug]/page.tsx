@@ -8,18 +8,18 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { Media, User } from '@/engage-types'
+import type { Media, Post, User } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 async function getPost(slug: string) {
   const engine = await getEngine()
-  const { docs } = await engine.find({
+  const { docs } = (await engine.find({
     collection: 'posts',
     where: { slug: { equals: slug } },
     limit: 1,
     depth: 1,
-  })
+  })) as unknown as { docs: Post[] }
   return docs[0] || null
 }
 

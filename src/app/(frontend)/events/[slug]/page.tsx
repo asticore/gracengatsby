@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
-import type { EventRsvp, Media, Product } from '@/engage-types'
+import type { Event, EventRsvp, Media, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,12 +23,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-AU', {
 
 async function getEvent(slug: string) {
   const engine = await getEngine()
-  const { docs } = await engine.find({
+  const { docs } = (await engine.find({
     collection: 'events',
     where: { slug: { equals: slug } },
     depth: 2,
     limit: 1,
-  })
+  })) as unknown as { docs: Event[] }
   return docs[0] || null
 }
 

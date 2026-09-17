@@ -59,7 +59,7 @@ export async function getStatTiles(
   const counts = await Promise.all(
     targets.map((entity) =>
       engine
-        .count({ collection: entity.slug as CollectionSlug, req, overrideAccess: false })
+        .count({ collection: entity.slug as CollectionSlug, req: req as never, overrideAccess: false })
         .then((result) => result.totalDocs)
         .catch((): null => null),
     ),
@@ -99,7 +99,7 @@ export async function getRecentActivity(
           depth: 0,
           limit,
           sort: '-updatedAt',
-          req,
+          req: req as never,
           overrideAccess: false,
         })
         .then((result) => ({ entity, docs: result.docs }))

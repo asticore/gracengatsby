@@ -12,6 +12,7 @@ import { SETTINGS_COLUMNS, SETTINGS_INDEXES, SETTINGS_TABLES } from '@/migration
 import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
 import { hasInternalRouteKey } from '@/utilities/internalRouteGuard'
 import { getEngine } from '@/lib/engine'
+import type { MigrationEntry } from '@/localapi/migrate'
 
 import * as migration_20260827_100000_security_audit_log from '@/migrations/20260827_100000_security_audit_log'
 import * as migration_20260828_110000_forms from '@/migrations/20260828_110000_forms'
@@ -237,21 +238,23 @@ export async function POST(request: Request): Promise<Response> {
   // members, courses, A/B testing, security audit log) - see the comment on
   // RUNNABLE_MIGRATIONS above for why these run through the engine's own
   // migration runner instead of the ad-hoc schema diff above them.
+  //
+  // STAGE 6e: this used to diff `payload-migrations` (real Payload's own
+  // internal bookkeeping collection) before/after the run to compute
+  // `applied`/`alreadyApplied` for this route's own response. Post-cutover,
+  // `getEngine()` returns this app's own `createEngine()`, whose registry
+  // (src/localapi/registry.ts) has no entry for that vendor-internal
+  // collection - `engine.find({collection: 'payload-migrations', ...})` would
+  // throw "unknown collection" now. `db.migrate()`'s own return value
+  // (`RunMigrationsResult`) already carries exactly this information
+  // (`ran`/`skipped`), so this reads that directly instead - the
+  // simplification `src/localapi/engine.ts`'s own header comment anticipated
+  // when it documented the `void` → `RunMigrationsResult` return-type
+  // deviation.
   try {
     const engine = await getEngine()
-    const before = new Set(
-      ((await engine.find({ collection: 'payload-migrations', limit: 0, pagination: false })) as {
-        docs: { name: string }[]
-      }).docs.map((doc) => doc.name),
-    )
-    await engine.db.migrate({ migrations: RUNNABLE_MIGRATIONS as Parameters<typeof engine.db.migrate>[0]['migrations'] })
-    const after = (await engine.find({
-      collection: 'payload-migrations',
-      limit: 0,
-      pagination: false,
-    })) as { docs: { name: string }[] }
-    const applied = after.docs.map((doc) => doc.name).filter((name) => !before.has(name))
-    results['feature-migrations'] = { applied, alreadyApplied: RUNNABLE_MIGRATIONS.length - applied.length }
+    const result = await engine.db.migrate({ migrations: RUNNABLE_MIGRATIONS as unknown as MigrationEntry[] })
+    results['feature-migrations'] = { applied: result.ran, alreadyApplied: result.skipped.length }
   } catch (err) {
     errorCount += 1
     results['feature-migrations'] = { error: err instanceof Error ? err.message : String(err) }

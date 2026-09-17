@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/ProductCard'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import type { Product, ShopSetting } from '@/engage-types'
 
 export async function generateMetadata() {
   return buildMetadata({ title: 'Shop' })
@@ -29,7 +30,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const { category } = await searchParams
   const engine = await getEngine()
 
-  const [settings, { docs: products }] = await Promise.all([
+  const [settings, { docs: products }] = (await Promise.all([
     engine.findGlobal({ slug: 'shop-settings' }).catch((): null => null),
     engine.find({
       collection: 'products',
@@ -39,7 +40,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       sort: '-createdAt',
       limit: 100,
     }),
-  ])
+  ])) as unknown as [ShopSetting | null, { docs: Product[] }]
 
   const layout = settings?.archiveLayout || 'grid-4'
 

@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig, Where } from '@/engine'
+import type { Access, CollectionConfig, Engine, Where } from '@/engine'
 
 import { isAdmin } from '@/access/ecommerceAccess'
 import { pageBuilderBlocks } from '@/blocks'
@@ -27,12 +27,22 @@ import { COURSES_SLUG, LESSONS_SLUG } from '../types'
 const readableLessons: Access = async ({ req }) => {
   if (isAdminUser(req.user)) return true
 
-  const flags = await flagsFrom(req.payload)
+  // `readableLessons` is a real Payload `Access` function - real Payload's
+  // own access-control execution always calls it with a real `req.payload`
+  // (a real vendor Payload instance), whether the request came in through
+  // `/admin`, the REST API, or our own `localapi/hooks.ts` reusing this same
+  // function with a `toLocalReq()`-built req. `flagsFrom`/`accessibleCourseIds`
+  // are typed against this app's own `Engine` (their other, more common
+  // caller is the courses feature's own frontend code, already using
+  // `createEngine()`), so the real instance is cast at this boundary - both
+  // support the same find/count calls these helpers make.
+  const engine = req.payload as unknown as Engine
+  const flags = await flagsFrom(engine)
   // With the feature off the content should behave as though it were never
   // published, rather than as though it were merely hidden.
   if (!flags.lms) return false
 
-  const courseIds = await accessibleCourseIds(req.payload, req.user, flags)
+  const courseIds = await accessibleCourseIds(engine, req.user, flags)
 
   const clause: Where = {
     or: [

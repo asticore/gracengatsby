@@ -32,7 +32,7 @@ export const accountContext = async (): Promise<AccountContext> => {
       .catch((): { user: AccountUser | null } => ({ user: null })),
   ])
 
-  return { engine, flags, user: auth.user ?? null }
+  return { engine, flags, user: (auth.user as unknown as AccountUser) ?? null }
 }
 
 /**

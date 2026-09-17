@@ -8,6 +8,7 @@ import { ProductCard } from '@/components/ProductCard'
 import { getEngine } from '@/lib/engine'
 import { getHomepage } from '@/utilities/pagePaths'
 import { buildMetadata } from '@/utilities/seo'
+import type { Event, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ async function DefaultHomepage() {
   const engine = await getEngine()
   const now = new Date().toISOString()
 
-  const [{ docs: products }, { docs: events }] = await Promise.all([
+  const [{ docs: products }, { docs: events }] = (await Promise.all([
     engine.find({
       collection: 'products',
       where: { _status: { equals: 'published' } },
@@ -54,7 +55,7 @@ async function DefaultHomepage() {
       sort: 'startDate',
       limit: 3,
     }),
-  ])
+  ])) as unknown as [{ docs: Product[] }, { docs: Event[] }]
 
   return (
     <>

@@ -41,7 +41,7 @@ export const learnerContext = async (): Promise<LearnerContext> => {
     getFeatureFlags(),
     engine.auth({ headers: await nextHeaders() }).catch((): { user: MaybeUser } => ({ user: null })),
   ])
-  return { engine, flags, user: auth.user }
+  return { engine, flags, user: auth.user as unknown as MaybeUser }
 }
 
 export const publishedCourses = async (engine: Engine): Promise<CourseDoc[]> => {

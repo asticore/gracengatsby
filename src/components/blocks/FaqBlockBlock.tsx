@@ -19,7 +19,7 @@ export async function FaqBlockBlock({
   if (source === 'manual' && faqs?.length) {
     const ids = faqs.map((f) => (typeof f === 'object' ? f.id : f))
     const { docs } = await engine.find({ collection: 'faqs', where: { id: { in: ids } }, limit: 100 })
-    items = docs as Faq[]
+    items = docs as unknown as Faq[]
   } else {
     const { docs } = await engine.find({
       collection: 'faqs',
@@ -27,7 +27,7 @@ export async function FaqBlockBlock({
       sort: 'order',
       limit: 100,
     })
-    items = docs as Faq[]
+    items = docs as unknown as Faq[]
   }
 
   if (!items.length) return null

@@ -7,12 +7,13 @@ import { FaqList } from '@/components/FaqList'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import type { Faq, FaqSetting } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const engine = await getEngine()
-  const settings = await engine.findGlobal({ slug: 'faq-settings' }).catch((): null => null)
+  const settings = (await engine.findGlobal({ slug: 'faq-settings' }).catch((): null => null)) as FaqSetting | null
   return buildMetadata({ title: settings?.pageTitle || 'FAQ' })
 }
 
@@ -21,10 +22,10 @@ export default async function FaqPage() {
   if (!flags.faq) notFound()
 
   const engine = await getEngine()
-  const [settings, { docs: faqs }] = await Promise.all([
+  const [settings, { docs: faqs }] = (await Promise.all([
     engine.findGlobal({ slug: 'faq-settings' }).catch((): null => null),
     engine.find({ collection: 'faqs', sort: 'order', limit: 200 }),
-  ])
+  ])) as unknown as [FaqSetting | null, { docs: Faq[] }]
 
   return (
     <div className="page-shell">

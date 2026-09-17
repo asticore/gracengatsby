@@ -42,7 +42,7 @@ export async function FormBlockRenderer({
     typeof form === 'object'
       ? (form as FormDoc)
       : ((await engine
-          .findByID({ collection: FORMS_SLUG, id: form, depth: 0 })
+          .findByID({ collection: FORMS_SLUG, id: form as number, depth: 0 })
           .catch((): null => null)) as FormDoc | null)
 
   if (!doc?.id) return null

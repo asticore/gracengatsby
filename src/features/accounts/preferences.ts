@@ -81,7 +81,7 @@ export const writePreferences = async (
     await engine
       .update({
         collection: PREFERENCES_SLUG,
-        id: row.id,
+        id: Number(row.id),
         data: { value: next },
         // Safe because `row.id` came back from a read the owner rule vetted.
         overrideAccess: true,

@@ -76,7 +76,7 @@ export const addressForCustomer = async (
       overrideAccess: false,
       user,
     })
-    .catch((): null => null)) as Address | null
+    .catch((): null => null)) as unknown as Address | null
 }
 
 /** Keeps only the fields a customer is allowed to set, as trimmed strings. */
@@ -114,7 +114,7 @@ export const createAddress = async (
       // the session here and is re-stamped by the shop's own hook.
       overrideAccess: false,
       user,
-    })) as Address
+    })) as unknown as Address
     return { ok: true, id: created.id }
   } catch {
     return { ok: false, message: 'That address could not be saved.' }

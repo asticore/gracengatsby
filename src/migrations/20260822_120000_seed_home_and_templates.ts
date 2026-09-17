@@ -1,4 +1,5 @@
 import type { MigrateDownArgs, MigrateUpArgs } from '@/engine/db'
+import type { Engine } from '@/engine'
 
 import { seedHomeAndTemplates } from '@/seed/seedHomeAndTemplates'
 
@@ -28,7 +29,15 @@ export async function up({ payload: engine }: MigrateUpArgs): Promise<void> {
   // current. So a failure here is logged and stepped over rather than allowed
   // to break the chain that later migrations depend on.
   try {
-    await seedHomeAndTemplates(engine)
+    // This migration runs only through the CLI's real `payload migrate` (see
+    // this file's header) - `engine` here is always the real vendor Payload
+    // instance (from `MigrateUpArgs`, unaffected by Stage 6e), while
+    // `seedHomeAndTemplates` is typed against this app's own `Engine` since
+    // its OTHER caller (`/api/internal-seed`) uses `getEngine()` post-cutover.
+    // Both instances support the same find/create calls this seed logic
+    // makes, so the cast is safe - the same "real object, cast at a shared
+    // helper's typed boundary" pattern used throughout this project.
+    await seedHomeAndTemplates(engine as unknown as Engine)
   } catch (error) {
     engine.logger.warn(
       `[seed] Skipped seeding during migration (${String(

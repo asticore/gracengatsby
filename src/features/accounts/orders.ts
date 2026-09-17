@@ -55,7 +55,7 @@ export const orderForCustomer = async (
       overrideAccess: false,
       user,
     })
-    .catch((): null => null)) as Order | null
+    .catch((): null => null)) as unknown as Order | null
 }
 
 /** Money is stored in the smallest unit of the currency. */

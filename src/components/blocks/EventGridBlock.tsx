@@ -1,5 +1,6 @@
 import { EventCard } from '@/components/EventCard'
 import { getEngine } from '@/lib/engine'
+import type { Event } from '@/engage-types'
 
 export async function EventGridBlock({
   heading,
@@ -13,7 +14,7 @@ export async function EventGridBlock({
   const engine = await getEngine()
   const now = new Date().toISOString()
 
-  const { docs: events } = await engine.find({
+  const { docs: events } = (await engine.find({
     collection: 'events',
     where: {
       and: [
@@ -23,7 +24,7 @@ export async function EventGridBlock({
     },
     sort: showPast ? '-startDate' : 'startDate',
     limit: limit || 3,
-  })
+  })) as unknown as { docs: Event[] }
 
   if (events.length === 0) return null
 

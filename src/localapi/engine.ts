@@ -95,10 +95,12 @@ import {
 import { buildEngineCollectionEntries, buildEngineCollectionsMap, buildEngineConfig, SHOP_PLUGIN_COLLECTION_ENTRIES, type EngineCollectionsMap, type EngineConfigShape } from './config'
 import { consoleLogger, type EngineLogger } from './logger'
 import { runMigrations, type Drizzle as MigrateDrizzle, type MigrationEntry, type RunMigrationsResult } from './migrate'
-import { createDocument, deleteDocument, updateDocument, updateGlobalDocument } from './operations'
+import { createDocument, deleteDocument, updateDocument, updateGlobalDocument, ValidationError } from './operations'
 import { collectionConfigs, globalConfigs, readRegistry, writeRegistry } from './registry'
 import type { Doc, PaginatedDocs, Sort } from './read-operations'
 import { count as readCount, find as readFind, findByID as readFindByID, findGlobal as readFindGlobal } from './read-operations'
+import { deleteMediaObject, putMediaObject } from './storage'
+import { generateUploadFields, type UploadFile } from './uploads'
 
 import { findUserAuthRowByID, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db'
 import { getDb } from '@/cms/db/connect'
@@ -125,8 +127,9 @@ export type Engine = {
   findByID: (args: CommonOpts & { collection: string; id: number; depth?: number; disableErrors?: boolean; draft?: boolean }) => Promise<Doc | null>
   count: (args: CommonOpts & { collection: string; where?: Where }) => Promise<{ totalDocs: number }>
   findGlobal: (args: CommonOpts & { slug: string; depth?: number; disableErrors?: boolean }) => Promise<Doc | null>
-  create: (args: CommonOpts & { collection: string; data: Record<string, unknown>; draft?: boolean }) => Promise<Doc>
-  update: (args: CommonOpts & { collection: string; id: number; data: Record<string, unknown>; draft?: boolean }) => Promise<Doc | null>
+  /** `file` is only meaningful for `collection: 'media'` (this app's one upload-enabled collection - see `./uploads.ts`'s file header) - required on create, optional on update (omit it to edit `alt`/other plain fields without touching the stored file). Any other collection ignores it. */
+  create: (args: CommonOpts & { collection: string; data: Record<string, unknown>; draft?: boolean; file?: UploadFile }) => Promise<Doc>
+  update: (args: CommonOpts & { collection: string; id: number; data: Record<string, unknown>; draft?: boolean; file?: UploadFile }) => Promise<Doc | null>
   delete: (args: CommonOpts & { collection: string; id: number }) => Promise<Doc>
   updateGlobal: (args: CommonOpts & { slug: string; data: Record<string, unknown> }) => Promise<Doc>
   login: (args: { collection: string; data: { email: string; password: string } }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number }>
@@ -136,6 +139,15 @@ export type Engine = {
   logout: (args: { collection: string; headers: HeadersLike; allSessions?: boolean }) => Promise<{ message: string }>
   refreshToken: (args: { collection: string; headers: HeadersLike }) => Promise<{ exp: number; token: string; user: AuthUserDoc; setCookie: true }>
   unlock: (args: { collection: string; data: { email: string } }) => Promise<boolean>
+}
+
+/** This app's one upload-enabled collection - see `./uploads.ts`'s file header for why this is a hardcoded constant rather than a config lookup, same convention as `./rest.ts`'s `AUTH_COLLECTION_SLUG`. */
+const MEDIA_COLLECTION_SLUG = 'media'
+
+/** `filenameExists` predicate `./uploads.ts`'s `generateUploadFields` needs, wired to a real `filename`-equality lookup against `media` - the from-scratch equivalent of real Payload's own `docWithFilenameExists` (`payload/dist/uploads/docWithFilenameExists.js`), minus its local-filesystem branch (this app's media is never stored on disk - `disableLocalStorage` is implicitly true, see `./storage.ts`'s own file header). `overrideAccess: true` matches every other Local API DB-level lookup in this file - this is an internal dedup check, not a caller-facing read. */
+async function mediaFilenameExists(req: LocalReq, filename: string): Promise<boolean> {
+  const result = await readFind(readRegistry, MEDIA_COLLECTION_SLUG, { req, where: { filename: { equals: filename } }, limit: 1, pagination: false, overrideAccess: true })
+  return result.docs.length > 0
 }
 
 /** Real Payload's own derived JWT secret (`payload/dist/index.js`): `sha256(config.secret).hex().slice(0, 32)`, NOT the raw env var - confirmed and load-bearing since Stage 2. `engage.config.ts`'s own precedence (`ENGAGE_SECRET` preferred, `PAYLOAD_SECRET` fallback, empty-string last resort) is reproduced here so a deployment that only ever set one of the two still derives the same secret real Payload would. */
@@ -247,25 +259,96 @@ export function createEngine(): Engine {
     },
 
     create: async (args) => {
-      const { collection, data, draft, overrideAccess, user, req } = args
+      const { collection, data, draft, overrideAccess, user, req, file } = args
       const entry = readRegistry.collections[collection]
       const db = writeRegistry.collections[collection]
       if (!entry || !db) throw new Error(`createEngine().create: unknown collection "${collection}"`)
-      return createDocument({ collection: entry.config, db, data, req: toLocalReq(engine, { user, req }), overrideAccess, draft })
+      const localReq = toLocalReq(engine, { user, req })
+
+      let finalData = data
+      if (collection === MEDIA_COLLECTION_SLUG) {
+        // Real Payload's own default (`filesRequiredOnCreate !== false`,
+        // unoverridden by Media.ts, and this collection has no drafts to
+        // exempt a draft save from it either) - a media doc can never be
+        // created without a file. See ./uploads.ts's header for why
+        // metadata computation (this call) happens BEFORE the DB write,
+        // mirroring real `generateFileData` running in `beforeOperation`.
+        if (!file) throw new ValidationError([{ path: 'file', message: 'A file is required to create a media document.' }])
+        const uploadFields = await generateUploadFields({ file, filenameExists: (filename) => mediaFilenameExists(localReq, filename) })
+        finalData = { ...data, ...uploadFields, url: `/api/media/file/${encodeURIComponent(uploadFields.filename)}` }
+      }
+
+      const created = await createDocument({ collection: entry.config, db, data: finalData, req: localReq, overrideAccess, draft })
+
+      // The actual byte upload happens AFTER the DB row exists - mirroring
+      // real Payload's own `afterChange` hook timing (`@payloadcms/plugin-
+      // cloud-storage`'s `getAfterChangeHook`, see ./storage.ts's header).
+      // Left unguarded (not try/caught) deliberately: real Payload's own
+      // afterChange hook re-throws on an upload failure too, so a caller
+      // sees the same "the request failed" outcome even though the DB row
+      // was already committed - not this app's own regression to fix.
+      if (collection === MEDIA_COLLECTION_SLUG && file) {
+        await putMediaObject(String((created as Record<string, unknown>).filename), file.data, String((created as Record<string, unknown>).mimeType))
+      }
+
+      return created
     },
     update: async (args) => {
-      const { collection, id, data, draft, overrideAccess, user, req } = args
+      const { collection, id, data, draft, overrideAccess, user, req, file } = args
       const entry = readRegistry.collections[collection]
       const db = writeRegistry.collections[collection]
       if (!entry || !db) throw new Error(`createEngine().update: unknown collection "${collection}"`)
-      return updateDocument({ collection: entry.config, db, id, data, req: toLocalReq(engine, { user, req }), overrideAccess, draft })
+      const localReq = toLocalReq(engine, { user, req })
+
+      let finalData = data
+      let previousFilename: string | undefined
+      if (collection === MEDIA_COLLECTION_SLUG && file) {
+        const existing = await db.findByID(id)
+        const existingFilename = existing ? (existing as unknown as Record<string, unknown>).filename : undefined
+        previousFilename = typeof existingFilename === 'string' ? existingFilename : undefined
+        const uploadFields = await generateUploadFields({ file, filenameExists: (filename) => mediaFilenameExists(localReq, filename) })
+        finalData = { ...data, ...uploadFields, url: `/api/media/file/${encodeURIComponent(uploadFields.filename)}` }
+      }
+
+      const updated = await updateDocument({ collection: entry.config, db, id, data: finalData, req: localReq, overrideAccess, draft })
+
+      if (collection === MEDIA_COLLECTION_SLUG && file && updated) {
+        const updatedRecord = updated as unknown as Record<string, unknown>
+        await putMediaObject(String(updatedRecord.filename), file.data, String(updatedRecord.mimeType))
+        // Delete the previous file only after the new upload has succeeded
+        // (same ordering rationale as real `getAfterChangeHook` - see
+        // ./storage.ts's header), and only if the filename actually
+        // changed (a same-name reupload overwrites the R2 object in place
+        // via the put above, so there is nothing separate to delete).
+        if (previousFilename && previousFilename !== updatedRecord.filename) {
+          await deleteMediaObject(previousFilename)
+        }
+      }
+
+      return updated
     },
     delete: async (args) => {
       const { collection, id, overrideAccess, user, req } = args
       const entry = readRegistry.collections[collection]
       const db = writeRegistry.collections[collection]
       if (!entry || !db) throw new Error(`createEngine().delete: unknown collection "${collection}"`)
-      return deleteDocument({ collection: entry.config, db, id, req: toLocalReq(engine, { user, req }), overrideAccess })
+      const deleted = await deleteDocument({ collection: entry.config, db, id, req: toLocalReq(engine, { user, req }), overrideAccess })
+
+      if (collection === MEDIA_COLLECTION_SLUG) {
+        const filename = (deleted as Record<string, unknown>).filename
+        if (typeof filename === 'string' && filename) {
+          // Matches real `getAfterDeleteHook`'s own try/catch-and-log (see
+          // ./storage.ts's header) - a failed storage cleanup doesn't undo
+          // an already-committed DB delete.
+          try {
+            await deleteMediaObject(filename)
+          } catch (err) {
+            engine.logger.error({ err, msg: `Could not delete R2 object for deleted media document ${id} (filename: ${filename}).` })
+          }
+        }
+      }
+
+      return deleted
     },
     updateGlobal: async (args) => {
       const { slug, data, overrideAccess, user, req } = args

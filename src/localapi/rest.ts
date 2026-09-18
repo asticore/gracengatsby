@@ -172,7 +172,7 @@ function buildExpiredAuthCookie(): string {
   return `${COOKIE_NAME}=; Expires=${expires.toUTCString()}; Path=/; HttpOnly=true; SameSite=Lax`
 }
 
-/** Reads the `payload-token` cookie's raw value out of a request's `Cookie` header, for `handleMe`'s own need to echo the current token back (see that handler's doc comment) - deliberately NOT reusing `./auth.ts`'s own private `extractCookieToken` (unexported), so this is a second, small, independently-correct implementation of the same "last pair for this key wins" parsing `./auth.ts`'s own doc comment already documents matching real Payload's `parseCookies` on. */
+/** Reads the `payload-token` cookie's raw value out of a request's `Cookie` header, for `extractTokenFromRequest`'s cookie fallback - deliberately NOT reusing `./auth.ts`'s own private `extractCookieToken` (unexported), so this is a second, small, independently-correct implementation of the same "last pair for this key wins" parsing `./auth.ts`'s own doc comment already documents matching real Payload's `parseCookies` on. */
 function readCookieToken(request: Request): string | null {
   const raw = request.headers.get('Cookie')
   if (!raw) return null
@@ -188,6 +188,27 @@ function readCookieToken(request: Request): string | null {
     }
   }
   return found
+}
+
+/**
+ * Extracts the caller's own raw JWT string from a request, in real Payload's
+ * `extractJWT.js` order (`jwtOrder` defaults to `['JWT', 'Bearer', 'cookie']`,
+ * confirmed unoverridden in `engage.config.ts` - see `./auth.ts`'s own header
+ * comment, ground-truth point 11): `Authorization: JWT <token>`, then
+ * `Authorization: Bearer <token>`, then the `payload-token` cookie.
+ *
+ * Added after a real-Payload REST parity test caught `handleMe` originally
+ * calling `readCookieToken` alone: real `meHandler`'s own `extractJWT(req)`
+ * call checks ALL THREE forms, so a caller authenticated via an
+ * `Authorization` header (as this app's own REST clients and most API
+ * consumers do, not just cookie-based browser sessions) was getting `token`/
+ * `exp` silently omitted from `/me`'s response on this side only.
+ */
+function extractTokenFromRequest(request: Request): string | null {
+  const authorization = request.headers.get('Authorization')
+  if (authorization?.startsWith('JWT ')) return authorization.slice(4)
+  if (authorization?.startsWith('Bearer ')) return authorization.slice(7)
+  return readCookieToken(request)
 }
 
 /** Decodes a JWT's middle (payload) segment WITHOUT verifying its signature - only ever called on a token this module has already independently verified via `engine.auth()` (see `handleMe`), purely to read the `exp` claim back out for the response body, matching real Payload's own `meHandler` (`decodeJwt` from `jose`, also signature-blind - it trusts `req.user` having already been set by the strategy that ran earlier in the same request). Returns `null` on anything malformed rather than throwing. */
@@ -337,7 +358,12 @@ async function handleMe(engine: Engine, request: Request): Promise<Response> {
   const { user } = await engine.auth({ headers: request.headers })
   const body: Record<string, unknown> = { user, message: 'Account' }
   if (user) {
-    const token = readCookieToken(request)
+    // Real `meOperation` always sets these two once `req.user` is present
+    // (`result.collection = req.user.collection`, `result.strategy =
+    // req.user._strategy`) - unconditional, unlike `token`/`exp` below.
+    body.collection = AUTH_COLLECTION_SLUG
+    body.strategy = 'local-jwt'
+    const token = extractTokenFromRequest(request)
     if (token) {
       body.token = token
       const exp = decodeJwtExpUnsafe(token)
@@ -371,8 +397,36 @@ async function handleResetPassword(engine: Engine, collection: string, request: 
   return Response.json({ message: 'Password reset successfully.', user: result.user, token: result.token }, { status: 200, headers })
 }
 
-/** `POST /unlock` - always `{message: 'Success'}` at 200 on success (`auth/endpoints/unlock.js`, `general:success`). `./auth.ts`'s own `unlockUser()` throws `AuthenticationError` for an unknown email (401, via `errorToResponse`) and a bare `Error` for a missing email (falls through `errorToResponse`'s generic 500 case - a documented, minor gap: real Payload's own equivalent validation failure would be a 400, not a 500, but this is only reachable via a malformed request with no email field at all, not a real client flow). */
+/**
+ * `POST /unlock` - always `{message: 'Success'}` at 200 on success
+ * (`auth/endpoints/unlock.js`, `general:success`). `./auth.ts`'s own
+ * `unlockUser()` throws `AuthenticationError` for an unknown email (401, via
+ * `errorToResponse`) and a bare `Error` for a missing email (falls through
+ * `errorToResponse`'s generic 500 case - a documented, minor gap: real
+ * Payload's own equivalent validation failure would be a 400, not a 500, but
+ * this is only reachable via a malformed request with no email field at all,
+ * not a real client flow).
+ *
+ * **Access check, added after a real-Payload REST parity test caught its
+ * absence**: `unlockOperation` (`auth/operations/unlock.js`) runs
+ * `executeAccess({req}, collectionConfig.access.unlock)` at the REST layer
+ * (unlike this app's own `engine.unlock` Local API wrapper, which - like
+ * every other Local API call in this project - defaults `overrideAccess` to
+ * bypass it). This app's `users` collection (`src/collections/Users.ts`)
+ * does not define its own `access.unlock`, so real Payload's sanitize step
+ * fills in its own default, `auth/defaultAccess.js`: `({req:{user}}) =>
+ * Boolean(user)` - ANY authenticated user (not admin-only) may unlock ANY
+ * account, but an anonymous request is denied with 403. Confirmed
+ * empirically: an anonymous `POST /api/users/unlock` against real Payload's
+ * own REST route returns 403, not 200. Reproduced here with the same
+ * `Boolean(user)` check via `Forbidden`, since `readRegistry`'s narrow
+ * `ReadEntityConfig` (`{slug, fields, access?}` - see `./read-operations.ts`)
+ * has no generic per-operation access dispatch this handler could otherwise
+ * reuse, and `users` is the one hardcoded auth collection anyway.
+ */
 async function handleUnlock(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const { user } = await engine.auth({ headers: request.headers })
+  if (!user) throw new Forbidden()
   const data = await readJsonBody(request)
   await engine.unlock({ collection, data: { email: stringField(data, 'email') } })
   return Response.json({ message: 'Success' }, { status: 200 })

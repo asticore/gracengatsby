@@ -320,11 +320,24 @@ describe('localapi/rest - auth endpoints', () => {
     expect(res!.status).toBe(400)
   })
 
-  it('POST /users/unlock always returns {message: "Success"}, 200', async () => {
-    const engine = makeMockEngine()
+  it('POST /users/unlock returns {message: "Success"}, 200 for an authenticated caller', async () => {
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: { id: 1, email: 'a@b.com' } }) })
     const res = await handleRestRequest(req('POST', 'http://x/api/users/unlock', { email: 'a@b.com' }), ['users', 'unlock'], engine)
     expect(res!.status).toBe(200)
     expect(await res!.json()).toEqual({ message: 'Success' })
+  })
+
+  // Real Payload's `users` collection has no explicit `access.unlock`, so its
+  // sanitize step fills in `auth/defaultAccess.js`'s own default -
+  // `({req:{user}}) => Boolean(user)` - ANY authenticated user, but never an
+  // anonymous one. Confirmed empirically against real Payload's own REST
+  // route in tests/int/localapi-rest-parity.int.spec.ts (an anonymous
+  // request gets a real 403), which is what caught this handler's original
+  // missing access check.
+  it('POST /users/unlock denies an anonymous (unauthenticated) caller with 403, matching real Payload default access.unlock', async () => {
+    const engine = makeMockEngine() // default mock: auth() resolves { user: null }
+    const res = await handleRestRequest(req('POST', 'http://x/api/users/unlock', { email: 'a@b.com' }), ['users', 'unlock'], engine)
+    expect(res!.status).toBe(403)
   })
 })
 

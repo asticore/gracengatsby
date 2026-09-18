@@ -211,6 +211,22 @@ describe('rest parity - global find/update (site-settings)', () => {
     expect((realBody.result as { siteName?: string })?.siteName).toBe('Real Parity Site Name')
     expect((oursBody.result as { siteName?: string })?.siteName).toBe('Ours Parity Site Name')
   })
+
+  // Same bug class as the login regression test above: the admin panel's
+  // global-edit view is also a plain @payloadcms/ui <Form>, so it also
+  // submits multipart/form-data, not JSON. handleGlobalUpdate had the exact
+  // same readJsonBody-only bug as handleLogin - fixed by the same
+  // readRequestBody change.
+  it('POST /api/globals/site-settings via multipart/form-data (the real admin-panel wire shape): 200, applies the update', async () => {
+    const oursRes = await callOurs(
+      multipartReq('POST', 'http://x/api/globals/site-settings', { siteName: 'Ours Multipart Site Name' }, undefined, authHeader(adminToken)),
+      ['globals', 'site-settings'],
+    )
+
+    expect(oursRes.status).toBe(200)
+    const oursBody = (await oursRes.json()) as Record<string, unknown>
+    expect((oursBody.result as { siteName?: string })?.siteName).toBe('Ours Multipart Site Name')
+  })
 })
 
 /* -------------------------------------------------------------------------- */
@@ -355,6 +371,38 @@ describe('rest parity - auth endpoints (login/me/refresh-token/logout/forgot-pas
     // rather than silently asserted away.
     expect(Array.isArray(realUser.sessions)).toBe(true)
     expect(oursUser.sessions).toBeUndefined()
+  })
+
+  // Regression test for a real, previously-live production bug: the admin
+  // panel's login page - like every page built on @payloadcms/ui's generic
+  // <Form> component (confirmed by reading
+  // node_modules/@payloadcms/ui/dist/forms/Form/index.js's own
+  // createFormData directly) - submits multipart/form-data (a `_payload`
+  // field holding JSON.stringify({email, password})), never
+  // application/json. handleLogin used to call readJsonBody unconditionally,
+  // so request.json() threw on this real wire shape and every admin-panel
+  // login attempt got an uncaught 500 - which the admin UI's generic error
+  // toast made indistinguishable from "wrong email or password" to a real
+  // user. Fixed by routing through the same readRequestBody used by
+  // handleCreate/handleUpdateByID (see rest.ts's own updated handleLogin doc
+  // comment). This test drives handleRestRequest with the EXACT multipart
+  // shape the real admin login form sends - not the JSON shape the test
+  // above already covers - and only asserts against OUR side, since real
+  // Payload's own login endpoint accepts multipart natively (nothing to
+  // prove there; this is reproducing a gap in OUR implementation).
+  it('POST /api/users/login via multipart/form-data (the real admin-panel wire shape): 200, mints a cookie, no 500', async () => {
+    const ours = await createRealUser('login-multipart-ours')
+
+    const oursRes = await callOurs(multipartReq('POST', 'http://x/api/users/login', { email: ours.email, password: PASSWORD }, undefined), [
+      'users',
+      'login',
+    ])
+
+    expect(oursRes.status).toBe(200)
+    expect(oursRes.headers.get('set-cookie')).toContain('payload-token=')
+    const oursBody = (await oursRes.json()) as Record<string, unknown>
+    expect((oursBody.user as { id: number }).id).toBe(ours.id)
+    expect(typeof oursBody.token).toBe('string')
   })
 
   it('GET /api/users/me: authenticated with the login token from each side, same response-key shape', async () => {
@@ -608,7 +656,7 @@ describe('rest parity - media uploads (multipart create/update, GET .../file/:fi
       multipartReq('POST', 'http://x/api/media', { alt: 'v1' }, { buffer: onePixelPng, name: `${marker}.png`, type: 'image/png' }, authHeader(adminToken)),
       ['media'],
     )
-    const { doc } = (await created.json()) as { doc: { id: number; filename: string } }
+    const { doc } = (await created.json()) as { id: number; filename: string }
     createdOursMediaIds.push(doc.id)
 
     // A JSON PATCH (no file) changes `alt` only - the multipart branch must

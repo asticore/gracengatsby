@@ -371,8 +371,28 @@ async function readMultipartBody(request: Request): Promise<{ data: Record<strin
   return { data, file }
 }
 
-/** Reads a create/update request body regardless of wire shape - `readMultipartBody` for a `multipart/*` request (the only shape a real file upload ever arrives as - see that function's own doc comment), `readJsonBody` for everything else. A JSON request never carries a `file` (no collection accepts one as a JSON value), which `./engine.ts`'s own `create`/`update` already treat as "no new file" for every collection, `media` included (required on create, optional on update). */
-async function readCreateOrUpdateBody(request: Request): Promise<{ data: Record<string, unknown>; file?: UploadFile }> {
+/**
+ * Reads ANY request body this REST layer accepts, regardless of wire shape -
+ * `readMultipartBody` for a `multipart/*` request, `readJsonBody` for
+ * everything else. Originally written (and named `readCreateOrUpdateBody`)
+ * for just `handleCreate`/`handleUpdateByID`, on the assumption that only a
+ * real file upload would ever arrive as multipart. That assumption was
+ * wrong: `@payloadcms/ui`'s generic `<Form>` component - confirmed by
+ * reading `node_modules/@payloadcms/ui/dist/forms/Form/index.js` directly -
+ * ALWAYS submits via `createFormData()` (`_payload: JSON.stringify(data)`
+ * plus a `file` field only when the doc's collection is upload-enabled AND a
+ * file was picked), for every form it renders: collection create/update,
+ * GLOBAL update, and - this is what actually broke production - the admin
+ * panel's login, forgot-password, reset-password, and unlock views too, none
+ * of which are collection docs at all. So every one of THOSE handlers,
+ * having been left on `readJsonBody` alone, threw an uncaught JSON-parse
+ * error (surfaced to the user as a bare 500, easily mistaken for "wrong
+ * password") the moment they were hit through the real admin UI instead of a
+ * JSON API client. Renamed and generalized here rather than left
+ * misleadingly narrow; a JSON request never carries a `file` regardless of
+ * caller, so every non-upload call site below simply discards it.
+ */
+async function readRequestBody(request: Request): Promise<{ data: Record<string, unknown>; file?: UploadFile }> {
   if (isMultipartRequest(request)) return readMultipartBody(request)
   return { data: await readJsonBody(request) }
 }
@@ -400,14 +420,14 @@ async function handleCount(engine: Engine, collection: string, request: Request,
 }
 
 async function handleCreate(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const { data, file } = await readCreateOrUpdateBody(request)
+  const { data, file } = await readRequestBody(request)
   const query = parseSearchParams(new URL(request.url).searchParams)
   const doc = await engine.create({ collection, data, draft: query.draft, user, file })
   return Response.json({ doc, message: 'Successfully created.' }, { status: 201 })
 }
 
 async function handleUpdateByID(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const { data, file } = await readCreateOrUpdateBody(request)
+  const { data, file } = await readRequestBody(request)
   const query = parseSearchParams(new URL(request.url).searchParams)
   const doc = await engine.update({ collection, id, data, draft: query.draft, user, file })
   return Response.json({ doc, message: 'Updated successfully.' }, { status: 200 })
@@ -437,7 +457,7 @@ async function handleGlobalFind(engine: Engine, slug: string, request: Request, 
 
 /** Real global update is `POST /`, not `PATCH /`, and its response key is `result`, not `doc` - see this file's header. */
 async function handleGlobalUpdate(engine: Engine, slug: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const data = await readJsonBody(request)
+  const { data } = await readRequestBody(request)
   const result = await engine.updateGlobal({ slug, data, user })
   return Response.json({ message: 'Updated successfully.', result }, { status: 200 })
 }
@@ -446,9 +466,23 @@ async function handleGlobalUpdate(engine: Engine, slug: string, request: Request
 /* Auth handlers                                                              */
 /* -------------------------------------------------------------------------- */
 
-/** `POST /login` - real shape `{message: 'Authentication Passed', user, token, exp}` plus a `Set-Cookie` (`auth/endpoints/login.js`, `translations/languages/en.js`'s `authentication:passed`). A failed login throws `AuthenticationError`/`LockedAuth` from `./auth.ts`'s own `login()`, mapped to 401/423 by `errorToResponse`. */
+/**
+ * `POST /login` - real shape `{message: 'Authentication Passed', user, token, exp}` plus a `Set-Cookie` (`auth/endpoints/login.js`, `translations/languages/en.js`'s `authentication:passed`). A failed login throws `AuthenticationError`/`LockedAuth` from `./auth.ts`'s own `login()`, mapped to 401/423 by `errorToResponse`.
+ *
+ * **Live-production bug fixed here (2026-09-18)**: this handler used to call
+ * `readJsonBody` directly. The admin panel's own login page - like every
+ * page built on `@payloadcms/ui`'s generic `<Form>` component - submits as
+ * `multipart/form-data` (a `_payload` field holding the JSON-stringified
+ * `{email, password}`), never `application/json` - see `readRequestBody`'s
+ * own doc comment for the full citation. `request.json()` on a multipart
+ * body throws, which surfaced to a real user as a bare, unmapped 500 - easily
+ * mistaken for "wrong email or password" since the admin UI's generic error
+ * toast doesn't distinguish a thrown network error from a real 401. Every
+ * admin-panel login attempt was broken by this from the moment Stage 7's
+ * flip made this handler the live one, until this fix.
+ */
 async function handleLogin(engine: Engine, collection: string, request: Request): Promise<Response> {
-  const data = await readJsonBody(request)
+  const { data } = await readRequestBody(request)
   const result = await engine.login({ collection, data: { email: stringField(data, 'email'), password: stringField(data, 'password') } })
   const headers = new Headers()
   if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
@@ -494,14 +528,14 @@ async function handleRefreshToken(engine: Engine, collection: string, request: R
 
 /** `POST /forgot-password` - always `{message: 'Success'}` at 200, whether or not the email matches a real user (real Payload's own `forgotPasswordHandler` never branches on the operation's own result - by design, so a caller can't use this endpoint to enumerate valid emails; `./auth.ts`'s own `forgotPassword()` already returns `null` rather than throwing for an unknown email, matching this). */
 async function handleForgotPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
-  const data = await readJsonBody(request)
+  const { data } = await readRequestBody(request)
   await engine.forgotPassword({ collection, data: { email: stringField(data, 'email') } })
   return Response.json({ message: 'Success' }, { status: 200 })
 }
 
 /** `POST /reset-password` - `{message: 'Password reset successfully.', user, token}` plus a `Set-Cookie` (`auth/endpoints/resetPassword.js`, `authentication:passwordResetSuccessfully`). An invalid/expired token throws `InvalidResetToken` (400, via `errorToResponse`). */
 async function handleResetPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
-  const data = await readJsonBody(request)
+  const { data } = await readRequestBody(request)
   const result = await engine.resetPassword({ collection, data: { password: stringField(data, 'password'), token: stringField(data, 'token') } })
   const headers = new Headers()
   headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
@@ -538,7 +572,7 @@ async function handleResetPassword(engine: Engine, collection: string, request: 
 async function handleUnlock(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { user } = await engine.auth({ headers: request.headers })
   if (!user) throw new Forbidden()
-  const data = await readJsonBody(request)
+  const { data } = await readRequestBody(request)
   await engine.unlock({ collection, data: { email: stringField(data, 'email') } })
   return Response.json({ message: 'Success' }, { status: 200 })
 }

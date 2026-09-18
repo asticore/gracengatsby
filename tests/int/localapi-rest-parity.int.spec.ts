@@ -656,7 +656,7 @@ describe('rest parity - media uploads (multipart create/update, GET .../file/:fi
       multipartReq('POST', 'http://x/api/media', { alt: 'v1' }, { buffer: onePixelPng, name: `${marker}.png`, type: 'image/png' }, authHeader(adminToken)),
       ['media'],
     )
-    const { doc } = (await created.json()) as { id: number; filename: string }
+    const { doc } = (await created.json()) as { doc: { id: number; filename: string } }
     createdOursMediaIds.push(doc.id)
 
     // A JSON PATCH (no file) changes `alt` only - the multipart branch must

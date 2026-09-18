@@ -7,6 +7,15 @@
  * at the same time.
  *
  * See ../index.ts for what this directory is and the rules that govern it.
+ *
+ * Payload removal, Rich Text stage: this used to re-export
+ * `@payloadcms/richtext-lexical/react`'s own `RichText`. It's now our own
+ * from-scratch port (`@/localapi/richtext`), verified byte-for-byte
+ * equivalent to the real component for this app's actual usage - see
+ * `tests/int/localapi-richtext-parity.int.spec.ts` and
+ * `payload-removal-plan.md`'s "Rich text" section. `../editor.ts` (the admin
+ * *editing* UI's `richTextEditor`/`lexicalEditor` factory) is untouched and
+ * still real Payload - only the frontend read-side renderer changes here.
  */
 
-export { RichText } from '@payloadcms/richtext-lexical/react'
+export { RichText } from '@/localapi/richtext'

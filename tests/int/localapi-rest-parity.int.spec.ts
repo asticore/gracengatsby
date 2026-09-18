@@ -506,6 +506,154 @@ describe('rest parity - auth endpoints (login/me/refresh-token/logout/forgot-pas
 })
 
 /* -------------------------------------------------------------------------- */
+/* Uploads stage: multipart create/update + GET .../file/:filename           */
+/* -------------------------------------------------------------------------- */
+// Proves the REST-layer fix for the real, previously-live bug documented in
+// rest.ts's own header comment ("Uploads stage addition"): a real
+// multipart/form-data upload POST to /api/media, in real Payload's own wire
+// shape (a `_payload` JSON field plus a `file` field - the exact shape real
+// Payload's OWN admin panel upload UI sends), now round-trips through
+// handleCreate/handleUpdateByID instead of silently losing the file. Uses
+// the same real-Payload-as-oracle pattern as every other describe block in
+// this file, at the wire (Request/Response) level rather than the engine
+// level tests/int/localapi-uploads-parity.int.spec.ts already covers.
+
+const onePixelPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+)
+
+function multipartReq(method: string, url: string, data: Record<string, unknown>, file: { buffer: Buffer; name: string; type: string } | undefined, headers?: Record<string, string>): Request {
+  const formData = new FormData()
+  formData.set('_payload', JSON.stringify(data))
+  if (file) formData.set('file', new File([new Uint8Array(file.buffer)], file.name, { type: file.type }))
+  // Deliberately no explicit Content-Type header - the Fetch API's own
+  // `Request` constructor sets `multipart/form-data; boundary=...` itself
+  // from the `FormData` body, matching what a real browser/client does and
+  // what `isMultipartRequest`'s own boundary-bearing check expects.
+  return new Request(url, { method, headers, body: formData })
+}
+
+describe('rest parity - media uploads (multipart create/update, GET .../file/:filename)', () => {
+  let adminToken: string
+  const createdRealMediaIds: number[] = []
+  const createdOursMediaIds: number[] = []
+
+  beforeAll(async () => {
+    const admin = await createRealUser('media-admin', ['admin'])
+    const login = await engine.login({ collection: 'users', data: { email: admin.email, password: PASSWORD } })
+    adminToken = login.token as string
+  })
+
+  afterAll(async () => {
+    const real = await getReal()
+    for (const id of createdRealMediaIds) await real.delete({ collection: 'media', id }).catch((): undefined => undefined)
+    for (const id of createdOursMediaIds) await engine.delete({ collection: 'media', id, overrideAccess: true }).catch((): undefined => undefined)
+  })
+
+  it('POST /api/media (multipart): both sides return {doc, message}, 201, with computed upload fields', async () => {
+    const marker = `rest-upl-${Date.now()}`
+
+    const realRes = await callReal(
+      realPost,
+      multipartReq('POST', 'http://x/api/media', { alt: 'real alt' }, { buffer: onePixelPng, name: `${marker}-real.png`, type: 'image/png' }, authHeader(adminToken)),
+      ['media'],
+    )
+    const oursRes = await callOurs(
+      multipartReq('POST', 'http://x/api/media', { alt: 'ours alt' }, { buffer: onePixelPng, name: `${marker}-ours.png`, type: 'image/png' }, authHeader(adminToken)),
+      ['media'],
+    )
+
+    expect(realRes.status).toBe(201)
+    expect(oursRes.status).toBe(201)
+
+    const realBody = (await realRes.json()) as { doc: Record<string, unknown>; message: string }
+    const oursBody = (await oursRes.json()) as { doc: Record<string, unknown>; message: string }
+    createdRealMediaIds.push(realBody.doc.id as number)
+    createdOursMediaIds.push(oursBody.doc.id as number)
+
+    expect(Object.keys(oursBody).sort()).toEqual(Object.keys(realBody).sort())
+    expect(realBody.doc.filename).toBe(`${marker}-real.png`)
+    expect(oursBody.doc.filename).toBe(`${marker}-ours.png`)
+    expect(oursBody.doc.mimeType).toBe(realBody.doc.mimeType)
+    expect(oursBody.doc.filesize).toBe(realBody.doc.filesize)
+    expect(oursBody.doc.width).toBe(realBody.doc.width)
+    expect(oursBody.doc.height).toBe(realBody.doc.height)
+    expect(oursBody.doc.alt).toBe('ours alt')
+  })
+
+  it('POST /api/media (multipart) denies a non-admin identically: 403 on both sides', async () => {
+    const customer = await createRealUser('media-customer', ['customer'])
+    const login = await engine.login({ collection: 'users', data: { email: customer.email, password: PASSWORD } })
+    const token = login.token as string
+    const marker = `rest-upl-forbidden-${Date.now()}`
+
+    const realRes = await callReal(
+      realPost,
+      multipartReq('POST', 'http://x/api/media', { alt: 'nope' }, { buffer: onePixelPng, name: `${marker}-real.png`, type: 'image/png' }, authHeader(token)),
+      ['media'],
+    )
+    const oursRes = await callOurs(
+      multipartReq('POST', 'http://x/api/media', { alt: 'nope' }, { buffer: onePixelPng, name: `${marker}-ours.png`, type: 'image/png' }, authHeader(token)),
+      ['media'],
+    )
+
+    expect(realRes.status).toBe(403)
+    expect(oursRes.status).toBe(403)
+  })
+
+  it('PATCH /api/media/:id (multipart): replaces the stored file, and a JSON PATCH with no file leaves it untouched', async () => {
+    const marker = `rest-upl-update-${Date.now()}`
+    const created = await callOurs(
+      multipartReq('POST', 'http://x/api/media', { alt: 'v1' }, { buffer: onePixelPng, name: `${marker}.png`, type: 'image/png' }, authHeader(adminToken)),
+      ['media'],
+    )
+    const { doc } = (await created.json()) as { id: number; filename: string } & { doc: { id: number; filename: string } }
+    createdOursMediaIds.push(doc.id)
+
+    // A JSON PATCH (no file) changes `alt` only - the multipart branch must
+    // not swallow the still-supported plain-JSON update path.
+    const jsonUpdate = await callOurs(req('PATCH', `http://x/api/media/${doc.id}`, { alt: 'v2' }, authHeader(adminToken)), ['media', String(doc.id)])
+    expect(jsonUpdate.status).toBe(200)
+    const jsonUpdateBody = (await jsonUpdate.json()) as { doc: { alt: string; filename: string } }
+    expect(jsonUpdateBody.doc.alt).toBe('v2')
+    expect(jsonUpdateBody.doc.filename).toBe(doc.filename)
+
+    // A multipart PATCH with a new file replaces the stored object.
+    const newName = `${marker}-replaced.png`
+    const multipartUpdate = await callOurs(
+      multipartReq('PATCH', `http://x/api/media/${doc.id}`, {}, { buffer: onePixelPng, name: newName, type: 'image/png' }, authHeader(adminToken)),
+      ['media', String(doc.id)],
+    )
+    expect(multipartUpdate.status).toBe(200)
+    const multipartUpdateBody = (await multipartUpdate.json()) as { doc: { filename: string; url: string } }
+    expect(multipartUpdateBody.doc.filename).toBe(newName)
+    expect(multipartUpdateBody.doc.url).toBe(`/api/media/file/${newName}`)
+  })
+
+  it('GET /api/media/file/:filename serves the stored bytes with no auth required, and 404s for a missing key', async () => {
+    const marker = `rest-upl-serve-${Date.now()}`
+    const created = await callOurs(
+      multipartReq('POST', 'http://x/api/media', { alt: 'serve' }, { buffer: onePixelPng, name: `${marker}.png`, type: 'image/png' }, authHeader(adminToken)),
+      ['media'],
+    )
+    const { doc } = (await created.json()) as { doc: { id: number; filename: string } }
+    createdOursMediaIds.push(doc.id)
+
+    const served = await handleRestRequest(req('GET', `http://x/api/media/file/${doc.filename}`), ['media', 'file', doc.filename], engine)
+    expect(served).not.toBeNull()
+    expect(served!.status).toBe(200)
+    expect(served!.headers.get('content-type')).toBe('image/png')
+    const bytes = Buffer.from(await served!.arrayBuffer())
+    expect(bytes.equals(onePixelPng)).toBe(true)
+
+    const missing = await handleRestRequest(req('GET', 'http://x/api/media/file/does-not-exist.png'), ['media', 'file', 'does-not-exist.png'], engine)
+    expect(missing).not.toBeNull()
+    expect(missing!.status).toBe(404)
+  })
+})
+
+/* -------------------------------------------------------------------------- */
 /* Fallthrough contract: handleRestRequest returns null for out-of-scope     */
 /* routes so the future route wiring falls through to real Payload for them  */
 /* -------------------------------------------------------------------------- */

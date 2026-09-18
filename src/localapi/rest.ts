@@ -111,6 +111,31 @@
  * this module doesn't recognize at all.
  *
  * ---------------------------------------------------------------------------
+ * Uploads stage addition: multipart create/update + file serving
+ * ---------------------------------------------------------------------------
+ * This module's `media` entry in `readRegistry.collections` (Stage 6a)
+ * always made `handleRestRequest` claim `/api/media` requests over real
+ * Payload's own, but `handleCreate`/`handleUpdateByID` originally only ever
+ * read a JSON body - a real multipart/form-data upload POST (including
+ * every upload real Payload's OWN admin panel UI sends, which already uses
+ * the wire shape reproduced below) silently lost its file. Fixed here by
+ * teaching `handleCreate`/`handleUpdateByID` to branch on `Content-Type`:
+ * a `multipart/*` request is parsed via the standard Fetch API's own
+ * `Request.formData()` (built into both Node's undici and this app's real
+ * Cloudflare Workers runtime - no busboy/vendor parser needed, unlike real
+ * Payload's own Node-specific `uploads/fetchAPI-multipart/*`), reproducing
+ * real Payload's own `addDataAndFileToRequest.js` wire shape: the document's
+ * own fields arrive as a JSON string in a `_payload` form field, and the
+ * uploaded file arrives as a standard `File` in a `file` form field. See
+ * `readMultipartBody`'s own doc comment for the full citation.
+ *
+ * Also added: `GET /api/media/file/:filename`, real Payload's own file-
+ * serving route (`uploads/endpoints/getFile.js`), reproduced via
+ * `./storage.ts`'s `getMediaObjectResponse` - see that module's header for
+ * why no access check is needed here (`media`'s `access.read` is the
+ * unconditional `() => true`).
+ *
+ * ---------------------------------------------------------------------------
  * Message text
  * ---------------------------------------------------------------------------
  * Real Payload's success messages are i18n-looked-up and, for
@@ -139,9 +164,14 @@ import { NotFound as OperationsNotFound, ValidationError } from './operations'
 import { parseSearchParams } from './queryParser'
 import { NotFound as ReadNotFound } from './read-operations'
 import { readRegistry } from './registry'
+import { getMediaObjectResponse } from './storage'
+import type { UploadFile } from './uploads'
 
 /** This app's one real `auth: true` collection - see this file's header for why this is a hardcoded constant rather than a config lookup. */
 const AUTH_COLLECTION_SLUG = 'users'
+
+/** This app's one upload-enabled collection - same hardcoding convention as `AUTH_COLLECTION_SLUG` above (see `./uploads.ts`'s and `./storage.ts`'s own file headers for why). */
+const UPLOAD_COLLECTION_SLUG = 'media'
 
 const COOKIE_NAME = 'payload-token'
 
@@ -273,6 +303,80 @@ function stringField(data: Record<string, unknown>, key: string): string {
   return typeof value === 'string' ? value : ''
 }
 
+/**
+ * Whether `request`'s `Content-Type` is a `multipart/*` body - the same
+ * eligibility check real Payload's own `utilities/addDataAndFileToRequest.js`
+ * makes before routing to its own busboy-based multipart parser (confirmed
+ * by reading it directly: `contentType?.includes('multipart/')`, `contentType`
+ * itself being the header value split on its first `;`).
+ */
+function isMultipartRequest(request: Request): boolean {
+  const contentType = request.headers.get('Content-Type') ?? ''
+  return contentType.split(';', 1)[0].trim().toLowerCase().includes('multipart/')
+}
+
+/**
+ * Reproduces real Payload's own multipart request wire shape
+ * (`utilities/addDataAndFileToRequest.js` + `uploads/fetchAPI-multipart/*`,
+ * confirmed by reading both directly): the document's own fields travel as
+ * a single JSON string in a `_payload` form field - NOT as individual named
+ * form fields - and the uploaded file travels in a form field named `file`.
+ * Real Payload's OWN admin panel upload UI already submits exactly this
+ * shape, which is what makes matching it (rather than inventing a simpler
+ * one) the fix for the real, previously-live bug where a real multipart
+ * upload POST to `/api/media` was silently misrouted into the JSON-only
+ * path (`readJsonBody`) and lost its file entirely.
+ *
+ * Uses the standard Fetch API's own `Request.formData()`/`File` - built
+ * into both Node's undici (this app's test runtime) and the Cloudflare
+ * Workers runtime this app actually deploys to - rather than real Payload's
+ * own busboy-based parser (`uploads/fetchAPI-multipart/processMultipart.js`,
+ * Node-stream-specific and not something this app's Workers runtime can
+ * run), per this project's standing zero-new-runtime-dependencies rule.
+ *
+ * Bracket-notation nested fields (real Payload's own `uploads/
+ * fetchAPI-multipart/processNested.js`) are NOT reproduced - real Payload
+ * itself only applies that parsing when a caller opts in (`parseNested`,
+ * default `false`, confirmed in `fetchAPI-multipart/index.js`), and this
+ * app's only upload collection (`media`) has no field that would ever need
+ * it (just `alt` plus the upload-computed columns) - not a gap any real
+ * upload flow in this app hits.
+ */
+async function readMultipartBody(request: Request): Promise<{ data: Record<string, unknown>; file?: UploadFile }> {
+  const formData = await request.formData()
+
+  let data: Record<string, unknown> = {}
+  const payloadField = formData.get('_payload')
+  if (typeof payloadField === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(payloadField)
+      if (typeof parsed === 'object' && parsed !== null) data = parsed as Record<string, unknown>
+    } catch {
+      // Matches readJsonBody's own defensive fallback - a malformed
+      // `_payload` value is treated as "no fields", not a thrown error.
+    }
+  }
+
+  let file: UploadFile | undefined
+  const fileField = formData.get('file')
+  if (fileField instanceof File) {
+    file = {
+      data: new Uint8Array(await fileField.arrayBuffer()),
+      mimetype: fileField.type,
+      name: fileField.name,
+      size: fileField.size,
+    }
+  }
+
+  return { data, file }
+}
+
+/** Reads a create/update request body regardless of wire shape - `readMultipartBody` for a `multipart/*` request (the only shape a real file upload ever arrives as - see that function's own doc comment), `readJsonBody` for everything else. A JSON request never carries a `file` (no collection accepts one as a JSON value), which `./engine.ts`'s own `create`/`update` already treat as "no new file" for every collection, `media` included (required on create, optional on update). */
+async function readCreateOrUpdateBody(request: Request): Promise<{ data: Record<string, unknown>; file?: UploadFile }> {
+  if (isMultipartRequest(request)) return readMultipartBody(request)
+  return { data: await readJsonBody(request) }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Collection handlers                                                        */
 /* -------------------------------------------------------------------------- */
@@ -296,17 +400,24 @@ async function handleCount(engine: Engine, collection: string, request: Request,
 }
 
 async function handleCreate(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const data = await readJsonBody(request)
+  const { data, file } = await readCreateOrUpdateBody(request)
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.create({ collection, data, draft: query.draft, user })
+  const doc = await engine.create({ collection, data, draft: query.draft, user, file })
   return Response.json({ doc, message: 'Successfully created.' }, { status: 201 })
 }
 
 async function handleUpdateByID(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const data = await readJsonBody(request)
+  const { data, file } = await readCreateOrUpdateBody(request)
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.update({ collection, id, data, draft: query.draft, user })
+  const doc = await engine.update({ collection, id, data, draft: query.draft, user, file })
   return Response.json({ doc, message: 'Updated successfully.' }, { status: 200 })
+}
+
+/** `GET /api/media/file/:filename` - real Payload's own `getFile.js` handler, reproduced for this app's one upload collection. No access check here: see `./storage.ts`'s own header for why `media`'s unconditional `access.read: () => true` means real Payload's own `checkFileAccess` short-circuits to "allowed, no doc lookup" for it. `getMediaObjectResponse` does the actual R2 fetch/range/headers work; this handler only maps its `null` ("no such object") to a 404 in this module's own error-envelope shape. */
+async function handleGetMediaFile(filename: string, request: Request): Promise<Response> {
+  const response = await getMediaObjectResponse(filename, request)
+  if (!response) return Response.json({ errors: [{ name: 'NotFound', message: 'Not Found' }] }, { status: 404 })
+  return response
 }
 
 async function handleDeleteByID(engine: Engine, collection: string, id: number, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
@@ -514,6 +625,10 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       if (method === 'PATCH') return await handleUpdateByID(engine, collectionSlug, id, request, user)
       if (method === 'DELETE') return await handleDeleteByID(engine, collectionSlug, id, user)
       return null
+    }
+
+    if (rest.length === 2 && collectionSlug === UPLOAD_COLLECTION_SLUG && rest[0] === 'file' && method === 'GET') {
+      return await handleGetMediaFile(decodeURIComponent(rest[1]), request)
     }
 
     // /versions, /versions/:id, /:id/duplicate, /access/:id? - deferred.

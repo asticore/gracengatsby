@@ -294,17 +294,36 @@ function liftGroupSpecialFields(data: Record<string, unknown>, groupFields: Grou
   return result
 }
 
-/** Pulls a version document's `array`/`blocks` field(s) out for separate handling, same idea as createCollectionOps' splitSpecialFields but scoped to just what createVersionsOps supports (no top-level-rels at the version level yet - nothing in this app's versioned collections has one outside a block). */
+/**
+ * Pulls a version document's `array`/`blocks`/top-level-hasMany-rels field(s)
+ * out for separate handling, same idea as createCollectionOps'
+ * splitSpecialFields. Top-level rels support added for Products (Stage 10,
+ * first versioned collection with a top-level hasMany field outside a block -
+ * `images`/`faqs`) - see createVersionsOps' own doc comment.
+ */
 function splitVersionFields(
   data: Record<string, unknown>,
   arrayFieldNames: string[],
+  topLevelRelsFieldNames: string[],
   blocksFieldNames: string[],
-): { scalars: Record<string, unknown>; arrays: Record<string, unknown[]>; blocks: Record<string, Record<string, unknown>[]> } {
+): {
+  scalars: Record<string, unknown>
+  arrays: Record<string, unknown[]>
+  topLevelRels: Record<string, number[]>
+  blocks: Record<string, Record<string, unknown>[]>
+} {
   const scalars = { ...data }
   const arrays: Record<string, unknown[]> = {}
   for (const name of arrayFieldNames) {
     if (name in scalars) {
       arrays[name] = (scalars[name] as unknown[]) ?? []
+      delete scalars[name]
+    }
+  }
+  const topLevelRels: Record<string, number[]> = {}
+  for (const name of topLevelRelsFieldNames) {
+    if (name in scalars) {
+      topLevelRels[name] = (scalars[name] as number[]) ?? []
       delete scalars[name]
     }
   }
@@ -315,7 +334,7 @@ function splitVersionFields(
       delete scalars[name]
     }
   }
-  return { scalars, arrays, blocks }
+  return { scalars, arrays, topLevelRels, blocks }
 }
 
 /**
@@ -766,16 +785,19 @@ function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onCol
 
 /**
  * Read/write for the parallel `_<table>_v` versions table generateVersionsTable
- * produces. `array` and `blocks` fields, and blocks' nested hasMany/polymorphic
- * subfields, ARE supported here (pass the versioned `arrayTables`/`relsTable`/
- * `blocksFields` - e.g. postsVersionsCategories/postsVersionsRels/
- * postsVersionsBlockTypes - same shapes createCollectionOps takes, just
- * generated against the versions table instead of the live one), scoped by
- * the version row's OWN id via createArrayOps/createBlocksRelsOps - see
- * their doc comments. Still narrow on one thing: top-level (not
- * blocks-nested) hasMany fields at the version level (nothing has needed one
- * yet - every hasMany/polymorphic field in this app's versioned collections
- * lives inside a block).
+ * produces. `array` and `blocks` fields, blocks' nested hasMany/polymorphic
+ * subfields, AND top-level (not blocks-nested) hasMany/polymorphic fields are
+ * all supported here (pass the versioned `arrayTables`/`relsTable`/
+ * `topLevelRelsFieldTargets`/`blocksFields` - e.g. postsVersionsCategories/
+ * postsVersionsRels/postsVersionsBlockTypes, or productsVersionsRels +
+ * `{ images: 'media', faqs: 'faqs' }` for Products (Stage 10) - same shapes
+ * createCollectionOps takes, just generated against the versions table
+ * instead of the live one), scoped by the version row's OWN id via
+ * createArrayOps/createBlocksRelsOps - see their doc comments.
+ * `topLevelRelsFieldTargets` reuses createBlocksRelsOps' own
+ * attachTopLevelRels/writeTopLevelRels with the `'version.'` pathPrefix,
+ * exactly like blocks-nested rels already did - Products is simply the first
+ * versioned collection to have a top-level one.
  *
  * Not folded into createCollectionOps' create/updateByID: whether every live
  * write should also create a version row, and how `_status`/`latest`/
@@ -789,21 +811,33 @@ export function createVersionsOps(
   rels: {
     arrayTables?: Record<string, AnySQLiteTable>
     relsTable?: RelsTableDef
+    topLevelRelsFieldTargets?: Record<string, string>
     blocksFields?: Record<string, { blockTypes: Record<string, BlockTypeDef> }>
   } = {},
 ) {
   const columns = table as unknown as Record<string, SQLiteColumn>
-  const { arrayTables = {}, relsTable, blocksFields = {} } = rels
+  const { arrayTables = {}, relsTable, topLevelRelsFieldTargets = {}, blocksFields = {} } = rels
   const arrayFieldNames = Object.keys(arrayTables)
+  const topLevelRelsFieldNames = Object.keys(topLevelRelsFieldTargets)
   const blocksFieldNames = Object.keys(blocksFields)
   const { attachArrays, writeArrays } = createArrayOps(arrayTables, true)
   // "version." (dot), not "version_" (underscore) - see createBlocksRelsOps'
   // pathPrefix doc comment; confirmed against real _eg_pages_v_rels data.
-  const { attachBlocksFields, writeBlocksFields } = createBlocksRelsOps(relsTable, {}, blocksFields, true, 'version.')
+  // topLevelRelsFieldTargets reuses the exact same pathPrefix machinery a
+  // block's own nested rels use (see attachTopLevelRels/writeTopLevelRels) -
+  // Products (Stage 10) is the first versioned collection to exercise this.
+  const { attachTopLevelRels, writeTopLevelRels, attachBlocksFields, writeBlocksFields } = createBlocksRelsOps(
+    relsTable,
+    topLevelRelsFieldTargets,
+    blocksFields,
+    true,
+    'version.',
+  )
 
   async function attachExtras(row: Record<string, unknown>): Promise<Record<string, unknown>> {
     const withArrays = await attachArrays(row, row.id as number)
-    const withBlocks = await attachBlocksFields(withArrays, row.id as number)
+    const withRels = await attachTopLevelRels(withArrays, row.id as number)
+    const withBlocks = await attachBlocksFields(withRels, row.id as number)
     return nestGroups(withBlocks, groupFields)
   }
 
@@ -845,11 +879,12 @@ export function createVersionsOps(
     if (latest) {
       await db.update(table).set({ latest: false }).where(eq(columns.parentId, parentId))
     }
-    const { scalars, arrays, blocks } = splitVersionFields(data, arrayFieldNames, blocksFieldNames)
+    const { scalars, arrays, topLevelRels, blocks } = splitVersionFields(data, arrayFieldNames, topLevelRelsFieldNames, blocksFieldNames)
     const values = { ...flattenGroups(scalars, groupFields), parentId, createdAt: now, updatedAt: now, latest }
     const [row] = await db.insert(table).values(values).returning()
     const id = (row as { id: number }).id
     await writeArrays(id, arrays)
+    await writeTopLevelRels(id, topLevelRels)
     await writeBlocksFields(id, blocks)
     return attachExtras(row as Record<string, unknown>)
   }

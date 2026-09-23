@@ -1,410 +1,490 @@
-/**
- * Stage 6a: the full slug -> {config, db-ops} wiring for all 21 real
- * collections and 17 real globals, assembled from the SAME real config
- * objects (`src/collections/*`, `src/globals/*`, `src/features/*`) and the
- * SAME real `src/cms/db` functions the existing Stage 1 parity tests
- * (`tests/int/localapi-read-operations-parity.int.spec.ts`,
- * `tests/int/localapi-operations-parity.int.spec.ts`) already prove correct
- * for a 5-7-entity subset - nothing here is a rewritten stand-in, this is
- * the same pattern generalized to every entity.
- *
- * Two registries:
- * - `readRegistry` (`ReadRegistry` from `./read-operations.ts`) - covers
- *   `find`/`findByID`/`count`/`findGlobal`.
- * - `writeRegistry` - covers `create`/`update`/`delete`/`updateGlobal`.
- *   `./operations.ts` deliberately does NOT own a registry itself (see that
- *   file's header, "Why a `db` parameter, not a hardcoded registry") - each
- *   `createDocument`/`updateDocument`/etc. call takes its `db: CollectionDbOps`
- *   directly, by design, so a future `createEngine()` (Stage 6c) needs
- *   somewhere to look up which `CollectionDbOps`/`GlobalDbOps` object to hand
- *   it for a given slug. This module is that lookup table - it does not
- *   change `operations.ts`'s own design, it's the caller `operations.ts`
- *   already expected to exist.
- *
- * SLUG NAMING, confirmed by reading every config file directly (not
- * assumed): the real Payload collection/global `slug:` values are
- * kebab-case (`'event-rsvps'`, `'page-templates'`, `'payment-settings'`,
- * ...) - the SAME strings every real `engine.find({collection: '...'})` /
- * `engine.findGlobal({slug: '...'})` call site in this app already uses.
- * The `src/cms/db` layer's own internal file/function names are camelCase
- * (`eventRSVPs`, `pageTemplates`, ...) - a completely different naming
- * convention for the same entities, used only for that layer's own
- * table/module identifiers. Both registries below are keyed by the real
- * kebab-case slug, matching every existing call site and every existing
- * parity test's registry keys (e.g. `'payment-settings'`, not
- * `paymentSettings`) - never the db-layer's internal camelCase name.
- *
- * VERSIONED COLLECTIONS (events, pages, posts, courses): each of these
- * collections' db file exports TWO families of ops - the plain
- * `create{X}`/`update{X}`/`find{X}ByID`/`delete{X}` names (built from
- * `createDraftOps(baseOps, versionsOps, ...)` - confirmed by reading
- * `src/cms/db/collections/events.ts` directly) which already implement this
- * app's real draft/publish policy end to end, and a second
- * `create{X}LiveRow`/`update{X}LiveRow` family (raw `baseOps`, bypassing
- * version bookkeeping entirely) used elsewhere for direct live-row writes.
- * Both registries below use ONLY the first (plain-named, `createDraftOps`-
- * backed) family - the `LiveRow` variants are a different, narrower tool
- * for a different job and are not part of this general CRUD surface.
- *
- * `users`' db file additionally exports a THIRD family
- * (`findUserAuthRowByID`/`updateUserAuthRow`/`createUserAuthRow`) used by
- * Stage 2's `auth.ts` for the auth-specific row shape - also not used here;
- * this registry's `users` entry uses the same plain
- * `create/update/find/deleteUser` family every other collection uses.
- *
- * TYPE-ERASURE NOTE: `CollectionDbOps<TDoc>` is generic per real doc type
- * (`FaqDoc`, `EventDoc`, ...), but a single `Record<string, CollectionDbOps<...>>`
- * needs one fixed type parameter for every entry. Real `create{X}` functions
- * take a narrower `data` parameter than `CollectionDbOps`'s
- * `(data: Record<string, unknown>) => ...` (contravariant position - unlike
- * the read side's covariant return types, which are directly assignable
- * with no cast per `ReadEntityConfig`'s/`CollectionReadEntry`'s own doc
- * comments), so each collection's ops object is cast at the boundary with
- * `as unknown as CollectionDbOps<AnyDoc>` - the same "real functions, cast
- * where a shared map needs one erased type" pattern already used throughout
- * this removal project (e.g. `localapi-migrate-fresh-install.int.spec.ts`'s
- * `REAL_MIGRATIONS` cast).
- */
-import { ABTests } from '@/features/abTesting/collections/ABTests'
+import type { GlobalConfig, CollectionConfig } from '@/engine'
+
+import { AbTests } from '@/features/abTesting/collections/ABTests'
+import { AuditLog } from '@/features/security/auditLogCollection'
+import { BackupSettings } from '@/features/backups/collection'
+import { BlogSettings } from '@/cms/config/globals/BlogSettings'
 import { Courses } from '@/features/courses/collections/Courses'
 import { Enrolments } from '@/features/courses/collections/Enrolments'
-import { LessonProgress } from '@/features/courses/collections/LessonProgress'
-import { Lessons } from '@/features/courses/collections/Lessons'
-import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
-import { Memberships } from '@/features/members/collections/Memberships'
+import { EventRSVPs } from '@/features/events/collections/EventRSVPs'
+import { Events } from '@/cms/config/collections/Events'
+import { FAQs } from '@/cms/config/collections/FAQs'
+import { FieldGroups } from '@/cms/config/collections/FieldGroups'
 import { FormSubmissions } from '@/features/forms/collections/FormSubmissions'
 import { Forms } from '@/features/forms/collections/Forms'
-import { AuditLog } from '@/features/security/auditLogCollection'
-import { Translations } from '@/features/multilingual/translationsCollection'
-import { Backups } from '@/features/backups/collection'
+import { LessonProgress } from '@/features/courses/collections/LessonProgress'
+import { Lessons } from '@/features/courses/collections/Lessons'
+import { Media } from '@/cms/config/collections/Media'
+import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
+import { Memberships } from '@/features/members/collections/Memberships'
+import { PageTemplates } from '@/cms/config/collections/PageTemplates'
+import { Pages } from '@/cms/config/collections/Pages'
+import { Posts } from '@/cms/config/collections/Posts'
+import { Users } from '@/cms/config/collections/Users'
+import { Translations } from '@/cms/config/collections/Translations'
+import { Footer } from '@/cms/config/globals/Footer'
+import { Header } from '@/cms/config/globals/Header'
+import { SeoSettings } from '@/cms/config/globals/SeoSettings'
+import { ShopSettings } from '@/cms/config/globals/ShopSettings'
+import { SiteSettings } from '@/cms/config/globals/SiteSettings'
+import { SpeedSettings } from '@/cms/config/globals/SpeedSettings'
+import { SecuritySettings } from '@/cms/config/globals/SecuritySettings'
+import { PaymentSettings } from '@/cms/config/globals/PaymentSettings'
+import { EmailSettings } from '@/cms/config/globals/EmailSettings'
+import { FaqSettings } from '@/cms/config/globals/FaqSettings'
+import { BlogSettings as BlogSettingsGlobal } from '@/cms/config/globals/BlogSettings'
+import { FormSettings } from '@/cms/config/globals/FormSettings'
+import { MediaSettings } from '@/cms/config/globals/MediaSettings'
+import { IntegrationSettings } from '@/cms/config/globals/IntegrationSettings'
+import { MemberSettings } from '@/cms/config/globals/MemberSettings'
+import { LanguageSettings } from '@/cms/config/globals/LanguageSettings'
+import { BackupSettings as BackupSettingsGlobal } from '@/cms/config/globals/BackupSettings'
 
-import { EventRSVPs } from '@/collections/EventRSVPs'
-import { Events } from '@/collections/Events'
-import { Faqs } from '@/collections/Faqs'
-import { FieldGroups } from '@/collections/FieldGroups'
-import { Media } from '@/collections/Media'
-import { PageTemplates } from '@/collections/PageTemplates'
-import { Pages } from '@/collections/Pages'
-import { Posts } from '@/collections/Posts'
-import { Users } from '@/collections/Users'
-
-import { BackupSettings } from '@/globals/BackupSettings'
-import { BlogSettings } from '@/globals/BlogSettings'
-import { EmailSettings } from '@/globals/EmailSettings'
-import { FaqSettings } from '@/globals/FaqSettings'
-import { Footer } from '@/globals/Footer'
-import { FormSettings } from '@/globals/FormSettings'
-import { Header } from '@/globals/Header'
-import { Integrations } from '@/globals/Integrations'
-import { LanguageSettings } from '@/globals/LanguageSettings'
-import { MediaSettings } from '@/globals/MediaSettings'
-import { MemberSettings } from '@/globals/MemberSettings'
-import { PaymentSettings } from '@/globals/PaymentSettings'
-import { SecuritySettings } from '@/globals/SecuritySettings'
-import { SeoSettings } from '@/globals/SeoSettings'
-import { ShopSettings } from '@/globals/ShopSettings'
-import { SiteSettings } from '@/globals/SiteSettings'
-import { SpeedSettings } from '@/globals/SpeedSettings'
+import { Addresses } from '@/features/ecommerce/collections/Addresses'
+import { Carts } from '@/features/ecommerce/collections/Carts'
+import { Orders } from '@/features/ecommerce/collections/Orders'
+import { Products } from '@/features/ecommerce/collections/Products'
+import { Transactions } from '@/features/ecommerce/collections/Transactions'
 
 import {
-  countABTests,
-  countAuditLogEntries,
-  countBackups,
-  countCourses,
-  countEnrolments,
-  countEventRSVPs,
-  countEvents,
-  countFaqs,
-  countFieldGroups,
-  countFormSubmissions,
-  countForms,
-  countLessonProgress,
-  countLessons,
-  countMedia,
-  countMembershipTiers,
-  countMemberships,
-  countPageTemplates,
-  countPages,
-  countPosts,
-  countTranslations,
-  countUsers,
-  createABTest,
-  createAuditLogEntry,
-  createBackup,
-  createCourse,
-  createEnrolment,
-  createEvent,
-  createEventRSVP,
-  createFaq,
-  createFieldGroup,
-  createForm,
-  createFormSubmission,
-  createLesson,
-  createLessonProgress,
-  createMedia,
-  createMembership,
-  createMembershipTier,
-  createPage,
-  createPageTemplate,
-  createPost,
-  createTranslation,
-  createUser,
-  deleteABTest,
-  deleteAuditLogEntry,
-  deleteBackup,
-  deleteCourse,
-  deleteEnrolment,
-  deleteEvent,
-  deleteEventRSVP,
-  deleteFaq,
-  deleteFieldGroup,
-  deleteForm,
-  deleteFormSubmission,
-  deleteLesson,
-  deleteLessonProgress,
-  deleteMedia,
-  deleteMembership,
-  deleteMembershipTier,
-  deletePage,
-  deletePageTemplate,
-  deletePost,
-  deleteTranslation,
-  deleteUser,
-  findABTestByID,
-  findABTestsPaginated,
-  findAuditLogEntriesPaginated,
-  findAuditLogEntryByID,
+  findAbTests,
+  findAbTestByID,
+  countAbTests,
+  createAbTest,
+  updateAbTest,
+  deleteAbTest,
+  findAuditLogs,
+  findAuditLogByID,
+  countAuditLogs,
+  findBackups,
   findBackupByID,
-  findBackupsPaginated,
-  findBackupSettings,
-  findBlogSettings,
-  findCourseByID,
-  findCoursesPaginated,
-  findEmailSettings,
-  findEnrolmentByID,
-  findEnrolmentsPaginated,
-  findEventByID,
-  findEventRSVPByID,
-  findEventRSVPsPaginated,
-  findEventsPaginated,
-  findFaqByID,
-  findFaqsPaginated,
-  findFaqSettings,
-  findFieldGroupByID,
-  findFieldGroupsPaginated,
-  findFormByID,
-  findFormsPaginated,
-  findFormSettings,
-  findFormSubmissionByID,
-  findFormSubmissionsPaginated,
-  findFooter,
-  findHeader,
-  findIntegrations,
-  findLanguageSettings,
-  findLessonByID,
-  findLessonProgressByID,
-  findLessonProgressPaginated,
-  findLessonsPaginated,
-  findMediaByID,
-  findMediaPaginated,
-  findMediaSettings,
-  findMemberSettings,
-  findMembershipByID,
-  findMembershipsPaginated,
-  findMembershipTierByID,
-  findMembershipTiersPaginated,
-  findPageByID,
-  findPagesPaginated,
-  findPageTemplateByID,
-  findPageTemplatesPaginated,
-  findPaymentSettings,
-  findPostByID,
-  findPostsPaginated,
-  findSecuritySettings,
-  findSeoSettings,
-  findShopSettings,
-  findSiteSettings,
-  findSpeedSettings,
-  findTranslationByID,
-  findTranslationsPaginated,
-  findUserByID,
-  findUsersPaginated,
-  updateABTest,
-  updateAuditLogEntry,
+  countBackups,
+  createBackup,
   updateBackup,
-  updateBackupSettings,
-  updateBlogSettings,
+  deleteBackup,
+  findCourses,
+  findCourseByID,
+  countCourses,
+  createCourse,
   updateCourse,
-  updateEmailSettings,
+  deleteCourse,
+  findCourseVersions,
+  findLatestCourseVersion,
+  createCourseVersion,
+  findEnrolments,
+  findEnrolmentByID,
+  countEnrolments,
+  createEnrolment,
   updateEnrolment,
-  updateEvent,
+  deleteEnrolment,
+  findEventRSVPs,
+  findEventRSVPByID,
+  countEventRSVPs,
+  createEventRSVP,
   updateEventRSVP,
+  deleteEventRSVP,
+  findEvents,
+  findEventByID,
+  countEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  findEventVersions,
+  findLatestEventVersion,
+  createEventVersion,
+  findFaqs,
+  findFaqByID,
+  countFaqs,
+  createFaq,
   updateFaq,
-  updateFaqSettings,
+  deleteFaq,
+  findFieldGroups,
+  findFieldGroupByID,
+  countFieldGroups,
+  createFieldGroup,
   updateFieldGroup,
-  updateFooter,
-  updateForm,
-  updateFormSettings,
+  deleteFieldGroup,
+  findFormSubmissions,
+  findFormSubmissionByID,
+  countFormSubmissions,
+  createFormSubmission,
   updateFormSubmission,
-  updateHeader,
-  updateIntegrations,
-  updateLanguageSettings,
-  updateLesson,
+  deleteFormSubmission,
+  findForms,
+  findFormByID,
+  countForms,
+  createForm,
+  updateForm,
+  deleteForm,
+  findLessonProgress,
+  findLessonProgressByID,
+  countLessonProgress,
+  createLessonProgress,
   updateLessonProgress,
+  deleteLessonProgress,
+  findLessons,
+  findLessonByID,
+  countLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+  findMedia,
+  findMediaByID,
+  countMedia,
+  createMedia,
   updateMedia,
-  updateMediaSettings,
-  updateMembership,
-  updateMemberSettings,
+  deleteMedia,
+  findMembershipTiers,
+  findMembershipTierByID,
+  countMembershipTiers,
+  createMembershipTier,
   updateMembershipTier,
-  updatePage,
+  deleteMembershipTier,
+  findMemberships,
+  findMembershipByID,
+  countMemberships,
+  createMembership,
+  updateMembership,
+  deleteMembership,
+  findPageTemplates,
+  findPageTemplateByID,
+  countPageTemplates,
+  createPageTemplate,
   updatePageTemplate,
-  updatePaymentSettings,
+  deletePageTemplate,
+  findPages,
+  findPageByID,
+  countPages,
+  createPage,
+  updatePage,
+  deletePage,
+  findPageVersions,
+  findLatestPageVersion,
+  createPageVersion,
+  findPosts,
+  findPostByID,
+  countPosts,
+  createPost,
   updatePost,
-  updateSecuritySettings,
-  updateSeoSettings,
-  updateShopSettings,
-  updateSiteSettings,
-  updateSpeedSettings,
-  updateTranslation,
+  deletePost,
+  findPostVersions,
+  findLatestPostVersion,
+  createPostVersion,
+  findUsers,
+  findUserByID,
+  countUsers,
+  createUser,
   updateUser,
+  deleteUser,
+  findTranslations,
+  findTranslationByID,
+  countTranslations,
+  createTranslation,
+  updateTranslation,
+  deleteTranslation,
+  findFooter,
+  updateFooter,
+  findHeader,
+  updateHeader,
+  findSeoSettings,
+  updateSeoSettings,
+  findShopSettings,
+  updateShopSettings,
+  findSiteSettings,
+  updateSiteSettings,
+  findSpeedSettings,
+  updateSpeedSettings,
+  findSecuritySettings,
+  updateSecuritySettings,
+  findPaymentSettings,
+  updatePaymentSettings,
+  findEmailSettings,
+  updateEmailSettings,
+  findFaqSettings,
+  updateFaqSettings,
+  findFormSettings,
+  updateFormSettings,
+  findMediaSettings,
+  updateMediaSettings,
+  findIntegrationSettings,
+  updateIntegrationSettings,
+  findMemberSettings,
+  updateMemberSettings,
+  findLanguageSettings,
+  updateLanguageSettings,
+  findBackupSettings,
+  updateBackupSettings,
+  findAddresses,
+  findAddressByID,
+  countAddresses,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  findCarts,
+  findCartByID,
+  countCarts,
+  createCart,
+  updateCart,
+  deleteCart,
+  findOrders,
+  findOrderByID,
+  countOrders,
+  createOrder,
+  updateOrder,
+  deleteOrder,
+  findProducts,
+  findProductByID,
+  countProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  findTransactions,
+  findTransactionByID,
+  countTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
 } from '@/cms/db'
 
-import type { CollectionDbOps, GlobalDbOps } from './operations'
-import type { CollectionReadEntry, GlobalReadEntry, ReadRegistry } from './read-operations'
+export const collections: (CollectionConfig | string)[] = [
+  AbTests,
+  AuditLog,
+  BackupSettings,
+  Courses,
+  Enrolments,
+  EventRSVPs,
+  Events,
+  FAQs,
+  FieldGroups,
+  FormSubmissions,
+  Forms,
+  LessonProgress,
+  Lessons,
+  Media,
+  MembershipTiers,
+  Memberships,
+  PageTemplates,
+  Pages,
+  Posts,
+  Users,
+  Translations,
+  Addresses,
+  Carts,
+  Orders,
+  Products,
+  Transactions,
+]
 
-/** Type-erased doc shape every `CollectionDbOps`/`GlobalDbOps` map entry is cast to - see this file's header "TYPE-ERASURE NOTE". */
-export type AnyDoc = Record<string, unknown> & { id: number }
+export const globals: (GlobalConfig | string)[] = [
+  BlogSettings,
+  Footer,
+  Header,
+  SeoSettings,
+  ShopSettings,
+  SiteSettings,
+  SpeedSettings,
+  SecuritySettings,
+  PaymentSettings,
+  EmailSettings,
+  FaqSettings,
+  FormSettings,
+  MediaSettings,
+  IntegrationSettings,
+  MemberSettings,
+  LanguageSettings,
+  BackupSettingsGlobal,
+]
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- real create/updateByID params are narrower per-collection types (e.g. `{question: string, answer: unknown} & Partial<Omit<FaqDoc,...>>`); `any` here is a deliberate contravariance workaround so one shared, type-erased map can hold all 21 collections' real ops functions unmodified - see this file's header "TYPE-ERASURE NOTE". The outer `CollectionDbOps<AnyDoc>` cast on the return is what actually re-establishes a checked type for every caller of this map.
-function collectionOps(
-  create: (data: any) => Promise<any>,
-  updateByID: (id: number, data: any, opts?: { draft?: boolean }) => Promise<any>,
-  deleteByID: (id: number) => Promise<boolean>,
-  findByID: (id: number, opts?: { draft?: boolean }) => Promise<any>,
-): CollectionDbOps<AnyDoc> {
-  return { create, updateByID, deleteByID, findByID } as unknown as CollectionDbOps<AnyDoc>
+export const ops = {
+  // AB Tests
+  findAbTests,
+  findAbTestByID,
+  countAbTests,
+  createAbTest,
+  updateAbTest,
+  deleteAbTest,
+  // Audit Log
+  findAuditLogs,
+  findAuditLogByID,
+  countAuditLogs,
+  // Backups
+  findBackups,
+  findBackupByID,
+  countBackups,
+  createBackup,
+  updateBackup,
+  deleteBackup,
+  // Courses
+  findCourses,
+  findCourseByID,
+  countCourses,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+  findCourseVersions,
+  findLatestCourseVersion,
+  createCourseVersion,
+  // Enrolments
+  findEnrolments,
+  findEnrolmentByID,
+  countEnrolments,
+  createEnrolment,
+  updateEnrolment,
+  deleteEnrolment,
+  // Event RSVPs
+  findEventRSVPs,
+  findEventRSVPByID,
+  countEventRSVPs,
+  createEventRSVP,
+  updateEventRSVP,
+  deleteEventRSVP,
+  // Events
+  findEvents,
+  findEventByID,
+  countEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  findEventVersions,
+  findLatestEventVersion,
+  createEventVersion,
+  // FAQs
+  findFaqs,
+  findFaqByID,
+  countFaqs,
+  createFaq,
+  updateFaq,
+  deleteFaq,
+  // Field Groups
+  findFieldGroups,
+  findFieldGroupByID,
+  countFieldGroups,
+  createFieldGroup,
+  updateFieldGroup,
+  deleteFieldGroup,
+  // Form Submissions
+  findFormSubmissions,
+  findFormSubmissionByID,
+  countFormSubmissions,
+  createFormSubmission,
+  updateFormSubmission,
+  deleteFormSubmission,
+  // Forms
+  findForms,
+  findFormByID,
+  countForms,
+  createForm,
+  updateForm,
+  deleteForm,
+  // Lesson Progress
+  findLessonProgress,
+  findLessonProgressByID,
+  countLessonProgress,
+  createLessonProgress,
+  updateLessonProgress,
+  deleteLessonProgress,
+  // Lessons
+  findLessons,
+  findLessonByID,
+  countLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+  // Media
+  findMedia,
+  findMediaByID,
+  countMedia,
+  createMedia,
+  updateMedia,
+  deleteMedia,
+  // Membership Tiers
+  findMembershipTiers,
+  findMembershipTierByID,
+  countMembershipTiers,
+  createMembershipTier,
+  updateMembershipTier,
+  deleteMembershipTier,
+  // Memberships
+  findMemberships,
+  findMembershipByID,
+  countMemberships,
+  createMembership,
+  updateMembership,
+  deleteMembership,
+  // Page Templates
+  findPageTemplates,
+  findPageTemplateByID,
+  countPageTemplates,
+  createPageTemplate,
+  updatePageTemplate,
+  deletePageTemplate,
+  // Pages
+  findPages,
+  findPageByID,
+  countPages,
+  createPage,
+  updatePage,
+  deletePage,
+  findPageVersions,
+  findLatestPageVersion,
+  createPageVersion,
+  // Posts
+  findPosts,
+  findPostByID,
+  countPosts,
+  createPost,
+  updatePost,
+  deletePost,
+  findPostVersions,
+  findLatestPostVersion,
+  createPostVersion,
+  // Users
+  findUsers,
+  findUserByID,
+  countUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  // Translations
+  findTranslations,
+  findTranslationByID,
+  countTranslations,
+  createTranslation,
+  updateTranslation,
+  deleteTranslation,
+  // Addresses
+  findAddresses,
+  findAddressByID,
+  countAddresses,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  // Carts
+  findCarts,
+  findCartByID,
+  countCarts,
+  createCart,
+  updateCart,
+  deleteCart,
+  // Orders
+  findOrders,
+  findOrderByID,
+  countOrders,
+  createOrder,
+  updateOrder,
+  deleteOrder,
+  // Products
+  findProducts,
+  findProductByID,
+  countProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  // Transactions
+  findTransactions,
+  findTransactionByID,
+  countTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- same contravariance workaround as collectionOps above, for globals' narrower per-entity `update` param types.
-function globalOps(find: () => Promise<any>, update: (data: any) => Promise<any>): GlobalDbOps<AnyDoc> {
-  return { find, update } as unknown as GlobalDbOps<AnyDoc>
-}
-
-/**
- * Write-side registry (`create`/`update`/`delete`/`updateGlobal`) - see this
- * file's header for why `./operations.ts` itself owns no such table.
- */
-export const writeRegistry: {
-  collections: Record<string, CollectionDbOps<AnyDoc>>
-  globals: Record<string, GlobalDbOps<AnyDoc>>
-} = {
-  collections: {
-    faqs: collectionOps(createFaq, updateFaq, deleteFaq, findFaqByID),
-    'event-rsvps': collectionOps(createEventRSVP, updateEventRSVP, deleteEventRSVP, findEventRSVPByID),
-    'membership-tiers': collectionOps(createMembershipTier, updateMembershipTier, deleteMembershipTier, findMembershipTierByID),
-    'audit-log': collectionOps(createAuditLogEntry, updateAuditLogEntry, deleteAuditLogEntry, findAuditLogEntryByID),
-    backups: collectionOps(createBackup, updateBackup, deleteBackup, findBackupByID),
-    translations: collectionOps(createTranslation, updateTranslation, deleteTranslation, findTranslationByID),
-    'field-groups': collectionOps(createFieldGroup, updateFieldGroup, deleteFieldGroup, findFieldGroupByID),
-    'form-submissions': collectionOps(createFormSubmission, updateFormSubmission, deleteFormSubmission, findFormSubmissionByID),
-    'ab-tests': collectionOps(createABTest, updateABTest, deleteABTest, findABTestByID),
-    media: collectionOps(createMedia, updateMedia, deleteMedia, findMediaByID),
-    memberships: collectionOps(createMembership, updateMembership, deleteMembership, findMembershipByID),
-    'page-templates': collectionOps(createPageTemplate, updatePageTemplate, deletePageTemplate, findPageTemplateByID),
-    forms: collectionOps(createForm, updateForm, deleteForm, findFormByID),
-    enrolments: collectionOps(createEnrolment, updateEnrolment, deleteEnrolment, findEnrolmentByID),
-    lessons: collectionOps(createLesson, updateLesson, deleteLesson, findLessonByID),
-    'lesson-progress': collectionOps(createLessonProgress, updateLessonProgress, deleteLessonProgress, findLessonProgressByID),
-    pages: collectionOps(createPage, updatePage, deletePage, findPageByID),
-    events: collectionOps(createEvent, updateEvent, deleteEvent, findEventByID),
-    courses: collectionOps(createCourse, updateCourse, deleteCourse, findCourseByID),
-    posts: collectionOps(createPost, updatePost, deletePost, findPostByID),
-    users: collectionOps(createUser, updateUser, deleteUser, findUserByID),
-  },
-  globals: {
-    'faq-settings': globalOps(findFaqSettings, updateFaqSettings),
-    'blog-settings': globalOps(findBlogSettings, updateBlogSettings),
-    integrations: globalOps(findIntegrations, updateIntegrations),
-    'payment-settings': globalOps(findPaymentSettings, updatePaymentSettings),
-    'form-settings': globalOps(findFormSettings, updateFormSettings),
-    'site-settings': globalOps(findSiteSettings, updateSiteSettings),
-    'member-settings': globalOps(findMemberSettings, updateMemberSettings),
-    'email-settings': globalOps(findEmailSettings, updateEmailSettings),
-    'shop-settings': globalOps(findShopSettings, updateShopSettings),
-    'security-settings': globalOps(findSecuritySettings, updateSecuritySettings),
-    header: globalOps(findHeader, updateHeader),
-    footer: globalOps(findFooter, updateFooter),
-    'backup-settings': globalOps(findBackupSettings, updateBackupSettings),
-    'language-settings': globalOps(findLanguageSettings, updateLanguageSettings),
-    'seo-settings': globalOps(findSeoSettings, updateSeoSettings),
-    'speed-settings': globalOps(findSpeedSettings, updateSpeedSettings),
-    'media-settings': globalOps(findMediaSettings, updateMediaSettings),
-  },
-}
-
-function readEntry(config: CollectionReadEntry['config'], findPaginated: CollectionReadEntry['findPaginated'], findByID: CollectionReadEntry['findByID'], count: CollectionReadEntry['count']): CollectionReadEntry {
-  return { config, findPaginated, findByID, count }
-}
-
-function globalReadEntry(config: GlobalReadEntry['config'], find: GlobalReadEntry['find']): GlobalReadEntry {
-  return { config, find }
-}
-
-/** Read-side registry (`find`/`findByID`/`count`/`findGlobal`) - see this file's header. */
-export const readRegistry: ReadRegistry = {
-  collections: {
-    faqs: readEntry(Faqs, findFaqsPaginated, findFaqByID, countFaqs),
-    'event-rsvps': readEntry(EventRSVPs, findEventRSVPsPaginated, findEventRSVPByID, countEventRSVPs),
-    'membership-tiers': readEntry(MembershipTiers, findMembershipTiersPaginated, findMembershipTierByID, countMembershipTiers),
-    'audit-log': readEntry(AuditLog, findAuditLogEntriesPaginated, findAuditLogEntryByID, countAuditLogEntries),
-    backups: readEntry(Backups, findBackupsPaginated, findBackupByID, countBackups),
-    translations: readEntry(Translations, findTranslationsPaginated, findTranslationByID, countTranslations),
-    'field-groups': readEntry(FieldGroups, findFieldGroupsPaginated, findFieldGroupByID, countFieldGroups),
-    'form-submissions': readEntry(FormSubmissions, findFormSubmissionsPaginated, findFormSubmissionByID, countFormSubmissions),
-    'ab-tests': readEntry(ABTests, findABTestsPaginated, findABTestByID, countABTests),
-    media: readEntry(Media, findMediaPaginated, findMediaByID, countMedia),
-    memberships: readEntry(Memberships, findMembershipsPaginated, findMembershipByID, countMemberships),
-    'page-templates': readEntry(PageTemplates, findPageTemplatesPaginated, findPageTemplateByID, countPageTemplates),
-    forms: readEntry(Forms, findFormsPaginated, findFormByID, countForms),
-    enrolments: readEntry(Enrolments, findEnrolmentsPaginated, findEnrolmentByID, countEnrolments),
-    lessons: readEntry(Lessons, findLessonsPaginated, findLessonByID, countLessons),
-    'lesson-progress': readEntry(LessonProgress, findLessonProgressPaginated, findLessonProgressByID, countLessonProgress),
-    pages: readEntry(Pages, findPagesPaginated, findPageByID, countPages),
-    events: readEntry(Events, findEventsPaginated, findEventByID, countEvents),
-    courses: readEntry(Courses, findCoursesPaginated, findCourseByID, countCourses),
-    posts: readEntry(Posts, findPostsPaginated, findPostByID, countPosts),
-    users: readEntry(Users, findUsersPaginated, findUserByID, countUsers),
-  },
-  globals: {
-    'faq-settings': globalReadEntry(FaqSettings, findFaqSettings),
-    'blog-settings': globalReadEntry(BlogSettings, findBlogSettings),
-    integrations: globalReadEntry(Integrations, findIntegrations),
-    'payment-settings': globalReadEntry(PaymentSettings, findPaymentSettings),
-    'form-settings': globalReadEntry(FormSettings, findFormSettings),
-    'site-settings': globalReadEntry(SiteSettings, findSiteSettings),
-    'member-settings': globalReadEntry(MemberSettings, findMemberSettings),
-    'email-settings': globalReadEntry(EmailSettings, findEmailSettings),
-    'shop-settings': globalReadEntry(ShopSettings, findShopSettings),
-    'security-settings': globalReadEntry(SecuritySettings, findSecuritySettings),
-    header: globalReadEntry(Header, findHeader),
-    footer: globalReadEntry(Footer, findFooter),
-    'backup-settings': globalReadEntry(BackupSettings, findBackupSettings),
-    'language-settings': globalReadEntry(LanguageSettings, findLanguageSettings),
-    'seo-settings': globalReadEntry(SeoSettings, findSeoSettings),
-    'speed-settings': globalReadEntry(SpeedSettings, findSpeedSettings),
-    'media-settings': globalReadEntry(MediaSettings, findMediaSettings),
-  },
-}
-
-/**
- * The same 21 real collection / 17 real global config objects above, as
- * flat arrays - for Stage 6c's `createEngine()` (`./engine.ts`), which needs
- * to hand them to `./config.ts`'s `buildEngineConfig`/`buildEngineCollectionEntries`
- * (Stage 4) to build `.config`/`.collections`. Exported from here rather
- * than re-imported a second time in `engine.ts`, so there is exactly one
- * place that lists "the 21 collections"/"the 17 globals" for this app - the
- * same single-source-of-truth reasoning the registries above already follow.
- */
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users]
-
-export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings]

@@ -11,6 +11,11 @@ import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
+import { Addresses } from '@/features/ecommerce/collections/Addresses'
+import { Carts } from '@/features/ecommerce/collections/Carts'
+import { Orders } from '@/features/ecommerce/collections/Orders'
+import { Products } from '@/features/ecommerce/collections/Products'
+import { Transactions } from '@/features/ecommerce/collections/Transactions'
 import { ABTests } from '@/features/abTesting/collections/ABTests'
 import { Backups } from '@/features/backups/collection'
 import { Courses } from '@/features/courses/collections/Courses'
@@ -114,6 +119,7 @@ export const pageTemplatesBlocks = Object.fromEntries(pageTemplatesBlockDefs.map
 function resolveTargetTable(slug: string): string {
   if (slug === Faqs.slug) return tableNameFor(Faqs)
   if (slug === Media.slug) return tableNameFor(Media)
+  if (slug === Transactions.slug) return tableNameFor(Transactions)
   throw new Error(`cms/db/schema: no known table for target collection "${slug}" - add it to resolveTargetTable in schema/index.ts.`)
 }
 
@@ -910,3 +916,98 @@ const backupSettingsSchemaConfig: GlobalConfig = { ...BackupSettings, fields: st
 export const backupSettingsGenerated = generateTable(backupSettingsSchemaConfig)
 export const backupSettings = backupSettingsGenerated.table
 export const backupSettingsGroupFields = backupSettingsGenerated.groupFields
+
+/**
+ * Stage 10 (Ecommerce), Layer 1: the 5 shop collections' shadow configs
+ * (`src/features/ecommerce/collections/*.ts`) fed through the same
+ * generateTable/generateArrayTable/generateBlockTables/generateRelsTable/
+ * generateVersionsTable machinery as every other collection above - see
+ * those shadow configs' own header comments for how each was confirmed
+ * against the real `@payloadcms/plugin-ecommerce` field shapes and this
+ * app's real `shopPlugin()` call/migrations. `resolveTargetTable` above was
+ * extended with a Transactions entry (Orders' `transactions` hasMany field
+ * targets it).
+ *
+ * Addresses: plain, scalar-only fields - same shape as Faqs (Phase 1/2).
+ *
+ * Carts/Transactions: a single top-level array field (`items` -
+ * cartItemsField, a `product` relationship + `quantity`, no rels table of
+ * its own since the relationship is single-target) - same pattern as
+ * MembershipTiers' `benefits`. Transactions also has two named groups
+ * (`stripe`, `billingAddress`) - flattened onto the live table, reconstructed
+ * via `transactionsGenerated.groupFields`, same mechanism as any other named
+ * group elsewhere in this file.
+ *
+ * Orders: the `items` array plus a TOP-LEVEL (not blocks-nested) hasMany
+ * `transactions` relationship field - this app's first `_rels` table among
+ * these 5 collections, and the first real exercise anywhere in this app of
+ * `topLevelRelsFieldTargets` (wired in ../generic.ts's createCollectionOps
+ * call in ./collections/orders.ts, not here - this file only has to produce
+ * the table/targetColumns, same as any other rels table).
+ *
+ * Products: the most complex - `versions: { drafts: true }` (parallel
+ * `_eg_products_v` table, same as Events/Pages), `trash: true` (adds the
+ * implicit `deletedAt` column - see generate.ts's hasTrash/deletedAtColumn),
+ * a `layout` blocks field reusing the SAME `pageBuilderBlocks` library
+ * Pages/Posts/PageTemplates already use, and TWO top-level hasMany fields
+ * (`images`, `faqs`) - mirrors pagesGenerated/pagesBlocks/pagesRels/
+ * pagesVersions* above exactly, with `Pages` swapped for `Products`.
+ */
+const addressesGenerated = generateTable(Addresses)
+export const addresses = addressesGenerated.table
+
+const cartsGenerated = generateTable(Carts)
+export const carts = cartsGenerated.table
+const [cartsItemsField] = cartsGenerated.arrayFields
+export const cartsItems = generateArrayTable(Carts.slug, cartsGenerated.tableName, cartsItemsField).table
+
+export const ordersGenerated = generateTable(Orders)
+export const orders = ordersGenerated.table
+const [ordersItemsField] = ordersGenerated.arrayFields
+export const ordersItems = generateArrayTable(Orders.slug, ordersGenerated.tableName, ordersItemsField).table
+export const ordersRelsGenerated = generateRelsTable(ordersGenerated.tableName, ordersGenerated.relsFields, resolveTargetTable)
+export const ordersRels = ordersRelsGenerated.table
+export const ordersRelsTargetColumns = ordersRelsGenerated.targetColumns
+
+export const transactionsGenerated = generateTable(Transactions)
+export const transactions = transactionsGenerated.table
+const [transactionsItemsField] = transactionsGenerated.arrayFields
+export const transactionsItems = generateArrayTable(Transactions.slug, transactionsGenerated.tableName, transactionsItemsField).table
+
+export const productsGenerated = generateTable(Products)
+export const products = productsGenerated.table
+
+const [productsBlocksField] = productsGenerated.blocksFields
+const productsBlockDefs = generateBlockTables(Products.slug, productsGenerated.tableName, productsBlocksField)
+export const productsBlocks = Object.fromEntries(productsBlockDefs.map((block) => [block.slug, block.table]))
+
+const productsRelsFields = [...productsGenerated.relsFields, ...productsBlockDefs.flatMap((block) => block.relsFields)]
+const productsRelsGenerated = generateRelsTable(productsGenerated.tableName, productsRelsFields, resolveTargetTable)
+export const productsRels = productsRelsGenerated.table
+
+export const productsBlockTypes = Object.fromEntries(
+  productsBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+export const productsRelsTargetColumns = productsRelsGenerated.targetColumns
+
+export const productsVersionsGenerated = generateVersionsTable(Products, productsGenerated.tableName)
+export const productsVersions = productsVersionsGenerated.table
+
+const [productsVersionsBlocksField] = productsVersionsGenerated.blocksFields
+const productsVersionsBlockDefs = generateBlockTables(Products.slug, productsVersionsGenerated.tableName, productsVersionsBlocksField, true, true)
+export const productsVersionsBlocks = Object.fromEntries(productsVersionsBlockDefs.map((block) => [block.slug, block.table]))
+
+const productsVersionsRelsFields = [...productsVersionsGenerated.relsFields, ...productsVersionsBlockDefs.flatMap((block) => block.relsFields)]
+const productsVersionsRelsGenerated = generateRelsTable(productsVersionsGenerated.tableName, productsVersionsRelsFields, resolveTargetTable)
+export const productsVersionsRels = productsVersionsRelsGenerated.table
+
+export const productsVersionsBlockTypes = Object.fromEntries(
+  productsVersionsBlockDefs.map((block) => [
+    block.slug,
+    { table: block.table, relsFieldTargets: Object.fromEntries(block.relsFields.map((field) => [field.name, singleTargetSlug(field)])) },
+  ]),
+)
+export const productsVersionsRelsTargetColumns = productsVersionsRelsGenerated.targetColumns

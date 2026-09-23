@@ -2,7 +2,7 @@ import type { CollectionConfig } from '@/engine'
 
 import { isAdmin } from '@/access/ecommerceAccess'
 
-import { pageBuilderBlocks } from '@/cms/config/blockLibrary'
+import { pageBuilderBlocks } from '@/blocks'
 
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see

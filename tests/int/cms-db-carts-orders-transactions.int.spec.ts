@@ -63,7 +63,7 @@ describe('cms/db - carts, orders, transactions (Stage 10 Ecommerce, Layer 1)', (
         collection: 'orders',
         data: {
           customerEmail: 'test@example.com',
-          status: 'pending',
+          status: 'processing',
           amount: 100,
           currency: 'AUD',
         },
@@ -72,7 +72,7 @@ describe('cms/db - carts, orders, transactions (Stage 10 Ecommerce, Layer 1)', (
 
       const viaOurs = await findOrderByID(created.id as number)
       expect(viaOurs?.customerEmail).toBe('test@example.com')
-      expect(viaOurs?.status).toBe('pending')
+      expect(viaOurs?.status).toBe('processing')
       expect(viaOurs?.amount).toBe(100)
     })
 

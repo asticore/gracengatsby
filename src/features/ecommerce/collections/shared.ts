@@ -1,4 +1,4 @@
-import type { BlocksField, Field, SelectField, TextField } from '@/engine'
+import type { Field } from '@/engine'
 
 const addressFields: Field[] = [
   { name: 'title', type: 'text' },
@@ -14,22 +14,22 @@ const addressFields: Field[] = [
   { name: 'phone', type: 'text' },
 ]
 
-const cartItemFields = [
+const cartItemFields: Field[] = [
   { name: 'product', type: 'relationship', relationTo: 'products' },
   { name: 'quantity', type: 'number', required: true },
 ]
 
-const transactionItemFields = [
+const transactionItemFields: Field[] = [
   { name: 'product', type: 'relationship', relationTo: 'products' },
   { name: 'quantity', type: 'number', required: true },
 ]
 
-const orderItemFields = [
+const orderItemFields: Field[] = [
   { name: 'product', type: 'relationship', relationTo: 'products' },
   { name: 'quantity', type: 'number', required: true },
 ]
 
-export const currencyField: SelectField = {
+export const currencyField: Field = {
   name: 'currency',
   type: 'select',
   defaultValue: 'AUD',
@@ -40,7 +40,7 @@ export const currencyField: SelectField = {
   ],
 }
 
-export function cartItemsField(name: string): BlocksField {
+export function cartItemsField(name: string): Field {
   return {
     name,
     type: 'array',
@@ -48,7 +48,7 @@ export function cartItemsField(name: string): BlocksField {
   }
 }
 
-export function transactionItemsField(name: string): BlocksField {
+export function transactionItemsField(name: string): Field {
   return {
     name,
     type: 'array',
@@ -56,7 +56,7 @@ export function transactionItemsField(name: string): BlocksField {
   }
 }
 
-export function orderItemsField(name: string): BlocksField {
+export function orderItemsField(name: string): Field {
   return {
     name,
     type: 'array',

@@ -160,6 +160,8 @@ import { Forbidden } from './access'
 import { AuthenticationError, InvalidResetToken, LockedAuth } from './auth'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
+import { confirmStripeOrder, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
+
 import { NotFound as OperationsNotFound, ValidationError } from './operations'
 import { parseSearchParams } from './queryParser'
 import { NotFound as ReadNotFound } from './read-operations'
@@ -632,6 +634,134 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
 }
 
 /* -------------------------------------------------------------------------- */
+/* Payments: Stripe cart-checkout endpoints (Stage 10 Ecommerce, Layer 3)     */
+/*                                                                            */
+/* POST /api/payments/stripe/initiate and .../confirm-order, reproduced from */
+/* the real ecommerce plugin's generic `endpoints/{initiatePayment,          */
+/* confirmOrder}.js` (the HTTP-shape/validation half, read directly from     */
+/* `node_modules` - cart/currency/product-price/inventory checks below) -    */
+/* the Stripe-specific work (PaymentIntent creation, transaction/order       */
+/* writes) is `@/features/ecommerce/payments/stripeAdapter.ts` (the ADAPTER  */
+/* half). See that module's header for the full real-source citation and,   */
+/* importantly, why `/api/payments/stripe/webhooks` is DELIBERATELY NOT      */
+/* claimed by the dispatcher below (still real Payload's job, serving the   */
+/* unrelated membership-subscription flow).                                 */
+/*                                                                            */
+/* Simplified vs the real endpoint handlers, matching this app's shop       */
+/* config and established conventions elsewhere in this file/cartHooks.ts:  */
+/*  - no variants (`variants: false`) - no variant price/inventory checks.  */
+/*  - single currency (AUD-only) - `priceInAUD` directly, no per-currency   */
+/*    `priceIn${currency}` lookup or supported-currency-list check.         */
+/*  - the real endpoint falls back to `user.cart.docs[0]` when `cartID` is  */
+/*    omitted from the body - this app's actual client (`usePayments()`,    */
+/*    `@payloadcms/plugin-ecommerce/client/react`, read directly to confirm */
+/*    the exact request body shape) always sends `cartID` explicitly, so    */
+/*    that branch is dead code for this app and is not reproduced.          */
+/* -------------------------------------------------------------------------- */
+
+/** Cart lookup + guest/authenticated email resolution shared by both payments endpoints below - mirrors the shared prefix of the real `initiatePaymentHandler`/`confirmOrderHandler` (both start with the identical cartID/secret/email resolution before diverging). Returns a `Response` directly for any of the real handlers' own 400/404 cases, so callers just do `if (resolved instanceof Response) return resolved`. */
+async function resolvePaymentsCart(
+  engine: Engine,
+  data: Record<string, unknown>,
+  user: Parameters<Engine['find']>[0]['user'],
+): Promise<{ cart: PaymentsCartDoc; customerEmail: string } | Response> {
+  let customerEmail: string | undefined
+  if (!user) {
+    if (typeof data.customerEmail !== 'string' || !data.customerEmail) {
+      return Response.json({ message: 'A customer email is required to make a purchase.' }, { status: 400 })
+    }
+    customerEmail = data.customerEmail
+  } else {
+    customerEmail = (user as { email?: string }).email
+  }
+
+  if (data.cartID === undefined || data.cartID === null) {
+    return Response.json({ message: 'Cart ID is required.' }, { status: 400 })
+  }
+  const cartId = typeof data.cartID === 'number' ? data.cartID : Number(data.cartID)
+  if (!Number.isFinite(cartId)) {
+    return Response.json({ message: 'Cart ID is required.' }, { status: 400 })
+  }
+
+  const cart = (await engine.findByID({
+    collection: 'carts',
+    id: cartId,
+    depth: 0,
+    overrideAccess: false,
+    user,
+    req: bodySecretReq(data.secret),
+  })) as unknown as PaymentsCartDoc | null
+  if (!cart) {
+    return Response.json({ message: `Cart with ID ${cartId} not found.` }, { status: 404 })
+  }
+
+  return { cart, customerEmail: customerEmail ?? '' }
+}
+
+/** `POST /payments/stripe/initiate` - body `{cartID, secret?, customerEmail?, billingAddress?, shippingAddress?}`. Validates every cart item's product has a price and enough inventory (`defaultProductsValidation.js`, simplified as above) before handing off to `initiateStripePayment`. */
+async function handlePaymentsStripeInitiate(engine: Engine, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const resolved = await resolvePaymentsCart(engine, data, user)
+  if (resolved instanceof Response) return resolved
+  const { cart, customerEmail } = resolved
+
+  if (!cart.items || !Array.isArray(cart.items) || cart.items.length === 0) {
+    return Response.json({ message: 'Cart is required and must contain at least one item.' }, { status: 400 })
+  }
+
+  for (const item of cart.items) {
+    const productId = cartItemProductId(item)
+    if (!productId) continue
+    const quantity = item.quantity || 1
+    const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0 })) as { inventory?: number; priceInAUD?: number } | null
+    if (!product) {
+      return Response.json({ message: `Product with ID ${productId} not found.` }, { status: 404 })
+    }
+    if (!product.priceInAUD) {
+      return Response.json({ message: 'Product does not have a price in AUD.' }, { status: 400 })
+    }
+    if (product.inventory === 0 || (typeof product.inventory === 'number' && product.inventory < quantity)) {
+      return Response.json({ message: 'Product is out of stock or does not have enough inventory.' }, { status: 400 })
+    }
+  }
+
+  try {
+    const result = await initiateStripePayment({
+      engine,
+      cart,
+      currency: cart.currency || 'AUD',
+      customerEmail,
+      billingAddress: data.billingAddress as Record<string, unknown> | undefined,
+      shippingAddress: data.shippingAddress as Record<string, unknown> | undefined,
+      user,
+    })
+    return Response.json(result)
+  } catch {
+    return Response.json({ message: 'Error initiating payment.' }, { status: 500 })
+  }
+}
+
+/** `POST /payments/stripe/confirm-order` - body `{cartID, secret?, customerEmail?, paymentIntentID}`. */
+async function handlePaymentsStripeConfirmOrder(engine: Engine, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const resolved = await resolvePaymentsCart(engine, data, user)
+  if (resolved instanceof Response) return resolved
+  const { customerEmail } = resolved
+
+  const paymentIntentID = data.paymentIntentID
+  if (typeof paymentIntentID !== 'string' || !paymentIntentID) {
+    return Response.json({ message: 'PaymentIntent ID is required' }, { status: 400 })
+  }
+
+  try {
+    const result = await confirmStripeOrder({ engine, customerEmail, paymentIntentID, user })
+    return Response.json(result)
+  } catch {
+    return Response.json({ message: 'Error confirming order.' }, { status: 500 })
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Global handlers                                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -796,6 +926,18 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       const { user } = await engine.auth({ headers: request.headers })
       if (method === 'GET') return await handleGlobalFind(engine, globalSlug, request, user)
       if (method === 'POST') return await handleGlobalUpdate(engine, globalSlug, request, user)
+      return null
+    }
+
+    // `payments` is not a collection or global slug - a real Payload
+    // custom top-level endpoint (`config.endpoints`), reproduced here only
+    // for `initiate`/`confirm-order` - see the handler functions' own
+    // header comment for why `webhooks` is deliberately excluded and left
+    // falling through to real Payload.
+    if (slug[0] === 'payments' && slug[1] === 'stripe' && slug.length === 3 && method === 'POST') {
+      const { user } = await engine.auth({ headers: request.headers })
+      if (slug[2] === 'initiate') return await handlePaymentsStripeInitiate(engine, request, user)
+      if (slug[2] === 'confirm-order') return await handlePaymentsStripeConfirmOrder(engine, request, user)
       return null
     }
 

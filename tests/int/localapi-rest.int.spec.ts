@@ -9,7 +9,7 @@
 // 'users', 'header', 'site-settings') already known to exist in this app's
 // 21 collections / 17 globals - no live DB or real engine construction
 // happens anywhere in this file.
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Forbidden } from '@/localapi/access'
 import { AuthenticationError, InvalidResetToken, LockedAuth } from '@/localapi/auth'
@@ -17,6 +17,14 @@ import type { Engine } from '@/localapi/engine'
 import { NotFound as OperationsNotFound, ValidationError } from '@/localapi/operations'
 import { NotFound as ReadNotFound } from '@/localapi/read-operations'
 import { handleRestRequest } from '@/localapi/rest'
+
+// Auto-mocked (not a live Stripe client) for the "payments: Stripe cart
+// checkout" describe block below - each test that reaches the actual
+// stripeAdapter.ts code (i.e. past the outer cart/product/email validation
+// in rest.ts) sets its own `mockImplementation` on the default export, same
+// spirit as this file's own `makeMockEngine` per-test overrides.
+vi.mock('stripe', () => ({ default: vi.fn() }))
+import Stripe from 'stripe'
 
 /* -------------------------------------------------------------------------- */
 /* Test fixtures                                                              */
@@ -418,6 +426,157 @@ describe('localapi/rest - cart item endpoints', () => {
   it('an unrecognized cart sub-route falls through', async () => {
     const engine = makeMockEngine()
     expect(await handleRestRequest(req('POST', 'http://x/api/carts/1/whatever', {}), ['carts', '1', 'whatever'], engine)).toBeNull()
+  })
+})
+
+/* -------------------------------------------------------------------------- */
+/* Payments: Stripe cart checkout (Stage 10 Ecommerce, Layer 3)              */
+/* -------------------------------------------------------------------------- */
+
+function makeFakeStripe(overrides: { customers?: Partial<{ list: unknown; create: unknown }>; paymentIntents?: Partial<{ create: unknown; retrieve: unknown }> } = {}) {
+  return {
+    customers: {
+      list: vi.fn().mockResolvedValue({ data: [] }),
+      create: vi.fn().mockResolvedValue({ id: 'cus_1' }),
+      ...overrides.customers,
+    },
+    paymentIntents: {
+      create: vi.fn().mockResolvedValue({ id: 'pi_1', client_secret: 'secret_1', amount: 50, currency: 'aud' }),
+      retrieve: vi.fn().mockResolvedValue({ status: 'succeeded', amount: 50, currency: 'aud', metadata: {} }),
+      ...overrides.paymentIntents,
+    },
+  }
+}
+
+describe('localapi/rest - payments: Stripe cart checkout', () => {
+  // Only the two success tests below stub STRIPE_SECRET_KEY (its absence is
+  // itself asserted implicitly by every earlier-failing-validation test never
+  // reaching the adapter) - unstub after each so it never leaks into other
+  // describe blocks in this file.
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('CRITICAL: POST /payments/stripe/webhooks always falls through untouched (serves the unrelated membership-subscription flow via real Payload)', async () => {
+    const engine = makeMockEngine()
+    expect(await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}), ['payments', 'stripe', 'webhooks'], engine)).toBeNull()
+  })
+
+  describe('POST /payments/stripe/initiate', () => {
+    it('400 when cartID is missing', async () => {
+      const engine = makeMockEngine()
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'Cart ID is required.' })
+    })
+
+    it('400 when a guest omits customerEmail', async () => {
+      const engine = makeMockEngine()
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1 }), ['payments', 'stripe', 'initiate'], engine)
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'A customer email is required to make a purchase.' })
+      expect(engine.findByID).not.toHaveBeenCalled()
+    })
+
+    it('404 when the cart does not exist', async () => {
+      const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue(null) })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
+      expect(res!.status).toBe(404)
+      expect(await res!.json()).toEqual({ message: 'Cart with ID 1 not found.' })
+    })
+
+    it('400 when the cart has no items', async () => {
+      const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [] }) })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'Cart is required and must contain at least one item.' })
+    })
+
+    it('404 when a cart item references a product that does not exist', async () => {
+      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 1 }], currency: 'AUD' }).mockResolvedValueOnce(null)
+      const engine = makeMockEngine({ findByID })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
+      expect(res!.status).toBe(404)
+      expect(await res!.json()).toEqual({ message: 'Product with ID 5 not found.' })
+    })
+
+    it('400 when a product has no priceInAUD', async () => {
+      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 1 }], currency: 'AUD' }).mockResolvedValueOnce({ id: 5 })
+      const engine = makeMockEngine({ findByID })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'Product does not have a price in AUD.' })
+    })
+
+    it('400 when a product is out of stock or does not have enough inventory', async () => {
+      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 2 }], currency: 'AUD' }).mockResolvedValueOnce({ id: 5, priceInAUD: 25, inventory: 1 })
+      const engine = makeMockEngine({ findByID })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'Product is out of stock or does not have enough inventory.' })
+    })
+
+    it('success: creates a Stripe PaymentIntent, records a pending transaction, and returns the client secret', async () => {
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fake')
+      const fakeStripe = makeFakeStripe()
+      vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
+      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 2 }], subtotal: 50, currency: 'AUD' }).mockResolvedValueOnce({ id: 5, priceInAUD: 25, inventory: 10 })
+      const engine = makeMockEngine({ findByID })
+
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
+
+      expect(res!.status).toBe(200)
+      expect(await res!.json()).toEqual({ clientSecret: 'secret_1', message: 'Payment initiated successfully', paymentIntentID: 'pi_1' })
+      expect(fakeStripe.customers.create).toHaveBeenCalledWith({ email: 'a@b.com' })
+      expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 50, currency: 'AUD', customer: 'cus_1' }))
+      expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({
+        collection: 'transactions',
+        data: expect.objectContaining({ status: 'pending', paymentMethod: 'stripe', customerEmail: 'a@b.com' }),
+        overrideAccess: true,
+      }))
+    })
+  })
+
+  describe('POST /payments/stripe/confirm-order', () => {
+    it('400 when paymentIntentID is missing', async () => {
+      const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [] }) })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/confirm-order', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'confirm-order'], engine)
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'PaymentIntent ID is required' })
+    })
+
+    it('success: confirms the PaymentIntent, creates the order, marks the cart purchased, and decrements inventory - queried by the flattened `stripePaymentIntentID` column key, not a dotted path', async () => {
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fake')
+      const fakeStripe = makeFakeStripe({
+        paymentIntents: {
+          retrieve: vi.fn().mockResolvedValue({
+            status: 'succeeded',
+            amount: 50,
+            currency: 'aud',
+            metadata: { cartID: '1', cartItemsSnapshot: JSON.stringify([{ product: 5, quantity: 2 }]), shippingAddress: 'null' },
+          }),
+        },
+      })
+      vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
+
+      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 2 }], currency: 'AUD' }).mockResolvedValueOnce({ id: 5, inventory: 10 })
+      const find = vi.fn().mockResolvedValue({
+        docs: [{ id: 10, items: [{ product: 5, quantity: 2 }] }],
+        totalDocs: 1, limit: 1, totalPages: 1, page: 1, pagingCounter: 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null,
+      })
+      const create = vi.fn().mockResolvedValue({ id: 99 })
+      const engine = makeMockEngine({ findByID, find, create })
+
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/confirm-order', { cartID: 1, customerEmail: 'a@b.com', paymentIntentID: 'pi_1' }), ['payments', 'stripe', 'confirm-order'], engine)
+
+      expect(res!.status).toBe(200)
+      expect(await res!.json()).toEqual({ message: 'Payment initiated successfully', orderID: 99, transactionID: 10 })
+      expect(engine.find).toHaveBeenCalledWith(expect.objectContaining({ collection: 'transactions', where: { stripePaymentIntentID: { equals: 'pi_1' } } }))
+      expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({ collection: 'orders', data: expect.objectContaining({ status: 'processing', transactions: [10] }) }))
+      expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, data: expect.objectContaining({ purchasedAt: expect.any(String) }) }))
+      expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'transactions', id: 10, data: { order: 99, status: 'succeeded' } }))
+      expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'products', id: 5, data: { inventory: 8 }, draft: false }))
+    })
   })
 })
 

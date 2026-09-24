@@ -847,6 +847,23 @@ function processFields(
   const topLevelGroupFields: TopLevelGroupFieldMeta[] = []
 
   for (const field of walkFields(collectionSlug, fields)) {
+    // A `virtual: true` field (real Payload's own flag - confirmed against
+    // the ecommerce plugin's Carts `status` field, `createCartsCollection.js`)
+    // never gets a DB column, in real Payload OR here: it is computed purely
+    // by a field-level `hooks.afterRead` at read time (see
+    // `src/localapi/read-operations.ts`'s `traverseField`, which runs that
+    // hook regardless of whether the field has a backing column) and is
+    // never written on create/update. Skipping it here isn't just an
+    // optimization - `carts`/`orders`/etc's drizzle table objects in
+    // `./index.ts` are bound to the SAME physical D1 table real Payload's own
+    // migrations already created (see this project's Layer 1 ecommerce
+    // work), and real Payload's own migration generator also gives a virtual
+    // field no column - so adding one here would drift this shadow schema
+    // away from the real, already-migrated table and break at the first
+    // query ("no such column").
+    if ('virtual' in field && field.virtual === true) {
+      continue
+    }
     if (field.type === 'join') {
       joinFields.push(field)
       continue

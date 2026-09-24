@@ -59,3 +59,33 @@ export const beforeChangeCart = async ({ data, operation, req }: Record<string, 
 
   return data
 }
+
+/**
+ * `status` field-level `afterRead` hook (Stage 10 Ecommerce, Layer 2
+ * remainder). Reproduced verbatim from the real ecommerce plugin's
+ * `statusBeforeRead.js`: `'purchased'` once `purchasedAt` is set, `'active'`
+ * for a cart created within the last 7 days, otherwise `'abandoned'`.
+ *
+ * This is a plain FIELD-level hook, not a collection-level one - the
+ * `status` field on `../collections/Carts.ts` declares `virtual: true` (no
+ * DB column - see `src/cms/db/schema/generate.ts`'s virtual-field skip) plus
+ * `hooks: {afterRead: [cartStatusAfterRead]}`, and this app's own engine
+ * already runs field-level `afterRead` hooks generically for any field that
+ * declares one (`src/localapi/read-operations.ts`'s `traverseField`) - no
+ * engine change was needed for this, only for realizing the field didn't
+ * need the (unsupported) COLLECTION-level `afterRead` this project's earlier
+ * notes assumed it did.
+ *
+ * `data` here is the whole doc (siblings), matching real Payload's own
+ * `AfterReadFieldHookArgs.data` - untyped for the same reason
+ * `beforeChangeCart` above is.
+ */
+export const cartStatusAfterRead = ({ data }: { data?: Record<string, unknown> }): 'active' | 'purchased' | 'abandoned' => {
+  if (data?.purchasedAt) return 'purchased'
+  if (data?.createdAt) {
+    const createdAt = new Date(data.createdAt as string).getTime()
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+    if (Date.now() - createdAt < sevenDaysMs) return 'active'
+  }
+  return 'abandoned'
+}

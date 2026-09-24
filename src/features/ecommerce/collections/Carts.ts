@@ -2,7 +2,7 @@ import type { CollectionConfig } from '@/engine'
 
 import { hasCartSecretAccess, isAdmin, isAuthenticated, isDocumentOwner, isGuest } from '@/access/ecommerceAccess'
 
-import { beforeChangeCart } from '../hooks/cartHooks'
+import { beforeChangeCart, cartStatusAfterRead } from '../hooks/cartHooks'
 import { cartItemsField, currencyField } from './shared'
 
 /**
@@ -28,14 +28,24 @@ import { cartItemsField, currencyField } from './shared'
  * endpoints/*.js` + `operations/*.js`, simplified for this app's `variants:
  * false` shop config (no variant matching, no extra item fields).
  *
- * DELIBERATELY NOT MODELED HERE (Layer 2 remainder / Layer 3 - see
- * payload-removal-plan.md's Ecommerce scoping):
- *  - `status` (virtual, computed by an `afterRead` hook from
- *    `purchasedAt`/`createdAt` - never a real column, confirmed against the
- *    real `eg_carts` schema, which has no `status` column at all; also, this
- *    app's own engine has no collection-level `afterRead`/virtual-field
- *    support yet, so this would need an engine change, not just a config
- *    one - see `src/localapi/operations.ts`).
+ * Also added (2026-09-24, closing out Layer 2): the `status` field. Earlier
+ * notes here assumed this needed a COLLECTION-level `afterRead` hook this
+ * app's engine doesn't support - wrong: the real plugin's own `status` field
+ * (`createCartsCollection.js`) is a plain FIELD-level `afterRead` hook
+ * (`statusBeforeRead.js`, reproduced verbatim as `cartStatusAfterRead` in
+ * `../hooks/cartHooks.ts`), which this engine already ran generically for
+ * any field that declares one (`src/localapi/read-operations.ts`'s
+ * `traverseField`) - no engine change needed there. `virtual: true` (real
+ * Payload's own flag) DID need one: `src/cms/db/schema/generate.ts` now
+ * skips any `virtual` field when building columns, matching real Payload's
+ * own "no DB column for a virtual field" behavior - required because this
+ * shadow schema is bound to the SAME physical `eg_carts` table real
+ * Payload's own (already-migrated) plugin config created, which also has no
+ * `status` column; without that skip this shadow table would drift from the
+ * real one and break at the first query.
+ *
+ * Layer 2 is now fully done. Remaining ecommerce work is Layer 3 (Stripe)
+ * and the real plugin cutover - see payload-removal-plan.md.
  */
 export const Carts: CollectionConfig = {
   slug: 'carts',
@@ -79,6 +89,18 @@ export const Carts: CollectionConfig = {
     },
     { name: 'customer', type: 'relationship', relationTo: 'users', admin: { position: 'sidebar' } },
     { name: 'purchasedAt', type: 'date', admin: { position: 'sidebar', date: { pickerAppearance: 'dayAndTime' } } },
+    {
+      name: 'status',
+      type: 'select',
+      virtual: true,
+      hooks: { afterRead: [cartStatusAfterRead] },
+      admin: { position: 'sidebar', readOnly: true },
+      options: [
+        { label: 'Active', value: 'active' },
+        { label: 'Purchased', value: 'purchased' },
+        { label: 'Abandoned', value: 'abandoned' },
+      ],
+    },
     {
       type: 'row',
       admin: { position: 'sidebar' },

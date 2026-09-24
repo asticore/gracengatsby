@@ -6,7 +6,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { hasCartSecretAccess, isGuest } from '@/access/ecommerceAccess'
-import { beforeChangeCart } from '@/features/ecommerce/hooks/cartHooks'
+import { beforeChangeCart, cartStatusAfterRead } from '@/features/ecommerce/hooks/cartHooks'
 
 describe('ecommerceAccess - isGuest', () => {
   it('true when there is no req.user', () => {
@@ -74,5 +74,28 @@ describe('cartHooks - beforeChangeCart', () => {
     const data: Record<string, unknown> = { subtotal: 50 }
     const result = await beforeChangeCart({ data, operation: 'update', req: { payload: { findByID: vi.fn() } } } as never)
     expect(result.subtotal).toBe(0)
+  })
+})
+
+describe('cartHooks - cartStatusAfterRead', () => {
+  it('"purchased" when purchasedAt is set, regardless of createdAt', () => {
+    const result = cartStatusAfterRead({ data: { purchasedAt: '2020-01-01T00:00:00.000Z', createdAt: new Date().toISOString() } })
+    expect(result).toBe('purchased')
+  })
+
+  it('"active" when createdAt is within the last 7 days and no purchasedAt', () => {
+    const result = cartStatusAfterRead({ data: { createdAt: new Date().toISOString() } })
+    expect(result).toBe('active')
+  })
+
+  it('"abandoned" when createdAt is older than 7 days and no purchasedAt', () => {
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
+    const result = cartStatusAfterRead({ data: { createdAt: eightDaysAgo } })
+    expect(result).toBe('abandoned')
+  })
+
+  it('"abandoned" when neither purchasedAt nor createdAt is present', () => {
+    expect(cartStatusAfterRead({ data: {} })).toBe('abandoned')
+    expect(cartStatusAfterRead({})).toBe('abandoned')
   })
 })

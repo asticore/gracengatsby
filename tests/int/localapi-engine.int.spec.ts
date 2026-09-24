@@ -156,6 +156,51 @@ describe('localapi/engine - createEngine() auth-side wiring proof', () => {
   })
 })
 
+describe('localapi/engine - createEngine() carts `status` virtual field (Stage 10 Ecommerce, Layer 2)', () => {
+  // Proves the field-level afterRead hook actually fires through this app's
+  // own read path (src/localapi/read-operations.ts's traverseField) for a
+  // `virtual: true` field with no DB column - see Carts.ts's own header
+  // comment for why this needed no collection-level engine change, only the
+  // schema generator's virtual-field skip (src/cms/db/schema/generate.ts).
+  let ours: Engine
+  const createdIds: number[] = []
+
+  beforeAll(() => {
+    ours = createEngine()
+  })
+
+  afterAll(async () => {
+    for (const id of createdIds) await ours.delete({ collection: 'carts', id, overrideAccess: true }).catch(() => {})
+  })
+
+  it('a freshly created cart (no purchasedAt) reads back status "active"', async () => {
+    const created = await ours.create({ collection: 'carts', data: {}, overrideAccess: true })
+    createdIds.push(created.id as number)
+    expect((created as { status?: string }).status).toBe('active')
+
+    const viaFindByID = await ours.findByID({ collection: 'carts', id: created.id as number, overrideAccess: true })
+    expect((viaFindByID as { status?: string } | null)?.status).toBe('active')
+  })
+
+  it('a cart with purchasedAt set reads back status "purchased"', async () => {
+    const created = await ours.create({ collection: 'carts', data: { purchasedAt: new Date().toISOString() }, overrideAccess: true })
+    createdIds.push(created.id as number)
+    expect((created as { status?: string }).status).toBe('purchased')
+  })
+
+  it('does not persist a real "status" column - a cart round-trips through the DB-level createCart/findCartByID with no status key at all', async () => {
+    const { createCart, deleteCart, findCartByID } = await import('@/cms/db')
+    const ours2 = await createCart({} as never)
+    try {
+      expect(ours2).not.toHaveProperty('status')
+      const viaDb = await findCartByID(ours2.id)
+      expect(viaDb).not.toHaveProperty('status')
+    } finally {
+      await deleteCart(ours2.id)
+    }
+  })
+})
+
 describe('localapi/engine - createEngine() db.migrate wiring proof', () => {
   it('skips an already-applied migration against the real, live dev D1 rather than re-running it', async () => {
     const ours = createEngine()

@@ -1,7 +1,8 @@
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin, isAuthenticated, isDocumentOwner } from '@/access/ecommerceAccess'
+import { hasCartSecretAccess, isAdmin, isAuthenticated, isDocumentOwner, isGuest } from '@/access/ecommerceAccess'
 
+import { beforeChangeCart } from '../hooks/cartHooks'
 import { cartItemsField, currencyField } from './shared'
 
 /**
@@ -10,23 +11,27 @@ import { cartItemsField, currencyField } from './shared'
  * (`@payloadcms/plugin-ecommerce@3.88.0`) with this app's own
  * `allowGuestCarts: true` (`engage.config.ts`'s `carts:` key).
  *
- * DELIBERATELY NOT MODELED HERE (Layer 2/3, not this DB-layer stage - see
+ * LAYER 2 (this stage) added: `secret`'s auto-generation and the
+ * `beforeChangeCart` subtotal recalculation (`../hooks/cartHooks.ts`,
+ * `beforeChange` hook), and the cart-secret-based guest access path
+ * (`hasCartSecretAccess`, `@/access/ecommerceAccess`) - `access` below now
+ * covers admin/owner/guest-by-secret, matching the real plugin's
+ * `accessOR(isAdmin, isDocumentOwner, hasCartSecretAccess(allowGuestCarts))`.
+ *
+ * DELIBERATELY NOT MODELED HERE (Layer 2 remainder / Layer 3 - see
  * payload-removal-plan.md's Ecommerce scoping):
  *  - `status` (virtual, computed by an `afterRead` hook from
  *    `purchasedAt`/`createdAt` - never a real column, confirmed against the
- *    real `eg_carts` schema, which has no `status` column at all).
- *  - `secret`'s auto-generation and the `beforeChangeCart` subtotal
- *    recalculation (both `beforeChange` hooks).
+ *    real `eg_carts` schema, which has no `status` column at all; also, this
+ *    app's own engine has no collection-level `afterRead`/virtual-field
+ *    support yet, so this would need an engine change, not just a config
+ *    one - see `src/localapi/operations.ts`).
  *  - The 5 custom cart endpoints (add-item/remove-item/update-item/clear/
- *    merge-cart) and the cart-secret-based guest access path
- *    (`hasCartSecretAccess`) - `access` below covers the admin/owner case
- *    only; a signed-out guest's own cart (matched by the `secret` cookie/
- *    header, not `req.user`) is NOT yet reachable through this registry
- *    entry until Layer 2 lands.
- *
- * `secret` itself IS modeled (real column, `carts.secret`) even though its
- * generation hook isn't - so the column exists and round-trips like any
- * other field once Layer 2 supplies a value for it.
+ *    merge-cart) as this app's own REST routes - `/api/carts/:id/add-item`
+ *    etc. still fall through to real Payload + the real plugin
+ *    (`src/localapi/rest.ts`'s dispatcher returns `null` for any 2-segment
+ *    cart sub-route), which still works correctly since the real plugin's
+ *    own collection config (real access/hooks) is unaffected by this file.
  */
 export const Carts: CollectionConfig = {
   slug: 'carts',
@@ -37,10 +42,17 @@ export const Carts: CollectionConfig = {
     useAsTitle: 'createdAt',
   },
   access: {
-    create: (args) => isAdmin(args) || isAuthenticated(args),
-    read: (args) => isAdmin(args) || isDocumentOwner(args),
-    update: (args) => isAdmin(args) || isDocumentOwner(args),
-    delete: (args) => isAdmin(args) || isDocumentOwner(args),
+    // allowGuestCarts is always true in this app (engage.config.ts) - a
+    // signed-out request is always allowed to create its own cart, same as
+    // the real plugin's `accessOR(isAdmin, isAuthenticated,
+    // conditional(allowGuestCarts, isGuest))`.
+    create: (args) => isAdmin(args) || isAuthenticated(args) || isGuest(args),
+    read: (args) => isAdmin(args) || isDocumentOwner(args) || hasCartSecretAccess(args),
+    update: (args) => isAdmin(args) || isDocumentOwner(args) || hasCartSecretAccess(args),
+    delete: (args) => isAdmin(args) || isDocumentOwner(args) || hasCartSecretAccess(args),
+  },
+  hooks: {
+    beforeChange: [beforeChangeCart],
   },
   timestamps: true,
   fields: [
@@ -49,7 +61,16 @@ export const Carts: CollectionConfig = {
       name: 'secret',
       type: 'text',
       index: true,
-      access: { create: () => false, read: () => false, update: () => false },
+      // Never editable by a client and never returned to an authenticated
+      // admin/owner request - but visible on a GUEST request (`!req.user`),
+      // which is what lets the create response (always a guest request when
+      // a secret is actually generated - see cartHooks.ts) hand the secret
+      // back the one time the caller doesn't already have it, and lets a
+      // guest's later `?secret=` requests keep confirming it. Matches the
+      // real plugin's one-time-reveal intent without needing this app's
+      // engine to support the collection-level `afterRead` hook the real
+      // plugin uses to do that same reveal (see the header comment above).
+      access: { create: () => false, read: ({ req }) => !req.user, update: () => false },
       admin: { hidden: true, position: 'sidebar', readOnly: true },
     },
     { name: 'customer', type: 'relationship', relationTo: 'users', admin: { position: 'sidebar' } },

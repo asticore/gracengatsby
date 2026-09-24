@@ -194,6 +194,37 @@ describe('localapi/rest - collection list/create/byID/count', () => {
 })
 
 /* -------------------------------------------------------------------------- */
+/* Cart guest secret (Stage 10 Ecommerce, Layer 2)                           */
+/* -------------------------------------------------------------------------- */
+
+describe('localapi/rest - carts ?secret= threading', () => {
+  it('GET /:id passes ?secret= onto req.query.secret for access functions to read', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('GET', 'http://x/api/carts/1?secret=abc123'), ['carts', '1'], engine)
+    expect(res!.status).toBe(200)
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc123' } } }))
+  })
+
+  it('PATCH /:id passes ?secret= through the same way', async () => {
+    const engine = makeMockEngine()
+    await handleRestRequest(req('PATCH', 'http://x/api/carts/1?secret=abc123', { items: [] }), ['carts', '1'], engine)
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc123' } } }))
+  })
+
+  it('DELETE /:id passes ?secret= through the same way', async () => {
+    const engine = makeMockEngine()
+    await handleRestRequest(req('DELETE', 'http://x/api/carts/1?secret=abc123'), ['carts', '1'], engine)
+    expect(engine.delete).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc123' } } }))
+  })
+
+  it('with no ?secret=, req.query.secret is undefined rather than a missing key', async () => {
+    const engine = makeMockEngine()
+    await handleRestRequest(req('GET', 'http://x/api/carts/1'), ['carts', '1'], engine)
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ req: { query: { secret: undefined } } }))
+  })
+})
+
+/* -------------------------------------------------------------------------- */
 /* Globals                                                                    */
 /* -------------------------------------------------------------------------- */
 

@@ -35,3 +35,28 @@ export const isDocumentOwner: Access = ({ req }) => {
   if (!req.user) return false
   return { customer: { equals: req.user.id } }
 }
+
+/**
+ * Guest cart access, mirroring the real ecommerce plugin's
+ * `hasCartSecretAccess(allowGuestCarts)` (Stage 10 Ecommerce, Layer 2). This
+ * app always runs with `allowGuestCarts: true` (`engage.config.ts`'s
+ * `carts:` key), so unlike the plugin's version this doesn't take that flag
+ * as a parameter - flip this back to a parameterized factory if that ever
+ * changes.
+ *
+ * A signed-out visitor's cart is matched by the `secret` value they were
+ * handed back when they created it (see `beforeChangeCart` in
+ * `../features/ecommerce/hooks/cartHooks.ts`), sent back as `?secret=`.
+ * `req` here is `LocalReq` (see `src/localapi/access.ts`'s own doc comment
+ * for why it's additive/untyped) - `handleFindByID`/`handleUpdateByID`/
+ * `handleDeleteByID` in `src/localapi/rest.ts` thread the query string's
+ * `secret` param onto it as `req.query.secret`.
+ */
+export const hasCartSecretAccess: Access = ({ req }) => {
+  const cartSecret = (req as { query?: { secret?: string } }).query?.secret
+  if (!cartSecret || typeof cartSecret !== 'string') return false
+  return { secret: { equals: cartSecret } }
+}
+
+/** True for a signed-out request - used to allow guest cart creation. */
+export const isGuest: Access = ({ req }) => !req.user

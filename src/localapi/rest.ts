@@ -407,9 +407,20 @@ async function handleFind(engine: Engine, collection: string, request: Request, 
   return Response.json(result, { status: 200 })
 }
 
+/**
+ * `?secret=` threaded onto `req.query.secret` for every collection (cheap,
+ * ignored by every access function except the ecommerce ones) so a guest
+ * cart's `hasCartSecretAccess` (`@/access/ecommerceAccess`) - which reads
+ * `req.query.secret`, mirroring the real plugin's own `req.query?.secret` -
+ * can actually see it. Stage 10 Ecommerce, Layer 2.
+ */
+function secretReq(request: Request): { query: { secret?: string } } {
+  return { query: { secret: new URL(request.url).searchParams.get('secret') ?? undefined } }
+}
+
 async function handleFindByID(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.findByID({ collection, id, depth: query.depth, draft: query.draft, user })
+  const doc = await engine.findByID({ collection, id, depth: query.depth, draft: query.draft, user, req: secretReq(request) })
   return Response.json(doc, { status: 200 })
 }
 
@@ -429,7 +440,7 @@ async function handleCreate(engine: Engine, collection: string, request: Request
 async function handleUpdateByID(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data, file } = await readRequestBody(request)
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.update({ collection, id, data, draft: query.draft, user, file })
+  const doc = await engine.update({ collection, id, data, draft: query.draft, user, file, req: secretReq(request) })
   return Response.json({ doc, message: 'Updated successfully.' }, { status: 200 })
 }
 
@@ -440,8 +451,8 @@ async function handleGetMediaFile(filename: string, request: Request): Promise<R
   return response
 }
 
-async function handleDeleteByID(engine: Engine, collection: string, id: number, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const doc = await engine.delete({ collection, id, user })
+async function handleDeleteByID(engine: Engine, collection: string, id: number, user: Parameters<Engine['find']>[0]['user'], request: Request): Promise<Response> {
+  const doc = await engine.delete({ collection, id, user, req: secretReq(request) })
   return Response.json({ doc, message: 'Deleted successfully.' }, { status: 200 })
 }
 
@@ -657,7 +668,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       const { user } = await engine.auth({ headers: request.headers })
       if (method === 'GET') return await handleFindByID(engine, collectionSlug, id, request, user)
       if (method === 'PATCH') return await handleUpdateByID(engine, collectionSlug, id, request, user)
-      if (method === 'DELETE') return await handleDeleteByID(engine, collectionSlug, id, user)
+      if (method === 'DELETE') return await handleDeleteByID(engine, collectionSlug, id, user, request)
       return null
     }
 

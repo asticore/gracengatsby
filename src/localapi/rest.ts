@@ -457,6 +457,181 @@ async function handleDeleteByID(engine: Engine, collection: string, id: number, 
 }
 
 /* -------------------------------------------------------------------------- */
+/* Cart item endpoints (Stage 10 Ecommerce, Layer 2 remainder)                */
+/*                                                                            */
+/* Reproduced from the real ecommerce plugin's 5 cart endpoints              */
+/* (`@payloadcms/plugin-ecommerce@3.88.0`'s `collections/carts/endpoints/*`  */
+/* + `collections/carts/operations/*`, read directly from `node_modules` to  */
+/* confirm exact request/response shapes, validation messages, and status   */
+/* codes below). Simplified for this app's shop config (`engage.config.ts`: */
+/* `variants: false`) - no variant matching/spreading, no custom item       */
+/* fields (`cartItemFields` in `../features/ecommerce/collections/shared.ts`*/
+/* is just `product`/`quantity`).                                           */
+/*                                                                            */
+/* Access: reused as-is from the normal collection access path -            */
+/* `engine.findByID`/`update`/`delete` below run through the SAME           */
+/* `Carts.ts` access functions (`isAdmin`/`isDocumentOwner`/                */
+/* `hasCartSecretAccess`) as every other cart request, by passing `user`    */
+/* and (for a guest's body-supplied `secret`) `req: bodySecretReq(...)` -   */
+/* mirroring the real plugin's own `createRequestWithSecret` (which injects */
+/* into `req.context.cartSecret`; this app's `hasCartSecretAccess` reads    */
+/* `req.query.secret` instead - see `@/access/ecommerceAccess`'s own doc    */
+/* comment - so `bodySecretReq` puts it there instead of in `req.context`). */
+/* `handleCartMerge`'s source-cart lookup/delete use `overrideAccess: true` */
+/* exactly like the real plugin, because the secret is already being        */
+/* verified by hand in the `where` clause/prior lookup.                     */
+/* -------------------------------------------------------------------------- */
+
+type CartItemRow = { id?: string; product?: number | { id: number } | null; quantity?: number }
+
+function cartItemProductId(item: CartItemRow): number | null {
+  if (item.product && typeof item.product === 'object') return item.product.id
+  return typeof item.product === 'number' ? item.product : null
+}
+
+/** Secret from a POST body (`data.secret`, matching the real plugin's own `addItem`/`removeItem`/`updateItem`/`clearCart` arg) - threaded onto `req.query.secret` the same way `secretReq` threads a `?secret=` query param, since that's what `hasCartSecretAccess` reads. */
+function bodySecretReq(secret: unknown): { query: { secret?: string } } {
+  return { query: { secret: typeof secret === 'string' ? secret : undefined } }
+}
+
+/** `POST /:id/add-item` - body `{item: {product}, quantity?}`. Matches an existing item by `product` id (no `variant` - this app has none) and increments its quantity, or appends a new item. */
+async function handleCartAddItem(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const item = data.item as Record<string, unknown> | undefined
+  const productId = typeof item?.product === 'number' ? item.product : Number(item?.product)
+  if (!item || !Number.isFinite(productId)) {
+    return Response.json({ success: false, message: 'Item with product ID is required', cart: null }, { status: 400 })
+  }
+  const quantity = typeof data.quantity === 'number' ? data.quantity : 1
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const items = (cart.items as CartItemRow[] | undefined) ?? []
+  const existingIndex = items.findIndex((existing) => cartItemProductId(existing) === productId)
+  let updatedItems: CartItemRow[]
+  let message: string
+  if (existingIndex !== -1) {
+    updatedItems = [...items]
+    updatedItems[existingIndex] = { ...updatedItems[existingIndex], quantity: (updatedItems[existingIndex].quantity ?? 0) + quantity }
+    message = 'Item quantity updated'
+  } else {
+    updatedItems = [...items, { product: productId, quantity }]
+    message = 'Item added to cart'
+  }
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
+  return Response.json({ success: true, message, cart: updatedCart })
+}
+
+/** `POST /:id/remove-item` - body `{itemID}`. `itemID` is the cart item's own array-row id (a UUID string - see `src/cms/db/schema/generate.ts`'s array-table id column, text for a non-versioned collection like `carts`). */
+async function handleCartRemoveItem(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const itemId = data.itemID
+  if (typeof itemId !== 'string' || !itemId) {
+    return Response.json({ success: false, message: 'Item ID is required', cart: null }, { status: 400 })
+  }
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const items = (cart.items as CartItemRow[] | undefined) ?? []
+  const index = items.findIndex((it) => it.id === itemId)
+  if (index === -1) return Response.json({ success: false, message: `Item with ID ${itemId} not found in cart`, cart }, { status: 404 })
+  const updatedItems = [...items]
+  updatedItems.splice(index, 1)
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
+  return Response.json({ success: true, message: 'Item removed from cart', cart: updatedCart })
+}
+
+/** `POST /:id/update-item` - body `{itemID, quantity: number | {$inc: number}, removeOnZero?}` (defaults `true`). */
+async function handleCartUpdateItem(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const itemId = data.itemID
+  if (typeof itemId !== 'string' || !itemId) {
+    return Response.json({ success: false, message: 'Item ID is required', cart: null }, { status: 400 })
+  }
+  const quantityInput = data.quantity
+  if (quantityInput === undefined) {
+    return Response.json({ success: false, message: 'Quantity is required', cart: null }, { status: 400 })
+  }
+  const isIncOp = typeof quantityInput === 'object' && quantityInput !== null && typeof (quantityInput as { $inc?: unknown }).$inc === 'number'
+  if (typeof quantityInput !== 'number' && !isIncOp) {
+    return Response.json({ success: false, message: 'Quantity must be a number or { $inc: number }', cart: null }, { status: 400 })
+  }
+  const removeOnZero = data.removeOnZero !== false
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const items = (cart.items as CartItemRow[] | undefined) ?? []
+  const index = items.findIndex((it) => it.id === itemId)
+  if (index === -1) return Response.json({ success: false, message: `Item with ID ${itemId} not found in cart`, cart }, { status: 404 })
+  const updatedItems = [...items]
+  const current = updatedItems[index]
+  const currentQuantity = current.quantity ?? 0
+  const newQuantity = isIncOp ? currentQuantity + (quantityInput as { $inc: number }).$inc : (quantityInput as number)
+  let wasRemoved = false
+  if (newQuantity <= 0 && removeOnZero) {
+    updatedItems.splice(index, 1)
+    wasRemoved = true
+  } else {
+    updatedItems[index] = { ...current, quantity: removeOnZero ? newQuantity : Math.max(1, newQuantity) }
+  }
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
+  return Response.json({ success: true, message: wasRemoved ? 'Item removed from cart' : 'Item quantity updated', cart: updatedCart })
+}
+
+/** `POST /:id/clear` - body `{secret?}`. Empties `items`. */
+async function handleCartClear(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: [] }, user, req })
+  return Response.json({ success: true, message: 'Cart cleared', cart: updatedCart })
+}
+
+/** `POST /:id/merge` - body `{sourceCartID, sourceSecret}`. Merges a guest cart's items into the caller's own (authenticated-only) cart, then deletes the guest cart. */
+async function handleCartMerge(engine: Engine, targetCartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  if (!user) return Response.json({ success: false, message: 'Authentication required', cart: null }, { status: 401 })
+  const { data } = await readRequestBody(request)
+  const sourceCartId = typeof data.sourceCartID === 'number' ? data.sourceCartID : Number(data.sourceCartID)
+  const sourceSecret = data.sourceSecret
+  if (data.sourceCartID === undefined || !Number.isFinite(sourceCartId)) {
+    return Response.json({ success: false, message: 'Source cart ID is required', cart: null }, { status: 400 })
+  }
+  if (typeof sourceSecret !== 'string' || !sourceSecret) {
+    return Response.json({ success: false, message: 'Source cart secret is required', cart: null }, { status: 400 })
+  }
+  const sourceResult = await engine.find({ collection: 'carts', where: { and: [{ id: { equals: sourceCartId } }, { secret: { equals: sourceSecret } }] }, limit: 1, depth: 0, overrideAccess: true })
+  const guestCart = sourceResult.docs[0] as unknown as (CartItemRow & { items?: CartItemRow[] }) | undefined
+  if (!guestCart) {
+    return Response.json({ success: false, message: `Source cart with ID ${sourceCartId} not found or secret mismatch`, cart: null }, { status: 404 })
+  }
+  const targetCart = await engine.findByID({ collection: 'carts', id: targetCartId, depth: 0, user })
+  if (!targetCart) {
+    return Response.json({ success: false, message: `Target cart with ID ${targetCartId} not found`, cart: null }, { status: 404 })
+  }
+  const sourceItems = guestCart.items ?? []
+  const targetItems = (targetCart.items as CartItemRow[] | undefined) ?? []
+  const mergedItems = [...targetItems]
+  for (const sourceItem of sourceItems) {
+    const sourceProductId = cartItemProductId(sourceItem)
+    const existingIndex = mergedItems.findIndex((it) => cartItemProductId(it) === sourceProductId)
+    if (existingIndex !== -1) {
+      mergedItems[existingIndex] = { ...mergedItems[existingIndex], quantity: (mergedItems[existingIndex].quantity ?? 0) + (sourceItem.quantity ?? 0) }
+    } else {
+      const { id: _omit, ...rest } = sourceItem
+      mergedItems.push(rest)
+    }
+  }
+  const updatedCart = await engine.update({ collection: 'carts', id: targetCartId, data: { items: mergedItems }, user })
+  try {
+    await engine.delete({ collection: 'carts', id: sourceCartId, overrideAccess: true })
+  } catch {
+    // Silently ignore, matching the real plugin - the merge already succeeded.
+  }
+  return Response.json({ success: true, message: `Merged ${sourceItems.length} items from guest cart`, cart: updatedCart })
+}
+
+/* -------------------------------------------------------------------------- */
 /* Global handlers                                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -674,6 +849,18 @@ export async function handleRestRequest(request: Request, slug: string[], engine
 
     if (rest.length === 2 && collectionSlug === UPLOAD_COLLECTION_SLUG && rest[0] === 'file' && method === 'GET') {
       return await handleGetMediaFile(decodeURIComponent(rest[1]), request)
+    }
+
+    if (rest.length === 2 && collectionSlug === 'carts' && method === 'POST') {
+      const cartId = Number(rest[0])
+      if (!Number.isFinite(cartId)) return null
+      const { user } = await engine.auth({ headers: request.headers })
+      if (rest[1] === 'add-item') return await handleCartAddItem(engine, cartId, request, user)
+      if (rest[1] === 'remove-item') return await handleCartRemoveItem(engine, cartId, request, user)
+      if (rest[1] === 'update-item') return await handleCartUpdateItem(engine, cartId, request, user)
+      if (rest[1] === 'clear') return await handleCartClear(engine, cartId, request, user)
+      if (rest[1] === 'merge') return await handleCartMerge(engine, cartId, request, user)
+      return null
     }
 
     // /versions, /versions/:id, /:id/duplicate, /access/:id? - deferred.

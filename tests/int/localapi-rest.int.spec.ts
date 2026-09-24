@@ -225,6 +225,203 @@ describe('localapi/rest - carts ?secret= threading', () => {
 })
 
 /* -------------------------------------------------------------------------- */
+/* Cart item endpoints (Stage 10 Ecommerce, Layer 2 remainder)               */
+/* -------------------------------------------------------------------------- */
+
+describe('localapi/rest - cart item endpoints', () => {
+  it('add-item: appends a new item and passes the body secret through as req.query.secret', async () => {
+    const engine = makeMockEngine({
+      findByID: vi.fn().mockResolvedValue({ id: 1, items: [] }),
+      update: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'x', product: 5, quantity: 2 }] }),
+    })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/add-item', { item: { product: 5 }, quantity: 2, secret: 'abc' }), ['carts', '1', 'add-item'], engine)
+    const body = await res!.json()
+    expect(res!.status).toBe(200)
+    expect(body).toEqual({ success: true, message: 'Item added to cart', cart: { id: 1, items: [{ id: 'x', product: 5, quantity: 2 }] } })
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc' } } }))
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, data: { items: [{ product: 5, quantity: 2 }] } }))
+  })
+
+  it('add-item: increments quantity when the product already exists in the cart', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'x', product: 5, quantity: 2 }] }) })
+    await handleRestRequest(req('POST', 'http://x/api/carts/1/add-item', { item: { product: 5 }, quantity: 3 }), ['carts', '1', 'add-item'], engine)
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ data: { items: [{ id: 'x', product: 5, quantity: 5 }] } }))
+  })
+
+  it('add-item: defaults quantity to 1 when not provided', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [] }) })
+    await handleRestRequest(req('POST', 'http://x/api/carts/1/add-item', { item: { product: 5 } }), ['carts', '1', 'add-item'], engine)
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ data: { items: [{ product: 5, quantity: 1 }] } }))
+  })
+
+  it('add-item: 400 when item.product is missing', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/add-item', { item: {} }), ['carts', '1', 'add-item'], engine)
+    expect(res!.status).toBe(400)
+    expect(await res!.json()).toEqual({ success: false, message: 'Item with product ID is required', cart: null })
+    expect(engine.findByID).not.toHaveBeenCalled()
+  })
+
+  it('add-item: 404 when the cart does not exist', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue(null) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/add-item', { item: { product: 5 } }), ['carts', '1', 'add-item'], engine)
+    expect(res!.status).toBe(404)
+    expect(await res!.json()).toEqual({ success: false, message: 'Cart with ID 1 not found', cart: null })
+    expect(engine.update).not.toHaveBeenCalled()
+  })
+
+  it('remove-item: splices the matching item out by its row id', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'a', product: 1, quantity: 1 }, { id: 'b', product: 2, quantity: 1 }] }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/remove-item', { itemID: 'a' }), ['carts', '1', 'remove-item'], engine)
+    expect(res!.status).toBe(200)
+    expect(await res!.json()).toMatchObject({ success: true, message: 'Item removed from cart' })
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ data: { items: [{ id: 'b', product: 2, quantity: 1 }] } }))
+  })
+
+  it('remove-item: 400 when itemID is missing', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/remove-item', {}), ['carts', '1', 'remove-item'], engine)
+    expect(res!.status).toBe(400)
+    expect(await res!.json()).toEqual({ success: false, message: 'Item ID is required', cart: null })
+  })
+
+  it('remove-item: 404 when the item is not found in an existing cart', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [] }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/remove-item', { itemID: 'missing' }), ['carts', '1', 'remove-item'], engine)
+    expect(res!.status).toBe(404)
+    expect(await res!.json()).toEqual({ success: false, message: 'Item with ID missing not found in cart', cart: { id: 1, items: [] } })
+  })
+
+  it('update-item: sets quantity to a direct value', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'a', product: 1, quantity: 2 }] }) })
+    await handleRestRequest(req('POST', 'http://x/api/carts/1/update-item', { itemID: 'a', quantity: 5 }), ['carts', '1', 'update-item'], engine)
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ data: { items: [{ id: 'a', product: 1, quantity: 5 }] } }))
+  })
+
+  it('update-item: applies { $inc } relative to the current quantity', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'a', product: 1, quantity: 2 }] }) })
+    await handleRestRequest(req('POST', 'http://x/api/carts/1/update-item', { itemID: 'a', quantity: { $inc: -1 } }), ['carts', '1', 'update-item'], engine)
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ data: { items: [{ id: 'a', product: 1, quantity: 1 }] } }))
+  })
+
+  it('update-item: removes the item when quantity reaches 0 and removeOnZero is not false', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'a', product: 1, quantity: 1 }] }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/update-item', { itemID: 'a', quantity: { $inc: -1 } }), ['carts', '1', 'update-item'], engine)
+    expect(await res!.json()).toMatchObject({ message: 'Item removed from cart' })
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ data: { items: [] } }))
+  })
+
+  it('update-item: floors at 1 (never removes) when removeOnZero is explicitly false', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'a', product: 1, quantity: 1 }] }) })
+    await handleRestRequest(req('POST', 'http://x/api/carts/1/update-item', { itemID: 'a', quantity: { $inc: -5 }, removeOnZero: false }), ['carts', '1', 'update-item'], engine)
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ data: { items: [{ id: 'a', product: 1, quantity: 1 }] } }))
+  })
+
+  it('update-item: 400 for an invalid quantity shape', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/update-item', { itemID: 'a', quantity: 'five' }), ['carts', '1', 'update-item'], engine)
+    expect(res!.status).toBe(400)
+    expect(await res!.json()).toEqual({ success: false, message: 'Quantity must be a number or { $inc: number }', cart: null })
+  })
+
+  it('update-item: 400 when quantity is missing entirely', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/update-item', { itemID: 'a' }), ['carts', '1', 'update-item'], engine)
+    expect(res!.status).toBe(400)
+    expect(await res!.json()).toEqual({ success: false, message: 'Quantity is required', cart: null })
+  })
+
+  it('clear: empties items', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 'a', product: 1, quantity: 1 }] }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/clear', {}), ['carts', '1', 'clear'], engine)
+    expect(res!.status).toBe(200)
+    expect(await res!.json()).toMatchObject({ success: true, message: 'Cart cleared' })
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, data: { items: [] } }))
+  })
+
+  it('clear: 404 when the cart does not exist', async () => {
+    const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue(null) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/clear', {}), ['carts', '1', 'clear'], engine)
+    expect(res!.status).toBe(404)
+  })
+
+  it('merge: 401 when the caller is not authenticated', async () => {
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: null }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/merge', { sourceCartID: 2, sourceSecret: 's' }), ['carts', '1', 'merge'], engine)
+    expect(res!.status).toBe(401)
+    expect(await res!.json()).toEqual({ success: false, message: 'Authentication required', cart: null })
+    expect(engine.find).not.toHaveBeenCalled()
+  })
+
+  it('merge: 400 when sourceCartID or sourceSecret is missing', async () => {
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: { id: 1 } }) })
+    const res1 = await handleRestRequest(req('POST', 'http://x/api/carts/1/merge', { sourceSecret: 's' }), ['carts', '1', 'merge'], engine)
+    expect(res1!.status).toBe(400)
+    expect(await res1!.json()).toEqual({ success: false, message: 'Source cart ID is required', cart: null })
+
+    const res2 = await handleRestRequest(req('POST', 'http://x/api/carts/1/merge', { sourceCartID: 2 }), ['carts', '1', 'merge'], engine)
+    expect(res2!.status).toBe(400)
+    expect(await res2!.json()).toEqual({ success: false, message: 'Source cart secret is required', cart: null })
+  })
+
+  it('merge: 404 when the source cart/secret pair does not match (uses overrideAccess since the secret IS the access check)', async () => {
+    const engine = makeMockEngine({
+      auth: vi.fn().mockResolvedValue({ user: { id: 1 } }),
+      find: vi.fn().mockResolvedValue({ docs: [], totalDocs: 0, limit: 1, totalPages: 0, page: 1, pagingCounter: 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null }),
+    })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/merge', { sourceCartID: 2, sourceSecret: 'wrong' }), ['carts', '1', 'merge'], engine)
+    expect(res!.status).toBe(404)
+    expect(await res!.json()).toEqual({ success: false, message: 'Source cart with ID 2 not found or secret mismatch', cart: null })
+    expect(engine.find).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', overrideAccess: true, where: { and: [{ id: { equals: 2 } }, { secret: { equals: 'wrong' } }] } }))
+  })
+
+  it('merge: combines matching-product quantities, keeps non-matching items, and deletes the source cart', async () => {
+    const engine = makeMockEngine({
+      auth: vi.fn().mockResolvedValue({ user: { id: 1 } }),
+      find: vi.fn().mockResolvedValue({
+        docs: [{ id: 2, items: [{ id: 'g1', product: 1, quantity: 2 }, { id: 'g2', product: 3, quantity: 1 }] }],
+        totalDocs: 1, limit: 1, totalPages: 1, page: 1, pagingCounter: 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null,
+      }),
+      findByID: vi.fn().mockResolvedValue({ id: 1, items: [{ id: 't1', product: 1, quantity: 1 }] }),
+    })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/merge', { sourceCartID: 2, sourceSecret: 's' }), ['carts', '1', 'merge'], engine)
+    expect(res!.status).toBe(200)
+    expect(await res!.json()).toMatchObject({ success: true, message: 'Merged 2 items from guest cart' })
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({
+      collection: 'carts',
+      id: 1,
+      data: { items: [{ id: 't1', product: 1, quantity: 3 }, { product: 3, quantity: 1 }] },
+    }))
+    expect(engine.delete).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 2, overrideAccess: true }))
+  })
+
+  it('merge: 404 when the target cart does not exist/belong to the caller, and never deletes the source cart', async () => {
+    const engine = makeMockEngine({
+      auth: vi.fn().mockResolvedValue({ user: { id: 1 } }),
+      find: vi.fn().mockResolvedValue({
+        docs: [{ id: 2, items: [] }],
+        totalDocs: 1, limit: 1, totalPages: 1, page: 1, pagingCounter: 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null,
+      }),
+      findByID: vi.fn().mockResolvedValue(null),
+    })
+    const res = await handleRestRequest(req('POST', 'http://x/api/carts/1/merge', { sourceCartID: 2, sourceSecret: 's' }), ['carts', '1', 'merge'], engine)
+    expect(res!.status).toBe(404)
+    expect(await res!.json()).toEqual({ success: false, message: 'Target cart with ID 1 not found', cart: null })
+    expect(engine.delete).not.toHaveBeenCalled()
+  })
+
+  it('non-carts collections still fall through for a 2-segment sub-route', async () => {
+    const engine = makeMockEngine()
+    expect(await handleRestRequest(req('POST', 'http://x/api/posts/1/add-item', {}), ['posts', '1', 'add-item'], engine)).toBeNull()
+  })
+
+  it('an unrecognized cart sub-route falls through', async () => {
+    const engine = makeMockEngine()
+    expect(await handleRestRequest(req('POST', 'http://x/api/carts/1/whatever', {}), ['carts', '1', 'whatever'], engine)).toBeNull()
+  })
+})
+
+/* -------------------------------------------------------------------------- */
 /* Globals                                                                    */
 /* -------------------------------------------------------------------------- */
 

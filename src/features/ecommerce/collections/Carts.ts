@@ -18,6 +18,16 @@ import { cartItemsField, currencyField } from './shared'
  * covers admin/owner/guest-by-secret, matching the real plugin's
  * `accessOR(isAdmin, isDocumentOwner, hasCartSecretAccess(allowGuestCarts))`.
  *
+ * Also added (2026-09-24, Layer 2 remainder): the 5 custom cart endpoints
+ * (add-item/remove-item/update-item/clear/merge) as this app's own REST
+ * routes - `src/localapi/rest.ts`'s dispatcher now handles
+ * `POST /api/carts/:id/<action>` itself (`handleCartAddItem` etc.), reusing
+ * this collection's own `access`/`hooks` above via the same
+ * `engine.findByID`/`update`/`delete` calls every other cart request goes
+ * through - reproduced from the real plugin's `collections/carts/
+ * endpoints/*.js` + `operations/*.js`, simplified for this app's `variants:
+ * false` shop config (no variant matching, no extra item fields).
+ *
  * DELIBERATELY NOT MODELED HERE (Layer 2 remainder / Layer 3 - see
  * payload-removal-plan.md's Ecommerce scoping):
  *  - `status` (virtual, computed by an `afterRead` hook from
@@ -26,12 +36,6 @@ import { cartItemsField, currencyField } from './shared'
  *    app's own engine has no collection-level `afterRead`/virtual-field
  *    support yet, so this would need an engine change, not just a config
  *    one - see `src/localapi/operations.ts`).
- *  - The 5 custom cart endpoints (add-item/remove-item/update-item/clear/
- *    merge-cart) as this app's own REST routes - `/api/carts/:id/add-item`
- *    etc. still fall through to real Payload + the real plugin
- *    (`src/localapi/rest.ts`'s dispatcher returns `null` for any 2-segment
- *    cart sub-route), which still works correctly since the real plugin's
- *    own collection config (real access/hooks) is unaffected by this file.
  */
 export const Carts: CollectionConfig = {
   slug: 'carts',

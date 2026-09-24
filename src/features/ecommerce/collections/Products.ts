@@ -3,6 +3,7 @@ import type { CollectionConfig } from '@/engine'
 import { isAdmin } from '@/access/ecommerceAccess'
 
 import { pageBuilderBlocks } from '@/blocks'
+import { richTextEditor } from '@/engine/editor'
 
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see
@@ -61,7 +62,7 @@ export const Products: CollectionConfig = {
       ],
     },
     { name: 'shortDescription', type: 'textarea' },
-    { name: 'description', type: 'richText', admin: { elements: ['link'] } },
+    { name: 'description', type: 'richText', editor: richTextEditor() },
     { name: 'images', type: 'upload', relationTo: 'media', hasMany: true },
     { name: 'faqs', type: 'relationship', relationTo: 'faqs', hasMany: true },
     {

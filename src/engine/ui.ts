@@ -24,5 +24,5 @@ export { TextInput } from '@/admin/ui/TextInput'
 
 export { useDocumentEvents } from '@/admin/context/DocumentEventsContext'
 export { useDocumentInfo } from '@/admin/context/DocumentInfoContext'
-export { useField, useFormFields, useFormModified } from '@/admin/context/FormContext'
+export { useField, useFormFields, useFormModified, type FieldsMap } from '@/admin/context/FormContext'
 export { useNav } from '@/admin/context/NavContext'

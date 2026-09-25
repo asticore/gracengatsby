@@ -114,7 +114,12 @@ export const AdminNavShell: React.FC<{ children: React.ReactNode }> = ({ childre
     .join(' ')
 
   return (
-    <aside className={className} inert={!navOpen ? true : undefined}>
+    // navOpen's initial value comes from a client-only viewport check (see
+    // NavContext's getInitialNavOpen) that the server render can't perform,
+    // so the very first client render can legitimately disagree with the
+    // server-rendered class here - suppressed rather than "fixed", same as
+    // MediaGalleryGrid's tile-size preference.
+    <aside className={className} inert={!navOpen ? true : undefined} suppressHydrationWarning>
       <div className={`${baseClass}__scroll`} ref={navRef}>
         {children}
       </div>

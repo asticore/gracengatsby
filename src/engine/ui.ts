@@ -1,29 +1,28 @@
 /**
  * Engine seam: admin UI components and field hooks.
  *
- * These are the vendor's own client components, used by our custom admin
- * views and custom field components. No 'use client' directive here on
- * purpose - each source module declares its own, and a plain re-export
- * preserves that boundary exactly as it is today.
- *
- * This is the largest and last subsystem to replace: it is what renders the
- * portal. Everything our custom admin code needs from it is listed below, and
- * that list is the spec our own component set has to meet.
+ * Stage 11 (Admin UI rebuild, option 1 - full custom admin): this file used
+ * to re-export the vendor's own client components from `@payloadcms/ui`. It
+ * now re-exports our own from-scratch replacements instead, under
+ * `src/admin/{context,ui}`. Every one of them was written to match the exact
+ * call signature the existing custom field/nav components already depend on
+ * (SlugComponent.tsx, OpenVisualEditorButton.tsx, CustomFieldsPanel.tsx,
+ * BackupPanel.tsx, SendTestEmailButton.tsx, AdminNav.tsx, AdminNavClient.tsx,
+ * SettingsRefresh.tsx), so none of those consumer files needed to change.
  *
  * See ./index.ts for what this directory is and the rules that govern it.
+ * See claude/payload-removal-plan.md, "Admin UI rebuild (Stage 11)" for the
+ * full architecture.
  */
 
-export {
-  FieldLabel,
-  Hamburger,
-  Link,
-  Logout,
-  NavGroup,
-  TextInput,
-  useDocumentEvents,
-  useDocumentInfo,
-  useField,
-  useFormFields,
-  useFormModified,
-  useNav,
-} from '@payloadcms/ui'
+export { FieldLabel } from '@/admin/ui/FieldLabel'
+export { Hamburger } from '@/admin/ui/Hamburger'
+export { Link } from '@/admin/ui/Link'
+export { Logout } from '@/admin/ui/Logout'
+export { NavGroup } from '@/admin/ui/NavGroup'
+export { TextInput } from '@/admin/ui/TextInput'
+
+export { useDocumentEvents } from '@/admin/context/DocumentEventsContext'
+export { useDocumentInfo } from '@/admin/context/DocumentInfoContext'
+export { useField, useFormFields, useFormModified } from '@/admin/context/FormContext'
+export { useNav } from '@/admin/context/NavContext'

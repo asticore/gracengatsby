@@ -19,6 +19,7 @@ export const CheckboxFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ fiel
       <label htmlFor={`field-${path}`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input
           id={`field-${path}`}
+          name={path}
           type="checkbox"
           readOnly={readOnly}
           disabled={readOnly}

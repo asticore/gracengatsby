@@ -19,6 +19,7 @@ export const DateFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, p
       <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
       <input
         id={`field-${path}`}
+        name={path}
         type="date"
         readOnly={readOnly}
         value={value ? value.slice(0, 10) : ''}

@@ -10,6 +10,7 @@ import { membersOnlyField } from '@/features/members'
 export const Pages: CollectionConfig = {
   slug: 'pages',
   dbName: 'eg_pages',
+  labels: { plural: 'Pages', singular: 'Page' },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'slug', 'parent', 'isHomepage', '_status'],

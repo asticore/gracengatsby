@@ -91,7 +91,7 @@ export const AdminNavDashboardLink: React.FC<{ href: string }> = ({ href }) => {
         <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
         <rect x="9" y="9" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
       </svg>
-      <span>Dashboard</span>
+      <span title="Dashboard">Dashboard</span>
     </Link>
   )
 }

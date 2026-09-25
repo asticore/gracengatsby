@@ -31,8 +31,8 @@
 import React from 'react'
 import type { Field } from '@/engine'
 import { resolveComponent } from '@/admin/componentRegistry'
-import { FieldLabel, useField, useFormFields, type FieldsMap } from '@/engine/ui'
-import { fieldLabel, fieldRequired } from './shared'
+import { FieldLabel, useField, useFormFields } from '@/engine/ui'
+import { childPath, fieldLabel, fieldRequired, getAtPath, unflattenFields } from './shared'
 
 import { CheckboxFieldRenderer } from './CheckboxField'
 import { DateFieldRenderer } from './DateField'
@@ -49,36 +49,6 @@ export type ScalarFieldRendererProps = {
   readOnly?: boolean
 }
 
-/** Fields with a `name` nest the path; pure layout fields (row/collapsible, unnamed tabs) don't. */
-function childPath(parentPath: string, name?: string): string {
-  if (!name) return parentPath
-  return parentPath ? `${parentPath}.${name}` : name
-}
-
-/** Rebuilds a nested object from FormContext's flat, dotted-path fields map, for evaluating `admin.condition`. */
-function unflatten(fields: FieldsMap): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
-  for (const path of Object.keys(fields)) {
-    const segments = path.split('.')
-    let cursor = result
-    for (let i = 0; i < segments.length - 1; i++) {
-      const segment = segments[i]
-      if (typeof cursor[segment] !== 'object' || cursor[segment] === null) cursor[segment] = {}
-      cursor = cursor[segment] as Record<string, unknown>
-    }
-    cursor[segments[segments.length - 1]] = fields[path]?.value
-  }
-  return result
-}
-
-function getAtPath(data: Record<string, unknown>, path: string): unknown {
-  if (!path) return data
-  return path.split('.').reduce<unknown>((acc, segment) => {
-    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[segment]
-    return undefined
-  }, data)
-}
-
 /**
  * Evaluates `field.admin.condition(data, siblingData, {user})` against the
  * current form state. `user` is not wired up yet (auth context isn't threaded
@@ -89,7 +59,7 @@ function useFieldVisible(field: Field, parentPath: string): boolean {
   const condition = (field as { admin?: { condition?: (...args: unknown[]) => boolean } }).admin?.condition
   return useFormFields(([fields]) => {
     if (!condition) return true
-    const data = unflatten(fields)
+    const data = unflattenFields(fields)
     const siblingData = (getAtPath(data, parentPath) as Record<string, unknown>) ?? data
     try {
       return condition(data, siblingData, { user: undefined })

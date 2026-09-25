@@ -19,6 +19,7 @@ export const EmailFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
       <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
       <input
         id={`field-${path}`}
+        name={path}
         type="email"
         readOnly={readOnly}
         value={value || ''}

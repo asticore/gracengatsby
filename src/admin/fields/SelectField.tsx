@@ -21,6 +21,7 @@ const SingleSelect: React.FC<{ field: Field; path: string; readOnly?: boolean; o
       <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
       <select
         id={`field-${path}`}
+        name={path}
         disabled={readOnly}
         value={value || ''}
         onChange={(e) => setValue(e.target.value)}
@@ -42,6 +43,7 @@ const MultiSelect: React.FC<{ field: Field; path: string; readOnly?: boolean; op
       <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
       <select
         id={`field-${path}`}
+        name={path}
         multiple
         disabled={readOnly}
         value={value || []}

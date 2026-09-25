@@ -20,6 +20,7 @@ export const TextareaFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ fiel
       <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
       <textarea
         id={`field-${path}`}
+        name={path}
         readOnly={readOnly}
         rows={rows}
         value={value || ''}

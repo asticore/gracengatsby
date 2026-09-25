@@ -21,6 +21,7 @@ export const NumberFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field,
       <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
       <input
         id={`field-${path}`}
+        name={path}
         type="number"
         readOnly={readOnly}
         value={value ?? ''}

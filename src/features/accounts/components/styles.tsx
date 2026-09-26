@@ -17,6 +17,23 @@ export const AccountStyles: React.FC = () => (
     .account-nav a { display: block; padding: .7rem 1rem; text-decoration: none; color: inherit; }
     .account-nav a[aria-current='page'] { font-weight: 600; background: rgba(0,0,0,.04); }
     .account-panel { min-width: 0; }
+    /* Off-canvas drawer, mobile only (added 2026-09-26 - see AccountNav.tsx's
+       header comment). Desktop keeps the plain always-visible sidebar this
+       had before: the toggle button stays hidden and the drawer/backdrop
+       rules below only apply inside the ≤720px media query, so nothing here
+       changes desktop layout at all. */
+    .account-nav-toggle { display: none; }
+    @media (max-width: 720px) {
+      .account-nav-toggle { display: inline-flex; align-items: center; gap: .6rem; margin-bottom: 1rem; padding: .6rem 1rem; border: 1px solid rgba(0,0,0,.25); border-radius: 6px; background: #fff; font: inherit; cursor: pointer; }
+      .account-nav-toggle__bars, .account-nav-toggle__bars::before, .account-nav-toggle__bars::after { display: block; width: 1.1rem; height: 2px; background: currentColor; border-radius: 1px; }
+      .account-nav-toggle__bars { position: relative; }
+      .account-nav-toggle__bars::before, .account-nav-toggle__bars::after { content: ''; position: absolute; left: 0; }
+      .account-nav-toggle__bars::before { top: -.35rem; }
+      .account-nav-toggle__bars::after { top: .35rem; }
+      .account-nav-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 99; }
+      .account-nav-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 16rem; max-width: 82vw; background: #fff; z-index: 100; padding: 1.5rem 1.25rem; overflow-y: auto; box-shadow: 2px 0 16px rgba(0,0,0,.18); transform: translateX(-100%); transition: transform .25s ease; }
+      .account-nav-drawer--open { transform: translateX(0); }
+    }
     .account-form { display: grid; gap: .9rem; max-width: 30rem; }
     .account-form label { display: grid; gap: .3rem; font-size: .9rem; }
     .account-form input, .account-form select { padding: .55rem .7rem; border: 1px solid rgba(0,0,0,.25); border-radius: 6px; font: inherit; }

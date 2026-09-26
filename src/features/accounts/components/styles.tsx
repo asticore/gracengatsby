@@ -22,8 +22,10 @@ export const AccountStyles: React.FC = () => (
        had before: the toggle button stays hidden and the drawer/backdrop
        rules below only apply inside the ≤720px media query, so nothing here
        changes desktop layout at all. */
+    .account-nav-wrap { min-width: 0; }
     .account-nav-toggle { display: none; }
     @media (max-width: 720px) {
+      .account-nav-wrap { position: relative; z-index: 100; }
       .account-nav-toggle { display: inline-flex; align-items: center; gap: .6rem; margin-bottom: 1rem; padding: .6rem 1rem; border: 1px solid rgba(0,0,0,.25); border-radius: 6px; background: #fff; font: inherit; cursor: pointer; }
       .account-nav-toggle__bars, .account-nav-toggle__bars::before, .account-nav-toggle__bars::after { display: block; width: 1.1rem; height: 2px; background: currentColor; border-radius: 1px; }
       .account-nav-toggle__bars { position: relative; }

@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 
-import { formatCurrency } from '@/lib/formatCurrency'
+import { formatPriceInAUD } from '@/lib/formatCurrency'
 import type { Media, Product } from '@/engage-types'
 
 const getImageURL = (product: Product): string | null => {
@@ -47,7 +47,7 @@ export const ProductCard: React.FC<{
         </span>
         <h3>{product.title}</h3>
         <p className="mt-1 font-[family-name:var(--font-display)] text-[1.25rem]">
-          {formatCurrency(product.priceInAUD)}
+          {formatPriceInAUD(product.priceInAUD)}
         </p>
         {showShortDescription && product.shortDescription && (
           <p className="mt-1.5 text-[0.85rem] opacity-75">{product.shortDescription}</p>

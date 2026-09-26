@@ -8,7 +8,7 @@ import { AddToCartButton } from '@/components/AddToCartButton'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
-import { formatCurrency } from '@/lib/formatCurrency'
+import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -99,7 +99,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         )}
         <h1 className="text-[2.75rem]">{product.title}</h1>
         <p className="mb-4 font-[family-name:var(--font-display)] text-[1.5rem]">
-          {formatCurrency(product.priceInAUD)}
+          {formatPriceInAUD(product.priceInAUD)}
         </p>
         {product.shortDescription && (
           <p className="mb-6 text-[rgba(20,17,15,0.7)]">{product.shortDescription}</p>

@@ -399,6 +399,8 @@ import { executeAccess, executeFieldAccess, Forbidden } from './access'
 import type { CollectionHookOperation, RequestContextLike } from './hooks'
 import { runCollectionHooks, runFieldHooks } from './hooks'
 
+import { hashPassword } from './auth'
+
 export { Forbidden } from './access'
 
 /* -------------------------------------------------------------------------- */
@@ -513,6 +515,8 @@ export type CollectionConfigLike = {
   /** Only `versions.drafts` (boolean or `{validate?: boolean}`) is read - see "Draft/publish policy" in the file header. */
   /** Real Payload's own `versions` is `boolean | IncomingCollectionVersions` - a bare `false` (this app's non-drafts collections' real, sanitized shape) is a valid value that carries no `.drafts` property at all, so `boolean |` must be included here too even though this module's own `hasDraftsEnabled`/`hasDraftValidationEnabled` helpers only ever read the object form's `.drafts`. */
   versions?: boolean | { drafts?: boolean | { validate?: boolean } }
+  /** Real Payload's own `auth` is `boolean | IncomingAuthType` - only truthiness is read here, by `hashIncomingPassword` below (What's left #6's fix: hashing a `users`-style collection's plain `password` field into `salt`/`hash`). */
+  auth?: boolean | Record<string, unknown>
 }
 
 /** Structural mirror of a real `GlobalConfig` - no `create`/`delete` access (globals have neither operation), `hooks.afterDelete` likewise absent. */
@@ -1095,6 +1099,44 @@ function hasDraftValidationEnabled(collection: CollectionConfigLike): boolean {
   return typeof drafts === 'object' && drafts.validate === true
 }
 
+/**
+ * Fixes What's-left #6: this module never hashed a `users`-style (`auth:
+ * true`) collection's plain `password` field - `engine.create`/REST
+ * `POST /api/users` with `{password: '...'}` wrote no working credentials,
+ * since `password` isn't a real schema field (only `email` plus the implicit
+ * auth columns `salt`/`hash`/etc are - see `src/cms/db/schema/generate.ts`'s
+ * header) and there was never a step that turned it into `salt`/`hash`.
+ *
+ * Mirrors real Payload's own auth plugin: on a create with a `password`
+ * string present, or an update that includes a new `password` string, hash
+ * it with this app's own `hashPassword` (`./auth.ts` - PBKDF2-HMAC-SHA256,
+ * same primitive `verifyPassword`/the password-reset flow already use) and
+ * write `salt`/`hash` instead. A `password` key present but not a non-empty
+ * string (or an update that doesn't touch `password` at all) is left alone -
+ * never overwrite an existing salt/hash with nothing.
+ *
+ * Called on `resultData` as the LAST step before the DB write (both
+ * `createDocument` and `updateDocument`), not up front on raw incoming
+ * `data` - see those call sites' own comments for why: real Payload's
+ * sanitizer injects implicit `email`/`salt`/`hash`/`resetPasswordToken`/
+ * `lockUntil`/`sessions`/etc Field objects into an `auth: true` collection's
+ * `collection.fields` (confirmed live 2026-09-26 by dumping
+ * `collection.fields` inside this pipeline - NOT the bare `[roles]` this
+ * module's own narrower `CollectionConfigLike` type made it look like), and
+ * ordinary field-level access enforcement in `traverseBeforeValidate`/
+ * `traverseBeforeChange` strips any client-supplied `salt`/`hash` set any
+ * earlier than this. `password` itself is never a declared field even on the
+ * real sanitized config, so it safely rides along untouched through every
+ * pass before this function finally consumes it.
+ */
+function hashIncomingPassword(collection: CollectionConfigLike, data: Record<string, unknown>): Record<string, unknown> {
+  if (!collection.auth || !('password' in data)) return data
+  const { password, ...rest } = data
+  if (typeof password !== 'string' || password.length === 0) return rest
+  const { salt, hash } = hashPassword(password)
+  return { ...rest, salt, hash }
+}
+
 /* -------------------------------------------------------------------------- */
 /* createDocument                                                             */
 /* -------------------------------------------------------------------------- */
@@ -1157,7 +1199,7 @@ export async function createDocument<TDoc extends { id: number }>(args: CreateDo
   >
 
   // beforeChange - Fields (+ validation)
-  const resultData = deepClone(data)
+  let resultData = deepClone(data)
   const errors: ValidationFieldError[] = []
   await traverseBeforeChange(collection.fields, resultData, originalDoc, [], {
     data,
@@ -1173,6 +1215,27 @@ export async function createDocument<TDoc extends { id: number }>(args: CreateDo
     errors,
   })
   if (errors.length > 0) throw new ValidationError(errors)
+
+  // Password hashing (What's left #6) - deliberately AFTER every field-level
+  // pass above, not before: `salt`/`hash` (and the other implicit auth
+  // columns real Payload's sanitizer injects into `collection.fields` for an
+  // `auth: true` collection - `resetPasswordToken`, `lockUntil`, `sessions`,
+  // etc, confirmed live 2026-09-26 via debug logging, NOT the empty `[roles]`
+  // this module's own narrower `CollectionConfigLike` type suggested) carry
+  // real Payload's own restrictive field-level `access` - normal
+  // traverseBeforeValidate/traverseBeforeChange field-access enforcement
+  // (`if (!allowed) delete siblingData[name]`) strips any client-supplied
+  // `salt`/`hash` before this line ever runs, exactly the security property
+  // real Payload wants for these columns (never settable through the
+  // ordinary fields-access path). Real Payload's own create.js sidesteps
+  // this the same way: it sets `data.hash`/`data.salt` directly in the
+  // operation's own code, bypassing the fields system entirely - mirrored
+  // here by hashing on `resultData` (the fully-traversed clone) as the very
+  // last step before the DB write, so nothing after this can strip it again.
+  // `password` is never a declared field (confirmed - collection.fields has
+  // no `password` entry even on the real sanitized config), so it rides
+  // along untouched through every pass above and is only consumed here.
+  resultData = hashIncomingPassword(collection, resultData)
 
   // DB create - draft-aware via `db` (createDraftOps.create always writes the
   // live row AND a mirroring version row; a non-drafts collection's plain
@@ -1269,7 +1332,7 @@ export async function updateDocument<TDoc extends { id: number }>(args: UpdateDo
   >
 
   // beforeChange - Fields (+ validation)
-  const resultData = deepClone(data)
+  let resultData = deepClone(data)
   const errors: ValidationFieldError[] = []
   await traverseBeforeChange(collection.fields, resultData, originalDoc, [], {
     data,
@@ -1285,6 +1348,12 @@ export async function updateDocument<TDoc extends { id: number }>(args: UpdateDo
     errors,
   })
   if (errors.length > 0) throw new ValidationError(errors)
+
+  // Password hashing (What's left #6) - see createDocument's own comment on
+  // this exact placement for why it must run AFTER every field-level pass
+  // (real Payload's field-level access strips a client-supplied `salt`/
+  // `hash` otherwise) and only touch `resultData` here.
+  resultData = hashIncomingPassword(collection, resultData)
 
   // DB update - draft-aware (createDraftOps.updateByID skips the live write
   // entirely when `draft: true`, per that function's own doc comment).

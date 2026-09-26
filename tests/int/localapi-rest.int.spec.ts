@@ -528,7 +528,10 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
       expect(res!.status).toBe(200)
       expect(await res!.json()).toEqual({ clientSecret: 'secret_1', message: 'Payment initiated successfully', paymentIntentID: 'pi_1' })
       expect(fakeStripe.customers.create).toHaveBeenCalledWith({ email: 'a@b.com' })
-      expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 50, currency: 'AUD', customer: 'cus_1' }))
+      // cart.subtotal (50, built from priceInAUD - whole dollars) must be converted to
+      // Stripe's smallest-unit cents (5000) at this boundary - see stripeAdapter.ts's
+      // header comment (2026-09-26 unit-convention fix, plan doc What's-left item #12).
+      expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 5000, currency: 'AUD', customer: 'cus_1' }))
       expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({
         collection: 'transactions',
         data: expect.objectContaining({ status: 'pending', paymentMethod: 'stripe', customerEmail: 'a@b.com' }),

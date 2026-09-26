@@ -1,14 +1,23 @@
 'use client'
 
-import { useCart, useCurrency } from '@/engine/commerce/react'
+import { useCart } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React from 'react'
 
+import { formatPriceInAUD } from '@/lib/formatCurrency'
 import type { Product } from '@/engage-types'
 
+/**
+ * Was `useCurrency().formatCurrency` (real `@payloadcms/plugin-ecommerce`
+ * client hook) - dropped 2026-09-26. That real hook's formatter divides by
+ * 100 (matching the real plugin's own genuinely-cents price storage), which
+ * is wrong for this app's `priceInAUD` (whole currency units - see the plan
+ * doc's What's-left item #12) and was silently displaying prices ~100x too
+ * small. `formatPriceInAUD` (`@/lib/formatCurrency`) is the same formatter
+ * every other storefront page already uses for this field.
+ */
 export default function CartPage() {
   const { cart, decrementItem, incrementItem, removeItem, isLoading } = useCart()
-  const { formatCurrency } = useCurrency()
 
   const items = cart?.items || []
 
@@ -33,7 +42,7 @@ export default function CartPage() {
                   <div>
                     <h3>{typeof product === 'object' ? product.title : 'Item'}</h3>
                     <p>
-                      {typeof product === 'object' ? formatCurrency(product.priceInAUD) : ''}
+                      {typeof product === 'object' ? formatPriceInAUD(product.priceInAUD) : ''}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -70,7 +79,7 @@ export default function CartPage() {
 
           <div className="flex items-center justify-between">
             <p>
-              Subtotal: <strong>{formatCurrency(cart?.subtotal)}</strong>
+              Subtotal: <strong>{formatPriceInAUD(cart?.subtotal)}</strong>
             </p>
             <Link href="/checkout" className="btn btn--primary">
               Checkout

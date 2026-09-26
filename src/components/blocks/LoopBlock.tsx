@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { getEngine } from '@/lib/engine'
-import { formatCurrency } from '@/lib/formatCurrency'
+import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { buildMergeContext, resolveTagsDeep } from '@/lib/mergeTags'
 import type { SectionNode } from '@/lib/sectionTree'
 
@@ -98,7 +98,7 @@ export async function LoopBlock({
         )}
         <div className="be-loop-grid" style={{ ['--loop-columns' as string]: String(columnCount) }}>
           {items.map((item) => {
-            const context = buildMergeContext(item, collection, (cents) => formatCurrency(cents, 'AUD'))
+            const context = buildMergeContext(item, collection, (amount) => formatPriceInAUD(amount, 'AUD'))
             const resolved = resolveTagsDeep(templateBlocks, context)
 
             return (

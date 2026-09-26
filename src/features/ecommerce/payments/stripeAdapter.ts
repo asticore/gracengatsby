@@ -88,17 +88,34 @@ export type InitiateStripePaymentResult = { clientSecret: string; message: strin
  * `payload/dist/collections/operations/local/create.js`; this app's own
  * `engine.create()` defaults the OPPOSITE way - `false` - so it must be
  * passed explicitly to match).
+ *
+ * `cart.subtotal` is built by summing `priceInAUD * quantity`
+ * (`cartHooks.ts`), and `priceInAUD` is stored in WHOLE currency units (e.g.
+ * `29.99` meaning $29.99 - confirmed 2026-09-26, plan doc What's-left item
+ * #12) - but Stripe's own API requires `amount` in the currency's SMALLEST
+ * unit (cents for AUD). This used to pass `cart.subtotal` straight through
+ * with no conversion at all, which would have sent Stripe an amount ~100x
+ * too small (or a non-integer amount Stripe rejects outright) for any real
+ * charge - never caught because `STRIPE_SECRET_KEY` is blank in this
+ * environment and the test suite mocks Stripe entirely (asserting the buggy
+ * behavior as if it were correct). Fixed by converting to cents right at
+ * this boundary, the one place real Payload's own plugin does the same
+ * conversion (per `pricing.ts`'s doc comment). `transactions.amount`/
+ * `orders.amount` are populated FROM Stripe's own response
+ * (`paymentIntent.amount`) elsewhere in this file, so they were already
+ * correctly cents-denominated and needed no change.
  */
 export async function initiateStripePayment(args: InitiateStripePaymentArgs): Promise<InitiateStripePaymentResult> {
   const { engine, cart, currency, customerEmail, billingAddress, shippingAddress, user } = args
   const secretKey = process.env.STRIPE_SECRET_KEY
-  const amount = cart.subtotal
+  const subtotal = cart.subtotal
+  const amount = typeof subtotal === 'number' ? Math.round(subtotal * 100) : subtotal
 
   if (!secretKey) throw new Error('Stripe secret key is required.')
   if (!currency) throw new Error('Currency is required.')
   if (!cart.items || cart.items.length === 0) throw new Error('Cart is empty or not provided.')
   if (!customerEmail || typeof customerEmail !== 'string') throw new Error('A valid customer email is required to make a purchase.')
-  if (!amount || typeof amount !== 'number' || amount <= 0) throw new Error('A valid amount is required to initiate a payment.')
+  if (!subtotal || typeof subtotal !== 'number' || subtotal <= 0) throw new Error('A valid amount is required to initiate a payment.')
 
   const stripe = getStripeClient(secretKey)
 

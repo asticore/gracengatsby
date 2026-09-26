@@ -21,10 +21,13 @@
  *     on `hasMany`, client-side filtered over one fetched page of
  *     `GET /api/<relationTo>`. See that file's own doc comment for the
  *     label/search heuristic's limits.
+ *   - array/blocks: real repeatable-row UI (Phase 3, `./ArrayField.tsx` and
+ *     `./BlocksField.tsx`) with per-row-subfield editing, add/remove/reorder
+ *     controls, and fallback to raw JSON for unsupported nested types.
  *   - Complex types not yet given dedicated UI (Phase 3 polish item):
- *     richText/json/array/blocks/join/code/point get a FUNCTIONAL STOPGAP
- *     here inline, so nothing crashes for any of the 38 entities before those
- *     get a real pass - see the plan doc's Phase breakdown.
+ *     richText/json/join/code/point get a FUNCTIONAL STOPGAP here inline, so
+ *     nothing crashes for any of the 38 entities before those get a real pass -
+ *     see the plan doc's Phase breakdown.
  *
  * A field's own `admin.components.Field` override (a `'<path>#<Export>'`
  * string, e.g. SlugComponent) always wins over the built-in renderer for its
@@ -38,6 +41,8 @@ import { resolveComponent } from '@/admin/componentRegistry'
 import { FieldLabel, useField, useFormFields } from '@/engine/ui'
 import { childPath, fieldLabel, fieldRequired, getAtPath, unflattenFields } from './shared'
 
+import { ArrayFieldRenderer } from './ArrayField'
+import { BlocksFieldRenderer } from './BlocksField'
 import { CheckboxFieldRenderer } from './CheckboxField'
 import { DateFieldRenderer } from './DateField'
 import { EmailFieldRenderer } from './EmailField'
@@ -213,10 +218,14 @@ const SingleFieldRenderer: React.FC<{
     case 'upload':
       return <RelationshipFieldRenderer field={field} path={path} readOnly={fieldReadOnly} />
 
+    case 'array':
+      return <ArrayFieldRenderer field={field} path={path} readOnly={fieldReadOnly} />
+
+    case 'blocks':
+      return <BlocksFieldRenderer field={field} path={path} readOnly={fieldReadOnly} />
+
     case 'richText':
     case 'json':
-    case 'array':
-    case 'blocks':
     case 'code':
     case 'point':
     case 'join':

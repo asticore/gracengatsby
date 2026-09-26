@@ -112,7 +112,7 @@ function formatDate(value: unknown): string {
 export function buildMergeContext(
   item: Record<string, unknown>,
   source: LoopSource,
-  formatPrice?: (cents: number) => string,
+  formatPrice?: (amount: number) => string,
 ): MergeContext {
   const slug = str(item.slug)
   const context: MergeContext = {
@@ -125,8 +125,11 @@ export function buildMergeContext(
   }
 
   if (source === 'products') {
-    const cents = typeof item.priceInAUD === 'number' ? item.priceInAUD : null
-    context.price = cents !== null ? (formatPrice ? formatPrice(cents) : `$${(cents / 100).toFixed(2)}`) : ''
+    // `priceInAUD` is stored in WHOLE currency units (e.g. `29.99` meaning
+    // $29.99), NOT cents - fixed 2026-09-26, see the plan doc's What's-left
+    // item #12. The fallback below must NOT divide by 100.
+    const amount = typeof item.priceInAUD === 'number' ? item.priceInAUD : null
+    context.price = amount !== null ? (formatPrice ? formatPrice(amount) : `$${amount.toFixed(2)}`) : ''
     context.category = str(item.category)
     context.inventory = str(item.inventory)
   }

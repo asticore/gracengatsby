@@ -49,6 +49,31 @@ import { richTextEditor } from '@/engine/editor'
  * Also matched real `inventoryField.js`'s `defaultValue: 0, min: 0`
  * (previously a bare, unconstrained number here).
  *
+ * Ecommerce cutover (PriceCell/PriceInput gap, 2026-09-26): `ListView.tsx` had
+ * no `admin.components.Cell` mechanism at all (added one - see its own header
+ * comment and `@/admin/cellRegistry.ts`), so `priceInAUD` showed as a raw
+ * number in the admin list. Wired `priceInAUD` to `formatPriceCell`
+ * (`@/features/ecommerce/admin/priceCell.ts`, reuses the same `formatCurrency`
+ * already used for this field on the storefront) for `Cell`, and `PriceInput`
+ * (`@/features/ecommerce/admin/PriceInput.tsx`) for `Field` - a purely
+ * cosmetic `$`-prefixed wrapper around the existing number input, via the
+ * ALREADY-EXISTING `admin.components.Field` mechanism (`componentRegistry.ts`
+ * + `FieldRenderer.tsx`), no new machinery needed there.
+ *
+ * While scoping this, found a genuine unit-convention AMBIGUITY in
+ * `priceInAUD`'s stored value that this task deliberately did NOT resolve
+ * (flagged in the plan doc for a dedicated look): `formatCurrency`
+ * (`@/lib/formatCurrency.ts`) divides by 100 as if the field stores integer
+ * cents, but `pricing.ts`'s own doc comment and a DB round-trip test
+ * (`cms-db-products.int.spec.ts`, `priceInAUD: 29.99`) both treat it as whole
+ * currency units, and `stripeAdapter.ts`'s `initiateStripePayment` passes
+ * `cart.subtotal` - built directly from `priceInAUD` - straight to Stripe's
+ * `amount` param with no `* 100` conversion either (Stripe's own API expects
+ * the smallest currency unit). These three call sites disagree with each
+ * other; `PriceInput` deliberately does NOT add a `* 100`/`/ 100` conversion
+ * on top of that ambiguity, since guessing wrong here risks silently
+ * corrupting a real money field on save.
+ *
  * DELIBERATELY NOT MODELED HERE (Layer 2/3, not this DB-layer stage - see
  * payload-removal-plan.md's Ecommerce scoping):
  *  - Product variant storage (products' `stripeProductID`/`variants` fields
@@ -117,7 +142,16 @@ export const Products: CollectionConfig = {
       type: 'row',
       fields: [
         { name: 'priceInAUDEnabled', type: 'checkbox' },
-        { name: 'priceInAUD', type: 'number' },
+        {
+          name: 'priceInAUD',
+          type: 'number',
+          admin: {
+            components: {
+              Cell: '@/features/ecommerce/admin/priceCell#formatPriceCell',
+              Field: '@/features/ecommerce/admin/PriceInput#PriceInput',
+            },
+          },
+        },
       ],
     },
   ],

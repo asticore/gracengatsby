@@ -99,3 +99,39 @@ export function flattenDoc(doc: Record<string, unknown>, fields: Field[], parent
   walk(fields, parentPath)
   return result
 }
+
+/**
+ * Strips every function value out of a `Field[]` tree (recursively, through
+ * `row`/`group`/`tabs`/`array`/`blocks` nesting) before it crosses the
+ * server -> client boundary into `EditForm`/`FieldRenderer` (a `'use client'`
+ * tree).
+ *
+ * Found live (not caught by `tsc`/`npm run build`, which don't render
+ * anything): a real collection/global's `Field[]` array - the same plain
+ * data object `readRegistry` hands back, see `src/admin/auth.ts`'s header -
+ * still carries real FUNCTION values on plenty of fields: `access.create`/
+ * `.read`/`.update`, `hooks.beforeChange`/`.afterRead`, `validate`,
+ * occasionally `defaultValue` (e.g. `Posts.ts`). React/Next refuses to
+ * serialize a Server Component prop containing a function for a Client
+ * Component ("Functions cannot be passed directly to Client Components"),
+ * which 500'd EVERY EditView/GlobalEditView page once actually rendered.
+ *
+ * The `JSON.stringify` replacer trick (return `undefined` for a function
+ * value) is what does the stripping - for a plain object key that removes
+ * the key entirely (not a `null`), and it walks the WHOLE nested tree for
+ * free, exactly matching `FieldRenderer`'s own recursion rules (row/group/
+ * tabs/array/blocks all just become nested objects/arrays here too), so
+ * there is no need to hand-write the recursion twice.
+ *
+ * Known, accepted regression from this (same "functional stopgap" tier as
+ * the rest of Phase 1's complex-field handling, not a Phase-1-blocking gap):
+ * `admin.condition` is a function, so it is stripped too - `FieldRenderer`'s
+ * `useFieldVisible` already treats a missing condition as "always visible",
+ * so a conditionally-shown field now simply always shows rather than being
+ * live-reactive to sibling values. A function-valued `defaultValue` (only
+ * `Posts.ts` today) is likewise dropped rather than resolved - a blank
+ * create form for that one field starts empty instead of prefilled.
+ */
+export function sanitizeFieldsForClient(fields: Field[]): Field[] {
+  return JSON.parse(JSON.stringify(fields, (_key, value) => (typeof value === 'function' ? undefined : value))) as Field[]
+}

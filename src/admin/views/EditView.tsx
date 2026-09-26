@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig } from '@/admin/auth'
+import { sanitizeFieldsForClient } from '@/admin/fields/shared'
 import { EditForm } from './EditForm'
 
 /**
@@ -30,7 +31,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   return (
     <div className="collection-edit">
       <h1>{id === undefined ? `Create ${label}` : `Edit ${label}`}</h1>
-      <EditForm collectionSlug={collectionSlug} doc={doc} fields={collection.fields} id={id} />
+      <EditForm collectionSlug={collectionSlug} doc={doc} fields={sanitizeFieldsForClient(collection.fields)} id={id} />
     </div>
   )
 }

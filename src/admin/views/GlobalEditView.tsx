@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getGlobalConfig } from '@/admin/auth'
+import { sanitizeFieldsForClient } from '@/admin/fields/shared'
 import { EditForm } from './EditForm'
 
 /** Generic edit view for any global - a global always exists (real Payload creates it lazily on first read), so there is no create/blank branch here, unlike EditView. */
@@ -19,7 +20,7 @@ export async function GlobalEditView({ globalSlug }: { globalSlug: string }) {
   return (
     <div className="global-edit">
       <h1>{label}</h1>
-      <EditForm doc={doc} fields={global.fields} globalSlug={globalSlug} />
+      <EditForm doc={doc} fields={sanitizeFieldsForClient(global.fields)} globalSlug={globalSlug} />
     </div>
   )
 }

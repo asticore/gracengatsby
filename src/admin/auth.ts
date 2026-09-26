@@ -100,10 +100,22 @@ function isHidden(hidden: unknown, user: unknown): boolean {
  * Payload's own convention) counts as readable for nav/menu purposes, same as
  * a plain `true`.
  */
-function evaluateAccess(fn: unknown, user: unknown): boolean {
+async function evaluateAccess(fn: unknown, user: unknown, engine: Engine): Promise<boolean> {
   if (typeof fn !== 'function') return true
   try {
-    const result = (fn as (args: { req: { user: unknown } }) => unknown)({ req: { user } })
+    // Real Payload always calls an `Access` fn with a real `req.payload` set
+    // (see e.g. `Lessons.ts`'s `readableLessons`, which does
+    // `req.payload as unknown as Engine` and then calls `engine.findGlobal`/
+    // `engine.find` on it) - omitting it here made every access fn that
+    // reads `req.payload` throw (`Cannot read properties of undefined
+    // (reading 'findGlobal')`), caught below and silently treated as
+    // "not readable" rather than surfacing the real bug. Found live via a
+    // dev-server boot of `/admin/login`.
+    // Many real `Access` fns (like `readableLessons`) are `async` - MUST be
+    // awaited here, not just truthy-checked, or every one of them evaluates
+    // as "readable" (a pending Promise is truthy) regardless of its real
+    // resolved value.
+    const result = await (fn as (args: { req: { user: unknown; payload: Engine } }) => unknown)({ req: { payload: engine, user } })
     return result !== false && result !== undefined && result !== null
   } catch {
     return false
@@ -143,12 +155,12 @@ export const getAdminContext = cache(async (): Promise<AdminContext> => {
   const permissions: EntityPermissions = { collections: {}, globals: {} }
   for (const collection of collections) {
     permissions.collections![collection.slug] = {
-      create: evaluateAccess(collection.access?.create, user),
-      read: evaluateAccess(collection.access?.read, user),
+      create: await evaluateAccess(collection.access?.create, user, engine),
+      read: await evaluateAccess(collection.access?.read, user, engine),
     }
   }
   for (const global of globals) {
-    permissions.globals![global.slug] = { read: evaluateAccess(global.access?.read, user) }
+    permissions.globals![global.slug] = { read: await evaluateAccess(global.access?.read, user, engine) }
   }
 
   return {

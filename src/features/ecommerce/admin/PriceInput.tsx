@@ -21,16 +21,14 @@ type ScalarFieldRendererProps = {
  * Deliberately a purely COSMETIC wrapper around the same plain number input
  * `NumberFieldRenderer` already renders (`@/admin/fields/NumberField.tsx`) -
  * a `$` prefix and a 0.01 step, nothing else. It does NOT convert the typed
- * value (no `* 100`/`/ 100`): `priceInAUD`'s stored-value unit convention
- * turned out to be genuinely ambiguous across this codebase while scoping
- * this task (`formatCurrency` divides by 100 as if storing cents;
- * `pricing.ts`'s own doc comment and `cms-db-products.int.spec.ts`'s fixture
- * (`priceInAUD: 29.99`) both treat it as whole currency units; `stripeAdapter.ts`
- * passes `cart.subtotal` - built directly from `priceInAUD` - straight to
- * Stripe's `amount` with no `* 100` either). Adding a conversion here without
- * resolving that ambiguity first would risk silently corrupting a real money
- * field on save. See the plan doc's incident log for this finding - flagged
- * for a dedicated look, not fixed as a drive-by inside this cosmetic task.
+ * value (no `* 100`/`/ 100`) - correctly so: `priceInAUD` is stored in WHOLE
+ * currency units (e.g. `29.99` meaning $29.99), confirmed 2026-09-26 after a
+ * dedicated investigation (see the plan doc's What's-left item #12 and
+ * incident log) that also fixed the several storefront/admin call sites that
+ * were WRONGLY treating this field as cents (`formatCurrency`,
+ * `formatPriceCell`, `mergeTags.ts`/`LoopBlock.tsx`, and a real-Stripe-amount
+ * bug in `stripeAdapter.ts`). This input needed no change - a plain 1:1
+ * dollars-in-dollars-out number field was already correct.
  */
 export function PriceInput({ field, path, readOnly }: ScalarFieldRendererProps) {
   const { setValue, value } = useField<number | undefined>({ path })

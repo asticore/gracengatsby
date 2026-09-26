@@ -46,14 +46,26 @@ export type EditFormProps = {
   doc: Record<string, unknown> | null
   fields: Field[]
   readOnly?: boolean
+  /** Stage 11 Phase 2: true for one of the 5 `versions: {drafts: true}` collections - see SaveButton's doc comment for what this changes. Globals never have drafts in this app, so GlobalEditView never sets it. */
+  draftsEnabled?: boolean
 }
 
-type SaveTarget = { collectionSlug?: string; globalSlug?: string; id?: number }
+type SaveTarget = { collectionSlug?: string; globalSlug?: string; id?: number; draftsEnabled?: boolean }
 
-function saveRequest({ collectionSlug, globalSlug, id }: SaveTarget): { url: string; method: 'POST' | 'PATCH' } {
+/**
+ * `draft` picks the query-string flag (`?draft=true`), which is what
+ * actually changes DB behavior (see `src/cms/db/generic.ts`'s
+ * `createDraftOps` doc comment): on an UPDATE it makes the write hit only a
+ * new version row and leaves the live row untouched; on a CREATE it lets
+ * validation skip incomplete required fields. Publishing is the ABSENCE of
+ * that flag on both create and update, which is why it is only ever added,
+ * never sent as an explicit `draft=false`.
+ */
+function saveRequest({ collectionSlug, globalSlug, id }: SaveTarget, draft: boolean): { url: string; method: 'POST' | 'PATCH' } {
+  const suffix = draft ? '?draft=true' : ''
   if (globalSlug) return { url: `/api/globals/${globalSlug}`, method: 'POST' }
-  if (id) return { url: `/api/${collectionSlug}/${id}`, method: 'PATCH' }
-  return { url: `/api/${collectionSlug}`, method: 'POST' }
+  if (id) return { url: `/api/${collectionSlug}/${id}${suffix}`, method: 'PATCH' }
+  return { url: `/api/${collectionSlug}${suffix}`, method: 'POST' }
 }
 
 function extractErrorMessage(body: unknown): string {
@@ -61,20 +73,34 @@ function extractErrorMessage(body: unknown): string {
   return errors?.[0]?.message || 'Save failed.'
 }
 
-const SaveButton: React.FC<SaveTarget> = ({ collectionSlug, globalSlug, id }) => {
+/**
+ * Stage 11 Phase 2: a `draftsEnabled` collection (Posts/Products/Events/
+ * Pages/Courses) gets two buttons instead of one, matching real Payload's
+ * own draft/publish split. Save Draft sends `_status: 'draft'` in the body
+ * AND the `?draft=true` query flag; Publish sends `_status: 'published'`
+ * with no query flag. The `_status` field is sent explicitly in BOTH cases
+ * rather than relying on the DB layer's own defaulting, because a CREATE's
+ * live row defaults to 'draft' via its own SQL column default when the
+ * caller sets nothing (see `createDraftOps`'s doc comment) - a "Publish"
+ * click that didn't say so explicitly would silently create a draft.
+ * A non-drafts collection (and every global) keeps the old single "Save"
+ * button, unchanged.
+ */
+const SaveButton: React.FC<SaveTarget> = ({ collectionSlug, globalSlug, id, draftsEnabled }) => {
   const router = useRouter()
   const resetModified = useResetFormModified()
   const { reportUpdate } = useDocumentEvents()
   const fields = useFormFields(([f]) => f)
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving] = useState<'draft' | 'published' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSave = async () => {
-    setSaving(true)
+  const handleSave = async (status: 'draft' | 'published') => {
+    setSaving(status)
     setError(null)
     try {
       const data = unflattenFields(fields)
-      const { url, method } = saveRequest({ collectionSlug, globalSlug, id })
+      if (draftsEnabled) data._status = status
+      const { url, method } = saveRequest({ collectionSlug, globalSlug, id }, status === 'draft')
       const response = await fetch(url, {
         body: JSON.stringify(data),
         credentials: 'include',
@@ -107,21 +133,26 @@ const SaveButton: React.FC<SaveTarget> = ({ collectionSlug, globalSlug, id }) =>
     } catch {
       setError('Save failed - check your connection and try again.')
     } finally {
-      setSaving(false)
+      setSaving(null)
     }
   }
 
   return (
     <div style={{ alignItems: 'center', display: 'flex', gap: 12, marginTop: 24 }}>
-      <button disabled={saving} onClick={handleSave} type="button">
-        {saving ? 'Saving…' : 'Save'}
+      {draftsEnabled && (
+        <button disabled={saving !== null} onClick={() => handleSave('draft')} type="button">
+          {saving === 'draft' ? 'Saving…' : 'Save Draft'}
+        </button>
+      )}
+      <button disabled={saving !== null} onClick={() => handleSave('published')} type="button">
+        {saving === 'published' ? 'Saving…' : draftsEnabled ? 'Publish' : 'Save'}
       </button>
       {error && <span style={{ color: '#b3261e' }}>{error}</span>}
     </div>
   )
 }
 
-export const EditForm: React.FC<EditFormProps> = ({ collectionSlug, doc, fields, globalSlug, id, readOnly }) => {
+export const EditForm: React.FC<EditFormProps> = ({ collectionSlug, doc, draftsEnabled, fields, globalSlug, id, readOnly }) => {
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
 
   return (
@@ -129,7 +160,7 @@ export const EditForm: React.FC<EditFormProps> = ({ collectionSlug, doc, fields,
       <FormProvider initialFields={initialFields}>
         <div className="edit-form">
           <FieldRenderer fields={fields} readOnly={readOnly} />
-          {!readOnly && <SaveButton collectionSlug={collectionSlug} globalSlug={globalSlug} id={id} />}
+          {!readOnly && <SaveButton collectionSlug={collectionSlug} draftsEnabled={draftsEnabled} globalSlug={globalSlug} id={id} />}
         </div>
       </FormProvider>
     </DocumentInfoProvider>

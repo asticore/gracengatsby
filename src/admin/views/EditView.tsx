@@ -28,10 +28,25 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 
   const label = typeof collection.labels?.singular === 'string' ? collection.labels.singular : collectionSlug
 
+  // Stage 11 Phase 2: real Payload's `versions` is `boolean | {drafts?: boolean | object}` -
+  // a bare `false` (the 33 non-drafts collections' real, sanitized shape) carries no `.drafts`
+  // at all, hence the defensive shape check rather than a direct `.versions.drafts` read.
+  const versions = (collection as { versions?: unknown }).versions
+  const draftsEnabled = Boolean(versions && typeof versions === 'object' && (versions as { drafts?: unknown }).drafts)
+  const rawStatus = (doc as { _status?: unknown } | null)?._status
+  const status = typeof rawStatus === 'string' ? rawStatus : undefined
+
   return (
     <div className="collection-edit">
-      <h1>{id === undefined ? `Create ${label}` : `Edit ${label}`}</h1>
-      <EditForm collectionSlug={collectionSlug} doc={doc} fields={sanitizeFieldsForClient(collection.fields)} id={id} />
+      <h1>
+        {id === undefined ? `Create ${label}` : `Edit ${label}`}
+        {draftsEnabled && status && (
+          <span style={{ borderRadius: 4, fontSize: '0.6em', fontWeight: 'normal', marginLeft: 12, padding: '2px 8px', textTransform: 'uppercase', verticalAlign: 'middle' }}>
+            {status}
+          </span>
+        )}
+      </h1>
+      <EditForm collectionSlug={collectionSlug} doc={doc} draftsEnabled={draftsEnabled} fields={sanitizeFieldsForClient(collection.fields)} id={id} />
     </div>
   )
 }

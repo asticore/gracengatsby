@@ -123,15 +123,52 @@ export function flattenDoc(doc: Record<string, unknown>, fields: Field[], parent
  * tabs/array/blocks all just become nested objects/arrays here too), so
  * there is no need to hand-write the recursion twice.
  *
- * Known, accepted regression from this (same "functional stopgap" tier as
- * the rest of Phase 1's complex-field handling, not a Phase-1-blocking gap):
- * `admin.condition` is a function, so it is stripped too - `FieldRenderer`'s
- * `useFieldVisible` already treats a missing condition as "always visible",
- * so a conditionally-shown field now simply always shows rather than being
- * live-reactive to sibling values. A function-valued `defaultValue` (only
- * `Posts.ts` today) is likewise dropped rather than resolved - a blank
- * create form for that one field starts empty instead of prefilled.
+ * `admin.condition` is the ONE exception: every condition fn in this codebase
+ * (confirmed by inspection 2026-09-26 - grep `condition:` across
+ * collections/globals/blocks/features) is a pure function of its own
+ * `(data, siblingData, options)` params only, no closures over outer
+ * variables or imports - safe to ship as source text (`fn.toString()`)
+ * instead of stripping it, and reconstruct client-side with `new Function`
+ * (see `reviveCondition` below and `FieldRenderer.tsx`'s `useFieldVisible`,
+ * which is what gives conditionally-shown fields real live reactivity to
+ * sibling values instead of always showing). Every OTHER function
+ * (`access.*`, `hooks.*`, `validate`, ...) stays stripped entirely - only
+ * `admin.condition` is a client-UI concern.
+ *
+ * Known, accepted regression: a function-valued `defaultValue` (only
+ * `Posts.ts` today) is dropped rather than resolved - a blank create form
+ * for that one field starts empty instead of prefilled.
  */
 export function sanitizeFieldsForClient(fields: Field[]): Field[] {
-  return JSON.parse(JSON.stringify(fields, (_key, value) => (typeof value === 'function' ? undefined : value))) as Field[]
+  return JSON.parse(
+    JSON.stringify(fields, (key, value) => {
+      if (typeof value !== 'function') return value
+      return key === 'condition' ? value.toString() : undefined
+    }),
+  ) as Field[]
+}
+
+const conditionFnCache = new Map<string, (...args: unknown[]) => unknown>()
+
+/**
+ * Reconstructs an `admin.condition` function from the source text
+ * `sanitizeFieldsForClient` shipped it as (see that function's doc comment
+ * for why this is safe for every condition actually used in this codebase).
+ * Cached by source string so repeated calls (e.g. on every keystroke, via
+ * `useFieldVisible`'s `useFormFields` selector) don't re-parse each time.
+ * Returns `undefined` on any parse/reconstruction failure - callers should
+ * treat that the same as "no condition" or "hide the field", never crash.
+ */
+export function reviveCondition(source: string): ((...args: unknown[]) => unknown) | undefined {
+  const cached = conditionFnCache.get(source)
+  if (cached) return cached
+  try {
+    // Reconstructing this app's own admin.condition source (stringified server-side by
+    // sanitizeFieldsForClient above), not arbitrary input.
+    const fn = new Function(`return (${source})`)() as (...args: unknown[]) => unknown
+    conditionFnCache.set(source, fn)
+    return fn
+  } catch {
+    return undefined
+  }
 }

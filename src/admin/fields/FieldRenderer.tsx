@@ -6,6 +6,11 @@
  * data array, not a runtime Payload call - see the plan doc's "Key discovery")
  * is walked by this ONE component instead of 38 hand-written per-entity forms.
  *
+ * Every field is also gated by `useFieldVisible`, which live-evaluates its
+ * `admin.condition` (if any) against current sibling form data - see that
+ * function's own doc comment for how a condition survives the server->client
+ * boundary (shipped as source text, reconstructed with `new Function`).
+ *
  * Handles, by `field.type`:
  *   - Pure layout, no path segment added: `row`, `collapsible` (recurse into
  *     `.fields` at the SAME path prefix as the parent).
@@ -39,7 +44,7 @@ import React from 'react'
 import type { Field } from '@/engine'
 import { resolveComponent } from '@/admin/componentRegistry'
 import { FieldLabel, useField, useFormFields } from '@/engine/ui'
-import { childPath, fieldLabel, fieldRequired, getAtPath, unflattenFields } from './shared'
+import { childPath, fieldLabel, fieldRequired, getAtPath, reviveCondition, unflattenFields } from './shared'
 
 import { ArrayFieldRenderer } from './ArrayField'
 import { BlocksFieldRenderer } from './BlocksField'
@@ -61,18 +66,24 @@ export type ScalarFieldRendererProps = {
 
 /**
  * Evaluates `field.admin.condition(data, siblingData, {user})` against the
- * current form state. `user` is not wired up yet (auth context isn't threaded
+ * current form state - LIVE reactive to sibling values (Stage 11 Phase 3).
+ * `condition` arrives here as a STRING (its source text), not a function -
+ * `sanitizeFieldsForClient` (shared.ts) ships it that way since a real
+ * function can't cross the server->client boundary; `reviveCondition`
+ * reconstructs it. `user` is not wired up yet (auth context isn't threaded
  * into the admin tree as of Phase 1) - a condition that branches on `user`
  * will see `undefined` for it until that's addressed; tracked in the plan doc.
  */
 function useFieldVisible(field: Field, parentPath: string): boolean {
-  const condition = (field as { admin?: { condition?: (...args: unknown[]) => boolean } }).admin?.condition
+  const conditionSource = (field as { admin?: { condition?: unknown } }).admin?.condition
   return useFormFields(([fields]) => {
+    if (typeof conditionSource !== 'string') return true
+    const condition = reviveCondition(conditionSource)
     if (!condition) return true
     const data = unflattenFields(fields)
     const siblingData = (getAtPath(data, parentPath) as Record<string, unknown>) ?? data
     try {
-      return condition(data, siblingData, { user: undefined })
+      return Boolean(condition(data, siblingData, { user: undefined }))
     } catch {
       // A throwing condition function should hide the field it guards rather than crash the whole form.
       return false

@@ -5,7 +5,7 @@ import { RichText } from '@/engine/editor/react'
 
 import { AddToCartButton } from '@/components/AddToCartButton'
 import { RsvpForm } from '@/components/RsvpForm'
-import { formatCurrency } from '@/lib/formatCurrency'
+import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -101,7 +101,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             ticket ? (
               <div>
                 <p className="mb-4 font-[family-name:var(--font-display)] text-[1.5rem]">
-                  {formatCurrency(ticket.priceInAUD)}
+                  {formatPriceInAUD(ticket.priceInAUD)}
                 </p>
                 <AddToCartButton productID={ticket.id} label="Buy ticket" />
               </div>

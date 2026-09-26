@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import type { Field } from '@/engine'
 import { getAdminContext, getCollectionConfig } from '@/admin/auth'
+import { resolveCellFormatter } from '@/admin/cellRegistry'
 
 /**
  * Generic list view for any collection - one component instead of 21
@@ -14,7 +16,28 @@ import { getAdminContext, getCollectionConfig } from '@/admin/auth'
  * trip through our own REST layer would just be slower for no benefit. Saves
  * (Task: EditView) go through the REST API instead, because those need to
  * happen from a CLIENT component for interactivity - see EditForm.tsx.
+ *
+ * A column's own `admin.components.Cell` override (a `'<path>#<Export>'`
+ * string, same convention as `admin.components.Field` - see
+ * `@/admin/cellRegistry.ts`) always wins over the raw `String(doc[column])`
+ * fallback - added 2026-09-26 (ecommerce cutover, PriceCell gap; see plan
+ * doc). `findColumnField` only descends into `row`/`collapsible` (pure
+ * layout, no path segment - `shared.ts`'s `childPath`), matching the
+ * pre-existing `doc[column]` lookup's own limitation: a field nested in a
+ * `group`/`tabs`/`array`/`blocks` was never addressable by a bare column name
+ * to begin with, so this doesn't newly regress or fix that.
  */
+function findColumnField(fields: Field[], name: string): Field | undefined {
+  for (const field of fields) {
+    if (field.type === 'row' || field.type === 'collapsible') {
+      const found = findColumnField(field.fields, name)
+      if (found) return found
+      continue
+    }
+    if ('name' in field && field.name === name) return field
+  }
+  return undefined
+}
 export async function ListView({ collectionSlug }: { collectionSlug: string }) {
   const context = await getAdminContext()
   if (!context.isAdmin) redirect('/admin/login')
@@ -65,7 +88,16 @@ export async function ListView({ collectionSlug }: { collectionSlug: string }) {
               <tr key={doc.id}>
                 {columns.map((column, index) => {
                   const cell = doc[column]
-                  const text = cell === undefined || cell === null ? '' : typeof cell === 'object' ? JSON.stringify(cell) : String(cell)
+                  const columnField = findColumnField(collection.fields, column)
+                  const cellOverride = (columnField as { admin?: { components?: { Cell?: string } } } | undefined)?.admin?.components?.Cell
+                  const formatter = resolveCellFormatter(cellOverride)
+                  const text = formatter
+                    ? formatter(cell, doc)
+                    : cell === undefined || cell === null
+                      ? ''
+                      : typeof cell === 'object'
+                        ? JSON.stringify(cell)
+                        : String(cell)
                   return (
                     <td key={column} style={{ borderBottom: '1px solid #eee', padding: 8 }}>
                       {index === 0 ? (

@@ -10,22 +10,30 @@
  * (`product.priceInAUD` directly, no per-currency `priceIn${currency}`
  * lookup, no variant matching/inventory).
  *
- * SCOPE NOTE, important: this reproduces the CART CHECKOUT payment flow only
- * (`POST /api/payments/stripe/initiate` and `/confirm-order`, wired in
- * `src/localapi/rest.ts`'s dispatcher). `POST /api/payments/stripe/webhooks`
- * is DELIBERATELY left alone, still served by real Payload's own,
- * still-registered `stripeAdapter()` (`src/engine/commerce/stripe.ts` /
- * `engage.config.ts`'s `payments.paymentMethods`) - that route today only
- * wires up the UNRELATED membership-subscription flow
- * (`src/features/members/webhooks.ts`'s `membershipWebhooks`:
- * `checkout.session.completed`, subscription lifecycle events), which this
- * app's own cart checkout does not use at all: the real `confirmOrder.js`
- * reproduced below polls `stripe.paymentIntents.retrieve` directly rather
- * than waiting on a webhook, exactly like this module does. Intercepting
- * `/webhooks` here would silently break membership billing the exact way
- * Layer 1 silently broke guest carts (see the plan doc's incident log) -
- * `src/localapi/rest.ts`'s dispatcher only ever claims `initiate` and
- * `confirm-order` under `/payments/stripe/`, never `webhooks`.
+ * SCOPE NOTE, important: this reproduces the CART CHECKOUT payment flow
+ * (`POST /api/payments/stripe/initiate` and `/confirm-order`) - the real
+ * `confirmOrder.js` reproduced below polls `stripe.paymentIntents.retrieve`
+ * directly rather than waiting on a webhook, exactly like this module does,
+ * so this app's own cart checkout never needed one. `POST
+ * /api/payments/stripe/webhooks` was for a long time DELIBERATELY left to
+ * real Payload's own `stripeAdapter()` registration (`engage.config.ts`'s
+ * `payments.paymentMethods`) purely to serve the UNRELATED
+ * membership-subscription flow (`src/features/members/webhooks.ts`'s
+ * `membershipWebhooks`: `checkout.session.completed`, subscription
+ * lifecycle events) - intercepting it without reproducing that dispatch
+ * first would have silently broken membership billing the exact way Layer 1
+ * once silently broke guest carts (see the plan doc's incident log).
+ *
+ * That dispatch is now reproduced too - `handlePaymentsStripeWebhooks` in
+ * `src/localapi/rest.ts` verifies the Stripe signature and calls
+ * `membershipWebhooks[event.type]` itself, exactly matching the real
+ * plugin's own `payments/adapters/stripe/endpoints/webhooks.js` (read
+ * directly from `node_modules` to confirm: `returnStatus` starts at 200,
+ * only a signature-verification failure sets it to 400, and the handler is
+ * only ever invoked when both `webhookSecret` and `secretKey` are
+ * configured). This closes the last real blocker to removing the real
+ * `shopPlugin()` call for good - see the plan doc's "What's left" section
+ * for what (if anything) still remains.
  *
  * Uses the real Stripe Node SDK directly (`stripe`, already a direct
  * dependency in `package.json` - the real ecommerce plugin's own adapter
@@ -48,7 +56,7 @@ import type { Engine } from '@/localapi/engine'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Stripe's own apiVersion type only accepts its single current literal; casting matches the real plugin's own `@ts-ignore` on this exact line.
 const STRIPE_API_VERSION = '2025-03-31.basil' as any
 
-function getStripeClient(secretKey: string): Stripe {
+export function getStripeClient(secretKey: string): Stripe {
   return new Stripe(secretKey, {
     apiVersion: STRIPE_API_VERSION,
     appInfo: { name: 'Gracengatsby Shop', url: 'https://payloadcms.com' },

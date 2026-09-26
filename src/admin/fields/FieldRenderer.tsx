@@ -16,11 +16,15 @@
  *     to render generically for a field with no shape of its own).
  *   - Scalar leaves (text/textarea/number/email/checkbox/date/select/radio):
  *     delegated to the sibling renderer files in this directory.
+ *   - relationship/upload: a real search-select picker (Phase 3, `./
+ *     RelationshipField.tsx`) - single-value or multi-value (chips) depending
+ *     on `hasMany`, client-side filtered over one fetched page of
+ *     `GET /api/<relationTo>`. See that file's own doc comment for the
+ *     label/search heuristic's limits.
  *   - Complex types not yet given dedicated UI (Phase 3 polish item):
- *     relationship/upload/richText/json/array/blocks/join/code/point get a
- *     FUNCTIONAL STOPGAP here inline, so nothing crashes for any of the 38
- *     entities before those get a real pass - see the plan doc's Phase
- *     breakdown.
+ *     richText/json/array/blocks/join/code/point get a FUNCTIONAL STOPGAP
+ *     here inline, so nothing crashes for any of the 38 entities before those
+ *     get a real pass - see the plan doc's Phase breakdown.
  *
  * A field's own `admin.components.Field` override (a `'<path>#<Export>'`
  * string, e.g. SlugComponent) always wins over the built-in renderer for its
@@ -39,6 +43,7 @@ import { DateFieldRenderer } from './DateField'
 import { EmailFieldRenderer } from './EmailField'
 import { NumberFieldRenderer } from './NumberField'
 import { RadioFieldRenderer } from './RadioField'
+import { RelationshipFieldRenderer } from './RelationshipField'
 import { SelectFieldRenderer } from './SelectField'
 import { TextFieldRenderer } from './TextField'
 import { TextareaFieldRenderer } from './TextareaField'
@@ -108,49 +113,6 @@ function JsonStopgapRenderer({ field, path, readOnly }: ScalarFieldRendererProps
       />
       <div className="field-description">
         {error ?? 'Raw JSON - a real picker/editor for this field type is a later polish pass.'}
-      </div>
-    </FieldWrapper>
-  )
-}
-
-/** Relationship/upload stopgap: a numeric/string ID input. No search-select picker yet (Phase 3). */
-function RelationshipStopgapRenderer({ field, path, readOnly }: ScalarFieldRendererProps) {
-  const hasMany = Boolean((field as { hasMany?: boolean }).hasMany)
-  const { value, setValue } = useField<unknown>({ path })
-  const text = hasMany
-    ? Array.isArray(value)
-      ? value.join(', ')
-      : ''
-    : value === undefined || value === null
-      ? ''
-      : String(value)
-
-  return (
-    <FieldWrapper type={field.type}>
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
-      <input
-        id={`field-${path}`}
-        className="field-type text"
-        placeholder={hasMany ? 'Comma-separated IDs' : 'Document ID'}
-        readOnly={readOnly}
-        type="text"
-        value={text}
-        onChange={(event) => {
-          const raw = event.target.value
-          if (!hasMany) {
-            setValue(raw === '' ? undefined : raw)
-            return
-          }
-          setValue(
-            raw
-              .split(',')
-              .map((part) => part.trim())
-              .filter(Boolean),
-          )
-        }}
-      />
-      <div className="field-description">
-        By ID for now - a real search-select picker is a later polish pass.
       </div>
     </FieldWrapper>
   )
@@ -249,7 +211,7 @@ const SingleFieldRenderer: React.FC<{
 
     case 'relationship':
     case 'upload':
-      return <RelationshipStopgapRenderer field={field} path={path} readOnly={fieldReadOnly} />
+      return <RelationshipFieldRenderer field={field} path={path} readOnly={fieldReadOnly} />
 
     case 'richText':
     case 'json':

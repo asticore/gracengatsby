@@ -27,6 +27,7 @@ import { OpenVisualEditorButton } from '@/fields/visualEditor/OpenVisualEditorBu
 import { CustomFieldsPanel } from '@/fields/customFields/CustomFieldsPanel'
 import { BackupPanel } from '@/features/backups/admin/BackupPanel'
 import { SendTestEmailButton } from '@/features/email/admin/SendTestEmailButton'
+import { PriceInput } from '@/features/ecommerce/admin/PriceInput'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/fields/slug/SlugComponent#SlugComponent': SlugComponent,
@@ -34,6 +35,7 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/fields/customFields/CustomFieldsPanel#CustomFieldsPanel': CustomFieldsPanel,
   '@/features/backups/admin/BackupPanel#BackupPanel': BackupPanel,
   '@/features/email/admin/SendTestEmailButton#SendTestEmailButton': SendTestEmailButton,
+  '@/features/ecommerce/admin/PriceInput#PriceInput': PriceInput,
 }
 
 export function resolveComponent(path: string | undefined | null): ComponentType<any> | undefined {

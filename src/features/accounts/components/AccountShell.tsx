@@ -1,7 +1,6 @@
-import Link from 'next/link'
 import React from 'react'
 
-import { SignOutButton } from './AccountForms'
+import { AccountNav } from './AccountNav'
 import { AccountStyles } from './styles'
 
 /**
@@ -10,7 +9,10 @@ import { AccountStyles } from './styles'
  *
  * The navigation lives here rather than in the site header because it only
  * exists inside the account area - which keeps the header, and the layout that
- * builds it, untouched by this feature.
+ * builds it, untouched by this feature. The nav itself is `AccountNav` (a
+ * `'use client'` component, for its off-canvas-drawer toggle state on mobile -
+ * added 2026-09-26, see that file's header comment) - this shell stays a
+ * plain Server Component.
  */
 
 const LINKS: { href: string; label: string }[] = [
@@ -30,20 +32,7 @@ export const AccountShell: React.FC<{
     <AccountStyles />
     <h1>{title}</h1>
     <div className="account">
-      <nav aria-label="Your account">
-        <ul className="account-nav">
-          {LINKS.map((link) => (
-            <li key={link.href}>
-              <Link href={link.href} aria-current={link.href === current ? 'page' : undefined}>
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <div className="account-link-row">
-          <SignOutButton />
-        </div>
-      </nav>
+      <AccountNav links={LINKS} current={current} />
       <div className="account-panel">{children}</div>
     </div>
   </div>

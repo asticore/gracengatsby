@@ -433,7 +433,7 @@ describe('localapi/rest - cart item endpoints', () => {
 /* Payments: Stripe cart checkout (Stage 10 Ecommerce, Layer 3)              */
 /* -------------------------------------------------------------------------- */
 
-function makeFakeStripe(overrides: { customers?: Partial<{ list: unknown; create: unknown }>; paymentIntents?: Partial<{ create: unknown; retrieve: unknown }> } = {}) {
+function makeFakeStripe(overrides: { customers?: Partial<{ list: unknown; create: unknown }>; paymentIntents?: Partial<{ create: unknown; retrieve: unknown }>; webhooks?: Partial<{ constructEvent: unknown }> } = {}) {
   return {
     customers: {
       list: vi.fn().mockResolvedValue({ data: [] }),
@@ -444,6 +444,10 @@ function makeFakeStripe(overrides: { customers?: Partial<{ list: unknown; create
       create: vi.fn().mockResolvedValue({ id: 'pi_1', client_secret: 'secret_1', amount: 50, currency: 'aud' }),
       retrieve: vi.fn().mockResolvedValue({ status: 'succeeded', amount: 50, currency: 'aud', metadata: {} }),
       ...overrides.paymentIntents,
+    },
+    webhooks: {
+      constructEvent: vi.fn(),
+      ...overrides.webhooks,
     },
   }
 }
@@ -457,9 +461,94 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
     vi.unstubAllEnvs()
   })
 
-  it('CRITICAL: POST /payments/stripe/webhooks always falls through untouched (serves the unrelated membership-subscription flow via real Payload)', async () => {
-    const engine = makeMockEngine()
-    expect(await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}), ['payments', 'stripe', 'webhooks'], engine)).toBeNull()
+  describe('POST /payments/stripe/webhooks', () => {
+    // CORRECTION 2026-09-26: this endpoint used to always fall through to
+    // real Payload's own registered stripeAdapter() (serving the unrelated
+    // membership-subscription flow) - it is now fully reproduced here,
+    // closing the last real blocker to removing the real `shopPlugin()`
+    // call. See stripeAdapter.ts's header for the full history.
+
+    it('200 {received: true}, no crash, when STRIPE_WEBHOOK_SECRET/STRIPE_SECRET_KEY are not configured (this sandbox\'s default) - matches the real handler\'s own early-exit shape, never falls through', async () => {
+      const engine = makeMockEngine()
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}), ['payments', 'stripe', 'webhooks'], engine)
+      expect(res).not.toBeNull()
+      expect(res!.status).toBe(200)
+      expect(await res!.json()).toEqual({ received: true })
+    })
+
+    it('200 and calls the matching membershipWebhooks handler for a validly-signed event', async () => {
+      vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_fake')
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fake')
+      const fakeEvent = { type: 'customer.subscription.deleted', data: { object: { id: 'sub_1', status: 'canceled' } } }
+      const fakeStripe = makeFakeStripe({ webhooks: { constructEvent: vi.fn().mockReturnValue(fakeEvent) } })
+      vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
+      const find = vi.fn().mockResolvedValue({
+        docs: [{ id: 7, cancelledAt: null }],
+        totalDocs: 1, limit: 1, totalPages: 1, page: 1, pagingCounter: 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null,
+      })
+      const update = vi.fn().mockResolvedValue({ id: 7 })
+      const engine = makeMockEngine({ find, update })
+
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}, { 'stripe-signature': 'sig_1' }), ['payments', 'stripe', 'webhooks'], engine)
+
+      expect(res!.status).toBe(200)
+      expect(await res!.json()).toEqual({ received: true })
+      expect(fakeStripe.webhooks.constructEvent).toHaveBeenCalledWith(expect.any(String), 'sig_1', 'whsec_fake')
+      // customer.subscription.deleted's own handler (membershipWebhooks) looks the
+      // membership up by externalSubscriptionId, then marks it expired.
+      expect(update).toHaveBeenCalledWith(expect.objectContaining({
+        collection: 'memberships',
+        id: 7,
+        data: expect.objectContaining({ status: 'expired' }),
+        overrideAccess: true,
+      }))
+    })
+
+    it('400 {received: true} when the signature fails verification, and no membershipWebhooks handler runs', async () => {
+      vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_fake')
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fake')
+      const constructEvent = vi.fn().mockImplementation(() => { throw new Error('bad signature') })
+      const fakeStripe = makeFakeStripe({ webhooks: { constructEvent } })
+      vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
+      const update = vi.fn()
+      const engine = makeMockEngine({ update })
+
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}, { 'stripe-signature': 'sig_bad' }), ['payments', 'stripe', 'webhooks'], engine)
+
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ received: true })
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('200, no-op, for a validly-signed event type membershipWebhooks does not handle', async () => {
+      vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_fake')
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fake')
+      const fakeEvent = { type: 'payment_intent.created', data: { object: {} } }
+      const fakeStripe = makeFakeStripe({ webhooks: { constructEvent: vi.fn().mockReturnValue(fakeEvent) } })
+      vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
+      const update = vi.fn()
+      const engine = makeMockEngine({ update })
+
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}, { 'stripe-signature': 'sig_1' }), ['payments', 'stripe', 'webhooks'], engine)
+
+      expect(res!.status).toBe(200)
+      expect(await res!.json()).toEqual({ received: true })
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('skips signature verification entirely (and never calls a handler) when the stripe-signature header is missing, even with both env vars configured', async () => {
+      vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_fake')
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fake')
+      const fakeStripe = makeFakeStripe()
+      vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
+      const engine = makeMockEngine()
+
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}), ['payments', 'stripe', 'webhooks'], engine)
+
+      expect(res!.status).toBe(200)
+      expect(await res!.json()).toEqual({ received: true })
+      expect(fakeStripe.webhooks.constructEvent).not.toHaveBeenCalled()
+    })
   })
 
   describe('POST /payments/stripe/initiate', () => {

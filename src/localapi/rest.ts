@@ -403,9 +403,22 @@ async function readRequestBody(request: Request): Promise<{ data: Record<string,
 /* Collection handlers                                                        */
 /* -------------------------------------------------------------------------- */
 
+// `overrideAccess: false` on every REST-facing read below (What's left #2's
+// Addresses fix surfaced this live 2026-09-26 - see incident log): this
+// app's own Local API defaults `overrideAccess` to `true` when unset,
+// deliberately mirroring real Payload's own Local API default for TRUSTED
+// server-side callers (`read-operations.ts`'s file header, point 1). A REST
+// request is the untrusted, caller-facing side and must explicitly opt back
+// INTO access enforcement, exactly like real Payload's own generated REST
+// route handlers do - omitting it here silently skipped every collection's
+// `access.read` (both collection- and field-level, `overrideAccess` gates
+// both) for every GET, confirmed live via an anonymous request returning a
+// `draft`-status Post and, worse, `Integrations`'s `read: isAdmin` global
+// (holds secrets like `claudeApiKey`) being readable by anyone.
+
 async function handleFind(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const result = await engine.find({ collection, where: query.where as Where | undefined, sort: query.sort, limit: query.limit, page: query.page, pagination: query.pagination, depth: query.depth, user })
+  const result = await engine.find({ collection, where: query.where as Where | undefined, sort: query.sort, limit: query.limit, page: query.page, pagination: query.pagination, depth: query.depth, user, overrideAccess: false })
   return Response.json(result, { status: 200 })
 }
 
@@ -422,13 +435,13 @@ function secretReq(request: Request): { query: { secret?: string } } {
 
 async function handleFindByID(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.findByID({ collection, id, depth: query.depth, draft: query.draft, user, req: secretReq(request) })
+  const doc = await engine.findByID({ collection, id, depth: query.depth, draft: query.draft, user, req: secretReq(request), overrideAccess: false })
   return Response.json(doc, { status: 200 })
 }
 
 async function handleCount(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const result = await engine.count({ collection, where: query.where as Where | undefined, user })
+  const result = await engine.count({ collection, where: query.where as Where | undefined, user, overrideAccess: false })
   return Response.json(result, { status: 200 })
 }
 
@@ -767,7 +780,7 @@ async function handlePaymentsStripeConfirmOrder(engine: Engine, request: Request
 
 async function handleGlobalFind(engine: Engine, slug: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.findGlobal({ slug, depth: query.depth, user })
+  const doc = await engine.findGlobal({ slug, depth: query.depth, user, overrideAccess: false })
   return Response.json(doc, { status: 200 })
 }
 

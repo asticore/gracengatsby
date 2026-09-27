@@ -42,14 +42,31 @@ function reqWith(user: typeof admin | null, engine: Engine) {
   return { user, payload: engine, t: (key: string) => key }
 }
 
-describe('localapi/registry - parity vs real Payload (all 21 collections, read side)', () => {
+// shopPlugin() is REMOVED (payload-removal-plan.md: ecommerce cutover).
+// Only 'products' is still registered as a real Payload collection (a stub
+// reusing the exact same @/features/ecommerce/collections/Products object
+// the shadow REST/GraphQL dispatchers use, purely to satisfy
+// InvalidFieldRelationship for Events/Courses/Forms's real
+// `relationTo: 'products'` fields - see engage.config.ts's comment above
+// its `collections:` array). 'orders'/'carts'/'transactions'/'addresses'
+// no longer exist in real Payload's config at all, so
+// `engine.find({collection: 'orders', ...})` against the REAL engine would
+// now throw `APIError: The collection with slug orders can't be found.` -
+// there is no real-Payload behavior left to compare those 4 against, so
+// they're excluded from this parity loop. (Their own read/write behavior
+// is still covered directly by tests/int/cms-db-addresses.int.spec.ts and
+// tests/int/cms-db-carts-orders-transactions.int.spec.ts.)
+const REMOVED_FROM_REAL_PAYLOAD = new Set(['orders', 'carts', 'transactions', 'addresses'])
+const REAL_PARITY_COLLECTION_SLUGS = Object.keys(readRegistry.collections).filter((slug) => !REMOVED_FROM_REAL_PAYLOAD.has(slug))
+
+describe('localapi/registry - parity vs real Payload (all real-Payload-backed collections, read side)', () => {
   let engine: Engine
 
   beforeAll(async () => {
     engine = await getEngine()
   })
 
-  it.each(Object.keys(readRegistry.collections))(
+  it.each(REAL_PARITY_COLLECTION_SLUGS)(
     'collection `%s`: registry find()/count() match real engine.find()/count()',
     async (slug) => {
       // Explicit `sort: 'id'` on BOTH sides (rather than relying on either

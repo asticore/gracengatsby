@@ -1,4 +1,4 @@
-import type { CollectionConfig } from '@/engine'
+import type { CollectionConfig, CollectionSlug } from '@/engine'
 
 import { isAdmin, isDocumentOwner } from '@/access/ecommerceAccess'
 
@@ -88,8 +88,16 @@ export const Transactions: CollectionConfig = {
     { name: 'status', type: 'text', required: true },
     { name: 'customer', type: 'relationship', relationTo: 'users', admin: { position: 'sidebar' } },
     { name: 'customerEmail', type: 'email', admin: { position: 'sidebar' } },
-    { name: 'order', type: 'relationship', relationTo: 'orders', admin: { position: 'sidebar' } },
-    { name: 'cart', type: 'relationship', relationTo: 'carts', admin: { position: 'sidebar' } },
+    // shopPlugin() is REMOVED (payload-removal-plan.md: ecommerce cutover)
+    // and 'orders'/'carts' are no longer real Payload collections (only
+    // 'products' still is, as a stub - see engage.config.ts), so real
+    // Payload's own generated `CollectionSlug` union no longer includes
+    // them. This config is a SHADOW config never passed through
+    // `buildConfig()` (never sanitized/validated against that union at
+    // runtime), so the casts below are safe - this app's own REST/GraphQL
+    // hybrid dispatchers are what actually resolve these relationships.
+    { name: 'order', type: 'relationship', relationTo: 'orders' as CollectionSlug, admin: { position: 'sidebar' } },
+    { name: 'cart', type: 'relationship', relationTo: 'carts' as CollectionSlug, admin: { position: 'sidebar' } },
     { name: 'amount', type: 'number', admin: { position: 'sidebar' } },
     currencyField,
   ],

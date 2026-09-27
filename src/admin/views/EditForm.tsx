@@ -158,9 +158,20 @@ export const EditForm: React.FC<EditFormProps> = ({ collectionSlug, doc, draftsE
   return (
     <DocumentInfoProvider value={{ collectionSlug, globalSlug, id }}>
       <FormProvider initialFields={initialFields}>
-        <div className="edit-form">
-          <FieldRenderer fields={fields} readOnly={readOnly} />
-          {!readOnly && <SaveButton collectionSlug={collectionSlug} draftsEnabled={draftsEnabled} globalSlug={globalSlug} id={id} />}
+        {/* Was a single flat `edit-form` div, which matches zero CSS rules -
+            neither stock `@payloadcms/next/css` nor this app's own
+            custom.css. This nesting instead matches both: `document-fields`/
+            `document-fields__edit` picks up stock CSS's own padding, and
+            `collection-edit__form`/`global-edit__form` picks up custom.css's
+            soft-card theming (`@layer payload` block shared with
+            `.collection-list__wrap`/`.table`/`.dashboard__card`/`.card`). */}
+        <div className="document-fields">
+          <div className="document-fields__edit">
+            <div className={globalSlug ? 'global-edit__form' : 'collection-edit__form'}>
+              <FieldRenderer fields={fields} readOnly={readOnly} />
+              {!readOnly && <SaveButton collectionSlug={collectionSlug} draftsEnabled={draftsEnabled} globalSlug={globalSlug} id={id} />}
+            </div>
+          </div>
         </div>
       </FormProvider>
     </DocumentInfoProvider>

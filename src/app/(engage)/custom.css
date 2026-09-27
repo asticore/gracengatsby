@@ -322,4 +322,19 @@
     flex-shrink: 0;
     color: var(--ac-gold);
   }
+
+  /* ---------------------------------------------------------------- *
+   * Nav open/close toggle                                             *
+   * ---------------------------------------------------------------- */
+  /* Stock CSS hides this toggler's hamburger icon below 768px
+     (`@media(max-width:768px){.template-default__nav-toggler-wrapper
+     .hamburger{display:none}}`), assuming `@payloadcms/ui`'s own AppHeader
+     renders a SEPARATE mobile-specific toggler at that width instead (its
+     stylesheet references one under `.app-header__mobile-nav-toggler`).
+     This app has no AppHeader - RootLayout.tsx's NavToggler is the only
+     nav-open control it has at any width - so keep its icon visible instead
+     of silently losing the only way to reopen the nav on a phone. */
+  .template-default__nav-toggler-wrapper .hamburger {
+    display: flex;
+  }
 }

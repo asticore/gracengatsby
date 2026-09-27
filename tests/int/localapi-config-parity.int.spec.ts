@@ -90,7 +90,21 @@ describe('localapi/config parity - this module vs a live getEngine()', () => {
     }
   })
 
-  it("the 5 shop-plugin thin-shape entries' labels resolve to the same text real Payload's own LabelFunctions produce", async () => {
+  it("the 'products' shop-plugin thin-shape entry's labels resolve to the same text real Payload's own LabelFunctions produce", async () => {
+    // shopPlugin() is REMOVED (payload-removal-plan.md: ecommerce cutover).
+    // Only 'products' is still registered as a REAL Payload collection (a
+    // stub reusing the exact same @/features/ecommerce/collections/Products
+    // object the shadow REST/GraphQL dispatchers use), purely to satisfy
+    // InvalidFieldRelationship for Events/Courses/Forms's real
+    // `relationTo: 'products'` fields - see engage.config.ts's comment above
+    // its `collections:` array. 'orders'/'carts'/'transactions'/'addresses'
+    // no longer exist in real Payload's config at all, so there is nothing
+    // left to compare their labels against; this test now only covers
+    // 'products'. (Their thin-shape entries in SHOP_PLUGIN_COLLECTION_ENTRIES
+    // still exist and are still exercised by localapi-registry-parity's own
+    // find()/count() coverage against the registry, just not against real
+    // Payload anymore.)
+    //
     // The ecommerce plugin's real labels are i18n LabelFunctions
     // (`({t}) => t('plugin-ecommerce:products')`), not plain strings - see
     // src/localapi/config.ts's own header comment. Comparing the raw values
@@ -104,14 +118,6 @@ describe('localapi/config parity - this module vs a live getEngine()', () => {
     const EN_TRANSLATIONS: Record<string, string> = {
       'plugin-ecommerce:products': 'Products',
       'plugin-ecommerce:product': 'Product',
-      'plugin-ecommerce:carts': 'Carts',
-      'plugin-ecommerce:cart': 'Cart',
-      'plugin-ecommerce:orders': 'Orders',
-      'plugin-ecommerce:order': 'Order',
-      'plugin-ecommerce:transactions': 'Transactions',
-      'plugin-ecommerce:transaction': 'Transaction',
-      'plugin-ecommerce:addresses': 'Addresses',
-      'plugin-ecommerce:address': 'Address',
     }
     const t = (key: string): string => EN_TRANSLATIONS[key] ?? key
     const resolveText = (value: unknown): string =>
@@ -122,13 +128,17 @@ describe('localapi/config parity - this module vs a live getEngine()', () => {
       (engine.config.collections as Array<{ slug: string; admin?: { group?: unknown }; labels?: { plural?: unknown; singular?: unknown }; auth?: unknown }>).map((c) => [c.slug, c]),
     )
 
-    for (const entry of SHOP_PLUGIN_COLLECTION_ENTRIES) {
-      const realEntry = real.get(entry.slug)
-      expect(realEntry, `real engine.config.collections has no entry for "${entry.slug}"`).toBeDefined()
-      expect(entry.admin?.group).toEqual(realEntry?.admin?.group)
-      expect(resolveText(entry.labels.plural)).toBe(resolveText(realEntry?.labels?.plural))
-      expect(resolveText(entry.labels.singular)).toBe(resolveText(realEntry?.labels?.singular))
-      expect(realEntry?.auth).toBeFalsy()
+    const entry = SHOP_PLUGIN_COLLECTION_ENTRIES.find((e) => e.slug === 'products')
+    expect(entry, 'SHOP_PLUGIN_COLLECTION_ENTRIES should still carry a products entry').toBeDefined()
+    const realEntry = real.get('products')
+    expect(realEntry, 'real engine.config.collections has no entry for "products"').toBeDefined()
+    expect(entry?.admin?.group).toEqual(realEntry?.admin?.group)
+    expect(resolveText(entry?.labels.plural)).toBe(resolveText(realEntry?.labels?.plural))
+    expect(resolveText(entry?.labels.singular)).toBe(resolveText(realEntry?.labels?.singular))
+    expect(realEntry?.auth).toBeFalsy()
+
+    for (const slug of ['orders', 'carts', 'transactions', 'addresses']) {
+      expect(real.has(slug), `"${slug}" should no longer be a real Payload collection after shopPlugin() removal`).toBe(false)
     }
   })
 

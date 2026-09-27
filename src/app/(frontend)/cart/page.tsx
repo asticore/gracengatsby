@@ -33,7 +33,7 @@ export default function CartPage() {
         <>
           <ul className="mb-8 list-none border-t border-[var(--color-line)] p-0">
             {items.map((item) => {
-              const product = item.product as Product
+              const product = item.product as unknown as Product
               return (
                 <li
                   key={item.id}

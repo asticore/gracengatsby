@@ -1,5 +1,13 @@
 import type { Engine } from '@/engine'
-import type { Address } from '@/engage-types'
+// Was `import type { Address } from '@/engage-types'` (real Payload's own
+// generated types). shopPlugin() is REMOVED (payload-removal-plan.md:
+// ecommerce cutover) and 'addresses' is no longer a real Payload collection,
+// so `generate:types` no longer emits an `Address` type at all. `engine`
+// here has always been the shadow `createEngine()` (`Engine` = `LocalEngine`,
+// see `@/engine/index.ts`), never the real one, so this is a type-only fix -
+// `AddressDoc` (`@/cms/db/collections/addresses.ts`) is the exact shape the
+// shadow engine's `find`/`findByID` already return for this collection.
+import type { AddressDoc as Address } from '@/cms/db/collections/addresses'
 
 import { readPreferences, writePreferences } from './preferences'
 import type { AccountUser } from './session'

@@ -1,5 +1,13 @@
 import type { Engine } from '@/engine'
-import type { Order } from '@/engage-types'
+// Was `import type { Order } from '@/engage-types'` (real Payload's own
+// generated types). shopPlugin() is REMOVED (payload-removal-plan.md:
+// ecommerce cutover) and 'orders' is no longer a real Payload collection, so
+// `generate:types` no longer emits an `Order` type at all. `engine` here has
+// always been the shadow `createEngine()` (`Engine` = `LocalEngine`, see
+// `@/engine/index.ts`), never the real one, so this is a type-only fix -
+// `OrderDoc` (`@/cms/db/collections/orders.ts`) is the exact shape the
+// shadow engine's `find`/`findByID` already return for this collection.
+import type { OrderDoc as Order } from '@/cms/db/collections/orders'
 
 import type { AccountUser } from './session'
 import { ORDERS_SLUG } from './types'

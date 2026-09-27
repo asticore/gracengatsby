@@ -1,20 +1,24 @@
 // @vitest-environment node
-import type { RealEngine as Engine } from './helpers/realEngine'
-
 import '@/engage.config'
 
-import { getRealEngine as getEngine } from './helpers/realEngine'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import { createAddress, deleteAddress, findAddressByID, updateAddress } from '@/cms/db'
 
+// Stage 10 Ecommerce, Layer 1. This used to be a "write-both-ways" proof
+// against a live real-Payload engine (create via engine.create, read via
+// our own findAddressByID, and vice versa) to prove our own D1/Drizzle
+// reader/writer stays byte-compatible with what real Payload's own
+// collection config would produce for the same table. shopPlugin() is now
+// REMOVED (payload-removal-plan.md: ecommerce cutover) and 'addresses' is
+// no longer a real Payload collection at all - engine.create({collection:
+// 'addresses', ...}) would now throw APIError: "The collection with slug
+// addresses can't be found." There is no real Payload behavior left to
+// compare against, so this is now a plain self-consistency test of our own
+// createAddress/findAddressByID/updateAddress/deleteAddress implementation
+// instead.
 describe('cms/db - addresses (Stage 10 Ecommerce, Layer 1)', () => {
-  let engine: Engine
   const createdIds: number[] = []
-
-  beforeAll(async () => {
-    engine = await getEngine()
-  })
 
   afterAll(async () => {
     for (const id of createdIds) {
@@ -22,24 +26,21 @@ describe('cms/db - addresses (Stage 10 Ecommerce, Layer 1)', () => {
     }
   })
 
-  it('reads an address written by Payload', async () => {
-    const created = await engine.create({
-      collection: 'addresses',
-      data: {
-        addressLine1: '123 Main St',
-        city: 'Melbourne',
-        country: 'AU',
-      },
+  it('creates an address and reads it back', async () => {
+    const ours = await createAddress({
+      addressLine1: '123 Main St',
+      city: 'Melbourne',
+      country: 'AU',
     })
-    createdIds.push(created.id as number)
+    createdIds.push(ours.id)
 
-    const viaOurs = await findAddressByID(created.id as number)
+    const viaOurs = await findAddressByID(ours.id)
     expect(viaOurs?.addressLine1).toBe('123 Main St')
     expect(viaOurs?.city).toBe('Melbourne')
     expect(viaOurs?.country).toBe('AU')
   })
 
-  it('writes an address Payload can read back', async () => {
+  it('creates another address and reads it back', async () => {
     const ours = await createAddress({
       addressLine1: '456 Market St',
       city: 'Sydney',
@@ -47,10 +48,10 @@ describe('cms/db - addresses (Stage 10 Ecommerce, Layer 1)', () => {
     })
     createdIds.push(ours.id)
 
-    const viaPayload = await engine.findByID({ collection: 'addresses', id: ours.id })
-    expect(viaPayload.addressLine1).toBe('456 Market St')
-    expect(viaPayload.city).toBe('Sydney')
-    expect(viaPayload.country).toBe('AU')
+    const viaOurs = await findAddressByID(ours.id)
+    expect(viaOurs?.addressLine1).toBe('456 Market St')
+    expect(viaOurs?.city).toBe('Sydney')
+    expect(viaOurs?.country).toBe('AU')
   })
 
   it('updates an address', async () => {
@@ -67,7 +68,7 @@ describe('cms/db - addresses (Stage 10 Ecommerce, Layer 1)', () => {
     expect(updated?.city).toBe('Gold Coast')
     expect(updated?.addressLine1).toBe('789 King St')
 
-    const viaPayload = await engine.findByID({ collection: 'addresses', id: ours.id })
-    expect(viaPayload.city).toBe('Gold Coast')
+    const viaOurs = await findAddressByID(ours.id)
+    expect(viaOurs?.city).toBe('Gold Coast')
   })
 })

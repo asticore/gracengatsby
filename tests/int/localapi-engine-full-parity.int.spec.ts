@@ -27,11 +27,30 @@ import { describe, expect, it } from 'vitest'
 import { readRegistry } from '@/localapi/registry'
 import { createEngine, type Engine } from '@/localapi/engine'
 
-describe('localapi/engine - createEngine() read-side parity vs real getEngine(), ALL 21 collections', () => {
+// shopPlugin() is REMOVED (payload-removal-plan.md: ecommerce cutover).
+// Only 'products' is still registered as a real Payload collection (a stub
+// reusing the exact same @/features/ecommerce/collections/Products object
+// the shadow REST/GraphQL dispatchers use, purely to satisfy
+// InvalidFieldRelationship for Events/Courses/Forms's real
+// `relationTo: 'products'` fields - see engage.config.ts's comment above
+// its `collections:` array). 'orders'/'carts'/'transactions'/'addresses'
+// no longer exist in real Payload's config at all, so
+// `engine.find({collection: 'orders', ...})` against the REAL engine would
+// now throw `APIError: The collection with slug orders can't be found.` -
+// there is no real-Payload behavior left to compare those 4 against, so
+// they're excluded from this parity loop. (Their own read/write behavior
+// is still covered directly by tests/int/cms-db-addresses.int.spec.ts and
+// tests/int/cms-db-carts-orders-transactions.int.spec.ts, and by
+// localapi-registry-parity.int.spec.ts's own find()/count() coverage
+// against the registry.)
+const REMOVED_FROM_REAL_PAYLOAD = new Set(['orders', 'carts', 'transactions', 'addresses'])
+const REAL_PARITY_COLLECTION_SLUGS = Object.keys(readRegistry.collections).filter((slug) => !REMOVED_FROM_REAL_PAYLOAD.has(slug))
+
+describe('localapi/engine - createEngine() read-side parity vs real getEngine(), ALL real-Payload-backed collections', () => {
   const real: Promise<RealEngine> = getEngine()
   const ours: Engine = createEngine()
 
-  it.each(Object.keys(readRegistry.collections))(
+  it.each(REAL_PARITY_COLLECTION_SLUGS)(
     'collection `%s`: createEngine().find()/count() match real engine.find()/count()',
     async (slug) => {
       const engine = await real

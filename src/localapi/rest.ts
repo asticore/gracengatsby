@@ -160,7 +160,9 @@ import { Forbidden } from './access'
 import { AuthenticationError, InvalidResetToken, LockedAuth } from './auth'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
-import { confirmStripeOrder, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
+import { confirmStripeOrder, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
+import { membershipWebhooks } from '@/features/members/webhooks'
+import type Stripe from 'stripe'
 
 import { NotFound as OperationsNotFound, ValidationError } from './operations'
 import { parseSearchParams } from './queryParser'
@@ -647,7 +649,7 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
 }
 
 /* -------------------------------------------------------------------------- */
-/* Payments: Stripe cart-checkout endpoints (Stage 10 Ecommerce, Layer 3)     */
+/* Payments: Stripe endpoints (Stage 10 Ecommerce, Layer 3 + cutover)        */
 /*                                                                            */
 /* POST /api/payments/stripe/initiate and .../confirm-order, reproduced from */
 /* the real ecommerce plugin's generic `endpoints/{initiatePayment,          */
@@ -655,10 +657,15 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
 /* `node_modules` - cart/currency/product-price/inventory checks below) -    */
 /* the Stripe-specific work (PaymentIntent creation, transaction/order       */
 /* writes) is `@/features/ecommerce/payments/stripeAdapter.ts` (the ADAPTER  */
-/* half). See that module's header for the full real-source citation and,   */
-/* importantly, why `/api/payments/stripe/webhooks` is DELIBERATELY NOT      */
-/* claimed by the dispatcher below (still real Payload's job, serving the   */
-/* unrelated membership-subscription flow).                                 */
+/* half). See that module's header for the full real-source citation.       */
+/*                                                                            */
+/* POST /api/payments/stripe/webhooks, reproduced from the real plugin's     */
+/* `payments/adapters/stripe/endpoints/webhooks.js` - this one route serves  */
+/* the UNRELATED membership-subscription flow (`@/features/members/          */
+/* webhooks.ts`'s `membershipWebhooks`), not cart checkout, and used to be   */
+/* deliberately left to real Payload's own `stripeAdapter()` registration    */
+/* for exactly that reason. Now reproduced here too - see                   */
+/* `handlePaymentsStripeWebhooks` below and `stripeAdapter.ts`'s header.     */
 /*                                                                            */
 /* Simplified vs the real endpoint handlers, matching this app's shop       */
 /* config and established conventions elsewhere in this file/cartHooks.ts:  */
@@ -772,6 +779,56 @@ async function handlePaymentsStripeConfirmOrder(engine: Engine, request: Request
   } catch {
     return Response.json({ message: 'Error confirming order.' }, { status: 500 })
   }
+}
+
+/**
+ * `POST /payments/stripe/webhooks` - reproduces the real plugin's own
+ * `payments/adapters/stripe/endpoints/webhooks.js` exactly (read directly
+ * from `node_modules` to confirm): no auth/user resolution at all (unlike
+ * `initiate`/`confirm-order` above) - the only trust boundary is the Stripe
+ * signature. `returnStatus` starts at 200 and is only ever set to 400 by a
+ * signature-verification failure; when `STRIPE_WEBHOOK_SECRET`/
+ * `STRIPE_SECRET_KEY` aren't both configured (e.g. this sandbox, where both
+ * are blank) the whole body is skipped and this always answers `{received:
+ * true}` at 200, matching the real handler's own early-exit shape. Dispatch
+ * to `membershipWebhooks[event.type]` uses the same `{req: {payload:
+ * engine}}` minimal-shape cast this codebase already uses to call a
+ * real-Payload-typed function from the engine layer (see
+ * `src/admin/auth.ts`'s `evaluateAccess`) rather than casting a fake object
+ * through `EngineRequest` (real Payload's `PayloadRequest`) - `req` here is
+ * never touched except via `.payload`.
+ */
+async function handlePaymentsStripeWebhooks(engine: Engine, request: Request): Promise<Response> {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  let returnStatus = 200
+
+  if (webhookSecret && secretKey) {
+    const stripe = getStripeClient(secretKey)
+    const body = await request.text()
+    const signature = request.headers.get('stripe-signature')
+
+    if (signature) {
+      let event: Stripe.Event | undefined
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+      } catch (err) {
+        console.error(`Error constructing Stripe event: ${err instanceof Error ? err.message : String(err)}`)
+        returnStatus = 400
+      }
+
+      if (event) {
+        const handler = membershipWebhooks[event.type as keyof typeof membershipWebhooks] as unknown as
+          | ((args: { event: Stripe.Event; req: { payload: Engine }; stripe: Stripe }) => Promise<void>)
+          | undefined
+        if (typeof handler === 'function') {
+          await handler({ event, req: { payload: engine }, stripe })
+        }
+      }
+    }
+  }
+
+  return Response.json({ received: true }, { status: returnStatus })
 }
 
 /* -------------------------------------------------------------------------- */
@@ -943,11 +1000,12 @@ export async function handleRestRequest(request: Request, slug: string[], engine
     }
 
     // `payments` is not a collection or global slug - a real Payload
-    // custom top-level endpoint (`config.endpoints`), reproduced here only
-    // for `initiate`/`confirm-order` - see the handler functions' own
-    // header comment for why `webhooks` is deliberately excluded and left
-    // falling through to real Payload.
+    // custom top-level endpoint (`config.endpoints`), fully reproduced here
+    // now including `webhooks` - see the handler functions' own header
+    // comments. `webhooks` is checked first and deliberately skips
+    // `engine.auth()`: it has no user/session, only a Stripe signature.
     if (slug[0] === 'payments' && slug[1] === 'stripe' && slug.length === 3 && method === 'POST') {
+      if (slug[2] === 'webhooks') return await handlePaymentsStripeWebhooks(engine, request)
       const { user } = await engine.auth({ headers: request.headers })
       if (slug[2] === 'initiate') return await handlePaymentsStripeInitiate(engine, request, user)
       if (slug[2] === 'confirm-order') return await handlePaymentsStripeConfirmOrder(engine, request, user)

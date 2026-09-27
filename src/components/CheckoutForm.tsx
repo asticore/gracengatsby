@@ -75,12 +75,15 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
 
     if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
       try {
-        const order = (await confirmOrder('stripe', {
+        // confirmOrder (`@/engine/commerce/react`) is properly typed now
+        // that it's this app's own hook, not the plugin's untyped one - no
+        // cast needed.
+        const order = await confirmOrder('stripe', {
           additionalData: {
             customerEmail: email,
             paymentIntentID: paymentIntent.id,
           },
-        })) as { orderID?: string }
+        })
 
         router.push(`/checkout/success${order?.orderID ? `?order=${order.orderID}` : ''}`)
       } catch (err) {

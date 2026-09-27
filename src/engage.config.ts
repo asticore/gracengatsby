@@ -7,8 +7,6 @@ import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
 import { GetPlatformProxyOptions } from 'wrangler'
 import { r2Storage } from '@/engine/storage'
-import { shopPlugin } from '@/engine/commerce'
-import { stripeAdapter } from '@/engine/commerce/stripe'
 import { countFaqs, createFaq, deleteFaq, findFaqByID, findFaqsPaginated, updateFaq } from '@/cms/db/collections/faqs'
 import { countUsers, createUserAuthRow, deleteUser, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db/collections/users'
 import { countEventRSVPs, createEventRSVP, deleteEventRSVP, findEventRSVPsPaginated, updateEventRSVP } from '@/cms/db/collections/eventRSVPs'
@@ -31,21 +29,11 @@ import { countPages, createPageLiveRow, deletePage, findPagesPaginated, updatePa
 import { countPosts, createPostLiveRow, deletePost, findPostsPaginated, updatePostLiveRow } from '@/cms/db/collections/posts'
 import { countCourses, createCourseLiveRow, deleteCourse, findCoursesPaginated, updateCourseLiveRow } from '@/cms/db/collections/courses'
 //import { payloadTotp } from 'payload-totp'
-import {
-  isAdmin,
-  adminOnlyFieldAccess,
-  isAuthenticated,
-  isCustomer,
-  adminOrPublishedStatus,
-  isDocumentOwner,
-} from './access/ecommerceAccess'
-import { AUD } from './lib/currencies'
-import { formatSlugHook } from './utilities/formatSlug'
-import { pageBuilderBlocks } from './blocks'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Events } from './collections/Events'
+import { Products } from './features/ecommerce/collections/Products'
 import { EventRSVPs } from './collections/EventRSVPs'
 import { Pages } from './collections/Pages'
 import { PageTemplates } from './collections/PageTemplates'
@@ -57,7 +45,6 @@ import { Forms, FormSubmissions } from './features/forms'
 import { Backups } from './features/backups'
 import { Translations } from './features/multilingual/translationsCollection'
 import { MembershipTiers, Memberships } from './features/members'
-import { membershipWebhooks } from './features/members/webhooks'
 import { Courses, Lessons, Enrolments, LessonProgress } from './features/courses'
 import { ABTests } from './features/abTesting'
 import { Header } from './globals/Header'
@@ -77,8 +64,6 @@ import { SecuritySettings } from './globals/SecuritySettings'
 import { LanguageSettings } from './globals/LanguageSettings'
 import { PaymentSettings } from './globals/PaymentSettings'
 import { FormSettings } from './globals/FormSettings'
-import { seoFields } from './fields/seo'
-import { customFieldsField } from './fields/customFields'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -1072,7 +1057,32 @@ const config = buildConfig({
       },
     },
   },
-  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog, Forms, FormSubmissions, Backups, Translations, MembershipTiers, Memberships, Courses, Lessons, Enrolments, LessonProgress, ABTests],
+  // `Products` is real Payload's own collection - not routed through
+  // `shopPlugin()` anymore (see the plugins array below and
+  // payload-removal-plan.md's "GraphQL types for the 5 ecommerce
+  // collections" / ecommerce cutover section for the full story). It stays
+  // registered here, and ONLY here of the 5 ecommerce collections, for one
+  // reason: `Events`/`Courses`/`Forms` have real `relationTo: 'products'`
+  // fields, and real Payload's own config sanitizer throws
+  // `InvalidFieldRelationship` at config-build time if a `relationTo` target
+  // isn't among the registered collections - confirmed empirically before
+  // removing `shopPlugin()` (see incident log) by deleting the plugin call
+  // and watching `fields/config/sanitize.js`'s own relationship-validation
+  // throw fire for exactly this reason. No other real (non-ecommerce)
+  // collection's `relationTo` points at `orders`/`carts`/`transactions`/
+  // `addresses` (checked via grep), so only `products` needs this.
+  //
+  // This is the EXACT SAME object `readRegistry`/REST/admin already use for
+  // real day-to-day reads and writes (imported directly, no duplication) -
+  // its own file header explains why that's safe to reuse here unchanged.
+  // Real Payload's own REST/GraphQL resolvers for `products` still never run
+  // in practice: `src/localapi/rest.ts`'s dispatcher already claims 100% of
+  // `/api/products*` before real Payload's REST handlers ever see it, and
+  // `src/localapi/graphql.ts`'s hybrid dispatcher does the exact same thing
+  // for every GraphQL operation naming `Products`/`Product`/`createProduct`/
+  // `updateProduct`/`deleteProduct` - this registration exists purely to
+  // satisfy the relationship-validation check above, not to serve traffic.
+  collections: [Users, Media, Events, EventRSVPs, Pages, PageTemplates, Posts, Faqs, FieldGroups, AuditLog, Forms, FormSubmissions, Backups, Translations, MembershipTiers, Memberships, Courses, Lessons, Enrolments, LessonProgress, ABTests, Products],
   globals: [
     Header,
     Footer,
@@ -1119,156 +1129,6 @@ const config = buildConfig({
     r2Storage({
       bucket: cloudflare.env.R2,
       collections: { media: true },
-    }),
-    shopPlugin({
-      customers: { slug: 'users' },
-      currencies: {
-        defaultCurrency: 'AUD',
-        supportedCurrencies: [AUD],
-      },
-      products: {
-        // Keep the storefront simple for now - variants (size/colour) can be
-        // switched on later without losing any existing product data.
-        variants: false,
-        productsCollectionOverride: ({ defaultCollection }) => ({
-          ...defaultCollection,
-          dbName: 'eg_products',
-          admin: {
-            ...defaultCollection.admin,
-            useAsTitle: 'title',
-            defaultColumns: ['title', 'category', 'priceInAUD', 'inventory', '_status'],
-            components: {
-              edit: {
-                beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
-              },
-            },
-          },
-          fields: [
-            {
-              name: 'title',
-              type: 'text',
-              required: true,
-            },
-            {
-              name: 'slug',
-              type: 'text',
-              unique: true,
-              admin: {
-                position: 'sidebar',
-                description: 'Auto-fills from the title as you type - edit it here to override.',
-                components: {
-                  Field: '@/fields/slug/SlugComponent#SlugComponent',
-                },
-              },
-              hooks: {
-                beforeValidate: [formatSlugHook('title')],
-              },
-            },
-            {
-              name: 'category',
-              type: 'select',
-              options: [
-                { label: 'Apparel', value: 'apparel' },
-                { label: 'Accessories', value: 'accessories' },
-                { label: 'Jewellery', value: 'jewellery' },
-                { label: 'Homeware', value: 'homeware' },
-                { label: 'Gifting', value: 'gifting' },
-              ],
-              admin: { position: 'sidebar' },
-            },
-            {
-              name: 'shortDescription',
-              type: 'textarea',
-              admin: {
-                description: 'Shown on product listing cards.',
-              },
-            },
-            {
-              name: 'description',
-              type: 'richText',
-              editor: richTextEditor(),
-            },
-            {
-              name: 'images',
-              type: 'upload',
-              relationTo: 'media',
-              hasMany: true,
-            },
-            {
-              name: 'faqs',
-              type: 'relationship',
-              relationTo: 'faqs',
-              hasMany: true,
-              admin: {
-                position: 'sidebar',
-                description: 'Shown in a FAQ section on the product page.',
-              },
-            },
-            {
-              name: 'layout',
-              type: 'blocks',
-              labels: { singular: 'Section', plural: 'Sections' },
-              blocks: pageBuilderBlocks,
-              admin: {
-                description: 'Extra visually-editable sections shown below the product details (FAQs, galleries, etc).',
-                initCollapsed: true,
-              },
-            },
-            seoFields,
-            customFieldsField,
-            ...defaultCollection.fields,
-          ],
-        }),
-      },
-      // The remaining shop collections are created by the ecommerce plugin
-      // rather than by us, so their table names can only be set through the
-      // per-collection override hooks the plugin exposes. Each one spreads the
-      // plugin's own default collection untouched and only adds `dbName`.
-      // Passing an object here (instead of `true`) still enables the
-      // collection - the plugin treats any truthy value as enabled.
-      carts: {
-        allowGuestCarts: true,
-        cartsCollectionOverride: ({ defaultCollection }) => ({
-          ...defaultCollection,
-          dbName: 'eg_carts',
-        }),
-      },
-      orders: {
-        ordersCollectionOverride: ({ defaultCollection }) => ({
-          ...defaultCollection,
-          dbName: 'eg_orders',
-        }),
-      },
-      transactions: {
-        transactionsCollectionOverride: ({ defaultCollection }) => ({
-          ...defaultCollection,
-          dbName: 'eg_transactions',
-        }),
-      },
-      addresses: {
-        addressesCollectionOverride: ({ defaultCollection }) => ({
-          ...defaultCollection,
-          dbName: 'eg_addresses',
-        }),
-      },
-      access: {
-        isAdmin,
-        adminOnlyFieldAccess,
-        isAuthenticated,
-        isCustomer,
-        adminOrPublishedStatus,
-        isDocumentOwner,
-      },
-      payments: {
-        paymentMethods: [
-          stripeAdapter({
-            publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
-            secretKey: process.env.STRIPE_SECRET_KEY || '',
-            webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-            webhooks: membershipWebhooks,
-          }),
-        ],
-      },
     }),
     //payloadTotp({
     //  collection: 'users',

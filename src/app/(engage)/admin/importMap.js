@@ -26,8 +26,8 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { CustomFieldsPanel as CustomFieldsPanel_e6c8cdabc1922c69cdfeea3fcc76e7a8 } from '@/fields/customFields/CustomFieldsPanel'
 import { EventsCalendarView as EventsCalendarView_a92ad2a7749cc761173fa671df1f721e } from '@/views/events/EventsCalendarView'
 import { OpenVisualEditorButton as OpenVisualEditorButton_27a3f39cf80f9138445cd476fa25bd30 } from '@/fields/visualEditor/OpenVisualEditorButton'
-import { PriceCell as PriceCell_e27bf7b8cc50640dcdd584767b8eac3c } from '@payloadcms/plugin-ecommerce/client'
-import { PriceInput as PriceInput_b91672ccd6e8b071c11142ab941fedfb } from '@payloadcms/plugin-ecommerce/rsc'
+import { formatPriceCell as formatPriceCell_4cec274a6213012531e45e71619e8952 } from '@/features/ecommerce/admin/priceCell'
+import { PriceInput as PriceInput_a61c323ec3b072da4f0ee8e4fc2f21c8 } from '@/features/ecommerce/admin/PriceInput'
 import { SendTestEmailButton as SendTestEmailButton_7ac16a5f70e74b6b38bca197ba3d6256 } from '@/features/email/admin/SendTestEmailButton'
 import { BackupPanel as BackupPanel_0645cad9a6770ce8d137ad2971387380 } from '@/features/backups/admin/BackupPanel'
 import { AdminNav as AdminNav_dc4fd4746f7f98760676e52d2bbade6c } from '@/components/admin/nav/AdminNav'
@@ -72,8 +72,8 @@ export const importMap = {
   "@/fields/customFields/CustomFieldsPanel#CustomFieldsPanel": CustomFieldsPanel_e6c8cdabc1922c69cdfeea3fcc76e7a8,
   "@/views/events/EventsCalendarView#EventsCalendarView": EventsCalendarView_a92ad2a7749cc761173fa671df1f721e,
   "@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton": OpenVisualEditorButton_27a3f39cf80f9138445cd476fa25bd30,
-  "@payloadcms/plugin-ecommerce/client#PriceCell": PriceCell_e27bf7b8cc50640dcdd584767b8eac3c,
-  "@payloadcms/plugin-ecommerce/rsc#PriceInput": PriceInput_b91672ccd6e8b071c11142ab941fedfb,
+  "@/features/ecommerce/admin/priceCell#formatPriceCell": formatPriceCell_4cec274a6213012531e45e71619e8952,
+  "@/features/ecommerce/admin/PriceInput#PriceInput": PriceInput_a61c323ec3b072da4f0ee8e4fc2f21c8,
   "@/features/email/admin/SendTestEmailButton#SendTestEmailButton": SendTestEmailButton_7ac16a5f70e74b6b38bca197ba3d6256,
   "@/features/backups/admin/BackupPanel#BackupPanel": BackupPanel_0645cad9a6770ce8d137ad2971387380,
   "@/components/admin/nav/AdminNav#AdminNav": AdminNav_dc4fd4746f7f98760676e52d2bbade6c,

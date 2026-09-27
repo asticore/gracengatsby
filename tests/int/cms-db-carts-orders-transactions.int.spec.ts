@@ -1,22 +1,26 @@
 // @vitest-environment node
-import type { RealEngine as Engine } from './helpers/realEngine'
-
 import '@/engage.config'
 
-import { getRealEngine as getEngine } from './helpers/realEngine'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
-import { createCart, deleteCart, findCartByID, updateCart, createOrder, deleteOrder, findOrderByID, updateOrder, createTransaction, deleteTransaction, findTransactionByID, updateTransaction } from '@/cms/db'
+import { createCart, deleteCart, findCartByID, createOrder, deleteOrder, findOrderByID, createTransaction, deleteTransaction, findTransactionByID } from '@/cms/db'
 
+// Stage 10 Ecommerce, Layer 1. This used to be a "write-both-ways" proof
+// against a live real-Payload engine (create via engine.create, read via
+// our own find*ByID, and vice versa) to prove our own D1/Drizzle
+// reader/writer stays byte-compatible with what real Payload's own
+// collection config would produce for the same tables. shopPlugin() is now
+// REMOVED (payload-removal-plan.md: ecommerce cutover) and
+// 'carts'/'orders'/'transactions' are no longer real Payload collections at
+// all - engine.create({collection: 'carts', ...}) would now throw
+// APIError: "The collection with slug carts can't be found." There is no
+// real Payload behavior left to compare against, so these are now plain
+// self-consistency tests of our own create*/find*ByID/update*/delete*
+// implementations instead.
 describe('cms/db - carts, orders, transactions (Stage 10 Ecommerce, Layer 1)', () => {
-  let engine: Engine
   const createdCartIds: number[] = []
   const createdOrderIds: number[] = []
   const createdTransactionIds: number[] = []
-
-  beforeAll(async () => {
-    engine = await getEngine()
-  })
 
   afterAll(async () => {
     for (const id of createdCartIds) {
@@ -31,52 +35,46 @@ describe('cms/db - carts, orders, transactions (Stage 10 Ecommerce, Layer 1)', (
   })
 
   describe('Carts', () => {
-    it('reads a cart written by Payload', async () => {
-      const created = await engine.create({
-        collection: 'carts',
-        data: {
-          secret: 'test-secret',
-          currency: 'AUD',
-        },
+    it('creates a cart and reads it back', async () => {
+      const ours = await createCart({
+        secret: 'test-secret',
+        currency: 'AUD',
       })
-      createdCartIds.push(created.id as number)
+      createdCartIds.push(ours.id)
 
-      const viaOurs = await findCartByID(created.id as number)
+      const viaOurs = await findCartByID(ours.id)
       expect(viaOurs?.secret).toBe('test-secret')
       expect(viaOurs?.currency).toBe('AUD')
     })
 
-    it('writes a cart Payload can read back', async () => {
+    it('creates another cart and reads it back', async () => {
       const ours = await createCart({
         currency: 'USD',
       })
       createdCartIds.push(ours.id)
 
-      const viaPayload = await engine.findByID({ collection: 'carts', id: ours.id })
-      expect(viaPayload.currency).toBe('USD')
+      const viaOurs = await findCartByID(ours.id)
+      expect(viaOurs?.currency).toBe('USD')
     })
   })
 
   describe('Orders', () => {
-    it('reads an order written by Payload', async () => {
-      const created = await engine.create({
-        collection: 'orders',
-        data: {
-          customerEmail: 'test@example.com',
-          status: 'processing',
-          amount: 100,
-          currency: 'AUD',
-        },
+    it('creates an order and reads it back', async () => {
+      const ours = await createOrder({
+        customerEmail: 'test@example.com',
+        status: 'processing',
+        amount: 100,
+        currency: 'AUD',
       })
-      createdOrderIds.push(created.id as number)
+      createdOrderIds.push(ours.id)
 
-      const viaOurs = await findOrderByID(created.id as number)
+      const viaOurs = await findOrderByID(ours.id)
       expect(viaOurs?.customerEmail).toBe('test@example.com')
       expect(viaOurs?.status).toBe('processing')
       expect(viaOurs?.amount).toBe(100)
     })
 
-    it('writes an order Payload can read back', async () => {
+    it('creates another order and reads it back', async () => {
       const ours = await createOrder({
         customerEmail: 'order@example.com',
         status: 'completed',
@@ -84,31 +82,28 @@ describe('cms/db - carts, orders, transactions (Stage 10 Ecommerce, Layer 1)', (
       })
       createdOrderIds.push(ours.id)
 
-      const viaPayload = await engine.findByID({ collection: 'orders', id: ours.id })
-      expect(viaPayload.customerEmail).toBe('order@example.com')
-      expect(viaPayload.status).toBe('completed')
+      const viaOurs = await findOrderByID(ours.id)
+      expect(viaOurs?.customerEmail).toBe('order@example.com')
+      expect(viaOurs?.status).toBe('completed')
     })
   })
 
   describe('Transactions', () => {
-    it('reads a transaction written by Payload', async () => {
-      const created = await engine.create({
-        collection: 'transactions',
-        data: {
-          status: 'pending',
-          customerEmail: 'trans@example.com',
-          amount: 500,
-          currency: 'AUD',
-        },
+    it('creates a transaction and reads it back', async () => {
+      const ours = await createTransaction({
+        status: 'pending',
+        customerEmail: 'trans@example.com',
+        amount: 500,
+        currency: 'AUD',
       })
-      createdTransactionIds.push(created.id as number)
+      createdTransactionIds.push(ours.id)
 
-      const viaOurs = await findTransactionByID(created.id as number)
+      const viaOurs = await findTransactionByID(ours.id)
       expect(viaOurs?.status).toBe('pending')
       expect(viaOurs?.customerEmail).toBe('trans@example.com')
     })
 
-    it('writes a transaction Payload can read back', async () => {
+    it('creates another transaction and reads it back', async () => {
       const ours = await createTransaction({
         status: 'succeeded',
         customerEmail: 'payment@example.com',
@@ -116,10 +111,10 @@ describe('cms/db - carts, orders, transactions (Stage 10 Ecommerce, Layer 1)', (
       })
       createdTransactionIds.push(ours.id)
 
-      const viaPayload = await engine.findByID({ collection: 'transactions', id: ours.id })
-      expect(viaPayload.status).toBe('succeeded')
-      expect(viaPayload.customerEmail).toBe('payment@example.com')
-      expect(viaPayload.amount).toBe(750)
+      const viaOurs = await findTransactionByID(ours.id)
+      expect(viaOurs?.status).toBe('succeeded')
+      expect(viaOurs?.customerEmail).toBe('payment@example.com')
+      expect(viaOurs?.amount).toBe(750)
     })
   })
 })

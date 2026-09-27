@@ -1,4 +1,4 @@
-import type { CollectionConfig } from '@/engine'
+import type { CollectionConfig, CollectionSlug } from '@/engine'
 
 import { adminOnlyFieldAccess, isAdmin, isDocumentOwner } from '@/access/ecommerceAccess'
 
@@ -81,7 +81,15 @@ export const Orders: CollectionConfig = {
     {
       name: 'transactions',
       type: 'relationship',
-      relationTo: 'transactions',
+      // shopPlugin() is REMOVED (payload-removal-plan.md: ecommerce
+      // cutover) and 'transactions' is no longer a real Payload collection
+      // (only 'products' still is, as a stub - see engage.config.ts), so
+      // real Payload's own generated `CollectionSlug` union no longer
+      // includes it. This field is on a SHADOW config never passed through
+      // `buildConfig()` (never sanitized/validated against that union at
+      // runtime), so the cast is safe - this app's own REST/GraphQL hybrid
+      // dispatchers are what actually resolve this relationship.
+      relationTo: 'transactions' as CollectionSlug,
       hasMany: true,
       admin: { position: 'sidebar' },
       access: {

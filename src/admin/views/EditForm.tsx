@@ -140,14 +140,14 @@ const SaveButton: React.FC<SaveTarget> = ({ collectionSlug, globalSlug, id, draf
   return (
     <div style={{ alignItems: 'center', display: 'flex', gap: 12, marginTop: 24 }}>
       {draftsEnabled && (
-        <button disabled={saving !== null} onClick={() => handleSave('draft')} type="button">
+        <button className="btn" disabled={saving !== null} onClick={() => handleSave('draft')} type="button">
           {saving === 'draft' ? 'Saving…' : 'Save Draft'}
         </button>
       )}
-      <button disabled={saving !== null} onClick={() => handleSave('published')} type="button">
+      <button className="btn btn--primary" disabled={saving !== null} onClick={() => handleSave('published')} type="button">
         {saving === 'published' ? 'Saving…' : draftsEnabled ? 'Publish' : 'Save'}
       </button>
-      {error && <span style={{ color: '#b3261e' }}>{error}</span>}
+      {error && <span style={{ color: 'var(--theme-error-500, #b3261e)' }}>{error}</span>}
     </div>
   )
 }

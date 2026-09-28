@@ -1,14 +1,24 @@
 /* THIS FILE WAS GENERATED AUTOMATICALLY BY THE CMS ENGINE. */
 /* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
 import config from '@engage-config'
-import '@payloadcms/next/css'
 import type { ServerFunctionClient } from '@/engine'
 import { handleServerFunctions, RootLayout } from '@/engine/next/layouts'
 import { headers } from 'next/headers'
 import React from 'react'
 
 import { importMap } from './admin/importMap.js'
-import './custom.css'
+
+// Stage 12 (full custom rebuild): the admin no longer imports
+// `@payloadcms/next/css` at all - custom.css + tailwind.css (imported below)
+// are now this admin's entire visual system, built from scratch. Inter is
+// the admin's one single font (self-hosted via @fontsource, same as the
+// frontend's own body text - see (frontend)/layout.tsx for the identical
+// pattern) - before this, the admin loaded no custom font at all and fell
+// back to the raw OS system-font stack.
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
 import './tailwind.css'
 
 export const generateViewport = async () => {

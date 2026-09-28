@@ -41,7 +41,10 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
       <h1>
         {id === undefined ? `Create ${label}` : `Edit ${label}`}
         {draftsEnabled && status && (
-          <span style={{ borderRadius: 4, fontSize: '0.6em', fontWeight: 'normal', marginLeft: 12, padding: '2px 8px', textTransform: 'uppercase', verticalAlign: 'middle' }}>
+          <span
+            className={status === 'published' ? 'pill pill--accent' : 'pill'}
+            style={{ marginLeft: 12, textTransform: 'uppercase', verticalAlign: 'middle' }}
+          >
             {status}
           </span>
         )}

@@ -65,56 +65,60 @@ export async function ListView({ collectionSlug }: { collectionSlug: string }) {
 
   return (
     <div className="collection-list">
-      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="flex items-center justify-between mb-[calc(var(--base)*0.9)]">
         <h1>{label}</h1>
-        {canCreate && <Link href={`/admin/collections/${collectionSlug}/create`}>Create new</Link>}
+        {canCreate && (
+          <Link className="btn btn--primary" href={`/admin/collections/${collectionSlug}/create`}>
+            Create new
+          </Link>
+        )}
       </div>
 
       {result.docs.length === 0 ? (
-        <p>No documents yet.</p>
+        <p className="text-[var(--theme-elevation-600)]">No documents yet.</p>
       ) : (
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              {columns.map((column) => (
-                <th key={column} style={{ borderBottom: '1px solid #ccc', padding: 8, textAlign: 'left' }}>
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {result.docs.map((doc) => (
-              <tr key={doc.id}>
-                {columns.map((column, index) => {
-                  const cell = doc[column]
-                  const columnField = findColumnField(collection.fields, column)
-                  const cellOverride = (columnField as { admin?: { components?: { Cell?: string } } } | undefined)?.admin?.components?.Cell
-                  const formatter = resolveCellFormatter(cellOverride)
-                  const text = formatter
-                    ? formatter(cell, doc)
-                    : cell === undefined || cell === null
-                      ? ''
-                      : typeof cell === 'object'
-                        ? JSON.stringify(cell)
-                        : String(cell)
-                  return (
-                    <td key={column} style={{ borderBottom: '1px solid #eee', padding: 8 }}>
-                      {index === 0 ? (
-                        <Link href={`/admin/collections/${collectionSlug}/${doc.id}`}>{text || `#${doc.id}`}</Link>
-                      ) : (
-                        text
-                      )}
-                    </td>
-                  )
-                })}
+        <div className="table">
+          <table>
+            <thead>
+              <tr>
+                {columns.map((column) => (
+                  <th key={column}>{column}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {result.docs.map((doc) => (
+                <tr key={doc.id}>
+                  {columns.map((column, index) => {
+                    const cell = doc[column]
+                    const columnField = findColumnField(collection.fields, column)
+                    const cellOverride = (columnField as { admin?: { components?: { Cell?: string } } } | undefined)?.admin?.components?.Cell
+                    const formatter = resolveCellFormatter(cellOverride)
+                    const text = formatter
+                      ? formatter(cell, doc)
+                      : cell === undefined || cell === null
+                        ? ''
+                        : typeof cell === 'object'
+                          ? JSON.stringify(cell)
+                          : String(cell)
+                    return (
+                      <td key={column}>
+                        {index === 0 ? (
+                          <Link href={`/admin/collections/${collectionSlug}/${doc.id}`}>{text || `#${doc.id}`}</Link>
+                        ) : (
+                          text
+                        )}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      <p style={{ marginTop: 12, opacity: 0.7 }}>
+      <p className="mt-[calc(var(--base)*0.6)] text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-500)]">
         {result.totalDocs} total{result.totalDocs > result.docs.length ? ` (showing first ${result.docs.length})` : ''}
       </p>
     </div>

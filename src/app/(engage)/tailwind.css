@@ -1,20 +1,48 @@
 /*
- * Tailwind utilities for the admin portal's own custom views (Dashboard,
- * A/B results, database cleanup, translations, custom fields) - the
- * components under src/views and src/fields that we author ourselves, as
- * opposed to the CMS engine's stock admin UI (nav, tables, buttons, inputs),
- * which custom.css themes by overriding the engine's own documented classes
- * and CSS variables.
+ * Admin design system — entry point.
  *
- * Deliberately NOT `@import 'tailwindcss'`: that also pulls in Preflight, a
- * global reset (button/table/heading appearance, margins, etc.) that would
- * reach every element the engine's stock admin UI renders too, not just ours
- * - silently breaking the look of screens this file has no business touching.
- * Importing only the theme and utilities layers keeps Tailwind scoped to
- * classes we actually put on our own markup.
+ * Stage 12 ("full custom rebuild"): the admin no longer imports
+ * `@payloadcms/next/css` (see layout.tsx) — this file + custom.css ARE the
+ * admin's whole visual system now, built on Tailwind v4 rather than layered
+ * on top of the vendor's own stylesheet. Real Preflight is safe to pull in
+ * here (unlike the old version of this file, which deliberately excluded it)
+ * because this `(engage)` route group is admin-only — no public frontend
+ * page mounts under it (that's `(frontend)/layout.tsx` + its own
+ * styles.css, entirely separate) — so a global reset here can't reach
+ * anything but our own admin markup.
  *
- * See ./custom.css for why this lives in its own file rather than folding
- * into it: that file is deliberately kept as plain CSS.
+ * `custom.css` is pulled in via a real `@import` (not a second top-level
+ * import in layout.tsx) specifically so its `@layer components` rules sit in
+ * the same Tailwind build graph as this file's `@theme` tokens - Tailwind v4
+ * only expands `@apply`/theme-derived utilities within one connected
+ * `@import` chain rooted at a file that itself imports 'tailwindcss'.
  */
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+@import 'tailwindcss';
+@import './custom.css';
+
+@theme {
+  /* Stage 12: single admin font (was the raw OS system-font stack before -
+     zero custom font was ever loaded for the admin). Already an installed
+     dependency (@fontsource/inter, imported in layout.tsx) - same family the
+     frontend's own body text uses, and shadcn's own default. */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Semantic color tokens, each pointed at a runtime CSS custom property
+     (custom.css's own --ac-* tokens) rather than a literal value - lets
+     light/dark switch at runtime via the cascade while still getting real
+     `bg-surface`/`text-ink`/`border-border`/etc. Tailwind utilities. */
+  --color-surface: var(--ac-surface);
+  --color-ground: var(--ac-ground);
+  --color-border: var(--theme-elevation-150);
+  --color-border-strong: var(--theme-elevation-250);
+  --color-ink: var(--theme-elevation-900);
+  --color-ink-muted: var(--theme-elevation-600);
+  --color-accent: var(--ac-gold);
+  --color-accent-soft: var(--ac-gold-soft);
+  --color-accent-contrast: var(--ac-gold-contrast);
+  --color-danger: var(--theme-error-500, #b3261e);
+
+  --radius-s: var(--style-radius-s);
+  --radius-m: var(--style-radius-m);
+  --radius-l: var(--style-radius-l);
+}

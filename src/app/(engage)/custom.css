@@ -1,135 +1,248 @@
 /*
- * Asticore Engage — admin portal theme.
+ * Asticore Engage — admin design system (Stage 12: full custom rebuild).
  *
- * Direction C ("Soft Cards"): rounded surfaces, tinted status pills, a cool
- * blue-grey neutral ground and a deep blue as the single accent — at a denser
- * scale so more fits on screen. (Recolored from the original warm gold/cream
- * palette to blues/greys — every step below is the same lightness/saturation
- * as before, hue-shifted from warm amber to cool blue, so contrast ratios are
- * unchanged and only the hue reads differently.)
+ * This app no longer imports `@payloadcms/next/css` (see layout.tsx) - the
+ * admin was asked to stop depending on the vendor's own CSS/design system
+ * entirely, not just override pieces of it. This file (pulled in from
+ * tailwind.css via a real `@import`, see that file's own header) is now the
+ * WHOLE admin visual system: every token and every component rule below is
+ * ours, hand-written, not a themed override of vendor output.
  *
- * HOW THIS WORKS (important — an earlier version of this file got it wrong and
- * produced unreadable dark mode):
+ * IMPORTANT - why this still defines `--theme-elevation-*` / `--base` /
+ * `--gutter-h` / `--theme-bg` / `--theme-text` / `--theme-input-bg` /
+ * `--theme-success/warning/error-*` (real Payload's own variable NAMES):
+ * a dozen already-written, already-good-looking custom admin screens this
+ * app owns outright - Dashboard.tsx, MediaGalleryView/Grid, EventsCalendar-
+ * View, DatabaseView/DatabaseCleanupPanel, TranslationsView/Table - were
+ * built entirely with Tailwind utilities that reference these exact variable
+ * names (arbitrary values like `text-[var(--theme-elevation-600)]`). They
+ * are OUR OWN components, not vendor code, and reusing their existing
+ * variable vocabulary here means the dashboard the user held up as "the bar
+ * to hit" keeps looking exactly like it already does with zero edits to any
+ * of those dozen files, while every value on the right of every `:` below is
+ * ours to set. Below is a hand-written reimplementation of the small,
+ * generic token-mapping shape those files depend on (an elevation ramp that
+ * inverts per theme, a `--base` spacing unit, a responsive gutter) - not a
+ * copy of the vendor's stylesheet, and importing nothing from it.
  *
- *   `--color-base-0 … --color-base-1000` is ONE ramp running light → dark.
- *   It is NOT per-theme. The portal's base stylesheet maps that single ramp
- *   onto `--theme-elevation-*` and INVERTS the mapping for dark mode
- *   (`--theme-elevation-0: var(--color-base-900)` and so on). Supplying a
- *   second, already-inverted ramp for dark therefore inverts twice, giving
- *   light surfaces with light text.
- *
- *   So: define the ramp once, define all 21 steps (0, 50, 100 … 1000 — any
- *   step left out falls back to the stock cool grey and mixes cool with warm),
- *   and let the base stylesheet invert it. `--theme-bg`, `--theme-text` and
- *   `--theme-input-bg` are derived from the ramp per theme upstream and are
- *   deliberately NOT overridden here.
- *
- * Two further rules:
- *   - Override the documented CSS custom properties, not the class names.
- *     Variables are a supported surface; class names are internal.
- *   - Declare inside `@layer payload`. That layer name is NOT ours to choose -
- *     the underlying CMS engine declares `@layer payload-default, payload;`,
- *     putting its own styles in the first and reserving the second for the
- *     host app. A later layer always wins, so nothing here needs `!important`.
- *
- * Light / Dark / Auto: the portal stamps `data-theme` on <html> for an explicit
- * choice and stamps nothing for Auto, so the `prefers-color-scheme` block is
- * what makes Auto follow the OS. `admin.theme: 'all'` exposes the choice.
+ * Two-ramp system, same as before this rebuild:
+ *   `--color-base-0 … --color-base-1000` is ONE neutral ramp, light → dark.
+ *   `--theme-elevation-N` maps onto it per theme - identity in light
+ *   (elevation-0 = base-0 = white), inverted in dark (elevation-0 = a dark
+ *   base step) - see the `[data-theme='dark']` block below for the exact
+ *   mapping. Only the MAPPING is theme-aware; the ramp itself is defined once.
  */
 
-@layer payload {
-  /* ---------------------------------------------------------------- *
-   * Brand tokens and density                                          *
-   * ---------------------------------------------------------------- */
+/* ---------------------------------------------------------------- *
+ * Brand tokens, density, and the neutral + status ramps              *
+ * ---------------------------------------------------------------- */
+:root {
+  --ac-gold: #2e3192;
+  --ac-gold-soft: #00a9ff;
+  /* --ac-gold is a dark navy in light theme (needs light text) but a bright
+     cyan-blue in dark theme (needs dark text); --ac-gold-soft is the
+     opposite lightness of --ac-gold in EVERY theme - so each needs its own
+     contrast color, computed, not assumed: white-on-#2e3192 ~10.7:1,
+     black-on-#00a9ff ~7.4:1. */
+  --ac-gold-contrast: #ffffff;
+  --ac-gold-soft-contrast: #0f0f14;
+
+  /* Spacing unit, reimplemented from scratch (the vendor's own stylesheet
+     used to compute this from these same two inputs - dropping that
+     stylesheet means computing it ourselves, not dropping the formula every
+     already-written admin screen's arbitrary-value classes rely on). */
+  --base-px: 17;
+  --base-body-size: 12.5;
+  --base: calc((var(--base-px) / var(--base-body-size)) * 1rem);
+
+  --gutter-h: 48px;
+  --spacing-view-bottom: var(--gutter-h);
+  --doc-controls-height: calc(var(--base) * 2.8);
+  --app-header-height: calc(var(--base) * 2.8);
+
+  --style-radius-s: 5px;
+  --style-radius-m: 8px;
+  --style-radius-l: 14px;
+
+  --nav-width: 250px;
+  --nav-width-collapsed: 4.5rem;
+  --nav-trans-time: 0.18s;
+
+  /* Semantic surface roles - elevation runs in opposite directions per
+     theme (see the dark block below), so which elevation step is the
+     "card" vs. the "page" has to swap too, or cards end up darker than the
+     page they sit on. */
+  --ac-surface: var(--theme-elevation-0);
+  --ac-ground: var(--theme-elevation-50);
+}
+
+@media (max-width: 1024px) {
   :root {
-    --ac-gold: #2e3192;
-    --ac-gold-soft: #00a9ff;
-    /* --ac-gold is a dark navy in light theme (needs light text) but a bright
-       cyan-blue in dark theme (needs dark text); --ac-gold-soft is the
-       opposite lightness of --ac-gold in EVERY theme (it's bright cyan in
-       light theme, an even lighter cyan in dark theme) - so each needs its
-       own contrast color, computed, not assumed: white-on-#2e3192 ~10.7:1,
-       black-on-#2e3192 ~1.8:1 (fails); white-on-#00a9ff ~2.6:1 (fails),
-       black-on-#00a9ff ~7.4:1; white-on-#4fc3ff ~2:1 (fails), black-on-#4fc3ff
-       ~9.6:1. */
-    --ac-gold-contrast: #ffffff;
-    --ac-gold-soft-contrast: #0f0f14;
-
-    /* The portal derives spacing from --base = (--base-px / --base-body-size)rem.
-       Lowering --base-px tightens padding, gutters and row heights together. */
-    --base-px: 17;
-    --base-body-size: 12.5;
-
-    --style-radius-s: 5px;
-    --style-radius-m: 8px;
-    --style-radius-l: 14px;
-
-    --nav-width: 250px;
-    --app-header-height: 52px;
-    --doc-controls-height: 56px;
-
-    /* Semantic surface roles.
-       Elevation runs in opposite directions per theme: in light, elevation-0 is
-       white and higher steps get darker; in dark, elevation-0 is the darkest
-       and higher steps get lighter. So the card/page pairing has to swap, or
-       cards end up darker than the page they sit on. */
-    --ac-surface: var(--theme-elevation-0);
-    --ac-ground: var(--theme-elevation-50);
+    --gutter-h: 32px;
+    --app-header-height: calc(var(--base) * 2.4);
+    --doc-controls-height: calc(var(--base) * 2.4);
   }
+}
 
-  /* ---------------------------------------------------------------- *
-   * The single blue-grey ramp: light (0) → dark (1000)                *
-   * ---------------------------------------------------------------- */
+@media (max-width: 768px) {
   :root {
-    --color-base-0: #ffffff;
-    --color-base-50: #f5f3f5;
-    --color-base-100: #eaebf4;
-    --color-base-150: #dddeec;
-    --color-base-200: #cdcfe2;
-    --color-base-250: #bbbdd6;
-    --color-base-300: #a8abc8;
-    --color-base-350: #9598b8;
-    --color-base-400: #8386a8;
-    --color-base-450: #857c8d;
-    --color-base-500: #626587;
-    --color-base-550: #545777;
-    --color-base-600: #474a67;
-    --color-base-650: #3b3d58;
-    --color-base-700: #31334a;
-    --color-base-750: #282a3d;
-    --color-base-800: #202132;
-    --color-base-850: #191a28;
-    --color-base-900: #13141f;
-    --color-base-950: #0f1019;
-    --color-base-1000: #0f0f14;
-
-    /* The stock de-facto accent is the blue ramp; repointing it to the
-       Asticore blue recolours buttons, links and focus rings in one move. */
-    --color-blue-50: #eef1fe;
-    --color-blue-100: #d4dcf9;
-    --color-blue-150: #bbc8f4;
-    --color-blue-200: #9aabeb;
-    --color-blue-250: #778ee3;
-    --color-blue-300: #5572db;
-    --color-blue-350: #4664d0;
-    --color-blue-400: var(--ac-gold-soft);
-    --color-blue-450: var(--ac-gold);
-    --color-blue-500: var(--ac-gold);
-    --color-blue-550: #3751b1;
-    --color-blue-600: #2e469e;
-    --color-blue-650: #253c8c;
-    --color-blue-700: #1d3179;
-    --color-blue-750: #162766;
-    --color-blue-800: #101e53;
-    --color-blue-850: #0a1641;
-    --color-blue-900: #050e2e;
-    --color-blue-950: #01071b;
+    --gutter-h: 16px;
   }
+}
 
-  /* Dark: swap the surface roles, and lift the blue so it holds contrast
-     against a dark ground. The ramp itself is NOT redefined — the portal already
-     inverts it. */
-  [data-theme='dark'] {
+:root {
+  --color-base-0: #ffffff;
+  --color-base-50: #f5f3f5;
+  --color-base-100: #eaebf4;
+  --color-base-150: #dddeec;
+  --color-base-200: #cdcfe2;
+  --color-base-250: #bbbdd6;
+  --color-base-300: #a8abc8;
+  --color-base-350: #9598b8;
+  --color-base-400: #8386a8;
+  --color-base-450: #857c8d;
+  --color-base-500: #626587;
+  --color-base-550: #545777;
+  --color-base-600: #474a67;
+  --color-base-650: #3b3d58;
+  --color-base-700: #31334a;
+  --color-base-750: #282a3d;
+  --color-base-800: #202132;
+  --color-base-850: #191a28;
+  --color-base-900: #13141f;
+  --color-base-950: #0f1019;
+  --color-base-1000: #0f0f14;
+
+  /* Generic status ramps (success/warning/error) - a handful of internal
+     tool screens (DatabaseCleanupPanel, TranslationsTable, ABResultsView)
+     reference these by name. Ordinary accessible green/amber/red scales,
+     not brand-specific, so no reason to reinvent the values. */
+  --color-success-50: #edf7f0;
+  --color-success-300: #7bc999;
+  --color-success-500: #2e7d32;
+  --color-success-600: #276b2a;
+  --color-warning-50: #fdf3e3;
+  --color-warning-300: #f0c375;
+  --color-warning-500: #b58900;
+  --color-warning-600: #8f6c00;
+  --color-error-50: #fbeceb;
+  --color-error-300: #e79490;
+  --color-error-500: #b3261e;
+  --color-error-600: #94211a;
+
+  /* The stock de-facto accent is the blue ramp; repointing it to the
+     Asticore blue recolours buttons, links and focus rings in one move. */
+  --color-blue-50: #eef1fe;
+  --color-blue-100: #d4dcf9;
+  --color-blue-150: #bbc8f4;
+  --color-blue-200: #9aabeb;
+  --color-blue-250: #778ee3;
+  --color-blue-300: #5572db;
+  --color-blue-350: #4664d0;
+  --color-blue-400: var(--ac-gold-soft);
+  --color-blue-450: var(--ac-gold);
+  --color-blue-500: var(--ac-gold);
+  --color-blue-550: #3751b1;
+  --color-blue-600: #2e469e;
+  --color-blue-650: #253c8c;
+  --color-blue-700: #1d3179;
+  --color-blue-750: #162766;
+  --color-blue-800: #101e53;
+  --color-blue-850: #0a1641;
+  --color-blue-900: #050e2e;
+  --color-blue-950: #01071b;
+
+  /* Elevation - identity mapping in light theme. */
+  --theme-elevation-0: var(--color-base-0);
+  --theme-elevation-50: var(--color-base-50);
+  --theme-elevation-100: var(--color-base-100);
+  --theme-elevation-150: var(--color-base-150);
+  --theme-elevation-200: var(--color-base-200);
+  --theme-elevation-250: var(--color-base-250);
+  --theme-elevation-300: var(--color-base-300);
+  --theme-elevation-400: var(--color-base-400);
+  --theme-elevation-500: var(--color-base-500);
+  --theme-elevation-600: var(--color-base-600);
+  --theme-elevation-700: var(--color-base-700);
+  --theme-elevation-800: var(--color-base-800);
+  --theme-elevation-900: var(--color-base-900);
+  --theme-elevation-1000: var(--color-base-1000);
+
+  --theme-success-500: var(--color-success-500);
+  --theme-success-600: var(--color-success-600);
+  --theme-warning-500: var(--color-warning-500);
+  --theme-warning-600: var(--color-warning-600);
+  --theme-error-500: var(--color-error-500);
+  --theme-error-600: var(--color-error-600);
+
+  --theme-bg: var(--theme-elevation-0);
+  --theme-input-bg: var(--theme-elevation-0);
+  --theme-text: var(--theme-elevation-800);
+  --theme-base-0: var(--color-base-0);
+  --theme-border-color: var(--theme-elevation-150);
+}
+
+/* Dark: invert the elevation ramp (same shape real Payload's own stylesheet
+   used - elevation-0 becomes a DARK step, not white) and swap the surface
+   roles. The base ramp itself is NOT redefined. */
+[data-theme='dark'] {
+  --theme-elevation-0: var(--color-base-900);
+  --theme-elevation-50: var(--color-base-850);
+  --theme-elevation-100: var(--color-base-800);
+  --theme-elevation-150: var(--color-base-750);
+  --theme-elevation-200: var(--color-base-700);
+  --theme-elevation-250: var(--color-base-650);
+  --theme-elevation-300: var(--color-base-600);
+  --theme-elevation-400: var(--color-base-450);
+  --theme-elevation-500: var(--color-base-400);
+  --theme-elevation-600: var(--color-base-300);
+  --theme-elevation-700: var(--color-base-200);
+  --theme-elevation-800: var(--color-base-100);
+  --theme-elevation-900: var(--color-base-50);
+  --theme-elevation-1000: var(--color-base-0);
+
+  --theme-bg: var(--theme-elevation-0);
+  --theme-text: var(--theme-elevation-1000);
+  --theme-input-bg: var(--theme-elevation-50);
+
+  --ac-surface: var(--theme-elevation-50);
+  --ac-ground: var(--theme-elevation-0);
+
+  --color-blue-400: #6b85e4;
+  --color-blue-450: #00a9ff;
+  --color-blue-500: #00a9ff;
+  --color-blue-550: #4e6bd2;
+  --ac-gold: #00a9ff;
+  --ac-gold-soft: #4fc3ff;
+  --ac-gold-contrast: #0f0f14;
+  --ac-gold-soft-contrast: #0f0f14;
+}
+
+/* Auto — no data-theme attribute, so follow the OS. Guarded so an explicit
+   light choice on a dark-mode machine still wins. (No manual light/dark/auto
+   switcher exists in this admin's UI right now - this block only ever
+   engages via the OS's own setting.) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --theme-elevation-0: var(--color-base-900);
+    --theme-elevation-50: var(--color-base-850);
+    --theme-elevation-100: var(--color-base-800);
+    --theme-elevation-150: var(--color-base-750);
+    --theme-elevation-200: var(--color-base-700);
+    --theme-elevation-250: var(--color-base-650);
+    --theme-elevation-300: var(--color-base-600);
+    --theme-elevation-400: var(--color-base-450);
+    --theme-elevation-500: var(--color-base-400);
+    --theme-elevation-600: var(--color-base-300);
+    --theme-elevation-700: var(--color-base-200);
+    --theme-elevation-800: var(--color-base-100);
+    --theme-elevation-900: var(--color-base-50);
+    --theme-elevation-1000: var(--color-base-0);
+
+    --theme-bg: var(--theme-elevation-0);
+    --theme-text: var(--theme-elevation-1000);
+    --theme-input-bg: var(--theme-elevation-50);
+
     --ac-surface: var(--theme-elevation-50);
     --ac-ground: var(--theme-elevation-0);
 
@@ -142,199 +255,599 @@
     --ac-gold-contrast: #0f0f14;
     --ac-gold-soft-contrast: #0f0f14;
   }
+}
 
-  /* Auto — no data-theme attribute, so follow the OS. Guarded so an explicit
-     light choice on a dark-mode machine still wins. */
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme='light']) {
-      --ac-surface: var(--theme-elevation-50);
-      --ac-ground: var(--theme-elevation-0);
+/* ---------------------------------------------------------------- *
+ * Base element defaults (Preflight is on now - see tailwind.css -   *
+ * these restore sane admin-form defaults on top of it)              *
+ * ---------------------------------------------------------------- */
+html {
+  background: var(--ac-ground);
+}
 
-      --color-blue-400: #6b85e4;
-      --color-blue-450: #00a9ff;
-      --color-blue-500: #00a9ff;
-      --color-blue-550: #4e6bd2;
-      --ac-gold: #00a9ff;
-      --ac-gold-soft: #4fc3ff;
-      --ac-gold-contrast: #0f0f14;
-      --ac-gold-soft-contrast: #0f0f14;
-    }
-  }
+body {
+  font-family: var(--font-sans, 'Inter', ui-sans-serif, system-ui, sans-serif);
+  color: var(--theme-elevation-900);
+  font-size: calc(var(--base) * 0.8);
+  line-height: 1.5;
+}
 
-  /* ---------------------------------------------------------------- *
-   * Soft-card surfaces                                                *
-   * ---------------------------------------------------------------- */
-  html {
-    background: var(--ac-ground);
-  }
+h1 {
+  font-size: calc(var(--base) * 1.4);
+  font-weight: 600;
+  margin: 0 0 calc(var(--base) * 0.6);
+}
 
-  .collection-list__wrap,
-  .table,
-  .document-fields__edit,
-  .collection-edit__form,
-  .global-edit__form,
-  .dashboard__card,
-  .card {
-    background-color: var(--ac-surface);
-    border: 1px solid var(--theme-elevation-100);
-    border-radius: var(--style-radius-l);
-  }
+h2 {
+  font-size: calc(var(--base) * 1.05);
+  font-weight: 600;
+  margin: 0 0 calc(var(--base) * 0.4);
+}
 
-  .table {
-    overflow: hidden;
-  }
+a {
+  color: var(--ac-gold);
+}
 
-  .table table {
-    border-collapse: separate;
-    border-spacing: 0;
-  }
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background-color: var(--theme-input-bg);
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: var(--style-radius-m);
+  padding: calc(var(--base) * 0.4) calc(var(--base) * 0.6);
+  width: 100%;
+}
 
-  .table thead th {
-    background-color: var(--theme-elevation-100);
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--theme-elevation-700);
-    padding-top: calc(var(--base) * 0.42);
-    padding-bottom: calc(var(--base) * 0.42);
-  }
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--ac-gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac-gold) 22%, transparent);
+  outline: none;
+}
 
-  .table tbody td {
-    padding-top: calc(var(--base) * 0.38);
-    padding-bottom: calc(var(--base) * 0.38);
-    border-top: 1px solid var(--theme-elevation-100);
-  }
+input[type='checkbox'],
+input[type='radio'] {
+  width: auto;
+  accent-color: var(--ac-gold);
+}
 
-  .table tbody tr:hover td {
-    background-color: var(--theme-elevation-50);
-  }
+button {
+  font: inherit;
+}
 
-  .pill {
-    border-radius: 999px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    padding: 2px 9px;
-  }
+/* ---------------------------------------------------------------- *
+ * Buttons                                                           *
+ * ---------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--theme-elevation-200);
+  background: var(--ac-surface);
+  color: var(--theme-elevation-800);
+  border-radius: var(--style-radius-m);
+  padding: calc(var(--base) * 0.45) calc(var(--base) * 0.9);
+  font-weight: 600;
+  font-size: calc(var(--base) * 0.85);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    background-color 100ms ease,
+    border-color 100ms ease,
+    color 100ms ease;
+}
 
-  /* Inputs — let the portal's own --theme-input-bg drive the fill so it stays
-     correct in both themes; only the shape and focus ring are ours. */
-  .field-type input[type='text'],
-  .field-type input[type='number'],
-  .field-type input[type='email'],
-  .field-type input[type='password'],
-  .field-type textarea,
-  .rs__control {
-    border-radius: var(--style-radius-m);
-    border-color: var(--theme-elevation-200);
-  }
+.btn:hover {
+  border-color: var(--theme-elevation-300);
+}
 
-  .field-type input:focus,
-  .field-type textarea:focus,
-  .rs__control--is-focused {
-    border-color: var(--ac-gold);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac-gold) 22%, transparent);
-    outline: none;
-  }
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 
-  .btn {
-    border-radius: var(--style-radius-m);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-  }
+.btn--primary {
+  background-color: var(--ac-gold);
+  border-color: var(--ac-gold);
+  color: var(--ac-gold-contrast);
+}
 
-  /* The blue accent's contrast need flips per theme (dark navy in light mode,
-     bright cyan in dark mode) - see --ac-gold-contrast's own comment above. */
-  .btn--style-primary {
-    background-color: var(--ac-gold);
-    border-color: var(--ac-gold);
-    color: var(--ac-gold-contrast);
-  }
+.btn--primary:hover {
+  background-color: var(--ac-gold-soft);
+  border-color: var(--ac-gold-soft);
+  color: var(--ac-gold-soft-contrast);
+}
 
-  .btn--style-primary:hover {
-    background-color: var(--ac-gold-soft);
-    border-color: var(--ac-gold-soft);
-    color: var(--ac-gold-soft-contrast);
-  }
+/* Kept for compatibility with the vendor class-name shape (unused by any
+   component we render today, harmless to keep). */
+.btn--style-primary {
+  background-color: var(--ac-gold);
+  border-color: var(--ac-gold);
+  color: var(--ac-gold-contrast);
+}
 
-  /* ---------------------------------------------------------------- *
-   * Sidebar                                                           *
-   * ---------------------------------------------------------------- */
+/* ---------------------------------------------------------------- *
+ * Soft-card surfaces (list/edit/dashboard chrome)                   *
+ * ---------------------------------------------------------------- */
+.collection-list__wrap,
+.table,
+.document-fields__edit,
+.collection-edit__form,
+.global-edit__form,
+.dashboard__card,
+.card {
+  background-color: var(--ac-surface);
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-l);
+}
+
+.document-fields__edit,
+.collection-edit__form,
+.global-edit__form {
+  padding: calc(var(--base) * 1.25);
+}
+
+.table {
+  overflow: hidden;
+}
+
+.table table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.table thead th {
+  background-color: var(--theme-elevation-100);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-700);
+  text-align: left;
+  padding: calc(var(--base) * 0.42) calc(var(--base) * 0.6);
+}
+
+.table tbody td {
+  padding: calc(var(--base) * 0.38) calc(var(--base) * 0.6);
+  border-top: 1px solid var(--theme-elevation-100);
+}
+
+.table tbody tr:hover td {
+  background-color: var(--theme-elevation-50);
+}
+
+.pill {
+  display: inline-block;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size: 0.78em;
+  padding: 2px 9px;
+  background-color: var(--theme-elevation-100);
+  color: var(--theme-elevation-700);
+}
+
+.pill--accent {
+  background-color: color-mix(in srgb, var(--ac-gold) 14%, transparent);
+  color: var(--ac-gold);
+}
+
+/* ---------------------------------------------------------------- *
+ * Fields                                                             *
+ * ---------------------------------------------------------------- */
+.field-type {
+  margin-bottom: calc(var(--base) * 0.85);
+}
+
+.field-label {
+  display: block;
+  font-size: calc(var(--base) * 0.78);
+  font-weight: 600;
+  color: var(--theme-elevation-700);
+  margin-bottom: calc(var(--base) * 0.3);
+}
+
+.field-label .required {
+  color: var(--theme-error-500);
+  margin-left: 2px;
+}
+
+.field-type.checkbox label {
+  font-size: calc(var(--base) * 0.85);
+  color: var(--theme-elevation-800);
+}
+
+.field-description {
+  font-size: calc(var(--base) * 0.72);
+  color: var(--theme-elevation-500);
+  margin-top: calc(var(--base) * 0.25);
+}
+
+/* ---------------------------------------------------------------- *
+ * Admin login                                                       *
+ * ---------------------------------------------------------------- */
+.admin-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--ac-ground);
+  padding: var(--gutter-h);
+}
+
+.admin-login__card {
+  background: var(--ac-surface);
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-l);
+  padding: calc(var(--base) * 2);
+  width: 100%;
+  max-width: 380px;
+}
+
+.admin-login__title {
+  margin: 0 0 calc(var(--base) * 1.5);
+  text-align: center;
+  font-size: calc(var(--base) * 1.3);
+}
+
+.admin-login__error {
+  background-color: color-mix(in srgb, var(--theme-error-500) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-error-500) 30%, transparent);
+  color: var(--theme-error-600);
+  padding: calc(var(--base) * 0.6);
+  border-radius: var(--style-radius-m);
+  font-size: calc(var(--base) * 0.78);
+  margin-bottom: calc(var(--base) * 0.9);
+}
+
+.admin-login__field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--base) * 0.25);
+  margin-bottom: calc(var(--base) * 0.9);
+}
+
+.admin-login__field label {
+  font-size: calc(var(--base) * 0.78);
+  font-weight: 600;
+  color: var(--theme-elevation-700);
+}
+
+.admin-login__submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: calc(var(--base) * 0.4);
+}
+
+/* ---------------------------------------------------------------- *
+ * Sidebar                                                            *
+ * ---------------------------------------------------------------- */
+.nav {
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(85vw, 320px);
+  background-color: var(--ac-ground);
+  border-right: 1px solid var(--theme-elevation-150);
+  transform: translateX(-100%);
+}
+
+.nav--hydrated {
+  transition:
+    width var(--nav-trans-time) ease,
+    transform var(--nav-trans-time) ease;
+}
+
+.nav--open {
+  transform: translateX(0);
+}
+
+@media (min-width: 769px) {
   .nav {
-    background-color: var(--ac-ground);
-    border-right: 1px solid var(--theme-elevation-100);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: var(--nav-width);
+    transform: none;
   }
 
-  .nav-group__toggle {
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--theme-elevation-600);
-    padding-top: calc(var(--base) * 0.3);
-    padding-bottom: calc(var(--base) * 0.3);
+  .nav--collapsed {
+    width: var(--nav-width-collapsed);
   }
+}
 
-  .nav__link {
-    border-radius: var(--style-radius-m);
-    padding: 6px 10px;
-    font-size: 0.9rem;
-    color: var(--theme-elevation-800);
-  }
+.nav__wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: calc(var(--base) * 1.1) calc(var(--base) * 0.9);
+}
 
-  .nav__link:hover {
-    background-color: var(--theme-elevation-100);
-    color: var(--theme-elevation-1000);
-    text-decoration: none;
-  }
+.nav__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
 
-  .ac-nav-dashboard {
+.nav__controls {
+  margin-top: auto;
+  padding-top: calc(var(--base) * 0.75);
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+.nav__log-out {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  color: var(--theme-elevation-600);
+  border-radius: var(--style-radius-m);
+  padding: calc(var(--base) * 0.5) calc(var(--base) * 0.6);
+  font-weight: 600;
+  font-size: calc(var(--base) * 0.85);
+  cursor: pointer;
+}
+
+.nav__log-out:hover {
+  background-color: var(--theme-elevation-100);
+  color: var(--theme-elevation-900);
+}
+
+.nav--collapsed .nav__log-out {
+  justify-content: center;
+}
+
+.nav--collapsed .nav__log-out span {
+  display: none;
+}
+
+/* Mobile-only close button inside the nav itself - rendered after `.nav__wrap`
+   in the DOM (AdminNav.tsx) but pinned to the top visually via flex order,
+   since `.nav__scroll` (its shared flex-column parent) lays children out in
+   source order otherwise. */
+.nav__header {
+  display: none;
+  order: -1;
+}
+
+@media (max-width: 768px) {
+  .nav__header {
     display: flex;
-    align-items: center;
-    gap: 9px;
-    margin: 0 0 calc(var(--base) * 0.7);
-    padding: 8px 11px;
-    border-radius: var(--style-radius-m);
-    border: 1px solid var(--theme-elevation-200);
-    background-color: var(--ac-surface);
-    color: var(--theme-elevation-800);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    line-height: 1;
-    transition:
-      background-color 100ms ease,
-      border-color 100ms ease,
-      color 100ms ease;
+    justify-content: flex-end;
+    padding: calc(var(--base) * 0.6) calc(var(--base) * 0.9) 0;
+  }
+}
+
+.nav__mobile-close {
+  border: none;
+  background: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--theme-elevation-600);
+}
+
+.nav-group {
+  margin-bottom: calc(var(--base) * 0.2);
+}
+
+.nav-group__toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-500);
+  padding: calc(var(--base) * 0.3) calc(var(--base) * 0.3);
+}
+
+.nav-group__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav--collapsed .nav-group {
+  border-top: 1px solid var(--theme-elevation-150);
+  padding-top: calc(var(--base) * 0.3);
+  margin-top: calc(var(--base) * 0.3);
+}
+
+.nav--collapsed .nav-group:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.nav__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  border-radius: var(--style-radius-m);
+  padding: calc(var(--base) * 0.42) calc(var(--base) * 0.55);
+  font-size: 0.9rem;
+  color: var(--theme-elevation-800);
+  text-decoration: none;
+}
+
+.nav__link:hover {
+  background-color: var(--theme-elevation-100);
+  color: var(--theme-elevation-1000);
+  text-decoration: none;
+}
+
+.nav__link-indicator {
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 2px;
+  background-color: var(--ac-gold);
+}
+
+.nav--collapsed .nav__link-label {
+  display: none;
+}
+
+.nav--collapsed .nav__link {
+  justify-content: center;
+}
+
+.nav--collapsed .nav__link-indicator {
+  left: auto;
+  right: -6px;
+}
+
+/* Collapsed rail: each link gets a small round initial badge instead of its
+   full label (see AdminNavClient.tsx's `NavLinkBadge`) - there is no
+   per-entity icon set in this app's nav data (NAV_STRUCTURE), and adding one
+   for ~50 entities is its own separate project; a lettered badge with a
+   native title tooltip is a real, working collapsed rail without that. */
+.nav__link-badge {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--theme-elevation-100);
+  color: var(--theme-elevation-700);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.nav--collapsed .nav__link-badge {
+  display: flex;
+}
+
+.nav__link:hover .nav__link-badge {
+  background-color: var(--ac-gold);
+  color: var(--ac-gold-contrast);
+}
+
+.ac-nav-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  margin: 0 0 calc(var(--base) * 0.7);
+  padding: 8px 11px;
+  border-radius: var(--style-radius-m);
+  border: 1px solid var(--theme-elevation-200);
+  background-color: var(--ac-surface);
+  color: var(--theme-elevation-800);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition:
+    background-color 100ms ease,
+    border-color 100ms ease,
+    color 100ms ease;
+}
+
+.nav--collapsed .ac-nav-dashboard {
+  justify-content: center;
+}
+
+.nav--collapsed .ac-nav-dashboard span {
+  display: none;
+}
+
+.ac-nav-dashboard:hover {
+  border-color: var(--ac-gold);
+  color: var(--theme-elevation-1000);
+  text-decoration: none;
+}
+
+.ac-nav-dashboard--active {
+  background-color: color-mix(in srgb, var(--ac-gold) 14%, transparent);
+  border-color: var(--ac-gold);
+  color: var(--theme-elevation-1000);
+}
+
+.ac-nav-dashboard svg {
+  flex-shrink: 0;
+  color: var(--ac-gold);
+}
+
+/* ---------------------------------------------------------------- *
+ * Sidebar trigger (collapse on desktop, open/close on mobile)       *
+ * ---------------------------------------------------------------- */
+.nav-toggler {
+  position: fixed;
+  top: calc(var(--gutter-h) * 0.4);
+  left: calc(var(--gutter-h) * 0.4);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--style-radius-m);
+  border: 1px solid var(--theme-elevation-200);
+  background-color: var(--ac-surface);
+  color: var(--theme-elevation-700);
+  cursor: pointer;
+  transition: left var(--nav-trans-time) ease;
+}
+
+.nav-toggler:hover {
+  border-color: var(--ac-gold);
+  color: var(--ac-gold);
+}
+
+@media (min-width: 769px) {
+  .nav-toggler {
+    top: calc(var(--gutter-h) * 0.4);
+    left: calc(var(--nav-width) + var(--gutter-h) * 0.4);
   }
 
-  .ac-nav-dashboard:hover {
-    border-color: var(--ac-gold);
-    color: var(--theme-elevation-1000);
-    text-decoration: none;
+  .admin-shell--collapsed .nav-toggler {
+    left: calc(var(--nav-width-collapsed) + var(--gutter-h) * 0.4);
   }
 
-  .ac-nav-dashboard--active {
-    background-color: color-mix(in srgb, var(--ac-gold) 14%, transparent);
-    border-color: var(--ac-gold);
-    color: var(--theme-elevation-1000);
+  .admin-shell--hydrated .nav-toggler {
+    transition: left var(--nav-trans-time) ease;
   }
+}
 
-  .ac-nav-dashboard svg {
-    flex-shrink: 0;
-    color: var(--ac-gold);
-  }
+/* ---------------------------------------------------------------- *
+ * Shell layout (replaces the old @payloadcms/next/css grid wrapper) *
+ * ---------------------------------------------------------------- */
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+}
 
-  /* ---------------------------------------------------------------- *
-   * Nav open/close toggle                                             *
-   * ---------------------------------------------------------------- */
-  /* Stock CSS hides this toggler's hamburger icon below 768px
-     (`@media(max-width:768px){.template-default__nav-toggler-wrapper
-     .hamburger{display:none}}`), assuming `@payloadcms/ui`'s own AppHeader
-     renders a SEPARATE mobile-specific toggler at that width instead (its
-     stylesheet references one under `.app-header__mobile-nav-toggler`).
-     This app has no AppHeader - RootLayout.tsx's NavToggler is the only
-     nav-open control it has at any width - so keep its icon visible instead
-     of silently losing the only way to reopen the nav on a phone. */
-  .template-default__nav-toggler-wrapper .hamburger {
-    display: flex;
+.admin-shell__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-shell__content {
+  padding: calc(var(--doc-controls-height) * 0.6) var(--gutter-h) calc(var(--base) * 3);
+}
+
+@media (min-width: 769px) {
+  .admin-shell__content {
+    padding-top: calc(var(--base) * 2.4);
   }
 }

@@ -47,47 +47,15 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#f5f5f5',
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'white',
-          padding: 32,
-          borderRadius: 8,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          width: '100%',
-          maxWidth: 400,
-        }}
-      >
-        <h1 style={{ marginTop: 0, marginBottom: 24, textAlign: 'center', fontSize: 24 }}>Admin Login</h1>
+    <div className="admin-login">
+      <div className="admin-login__card">
+        <h1 className="admin-login__title">Admin Login</h1>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {error && (
-            <div
-              style={{
-                backgroundColor: '#fee',
-                border: '1px solid #fcc',
-                color: '#c33',
-                padding: 12,
-                borderRadius: 4,
-                fontSize: 14,
-              }}
-            >
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit}>
+          {error && <div className="admin-login__error">{error}</div>}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label htmlFor="field-email" style={{ fontSize: 14, fontWeight: 500 }}>
-              Email
-            </label>
+          <div className="admin-login__field">
+            <label htmlFor="field-email">Email</label>
             <input
               id="field-email"
               name="email"
@@ -96,20 +64,11 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
               required
-              style={{
-                padding: '8px 12px',
-                fontSize: 14,
-                border: '1px solid #ddd',
-                borderRadius: 4,
-                fontFamily: 'inherit',
-              }}
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label htmlFor="field-password" style={{ fontSize: 14, fontWeight: 500 }}>
-              Password
-            </label>
+          <div className="admin-login__field">
+            <label htmlFor="field-password">Password</label>
             <input
               id="field-password"
               name="password"
@@ -118,31 +77,10 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
               required
-              style={{
-                padding: '8px 12px',
-                fontSize: 14,
-                border: '1px solid #ddd',
-                borderRadius: 4,
-                fontFamily: 'inherit',
-              }}
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            style={{
-              padding: '10px 16px',
-              fontSize: 14,
-              fontWeight: 500,
-              backgroundColor: isLoading ? '#ccc' : '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: 4,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              marginTop: 8,
-            }}
-          >
+          <button className="btn btn--primary admin-login__submit" type="submit" disabled={isLoading}>
             {isLoading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>

@@ -10,3 +10,4 @@ export { DocumentEventsProvider, useDocumentEvents, type DocumentEvent } from '.
 export { DocumentInfoProvider, useDocumentInfo, type DocumentInfoValue } from './DocumentInfoContext'
 export { FormProvider, useField, useFormFields, useFormModified, useResetFormModified, type FieldsMap } from './FormContext'
 export { NavProvider, useNav } from './NavContext'
+export { ThemeProvider, useTheme, type ThemePref } from './ThemeContext'

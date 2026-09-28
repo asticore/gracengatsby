@@ -219,9 +219,9 @@
 }
 
 /* Auto — no data-theme attribute, so follow the OS. Guarded so an explicit
-   light choice on a dark-mode machine still wins. (No manual light/dark/auto
-   switcher exists in this admin's UI right now - this block only ever
-   engages via the OS's own setting.) */
+   light choice on a dark-mode machine still wins. Set via the top-right
+   ThemeToggler (Stage 13) - see ThemeContext.tsx's own header for how the
+   attribute itself gets applied. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --theme-elevation-0: var(--color-base-900);
@@ -742,6 +742,28 @@ button {
   color: var(--ac-gold-contrast);
 }
 
+/* Stage 13: inside a collapsed-rail group's flyout there's room for the full
+   label again, so undo the `.nav--collapsed` rail rules (badge instead of
+   label, centered/right-aligned link) for anything under `.nav-group__flyout`
+   specifically. Same specificity as the rules above (two classes each) - this
+   block must stay AFTER them in source order to win. */
+.nav-group__flyout .nav__link {
+  justify-content: flex-start;
+}
+
+.nav-group__flyout .nav__link-label {
+  display: inline;
+}
+
+.nav-group__flyout .nav__link-badge {
+  display: none;
+}
+
+.nav-group__flyout .nav__link-indicator {
+  left: -9px;
+  right: auto;
+}
+
 .ac-nav-dashboard {
   display: flex;
   align-items: center;
@@ -850,4 +872,130 @@ button {
   .admin-shell__content {
     padding-top: calc(var(--base) * 2.4);
   }
+}
+
+/* ---------------------------------------------------------------- *
+ * Collapsed-rail group flyout (Stage 13 - WordPress-style submenu)  *
+ * ---------------------------------------------------------------- */
+.nav-group--rail {
+  position: relative;
+}
+
+.nav-group__rail-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: calc(var(--base) * 0.45) 0;
+  border-radius: var(--style-radius-m);
+  color: var(--theme-elevation-600);
+}
+
+.nav-group__rail-trigger:hover,
+.nav-group__rail-trigger:focus-visible {
+  background-color: var(--theme-elevation-100);
+  color: var(--theme-elevation-1000);
+}
+
+/* Always mounted (see NavGroup.tsx's header comment) - `display` alone
+   toggles visibility so a keyboard user tabbing into the trigger can tab
+   straight into these links next, not into an empty subtree. */
+.nav-group__flyout {
+  display: none;
+  position: fixed;
+  z-index: 60;
+  min-width: 190px;
+  max-width: 260px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: calc(var(--base) * 0.5);
+  border-radius: var(--style-radius-m);
+  border: 1px solid var(--theme-elevation-150);
+  background-color: var(--ac-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.nav-group__flyout--open {
+  display: block;
+}
+
+.nav-group__flyout-label {
+  padding: calc(var(--base) * 0.2) calc(var(--base) * 0.4);
+  margin-bottom: calc(var(--base) * 0.2);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-500);
+}
+
+.nav-group__flyout-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------------------------------------------------------------- *
+ * Theme (color scheme) switcher                                     *
+ * ---------------------------------------------------------------- */
+.theme-toggler {
+  position: fixed;
+  top: calc(var(--gutter-h) * 0.4);
+  right: calc(var(--gutter-h) * 0.4);
+  z-index: 50;
+}
+
+.theme-toggler__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-elevation-200);
+  background-color: var(--ac-surface);
+  color: var(--theme-elevation-700);
+  cursor: pointer;
+}
+
+.theme-toggler__trigger:hover {
+  border-color: var(--ac-gold);
+  color: var(--ac-gold);
+}
+
+.theme-toggler__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 120px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--style-radius-m);
+  border: 1px solid var(--theme-elevation-150);
+  background-color: var(--ac-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.theme-toggler__option {
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  padding: calc(var(--base) * 0.35) calc(var(--base) * 0.5);
+  border-radius: var(--style-radius-s);
+  font-size: 0.85rem;
+  color: var(--theme-elevation-700);
+}
+
+.theme-toggler__option:hover {
+  background-color: var(--theme-elevation-100);
+  color: var(--theme-elevation-1000);
+}
+
+.theme-toggler__option--active {
+  color: var(--ac-gold);
+  font-weight: 600;
 }

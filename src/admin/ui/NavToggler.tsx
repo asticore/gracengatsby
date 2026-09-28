@@ -1,60 +1,48 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `NavToggler`, wired up the
- * way `@payloadcms/next`'s `DefaultTemplate` places it: OUTSIDE the nav/main
- * grid wrapper (see TemplateDefaultWrapper.tsx), inside its own
- * `template-default__nav-toggler-wrapper` > `template-default__nav-toggler-
- * container` sticky-positioned shell (stock `@payloadcms/next/css` targets
- * those exact class names). Read directly from
- * `@payloadcms/ui/dist/elements/Nav/NavToggler` and
- * `@payloadcms/next/dist/templates/Default/index.js` to match both the
- * markup nesting and the click behavior (`setNavOpen(!navOpen)`, plus
- * persisting the choice to the nav preference below the desktop breakpoint -
- * intentionally NOT reproduced here, since this app's `useNav` has no
- * preference-persistence concept, same simplification NavGroup.tsx already
- * makes).
+ * The sidebar's one visible trigger - collapses/expands the desktop rail,
+ * or opens/closes the mobile off-canvas drawer, depending on viewport (see
+ * NavContext.tsx's `toggleSidebar`). Replaces the old open/close-only
+ * hamburger this file used to render (a straight port of `@payloadcms/ui`'s
+ * `NavToggler`) - a single adaptive "panel" icon matches the shadcn sidebar
+ * pattern this rebuild is modeled on
+ * (https://ui.shadcn.com/docs/components/base/sidebar), where one
+ * `SidebarTrigger` button does both jobs.
  *
- * This is the missing OPEN button. AdminNavHamburger (AdminNavClient.tsx) is
- * a CLOSE-only button that lives INSIDE the nav itself - before this file,
- * there was no way to reopen the nav once it started (or was toggled)
- * closed, and no wrapper class for stock CSS to lay nav + content out side by
- * side in the first place (see TemplateDefaultWrapper.tsx for that half of
- * the fix).
+ * Fixed-position, outside the nav/content flow (see custom.css's
+ * `.nav-toggler`, which slides itself to sit just past the sidebar's own
+ * current width) - there is no AppHeader/toolbar in this admin for a trigger
+ * to live inside, so a floating button is the only place for it.
  */
 
 import React from 'react'
 import { useNav } from '@/admin/context'
-import { Hamburger } from './Hamburger'
 
-const baseClass = 'template-default'
+const PanelIcon: React.FC = () => (
+  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16">
+    <rect fill="none" height="12" rx="2" stroke="currentColor" strokeWidth="1.4" width="12" x="2" y="2" />
+    <line stroke="currentColor" strokeWidth="1.4" x1="6.3" x2="6.3" y1="2" y2="14" />
+  </svg>
+)
 
 export const NavToggler: React.FC = () => {
-  const { navOpen, setNavOpen } = useNav()
+  const { collapsed, isMobile, navOpen, toggleSidebar } = useNav()
 
-  const className = ['nav-toggler', navOpen && 'nav-toggler--is-open', `${baseClass}__nav-toggler`]
-    .filter(Boolean)
-    .join(' ')
+  const isOpenState = isMobile ? navOpen : !collapsed
+  const label = isOpenState ? 'Collapse sidebar' : 'Expand sidebar'
 
   return (
-    <div className={`${baseClass}__nav-toggler-wrapper`} id="nav-toggler">
-      <div className={`${baseClass}__nav-toggler-container`}>
-        {/* navOpen's initial value is a client-only viewport check (see
-            NavContext's getInitialNavOpen) that the server render can't
-            perform - same server/client mismatch documented on
-            TemplateDefaultWrapper.tsx and AdminNavShell's <aside>, and just
-            as unpatched without this on a narrow (mobile) viewport. */}
-        <button
-          aria-label={navOpen ? 'Close menu' : 'Open menu'}
-          className={className}
-          onClick={() => setNavOpen(!navOpen)}
-          suppressHydrationWarning
-          type="button"
-        >
-          <Hamburger isActive={navOpen} suppressHydrationWarning />
-        </button>
-      </div>
-    </div>
+    <button
+      aria-label={label}
+      className="nav-toggler"
+      onClick={toggleSidebar}
+      suppressHydrationWarning
+      title={`${label} (Ctrl/⌘+B)`}
+      type="button"
+    >
+      <PanelIcon />
+    </button>
   )
 }
 

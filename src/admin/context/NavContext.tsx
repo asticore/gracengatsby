@@ -1,79 +1,94 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `useNav`.
+ * From-scratch sidebar state - no longer a straight port of `@payloadcms/ui`'s
+ * `useNav` (Stage 12: full custom rebuild adds a real collapsible/compressible
+ * desktop rail, matching the shadcn sidebar pattern the user pointed at:
+ * https://ui.shadcn.com/docs/components/base/sidebar).
  *
- * Backs AdminNavClient.tsx's AdminNavShell/AdminNavHamburger, and any future
- * consumer of the nav-open toggle. `navOpen`/`hydrated` are seeded with a
- * client-only viewport check inside useState's lazy initializer, not a
- * useEffect - a version that reconciled them via useEffect + setState trips
- * eslint-plugin-react-hooks' set-state-in-effect rule (React 19: setState
- * called synchronously in an effect body risks a cascading render), the same
- * issue and the same fix already established in
- * src/views/media/MediaGalleryGrid.tsx's readStoredSize. The lazy initializer
- * runs during the client's very first render (same as any render), so it
- * disagrees with the server-rendered markup (which always assumes desktop,
- * not-yet-hydrated) - that one-time mismatch is silenced with
- * `suppressHydrationWarning` on the single element whose class depends on
- * these values (AdminNavClient's AdminNavShell `<aside>`).
+ * Two independent axes, because they mean different things at different
+ * widths:
+ *   - `navOpen` - the MOBILE off-canvas drawer (< 769px). Whether the nav is
+ *     on/off screen. Unchanged from before this rebuild.
+ *   - `collapsed` - the DESKTOP rail (>= 769px). Whether the nav is full width
+ *     (labels + the collapsed-rail badges hidden) or the icon-rail width
+ *     (labels hidden, badges shown) - see custom.css's `.nav--collapsed`.
+ *     Persisted to localStorage so a reload keeps your last choice, the same
+ *     thing shadcn's own sidebar does with a cookie.
  *
- * `shouldAnimate` stays false until the first explicit toggle so the initial
- * open/closed state never animates in.
+ * `toggleSidebar()` is what the one visible trigger button (NavToggler.tsx)
+ * calls - it picks WHICH axis to flip based on `isMobile`, so there is a
+ * single control whose behavior adapts to viewport, same as shadcn's own
+ * `SidebarTrigger`. Ctrl/Cmd+B also calls it, matching that same reference.
  *
- * `hydrated` is the one exception to the "lazy initializer, no effect" rule
- * above, and deliberately so. A lazy initializer's value differs between the
- * server render and the client's OWN hydration render (same idea as
- * `navOpen`'s), but for a plain boolean flag like this one, that difference
- * is exactly the kind of mismatch React logs and then leaves alone: "A tree
- * hydrated but some attributes of the server rendered HTML didn't match the
- * client properties. This won't be patched up." - attribute mismatches
- * discovered DURING hydration are not synced to the client's computed value,
- * unlike an ordinary post-hydration re-render, which applies it normally.
- * Confirmed live: without an explicit post-mount update, every element whose
- * class reads `hydrated` (this admin's `.template-default` wrapper, its nav
- * toggler) stayed stuck on the server's `hydrated: false` classes forever -
- * on a real page that means stock CSS's `.template-default .nav{display:
- * none}` never resolves to `display:unset`, permanently hiding the sidebar
- * until some UNRELATED state change elsewhere forces a normal re-render.
- * Real Payload's own `NavProvider` (`@payloadcms/ui/dist/elements/Nav/
- * context.js`) hits this identical constraint and solves it the same way -
- * a `useEffect` that flips `hydrated` (and re-syncs `navOpen`) once, right
- * after mount. That one, isolated `set-state-in-effect` is the deliberate
- * exception; nothing else in this file needs it.
+ * Every value below has a legitimate server/client mismatch on first
+ * hydration (`navOpen`/`collapsed`/`isMobile` all read from `window` in their
+ * lazy initializers, which the server render can't do) - `hydrated` exists
+ * so consumers can suppress that one, real mismatch via
+ * `suppressHydrationWarning` without silencing anything else. See
+ * TemplateDefaultWrapper.tsx's history (removed this same rebuild) for the
+ * concrete bug this pattern fixes: React does NOT patch an attribute
+ * mismatch discovered during hydration itself - it has to be applied in a
+ * post-mount effect, never in the lazy initializer alone.
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 type NavContextValue = {
+  collapsed: boolean
   hydrated: boolean
+  isMobile: boolean
   navOpen: boolean
   navRef: React.RefObject<HTMLDivElement | null>
+  setCollapsed: (collapsed: boolean) => void
   setNavOpen: (open: boolean) => void
   shouldAnimate: boolean
+  toggleSidebar: () => void
 }
 
 const NavContext = createContext<NavContextValue | null>(null)
 
 const MOBILE_QUERY = '(max-width: 768px)'
+const COLLAPSED_STORAGE_KEY = 'ac-nav-collapsed'
 
 function getInitialNavOpen(): boolean {
   if (typeof window === 'undefined') return true
   return !window.matchMedia(MOBILE_QUERY).matches
 }
 
+function getInitialIsMobile(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia(MOBILE_QUERY).matches
+}
+
+function getInitialCollapsed(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === '1'
+  } catch {
+    // Private browsing / storage disabled - fall back to expanded.
+    return false
+  }
+}
+
 export const NavProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [navOpen, setNavOpenState] = useState(getInitialNavOpen)
+  const [collapsed, setCollapsedState] = useState(getInitialCollapsed)
+  const [isMobile, setIsMobile] = useState(getInitialIsMobile)
   const [hydrated, setHydrated] = useState(false)
   const [shouldAnimate, setShouldAnimate] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
 
-  // Deliberate mount-flag pattern, see this file's header comment: only a
-  // real post-hydration re-render (not the lazy initializer above) actually
-  // unhides the nav. Matches real Payload's own NavProvider.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setHydrated(true)
     setNavOpenState(getInitialNavOpen())
+    setIsMobile(getInitialIsMobile())
+
+    const mql = window.matchMedia(MOBILE_QUERY)
+    const onChange = (event: MediaQueryListEvent) => setIsMobile(event.matches)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
   }, [])
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -82,9 +97,39 @@ export const NavProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNavOpenState(open)
   }, [])
 
+  const setCollapsed = useCallback((next: boolean) => {
+    setShouldAnimate(true)
+    setCollapsedState(next)
+    try {
+      window.localStorage.setItem(COLLAPSED_STORAGE_KEY, next ? '1' : '0')
+    } catch {
+      // Nothing to persist to - the in-memory state above still works for this session.
+    }
+  }, [])
+
+  const toggleSidebar = useCallback(() => {
+    if (isMobile) {
+      setNavOpen(!navOpen)
+    } else {
+      setCollapsed(!collapsed)
+    }
+  }, [collapsed, isMobile, navOpen, setCollapsed, setNavOpen])
+
+  // Cmd/Ctrl+B - same shortcut shadcn's own SidebarTrigger uses.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault()
+        toggleSidebar()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [toggleSidebar])
+
   const value = useMemo(
-    () => ({ hydrated, navOpen, navRef, setNavOpen, shouldAnimate }),
-    [hydrated, navOpen, setNavOpen, shouldAnimate],
+    () => ({ collapsed, hydrated, isMobile, navOpen, navRef, setCollapsed, setNavOpen, shouldAnimate, toggleSidebar }),
+    [collapsed, hydrated, isMobile, navOpen, setCollapsed, setNavOpen, shouldAnimate, toggleSidebar],
   )
 
   return <NavContext.Provider value={value}>{children}</NavContext.Provider>

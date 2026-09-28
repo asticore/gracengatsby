@@ -27,8 +27,8 @@
 import type { ReactNode } from 'react'
 import { AdminNav } from '@/components/admin/nav/AdminNav'
 import { DocumentEventsProvider, NavProvider } from '@/admin/context'
+import { AdminShell } from '@/admin/ui/AdminShell'
 import { NavToggler } from '@/admin/ui/NavToggler'
-import { TemplateDefaultWrapper } from '@/admin/ui/TemplateDefaultWrapper'
 import { getAdminContext } from '@/admin/auth'
 
 export async function RootLayout({ children }: { children: ReactNode; config?: unknown; importMap?: unknown; serverFunction?: unknown }) {
@@ -40,18 +40,17 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
         <DocumentEventsProvider>
           <NavProvider>
             {context.isAdmin ? (
-              // Mirrors real Payload's DefaultTemplate: a position:relative
-              // wrapper holding the outside nav-open toggle plus the
-              // template-default grid wrapper (nav + main side by side). See
-              // NavToggler.tsx / TemplateDefaultWrapper.tsx for why this was
-              // missing and what it broke.
-              <div style={{ position: 'relative' }}>
+              // Stage 12 (full custom rebuild): AdminShell is this admin's own
+              // flex layout - the sidebar beside the content - replacing the
+              // old TemplateDefaultWrapper, which existed only to trigger
+              // @payloadcms/next/css's own CSS-grid rules. See AdminShell.tsx.
+              <AdminShell>
                 <NavToggler />
-                <TemplateDefaultWrapper>
-                  <AdminNav i18n={context.i18n} payload={context.engine} permissions={context.permissions} visibleEntities={context.visibleEntities} />
-                  <main className="template-default__wrap">{children}</main>
-                </TemplateDefaultWrapper>
-              </div>
+                <AdminNav i18n={context.i18n} payload={context.engine} permissions={context.permissions} visibleEntities={context.visibleEntities} />
+                <div className="admin-shell__main">
+                  <main className="admin-shell__content">{children}</main>
+                </div>
+              </AdminShell>
             ) : (
               <main>{children}</main>
             )}

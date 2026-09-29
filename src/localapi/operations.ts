@@ -462,6 +462,8 @@ export type FieldConfigLike = {
   /** `blocks` fields only. This app never uses the newer `blockReferences` shorthand (confirmed by `validators.ts`'s own file header grep) - only the plain `blocks: Block[]` array form is read here. */
   blocks?: Array<{ slug: string; fields: FieldConfigLike[] }>
   required?: boolean
+  /** Read by `rest.ts`'s `applyBeforeDuplicate` (real Payload's own default `beforeDuplicate` hook, `fields/setDefaultBeforeDuplicate.js`) - not read anywhere in this file's own beforeChange/beforeValidate pipeline. */
+  unique?: boolean
   hasMany?: boolean
   min?: number
   max?: number

@@ -17,11 +17,12 @@
  * future thin wrapper in that route file will call: it returns a real
  * `Response` for anything in scope, or `null` to signal "not handled here,
  * fall through to real Payload's REST_GET/POST/PATCH/DELETE" for anything
- * still deferred (versions/drafts LIST/history, `/access`,
+ * still deferred (versions/drafts LIST/history,
  * locked-documents/preferences, GraphQL, and any collection/global this
- * module doesn't recognize). `/:id/duplicate` and bulk update/delete were
- * both in this deferred list originally - now handled (see `handleDuplicate`,
- * `handleBulkUpdate`/`handleBulkDelete` below).
+ * module doesn't recognize). `/:id/duplicate`, bulk update/delete, and
+ * `/access`/`/access/:id?` were all in this deferred list originally - now
+ * handled (see `handleDuplicate`, `handleBulkUpdate`/`handleBulkDelete`,
+ * `handleAccessRoot`/`handleCollectionAccess`/`handleGlobalAccess` below).
  *
  * ---------------------------------------------------------------------------
  * Real Payload's endpoint-matching precedence, reproduced here
@@ -104,12 +105,11 @@
  * see the plan doc's "Explicitly deferred to a later sub-stage" list)
  * ---------------------------------------------------------------------------
  * Versions/drafts endpoints (LIST/history/restore); the admin panel's own
- * locked-documents/preferences CRUD; `/api/access`/`/api/<collection>/
- * access/:id?`; GraphQL. A request that
- * matches a recognized collection/global slug but not one of the routes
- * this module implements (any of the above) returns `null` from
- * `handleRestRequest`, the same as a request for a collection/global slug
- * this module doesn't recognize at all.
+ * locked-documents/preferences CRUD; GraphQL. A request that matches a
+ * recognized collection/global slug but not one of the routes this module
+ * implements (any of the above) returns `null` from `handleRestRequest`, the
+ * same as a request for a collection/global slug this module doesn't
+ * recognize at all.
  *
  * ---------------------------------------------------------------------------
  * Uploads stage addition: multipart create/update + file serving
@@ -636,6 +636,281 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
 }
 
 /* -------------------------------------------------------------------------- */
+/* /api/access (root), POST /api/<collection>/access/:id?, POST               */
+/* /api/globals/<slug>/access - Stage 7                                       */
+/*                                                                            */
+/* Reproduced from `payload/dist/auth/{endpoints,operations}/access.js`,      */
+/* `auth/getAccessResults.js`, `utilities/getEntityPermissions/               */
+/* {getEntityPermissions,populateFieldPermissions}.js`,                       */
+/* `utilities/sanitizePermissions.js`, `collections/endpoints/docAccess.js`,  */
+/* `globals/endpoints/docAccess.js` (all read directly from `node_modules` to */
+/* confirm exact wire behavior).                                              */
+/*                                                                            */
+/* Root `GET /api/access` needs no auth - it computes a permission tree for   */
+/* every registered collection/global against whatever `user` is present     */
+/* (or none). Per-collection is `POST /api/<collection>/access/:id?` (id      */
+/* OPTIONAL - the no-id case is how the real admin UI checks "can I create a  */
+/* new one at all"), body is a raw `data` object used to evaluate access      */
+/* functions that read doc/sibling values. Per-global is                     */
+/* `POST /api/globals/<slug>/access` (no id - globals are singletons).        */
+/*                                                                            */
+/* Default when an entity/field declares NO access function for an operation */
+/* is `isLoggedIn` (real Payload's own default, confirmed in                 */
+/* `getEntityPermissions.js` - NOT unconditional `true`, and deliberately    */
+/* NOT this module's own `admin/auth.ts`'s `evaluateAccess` helper, which     */
+/* defaults to `true` for a different, narrower caller). A field WITH no      */
+/* access function inherits its already-resolved PARENT's permission for      */
+/* that operation (not a fresh `isLoggedIn` check) - confirmed in            */
+/* `populateFieldPermissions.js`.                                            */
+/*                                                                            */
+/* An access function that returns a `Where` query object (rather than a     */
+/* plain boolean) is, per real Payload's own `processWhereQuery`, resolved   */
+/* against the actual document ONLY when `fetchData` is true (the id-present */
+/* per-collection/global case) - otherwise (root, and the no-id per-         */
+/* collection case) it's left unresolved as `{permission: true, where}`.     */
+/* DOCUMENTED SIMPLIFICATION: this module treats a `Where`-object result as  */
+/* `{permission: true, where}` in EVERY case, including id-present, rather   */
+/* than running the real `entityDocExists` DB check against it - matching    */
+/* the plan doc's established pattern of documenting a wire-fidelity gap     */
+/* rather than building full parity for it (no known caller in this app's    */
+/* own admin UI reads a `where`-restricted access result's resolved boolean  */
+/* rather than just checking for the key's presence, which this module       */
+/* already reproduces exactly).                                              */
+/* -------------------------------------------------------------------------- */
+
+/** A real Payload access function's call shape, as every access fn in this app's own `src/collections/*`/`src/globals/*` configs is already written against (`({req}) => ...`, occasionally reading `id`/`data` too - real Payload's full signature is `({req, id, data, siblingData})`, this module only ever needs `req`/`id`/`data`). */
+type AccessFn = (args: { req: { user: unknown; payload: Engine }; id?: unknown; data?: unknown }) => unknown
+
+type EntityAccessConfigLike = {
+  create?: AccessFn
+  read?: AccessFn
+  update?: AccessFn
+  delete?: AccessFn
+  unlock?: AccessFn
+  readVersions?: AccessFn
+  admin?: AccessFn
+}
+
+/** A hand-rolled structural mirror of real Payload's `Field` type, scoped to exactly what this module's field-permission recursion needs (name/type/nesting/`access`) - same "structural mirror, not an import" convention as `./operations.ts`'s own `FieldConfigLike` (see that type's doc comment), just widened with `access` and `tabs`, neither of which `FieldConfigLike` declares (that type was built for `applyBeforeDuplicate`'s narrower needs). */
+type AccessFieldLike = {
+  name?: string
+  type: string
+  fields?: AccessFieldLike[]
+  blocks?: Array<{ slug: string; fields: AccessFieldLike[] }>
+  tabs?: Array<{ name?: string; fields: AccessFieldLike[] }>
+  access?: { create?: AccessFn; read?: AccessFn; update?: AccessFn }
+}
+
+type AccessEntityConfigLike = {
+  slug: string
+  access?: EntityAccessConfigLike
+  fields?: AccessFieldLike[]
+  auth?: unknown
+  versions?: unknown
+}
+
+type AccessResult = { permission: boolean; where?: Where }
+
+/** Calls one access function (or applies the `isLoggedIn` default when none is declared) and normalizes its result to `{permission, where?}` - see this section's header comment for the `Where`-object handling's documented simplification. */
+async function callAccessFn(fn: AccessFn | undefined, isLoggedIn: boolean, id: unknown, data: unknown, user: unknown, engine: Engine): Promise<AccessResult> {
+  if (typeof fn !== 'function') return { permission: isLoggedIn }
+  let result: unknown
+  try {
+    result = await fn({ req: { user, payload: engine }, id, data })
+  } catch {
+    return { permission: false }
+  }
+  if (typeof result === 'boolean') return { permission: result }
+  if (result && typeof result === 'object') return { permission: true, where: result as Where }
+  return { permission: Boolean(result) }
+}
+
+/** Real Payload's `sanitizePermissions.js` wire value for one resolved operation: omitted entirely (`undefined`) when denied, literal `true` when allowed with no `where` restriction, or the unresolved `{permission: true, where}` object when allowed-with-a-where (see this section's header comment). */
+function accessPermissionValue(result: AccessResult): true | { permission: true; where: Where } | undefined {
+  if (!result.permission) return undefined
+  if (result.where) return { permission: true, where: result.where }
+  return true
+}
+
+/** A `fields`/`blocks` container collapses to literal `true` (real Payload's own `sanitizePermissions.js` behavior) only when it has at least one entry and every entry is itself literal `true`. */
+function collapseIfAllTrue(obj: Record<string, unknown>): Record<string, unknown> | true {
+  const keys = Object.keys(obj)
+  if (keys.length > 0 && keys.every((k) => obj[k] === true)) return true
+  return obj
+}
+
+/**
+ * Reproduces `populateFieldPermissions.js`'s recursion: every named field
+ * gets its own `access[op]` evaluated (or inherits the parent's already-
+ * resolved permission for that op when it declares none); unnamed group/row/
+ * collapsible fields recurse transparently (no extra nesting level in the
+ * output); named `group`/`array` fields nest under `fields`; `blocks` fields
+ * nest per-block-slug under `blocks`; named `tabs` nest like a named group,
+ * unnamed tabs recurse transparently. `delete`/`readVersions`/`unlock` are
+ * never field-level operations (real Payload's own `continue` for those -
+ * confirmed reading the source) - only `create`/`read`/`update` reach here.
+ */
+async function buildFieldPermissions(fields: AccessFieldLike[], operations: string[], parent: Record<string, AccessResult>, data: unknown, user: unknown, engine: Engine): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = {}
+  const isLoggedIn = Boolean(user)
+
+  for (const field of fields) {
+    if (field.type === 'tabs' && field.tabs) {
+      for (const tab of field.tabs) {
+        if (tab.name) {
+          const tabFields = await buildFieldPermissions(tab.fields, operations, parent, data, user, engine)
+          const collapsed = collapseIfAllTrue(tabFields)
+          if (Object.keys(tabFields).length > 0) out[tab.name] = { fields: collapsed }
+        } else {
+          Object.assign(out, await buildFieldPermissions(tab.fields, operations, parent, data, user, engine))
+        }
+      }
+      continue
+    }
+
+    if (!field.name) {
+      if (field.fields) Object.assign(out, await buildFieldPermissions(field.fields, operations, parent, data, user, engine))
+      continue
+    }
+
+    const resolvedOps: Record<string, AccessResult> = {}
+    const fieldNode: Record<string, unknown> = {}
+    let allOpsTrue = true
+    for (const op of operations) {
+      const fieldFn = field.access?.[op as 'create' | 'read' | 'update']
+      const result = typeof fieldFn === 'function' ? await callAccessFn(fieldFn, isLoggedIn, undefined, data, user, engine) : (parent[op] ?? { permission: false })
+      resolvedOps[op] = result
+      const value = accessPermissionValue(result)
+      if (value === undefined) allOpsTrue = false
+      else {
+        fieldNode[op] = value
+        if (value !== true) allOpsTrue = false
+      }
+    }
+
+    const childData = data && typeof data === 'object' ? (data as Record<string, unknown>)[field.name] : undefined
+
+    if (field.fields && field.fields.length > 0) {
+      const nested = await buildFieldPermissions(field.fields, operations, resolvedOps, childData, user, engine)
+      if (Object.keys(nested).length > 0) {
+        const collapsedNested = collapseIfAllTrue(nested)
+        fieldNode.fields = collapsedNested
+        if (collapsedNested !== true) allOpsTrue = false
+      }
+    }
+    if (field.blocks && field.blocks.length > 0) {
+      const blocksOut: Record<string, unknown> = {}
+      for (const block of field.blocks) {
+        const blockFields = await buildFieldPermissions(block.fields, operations, resolvedOps, undefined, user, engine)
+        if (Object.keys(blockFields).length > 0) blocksOut[block.slug] = { fields: collapseIfAllTrue(blockFields) }
+      }
+      if (Object.keys(blocksOut).length > 0) {
+        const collapsedBlocks = collapseIfAllTrue(blocksOut)
+        fieldNode.blocks = collapsedBlocks
+        if (collapsedBlocks !== true) allOpsTrue = false
+      }
+    }
+
+    if (allOpsTrue && Object.keys(fieldNode).length > 0) out[field.name] = true
+    else if (Object.keys(fieldNode).length > 0) out[field.name] = fieldNode
+  }
+
+  return out
+}
+
+/** Reproduces `getEntityPermissions.js`'s per-entity (collection or global) result: top-level `operations` resolved against `entity.access`, then `entity.fields` recursed via `buildFieldPermissions` (always present as `fields`, collapsing to `true` when every field is fully permitted, `{}` when nothing under it is). */
+async function getEntityAccessResult(entity: AccessEntityConfigLike, operations: string[], id: unknown, data: unknown, user: unknown, engine: Engine): Promise<Record<string, unknown>> {
+  const isLoggedIn = Boolean(user)
+  const out: Record<string, unknown> = {}
+  const resolvedOps: Record<string, AccessResult> = {}
+  for (const op of operations) {
+    const fn = entity.access?.[op as keyof EntityAccessConfigLike]
+    const result = await callAccessFn(fn, isLoggedIn, id, data, user, engine)
+    resolvedOps[op] = result
+    const value = accessPermissionValue(result)
+    if (value !== undefined) out[op] = value
+  }
+  const fieldOps = operations.filter((op) => op === 'create' || op === 'read' || op === 'update')
+  const fieldsTree = await buildFieldPermissions(entity.fields ?? [], fieldOps, resolvedOps, data, user, engine)
+  out.fields = collapseIfAllTrue(fieldsTree)
+  return out
+}
+
+/** The set of top-level operations `getAccessResults.js` checks for a collection: `create/read/update/delete`, plus `unlock` when the collection is auth-enabled with a nonzero (or default) `maxLoginAttempts`, plus `readVersions` when it has `versions`. */
+function collectionAccessOperations(entity: AccessEntityConfigLike): string[] {
+  const ops = ['create', 'read', 'update', 'delete']
+  const authCfg = entity.auth as { maxLoginAttempts?: number } | boolean | undefined
+  const authEnabled = authCfg === true || (authCfg && typeof authCfg === 'object')
+  const maxLoginAttempts = authCfg && typeof authCfg === 'object' ? authCfg.maxLoginAttempts : undefined
+  if (authEnabled && maxLoginAttempts !== 0) ops.push('unlock')
+  if (entity.versions) ops.push('readVersions')
+  return ops
+}
+
+/** `getAccessResults.js`'s `canAccessAdmin`: only computed when the requesting user belongs to `config.admin.user`'s own collection (this app's is always `AUTH_COLLECTION_SLUG`/`'users'`, per `engage.config.ts`'s `admin.user: Users.slug` - same hardcoding convention as `AUTH_COLLECTION_SLUG` itself, see this file's header), via that collection's own `access.admin` (or `isLoggedIn` when it declares none). `false` for an anonymous request or a user from any other collection. */
+async function computeCanAccessAdmin(user: unknown, engine: Engine): Promise<boolean> {
+  if (!user) return false
+  const userCollection = (user as { collection?: unknown }).collection
+  if (userCollection !== AUTH_COLLECTION_SLUG) return false
+  const usersConfig = readRegistry.collections[AUTH_COLLECTION_SLUG]?.config as unknown as AccessEntityConfigLike | undefined
+  const adminFn = usersConfig?.access?.admin
+  const result = await callAccessFn(adminFn, true, undefined, undefined, user, engine)
+  return result.permission
+}
+
+/** `GET /api/access` (root, no auth required) - iterates every registered collection/global (`readRegistry`) and computes its full permission tree against whatever `user` is present (or none). */
+async function handleAccessRoot(engine: Engine, user: unknown): Promise<Response> {
+  const canAccessAdmin = await computeCanAccessAdmin(user, engine)
+  const collections: Record<string, unknown> = {}
+  for (const slug of Object.keys(readRegistry.collections)) {
+    const config = readRegistry.collections[slug]?.config as unknown as AccessEntityConfigLike
+    collections[slug] = await getEntityAccessResult(config, collectionAccessOperations(config), undefined, undefined, user, engine)
+  }
+  const globals: Record<string, unknown> = {}
+  for (const slug of Object.keys(readRegistry.globals)) {
+    const config = readRegistry.globals[slug]?.config as unknown as AccessEntityConfigLike
+    const ops = config.versions ? ['read', 'update', 'readVersions'] : ['read', 'update']
+    globals[slug] = await getEntityAccessResult(config, ops, undefined, undefined, user, engine)
+  }
+  const body: Record<string, unknown> = { collections, globals }
+  if (canAccessAdmin) body.canAccessAdmin = true
+  return Response.json(body, { status: 200 })
+}
+
+/** Best-effort parse of a POST body's JSON `data` object - real Payload's `req.data`, used by access functions that read doc/sibling values. A missing/unparseable body is `undefined`, not an error (matching `docAccessOperation`'s own `hasData` check falling through to a DB fetch instead of throwing). */
+async function parseAccessRequestData(request: Request): Promise<unknown> {
+  try {
+    const body = await request.clone().json()
+    return body && typeof body === 'object' ? body : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** `POST /api/<collection>/access/:id?` - `id` is OPTIONAL (real Payload's own route is `/access/:id?`, confirmed in `collections/endpoints/docAccess.js`): the no-id case is how the real admin UI checks "can I create a new one at all" (`fetchData: false` in real Payload). When `id` is present and the POST body carried no usable `data`, this fetches the real doc (`overrideAccess: true`, matching real Payload's own fallback fetch) so field-level access functions that read doc values still see them - see this section's header comment for the one documented `Where`-object fidelity gap. */
+async function handleCollectionAccess(engine: Engine, collection: string, id: number | undefined, request: Request, user: unknown): Promise<Response> {
+  const config = readRegistry.collections[collection]?.config as unknown as AccessEntityConfigLike
+  let data = await parseAccessRequestData(request)
+  if (data === undefined && id !== undefined) {
+    data = await engine.findByID({ collection, id, overrideAccess: true, user: user as Parameters<Engine['findByID']>[0]['user'] }).catch((): unknown => undefined)
+  }
+  const result = await getEntityAccessResult(config, collectionAccessOperations(config), id, data, user, engine)
+  return Response.json(result, { status: 200 })
+}
+
+/** `POST /api/globals/<slug>/access` - globals are singletons, so real Payload always fetches the current doc (`fetchData: true` unconditionally, confirmed in `globals/endpoints/docAccess.js`) unless the POST body already carried usable `data`. */
+async function handleGlobalAccess(engine: Engine, globalSlug: string, request: Request, user: unknown): Promise<Response> {
+  const config = readRegistry.globals[globalSlug]?.config as unknown as AccessEntityConfigLike
+  let data = await parseAccessRequestData(request)
+  if (data === undefined) {
+    data = await engine.findGlobal({ slug: globalSlug, overrideAccess: true, user: user as Parameters<Engine['findGlobal']>[0]['user'] }).catch((): unknown => undefined)
+  }
+  const ops = config.versions ? ['read', 'update', 'readVersions'] : ['read', 'update']
+  const result = await getEntityAccessResult(config, ops, undefined, data, user, engine)
+  return Response.json(result, { status: 200 })
+}
+
+/* -------------------------------------------------------------------------- */
 /* Cart item endpoints (Stage 10 Ecommerce, Layer 2 remainder)                */
 /*                                                                            */
 /* Reproduced from the real ecommerce plugin's 5 cart endpoints              */
@@ -1153,12 +1428,27 @@ export async function handleRestRequest(request: Request, slug: string[], engine
     if (slug[0] === 'globals') {
       const globalSlug = slug[1]
       const rest = slug.slice(2)
-      if (!globalSlug || !readRegistry.globals[globalSlug] || rest.length > 0) return null
+      if (!globalSlug || !readRegistry.globals[globalSlug]) return null
+
+      if (rest.length === 1 && rest[0] === 'access' && method === 'POST') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleGlobalAccess(engine, globalSlug, request, user)
+      }
+      if (rest.length > 0) return null
 
       const { user } = await engine.auth({ headers: request.headers })
       if (method === 'GET') return await handleGlobalFind(engine, globalSlug, request, user)
       if (method === 'POST') return await handleGlobalUpdate(engine, globalSlug, request, user)
       return null
+    }
+
+    // Root `GET /api/access` - real Payload's own root endpoint (no
+    // `collections`/`globals` prefix, not gated on a recognized collection
+    // slug), needs no auth (works anonymously, see `handleAccessRoot`'s doc
+    // comment).
+    if (slug[0] === 'access' && slug.length === 1 && method === 'GET') {
+      const { user } = await engine.auth({ headers: request.headers })
+      return await handleAccessRoot(engine, user)
     }
 
     // `payments` is not a collection or global slug - a real Payload
@@ -1219,6 +1509,11 @@ export async function handleRestRequest(request: Request, slug: string[], engine
         return await handleCount(engine, collectionSlug, request, user)
       }
 
+      if (method === 'POST' && seg === 'access') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleCollectionAccess(engine, collectionSlug, undefined, request, user)
+      }
+
       const id = Number(seg)
       if (!Number.isFinite(id)) return null // not a recognized named route or a valid numeric id - fall through
 
@@ -1240,6 +1535,13 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       return await handleDuplicate(engine, collectionSlug, docId, request, user)
     }
 
+    if (rest.length === 2 && rest[0] === 'access' && method === 'POST') {
+      const docId = Number(rest[1])
+      if (!Number.isFinite(docId)) return null
+      const { user } = await engine.auth({ headers: request.headers })
+      return await handleCollectionAccess(engine, collectionSlug, docId, request, user)
+    }
+
     if (rest.length === 2 && collectionSlug === 'carts' && method === 'POST') {
       const cartId = Number(rest[0])
       if (!Number.isFinite(cartId)) return null
@@ -1252,7 +1554,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       return null
     }
 
-    // /versions, /versions/:id, /access/:id? - still deferred. /:id/duplicate and bulk PATCH/DELETE are handled above.
+    // /versions, /versions/:id - still deferred. /:id/duplicate, bulk PATCH/DELETE, and /access/:id? are handled above.
     return null
   } catch (err) {
     const { status, body } = errorToResponse(err)

@@ -13,9 +13,9 @@
  *
  * `handleRestRequest` (`@/localapi/rest`) is tried FIRST for GET/POST/PATCH/
  * DELETE. It returns a real `Response` for anything in this stage's scope
- * (core collection/global CRUD + core auth + `/:id/duplicate` - see the plan
- * doc), or `null` to mean "not handled here" for anything still deferred
- * (bulk operations, versions/drafts LIST/history, `/access`,
+ * (core collection/global CRUD + bulk update/delete + core auth +
+ * `/:id/duplicate` - see the plan doc), or `null` to mean "not handled here"
+ * for anything still deferred (versions/drafts LIST/history, `/access`,
  * locked-documents/preferences, GraphQL, or any collection/global it doesn't
  * recognize) - in every one of
  * those fallthrough cases `handleRestRequest` returns before ever reading the

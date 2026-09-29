@@ -117,6 +117,22 @@ describe('api/[...slug] route wiring - matched requests are served by handleRest
     expect(viaRoute.status).toBe(viaReal.status)
     expect(viaRouteBody).toEqual(await bodyOf(viaReal))
   })
+
+  it('DELETE /api/faqs with no `where` (bulk, missing where) is served by our own handler, matching real Payload\'s 400 status', async () => {
+    // Bulk delete is now handled (Stage 7), no longer deferred. Real Payload
+    // requires `where` for a bulk op and 400s without it - same status here,
+    // body compared only loosely (exact error-object shape isn't identical,
+    // see handleBulkDelete's own doc comment: no `isPublic` field on our side).
+    const slug = ['faqs']
+    const viaRoute = await DELETE(req('DELETE', 'http://localhost/api/faqs'), args(slug))
+    const viaHandler = await handleRestRequest(req('DELETE', 'http://localhost/api/faqs'), slug)
+    expect(viaHandler).not.toBeNull()
+    expect(viaRoute.status).toBe(viaHandler!.status)
+    expect(await bodyOf(viaRoute)).toEqual(await bodyOf(viaHandler!))
+
+    const viaReal = await realDelete(req('DELETE', 'http://localhost/api/faqs'), args(slug))
+    expect(viaRoute.status).toBe(viaReal.status)
+  })
 })
 
 describe('api/[...slug] route wiring - unmatched requests fall through to real Payload', () => {
@@ -136,16 +152,6 @@ describe('api/[...slug] route wiring - unmatched requests fall through to real P
     expect(premise).toBeNull()
     const viaRoute = await PATCH(req('PATCH', 'http://localhost/api/faqs/versions/1', { title: 'x' }), args(slug))
     const viaReal = await realPatch(req('PATCH', 'http://localhost/api/faqs/versions/1', { title: 'x' }), args(slug))
-    expect(viaRoute.status).toBe(viaReal.status)
-    expect(await bodyOf(viaRoute)).toEqual(await bodyOf(viaReal))
-  })
-
-  it('DELETE /api/faqs (bulk, no id, deferred) falls through to real Payload, matching REST_DELETE directly', async () => {
-    const slug = ['faqs']
-    const premise = await handleRestRequest(req('DELETE', 'http://localhost/api/faqs'), slug)
-    expect(premise).toBeNull()
-    const viaRoute = await DELETE(req('DELETE', 'http://localhost/api/faqs'), args(slug))
-    const viaReal = await realDelete(req('DELETE', 'http://localhost/api/faqs'), args(slug))
     expect(viaRoute.status).toBe(viaReal.status)
     expect(await bodyOf(viaRoute)).toEqual(await bodyOf(viaReal))
   })

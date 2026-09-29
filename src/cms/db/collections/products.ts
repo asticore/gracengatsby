@@ -101,6 +101,7 @@ export const deleteProduct = ops.deleteByID
 
 export const findLatestProductVersion = versionsOps.findLatestByParentID as unknown as (parentId: number) => Promise<ProductVersion | null>
 export const findProductVersions = versionsOps.findAllByParentID as unknown as (parentId: number) => Promise<ProductVersion[]>
+export const findProductVersionByID = versionsOps.findByID as unknown as (versionId: number) => Promise<ProductVersion | null>
 export const createProductVersion = versionsOps.createVersion as unknown as (
   parentId: number,
   data: Partial<Omit<ProductDoc, 'id' | 'updatedAt' | 'createdAt'>>,

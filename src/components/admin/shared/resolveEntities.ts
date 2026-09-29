@@ -126,7 +126,7 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
   const adminRoute = engine.config.routes.admin
   const available = new Map<string, ResolvedEntity>()
 
-  for (const collection of engine.config.collections as SanitizedCollectionConfig[]) {
+  for (const collection of engine.config.collections as unknown as SanitizedCollectionConfig[]) {
     if (!visibleEntities.collections.includes(collection.slug)) continue
     if (collection.admin?.group === false) continue
     if (!permissions?.collections?.[collection.slug]?.read) continue

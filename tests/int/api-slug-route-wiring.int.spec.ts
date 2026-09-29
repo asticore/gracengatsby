@@ -133,6 +133,61 @@ describe('api/[...slug] route wiring - matched requests are served by handleRest
     const viaReal = await realDelete(req('DELETE', 'http://localhost/api/faqs'), args(slug))
     expect(viaRoute.status).toBe(viaReal.status)
   })
+
+  it('GET /api/access (root, anonymous) is served by our own handler, and matches real Payload\'s own top-level shape', async () => {
+    // /access is now handled (Stage 7), no longer deferred. Real Payload's
+    // own root accessHandler needs no DB access at all (getAccessResults.js
+    // never sets `fetchData: true` at the root level - see rest.ts's own
+    // `/api/access` section header) so a live parity check against
+    // REST_GET is safe in this sandbox (unlike other real-Payload endpoints
+    // that hit "no such table" - see the plan doc's standing practices).
+    // Deep body equality isn't asserted: this module's own documented
+    // simplification (a `Where`-object access result is never resolved
+    // against a real DB existence check) can make individual field/entity
+    // permission values differ in edge cases the plan doc already flags -
+    // only the top-level response shape and status are compared here.
+    const slug = ['access']
+    const viaRoute = await GET(req('GET', 'http://localhost/api/access'), args(slug))
+    const viaRouteBody = (await bodyOf(viaRoute)) as { collections?: object; globals?: object }
+
+    const viaHandler = await handleRestRequest(req('GET', 'http://localhost/api/access'), slug)
+    expect(viaHandler).not.toBeNull()
+    expect(viaRoute.status).toBe(viaHandler!.status)
+    expect(viaRouteBody).toEqual(await bodyOf(viaHandler!))
+
+    const viaReal = await realGet(req('GET', 'http://localhost/api/access'), args(slug))
+    expect(viaRoute.status).toBe(viaReal.status)
+    const viaRealBody = (await bodyOf(viaReal)) as { collections?: object; globals?: object }
+    expect(typeof viaRouteBody.collections).toBe('object')
+    expect(typeof viaRouteBody.globals).toBe('object')
+    // Real Payload's own `buildConfig()` only still registers a SUBSET of
+    // this app's full 21-collection/17-global registry as real collections
+    // (many were already fully cut over to this app's own registry-only
+    // shadow configs by earlier stages, e.g. the 5 ecommerce collections
+    // after `shopPlugin()` was removed) - so real's key set is a subset of
+    // ours, not an equal set. Confirm the subset relationship rather than
+    // exact equality.
+    for (const slugKey of Object.keys(viaRealBody.collections ?? {})) {
+      expect(Object.keys(viaRouteBody.collections ?? {})).toContain(slugKey)
+    }
+    for (const slugKey of Object.keys(viaRealBody.globals ?? {})) {
+      expect(Object.keys(viaRouteBody.globals ?? {})).toContain(slugKey)
+    }
+  })
+
+  it('POST /api/faqs/access (no id) is served by our own handler, matching real Payload\'s own status and top-level operation keys', async () => {
+    const slug = ['faqs', 'access']
+    const viaRoute = await POST(req('POST', 'http://localhost/api/faqs/access'), args(slug))
+    const viaRouteBody = await bodyOf(viaRoute)
+
+    const viaHandler = await handleRestRequest(req('POST', 'http://localhost/api/faqs/access'), slug)
+    expect(viaHandler).not.toBeNull()
+    expect(viaRoute.status).toBe(viaHandler!.status)
+    expect(viaRouteBody).toEqual(await bodyOf(viaHandler!))
+
+    const viaReal = await realPost(req('POST', 'http://localhost/api/faqs/access'), args(slug))
+    expect(viaRoute.status).toBe(viaReal.status)
+  })
 })
 
 describe('api/[...slug] route wiring - unmatched requests fall through to real Payload', () => {

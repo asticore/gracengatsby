@@ -865,6 +865,13 @@ export function createVersionsOps(
     return Promise.all(rows.map((row) => attachExtras(row as Record<string, unknown>)))
   }
 
+  /** Single version row by its OWN id (not its parent's) - backs `GET/POST /api/<collection>/versions/:id`. */
+  async function findByID(versionId: number): Promise<Record<string, unknown> | null> {
+    const db = await getDb()
+    const [row] = await db.select().from(table).where(eq(columns.id, versionId)).limit(1)
+    return row ? attachExtras(row as Record<string, unknown>) : null
+  }
+
   async function createVersion(parentId: number, data: Record<string, unknown>, opts: { latest?: boolean } = {}): Promise<Record<string, unknown>> {
     const db = await getDb()
     const now = new Date().toISOString()
@@ -889,7 +896,7 @@ export function createVersionsOps(
     return attachExtras(row as Record<string, unknown>)
   }
 
-  return { findLatestByParentID, findAllByParentID, createVersion }
+  return { findLatestByParentID, findAllByParentID, findByID, createVersion }
 }
 
 /**

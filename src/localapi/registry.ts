@@ -317,6 +317,16 @@ import {
   updateTransaction,
   updateTranslation,
   updateUser,
+  findPostVersionByID,
+  findPostVersions,
+  findPageVersionByID,
+  findPageVersions,
+  findEventVersionByID,
+  findEventVersions,
+  findCourseVersionByID,
+  findCourseVersions,
+  findProductVersionByID,
+  findProductVersions,
 } from '@/cms/db'
 
 import type { CollectionDbOps, GlobalDbOps } from './operations'
@@ -325,7 +335,7 @@ import type { CollectionReadEntry, GlobalReadEntry, ReadRegistry } from './read-
 /** Type-erased doc shape every `CollectionDbOps`/`GlobalDbOps` map entry is cast to - see this file's header "TYPE-ERASURE NOTE". */
 export type AnyDoc = Record<string, unknown> & { id: number }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- real create/updateByID params are narrower per-collection types (e.g. `{question: string, answer: unknown} & Partial<Omit<FaqDoc,...>>`); `any` here is a deliberate contravariance workaround so one shared, type-erased map can hold all 21 collections' real ops functions unmodified - see this file's header "TYPE-ERASURE NOTE". The outer `CollectionDbOps<AnyDoc>` cast on the return is what actually re-establishes a checked type for every caller of this map.
+ 
 function collectionOps(
   create: (data: any) => Promise<any>,
   updateByID: (id: number, data: any, opts?: { draft?: boolean }) => Promise<any>,
@@ -469,6 +479,27 @@ export const readRegistry: ReadRegistry = {
  * place that lists "the 21 collections"/"the 17 globals" for this app - the
  * same single-source-of-truth reasoning the registries above already follow.
  */
+/**
+ * Versions read-side registry (Stage 7) - one entry per collection that
+ * declares `versions.drafts` (posts, pages, events, courses, products), backing
+ * `GET /api/<collection>/versions` and `GET/POST /api/<collection>/versions/:id`
+ * in `./rest.ts`. `findAll` is `createVersionsOps.findAllByParentID` (one
+ * parent's versions, newest first), `findByID` is the version row's OWN id.
+ * Kept separate from `readRegistry`/`writeRegistry` because only rest.ts needs
+ * it. A plain mutable object so unit tests can `vi.spyOn` individual entries.
+ */
+export type VersionsRegistryEntry = {
+  findAll: (parentId: number) => Promise<Array<Record<string, unknown>>>
+  findByID: (versionId: number) => Promise<Record<string, unknown> | null>
+}
+export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
+  posts: { findAll: findPostVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findPostVersionByID as unknown as VersionsRegistryEntry['findByID'] },
+  pages: { findAll: findPageVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findPageVersionByID as unknown as VersionsRegistryEntry['findByID'] },
+  events: { findAll: findEventVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findEventVersionByID as unknown as VersionsRegistryEntry['findByID'] },
+  courses: { findAll: findCourseVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findCourseVersionByID as unknown as VersionsRegistryEntry['findByID'] },
+  products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
+}
+
 export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings]

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { Payload, PayloadRequest } from 'payload'
+import type { Engine, EngineRequest } from '@/engine'
 
 interface EventsListData {
   docs: Array<Record<string, unknown>>
@@ -15,9 +15,9 @@ interface EventsCalendarViewProps {
   data?: EventsListData
   hasCreatePermission?: boolean
   newDocumentURL?: string
-  payload?: Payload
+  payload?: Engine
   searchParams?: Record<string, string | string[] | undefined>
-  user?: PayloadRequest['user']
+  user?: EngineRequest['user']
 }
 
 type ViewMode = 'list' | 'calendar'

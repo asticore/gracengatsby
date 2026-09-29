@@ -157,6 +157,8 @@ const AUTO_LABELS_BY_SLUG: Record<string, { plural: string; singular: string }> 
   events: { plural: 'Events', singular: 'Event' },
   media: { plural: 'Media', singular: 'Media' },
   users: { plural: 'Users', singular: 'User' },
+  'payload-preferences': { plural: 'Preferences', singular: 'Preference' },
+  'payload-locked-documents': { plural: 'Locked Documents', singular: 'Locked Document' },
 }
 
 /** See this file's header comment - the ecommerce plugin's own 5 injected collections, thin-shape only, confirmed against the plugin's real source + English translations. */

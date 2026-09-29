@@ -1,12 +1,6 @@
-/* THIS FILE WAS GENERATED AUTOMATICALLY BY THE CMS ENGINE. */
-/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
-import config from '@engage-config'
-import type { ServerFunctionClient } from '@/engine'
-import { handleServerFunctions, RootLayout } from '@/engine/next/layouts'
+import { RootLayout } from '@/engine/next/layouts'
 import { headers } from 'next/headers'
 import React from 'react'
-
-import { importMap } from './admin/importMap.js'
 
 // Stage 12 (full custom rebuild): the admin no longer imports
 // `@payloadcms/next/css` at all - custom.css + tailwind.css (imported below)
@@ -37,19 +31,6 @@ type Args = {
   children: React.ReactNode
 }
 
-const serverFunction: ServerFunctionClient = async function (args) {
-  'use server'
-  return handleServerFunctions({
-    ...args,
-    config,
-    importMap,
-  })
-}
-
-const Layout = ({ children }: Args) => (
-  <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
-    {children}
-  </RootLayout>
-)
+const Layout = ({ children }: Args) => <RootLayout>{children}</RootLayout>
 
 export default Layout

@@ -63,6 +63,7 @@ export const deleteCourse = ops.deleteByID
 
 export const findLatestCourseVersion = versionsOps.findLatestByParentID as unknown as (parentId: number) => Promise<CourseVersion | null>
 export const findCourseVersions = versionsOps.findAllByParentID as unknown as (parentId: number) => Promise<CourseVersion[]>
+export const findCourseVersionByID = versionsOps.findByID as unknown as (versionId: number) => Promise<CourseVersion | null>
 export const createCourseVersion = versionsOps.createVersion as unknown as (
   parentId: number,
   data: Partial<Omit<CourseDoc, 'id' | 'updatedAt' | 'createdAt'>>,

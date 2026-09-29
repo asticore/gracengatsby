@@ -1,21 +1,11 @@
 /**
- * Engine seam: the HTTP route handlers mounted under /api.
+ * Engine seam: HTTP route handlers.
  *
- * REST_* back the content API at /api/[...slug]. /api/graphql is now a
- * hand-written, Payload-free route (see src/app/(engage)/api/graphql/route.ts).
- *
- * Replacing these means owning request parsing, querying, depth/population
- * and serialisation - so this comes after the data and field layers, not
- * before.
+ * `/api/*` is served by hand-written route files
+ * (`src/app/(engage)/api/[...slug]/route.ts`, `.../api/graphql/route.ts`),
+ * so nothing is re-exported from here any more. File kept so
+ * `src/engine/next/` still documents where the API routes live.
  *
  * See ../index.ts for what this directory is and the rules that govern it.
  */
-
-export {
-  REST_DELETE,
-  REST_GET,
-  REST_OPTIONS,
-  REST_PATCH,
-  REST_POST,
-  REST_PUT,
-} from '@payloadcms/next/routes'
+export {}

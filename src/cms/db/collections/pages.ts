@@ -93,6 +93,7 @@ export const deletePage = ops.deleteByID
 
 export const findLatestPageVersion = versionsOps.findLatestByParentID as unknown as (parentId: number) => Promise<PageVersion | null>
 export const findPageVersions = versionsOps.findAllByParentID as unknown as (parentId: number) => Promise<PageVersion[]>
+export const findPageVersionByID = versionsOps.findByID as unknown as (versionId: number) => Promise<PageVersion | null>
 export const createPageVersion = versionsOps.createVersion as unknown as (
   parentId: number,
   data: Partial<Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt'>>,

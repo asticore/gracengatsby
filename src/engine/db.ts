@@ -1,14 +1,15 @@
 /**
- * Engine seam: the database adapter and migration primitives.
+ * Engine seam: migration primitives.
  *
- * This is the first subsystem slated for replacement (see the roadmap), and
- * the smallest vendor surface in the whole seam - four symbols. Every
- * migration file in src/migrations/ imports its argument types from here, so
- * when our own D1 layer lands it only has to satisfy this contract.
+ * Every migration file in src/migrations/ imports `sql` and its argument
+ * types from here. `sql` is drizzle-orm's own tagged template (what the
+ * old vendor adapter re-exported); `MigrateUpArgs`/`MigrateDownArgs` are this
+ * app's own hand-rolled shapes (`@/localapi/migrate`), narrowed to what the
+ * migrations actually use (`db`, `payload.logger`).
  *
  * See ./index.ts for what this directory is and the rules that govern it.
  */
 
-export { sqliteD1Adapter, sql } from '@payloadcms/db-d1-sqlite'
+export { sql } from 'drizzle-orm'
 
-export type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-d1-sqlite'
+export type { MigrateDownArgs, MigrateUpArgs } from '@/localapi/migrate'

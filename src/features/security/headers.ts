@@ -59,7 +59,7 @@ export const DEFAULT_CONTENT_SECURITY_POLICY = [
  * applies everywhere - if somebody has taken the trouble to write one, they
  * mean it.
  */
-const POLICY_FREE_PREFIXES = ['/admin', '/api/graphql-playground']
+const POLICY_FREE_PREFIXES = ['/admin']
 
 export const isPolicyFreePath = (pathname: string): boolean =>
   POLICY_FREE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))

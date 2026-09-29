@@ -105,6 +105,7 @@ export const deletePost = ops.deleteByID
 
 export const findLatestPostVersion = versionsOps.findLatestByParentID as unknown as (parentId: number) => Promise<PostVersion | null>
 export const findPostVersions = versionsOps.findAllByParentID as unknown as (parentId: number) => Promise<PostVersion[]>
+export const findPostVersionByID = versionsOps.findByID as unknown as (versionId: number) => Promise<PostVersion | null>
 export const createPostVersion = versionsOps.createVersion as unknown as (
   parentId: number,
   data: Partial<Omit<PostDoc, 'id' | 'updatedAt' | 'createdAt'>>,

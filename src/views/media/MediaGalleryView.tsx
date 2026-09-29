@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { Payload } from 'payload'
+import type { Engine } from '@/engine'
 
 import { MediaGalleryGrid, type GalleryDoc } from './MediaGalleryGrid'
 
@@ -17,7 +17,7 @@ interface MediaGalleryViewProps {
   data?: MediaListData
   hasCreatePermission?: boolean
   newDocumentURL?: string
-  payload?: Payload
+  payload?: Engine
   searchParams?: Record<string, string | string[] | undefined>
 }
 

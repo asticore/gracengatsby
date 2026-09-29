@@ -67,17 +67,14 @@
 
 import { createEngine, type Engine as LocalEngine } from '@/localapi/engine'
 
-export { buildConfig } from 'payload'
-
 /* -------------------------------------------------------------------------- */
 /* Core types                                                                  */
 /* -------------------------------------------------------------------------- */
 
 /** An initialised engine client. */
 export type Engine = LocalEngine
-/** The request object handed to hooks, access rules and endpoints - real Payload's own type, see this file's header. */
-export type { PayloadRequest as EngineRequest } from 'payload'
 
+/** Config-authoring types - hand-written, see ./types.ts. */
 export type {
   Access,
   AdminViewServerProps,
@@ -88,6 +85,7 @@ export type {
   CollectionConfig,
   CollectionSlug,
   Endpoint,
+  EngineRequest,
   Field,
   FieldAccess,
   FieldHook,
@@ -100,7 +98,7 @@ export type {
   TextFieldClientProps,
   TypedUser,
   Where,
-} from 'payload'
+} from './types'
 
 /* -------------------------------------------------------------------------- */
 /* Client accessor                                                             */

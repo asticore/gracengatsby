@@ -1,10 +1,6 @@
-/* THIS FILE WAS GENERATED AUTOMATICALLY BY THE CMS ENGINE. */
-/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
 import type { Metadata } from 'next'
 
-import config from '@engage-config'
 import { NotFoundPage, generatePageMetadata } from '@/engine/next/views'
-import { importMap } from '../importMap'
 
 type Args = {
   params: Promise<{
@@ -16,9 +12,8 @@ type Args = {
 }
 
 export const generateMetadata = ({ params, searchParams }: Args): Promise<Metadata> =>
-  generatePageMetadata({ config, params, searchParams })
+  generatePageMetadata({ params, searchParams })
 
-const NotFound = ({ params, searchParams }: Args) =>
-  NotFoundPage({ config, params, searchParams, importMap })
+const NotFound = ({ params, searchParams }: Args) => NotFoundPage({ params, searchParams })
 
 export default NotFound

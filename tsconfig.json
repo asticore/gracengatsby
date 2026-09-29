@@ -26,20 +26,19 @@
       "@/*": [
         "./src/*"
       ],
-      // Two aliases, one file, on purpose:
-      //
-      // "@engage-config" is ours - every file in src/ imports the config
-      // through this name.
-      //
-      // "@payload-config" must stay: the underlying CMS engine's own config
-      // discovery (its CLI and its Next integration) reads this exact key out
-      // of tsconfig to locate the config file. Removing it breaks them, even
-      // though nothing in src/ imports it any more.
+      // The real-Payload "oracle" config now lives in tests/ (production has no
+      // Payload). The parity specs reach it through these aliases; nothing
+      // under src/ imports any of them. "@payload-config" is the key the
+      // vendor CLI/Next integration would look for - kept while `payload`
+      // remains a devDependency for those specs.
       "@engage-config": [
-        "./src/engage.config.ts"
+        "./tests/helpers/payload.config.ts"
+      ],
+      "@/engage.config": [
+        "./tests/helpers/payload.config.ts"
       ],
       "@payload-config": [
-        "./src/engage.config.ts"
+        "./tests/helpers/payload.config.ts"
       ]
     },
     "target": "ES2022",

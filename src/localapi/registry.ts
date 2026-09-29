@@ -14,7 +14,7 @@
  * - `writeRegistry` - covers `create`/`update`/`delete`/`updateGlobal`.
  *   `./operations.ts` deliberately does NOT own a registry itself (see that
  *   file's header, "Why a `db` parameter, not a hardcoded registry") - each
- *   `createDocument`/`updateDocument`/`etc. call takes its `db: CollectionDbOps`
+ *   `createDocument`/`updateDocument`/etc. call takes its `db: CollectionDbOps`
  *   directly, by design, so a future `createEngine()` (Stage 6c) needs
  *   somewhere to look up which `CollectionDbOps`/`GlobalDbOps` object to hand
  *   it for a given slug. This module is that lookup table - it does not

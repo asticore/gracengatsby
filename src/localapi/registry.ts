@@ -14,7 +14,7 @@
  * - `writeRegistry` - covers `create`/`update`/`delete`/`updateGlobal`.
  *   `./operations.ts` deliberately does NOT own a registry itself (see that
  *   file's header, "Why a `db` parameter, not a hardcoded registry") - each
- *   `createDocument`/`updateDocument`/etc. call takes its `db: CollectionDbOps`
+ *   `createDocument`/`updateDocument`/`etc. call takes its `db: CollectionDbOps`
  *   directly, by design, so a future `createEngine()` (Stage 6c) needs
  *   somewhere to look up which `CollectionDbOps`/`GlobalDbOps` object to hand
  *   it for a given slug. This module is that lookup table - it does not
@@ -85,6 +85,8 @@ import { FieldGroups } from '@/collections/FieldGroups'
 import { Media } from '@/collections/Media'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Pages } from '@/collections/Pages'
+import { PayloadLockedDocuments } from '@/collections/PayloadLockedDocuments'
+import { PayloadPreferences } from '@/collections/PayloadPreferences'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
 
@@ -128,6 +130,7 @@ import {
   countForms,
   countLessonProgress,
   countLessons,
+  countLockedDocuments,
   countMedia,
   countMembershipTiers,
   countMemberships,
@@ -135,6 +138,7 @@ import {
   countPageTemplates,
   countPages,
   countPosts,
+  countPreferences,
   countProducts,
   countTransactions,
   countTranslations,
@@ -154,6 +158,7 @@ import {
   createFormSubmission,
   createLesson,
   createLessonProgress,
+  createLockedDocument,
   createMedia,
   createMembership,
   createMembershipTier,
@@ -161,6 +166,7 @@ import {
   createPage,
   createPageTemplate,
   createPost,
+  createPreference,
   createProduct,
   createTransaction,
   createTranslation,
@@ -180,6 +186,7 @@ import {
   deleteFormSubmission,
   deleteLesson,
   deleteLessonProgress,
+  deleteLockedDocument,
   deleteMedia,
   deleteMembership,
   deleteMembershipTier,
@@ -187,6 +194,7 @@ import {
   deletePage,
   deletePageTemplate,
   deletePost,
+  deletePreference,
   deleteProduct,
   deleteTransaction,
   deleteTranslation,
@@ -230,6 +238,8 @@ import {
   findLessonProgressByID,
   findLessonProgressPaginated,
   findLessonsPaginated,
+  findLockedDocumentByID,
+  findLockedDocumentsPaginated,
   findMediaByID,
   findMediaPaginated,
   findMediaSettings,
@@ -247,6 +257,8 @@ import {
   findPaymentSettings,
   findPostByID,
   findPostsPaginated,
+  findPreferenceByID,
+  findPreferencesPaginated,
   findProductByID,
   findProductsPaginated,
   findSecuritySettings,
@@ -284,6 +296,7 @@ import {
   updateLanguageSettings,
   updateLesson,
   updateLessonProgress,
+  updateLockedDocument,
   updateMedia,
   updateMediaSettings,
   updateMembership,
@@ -294,6 +307,7 @@ import {
   updatePageTemplate,
   updatePaymentSettings,
   updatePost,
+  updatePreference,
   updateProduct,
   updateSecuritySettings,
   updateSeoSettings,
@@ -361,6 +375,8 @@ export const writeRegistry: {
     orders: collectionOps(createOrder, updateOrder, deleteOrder, findOrderByID),
     products: collectionOps(createProduct, updateProduct, deleteProduct, findProductByID),
     transactions: collectionOps(createTransaction, updateTransaction, deleteTransaction, findTransactionByID),
+    'payload-preferences': collectionOps(createPreference, updatePreference, deletePreference, findPreferenceByID),
+    'payload-locked-documents': collectionOps(createLockedDocument, updateLockedDocument, deleteLockedDocument, findLockedDocumentByID),
   },
   globals: {
     'faq-settings': globalOps(findFaqSettings, updateFaqSettings),
@@ -420,6 +436,8 @@ export const readRegistry: ReadRegistry = {
     orders: readEntry(Orders, findOrdersPaginated, findOrderByID, countOrders),
     products: readEntry(Products, findProductsPaginated, findProductByID, countProducts),
     transactions: readEntry(Transactions, findTransactionsPaginated, findTransactionByID, countTransactions),
+    'payload-preferences': readEntry(PayloadPreferences, findPreferencesPaginated, findPreferenceByID, countPreferences),
+    'payload-locked-documents': readEntry(PayloadLockedDocuments, findLockedDocumentsPaginated, findLockedDocumentByID, countLockedDocuments),
   },
   globals: {
     'faq-settings': globalReadEntry(FaqSettings, findFaqSettings),

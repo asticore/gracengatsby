@@ -17,10 +17,11 @@
  * future thin wrapper in that route file will call: it returns a real
  * `Response` for anything in scope, or `null` to signal "not handled here,
  * fall through to real Payload's REST_GET/POST/PATCH/DELETE" for anything
- * still deferred (bulk operations, versions/drafts LIST/history, `/access`,
+ * still deferred (versions/drafts LIST/history, `/access`,
  * locked-documents/preferences, GraphQL, and any collection/global this
- * module doesn't recognize). `/:id/duplicate` was in this deferred list
- * originally - now handled (see `handleDuplicate` below).
+ * module doesn't recognize). `/:id/duplicate` and bulk update/delete were
+ * both in this deferred list originally - now handled (see `handleDuplicate`,
+ * `handleBulkUpdate`/`handleBulkDelete` below).
  *
  * ---------------------------------------------------------------------------
  * Real Payload's endpoint-matching precedence, reproduced here
@@ -102,10 +103,9 @@
  * Deliberately NOT implemented here (falls through to real Payload;
  * see the plan doc's "Explicitly deferred to a later sub-stage" list)
  * ---------------------------------------------------------------------------
- * Bulk update/delete (`PATCH /`/`DELETE /` with no id - confirmed unused in
- * this app since Stage 1); versions/drafts endpoints and document
- * duplication; the admin panel's own locked-documents/preferences CRUD;
- * `/api/access`/`/api/<collection>/access/:id?`; GraphQL. A request that
+ * Versions/drafts endpoints (LIST/history/restore); the admin panel's own
+ * locked-documents/preferences CRUD; `/api/access`/`/api/<collection>/
+ * access/:id?`; GraphQL. A request that
  * matches a recognized collection/global slug but not one of the routes
  * this module implements (any of the above) returns `null` from
  * `handleRestRequest`, the same as a request for a collection/global slug
@@ -463,6 +463,52 @@ async function handleUpdateByID(engine: Engine, collection: string, id: number, 
   return Response.json({ doc, message: 'Updated successfully.' }, { status: 200 })
 }
 
+/**
+ * `PATCH /api/<collection>` (no id) - real Payload's own bulk update,
+ * reproduced from `payload/dist/collections/{endpoints,operations}/update.js`
+ * (read directly from `node_modules` to confirm wire shape). `where` is
+ * REQUIRED - real Payload throws a 400 `APIError` for a missing/falsy
+ * `where`, confirmed at `operations/update.js` ("Missing 'where' query of
+ * documents to update."), reproduced here as the same inline 400 this
+ * module already uses for its own hand-rolled validation errors (cart
+ * handlers above) rather than routing through `errorToResponse` (no local
+ * error class carries that exact real-Payload message).
+ *
+ * Per-doc update failures don't abort the whole batch - each doc is updated
+ * independently (`engine.update` one at a time; confirmed unused in this
+ * app's own code per the plan doc, so no engine-level bulk primitive exists
+ * to call instead), matching real Payload's own `Promise.allSettled`-style
+ * per-doc error collection: a failed doc's error goes in `errors` (this
+ * module's own generic `{message}` shape, not real Payload's full
+ * `{id, isPublic, message}` - the `isPublic` flag has no equivalent among
+ * this app's own error classes, and no known caller reads it). Overall
+ * status is 200 if every matched doc succeeded, 400 if any failed - matching
+ * real Payload's own `result.errors.length > 0` branch. Zero matched docs is
+ * still a 200 with empty `docs`/`errors`, not an error.
+ */
+async function handleBulkUpdate(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const query = parseSearchParams(new URL(request.url).searchParams)
+  if (!query.where) {
+    return Response.json({ errors: [{ message: "Missing 'where' query of documents to update." }] }, { status: 400 })
+  }
+  const { data } = await readRequestBody(request)
+  const matched = await engine.find({ collection, where: query.where as Where, pagination: false, user, overrideAccess: false })
+  const docs: unknown[] = []
+  const errors: Array<{ id: unknown; message: string }> = []
+  for (const match of matched.docs) {
+    const id = (match as { id: unknown }).id
+    try {
+      const doc = await engine.update({ collection, id: id as number, data, user })
+      docs.push(doc)
+    } catch (err) {
+      errors.push({ id, message: err instanceof Error ? err.message : String(err) })
+    }
+  }
+  const status = errors.length > 0 ? 400 : 200
+  const message = errors.length > 0 ? `Unable to update ${errors.length} item${errors.length === 1 ? '' : 's'} out of ${matched.docs.length} total.` : `Updated ${docs.length} item${docs.length === 1 ? '' : 's'} successfully.`
+  return Response.json({ docs, errors, message }, { status })
+}
+
 /** `GET /api/media/file/:filename` - real Payload's own `getFile.js` handler, reproduced for this app's one upload collection. No access check here: see `./storage.ts`'s own header for why `media`'s unconditional `access.read: () => true` means real Payload's own `checkFileAccess` short-circuits to "allowed, no doc lookup" for it. `getMediaObjectResponse` does the actual R2 fetch/range/headers work; this handler only maps its `null` ("no such object") to a 404 in this module's own error-envelope shape. */
 async function handleGetMediaFile(filename: string, request: Request): Promise<Response> {
   const response = await getMediaObjectResponse(filename, request)
@@ -473,6 +519,29 @@ async function handleGetMediaFile(filename: string, request: Request): Promise<R
 async function handleDeleteByID(engine: Engine, collection: string, id: number, user: Parameters<Engine['find']>[0]['user'], request: Request): Promise<Response> {
   const doc = await engine.delete({ collection, id, user, req: secretReq(request) })
   return Response.json({ doc, message: 'Deleted successfully.' }, { status: 200 })
+}
+
+/** `DELETE /api/<collection>` (no id) - real Payload's own bulk delete, same shape/rationale as `handleBulkUpdate` above (see its doc comment): `where` required (400 if missing), per-doc `engine.delete` calls collected into `docs`/`errors`, 200 unless any doc failed. */
+async function handleBulkDelete(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const query = parseSearchParams(new URL(request.url).searchParams)
+  if (!query.where) {
+    return Response.json({ errors: [{ message: "Missing 'where' query of documents to delete." }] }, { status: 400 })
+  }
+  const matched = await engine.find({ collection, where: query.where as Where, pagination: false, user, overrideAccess: false })
+  const docs: unknown[] = []
+  const errors: Array<{ id: unknown; message: string }> = []
+  for (const match of matched.docs) {
+    const id = (match as { id: unknown }).id
+    try {
+      const doc = await engine.delete({ collection, id: id as number, user })
+      docs.push(doc)
+    } catch (err) {
+      errors.push({ id, message: err instanceof Error ? err.message : String(err) })
+    }
+  }
+  const status = errors.length > 0 ? 400 : 200
+  const message = errors.length > 0 ? `Unable to delete ${errors.length} item${errors.length === 1 ? '' : 's'} out of ${matched.docs.length} total.` : `Deleted ${docs.length} item${docs.length === 1 ? '' : 's'} successfully.`
+  return Response.json({ docs, errors, message }, { status })
 }
 
 /**
@@ -1119,7 +1188,14 @@ export async function handleRestRequest(request: Request, slug: string[], engine
         const { user } = await engine.auth({ headers: request.headers })
         return await handleCreate(engine, collectionSlug, request, user)
       }
-      // Bulk PATCH/DELETE (no id) - confirmed unused in this app, deferred.
+      if (method === 'PATCH') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleBulkUpdate(engine, collectionSlug, request, user)
+      }
+      if (method === 'DELETE') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleBulkDelete(engine, collectionSlug, request, user)
+      }
       return null
     }
 
@@ -1176,7 +1252,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       return null
     }
 
-    // /versions, /versions/:id, /access/:id? - still deferred. /:id/duplicate is handled above.
+    // /versions, /versions/:id, /access/:id? - still deferred. /:id/duplicate and bulk PATCH/DELETE are handled above.
     return null
   } catch (err) {
     const { status, body } = errorToResponse(err)

@@ -202,6 +202,65 @@ describe('localapi/rest - collection list/create/byID/count', () => {
 })
 
 /* -------------------------------------------------------------------------- */
+/* Duplicate (POST /:id/duplicate) - Stage 7 item, previously deferred        */
+/* -------------------------------------------------------------------------- */
+
+describe('localapi/rest - POST /:id/duplicate', () => {
+  // 'posts' is a real collection (registry-backed) whose 'slug' field is
+  // `type: 'text', unique: true` - see src/collections/Posts.ts. Exercises
+  // the real applyBeforeDuplicate recursion via a real registry entry rather
+  // than a hand-built fields array, same "read real slugs off the real
+  // registry" convention this whole file already uses.
+  it('strips id/createdAt/updatedAt/_status, appends " - Copy" to the unique text field, creates as a draft', async () => {
+    const source = { id: 7, title: 'Hello World', slug: 'hello-world', createdAt: '2026-01-01', updatedAt: '2026-01-02', _status: 'published' }
+    const engine = makeMockEngine({
+      findByID: vi.fn().mockResolvedValue(source),
+      create: vi.fn().mockResolvedValue({ id: 8, title: 'Hello World', slug: 'hello-world - Copy' }),
+    })
+    const res = await handleRestRequest(req('POST', 'http://x/api/posts/7/duplicate'), ['posts', '7', 'duplicate'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(200)
+    expect(await res!.json()).toEqual({ doc: { id: 8, title: 'Hello World', slug: 'hello-world - Copy' }, message: 'Successfully duplicated.' })
+
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'posts', id: 7, overrideAccess: false }))
+    expect(engine.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'posts',
+        data: { title: 'Hello World', slug: 'hello-world - Copy' },
+        draft: true,
+      }),
+    )
+    const createdData = (engine.create as ReturnType<typeof vi.fn>).mock.calls[0][0].data
+    expect(createdData).not.toHaveProperty('id')
+    expect(createdData).not.toHaveProperty('createdAt')
+    expect(createdData).not.toHaveProperty('updatedAt')
+    expect(createdData).not.toHaveProperty('_status')
+  })
+
+  it('a non-numeric id segment falls through (null), same as every other /:id route', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('POST', 'http://x/api/posts/abc/duplicate'), ['posts', 'abc', 'duplicate'], engine)
+    expect(res).toBeNull()
+    expect(engine.findByID).not.toHaveBeenCalled()
+  })
+
+  it('GET (not POST) to the same path falls through (null)', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('GET', 'http://x/api/posts/7/duplicate'), ['posts', '7', 'duplicate'], engine)
+    expect(res).toBeNull()
+    expect(engine.findByID).not.toHaveBeenCalled()
+  })
+
+  it('passes the authenticated user through to both findByID and create', async () => {
+    const user = { id: 42, email: 'me@x.com' }
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user }), findByID: vi.fn().mockResolvedValue({ id: 7, title: 'Hi', slug: 'hi' }) })
+    await handleRestRequest(req('POST', 'http://x/api/posts/7/duplicate'), ['posts', '7', 'duplicate'], engine)
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ user }))
+    expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({ user }))
+  })
+})
+
+/* -------------------------------------------------------------------------- */
 /* Cart guest secret (Stage 10 Ecommerce, Layer 2)                           */
 /* -------------------------------------------------------------------------- */
 

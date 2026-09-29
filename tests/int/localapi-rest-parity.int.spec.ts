@@ -33,12 +33,12 @@
 // formula, confirmed in Stage 2/6c) without mutating shared session state
 // in a way that would cross-contaminate the comparison.
 import config from '@engage-config'
-import '@/engage.config'
+import '@engage-config'
 
 import type { RealEngine } from './helpers/realEngine'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { REST_DELETE, REST_GET, REST_PATCH, REST_POST } from '@/engine/next/routes'
+import { REST_DELETE, REST_GET, REST_PATCH, REST_POST } from '@payloadcms/next/routes'
 
 import { deleteUser } from '@/cms/db'
 import { createEngine } from '@/localapi/engine'

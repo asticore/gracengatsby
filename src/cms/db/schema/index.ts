@@ -9,6 +9,8 @@ import { FieldGroups } from '@/collections/FieldGroups'
 import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
+import { PayloadLockedDocuments } from '@/collections/PayloadLockedDocuments'
+import { PayloadPreferences } from '@/collections/PayloadPreferences'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
 import { Addresses } from '@/features/ecommerce/collections/Addresses'
@@ -120,6 +122,7 @@ function resolveTargetTable(slug: string): string {
   if (slug === Faqs.slug) return tableNameFor(Faqs)
   if (slug === Media.slug) return tableNameFor(Media)
   if (slug === Transactions.slug) return tableNameFor(Transactions)
+  if (slug === Users.slug) return tableNameFor(Users)
   throw new Error(`cms/db/schema: no known table for target collection "${slug}" - add it to resolveTargetTable in schema/index.ts.`)
 }
 
@@ -1011,3 +1014,28 @@ export const productsVersionsBlockTypes = Object.fromEntries(
   ]),
 )
 export const productsVersionsRelsTargetColumns = productsVersionsRelsGenerated.targetColumns
+
+/**
+ * Stage 7: real Payload's own internal `payload-preferences`/
+ * `payload-locked-documents` collections - see
+ * `@/collections/PayloadPreferences`/`PayloadLockedDocuments` for the
+ * exact fidelity notes (the `user` field's `relationTo: ['users']` shape,
+ * and `payload-locked-documents`' confirmed, deliberate `document`-field
+ * gap). Both generated tables are a strict SUBSET of their real physical
+ * columns (`eg_preferences` matches exactly; `eg_locked_documents`/
+ * `eg_locked_documents_rels` omit the `document`-field columns this config
+ * doesn't declare) - drizzle only ever touches columns it knows about, so
+ * this is safe: the undeclared real columns are simply never read or
+ * written, not a schema conflict.
+ */
+export const preferencesGenerated = generateTable(PayloadPreferences)
+export const preferences = preferencesGenerated.table
+const preferencesRelsGenerated = generateRelsTable(preferencesGenerated.tableName, preferencesGenerated.relsFields, resolveTargetTable)
+export const preferencesRels = preferencesRelsGenerated.table
+export const preferencesRelsTargetColumns = preferencesRelsGenerated.targetColumns
+
+export const lockedDocumentsGenerated = generateTable(PayloadLockedDocuments)
+export const lockedDocuments = lockedDocumentsGenerated.table
+const lockedDocumentsRelsGenerated = generateRelsTable(lockedDocumentsGenerated.tableName, lockedDocumentsGenerated.relsFields, resolveTargetTable)
+export const lockedDocumentsRels = lockedDocumentsRelsGenerated.table
+export const lockedDocumentsRelsTargetColumns = lockedDocumentsRelsGenerated.targetColumns

@@ -99,6 +99,24 @@ describe('api/[...slug] route wiring - matched requests are served by handleRest
     expect(viaRoute.status).toBe(viaHandler!.status)
     expect(await bodyOf(viaRoute)).toEqual(await bodyOf(viaHandler!))
   })
+
+  it('POST /api/faqs/:id/duplicate on a nonexistent id is served by our own handler, matching real Payload\'s own duplicate wire behavior', async () => {
+    // faqs has no `unique` fields and drafts disabled - clean parity fixture
+    // (no beforeDuplicate mutation, no draft-status wrinkle). Now handled by
+    // handleRestRequest (Stage 7 duplicate-endpoint work), no longer deferred.
+    const slug = ['faqs', '999999999', 'duplicate']
+    const viaRoute = await POST(req('POST', 'http://localhost/api/faqs/999999999/duplicate'), args(slug))
+    const viaRouteBody = await bodyOf(viaRoute)
+
+    const viaHandler = await handleRestRequest(req('POST', 'http://localhost/api/faqs/999999999/duplicate'), slug)
+    expect(viaHandler).not.toBeNull()
+    expect(viaRoute.status).toBe(viaHandler!.status)
+    expect(viaRouteBody).toEqual(await bodyOf(viaHandler!))
+
+    const viaReal = await realPost(req('POST', 'http://localhost/api/faqs/999999999/duplicate'), args(slug))
+    expect(viaRoute.status).toBe(viaReal.status)
+    expect(viaRouteBody).toEqual(await bodyOf(viaReal))
+  })
 })
 
 describe('api/[...slug] route wiring - unmatched requests fall through to real Payload', () => {
@@ -108,16 +126,6 @@ describe('api/[...slug] route wiring - unmatched requests fall through to real P
     expect(premise).toBeNull()
     const viaRoute = await GET(req('GET', 'http://localhost/api/faqs/versions'), args(slug))
     const viaReal = await realGet(req('GET', 'http://localhost/api/faqs/versions'), args(slug))
-    expect(viaRoute.status).toBe(viaReal.status)
-    expect(await bodyOf(viaRoute)).toEqual(await bodyOf(viaReal))
-  })
-
-  it('POST /api/faqs/:id/duplicate (deferred) falls through to real Payload, matching REST_POST directly', async () => {
-    const slug = ['faqs', '1', 'duplicate']
-    const premise = await handleRestRequest(req('POST', 'http://localhost/api/faqs/1/duplicate'), slug)
-    expect(premise).toBeNull()
-    const viaRoute = await POST(req('POST', 'http://localhost/api/faqs/1/duplicate'), args(slug))
-    const viaReal = await realPost(req('POST', 'http://localhost/api/faqs/1/duplicate'), args(slug))
     expect(viaRoute.status).toBe(viaReal.status)
     expect(await bodyOf(viaRoute)).toEqual(await bodyOf(viaReal))
   })

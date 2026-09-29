@@ -17,9 +17,10 @@
  * future thin wrapper in that route file will call: it returns a real
  * `Response` for anything in scope, or `null` to signal "not handled here,
  * fall through to real Payload's REST_GET/POST/PATCH/DELETE" for anything
- * still deferred (bulk operations, versions/drafts, duplicate, `/access`,
+ * still deferred (bulk operations, versions/drafts LIST/history, `/access`,
  * locked-documents/preferences, GraphQL, and any collection/global this
- * module doesn't recognize).
+ * module doesn't recognize). `/:id/duplicate` was in this deferred list
+ * originally - now handled (see `handleDuplicate` below).
  *
  * ---------------------------------------------------------------------------
  * Real Payload's endpoint-matching precedence, reproduced here
@@ -164,6 +165,7 @@ import { confirmStripeOrder, getStripeClient, initiateStripePayment, type Paymen
 import { membershipWebhooks } from '@/features/members/webhooks'
 import type Stripe from 'stripe'
 
+import type { FieldConfigLike } from './operations'
 import { NotFound as OperationsNotFound, ValidationError } from './operations'
 import { parseSearchParams } from './queryParser'
 import { NotFound as ReadNotFound } from './read-operations'
@@ -473,6 +475,97 @@ async function handleDeleteByID(engine: Engine, collection: string, id: number, 
   return Response.json({ doc, message: 'Deleted successfully.' }, { status: 200 })
 }
 
+/**
+ * `POST /api/<collection>/:id/duplicate` - real Payload's own duplicate
+ * endpoint, reproduced from `payload/dist/collections/endpoints/duplicate.js`
+ * (read directly from `node_modules` to confirm the wire shape below).
+ *
+ * `applyBeforeDuplicate` reproduces real Payload's DEFAULT `beforeDuplicate`
+ * field hook (`payload/dist/fields/setDefaultBeforeDuplicate.js`), which is
+ * the only variant this app needs: grepped every field literal under `src/`
+ * for a custom `hooks.beforeDuplicate` - none declare one, so only the
+ * default behavior ever applies. That default only touches `unique` fields
+ * (a `required`-only field is duplicated verbatim, unchanged): string-ish
+ * types (`text`/`textarea`/`code`/`json`) get `' - Copy'` appended so the
+ * unique constraint doesn't collide on create; every other unique type
+ * (`email`/`number`/`point`/`relationship`/`select`/`upload`) is cleared to
+ * `undefined` instead, since there's no generic way to mint a new unique
+ * value for those. The recursion shape (row/collapsible flatten, group
+ * nests by name, array/blocks iterate rows by `blockType`) mirrors
+ * `traverseBeforeChange` above exactly, minus everything that function does
+ * that duplication doesn't need (hooks, validation, access).
+ *
+ * `readRegistry.collections[slug].config` is typed as the narrower
+ * `ReadEntityConfig`, but the actual object at runtime IS the real,
+ * sanitized Payload collection config (same object `admin/auth.ts`'s own
+ * `allCollectionConfigs` casts for the same reason - see that file's
+ * header) - safe to cast to `FieldConfigLike[]` here to read `.unique`,
+ * which `ReadEntityConfig`'s own field type doesn't declare.
+ *
+ * Message text doesn't chase real Payload's exact translated string
+ * (`general:successfullyDuplicated`) - this module already uses its own
+ * terse messages for create/update/delete (see those handlers above), not
+ * real Payload's i18n keys, so duplicate matches that existing convention
+ * instead of introducing a one-off exact-string dependency.
+ */
+const UNIQUE_STRING_TYPES = new Set(['code', 'json', 'text', 'textarea'])
+const UNIQUE_CLEAR_TYPES = new Set(['email', 'number', 'point', 'relationship', 'select', 'upload'])
+
+function applyBeforeDuplicate(fields: FieldConfigLike[], data: Record<string, unknown>): void {
+  for (const field of fields) {
+    if (field.type === 'join') continue
+
+    if (field.type === 'row' || field.type === 'collapsible') {
+      applyBeforeDuplicate(field.fields ?? [], data)
+      continue
+    }
+
+    const name = field.name
+    if (typeof name !== 'string') continue
+
+    if (field.type === 'group') {
+      if (data[name] && typeof data[name] === 'object') applyBeforeDuplicate(field.fields ?? [], data[name] as Record<string, unknown>)
+      continue
+    }
+
+    if (field.unique) {
+      const value = data[name]
+      if (UNIQUE_STRING_TYPES.has(field.type) && typeof value === 'string' && value.trim() !== '') {
+        data[name] = `${value} - Copy`
+      } else if (UNIQUE_CLEAR_TYPES.has(field.type)) {
+        data[name] = undefined
+      }
+    }
+
+    if (field.type === 'array' && Array.isArray(data[name])) {
+      for (const row of data[name] as Record<string, unknown>[]) applyBeforeDuplicate(field.fields ?? [], row)
+    } else if (field.type === 'blocks' && Array.isArray(data[name])) {
+      for (const row of data[name] as Record<string, unknown>[]) {
+        const blockConfig = (field.blocks ?? []).find((b) => b.slug === row?.blockType)
+        if (blockConfig) applyBeforeDuplicate(blockConfig.fields, row)
+      }
+    }
+  }
+}
+
+async function handleDuplicate(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const source = (await engine.findByID({ collection, depth: 0, id, overrideAccess: false, req: secretReq(request), user })) as unknown as Record<string, unknown>
+  const data: Record<string, unknown> = { ...source }
+  delete data.id
+  delete data.createdAt
+  delete data.updatedAt
+  // A fresh doc gets its own draft/published state via the `draft: true`
+  // passed to `engine.create` below (matching real Payload's own default),
+  // not the source doc's copied `_status`.
+  delete data._status
+
+  const fields = (readRegistry.collections[collection]?.config.fields ?? []) as unknown as FieldConfigLike[]
+  applyBeforeDuplicate(fields, data)
+
+  const doc = await engine.create({ collection, data, draft: true, user })
+  return Response.json({ doc, message: 'Successfully duplicated.' }, { status: 200 })
+}
+
 /* -------------------------------------------------------------------------- */
 /* Cart item endpoints (Stage 10 Ecommerce, Layer 2 remainder)                */
 /*                                                                            */
@@ -504,6 +597,8 @@ type CartItemRow = { id?: string; product?: number | { id: number } | null; quan
 function cartItemProductId(item: CartItemRow): number | null {
   if (item.product && typeof item.product === 'object') return item.product.id
   return typeof item.product === 'number' ? item.product : null
+}
+
 }
 
 /** Secret from a POST body (`data.secret`, matching the real plugin's own `addItem`/`removeItem`/`updateItem`/`clearCart` arg) - threaded onto `req.query.secret` the same way `secretReq` threads a `?secret=` query param, since that's what `hasCartSecretAccess` reads. */
@@ -1064,6 +1159,13 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       return await handleGetMediaFile(decodeURIComponent(rest[1]), request)
     }
 
+    if (rest.length === 2 && rest[1] === 'duplicate' && method === 'POST') {
+      const docId = Number(rest[0])
+      if (!Number.isFinite(docId)) return null
+      const { user } = await engine.auth({ headers: request.headers })
+      return await handleDuplicate(engine, collectionSlug, docId, request, user)
+    }
+
     if (rest.length === 2 && collectionSlug === 'carts' && method === 'POST') {
       const cartId = Number(rest[0])
       if (!Number.isFinite(cartId)) return null
@@ -1076,7 +1178,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       return null
     }
 
-    // /versions, /versions/:id, /:id/duplicate, /access/:id? - deferred.
+    // /versions, /versions/:id, /access/:id? - still deferred. /:id/duplicate is handled above.
     return null
   } catch (err) {
     const { status, body } = errorToResponse(err)

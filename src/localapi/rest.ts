@@ -599,8 +599,6 @@ function cartItemProductId(item: CartItemRow): number | null {
   return typeof item.product === 'number' ? item.product : null
 }
 
-}
-
 /** Secret from a POST body (`data.secret`, matching the real plugin's own `addItem`/`removeItem`/`updateItem`/`clearCart` arg) - threaded onto `req.query.secret` the same way `secretReq` threads a `?secret=` query param, since that's what `hasCartSecretAccess` reads. */
 function bodySecretReq(secret: unknown): { query: { secret?: string } } {
   return { query: { secret: typeof secret === 'string' ? secret : undefined } }

@@ -10,4 +10,4 @@
  * reimplementation.
  */
 
-export { RootLayout, handleServerFunctions } from '@/admin/RootLayout'
+export { RootLayout } from '@/admin/RootLayout'

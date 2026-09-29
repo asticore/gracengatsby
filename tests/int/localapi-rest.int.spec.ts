@@ -96,16 +96,6 @@ describe('localapi/rest - fallthrough to real Payload', () => {
     expect(await handleRestRequest(req('GET', 'http://x/api/globals/nonsense'), ['globals', 'nonsense'], engine)).toBeNull()
   })
 
-  it('returns null for bulk PATCH (no id)', async () => {
-    const engine = makeMockEngine()
-    expect(await handleRestRequest(req('PATCH', 'http://x/api/posts'), ['posts'], engine)).toBeNull()
-  })
-
-  it('returns null for bulk DELETE (no id)', async () => {
-    const engine = makeMockEngine()
-    expect(await handleRestRequest(req('DELETE', 'http://x/api/posts'), ['posts'], engine)).toBeNull()
-  })
-
   it('returns null for a non-numeric, non-route path segment', async () => {
     const engine = makeMockEngine()
     expect(await handleRestRequest(req('GET', 'http://x/api/posts/not-a-number'), ['posts', 'not-a-number'], engine)).toBeNull()
@@ -257,6 +247,63 @@ describe('localapi/rest - POST /:id/duplicate', () => {
     await handleRestRequest(req('POST', 'http://x/api/posts/7/duplicate'), ['posts', '7', 'duplicate'], engine)
     expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ user }))
     expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({ user }))
+  })
+})
+
+/* -------------------------------------------------------------------------- */
+/* Bulk PATCH/DELETE (no id) - Stage 7 item, previously deferred              */
+/* -------------------------------------------------------------------------- */
+
+describe('localapi/rest - bulk PATCH/DELETE (no id)', () => {
+  it('PATCH with no `where` query is a 400, matching real Payload\'s own missing-where error, engine.find never called', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('PATCH', 'http://x/api/posts', { title: 'x' }), ['posts'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(400)
+    expect(await res!.json()).toEqual({ errors: [{ message: "Missing 'where' query of documents to update." }] })
+    expect(engine.find).not.toHaveBeenCalled()
+  })
+
+  it('DELETE with no `where` query is a 400, matching real Payload\'s own missing-where error', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('DELETE', 'http://x/api/posts'), ['posts'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(400)
+    expect(await res!.json()).toEqual({ errors: [{ message: "Missing 'where' query of documents to delete." }] })
+    expect(engine.find).not.toHaveBeenCalled()
+  })
+
+  it('PATCH with `where` matching 2 docs updates each one, returns {docs, errors: [], message} at 200', async () => {
+    const engine = makeMockEngine({
+      find: vi.fn().mockResolvedValue({ ...PAGINATED_DOCS, docs: [{ id: 1 }, { id: 2 }] }),
+      update: vi.fn().mockImplementation(({ id }: { id: number }) => Promise.resolve({ id, title: 'Updated' })),
+    })
+    const res = await handleRestRequest(req('PATCH', 'http://x/api/posts?where[category][equals]=news', { title: 'Updated' }), ['posts'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(200)
+    expect(await res!.json()).toEqual({ docs: [{ id: 1, title: 'Updated' }, { id: 2, title: 'Updated' }], errors: [], message: 'Updated 2 items successfully.' })
+    expect(engine.find).toHaveBeenCalledWith(expect.objectContaining({ collection: 'posts', pagination: false, overrideAccess: false }))
+    expect(engine.update).toHaveBeenCalledTimes(2)
+  })
+
+  it('DELETE with `where` matching zero docs is a 200 with empty docs/errors (not an error)', async () => {
+    const engine = makeMockEngine({ find: vi.fn().mockResolvedValue({ ...PAGINATED_DOCS, docs: [] }) })
+    const res = await handleRestRequest(req('DELETE', 'http://x/api/posts?where[category][equals]=nonexistent'), ['posts'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(200)
+    expect(await res!.json()).toEqual({ docs: [], errors: [], message: 'Deleted 0 items successfully.' })
+    expect(engine.delete).not.toHaveBeenCalled()
+  })
+
+  it('PATCH where one of two matched docs fails is a 400 with partial docs/errors', async () => {
+    const engine = makeMockEngine({
+      find: vi.fn().mockResolvedValue({ ...PAGINATED_DOCS, docs: [{ id: 1 }, { id: 2 }] }),
+      update: vi.fn().mockImplementation(({ id }: { id: number }) => (id === 1 ? Promise.resolve({ id, title: 'Updated' }) : Promise.reject(new Error('boom')))),
+    })
+    const res = await handleRestRequest(req('PATCH', 'http://x/api/posts?where[category][equals]=news', { title: 'Updated' }), ['posts'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(400)
+    expect(await res!.json()).toEqual({ docs: [{ id: 1, title: 'Updated' }], errors: [{ id: 2, message: 'boom' }], message: 'Unable to update 1 item out of 2 total.' })
   })
 })
 

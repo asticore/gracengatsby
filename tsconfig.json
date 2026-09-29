@@ -25,20 +25,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      // The real-Payload "oracle" config now lives in tests/ (production has no
-      // Payload). The parity specs reach it through these aliases; nothing
-      // under src/ imports any of them. "@payload-config" is the key the
-      // vendor CLI/Next integration would look for - kept while `payload`
-      // remains a devDependency for those specs.
-      "@engage-config": [
-        "./tests/helpers/payload.config.ts"
-      ],
-      "@/engage.config": [
-        "./tests/helpers/payload.config.ts"
-      ],
-      "@payload-config": [
-        "./tests/helpers/payload.config.ts"
       ]
     },
     "target": "ES2022",

@@ -1,35 +1,35 @@
 /**
- * GraphQL hybrid dispatcher (payload-removal-plan.md: "GraphQL types for the
- * 5 ecommerce collections"). This file used to be Payload-generated
- * scaffolding (a header comment here used to say "DO NOT MODIFY - COULD BE
- * REWRITTEN AT ANY TIME"), same claim already checked and found false for
- * the REST equivalent (`src/app/(engage)/api/[...slug]/route.ts` - see that
- * file's own header): no installed CLI step regenerates this file either, so
- * it is dead scaffolding boilerplate, safe to hand-maintain permanently.
+ * GraphQL endpoint (payload-removal-plan.md: Stage 7). Fully Payload-free.
  *
- * `handleEcommerceGraphQL` (`@/localapi/graphql`) is tried FIRST. It returns
- * a real `Response` for any operation that touches only the 5 ecommerce
- * collections' own known Query/Mutation fields, or `null` to mean "not
- * handled here" for anything else (the other 21 collections + 17 globals'
- * full real-Payload-generated schema, introspection, malformed queries, or a
- * mixed query touching both) - in every fallthrough case it reads the
- * request body via `request.clone()` first, so handing the same,
- * still-unconsumed `Request` to real Payload's own handler next is safe. See
- * `@/localapi/graphql`'s own header for the full rationale and the
- * deliberate simplifications this hybrid schema makes vs real Payload's
- * fully-typed one.
+ * `handleEcommerceGraphQL` (`@/localapi/graphql`) serves the 5 ecommerce
+ * collections' own Query/Mutation fields using the `graphql` package only.
+ * It returns `null` for anything else (other collections/globals,
+ * introspection, malformed or mixed queries). Real Payload's GraphQL used to
+ * be the fallthrough, but that schema crashed at build time
+ * (`Schema must contain uniquely named types but contains multiple types
+ * named "Faq"`) and this app has no GraphQL consumers outside the ecommerce
+ * collections, so unhandled operations now get an explicit 501. Use REST
+ * (`/api/[...slug]`) for those.
  */
-import config from '@engage-config'
-import { GRAPHQL_POST, REST_OPTIONS } from '@/engine/next/routes'
-
 import { handleEcommerceGraphQL } from '@/localapi/graphql'
-
-const realPost = GRAPHQL_POST(config)
 
 export async function POST(request: Request): Promise<Response> {
   const ours = await handleEcommerceGraphQL(request)
   if (ours) return ours
-  return realPost(request)
+  return Response.json(
+    {
+      errors: [
+        {
+          message:
+            'GraphQL is only supported for the ecommerce collections (products, orders, carts, transactions, addresses). Use the REST API for other collections and globals.',
+          extensions: { code: 'NOT_IMPLEMENTED' },
+        },
+      ],
+    },
+    { status: 501 },
+  )
 }
 
-export const OPTIONS = REST_OPTIONS(config)
+export function OPTIONS(): Response {
+  return new Response(null, { status: 204, headers: { Allow: 'POST, OPTIONS' } })
+}

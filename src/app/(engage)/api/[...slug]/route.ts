@@ -1,75 +1,40 @@
 /**
- * REST + GraphQL API removal (Stage 7): the hybrid dispatcher.
+ * REST API route (payload-removal-plan.md: Stage 7). Fully Payload-free.
  *
- * This file used to be Payload-generated scaffolding (a header comment here
- * used to say "DO NOT MODIFY - COULD BE REWRITTEN AT ANY TIME"). That claim
- * was checked directly against `node_modules/@payloadcms/next`'s dist output
- * during Stage 7's scoping work: no installed CLI step (`generate:importmap`,
- * `generate:types`, build, etc.) regenerates this file, so it is dead
- * scaffolding boilerplate, not something any tool rewrites - safe to
- * hand-maintain permanently. See payload-removal-plan.md's "REST + GraphQL
- * API removal (Stage 7)" section for the full scoping decision and the
- * build-prove-flip history behind this wiring (sub-steps 1-3b).
+ * `handleCustomCollectionEndpoint` (`@/localapi/endpoints`) runs a
+ * collection's own config `endpoints` first; then `handleRestRequest`
+ * (`@/localapi/rest`) serves every collection/global route, auth, versions,
+ * access, duplicate, bulk update/delete and the Stripe payment routes. It returns `null` for anything it does not recognise; that used to
+ * fall through to real Payload's REST handler and now gets the same 404 body
+ * real Payload sent for an unknown route (`Route not found "<pathname>"`).
  *
- * `handleRestRequest` (`@/localapi/rest`) is tried FIRST for GET/POST/PATCH/
- * DELETE. It returns a real `Response` for anything in this stage's scope
- * (core collection/global CRUD + bulk update/delete + core auth +
- * `/:id/duplicate` - see the plan doc), or `null` to mean "not handled here"
- * for anything still deferred (versions/drafts LIST/history, `/access`,
- * locked-documents/preferences, GraphQL, or any collection/global it doesn't
- * recognize) - in every one of
- * those fallthrough cases `handleRestRequest` returns before ever reading the
- * request body, so handing the same, still-unconsumed `Request` object to
- * real Payload's own handler next is safe. `PUT`/`OPTIONS` have no
- * from-scratch implementation and always go straight to real Payload.
+ * Real Payload's core routes this app never used and does not implement:
+ * `POST /users/verify/:token`, `/users/init`, `/users/first-register`,
+ * `GET /:media/paste-url`, `GET /payload-jobs/run`. `PUT` has no core routes
+ * at all. `OPTIONS` answers `200 {}` like real Payload does with no `cors`
+ * config (this app declares none).
  */
-import config from '@engage-config'
-import '@payloadcms/next/css'
-import {
-  REST_DELETE,
-  REST_GET,
-  REST_OPTIONS,
-  REST_PATCH,
-  REST_POST,
-  REST_PUT,
-} from '@/engine/next/routes'
-
+import { createEngine } from '@/localapi/engine'
+import { handleCustomCollectionEndpoint } from '@/localapi/endpoints'
 import { handleRestRequest } from '@/localapi/rest'
 
-const realGet = REST_GET(config)
-const realPost = REST_POST(config)
-const realDelete = REST_DELETE(config)
-const realPatch = REST_PATCH(config)
+type RouteArgs = { params: Promise<{ slug: string[] }> }
 
-type RouteArgs = Parameters<typeof realGet>[1]
+const notFound = (request: Request): Response =>
+  Response.json({ message: `Route not found "${new URL(request.url).pathname}"` }, { status: 404 })
 
-export async function GET(request: Request, args: RouteArgs): Promise<Response> {
+const dispatch = async (request: Request, args: RouteArgs): Promise<Response> => {
   const { slug } = await args.params
-  const ours = await handleRestRequest(request, slug)
-  if (ours) return ours
-  return realGet(request, args)
+  const engine = createEngine()
+  // Custom collection `endpoints` go first, like real Payload: otherwise `GET /form-submissions/export` would be read as findByID('export').
+  const response =
+    (await handleCustomCollectionEndpoint(request, slug, engine)) ?? (await handleRestRequest(request, slug, engine))
+  return response ?? notFound(request)
 }
 
-export async function POST(request: Request, args: RouteArgs): Promise<Response> {
-  const { slug } = await args.params
-  const ours = await handleRestRequest(request, slug)
-  if (ours) return ours
-  return realPost(request, args)
-}
-
-export async function PATCH(request: Request, args: RouteArgs): Promise<Response> {
-  const { slug } = await args.params
-  const ours = await handleRestRequest(request, slug)
-  if (ours) return ours
-  return realPatch(request, args)
-}
-
-export async function DELETE(request: Request, args: RouteArgs): Promise<Response> {
-  const { slug } = await args.params
-  const ours = await handleRestRequest(request, slug)
-  if (ours) return ours
-  return realDelete(request, args)
-}
-
-export const PUT = REST_PUT(config)
-export const OPTIONS = REST_OPTIONS(config)
+export const GET = dispatch
+export const POST = dispatch
+export const PATCH = dispatch
+export const DELETE = dispatch
+export const PUT = (request: Request): Response => notFound(request)
+export const OPTIONS = (): Response => Response.json({}, { status: 200 })

@@ -65,6 +65,7 @@ export const deleteEvent = ops.deleteByID
 
 export const findLatestEventVersion = versionsOps.findLatestByParentID as unknown as (parentId: number) => Promise<EventVersion | null>
 export const findEventVersions = versionsOps.findAllByParentID as unknown as (parentId: number) => Promise<EventVersion[]>
+export const findEventVersionByID = versionsOps.findByID as unknown as (versionId: number) => Promise<EventVersion | null>
 export const createEventVersion = versionsOps.createVersion as unknown as (
   parentId: number,
   data: Partial<Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt'>>,

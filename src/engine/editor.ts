@@ -1,12 +1,13 @@
 /**
- * Engine seam: the rich-text editor, server side.
+ * Engine seam: the rich-text editor factory used in `richText` field configs.
  *
- * Used by the config and by any field or block that declares a rich-text
- * field. Consumers only ever call the factory - they never reach into the
- * editor's node types - which keeps this a narrow contract to reimplement or
- * swap for a different editor later.
+ * There is no vendor editor any more. The admin edits rich text as raw
+ * editor-state JSON, and read/write/validate/render are this app's own code
+ * (`@/localapi/richtext`, `@/localapi/validators`), none of which reads
+ * anything off the field's `editor` value. This factory therefore returns an
+ * `undefined`, so `editor: richTextEditor()` in a field config stays a
+ * valid, self-documenting declaration.
  *
  * See ./index.ts for what this directory is and the rules that govern it.
  */
-
-export { lexicalEditor as richTextEditor } from '@payloadcms/richtext-lexical'
+export const richTextEditor = (): undefined => undefined

@@ -659,7 +659,7 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
 /* `getEntityPermissions.js` - NOT unconditional `true`, and deliberately    */
 /* NOT this module's own `admin/auth.ts`'s `evaluateAccess` helper, which     */
 /* defaults to `true` for a different, narrower caller). A field WITH no      */
-/* access function inherits its already-resolved PARENT's permission for      */
+/* access function inherits its already-resolved PARENT's permission for     */
 /* that operation (not a fresh `isLoggedIn` check) - confirmed in            */
 /* `populateFieldPermissions.js`.                                            */
 /*                                                                            */

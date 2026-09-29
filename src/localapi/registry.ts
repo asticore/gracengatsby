@@ -89,6 +89,7 @@ import { PayloadLockedDocuments } from '@/collections/PayloadLockedDocuments'
 import { PayloadPreferences } from '@/collections/PayloadPreferences'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
+import { applyImplicitAuthFields } from './sanitize'
 
 import { Addresses } from '@/features/ecommerce/collections/Addresses'
 import { Carts } from '@/features/ecommerce/collections/Carts'
@@ -440,7 +441,7 @@ export const readRegistry: ReadRegistry = {
     events: readEntry(Events, findEventsPaginated, findEventByID, countEvents),
     courses: readEntry(Courses, findCoursesPaginated, findCourseByID, countCourses),
     posts: readEntry(Posts, findPostsPaginated, findPostByID, countPosts),
-    users: readEntry(Users, findUsersPaginated, findUserByID, countUsers),
+    users: readEntry(applyImplicitAuthFields(Users), findUsersPaginated, findUserByID, countUsers),
     addresses: readEntry(Addresses, findAddressesPaginated, findAddressByID, countAddresses),
     carts: readEntry(Carts, findCartsPaginated, findCartByID, countCarts),
     orders: readEntry(Orders, findOrdersPaginated, findOrderByID, countOrders),

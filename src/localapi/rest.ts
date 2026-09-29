@@ -660,7 +660,7 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
 /* `getEntityPermissions.js` - NOT unconditional `true`, and deliberately    */
 /* NOT this module's own `admin/auth.ts`'s `evaluateAccess` helper, which     */
 /* defaults to `true` for a different, narrower caller). A field WITH no      */
-/* access function inherits its already-resolved PARENT's permission for      */
+/* access function inherits its already-resolved PARENT's permission for     */
 /* that operation (not a fresh `isLoggedIn` check) - confirmed in            */
 /* `populateFieldPermissions.js`.                                            */
 /*                                                                            */
@@ -922,538 +922,824 @@ async function handleGlobalAccess(engine: Engine, globalSlug: string, request: R
 /* `variants: false`) - no variant matching/spreading, no custom item       */
 /* fields (`cartItemFields` in `../features/ecommerce/collections/shared.ts`*/
 /* is just `product`/`quantity`).                                           */
+/*                                                                            */
+/* Access: reused as-is from the normal collection access path -            */
+/* `engine.findByID`/`update`/`delete` below run through the SAME           */
+/* `Carts.ts` access functions (`isAdmin`/`isDocumentOwner`/                */
+/* `hasCartSecretAccess`) as every other cart request, by passing `user`    */
+/* and (for a guest's body-supplied `secret`) `req: bodySecretReq(...)` -   */
+/* mirroring the real plugin's own `createRequestWithSecret` (which injects */
+/* into `req.context.cartSecret`; this app's `hasCartSecretAccess` reads    */
+/* `req.query.secret` instead - see `@/access/ecommerceAccess`'s own doc    */
+/* comment - so `bodySecretReq` puts it there instead of in `req.context`). */
+/* `handleCartMerge`'s source-cart lookup/delete use `overrideAccess: true` */
+/* exactly like the real plugin, because the secret is already being        */
+/* verified by hand in the `where` clause/prior lookup.                     */
+/* -------------------------------------------------------------------------- */
 
-type CartItem = { product: number; quantity: number; id?: string }
+type CartItemRow = { id?: string; product?: number | { id: number } | null; quantity?: number }
 
-async function handleAddItem(engine: Engine, cartID: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+function cartItemProductId(item: CartItemRow): number | null {
+  if (item.product && typeof item.product === 'object') return item.product.id
+  return typeof item.product === 'number' ? item.product : null
+}
+
+/** Secret from a POST body (`data.secret`, matching the real plugin's own `addItem`/`removeItem`/`updateItem`/`clearCart` arg) - threaded onto `req.query.secret` the same way `secretReq` threads a `?secret=` query param, since that's what `hasCartSecretAccess` reads. */
+function bodySecretReq(secret: unknown): { query: { secret?: string } } {
+  return { query: { secret: typeof secret === 'string' ? secret : undefined } }
+}
+
+/** `POST /:id/add-item` - body `{item: {product}, quantity?}`. Matches an existing item by `product` id (no `variant` - this app has none) and increments its quantity, or appends a new item. */
+async function handleCartAddItem(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const itemData = data.item as unknown
-  const item: CartItem = { product: -1, quantity: 1 }
-  if (itemData && typeof itemData === 'object' && typeof (itemData as Record<string, unknown>).product === 'number') {
-    item.product = (itemData as Record<string, unknown>).product as number
-  } else {
+  const item = data.item as Record<string, unknown> | undefined
+  const productId = typeof item?.product === 'number' ? item.product : Number(item?.product)
+  if (!item || !Number.isFinite(productId)) {
     return Response.json({ success: false, message: 'Item with product ID is required', cart: null }, { status: 400 })
   }
-
-  const quantity = data.quantity
-  if (typeof quantity === 'number' && quantity > 0) item.quantity = quantity
-
-  const cart = (await engine.findByID({ collection: 'carts', id: cartID, user, req: secretReq(request), overrideAccess: false }).catch((): unknown => null)) as unknown as { items?: unknown[] } | null
-  if (!cart) {
-    return Response.json({ success: false, message: `Cart with ID ${cartID} not found`, cart: null }, { status: 404 })
-  }
-
-  const items = Array.isArray(cart.items) ? [...cart.items] : []
-  const existingItem = items.find((i) => (i as Record<string, unknown>).product === item.product)
-  if (existingItem) {
-    (existingItem as Record<string, unknown>).quantity = ((existingItem as Record<string, unknown>).quantity as number) + item.quantity
+  const quantity = typeof data.quantity === 'number' ? data.quantity : 1
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const items = (cart.items as CartItemRow[] | undefined) ?? []
+  const existingIndex = items.findIndex((existing) => cartItemProductId(existing) === productId)
+  let updatedItems: CartItemRow[]
+  let message: string
+  if (existingIndex !== -1) {
+    updatedItems = [...items]
+    updatedItems[existingIndex] = { ...updatedItems[existingIndex], quantity: (updatedItems[existingIndex].quantity ?? 0) + quantity }
+    message = 'Item quantity updated'
   } else {
-    items.push(item)
+    updatedItems = [...items, { product: productId, quantity }]
+    message = 'Item added to cart'
   }
-
-  const updated = (await engine.update({ collection: 'carts', id: cartID, data: { items }, user, req: secretReq(request) }).catch((): unknown => null)) as unknown
-  return Response.json({ success: true, message: 'Item added to cart', cart: updated }, { status: 200 })
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
+  return Response.json({ success: true, message, cart: updatedCart })
 }
 
-async function handleRemoveItem(engine: Engine, cartID: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+/** `POST /:id/remove-item` - body `{itemID}`. `itemID` is the cart item's own array-row id (a UUID string - see `src/cms/db/schema/generate.ts`'s array-table id column, text for a non-versioned collection like `carts`). */
+async function handleCartRemoveItem(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const itemID = data.itemID
-  if (typeof itemID !== 'string') {
+  const itemId = data.itemID
+  if (typeof itemId !== 'string' || !itemId) {
     return Response.json({ success: false, message: 'Item ID is required', cart: null }, { status: 400 })
   }
-
-  const cart = (await engine.findByID({ collection: 'carts', id: cartID, user, req: secretReq(request), overrideAccess: false }).catch((): unknown => null)) as unknown as { items?: unknown[] } | null
-  if (!cart) {
-    return Response.json({ success: false, message: `Cart with ID ${cartID} not found`, cart: null }, { status: 404 })
-  }
-
-  const items = Array.isArray(cart.items) ? [...cart.items] : []
-  const idx = items.findIndex((i) => (i as Record<string, unknown>).id === itemID)
-  if (idx === -1) {
-    return Response.json({ success: false, message: `Item with ID ${itemID} not found in cart`, cart }, { status: 404 })
-  }
-
-  items.splice(idx, 1)
-  const updated = (await engine.update({ collection: 'carts', id: cartID, data: { items }, user, req: secretReq(request) }).catch((): unknown => null)) as unknown
-  return Response.json({ success: true, message: 'Item removed from cart', cart: updated }, { status: 200 })
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const items = (cart.items as CartItemRow[] | undefined) ?? []
+  const index = items.findIndex((it) => it.id === itemId)
+  if (index === -1) return Response.json({ success: false, message: `Item with ID ${itemId} not found in cart`, cart }, { status: 404 })
+  const updatedItems = [...items]
+  updatedItems.splice(index, 1)
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
+  return Response.json({ success: true, message: 'Item removed from cart', cart: updatedCart })
 }
 
-async function handleUpdateItem(engine: Engine, cartID: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+/** `POST /:id/update-item` - body `{itemID, quantity: number | {$inc: number}, removeOnZero?}` (defaults `true`). */
+async function handleCartUpdateItem(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const itemID = data.itemID
-  const quantityData = data.quantity
-  const removeOnZero = data.removeOnZero !== false
-
-  if (typeof itemID !== 'string') {
+  const itemId = data.itemID
+  if (typeof itemId !== 'string' || !itemId) {
     return Response.json({ success: false, message: 'Item ID is required', cart: null }, { status: 400 })
   }
-
-  let quantity: number | null = null
-  if (typeof quantityData === 'number') {
-    quantity = quantityData
-  } else if (quantityData && typeof quantityData === 'object' && typeof (quantityData as Record<string, number>).$inc === 'number') {
-    // Will compute the actual quantity after fetching the cart
-  } else {
+  const quantityInput = data.quantity
+  if (quantityInput === undefined) {
+    return Response.json({ success: false, message: 'Quantity is required', cart: null }, { status: 400 })
+  }
+  const isIncOp = typeof quantityInput === 'object' && quantityInput !== null && typeof (quantityInput as { $inc?: unknown }).$inc === 'number'
+  if (typeof quantityInput !== 'number' && !isIncOp) {
     return Response.json({ success: false, message: 'Quantity must be a number or { $inc: number }', cart: null }, { status: 400 })
   }
-
-  const cart = (await engine.findByID({ collection: 'carts', id: cartID, user, req: secretReq(request), overrideAccess: false }).catch((): unknown => null)) as unknown as { items?: unknown[] } | null
-  if (!cart) {
-    return Response.json({ success: false, message: `Cart with ID ${cartID} not found`, cart: null }, { status: 404 })
+  const removeOnZero = data.removeOnZero !== false
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const items = (cart.items as CartItemRow[] | undefined) ?? []
+  const index = items.findIndex((it) => it.id === itemId)
+  if (index === -1) return Response.json({ success: false, message: `Item with ID ${itemId} not found in cart`, cart }, { status: 404 })
+  const updatedItems = [...items]
+  const current = updatedItems[index]
+  const currentQuantity = current.quantity ?? 0
+  const newQuantity = isIncOp ? currentQuantity + (quantityInput as { $inc: number }).$inc : (quantityInput as number)
+  let wasRemoved = false
+  if (newQuantity <= 0 && removeOnZero) {
+    updatedItems.splice(index, 1)
+    wasRemoved = true
+  } else {
+    updatedItems[index] = { ...current, quantity: removeOnZero ? newQuantity : Math.max(1, newQuantity) }
   }
-
-  const items = Array.isArray(cart.items) ? [...cart.items] : []
-  const existingItem = items.find((i) => (i as Record<string, unknown>).id === itemID)
-  if (!existingItem) {
-    return Response.json({ success: false, message: `Item with ID ${itemID} not found in cart`, cart }, { status: 404 })
-  }
-
-  if (quantity === null) {
-    // Must be $inc case
-    const inc = ((quantityData as Record<string, number>).$inc ?? 0) as number
-    quantity = Math.max(1, ((existingItem as Record<string, unknown>).quantity as number) + inc)
-  }
-
-  if (removeOnZero && quantity === 0) {
-    const idx = items.indexOf(existingItem)
-    items.splice(idx, 1)
-    const updated = (await engine.update({ collection: 'carts', id: cartID, data: { items }, user, req: secretReq(request) }).catch((): unknown => null)) as unknown
-    return Response.json({ success: true, message: 'Item removed from cart', cart: updated }, { status: 200 })
-  }
-
-  ;(existingItem as Record<string, unknown>).quantity = Math.max(1, quantity)
-  const updated = (await engine.update({ collection: 'carts', id: cartID, data: { items }, user, req: secretReq(request) }).catch((): unknown => null)) as unknown
-  return Response.json({ success: true, message: 'Item quantity updated', cart: updated }, { status: 200 })
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
+  return Response.json({ success: true, message: wasRemoved ? 'Item removed from cart' : 'Item quantity updated', cart: updatedCart })
 }
 
-async function handleClearCart(engine: Engine, cartID: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const cart = (await engine.findByID({ collection: 'carts', id: cartID, user, req: secretReq(request), overrideAccess: false }).catch((): unknown => null)) as unknown as { items?: unknown[] } | null
-  if (!cart) {
-    return Response.json({ success: false, message: `Cart with ID ${cartID} not found`, cart: null }, { status: 404 })
-  }
-
-  const updated = (await engine.update({ collection: 'carts', id: cartID, data: { items: [] }, user, req: secretReq(request) }).catch((): unknown => null)) as unknown
-  return Response.json({ success: true, message: 'Cart cleared', cart: updated }, { status: 200 })
-}
-
-async function handleMergeCart(engine: Engine, cartID: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  if (!user) {
-    return Response.json({ success: false, message: 'Authentication required', cart: null }, { status: 401 })
-  }
-
+/** `POST /:id/clear` - body `{secret?}`. Empties `items`. */
+async function handleCartClear(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const sourceCartID = data.sourceCartID
-  const sourceSecret = data.sourceSecret
+  const req = bodySecretReq(data.secret)
+  const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
+  if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
+  const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: [] }, user, req })
+  return Response.json({ success: true, message: 'Cart cleared', cart: updatedCart })
+}
 
-  if (typeof sourceCartID !== 'number') {
+/** `POST /:id/merge` - body `{sourceCartID, sourceSecret}`. Merges a guest cart's items into the caller's own (authenticated-only) cart, then deletes the guest cart. */
+async function handleCartMerge(engine: Engine, targetCartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  if (!user) return Response.json({ success: false, message: 'Authentication required', cart: null }, { status: 401 })
+  const { data } = await readRequestBody(request)
+  const sourceCartId = typeof data.sourceCartID === 'number' ? data.sourceCartID : Number(data.sourceCartID)
+  const sourceSecret = data.sourceSecret
+  if (data.sourceCartID === undefined || !Number.isFinite(sourceCartId)) {
     return Response.json({ success: false, message: 'Source cart ID is required', cart: null }, { status: 400 })
   }
-  if (typeof sourceSecret !== 'string') {
+  if (typeof sourceSecret !== 'string' || !sourceSecret) {
     return Response.json({ success: false, message: 'Source cart secret is required', cart: null }, { status: 400 })
   }
-
-  const sourceCart = (await engine.find({ collection: 'carts', where: { and: [{ id: { equals: sourceCartID } }, { secret: { equals: sourceSecret } }] }, overrideAccess: true, user, pagination: false }).catch((): unknown => ({ docs: [] }))) as unknown as { docs: Array<{ id?: number; items?: unknown[] }> }
-  if (!sourceCart.docs || sourceCart.docs.length === 0) {
-    return Response.json({ success: false, message: `Source cart with ID ${sourceCartID} not found or secret mismatch`, cart: null }, { status: 404 })
+  const sourceResult = await engine.find({ collection: 'carts', where: { and: [{ id: { equals: sourceCartId } }, { secret: { equals: sourceSecret } }] }, limit: 1, depth: 0, overrideAccess: true })
+  const guestCart = sourceResult.docs[0] as unknown as (CartItemRow & { items?: CartItemRow[] }) | undefined
+  if (!guestCart) {
+    return Response.json({ success: false, message: `Source cart with ID ${sourceCartId} not found or secret mismatch`, cart: null }, { status: 404 })
   }
-
-  const targetCart = (await engine.findByID({ collection: 'carts', id: cartID, user, req: secretReq(request), overrideAccess: false }).catch((): unknown => null)) as unknown as { items?: unknown[] } | null
+  const targetCart = await engine.findByID({ collection: 'carts', id: targetCartId, depth: 0, user })
   if (!targetCart) {
-    return Response.json({ success: false, message: `Target cart with ID ${cartID} not found`, cart: null }, { status: 404 })
+    return Response.json({ success: false, message: `Target cart with ID ${targetCartId} not found`, cart: null }, { status: 404 })
   }
-
-  const sourceItems = Array.isArray(sourceCart.docs[0].items) ? sourceCart.docs[0].items : []
-  const targetItems = Array.isArray(targetCart.items) ? [...targetCart.items] : []
-
-  for (const sourceItem of sourceItems as unknown[]) {
-    const sItem = sourceItem as Record<string, unknown>
-    const sourceProduct = sItem.product
-    const sourceQty = sItem.quantity as number
-
-    const existingIdx = targetItems.findIndex((t) => (t as Record<string, unknown>).product === sourceProduct)
-    if (existingIdx !== -1) {
-      ;(targetItems[existingIdx] as Record<string, unknown>).quantity = (((targetItems[existingIdx] as Record<string, unknown>).quantity as number) || 0) + sourceQty
+  const sourceItems = guestCart.items ?? []
+  const targetItems = (targetCart.items as CartItemRow[] | undefined) ?? []
+  const mergedItems = [...targetItems]
+  for (const sourceItem of sourceItems) {
+    const sourceProductId = cartItemProductId(sourceItem)
+    const existingIndex = mergedItems.findIndex((it) => cartItemProductId(it) === sourceProductId)
+    if (existingIndex !== -1) {
+      mergedItems[existingIndex] = { ...mergedItems[existingIndex], quantity: (mergedItems[existingIndex].quantity ?? 0) + (sourceItem.quantity ?? 0) }
     } else {
-      targetItems.push({ product: sourceProduct, quantity: sourceQty })
+      const { id: _omit, ...rest } = sourceItem
+      mergedItems.push(rest)
     }
   }
-
-  const sourceId = sourceCart.docs[0].id
-  await engine.update({ collection: 'carts', id: cartID, data: { items: targetItems }, user, req: secretReq(request) }).catch((): unknown => null)
-  await engine.delete({ collection: 'carts', id: sourceId as number, overrideAccess: true, user }).catch((): unknown => null)
-
-  const updated = (await engine.findByID({ collection: 'carts', id: cartID, user, req: secretReq(request), overrideAccess: false }).catch((): unknown => null)) as unknown
-  return Response.json({ success: true, message: `Merged ${sourceItems.length} items from guest cart`, cart: updated }, { status: 200 })
-}
-
-/* -------------------------------------------------------------------------- */
-/* Payments: Stripe cart checkout (Stage 10 Ecommerce, Layer 3)              */
-/* -------------------------------------------------------------------------- */
-
-async function handleStripeWebhook(engine: Engine, request: Request): Promise<Response> {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-
-  // Early exit if not configured - matches real handler's shape
-  if (!webhookSecret || !stripeSecretKey) {
-    return Response.json({ received: true }, { status: 200 })
-  }
-
-  // Early exit if no signature header
-  const signature = request.headers.get('stripe-signature')
-  if (!signature) {
-    return Response.json({ received: true }, { status: 200 })
-  }
-
+  const updatedCart = await engine.update({ collection: 'carts', id: targetCartId, data: { items: mergedItems }, user })
   try {
-    const body = await request.text()
-    const StripeClass = await getStripeClient()
-    const stripe = new StripeClass({ apiKey: stripeSecretKey })
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-
-    // Event-type routing - only handle events we recognize
-    if (event.type === 'customer.subscription.deleted') {
-      await membershipWebhooks.handleSubscriptionDeleted(event.data.object as Stripe.Event.Data.Object, engine)
-    }
-
-    return Response.json({ received: true }, { status: 200 })
-  } catch (err) {
-    // Bad signature or other webhook error - always return 400/received:true matching real handler
-    return Response.json({ received: true }, { status: 400 })
+    await engine.delete({ collection: 'carts', id: sourceCartId, overrideAccess: true })
+  } catch {
+    // Silently ignore, matching the real plugin - the merge already succeeded.
   }
+  return Response.json({ success: true, message: `Merged ${sourceItems.length} items from guest cart`, cart: updatedCart })
 }
 
-async function handleStripeInitiate(engine: Engine, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const { data } = await readRequestBody(request)
-  const cartID = data.cartID as number
-  const customerEmail = stringField(data, 'customerEmail')
+/* -------------------------------------------------------------------------- */
+/* Payments: Stripe endpoints (Stage 10 Ecommerce, Layer 3 + cutover)        */
+/*                                                                            */
+/* POST /api/payments/stripe/initiate and .../confirm-order, reproduced from */
+/* the real ecommerce plugin's generic `endpoints/{initiatePayment,          */
+/* confirmOrder}.js` (the HTTP-shape/validation half, read directly from     */
+/* `node_modules` - cart/currency/product-price/inventory checks below) -    */
+/* the Stripe-specific work (PaymentIntent creation, transaction/order       */
+/* writes) is `@/features/ecommerce/payments/stripeAdapter.ts` (the ADAPTER  */
+/* half). See that module's header for the full real-source citation.       */
+/*                                                                            */
+/* POST /api/payments/stripe/webhooks, reproduced from the real plugin's     */
+/* `payments/adapters/stripe/endpoints/webhooks.js` - this one route serves  */
+/* the UNRELATED membership-subscription flow (`@/features/members/          */
+/* webhooks.ts`'s `membershipWebhooks`), not cart checkout, and used to be   */
+/* deliberately left to real Payload's own `stripeAdapter()` registration    */
+/* for exactly that reason. Now reproduced here too - see                   */
+/* `handlePaymentsStripeWebhooks` below and `stripeAdapter.ts`'s header.     */
+/*                                                                            */
+/* Simplified vs the real endpoint handlers, matching this app's shop       */
+/* config and established conventions elsewhere in this file/cartHooks.ts:  */
+/*  - no variants (`variants: false`) - no variant price/inventory checks.  */
+/*  - single currency (AUD-only) - `priceInAUD` directly, no per-currency   */
+/*    `priceIn${currency}` lookup or supported-currency-list check.         */
+/*  - the real endpoint falls back to `user.cart.docs[0]` when `cartID` is  */
+/*    omitted from the body - this app's actual client (`usePayments()`,    */
+/*    `@payloadcms/plugin-ecommerce/client/react`, read directly to confirm */
+/*    the exact request body shape) always sends `cartID` explicitly, so    */
+/*    that branch is dead code for this app and is not reproduced.          */
+/* -------------------------------------------------------------------------- */
 
-  if (typeof cartID !== 'number' || cartID <= 0) {
+/** Cart lookup + guest/authenticated email resolution shared by both payments endpoints below - mirrors the shared prefix of the real `initiatePaymentHandler`/`confirmOrderHandler` (both start with the identical cartID/secret/email resolution before diverging). Returns a `Response` directly for any of the real handlers' own 400/404 cases, so callers just do `if (resolved instanceof Response) return resolved`. */
+async function resolvePaymentsCart(
+  engine: Engine,
+  data: Record<string, unknown>,
+  user: Parameters<Engine['find']>[0]['user'],
+): Promise<{ cart: PaymentsCartDoc; customerEmail: string } | Response> {
+  let customerEmail: string | undefined
+  if (!user) {
+    if (typeof data.customerEmail !== 'string' || !data.customerEmail) {
+      return Response.json({ message: 'A customer email is required to make a purchase.' }, { status: 400 })
+    }
+    customerEmail = data.customerEmail
+  } else {
+    customerEmail = (user as { email?: string }).email
+  }
+
+  if (data.cartID === undefined || data.cartID === null) {
+    return Response.json({ message: 'Cart ID is required.' }, { status: 400 })
+  }
+  const cartId = typeof data.cartID === 'number' ? data.cartID : Number(data.cartID)
+  if (!Number.isFinite(cartId)) {
     return Response.json({ message: 'Cart ID is required.' }, { status: 400 })
   }
 
-  if (!user && !customerEmail) {
-    return Response.json({ message: 'A customer email is required to make a purchase.' }, { status: 400 })
-  }
-
-  const cart = (await engine.findByID({ collection: 'carts', id: cartID, user, req: secretReq(request), overrideAccess: false }).catch((): unknown => null)) as unknown as { items?: unknown[]; currency?: string; subtotal?: number } | null
+  const cart = (await engine.findByID({
+    collection: 'carts',
+    id: cartId,
+    depth: 0,
+    overrideAccess: false,
+    user,
+    req: bodySecretReq(data.secret),
+  })) as unknown as PaymentsCartDoc | null
   if (!cart) {
-    return Response.json({ message: `Cart with ID ${cartID} not found.` }, { status: 404 })
+    return Response.json({ message: `Cart with ID ${cartId} not found.` }, { status: 404 })
   }
 
-  if (!Array.isArray(cart.items) || cart.items.length === 0) {
+  return { cart, customerEmail: customerEmail ?? '' }
+}
+
+/** `POST /payments/stripe/initiate` - body `{cartID, secret?, customerEmail?, billingAddress?, shippingAddress?}`. Validates every cart item's product has a price and enough inventory (`defaultProductsValidation.js`, simplified as above) before handing off to `initiateStripePayment`. */
+async function handlePaymentsStripeInitiate(engine: Engine, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const resolved = await resolvePaymentsCart(engine, data, user)
+  if (resolved instanceof Response) return resolved
+  const { cart, customerEmail } = resolved
+
+  if (!cart.items || !Array.isArray(cart.items) || cart.items.length === 0) {
     return Response.json({ message: 'Cart is required and must contain at least one item.' }, { status: 400 })
   }
 
-  // Validate products exist and have prices
-  for (const item of cart.items as unknown[]) {
-    const iData = item as Record<string, unknown>
-    const productID = iData.product as number
-    const product = (await engine.findByID({ collection: 'products', id: productID, user, overrideAccess: false }).catch((): unknown => null)) as unknown as { priceInAUD?: number } | null
+  for (const item of cart.items) {
+    const productId = cartItemProductId(item)
+    if (!productId) continue
+    const quantity = item.quantity || 1
+    const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0 })) as { inventory?: number; priceInAUD?: number } | null
     if (!product) {
-      return Response.json({ message: `Product with ID ${productID} not found.` }, { status: 404 })
+      return Response.json({ message: `Product with ID ${productId} not found.` }, { status: 404 })
     }
-    if (typeof product.priceInAUD !== 'number' || product.priceInAUD <= 0) {
+    if (!product.priceInAUD) {
       return Response.json({ message: 'Product does not have a price in AUD.' }, { status: 400 })
     }
-
-    const quantity = iData.quantity as number
-    if (product.priceInAUD * quantity < 0) {
+    if (product.inventory === 0 || (typeof product.inventory === 'number' && product.inventory < quantity)) {
       return Response.json({ message: 'Product is out of stock or does not have enough inventory.' }, { status: 400 })
     }
   }
 
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-  if (!stripeSecretKey) {
-    return Response.json({ message: 'Stripe is not configured.' }, { status: 500 })
+  try {
+    const result = await initiateStripePayment({
+      engine,
+      cart,
+      currency: cart.currency || 'AUD',
+      customerEmail,
+      billingAddress: data.billingAddress as Record<string, unknown> | undefined,
+      shippingAddress: data.shippingAddress as Record<string, unknown> | undefined,
+      user,
+    })
+    return Response.json(result)
+  } catch {
+    return Response.json({ message: 'Error initiating payment.' }, { status: 500 })
   }
-
-  return await initiateStripePayment(engine, cartID, customerEmail, user, request)
 }
 
-async function handleStripeConfirmOrder(engine: Engine, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+/** `POST /payments/stripe/confirm-order` - body `{cartID, secret?, customerEmail?, paymentIntentID}`. */
+async function handlePaymentsStripeConfirmOrder(engine: Engine, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const cartID = data.cartID as number
-  const customerEmail = stringField(data, 'customerEmail')
-  const paymentIntentID = stringField(data, 'paymentIntentID')
+  const resolved = await resolvePaymentsCart(engine, data, user)
+  if (resolved instanceof Response) return resolved
+  const { customerEmail } = resolved
 
-  if (!paymentIntentID) {
+  const paymentIntentID = data.paymentIntentID
+  if (typeof paymentIntentID !== 'string' || !paymentIntentID) {
     return Response.json({ message: 'PaymentIntent ID is required' }, { status: 400 })
   }
 
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-  if (!stripeSecretKey) {
-    return Response.json({ message: 'Stripe is not configured.' }, { status: 500 })
+  try {
+    const result = await confirmStripeOrder({ engine, customerEmail, paymentIntentID, user })
+    return Response.json(result)
+  } catch {
+    return Response.json({ message: 'Error confirming order.' }, { status: 500 })
+  }
+}
+
+/**
+ * `POST /payments/stripe/webhooks` - reproduces the real plugin's own
+ * `payments/adapters/stripe/endpoints/webhooks.js` exactly (read directly
+ * from `node_modules` to confirm): no auth/user resolution at all (unlike
+ * `initiate`/`confirm-order` above) - the only trust boundary is the Stripe
+ * signature. `returnStatus` starts at 200 and is only ever set to 400 by a
+ * signature-verification failure; when `STRIPE_WEBHOOK_SECRET`/
+ * `STRIPE_SECRET_KEY` aren't both configured (e.g. this sandbox, where both
+ * are blank) the whole body is skipped and this always answers `{received:
+ * true}` at 200, matching the real handler's own early-exit shape. Dispatch
+ * to `membershipWebhooks[event.type]` uses the same `{req: {payload:
+ * engine}}` minimal-shape cast this codebase already uses to call a
+ * real-Payload-typed function from the engine layer (see
+ * `src/admin/auth.ts`'s `evaluateAccess`) rather than casting a fake object
+ * through `EngineRequest` (real Payload's `PayloadRequest`) - `req` here is
+ * never touched except via `.payload`.
+ */
+async function handlePaymentsStripeWebhooks(engine: Engine, request: Request): Promise<Response> {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  let returnStatus = 200
+
+  if (webhookSecret && secretKey) {
+    const stripe = getStripeClient(secretKey)
+    const body = await request.text()
+    const signature = request.headers.get('stripe-signature')
+
+    if (signature) {
+      let event: Stripe.Event | undefined
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+      } catch (err) {
+        console.error(`Error constructing Stripe event: ${err instanceof Error ? err.message : String(err)}`)
+        returnStatus = 400
+      }
+
+      if (event) {
+        const handler = membershipWebhooks[event.type as keyof typeof membershipWebhooks] as unknown as
+          | ((args: { event: Stripe.Event; req: { payload: Engine }; stripe: Stripe }) => Promise<void>)
+          | undefined
+        if (typeof handler === 'function') {
+          await handler({ event, req: { payload: engine }, stripe })
+        }
+      }
+    }
   }
 
-  return await confirmStripeOrder(engine, cartID, customerEmail, paymentIntentID, user, request)
+  return Response.json({ received: true }, { status: returnStatus })
 }
 
 /* -------------------------------------------------------------------------- */
-/* Versions endpoints (Stage 7)                                              */
+/* Global handlers                                                            */
 /* -------------------------------------------------------------------------- */
 
-/**
- * All 6 core version endpoints for the 5 versioned collections (posts,
- * pages, events, courses, products) are reproduced here, matching real
- * Payload's wire-for-wire (see `payload/dist/collections/endpoints/
- * {getVersions,getVersionByID,restoreVersion}.js` read directly from
- * `node_modules`, and the plan doc's "REST responses" mapping for field-
- * level naming and status/envelope conventions). Each handler validates
- * collection/id/version-id existence before operating (real Payload's own
- * pattern confirmed by reading), and returns the same error envelopes
- * (`errorToResponse` above).
- */
-
-async function handleGetVersions(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+async function handleGlobalFind(engine: Engine, slug: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const entry = versionsRegistry.findByID(collection)
-  if (!entry) return null // Fallthrough to real Payload
-  const result = await entry.ops.findVersions({ id, limit: query.limit, page: query.page, sort: query.sort, pagination: query.pagination, user, overrideAccess: false })
-  return Response.json(result, { status: 200 })
-}
-
-async function handleGetVersionByID(engine: Engine, collection: string, id: number, versionID: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const entry = versionsRegistry.findByID(collection)
-  if (!entry) return null // Fallthrough to real Payload
-  const doc = await entry.ops.findVersionByID({ id, versionID, user, overrideAccess: false })
+  const doc = await engine.findGlobal({ slug, depth: query.depth, user, overrideAccess: false })
   return Response.json(doc, { status: 200 })
 }
 
-async function handleRestoreVersion(engine: Engine, collection: string, id: number, versionID: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
-  const entry = versionsRegistry.findByID(collection)
-  if (!entry) return null // Fallthrough to real Payload
-  const doc = await entry.ops.restoreVersion({ id, versionID, user, overrideAccess: false })
-  return Response.json({ doc, message: 'Version restored successfully.' }, { status: 200 })
+/** Real global update is `POST /`, not `PATCH /`, and its response key is `result`, not `doc` - see this file's header. */
+async function handleGlobalUpdate(engine: Engine, slug: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const result = await engine.updateGlobal({ slug, data, user })
+  return Response.json({ message: 'Updated successfully.', result }, { status: 200 })
 }
 
 /* -------------------------------------------------------------------------- */
-/* Main handler router                                                        */
+/* Auth handlers                                                              */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Reproduces real Payload's own REST request routing (see `payload/dist/
- * collections/endpoints/handleEndpoints.js` and equivalent globals handler,
- * read directly from `node_modules`). Matches a request path against the
- * registered collection/global slugs, branching on method + remaining path
- * segments. Returns a real `Response` for anything handled, or `null` to
- * signal "not handled here, fall through to real Payload's REST".
+ * `POST /login` - real shape `{message: 'Authentication Passed', user, token, exp}` plus a `Set-Cookie` (`auth/endpoints/login.js`, `translations/languages/en.js`'s `authentication:passed`). A failed login throws `AuthenticationError`/`LockedAuth` from `./auth.ts`'s own `login()`, mapped to 401/423 by `errorToResponse`.
  *
- * Call signature is `handleRestRequest(request, pathSegments, engine,
- * testEngine?)` - a third `testEngine` parameter is ONLY for unit tests to
- * inject a mocked engine without the real DB attached. Omit it in
- * production.
+ * **Live-production bug fixed here (2026-09-18)**: this handler used to call
+ * `readJsonBody` directly. The admin panel's own login page - like every
+ * page built on `@payloadcms/ui`'s generic `<Form>` component - submits as
+ * `multipart/form-data` (a `_payload` field holding the JSON-stringified
+ * `{email, password}`), never `application/json` - see `readRequestBody`'s
+ * own doc comment for the full citation. `request.json()` on a multipart
+ * body throws, which surfaced to a real user as a bare, unmapped 500 - easily
+ * mistaken for "wrong email or password" since the admin UI's generic error
+ * toast doesn't distinguish a thrown network error from a real 401. Every
+ * admin-panel login attempt was broken by this from the moment Stage 7's
+ * flip made this handler the live one, until this fix.
  */
-export async function handleRestRequest(request: Request, pathSegments: string[], engine: Engine): Promise<Response | null> {
-  const method = request.method
-  const [rootOrCollection, ...rest] = pathSegments
-
-  // Fallthrough for empty/unrecognized root
-  if (!rootOrCollection) return null
-
-  // /api/access (root)
-  if (rootOrCollection === 'access' && rest.length === 0 && method === 'GET') {
-    return handleAccessRoot(engine, (await engine.auth({ data: {}, request })).user)
-  }
-
-  // /api/globals/:slug or /api/globals/:slug/access
-  if (rootOrCollection === 'globals') {
-    const [globalSlug, ...globalRest] = rest
-    if (!globalSlug) return null
-
-    if (globalRest.length === 0 && method === 'GET') {
-      const user = (await engine.auth({ data: {}, request })).user
-      return handleFindGlobal(engine, globalSlug, request, user)
-    }
-    if (globalRest.length === 0 && method === 'POST') {
-      const user = (await engine.auth({ data: {}, request })).user
-      return handleUpdateGlobal(engine, globalSlug, request, user)
-    }
-    if (globalRest.length === 1 && globalRest[0] === 'access' && method === 'POST') {
-      const user = (await engine.auth({ data: {}, request })).user
-      return handleGlobalAccess(engine, globalSlug, request, user)
-    }
-    return null
-  }
-
-  // /api/payments/...
-  if (rootOrCollection === 'payments') {
-    const [provider, ...paymentRest] = rest
-    if (provider === 'stripe' && paymentRest[0] === 'webhooks' && method === 'POST') {
-      return handleStripeWebhook(engine, request)
-    }
-    if (provider === 'stripe' && paymentRest[0] === 'initiate' && method === 'POST') {
-      const user = (await engine.auth({ data: {}, request })).user
-      return handleStripeInitiate(engine, request, user)
-    }
-    if (provider === 'stripe' && paymentRest[0] === 'confirm-order' && method === 'POST') {
-      const user = (await engine.auth({ data: {}, request })).user
-      return handleStripeConfirmOrder(engine, request, user)
-    }
-    return null
-  }
-
-  // /api/<collection> or /api/<collection>/... handlers
-  const user = (await engine.auth({ data: {}, request })).user
-
-  // Verify it's a registered collection
-  if (!readRegistry.collections[rootOrCollection]) return null
-
-  // /api/<collection> or /api/<collection>/ - list/create/count
-  if (rest.length === 0) {
-    if (method === 'GET') return handleFind(engine, rootOrCollection, request, user)
-    if (method === 'POST') return handleCreate(engine, rootOrCollection, request, user)
-    if (method === 'PATCH') return handleBulkUpdate(engine, rootOrCollection, request, user)
-    if (method === 'DELETE') return handleBulkDelete(engine, rootOrCollection, request, user)
-    return null
-  }
-
-  // Parse first segment after collection
-  const [firstSegment, ...afterFirst] = rest
-  const numericID = /^\d+$/.test(firstSegment) ? parseInt(firstSegment, 10) : null
-
-  // /api/<collection>/:id routes (must be numeric)
-  if (numericID !== null) {
-    // /api/<collection>/:id
-    if (afterFirst.length === 0) {
-      if (method === 'GET') return handleFindByID(engine, rootOrCollection, numericID, request, user)
-      if (method === 'PATCH') return handleUpdateByID(engine, rootOrCollection, numericID, request, user)
-      if (method === 'DELETE') return handleDeleteByID(engine, rootOrCollection, numericID, user, request)
-      return null
-    }
-
-    // /api/<collection>/:id/<subpath>
-    const [subpath, ...afterSubpath] = afterFirst
-
-    // /api/<collection>/:id/duplicate
-    if (subpath === 'duplicate' && afterSubpath.length === 0 && method === 'POST') {
-      return handleDuplicate(engine, rootOrCollection, numericID, request, user)
-    }
-
-    // /api/<collection>/:id/access
-    if (subpath === 'access' && afterSubpath.length === 0 && method === 'POST') {
-      return handleCollectionAccess(engine, rootOrCollection, numericID, request, user)
-    }
-
-    // /api/<collection>/:id/versions or /api/<collection>/:id/versions/:versionID
-    if (subpath === 'versions') {
-      if (afterSubpath.length === 0 && method === 'GET') {
-        return handleGetVersions(engine, rootOrCollection, numericID, request, user)
-      }
-      if (afterSubpath.length === 1 && /^\d+$/.test(afterSubpath[0])) {
-        const versionID = parseInt(afterSubpath[0], 10)
-        if (method === 'GET') {
-          return handleGetVersionByID(engine, rootOrCollection, numericID, request, user)
-        }
-        if (method === 'POST') {
-          return handleRestoreVersion(engine, rootOrCollection, numericID, versionID, request, user)
-        }
-      }
-      return null
-    }
-
-    // Cart-specific sub-routes (/api/carts/:id/add-item, etc.)
-    if (rootOrCollection === 'carts') {
-      if (subpath === 'add-item' && afterSubpath.length === 0 && method === 'POST') {
-        return handleAddItem(engine, numericID, request, user)
-      }
-      if (subpath === 'remove-item' && afterSubpath.length === 0 && method === 'POST') {
-        return handleRemoveItem(engine, numericID, request, user)
-      }
-      if (subpath === 'update-item' && afterSubpath.length === 0 && method === 'POST') {
-        return handleUpdateItem(engine, numericID, request, user)
-      }
-      if (subpath === 'clear' && afterSubpath.length === 0 && method === 'POST') {
-        return handleClearCart(engine, numericID, request, user)
-      }
-      if (subpath === 'merge' && afterSubpath.length === 0 && method === 'POST') {
-        return handleMergeCart(engine, numericID, request, user)
-      }
-    }
-
-    // /api/media/file/:filename
-    if (rootOrCollection === 'media' && subpath === 'file' && afterSubpath.length === 1 && method === 'GET') {
-      return handleGetMediaFile(afterSubpath[0], request)
-    }
-
-    return null
-  }
-
-  // Non-numeric :id fallback (including auth routes on `users` collection)
-  if (rootOrCollection === AUTH_COLLECTION_SLUG) {
-    // Auth endpoints - literal path checks BEFORE numeric :id parsing (real Payload precedence reproduced)
-    if (firstSegment === 'login' && afterFirst.length === 0 && method === 'POST') {
-      const { data } = await readRequestBody(request)
-      const result = await engine.login({ collection: AUTH_COLLECTION_SLUG, data })
-      const token = result.token
-      const exp = result.exp
-      const setCookie = buildAuthCookie(token, result.exp && typeof result.exp === 'number' ? result.exp - Math.floor(Date.now() / 1000) : 7200)
-      return Response.json({ message: 'Authentication Passed', user: result.user, token, exp }, { status: 200, headers: { 'Set-Cookie': setCookie } })
-    }
-    if (firstSegment === 'logout' && afterFirst.length === 0 && method === 'POST') {
-      const { message } = await engine.logout({ collection: AUTH_COLLECTION_SLUG })
-      const expiredCookie = buildExpiredAuthCookie()
-      return Response.json({ message }, { status: 200, headers: { 'Set-Cookie': expiredCookie } })
-    }
-    if (firstSegment === 'me' && afterFirst.length === 0 && method === 'GET') {
-      const token = extractTokenFromRequest(request)
-      const result = await engine.auth({ data: { token }, request })
-      if (!result.user) {
-        const { status, body } = errorToResponse(new AuthenticationError())
-        return Response.json(body, { status })
-      }
-      const exp = decodeJwtExpUnsafe(token ?? '')
-      return Response.json({ ...result.user, token, exp }, { status: 200 })
-    }
-    if (firstSegment === 'refresh-token' && afterFirst.length === 0 && method === 'POST') {
-      const token = extractTokenFromRequest(request)
-      const result = await engine.refreshToken({ collection: AUTH_COLLECTION_SLUG, token: token ?? '' })
-      const setCookie = result.setCookie ? buildAuthCookie(result.token, result.exp - Math.floor(Date.now() / 1000)) : undefined
-      const headers = setCookie ? { 'Set-Cookie': setCookie } : {}
-      return Response.json({ message: 'Token refreshed', token: result.token, exp: result.exp, user: result.user }, { status: 200, headers })
-    }
-    if (firstSegment === 'forgot-password' && afterFirst.length === 0 && method === 'POST') {
-      const { data } = await readRequestBody(request)
-      const { message } = await engine.forgotPassword({ collection: AUTH_COLLECTION_SLUG, data })
-      return Response.json({ message }, { status: 200 })
-    }
-    if (firstSegment === 'reset-password' && afterFirst.length === 0 && method === 'POST') {
-      const { data } = await readRequestBody(request)
-      const result = await engine.resetPassword({ collection: AUTH_COLLECTION_SLUG, data })
-      const token = result.token
-      const exp = result.exp
-      const setCookie = buildAuthCookie(token, result.exp && typeof result.exp === 'number' ? result.exp - Math.floor(Date.now() / 1000) : 7200)
-      return Response.json({ message: 'Password reset successfully', user: result.user, token, exp }, { status: 200, headers: { 'Set-Cookie': setCookie } })
-    }
-    if (firstSegment === 'unlock' && afterFirst.length === 0 && method === 'POST') {
-      const { data } = await readRequestBody(request)
-      await engine.unlock({ collection: AUTH_COLLECTION_SLUG, data })
-      return Response.json({ message: 'Account unlocked successfully' }, { status: 200 })
-    }
-    if (firstSegment === 'access' && afterFirst.length === 0 && method === 'POST') {
-      return handleCollectionAccess(engine, AUTH_COLLECTION_SLUG, undefined, request, user)
-    }
-  }
-
-  // /api/<collection>/access (no id)
-  if (firstSegment === 'access' && afterFirst.length === 0 && method === 'POST') {
-    return handleCollectionAccess(engine, rootOrCollection, undefined, request, user)
-  }
-
-  return null
-}
-
-// Additional exports for Stage 7: handle versions registry + corresponding ops collections
-export { versionsRegistry }
-
-// Global find/update handlers (Stage 7 addition, needed by /api/globals/:slug routes above)
-async function handleFindGlobal(engine: Engine, slug: string, request: Request, user: Parameters<Engine['findGlobal']>[0]['user']): Promise<Response> {
-  const doc = await engine.findGlobal({ slug, user, overrideAccess: false })
-  return Response.json(doc, { status: 200 })
-}
-
-async function handleUpdateGlobal(engine: Engine, slug: string, request: Request, user: Parameters<Engine['findGlobal']>[0]['user']): Promise<Response> {
+async function handleLogin(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const doc = await engine.updateGlobal({ slug, data, user })
-  return Response.json({ message: 'Updated successfully', result: doc }, { status: 200 })
+  const result = await engine.login({ collection, data: { email: stringField(data, 'email'), password: stringField(data, 'password') } })
+  const headers = new Headers()
+  if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
+  return Response.json({ message: 'Authentication Passed', ...result }, { status: 200, headers })
+}
+
+/** `POST /logout` - `{message: 'Logout successful.'}` plus an expired `Set-Cookie` (`auth/endpoints/logout.js`, `authentication:logoutSuccessful`). This app's own `./auth.ts`'s `logout()` never throws (an already-invalid/missing token is a no-op success, by design - see its own doc comment), so there is no failure branch to reproduce from real Payload's own `error:logoutFailed` 400 case. */
+async function handleLogout(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const url = new URL(request.url)
+  await engine.logout({ collection, headers: request.headers, allSessions: url.searchParams.get('allSessions') === 'true' })
+  const headers = new Headers()
+  headers.set('Set-Cookie', buildExpiredAuthCookie())
+  return Response.json({ message: 'Logout successful.' }, { status: 200, headers })
+}
+
+/** `GET /me` - `{user, message: 'Account'}`, plus `token`/`exp` when authenticated (`auth/endpoints/me.js`, `authentication:account`). Built from `engine.auth()` (this module's own equivalent of real Payload's strategy-already-ran `req.user`) rather than a dedicated `engine.me()` - no such member exists on `Engine` (see `./engine.ts`'s own confirmed 16-member interface), and `verifyAuth`'s own return value is already exactly what real `meOperation` computes for `result.user` in the one-token-one-collection case this app has. */
+async function handleMe(engine: Engine, request: Request): Promise<Response> {
+  const { user } = await engine.auth({ headers: request.headers })
+  const body: Record<string, unknown> = { user, message: 'Account' }
+  if (user) {
+    // Real `meOperation` always sets these two once `req.user` is present
+    // (`result.collection = req.user.collection`, `result.strategy =
+    // req.user._strategy`) - unconditional, unlike `token`/`exp` below.
+    body.collection = AUTH_COLLECTION_SLUG
+    body.strategy = 'local-jwt'
+    const token = extractTokenFromRequest(request)
+    if (token) {
+      body.token = token
+      const exp = decodeJwtExpUnsafe(token)
+      if (exp !== null) body.exp = exp
+    }
+  }
+  return Response.json(body, { status: 200 })
+}
+
+/** `POST /refresh-token` - `{message: 'Token refresh successful.', exp, refreshedToken, setCookie, strategy, user}` plus a `Set-Cookie` when `setCookie` is true (`auth/endpoints/refresh.js`, `authentication:tokenRefreshSuccessful`). `Engine['refreshToken']`'s own return field is named `token` (this app's own naming, confirmed in `./engine.ts`), renamed to the real wire field `refreshedToken` here - the one field-name translation this handler does between the engine layer and the real REST wire shape. `strategy` is always the literal `'local-jwt'` for a password-based session, matching real Payload's own `_strategy` value confirmed throughout Stage 7's ground-truth research. */
+async function handleRefreshToken(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const result = await engine.refreshToken({ collection, headers: request.headers })
+  const headers = new Headers()
+  if (result.setCookie) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
+  return Response.json({ message: 'Token refresh successful.', exp: result.exp, refreshedToken: result.token, setCookie: result.setCookie, strategy: 'local-jwt', user: result.user }, { status: 200, headers })
+}
+
+/** `POST /forgot-password` - always `{message: 'Success'}` at 200, whether or not the email matches a real user (real Payload's own `forgotPasswordHandler` never branches on the operation's own result - by design, so a caller can't use this endpoint to enumerate valid emails; `./auth.ts`'s own `forgotPassword()` already returns `null` rather than throwing for an unknown email, matching this). */
+async function handleForgotPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  await engine.forgotPassword({ collection, data: { email: stringField(data, 'email') } })
+  return Response.json({ message: 'Success' }, { status: 200 })
+}
+
+/** `POST /reset-password` - `{message: 'Password reset successfully.', user, token}` plus a `Set-Cookie` (`auth/endpoints/resetPassword.js`, `authentication:passwordResetSuccessfully`). An invalid/expired token throws `InvalidResetToken` (400, via `errorToResponse`). */
+async function handleResetPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const { data } = await readRequestBody(request)
+  const result = await engine.resetPassword({ collection, data: { password: stringField(data, 'password'), token: stringField(data, 'token') } })
+  const headers = new Headers()
+  headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
+  return Response.json({ message: 'Password reset successfully.', user: result.user, token: result.token }, { status: 200, headers })
+}
+
+/**
+ * `POST /unlock` - always `{message: 'Success'}` at 200 on success
+ * (`auth/endpoints/unlock.js`, `general:success`). `./auth.ts`'s own
+ * `unlockUser()` throws `AuthenticationError` for an unknown email (401, via
+ * `errorToResponse`) and a bare `Error` for a missing email (falls through
+ * `errorToResponse`'s generic 500 case - a documented, minor gap: real
+ * Payload's own equivalent validation failure would be a 400, not a 500, but
+ * this is only reachable via a malformed request with no email field at all,
+ * not a real client flow).
+ *
+ * **Access check, added after a real-Payload REST parity test caught its
+ * absence**: `unlockOperation` (`auth/operations/unlock.js`) runs
+ * `executeAccess({req}, collectionConfig.access.unlock)` at the REST layer
+ * (unlike this app's own `engine.unlock` Local API wrapper, which - like
+ * every other Local API call in this project - defaults `overrideAccess` to
+ * bypass it). This app's `users` collection (`src/collections/Users.ts`)
+ * does not define its own `access.unlock`, so real Payload's sanitize step
+ * fills in its own default, `auth/defaultAccess.js`: `({req:{user}}) =>
+ * Boolean(user)` - ANY authenticated user (not admin-only) may unlock ANY
+ * account, but an anonymous request is denied with 403. Confirmed
+ * empirically: an anonymous `POST /api/users/unlock` against real Payload's
+ * own REST route returns 403, not 200. Reproduced here with the same
+ * `Boolean(user)` check via `Forbidden`, since `readRegistry`'s narrow
+ * `ReadEntityConfig` (`{slug, fields, access?}` - see `./read-operations.ts`)
+ * has no generic per-operation access dispatch this handler could otherwise
+ * reuse, and `users` is the one hardcoded auth collection anyway.
+ */
+async function handleUnlock(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const { user } = await engine.auth({ headers: request.headers })
+  if (!user) throw new Forbidden()
+  const { data } = await readRequestBody(request)
+  await engine.unlock({ collection, data: { email: stringField(data, 'email') } })
+  return Response.json({ message: 'Success' }, { status: 200 })
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dispatch                                                                    */
+/* -------------------------------------------------------------------------- */
+
+const AUTH_ROUTE_NAMES = new Set(['login', 'logout', 'me', 'refresh-token', 'forgot-password', 'reset-password', 'unlock'])
+
+/* -------------------------------------------------------------------------- */
+/* Versions: GET /:c/versions, GET /:c/versions/:id, POST /:c/versions/:id    */
+/* -------------------------------------------------------------------------- */
+//
+// Real Payload's `payload/dist/collections/endpoints/{findVersions,
+// findVersionByID,restoreVersion}.js`, reproduced for the 5 collections that
+// declare `versions.drafts` (see `versionsRegistry`); every other collection
+// falls through (`null`) since it has no versions at all. Wire shapes:
+//   - a version doc: `{id, parent, version: {...docFields, createdAt,
+//     updatedAt, _status}, createdAt, updatedAt, latest}` - `version.*` is the
+//     document snapshot, the outer `createdAt`/`updatedAt` are the version
+//     ROW's own timestamps.
+//   - list: the usual paginated envelope, default sort `-updatedAt`, default
+//     limit 10.
+//   - restore: `{...restoredDoc, message}` (flat, unlike create/update's
+//     `{doc, message}`) - real Payload's collection restore shape.
+//
+// DOCUMENTED SIMPLIFICATIONS (all deliberate, none reachable from this app's
+// own callers - the admin UI's version views are not built here yet):
+//   - `where` supports `and`/`or` plus `equals`/`not_equals`/`in`/`not_in`/
+//     `exists` on `id`, `parent`, `latest`, `createdAt`, `updatedAt`, and
+//     `version.<field>` (top-level snapshot fields only). Any other operator
+//     is a 400, not a silent mismatch.
+//   - `readVersions` access returning a `where` object (nothing in this app
+//     does) is treated as denied rather than merged into the query.
+//   - Restore reuses `engine.update` (so update access, validation, hooks-free
+//     draft/publish policy and version bookkeeping all run exactly as for a
+//     normal PATCH) with the snapshot as `data`; `draft=true` keeps the live
+//     doc untouched and just records a new draft version, otherwise the doc is
+//     published from the snapshot (`_status: 'published'`).
+
+const VERSION_ROW_META_KEYS = new Set(['id', 'parentId', 'latest', 'createdAt', 'updatedAt', 'versionCreatedAt', 'versionUpdatedAt'])
+
+function versionRowToWire(row: Record<string, unknown>): Record<string, unknown> {
+  const snapshot: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(row)) {
+    if (!VERSION_ROW_META_KEYS.has(key)) snapshot[key] = value
+  }
+  snapshot.createdAt = row.versionCreatedAt ?? row.createdAt
+  snapshot.updatedAt = row.versionUpdatedAt ?? row.updatedAt
+  return { id: row.id, parent: row.parentId, version: snapshot, createdAt: row.createdAt, updatedAt: row.updatedAt, latest: Boolean(row.latest) }
+}
+
+function readWirePath(doc: Record<string, unknown>, path: string): unknown {
+  let cur: unknown = doc
+  for (const part of path.split('.')) {
+    if (cur === null || typeof cur !== 'object') return undefined
+    cur = (cur as Record<string, unknown>)[part]
+  }
+  return cur
+}
+
+function matchesVersionsWhere(doc: Record<string, unknown>, where: Record<string, unknown>): boolean {
+  for (const [key, cond] of Object.entries(where)) {
+    if (key === 'and') {
+      if (!(cond as Record<string, unknown>[]).every((w) => matchesVersionsWhere(doc, w))) return false
+      continue
+    }
+    if (key === 'or') {
+      if (!(cond as Record<string, unknown>[]).some((w) => matchesVersionsWhere(doc, w))) return false
+      continue
+    }
+    const value = readWirePath(doc, key)
+    for (const [op, operand] of Object.entries(cond as Record<string, unknown>)) {
+      const list = (): string[] => (Array.isArray(operand) ? operand : String(operand).split(',')).map(String)
+      const ok =
+        op === 'equals' ? String(value) === String(operand)
+        : op === 'not_equals' ? String(value) !== String(operand)
+        : op === 'in' ? list().includes(String(value))
+        : op === 'not_in' ? !list().includes(String(value))
+        : op === 'exists' ? (String(operand) === 'true') === (value !== undefined && value !== null)
+        : null
+      if (ok === null) throw new ValidationError([{ path: key, message: `unsupported versions where operator '${op}'` }])
+      if (!ok) return false
+    }
+  }
+  return true
+}
+
+function compareVersionsBy(sort: string): (a: Record<string, unknown>, b: Record<string, unknown>) => number {
+  const desc = sort.startsWith('-')
+  const path = desc ? sort.slice(1) : sort
+  return (a, b) => {
+    const av = readWirePath(a, path) as string | number | null | undefined
+    const bv = readWirePath(b, path) as string | number | null | undefined
+    const cmp = av === bv ? 0 : av == null ? -1 : bv == null ? 1 : av < bv ? -1 : 1
+    return desc ? -cmp : cmp
+  }
+}
+
+/** Resolves the versions registry entry + `readVersions` access for a collection, throwing `Forbidden` when denied. Returns `null` (fall through) for a collection with no versions. */
+async function resolveVersionsAccess(engine: Engine, collection: string, user: unknown, id?: number): Promise<{ entry: VersionsRegistryEntry } | null> {
+  const entry = versionsRegistry[collection]
+  if (!entry) return null
+  const config = readRegistry.collections[collection].config as unknown as AccessEntityConfigLike
+  const result = await callAccessFn(config.access?.readVersions, Boolean(user), id, undefined, user, engine)
+  if (!result.permission || result.where) throw new Forbidden()
+  return { entry }
+}
+
+async function handleFindVersions(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response | null> {
+  const resolved = await resolveVersionsAccess(engine, collection, user)
+  if (!resolved) return null
+  const query = parseSearchParams(new URL(request.url).searchParams)
+  const where = (query.where ?? {}) as Record<string, unknown>
+
+  // Every parent's versions, unless `where[parent][equals]` pins one (the
+  // common admin-UI case) - avoids a full scan in that case.
+  const parentEq = (where.parent as { equals?: unknown } | undefined)?.equals
+  let parentIds: number[]
+  if (parentEq !== undefined && Number.isFinite(Number(parentEq))) {
+    parentIds = [Number(parentEq)]
+  } else {
+    const parents = await engine.find({ collection, pagination: false, depth: 0, overrideAccess: true })
+    parentIds = (parents.docs as Array<{ id: number }>).map((doc) => doc.id)
+  }
+  const rows = (await Promise.all(parentIds.map((pid) => resolved.entry.findAll(pid)))).flat()
+  const sortRaw = Array.isArray(query.sort) ? query.sort[0] : (query.sort as string | undefined)
+  const filtered = rows.map(versionRowToWire).filter((doc) => matchesVersionsWhere(doc, where)).sort(compareVersionsBy(sortRaw ?? '-updatedAt'))
+
+  const paginate = query.pagination !== false
+  const limit = paginate ? (query.limit && query.limit > 0 ? query.limit : 10) : Math.max(filtered.length, 1)
+  const totalDocs = filtered.length
+  const totalPages = paginate ? Math.max(Math.ceil(totalDocs / limit), 1) : 1
+  const page = paginate ? Math.min(Math.max(query.page ?? 1, 1), totalPages) : 1
+  const start = (page - 1) * limit
+  return Response.json(
+    {
+      docs: filtered.slice(start, start + limit),
+      totalDocs,
+      limit,
+      totalPages,
+      page,
+      pagingCounter: totalDocs === 0 ? 1 : start + 1,
+      hasPrevPage: page > 1,
+      hasNextPage: page < totalPages,
+      prevPage: page > 1 ? page - 1 : null,
+      nextPage: page < totalPages ? page + 1 : null,
+    },
+    { status: 200 },
+  )
+}
+
+async function loadVersionOr404(entry: VersionsRegistryEntry, versionId: number): Promise<Record<string, unknown>> {
+  const row = await entry.findByID(versionId)
+  if (!row) throw new ReadNotFound('Not Found')
+  return row
+}
+
+async function handleFindVersionByID(engine: Engine, collection: string, versionId: number, user: Parameters<Engine['find']>[0]['user']): Promise<Response | null> {
+  const resolved = await resolveVersionsAccess(engine, collection, user, versionId)
+  if (!resolved) return null
+  return Response.json(versionRowToWire(await loadVersionOr404(resolved.entry, versionId)), { status: 200 })
+}
+
+async function handleRestoreVersion(engine: Engine, collection: string, versionId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response | null> {
+  const entry = versionsRegistry[collection]
+  if (!entry) return null
+  const row = await loadVersionOr404(entry, versionId)
+  const parentId = row.parentId as number | null
+  if (parentId === null || parentId === undefined) throw new ReadNotFound('Not Found')
+  const snapshot = (versionRowToWire(row).version ?? {}) as Record<string, unknown>
+  delete snapshot.createdAt
+  delete snapshot.updatedAt
+  const query = parseSearchParams(new URL(request.url).searchParams)
+  const draft = query.draft === true
+  snapshot._status = draft ? 'draft' : 'published'
+  const doc = await engine.update({ collection, id: parentId, data: snapshot, draft, user, req: secretReq(request) })
+  return Response.json({ ...doc, message: 'Restored successfully.' }, { status: 200 })
+}
+
+/**
+ * Routes one REST request. `slug` is the same path-segment array a Next.js
+ * catch-all route (`[...slug]`) already hands its own route handlers - e.g.
+ * `/api/posts/5` -> `['posts', '5']`, `/api/globals/header` ->
+ * `['globals', 'header']`. Returns `null` for anything not implemented by
+ * this module (an unrecognized collection/global slug, or a recognized one
+ * but a route this stage deliberately defers - see this file's header) so a
+ * caller (the future hybrid-dispatcher route file) can fall through to real
+ * Payload's own REST handlers. `engine` defaults to a freshly-built
+ * `createEngine()` (cheap and synchronous, per `./engine.ts`'s own doc
+ * comment) but is injectable for tests, the same dependency-injection
+ * pattern this module's own dependencies (`./read-operations.ts`'s
+ * `find`/`findByID`/etc, `./migrate.ts`'s `runMigrations`) already use.
+ */
+export async function handleRestRequest(request: Request, slug: string[], engine: Engine = createEngine()): Promise<Response | null> {
+  if (!slug || slug.length === 0) return null
+  const method = request.method.toUpperCase()
+
+  try {
+    if (slug[0] === 'globals') {
+      const globalSlug = slug[1]
+      const rest = slug.slice(2)
+      if (!globalSlug || !readRegistry.globals[globalSlug]) return null
+
+      if (rest.length === 1 && rest[0] === 'access' && method === 'POST') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleGlobalAccess(engine, globalSlug, request, user)
+      }
+      if (rest.length > 0) return null
+
+      const { user } = await engine.auth({ headers: request.headers })
+      if (method === 'GET') return await handleGlobalFind(engine, globalSlug, request, user)
+      if (method === 'POST') return await handleGlobalUpdate(engine, globalSlug, request, user)
+      return null
+    }
+
+    // Root `GET /api/access` - real Payload's own root endpoint (no
+    // `collections`/`globals` prefix, not gated on a recognized collection
+    // slug), needs no auth (works anonymously, see `handleAccessRoot`'s doc
+    // comment).
+    if (slug[0] === 'access' && slug.length === 1 && method === 'GET') {
+      const { user } = await engine.auth({ headers: request.headers })
+      return await handleAccessRoot(engine, user)
+    }
+
+    // `payments` is not a collection or global slug - a real Payload
+    // custom top-level endpoint (`config.endpoints`), fully reproduced here
+    // now including `webhooks` - see the handler functions' own header
+    // comments. `webhooks` is checked first and deliberately skips
+    // `engine.auth()`: it has no user/session, only a Stripe signature.
+    if (slug[0] === 'payments' && slug[1] === 'stripe' && slug.length === 3 && method === 'POST') {
+      if (slug[2] === 'webhooks') return await handlePaymentsStripeWebhooks(engine, request)
+      const { user } = await engine.auth({ headers: request.headers })
+      if (slug[2] === 'initiate') return await handlePaymentsStripeInitiate(engine, request, user)
+      if (slug[2] === 'confirm-order') return await handlePaymentsStripeConfirmOrder(engine, request, user)
+      return null
+    }
+
+    const collectionSlug = slug[0]
+    if (!readRegistry.collections[collectionSlug]) return null
+    const rest = slug.slice(1)
+    const isAuthCollection = collectionSlug === AUTH_COLLECTION_SLUG
+
+    if (rest.length === 0) {
+      if (method === 'GET') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleFind(engine, collectionSlug, request, user)
+      }
+      if (method === 'POST') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleCreate(engine, collectionSlug, request, user)
+      }
+      if (method === 'PATCH') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleBulkUpdate(engine, collectionSlug, request, user)
+      }
+      if (method === 'DELETE') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleBulkDelete(engine, collectionSlug, request, user)
+      }
+      return null
+    }
+
+    // `/versions` and `/versions/:id` - only the 5 collections in `versionsRegistry` (a `null` from the handler falls through). Must sit BEFORE the `rest.length === 1` block below, which would otherwise swallow `versions` as a non-numeric id and return `null`.
+    if (rest[0] === 'versions' && (rest.length === 1 || rest.length === 2)) {
+      const { user } = await engine.auth({ headers: request.headers })
+      if (rest.length === 1) return method === 'GET' ? await handleFindVersions(engine, collectionSlug, request, user) : null
+      const versionId = Number(rest[1])
+      if (!Number.isFinite(versionId)) return null
+      if (method === 'GET') return await handleFindVersionByID(engine, collectionSlug, versionId, user)
+      if (method === 'POST') return await handleRestoreVersion(engine, collectionSlug, versionId, request, user)
+      return null
+    }
+
+    if (rest.length === 1) {
+      const seg = rest[0]
+
+      if (isAuthCollection && method === 'POST' && AUTH_ROUTE_NAMES.has(seg) && seg !== 'me') {
+        if (seg === 'login') return await handleLogin(engine, collectionSlug, request)
+        if (seg === 'logout') return await handleLogout(engine, collectionSlug, request)
+        if (seg === 'refresh-token') return await handleRefreshToken(engine, collectionSlug, request)
+        if (seg === 'forgot-password') return await handleForgotPassword(engine, collectionSlug, request)
+        if (seg === 'reset-password') return await handleResetPassword(engine, collectionSlug, request)
+        if (seg === 'unlock') return await handleUnlock(engine, collectionSlug, request)
+      }
+      if (isAuthCollection && method === 'GET' && seg === 'me') {
+        return await handleMe(engine, request)
+      }
+
+      if (method === 'GET' && seg === 'count') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleCount(engine, collectionSlug, request, user)
+      }
+
+      if (method === 'POST' && seg === 'access') {
+        const { user } = await engine.auth({ headers: request.headers })
+        return await handleCollectionAccess(engine, collectionSlug, undefined, request, user)
+      }
+
+      const id = Number(seg)
+      if (!Number.isFinite(id)) return null // not a recognized named route or a valid numeric id - fall through
+
+      const { user } = await engine.auth({ headers: request.headers })
+      if (method === 'GET') return await handleFindByID(engine, collectionSlug, id, request, user)
+      if (method === 'PATCH') return await handleUpdateByID(engine, collectionSlug, id, request, user)
+      if (method === 'DELETE') return await handleDeleteByID(engine, collectionSlug, id, user, request)
+      return null
+    }
+
+    if (rest.length === 2 && collectionSlug === UPLOAD_COLLECTION_SLUG && rest[0] === 'file' && method === 'GET') {
+      return await handleGetMediaFile(decodeURIComponent(rest[1]), request)
+    }
+
+    if (rest.length === 2 && rest[1] === 'duplicate' && method === 'POST') {
+      const docId = Number(rest[0])
+      if (!Number.isFinite(docId)) return null
+      const { user } = await engine.auth({ headers: request.headers })
+      return await handleDuplicate(engine, collectionSlug, docId, request, user)
+    }
+
+    if (rest.length === 2 && rest[0] === 'access' && method === 'POST') {
+      const docId = Number(rest[1])
+      if (!Number.isFinite(docId)) return null
+      const { user } = await engine.auth({ headers: request.headers })
+      return await handleCollectionAccess(engine, collectionSlug, docId, request, user)
+    }
+
+    if (rest.length === 2 && collectionSlug === 'carts' && method === 'POST') {
+      const cartId = Number(rest[0])
+      if (!Number.isFinite(cartId)) return null
+      const { user } = await engine.auth({ headers: request.headers })
+      if (rest[1] === 'add-item') return await handleCartAddItem(engine, cartId, request, user)
+      if (rest[1] === 'remove-item') return await handleCartRemoveItem(engine, cartId, request, user)
+      if (rest[1] === 'update-item') return await handleCartUpdateItem(engine, cartId, request, user)
+      if (rest[1] === 'clear') return await handleCartClear(engine, cartId, request, user)
+      if (rest[1] === 'merge') return await handleCartMerge(engine, cartId, request, user)
+      return null
+    }
+
+    return null
+  } catch (err) {
+    const { status, body } = errorToResponse(err)
+    return Response.json(body, { status })
+  }
 }

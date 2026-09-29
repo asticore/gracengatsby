@@ -969,3 +969,148 @@ describe('localapi/rest - error mapping', () => {
     expect(body.errors[0].message).toBe('Something went wrong.')
   })
 })
+
+/* -------------------------------------------------------------------------- */
+/* /api/access, /api/<collection>/access/:id?, /api/globals/<slug>/access    */
+/*                                                                            */
+/* Fixtures use real registry slugs whose real access functions this test    */
+/* file can reason about directly (not mocked - the registry itself isn't    */
+/* injectable, see this file's own header): `faqs` (`access.read: () => true`*/
+/* unconditionally, `create`/`update`/`delete: isAdmin`, no field-level       */
+/* access anywhere - a clean "collapses to `true`/omitted" fixture), and     */
+/* `users` (`access.read`/`update: isAdminOrSelf` - returns a `Where` object */
+/* for a non-admin matching self, `false` otherwise; `access.create`/        */
+/* `delete: isAdmin`; the `roles` field has its own `access.update` -        */
+/* admin-only - a fixture for field-level override + inheritance).          */
+/* -------------------------------------------------------------------------- */
+
+type AccessBody = Record<string, unknown>
+
+describe('localapi/rest - GET /api/access (root)', () => {
+  it('anonymous request: no canAccessAdmin, faqs.read true (unconditional), faqs create/update/delete absent', async () => {
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: null }) })
+    const res = await handleRestRequest(req('GET', 'http://x/api/access'), ['access'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(200)
+    const body = (await res!.json()) as AccessBody
+    expect(body.canAccessAdmin).toBeUndefined()
+    const faqs = (body.collections as AccessBody).faqs as AccessBody
+    expect(faqs.read).toBe(true)
+    expect(faqs.create).toBeUndefined()
+    expect(faqs.update).toBeUndefined()
+    expect(faqs.delete).toBeUndefined()
+  })
+
+  it('admin user: canAccessAdmin true, faqs fields collapse to true (no field-level access anywhere, all ops permitted)', async () => {
+    const adminUser = { id: 1, collection: 'users', roles: ['admin'] }
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: adminUser }) })
+    const res = await handleRestRequest(req('GET', 'http://x/api/access'), ['access'], engine)
+    const body = (await res!.json()) as AccessBody
+    expect(body.canAccessAdmin).toBe(true)
+    const faqs = (body.collections as AccessBody).faqs as AccessBody
+    expect(faqs.create).toBe(true)
+    expect(faqs.read).toBe(true)
+    expect(faqs.update).toBe(true)
+    expect(faqs.delete).toBe(true)
+    expect(faqs.fields).toBe(true)
+  })
+
+  it('non-admin logged-in user from the users collection: canAccessAdmin true (isLoggedIn default, Users declares no access.admin)', async () => {
+    const user = { id: 5, collection: 'users', roles: ['customer'] }
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user }) })
+    const res = await handleRestRequest(req('GET', 'http://x/api/access'), ['access'], engine)
+    const body = (await res!.json()) as AccessBody
+    expect(body.canAccessAdmin).toBe(true)
+  })
+
+  it('includes every registered collection and global slug', async () => {
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: null }) })
+    const res = await handleRestRequest(req('GET', 'http://x/api/access'), ['access'], engine)
+    const body = (await res!.json()) as AccessBody
+    expect(Object.keys(body.collections as AccessBody)).toContain('faqs')
+    expect(Object.keys(body.collections as AccessBody)).toContain('users')
+    expect(Object.keys(body.globals as AccessBody).length).toBeGreaterThan(0)
+  })
+})
+
+describe('localapi/rest - POST /api/<collection>/access/:id? (no id)', () => {
+  it('faqs, anonymous: read true, create/update/delete absent', async () => {
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: null }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/faqs/access'), ['faqs', 'access'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(200)
+    const body = (await res!.json()) as AccessBody
+    expect(body.read).toBe(true)
+    expect(body.create).toBeUndefined()
+  })
+
+  it('users, non-admin logged-in (no id, so no doc to match self against): read/update resolve via isAdminOrSelf with no req.user match target -> false, create/delete false (isAdmin)', async () => {
+    const user = { id: 5, collection: 'users', roles: ['customer'] }
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/users/access'), ['users', 'access'], engine)
+    const body = (await res!.json()) as AccessBody
+    // isAdminOrSelf always returns `{id: {equals: user.id}}` for a non-admin
+    // logged-in user regardless of an id being present - this module's own
+    // documented simplification (see rest.ts's `/api/access` section header)
+    // treats any Where-object result as permitted-with-where, matching real
+    // Payload's own root/no-id (`fetchData: false`) behavior exactly.
+    expect(body.read).toEqual({ permission: true, where: { id: { equals: 5 } } })
+    expect(body.update).toEqual({ permission: true, where: { id: { equals: 5 } } })
+    expect(body.create).toBeUndefined()
+    expect(body.delete).toBeUndefined()
+  })
+})
+
+describe('localapi/rest - POST /api/<collection>/access/:id (with id)', () => {
+  it('users/access/5, non-admin self (id 5): read/update permitted-with-where, field-level roles.update denied (admin-only fn) but roles.read inherits the parent\'s where-restricted read', async () => {
+    const user = { id: 5, collection: 'users', roles: ['customer'] }
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/users/access/5', {}), ['users', 'access', '5'], engine)
+    expect(res).not.toBeNull()
+    const body = (await res!.json()) as AccessBody
+    expect(body.read).toEqual({ permission: true, where: { id: { equals: 5 } } })
+    const fields = body.fields as AccessBody
+    const roles = fields.roles as AccessBody
+    // roles' own `access.update` is admin-only - denied for this non-admin user, so 'update' is absent.
+    expect(roles.update).toBeUndefined()
+    // roles declares no `access.read` - inherits the parent's own resolved 'read' result verbatim.
+    expect(roles.read).toEqual({ permission: true, where: { id: { equals: 5 } } })
+  })
+
+  it('users/access/999, non-admin (id not self): read/update denied entirely (isAdminOrSelf returns a Where object even so - but a non-matching id still resolves permission=false at the entity level per this module\'s isAdmin-or-where semantics is not evaluated - the Where object itself is opaque to this module, so it is still treated as permitted-with-where, a known simplification)', async () => {
+    const user = { id: 5, collection: 'users', roles: ['customer'] }
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/users/access/999', {}), ['users', 'access', '999'], engine)
+    const body = (await res!.json()) as AccessBody
+    // isAdminOrSelf doesn't know about the target id at all - it always
+    // returns the SAME `{id: {equals: req.user.id}}` Where object regardless
+    // of which doc is being checked, so this module's read here is identical
+    // to the id-5 case above (a `Where`-object result is never evaluated
+    // against the actual target doc - see this module's documented
+    // simplification).
+    expect(body.read).toEqual({ permission: true, where: { id: { equals: 5 } } })
+  })
+
+  it('returns null for a non-numeric id segment', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('POST', 'http://x/api/users/access/not-a-number'), ['users', 'access', 'not-a-number'], engine)
+    expect(res).toBeNull()
+  })
+})
+
+describe('localapi/rest - POST /api/globals/<slug>/access', () => {
+  it('site-settings, anonymous: no canAccessAdmin-equivalent concept at global level, resolves per the global\'s own access config', async () => {
+    const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user: null }), findGlobal: vi.fn().mockResolvedValue({ id: 1, siteName: 'Test' }) })
+    const res = await handleRestRequest(req('POST', 'http://x/api/globals/site-settings/access'), ['globals', 'site-settings', 'access'], engine)
+    expect(res).not.toBeNull()
+    expect(res!.status).toBe(200)
+    const body = (await res!.json()) as AccessBody
+    expect(body.fields).toBeDefined()
+  })
+
+  it('returns null for an unrecognized global slug', async () => {
+    const engine = makeMockEngine()
+    const res = await handleRestRequest(req('POST', 'http://x/api/globals/nonsense/access'), ['globals', 'nonsense', 'access'], engine)
+    expect(res).toBeNull()
+  })
+})

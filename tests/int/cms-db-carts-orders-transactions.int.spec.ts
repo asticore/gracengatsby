@@ -6,15 +6,15 @@ import { ensureMigratedLocalDb } from '../helpers/migratedDb'
 import { createCart, deleteCart, findCartByID, createOrder, deleteOrder, findOrderByID, createTransaction, deleteTransaction, findTransactionByID } from '@/cms/db'
 
 // Stage 10 Ecommerce, Layer 1. This used to be a "write-both-ways" proof
-// against a live real-Payload engine (create via engine.create, read via
+// against a live reference-engine engine (create via engine.create, read via
 // our own find*ByID, and vice versa) to prove our own D1/Drizzle
-// reader/writer stays byte-compatible with what real Payload's own
+// reader/writer stays byte-compatible with what the reference engine's own
 // collection config would produce for the same tables. shopPlugin() is now
-// REMOVED (payload-removal-plan.md: ecommerce cutover) and
-// 'carts'/'orders'/'transactions' are no longer real Payload collections at
+// REMOVED (the plan doc: ecommerce cutover) and
+// 'carts'/'orders'/'transactions' are no longer the reference engine collections at
 // all - engine.create({collection: 'carts', ...}) would now throw
 // APIError: "The collection with slug carts can't be found." There is no
-// real Payload behavior left to compare against, so these are now plain
+// the reference engine behavior left to compare against, so these are now plain
 // self-consistency tests of our own create*/find*ByID/update*/delete*
 // implementations instead.
 describe('cms/db - carts, orders, transactions (Stage 10 Ecommerce, Layer 1)', () => {

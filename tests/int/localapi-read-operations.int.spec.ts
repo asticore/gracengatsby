@@ -1,12 +1,12 @@
 // Pure unit tests against a fully mocked ReadRegistry - no real D1, no real
-// Payload, no `@/engage.config` ceremony needed (unlike the parity suite).
+// The original engine, no `@/engage.config` ceremony needed (unlike the parity suite).
 // Proves `find`/`findByID`/`count`/`findGlobal`'s own decision logic in
 // isolation: access resolution (`overrideAccess`/`disableErrors` defaults),
 // where-merging, field-level `afterRead` hooks + field access, depth
 // population, and draft threading - each exercised against small, purpose-
 // built fixtures rather than this app's real (much bigger) collections.
 // `localapi-read-operations-parity.int.spec.ts` covers the "does this agree
-// with real, live Payload" half of the discipline.
+// with real, live the original engine" half of the discipline.
 import { describe, expect, it } from 'vitest'
 
 import { Forbidden, type LocalReq } from '@/localapi/access'
@@ -181,7 +181,7 @@ describe('localapi/read-operations - row-filtering access', () => {
     expect(doc?.id).toBe(1)
   })
 
-  it('findByID: not-found id -> throws NotFound by default (real Payload does not distinguish "missing" from "denied" without disableErrors)', async () => {
+  it('findByID: not-found id -> throws NotFound by default (the reference engine does not distinguish "missing" from "denied" without disableErrors)', async () => {
     await expect(findByID(registry, 'posts', 999, { req: { user: admin }, overrideAccess: false })).rejects.toThrow(NotFound)
   })
 
@@ -257,7 +257,7 @@ describe('localapi/read-operations - nested field traversal', () => {
   const shout = ({ value }: { value?: unknown }) => (typeof value === 'string' ? value.toUpperCase() : value)
 
   // A fresh registry per test, not a shared `const` - `findByID`'s shallow
-  // `{ ...rawDoc }` copy (matching real Payload, which also mutates
+  // `{ ...rawDoc }` copy (matching the reference engine, which also mutates
   // `siblingDoc` in place rather than deep-cloning per read) only protects
   // the TOP-level doc object; a nested group's own object is the SAME
   // reference the fixture row holds. In real usage this is a non-issue
@@ -385,7 +385,7 @@ describe('localapi/read-operations - depth population', () => {
     expect(doc?.tags).toEqual([{ id: 10, name: 'Ada' }, { id: 11, name: 'Grace' }])
   })
 
-  it('a dangling/not-found related id falls back to the raw id, matching real Payload\'s "ids are visible regardless of access controls"', async () => {
+  it('a dangling/not-found related id falls back to the raw id, matching the reference engine\'s "ids are visible regardless of access controls"', async () => {
     const doc = await findByID(registry, 'posts', 2, { req: { user: admin }, depth: 1 })
     expect(doc?.author).toBe(999)
   })

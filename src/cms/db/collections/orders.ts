@@ -20,7 +20,7 @@ export type OrderAddress = {
   phone?: string | null
 }
 
-/** Payload's document shape for the `orders` collection - see src/features/ecommerce/collections/Orders.ts. */
+/** The original engine's document shape for the `orders` collection - see src/features/ecommerce/collections/Orders.ts. */
 export type OrderDoc = {
   id: number
   items?: OrderItem[] | null

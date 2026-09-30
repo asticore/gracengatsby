@@ -5,7 +5,7 @@ import { Addresses } from '@/features/ecommerce/collections/Addresses'
 import { createCollectionOps } from '../generic'
 import { addresses } from '../schema'
 
-/** Payload's document shape for the `addresses` collection - see src/features/ecommerce/collections/Addresses.ts. */
+/** The original engine's document shape for the `addresses` collection - see src/features/ecommerce/collections/Addresses.ts. */
 export type AddressDoc = {
   id: number
   customer?: number | null

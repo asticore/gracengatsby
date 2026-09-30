@@ -1,8 +1,8 @@
 /**
  * From-scratch Stripe payment adapter functions (Stage 10 Ecommerce, Layer 3
- * - see payload-removal-plan.md). Reproduced from the real ecommerce
+ * - see the plan doc). Reproduced from the real ecommerce
  * plugin's `payments/adapters/stripe/{initiatePayment,confirmOrder}.js`
- * (`@payloadcms/plugin-ecommerce@3.88.0`, read directly from `node_modules`
+ * (`the vendor package@3.88.0`, read directly from `node_modules`
  * to confirm the exact request/response shapes and Stripe API calls below),
  * simplified for this app's single-currency (AUD-only), no-variants shop
  * config (`engage.config.ts`'s `variants: false`) - the same simplification
@@ -16,7 +16,7 @@
  * directly rather than waiting on a webhook, exactly like this module does,
  * so this app's own cart checkout never needed one. `POST
  * /api/payments/stripe/webhooks` was for a long time DELIBERATELY left to
- * real Payload's own `stripeAdapter()` registration (`engage.config.ts`'s
+ * the reference engine's own `stripeAdapter()` registration (`engage.config.ts`'s
  * `payments.paymentMethods`) purely to serve the UNRELATED
  * membership-subscription flow (`src/features/members/webhooks.ts`'s
  * `membershipWebhooks`: `checkout.session.completed`, subscription
@@ -38,7 +38,7 @@
  * Uses the real Stripe Node SDK directly (`stripe`, already a direct
  * dependency in `package.json` - the real ecommerce plugin's own adapter
  * uses the same package) rather than going through
- * `@payloadcms/plugin-ecommerce`'s adapter factory - `STRIPE_SECRET_KEY` is
+ * `the vendor package`'s adapter factory - `STRIPE_SECRET_KEY` is
  * read from the same env var `engage.config.ts` already configures the real
  * (still-registered) `stripeAdapter()` from, so both can run side by side
  * against the same Stripe account until the real plugin cutover.
@@ -59,7 +59,7 @@ const STRIPE_API_VERSION = '2025-03-31.basil' as any
 export function getStripeClient(secretKey: string): Stripe {
   return new Stripe(secretKey, {
     apiVersion: STRIPE_API_VERSION,
-    appInfo: { name: 'Gracengatsby Shop', url: 'https://payloadcms.com' },
+    appInfo: { name: 'Gracengatsby Shop', url: 'https://github.com/asticore/gracengatsby' },
   })
 }
 
@@ -91,9 +91,9 @@ export type InitiateStripePaymentResult = { clientSecret: string; message: strin
  * file). Creates or reuses a Stripe Customer by email, creates a
  * PaymentIntent for the cart's subtotal, and records a `transactions` row
  * (`status: 'pending'`) - `overrideAccess: true` on that create matches real
- * Payload's own Local API default (`payload.create()` with no
+ * The original engine's own Local API default (`engine.create()` with no
  * `overrideAccess` defaults to `true` there, confirmed against
- * `payload/dist/collections/operations/local/create.js`; this app's own
+ * the vendor source; this app's own
  * `engine.create()` defaults the OPPOSITE way - `false` - so it must be
  * passed explicitly to match).
  *
@@ -107,7 +107,7 @@ export type InitiateStripePaymentResult = { clientSecret: string; message: strin
  * charge - never caught because `STRIPE_SECRET_KEY` is blank in this
  * environment and the test suite mocks Stripe entirely (asserting the buggy
  * behavior as if it were correct). Fixed by converting to cents right at
- * this boundary, the one place real Payload's own plugin does the same
+ * this boundary, the one place the reference engine's own plugin does the same
  * conversion (per `pricing.ts`'s doc comment). `transactions.amount`/
  * `orders.amount` are populated FROM Stripe's own response
  * (`paymentIntent.amount`) elsewhere in this file, so they were already
@@ -200,17 +200,17 @@ export type ConfirmStripeOrderResult = { message: string; orderID: number; trans
  * column key `stripePaymentIntentID`), and `src/cms/db/where.ts`'s
  * `buildWhere` looks a `where` key up in that same flat `columns` map
  * verbatim - there is no dotted-path resolution in this app's own query
- * engine the way real Payload's does. The nested `transaction.stripe.*`
+ * engine the way the reference engine's does. The nested `transaction.stripe.*`
  * shape is only reconstructed on READ (by `nestGroups`), never accepted on
  * the `where` side.
  *
- * Inventory decrement: real Payload does this via a raw
- * `payload.db.updateOne` (`endpoints/confirmOrder.js`) that writes straight
+ * Inventory decrement: the reference engine does this via a raw
+ * `engine.db.updateOne` (`endpoints/confirmOrder.js`) that writes straight
  * to the live table, bypassing hooks/access/versions entirely - this
  * engine has no such bypass, so `engine.update(..., overrideAccess: true,
  * draft: false)` is used instead. Documented simplification, not a
  * functional gap: `products` has `versions: {drafts: true}` (Products.ts),
- * so this technically also writes a version-snapshot row real Payload's raw
+ * so this technically also writes a version-snapshot row the reference engine's raw
  * DB write wouldn't - the live inventory value this engine's own read path
  * serves ends up correct either way, which is what actually matters for the
  * storefront.

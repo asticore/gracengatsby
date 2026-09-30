@@ -28,7 +28,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 
   const label = typeof collection.labels?.singular === 'string' ? collection.labels.singular : collectionSlug
 
-  // Stage 11 Phase 2: real Payload's `versions` is `boolean | {drafts?: boolean | object}` -
+  // Stage 11 Phase 2: the reference engine's `versions` is `boolean | {drafts?: boolean | object}` -
   // a bare `false` (the 33 non-drafts collections' real, sanitized shape) carries no `.drafts`
   // at all, hence the defensive shape check rather than a direct `.versions.drafts` read.
   const versions = (collection as { versions?: unknown }).versions

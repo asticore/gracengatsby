@@ -3,7 +3,7 @@ import { Faqs } from '@/collections/Faqs'
 import { createCollectionOps } from '../generic'
 import { faqs } from '../schema'
 
-/** Payload's document shape for the `faqs` collection - see src/collections/Faqs.ts. */
+/** The original engine's document shape for the `faqs` collection - see src/collections/Faqs.ts. */
 export type FaqDoc = {
   id: number
   question: string
@@ -21,7 +21,7 @@ export const findFaqs = ops.findMany as unknown as (args?: { where?: import('@/e
 /**
  * The adapter-shaped counterpart to findFaqs (see ../generic.ts's
  * findPaginated doc comment) - what src/engage.config.ts's per-collection
- * adapter intercept calls for Faqs' `find`, since Payload's own list views
+ * adapter intercept calls for Faqs' `find`, since the original engine's own list views
  * and API queries always pass sort/pagination, however simple the
  * collection's fields are.
  */

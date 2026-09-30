@@ -196,7 +196,7 @@ const RELS_TABLES = [
   'eg_shop_settings_rels',
 ]
 
-export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   const exists = async (table: string): Promise<boolean> => {
     const rows = (await db.all(
       sql`SELECT name FROM sqlite_master WHERE type='table' AND name=${table}`,
@@ -274,7 +274,7 @@ export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> 
   }
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // No-op, matching the other migrations here. A rollback that dropped these
   // would take every enquiry the site has ever received with it, and the Forms
   // feature toggle already hides the whole thing without deleting anything.

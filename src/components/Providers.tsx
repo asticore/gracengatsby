@@ -5,9 +5,9 @@ import React from 'react'
 
 /**
  * `currenciesConfig`/`paymentMethods`/`api`/`syncLocalStorage` used to
- * configure the real `@payloadcms/plugin-ecommerce` provider (`AUD`,
+ * configure the real `the vendor package` provider (`AUD`,
  * `stripeAdapterClient`, `/api` + depth-2 cart fetches, localStorage
- * persistence). Removed 2026-09-27 (payload-removal-plan.md, What's-left
+ * persistence). Removed 2026-09-27 (the plan doc, What's-left
  * item 3): this app's own `EcommerceProvider` (`@/engine/commerce/react`)
  * hardcodes the equivalent behaviour directly - AUD is this shop's only
  * currency, `CheckoutForm.tsx` already loads Stripe itself from

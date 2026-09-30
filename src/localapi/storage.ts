@@ -1,11 +1,11 @@
 /**
- * Uploads stage: a from-scratch replacement for `@payloadcms/storage-r2`
+ * Uploads stage: a from-scratch replacement for `the vendor package`
  * (re-exported today as `src/engine/storage.ts`'s `r2Storage`), talking to
  * the same R2 bucket binding directly.
  *
- * GROUND TRUTH, read directly from `node_modules/@payloadcms/storage-r2@
+ * GROUND TRUTH, read directly from `node_modules/the vendor package@
  * 3.88.0/dist/{index,adapter,uploadFile,deleteFile,getFile}.js` and
- * `@payloadcms/plugin-cloud-storage`'s `utilities/getFileKey.js`: this app's
+ * `the vendor package`'s `utilities/getFileKey.js`: this app's
  * own `engage.config.ts` wires the plugin with `{ bucket: cloudflare.env.R2,
  * collections: { media: true } }` - no `prefix` option, and
  * `useCompositePrefixes` defaults false. `getFileKey`'s own resolution
@@ -29,8 +29,7 @@
  * - Delete: `bucket.delete(key)` - `deleteFile.js`'s own call, verbatim.
  * - Serve: `getFile.js`'s handler, reproduced narrower - this app's one
  *   upload collection's `access.read` is the unconditional `() => true`
- *   (see `Media.ts`), so real Payload's own `checkFileAccess` (`payload/
- *   dist/uploads/checkFileAccess.js`) never resolves to a `Where`-shaped
+ *   (see `Media.ts`), so the reference engine's own `checkFileAccess` (the vendor source) never resolves to a `Where`-shaped
  *   constraint for it (`typeof true !== 'object'`) and short-circuits to
  *   "allowed, no doc lookup needed" - confirmed by reading that file
  *   directly. `./rest.ts`'s file-serving route handler is expected to
@@ -89,7 +88,7 @@ export async function deleteMediaObject(key: string): Promise<void> {
 
 /**
  * Parses a single-range `Range: bytes=start-end` header value into a plain
- * `R2Range` (real Payload's own `parseRangeHeader.js` hand-rolls the same
+ * `R2Range` (the reference engine's own `parseRangeHeader.js` hand-rolls the same
  * byte math for its own local-disk range serving - this is this module's
  * equivalent, kept small since R2 itself validates/clamps the result).
  * Deliberately returns a plain object rather than passing the `Headers`

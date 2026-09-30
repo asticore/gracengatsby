@@ -5,7 +5,7 @@
  *
  * STAGE 11 (Admin UI rebuild): a from-scratch implementation
  * (`src/admin/RootLayout.tsx`) replaces the vendor's own
- * `@payloadcms/next/layouts` exports - see that file's own header for why
+ * `the vendor package` exports - see that file's own header for why
  * `handleServerFunctions` is a deliberate throwing stub, not a real
  * reimplementation.
  */

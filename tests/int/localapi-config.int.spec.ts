@@ -46,7 +46,7 @@ describe('localapi/config - unit tests (mocked collection/global configs)', () =
       expect(entry.auth).toBeUndefined()
     })
 
-    it('expands `auth: true` to the real, full sanitized shape with real Payload defaults', () => {
+    it('expands `auth: true` to the real, full sanitized shape with the reference engine defaults', () => {
       const [entry] = buildEngineCollectionEntries([{ slug: 'users', auth: true }])
       expect(entry.auth).toEqual({
         cookies: { sameSite: 'Lax', secure: false },

@@ -1,7 +1,7 @@
 /**
  * Deterministic replacement for the one side effect this app used to get, by
- * accident, from real Payload's `buildConfig()` sanitizer
- * (payload-removal-plan.md: last runtime use of `buildConfig`).
+ * accident, from the reference engine's `buildConfig()` sanitizer
+ * (the plan doc: last runtime use of `buildConfig`).
  *
  * `buildConfig()` mutates an `auth: true` collection's own `fields` array in
  * place, appending the implicit auth columns (`updatedAt`, `createdAt`,
@@ -15,12 +15,12 @@
  * the injection must not depend on it. This reproduces exactly what the
  * sanitizer appended (compared field-by-field against a real
  * `buildConfig()` run on 2026-09-29), with `label` strings instead of real
- * Payload's i18n functions - no admin locale is configured, so
+ * The original engine's i18n functions - no admin locale is configured, so
  * `t('general:email')` is always the English string.
  *
  * Idempotent: a field already present by name is left alone, so running it
  * before, after or without real `buildConfig()` yields the same fields.
- * No `payload` import.
+ * No `engine` import.
  */
 
 type FieldLike = { name?: string; [key: string]: unknown }

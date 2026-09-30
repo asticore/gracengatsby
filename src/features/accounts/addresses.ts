@@ -1,7 +1,7 @@
 import type { Engine } from '@/engine'
-// Was `import type { Address } from '@/engage-types'` (real Payload's own
-// generated types). shopPlugin() is REMOVED (payload-removal-plan.md:
-// ecommerce cutover) and 'addresses' is no longer a real Payload collection,
+// Was `import type { Address } from '@/engage-types'` (the reference engine's own
+// generated types). shopPlugin() is REMOVED (the plan doc:
+// ecommerce cutover) and 'addresses' is no longer a the reference engine collection,
 // so `generate:types` no longer emits an `Address` type at all. `engine`
 // here has always been the shadow `createEngine()` (`Engine` = `LocalEngine`,
 // see `@/engine/index.ts`), never the real one, so this is a type-only fix -

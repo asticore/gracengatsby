@@ -6,14 +6,14 @@ import { ensureMigratedLocalDb } from '../helpers/migratedDb'
 import { createAddress, deleteAddress, findAddressByID, updateAddress } from '@/cms/db'
 
 // Stage 10 Ecommerce, Layer 1. This used to be a "write-both-ways" proof
-// against a live real-Payload engine (create via engine.create, read via
+// against a live reference-engine engine (create via engine.create, read via
 // our own findAddressByID, and vice versa) to prove our own D1/Drizzle
-// reader/writer stays byte-compatible with what real Payload's own
+// reader/writer stays byte-compatible with what the reference engine's own
 // collection config would produce for the same table. shopPlugin() is now
-// REMOVED (payload-removal-plan.md: ecommerce cutover) and 'addresses' is
-// no longer a real Payload collection at all - engine.create({collection:
+// REMOVED (the plan doc: ecommerce cutover) and 'addresses' is
+// no longer a the reference engine collection at all - engine.create({collection:
 // 'addresses', ...}) would now throw APIError: "The collection with slug
-// addresses can't be found." There is no real Payload behavior left to
+// addresses can't be found." There is no the reference engine behavior left to
 // compare against, so this is now a plain self-consistency test of our own
 // createAddress/findAddressByID/updateAddress/deleteAddress implementation
 // instead.

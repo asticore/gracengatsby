@@ -4,20 +4,20 @@ import { createGlobalOps } from '../generic'
 import { integrations } from '../schema'
 
 /**
- * Payload's document shape for the `integrations` global - see
+ * The original engine's document shape for the `integrations` global - see
  * src/globals/Integrations.ts. `claudeApiKey` is declared as a plain `text`
  * column (no new column-type work needed) but carries `hooks: {
  * beforeChange: encryptSecretHook, afterRead: decryptSecretHook }`
  * (src/utilities/secretField.ts) - AES-256-GCM encryption that happens
- * entirely inside Payload's own field-hook pipeline, which this data layer's
+ * entirely inside the original engine's own field-hook pipeline, which this data layer's
  * generic ops do NOT run (they read/write the raw column value directly -
  * see ../generic.ts's doc comments). So `findIntegrations()` returns exactly
- * what's stored: a document Payload wrote comes back with `claudeApiKey`
+ * what's stored: a document the original engine wrote comes back with `claudeApiKey`
  * still ciphertext (`enc:v1:...`, PREFIX in secretField.ts), never the
  * decrypted plaintext - confirmed in
  * tests/int/cms-db-integrations.int.spec.ts, which also proves the reverse
  * direction (a valid ciphertext string written through `updateIntegrations()`
- * is decrypted back to the original plaintext by Payload's real
+ * is decrypted back to the original plaintext by the original engine's real
  * `afterRead` hook).
  *
  * KNOWN GAP (mirrors the pre-existing Form-block gap noted on

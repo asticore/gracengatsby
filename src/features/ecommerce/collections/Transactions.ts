@@ -7,12 +7,12 @@ import { currencyField, transactionItemsField } from './shared'
 /**
  * SHADOW config for the ecommerce plugin's real `transactions` collection - see
  * ./Products.ts's header comment. Reproduced from `createTransactionsCollection.js`
- * (`@payloadcms/plugin-ecommerce@3.88.0`, read directly all 155 lines, plus
+ * (`the vendor package@3.88.0`, read directly all 155 lines, plus
  * checked for a `hooks/` subdirectory under this plugin version's
  * `dist/collections/transactions/` - none exists, same false-premise pattern
  * already found and corrected on Orders.ts/Products.ts. There was never a
  * `beforeChangeTransaction` PaymentIntent-creation hook to defer - real
- * Payload doesn't have one in this plugin version. `stripeAdapter.ts`'s
+ * The original engine doesn't have one in this plugin version. `stripeAdapter.ts`'s
  * `initiateStripePayment`/`confirmStripeOrder` already create/update this
  * collection's rows directly (both via `overrideAccess: true`), which is
  * this app's already-working equivalent. Nothing to port.
@@ -24,7 +24,7 @@ import { currencyField, transactionItemsField } from './shared'
  * them. Any signed-in customer could `GET /api/transactions` (or fetch by id)
  * and read every OTHER customer's payment records: Stripe customer/
  * PaymentIntent ids, billing address, amount, linked order/cart. Real
- * Payload's own access (`createTransactionsCollection.js:126-131`) is
+ * The original engine's own access (`createTransactionsCollection.js:126-131`) is
  * actually `isAdmin`-only for ALL four operations - stricter than this
  * shadow's intent of letting a customer see their own receipt. Fixed `read`
  * to `isDocumentOwner` (own transactions only, matching the `customer`
@@ -88,10 +88,10 @@ export const Transactions: CollectionConfig = {
     { name: 'status', type: 'text', required: true },
     { name: 'customer', type: 'relationship', relationTo: 'users', admin: { position: 'sidebar' } },
     { name: 'customerEmail', type: 'email', admin: { position: 'sidebar' } },
-    // shopPlugin() is REMOVED (payload-removal-plan.md: ecommerce cutover)
-    // and 'orders'/'carts' are no longer real Payload collections (only
+    // shopPlugin() is REMOVED (the plan doc: ecommerce cutover)
+    // and 'orders'/'carts' are no longer the reference engine collections (only
     // 'products' still is, as a stub - see engage.config.ts), so real
-    // Payload's own generated `CollectionSlug` union no longer includes
+    // The original engine's own generated `CollectionSlug` union no longer includes
     // them. This config is a SHADOW config never passed through
     // `buildConfig()` (never sanitized/validated against that union at
     // runtime), so the casts below are safe - this app's own REST/GraphQL

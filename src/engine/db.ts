@@ -5,7 +5,7 @@
  * types from here. `sql` is drizzle-orm's own tagged template (what the
  * old vendor adapter re-exported); `MigrateUpArgs`/`MigrateDownArgs` are this
  * app's own hand-rolled shapes (`@/localapi/migrate`), narrowed to what the
- * migrations actually use (`db`, `payload.logger`).
+ * migrations actually use (`db`, `engine.logger`).
  *
  * See ./index.ts for what this directory is and the rules that govern it.
  */

@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { blogSettings, blogSettingsBlockTypes, blogSettingsRels, blogSettingsRelsTargetColumns } from '../schema'
 
 /**
- * One `introBlocks` block instance as Payload's own API returns it - same
+ * One `introBlocks` block instance as the original engine's own API returns it - same
  * loosely-typed shape as PageTemplateBlock (../collections/pageTemplates.ts)
  * and every other blocks-field block type in this data layer; see
  * src/blocks/*.ts for each block's own real field list.
@@ -15,7 +15,7 @@ export type BlogSettingsBlock = {
   blockName?: string | null
 } & Record<string, unknown>
 
-/** Payload's document shape for the `blog-settings` global - see src/globals/BlogSettings.ts. */
+/** The original engine's document shape for the `blog-settings` global - see src/globals/BlogSettings.ts. */
 export type BlogSettingsDoc = {
   id: number
   archiveTitle?: string | null

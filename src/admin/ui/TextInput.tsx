@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `TextInput`.
+ * From-scratch replacement for `the vendor package`'s `TextInput`.
  *
  * Matches the exact props SlugComponent.tsx already passes:
  * {path, value, readOnly, onChange} with onChange receiving a plain

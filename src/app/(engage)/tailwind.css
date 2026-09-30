@@ -2,7 +2,7 @@
  * Admin design system — entry point.
  *
  * Stage 12 ("full custom rebuild"): the admin no longer imports
- * `@payloadcms/next/css` (see layout.tsx) — this file + custom.css ARE the
+ * `the vendor package` (see layout.tsx) — this file + custom.css ARE the
  * admin's whole visual system now, built on Tailwind v4 rather than layered
  * on top of the vendor's own stylesheet. Real Preflight is safe to pull in
  * here (unlike the old version of this file, which deliberately excluded it)

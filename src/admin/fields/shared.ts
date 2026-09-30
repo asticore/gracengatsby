@@ -1,7 +1,7 @@
 /**
  * Shared helper for the field renderers in this directory.
  *
- * `@/engine`'s `Field` type is real Payload's own union across every field
+ * `@/engine`'s `Field` type is the reference engine's own union across every field
  * type (text, row, tabs, ui, ...) - `label`/`required` aren't on every member
  * (a `row` or `tabs` field has neither), so TS rejects `field.label` directly.
  * Every leaf renderer needs the same two properties off of whichever field it

@@ -5,7 +5,7 @@
  *
  * STAGE 11 (Admin UI rebuild): from-scratch implementations
  * (`src/admin/views/RootPage.tsx`) replace the vendor's own
- * `@payloadcms/next/views` exports - see that file's own header for the full
+ * `the vendor package` exports - see that file's own header for the full
  * routing table and design.
  */
 

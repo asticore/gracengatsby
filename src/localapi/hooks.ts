@@ -6,10 +6,10 @@
  * `src/features/abTesting/collections/ABTests.ts`,
  * `src/features/courses/collections/Enrolments.ts`, and
  * `src/globals/SiteSettings.ts` - in the same order, and with the same
- * argument shapes and chaining semantics, real Payload 3.88.0 uses. Those
+ * argument shapes and chaining semantics, the reference engine 3.88.0 uses. Those
  * hook functions are NOT being rewritten here: they stay typed against
- * Payload's real `CollectionBeforeChangeHook`/`FieldHook`/etc. types from the
- * `payload` package (via `@/engine`'s re-exports) and are literally imported
+ * The original engine's real `CollectionBeforeChangeHook`/`FieldHook`/etc. types from the
+ * `engine` package (via `@/engine`'s re-exports) and are literally imported
  * and called through this module unmodified, in this module's own tests and
  * in the from-scratch create/update/find/delete pipeline a later stage
  * builds on top of this one.
@@ -20,14 +20,14 @@
  *
  * ---------------------------------------------------------------------------
  * WHY the runner is typed the way it is (no `import type { ... } from
- * 'payload'` anywhere in this file)
+ * 'engine'` anywhere in this file)
  * ---------------------------------------------------------------------------
  * The whole point of the from-scratch Local API is that it must not depend on
- * the `payload` package once the removal is complete. So this module's own
+ * the `engine` package once the removal is complete. So this module's own
  * exported types (`CollectionDocumentHookArgs`, `BeforeChangeFieldHookArgs`,
- * etc. below) are hand-rolled mirrors of Payload's real hook-arg shapes, NOT
+ * etc. below) are hand-rolled mirrors of the original engine's real hook-arg shapes, NOT
  * re-exports or structural aliases of them - they exist so a caller who has
- * no Payload types on hand (a mock hook in this module's own unit tests, or
+ * no the original engine types on hand (a mock hook in this module's own unit tests, or
  * a genuinely new from-scratch hook written in a later stage) has something
  * accurate to write against.
  *
@@ -35,10 +35,10 @@
  * generic over the exact args type the caller supplies, so they impose NO
  * type of their own on what "the hook" or "the args" look like - they just
  * need *an* array of `(args: TArgs) => TValue-ish` functions and *an* args
- * object. That is what makes a REAL Payload-typed hook function (e.g.
- * `formatSlugHook`, typed as `payload`'s real `FieldHook`) "structurally
+ * object. That is what makes a REAL vendor-typed hook function (e.g.
+ * `formatSlugHook`, typed as `engine`'s real `FieldHook`) "structurally
  * callable without modification" through this file: a caller passes the real
- * hook (typed against `payload`'s real `FieldHook`/`CollectionBeforeChangeHook`
+ * hook (typed against `engine`'s real `FieldHook`/`CollectionBeforeChangeHook`
  * etc., imported from `@/engine`) together with an args object built to that
  * REAL type's shape, and the runner's generics simply adopt whatever type
  * TypeScript infers from that real hook - this file's own args types never
@@ -48,19 +48,19 @@
  * `runFieldHook`/`runCollectionHooks`.
  *
  * ---------------------------------------------------------------------------
- * Ground truth (confirmed by reading real Payload 3.88.0 source, not assumed)
+ * Ground truth (confirmed by reading the reference engine 3.88.0 source, not assumed)
  * ---------------------------------------------------------------------------
  * Hook types this app actually uses (grepped every `hooks:` block under
  * `src/`, per the stage brief): `beforeValidate`, `beforeChange`,
  * `afterChange` (collection- AND global-level), field-level `afterRead`, and
  * `afterDelete`. Every one of those is a plain, synchronous-or-async
- * "for (const hook of hooks) { ... }" loop in real Payload - there is no
+ * "for (const hook of hooks) { ... }" loop in the reference engine - there is no
  * queueing, no parallelism, and no built-in retry:
  *
  * COLLECTION-LEVEL (one call per hook per operation, chained on a single
  * value - `data` for beforeValidate/beforeChange, `doc` for
  * afterChange/afterDelete):
- *   - beforeValidate: `node_modules/payload/dist/collections/operations/create.js:106-116`
+ *   - beforeValidate: `the vendor source:106-116`
  *     (create) and `.../operations/utilities/update.js:102-116` (update) -
  *     `data = await hook({ collection, context, data, operation, originalDoc, req }) || data`
  *   - beforeChange: `create.js:121-133` / `utilities/update.js:123-135` -
@@ -79,7 +79,7 @@
  *     data and only one "operation".
  *   - GLOBAL-level afterChange has the same `|| result` chaining but a
  *     different args shape (no `collection`/`operation`, a `global` field
- *     instead): `node_modules/payload/dist/globals/operations/update.js:326-340` -
+ *     instead): `the vendor source:326-340` -
  *     `result = await hook({ context, data, doc: result, global, overrideAccess, previousDoc: originalDoc, req }) || result`.
  *     `runCollectionHooks` below is generic enough to run these too (the
  *     chaining logic - "call each hook with the current value plugged into
@@ -90,7 +90,7 @@
  *   IMPORTANT, easy to get wrong: the chain check is `|| data` / `|| result`,
  *   a plain JS OR, NOT `!== undefined`. That means a hook that returns `''`,
  *   `0`, `false`, or `null` (not just `undefined`) is ALSO treated as "kept
- *   the previous value" by real Payload - this only matters for
+ *   the previous value" by the reference engine - this only matters for
  *   beforeChange/afterChange hooks whose `data`/`doc` argument could itself
  *   validly BE one of those falsy things (which never happens in practice
  *   here: `data`/`doc` are always the whole document object, always
@@ -106,7 +106,7 @@
  * FIELD-LEVEL (one call per hook per FIELD during the field traversal, not
  * per document - `beforeValidate`/`beforeChange` chain on `value`, one field
  * at a time):
- *   - beforeValidate: `node_modules/payload/dist/fields/hooks/beforeValidate/promise.js:189-215` -
+ *   - beforeValidate: `the vendor source:189-215` -
  *     `hookedValue = await hook({ blockData, collection, context, data, field, global, indexPath, operation, originalDoc, overrideAccess, path, previousSiblingDoc, previousValue, req, schemaPath, siblingData, siblingFields, value }); if (hookedValue !== undefined) siblingData[field.name] = hookedValue`.
  *   - beforeChange: `fields/hooks/beforeChange/promise.js:58-81` - same
  *     `hookedValue !== undefined` gate, args additionally carry
@@ -145,7 +145,7 @@
  *     `afterDelete`) is not implemented here since nothing in this app uses
  *     it, but is worth naming so a future stage does not assume it chains
  *     like `afterDelete` does.
- *   - Collection- or global-level `afterRead` - real Payload supports both
+ *   - Collection- or global-level `afterRead` - the reference engine supports both
  *     (same `|| result` chaining as `afterChange`,
  *     `create.js:246-258/globals` equivalents), but this app only ever
  *     attaches `afterRead` at the FIELD level (the secret-field decrypt
@@ -160,7 +160,7 @@
  *     `afterRead/promise.js` (each file's own `~L370-410` region) - this
  *     runner always runs a hook exactly once per call, matching every one of
  *     this app's real single-locale usages.
- *   - `req.payload.jobs`, `sendEmail`, `transactionID`, and any upload/
+ *   - `req.engine.jobs`, `sendEmail`, `transactionID`, and any upload/
  *     filesystem API - re-confirmed via a fresh grep of
  *     `sendEmail|\.jobs\.|transactionID` under `src/` immediately before
  *     writing this file: the only matches are `src/features/accounts/emails.ts`,
@@ -172,7 +172,7 @@
  * the hook call in a try/catch. A hook that throws (e.g. `checkEventCapacity`
  * throwing a plain `Error` once an event is at capacity) propagates straight
  * out of the `await`, aborting the `for` loop and everything after it - the
- * same as real Payload's own hook loops, which also have no per-hook
+ * same as the reference engine's own hook loops, which also have no per-hook
  * try/catch (see e.g. `create.js:108-116`: the `for` loop body has no `try`
  * at all; the operation-level `try/catch` several frames up in
  * `createOperation`/`updateByIDOperation` is what actually catches it, purely
@@ -184,23 +184,23 @@
  * cases for both a mock hook and the real `checkEventCapacity`.
  */
 
-/** Real Payload's own `RequestContext` (`payload/dist/index.d.ts`: `interface RequestContext { [key: string]: unknown }`) - reproduced structurally rather than imported so this module has no `payload` dependency. */
+/** The reference engine's own `RequestContext` (the vendor source: `interface RequestContext { [key: string]: unknown }`) - reproduced structurally rather than imported so this module has no `engine` dependency. */
 export type RequestContextLike = Record<string, unknown>
 
 /** The two operations every collection-level `beforeValidate`/`beforeChange`/`afterChange` hook in this app's inventory ever runs under (`create.js`/`utilities/update.js` only ever pass `'create'` or `'update'` into these three hook types - `'delete'`/`'read'` only ever reach FIELD-level hooks, see `FieldHookOperation` below). */
 export type CollectionHookOperation = 'create' | 'update'
 
-/** Field-level hooks additionally run during read and delete (real `FieldHookArgs['operation']` is `'create' | 'delete' | 'read' | 'update'`, `payload/dist/fields/config/types.d.ts:48`), even though this app's own field hooks (`formatSlugHook`, `encryptSecretHook`/`decryptSecretHook`) only ever branch on it being absent or `'create'`/`'update'`. */
+/** Field-level hooks additionally run during read and delete (real `FieldHookArgs['operation']` is `'create' | 'delete' | 'read' | 'update'`, the vendor source), even though this app's own field hooks (`formatSlugHook`, `encryptSecretHook`/`decryptSecretHook`) only ever branch on it being absent or `'create'`/`'update'`. */
 export type FieldHookOperation = 'create' | 'delete' | 'read' | 'update'
 
 /**
  * Shared shape of every COLLECTION-level `beforeValidate`/`beforeChange`/
- * `afterChange`/`afterDelete` hook's args, standing in for real Payload's
- * `SanitizedCollectionConfig` (`collection`) and `PayloadRequest` (`req`)
+ * `afterChange`/`afterDelete` hook's args, standing in for the reference engine's
+ * `SanitizedCollectionConfig` (`collection`) and `EngineRequest` (`req`)
  * with `unknown` - this module never reads either, it only forwards
  * whatever the caller hands it straight through to the real hook function.
  * Individual hook-type args below (`CollectionBeforeValidateHookArgs` etc.)
- * pick the subset of these fields real Payload actually includes for that
+ * pick the subset of these fields the reference engine actually includes for that
  * hook type, matching `CollectionOperationType`'s "which fields exist"
  * distinctions cited in the file header above.
  */
@@ -213,7 +213,7 @@ type CollectionHookArgsBase = {
 export type CollectionBeforeValidateHookArgs<TData = Record<string, unknown>> = CollectionHookArgsBase & {
   data?: Partial<TData>
   operation: CollectionHookOperation
-  /** `undefined` on create - real Payload passes `duplicatedFromDoc` (`{}` unless duplicating) on create and the pre-update doc on update; this module leaves that distinction to the caller. */
+  /** `undefined` on create - the reference engine passes `duplicatedFromDoc` (`{}` unless duplicating) on create and the pre-update doc on update; this module leaves that distinction to the caller. */
   originalDoc?: TData
 }
 
@@ -235,7 +235,7 @@ export type CollectionAfterDeleteHookArgs<TData = Record<string, unknown>> = Col
   doc: TData
 }
 
-/** Real Payload's global `afterChange` args (`globals/config/types.d.ts:67-79`) - deliberately NOT `CollectionAfterChangeHookArgs` with fields swapped: globals have no `operation` (a global only ever has one "document") and `global` instead of `collection`. */
+/** The reference engine's global `afterChange` args (`globals/config/types.d.ts:67-79`) - deliberately NOT `CollectionAfterChangeHookArgs` with fields swapped: globals have no `operation` (a global only ever has one "document") and `global` instead of `collection`. */
 export type GlobalAfterChangeHookArgs<TData = Record<string, unknown>> = {
   context: RequestContextLike
   data: Partial<TData>
@@ -247,12 +247,12 @@ export type GlobalAfterChangeHookArgs<TData = Record<string, unknown>> = {
 }
 
 /**
- * Shared shape of every FIELD-level hook's args (mirrors real Payload's
- * `FieldHookArgs`, `payload/dist/fields/config/types.d.ts:18-84`), trimmed to
+ * Shared shape of every FIELD-level hook's args (mirrors the reference engine's
+ * `FieldHookArgs`, the vendor source), trimmed to
  * what this module's job needs plus every field this app's own field hooks
  * (`formatSlugHook`, `encryptSecretHook`/`decryptSecretHook`) actually read
  * (`value`, `data`) - the rest (`field`, `siblingData`, `path`, etc.) are
- * kept because a real Payload `FieldHook` requires them to be present on the
+ * kept because a the reference engine `FieldHook` requires them to be present on the
  * args object even when a given hook implementation ignores them.
  */
 type FieldHookArgsBase<TSiblingData = Record<string, unknown>> = {
@@ -301,7 +301,7 @@ export type AfterReadFieldHookArgs<TData = Record<string, unknown>, TValue = unk
 
 /**
  * Runs an array of collection- or global-level hooks IN ORDER, replicating
- * real Payload's own `for (const hook of hooks) { data = await hook(args) ||
+ * the reference engine's own `for (const hook of hooks) { data = await hook(args) ||
  * data }` loop (see the file header's citations for `beforeValidate`,
  * `beforeChange`, `afterChange`, and `afterDelete` - all four use this exact
  * pattern, just chained on a different named field of `args`: `data` for the
@@ -313,16 +313,16 @@ export type AfterReadFieldHookArgs<TData = Record<string, unknown>, TValue = unk
  * ...) always sees the CURRENT value there, not the value as of the first
  * call. A hook may either return a new value (replacing the running value,
  * as long as it is truthy - `|| currentValue` on a falsy return keeps the
- * previous value, matching real Payload exactly, see the file header's
+ * previous value, matching the reference engine exactly, see the file header's
  * "IMPORTANT" note on `||` vs `!== undefined`) or mutate the object it was
  * handed in place and return nothing - both work here for the same reason
- * they work in real Payload: `args[key]` is a live object reference, so an
+ * they work in the reference engine: `args[key]` is a live object reference, so an
  * in-place mutation is visible to the next hook even when the hook's own
  * return value is `undefined` and gets discarded by `|| currentValue`.
  *
  * Generic over `TArgs`/`TKey` (not over any hook-args type this module
  * exports) so a caller can pass an array of hooks typed against real
- * Payload's own `CollectionBeforeChangeHook`/`CollectionAfterChangeHook`/etc.
+ * The original engine's own `CollectionBeforeChangeHook`/`CollectionAfterChangeHook`/etc.
  * (imported from `@/engine`, not from here) and TypeScript infers `TArgs`
  * from THAT real type - this function imposes no shape of its own. See the
  * file header's "WHY the runner is typed the way it is" section.
@@ -344,7 +344,7 @@ export async function runCollectionHooks<TArgs extends Record<string, unknown>, 
 
   for (const hook of hooks) {
     const hookedValue = await hook({ ...args, [key]: current } as TArgs)
-    // Real Payload's own `|| data` / `|| result` - a plain OR, not a
+    // The reference engine's own `|| data` / `|| result` - a plain OR, not a
     // `!== undefined` check. See the file header for why that distinction
     // is deliberate and why this runner must NOT "clean it up" to match the
     // field-level check below.
@@ -360,7 +360,7 @@ export async function runCollectionHooks<TArgs extends Record<string, unknown>, 
 
 /**
  * Runs a SINGLE field-level hook (`beforeValidate`, `beforeChange`, or
- * `afterRead` - whichever `args` is shaped for), replicating real Payload's
+ * `afterRead` - whichever `args` is shaped for), replicating the reference engine's
  * `hookedValue = await hook(args); if (hookedValue !== undefined)
  * siblingData[field.name] = hookedValue` (see the file header's citations -
  * all three field-hook lifecycle points use this exact `!== undefined` gate,
@@ -370,7 +370,7 @@ export async function runCollectionHooks<TArgs extends Record<string, unknown>, 
  * returned anything other than `undefined`, otherwise `args.value` unchanged
  * - the caller (a later stage's field traversal) is responsible for writing
  * that result back onto its own `siblingData[field.name]`, the same way real
- * Payload's `promise.js` files do immediately after this exact check; this
+ * The original engine's `promise.js` files do immediately after this exact check; this
  * module does not know about "sibling data" objects or field names, only the
  * single value being hooked.
  *
@@ -378,11 +378,11 @@ export async function runCollectionHooks<TArgs extends Record<string, unknown>, 
  * exports, for the same reason `runCollectionHooks` is - see that function's
  * doc comment and the file header's "WHY the runner is typed the way it is"
  * section. This is what lets `formatSlugHook`/`encryptSecretHook`/
- * `decryptSecretHook` (all three typed against real Payload's own
+ * `decryptSecretHook` (all three typed against the reference engine's own
  * `FieldHook`) run through this function completely unmodified, as proven in
  * `tests/int/localapi-hooks.int.spec.ts`.
  *
- * To run more than one hook on the same field (real Payload supports a
+ * To run more than one hook on the same field (the reference engine supports a
  * `field.hooks.beforeChange` ARRAY - `fields/hooks/beforeChange/promise.js:58-60`
  * loops it), call this once per hook, threading the previous call's result
  * back in as the next call's `value`/`previousValue` - see `runFieldHooks`
@@ -406,9 +406,9 @@ export async function runFieldHook<TArgs extends { value?: TValue }, TValue = TA
  * Convenience loop over `runFieldHook` for a field with more than one hook
  * of the same type, threading each call's resulting value into the next
  * call's `value` (and `previousValue`, when the args shape has one - real
- * Payload's own field-hook args always carry both, see
+ * The original engine's own field-hook args always carry both, see
  * `BeforeChangeFieldHookArgs`/`BeforeValidateFieldHookArgs` above) exactly
- * the way real Payload's `for (const hook of field.hooks.X)` loops do (see
+ * the way the reference engine's `for (const hook of field.hooks.X)` loops do (see
  * the file header's field-level citations). Not exercised by any real hook
  * in this app today (see `runFieldHook`'s doc comment) - provided so a later
  * stage's field traversal does not have to reinvent this loop the first time

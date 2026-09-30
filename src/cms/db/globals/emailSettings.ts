@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { emailSettings, emailSettingsGenerated } from '../schema'
 
 /**
- * Payload's document shape for the `email-settings` global - see
+ * The original engine's document shape for the `email-settings` global - see
  * src/globals/EmailSettings.ts. The top-level `row` field (fromName/
  * fromEmail/replyToEmail) is a layout-only wrapper - flattened onto this
  * table with no nesting in the JS shape, same as every other `row` field
@@ -13,9 +13,9 @@ import { emailSettings, emailSettingsGenerated } from '../schema'
  * onto this table with a `<group>_` column prefix and reconstructed here as
  * a nested object, the same mechanism Events' `location` group uses (see
  * src/cms/db/collections/events.ts). Each group's own `admin.condition`
- * (which provider is selected) is Payload admin-UI-only and has no effect on
+ * (which provider is selected) is the original engine admin-UI-only and has no effect on
  * the schema - every group's columns exist unconditionally, exactly as
- * Payload's own real `eg_email_settings` table has them.
+ * The original engine's own real `eg_email_settings` table has them.
  *
  * Eight fields are secrets (hooks: { beforeChange: encryptSecretHook,
  * afterRead: decryptSecretHook }, src/utilities/secretField.ts, same
@@ -23,12 +23,12 @@ import { emailSettings, emailSettingsGenerated } from '../schema'
  * `sesApi.accessKeyId`, `sesApi.secretAccessKey`, `mailgun.apiKey`,
  * `postmark.serverToken`, `sendgrid.apiKey`, `cloudflare.apiToken`, and
  * `smtp.password`. `findEmailSettings()` returns exactly what's stored - a
- * document Payload wrote comes back with these still ciphertext, never
+ * document the original engine wrote comes back with these still ciphertext, never
  * decrypted plaintext - confirmed both directions in
  * tests/int/cms-db-email-settings.int.spec.ts.
  *
  * `testing.sendTest` is a `type: 'ui'` field (renders a button, backed by no
- * column at all - Payload never gives a `ui` field a column). It is stripped
+ * column at all - the original engine never gives a `ui` field a column). It is stripped
  * out of the field list fed to `generateTable` in ../schema/index.ts (see
  * that file's `emailSettingsGenerated` doc comment for why) and has no place
  * in this Doc type - it isn't data, so it gets no test coverage either.

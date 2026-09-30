@@ -6,8 +6,8 @@ import { createCollectionOps } from '../generic'
 import { users, usersRoles, usersSessions } from '../schema'
 
 /**
- * Payload's document shape for the `users` collection - see
- * src/collections/Users.ts. Deliberately narrower than Payload's own: this
+ * The original engine's document shape for the `users` collection - see
+ * src/collections/Users.ts. Deliberately narrower than the original engine's own: this
  * is the shape ordinary app code should use, so nothing outside the auth
  * system itself ever casually handles a password hash. See `UserAuthRow`
  * below for the full shape (hash/salt/sessions included) a real adapter
@@ -25,7 +25,7 @@ export type UserDoc = {
 }
 
 /**
- * The full row `payload.db.findOne`/`updateOne` see for an existing user -
+ * The full row `engine.db.findOne`/`updateOne` see for an existing user -
  * every implicit auth column ../schema/generate.ts's authColumns() adds,
  * confirmed against the real `eg_users` table via `pragma table_info` (see
  * that function's own doc comment), plus `sessions` (see
@@ -34,12 +34,12 @@ export type UserDoc = {
  *
  * This data layer still never GENERATES any of these values itself -
  * hashing a password, minting a session, incrementing loginAttempts - that
- * stays entirely Payload's own auth code (`payload/dist/auth/**`), same
- * reasoning as real file upload/resize staying Payload's job for Media.
+ * stays entirely the original engine's own auth code (the vendor source), same
+ * reasoning as real file upload/resize staying the original engine's job for Media.
  * What changed from the narrower doc comment this type replaces: this data
- * layer now STORES AND RETURNS whatever Payload hands it for these columns
+ * layer now STORES AND RETURNS whatever the original engine hands it for these columns
  * (proven in tests/int/cms-db-users.int.spec.ts against a real
- * `payload.login()`/session round trip), because `db.select().from(table)`
+ * `engine.login()`/session round trip), because `db.select().from(table)`
  * already selected every column on the real `users` table - hash/salt
  * included - even before this type existed to expose them; only the TS
  * shape and the missing `sessions` child-table wiring were the gap, not the

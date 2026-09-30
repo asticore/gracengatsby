@@ -373,7 +373,7 @@ const LOCKED_DOCUMENT_INDEXES = [
   'CREATE INDEX IF NOT EXISTS `eg_locked_documents_rels_eg_lesson_progress_id_idx` ON `eg_locked_documents_rels` (`eg_lesson_progress_id`)',
 ]
 
-export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   for (const statement of TABLES) {
     await db.run(sql.raw(statement))
   }
@@ -412,7 +412,7 @@ export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> 
   if (added.length > 0) engine.logger.info(`[migrate] Added to eg_locked_documents_rels: ${added.join(', ')}`)
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // No-op, matching the other migrations here. Dropping these would take every
   // enrolment and every lesson a learner has ticked off with them, and the
   // Courses toggle already hides the whole feature without deleting a row.

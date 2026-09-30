@@ -139,7 +139,7 @@ const addColumn = async (db: Runner, table: string, column: string, type: string
   }
 }
 
-export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   for (const statement of [MEMBERSHIP_TIERS, MEMBERSHIP_TIER_BENEFITS, MEMBERSHIPS]) {
     await db.run(sql.raw(statement))
   }
@@ -157,7 +157,7 @@ export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> 
   engine.logger.info('[migrate] eg_membership_tiers and eg_memberships are present, and the gate columns are on Pages and Posts.')
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // No-op, matching the other migrations here. Dropping these tables on a
   // rollback would delete the record of who has paid for what, which is the one
   // thing that cannot be reconstructed from the site itself.

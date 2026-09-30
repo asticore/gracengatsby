@@ -1,5 +1,5 @@
 /**
- * From-scratch CLI-equivalent of `pnpm cms migrate` (the real `payload`
+ * From-scratch CLI-equivalent of `pnpm cms migrate` (the real `engine`
  * binary), built on top of `src/localapi/migrate.ts`'s `runMigrations` -
  * see that file's own header comment for the full ground-truth citations.
  *
@@ -72,9 +72,9 @@ console.log('[run-migrations] bootstrap:', JSON.stringify(bootstrapReport, null,
 const db = drizzle(d1) as unknown as Drizzle
 
 // See src/localapi/migrate.ts's header comment for why this cast is here:
-// the barrel's entries are typed against real Payload's full
+// the barrel's entries are typed against the reference engine's full
 // MigrateUpArgs/MigrateDownArgs, ours narrows both to this app's real,
-// confirmed usage (db + payload.logger only, req never touched).
+// confirmed usage (db + engine.logger only, req never touched).
 const result = await runMigrations({
   db,
   engineDb,

@@ -1,13 +1,13 @@
 /** Inlined as a <style> tag from VisualEditor.tsx.
- * A .css import works fine under Next's build, but payload's
+ * A .css import works fine under Next's build, but engine's
  * generate:importmap / generate:types CLI steps import admin components
  * directly under plain Node/tsx, which has no loader for .css files and
  * crashes with ERR_UNKNOWN_FILE_EXTENSION. A plain JS string sidesteps
  * that entirely while keeping the same scoped styles.
  *
  * Colors are CSS custom properties on .ve-root, not hardcoded hex, for two
- * reasons: Payload's own dark mode (it sets data-theme="dark" on <html>,
- * checked directly in node_modules/@payloadcms/ui) was leaking through
+ * reasons: the original engine's own dark mode (it sets data-theme="dark" on <html>,
+ * checked directly in node_modules/the vendor package) was leaking through
  * unstyled before, and a couple of buttons (.ve-btn--ghost, specifically)
  * hardcoded dark text that went invisible against the always-dark topbar -
  * every color below is one of these tokens so that bug class can't recur.

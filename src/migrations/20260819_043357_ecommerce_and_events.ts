@@ -324,27 +324,27 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`transactions_cart_idx\` ON \`transactions\` (\`cart_id\`);`)
   await db.run(sql`CREATE INDEX \`transactions_updated_at_idx\` ON \`transactions\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`transactions_created_at_idx\` ON \`transactions\` (\`created_at\`);`)
-  await db.run(sql`CREATE TABLE \`payload_kv\` (
+  await db.run(sql`CREATE TABLE \`eg_kv\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`key\` text NOT NULL,
   	\`data\` text NOT NULL
   );
   `)
-  await db.run(sql`CREATE UNIQUE INDEX \`payload_kv_key_idx\` ON \`payload_kv\` (\`key\`);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`events_id\` integer REFERENCES events(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`event_rsvps_id\` integer REFERENCES event_rsvps(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`addresses_id\` integer REFERENCES addresses(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`products_id\` integer REFERENCES products(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`carts_id\` integer REFERENCES carts(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`orders_id\` integer REFERENCES orders(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`transactions_id\` integer REFERENCES transactions(id);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_events_id_idx\` ON \`payload_locked_documents_rels\` (\`events_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_event_rsvps_id_idx\` ON \`payload_locked_documents_rels\` (\`event_rsvps_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_addresses_id_idx\` ON \`payload_locked_documents_rels\` (\`addresses_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_products_id_idx\` ON \`payload_locked_documents_rels\` (\`products_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_carts_id_idx\` ON \`payload_locked_documents_rels\` (\`carts_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_orders_id_idx\` ON \`payload_locked_documents_rels\` (\`orders_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_transactions_id_idx\` ON \`payload_locked_documents_rels\` (\`transactions_id\`);`)
+  await db.run(sql`CREATE UNIQUE INDEX \`eg_kv_key_idx\` ON \`eg_kv\` (\`key\`);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`events_id\` integer REFERENCES events(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`event_rsvps_id\` integer REFERENCES event_rsvps(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`addresses_id\` integer REFERENCES addresses(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`products_id\` integer REFERENCES products(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`carts_id\` integer REFERENCES carts(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`orders_id\` integer REFERENCES orders(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`transactions_id\` integer REFERENCES transactions(id);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_events_id_idx\` ON \`eg_locked_documents_rels\` (\`events_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_event_rsvps_id_idx\` ON \`eg_locked_documents_rels\` (\`event_rsvps_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_addresses_id_idx\` ON \`eg_locked_documents_rels\` (\`addresses_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_products_id_idx\` ON \`eg_locked_documents_rels\` (\`products_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_carts_id_idx\` ON \`eg_locked_documents_rels\` (\`carts_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_orders_id_idx\` ON \`eg_locked_documents_rels\` (\`orders_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_transactions_id_idx\` ON \`eg_locked_documents_rels\` (\`transactions_id\`);`)
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
@@ -364,27 +364,27 @@ export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.run(sql`DROP TABLE \`orders_rels\`;`)
   await db.run(sql`DROP TABLE \`transactions_items\`;`)
   await db.run(sql`DROP TABLE \`transactions\`;`)
-  await db.run(sql`DROP TABLE \`payload_kv\`;`)
+  await db.run(sql`DROP TABLE \`eg_kv\`;`)
   await db.run(sql`PRAGMA foreign_keys=OFF;`)
-  await db.run(sql`CREATE TABLE \`__new_payload_locked_documents_rels\` (
+  await db.run(sql`CREATE TABLE \`__new_eg_locked_documents_rels\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`order\` integer,
   	\`parent_id\` integer NOT NULL,
   	\`path\` text NOT NULL,
   	\`users_id\` integer,
   	\`media_id\` integer,
-  	FOREIGN KEY (\`parent_id\`) REFERENCES \`payload_locked_documents\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+  	FOREIGN KEY (\`parent_id\`) REFERENCES \`eg_locked_documents\`(\`id\`) ON UPDATE no action ON DELETE cascade,
   	FOREIGN KEY (\`users_id\`) REFERENCES \`users\`(\`id\`) ON UPDATE no action ON DELETE cascade,
   	FOREIGN KEY (\`media_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE cascade
   );
   `)
-  await db.run(sql`INSERT INTO \`__new_payload_locked_documents_rels\`("id", "order", "parent_id", "path", "users_id", "media_id") SELECT "id", "order", "parent_id", "path", "users_id", "media_id" FROM \`payload_locked_documents_rels\`;`)
-  await db.run(sql`DROP TABLE \`payload_locked_documents_rels\`;`)
-  await db.run(sql`ALTER TABLE \`__new_payload_locked_documents_rels\` RENAME TO \`payload_locked_documents_rels\`;`)
+  await db.run(sql`INSERT INTO \`__new_eg_locked_documents_rels\`("id", "order", "parent_id", "path", "users_id", "media_id") SELECT "id", "order", "parent_id", "path", "users_id", "media_id" FROM \`eg_locked_documents_rels\`;`)
+  await db.run(sql`DROP TABLE \`eg_locked_documents_rels\`;`)
+  await db.run(sql`ALTER TABLE \`__new_eg_locked_documents_rels\` RENAME TO \`eg_locked_documents_rels\`;`)
   await db.run(sql`PRAGMA foreign_keys=ON;`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_order_idx\` ON \`payload_locked_documents_rels\` (\`order\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_parent_idx\` ON \`payload_locked_documents_rels\` (\`parent_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_path_idx\` ON \`payload_locked_documents_rels\` (\`path\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_users_id_idx\` ON \`payload_locked_documents_rels\` (\`users_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_media_id_idx\` ON \`payload_locked_documents_rels\` (\`media_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_order_idx\` ON \`eg_locked_documents_rels\` (\`order\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_parent_idx\` ON \`eg_locked_documents_rels\` (\`parent_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_path_idx\` ON \`eg_locked_documents_rels\` (\`path\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_users_id_idx\` ON \`eg_locked_documents_rels\` (\`users_id\`);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_media_id_idx\` ON \`eg_locked_documents_rels\` (\`media_id\`);`)
 }

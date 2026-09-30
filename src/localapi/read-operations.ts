@@ -1,12 +1,12 @@
 /**
- * Read operations - reimplemented from Payload 3.88.0's real Local API
- * `find`/`findByID`/`count` (`node_modules/payload/dist/collections/operations/
+ * Read operations - reimplemented from the original engine 3.88.0's real Local API
+ * `find`/`findByID`/`count` (`the vendor source
  * {find,findByID,count}.js` + their `local/*.js` wrappers) and globals'
- * `findOne` (`node_modules/payload/dist/globals/operations/{findOne,local/
+ * `findOne` (`the vendor source{findOne,local/
  * findOne}.js`), composing stage 1a-1c (`./validators.ts` is NOT used here -
  * validation is a write-side concern, see its own file header) on top of the
  * already-proven `src/cms/db` read functions, per the Local API core stage of
- * the payload-removal plan (project doc `payload-removal-plan.md`).
+ * the engine-removal plan (project doc `the plan doc`).
  *
  * This module does not know about any PARTICULAR collection. Like
  * `./access.ts` and `./hooks.ts` it is a pure executor: a caller builds a
@@ -19,11 +19,11 @@
  * is assembled later, when this module is wired into `@/engine`.
  *
  * Like every module in this directory, nothing here imports from the
- * `payload` package - every type is hand-rolled (or reused from `./access.ts`/
+ * `engine` package - every type is hand-rolled (or reused from `./access.ts`/
  * `./hooks.ts`, this module's own siblings, which is fine) so this module has
  * zero build-time dependency on the vendor package. This app's real
  * collection/global configs (`src/collections/*.ts`, `src/globals/*.ts`,
- * still typed against real Payload's `CollectionConfig`/`GlobalConfig` via
+ * still typed against the reference engine's `CollectionConfig`/`GlobalConfig` via
  * `@/engine`) are passed in as plain data at runtime and read structurally -
  * the same accommodation `./access.ts`'s `AccessFn`/`req: any` already proved
  * out for `Access`/`FieldAccess` functions; see `ReadFieldConfig`'s doc
@@ -31,7 +31,7 @@
  * without modification.
  *
  * ---------------------------------------------------------------------------
- * GROUND TRUTH, confirmed by reading real Payload 3.88.0 source directly
+ * GROUND TRUTH, confirmed by reading the reference engine 3.88.0 source directly
  * ---------------------------------------------------------------------------
  *
  * 1. `overrideAccess` defaults to `true` in the LOCAL API, not `false`.
@@ -40,8 +40,8 @@
  *    destructures `overrideAccess = true` from the caller's options before
  *    calling its own operation function. This is why `src/hooks/
  *    checkEventCapacity.ts` (this app's own hook, unmodified) can call
- *    `req.payload.findByID({ id, collection: 'events', req })` and
- *    `req.payload.find({ collection: 'event-rsvps', where, limit: 0, req })`
+ *    `req.engine.findByID({ id, collection: 'events', req })` and
+ *    `req.engine.find({ collection: 'event-rsvps', where, limit: 0, req })`
  *    with NO `overrideAccess` at all and still read every row regardless of
  *    `adminOrPublishedStatus` - it is relying on this default, not on an
  *    explicit flag the task brief's shorthand summary implied it passed. This
@@ -68,7 +68,7 @@
  *    `disableErrors`, a denied `find`/`findByID`/`count`/`findGlobal` call
  *    THROWS (`Forbidden` for a collection, same class here since findOne's own
  *    `NotFound`-throwing branch is genuinely unreachable dead code in real
- *    Payload for the same reason - see `findGlobal`'s doc comment) exactly
+ *    The original engine for the same reason - see `findGlobal`'s doc comment) exactly
  *    like every other access-controlled operation; passing `disableErrors:
  *    true` is what turns that into an empty/`null` result. This module
  *    exposes `disableErrors` as a caller option (default `false`) rather than
@@ -78,7 +78,7 @@
  *    regardless of the outer call's own setting - confirmed in
  *    `collections/dataloader.js`'s `batchAndLoadDocs`, which is what every
  *    relationship/upload/join field's population resolves through: `await
- *    payload.find({ ..., disableErrors: true, overrideAccess: Boolean(
+ *    engine.find({ ..., disableErrors: true, overrideAccess: Boolean(
  *    overrideAccess), pagination: false, ... })`. A related document that
  *    can't be read (deleted, or genuinely access-denied) never throws and
  *    aborts the outer read - it just leaves the raw id in place (see
@@ -144,11 +144,11 @@ import { runFieldHook } from './hooks'
 /* Types                                                                       */
 /* -------------------------------------------------------------------------- */
 
-/** Real Payload's `Sort` (`config/types.d.ts`) is `string | string[]` - a bare field name sorts ascending, a `-`-prefixed one descending. Re-declared here (not imported) for the same zero-`payload`-dependency reason as everything else in this file. */
+/** The reference engine's `Sort` (`config/types.d.ts`) is `string | string[]` - a bare field name sorts ascending, a `-`-prefixed one descending. Re-declared here (not imported) for the same zero-`engine`-dependency reason as everything else in this file. */
 export type Sort = string | string[]
 
 /**
- * The subset of a real Payload `Field`'s shape this module's generic field
+ * The subset of a the reference engine `Field`'s shape this module's generic field
  * traversal (`traverseFields`) needs, trimmed to exactly what this app's
  * fields use (per `./validators.ts`'s own confirmed field-type inventory,
  * plus `group`/`row` - the two pure-layout/structural types that inventory
@@ -165,9 +165,9 @@ export type Sort = string | string[]
  * types, both handled by `traverseField`'s `case 'group'`/`case 'row'`.
  *
  * Every property is optional and loosely typed (`unknown`-flavoured where a
- * real Payload field's own type would be a big discriminated union) so that
+ * the reference engine field's own type would be a big discriminated union) so that
  * this app's REAL `Field[]` arrays (`Events.fields`, `PaymentSettings.fields`,
- * ...; still typed against Payload's real `Field` via `@/engine`, entirely
+ * ...; still typed against the original engine's real `Field` via `@/engine`, entirely
  * unmodified) are structurally assignable to `ReadFieldConfig[]` without any
  * cast at the registry boundary - the same reasoning `./access.ts`'s
  * `AccessFn`/`req: any` doc comment already worked through for `Access`/
@@ -191,7 +191,7 @@ export type ReadFieldConfig = {
    * `args: any`, not `args: AfterReadFieldHookArgs` - deliberately, for the
    * exact reason `./access.ts`'s `AccessFn`/`FieldAccessFn` type their own
    * `req` as `any` rather than a rich shape (see that module's doc comment
-   * on `AccessFn`): real Payload's own `FieldHook`'s args type
+   * on `AccessFn`): the reference engine's own `FieldHook`'s args type
    * (`FieldHookArgs`) requires a CONCRETE, non-optional `collection:
    * SanitizedCollectionConfig` - checked directly with `tsc` against this
    * app's real `strict`/`strictFunctionTypes` settings, a hook typed with
@@ -199,11 +199,11 @@ export type ReadFieldConfig = {
    * `unknown`, from `./hooks.ts`'s `FieldHookArgsBase`) fails function-
    * parameter contravariance against it ("Type '{}' is missing ... from type
    * 'SanitizedCollectionConfig'"), which would make every one of this app's
-   * REAL field configs (`Field[]`, still typed against Payload's real
+   * REAL field configs (`Field[]`, still typed against the original engine's real
    * `Field` via `@/engine`) fail to structurally satisfy `ReadFieldConfig`
    * at the registry boundary - exactly the assignability `ReadFieldConfig`'s
    * own doc comment promises. `any` is the only type that clears that bar
-   * without reproducing Payload-internal types this module has no business
+   * without reproducing the original engine-internal types this module has no business
    * knowing about, same conclusion `AccessFn` already reached. The actual
    * object this module calls a hook with (`traverseField`) is still built to
    * `./hooks.ts`'s real `AfterReadFieldHookArgs` shape - only the STATIC
@@ -212,7 +212,7 @@ export type ReadFieldConfig = {
   hooks?: { afterRead?: Array<(args: any) => unknown> } // eslint-disable-line @typescript-eslint/no-explicit-any -- see doc comment above
 }
 
-/** The subset of a real Payload `CollectionConfig`/`GlobalConfig` this module needs: its own `slug`, `fields`, and `access.read` - loose for the same reason as `ReadFieldConfig`. */
+/** The subset of a the reference engine `CollectionConfig`/`GlobalConfig` this module needs: its own `slug`, `fields`, and `access.read` - loose for the same reason as `ReadFieldConfig`. */
 export type ReadEntityConfig = {
   slug: string
   fields: ReadFieldConfig[]
@@ -224,17 +224,16 @@ export type ReadEntityConfig = {
    *
    * Root cause (corrected 2026-09-26 after live debugging - an earlier
    * version of this comment guessed wrong): `entry.config.fields` for
-   * `users` DOES already carry real Payload's sanitizer-injected implicit
+   * `users` DOES already carry the reference engine's sanitizer-injected implicit
    * fields at read time (confirmed live: `loginAttempts`'s real
    * `defaultValue: 0` was observably re-populating it via `traverseField`'s
    * own defaultValue-backfill step - see `stripAuthFields`'s two call sites'
    * comments for why the strip must run AFTER `traverseFields`, not before).
    * The actual gap is that `salt`/`hash`/`resetPasswordToken`/
    * `resetPasswordExpiration`/`loginAttempts`/`lockUntil` DON'T declare an
-   * `access.read` at all in real Payload (`payload/dist/auth/baseFields/
-   * {auth,accountLock}.js`, read directly - their `access` only blocks
+   * `access.read` at all in the reference engine (the vendor source, read directly - their `access` only blocks
    * `create`/`update`; read is deliberately left unrestricted at the field
-   * level). Real Payload instead relies on `hidden: true` on each of these
+   * level). The reference engine instead relies on `hidden: true` on each of these
    * fields to strip them from every API response - a completely different
    * mechanism than field-level access, and one `traverseField` (line ~507)
    * never implements at all (it only ever checks `field.access?.read`, never
@@ -250,7 +249,7 @@ export type ReadEntityConfig = {
  * The fixed set this function strips for any `auth: true` collection - see
  * `ReadEntityConfig.auth`'s doc comment for the real root cause (missing
  * `field.hidden` support, not a missing-field-declaration problem). `sessions`
- * has real Payload's own field-level `access.read: self-only`, not `hidden`,
+ * has the reference engine's own field-level `access.read: self-only`, not `hidden`,
  * but this app already established a stricter outcome for it
  * (`src/localapi/auth.ts`'s `AuthUserDoc` omits `sessions` unconditionally
  * for the login/`me` response, "a caller never sees a hash/salt/session/
@@ -258,7 +257,7 @@ export type ReadEntityConfig = {
  * that already-declared intent rather than introducing a new partial
  * self-only exposure. `twoFactorSecret`/`twoFactorConfirmedAt`/
  * `twoFactorLastUsedStep` are this app's own custom 2FA feature (`src/
- * features/security/twoFactor.ts`), not real Payload core, but a raw TOTP
+ * features/security/twoFactor.ts`), not the reference engine core, but a raw TOTP
  * secret has no business in a generic REST response either - stripped for
  * the same reason. `twoFactorEnabled` is left in: a plain boolean status
  * flag, not sensitive, and no code currently reads it via this generic path
@@ -284,10 +283,10 @@ function stripAuthFields(config: ReadEntityConfig, doc: Record<string, unknown>)
 }
 
 /**
- * Stands in for real Payload's `NotFound` (`payload/dist/errors/NotFound.js`)
+ * Stands in for the reference engine's `NotFound` (the vendor source)
  * for the ONE place this module needs it - see `findByIDInternal`'s doc
  * comment. Kept distinct from `./access.ts`'s `Forbidden` (a different real
- * error class in real Payload too) even though both currently carry a fixed
+ * error class in the reference engine too) even though both currently carry a fixed
  * English message for the same reason `Forbidden` does - no second admin-UI
  * locale configured (see that class's own doc comment).
  */
@@ -300,7 +299,7 @@ export class NotFound extends Error {
 
 export type Doc = Record<string, unknown> & { id: number }
 
-/** Real Payload's `PaginatedDocs<T>` (`database/types.d.ts`) - every field this app's own `.find({...})` call sites are confirmed (by grep) to actually destructure off a result, plus the handful more that cost nothing to include for parity. */
+/** The reference engine's `PaginatedDocs<T>` (`database/types.d.ts`) - every field this app's own `.find({...})` call sites are confirmed (by grep) to actually destructure off a result, plus the handful more that cost nothing to include for parity. */
 export type PaginatedDocs<T = Doc> = {
   docs: T[]
   totalDocs: number
@@ -344,7 +343,7 @@ export type ReadRegistry = {
   globals: Record<string, GlobalReadEntry>
 }
 
-/** Real Payload's own hardcoded defaults (`config/defaults.js`: `defaultDepth: 2`, `maxDepth: 10`) - this app's `engage.config.ts` never overrides either (confirmed by grep), so both apply unmodified here. */
+/** The reference engine's own hardcoded defaults (`config/defaults.js`: `defaultDepth: 2`, `maxDepth: 10`) - this app's `engage.config.ts` never overrides either (confirmed by grep), so both apply unmodified here. */
 const DEFAULT_DEPTH = 2
 const MAX_DEPTH = 10
 
@@ -445,7 +444,7 @@ type TraverseCtx = {
   registry: ReadRegistry
   /**
    * Memoizes one call's population fetches by `"<slug>:<id>"`, NOT real
-   * Payload's per-request `dataloader` (which batches every id needing
+   * The original engine's per-request `dataloader` (which batches every id needing
    * population within one (collection, depth, ...) combination into a
    * single extra `find`, see the file header's point 3) - this is a plain
    * per-id result cache, so populating the SAME related document from two
@@ -456,7 +455,7 @@ type TraverseCtx = {
    * leaving it as a raw, unpopulated id. Cycle safety (A relates to B
    * relates back to A) needs no separate guard: `currentDepth <= depth`
    * already bounds every recursive `populateOne` call, so a cycle simply
-   * stops populating once `depth` is exhausted, the same way real Payload's
+   * stops populating once `depth` is exhausted, the same way the reference engine's
    * own `depth` bound does.
    */
   populateCache: Map<string, Promise<unknown>>
@@ -464,8 +463,8 @@ type TraverseCtx = {
 
 /**
  * Populates one relationship/upload/join value - the from-scratch, deliberately
- * SCOPED counterpart to real Payload's `relationshipPopulationPromise.js` +
- * `collections/dataloader.js`. Real Payload batches every id needing
+ * SCOPED counterpart to the reference engine's `relationshipPopulationPromise.js` +
+ * `collections/dataloader.js`. The reference engine batches every id needing
  * population in one request into one extra `find` per (collection, depth,
  * ...) combination via a dataloader; this recurses through this module's own
  * `findByIDInternal` per id instead - correct, not batched. Scoped to what
@@ -475,12 +474,12 @@ type TraverseCtx = {
  * from a stored `{ relationTo, value }` shape.
  *
  * `disableErrors: true` is HARDCODED here regardless of the outer call's own
- * setting - see the file header's point 3 for why that is real Payload
+ * setting - see the file header's point 3 for why that is the reference engine
  * behaviour, not a shortcut. A target collection missing from the caller's
  * `registry` (this module has no fixed collection inventory - see
  * `ReadRegistry`'s doc comment), a not-found id, or a genuinely
  * access-denied related document all fall back to the raw id/doc-reference
- * unchanged, matching real Payload's own "ids are visible regardless of
+ * unchanged, matching the reference engine's own "ids are visible regardless of
  * access controls" fallback.
  */
 async function populateOne(targetSlug: string, idOrDoc: unknown, ctx: TraverseCtx): Promise<unknown> {
@@ -522,7 +521,7 @@ async function populateOne(targetSlug: string, idOrDoc: unknown, ctx: TraverseCt
  *      the field from `siblingData` on a `false` result. Returns immediately
  *      after (nothing left to populate/recurse into on a deleted field).
  *   4. `defaultValue` backfill when still `undefined` after the above (real
- *      Payload's own "Set defaultValue on the field for globals being
+ *      The original engine's own "Set defaultValue on the field for globals being
  *      returned without being first created" step) - function defaults are
  *      out of scope, same as `src/cms/db/generic.ts`'s own create-path
  *      handling (a function default is a per-request computed value, a
@@ -656,14 +655,14 @@ async function traverseFields(fields: ReadFieldConfig[], siblingData: Record<str
 
 /**
  * Shared by the public `findByID` and `populateOne` (population is, in real
- * Payload, exactly a nested `find`/`findByID` call - see the file header's
+ * The original engine, exactly a nested `find`/`findByID` call - see the file header's
  * point 3). Real step order (`collections/operations/findByID.js`,
  * confirmed):
  *
  *   1. `overrideAccess ? true : executeAccess(accessFn, { req, id, disableErrors })`.
  *   2. `accessResult === false` -> return `null` (only reachable with
  *      `disableErrors: true` - see the file header's point 2).
- *   3. `combineQueries({ id: { equals: id } }, accessResult)` - real Payload
+ *   3. `combineQueries({ id: { equals: id } }, accessResult)` - the reference engine
  *      pushes this INTO the database query. This module's registry `findByID`
  *      takes a bare `id` with no `where` to push a merge into (see
  *      `matchesWhere`'s doc comment for why), so instead: fetch by `id` first,
@@ -684,10 +683,10 @@ async function findByIDInternal(entry: CollectionReadEntry, id: number, ctx: Omi
   // (not assumed): `if (!docFromDB && !args.data) { if (!disableErrors) {
   // throw new NotFound(req.t) } return null }`. This fires whether the doc
   // is missing because the id genuinely doesn't exist OR because the
-  // access-merged `where` filtered it out - real Payload does not
+  // access-merged `where` filtered it out - the reference engine does not
   // distinguish "wrong id" from "exists but you can't see it", both throw
   // `NotFound` by default. This is easy to miss (most read APIs return
-  // `null` for a missing document) but is what real Payload's own Local API
+  // `null` for a missing document) but is what the reference engine's own Local API
   // does for a plain, unqualified `findByID` call with no `disableErrors` -
   // only `disableErrors: true` turns it into a `null` return, same switch as
   // the access-denial case above.
@@ -700,7 +699,7 @@ async function findByIDInternal(entry: CollectionReadEntry, id: number, ctx: Omi
   await traverseFields(entry.config.fields, doc, doc, { ...ctx, findMany: false })
   // Runs AFTER traverseFields, not before (see `stripAuthFields`'s doc
   // comment) - the implicit `loginAttempts` field carries a real
-  // `defaultValue: 0` (`payload/dist/auth/baseFields/accountLock.js`), so an
+  // `defaultValue: 0` (the vendor source), so an
   // earlier attempt that stripped before `traverseFields` had it silently
   // reintroduced by the very next line's defaultValue-backfill step.
   // Stripping last guarantees nothing added during traversal survives.
@@ -741,10 +740,10 @@ export async function find(registry: ReadRegistry, collection: string, args: Fin
   if (!overrideAccess) {
     accessResult = await executeAccess(entry.config.access?.read, { req, disableErrors })
     if (accessResult === false) {
-      // Exact shape of real Payload's own denied-with-disableErrors empty
+      // Exact shape of the reference engine's own denied-with-disableErrors empty
       // result (find.js:53-63) - including `limit` echoing the caller's own
       // RAW `limit` argument (possibly `undefined`), not a sanitized default;
-      // that is genuinely what real Payload returns here, not an oversight.
+      // that is genuinely what the reference engine returns here, not an oversight.
       return {
         docs: [],
         hasNextPage: false,
@@ -826,7 +825,7 @@ export async function count(registry: ReadRegistry, collection: string, args: Co
  * Mirrors `globals/operations/findOne.js` (confirmed by reading it directly):
  * same access shape as `findByID` but with no `id` (a global has no
  * "which one" - `AccessArgs` for a global read never carries one, matching
- * real Payload's own `globalConfig.access.read` signature, which is why
+ * the reference engine's own `globalConfig.access.read` signature, which is why
  * `./access.ts`'s `executeAccess` call below omits `id` entirely). A denied
  * access with `disableErrors: true` returns `null` - the real code ALSO has
  * an `if (!disableErrors) throw new NotFound(req.t)` branch immediately
@@ -839,7 +838,7 @@ export async function count(registry: ReadRegistry, collection: string, args: Co
  *
  * No `Where`-merge: `src/cms/db/generic.ts`'s `createGlobalOps.find()` takes
  * no `where` parameter at all (a global is always exactly one row, `SELECT *
- * ... LIMIT 1`, real Payload's own real adapter confirmed to do the same -
+ * ... LIMIT 1`, the reference engine's own real adapter confirmed to do the same -
  * see that file's Phase 18 note), and every one of this app's 17 real
  * globals is confirmed (by grep, `./access.ts`'s own investigation and a
  * fresh check here) to use a boolean-only read access function (`() => true`
@@ -850,7 +849,7 @@ export async function count(registry: ReadRegistry, collection: string, args: Co
  *
  * When no row has ever been written for this global yet, `entry.find()`
  * returns `null` (no default-populated stand-in row) - this module returns
- * `{}` in that case, matching real Payload's own `docFromDB ?? {}`
+ * `{}` in that case, matching the reference engine's own `docFromDB ?? {}`
  * fallback, then runs the SAME field traversal over it so any field
  * `defaultValue`s still get filled in (see `traverseField`'s doc comment).
  */

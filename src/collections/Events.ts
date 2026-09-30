@@ -14,7 +14,7 @@ export const Events: CollectionConfig = {
     defaultColumns: ['title', 'startDate', 'eventType', '_status'],
     group: 'Content',
     // List/calendar toggle - see the component for why this needs its own
-    // direct payload.find() for calendar mode rather than reusing the list
+    // direct engine.find() for calendar mode rather than reusing the list
     // route's own paginated `data`.
     components: {
       views: {

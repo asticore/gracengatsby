@@ -13,7 +13,7 @@ import { seedHomeAndTemplates } from '@/seed/seedHomeAndTemplates'
 // safe to run against a database that already has a homepage and/or
 // templates (it just skips).
 
-export async function up({ payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ engine }: MigrateUpArgs): Promise<void> {
   // Deliberately non-fatal.
   //
   // This step seeds through the CMS engine's local API, and the local API always
@@ -29,8 +29,8 @@ export async function up({ payload: engine }: MigrateUpArgs): Promise<void> {
   // current. So a failure here is logged and stepped over rather than allowed
   // to break the chain that later migrations depend on.
   try {
-    // This migration runs only through the CLI's real `payload migrate` (see
-    // this file's header) - `engine` here is always the real vendor Payload
+    // This migration runs only through the CLI's real `engine migrate` (see
+    // this file's header) - `engine` here is always the real vendor the original engine
     // instance (from `MigrateUpArgs`, unaffected by Stage 6e), while
     // `seedHomeAndTemplates` is typed against this app's own `Engine` since
     // its OTHER caller (`/api/internal-seed`) uses `getEngine()` post-cutover.
@@ -47,7 +47,7 @@ export async function up({ payload: engine }: MigrateUpArgs): Promise<void> {
   }
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // Intentionally a no-op: this migration only seeds convenience starter
   // content. Rolling it back would delete a real, possibly-edited Home page
   // and templates, which is far more destructive than leaving them in place.

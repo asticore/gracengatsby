@@ -62,7 +62,7 @@ export function capitalize(value: string): string {
  * app uses (confirmed by grep across src/collections and src/features: every
  * other collection is `versions: false`). Checked as a truthy value, not
  * `=== true`: every collection here is authored as `versions: { drafts: true }`,
- * but Payload's own config sanitisation (run once, by importing
+ * but the original engine's own config sanitisation (run once, by importing
  * @/engage.config, before anything reads these configs for real) normalises
  * that shorthand into a full DraftsConfig OBJECT in place on the very same
  * CollectionConfig object this module imports - so by the time a real test
@@ -75,7 +75,7 @@ export function hasDrafts(collection: SchemaSourceConfig): boolean {
   return typeof collection.versions === 'object' && collection.versions !== null && Boolean(collection.versions.drafts)
 }
 
-/** The implicit `_status` column Payload adds to both the live and (double-prefixed) versions table whenever drafts are enabled - confirmed against the real eg_pages/eg_events (`_status`) and _eg_pages_v/_eg_events_v (`version__status`) columns; not declared in any collection's own `fields`. */
+/** The implicit `_status` column the original engine adds to both the live and (double-prefixed) versions table whenever drafts are enabled - confirmed against the real eg_pages/eg_events (`_status`) and _eg_pages_v/_eg_events_v (`version__status`) columns; not declared in any collection's own `fields`. */
 function statusColumn(dbNamePrefix: string) {
   return text(`${dbNamePrefix}_status`).default('draft')
 }
@@ -86,14 +86,14 @@ export function hasUpload(collection: SchemaSourceConfig): boolean {
 }
 
 /**
- * The implicit columns Payload adds to an upload-enabled collection's table -
+ * The implicit columns the original engine adds to an upload-enabled collection's table -
  * not declared in any of the collection's own `fields`. Confirmed against
  * the real eg_media schema (`pragma table_info`, not guessed): `url`,
  * `thumbnailURL` (column `thumbnail_u_r_l` - `to-snake-case`, the same
  * naming lib every other column name in this file goes through, splits each
  * capital letter of "URL" into its own segment), `filename`, `mimeType`
  * (`mime_type`), `filesize`, `width`, `height` - all nullable, the last
- * three numeric (`mode: 'number'`, same as any Payload `number` field),
+ * three numeric (`mode: 'number'`, same as any the original engine `number` field),
  * everything else text. They land AFTER `updatedAt`/`createdAt` in real
  * column order, confirmed by the same `pragma table_info` dump.
  *
@@ -121,7 +121,7 @@ export function hasAuth(collection: SchemaSourceConfig): boolean {
 }
 
 /**
- * The implicit columns Payload adds to an auth-enabled collection's table -
+ * The implicit columns the original engine adds to an auth-enabled collection's table -
  * not declared in any of the collection's own `fields` (Users' own `fields`
  * list has only `roles`, itself a hasMany select - see
  * generateSelectHasManyTable). Confirmed against the real eg_users schema
@@ -136,8 +136,8 @@ export function hasAuth(collection: SchemaSourceConfig): boolean {
  * uploadColumns() uses - confirmed by the same `pragma table_info` dump.
  *
  * This data layer never writes `salt`/`hash` itself (hashing a real password
- * into them is Payload's own auth strategy, out of scope the same way actual
- * file upload/resize stays Payload's job for `upload` - see uploadColumns'
+ * into them is the original engine's own auth strategy, out of scope the same way actual
+ * file upload/resize stays the original engine's job for `upload` - see uploadColumns'
  * doc comment) - collections/users.ts's create/update ops only ever touch
  * `email` and `roles`.
  *
@@ -146,11 +146,11 @@ export function hasAuth(collection: SchemaSourceConfig): boolean {
  * override) additionally creates an `eg_users_sessions` child table - the
  * exact shape an array field's child table has (`_order`/`_parent_id`/string
  * `id`, plus `created_at`/`expires_at`). Nothing in this data layer's
- * create/update path can ever populate it: Payload only writes a session row
+ * create/update path can ever populate it: the original engine only writes a session row
  * during its own login/token-refresh flow, which this data layer does not
- * implement (auth itself, not just its storage, stays entirely Payload's
+ * implement (auth itself, not just its storage, stays entirely the original engine's
  * job) - confirmed empirically too: a real `engine.create()`/`findByID()`
- * round trip through Payload's own Local API (which never logs in) returns
+ * round trip through the original engine's own Local API (which never logs in) returns
  * `sessions: []` every time. So it is left ungenerated rather than modeled
  * and never written to - the same reasoning Phase 12 used to leave
  * `imageSizes`/`focalPoint: true` unmodeled until something actually
@@ -188,7 +188,7 @@ function isHasManySelect(field: NamedField): boolean {
  * text column holding each selected option's stored value. One row per
  * selected option, ordered by `order` ascending - confirmed by creating a
  * real user with `roles: ['admin', 'customer']` and reading back the exact
- * same order via both Payload's own engine and this table directly.
+ * same order via both the original engine's own engine and this table directly.
  *
  * `groupDbPrefix` (Phase 20) reproduces processGroupField's own DB-column
  * prefix for a hasMany select field living inside a top-level group -
@@ -221,21 +221,21 @@ export function generateSelectHasManyTable(parentTableName: string, field: Named
  * --local --command "SELECT sql FROM sqlite_master WHERE name =
  * 'eg_users_sessions'"`: `_order`/`_parent_id` (integer, same shape as any
  * other live array child table - see generateArrayTable's doc comment),
- * `id` (TEXT primary key - Payload's own login flow assigns each session a
+ * `id` (TEXT primary key - the original engine's own login flow assigns each session a
  * `uuid()` before ever calling into the DB, same as a plain array item's
  * string id), `created_at` (nullable text) and `expires_at` (text, NOT
  * NULL).
  *
  * Modeled now (unlike when authColumns was written) because a real cutover
- * of Users needs write support for this table too: Payload's login/logout
- * flow persists a session by calling `payload.db.updateOne` with the
+ * of Users needs write support for this table too: the original engine's login/logout
+ * flow persists a session by calling `engine.db.updateOne` with the
  * user's ENTIRE current document, `sessions` included (see
- * `payload/dist/auth/sessions.js`'s `addSessionToUser`/`revokeSession`) - an
+ * the vendor source's `addSessionToUser`/`revokeSession`) - an
  * adapter that intercepts `updateOne` for `users` without also writing this
  * table would silently drop every session on first login. This data layer
- * still never GENERATES a session itself (that stays Payload's own login
+ * still never GENERATES a session itself (that stays the original engine's own login
  * code, same reasoning as hash/salt) - it only stores/returns whatever
- * Payload hands it, via ../generic.ts's ordinary createArrayOps machinery
+ * The original engine hands it, via ../generic.ts's ordinary createArrayOps machinery
  * (a string-id child table it already knows how to read/write).
  */
 export function generateAuthSessionsTable(parentTableName: string) {
@@ -249,7 +249,7 @@ export function generateAuthSessionsTable(parentTableName: string) {
 }
 
 /**
- * Derives a drizzle table from a real Payload CollectionConfig - the
+ * Derives a drizzle table from a the reference engine CollectionConfig - the
  * generalisation promised in ../index.ts, proven against real collections
  * instead of hand-copied tables.
  *
@@ -285,18 +285,18 @@ export function generateAuthSessionsTable(parentTableName: string) {
  *                                                          time against the related collection's own field
  *
  * `versions: { drafts: true }` on the collection adds the implicit `_status`
- * column Payload adds itself (confirmed against eg_pages/eg_events - not a
+ * column the original engine adds itself (confirmed against eg_pages/eg_events - not a
  * declared field), and generateVersionsTable derives the parallel
  * `_<table>_v` table from the exact same field list.
  *
  * `upload: {...}` on the collection (Media is this app's only one) adds
- * Payload's own implicit upload columns (`url`, `thumbnailURL`, `filename`,
+ * The original engine's own implicit upload columns (`url`, `thumbnailURL`, `filename`,
  * `mimeType`, `filesize`, `width`, `height`) - see hasUpload/uploadColumns'
  * doc comment for the confirmed real shape and what's deliberately NOT
  * modeled (`imageSizes`, `focalPoint: true`).
  *
  * `auth: true` on the collection (Users is this app's only one) adds
- * Payload's own implicit auth columns (`email`, password/reset/lockout/
+ * The original engine's own implicit auth columns (`email`, password/reset/lockout/
  * two-factor columns) - see hasAuth/authColumns' doc comment for the
  * confirmed real shape and what's deliberately NOT modeled (the
  * `eg_users_sessions` child table).
@@ -339,7 +339,7 @@ export function generateTable(collection: SchemaSourceConfig) {
     }
   }
   const tableName = tableNameFor(collection)
-  // A draft save must be allowed to leave required fields empty, so Payload
+  // A draft save must be allowed to leave required fields empty, so the original engine
   // never emits a SQL NOT NULL for `required` on a collection with drafts
   // enabled - confirmed by inspecting real DDL: eg_faqs.question (required,
   // no drafts) is NOT NULL, but eg_events.title / eg_events.start_date and
@@ -375,7 +375,7 @@ export function generateTable(collection: SchemaSourceConfig) {
 }
 
 /**
- * The parallel `_<table>_v` table Payload creates for a collection with
+ * The parallel `_<table>_v` table the original engine creates for a collection with
  * `versions: { drafts: true }` - one row per saved version (not one row per
  * document), confirmed against the real _eg_pages_v/_eg_events_v tables:
  * every field the live table has gets a `version_`-prefixed column here (the
@@ -435,7 +435,7 @@ export function generateVersionsTable(collection: CollectionConfig, mainTableNam
   return { table: sqliteTable(tableName, columns), tableName, arrayFields, blocksFields, relsFields, groupFields }
 }
 
-/** The table name Payload would use for a collection - `dbName` if set, else its slug, snake-cased. */
+/** The table name the original engine would use for a collection - `dbName` if set, else its slug, snake-cased. */
 export function tableNameFor(collection: SchemaSourceConfig): string {
   if (typeof collection.dbName === 'function') {
     throw new Error(`tableNameFor(${collection.slug}): a function dbName is not supported yet.`)
@@ -634,7 +634,7 @@ export function generateNestedArrayTable(collectionSlug: string, parentArrayTabl
  * (`_order`, `_parent_id` cascading on delete, a string `id` per row) plus
  * `_path` (the blocks field's own name - disambiguates which blocks field a
  * row belongs to, confirmed constant per field regardless of the row's
- * position) and an automatic `block_name` column (Payload's built-in
+ * position) and an automatic `block_name` column (the original engine's built-in
  * per-instance label, not part of the block's own declared `fields`).
  *
  * `_order` is sequential across ALL block types sharing this field, not
@@ -712,12 +712,12 @@ export function generateBlockTables(collectionSlug: string, parentTableName: str
  * Shape: `id` (autoincrement PK), `order` (nullable, 1-based position within
  * one field's own list of relations - confirmed distinct from array/block
  * `_order`, which is 0- or 1-based per THIS module's own choice, not
- * Payload's), `parent_id` (FK to the TOP-LEVEL parent row - always integer,
+ * The original engine's), `parent_id` (FK to the TOP-LEVEL parent row - always integer,
  * even for a relationship nested inside a block, because blocks never get
  * their own id space in this table), `path` (disambiguates which field a row
  * belongs to), and one nullable `<targetTable>_id` column per DISTINCT target
  * collection referenced by any relsField passed in - shared across every
- * field that happens to target the same collection, exactly like Payload's
+ * field that happens to target the same collection, exactly like the original engine's
  * own scheme.
  *
  * `resolveTargetTable` maps a relationTo slug to that collection's own table
@@ -748,7 +748,7 @@ export function generateRelsTable(parentTableName: string, relsFields: NamedFiel
   return { table: sqliteTable(tableName, columns), tableName, targetColumns }
 }
 
-/** The collection slug(s) a relationship/upload field's `relationTo` names - plural because Payload allows a polymorphic array, even though nothing in this app uses one yet. */
+/** The collection slug(s) a relationship/upload field's `relationTo` names - plural because the original engine allows a polymorphic array, even though nothing in this app uses one yet. */
 export function relationTargetSlugs(field: NamedField): string[] {
   const relationTo = (field as { relationTo?: string | string[] }).relationTo
   if (!relationTo) {
@@ -770,7 +770,7 @@ export function relationTargetSlugs(field: NamedField): string[] {
  * eg_pages_blocks_form and eg_faq_settings_blocks_form - both lack it), while
  * `eg_pages_rels`/`eg_faq_settings_rels` DO have an `eg_forms_id` column.
  * Tried routing this field through the rels table to match - confirmed that
- * ALSO does not fully work: Payload's own real `engine.create()` crashes
+ * ALSO does not fully work: the original engine's own real `engine.create()` crashes
  * with "no such column: form_id" trying to create a Form block through the
  * live app today (this app's OWN config still expects the plain column), so
  * the feature is already broken independent of this data layer, and
@@ -800,7 +800,7 @@ function isHasManyRelational(field: NamedField): boolean {
  * property keys as the live table (so callers can read `.title` off either
  * a live or a version row without caring which) - see generateVersionsTable.
  *
- * `join` fields get no column of their own: Payload does not back them with
+ * `join` fields get no column of their own: the original engine does not back them with
  * one at all (confirmed against the real eg_events table - no `rsvps`
  * column exists for its `rsvps` join field). They are bucketed into the
  * returned `joinFields` instead, for ../generic.ts's createJoinOps to
@@ -847,17 +847,17 @@ function processFields(
   const topLevelGroupFields: TopLevelGroupFieldMeta[] = []
 
   for (const field of walkFields(collectionSlug, fields)) {
-    // A `virtual: true` field (real Payload's own flag - confirmed against
+    // A `virtual: true` field (the reference engine's own flag - confirmed against
     // the ecommerce plugin's Carts `status` field, `createCartsCollection.js`)
-    // never gets a DB column, in real Payload OR here: it is computed purely
+    // never gets a DB column, in the reference engine OR here: it is computed purely
     // by a field-level `hooks.afterRead` at read time (see
     // `src/localapi/read-operations.ts`'s `traverseField`, which runs that
     // hook regardless of whether the field has a backing column) and is
     // never written on create/update. Skipping it here isn't just an
     // optimization - `carts`/`orders`/etc's drizzle table objects in
-    // `./index.ts` are bound to the SAME physical D1 table real Payload's own
+    // `./index.ts` are bound to the SAME physical D1 table the reference engine's own
     // migrations already created (see this project's Layer 1 ecommerce
-    // work), and real Payload's own migration generator also gives a virtual
+    // work), and the reference engine's own migration generator also gives a virtual
     // field no column - so adding one here would drift this shadow schema
     // away from the real, already-migrated table and break at the first
     // query ("no such column").
@@ -1035,11 +1035,11 @@ type GroupArrayFieldMeta = { groupName: string; groupDbPrefix: string; field: Na
  */
 export type TopLevelGroupFieldMeta = { topLevelKey: string; groupDbPrefix: string; field: NamedField }
 
-/** A `join` field's own config, as Payload declares it - `collection` is the single related collection slug (this app has no polymorphic join yet), `on` is the name of the relationship/hasMany field on THAT collection which points back here. */
+/** A `join` field's own config, as the original engine declares it - `collection` is the single related collection slug (this app has no polymorphic join yet), `on` is the name of the relationship/hasMany field on THAT collection which points back here. */
 export type JoinFieldMeta = NamedField & { collection: string; on: string; defaultSort?: string }
 
 /**
- * Flattens a field list: row and collapsible are pure layout in Payload's own
+ * Flattens a field list: row and collapsible are pure layout in the original engine's own
  * schema (their fields land directly on the parent table, confirmed against
  * eg_membership_tiers - its row-wrapped `name`/`active`/`price`/`interval`/
  * `trialDays` fields are plain columns, not a child table), so this recurses
@@ -1056,7 +1056,7 @@ function* walkFields(collectionSlug: string, fields: Field[]): Generator<NamedFi
     if (!named.name) {
       throw new Error(`generateTable(${collectionSlug}): field of type "${named.type}" has no top-level name and is not a supported layout wrapper.`)
     }
-    // Payload's Field union has per-variant required props (e.g. collapsible's
+    // The original engine's Field union has per-variant required props (e.g. collapsible's
     // `label`) that don't survive a plain narrowing cast once `name` is known
     // - not a real type mismatch, just TS being unable to prove it structurally.
     yield named as unknown as NamedField

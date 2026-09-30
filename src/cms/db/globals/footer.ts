@@ -3,7 +3,7 @@ import { Footer } from '@/globals/Footer'
 import { createGlobalOps } from '../generic'
 import { footer, footerColumns, footerColumnsLinks, footerGroupFields, footerSocialsLinks } from '../schema'
 
-/** One `columns[].links[]` item, as Payload's own API returns it - `page` is a plain (non-hasMany, non-polymorphic) `relationship` field targeting `pages` (see header.ts's `HeaderLink` doc comment - same reasoning, this global also has no `_rels` table). `links` is an array nested directly in `columns`' own subfields, not wrapped in a further group - the same shape already proven for FieldGroups'/Forms' `options`. */
+/** One `columns[].links[]` item, as the original engine's own API returns it - `page` is a plain (non-hasMany, non-polymorphic) `relationship` field targeting `pages` (see header.ts's `HeaderLink` doc comment - same reasoning, this global also has no `_rels` table). `links` is an array nested directly in `columns`' own subfields, not wrapped in a further group - the same shape already proven for FieldGroups'/Forms' `options`. */
 export type FooterLink = {
   id: string
   label?: string | null
@@ -16,7 +16,7 @@ export type FooterColumn = { id: string; title?: string | null; links?: FooterLi
 
 export type FooterSocialLink = { id: string; platform?: string | null; url?: string | null }
 
-/** Payload's document shape for the `footer` global - see src/globals/Footer.ts. */
+/** The original engine's document shape for the `footer` global - see src/globals/Footer.ts. */
 export type FooterDoc = {
   id: number
   showLogo?: boolean | null

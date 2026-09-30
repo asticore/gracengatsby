@@ -32,7 +32,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   })
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // Intentionally a no-op. Rolling this back would drop every settings global
   // and the feature flags that decide which parts of the site are switched on.
   engine.logger.info('[migrate] Down is a no-op - settings schema is left in place.')

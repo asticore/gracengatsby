@@ -4,7 +4,7 @@ import { formatPriceInAUD } from '@/lib/formatCurrency'
  * `admin.components.Cell` stand-in for Products' `priceInAUD` column
  * (`../collections/Products.ts`) - see `@/admin/cellRegistry.ts`'s header for
  * why this is a plain function rather than a client component like real
- * Payload's own `PriceCell` (`@payloadcms/plugin-ecommerce`'s `ui/PriceCell`).
+ * The original engine's own `PriceCell` (`the vendor package`'s `ui/PriceCell`).
  *
  * Reuses the SAME `formatPriceInAUD` helper already used for this exact
  * field everywhere it's shown on the storefront (`ProductCard.tsx`,

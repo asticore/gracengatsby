@@ -149,7 +149,7 @@ const addColumn = async (db: Runner, table: string, column: string, type: string
   }
 }
 
-export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   for (const statement of [AB_TESTS, AB_TEST_VARIANTS, AB_TEST_GOALS, AB_EVENTS, AB_STATS]) {
     await db.run(sql.raw(statement))
   }
@@ -170,7 +170,7 @@ export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> 
   engine.logger.info('[migrate] eg_ab_tests, eg_ab_events and eg_ab_stats are present.')
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // No-op, matching the other migrations here. Dropping these tables on a
   // rollback would delete the measurements a test was run to collect, which is
   // the one thing that cannot be reconstructed afterwards - the visitors have

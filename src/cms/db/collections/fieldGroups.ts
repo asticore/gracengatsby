@@ -20,7 +20,7 @@ export type FieldGroupFieldRow = {
   defaultValue?: string | null
 }
 
-/** Payload's document shape for the `field-groups` collection - see src/collections/FieldGroups.ts. `targetCollections` is a hasMany select (the same mechanism Users' `roles` proved). */
+/** The original engine's document shape for the `field-groups` collection - see src/collections/FieldGroups.ts. `targetCollections` is a hasMany select (the same mechanism Users' `roles` proved). */
 export type FieldGroupDoc = {
   id: number
   name: string

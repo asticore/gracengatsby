@@ -1,7 +1,7 @@
 /**
  * Server-only admin component registry: whole-screen views and the sidebar
  * nav/chrome components `engage.config.ts`'s `admin.components.*` originally
- * pointed real Payload's generated importMap at.
+ * pointed the reference engine's generated importMap at.
  *
  * Deliberately separate from `./componentRegistry.ts` (field-level overrides
  * only) - see that file's own header for why: everything imported here

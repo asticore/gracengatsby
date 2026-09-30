@@ -1,7 +1,7 @@
 import { resolveSpeed, type ResolvedSpeed, type SpeedSettingsInput } from './types'
 
 /** The engine's auth cookie. Its presence is what "signed in" means here. */
-export const AUTH_COOKIE = 'payload-token'
+export const AUTH_COOKIE = 'engage-token'
 
 /** Never cached, whatever the settings say: admin, APIs, previews, auth flows. */
 const NEVER_CACHE = [/^\/admin(\/|$)/, /^\/api(\/|$)/, /^\/next(\/|$)/, /^\/my-route(\/|$)/]

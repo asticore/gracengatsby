@@ -1,23 +1,23 @@
 /**
- * Custom collection endpoints (payload-removal-plan.md: Stage 7 tail).
+ * Custom collection endpoints (the plan doc: Stage 7 tail).
  *
  * A collection's `endpoints: [{path, method, handler}]` config entry (this app
  * has two: `forms` -> `POST /:id/submit`, `form-submissions` -> `GET /export`)
- * used to be served only by real Payload's REST handler, reached through the
+ * used to be served only by the reference engine's REST handler, reached through the
  * fall-through in `src/app/(engage)/api/[...slug]/route.ts`. This module owns
  * that dispatch so the fall-through can go away.
  *
  * The handler receives the incoming `Request` itself (so `req.headers`,
  * `req.url`, `req.json()`, `req.formData()` behave exactly as before) with
- * four extra own-properties, matching the subset of real Payload's
- * `PayloadRequest` that this app's endpoints use: `user`, `payload` (the
+ * four extra own-properties, matching the subset of the reference engine's
+ * `EngineRequest` that this app's endpoints use: `user`, `engine` (the
  * engine), `routeParams` and `query`.
  *
- * Matching mirrors real Payload: collection endpoints are checked BEFORE the
+ * Matching mirrors the reference engine: collection endpoints are checked BEFORE the
  * generic CRUD routes (otherwise `GET /form-submissions/export` would be read
  * as `findByID('export')`), path segments starting with `:` capture a param.
  *
- * No `payload` import - the endpoint shape is declared locally.
+ * No `engine` import - the endpoint shape is declared locally.
  */
 import type { Engine } from './engine'
 import { readRegistry } from './registry'
@@ -79,7 +79,7 @@ export async function handleCustomCollectionEndpoint(
     })
     const req = Object.assign(request, {
       user,
-      payload: engine,
+      engine,
       routeParams: { collection: slug[0], ...routeParams },
       query,
     })

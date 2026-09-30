@@ -5,7 +5,7 @@ import { FormSubmissions } from '@/features/forms/collections/FormSubmissions'
 import { createCollectionOps } from '../generic'
 import { formSubmissions } from '../schema'
 
-/** Payload's document shape for the `form-submissions` collection - see src/features/forms/collections/FormSubmissions.ts. */
+/** The original engine's document shape for the `form-submissions` collection - see src/features/forms/collections/FormSubmissions.ts. */
 export type FormSubmissionDoc = {
   id: number
   form?: number | null

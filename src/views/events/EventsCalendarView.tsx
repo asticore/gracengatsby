@@ -15,7 +15,7 @@ interface EventsCalendarViewProps {
   data?: EventsListData
   hasCreatePermission?: boolean
   newDocumentURL?: string
-  payload?: Engine
+  engine?: Engine
   searchParams?: Record<string, string | string[] | undefined>
   user?: EngineRequest['user']
 }
@@ -64,27 +64,27 @@ function parseMonthParam(value: string | undefined): { year: number; month: numb
  * gallery/list toggle built for Media's admin list, per the same "don't
  * replace what's there, add an option" feedback). Registered via Events.ts's
  * `admin.components.views.list.Component`; before this, Events had no
- * admin.components.views override at all (100% stock Payload list/edit),
+ * admin.components.views override at all (100% stock the original engine list/edit),
  * and no calendar feature exists anywhere else in the app.
  *
- * List mode reuses Payload's own already-fetched `data` for the current
+ * List mode reuses the original engine's own already-fetched `data` for the current
  * page/sort/search - identical mechanism to MediaGalleryView's list mode
- * (sort/search links change the URL, Payload's own list-view route re-runs
- * `payload.find()` server-side with those params before this component
+ * (sort/search links change the URL, the original engine's own list-view route re-runs
+ * `engine.find()` server-side with those params before this component
  * re-renders), so it stays a plain server component with no client-side
  * query state.
  *
  * Calendar mode is different: it needs every event across a whole visible
  * month regardless of the list route's own page size, not a paginated
  * slice - so instead of relying on `data`, it runs its own direct
- * `payload.find()` scoped to the visible month's date range (with
+ * `engine.find()` scoped to the visible month's date range (with
  * `overrideAccess: false` so a non-admin viewer only ever sees what
  * `adminOrPublishedStatus` already allows them to see elsewhere, same as
  * the stock list would enforce).
  */
 export async function EventsCalendarView(props: EventsCalendarViewProps) {
-  const { collectionConfig, data, hasCreatePermission, newDocumentURL, payload, searchParams, user } = props
-  const adminRoute = payload?.config?.routes?.admin ?? '/admin'
+  const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams, user } = props
+  const adminRoute = engine?.config?.routes?.admin ?? '/admin'
   const slug = collectionConfig?.slug ?? 'events'
 
   const sp = searchParams ?? {}
@@ -160,8 +160,8 @@ export async function EventsCalendarView(props: EventsCalendarViewProps) {
     gridEnd.setUTCDate(gridEnd.getUTCDate() + trailingGap)
 
     const eventsByDay = new Map<string, Array<{ id: string; title: string; status?: string }>>()
-    if (payload) {
-      const result = await payload.find({
+    if (engine) {
+      const result = await engine.find({
         collection: slug as 'events',
         depth: 0,
         limit: 0,

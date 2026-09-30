@@ -1,5 +1,5 @@
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `Link`.
+ * From-scratch replacement for `the vendor package`'s `Link`.
  *
  * Every call site in this codebase (AdminNavClient.tsx, AdminNav.tsx) already
  * uses it exactly like next/link - href, className, id, prefetch, children -

@@ -5,12 +5,12 @@
  * CLIENT `fields/FieldRenderer.tsx`, which needs real interactivity to edit a
  * value), `ListView.tsx` is a server component with no interactivity in its
  * cells at all - a plain formatting function is enough, no need to ship a React
- * client component to the browser for read-only list display. Real Payload's
+ * client component to the browser for read-only list display. The reference engine's
  * own `admin.components.Cell` is a full client component (see e.g.
- * `@payloadcms/plugin-ecommerce`'s `PriceCell`, a `'use client'` component
+ * `the vendor package`'s `PriceCell`, a `'use client'` component
  * using `Intl.NumberFormat`); this is a deliberately simpler stand-in matching
  * this app's server-rendered list view - same simplification pattern as
- * `componentRegistry.ts` collapsing real Payload's `{path, clientProps}` object
+ * `componentRegistry.ts` collapsing the reference engine's `{path, clientProps}` object
  * shape down to a bare string identifier.
  *
  * Maps the SAME `'<module-path>#<ExportName>'` identifier convention used by

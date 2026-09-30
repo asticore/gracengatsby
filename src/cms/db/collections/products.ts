@@ -23,9 +23,9 @@ export type ProductBlock = {
 } & Record<string, unknown>
 
 /**
- * Payload's document shape for the `products` collection - see
+ * The original engine's document shape for the `products` collection - see
  * src/features/ecommerce/collections/Products.ts. `deletedAt` is modeled as
- * a plain passthrough column only (not full Payload `trash` CRUD policy -
+ * a plain passthrough column only (not full the original engine `trash` CRUD policy -
  * soft-delete-on-delete, default-exclude-trashed-on-find - which this Layer
  * 1 stage deliberately does not implement yet, same as Carts' `status`; see
  * this collection's own header comment). `deleteProduct` below is a genuine
@@ -111,7 +111,7 @@ export const createProductVersion = versionsOps.createVersion as unknown as (
 // Plain baseOps exports for engageD1Adapter's dispatch - same double-write
 // landmine and fix as events.ts's/pages.ts's own comment above their
 // equivalent blocks (see those, confirmed against
-// payload/dist/collections/operations/create.js:194-221).
+// engine/dist/collections/operations/create.js:194-221).
 export const findProductsPaginated = baseOps.findPaginated as unknown as (args?: {
   where?: Where
   sort?: Sort

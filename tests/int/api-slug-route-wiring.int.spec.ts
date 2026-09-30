@@ -1,5 +1,5 @@
 // Wiring test for src/app/(engage)/api/[...slug]/route.ts: the route is fully
-// Payload-free, so it only has to (1) try custom collection endpoints first,
+// vendor-free, so it only has to (1) try custom collection endpoints first,
 // (2) then the hand-written REST dispatcher, and (3) answer 404 for anything
 // neither recognises. The two dispatchers themselves are covered by
 // localapi-endpoints / localapi-rest specs; here they are mocked.
@@ -45,7 +45,7 @@ describe('api/[...slug] route wiring', () => {
     ['POST', POST],
     ['PATCH', PATCH],
     ['DELETE', DELETE],
-  ])('%s of an unknown route is a 404 in real Payload\'s wire format', async (_name, handler) => {
+  ])('%s of an unknown route is a 404 in the reference engine\'s wire format', async (_name, handler) => {
     const res = await handler(new Request('http://x/api/nope/1'), args(['nope', '1']))
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual({ message: 'Route not found "/api/nope/1"' })

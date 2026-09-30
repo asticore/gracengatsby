@@ -19,7 +19,6 @@
  * whose target name is taken is skipped rather than overwritten.
  */
 
-import { ENGINE_TABLE_RENAMES } from '@/migrations/schema/engineTables'
 import { TABLE_RENAMES } from '@/migrations/schema/tableRenames'
 
 import type { CleanupDb, IndexRecord } from './db'
@@ -41,7 +40,7 @@ export type IndexTidyReport = {
   errors: { statement: string; error: string }[]
 }
 
-const ALL_RENAMES = [...TABLE_RENAMES, ...ENGINE_TABLE_RENAMES]
+const ALL_RENAMES = TABLE_RENAMES
 
 /**
  * Rewrites the index name inside a `CREATE INDEX` statement, leaving the rest

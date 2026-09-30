@@ -5,7 +5,7 @@ import { isAdmin, isAuthenticated, isCustomer, isDocumentOwner } from '@/access/
 /**
  * SHADOW config for the ecommerce plugin's real `addresses` collection - see
  * ./Products.ts's header comment. Reproduced from `createAddressesCollection.js`
- * (`@payloadcms/plugin-ecommerce@3.88.0`, read directly from
+ * (`the vendor package@3.88.0`, read directly from
  * `node_modules/.pnpm/.../dist/collections/addresses/{createAddressesCollection,hooks/beforeChange}.js`).
  *
  * Ecommerce cutover (Addresses gap, 2026-09-26): the real plugin has NO
@@ -17,16 +17,16 @@ import { isAdmin, isAuthenticated, isCustomer, isDocumentOwner } from '@/access/
  *   to be `isAdmin || isCustomer` - `isCustomer` only checks the caller's
  *   ROLE (any authenticated non-admin), not whether THIS address document
  *   belongs to them. Any signed-in customer could read/edit/delete any OTHER
- *   customer's saved address. Real Payload's own access is `accessOR(isAdmin,
+ *   customer's saved address. The reference engine's own access is `accessOR(isAdmin,
  *   isDocumentOwner)` for those three - `isDocumentOwner` (`@/access/
  *   ecommerceAccess`, already used correctly by `./Carts.ts`) resolves to a
  *   `{customer: {equals: req.user.id}}` Where clause for a non-admin, which
- *   this app's own access layer enforces the same way real Payload does.
- *   `create` is real Payload's plain `isAuthenticated` (any signed-in user,
+ *   this app's own access layer enforces the same way the reference engine does.
+ *   `create` is the reference engine's plain `isAuthenticated` (any signed-in user,
  *   not customer-only - an admin creating an address for someone else still
  *   needs to be able to create one at all before the beforeChange hook below
  *   can even run for a non-admin caller).
- * - **The `customer` field was never auto-assigned.** Real Payload's
+ * - **The `customer` field was never auto-assigned.** The reference engine's
  *   `beforeChange` hook force-sets `data.customer = req.user.id` whenever the
  *   acting user is a customer (never an admin) - a customer's own create/
  *   update requests can't set someone else's `customer` id even if they send
@@ -54,12 +54,12 @@ export const Addresses: CollectionConfig = {
   hooks: {
     beforeChange: [
       ({ data, req }: Record<string, unknown> & { data: Record<string, unknown> }) => {
-        // Mirrors real Payload's own addresses `beforeChange` exactly: a
+        // Mirrors the reference engine's own addresses `beforeChange` exactly: a
         // customer (never an admin) always gets `data.customer` forced to
         // their own id, regardless of what they sent.
         const user = (req as { user?: { id: number } | null }).user
-        // `isCustomer` is typed against real Payload's own `FieldAccess`
-        // (`@/engine`), which wants a full `PayloadRequest` - this hook's own
+        // `isCustomer` is typed against the reference engine's own `FieldAccess`
+        // (`@/engine`), which wants a full `EngineRequest` - this hook's own
         // `req` is this app's looser `LocalReq`-shaped object (same as every
         // other collection hook in this app, e.g. `beforeChangeCart`), so
         // only `req.user` is ever actually read by `isCustomer` regardless.

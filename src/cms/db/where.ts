@@ -4,7 +4,7 @@ import { and, asc, desc, eq, gt, gte, isNotNull, isNull, like, lt, lte, ne, notI
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core'
 
 /**
- * Translates a Payload `Where` clause into a drizzle SQL condition, for one
+ * Translates a the original engine `Where` clause into a drizzle SQL condition, for one
  * flat table (no relationship/joined-field paths - those need the child-table
  * joins the generic engine builds; out of scope until a collection that
  * actually has them is being cloned).
@@ -83,9 +83,9 @@ export function buildWhere(columns: Record<string, SQLiteColumn>, where: Where |
 }
 
 /**
- * Translates a Payload `Sort` (a field name, optionally "-"-prefixed for
+ * Translates a the original engine `Sort` (a field name, optionally "-"-prefixed for
  * descending, or an array of them) into drizzle `orderBy` terms - the same
- * per-item convention @payloadcms/drizzle's own real buildOrderBy uses
+ * per-item convention the vendor package's own real buildOrderBy uses
  * (confirmed by reading it directly, not guessed): a bare field name sorts
  * ascending, a "-" prefix descending, and an unresolvable field (a dotted/
  * group path, or a field this flat-table builder has no column for) is
@@ -97,7 +97,7 @@ export function buildWhere(columns: Record<string, SQLiteColumn>, where: Where |
  *
  * Always appends a final `-id` term when the caller's sort doesn't already
  * include one, so paginated results stay stable page to page - the same
- * guarantee Payload's own adapter gives (it prefers `-createdAt` as its
+ * guarantee the original engine's own adapter gives (it prefers `-createdAt` as its
  * fallback; every table this layer generates always has a plain integer
  * `id` column too, and `id` and insertion order increase together, so `-id`
  * alone is equally stable here).

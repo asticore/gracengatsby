@@ -25,10 +25,10 @@ import { assertTwoFactorSatisfied, type TwoFactorUser } from './twoFactor'
 type ReqLike = {
   user?: TwoFactorUser | null
   headers?: Headers
-  payload?: unknown
+  engine?: unknown
 }
 
-const engineOf = (req: ReqLike) => req?.payload as Parameters<typeof getSecuritySettings>[0]
+const engineOf = (req: ReqLike) => req?.engine as Parameters<typeof getSecuritySettings>[0]
 
 /** Requests inside the engine carry real headers; background jobs may not. */
 const contextOf = (req: ReqLike): Pick<AuditEntry, 'ip' | 'userAgent'> =>

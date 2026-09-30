@@ -45,7 +45,7 @@ export const exportEndpoint: Endpoint = {
       })
     }
 
-    const engine = req.payload
+    const engine = req.engine
 
     const form = (await engine
       .findByID({ collection: FORMS_SLUG, id: formID as unknown as number, depth: 0 })

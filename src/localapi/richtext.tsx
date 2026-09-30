@@ -1,20 +1,20 @@
 /**
- * From-scratch replacement for `@payloadcms/richtext-lexical/react`'s
+ * From-scratch replacement for `the vendor package`'s
  * `RichText` component - the READ-SIDE renderer that turns stored Lexical
  * editor-state JSON into React elements on the frontend.
  *
- * Scope, deliberately narrow (see payload-removal-plan.md's "Rich text"
+ * Scope, deliberately narrow (see the plan doc's "Rich text"
  * stage): this module replaces ONLY the frontend renderer. The Lexical
  * WYSIWYG *editing* UI in the admin panel (`src/engine/editor.ts`'s
- * `richTextEditor` factory, i.e. real Payload's `lexicalEditor()`) is
- * untouched and still comes from the real `@payloadcms/richtext-lexical`
+ * `richTextEditor` factory, i.e. the reference engine's `lexicalEditor()`) is
+ * untouched and still comes from the real `the vendor package`
  * package - that is Admin UI work, deferred to this project's Admin UI
- * stage. This module only has to read the JSON real Payload's editor
+ * stage. This module only has to read the JSON the reference engine's editor
  * produces and render it identically; it never has to produce or validate
  * that JSON itself.
  *
  * Confirmed by direct inventory of this app's own code (haiku subagents,
- * cross-checked against `node_modules/@payloadcms/richtext-lexical@3.88.0`'s
+ * cross-checked against `node_modules/the vendor package@3.88.0`'s
  * own dist source read directly) before writing this file:
  *
  * - Every `richText` field in this app - `Events.description`,
@@ -24,7 +24,7 @@
  *   `editor: richTextEditor()` call with NO arguments, or (for `Posts`/
  *   `Faqs`, which omit `editor` entirely) `engage.config.ts`'s own top-level
  *   `editor: richTextEditor()` default (also no arguments). There is
- *   exactly one feature set in this whole app, and it is real Payload's
+ *   exactly one feature set in this whole app, and it is the reference engine's
  *   own `defaultEditorFeatures` (`dist/lexical/config/server/default.js`):
  *   Bold/Italic/Underline/Strikethrough/Subscript/Superscript/InlineCode,
  *   Paragraph, Heading, Align, Indent, UnorderedList/OrderedList/Checklist,
@@ -35,11 +35,11 @@
  *   (`RichTextBlock.tsx`/`ImageTextBlock.tsx`/`FaqList.tsx`/the blog, event,
  *   and shop detail pages) calls `<RichText data={...} />` with NO
  *   `converters`/`nodeMap` override - so the exact behavior to match is real
- *   Payload's OWN DEFAULT converter set
+ *   The original engine's OWN DEFAULT converter set
  *   (`dist/features/converters/lexicalToJSX/converter/defaultConverters.js`),
  *   not some app-specific customization.
  *
- * Node types handled below are exactly the ones real Payload's
+ * Node types handled below are exactly the ones the reference engine's
  * `defaultJSXConverters` handles: text, paragraph, linebreak, quote
  * (blockquote), table/tablerow/tablecell (TableFeature isn't enabled here,
  * so table nodes can never actually appear in this app's stored content -
@@ -47,8 +47,8 @@
  * unconditionally, and the cost of matching it is a handful of trivial
  * lines), heading, horizontalrule, list/listitem (incl. checklist),
  * link/autolink, upload, tab. `relationship` (from RelationshipFeature,
- * which IS enabled) has NO default converter in real Payload either - with
- * zero custom converters supplied, real Payload itself renders it as the
+ * which IS enabled) has NO default converter in the reference engine either - with
+ * zero custom converters supplied, the reference engine itself renders it as the
  * generic "unknown node" fallback, which is exactly what this module does
  * too (see `UNKNOWN_NODE` below) - genuine byte-for-byte parity, not a gap.
  * `block`/`inlineBlock` (BlocksFeature) are NOT in this app's feature set at
@@ -56,7 +56,7 @@
  * invent it away."
  *
  * **One separate, pre-existing, documented gap this module does NOT touch**:
- * real Payload's `UploadFeature` normally arrives at the frontend already
+ * the reference engine's `UploadFeature` normally arrives at the frontend already
  * populated (`dist/features/upload/server/index.js`'s own `afterRead` hook
  * walks the stored Lexical JSON and swaps each embedded upload node's raw
  * relation id for the full media doc - `url`/`mimeType`/`sizes`/etc - before
@@ -69,7 +69,7 @@
  * file (it has existed since the Stage 6e engine flip, independent of the
  * renderer) and stays open here: this component still renders an upload
  * node correctly WHEN `value` already happens to be a populated object
- * (matching real Payload's own `UploadJSXConverter`, which likewise
+ * (matching the reference engine's own `UploadJSXConverter`, which likewise
  * `return[s] null` when `value` isn't an object), but nothing yet populates
  * an unpopulated one. The natural place to close it is this project's
  * Uploads stage (next in the work order), which will need a real media
@@ -80,7 +80,7 @@
  * production bug.
  *
  * The tree-walk/align/indent logic below is a line-for-line port of real
- * Payload's own `convertLexicalNodesToJSX`
+ * The original engine's own `convertLexicalNodesToJSX`
  * (`dist/features/converters/lexicalToJSX/converter/index.js`), read
  * directly rather than guessed at, including its specific quirks: `indent`
  * styling is skipped for `listitem` nodes (list items get their indent from
@@ -88,7 +88,7 @@
  * element the type-specific converter already returned (via a clone), not
  * wrapped in an extra element.
  *
- * One deliberate substitution: real Payload's checklist item converter
+ * One deliberate substitution: the reference engine's checklist item converter
  * calls `uuidv4()` from the `uuid` npm package to link each checkbox
  * `<input>` to its `<label>`. This project's standing policy is zero new
  * runtime dependencies to reproduce vendor behavior - `crypto.randomUUID()`
@@ -108,7 +108,7 @@ import * as React from 'react'
 
 /**
  * Deliberately loose: this is arbitrary, editor-authored JSON, not a shape
- * this app's own type system controls. Real Payload's own `SerializedLexicalNode`
+ * this app's own type system controls. The reference engine's own `SerializedLexicalNode`
  * union is similarly a `Record<string, unknown>` grab-bag underneath - see
  * its own `dist/nodeTypes.d.ts`. Narrowing per-converter below reads the
  * specific fields each node type is documented (above) to carry.
@@ -163,7 +163,7 @@ function hasText(value: unknown): value is SerializedLexicalDoc {
 // Text formatting - Lexical's own bit values, copied from
 // dist/lexical/utils/nodeFormat.js (itself copy-pasted there from Lexical
 // core). IS_HIGHLIGHT (1 << 7) exists in that file but is deliberately
-// unhandled below too: real Payload's own TextJSXConverter never checks it
+// unhandled below too: the reference engine's own TextJSXConverter never checks it
 // either (HighlightFeature isn't enabled by this app in any case).
 // ---------------------------------------------------------------------------
 
@@ -223,7 +223,7 @@ function convertTab(): ReactNode {
 /**
  * Port of ListJSXConverter's `list`/`listitem` entries, including the
  * checklist branch. `parent` is the enclosing node (the list, for a
- * listitem) - matches real Payload's own converter, which reads
+ * listitem) - matches the reference engine's own converter, which reads
  * `parent.listType === 'check'` to decide whether an item is a checkbox.
  */
 function convertList({ node, convertChildren }: ConverterArgs): ReactNode {
@@ -271,7 +271,7 @@ function convertListItem({ node, parent, convertChildren }: ConverterArgs): Reac
 /**
  * Port of LinkJSXConverter, called with no `internalDocToHref` - matching
  * every call site in this app, which supplies no converters/overrides at
- * all. Real Payload's own fallback for an internal link with no resolver
+ * all. The reference engine's own fallback for an internal link with no resolver
  * is `href='#'` plus a `console.error` - reproduced verbatim rather than
  * inventing a slug-resolution scheme this app never asked for.
  */
@@ -308,7 +308,7 @@ function convertUpload({ node }: ConverterArgs): ReactNode {
 
   const sizes = doc.sizes as Record<string, any> | undefined // eslint-disable-line @typescript-eslint/no-explicit-any -- see LexicalNode doc comment above
   if (!sizes || !Object.keys(sizes).length) {
-    // eslint-disable-next-line @next/next/no-img-element -- parity with real Payload's UploadJSXConverter, which always renders a plain <img>
+    // eslint-disable-next-line @next/next/no-img-element -- parity with the reference engine's UploadJSXConverter, which always renders a plain <img>
     return <img alt={alt} height={doc.height} src={url} width={doc.width} />
   }
 
@@ -318,12 +318,12 @@ function convertUpload({ node }: ConverterArgs): ReactNode {
     if (!size || !size.width || !size.height || !size.mimeType || !size.filesize || !size.filename || !size.url) continue
     sources.push(<source key={sizeName} media={`(max-width: ${size.width}px)`} srcSet={size.url} type={size.mimeType} />)
   }
-  // eslint-disable-next-line @next/next/no-img-element -- parity with real Payload's UploadJSXConverter, which always renders a plain <img>
+  // eslint-disable-next-line @next/next/no-img-element -- parity with the reference engine's UploadJSXConverter, which always renders a plain <img>
   sources.push(<img alt={alt} height={doc.height} key="image" src={url} width={doc.width} />)
   return <picture>{sources}</picture>
 }
 
-/** Port of TableJSXConverter's three node types. See this file's header comment - unreachable in this app's own stored content (TableFeature isn't enabled), included for exact parity with real Payload's unconditional defaultJSXConverters anyway. */
+/** Port of TableJSXConverter's three node types. See this file's header comment - unreachable in this app's own stored content (TableFeature isn't enabled), included for exact parity with the reference engine's unconditional defaultJSXConverters anyway. */
 function convertTable({ node, convertChildren }: ConverterArgs): ReactNode {
   const children = convertChildren(node.children, node)
   return (
@@ -356,7 +356,7 @@ function convertTableCell({ node, convertChildren }: ConverterArgs): ReactNode {
 }
 
 /**
- * The default converter set - real Payload's own `defaultJSXConverters`
+ * The default converter set - the reference engine's own `defaultJSXConverters`
  * (defaultConverters.js), one entry per node type string. `relationship`
  * (and `block`/`inlineBlock`) are deliberately absent - see header comment.
  */
@@ -408,13 +408,13 @@ function applyAlignAndIndent(node: LexicalNode, reactNode: ReactNode, key: numbe
         style.textAlign = 'left'
         break
       // 'left' (and any other/no-op string) intentionally applies no style,
-      // matching real Payload's own switch statement exactly.
+      // matching the reference engine's own switch statement exactly.
     }
   }
 
   if ('indent' in node && node.indent && node.type !== 'listitem') {
-    // Unit and multiplier (px, 40) are load-bearing per real Payload's own
-    // comment (payloadcms/payload#13130) - do not change.
+    // Unit and multiplier (px, 40) are load-bearing per the reference engine's own
+    // comment - do not change.
     style.paddingInlineStart = `${Number(node.indent) * 40}px`
   }
 
@@ -452,7 +452,7 @@ function convertNodes(nodes: LexicalNode[] | undefined, parent: LexicalNode, con
 }
 
 // ---------------------------------------------------------------------------
-// Public component - matches @payloadcms/richtext-lexical/react's own
+// Public component - matches the vendor package's own
 // `RichText` prop surface for the subset this app actually uses. `nodeMap`
 // and a function form of `converters` (both for BlocksFeature/inlineBlocks,
 // which this app doesn't enable - see header comment) are deliberately not
@@ -471,7 +471,7 @@ export interface RichTextProps {
 export function RichText({ className, converters, data, disableContainer }: RichTextProps): ReactElement | null {
   if (!data) return null
   if (!hasText(data)) {
-    return disableContainer ? null : <div className={className ?? 'payload-richtext'} />
+    return disableContainer ? null : <div className={className ?? 'engage-richtext'} />
   }
 
   const doc = data as SerializedLexicalDoc
@@ -479,5 +479,5 @@ export function RichText({ className, converters, data, disableContainer }: Rich
   const content = convertNodes(doc.root!.children, doc.root as LexicalNode, merged)
 
   if (disableContainer) return <>{content}</>
-  return <div className={className ?? 'payload-richtext'}>{content}</div>
+  return <div className={className ?? 'engage-richtext'}>{content}</div>
 }

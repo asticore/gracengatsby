@@ -14,7 +14,7 @@ type ScalarFieldRendererProps = {
 type Option = { label: string; value: string }
 
 /**
- * `row`/`collapsible` are pure layout - Payload stores their fields at the SAME
+ * `row`/`collapsible` are pure layout - the original engine stores their fields at the SAME
  * level as their siblings (no extra path segment, see `childPath` in shared.ts),
  * so a `row` full of subfields inside an array/blocks row must be flattened
  * before rendering, not skipped - `row` is a very common pattern for laying out

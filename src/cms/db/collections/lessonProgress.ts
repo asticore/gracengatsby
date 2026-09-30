@@ -5,7 +5,7 @@ import { LessonProgress } from '@/features/courses/collections/LessonProgress'
 import { createCollectionOps } from '../generic'
 import { lessonProgress } from '../schema'
 
-/** Payload's document shape for the `lesson-progress` collection - see src/features/courses/collections/LessonProgress.ts. */
+/** The original engine's document shape for the `lesson-progress` collection - see src/features/courses/collections/LessonProgress.ts. */
 export type LessonProgressDoc = {
   id: number
   user: number

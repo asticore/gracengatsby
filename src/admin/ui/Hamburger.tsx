@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `Hamburger`. Presentational
+ * From-scratch replacement for `the vendor package`'s `Hamburger`. Presentational
  * only.
  *
  * `suppressHydrationWarning` defaults to false (every existing caller passes

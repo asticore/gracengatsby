@@ -8,7 +8,7 @@ import { formatPriceInAUD } from '@/lib/formatCurrency'
 import type { Product } from '@/engage-types'
 
 /**
- * Was `useCurrency().formatCurrency` (real `@payloadcms/plugin-ecommerce`
+ * Was `useCurrency().formatCurrency` (real `the vendor package`
  * client hook) - dropped 2026-09-26. That real hook's formatter divides by
  * 100 (matching the real plugin's own genuinely-cents price storage), which
  * is wrong for this app's `priceInAUD` (whole currency units - see the plan

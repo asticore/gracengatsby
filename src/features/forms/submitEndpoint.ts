@@ -70,7 +70,7 @@ export const submitEndpoint: Endpoint = {
     // Deferred so the collection config - which carries this endpoint - does
     // not statically depend on the submission pipeline. See settings.ts.
     const { handleSubmission, rateLimitSubmission } = await import('./submit')
-    const engine = req.payload as unknown as Parameters<typeof handleSubmission>[0]
+    const engine = req.engine as unknown as Parameters<typeof handleSubmission>[0]
 
     const limit = await rateLimitSubmission(engine, request, formID)
     if (limit.limited) {

@@ -1,51 +1,51 @@
 /**
- * Ecommerce GraphQL support (payload-removal-plan.md: "GraphQL types for the
+ * Ecommerce GraphQL support (the plan doc: "GraphQL types for the
  * 5 ecommerce collections" - scoped 2026-09-26, built 2026-09-27 once the
  * user asked to finish the ecommerce cutover in one pass).
  *
- * Real Payload's own `/api/graphql` (`GRAPHQL_POST` from `@payloadcms/next/
+ * The reference engine's own `/api/graphql` (`GRAPHQL_POST` from `the vendor package
  * routes`, still mounted - see `src/engine/next/routes.ts`) dynamically
  * builds its schema from `buildConfig()`'s sanitized `config.collections` via
- * `@payloadcms/graphql`. Removing `shopPlugin()` from `engage.config.ts`
+ * `the vendor package`. Removing `shopPlugin()` from `engage.config.ts`
  * drops `orders`/`carts`/`transactions`/`addresses` from that config
  * entirely, and leaves `products` registered directly (see
- * `engage.config.ts`'s own comment on why) purely to satisfy real Payload's
+ * `engage.config.ts`'s own comment on why) purely to satisfy the reference engine's
  * `InvalidFieldRelationship` check for `Events`/`Courses`/`Forms`' real
  * `relationTo: 'products'` fields - if that registration were left to also
  * back live GraphQL traffic, a `createProduct`/`updateProduct` mutation would
- * run through real Payload's OWN native resolvers and DB-adapter-generated
+ * run through the reference engine's OWN native resolvers and DB-adapter-generated
  * queries, bypassing every access-control and business-logic fix this
  * project has built into the ecommerce write path (owner-vs-role access
  * checks, the `priceInAUD` unit-conversion fix, etc - none of that exists in
- * real Payload's native pipeline for these collections, all of it lives in
+ * the reference engine's native pipeline for these collections, all of it lives in
  * `src/localapi`/`src/cms/db`). Both problems are solved the same way
  * `src/localapi/rest.ts` already solves the REST equivalent: a hybrid
  * dispatcher that claims full ownership of any GraphQL operation touching
  * one of these 5 collections' known root fields, routing it through the
  * exact same `engine.find/findByID/create/update/delete` calls REST already
  * uses (same access control, same business logic, same write path), and
- * falling through untouched to real Payload's own resolver for everything
+ * falling through untouched to the reference engine's own resolver for everything
  * else (the other 21 collections + 17 globals' full typed schema, unaffected
  * by any of this).
  *
  * ---------------------------------------------------------------------------
- * Deliberate simplifications vs real Payload's auto-generated GraphQL schema
+ * Deliberate simplifications vs the reference engine's auto-generated GraphQL schema
  * ---------------------------------------------------------------------------
  * Confirmed via grep across `src/`/`tests/` that this app has ZERO real
  * GraphQL consumers - this surface exists so removing `shopPlugin()` doesn't
  * silently drop capability, not because anything here calls it. Given that,
- * this deliberately does NOT reproduce real Payload's fully-typed per-field
+ * this deliberately does NOT reproduce the reference engine's fully-typed per-field
  * schema (a distinct type per collection with one field per DB column, a
  * `<Collection>WhereInput`, etc - the ~600-800 line effort the original
  * scoping pass estimated for a from-scratch build): every document, `where`
- * filter, and mutation `data` payload is the same generic `JSON` scalar. This
+ * filter, and mutation `data` engine is the same generic `JSON` scalar. This
  * still provides a real, introspectable Query/Mutation entry per collection
  * per operation - the actual capability at risk - without hand-maintaining a
  * second, fully-typed schema that would need to be kept in lockstep with
  * these 5 shadow collection configs forever. Also not reproduced: draft/
  * versions support (matches `handleRestRequest`'s own documented scope), a
  * `count` query, and cart-item/payments sub-endpoints (those stay REST-only,
- * matching real Payload's own plugin, which never exposed them over GraphQL
+ * matching the reference engine's own plugin, which never exposed them over GraphQL
  * either). A guest cart's `secret` IS supported on `Cart`/`updateCart`/
  * `deleteCart` (mirrors `rest.ts`'s `bodySecretReq`) since it costs little
  * and keeps at least read/update/delete usable for a guest cart caller -
@@ -61,9 +61,9 @@
  * one of those names is in this module's own known field set for that
  * operation type, it runs entirely against this module's own small schema
  * and a `Response` is returned; otherwise (any unrecognized field, a `query`
- * mixing an ecommerce field with a real-Payload-only field, introspection
+ * mixing an ecommerce field with a reference-engine-only field, introspection
  * fields, a `subscription`, or a malformed query `parse()` can't handle) this
- * returns `null` so the caller falls through to real Payload's `GRAPHQL_POST`
+ * returns `null` so the caller falls through to the reference engine's `GRAPHQL_POST`
  * untouched - the same null-means-fall-through convention `handleRestRequest`
  * already uses. `request.clone()` is used before reading the body so the
  * original `Request` is still fully intact for that fallthrough. A caller

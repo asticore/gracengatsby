@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { languageSettings, languageSettingsGroupFields, languageSettingsMultilingualActiveLocales } from '../schema'
 
 /**
- * Payload's document shape for the `language-settings` global - see
+ * The original engine's document shape for the `language-settings` global - see
  * src/globals/LanguageSettings.ts. Every field lives inside the one
  * `multilingual` group; the group is reconstructed as a nested object here
  * exactly like any other top-level group already modeled (Pages' `seo`,

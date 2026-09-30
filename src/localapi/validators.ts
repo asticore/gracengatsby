@@ -1,61 +1,61 @@
 /**
- * Field-level validation, reimplemented from Payload 3.88.0's real
- * `node_modules/payload/dist/fields/validations.js` so this app's eventual
- * from-scratch Local API (stage 1a of the Payload-removal plan - see the
- * `payload-removal-plan.md` project doc for the full sequence) can make the
- * exact same accept/reject decisions Payload's REST/Local API and admin UI
+ * Field-level validation, reimplemented from the original engine 3.88.0's real
+ * `the vendor source` so this app's eventual
+ * from-scratch Local API (stage 1a of the the original engine-removal plan - see the
+ * `the plan doc` project doc for the full sequence) can make the
+ * exact same accept/reject decisions the original engine's REST/Local API and admin UI
  * enforce today, without pulling in the machinery those decisions don't
  * actually need for this app: i18n `t('validation:...')` lookups, the
- * `req`/`payload.config` plumbing every real validator threads through,
+ * `req`/`engine.config` plumbing every real validator threads through,
  * `filterOptions` DB round-trips, and Ajv JSON-schema validation.
  *
  * Scope is deliberately narrow: only the 13 field types this app's
  * collections/globals/blocks actually declare anywhere under `src/`
  * (confirmed by grepping every `type: '...'` field literal) -
  * `text, textarea, number, checkbox, email, date, select, relationship,
- * upload, array, blocks, json, richText`. Every other real Payload field
+ * upload, array, blocks, json, richText`. Every other the reference engine field
  * type (`password`, `code`, `point`, `radio`, `confirmPassword`,
  * `username`, plus the pure-layout `group`/`row`/`collapsible`/`tabs`/
  * `join`) is out of scope - this app never uses them, or (group/row/etc.)
  * they carry no validation of their own, only subfields that would be
  * validated recursively by whatever calls into this table per-field.
  *
- * `unique` is explicitly OUT OF SCOPE here too: real Payload enforces it as
+ * `unique` is explicitly OUT OF SCOPE here too: the reference engine enforces it as
  * a DB constraint caught after a failed insert (SQLITE_CONSTRAINT_UNIQUE),
  * never as one of these field validators - there is no `unique` entry in
- * `payload/dist/fields/validations.js`'s own exported `validations` table
+ * the vendor source's own exported `validations` table
  * either. It belongs in a later stage's operations/write layer, not here.
  *
- * Every returned error is a plain English string, not one of Payload's
+ * Every returned error is a plain English string, not one of the original engine's
  * `t('validation:...')` translation keys - this app never configured a
  * second admin-UI locale, so there is nothing to look up, and the exact
  * wording is not part of this module's contract. Callers should branch on
- * `typeof result === 'string'`, the same way Payload's own callers do,
+ * `typeof result === 'string'`, the same way the original engine's own callers do,
  * never on the string's content.
  *
  * This module is intentionally NOT wired into `@/engine` or
  * `engage.config.ts` yet (a later stage) - it stands alone, exercised only
  * by its own tests, so it can be reviewed and proven correct against real
- * Payload behavior in isolation first.
+ * The original engine behavior in isolation first.
  */
 
-/** A `select` field's `options` entry - Payload allows a bare string as shorthand for `{ label: value, value }`. This app's own `options` arrays are always the `{ label, value }` object form (confirmed by grep), but the string form is implemented anyway since real Payload accepts both (validations.js:623-646). */
+/** A `select` field's `options` entry - the original engine allows a bare string as shorthand for `{ label: value, value }`. This app's own `options` arrays are always the `{ label, value }` object form (confirmed by grep), but the string form is implemented anyway since the reference engine accepts both (validations.js:623-646). */
 export type SelectOption = string | { label: string; value: string }
 
-/** The subset of a real Payload `RichTextField`'s sanitized `editor` this module needs - just the `validate` function `@payloadcms/richtext-lexical`'s `lexicalEditor()` attaches to every rich text field's config (validations.js:249-256 calls exactly this, `editor.validate(value, options)`, and throws if it's missing - reimplemented as a graceful fallback below instead, since wiring the real Lexical editor through is a separate, later stage). */
+/** The subset of a the reference engine `RichTextField`'s sanitized `editor` this module needs - just the `validate` function `the vendor package`'s `lexicalEditor()` attaches to every rich text field's config (validations.js:249-256 calls exactly this, `editor.validate(value, options)`, and throws if it's missing - reimplemented as a graceful fallback below instead, since wiring the real Lexical editor through is a separate, later stage). */
 export type LexicalEditorLike = {
   validate: (value: unknown, options: ValidateFieldOptions) => true | string | Promise<true | string>
 }
 
 /**
- * The real Payload `db.defaultIDType` (Local API name) an app's relationship/
+ * The the reference engine `db.defaultIDType` (Local API name) an app's relationship/
  * upload target IDs are shaped like: `'text'` for a Mongo ObjectId or a
  * sqlite adapter configured with `idType: 'uuid' | 'uuidv7'`, `'number'` for
  * a sqlite/Postgres adapter's default integer auto-increment primary key.
  *
  * This app's own default is `'number'`, NOT `'text'` - confirmed two ways:
- * (1) `node_modules/@payloadcms/db-d1-sqlite/dist/index.js`:
- * `payloadIDType = idType === 'uuid' || idType === 'uuidv7' ? 'text' : 'number'`,
+ * (1) `the vendor source`:
+ * the original ID-type rule (`uuid`/`uuidv7` -> text, otherwise number),
  * and `engage.config.ts`'s `engageD1Adapter({...})` call never passes an
  * `idType` option, so it takes that `'number'` default; (2) every live
  * collection table `src/cms/db/schema/generate.ts`'s `generateTable`
@@ -67,12 +67,12 @@ export type LexicalEditorLike = {
 export type IDType = 'text' | 'number'
 
 /**
- * The union of every option real Payload validators destructure off their
+ * The union of every option the reference engine validators destructure off their
  * second argument, trimmed to what this app's 13 in-scope field types
  * actually read (see each validator below for which subset it uses) and
- * flattened out of the real `{ req: { payload: { config }, t }, ... }`
+ * flattened out of the real `{ req: { engine: { config }, t }, ... }`
  * shape those validators are normally called with, since none of this
- * app's fields need `req`/`payload.config`/i18n for the paths reimplemented
+ * app's fields need `req`/`engine.config`/i18n for the paths reimplemented
  * here.
  */
 export type ValidateFieldOptions = {
@@ -90,7 +90,7 @@ export type ValidateFieldOptions = {
   relationTo?: string
   /** `relationship`/`upload` only - defaults to `'number'`, this app's real default (see `IDType`'s doc comment). */
   idType?: IDType
-  /** `json` only - set by the caller when it already tried `JSON.parse`-ing a string value and that threw, mirroring real Payload's own field-level `beforeValidate` hook wiring `jsonError` in before calling this validator (validations.js:166-217 never parses JSON itself either). */
+  /** `json` only - set by the caller when it already tried `JSON.parse`-ing a string value and that threw, mirroring the reference engine's own field-level `beforeValidate` hook wiring `jsonError` in before calling this validator (validations.js:166-217 never parses JSON itself either). */
   jsonError?: string
   /** `richText` only - the field's already-configured Lexical editor, when one has been wired up (see `LexicalEditorLike`'s doc comment for why this module doesn't assume one is always present yet). */
   editor?: LexicalEditorLike
@@ -99,7 +99,7 @@ export type ValidateFieldOptions = {
 export type ValidatorFn = (value: unknown, options: ValidateFieldOptions) => true | string | Promise<true | string>
 
 const isNumber = (value: unknown): boolean => {
-  // Mirrors payload/dist/utilities/isNumber.js exactly: `null`/`undefined`
+  // Mirrors engine/dist/utilities/isNumber.js exactly: `null`/`undefined`
   // and a whitespace-only string are never numbers (even though
   // `Number('   ')` is `0`, not `NaN`), everything else goes through
   // `!Number.isNaN(Number(value))` - so `"0"`, `0`, `"3.14"`, `true` (→ 1)
@@ -110,7 +110,7 @@ const isNumber = (value: unknown): boolean => {
 }
 
 const isValidID = (value: unknown, idType: IDType): boolean => {
-  // Mirrors payload/dist/utilities/isValidID.js, minus the Mongo ObjectId
+  // Mirrors engine/dist/utilities/isValidID.js, minus the Mongo ObjectId
   // branch (irrelevant to this app's sqlite adapter - `idType` here is
   // never `'ObjectID'`) and the `type === 'text'` object-shaped-ObjectId
   // case, for the same reason: this app's text IDs (were it ever to use
@@ -127,7 +127,7 @@ const isValidID = (value: unknown, idType: IDType): boolean => {
  * fallback for a non-array `value`: kept faithful to the source rather than
  * "fixed" to `typeof value === 'number' ? value : 0`, since every in-scope
  * caller only ever passes an array (or `undefined`) here in practice, and
- * this module's job is decision-parity with real Payload, not improving on
+ * this module's job is decision-parity with the reference engine, not improving on
  * it.
  */
 const validateArrayLength = (value: unknown, { maxRows, minRows, required }: Pick<ValidateFieldOptions, 'maxRows' | 'minRows' | 'required'>): true | string => {
@@ -149,8 +149,8 @@ const validateArrayLength = (value: unknown, { maxRows, minRows, required }: Pic
  * `minLength`/`maxLength` never reject a genuinely absent value); `hasMany`
  * validates row count first; then EVERY string in play (the whole array for
  * `hasMany`, or the single value otherwise) is length-checked against the
- * field's own `maxLength`/`minLength` - real Payload also folds in a
- * `payload.config`-wide `defaultMaxTextLength` default here, which this
+ * field's own `maxLength`/`minLength` - the reference engine also folds in a
+ * `engine.config`-wide `defaultMaxTextLength` default here, which this
  * app's `engage.config.ts` never sets (grepped, no matches), so only the
  * field's own `maxLength` is implemented; finally `required` fails on
  * anything falsy, OR a string/array whose `.length` is `0` (so `[]` fails
@@ -287,7 +287,7 @@ export const email: ValidatorFn = (value, { required }) => {
  * date" (this happens BEFORE the required check, so an invalid non-empty
  * date string fails with the date message even on a non-required field);
  * only a genuinely empty value falls through to the required check. There
- * is no `min`/`max` support at all in real Payload's own `date` validator
+ * is no `min`/`max` support at all in the reference engine's own `date` validator
  * (confirmed: nothing in the source references `min`/`max` for this field
  * type, matching that no field in this app needs it either).
  */
@@ -301,13 +301,13 @@ export const date: ValidatorFn = (value, { required }) => {
 
 /**
  * Mirrors validations.js:249-256's `richText` in spirit, not literally: real
- * Payload REQUIRES `options.editor` to be present (it throws if it's
- * missing or unsanitized) because by the time Payload's own field
+ * The original engine REQUIRES `options.editor` to be present (it throws if it's
+ * missing or unsanitized) because by the time the original engine's own field
  * validation runs, every rich text field has already been sanitized with a
- * real `@payloadcms/richtext-lexical` `lexicalEditor()` config. This module
+ * real `the vendor package` `lexicalEditor()` config. This module
  * stands alone (not yet wired to that sanitization pipeline - a later,
  * separate stage per the removal plan, since Lexical itself is not part of
- * the Payload-core cutover), so it degrades gracefully instead: delegate to
+ * the the original engine-core cutover), so it degrades gracefully instead: delegate to
  * `options.editor.validate(value, options)` when an editor is supplied,
  * otherwise fall back to a minimal required-only check against Lexical's
  * own empty-document shape (`{ root: { children: [] } }`) rather than
@@ -328,7 +328,7 @@ export const richText: ValidatorFn = async (value, options) => {
 /**
  * Mirrors validations.js:623-663's `select` exactly, including the parts
  * the task brief's summary omitted (verified directly against source, per
- * the module-level instruction not to trust paraphrase alone): real Payload
+ * the module-level instruction not to trust paraphrase alone): the reference engine
  * ALSO rejects a value that isn't one of the field's own `options` at all
  * (an "invalid selection" check, unconditional - it runs whether or not
  * `filterOptions` is configured, since `filteredOptions` defaults to plain
@@ -341,7 +341,7 @@ export const richText: ValidatorFn = async (value, options) => {
  * invalid-selection (single string) -> required. `options` entries are
  * `{ label, value }` objects for every `select` field in this app
  * (confirmed by grep), but the bare-string shorthand form is implemented
- * too since real Payload accepts both.
+ * too since the reference engine accepts both.
  */
 const optionMatches = (option: SelectOption, input: unknown): boolean => option === input || (typeof option !== 'string' && option.value === input)
 
@@ -370,7 +370,7 @@ export const select: ValidatorFn = (value, { hasMany, options: fieldOptions = []
 }
 
 /**
- * Shared by `relationship` and `upload` - real Payload's own two exported
+ * Shared by `relationship` and `upload` - the reference engine's own two exported
  * validators (validations.js:511-566 and :567-622) are byte-for-byte
  * identical logic (both destructure the same options and run the same
  * steps), differing only in field type, so this app's app-relevant subset
@@ -392,8 +392,8 @@ export const select: ValidatorFn = (value, { hasMany, options: fieldOptions = []
  * legitimately skips `minRows` entirely, unlike `array`/`blocks` below,
  * where `minRows` runs whenever the field is `required`), and shape-only ID
  * validation via `isValidID` - no DB existence/permission check, matching
- * that real Payload's own field validator doesn't do one either (that's a
- * separate, later `payload.find`-based step in the real create/update
+ * that the reference engine's own field validator doesn't do one either (that's a
+ * separate, later `engine.find`-based step in the real create/update
  * operation, not this validator).
  */
 const relationshipOrUpload: ValidatorFn = (value, options) => {
@@ -422,7 +422,7 @@ const relationshipOrUpload: ValidatorFn = (value, options) => {
       // polymorphic `relationTo: [...]` branch this module doesn't
       // implement) leaves it `undefined`, which then fails `isValidID`
       // below exactly like the source's own unset `let requestedID` would.
-      // `requestedID === null` is the one deliberate skip real Payload
+      // `requestedID === null` is the one deliberate skip the reference engine
       // carves out (only reachable via the polymorphic branch's
       // `val.value` being explicitly `null`), kept here for parity even
       // though this app never exercises it.
@@ -448,7 +448,7 @@ export const upload: ValidatorFn = relationshipOrUpload
  * happens here (a real array field's own subfields are validated
  * separately, one level down, by whatever calls into this table per
  * subfield - out of scope for this validator itself, same as real
- * Payload's).
+ * The original engine's).
  */
 export const array: ValidatorFn = (value, { maxRows, minRows, required }) => validateArrayLength(value, { maxRows, minRows, required })
 
@@ -468,7 +468,7 @@ export const blocks: ValidatorFn = (value, { maxRows, minRows, required }) => va
  * `jsonSchema` branch - confirmed unused by every `json` field in this app
  * (grepped `jsonSchema` under `src/`, no matches). `jsonError` is a
  * pass-through flag the CALLER sets after already attempting
- * `JSON.parse` on a string value and having it throw (real Payload wires
+ * `JSON.parse` on a string value and having it throw (the reference engine wires
  * this from a field-level `beforeValidate` hook, not from inside this
  * validator - this validator never parses JSON itself, in either
  * implementation).
@@ -480,7 +480,7 @@ export const json: ValidatorFn = (value, { jsonError, required }) => {
 }
 
 /**
- * Lookup table mirroring real Payload's own exported `validations` object
+ * Lookup table mirroring the reference engine's own exported `validations` object
  * (validations.js, final block) trimmed to this app's 13 in-scope field
  * types (see this module's top doc comment for the full "why only these"
  * reasoning and the deliberately-excluded types).

@@ -1,10 +1,10 @@
 /**
- * GraphQL endpoint (payload-removal-plan.md: Stage 7). Fully Payload-free.
+ * GraphQL endpoint (the plan doc: Stage 7). Fully vendor-free.
  *
  * `handleEcommerceGraphQL` (`@/localapi/graphql`) serves the 5 ecommerce
  * collections' own Query/Mutation fields using the `graphql` package only.
  * It returns `null` for anything else (other collections/globals,
- * introspection, malformed or mixed queries). Real Payload's GraphQL used to
+ * introspection, malformed or mixed queries). The reference engine's GraphQL used to
  * be the fallthrough, but that schema crashed at build time
  * (`Schema must contain uniquely named types but contains multiple types
  * named "Faq"`) and this app has no GraphQL consumers outside the ecommerce

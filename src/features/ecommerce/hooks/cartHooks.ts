@@ -1,16 +1,16 @@
 /**
  * Cart-specific hooks (Stage 10 Ecommerce, Layer 2 - see
- * payload-removal-plan.md). Reproduced from the real ecommerce plugin's
- * `beforeChange.js` (`@payloadcms/plugin-ecommerce@3.88.0`), simplified for
+ * the plan doc). Reproduced from the real ecommerce plugin's
+ * `beforeChange.js` (`the vendor package@3.88.0`), simplified for
  * this app's single-currency (AUD-only) setup - no `priceIn${currency}`
  * lookup, no variants (`engage.config.ts`'s shop config has `variants:
  * false`).
  *
- * `req.payload` is this app's own `Engine` (see `../../../engine/index.ts`'s
- * header for why the hook's own type still names it `PayloadRequest` even
+ * `req.engine` is this app's own `Engine` (see `../../../engine/index.ts`'s
+ * header for why the hook's own type still names it `EngineRequest` even
  * though the object handed in at runtime is ours) - `findByID` is one of the
  * methods the two share, so this reads the same as it would against real
- * Payload.
+ * The original engine.
  */
 
 import crypto from 'crypto'
@@ -20,7 +20,7 @@ type CartItem = { product?: number | { id: number } | null; quantity?: number | 
 /**
  * `beforeChange` on the Carts collection.
  *
- * - Generates a guest-access `secret` on creation, same as real Payload's
+ * - Generates a guest-access `secret` on creation, same as the reference engine's
  *   `crypto.randomBytes(20).toString('hex')` - only when the cart has no
  *   `customer` (an authenticated user's cart doesn't need one; access is
  *   already `isDocumentOwner`).
@@ -31,7 +31,7 @@ type CartItem = { product?: number | { id: number } | null; quantity?: number | 
 // hooks, e.g. Enrolments.ts's beforeChange) so this is assignable to
 // whatever the real `BeforeChangeHook<any>` type from `@/engine`'s
 // `CollectionConfig.hooks.beforeChange` array element actually is, without
-// fighting real Payload's generated per-collection `findByID` overload
+// fighting the reference engine's generated per-collection `findByID` overload
 // (its return type is the named `Product` type, not a plain
 // `Record<string, unknown>`) - the loose casts below get back to a shape
 // this function can work with either way.
@@ -43,12 +43,12 @@ export const beforeChangeCart = async ({ data, operation, req }: Record<string, 
   const items = data.items as CartItem[] | undefined
   if (Array.isArray(items)) {
     let subtotal = 0
-    const payload = (req as { payload: { findByID: (args: { collection: string; id: number; depth?: number }) => Promise<unknown> } }).payload
+    const engine = (req as { engine: { findByID: (args: { collection: string; id: number; depth?: number }) => Promise<unknown> } }).engine
     for (const item of items) {
       const productId: number | null | undefined =
         item.product && typeof item.product === 'object' ? item.product.id : (item.product as number | null | undefined)
       if (!productId || !item.quantity) continue
-      const product = (await payload.findByID({ collection: 'products', id: productId, depth: 0 }).catch((): null => null)) as { priceInAUD?: number } | null
+      const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0 }).catch((): null => null)) as { priceInAUD?: number } | null
       const price = product?.priceInAUD
       if (typeof price === 'number') subtotal += price * item.quantity
     }
@@ -76,7 +76,7 @@ export const beforeChangeCart = async ({ data, operation, req }: Record<string, 
  * need the (unsupported) COLLECTION-level `afterRead` this project's earlier
  * notes assumed it did.
  *
- * `data` here is the whole doc (siblings), matching real Payload's own
+ * `data` here is the whole doc (siblings), matching the reference engine's own
  * `AfterReadFieldHookArgs.data` - untyped for the same reason
  * `beforeChangeCart` above is.
  */

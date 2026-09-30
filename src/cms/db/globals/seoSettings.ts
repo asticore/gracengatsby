@@ -7,7 +7,7 @@ import { seoSettings, seoSettingsGroupFields, seoSettingsSchemaSameAs } from '..
 export type SeoSettingsSameAsRow = { id?: string; url?: string | null }
 
 /**
- * Payload's document shape for the `seo-settings` global - see
+ * The original engine's document shape for the `seo-settings` global - see
  * src/globals/SeoSettings.ts. Six of its seven groups (`defaults`,
  * `indexing`, `verification`, `analytics`, `sitemap`, `customCode`) are
  * plain-field groups, the already-proven top-level-group mechanism (Pages'

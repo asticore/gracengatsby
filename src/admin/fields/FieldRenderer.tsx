@@ -3,7 +3,7 @@
 /**
  * Generic, field-array-driven renderer - the core of the from-scratch admin
  * (Stage 11 Phase 1). Every collection/global's `fields: Field[]` (a plain
- * data array, not a runtime Payload call - see the plan doc's "Key discovery")
+ * data array, not a runtime the original engine call - see the plan doc's "Key discovery")
  * is walked by this ONE component instead of 38 hand-written per-entity forms.
  *
  * Every field is also gated by `useFieldVisible`, which live-evaluates its
@@ -37,7 +37,7 @@
  * A field's own `admin.components.Field` override (a `'<path>#<Export>'`
  * string, e.g. SlugComponent) always wins over the built-in renderer for its
  * type, resolved via `resolveComponent` - this is the same mechanism real
- * Payload used via the generated importMap.js, just hand-rolled.
+ * The original engine used via the generated importMap.js, just hand-rolled.
  */
 
 import React from 'react'

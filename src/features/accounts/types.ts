@@ -23,7 +23,7 @@ export const RSVPS_SLUG = 'event-rsvps'
  * default-address choice without adding a column to a collection it does not
  * own. The string is a collection slug, not a product name.
  */
-export const PREFERENCES_SLUG = 'payload-preferences'
+export const PREFERENCES_SLUG = 'preferences'
 
 /** One row per customer holds everything the account area remembers. */
 export const ACCOUNT_PREFERENCE_KEY = 'engage-account-profile'

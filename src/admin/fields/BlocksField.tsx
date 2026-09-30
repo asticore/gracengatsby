@@ -20,7 +20,7 @@ type ScalarFieldRendererProps = {
  *
  * Each row object carries a `blockType: string` discriminator (matching one of
  * `field.blocks[].slug`) at the top level of the row, alongside that block's
- * own fields' data - real Payload convention.
+ * own fields' data - the reference engine convention.
  */
 export const BlocksFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, path, readOnly }) => {
   const { value, setValue } = useField<Record<string, unknown>[]>({ path })

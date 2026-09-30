@@ -60,7 +60,7 @@ const USER_COLUMNS: { column: string; sql: string }[] = [
   },
 ]
 
-export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   const exists = async (table: string): Promise<boolean> => {
     const rows = (await db.all(
       sql`SELECT name FROM sqlite_master WHERE type='table' AND name=${table}`,
@@ -102,7 +102,7 @@ export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> 
   }
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // No-op, matching the other migrations here. Dropping the audit table on a
   // rollback would destroy the record of what happened during the incident
   // that prompted the rollback, which is precisely when it is worth having.

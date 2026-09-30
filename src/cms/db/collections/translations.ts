@@ -5,7 +5,7 @@ import { Translations } from '@/features/multilingual/translationsCollection'
 import { createCollectionOps } from '../generic'
 import { translations } from '../schema'
 
-/** Payload's document shape for the `translations` collection - see src/features/multilingual/translationsCollection.ts. */
+/** The original engine's document shape for the `translations` collection - see src/features/multilingual/translationsCollection.ts. */
 export type TranslationDoc = {
   id: number
   locale: string

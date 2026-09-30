@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { speedSettings, speedSettingsAdvancedPreconnectOrigins, speedSettingsAdvancedPrefetchDns, speedSettingsGroupFields } from '../schema'
 
 /**
- * Payload's document shape for the `speed-settings` global - see
+ * The original engine's document shape for the `speed-settings` global - see
  * src/globals/SpeedSettings.ts. `caching`/`assets`/`media`/`fonts` are plain
  * `group` fields (scalars only) - flattened onto the table with a column
  * prefix by generateTable() alone, same mechanism SiteSettings' `theme`/`seo`

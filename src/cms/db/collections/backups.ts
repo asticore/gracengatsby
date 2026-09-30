@@ -6,10 +6,10 @@ import { createCollectionOps } from '../generic'
 import { backups } from '../schema'
 
 /**
- * Payload's document shape for the `backups` collection - see
+ * The original engine's document shape for the `backups` collection - see
  * src/features/backups/collection.ts. Scalar-only, same shape class as Faqs:
  * no arrays/rels/blocks/joins/select fields, so `createCollectionOps` needs
- * no extra options. `startedAt`/`finishedAt` are Payload `date` fields,
+ * no extra options. `startedAt`/`finishedAt` are the original engine `date` fields,
  * stored (and read back) as ISO date strings, same as `startDate` on Events.
  */
 export type BackupDoc = {

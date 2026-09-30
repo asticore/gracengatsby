@@ -22,7 +22,7 @@
  *   already expected to exist.
  *
  * SLUG NAMING, confirmed by reading every config file directly (not
- * assumed): the real Payload collection/global `slug:` values are
+ * assumed): the the reference engine collection/global `slug:` values are
  * kebab-case (`'event-rsvps'`, `'page-templates'`, `'payment-settings'`,
  * ...) - the SAME strings every real `engine.find({collection: '...'})` /
  * `engine.findGlobal({slug: '...'})` call site in this app already uses.
@@ -85,8 +85,8 @@ import { FieldGroups } from '@/collections/FieldGroups'
 import { Media } from '@/collections/Media'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { Pages } from '@/collections/Pages'
-import { PayloadLockedDocuments } from '@/collections/PayloadLockedDocuments'
-import { PayloadPreferences } from '@/collections/PayloadPreferences'
+import { LockedDocuments } from '@/collections/LockedDocuments'
+import { Preferences } from '@/collections/Preferences'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
 import { applyImplicitAuthFields } from './sanitize'
@@ -386,8 +386,8 @@ export const writeRegistry: {
     orders: collectionOps(createOrder, updateOrder, deleteOrder, findOrderByID),
     products: collectionOps(createProduct, updateProduct, deleteProduct, findProductByID),
     transactions: collectionOps(createTransaction, updateTransaction, deleteTransaction, findTransactionByID),
-    'payload-preferences': collectionOps(createPreference, updatePreference, deletePreference, findPreferenceByID),
-    'payload-locked-documents': collectionOps(createLockedDocument, updateLockedDocument, deleteLockedDocument, findLockedDocumentByID),
+    'preferences': collectionOps(createPreference, updatePreference, deletePreference, findPreferenceByID),
+    'locked-documents': collectionOps(createLockedDocument, updateLockedDocument, deleteLockedDocument, findLockedDocumentByID),
   },
   globals: {
     'faq-settings': globalOps(findFaqSettings, updateFaqSettings),
@@ -447,8 +447,8 @@ export const readRegistry: ReadRegistry = {
     orders: readEntry(Orders, findOrdersPaginated, findOrderByID, countOrders),
     products: readEntry(Products, findProductsPaginated, findProductByID, countProducts),
     transactions: readEntry(Transactions, findTransactionsPaginated, findTransactionByID, countTransactions),
-    'payload-preferences': readEntry(PayloadPreferences, findPreferencesPaginated, findPreferenceByID, countPreferences),
-    'payload-locked-documents': readEntry(PayloadLockedDocuments, findLockedDocumentsPaginated, findLockedDocumentByID, countLockedDocuments),
+    'preferences': readEntry(Preferences, findPreferencesPaginated, findPreferenceByID, countPreferences),
+    'locked-documents': readEntry(LockedDocuments, findLockedDocumentsPaginated, findLockedDocumentByID, countLockedDocuments),
   },
   globals: {
     'faq-settings': globalReadEntry(FaqSettings, findFaqSettings),

@@ -339,11 +339,11 @@ describe('localapi/auth - verifyAuth', () => {
     expect(result.user?.id).toBe(1)
   })
 
-  it('accepts a valid payload-token cookie', async () => {
+  it('accepts a valid engage-token cookie', async () => {
     const db = makeFakeAuthDb([makeUser()])
     const { token } = await login(db, { email: 'user@example.com', password: CORRECT_PASSWORD, secret: SECRET })
 
-    const result = await verifyAuth(db, { headers: headersFrom({ Cookie: `some-other=1; payload-token=${token}; another=2` }), secret: SECRET })
+    const result = await verifyAuth(db, { headers: headersFrom({ Cookie: `some-other=1; engage-token=${token}; another=2` }), secret: SECRET })
 
     expect(result.user?.id).toBe(1)
   })
@@ -568,11 +568,11 @@ describe('localapi/auth - signJWT / verifyJWT', () => {
     expect(verifyJWT(tampered, SECRET)).toBeNull()
   })
 
-  it('a tampered payload fails verification (signature no longer matches)', () => {
+  it('tampered claims fail verification (signature no longer matches)', () => {
     const { token } = signJWT({ id: 1, admin: false }, SECRET)
     const [headerB64, , signatureB64] = token.split('.')
-    const forgedPayload = Buffer.from(JSON.stringify({ id: 1, admin: true, iat: 0, exp: 9_999_999_999 })).toString('base64url')
-    expect(verifyJWT(`${headerB64}.${forgedPayload}.${signatureB64}`, SECRET)).toBeNull()
+    const forgedClaims = Buffer.from(JSON.stringify({ id: 1, admin: true, iat: 0, exp: 9_999_999_999 })).toString('base64url')
+    expect(verifyJWT(`${headerB64}.${forgedClaims}.${signatureB64}`, SECRET)).toBeNull()
   })
 
   it('an expired exp fails verification', () => {

@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import React from 'react'
 
 // Stage 12 (full custom rebuild): the admin no longer imports
-// `@payloadcms/next/css` at all - custom.css + tailwind.css (imported below)
+// `the vendor package` at all - custom.css + tailwind.css (imported below)
 // are now this admin's entire visual system, built from scratch. Inter is
 // the admin's one single font (self-hosted via @fontsource, same as the
 // frontend's own body text - see (frontend)/layout.tsx for the identical

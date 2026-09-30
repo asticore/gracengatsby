@@ -60,7 +60,7 @@ describe('localapi/migrate - nextBatchNumber', () => {
     expect(await nextBatchNumber(db)).toBe(1)
   })
 
-  it('returns the latest batch + 1, matching real Payload\'s sort-by-name-desc logic', async () => {
+  it('returns the latest batch + 1, matching the reference engine\'s sort-by-name-desc logic', async () => {
     const { db } = mockDb([[{ batch: 3 }]])
     expect(await nextBatchNumber(db)).toBe(4)
   })
@@ -98,8 +98,8 @@ describe('localapi/migrate - runMigrations', () => {
     expect(result.ran).toEqual(['m2', 'm3'])
     expect(result.batch).toBe(6)
     expect(m1.up).not.toHaveBeenCalled()
-    expect(m2.up).toHaveBeenCalledWith({ db, payload: { logger }, req: {} })
-    expect(m3.up).toHaveBeenCalledWith({ db, payload: { logger }, req: {} })
+    expect(m2.up).toHaveBeenCalledWith({ db, engine: { logger }, req: {} })
+    expect(m3.up).toHaveBeenCalledWith({ db, engine: { logger }, req: {} })
     // One INSERT per migration actually run (m2, m3) - m1 was skipped, no insert for it.
     expect(runCalls).toHaveLength(2)
   })

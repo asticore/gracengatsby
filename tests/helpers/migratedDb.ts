@@ -7,7 +7,7 @@ let ready: Promise<void> | null = null
 /**
  * Makes sure the local emulated D1 used by the cms/db tests has the full
  * schema (idempotent: a no-op on an already-migrated database). Replaces the
- * side-effect import of the old Payload test config, which used to do this.
+ * side-effect import of the old the original engine test config, which used to do this.
  */
 export function ensureMigratedLocalDb(): Promise<void> {
   ready ??= (async () => {

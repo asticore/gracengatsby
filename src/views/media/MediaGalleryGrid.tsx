@@ -55,7 +55,7 @@ function readStoredSize(): TileSize {
 
 /**
  * The interactive half of MediaGalleryView: a size toggle (persisted in
- * localStorage per-browser, the same idea as Payload's own list-view column
+ * localStorage per-browser, the same idea as the original engine's own list-view column
  * preferences) plus the actual thumbnail grid. Split into its own client
  * component so the parent view can stay an async server component and avoid
  * shipping the whole doc list through a client-serialization boundary twice.

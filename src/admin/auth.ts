@@ -29,7 +29,7 @@ import { readFeatureFlags, resolveEntityGroups, type EntityPermissions, type Res
  */
 /**
  * Three of this app's real collection configs (`events`, `media`, `users`)
- * declare no `labels` of their own at all - real Payload auto-derives one
+ * declare no `labels` of their own at all - the reference engine auto-derives one
  * from the slug at sanitize time, and `src/localapi/config.ts`'s own
  * `buildEngineCollectionEntries`/`AUTO_LABELS_BY_SLUG` already reproduce
  * those exact three real values (confirmed live against `getEngine()` - see
@@ -88,7 +88,7 @@ function isHidden(hidden: unknown, user: unknown): boolean {
  * Evaluates a collection/global's own real `access.read`/`access.create`
  * function (a plain predicate, e.g. `isAdmin`/`isAdminOrSelf` from
  * `@/access/ecommerceAccess`) against the signed-in user - the SAME functions
- * real Payload would call, so behavior matches exactly.
+ * the reference engine would call, so behavior matches exactly.
  *
  * No access function set defaults to open (`true`), matching this app's own
  * convention of collections that omit `access.read` entirely (e.g. most of
@@ -97,17 +97,17 @@ function isHidden(hidden: unknown, user: unknown): boolean {
  * `isAdminUser` above - by the time this runs, the caller is a confirmed
  * admin, so "open" only ever means "open to an admin", never to the public.
  * A function returning a `Where` object (partial/row-filtered access, real
- * Payload's own convention) counts as readable for nav/menu purposes, same as
+ * The original engine's own convention) counts as readable for nav/menu purposes, same as
  * a plain `true`.
  */
 async function evaluateAccess(fn: unknown, user: unknown, engine: Engine): Promise<boolean> {
   if (typeof fn !== 'function') return true
   try {
-    // Real Payload always calls an `Access` fn with a real `req.payload` set
+    // The reference engine always calls an `Access` fn with a real `req.engine` set
     // (see e.g. `Lessons.ts`'s `readableLessons`, which does
-    // `req.payload as unknown as Engine` and then calls `engine.findGlobal`/
+    // `req.engine as unknown as Engine` and then calls `engine.findGlobal`/
     // `engine.find` on it) - omitting it here made every access fn that
-    // reads `req.payload` throw (`Cannot read properties of undefined
+    // reads `req.engine` throw (`Cannot read properties of undefined
     // (reading 'findGlobal')`), caught below and silently treated as
     // "not readable" rather than surfacing the real bug. Found live via a
     // dev-server boot of `/admin/login`.
@@ -115,7 +115,7 @@ async function evaluateAccess(fn: unknown, user: unknown, engine: Engine): Promi
     // awaited here, not just truthy-checked, or every one of them evaluates
     // as "readable" (a pending Promise is truthy) regardless of its real
     // resolved value.
-    const result = await (fn as (args: { req: { user: unknown; payload: Engine } }) => unknown)({ req: { payload: engine, user } })
+    const result = await (fn as (args: { req: { user: unknown; engine: Engine } }) => unknown)({ req: { engine, user } })
     return result !== false && result !== undefined && result !== null
   } catch {
     return false

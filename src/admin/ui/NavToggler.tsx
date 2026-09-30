@@ -4,7 +4,7 @@
  * The sidebar's one visible trigger - collapses/expands the desktop rail,
  * or opens/closes the mobile off-canvas drawer, depending on viewport (see
  * NavContext.tsx's `toggleSidebar`). Replaces the old open/close-only
- * hamburger this file used to render (a straight port of `@payloadcms/ui`'s
+ * hamburger this file used to render (a straight port of `the vendor package`'s
  * `NavToggler`) - a single adaptive "panel" icon matches the shadcn sidebar
  * pattern this rebuild is modeled on
  * (https://ui.shadcn.com/docs/components/base/sidebar), where one

@@ -1,12 +1,12 @@
 /**
- * Pre-step for `payload migrate`: gets the engine's bookkeeping tables onto
+ * Pre-step for `engine migrate`: gets the engine's bookkeeping tables onto
  * the `eg_` prefix before the migration runner touches the database.
  *
  * Run it with:
  *
  *   NODE_OPTIONS=--no-deprecation npx tsx scripts/prepareEngineTables.mts
  *
- * It is wired into `deploy:database` ahead of `payload migrate`, and is safe
+ * It is wired into `deploy:database` ahead of `engine migrate`, and is safe
  * to run by hand at any time - every step is idempotent.
  *
  * Why a script and not a migration: the runner reads its own history table on
@@ -62,13 +62,7 @@ const report = await bootstrapEngineTables(db)
 
 console.log('[prepare-engine-tables]', JSON.stringify(report, null, 2))
 
-if (report.keptLegacy.length > 0) {
-  console.warn(
-    `[prepare-engine-tables] Left ${report.keptLegacy.length} old-named table(s) in place because they still hold rows. Inspect them before removing.`,
-  )
-}
-
-const errors = [...report.columns.errors, ...report.tables.errors]
+const errors = report.columns.errors
 if (errors.length > 0) {
   console.error('[prepare-engine-tables] Errors:', errors)
   process.exit(1)

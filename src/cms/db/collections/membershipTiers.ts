@@ -5,7 +5,7 @@ import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 import { createCollectionOps } from '../generic'
 import { membershipTiers, membershipTiersBenefits } from '../schema'
 
-/** Payload's document shape for the `membership-tiers` collection - see src/features/members/collections/MembershipTiers.ts. */
+/** The original engine's document shape for the `membership-tiers` collection - see src/features/members/collections/MembershipTiers.ts. */
 export type MembershipTierDoc = {
   id: number
   name: string

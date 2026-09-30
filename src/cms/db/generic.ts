@@ -94,8 +94,8 @@ function extractGroup(result: Record<string, unknown>, meta: GroupFieldMeta, jsK
  * `groupValue[subName] ?? null`, not a bare `groupValue[subName]`: found via
  * real MemberSettings/SecuritySettings parity tests (Phase 19) submitting a
  * group object with a subfield omitted, expecting that subfield to come back
- * `null` (matching Payload's own real replace-the-whole-field semantics for
- * groups - a group is one field, and Payload does not deep-merge a partial
+ * `null` (matching the original engine's own real replace-the-whole-field semantics for
+ * groups - a group is one field, and the original engine does not deep-merge a partial
  * group object with the stored one). Passing a bare `undefined` through to
  * drizzle's `.set()`/`.values()` silently OMITS that column from the SQL
  * statement instead of writing NULL - the pre-existing wholesale-group-
@@ -142,16 +142,16 @@ function flattenOneGroup(result: Record<string, unknown>, meta: GroupFieldMeta, 
 }
 
 /**
- * Translates Payload's `{ $inc: n }` atomic-increment marker into a raw SQL
+ * Translates the original engine's `{ $inc: n }` atomic-increment marker into a raw SQL
  * `column + n` expression - the same mechanism the real base adapter's own
  * `transformForWrite` uses (confirmed by reading
- * `@payloadcms/drizzle/dist/transform/write/traverseFields.js` directly: for
+ * `the vendor package.js` directly: for
  * a number field whose value is `{ $inc: n }` it emits
  * `sql.raw(`${columnName} + ${value.$inc}`)`, gated behind its own
  * `enableAtomicWrites` flag, which the id-based fast path `updateOne` always
- * takes). This is not a Mongo-only shape: Payload's OWN login-attempt
- * tracking sends it to `payload.db.updateOne` on every failed local-strategy
- * login (`payload/dist/auth/strategies/local/incrementLoginAttempts.js`:
+ * takes). This is not a Mongo-only shape: the original engine's OWN login-attempt
+ * tracking sends it to `engine.db.updateOne` on every failed local-strategy
+ * login (the vendor source:
  * `data.loginAttempts = { $inc: 1 }`) specifically so concurrent failed
  * attempts can't race a read-then-write plain-number update into losing an
  * increment - so Users' cutover needs this before its `updateOne` intercept
@@ -167,10 +167,10 @@ function flattenOneGroup(result: Record<string, unknown>, meta: GroupFieldMeta, 
  * SQLite `text` column (see ../schema/generate.ts's columnFor), and every
  * OTHER write path already only ever hands one a string (this app's own
  * `createdAt`/`updatedAt` writes always go through `new Date().toISOString()`
- * explicitly). The one confirmed exception is Payload's OWN session-writing
- * code (`payload/dist/auth/sessions.js`'s `addSessionToUser`): it builds a
+ * explicitly). The one confirmed exception is the original engine's OWN session-writing
+ * code (the vendor source's `addSessionToUser`): it builds a
  * session's `createdAt`/`expiresAt` as raw `Date` objects, not strings, and
- * hands the whole array straight to `payload.db.updateOne` - the real base
+ * hands the whole array straight to `engine.db.updateOne` - the real base
  * adapter coerces this somewhere in its own transformForWrite; this data
  * layer did not need to until an array field's writer could receive one from
  * outside this app's own code, which only became possible once Users (the
@@ -178,7 +178,7 @@ function flattenOneGroup(result: Record<string, unknown>, meta: GroupFieldMeta, 
  * writes) was cut over. D1 itself rejects a raw `Date` outright
  * (`D1_TYPE_ERROR: Type 'object' not supported`), so this is a correctness
  * fix, not a defensive nicety - confirmed against a real
- * `payload.login()`/session write, see tests/int/cms-db-users.int.spec.ts.
+ * `engine.login()`/session write, see tests/int/cms-db-users.int.spec.ts.
  */
 function serializeDates<T extends Record<string, unknown>>(row: T): T {
   for (const [key, value] of Object.entries(row)) {
@@ -211,7 +211,7 @@ function applyAtomicIncrements(values: Record<string, unknown>, columns: Record<
  * document group (Gap A1/A2 - Header/Footer's `socials.links`, SeoSettings'
  * `schema.sameAs`, LanguageSettings' `multilingual.activeLocales`, etc),
  * derived automatically from `groupFields` by collectGroupSpecialFields.
- * `path` is where the value lives in the incoming write payload (e.g.
+ * `path` is where the value lives in the incoming write engine (e.g.
  * `['socials', 'links']`); `syntheticKey` is the top-level key it gets lifted
  * to (e.g. `socialsLinks`) - the exact same key generate.ts's
  * TopLevelGroupFieldMeta registers the child table under, and the same key
@@ -224,7 +224,7 @@ type GroupSpecialField = { path: string[]; syntheticKey: string }
 /**
  * Walks `groupFields` (recursively, through nested groups) collecting every
  * array/hasMany-select field declared directly inside a group, so
- * splitSpecialFields can lift each one out of the nested write payload
+ * splitSpecialFields can lift each one out of the nested write engine
  * BEFORE flattenGroups runs - entirely derived from the existing
  * `groupFields` parameter, no new exported parameter needed on
  * createCollectionOps/createGlobalOps.
@@ -247,7 +247,7 @@ function collectGroupSpecialFields(groupFields: GroupFieldMeta[], pathPrefix: st
 
 /**
  * Lifts the value at `path` out of `container` (a shallow-copied write
- * payload), returning `undefined` if the OUTERMOST group in the path was
+ * engine), returning `undefined` if the OUTERMOST group in the path was
  * never touched (nothing to do - leaves the rest of `container` untouched,
  * matching "the key is absent -> leave this field alone" everywhere else in
  * this data layer), or the value (defaulted to `[]` if the leaf itself is
@@ -559,7 +559,7 @@ function createBlocksRelsOps(
   // from the "version_" underscore prefix generateVersionsTable's columns
   // get), and a versioned block's nested hasMany subfield writes to
   // `_rels` with `path` = "version.blocks.<index>.<field>", not
-  // "blocks.<index>.<field>". Payload's own engine.create() produced both of
+  // "blocks.<index>.<field>". The original engine's own engine.create() produced both of
   // these; this is not guessed.
   pathPrefix = '',
 ) {
@@ -718,13 +718,13 @@ function createBlocksRelsOps(
 /**
  * Query-time resolution for `join` fields - the last schema-generation gap
  * (see ../schema/generate.ts's processFields doc comment: a join field never
- * gets a column of its own). Read-only by construction: Payload itself never
+ * gets a column of its own). Read-only by construction: the original engine itself never
  * accepts a write through a join field, it is always resolved by querying
  * the OTHER side's own relationship/hasMany field.
  *
  * Confirmed against a real Events document's `rsvps` field (Events' only
  * join field, targeting EventRSVPs' `event` relationship column) by creating
- * documents through Payload's own engine and inspecting its actual
+ * documents through the original engine's own engine and inspecting its actual
  * `findByID` response, not guessed:
  *
  *   { docs: [13, 12, 11, ...], hasNextPage: true }
@@ -742,17 +742,17 @@ function createBlocksRelsOps(
  *
  * Courses' `lessons` join (Phase 10) revealed that default isn't the whole
  * story: its join field DOES declare its own `defaultSort: 'order'` (see
- * src/features/courses/collections/Courses.ts), and real Payload honors
+ * src/features/courses/collections/Courses.ts), and the reference engine honors
  * that instead of the id-descending default - confirmed by creating 11 real
  * Lessons out of id order relative to their `order` values and inspecting
- * Payload's own `findByID` response: it came back sorted by `order`
+ * The original engine's own `findByID` response: it came back sorted by `order`
  * ascending, not by id at all. So each join field now carries its own
  * optional `sort` (column + direction), read off the field's own
  * `defaultSort` string in ../schema/index.ts (a bare name = ascending, a
- * `-`-prefixed name = descending, matching Payload's own `sort` string
+ * `-`-prefixed name = descending, matching the original engine's own `sort` string
  * convention) - falling back to `{ column: 'id', direction: 'desc' }` when a
  * join field declares no `defaultSort`, exactly reproducing the previously-
- * confirmed Events behaviour. Payload's real page/where query options on a
+ * confirmed Events behaviour. The original engine's real page/where query options on a
  * join field are still not implemented - nothing in this app's admin UI or
  * API usage needs them yet.
  */
@@ -801,7 +801,7 @@ function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onCol
  *
  * Not folded into createCollectionOps' create/updateByID: whether every live
  * write should also create a version row, and how `_status`/`latest`/
- * draft-vs-published reads should behave, is an application/Payload-level
+ * draft-vs-published reads should behave, is an application/the original engine-level
  * policy question this data layer does not need to settle to prove the
  * schema and the basic row shape are right - see ../index.ts.
  */
@@ -844,7 +844,7 @@ export function createVersionsOps(
   async function findLatestByParentID(parentId: number): Promise<Record<string, unknown> | null> {
     const db = await getDb()
     // Filter on `latest` itself, not just `order by id desc limit 1` - real
-    // Payload's own draft-resolution read does the same (confirmed: it does
+    // The original engine's own draft-resolution read does the same (confirmed: it does
     // NOT fall back to version row insertion order/timestamp when
     // `latest` disagrees with it - see createDraftOps' doc comment for how
     // that was found). `latest` is exclusive per parent by construction (see
@@ -876,7 +876,7 @@ export function createVersionsOps(
     const db = await getDb()
     const now = new Date().toISOString()
     const latest = opts.latest ?? true
-    // `latest` is exclusive per parent - confirmed against real Payload data
+    // `latest` is exclusive per parent - confirmed against the reference engine data
     // (create a doc, save a draft, publish it, save another draft: at every
     // step exactly one _eg_events_v row for that parent has latest=1, the
     // previous one flips to 0 the moment a new one becomes latest). Only
@@ -906,7 +906,7 @@ export function createVersionsOps(
  * see; there is no more per-collection SQL to hand-write.
  *
  * `arrayTables` (field name -> child table, from generateArrayTable) is how
- * array fields are assembled into the document shape Payload's own API
+ * array fields are assembled into the document shape the original engine's own API
  * returns: on read, each array field's child rows are fetched by
  * `_parent_id`, ordered by `_order`, and attached as a plain array under the
  * field name; on write, the field's existing child rows are replaced
@@ -951,9 +951,9 @@ export function createVersionsOps(
  * columns, and a bare string per row instead of a subfield object).
  *
  * Static `defaultValue`s from the collection config are applied on create
- * when the caller omits that field, matching what Payload's own validation
+ * when the caller omits that field, matching what the original engine's own validation
  * layer does before it ever reaches the database adapter - a function
- * default (a per-request computed value) is a Payload-level concern, not the
+ * default (a per-request computed value) is a the original engine-level concern, not the
  * database's, so those are left for the caller to resolve first. Merged into
  * `data` before splitSpecialFields runs, not into the flat insert `values`
  * afterward - a default targeting a special (array/rels/blocks/select) field,
@@ -1055,17 +1055,17 @@ export function createCollectionOps(
   }
 
   /**
-   * The adapter-shaped counterpart to findMany, matching Payload's own real
+   * The adapter-shaped counterpart to findMany, matching the original engine's own real
    * `find` contract (sort, page/limit, a `PaginatedDocs` return shape) - what
    * the engine cutover's per-collection adapter intercept needs to satisfy
-   * Payload's list views and API queries, which always pass sort/pagination
+   * The original engine's list views and API queries, which always pass sort/pagination
    * regardless of how simple the collection is. `findMany` itself is left
    * untouched (still used by every existing parity test and every ops file's
    * own `findX` alias) rather than folding pagination into it, to keep this
    * additive and avoid touching a widely-used existing signature.
    *
    * `limit: 0` disables pagination entirely (returns every matching row,
-   * still sorted) - the same convention Payload's own adapter documents on
+   * still sorted) - the same convention the original engine's own adapter documents on
    * its `Find` args and implements in its real `findMany` (confirmed by
    * reading it directly: `if (limit === 0) { pagination = false; limit =
    * undefined }`). `pagination: false` does the same regardless of `limit`.
@@ -1170,14 +1170,14 @@ export function createCollectionOps(
   async function updateByID(id: number, data: Record<string, unknown>): Promise<Doc | null> {
     const db = await getDb()
     const { scalars, arrays, topLevelRels, blocks, selects } = splitSpecialFields(data)
-    // Payload's own login/session-persistence path (`addSessionToUser`/
-    // `revokeSession` in payload/dist/auth/sessions.js) explicitly sets
-    // `user.updatedAt = null` before calling `payload.db.updateOne` so that
+    // The original engine's own login/session-persistence path (`addSessionToUser`/
+    // `revokeSession` in engine/dist/auth/sessions.js) explicitly sets
+    // `user.updatedAt = null` before calling `engine.db.updateOne` so that
     // adding/removing a session doesn't bump the document's own "last
     // modified" timestamp - the real base adapter honors that by leaving the
     // column untouched entirely. Every other existing caller either omits
     // `updatedAt` from `data` or has it overridden by `now()` below anyway,
-    // so this only changes behavior for the one case Payload itself sends an
+    // so this only changes behavior for the one case the original engine itself sends an
     // explicit `null` for.
     const skipUpdatedAt = scalars.updatedAt === null
     const values: Record<string, unknown> = flattenGroups(scalars, groupFields)
@@ -1219,19 +1219,19 @@ export function createCollectionOps(
  * proven, untouched.
  *
  * Confirmed by creating/updating/publishing a real Events document through
- * Payload's own engine and inspecting exactly what it did to both eg_events
+ * The original engine's own engine and inspecting exactly what it did to both eg_events
  * and _eg_events_v (see tests/int/cms-db-events-drafts.int.spec.ts) - not
  * guessed:
  *
  *  - `create()` always writes the live row (a document has to exist
  *    somewhere) AND a mirroring version row (latest: true). The live row's
  *    `_status` comes from the column's own SQL default ('draft') when the
- *    caller doesn't set one - exactly what Payload's create() does too.
+ *    caller doesn't set one - exactly what the original engine's create() does too.
  *  - `updateByID(id, data)` with no `draft` flag - a normal/"publish" write,
  *    whatever `_status` the caller passes - updates the live row (unchanged
  *    createCollectionOps behaviour) AND creates a new version row mirroring
  *    the fresh live state, becoming the new latest.
- *  - `updateByID(id, data, { draft: true })` - Payload's own "save as
+ *  - `updateByID(id, data, { draft: true })` - the original engine's own "save as
  *    draft" - creates a new latest version row ONLY, snapshotting the full
  *    resulting document (existing live state merged with `data`, same
  *    partial-update semantics as a live updateByID). The live row is left
@@ -1295,7 +1295,7 @@ export function createDraftOps(
       if (!current) return null
       // A draft:true save defaults the new version's `_status` to 'draft'
       // even when the live doc it's layered on top of is 'published' -
-      // confirmed against real Payload: `engine.update({..., draft: true})`
+      // confirmed against the reference engine: `engine.update({..., draft: true})`
       // with no `_status` in `data` produced a version__status of 'draft',
       // not the live row's 'published'. An explicit `_status` in `data`
       // still wins (untested edge case upstream, but the obvious precedent).
@@ -1321,8 +1321,8 @@ export function createDraftOps(
 }
 
 /**
- * Phase 18: globals. Confirmed against Payload's OWN real global adapter
- * (@payloadcms/drizzle's findGlobal.js/updateGlobal.js/createGlobal.js, not
+ * Phase 18: globals. Confirmed against the original engine's OWN real global adapter
+ * (the vendor package's findGlobal.js/updateGlobal.js/createGlobal.js, not
  * guessed): a global's table is schema-identical to an ordinary
  * non-versioned, non-upload, non-auth collection table (same generateTable/
  * generateArrayTable/generateBlockTables/generateRelsTable machinery -
@@ -1336,14 +1336,14 @@ export function createDraftOps(
  *
  *  - `findGlobal` is `SELECT * FROM <table> LIMIT 1` - no `WHERE id = ...`,
  *    no slug/global-type column on the row itself (`globalType` is stamped
- *    onto the result object by Payload's OWN adapter code, not read from a
+ *    onto the result object by the original engine's OWN adapter code, not read from a
  *    column - this data layer's callers already know which global they
  *    asked for, so it is not reproduced here).
  *  - `updateGlobal`/`createGlobal` both fold into ONE upsert: find the
  *    existing row's id first (`db.query[tableName].findFirst({})` in
- *    Payload's real adapter - the same "no WHERE, just the first/only row"
+ *    The original engine's real adapter - the same "no WHERE, just the first/only row"
  *    shape as the read), then UPDATE by that id if one exists, else INSERT a
- *    fresh row. Payload's own createGlobal() is only ever called from
+ *    fresh row. The original engine's own createGlobal() is only ever called from
  *    updateGlobal()'s own fallback in practice (there is no user-facing
  *    "create a global" operation - a global always exists conceptually, just
  *    possibly empty) - so this data layer exposes a single `update()` that

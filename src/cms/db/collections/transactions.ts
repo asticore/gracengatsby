@@ -20,7 +20,7 @@ export type TransactionAddress = {
   phone?: string | null
 }
 
-/** Payload's document shape for the `transactions` collection - see src/features/ecommerce/collections/Transactions.ts. No `_rels` table: `order`/`cart` are single-target relationships (plain `_id` columns), and `transactions` is never the target-side of its own hasMany field. */
+/** The original engine's document shape for the `transactions` collection - see src/features/ecommerce/collections/Transactions.ts. No `_rels` table: `order`/`cart` are single-target relationships (plain `_id` columns), and `transactions` is never the target-side of its own hasMany field. */
 export type TransactionDoc = {
   id: number
   items?: TransactionItem[] | null

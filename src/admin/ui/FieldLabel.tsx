@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `FieldLabel`. Presentational
- * only, except for resolving `label`: field configs type it as Payload's own
+ * From-scratch replacement for `the vendor package`'s `FieldLabel`. Presentational
+ * only, except for resolving `label`: field configs type it as the original engine's own
  * `StaticLabel` (`string | Record<string, string>`, the latter being a
  * per-locale label map), not a plain ReactNode - so a locale-keyed object is
  * resolved to a single string before rendering.

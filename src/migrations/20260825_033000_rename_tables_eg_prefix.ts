@@ -42,7 +42,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   })
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // Intentionally a no-op, matching the other migrations here. Renaming every
   // table back would leave the running config - which now asks for `eg_`
   // tables - pointing at names that no longer exist, so a rollback would break

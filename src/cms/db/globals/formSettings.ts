@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { formSettings, formSettingsGenerated } from '../schema'
 
 /**
- * Payload's document shape for the `form-settings` global - see
+ * The original engine's document shape for the `form-settings` global - see
  * src/globals/FormSettings.ts. NOTE the naming collision this file
  * deliberately avoids: the `Forms` COLLECTION already modeled in this data
  * layer (src/cms/db/collections/forms.ts, exporting `formsFields` etc.) is a
@@ -29,7 +29,7 @@ import { formSettings, formSettingsGenerated } from '../schema'
  * `admin.condition: (_, s) => Boolean(s?.turnstile)` - confirmed UI-only,
  * same as every other settings global modeled so far (generate.ts never
  * reads `field.admin`): both columns exist unconditionally, exactly like
- * Payload's own real `eg_form_settings` table has them, regardless of
+ * The original engine's own real `eg_form_settings` table has them, regardless of
  * whether `turnstile` is on.
  *
  * One field is a secret (hooks: { beforeChange: encryptSecretHook,
@@ -38,7 +38,7 @@ import { formSettings, formSettingsGenerated } from '../schema'
  * secret (no hooks declared on it) - it's meant to be public, per
  * FormSettings.ts's own field description ("this one is public - it appears
  * in the form itself"). `findFormSettings()` returns exactly what's stored:
- * a document Payload wrote comes back with `turnstileSecretKey` still
+ * a document the original engine wrote comes back with `turnstileSecretKey` still
  * ciphertext, never decrypted plaintext - confirmed both directions in
  * tests/int/cms-db-form-settings.int.spec.ts.
  *

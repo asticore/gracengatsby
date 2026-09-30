@@ -13,7 +13,7 @@
  * features/email/providers/sesApi.ts does it by hand - the SDK expects Node's
  * crypto and stream internals, which Workers do not provide. The four chained
  * HMACs below are the same construction; changing the canonical request in any
- * way (header order, the signed-headers list, the payload hash) invalidates the
+ * way (header order, the signed-headers list, the engine hash) invalidates the
  * signature and the store answers 403.
  *
  * Bodies are signed as UNSIGNED-PAYLOAD. Hashing a body would mean holding all

@@ -357,12 +357,12 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   	\`created_at\` text
   );
   `)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`pages_id\` integer REFERENCES pages(id);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_pages_id_idx\` ON \`payload_locked_documents_rels\` (\`pages_id\`);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`pages_id\` integer REFERENCES pages(id);`)
+  await db.run(sql`CREATE INDEX \`eg_locked_documents_rels_pages_id_idx\` ON \`eg_locked_documents_rels\` (\`pages_id\`);`)
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` DROP COLUMN \`pages_id\`;`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` DROP COLUMN \`pages_id\`;`)
   await db.run(sql`DROP TABLE \`pages_blocks_hero\`;`)
   await db.run(sql`DROP TABLE \`pages_blocks_rich_text\`;`)
   await db.run(sql`DROP TABLE \`pages_blocks_image_text\`;`)

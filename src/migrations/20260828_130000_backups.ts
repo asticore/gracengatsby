@@ -45,7 +45,7 @@ const BACKUPS_INDEXES = [
   'CREATE INDEX IF NOT EXISTS `eg_backups_status_finished_at_idx` ON `eg_backups` (`status`, `finished_at`)',
 ]
 
-export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   await db.run(sql.raw(BACKUPS_TABLE))
   for (const statement of BACKUPS_INDEXES) {
     await db.run(sql.raw(statement))
@@ -53,7 +53,7 @@ export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> 
   engine.logger.info('[migrate] eg_backups is present.')
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // No-op, matching the other migrations here. Dropping the table on a rollback
   // would erase the record of when the last good copy was taken, which is
   // precisely the question being asked during a rollback.

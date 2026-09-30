@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { paymentSettings, paymentSettingsGenerated } from '../schema'
 
 /**
- * Payload's document shape for the `payment-settings` global - see
+ * The original engine's document shape for the `payment-settings` global - see
  * src/globals/PaymentSettings.ts. Same shape class as securitySettings.ts/
  * memberSettings.ts: three top-level `group` fields (`stripe`, `paypal`,
  * `general`), each containing only `row`-wrapped or plain scalar subfields
@@ -28,10 +28,10 @@ import { paymentSettings, paymentSettingsGenerated } from '../schema'
  * Three fields are secrets (hooks: { beforeChange: encryptSecretHook,
  * afterRead: decryptSecretHook }, src/utilities/secretField.ts): `stripe.
  * secretKey`, `stripe.webhookSigningSecret`, `paypal.clientSecret`.
- * `stripe.publishableKey` is deliberately NOT a secret (Payload's own field
+ * `stripe.publishableKey` is deliberately NOT a secret (the original engine's own field
  * declares no hooks on it) even though it lives beside two secret fields -
  * it's meant to be public, per PaymentSettings.ts's own doc comment.
- * `findPaymentSettings()` returns exactly what's stored: a document Payload
+ * `findPaymentSettings()` returns exactly what's stored: a document the original engine
  * wrote comes back with the three secret fields still ciphertext, never
  * decrypted plaintext - confirmed both directions in
  * tests/int/cms-db-payment-settings.int.spec.ts.

@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { mediaSettings, mediaSettingsGroupFields, mediaSettingsResizingResponsiveWidths } from '../schema'
 
 /**
- * Payload's document shape for the `media-settings` global - see
+ * The original engine's document shape for the `media-settings` global - see
  * src/globals/MediaSettings.ts. `optimisation`/`delivery`/`bulk` are plain
  * `group` fields (scalars only) - flattened onto the table with a column
  * prefix by generateTable() alone, same mechanism SiteSettings' `theme`/`seo`

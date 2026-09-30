@@ -47,7 +47,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   })
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // Intentionally a no-op. Rolling this back would drop the tables and columns
   // holding every Section layout, Loop configuration and custom field value on
   // the site - far more destructive than leaving unused schema in place.

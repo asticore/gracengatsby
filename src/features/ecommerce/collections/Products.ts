@@ -8,13 +8,13 @@ import { richTextEditor } from '@/engine/editor'
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see
  * ./Addresses.ts's header comment. Reproduced from `createProductsCollection.js`
- * (`@payloadcms/plugin-ecommerce@3.88.0`, Phase 19: cut over from Payload's
+ * (`the vendor package@3.88.0`, Phase 19: cut over from the original engine's
  * own real collection type) with added `versions: { drafts: true }`
  * (Stage 10 - first ecommerce collection with versioning) and `trash: true`
  * (soft-delete support - new in generate.ts this stage). A SHADOW config
  * means this is a local TypeScript mirror of what the real ecommerce plugin
  * registers dynamically at import time: when that plugin is eventually
- * removed (payload-removal-plan.md), this becomes the canonical config, and
+ * removed (the plan doc), this becomes the canonical config, and
  * the matching schema/db-layer boilerplate gets generated once from it via
  * the existing codegen pipeline (src/cms/db/schema/generate.ts). Until then,
  * any schema/slug/relationship changes here must be mirrored in the real
@@ -35,7 +35,7 @@ import { richTextEditor } from '@/engine/editor'
  * `productsValidation` re-check). Nothing to port.
  *
  * Found and fixed a real gap instead: `read` was `() => true` (unconditional
- * public read) - real Payload uses `access.adminOrPublishedStatus`
+ * public read) - the reference engine uses `access.adminOrPublishedStatus`
  * (`createProductsCollection.js:28-33`), gating non-admin reads on
  * `_status: 'published'`. This shadow was letting anyone read draft/
  * unpublished products. Fixed to `adminOrPublishedStatus`
@@ -75,7 +75,7 @@ import { richTextEditor } from '@/engine/editor'
  * corrupting a real money field on save.
  *
  * DELIBERATELY NOT MODELED HERE (Layer 2/3, not this DB-layer stage - see
- * payload-removal-plan.md's Ecommerce scoping):
+ * the plan doc's Ecommerce scoping):
  *  - Product variant storage (products' `stripeProductID`/`variants` fields
  *    are admin-only for phase 19, not exposed to the storefront yet - Phase
  *    20 territory).

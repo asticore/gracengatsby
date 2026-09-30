@@ -6,8 +6,8 @@ import { createCollectionOps } from '../generic'
 import { pageTemplates, pageTemplatesBlockTypes, pageTemplatesRels, pageTemplatesRelsTargetColumns } from '../schema'
 
 /**
- * One block instance as Payload's own API returns it - `blockType` picks the
- * shape, `id` and `blockName` are Payload's own per-instance bookkeeping
+ * One block instance as the original engine's own API returns it - `blockType` picks the
+ * shape, `id` and `blockName` are the original engine's own per-instance bookkeeping
  * (confirmed against a real eg_page_templates_blocks_* row: `id` is a
  * generated string, `blockName` is nullable and separate from the block's own
  * declared fields), and everything else is that block's own fields. Typed
@@ -21,7 +21,7 @@ export type PageTemplateBlock = {
   blockName?: string | null
 } & Record<string, unknown>
 
-/** Payload's document shape for the `page-templates` collection - see src/collections/PageTemplates.ts. */
+/** The original engine's document shape for the `page-templates` collection - see src/collections/PageTemplates.ts. */
 export type PageTemplateDoc = {
   id: number
   name: string

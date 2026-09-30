@@ -1,5 +1,5 @@
 /**
- * Schema addition for `eg_locked_documents_rels` (Payload's own polymorphic
+ * Schema addition for `eg_locked_documents_rels` (the original engine's own polymorphic
  * "who has this document locked" table): FK columns for every collection
  * added to this app's config after that table was last migrated - audit-log,
  * backups, translations, membership-tiers, memberships. Without these,

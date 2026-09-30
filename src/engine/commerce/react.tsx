@@ -8,12 +8,12 @@
  *
  * See ../index.ts for what this directory is and the rules that govern it.
  *
- * From-scratch replacement (2026-09-27, payload-removal-plan.md - the last
- * of `@payloadcms/plugin-ecommerce`'s client/hook surface) for the real
+ * From-scratch replacement (2026-09-27, the plan doc - the last
+ * of `the vendor package`'s client/hook surface) for the real
  * plugin's `EcommerceProvider`/`useCart`/`useAddresses`/`usePayments`
  * (`client/react`). Talks directly to this app's own from-scratch REST
  * endpoints (`src/localapi/rest.ts`'s cart-item and payments handlers,
- * Stage 10 Ecommerce) - there is no Payload server behind this at all.
+ * Stage 10 Ecommerce) - there is no the original engine server behind this at all.
  *
  * Guest-cart only: this app never assigns a `customer` to a cart on
  * creation (`../../features/ecommerce/hooks/cartHooks.ts`'s

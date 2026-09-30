@@ -8,7 +8,7 @@ import { cartItemsField, currencyField } from './shared'
 /**
  * SHADOW config for the ecommerce plugin's real `carts` collection - see
  * ./Products.ts's header comment. Reproduced from `createCartsCollection.js`
- * (`@payloadcms/plugin-ecommerce@3.88.0`) with this app's own
+ * (`the vendor package@3.88.0`) with this app's own
  * `allowGuestCarts: true` (`engage.config.ts`'s `carts:` key).
  *
  * LAYER 2 (this stage) added: `secret`'s auto-generation and the
@@ -36,16 +36,16 @@ import { cartItemsField, currencyField } from './shared'
  * `../hooks/cartHooks.ts`), which this engine already ran generically for
  * any field that declares one (`src/localapi/read-operations.ts`'s
  * `traverseField`) - no engine change needed there. `virtual: true` (real
- * Payload's own flag) DID need one: `src/cms/db/schema/generate.ts` now
- * skips any `virtual` field when building columns, matching real Payload's
+ * The original engine's own flag) DID need one: `src/cms/db/schema/generate.ts` now
+ * skips any `virtual` field when building columns, matching the reference engine's
  * own "no DB column for a virtual field" behavior - required because this
  * shadow schema is bound to the SAME physical `eg_carts` table real
- * Payload's own (already-migrated) plugin config created, which also has no
+ * The original engine's own (already-migrated) plugin config created, which also has no
  * `status` column; without that skip this shadow table would drift from the
  * real one and break at the first query.
  *
  * Layer 2 is now fully done. Remaining ecommerce work is Layer 3 (Stripe)
- * and the real plugin cutover - see payload-removal-plan.md.
+ * and the real plugin cutover - see the plan doc.
  */
 export const Carts: CollectionConfig = {
   slug: 'carts',

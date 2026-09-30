@@ -1,9 +1,9 @@
 /**
- * From-scratch reimplementation of Payload 3.88.0's Local API AUTH surface -
+ * From-scratch reimplementation of the original engine 3.88.0's Local API AUTH surface -
  * `login`, `resetPassword`, `forgotPassword`, and the `auth({ headers })`
  * token-verification operation - built the same way every other module in
- * this directory is: hand-rolled types mirroring Payload's real shapes, zero
- * `import ... from 'payload'`, and a registry-shaped executor (a `db:
+ * this directory is: hand-rolled types mirroring the original engine's real shapes, zero
+ * `import ... from 'engine'`, and a registry-shaped executor (a `db:
  * AuthDbOps` parameter, exactly like `operations.ts`'s `CollectionDbOps`/
  * `GlobalDbOps` and `read-operations.ts`'s `ReadRegistry`) so this module has
  * no hardcoded dependency on `src/cms/db` and stays testable with a plain
@@ -15,20 +15,20 @@
  * (`src/collections/Users.ts`, `auth: true` as a bare boolean, confirmed by
  * reading that file directly - no `loginWithUsername`, no `verify`, no
  * `disableLocalStrategy`, no `maxLoginAttempts`/`lockTime`/`tokenExpiration`/
- * `useSessions` overrides) - so every branch real Payload's auth operations
+ * `useSessions` overrides) - so every branch the reference engine's auth operations
  * have for a DIFFERENT auth configuration (username login, email
  * verification, API keys, a disabled local strategy, per-collection
  * attempt/lock/expiration overrides) is out of scope and not implemented,
  * not silently working "by coincidence". Each such omission is called out
  * below, not left for a future reader to rediscover by diffing against real
- * Payload.
+ * The original engine.
  *
  * This is the most security-sensitive module in the from-scratch Local API
- * (payload-removal-plan.md project doc): it is what stands between a bad
+ * (the plan doc project doc): it is what stands between a bad
  * password guess and a minted session token. Every citation below was
  * confirmed by reading this repo's actual installed
- * `node_modules/payload@3.88.0/dist/**` source directly, not paraphrased
- * from memory or from Payload's public docs (which do not document several
+ * `node_modules/engine@3.88.0/dist/**` source directly, not paraphrased
+ * from memory or from the original engine's public docs (which do not document several
  * of the behaviors here - the lockout-recheck-after-increment race guard,
  * the `updatedAt: null` session-write suppression, and the asymmetric
  * `login`/`resetPassword` return shapes are all things only the real source
@@ -38,7 +38,7 @@
  * How this module is structured
  * ---------------------------------------------------------------------------
  * Four public functions - `login`, `resetPassword`, `forgotPassword`,
- * `verifyAuth` - each a straight-line port of one real Payload operation's
+ * `verifyAuth` - each a straight-line port of one the reference engine operation's
  * real step order for the `users`-only, default-config case. Each takes:
  *   - a `db: AuthDbOps` parameter - the tiny slice of
  *     `src/cms/db/collections/users.ts`'s exports (`findUserAuthRowsPaginated`
@@ -55,9 +55,9 @@
  *     mock in tests.
  *   - the real args each real operation takes (`email`/`password`,
  *     `token`/`password`, `email`/`expirationMs`, `headers`), plus `secret`
- *     where a JWT is signed or verified (real Payload gets this from
- *     `req.payload.secret` - this module takes it as a plain argument since
- *     it has no `payload` singleton to read it from).
+ *     where a JWT is signed or verified (the reference engine gets this from
+ *     `req.engine.secret` - this module takes it as a plain argument since
+ *     it has no `engine` singleton to read it from).
  *
  * Also exported: the four crypto primitives (`hashPassword`, `verifyPassword`,
  * `signJWT`, `verifyJWT`) as standalone functions, per this stage's brief,
@@ -65,40 +65,40 @@
  * operations that call them.
  *
  * ---------------------------------------------------------------------------
- * GROUND TRUTH, confirmed by reading real Payload 3.88.0 source directly
+ * GROUND TRUTH, confirmed by reading the reference engine 3.88.0 source directly
  * ---------------------------------------------------------------------------
  *
  * 1. CONFIG VALUES - `maxLoginAttempts = 5`, `lockTime = 600_000` (ms),
  *    `tokenExpiration = 7200` (seconds), `useSessions = true`
- *    (`payload/dist/collections/config/defaults.js:124-129` sets these as the
+ *    (the vendor source sets these as the
  *    literal defaults baked into `authDefaults`, and `:138-143`
  *    (`sanitizeCollection`) applies them with `??`, i.e. only when the
  *    collection's own `auth` object doesn't set the key). `Users.auth` is the
  *    bare boolean `true` (confirmed reading `src/collections/Users.ts`
- *    directly), which Payload's own collection sanitizer normalizes to `{}`
+ *    directly), which the original engine's own collection sanitizer normalizes to `{}`
  *    before applying these defaults - so EVERY one of these four values is
- *    real Payload's actual default for this app's actual `users` collection
+ *    the reference engine's actual default for this app's actual `users` collection
  *    TODAY, not a simplification. They are hardcoded as named constants
  *    below (`MAX_LOGIN_ATTEMPTS`, `LOCK_TIME_MS`, `TOKEN_EXPIRATION_SECONDS`,
  *    `USE_SESSIONS`) rather than read from this app's own
  *    `loginProtectionAuth()` (`src/features/security/loginProtection.ts` or
  *    wherever it lives) - that helper's env-driven numbers feed a completely
  *    different, unrelated session-COOKIE mechanism (checked separately, not
- *    Payload's own `auth` config at all) and have never been wired into
+ *    The original engine's own `auth` config at all) and have never been wired into
  *    `Users.auth`. A future engineer must NOT "fix" these constants to read
- *    from that helper without first confirming Payload's collection sanitizer
+ *    from that helper without first confirming the original engine's collection sanitizer
  *    would actually pick them up - doing so today would be a silent BEHAVIOR
- *    CHANGE from what real Payload does in production right now, not a
+ *    CHANGE from what the reference engine does in production right now, not a
  *    cleanup.
  *
- * 2. LOGIN'S REAL STEP ORDER (`payload/dist/auth/operations/login.js`,
+ * 2. LOGIN'S REAL STEP ORDER (the vendor source,
  *    `loginOperation`, plus its own `checkLoginPermission` at :21-28):
  *      - sanitize email: `unsanitizedEmail.toLowerCase().trim()` (:49) - this
  *        app never enables `loginWithUsername`, so the username branches
  *        (:48, :50-91, :110-143) are dead code for `users` and are not
  *        reimplemented here; only the plain `whereConstraint = emailConstraint`
  *        branch (:139-140) applies.
- *      - find the user by that email (:150-154, `payload.db.findOne`) - this
+ *      - find the user by that email (:150-154, `engine.db.findOne`) - this
  *        module takes that lookup as `db.findByEmail`, already normalized by
  *        the caller (see `findByEmail`'s doc comment on `AuthDbOps` below).
  *      - `checkLoginPermission` (:155-159, defined :21-28): throws
@@ -120,7 +120,7 @@
  *        `loginAttempts`/`lockUntil` as a SEPARATE write
  *        (`resetLoginAttempts`, :233-240, see point 6), THEN signs the JWT
  *        (`jwtSign`, :254-258, see point 7).
- *      - real Payload also re-fetches `lockUntil`/`loginAttempts` from the DB
+ *      - the reference engine also re-fetches `lockUntil`/`loginAttempts` from the DB
  *        immediately before minting the session (:196-216) to catch a lock
  *        that a PARALLEL request's failed attempt applied in the gap between
  *        this request's own password check and session mint. This module
@@ -130,7 +130,7 @@
  *      - `user.collection = collectionConfig.slug` / `user._strategy =
  *        'local-jwt'` (:160-161, :44) and every `beforeLogin`/`afterLogin`/
  *        `afterRead`-field/`afterRead`-collection hook (:244-304) are real
- *        Payload behavior this app never exercises: `Users` declares no
+ *        The original engine behavior this app never exercises: `Users` declares no
  *        `beforeLogin`/`afterLogin` hook (grepped `src/collections/Users.ts`),
  *        and the returned user's SHAPE is handled directly by this module's
  *        own `toAuthUserDoc` rather than by running the generic field
@@ -144,7 +144,7 @@
  *    (`hashBuffer.length === storedHashBuffer.length && ...`, :13) because
  *    `timingSafeEqual` throws (not "returns false") on a length mismatch
  *    rather than comparing. `verifyPassword` below reproduces this exact
- *    guard-then-compare shape. Real Payload's own hash GENERATION (for a
+ *    guard-then-compare shape. The reference engine's own hash GENERATION (for a
  *    brand-new/reset password) is a separate file,
  *    `auth/strategies/local/generatePasswordSaltHash.js:38-41`: a fresh
  *    32-byte random salt (`crypto.randomBytes(32)`, hex-encoded), same PBKDF2
@@ -156,7 +156,7 @@
  *    inputs; Node's docs guarantee the sync and async PBKDF2 implementations
  *    share one native binding), not a security-relevant deviation, made
  *    because nothing in this module's own call graph needs the non-blocking
- *    behavior real Payload's request-handling context wants.
+ *    behavior the reference engine's request-handling context wants.
  *
  * 4. INCREMENT-LOGIN-ATTEMPTS (`auth/strategies/local/
  *    incrementLoginAttempts.js`, full file read): if `user.lockUntil` is set
@@ -178,7 +178,7 @@
  *    parallel update, and if 99 racing wrong attempts and 1 racing correct
  *    attempt fought over the lock, retroactively purge sessions created in
  *    the last 20 seconds" branch. That entire branch exists to patch over
- *    races BETWEEN CONCURRENT REQUESTS in Payload's own transaction model -
+ *    races BETWEEN CONCURRENT REQUESTS in the original engine's own transaction model -
  *    it is not part of the single-request lockout logic this stage's brief
  *    asks for, and reproducing it faithfully would require this module to
  *    know about request concurrency it has no visibility into from a plain
@@ -193,7 +193,7 @@
  *    from the session-mint write.
  *
  * 6. SESSION MINTING (`auth/sessions.js`): `addSessionToUser` (:14-50)
- *    generates `sid = uuid()` (real Payload uses the `uuid` npm package's
+ *    generates `sid = uuid()` (the reference engine uses the `uuid` npm package's
  *    `v4()` - this module uses Node's built-in `crypto.randomUUID()` instead,
  *    which produces an equivalent RFC 4122 v4 UUID string with zero new
  *    dependency, per this directory's established policy), builds `session =
@@ -211,7 +211,7 @@
  *    implements logout), included in this citation only for completeness.
  *
  * 7. JWT SIGNING/CLAIMS (`auth/jwt.js` + `auth/getFieldsToSign.js`): real
- *    Payload signs with the `jose` package's `SignJWT`
+ *    The original engine signs with the `jose` package's `SignJWT`
  *    (`.setProtectedHeader({ alg: 'HS256', typ: 'JWT' }).setIssuedAt(iat)
  *    .setExpirationTime(iat + tokenExpiration).sign(secretKey)`, `jwt.js:2-14`)
  *    over claims built by `getFieldsToSign` (`id`, `collection`, `email`,
@@ -223,7 +223,7 @@
  *    compact-JWS implementation (`signJWT`/`verifyJWT`) that reproduces the
  *    exact wire format instead.
  *
- * 8. THE RETURNED USER SHAPE - real Payload's `sanitizeInternalFields`
+ * 8. THE RETURNED USER SHAPE - the reference engine's `sanitizeInternalFields`
  *    (`utilities/sanitizeInternalFields.js`, called at `login.js:166`) does
  *    NOT strip `hash`/`salt`/`sessions`/`resetPasswordToken`/
  *    `resetPasswordExpiration` - it only renames a MongoDB `_id` to `id` and
@@ -232,7 +232,7 @@
  *    `login`/`resetPassword` return happens later, inside the generic
  *    afterRead FIELD traversal (`fields/hooks/afterRead/promise.js`'s
  *    hidden-field stripping, `login.js:277-290`) - those columns are
- *    auto-added by Payload for any `auth: true` collection with `hidden:
+ *    auto-added by the original engine for any `auth: true` collection with `hidden:
  *    true`, and a hidden field is deleted from the doc during afterRead
  *    unless `showHiddenFields` is set. This module does not run that generic
  *    field-traversal machinery (it would need this module to know the full
@@ -242,7 +242,7 @@
  *    (`src/cms/db/collections/users.ts`) directly, by field name. Same
  *    OUTCOME (a caller never sees a hash/salt/session/reset-token), different
  *    MECHANISM (an explicit field pick-list here vs. a generic
- *    hidden-field-stripping traversal in real Payload) - documented because a
+ *    hidden-field-stripping traversal in the reference engine) - documented because a
  *    future reader diffing this file against `login.js` line-by-line would
  *    otherwise wonder where the stripping went.
  *
@@ -268,7 +268,7 @@
  *        `resetPasswordExpiration > now` half of the lookup query above can
  *        never match it again) rather than clearing `resetPasswordToken`
  *        itself, which is deliberately left on the row untouched. This first
- *        write also naturally bumps `updatedAt` (real Payload sets it
+ *        write also naturally bumps `updatedAt` (the reference engine sets it
  *        explicitly at :85; this module's underlying `updateUserAuthRow`
  *        auto-bumps it whenever the caller does NOT pass `updatedAt: null` -
  *        confirmed in `src/cms/db/generic.ts:1140-1143` - so this module
@@ -278,7 +278,7 @@
  *        `updatedAt: null` (point 6 above), meaning the net effect on
  *        `updatedAt` after BOTH of resetPassword's writes is the
  *        session-write's suppression winning, not the password-write's bump
- *        - a real, if slightly surprising, consequence of real Payload's own
+ *        - a real, if slightly surprising, consequence of the reference engine's own
  *        two-separate-`updateOne`-calls design that this module reproduces
  *        faithfully rather than "fixing".
  *      - signs a JWT with the SAME claim shape as login (:96-100, :126-130),
@@ -307,11 +307,11 @@
  *        no collection-level override (grepped `src/collections/Users.ts` -
  *        no `auth.forgotPassword` key at all), so for this app the caller's
  *        own value ALWAYS wins in practice - which is why this module makes
- *        `expirationMs` a REQUIRED argument rather than hardcoding Payload's
+ *        `expirationMs` a REQUIRED argument rather than hardcoding the original engine's
  *        1-hour default: this app's one real call site
  *        (`src/features/accounts/emails.ts` / wherever forgotPassword is
  *        invoked from) always supplies its own 30-minute value today, and
- *        silently falling back to Payload's unrelated 1-hour default if a
+ *        silently falling back to the original engine's unrelated 1-hour default if a
  *        future caller forgot to pass one would be a real behavior
  *        regression this module should not make easy to introduce by
  *        omission.
@@ -327,19 +327,19 @@
  * 11. TOKEN VERIFICATION - `auth({ headers })`
  *     (`auth/strategies/jwt.js`'s `JWTAuthentication` + `auth/extractJWT.js`):
  *      - `extractJWT` (`extractJWT.js`, full file) tries, IN THIS ORDER
- *        (`payload.config.auth.jwtOrder`, defaulted at
+ *        (`engine.config.auth.jwtOrder`, defaulted at
  *        `config/defaults.js:35-39` to exactly `['JWT', 'Bearer', 'cookie']`,
  *        confirmed not overridden anywhere in `src/engage.config.ts` -
  *        grepped): (a) `Authorization: JWT <token>` (:151-158), (b)
  *        `Authorization: Bearer <token>` (:115-122), (c) a cookie named
  *        `${cookiePrefix}-token` (:123-150) - `cookiePrefix` defaults to
- *        `'payload'` (`config/defaults.js:43`, also not overridden - grepped)
- *        so the real cookie name is `payload-token`, matched literally below.
+ *        `'engine'` (`config/defaults.js:43`, also not overridden - grepped)
+ *        so the real cookie name is `engage-token`, matched literally below.
  *      - the cookie extraction method ALSO gates on an `Origin`/CSRF-allowlist
  *        check (:130-149) - SKIPPED here entirely: this app configures
  *        `csrf: []` (the default - `config/defaults.js`'s own `csrf: []`,
  *        confirmed not overridden), and reading the real logic line by line
- *        shows `payload.config.csrf.length === 0` short-circuits BOTH the
+ *        shows `engine.config.csrf.length === 0` short-circuits BOTH the
  *        "Origin present" branch (:133, `csrf.length === 0 ||
  *        csrf.includes(origin)` - true unconditionally) and the "no Origin"
  *        branch (:139, `if (csrf.length === 0) return cookieToken`) to always
@@ -351,16 +351,16 @@
  *        module verifies the equivalent HS256 compact JWS by hand instead
  *        (see "Zero-new-dependency JWT" below), timing-safe, checking `exp`.
  *        ANY failure anywhere in the whole try block - bad signature,
- *        malformed structure, non-JSON payload, `findByID` throwing, an
+ *        malformed structure, non-JSON engine, `findByID` throwing, an
  *        unverified email, anything - is caught by the OUTER `catch (ignore)`
  *        (:99-110) and returns `{ user: null }`; this is deliberate,
  *        documented real behavior (a strategy's own errors are swallowed and
  *        treated as "did not authenticate", not surfaced), not this module
  *        carelessly hiding a real bug - see `executeAuthStrategies`'s own
- *        try/catch-and-log-as-no-match wrapper one layer up in real Payload,
+ *        try/catch-and-log-as-no-match wrapper one layer up in the reference engine,
  *        which this module's own `verifyAuth` mirrors by never throwing.
- *      - on successful verify, looks the user up by `decodedPayload.id`
- *        (:67-71, `payload.findByID`) - not found means `{ user: null }`
+ *      - on successful verify, looks the user up by `decodedClaims.id`
+ *        (:67-71, `engine.findByID`) - not found means `{ user: null }`
  *        (implicit: `user` stays undefined, the `if (user && ...)` at :72
  *        fails, falls to the `else` at :87 which - since `DisableAutologin`
  *        is never set true anywhere in this app, grepped - would attempt
@@ -370,14 +370,14 @@
  *        (point 1), the SESSION-ID branch always applies (:73-81): the
  *        decoded `sid` claim must still be found by `id` in the freshly
  *        fetched user's CURRENT `sessions` array - `!existingSession ||
- *        !decodedPayload.sid` (:75) returns `{ user: null }` for either "no
+ *        !decodedClaims.sid` (:75) returns `{ user: null }` for either "no
  *        sid claim at all" or "sid claim present but no longer in the
  *        array" (a revoked or pruned session invalidating an otherwise
  *        cryptographically valid, unexpired JWT) - this is an id-membership
  *        check only, NOT a re-check of that session's own `expiresAt` (that
  *        is a separate concern, already handled by `login`'s own
  *        prune-on-next-login behavior, not re-derived here).
- *      - otherwise returns `{ user }` (:84-86) - PLUS, in real Payload,
+ *      - otherwise returns `{ user }` (:84-86) - PLUS, in the reference engine,
  *        `permissions`/`responseHeaders` from the wider `auth` LOCAL API
  *        wrapper (not `JWTAuthentication` itself, which only ever returns
  *        `{ user }` - the wrapper around it in `auth/operations/me.js`-
@@ -397,8 +397,8 @@
  * ---------------------------------------------------------------------------
  * Zero-new-dependency JWT (`signJWT`/`verifyJWT` below)
  * ---------------------------------------------------------------------------
- * Real Payload signs/verifies with the `jose` npm package (point 7/11
- * above). This directory's one hard rule is "no `payload` import", but the
+ * The reference engine signs/verifies with the `jose` npm package (point 7/11
+ * above). This directory's one hard rule is "no `engine` import", but the
  * spirit of the whole removal effort - confirmed by every prior stage
  * (`validators.ts`, `access.ts`, `hooks.ts`, `operations.ts`,
  * `read-operations.ts`) never adding a new runtime dependency to reproduce
@@ -414,18 +414,18 @@
  * simplified or non-standard format - so a token signed here is byte-for-byte
  * the same shape a `jose`-based verifier would accept, and vice versa; the
  * deviation is purely "which code writes the bytes", not "what the bytes
- * are". `verifyJWT` recomputes the HMAC over the received `header.payload`
+ * are". `verifyJWT` recomputes the HMAC over the received `header.engine`
  * and compares with `crypto.timingSafeEqual` (guarding a length mismatch
  * first, same reasoning as `verifyPassword` - point 3 above), then checks
  * `exp` against the current time - returning `null` (never throwing) on ANY
  * failure: bad structure (not exactly 3 `.`-separated segments), invalid
- * base64url, a signature that doesn't match, non-JSON or non-object payload
+ * base64url, a signature that doesn't match, non-JSON or non-object engine
  * JSON, or an expired/missing `exp`.
  *
  * ---------------------------------------------------------------------------
  * Skipped: cross-request race guards
  * ---------------------------------------------------------------------------
- * Real Payload's login/incrementLoginAttempts both re-fetch fresh state from
+ * The reference engine's login/incrementLoginAttempts both re-fetch fresh state from
  * the DB mid-operation specifically to catch another CONCURRENT request
  * having changed `loginAttempts`/`lockUntil`/`sessions` in the gap (point 2's
  * `:196-216` re-fetch-before-session-mint, and point 4's skipped
@@ -435,7 +435,7 @@
  * ("a real DB doesn't need risk-of-races handling in this from-scratch
  * module the way `generic.ts`'s own `applyAtomicIncrements` already does at
  * the layer BELOW auth.ts"). A genuine two-concurrent-request race is a
- * real, if narrow, behavioral gap versus Payload today - documented here
+ * real, if narrow, behavioral gap versus the original engine today - documented here
  * rather than silently narrowed, per this whole directory's own standing
  * policy on documented simplifications.
  *
@@ -443,12 +443,12 @@
  * Skipped: admin auto-login
  * ---------------------------------------------------------------------------
  * `strategies/jwt.js`'s `autoLogin` (its own file, :3-43) logs a request in
- * as `payload.config.admin.autoLogin`'s configured email/username when NO
+ * as `engine.config.admin.autoLogin`'s configured email/username when NO
  * token was found (or verification failed) and auto-login isn't disabled.
  * This app never configures `admin.autoLogin` (grepped `src/engage.config.ts`
  * - no matches), so `autoLogin` is real dead code for this app today and is
  * not reimplemented; `verifyAuth` below simply returns `{ user: null }`
- * wherever real Payload would have called into `autoLogin` and found nothing
+ * wherever the reference engine would have called into `autoLogin` and found nothing
  * configured to do.
  *
  * ---------------------------------------------------------------------------
@@ -462,18 +462,18 @@
  * express. `AuthDbOps` below adds one more method, `findByResetToken`, for
  * exactly this lookup - documented here because a design that stuck rigidly
  * to the suggested three methods would have to fake a token+expiry lookup out
- * of `findByEmail`/`findByID`, which is not honest about what real Payload's
+ * of `findByEmail`/`findByID`, which is not honest about what the reference engine's
  * query is (a single combined condition, point 9), not two.
  *
  * ---------------------------------------------------------------------------
  * Design constraints (same as validators.ts/access.ts/hooks.ts/operations.ts/
  * read-operations.ts)
  * ---------------------------------------------------------------------------
- * No `import ... from 'payload'` anywhere in this file - every type here is
+ * No `import ... from 'engine'` anywhere in this file - every type here is
  * hand-rolled. This module is intentionally NOT wired into `@/engine`/
  * `engage.config.ts` yet; it stands alone, exercised only by
  * `tests/int/localapi-auth.int.spec.ts`, so it can be proven correct against
- * real Payload behavior before anything is cut over.
+ * the reference engine behavior before anything is cut over.
  */
 
 import crypto from 'crypto'
@@ -483,23 +483,23 @@ import crypto from 'crypto'
 /* -------------------------------------------------------------------------- */
 
 /**
- * Real Payload default (`payload/dist/collections/config/defaults.js:126`),
+ * The reference engine default (the vendor source),
  * confirmed as `Users`' actual, unoverridden value - see ground-truth point 1
  * above. Do NOT read this from `loginProtectionAuth()` or any other
- * env-driven source without first re-confirming Payload's own collection
+ * env-driven source without first re-confirming the original engine's own collection
  * sanitizer would apply it to `Users.auth` - it currently would not, since
  * `Users.auth` is the bare boolean `true`.
  */
 export const MAX_LOGIN_ATTEMPTS = 5
 
-/** Real Payload default, milliseconds (`defaults.js:124`). See `MAX_LOGIN_ATTEMPTS`'s doc comment - same provenance and same warning. */
+/** The reference engine default, milliseconds (`defaults.js:124`). See `MAX_LOGIN_ATTEMPTS`'s doc comment - same provenance and same warning. */
 export const LOCK_TIME_MS = 600_000
 
-/** Real Payload default, seconds (`defaults.js:127`). See `MAX_LOGIN_ATTEMPTS`'s doc comment - same provenance and same warning. */
+/** The reference engine default, seconds (`defaults.js:127`). See `MAX_LOGIN_ATTEMPTS`'s doc comment - same provenance and same warning. */
 export const TOKEN_EXPIRATION_SECONDS = 7200
 
 /**
- * Real Payload default (`defaults.js:128`). Always `true` for `Users` today -
+ * The reference engine default (`defaults.js:128`). Always `true` for `Users` today -
  * kept as an exported constant (rather than inlined) purely so a reader
  * scanning this file's exports sees all four confirmed-default auth knobs in
  * one place, matching `MAX_LOGIN_ATTEMPTS`/`LOCK_TIME_MS`/
@@ -520,10 +520,10 @@ const PBKDF2_DIGEST = 'sha256'
 /* -------------------------------------------------------------------------- */
 
 /**
- * Stands in for real Payload's `AuthenticationError`
- * (`payload/dist/errors/AuthenticationError.js`) for the same reason
+ * Stands in for the reference engine's `AuthenticationError`
+ * (the vendor source) for the same reason
  * `access.ts`'s `Forbidden`/`operations.ts`'s `NotFound`/`ValidationError`
- * stand in for their own real counterparts - no `payload` import, no i18n
+ * stand in for their own real counterparts - no `engine` import, no i18n
  * `t()` lookup (this app never configured a second admin-UI locale, same
  * finding every prior stage made). Thrown for "no such user" (ground-truth
  * point 2, `checkLoginPermission`) and for a plain wrong password that did
@@ -537,8 +537,8 @@ export class AuthenticationError extends Error {
 }
 
 /**
- * Stands in for real Payload's `LockedAuth`
- * (`payload/dist/errors/LockedAuth.js`) - same reasoning as
+ * Stands in for the reference engine's `LockedAuth`
+ * (the vendor source) - same reasoning as
  * `AuthenticationError` above. Thrown when `lockUntil` is already in the
  * future BEFORE a password is even checked (ground-truth point 2,
  * `checkLoginPermission`), and also when a wrong-password attempt is the one
@@ -553,16 +553,16 @@ export class LockedAuth extends Error {
 }
 
 /**
- * `resetPassword`'s "no such token, or it expired" case. Real Payload throws
+ * `resetPassword`'s "no such token, or it expired" case. The reference engine throws
  * a generic `APIError('Token is either invalid or has expired.', 403)`
  * here (`resetPassword.js:53`) rather than a token-specific error class -
  * this stage's brief explicitly says a plain, distinguishable message is
- * enough ("this module doesn't need Payload's exact APIError class
+ * enough ("this module doesn't need the original engine's exact APIError class
  * hierarchy"). This module still gives it its own named class, matching
  * every other error in this directory's own convention of a nameable,
  * `instanceof`-checkable error - but note it is NOT a mirror of any specific
- * real Payload error class the way `AuthenticationError`/`LockedAuth` are;
- * it is this module's own affordance, carrying real Payload's exact message
+ * the reference engine error class the way `AuthenticationError`/`LockedAuth` are;
+ * it is this module's own affordance, carrying the reference engine's exact message
  * text for parity.
  */
 export class InvalidResetToken extends Error {
@@ -576,7 +576,7 @@ export class InvalidResetToken extends Error {
 /* Types                                                                       */
 /* -------------------------------------------------------------------------- */
 
-/** One entry in a user's `sessions` array - mirrors `UserAuthRow['sessions']`'s element shape (`src/cms/db/collections/users.ts`), itself mirroring real Payload's session object (`auth/sessions.js:22-26`). */
+/** One entry in a user's `sessions` array - mirrors `UserAuthRow['sessions']`'s element shape (`src/cms/db/collections/users.ts`), itself mirroring the reference engine's session object (`auth/sessions.js:22-26`). */
 export type AuthSession = { id: string; createdAt?: string | null; expiresAt: string }
 
 /**
@@ -631,7 +631,7 @@ export type AuthUserRow = {
  * `src/cms/db/collections/users.ts`'s own `UserDoc` shape (`id`, `email`,
  * `roles?`, `updatedAt`, `createdAt`) plus the harmless `twoFactorEnabled`
  * flag - see ground-truth point 8 for why that is the right shape and how
- * real Payload arrives at the same outcome via a different mechanism.
+ * the reference engine arrives at the same outcome via a different mechanism.
  */
 export type AuthUserDoc = Omit<
   AuthUserRow,
@@ -652,7 +652,7 @@ export type AuthDbOps = {
    * Look up a user by exact, already-normalized email match. A real call
    * site wires this to `findUserAuthRowsPaginated({ where: { email: {
    * equals: email } }, limit: 1 }).docs[0] ?? null` - the auth-row
-   * equivalent of real Payload's own `payload.db.findOne({ where:
+   * equivalent of the reference engine's own `engine.db.findOne({ where:
    * emailConstraint })` (ground-truth point 2). This module always passes an
    * already-lowercased/trimmed email in (see `login`/`forgotPassword`
    * below), so an implementation does not need to normalize again, though
@@ -664,10 +664,10 @@ export type AuthDbOps = {
   /**
    * Look up a user whose `resetPasswordToken` equals `token` AND whose
    * `resetPasswordExpiration` is still in the future - BOTH conditions in
-   * one query, exactly matching real Payload's own combined `where`
+   * one query, exactly matching the reference engine's own combined `where`
    * (ground-truth point 9). An implementation that checked these as two
    * separate steps (e.g. find-by-token then check-expiry-in-memory) would
-   * observably differ from real Payload only in a vanishingly narrow window,
+   * observably differ from the reference engine only in a vanishingly narrow window,
    * but the combined-query contract is what this type declares so a real
    * implementation has no reason to split it.
    */
@@ -706,12 +706,12 @@ export type UnlockArgs = { email: string }
 /* -------------------------------------------------------------------------- */
 
 /**
- * Hashes a NEW password for storage - mirrors real Payload's
+ * Hashes a NEW password for storage - mirrors the reference engine's
  * `generatePasswordSaltHash` (`auth/strategies/local/
  * generatePasswordSaltHash.js:38-41`; see ground-truth point 3): a fresh
  * random 32-byte salt, hex-encoded, then PBKDF2-HMAC-SHA256 (25000
  * iterations, 512-byte key), also hex-encoded. Used by `resetPassword`
- * below (real Payload also uses this same function for initial account
+ * below (the reference engine also uses this same function for initial account
  * creation via the `password` field's own `beforeChange` hook - out of
  * scope here, since this module never creates a user, only authenticates
  * and resets an existing one).
@@ -724,7 +724,7 @@ export function hashPassword(password: string): { salt: string; hash: string } {
 
 /**
  * Verifies a candidate password against a stored salt+hash - mirrors real
- * Payload's `authenticateLocalStrategy`
+ * The original engine's `authenticateLocalStrategy`
  * (`auth/strategies/local/authenticate.js:3-26`; see ground-truth point 3):
  * recompute the PBKDF2 hash with the STORED salt, then timing-safe compare
  * the raw derived-key bytes against the stored hash's bytes (decoded from
@@ -756,20 +756,20 @@ function base64UrlDecode(input: string): Buffer {
 /**
  * Signs an HS256 compact JWS - see the file header's "Zero-new-dependency
  * JWT" for why this is hand-rolled with Node's `crypto` rather than the
- * `jose` package real Payload uses (ground-truth point 7), and why the
+ * `jose` package the reference engine uses (ground-truth point 7), and why the
  * output is nonetheless a standard, real-`jose`-compatible token, not a
- * simplified format. `claims` should be the payload WITHOUT `iat`/`exp` -
+ * simplified format. `claims` should be the engine WITHOUT `iat`/`exp` -
  * this function adds both (`iat = now`, `exp = iat + tokenExpirationSeconds`)
- * the same way real Payload's `jwtSign` does (`auth/jwt.js:4-5`).
+ * the same way the reference engine's `jwtSign` does (`auth/jwt.js:4-5`).
  */
 export function signJWT(claims: Record<string, unknown>, secret: string, tokenExpirationSeconds: number = TOKEN_EXPIRATION_SECONDS): { token: string; iat: number; exp: number } {
   const iat = Math.floor(Date.now() / 1000)
   const exp = iat + tokenExpirationSeconds
   const header = { alg: 'HS256', typ: 'JWT' }
-  const payload = { ...claims, iat, exp }
+  const body = { ...claims, iat, exp }
   const headerB64 = base64UrlEncode(JSON.stringify(header))
-  const payloadB64 = base64UrlEncode(JSON.stringify(payload))
-  const signingInput = `${headerB64}.${payloadB64}`
+  const claimsB64 = base64UrlEncode(JSON.stringify(body))
+  const signingInput = `${headerB64}.${claimsB64}`
   const signature = crypto.createHmac('sha256', secret).update(signingInput).digest()
   return { token: `${signingInput}.${base64UrlEncode(signature)}`, iat, exp }
 }
@@ -781,23 +781,23 @@ export function signJWT(claims: Record<string, unknown>, secret: string, tokenEx
  * contract (ground-truth point 11): malformed structure (not exactly 3
  * `.`-separated segments), invalid base64url, a signature that doesn't
  * timing-safe-match (length-guarded first, same reasoning as
- * `verifyPassword` above), non-JSON or non-object payload, or an
+ * `verifyPassword` above), non-JSON or non-object engine, or an
  * expired/missing `exp` claim - ALL return `null`, never throw.
  */
 export function verifyJWT(token: string, secret: string): (Record<string, unknown> & { exp?: number }) | null {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
-    const [headerB64, payloadB64, signatureB64] = parts
-    const expectedSignature = crypto.createHmac('sha256', secret).update(`${headerB64}.${payloadB64}`).digest()
+    const [headerB64, claimsB64, signatureB64] = parts
+    const expectedSignature = crypto.createHmac('sha256', secret).update(`${headerB64}.${claimsB64}`).digest()
     const actualSignature = base64UrlDecode(signatureB64)
     if (expectedSignature.length !== actualSignature.length) return null
     if (!crypto.timingSafeEqual(expectedSignature, actualSignature)) return null
 
-    const payload: unknown = JSON.parse(base64UrlDecode(payloadB64).toString('utf8'))
-    if (typeof payload !== 'object' || payload === null) return null
+    const decoded: unknown = JSON.parse(base64UrlDecode(claimsB64).toString('utf8'))
+    if (typeof decoded !== 'object' || decoded === null) return null
 
-    const claims = payload as Record<string, unknown> & { exp?: number }
+    const claims = decoded as Record<string, unknown> & { exp?: number }
     if (typeof claims.exp !== 'number' || claims.exp < Math.floor(Date.now() / 1000)) return null
 
     return claims
@@ -810,30 +810,30 @@ export function verifyJWT(token: string, secret: string): (Record<string, unknow
 /* Internal helpers                                                            */
 /* -------------------------------------------------------------------------- */
 
-/** Mirrors real Payload's `isUserLocked` (`auth/isUserLocked.js:1-6`) exactly: no lock date at all means "not locked"; otherwise locked only while the lock date is still in the future. */
+/** Mirrors the reference engine's `isUserLocked` (`auth/isUserLocked.js:1-6`) exactly: no lock date at all means "not locked"; otherwise locked only while the lock date is still in the future. */
 function isLocked(lockUntil: string | null | undefined, now: number): boolean {
   if (!lockUntil) return false
   return new Date(lockUntil).getTime() > now
 }
 
-/** Mirrors real Payload's `checkLoginPermission` (`auth/operations/login.js:21-28`): no user found -> `AuthenticationError`; user found but currently locked -> `LockedAuth`. Locked is checked BEFORE any password comparison happens. */
+/** Mirrors the reference engine's `checkLoginPermission` (`auth/operations/login.js:21-28`): no user found -> `AuthenticationError`; user found but currently locked -> `LockedAuth`. Locked is checked BEFORE any password comparison happens. */
 function checkLoginPermission(row: AuthUserRow | null, now: number): asserts row is AuthUserRow {
   if (!row) throw new AuthenticationError()
   if (isLocked(row.lockUntil, now)) throw new LockedAuth()
 }
 
-/** Mirrors real Payload's `removeExpiredSessions` (`auth/sessions.js:4-10`): strict `expiresAt > now`, so a session expiring at exactly `now` is dropped, not kept. */
+/** Mirrors the reference engine's `removeExpiredSessions` (`auth/sessions.js:4-10`): strict `expiresAt > now`, so a session expiring at exactly `now` is dropped, not kept. */
 function pruneExpiredSessions(sessions: AuthSession[] | null | undefined, now: number): AuthSession[] {
   return (sessions ?? []).filter((session) => new Date(session.expiresAt).getTime() > now)
 }
 
-/** Mirrors real Payload's `resetLoginAttempts` (`auth/strategies/local/resetLoginAttempts.js:2-4`): a no-op unless there's actually something to reset. */
+/** Mirrors the reference engine's `resetLoginAttempts` (`auth/strategies/local/resetLoginAttempts.js:2-4`): a no-op unless there's actually something to reset. */
 function needsAttemptsReset(row: Pick<AuthUserRow, 'loginAttempts' | 'lockUntil'>): boolean {
   return typeof row.lockUntil === 'string' || (typeof row.loginAttempts === 'number' && row.loginAttempts !== 0)
 }
 
 /**
- * Mirrors real Payload's `incrementLoginAttempts` core logic (ground-truth
+ * Mirrors the reference engine's `incrementLoginAttempts` core logic (ground-truth
  * point 4) - the "expired lock restarts the count" branch and the "increment,
  * lock if the new count reaches the max" branch, MINUS the cross-request race
  * guard (see the file header's "Skipped: cross-request race guards").
@@ -852,14 +852,14 @@ async function incrementAndCheckLock(db: AuthDbOps, row: AuthUserRow, now: numbe
     }
     updated = await db.updateByID(row.id, data)
   }
-  // Mirrors incrementLoginAttempts.js:50-52's own guard - a null return here means the row vanished mid-request, which this module treats the same way real Payload does: a hard failure, not a silent "not locked".
+  // Mirrors incrementLoginAttempts.js:50-52's own guard - a null return here means the row vanished mid-request, which this module treats the same way the reference engine does: a hard failure, not a silent "not locked".
   if (!updated) throw new Error('Failed to update login attempts for user')
   return updated
 }
 
 /**
  * Mints a new session for `row` and writes the FULL updated auth row back -
- * mirrors real Payload's `addSessionToUser` (`auth/sessions.js:14-50`, see
+ * mirrors the reference engine's `addSessionToUser` (`auth/sessions.js:14-50`, see
  * ground-truth point 6): prune expired sessions, append the new one, and set
  * `updatedAt: null` on this write specifically to suppress the normal
  * timestamp bump (confirmed load-bearing by
@@ -903,7 +903,7 @@ export function toAuthUserDoc(row: AuthUserRow): AuthUserDoc {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Real Payload's `loginOperation` (`auth/operations/login.js`), `users`-only,
+ * The reference engine's `loginOperation` (`auth/operations/login.js`), `users`-only,
  * default-config case - see ground-truth point 2 for the full real step
  * order this reproduces (email sanitize -> find -> lock check -> password
  * check -> [increment+recheck+throw] or [mint session + reset attempts +
@@ -942,7 +942,7 @@ export async function login(db: AuthDbOps, args: LoginArgs): Promise<LoginResult
 /* -------------------------------------------------------------------------- */
 
 /**
- * Real Payload's `resetPasswordOperation` (`auth/operations/
+ * The reference engine's `resetPasswordOperation` (`auth/operations/
  * resetPassword.js`) - see ground-truth point 9 for the full real step
  * order this reproduces (presence check -> combined token+expiry lookup ->
  * hash new password -> expire the token -> mint a session -> sign a JWT with
@@ -973,10 +973,10 @@ export async function resetPassword(db: AuthDbOps, args: ResetPasswordArgs): Pro
 /* -------------------------------------------------------------------------- */
 
 /**
- * Real Payload's `forgotPasswordOperation` (`auth/operations/
+ * The reference engine's `forgotPasswordOperation` (`auth/operations/
  * forgotPassword.js`) - see ground-truth point 10. Returns the plain token
  * string, or `null` for an unknown email (never throws for "not found" - a
- * deliberate silent failure, real Payload's own words: "we don't want to
+ * deliberate silent failure, the reference engine's own words: "we don't want to
  * indicate specifically that an email was not found"). Sends no email itself
  * - this app's real caller always operates in the equivalent of
  * `disableEmail: true` and sends its own via `src/features/accounts/
@@ -1001,10 +1001,10 @@ export async function forgotPassword(db: AuthDbOps, args: ForgotPasswordArgs): P
 /* -------------------------------------------------------------------------- */
 
 /**
- * Extracts a JWT from `headers` in real Payload's default `jwtOrder`
+ * Extracts a JWT from `headers` in the reference engine's default `jwtOrder`
  * (`['JWT', 'Bearer', 'cookie']` - ground-truth point 11): an
  * `Authorization: JWT <token>` header, then `Authorization: Bearer <token>`,
- * then a `payload-token` cookie. Returns `null` if none is present - never
+ * then a `engage-token` cookie. Returns `null` if none is present - never
  * throws.
  */
 function extractToken(headers: HeadersLike): string | null {
@@ -1015,11 +1015,11 @@ function extractToken(headers: HeadersLike): string | null {
 }
 
 /**
- * Mirrors real Payload's `parseCookies` (`utilities/parseCookies.js:1-18`)
- * closely enough for this module's one real use (finding `payload-token`):
+ * Mirrors the reference engine's `parseCookies` (`utilities/parseCookies.js:1-18`)
+ * closely enough for this module's one real use (finding `engage-token`):
  * splits on `;`, splits each pair on the FIRST `=` (so a value itself
  * containing `=` survives), and - matching a `Map`'s "last `set()` for a key
- * wins" semantics - the LAST `payload-token` pair in the header wins if the
+ * wins" semantics - the LAST `engage-token` pair in the header wins if the
  * header somehow contains more than one. Skips (rather than throwing on) a
  * pair whose value fails to decode, same as the real function's own
  * try/catch around `decodeURI`. Deliberately does NOT replicate
@@ -1035,7 +1035,7 @@ function extractCookieToken(headers: HeadersLike): string | null {
   for (const part of raw.split(';')) {
     const eqIdx = part.indexOf('=')
     const key = (eqIdx === -1 ? part : part.slice(0, eqIdx)).trim()
-    if (key !== 'payload-token') continue
+    if (key !== 'engage-token') continue
     const rawValue = eqIdx === -1 ? '' : part.slice(eqIdx + 1)
     try {
       found = decodeURI(rawValue)
@@ -1047,11 +1047,11 @@ function extractCookieToken(headers: HeadersLike): string | null {
 }
 
 /**
- * Real Payload's `JWTAuthentication` (`auth/strategies/jwt.js`) - see
+ * The reference engine's `JWTAuthentication` (`auth/strategies/jwt.js`) - see
  * ground-truth point 11 for the full real step order this reproduces
  * (extract -> verify signature+expiry -> look up by id -> confirm `sid` is
  * still a live session -> return the narrow user shape). NEVER throws - any
- * failure anywhere returns `{ user: null }`, matching real Payload's own
+ * failure anywhere returns `{ user: null }`, matching the reference engine's own
  * "a strategy's own errors mean no match" contract.
  */
 export async function verifyAuth(db: AuthDbOps, args: VerifyAuthArgs): Promise<VerifyAuthResult> {
@@ -1079,7 +1079,7 @@ export async function verifyAuth(db: AuthDbOps, args: VerifyAuthArgs): Promise<V
 /* -------------------------------------------------------------------------- */
 
 /**
- * Real Payload's `logoutOperation` (`auth/operations/logout.js`) - removes
+ * The reference engine's `logoutOperation` (`auth/operations/logout.js`) - removes
  * the session matching the caller's own `sid` claim from the user's
  * `sessions` array (or clears every session when `allSessions` is true),
  * writes it back with `updatedAt: null` (same "don't bump updatedAt for a
@@ -1118,13 +1118,13 @@ export async function logout(db: AuthDbOps, args: LogoutArgs): Promise<LogoutRes
 /* -------------------------------------------------------------------------- */
 
 /**
- * Real Payload's `refreshOperation` (`auth/operations/refresh.js`) - unlike
+ * The reference engine's `refreshOperation` (`auth/operations/refresh.js`) - unlike
  * `login`/`resetPassword`, this does NOT mint a new session: it extends the
  * EXISTING session (matched by the current token's `sid` claim) to a fresh
  * `expiresAt`, prunes any other expired sessions, writes that back with
  * `updatedAt: null`, then signs a brand-new JWT carrying the SAME `sid`.
  * Throws `AuthenticationError` for a missing/invalid token or a `sid` that
- * no longer has a live session (real Payload throws `Forbidden` there - this
+ * no longer has a live session (the reference engine throws `Forbidden` there - this
  * module reuses its own single authentication-failure error class rather
  * than adding a second one for a distinction no real call site needs to
  * make).
@@ -1162,13 +1162,13 @@ export async function refreshToken(db: AuthDbOps, args: RefreshTokenArgs): Promi
 /* -------------------------------------------------------------------------- */
 
 /**
- * Real Payload's `unlockOperation` (`auth/operations/unlock.js`), email-only
+ * The reference engine's `unlockOperation` (`auth/operations/unlock.js`), email-only
  * case (this app has no `loginWithUsername` - see file header). Resets
  * `loginAttempts` to 0 and clears `lockUntil` for the user matched by email.
- * Throws `AuthenticationError` for an unknown email - real Payload throws
+ * Throws `AuthenticationError` for an unknown email - the reference engine throws
  * `Forbidden` there, same "reuse this module's one auth-failure class"
  * reasoning as `refreshToken` above. Returns `true` on success, matching
- * real Payload's own boolean result.
+ * the reference engine's own boolean result.
  */
 export async function unlockUser(db: AuthDbOps, args: UnlockArgs): Promise<boolean> {
   const normalizedEmail = (args.email || '').toLowerCase().trim()

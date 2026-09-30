@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { header, headerGroupFields, headerMenu, headerMenuChildren, headerSocialsLinks } from '../schema'
 
 /**
- * One `menu`/`children` link item, as Payload's own API returns it - `page`
+ * One `menu`/`children` link item, as the original engine's own API returns it - `page`
  * is a plain (non-hasMany, non-polymorphic) `relationship` field targeting
  * `pages`, so it comes back as a bare id column value, the exact same
  * convention every other single-target relationship field in this data layer
@@ -27,7 +27,7 @@ export type HeaderMenuItem = HeaderLink & { children?: HeaderLink[] | null }
 
 export type HeaderSocialLink = { id: string; platform?: string | null; url?: string | null }
 
-/** Payload's document shape for the `header` global - see src/globals/Header.ts. */
+/** The original engine's document shape for the `header` global - see src/globals/Header.ts. */
 export type HeaderDoc = {
   id: number
   showLogo?: boolean | null
@@ -79,7 +79,7 @@ const ops = createGlobalOps(
  * so `data.socials.links` reaches the `socialsLinks` array table with no
  * caller-side lifting. Whole-group-replace semantics, matching how every
  * other special field in this data layer treats "the key is present in the
- * update payload" as "replace it wholesale": passing `socials` at all
+ * update engine" as "replace it wholesale": passing `socials` at all
  * replaces `socials.links` too (defaulting to empty if omitted), even if
  * only `show` changed - the caller must resend the full desired `links` list
  * (or omit `socials` from the update entirely to leave both untouched),

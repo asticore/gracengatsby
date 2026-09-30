@@ -51,14 +51,14 @@ const findEntity = (groups: ResolvedGroup[], slug: string): ResolvedEntity | und
 }
 
 export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
-  const { i18n, payload: realEngine, permissions, user, visibleEntities } = props
+  const { i18n, engine: realEngine, permissions, user, visibleEntities } = props
   const req = props.initPageResult?.req
 
   if (!realEngine?.config) return null
 
-  // This admin view always runs inside real Payload's own admin machinery
-  // (`AdminViewServerProps` is real Payload's own type, unchanged - admin UI
-  // is not part of this cutover), so `payload` here is always the real
+  // This admin view always runs inside the reference engine's own admin machinery
+  // (`AdminViewServerProps` is the reference engine's own type, unchanged - admin UI
+  // is not part of this cutover), so `engine` here is always the real
   // vendor instance. `readFeatureFlags`/`resolveEntityGroups`/`getStatTiles`/
   // `getRecentActivity` are typed against this app's own `Engine` because
   // `AdminNav` (a sibling admin component, see its own `AdminNavProps`) is

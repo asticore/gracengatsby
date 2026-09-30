@@ -9,8 +9,8 @@ import { FieldGroups } from '@/collections/FieldGroups'
 import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
 import { PageTemplates } from '@/collections/PageTemplates'
-import { PayloadLockedDocuments } from '@/collections/PayloadLockedDocuments'
-import { PayloadPreferences } from '@/collections/PayloadPreferences'
+import { LockedDocuments } from '@/collections/LockedDocuments'
+import { Preferences } from '@/collections/Preferences'
 import { Posts } from '@/collections/Posts'
 import { Users } from '@/collections/Users'
 import { Addresses } from '@/features/ecommerce/collections/Addresses'
@@ -70,7 +70,7 @@ import {
  *  - EventRSVPs: adds a single-target relationship field, still one row per
  *    document (an `event_id` FK column, not a child table).
  *  - MembershipTiers: adds row-wrapped fields (flattened onto this table,
- *    same as Payload's own schema does) and an array field (`benefits`,
+ *    same as the original engine's own schema does) and an array field (`benefits`,
  *    which needs its own child table - see membershipTiersBenefits below).
  *  - PageTemplates: adds a `blocks` field (one child table per block type -
  *    see pageTemplatesBlocks below) and, inside two of those block types
@@ -79,7 +79,7 @@ import {
  *    (pageTemplatesRels) rather than becoming columns of their own. See
  *    ./generate.ts's generateBlockTables/generateRelsTable doc comments for
  *    the real D1 shapes this mirrors, confirmed by creating a real document
- *    through Payload's own engine and inspecting the resulling tables.
+ *    through the original engine's own engine and inspecting the resulling tables.
  */
 const faqsGenerated = generateTable(Faqs)
 export const faqs = faqsGenerated.table
@@ -180,7 +180,7 @@ export const eventsVersions = generateVersionsTable(Events, eventsGenerated.tabl
  * read-only at query time by ../generic.ts's createJoinOps - see its doc
  * comment for the confirmed `{ docs: [...ids], hasNextPage }` response shape
  * and paging default, proven against a real Events document with 12 real
- * EventRSVPs created through Payload's own engine.create().
+ * EventRSVPs created through the original engine's own engine.create().
  */
 function resolveJoinTargetTable(slug: string): AnySQLiteTable {
   if (slug === EventRSVPs.slug) return eventRSVPs
@@ -352,11 +352,11 @@ function resolveCoursesJoinTargetTable(slug: string): AnySQLiteTable {
 }
 
 /**
- * Parses a Payload `sort` string (bare name = ascending, `-`-prefixed =
- * descending - Payload's own convention) into what ../generic.ts's
+ * Parses a the original engine `sort` string (bare name = ascending, `-`-prefixed =
+ * descending - the original engine's own convention) into what ../generic.ts's
  * createJoinOps wants. Courses' `lessons` join field declares
  * `defaultSort: 'order'` of its own (see Courses.ts) - confirmed by
- * inspection that real Payload honors THIS, not a generic id-descending
+ * inspection that the reference engine honors THIS, not a generic id-descending
  * default, for a join field's read order (see createJoinOps' doc comment).
  * Undefined (no defaultSort on the field) leaves createJoinOps' own
  * id-descending default in place, unchanged - that's what reproduces the
@@ -442,7 +442,7 @@ export const lessonProgress = lessonProgressGenerated.table
  *  - `auth: true`'s implicit columns (email, password/reset/lockout/two-factor)
  *    - see ../schema/generate.ts's hasAuth/authColumns doc comment for the
  *    confirmed real eg_users shape and what's deliberately NOT modeled (the
- *    `eg_users_sessions` child table - Payload only ever writes there during
+ *    `eg_users_sessions` child table - the original engine only ever writes there during
  *    its own login flow, which this data layer does not implement).
  *  - Users' own `roles` field: a hasMany `select`, needing its own child-table
  *    shape distinct from both an array field's and a rels field's - see
@@ -451,7 +451,7 @@ export const lessonProgress = lessonProgressGenerated.table
  *    every array/blocks child table in this app) and a single `value` column,
  *    one row per selected role, in order.
  *
- * Proven with a real user created and read back through Payload's own Local
+ * Proven with a real user created and read back through the original engine's own Local
  * API (`engine.create`/`engine.findByID`) - see tests/int/cms-db-users.int.spec.ts.
  * Also surfaced a real, pre-existing latent bug in ../generic.ts's
  * createCollectionOps: a `defaultValue` was being merged into the flat insert
@@ -473,11 +473,11 @@ export const usersRoles = generateSelectHasManyTable(usersGenerated.tableName, u
 export const usersSessions = generateAuthSessionsTable(usersGenerated.tableName)
 
 /**
- * Phase 15: AuditLog + Backups - both read-only-through-Payload collections
+ * Phase 15: AuditLog + Backups - both read-only-through-the original engine collections
  * (create/update closed to everyone in their own `access` config; rows arrive
  * by direct insert from the writers that log to them, not through the Local
  * API's normal create path) but that's an access-control fact, not a schema
- * one - Payload's Local API (`engine.create`) overrides access by default,
+ * one - the original engine's Local API (`engine.create`) overrides access by default,
  * same as every other phase's fixtures, so the usual write-both-ways parity
  * tests still apply unchanged.
  *
@@ -490,8 +490,8 @@ export const usersSessions = generateAuthSessionsTable(usersGenerated.tableName)
  * their `fields` lists, so no drift to work around here (unlike the
  * eg_locked_documents_rels gap noted in ../index.ts). A couple of columns
  * (`status`, `size_bytes`, etc. on eg_backups) carry a SQL-level DEFAULT with
- * no matching Payload `defaultValue` - harmless, since this data layer only
- * ever inserts columns a caller actually supplies (same as Payload's own
+ * no matching the original engine `defaultValue` - harmless, since this data layer only
+ * ever inserts columns a caller actually supplies (same as the original engine's own
  * insert path), so an omitted column falls through to the same DB default
  * either way.
  */
@@ -601,7 +601,7 @@ export const formsFieldsConditionalRules = formsFieldsGenerated.nestedArrayField
 
 /**
  * Phase 18: FaqSettings, the first GLOBAL this data layer models. Confirmed
- * against Payload's own real global adapter (@payloadcms/drizzle's
+ * against the original engine's own real global adapter (the vendor package's
  * findGlobal.js/updateGlobal.js/createGlobal.js - see ../generic.ts's
  * createGlobalOps doc comment) that a global's table is schema-identical to
  * an ordinary non-versioned/non-upload/non-auth collection table - so
@@ -725,7 +725,7 @@ export const securitySettings = securitySettingsGenerated.table
  * Integrations: the simplest global yet - one secret `text` field
  * (`claudeApiKey`), schema-identical to Faqs' scalar-only table. Its
  * encrypt/decrypt hooks (src/utilities/secretField.ts) run entirely inside
- * Payload's own field-hook pipeline, invisible to generateTable - see
+ * The original engine's own field-hook pipeline, invisible to generateTable - see
  * ../globals/integrations.ts's KNOWN GAP doc comment for what that means for
  * a write through this layer's own raw-column ops.
  */
@@ -738,7 +738,7 @@ export const integrations = integrationsGenerated.table
  * encrypt/decrypt-hook caveat as Integrations, see
  * ../globals/emailSettings.ts), plus a layout-only top-level `row`. Its
  * `testing.sendTest` is a `type: 'ui'` field - the first this data layer has
- * met. Payload backs a `ui` field with no column at all, and generateTable's
+ * met. The original engine backs a `ui` field with no column at all, and generateTable's
  * columnFor has no case for it (confirmed: nothing else in this app's real
  * config has ever needed one), so `generateTable(EmailSettings)` unmodified
  * would throw. Rather than add a one-off `ui` branch to generate.ts's shared
@@ -926,7 +926,7 @@ export const backupSettingsGroupFields = backupSettingsGenerated.groupFields
  * generateTable/generateArrayTable/generateBlockTables/generateRelsTable/
  * generateVersionsTable machinery as every other collection above - see
  * those shadow configs' own header comments for how each was confirmed
- * against the real `@payloadcms/plugin-ecommerce` field shapes and this
+ * against the real `the vendor package` field shapes and this
  * app's real `shopPlugin()` call/migrations. `resolveTargetTable` above was
  * extended with a Transactions entry (Orders' `transactions` hasMany field
  * targets it).
@@ -1016,11 +1016,11 @@ export const productsVersionsBlockTypes = Object.fromEntries(
 export const productsVersionsRelsTargetColumns = productsVersionsRelsGenerated.targetColumns
 
 /**
- * Stage 7: real Payload's own internal `payload-preferences`/
- * `payload-locked-documents` collections - see
- * `@/collections/PayloadPreferences`/`PayloadLockedDocuments` for the
+ * Stage 7: the reference engine's own internal `engine-preferences`/
+ * `engine-locked-documents` collections - see
+ * `@/collections/Preferences`/`LockedDocuments` for the
  * exact fidelity notes (the `user` field's `relationTo: ['users']` shape,
- * and `payload-locked-documents`' confirmed, deliberate `document`-field
+ * and `engine-locked-documents`' confirmed, deliberate `document`-field
  * gap). Both generated tables are a strict SUBSET of their real physical
  * columns (`eg_preferences` matches exactly; `eg_locked_documents`/
  * `eg_locked_documents_rels` omit the `document`-field columns this config
@@ -1028,13 +1028,13 @@ export const productsVersionsRelsTargetColumns = productsVersionsRelsGenerated.t
  * this is safe: the undeclared real columns are simply never read or
  * written, not a schema conflict.
  */
-export const preferencesGenerated = generateTable(PayloadPreferences)
+export const preferencesGenerated = generateTable(Preferences)
 export const preferences = preferencesGenerated.table
 const preferencesRelsGenerated = generateRelsTable(preferencesGenerated.tableName, preferencesGenerated.relsFields, resolveTargetTable)
 export const preferencesRels = preferencesRelsGenerated.table
 export const preferencesRelsTargetColumns = preferencesRelsGenerated.targetColumns
 
-export const lockedDocumentsGenerated = generateTable(PayloadLockedDocuments)
+export const lockedDocumentsGenerated = generateTable(LockedDocuments)
 export const lockedDocuments = lockedDocumentsGenerated.table
 const lockedDocumentsRelsGenerated = generateRelsTable(lockedDocumentsGenerated.tableName, lockedDocumentsGenerated.relsFields, resolveTargetTable)
 export const lockedDocumentsRels = lockedDocumentsRelsGenerated.table

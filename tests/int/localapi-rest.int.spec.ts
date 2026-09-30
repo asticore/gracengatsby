@@ -80,7 +80,7 @@ function req(method: string, url: string, body?: unknown, headers?: Record<strin
 /* Fallthrough (returns null) cases                                          */
 /* -------------------------------------------------------------------------- */
 
-describe('localapi/rest - fallthrough to real Payload', () => {
+describe('localapi/rest - fallthrough to the reference engine', () => {
   it('returns null for an empty slug', async () => {
     const engine = makeMockEngine()
     expect(await handleRestRequest(req('GET', 'http://x/api'), [], engine)).toBeNull()
@@ -255,7 +255,7 @@ describe('localapi/rest - POST /:id/duplicate', () => {
 /* -------------------------------------------------------------------------- */
 
 describe('localapi/rest - bulk PATCH/DELETE (no id)', () => {
-  it('PATCH with no `where` query is a 400, matching real Payload\'s own missing-where error, engine.find never called', async () => {
+  it('PATCH with no `where` query is a 400, matching the reference engine\'s own missing-where error, engine.find never called', async () => {
     const engine = makeMockEngine()
     const res = await handleRestRequest(req('PATCH', 'http://x/api/posts', { title: 'x' }), ['posts'], engine)
     expect(res).not.toBeNull()
@@ -264,7 +264,7 @@ describe('localapi/rest - bulk PATCH/DELETE (no id)', () => {
     expect(engine.find).not.toHaveBeenCalled()
   })
 
-  it('DELETE with no `where` query is a 400, matching real Payload\'s own missing-where error', async () => {
+  it('DELETE with no `where` query is a 400, matching the reference engine\'s own missing-where error', async () => {
     const engine = makeMockEngine()
     const res = await handleRestRequest(req('DELETE', 'http://x/api/posts'), ['posts'], engine)
     expect(res).not.toBeNull()
@@ -569,7 +569,7 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
 
   describe('POST /payments/stripe/webhooks', () => {
     // CORRECTION 2026-09-26: this endpoint used to always fall through to
-    // real Payload's own registered stripeAdapter() (serving the unrelated
+    // the reference engine's own registered stripeAdapter() (serving the unrelated
     // membership-subscription flow) - it is now fully reproduced here,
     // closing the last real blocker to removing the real `shopPlugin()`
     // call. See stripeAdapter.ts's header for the full history.
@@ -815,7 +815,7 @@ describe('localapi/rest - auth endpoints', () => {
     expect(body.message).toBe('Authentication Passed')
     expect(body.token).toBe('tok')
     const setCookie = res!.headers.get('Set-Cookie') ?? ''
-    expect(setCookie).toContain('payload-token=tok')
+    expect(setCookie).toContain('engage-token=tok')
     expect(setCookie).toContain('HttpOnly=true')
     expect(setCookie).toContain('SameSite=Lax')
     expect(engine.login).toHaveBeenCalledWith({ collection: 'users', data: { email: 'a@b.com', password: 'x' } })
@@ -841,7 +841,7 @@ describe('localapi/rest - auth endpoints', () => {
     expect(res!.status).toBe(200)
     expect((await res!.json()) as { message: string }).toEqual({ message: 'Logout successful.' })
     const setCookie = res!.headers.get('Set-Cookie') ?? ''
-    expect(setCookie).toContain('payload-token=;')
+    expect(setCookie).toContain('engage-token=;')
     expect(engine.logout).toHaveBeenCalledWith(expect.objectContaining({ collection: 'users', allSessions: false }))
   })
 
@@ -861,10 +861,10 @@ describe('localapi/rest - auth endpoints', () => {
   it('GET /users/me returns {user, message, token, exp} when authenticated via cookie', async () => {
     const user = { id: 1, email: 'a@b.com' }
     const engine = makeMockEngine({ auth: vi.fn().mockResolvedValue({ user }) })
-    // A syntactically JWT-shaped token (header.payload.signature) so decodeJwtExpUnsafe can read `exp` back out.
-    const payload = Buffer.from(JSON.stringify({ exp: 999 })).toString('base64url')
-    const token = `header.${payload}.sig`
-    const res = await handleRestRequest(req('GET', 'http://x/api/users/me', undefined, { Cookie: `payload-token=${token}` }), ['users', 'me'], engine)
+    // A syntactically JWT-shaped token (header.engine.signature) so decodeJwtExpUnsafe can read `exp` back out.
+    const claims = Buffer.from(JSON.stringify({ exp: 999 })).toString('base64url')
+    const token = `header.${claims}.sig`
+    const res = await handleRestRequest(req('GET', 'http://x/api/users/me', undefined, { Cookie: `engage-token=${token}` }), ['users', 'me'], engine)
     const body = (await res!.json()) as Record<string, unknown>
     expect(body.user).toEqual(user)
     expect(body.message).toBe('Account')
@@ -880,7 +880,7 @@ describe('localapi/rest - auth endpoints', () => {
     expect(body.refreshedToken).toBe('newtok')
     expect(body).not.toHaveProperty('token')
     expect(body.strategy).toBe('local-jwt')
-    expect(res!.headers.get('Set-Cookie')).toContain('payload-token=newtok')
+    expect(res!.headers.get('Set-Cookie')).toContain('engage-token=newtok')
   })
 
   it('POST /users/forgot-password always returns {message: "Success"}, 200', async () => {
@@ -896,7 +896,7 @@ describe('localapi/rest - auth endpoints', () => {
     expect(res!.status).toBe(200)
     const body = (await res!.json()) as Record<string, unknown>
     expect(body.message).toBe('Password reset successfully.')
-    expect(res!.headers.get('Set-Cookie')).toContain('payload-token=tok')
+    expect(res!.headers.get('Set-Cookie')).toContain('engage-token=tok')
   })
 
   it('POST /users/reset-password maps a thrown InvalidResetToken to 400', async () => {
@@ -912,14 +912,14 @@ describe('localapi/rest - auth endpoints', () => {
     expect(await res!.json()).toEqual({ message: 'Success' })
   })
 
-  // Real Payload's `users` collection has no explicit `access.unlock`, so its
+  // The reference engine's `users` collection has no explicit `access.unlock`, so its
   // sanitize step fills in `auth/defaultAccess.js`'s own default -
   // `({req:{user}}) => Boolean(user)` - ANY authenticated user, but never an
-  // anonymous one. Confirmed empirically against real Payload's own REST
+  // anonymous one. Confirmed empirically against the reference engine's own REST
   // route in tests/int/localapi-rest-parity.int.spec.ts (an anonymous
   // request gets a real 403), which is what caught this handler's original
   // missing access check.
-  it('POST /users/unlock denies an anonymous (unauthenticated) caller with 403, matching real Payload default access.unlock', async () => {
+  it('POST /users/unlock denies an anonymous (unauthenticated) caller with 403, matching the reference engine default access.unlock', async () => {
     const engine = makeMockEngine() // default mock: auth() resolves { user: null }
     const res = await handleRestRequest(req('POST', 'http://x/api/users/unlock', { email: 'a@b.com' }), ['users', 'unlock'], engine)
     expect(res!.status).toBe(403)
@@ -1053,7 +1053,7 @@ describe('localapi/rest - POST /api/<collection>/access/:id? (no id)', () => {
     // logged-in user regardless of an id being present - this module's own
     // documented simplification (see rest.ts's `/api/access` section header)
     // treats any Where-object result as permitted-with-where, matching real
-    // Payload's own root/no-id (`fetchData: false`) behavior exactly.
+    // The original engine's own root/no-id (`fetchData: false`) behavior exactly.
     expect(body.read).toEqual({ permission: true, where: { id: { equals: 5 } } })
     expect(body.update).toEqual({ permission: true, where: { id: { equals: 5 } } })
     expect(body.create).toBeUndefined()

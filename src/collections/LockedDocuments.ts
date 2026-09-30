@@ -1,11 +1,11 @@
 import type { CollectionConfig } from '@/engine'
 
 /**
- * Real Payload's own internal `payload-locked-documents` collection,
+ * The reference engine's own internal `engine-locked-documents` collection,
  * reproduced only as far as this app actually needs it.
  *
  * CONFIRMED, DELIBERATE GAP - the `document` field is NOT modeled here.
- * Real Payload's `document` field is genuinely polymorphic (relationTo
+ * The reference engine's `document` field is genuinely polymorphic (relationTo
  * spans every lockable collection - 25 of them in this app, confirmed by
  * tracing every migration touching `eg_locked_documents_rels`) and picks
  * its target PER ROW, not once per field. `../cms/db/generic.ts`'s
@@ -28,18 +28,18 @@ import type { CollectionConfig } from '@/engine'
  * `undefined`, not silently-wrong data - flag to whoever adds a real
  * locking feature rather than fixing here.
  *
- * `user` IS modeled, the same way as `PayloadPreferences.user` (see that
+ * `user` IS modeled, the same way as `Preferences.user` (see that
  * file's header) - `relationTo: ['users']` is the real shape (this app has
  * one auth collection), routed through the shared `eg_locked_documents_rels`
  * table's `eg_users_id` column via `topLevelRelsFieldTargets`.
  *
  * `globalSlug` is a plain column, matching the real table exactly.
  *
- * No `access` block: same reasoning as `PayloadPreferences` - falls back to
+ * No `access` block: same reasoning as `Preferences` - falls back to
  * this app's `/api/access` reproduction's `isLoggedIn` default.
  */
-export const PayloadLockedDocuments: CollectionConfig = {
-  slug: 'payload-locked-documents',
+export const LockedDocuments: CollectionConfig = {
+  slug: 'locked-documents',
   dbName: 'eg_locked_documents',
   fields: [
     { name: 'globalSlug', type: 'text' },

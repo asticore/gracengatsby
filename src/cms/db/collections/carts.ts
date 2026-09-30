@@ -8,7 +8,7 @@ import { carts, cartsItems } from '../schema'
 export type CartItem = { id: string; product?: number | null; quantity: number }
 
 /**
- * Payload's document shape for the `carts` collection - see
+ * The original engine's document shape for the `carts` collection - see
  * src/features/ecommerce/collections/Carts.ts. `status` is NOT modeled here -
  * it's a virtual, hook-computed field with no real column (see that file's
  * header comment) - Layer 2 territory, not this DB-layer stage.

@@ -6,7 +6,7 @@ import { createCollectionOps, createDraftOps, createVersionsOps } from '../gener
 import { courses, coursesGenerated, coursesJoinFields, coursesVersions } from '../schema'
 
 /**
- * Payload's document shape for the `courses` collection - see
+ * The original engine's document shape for the `courses` collection - see
  * src/features/courses/collections/Courses.ts. `lessons` is a `join` field,
  * resolved read-only at query time - see ../generic.ts's createJoinOps doc
  * comment for the confirmed `{ docs, hasNextPage }` shape.
@@ -73,7 +73,7 @@ export const createCourseVersion = versionsOps.createVersion as unknown as (
 // Plain baseOps exports for engageD1Adapter's dispatch - same double-write
 // landmine and fix as events.ts's own comment above its equivalent block
 // (see that comment for the full explanation, confirmed against
-// payload/dist/collections/operations/create.js:194-221). `lessons` (a join
+// engine/dist/collections/operations/create.js:194-221). `lessons` (a join
 // field) resolves inline against the real eg_lessons table inside
 // baseOps.findPaginated/findByID themselves, unaffected by which ops object
 // is used here (see engage.config.ts's own join-safety doc comment).

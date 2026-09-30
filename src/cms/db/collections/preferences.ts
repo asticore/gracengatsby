@@ -1,11 +1,11 @@
 import type { Sort, Where } from '@/engine'
 
-import { PayloadPreferences } from '@/collections/PayloadPreferences'
+import { Preferences } from '@/collections/Preferences'
 
 import { createCollectionOps } from '../generic'
 import { preferences, preferencesRels, preferencesRelsTargetColumns } from '../schema'
 
-/** Payload's document shape for the `payload-preferences` collection - see src/collections/PayloadPreferences.ts. */
+/** The original engine's document shape for the `engine-preferences` collection - see src/collections/Preferences.ts. */
 export type PreferenceDoc = {
   id: number
   user?: number[] | null
@@ -21,10 +21,10 @@ export type PreferenceDoc = {
 // always produces arrays - see generic.ts's attachTopLevelRels), not the
 // bare-id scalar every OTHER relationship field in this app uses - a
 // confirmed, documented divergence with no consequence today since no
-// caller reads/writes this field's value (see PayloadPreferences.ts header).
+// caller reads/writes this field's value (see Preferences.ts header).
 const ops = createCollectionOps(
   preferences,
-  PayloadPreferences,
+  Preferences,
   {},
   {
     relsTable: { table: preferencesRels, targetColumns: preferencesRelsTargetColumns },

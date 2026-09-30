@@ -4,7 +4,7 @@
 // for the full explanation) - this suite is server-only and needs no DOM.
 //
 // THE FRESH-INSTALL / DEPLOY-BUTTON ACCEPTANCE PROOF for src/localapi/migrate.ts
-// (payload-removal-plan.md's "Fresh-install / deploy-button acceptance
+// (the plan doc's "Fresh-install / deploy-button acceptance
 // requirement" - a hard, user-flagged acceptance criterion for the whole
 // removal project, not an optional nice-to-have).
 //
@@ -31,7 +31,7 @@
 // assert full set-equality against the live dev database's entire table
 // inventory (that database also carries tables from `applySchemaAdditions`
 // and the still-open "5th SQL file" gap flagged in the plan doc, neither of
-// which is part of `payload migrate`'s own job). What this test proves is the
+// which is part of `engine migrate`'s own job). What this test proves is the
 // literal, narrower claim the acceptance requirement makes: the migration
 // chain itself, run standalone against nothing, produces the tables it is
 // supposed to produce, in the right bookkeeping order, and they work.
@@ -45,8 +45,8 @@ import { runMigrations, type Drizzle, type MigrationEntry } from '@/localapi/mig
 import { migrations } from '@/migrations'
 import type { EngineDb } from '@/migrations/schema/engineBootstrap'
 
-// The barrel's own migration entries are typed against real Payload's full
-// MigrateUpArgs/MigrateDownArgs (payload: Payload, req: PayloadRequest) - our
+// The barrel's own migration entries are typed against the reference engine's full
+// MigrateUpArgs/MigrateDownArgs (engine: the original engine, req: EngineRequest) - our
 // hand-rolled MigrationEntry narrows both to this app's real, confirmed usage
 // (see src/localapi/migrate.ts's own header comment). Neither direction is
 // structurally assignable to the other by design (ours is narrower), so this

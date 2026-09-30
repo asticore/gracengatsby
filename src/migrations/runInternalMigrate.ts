@@ -9,7 +9,7 @@
  * sequence rather than a hand-copied approximation of it.
  *
  * THE FRESH-INSTALL GAP THIS CLOSES (found 2026-09-17, see
- * payload-removal-plan.md's "Fresh-install / deploy-button acceptance
+ * the plan doc's "Fresh-install / deploy-button acceptance
  * requirement" section for the full writeup): of this app's 18 real
  * migrations (`src/migrations/index.ts`), the route previously only ever ran
  * the LAST 7 (`RUNNABLE_MIGRATIONS`, now `LATE_MIGRATIONS` below) - the
@@ -34,7 +34,7 @@
  *
  * ORDERING - the part that isn't just "add them to the list". These 5
  * migrations create tables under their ORIGINAL, pre-`eg_`-prefix names
- * (`users`, `pages`, `posts`, `media`, `payload_locked_documents_rels`, ...).
+ * (`users`, `pages`, `posts`, `media`, `eg_locked_documents_rels`, ...).
  * The `eg_` rename is itself a LATER migration
  * (`20260825_033000_rename_tables_eg_prefix`/`20260826_090000_rename_engine_tables`,
  * both excluded here - see the bottom of this comment) whose idempotent
@@ -52,7 +52,7 @@
  *    names the POST-rename table (`eg_locked_documents_rels` - it is
  *    hand-written, not generated, and was written after the cutover). That
  *    table only exists once the engine-bookkeeping rename
- *    (`payload_locked_documents_rels` -> `eg_locked_documents_rels`, part of
+ *    (`eg_locked_documents_rels` -> `eg_locked_documents_rels`, part of
  *    `bootstrapEngineTables`) has run - which is why `bootstrapEngineTables`
  *    runs a SECOND time right after `EARLY_MIGRATIONS`, before `SCHEMA_SETS`,
  *    rather than only at the very top. (Its FK columns reference
@@ -81,9 +81,9 @@
  *     already recorded (production, local dev); creates the base schema
  *     under pre-`eg_`-prefix names on a fresh install.
  *  3. `bootstrapEngineTables` (2nd pass) - renames the engine bookkeeping
- *     tables `EARLY_MIGRATIONS` just created (`payload_migrations` was
- *     already handled in pass 1; `payload_preferences(_rels)`,
- *     `payload_locked_documents(_rels)`, `payload_kv`) onto the `eg_`
+ *     tables `EARLY_MIGRATIONS` just created (`eg_migrations` was
+ *     already handled in pass 1; `eg_preferences(_rels)`,
+ *     `eg_locked_documents(_rels)`, `eg_kv`) onto the `eg_`
  *     prefix, and renames every `_rels` table's relationship columns
  *     (content tables included - column renames don't depend on whether the
  *     referenced table itself has been renamed yet). No-op everywhere else.
@@ -117,7 +117,6 @@ import { renameTables } from './schema/applyRenames'
 import { applySchemaAdditions } from './schema/applySchema'
 import { BLOCKS_RELS_STATEMENTS } from './schema/blocksRelsTables'
 import { bootstrapEngineTables, type EngineDb } from './schema/engineBootstrap'
-import { ENGINE_TABLE_RENAMES } from './schema/engineTables'
 import { SCHEMA_SETS, withoutRenamedTables } from './schema/freshInstallSchemaSets'
 import { TABLE_RENAMES } from './schema/tableRenames'
 
@@ -176,7 +175,7 @@ export async function runInternalMigrate(rawDb: D1Database, logger: EngineLogger
 
   // Step 1: engine bookkeeping bootstrap, 1st pass - see header comment.
   const engineReportPassA = await bootstrapEngineTables(engineDb)
-  errorCount += engineReportPassA.columns.errors.length + engineReportPassA.tables.errors.length
+  errorCount += engineReportPassA.columns.errors.length
   results['engine-tables'] = engineReportPassA
 
   // Step 2: the foundation migrations.
@@ -193,7 +192,7 @@ export async function runInternalMigrate(rawDb: D1Database, logger: EngineLogger
   // `locked-documents-rels` schema set next) exists on a fresh install. See
   // header comment.
   const engineReportPassB = await bootstrapEngineTables(engineDb)
-  errorCount += engineReportPassB.columns.errors.length + engineReportPassB.tables.errors.length
+  errorCount += engineReportPassB.columns.errors.length
   results['engine-tables-second-pass'] = engineReportPassB
 
   // Step 4: additive schema sets, computed against the database as it stands
@@ -201,7 +200,7 @@ export async function runInternalMigrate(rawDb: D1Database, logger: EngineLogger
   // everywhere else) - see `withoutRenamedTables`'s own doc comment.
   const presentBeforeRename = new Set(await listTables())
   const renamedAwayBeforeRename = new Set(
-    [...TABLE_RENAMES, ...ENGINE_TABLE_RENAMES].filter((entry) => presentBeforeRename.has(entry.to)).map((entry) => entry.from),
+    TABLE_RENAMES.filter((entry) => presentBeforeRename.has(entry.to)).map((entry) => entry.from),
   )
 
   // Step 3b: per-block child tables (formerly the hand-run `deploy:database`

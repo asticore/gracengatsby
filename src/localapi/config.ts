@@ -1,10 +1,10 @@
 /**
  * From-scratch reimplementation of the Local API's `.config`/`.collections`
  * surface - the second of the four remaining `@/engine` shims scoped in
- * payload-removal-plan.md's "Full-removal cutover prerequisites" section
+ * the plan doc's "Full-removal cutover prerequisites" section
  * (logger done; this is config/collections; db.migrate remains the big one).
  *
- * Grepped every real `engine.config`/`payload?.config`/`req.payload.config`/
+ * Grepped every real `engine.config`/`engine?.config`/`req.engine.config`/
  * `engine.collections` call site in `src/` directly. Every one reads only:
  *
  *   - `.config.routes.admin` / `.config.routes.api` (admin-URL building)
@@ -20,14 +20,13 @@
  * Never anything else - no field arrays, no access/hooks, no endpoints, no
  * i18n/localization/upload/jobs config. `EngineConfigShape`/
  * `EngineCollectionsMap` below are hand-rolled to that real, narrow surface
- * only, matching this directory's rule of never importing the `payload`
+ * only, matching this directory's rule of never importing the `engine`
  * package to describe a shape already reimplemented by hand.
  *
  * WHAT THIS MODULE COVERS, CONFIRMED AGAINST A LIVE `getEngine()`
  *
- * Real Payload's sanitizer does two things this module has to reproduce
- * exactly, both confirmed by reading `payload/dist/collections/config/
- * sanitize.js` and `defaults.js` directly rather than assumed:
+ * The reference engine's sanitizer does two things this module has to reproduce
+ * exactly, both confirmed by reading the vendor source and `defaults.js` directly rather than assumed:
  *
  *  1. A collection with no explicit `labels` gets one auto-generated from its
  *     slug (`formatLabels`, via the `pluralize` npm package's irregular-word
@@ -38,7 +37,7 @@
  *     Reimplementing `pluralize`'s full dictionary/inflection rules to derive
  *     three fixed, known strings would be a large, error-prone undertaking
  *     for no real benefit, so the three real values - computed once via
- *     payload's own real `pluralize` dependency and confirmed against a live
+ *     engine's own real `pluralize` dependency and confirmed against a live
  *     `getEngine()` (`{events: 'Events'/'Event', media: 'Media'/'Media',
  *     users: 'Users'/'User'}`) - are hardcoded in `AUTO_LABELS_BY_SLUG`
  *     below. A slug that reaches `resolveCollectionLabels` with neither
@@ -49,11 +48,11 @@
  *
  *  2. `auth: true` (a bare boolean) expands to a full sanitized auth-config
  *     object (`addDefaultsToAuthConfig`,
- *     `payload/dist/collections/config/defaults.js`) - this app's ONE
+ *     the vendor source) - this app's ONE
  *     `auth: true` collection is `users` (confirmed bare boolean, no
  *     overrides - `src/collections/Users.ts`). The four defaulted values
  *     that matter (`maxLoginAttempts`, `lockTime`, `tokenExpiration`,
- *     `useSessions`) are the exact same real Payload defaults
+ *     `useSessions`) are the exact same the reference engine defaults
  *     `src/localapi/auth.ts`'s Stage 2 module already confirmed and exports
  *     as `MAX_LOGIN_ATTEMPTS`/`LOCK_TIME_MS`/`TOKEN_EXPIRATION_SECONDS`/
  *     `USE_SESSIONS` - reused here rather than re-declared, so the two
@@ -70,9 +69,9 @@
  * real `engine.config.collections` - the ecommerce `shopPlugin` (see
  * `engage.config.ts`'s `plugins:` array) injects 5 more collections
  * (`products`, `carts`, `orders`, `transactions`, `addresses`) that
- * `NAV_STRUCTURE`'s "Shop" group references by slug, and real Payload itself
- * always adds 4 internal bookkeeping collections (`payload-migrations`,
- * `payload-preferences`, `payload-locked-documents`, `payload-kv` - slugs
+ * `NAV_STRUCTURE`'s "Shop" group references by slug, and the reference engine itself
+ * always adds 4 internal bookkeeping collections (`engine-migrations`,
+ * `engine-preferences`, `engine-locked-documents`, `engine-kv` - slugs
  * unchanged even though their TABLES are renamed to `eg_*`, confirmed live:
  * `engine.config.collections.length` is 30, not this app's own 21).
  * `resolveEntityGroups` iterates every entry in `.config.collections`
@@ -81,7 +80,7 @@
  * referenced by `NAV_STRUCTURE` and can be omitted with no observable
  * difference). Confirmed directly against a live `getEngine()` that all 5
  * shop collections' `labels.plural`/`.singular` are LabelFunctions, not
- * plain strings (`@payloadcms/plugin-ecommerce`'s own
+ * plain strings (`the vendor package`'s own
  * `createProductsCollection.js` etc: `plural: ({ t }) => t('plugin-
  * ecommerce:products')`, an i18n-translated label, confirmed by reading the
  * plugin's real source directly). Reproducing the actual function reference
@@ -104,7 +103,7 @@
 
 import { LOCK_TIME_MS, MAX_LOGIN_ATTEMPTS, TOKEN_EXPIRATION_SECONDS, USE_SESSIONS } from './auth'
 
-/** Matches real Payload's `StaticLabel | LabelFunction` - this app's own configs never use the function form, but pass it through unevaluated same as `resolveEntityGroups`'s own `resolveLabel` does. */
+/** Matches the reference engine's `StaticLabel | LabelFunction` - this app's own configs never use the function form, but pass it through unevaluated same as `resolveEntityGroups`'s own `resolveLabel` does. */
 export type LabelValue = string | Record<string, string> | ((args: { t: (key: never) => string; i18n?: unknown }) => unknown)
 
 export type EngineRoutes = {
@@ -112,7 +111,7 @@ export type EngineRoutes = {
   api: string
 }
 
-/** Real Payload's `addDefaultsToAuthConfig` output shape - only the fields this app ever reads (`signup.ts`'s `auth.verify`) plus the rest for fidelity. */
+/** The reference engine's `addDefaultsToAuthConfig` output shape - only the fields this app ever reads (`signup.ts`'s `auth.verify`) plus the rest for fidelity. */
 export type EngineCollectionAuthConfig = {
   cookies: { sameSite: string; secure: boolean }
   forgotPassword: Record<string, unknown>
@@ -145,10 +144,10 @@ export type EngineConfigShape = {
   globals: EngineGlobalEntry[]
 }
 
-/** Real Payload's `payload.collections[slug].config` is the SAME sanitized object referenced in `config.collections` - not a separate build - so this is keyed straight off `EngineCollectionEntry`. */
+/** The reference engine's `engine.collections[slug].config` is the SAME sanitized object referenced in `config.collections` - not a separate build - so this is keyed straight off `EngineCollectionEntry`. */
 export type EngineCollectionsMap = Record<string, { config: EngineCollectionEntry }>
 
-/** This app never overrides `routes`/`serverURL` in its `buildConfig()` call (confirmed by reading `engage.config.ts` directly) - these are real Payload's own sanitize-time defaults (`payload/dist/config/defaults.js`), confirmed live against `getEngine()`. */
+/** This app never overrides `routes`/`serverURL` in its `buildConfig()` call (confirmed by reading `engage.config.ts` directly) - these are the reference engine's own sanitize-time defaults (the vendor source), confirmed live against `getEngine()`. */
 export const DEFAULT_ROUTES: EngineRoutes = { admin: '/admin', api: '/api' }
 export const DEFAULT_SERVER_URL = ''
 
@@ -157,8 +156,8 @@ const AUTO_LABELS_BY_SLUG: Record<string, { plural: string; singular: string }> 
   events: { plural: 'Events', singular: 'Event' },
   media: { plural: 'Media', singular: 'Media' },
   users: { plural: 'Users', singular: 'User' },
-  'payload-preferences': { plural: 'Preferences', singular: 'Preference' },
-  'payload-locked-documents': { plural: 'Locked Documents', singular: 'Locked Document' },
+  'preferences': { plural: 'Preferences', singular: 'Preference' },
+  'locked-documents': { plural: 'Locked Documents', singular: 'Locked Document' },
 }
 
 /** See this file's header comment - the ecommerce plugin's own 5 injected collections, thin-shape only, confirmed against the plugin's real source + English translations. */
@@ -170,7 +169,7 @@ export const SHOP_PLUGIN_COLLECTION_ENTRIES: EngineCollectionEntry[] = [
   { slug: 'addresses', admin: { group: 'Ecommerce' }, labels: { plural: 'Addresses', singular: 'Address' } },
 ]
 
-/** The raw, pre-sanitize auth shape a real `CollectionConfig.auth` may take - `verify`/`loginWithUsername` accept `true` here (real Payload's own input type), unlike `EngineCollectionAuthConfig`'s already-sanitized output shape below. */
+/** The raw, pre-sanitize auth shape a real `CollectionConfig.auth` may take - `verify`/`loginWithUsername` accept `true` here (the reference engine's own input type), unlike `EngineCollectionAuthConfig`'s already-sanitized output shape below. */
 export type RawCollectionAuthConfig = {
   cookies?: { sameSite?: string; secure?: boolean }
   forgotPassword?: Record<string, unknown>
@@ -204,7 +203,7 @@ function resolveCollectionLabels(collection: CollectionConfigLike): { plural?: L
   if (!fallback) {
     throw new Error(
       `src/localapi/config.ts has no auto-label fallback for collection "${collection.slug}" (it declares no ` +
-        'explicit labels). Add explicit `labels` to its config, or add its real, Payload-computed plural/singular ' +
+        'explicit labels). Add explicit `labels` to its config, or add its real, engine-computed plural/singular ' +
         "to AUTO_LABELS_BY_SLUG (compute it the same way this file's header comment describes, then confirm " +
         'against a live getEngine() before hardcoding it).',
     )
@@ -212,7 +211,7 @@ function resolveCollectionLabels(collection: CollectionConfigLike): { plural?: L
   return { plural: collection.labels?.plural ?? fallback.plural, singular: collection.labels?.singular ?? fallback.singular }
 }
 
-/** Reproduces real Payload's `auth: true` -> full sanitized auth-config object expansion - see this file's header comment. */
+/** Reproduces the reference engine's `auth: true` -> full sanitized auth-config object expansion - see this file's header comment. */
 function resolveCollectionAuth(collection: CollectionConfigLike): EngineCollectionAuthConfig | undefined {
   if (!collection.auth) return undefined
   const raw = typeof collection.auth === 'boolean' ? {} : collection.auth
@@ -243,7 +242,7 @@ export function buildEngineGlobalEntries(globals: GlobalConfigLike[]): EngineGlo
     if (!global.label) {
       throw new Error(
         `src/localapi/config.ts: global "${global.slug}" declares no \`label\` - every one of this app's 17 ` +
-          "globals does today (confirmed by grep). Add one rather than guessing real Payload's toWords(slug) " +
+          "globals does today (confirmed by grep). Add one rather than guessing the reference engine's toWords(slug) " +
           'fallback, which this module does not reproduce.',
       )
     }

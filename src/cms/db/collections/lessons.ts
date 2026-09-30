@@ -12,7 +12,7 @@ export type LessonBlock = {
   blockName?: string | null
 } & Record<string, unknown>
 
-/** Payload's document shape for the `lessons` collection - see src/features/courses/collections/Lessons.ts. Lessons has no `versions` config, so (unlike Courses) there is no version-row shape to model here. */
+/** The original engine's document shape for the `lessons` collection - see src/features/courses/collections/Lessons.ts. Lessons has no `versions` config, so (unlike Courses) there is no version-row shape to model here. */
 export type LessonDoc = {
   id: number
   title: string

@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `Logout`.
+ * From-scratch replacement for `the vendor package`'s `Logout`.
  *
  * Hits the already-implemented `POST /api/users/logout`, then sends the user
  * to `/admin/login` and refreshes so every server component (nav included)

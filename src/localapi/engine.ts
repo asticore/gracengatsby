@@ -1,14 +1,14 @@
 /**
  * Stage 6c: a hand-rolled `Engine` interface + `createEngine()` factory -
  * this app's own from-scratch replacement for `@/engine`'s
- * `export type Engine = Payload` / `getEngine = () => getPayload(...)`.
+ * `export type Engine = the original engine` / `getEngine = () => getEngine(...)`.
  *
  * Still standalone - NOT wired into `@/engine` yet (that is Stage 6e, the
  * actual flip). This module assembles the five already-built, already-proven
  * `src/localapi/*` modules (Local API core, auth, logger, config, migrate)
  * plus Stage 6a's `readRegistry`/`writeRegistry` into one object satisfying
  * the interface below, dispatching every call by collection/global slug into
- * those registries - exactly mirroring what real Payload's own `getPayload()`
+ * those registries - exactly mirroring what the reference engine's own `getEngine()`
  * does internally, just built from this app's own pieces instead of the
  * vendor package.
  *
@@ -24,23 +24,23 @@
  * `src/views/dashboard/dashboardData.ts:62`, `forgotPassword` at
  * `src/features/accounts/auth.ts:162`). No other method on a `getEngine()`
  * result has any real call site anywhere in `src/` - `delete` on a global
- * (globals have none in real Payload either), bulk operations, and
+ * (globals have none in the reference engine either), bulk operations, and
  * `autosave`/`unpublish` were already confirmed unused back in Stage 1.
  *
  * CALL SHAPE: every real call site passes EITHER a `user` sibling option
  * (`engine.count({collection, user, ...})` - well, actually none currently
  * do; they pass `req` instead) OR a pre-built `req`-like object with its own
  * `.user` (`engine.count({collection, req, overrideAccess})` at
- * `dashboardData.ts:62`), matching real Payload's own Local API convention
+ * `dashboardData.ts:62`), matching the reference engine's own Local API convention
  * (`user` is sibling sugar; `req` is the canonical carrier). `toLocalReq`
  * below accepts either and always produces the `LocalReq` shape
  * `./access.ts`/`./operations.ts`/`./read-operations.ts` already expect,
- * with `payload` ALWAYS set to this same `Engine` instance (self-reference)
+ * with `engine` ALWAYS set to this same `Engine` instance (self-reference)
  * and `t` defaulted to an identity stub when the caller's own `req` doesn't
- * carry one - the same "always supply a real payload + t, never assume a
+ * carry one - the same "always supply a real engine + t, never assume a
  * clean call" precaution `tests/int/localapi-operations-parity.int.spec.ts`
  * already established is necessary (a `CollectionConfig` object shared with
- * `engage.config.ts`'s still-running real Payload instance can carry a
+ * `engage.config.ts`'s still-running the reference engine instance can carry a
  * sanitize-mutated `field.validate` that expects both, whether or not
  * *this* call path is the one that triggered the mutation).
  *
@@ -50,12 +50,12 @@
  * produces byte-identical JSON-line output to `cloudflareLogger` (proven by
  * Stage 3's parity tests), so there is no real behavioral difference to
  * switch on, and importing `engage.config.ts` from this module (to reach
- * `cloudflareLogger`) would pull this payload-free `localapi/` directory
- * into `engage.config.ts`'s own real-Payload/circular-import machinery for
+ * `cloudflareLogger`) would pull this engine-free `localapi/` directory
+ * into `engage.config.ts`'s own reference-engine/circular-import machinery for
  * zero observable benefit.
  *
- * `db.migrate`: real Payload's `db.migrate(args？)` accepts an OPTIONAL
- * `{migrations}` - when omitted, real Payload runs whatever migrations list
+ * `db.migrate`: the reference engine's `db.migrate(args？)` accepts an OPTIONAL
+ * `{migrations}` - when omitted, the reference engine runs whatever migrations list
  * the db adapter was configured with at init time, which for this app is
  * every migration in `src/migrations/index.ts`'s barrel (the same list
  * `pnpm cms migrate` runs - see `./migrate.ts`'s own header). This factory's
@@ -64,11 +64,11 @@
  * (like `/api/internal-migrate`'s own `RUNNABLE_MIGRATIONS` - see Stage 6's
  * plan doc entry on that route) passes it explicitly, same as today.
  * Returns `RunMigrationsResult` (`{ran, skipped, batch}`) rather than
- * `void` the way real Payload's does - a DELIBERATE, additive deviation: no
+ * `void` the way the reference engine's does - a DELIBERATE, additive deviation: no
  * real call site in this app reads `db.migrate`'s return value today (both
  * confirmed real call sites discard it), and a caller that DOES want to know
  * what ran (like a future rewrite of `/api/internal-migrate`'s own
- * before/after `payload-migrations` diffing dance - see the plan doc) can
+ * before/after `engine-migrations` diffing dance - see the plan doc) can
  * now just read `result.ran` directly instead of re-querying bookkeeping
  * state, which `runMigrations` already tracked. Widening a return type from
  * `void` to something real callers can already safely ignore is not an
@@ -107,7 +107,7 @@ import { getDb } from '@/cms/db/connect'
 import { ensureMigrationsTable, type EngineDb } from '@/migrations/schema/engineBootstrap'
 import { migrations as ALL_MIGRATIONS } from '@/migrations'
 
-/** A caller's pre-built request-like object, matching real Payload's own Local API convention (see this file's header, "CALL SHAPE"). Loose (`Record<string,unknown>`-backed via `LocalReq` itself) so any real call site's own `req` object - however it got built - is accepted without this module needing to know its concrete shape. */
+/** A caller's pre-built request-like object, matching the reference engine's own Local API convention (see this file's header, "CALL SHAPE"). Loose (`Record<string,unknown>`-backed via `LocalReq` itself) so any real call site's own `req` object - however it got built - is accepted without this module needing to know its concrete shape. */
 export type EngineReqLike = Partial<LocalReq>
 
 type CommonOpts = {
@@ -144,19 +144,19 @@ export type Engine = {
 /** This app's one upload-enabled collection - see `./uploads.ts`'s file header for why this is a hardcoded constant rather than a config lookup, same convention as `./rest.ts`'s `AUTH_COLLECTION_SLUG`. */
 const MEDIA_COLLECTION_SLUG = 'media'
 
-/** `filenameExists` predicate `./uploads.ts`'s `generateUploadFields` needs, wired to a real `filename`-equality lookup against `media` - the from-scratch equivalent of real Payload's own `docWithFilenameExists` (`payload/dist/uploads/docWithFilenameExists.js`), minus its local-filesystem branch (this app's media is never stored on disk - `disableLocalStorage` is implicitly true, see `./storage.ts`'s own file header). `overrideAccess: true` matches every other Local API DB-level lookup in this file - this is an internal dedup check, not a caller-facing read. */
+/** `filenameExists` predicate `./uploads.ts`'s `generateUploadFields` needs, wired to a real `filename`-equality lookup against `media` - the from-scratch equivalent of the reference engine's own `docWithFilenameExists` (original engine), minus its local-filesystem branch (this app's media is never stored on disk - `disableLocalStorage` is implicitly true, see `./storage.ts`'s own file header). `overrideAccess: true` matches every other Local API DB-level lookup in this file - this is an internal dedup check, not a caller-facing read. */
 async function mediaFilenameExists(req: LocalReq, filename: string): Promise<boolean> {
   const result = await readFind(readRegistry, MEDIA_COLLECTION_SLUG, { req, where: { filename: { equals: filename } }, limit: 1, pagination: false, overrideAccess: true })
   return result.docs.length > 0
 }
 
-/** Real Payload's own derived JWT secret (`payload/dist/index.js`): `sha256(config.secret).hex().slice(0, 32)`, NOT the raw env var - confirmed and load-bearing since Stage 2. `engage.config.ts`'s own precedence (`ENGAGE_SECRET` preferred, `PAYLOAD_SECRET` fallback, empty-string last resort) is reproduced here so a deployment that only ever set one of the two still derives the same secret real Payload would. */
+/** The derived JWT secret: `sha256(ENGAGE_SECRET).hex().slice(0, 32)`, NOT the raw env var. Load-bearing: existing sessions are signed with it. */
 function deriveSecret(): string {
-  const raw = process.env.ENGAGE_SECRET || process.env.PAYLOAD_SECRET || ''
+  const raw = process.env.ENGAGE_SECRET || ''
   return createHash('sha256').update(raw).digest('hex').slice(0, 32)
 }
 
-/** The auth-row family (`findUserAuthRowByID`/`findUserAuthRowsPaginated`/`updateUserAuthRow`) `./auth.ts` needs - a THIRD family alongside Stage 6a's plain CRUD and versioned-drafts families, deliberately excluded from `./registry.ts` (see that file's own header) since only this factory needs it. Wiring copied from the exact pattern `tests/int/localapi-auth-parity.int.spec.ts`'s own `makeRealAuthDb()` already proves correct against real Payload. */
+/** The auth-row family (`findUserAuthRowByID`/`findUserAuthRowsPaginated`/`updateUserAuthRow`) `./auth.ts` needs - a THIRD family alongside Stage 6a's plain CRUD and versioned-drafts families, deliberately excluded from `./registry.ts` (see that file's own header) since only this factory needs it. Wiring copied from the exact pattern `tests/int/localapi-auth-parity.int.spec.ts`'s own `makeRealAuthDb()` already proves correct against the reference engine. */
 function buildAuthDb(): AuthDbOps {
   return {
     findByEmail: async (email) => {
@@ -180,7 +180,7 @@ function toLocalReq(engine: Engine, opts: { user?: LocalReq['user']; req?: Engin
   return {
     t: (key: string) => key,
     ...base,
-    payload: engine,
+    engine,
     user: opts.user ?? base.user ?? null,
   }
 }
@@ -211,7 +211,7 @@ async function buildMigrateDb(): Promise<{ db: MigrateDrizzle; engineDb: EngineD
 }
 
 /**
- * Builds a standalone `Engine`. Synchronous - unlike real `getPayload()`,
+ * Builds a standalone `Engine`. Synchronous - unlike real `getEngine()`,
  * nothing here needs an async init step (no schema sanitize pass, no plugin
  * execution): the registries are already-built module-level constants and
  * the secret derivation is a cheap sync hash. Callers awaiting it (matching
@@ -267,7 +267,7 @@ export function createEngine(): Engine {
 
       let finalData = data
       if (collection === MEDIA_COLLECTION_SLUG) {
-        // Real Payload's own default (`filesRequiredOnCreate !== false`,
+        // The reference engine's own default (`filesRequiredOnCreate !== false`,
         // unoverridden by Media.ts, and this collection has no drafts to
         // exempt a draft save from it either) - a media doc can never be
         // created without a file. See ./uploads.ts's header for why
@@ -281,9 +281,9 @@ export function createEngine(): Engine {
       const created = await createDocument({ collection: entry.config, db, data: finalData, req: localReq, overrideAccess, draft })
 
       // The actual byte upload happens AFTER the DB row exists - mirroring
-      // real Payload's own `afterChange` hook timing (`@payloadcms/plugin-
+      // the reference engine's own `afterChange` hook timing (`the vendor package
       // cloud-storage`'s `getAfterChangeHook`, see ./storage.ts's header).
-      // Left unguarded (not try/caught) deliberately: real Payload's own
+      // Left unguarded (not try/caught) deliberately: the reference engine's own
       // afterChange hook re-throws on an upload failure too, so a caller
       // sees the same "the request failed" outcome even though the DB row
       // was already committed - not this app's own regression to fix.
@@ -360,7 +360,7 @@ export function createEngine(): Engine {
 
     login: async (args) => {
       const result = await authLogin(authDb, { email: args.data.email.trim().toLowerCase(), password: args.data.password, secret }).catch((err) => {
-        // Real Payload's own login rejects on a wrong password / locked
+        // The reference engine's own login rejects on a wrong password / locked
         // account too - AuthenticationError/LockedAuth are this module's
         // own error classes, re-thrown unmodified so callers that only
         // check "did it throw" (every real call site - see this file's

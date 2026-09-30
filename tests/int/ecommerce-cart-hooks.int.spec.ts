@@ -31,27 +31,27 @@ describe('ecommerceAccess - hasCartSecretAccess', () => {
 describe('cartHooks - beforeChangeCart', () => {
   it('generates a secret on create for a cart with no customer', async () => {
     const data: Record<string, unknown> = { items: [] }
-    const result = await beforeChangeCart({ data, operation: 'create', req: { payload: { findByID: vi.fn() } } } as never)
+    const result = await beforeChangeCart({ data, operation: 'create', req: { engine: { findByID: vi.fn() } } } as never)
     expect(typeof result.secret).toBe('string')
     expect((result.secret as string).length).toBe(40) // 20 bytes, hex-encoded
   })
 
   it('does not generate a secret for an authenticated (customer-owned) cart', async () => {
     const data: Record<string, unknown> = { items: [], customer: 7 }
-    const result = await beforeChangeCart({ data, operation: 'create', req: { payload: { findByID: vi.fn() } } } as never)
+    const result = await beforeChangeCart({ data, operation: 'create', req: { engine: { findByID: vi.fn() } } } as never)
     expect(result.secret).toBeUndefined()
   })
 
   it('does not overwrite an existing secret on update', async () => {
     const data: Record<string, unknown> = { items: [], secret: 'already-set' }
-    const result = await beforeChangeCart({ data, operation: 'update', req: { payload: { findByID: vi.fn() } } } as never)
+    const result = await beforeChangeCart({ data, operation: 'update', req: { engine: { findByID: vi.fn() } } } as never)
     expect(result.secret).toBe('already-set')
   })
 
   it('recalculates subtotal from items using each product price, ignoring the posted value', async () => {
     const findByID = vi.fn().mockResolvedValue({ priceInAUD: 25 })
     const data: Record<string, unknown> = { items: [{ product: 5, quantity: 3 }], subtotal: 999999 }
-    const result = await beforeChangeCart({ data, operation: 'update', req: { payload: { findByID } } } as never)
+    const result = await beforeChangeCart({ data, operation: 'update', req: { engine: { findByID } } } as never)
     expect(result.subtotal).toBe(75)
     expect(findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'products', id: 5 }))
   })
@@ -65,14 +65,14 @@ describe('cartHooks - beforeChangeCart', () => {
         { product: { id: 3 }, quantity: 1 },
       ],
     }
-    const result = await beforeChangeCart({ data, operation: 'update', req: { payload: { findByID } } } as never)
+    const result = await beforeChangeCart({ data, operation: 'update', req: { engine: { findByID } } } as never)
     expect(result.subtotal).toBe(30)
     expect(findByID).toHaveBeenCalledTimes(2)
   })
 
   it('zeroes subtotal when items is not an array', async () => {
     const data: Record<string, unknown> = { subtotal: 50 }
-    const result = await beforeChangeCart({ data, operation: 'update', req: { payload: { findByID: vi.fn() } } } as never)
+    const result = await beforeChangeCart({ data, operation: 'update', req: { engine: { findByID: vi.fn() } } } as never)
     expect(result.subtotal).toBe(0)
   })
 })

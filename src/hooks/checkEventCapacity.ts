@@ -11,7 +11,7 @@ export const checkEventCapacity: CollectionBeforeChangeHook = async ({ data, req
 
   const eventID = typeof data.event === 'object' ? data.event.id : data.event
 
-  const event = await req.payload.findByID({
+  const event = await req.engine.findByID({
     id: eventID,
     collection: 'events',
     req,
@@ -21,7 +21,7 @@ export const checkEventCapacity: CollectionBeforeChangeHook = async ({ data, req
     return data
   }
 
-  const existing = await req.payload.find({
+  const existing = await req.engine.find({
     collection: 'event-rsvps',
     where: { event: { equals: eventID } },
     limit: 0,

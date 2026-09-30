@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `useDocumentEvents`.
+ * From-scratch replacement for `the vendor package`'s `useDocumentEvents`.
  *
  * Backs SettingsRefresh.tsx, which reads `mostRecentUpdate?.entitySlug` /
  * `.updatedAt` to know a save just happened. Mounted once, high in the admin

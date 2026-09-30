@@ -5,7 +5,7 @@ import { AuditLog } from '@/features/security/auditLogCollection'
 import { createCollectionOps } from '../generic'
 import { auditLog } from '../schema'
 
-/** Payload's document shape for the `audit-log` collection - see src/features/security/auditLogCollection.ts. */
+/** The original engine's document shape for the `audit-log` collection - see src/features/security/auditLogCollection.ts. */
 export type AuditLogDoc = {
   id: number
   action: string

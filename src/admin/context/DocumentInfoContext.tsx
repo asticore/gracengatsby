@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `useDocumentInfo`.
+ * From-scratch replacement for `the vendor package`'s `useDocumentInfo`.
  *
  * Backs OpenVisualEditorButton.tsx and CustomFieldsPanel.tsx, both of which
  * destructure `{id, collectionSlug, globalSlug}`. Provided once per

@@ -26,7 +26,7 @@
  *    exist alongside one temporarily so a specifier repoint can land as a
  *    mechanical, zero-risk change - see ./editor.ts, ./commerce.ts and
  *    ./commerce/react.ts - but each is deprecated and removed once call sites
- *    move to the neutral name, as happened here for `Payload`/`PayloadRequest`.
+ *    move to the neutral name, as happened here for `the original engine`/`EngineRequest`.
  * 3. Anything added here should be shaped the way WE want to consume it, not
  *    mirrored from the vendor for its own sake - this is the contract our own
  *    implementation has to satisfy later, so it is worth getting right now.
@@ -36,18 +36,18 @@
  *
  * STAGE 6e (this cutover): `getEngine()`/`Engine` are now this app's own
  * implementation (`src/localapi/engine.ts`'s `createEngine()`/`Engine`)
- * instead of real Payload's `getPayload()`/`Payload`. Every real call site
+ * instead of the reference engine's `getEngine()`/`the original engine`. Every real call site
  * already goes through this seam (rule 1 above), so no other file changed -
  * `getEngine()`'s callers keep awaiting a `Promise<Engine>` exactly as before
  * (see `createEngine()`'s own header for why wrapping a synchronous factory
  * in an async function is a safe no-op for every existing `await getEngine()`
  * call site).
  *
- * `EngineRequest` deliberately KEEPS meaning real Payload's own
- * `PayloadRequest`, unlike `Engine` - confirmed by grepping every real
+ * `EngineRequest` deliberately KEEPS meaning the reference engine's own
+ * `EngineRequest`, unlike `Engine` - confirmed by grepping every real
  * consumer: all of them type a hook, `Access` function, custom Endpoint
  * handler, or admin-view helper's `req` parameter, and every one of those is
- * invoked by real Payload's own still-running hook/access/endpoint/admin
+ * invoked by the reference engine's own still-running hook/access/endpoint/admin
  * machinery (config-authoring is out of scope for this cutover, same as
  * `Access`/`CollectionConfig`/`Field` below) - none of them is a caller
  * building a request to hand INTO our own `createEngine()`'s methods (that
@@ -56,9 +56,9 @@
  * client type itself (`Engine`) needed to change.
  *
  * The config-authoring types below (`Access`, `CollectionConfig`, `Field`,
- * hooks, ...) still come from the real `payload` package, unchanged - this is
+ * hooks, ...) still come from the real `engine` package, unchanged - this is
  * deliberately out of scope for this cutover (a separately scoped future
- * concern, tracked in the plan doc). The real Payload instance those types
+ * concern, tracked in the plan doc). The the reference engine instance those types
  * configure (`engage.config.ts`'s `buildConfig()` output) still exists and
  * still powers `/admin` and the REST/GraphQL API, neither of which is cut over
  * yet - only this app's own Local API usage (everything that calls
@@ -114,7 +114,7 @@ export type {
  *
  * This is the seam's most important export: it now returns this app's own
  * `createEngine()` (see this file's header, "STAGE 6e") instead of real
- * Payload's `getPayload()` - the from-scratch replacement built and proven
+ * The original engine's `getEngine()` - the from-scratch replacement built and proven
  * across Stages 1-6d.
  */
 export const getEngine = async (): Promise<Engine> => {

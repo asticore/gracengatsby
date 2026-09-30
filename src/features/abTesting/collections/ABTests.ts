@@ -72,7 +72,7 @@ const resolveTargetPath = async (req: EngineRequest, pageId: unknown): Promise<s
   let current: unknown = id
 
   for (let depth = 0; depth < 8 && current !== null && current !== undefined; depth += 1) {
-    const page = (await req.payload
+    const page = (await req.engine
       .findByID({ collection: 'pages', id: current as number, depth: 0, overrideAccess: true })
       .catch((): null => null)) as { slug?: string; parent?: unknown; isHomepage?: boolean } | null
     if (!page) break

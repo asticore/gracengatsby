@@ -29,7 +29,7 @@ const noticeClassName =
 const noticeTextClassName = 'max-w-[60ch] text-[var(--theme-elevation-600)]'
 
 export const TranslationsView: React.FC<AdminViewServerProps> = async (props) => {
-  const engine = props.payload
+  const engine = props.engine
   if (!engine?.config) return null
 
   const searchParams = (props.searchParams ?? {}) as Record<string, unknown>

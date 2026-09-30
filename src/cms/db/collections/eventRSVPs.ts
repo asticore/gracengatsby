@@ -5,7 +5,7 @@ import { EventRSVPs } from '@/collections/EventRSVPs'
 import { createCollectionOps } from '../generic'
 import { eventRSVPs } from '../schema'
 
-/** Payload's document shape for the `event-rsvps` collection - see src/collections/EventRSVPs.ts. */
+/** The original engine's document shape for the `event-rsvps` collection - see src/collections/EventRSVPs.ts. */
 export type EventRSVPDoc = {
   id: number
   event: number

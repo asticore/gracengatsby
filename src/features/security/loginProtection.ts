@@ -93,7 +93,7 @@ export function loginProtectionDrift(settings: SecuritySettings): string[] {
  * The session cookie's name is fixed by the framework's cookie prefix, which
  * this project leaves at its default.
  */
-export const SESSION_COOKIE = 'payload-token'
+export const SESSION_COOKIE = 'engage-token'
 
 type TokenClaims = { iat?: number; exp?: number }
 
@@ -109,10 +109,10 @@ type TokenClaims = { iat?: number; exp?: number }
  */
 export function tokenIssuedAt(token: string): number | null {
   try {
-    const payloadSegment = token.split('.')[1]
-    if (!payloadSegment) return null
+    const claimsSegment = token.split('.')[1]
+    if (!claimsSegment) return null
 
-    const normalised = payloadSegment.replace(/-/g, '+').replace(/_/g, '/')
+    const normalised = claimsSegment.replace(/-/g, '+').replace(/_/g, '/')
     const json = atob(normalised.padEnd(Math.ceil(normalised.length / 4) * 4, '='))
     const claims = JSON.parse(json) as TokenClaims
 

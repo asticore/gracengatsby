@@ -28,7 +28,7 @@ import { MEMBERSHIPS_SLUG } from './slugs'
 
 type HandlerArgs = { event: Stripe.Event; req: EngineRequest; stripe: Stripe }
 
-const engineOf = (req: EngineRequest): EngineSignup => req.payload as unknown as EngineSignup
+const engineOf = (req: EngineRequest): EngineSignup => req.engine as unknown as EngineSignup
 
 /**
  * Stripe's subscription states, mapped onto ours.
@@ -151,7 +151,7 @@ export const membershipWebhooks = {
     const membership = docs[0] as MembershipDoc | undefined
     if (!membership) return
 
-    const settings = await getMemberSettings(req.payload)
+    const settings = await getMemberSettings(req.engine)
     await sendWelcomeEmail(engine, membership, settings).catch((): undefined => undefined)
   },
 

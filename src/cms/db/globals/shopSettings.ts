@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { shopSettings, shopSettingsBlockTypes, shopSettingsRels, shopSettingsRelsTargetColumns } from '../schema'
 
 /**
- * One `introBlocks` block instance as Payload's own API returns it - same
+ * One `introBlocks` block instance as the original engine's own API returns it - same
  * loosely-typed shape as PageTemplateBlock (../collections/pageTemplates.ts)
  * and every other blocks-field block type in this data layer; see
  * src/blocks/*.ts for each block's own real field list.
@@ -15,7 +15,7 @@ export type ShopSettingsBlock = {
   blockName?: string | null
 } & Record<string, unknown>
 
-/** Payload's document shape for the `shop-settings` global - see src/globals/ShopSettings.ts. */
+/** The original engine's document shape for the `shop-settings` global - see src/globals/ShopSettings.ts. */
 export type ShopSettingsDoc = {
   id: number
   introBlocks?: ShopSettingsBlock[] | null

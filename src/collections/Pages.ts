@@ -67,7 +67,7 @@ export const Pages: CollectionConfig = {
             : data.parent
           : null
 
-        const { docs } = await req.payload.find({
+        const { docs } = await req.engine.find({
           collection: 'pages',
           where: {
             and: [
@@ -125,7 +125,7 @@ export const Pages: CollectionConfig = {
         if (operation === 'create' && data?.template && (!data.blocks || data.blocks.length === 0)) {
           const templateId = typeof data.template === 'object' ? data.template.id : data.template
           try {
-            const template = await req.payload.findByID({ collection: 'page-templates', id: templateId })
+            const template = await req.engine.findByID({ collection: 'page-templates', id: templateId })
             if (template?.blocks?.length) {
               data.blocks = template.blocks
             }
@@ -140,7 +140,7 @@ export const Pages: CollectionConfig = {
       async ({ data, req, originalDoc }) => {
         // Only one page can be the homepage - unset any previous holder.
         if (data?.isHomepage) {
-          const { docs } = await req.payload.find({
+          const { docs } = await req.engine.find({
             collection: 'pages',
             where: {
               and: [{ isHomepage: { equals: true } }, ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : [])],
@@ -149,7 +149,7 @@ export const Pages: CollectionConfig = {
             depth: 0,
           })
           await Promise.all(
-            docs.map((doc) => req.payload.update({ collection: 'pages', id: doc.id, data: { isHomepage: false } })),
+            docs.map((doc) => req.engine.update({ collection: 'pages', id: doc.id, data: { isHomepage: false } })),
           )
         }
         return data

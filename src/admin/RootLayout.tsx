@@ -1,5 +1,5 @@
 /**
- * From-scratch replacement for `@payloadcms/next/layouts`'s `RootLayout` +
+ * From-scratch replacement for `the vendor package`'s `RootLayout` +
  * `handleServerFunctions`.
  *
  * Mounted at `src/app/(engage)/layout.tsx` - unmodified, see that file's own
@@ -10,7 +10,7 @@
  * `api/` routes never render a layout at all, so in practice this component
  * only ever renders for a real `/admin/*` navigation - it can safely always
  * call `getAdminContext()` and always render the full `<html>/<body>`
- * document shell real Payload's own admin `RootLayout` also owns (this
+ * document shell the reference engine's own admin `RootLayout` also owns (this
  * route group has no other root layout to supply it).
  *
  * Nav visibility is driven by `context.isAdmin`, not the URL: an anonymous
@@ -45,11 +45,11 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
                 // Stage 12 (full custom rebuild): AdminShell is this admin's own
                 // flex layout - the sidebar beside the content - replacing the
                 // old TemplateDefaultWrapper, which existed only to trigger
-                // @payloadcms/next/css's own CSS-grid rules. See AdminShell.tsx.
+                // the vendor package's own CSS-grid rules. See AdminShell.tsx.
                 <AdminShell>
                   <NavToggler />
                   <ThemeToggler />
-                  <AdminNav i18n={context.i18n} payload={context.engine} permissions={context.permissions} visibleEntities={context.visibleEntities} />
+                  <AdminNav i18n={context.i18n} engine={context.engine} permissions={context.permissions} visibleEntities={context.visibleEntities} />
                   <div className="admin-shell__main">
                     <main className="admin-shell__content">{children}</main>
                   </div>
@@ -66,7 +66,7 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
 }
 
 /**
- * Real Payload's own React-Server-Action bridge for `@payloadcms/ui`'s
+ * The reference engine's own React-Server-Action bridge for `the vendor package`'s
  * client components (saving nav preferences, running admin-panel document
  * actions, etc. via a `'use server'` RPC rather than a REST call). Grepped
  * every consumer of `useServerFunctions`/`serverFunction`/

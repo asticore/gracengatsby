@@ -31,7 +31,7 @@ import { PRESENTATIONAL_TYPES } from './types'
  * why nothing in this feature may reach for `@/lib/engine`.
  */
 
-/** The engine surface a submission needs. `req.payload` satisfies it. */
+/** The engine surface a submission needs. `req.engine` satisfies it. */
 export type SubmitEngine = {
   findByID: (args: Record<string, unknown>) => Promise<unknown>
   create: (args: CreateArgs) => Promise<{ id?: number | string }>

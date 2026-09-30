@@ -1,28 +1,28 @@
 /**
- * Access-control executor, reimplemented from Payload 3.88.0's real
- * `node_modules/payload/dist/auth/executeAccess.js`,
- * `node_modules/payload/dist/database/combineQueries.js` and
- * `node_modules/payload/dist/auth/types.js` (`hasWhereAccessResult`), so this
+ * Access-control executor, reimplemented from the original engine 3.88.0's real
+ * `the vendor source`,
+ * `the vendor source` and
+ * `the vendor source` (`hasWhereAccessResult`), so this
  * app's eventual from-scratch Local API (stage 1b, following
- * `src/localapi/validators.ts`'s stage 1a - see the `payload-removal-plan.md`
+ * `src/localapi/validators.ts`'s stage 1a - see the `the plan doc`
  * project doc for the full sequence) makes the exact same allow/deny/filter
- * decisions Payload's create/find/findByID/update/delete operations make
+ * decisions the original engine's create/find/findByID/update/delete operations make
  * today, for the ~8 collection-level access functions this app actually
  * wrote that return a `Where` clause instead of a boolean (`adminOrPublishedStatus`,
  * `isAdminOrSelf`, `isDocumentOwner` in `src/access/ecommerceAccess.ts`;
  * `isAdminOrRsvpOwner` in `src/features/accounts/access.ts`;
  * `isAdminOrMembershipOwner` in `src/features/members/access.ts`; the local
  * `adminOrOwn` in `src/features/courses/collections/Enrolments.ts` and
- * `LessonProgress.ts`; the async, `req.payload.find`-backed `readableLessons`
+ * `LessonProgress.ts`; the async, `req.engine.find`-backed `readableLessons`
  * in `Lessons.ts`), plus the field-level access this app puts on
  * `Users.roles` and a long list of admin-only Settings-global fields
  * (`adminOnlyFieldAccess` in `ecommerceAccess.ts`, and one inline `() =>
  * false` field lock in `src/features/security/twoFactor.ts`).
  *
  * None of this app's OWN access functions are rewritten here - they stay
- * typed against Payload's real `Access`/`FieldAccess` (re-exported by
+ * typed against the original engine's real `Access`/`FieldAccess` (re-exported by
  * `@/engine`) and are called through this module unmodified (a later,
- * separate stage repoints their `import type { Access } from 'payload'` to
+ * separate stage repoints their `import type { Access } from 'engine'` to
  * this module's own types; see `AccessFn`'s doc comment for why that repoint
  * needs no change to the functions themselves). Only the EXECUTOR - the code
  * that decides what a falsy/truthy/object return means, and how a `Where`
@@ -30,7 +30,7 @@
  *
  * This module is intentionally NOT wired into `@/engine`/`engage.config.ts`
  * yet, same as `validators.ts` - it stands alone, exercised only by its own
- * tests, so it can be proven correct against real Payload behavior in
+ * tests, so it can be proven correct against the reference engine behavior in
  * isolation first.
  */
 
@@ -39,15 +39,15 @@
 /* -------------------------------------------------------------------------- */
 
 /**
- * Mirrors real Payload's `Where` (`payload/dist/types/index.d.ts:106-112`)
+ * Mirrors the reference engine's `Where` (the vendor source)
  * exactly: an object whose keys are either a field path mapped to an
  * operator object (`WhereField`, e.g. `{ equals: 1 }`), or the two reserved
  * boolean-logic keys `and`/`or`, each an array of nested `Where` clauses.
- * Real Payload types `WhereField`'s operator values as `JsonValue` (itself
+ * The reference engine types `WhereField`'s operator values as `JsonValue` (itself
  * `JsonArray | JsonObject | unknown`, which collapses to `unknown`) - kept as
  * `unknown` here too, rather than narrowed to this app's actual operators
  * (`equals`, `in`, ...), so real `Where` values built by this app's existing
- * access functions (still typed against Payload's real `Where` via
+ * access functions (still typed against the original engine's real `Where` via
  * `@/engine`) stay assignable into this type without modification.
  */
 export type Where = {
@@ -57,7 +57,7 @@ export type Where = {
 }
 
 /**
- * Mirrors real Payload's `AccessResult` (`config/types.d.ts:231`): `true`
+ * Mirrors the reference engine's `AccessResult` (`config/types.d.ts:231`): `true`
  * means unrestricted access, a `Where` narrows which rows are visible/
  * writable, and (only relevant with `disableErrors`, see `executeAccess`)
  * `false` means no access at all.
@@ -65,24 +65,24 @@ export type Where = {
 export type AccessResult = boolean | Where
 
 /**
- * Mirrors real Payload's `Access<TData>` (`config/types.d.ts:252`), whose
+ * Mirrors the reference engine's `Access<TData>` (`config/types.d.ts:252`), whose
  * args are `AccessArgs<TData>` (`config/types.d.ts:232-245`): `id`, `data`,
  * `isReadingStaticFile` and a required `req`.
  *
  * `req` is typed as `any` here, not as a hand-rolled "local request" shape,
- * and that is deliberate rather than lazy: real Payload's `AccessArgs.req`
- * is `PayloadRequest`, a type with ~15 unrelated required properties
- * (`i18n`, `payloadDataLoader`, `transactionID`, the inherited `URL` fields,
+ * and that is deliberate rather than lazy: the reference engine's `AccessArgs.req`
+ * is `EngineRequest`, a type with ~15 unrelated required properties
+ * (`i18n`, `dataLoader`, `transactionID`, the inherited `URL` fields,
  * ...) that none of this app's access functions touch. For this app's
- * EXISTING access functions (still typed against Payload's real `Access`
+ * EXISTING access functions (still typed against the original engine's real `Access`
  * from `@/engine`) to remain assignable to `AccessFn` without modification,
- * this type's `req` must be a type real `PayloadRequest` is assignable to -
+ * this type's `req` must be a type real `EngineRequest` is assignable to -
  * and empirically (checked with `tsc` against this repo's real
  * `strict`/`strictFunctionTypes` settings), `any` is the only type that
- * clears that bar without reproducing Payload-internal types this module
+ * clears that bar without reproducing the original engine-internal types this module
  * has no business knowing about. A rich, narrower `req` shape (even with a
  * catch-all index signature) fails with "missing properties from type
- * PayloadRequest: headers, context, i18n, payload, and 13 more" - the
+ * EngineRequest: headers, context, i18n, engine, and 13 more" - the
  * missing-property check is on NAMED required properties, which an index
  * signature does not supply. See `LocalReq` below for the shape this
  * module's OWN callers should actually use when building the `req` object.
@@ -104,16 +104,16 @@ export type AccessFn<TData = unknown> = (args: {
  * The request shape THIS module's own callers build and pass to
  * `executeAccess`/`executeFieldAccess`. Loose and additive (an index
  * signature alongside the one property every access function in this app
- * actually reads) rather than a `PayloadRequest` mirror, because nothing in
+ * actually reads) rather than a `EngineRequest` mirror, because nothing in
  * this app's real access functions needs more than `req.user` to make its
  * decision - `isAdmin`, `isAdminOrSelf`, `isDocumentOwner`,
  * `adminOrPublishedStatus`, `isAdminOrRsvpOwner`, `isAdminOrMembershipOwner`,
  * `adminOnlyFieldAccess`, `Users.roles`'s inline field access, and the local
  * `adminOrOwn` in Enrolments/LessonProgress all read `req.user` and nothing
  * else. The one exception is `Lessons.ts`'s `readableLessons`, which also
- * calls `req.payload.find` (via `accessibleCourseIds`/`flagsFrom`) - that is
+ * calls `req.engine.find` (via `accessibleCourseIds`/`flagsFrom`) - that is
  * exactly why this type is additive rather than closed: a caller with a real
- * engine client can hand it through as `req.payload` and the index signature
+ * engine client can hand it through as `req.engine` and the index signature
  * accepts it without this module needing to know its shape (`@/engine` is
  * not wired in here - see the file header).
  */
@@ -122,7 +122,7 @@ export type LocalReq = {
 } & Record<string, unknown>
 
 /**
- * Mirrors real Payload's `FieldAccess<TData, TSiblingData>`
+ * Mirrors the reference engine's `FieldAccess<TData, TSiblingData>`
  * (`fields/config/types.d.ts:110`), whose args are `FieldAccessArgs`
  * (`fields/config/types.d.ts:86-109`). Boolean-only return - see
  * `executeFieldAccess`'s doc comment for why field-level access never gets a
@@ -142,10 +142,10 @@ export type FieldAccessFn<TData = unknown, TSiblingData = unknown> = (args: {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Stands in for real Payload's `Forbidden` (`payload/dist/errors/Forbidden.js`),
+ * Stands in for the reference engine's `Forbidden` (the vendor source),
  * which this module deliberately does not import - see `validators.ts`'s file
  * header for the same rule applied to its own errors, and the top of this
- * file for why nothing here names the `payload` package. Real `Forbidden`
+ * file for why nothing here names the `engine` package. Real `Forbidden`
  * takes `req.t` and produces an i18n-translated message
  * (`t('error:notAllowedToPerformAction')`); this app never configured a
  * second admin-UI locale (grepped `engage.config.ts`, no matches - same
@@ -164,8 +164,8 @@ export class Forbidden extends Error {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Mirrors real Payload's `hasWhereAccessResult`
- * (`payload/dist/auth/types.js:1-3`) exactly: an `AccessResult` narrows to a
+ * Mirrors the reference engine's `hasWhereAccessResult`
+ * (the vendor source) exactly: an `AccessResult` narrows to a
  * `Where` when it is truthy AND an object - which excludes both `false` and
  * `true` (a `boolean` is never `typeof ... === 'object'`), leaving only an
  * actual `Where` clause.
@@ -173,8 +173,8 @@ export class Forbidden extends Error {
 const hasWhereAccessResult = (result: AccessResult | undefined): result is Where => Boolean(result) && typeof result === 'object'
 
 /**
- * Mirrors real Payload's `combineQueries`
- * (`payload/dist/database/combineQueries.js`) exactly, including its
+ * Mirrors the reference engine's `combineQueries`
+ * (the vendor source) exactly, including its
  * asymmetric contract - this is NOT "merge two Where clauses", it is
  * "merge an operation's own `where` with one access-control result":
  *
@@ -183,7 +183,7 @@ const hasWhereAccessResult = (result: AccessResult | undefined): result is Where
  *   or flattened, just nested one level deeper.
  * - `access` (second argument) is only pushed into `and` when
  *   `hasWhereAccessResult` says it is an actual `Where` object - a bare
- *   `true`/`false` contributes nothing (real Payload's own callers
+ *   `true`/`false` contributes nothing (the reference engine's own callers
  *   (`find.js`, `findByID.js`, `updateByID.js`, `deleteByID.js`) only ever
  *   reach this function with `access` already resolved to `true` or a
  *   `Where` - a falsy `AccessResult` either already threw in `executeAccess`
@@ -195,7 +195,7 @@ const hasWhereAccessResult = (result: AccessResult | undefined): result is Where
  *   returns `{ and: [] }` (an empty `and` array), not `{}`, because `true`
  *   fails the `!where && !access` check (`!true` is `false`) but also fails
  *   `hasWhereAccessResult` (so nothing gets pushed). This looks like an
- *   odd middle case but is exactly what real Payload produces, and this
+ *   odd middle case but is exactly what the reference engine produces, and this
  *   module's job is decision-parity, not tidying up the edge case.
  */
 export function combineQueries(where: Where | undefined, access: AccessResult | undefined): Where {
@@ -210,12 +210,11 @@ export function combineQueries(where: Where | undefined, access: AccessResult | 
 /* -------------------------------------------------------------------------- */
 
 /**
- * Mirrors real Payload's `executeAccess`
- * (`payload/dist/auth/executeAccess.js`) exactly:
+ * Mirrors the reference engine's `executeAccess`
+ * (the vendor source) exactly:
  *
  * 1. No access function configured on the collection (`accessFn` is
- *    `undefined`) - this is Payload's own default (`payload/dist/auth/
- *    defaultAccess.js`: `({ req: { user } }) => Boolean(user)`), inlined
+ *    `undefined`) - this is the original engine's own default (the vendor source: `({ req: { user } }) => Boolean(user)`), inlined
  *    directly in `executeAccess.js` rather than applied at sanitize time
  *    (confirmed: `collections/config/sanitize.js` never assigns a default
  *    into `access.read`/etc., so `collectionConfig.access.read` genuinely
@@ -224,7 +223,7 @@ export function combineQueries(where: Where | undefined, access: AccessResult | 
  *    is truthy, otherwise deny.
  * 2. An access function IS configured - call it and branch on the result:
  *    - Truthy (`true` or a `Where` object) - return it as-is. A `Where`
- *      result is NOT itself thrown or rejected; it is real Payload's
+ *      result is NOT itself thrown or rejected; it is the reference engine's
  *      row-filtering contract, returned for the caller to merge with
  *      `combineQueries`.
  *    - Falsy (`false`, or a genuinely broken access function returning
@@ -242,7 +241,7 @@ export function combineQueries(where: Where | undefined, access: AccessResult | 
  *      gap for).
  *
  * `isReadingStaticFile` is accepted and threaded through unchanged (real
- * Payload uses it for upload-collection static-file access checks via
+ * The original engine uses it for upload-collection static-file access checks via
  * `uploads/checkFileAccess.js`) even though nothing in this app's own access
  * functions reads it (grepped `src/`, no matches) - it is part of the real
  * `AccessArgs` contract this executor promises to reproduce, and costs

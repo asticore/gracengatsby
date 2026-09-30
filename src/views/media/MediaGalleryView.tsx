@@ -17,7 +17,7 @@ interface MediaGalleryViewProps {
   data?: MediaListData
   hasCreatePermission?: boolean
   newDocumentURL?: string
-  payload?: Engine
+  engine?: Engine
   searchParams?: Record<string, string | string[] | undefined>
 }
 
@@ -51,18 +51,18 @@ function formatDate(value: unknown): string {
  * and losing the other. Registered via Media.ts's
  * `admin.components.views.list.Component`.
  *
- * A prior version of this file replaced Payload's stock list outright with
+ * A prior version of this file replaced the original engine's stock list outright with
  * the gallery, which lost search/sort entirely - this restores an equivalent
  * (a real table, sortable by clicking a column, searchable by filename)
- * without pulling in Payload's own client-only DefaultListView, which
+ * without pulling in the original engine's own client-only DefaultListView, which
  * expects a much larger prop surface (columns, listPreferences, a
  * ListQueryProvider, etc.) that this read-only server component doesn't
  * have.
  *
  * Both modes reuse the SAME already-fetched `data` - the mode toggle, sort,
  * and search are all plain links/a GET form that change the URL's
- * `view`/`sort`/`search`/`page` params, causing Payload's own list-view
- * route to re-run `payload.find()` server-side with those params (exactly
+ * `view`/`sort`/`search`/`page` params, causing the original engine's own list-view
+ * route to re-run `engine.find()` server-side with those params (exactly
  * how the pre-existing pagination links below already worked) and re-render
  * this component with the new `data` - no client-side query state needed.
  *
@@ -74,20 +74,20 @@ function formatDate(value: unknown): string {
  * same original file, just displayed at different sizes via CSS, not a
  * distinct derived file.
  *
- * Rendered inside Payload's own list-view route (renderListView in
- * @payloadcms/next), which is why the props below are a subset of
+ * Rendered inside the original engine's own list-view route (renderListView in
+ * the vendor package), which is why the props below are a subset of
  * `ListViewServerProps`/`ListViewClientProps` rather than a full import of
  * those types - only what this view needs. Because this component has no
- * 'use client' directive, Payload's RenderServerComponent detects it as a
- * real server component and merges in the server-only props (data, payload,
+ * 'use client' directive, the original engine's RenderServerComponent detects it as a
+ * real server component and merges in the server-only props (data, engine,
  * collectionConfig) alongside the always-provided client ones
- * (hasCreatePermission, newDocumentURL) - see @payloadcms/ui's
+ * (hasCreatePermission, newDocumentURL) - see the vendor package's
  * RenderServerComponent for that isRSC branch.
  */
 export async function MediaGalleryView(props: MediaGalleryViewProps) {
-  const { collectionConfig, data, hasCreatePermission, newDocumentURL, payload, searchParams } = props
+  const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams } = props
   const docs = data?.docs ?? []
-  const adminRoute = payload?.config?.routes?.admin ?? '/admin'
+  const adminRoute = engine?.config?.routes?.admin ?? '/admin'
   const slug = collectionConfig?.slug ?? 'media'
 
   const sp = searchParams ?? {}

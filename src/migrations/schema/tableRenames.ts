@@ -3,7 +3,7 @@
  *
  * GENERATED, then committed - do not hand-edit. Regenerate with:
  *
- *   NODE_OPTIONS=--no-deprecation PAYLOAD_SECRET=ignore \
+ *   NODE_OPTIONS=--no-deprecation \
  *     npx tsx scripts/generateTableRenames.mts
  *
  * That script reads the new parent table names from every collection's and

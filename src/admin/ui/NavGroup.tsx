@@ -1,11 +1,11 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s `NavGroup`.
+ * From-scratch replacement for `the vendor package`'s `NavGroup`.
  *
  * Simplification vs. the vendor's own version: the vendor persists each
  * group's open/closed state to the signed-in user's portal preferences
- * (`payload-preferences`) so it survives a reload. This version keeps it in
+ * (`engine-preferences`) so it survives a reload. This version keeps it in
  * local component state only, seeded from the `isOpen` prop on first render.
  * Tracked in the plan doc as an intentional Phase-1 simplification - state
  * resets to `isOpen` on next login/reload instead of remembering the toggle.

@@ -4,14 +4,14 @@
  * hooks, ...).
  *
  * Hand-written replacement for the types that used to be re-exported from the
- * `payload` package (payload-removal-plan.md, last stage). They describe only
+ * `engine` package (the plan doc, last stage). They describe only
  * what this app's ~40 config files and its own runtime (`src/localapi/*`,
  * `src/admin/*`) actually use - deliberately looser than the vendor's types
  * (every object type carries an index signature) because nothing here is
  * validated by a vendor sanitizer any more: the runtime reads exactly the
  * properties it needs and ignores the rest.
  *
- * No `payload` import anywhere.
+ * No `engine` import anywhere.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -39,7 +39,7 @@ export type TypedUser = User & { collection: 'users' }
  */
 export type EngineRequest = Request & {
   user?: TypedUser | null
-  payload: Engine
+  engine: Engine
   context?: Record<string, unknown>
   routeParams?: Record<string, unknown>
   query?: Record<string, string>
@@ -364,7 +364,7 @@ export type SanitizedGlobalConfig = GlobalConfig
 /** Props handed to a custom admin view component. The admin resolves its own context (`getAdminContext`); views read `user`, `searchParams` and `initPageResult` at most. */
 export type AdminViewServerProps = {
   i18n?: any
-  payload?: any
+  engine?: any
   permissions?: any
   user?: any
   visibleEntities?: any

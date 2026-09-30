@@ -29,4 +29,4 @@ export const abTestingEnabled = async (engine: EngineLike): Promise<boolean> => 
 }
 
 /** The signing secret for the visitor cookie, taken from the same place the engine's is. */
-export const abSecret = (): string => process.env.ENGAGE_SECRET || process.env.PAYLOAD_SECRET || ''
+export const abSecret = (): string => process.env.ENGAGE_SECRET || ''

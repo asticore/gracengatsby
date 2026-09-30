@@ -1,7 +1,7 @@
 /**
  * Engine seam: shared constants and URL helpers used by the admin views.
  *
- * Hand-written (no vendor import): `PREFERENCE_KEYS` are the `payload-preferences`
+ * Hand-written (no vendor import): `PREFERENCE_KEYS` are the `engine-preferences`
  * keys this admin reads/writes, and `formatAdminURL` joins the admin route and
  * a path (optionally against a serverURL origin) the same way the previous
  * vendor helper did for this app's call sites.

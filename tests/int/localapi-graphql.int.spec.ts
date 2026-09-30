@@ -126,7 +126,7 @@ describe('localapi/graphql - mutations', () => {
   })
 })
 
-describe('localapi/graphql - fallthrough to real Payload (returns null)', () => {
+describe('localapi/graphql - fallthrough to the reference engine (returns null)', () => {
   it('falls through for a query touching only a non-ecommerce field', async () => {
     const engine = makeMockEngine()
     expect(await handleEcommerceGraphQL(req('query { Posts { docs { id } } }'), engine)).toBeNull()
@@ -164,7 +164,7 @@ describe('localapi/graphql - fallthrough to real Payload (returns null)', () => 
     expect(await handleEcommerceGraphQL(req('query A { Products { docs } }', undefined, 'B'), engine)).toBeNull()
   })
 
-  it('leaves the request body readable for the real-Payload fallthrough handler', async () => {
+  it('leaves the request body readable for the reference-engine fallthrough handler', async () => {
     const engine = makeMockEngine()
     const request = req('query { Posts { docs { id } } }')
     const ours = await handleEcommerceGraphQL(request, engine)

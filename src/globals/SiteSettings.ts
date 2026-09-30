@@ -26,7 +26,7 @@ export const SiteSettings: GlobalConfig = {
   hooks: {
     afterChange: [
       async ({ req }) => {
-        await revalidateAdmin(req?.payload?.config?.routes?.admin ?? '/admin')
+        await revalidateAdmin(req?.engine?.config?.routes?.admin ?? '/admin')
       },
     ],
   },

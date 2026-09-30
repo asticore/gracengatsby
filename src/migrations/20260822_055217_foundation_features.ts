@@ -540,16 +540,16 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   );
   `)
 
-  // ---- payload_locked_documents_rels: new collections need a ref column ----
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`page_templates_id\` integer REFERENCES page_templates(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`posts_id\` integer REFERENCES posts(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`faqs_id\` integer REFERENCES faqs(id);`)
+  // ---- eg_locked_documents_rels: new collections need a ref column ----
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`page_templates_id\` integer REFERENCES page_templates(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`posts_id\` integer REFERENCES posts(id);`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` ADD \`faqs_id\` integer REFERENCES faqs(id);`)
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` DROP COLUMN \`page_templates_id\`;`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` DROP COLUMN \`posts_id\`;`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` DROP COLUMN \`faqs_id\`;`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` DROP COLUMN \`page_templates_id\`;`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` DROP COLUMN \`posts_id\`;`)
+  await db.run(sql`ALTER TABLE \`eg_locked_documents_rels\` DROP COLUMN \`faqs_id\`;`)
 
   await db.run(sql`DROP TABLE \`shop_settings\`;`)
   await db.run(sql`DROP TABLE \`faq_settings\`;`)

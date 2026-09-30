@@ -9,7 +9,7 @@ export type Db = ReturnType<typeof drizzle<typeof schema>>
 let cached: Db | undefined
 
 /**
- * Gets the D1 binding the same way src/engage.config.ts does for Payload's
+ * Gets the D1 binding the same way src/engage.config.ts does for the original engine's
  * own adapter: `getCloudflareContext()` only resolves inside the actual
  * opennextjs-cloudflare runtime (production, or `next dev`/`wrangler dev`),
  * so anywhere else - the CLI, and this app's own vitest suite included -

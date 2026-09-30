@@ -2,7 +2,7 @@
 
 /**
  * Replaces TemplateDefaultWrapper.tsx (removed this rebuild) - that component
- * existed only to trigger `@payloadcms/next/css`'s own `.template-default`
+ * existed only to trigger `the vendor package`'s own `.template-default`
  * CSS-grid rules, which no longer exist now that stylesheet is gone (Stage
  * 12: full custom rebuild). This is the admin's own flex shell instead: the
  * sidebar (AdminNav's own `<aside>`, fixed/sticky-positioned - see

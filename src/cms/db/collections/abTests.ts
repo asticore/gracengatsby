@@ -28,10 +28,10 @@ export type GoalRow = {
 }
 
 /**
- * Payload's document shape for the `ab-tests` collection - see
- * src/features/abTesting/collections/ABTests.ts. Payload's own `beforeChange`
+ * The original engine's document shape for the `ab-tests` collection - see
+ * src/features/abTesting/collections/ABTests.ts. The original engine's own `beforeChange`
  * hook assigns `variants[].key`/`goals[].key` and recomputes `targetPath` -
- * that happens inside Payload's engine, not this data layer, so a caller
+ * that happens inside the original engine's engine, not this data layer, so a caller
  * writing through `createABTest` below must set those fields itself.
  */
 export type ABTestDoc = {

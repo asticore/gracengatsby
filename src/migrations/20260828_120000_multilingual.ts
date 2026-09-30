@@ -47,7 +47,7 @@ const TRANSLATIONS_INDEXES = [
   'CREATE INDEX IF NOT EXISTS `eg_translations_source_idx` ON `eg_translations` (`source_kind`, `source_id`)',
 ]
 
-export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> {
+export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   await db.run(sql.raw(TRANSLATIONS_TABLE))
   for (const statement of TRANSLATIONS_INDEXES) {
     await db.run(sql.raw(statement))
@@ -55,7 +55,7 @@ export async function up({ db, payload: engine }: MigrateUpArgs): Promise<void> 
   engine.logger.info('[migrate] eg_translations is present.')
 }
 
-export async function down({ payload: engine }: MigrateDownArgs): Promise<void> {
+export async function down({ engine }: MigrateDownArgs): Promise<void> {
   // No-op, matching the other migrations here. Dropping the table would throw
   // away every translation anybody has typed, and a rollback of the code that
   // reads them is not a reason to destroy the work - the table is inert while

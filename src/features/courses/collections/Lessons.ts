@@ -27,16 +27,16 @@ import { COURSES_SLUG, LESSONS_SLUG } from '../types'
 const readableLessons: Access = async ({ req }) => {
   if (isAdminUser(req.user)) return true
 
-  // `readableLessons` is a real Payload `Access` function - real Payload's
-  // own access-control execution always calls it with a real `req.payload`
-  // (a real vendor Payload instance), whether the request came in through
+  // `readableLessons` is a the reference engine `Access` function - the reference engine's
+  // own access-control execution always calls it with a real `req.engine`
+  // (a real vendor the original engine instance), whether the request came in through
   // `/admin`, the REST API, or our own `localapi/hooks.ts` reusing this same
   // function with a `toLocalReq()`-built req. `flagsFrom`/`accessibleCourseIds`
   // are typed against this app's own `Engine` (their other, more common
   // caller is the courses feature's own frontend code, already using
   // `createEngine()`), so the real instance is cast at this boundary - both
   // support the same find/count calls these helpers make.
-  const engine = req.payload as unknown as Engine
+  const engine = req.engine as unknown as Engine
   const flags = await flagsFrom(engine)
   // With the feature off the content should behave as though it were never
   // published, rather than as though it were merely hidden.

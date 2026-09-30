@@ -1,13 +1,13 @@
 import type { Sort, Where } from '@/engine'
 
-import { PayloadLockedDocuments } from '@/collections/PayloadLockedDocuments'
+import { LockedDocuments } from '@/collections/LockedDocuments'
 
 import { createCollectionOps } from '../generic'
 import { lockedDocuments, lockedDocumentsRels, lockedDocumentsRelsTargetColumns } from '../schema'
 
 /**
- * Payload's document shape for the `payload-locked-documents` collection -
- * see src/collections/PayloadLockedDocuments.ts. `document` is deliberately
+ * The original engine's document shape for the `engine-locked-documents` collection -
+ * see src/collections/LockedDocuments.ts. `document` is deliberately
  * absent - see that file's header for the confirmed, documented gap.
  */
 export type LockedDocumentDoc = {
@@ -22,7 +22,7 @@ export type LockedDocumentDoc = {
 // see that file's header.
 const ops = createCollectionOps(
   lockedDocuments,
-  PayloadLockedDocuments,
+  LockedDocuments,
   {},
   {
     relsTable: { table: lockedDocumentsRels, targetColumns: lockedDocumentsRelsTargetColumns },

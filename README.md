@@ -72,7 +72,6 @@ Wrangler creates local emulated D1 and R2 bindings automatically — no connecti
 | Variable | Required | Notes |
 | -------- | -------- | ----- |
 | `ENGAGE_SECRET` | yes | Signs sessions and encrypts secret settings fields. Generate with `openssl rand -base64 32`. This is the only secret the Cloudflare deploy button asks for. |
-| `PAYLOAD_SECRET` | no | Legacy fallback for `ENGAGE_SECRET`, read only when `ENGAGE_SECRET` is empty so an older deployment keeps the same signing key. New installs should leave it unset. |
 | `SITE_URL` | for prod | Used by `sitemap.xml`, `robots.txt` and canonical/OG URLs. |
 | `STRIPE_*` | shop only | Leave blank to deploy with the Shop feature off. |
 | `INTERNAL_ROUTE_KEY` | recommended | Guards the four internal maintenance routes (`/api/internal-migrate`, `/api/internal-seed`, `/api/internal-backup-run`, `/api/internal-backup-restore`). Not a hard security boundary — none of those routes can drop or modify data — but worth setting so a stray request can't run up unbounded D1 work. Falls back to a retired default if unset, so an install that hasn't set it yet still works. Generate with `openssl rand -hex 32`. |

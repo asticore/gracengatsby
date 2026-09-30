@@ -6,13 +6,13 @@ import { createGlobalOps } from '../generic'
 import { siteSettings, siteSettingsGenerated } from '../schema'
 
 /**
- * Payload's document shape for the `site-settings` global - see
+ * The original engine's document shape for the `site-settings` global - see
  * src/globals/SiteSettings.ts.
  *
  * `logo`/`favicon`/`seo.defaultOgImage` are single (non-hasMany, non-
  * polymorphic) `upload` fields pointing at Media - confirmed via
  * ../schema/generate.ts's columnFor doc comment that a single relationship
- * or upload field is indistinguishable from Payload's POV: both become a
+ * or upload field is indistinguishable from the original engine's POV: both become a
  * plain `<name>_id` FK column (`logo_id`, `favicon_id`,
  * `seo_default_og_image_id`), never routed through generateRelsTable. That
  * only happens for hasMany/polymorphic relationship/upload fields (see

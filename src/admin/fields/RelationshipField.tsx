@@ -33,7 +33,7 @@ function relationTo(field: Field): string | undefined {
  * Phase 3) - replaces the by-ID text-input stopgap. This app's own field-type
  * inventory confirms every relationship/upload field here uses a single
  * (non-polymorphic) `relationTo`, so this component only ever handles that
- * shape - a real Payload polymorphic `relationTo: string[]` field (none
+ * shape - a the reference engine polymorphic `relationTo: string[]` field (none
  * exist in this app today) would need a collection-picker dropdown added on
  * top of this, not supported here.
  *
@@ -144,7 +144,7 @@ function SingleRelationPicker({ field, path, readOnly }: ScalarFieldRendererProp
         </>
       )}
       <div className="field-description">
-        Search-select picker (first 100 docs, client-filtered) - real Payload&apos;s own title/thumbnail preview not reproduced (Phase 3 stopgap-plus, see plan doc).
+        Search-select picker (first 100 docs, client-filtered).
       </div>
     </div>
   )
@@ -205,7 +205,7 @@ function MultiRelationPicker({ field, path, readOnly }: ScalarFieldRendererProps
         </>
       )}
       <div className="field-description">
-        Search-select picker (first 100 docs, client-filtered) - real Payload&apos;s own title/thumbnail preview not reproduced (Phase 3 stopgap-plus, see plan doc).
+        Search-select picker (first 100 docs, client-filtered).
       </div>
     </div>
   )

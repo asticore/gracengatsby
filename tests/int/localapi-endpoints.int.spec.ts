@@ -36,17 +36,17 @@ describe('custom collection endpoints', () => {
     expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'forms', id: '9' }))
   })
 
-  it('POST /forms/:id/submit is routed to the endpoint with routeParams, user, payload and query attached', async () => {
+  it('POST /forms/:id/submit is routed to the endpoint with routeParams, user, engine and query attached', async () => {
     const engine = makeEngine({ id: 5 })
     const endpoints = (readRegistry.collections.forms.config as unknown as { endpoints: Array<{ path: string; handler: (req: never) => unknown }> }).endpoints
     const submit = endpoints.find((e) => e.path === '/:id/submit')!
     const spy = vi.spyOn(submit, 'handler').mockResolvedValue(new Response('ok', { status: 201 }) as never)
     const res = await handleCustomCollectionEndpoint(new Request('http://x/api/forms/7/submit?a=b', { method: 'POST', body: '{}' }), ['forms', '7', 'submit'], engine)
     expect(res?.status).toBe(201)
-    const req = spy.mock.calls[0][0] as unknown as { routeParams: unknown; user: unknown; payload: unknown; query: unknown }
+    const req = spy.mock.calls[0][0] as unknown as { routeParams: unknown; user: unknown; engine: unknown; query: unknown }
     expect(req.routeParams).toEqual({ collection: 'forms', id: '7' })
     expect(req.user).toEqual({ id: 5 })
-    expect(req.payload).toBe(engine)
+    expect(req.engine).toBe(engine)
     expect(req.query).toEqual({ a: 'b' })
     spy.mockRestore()
   })

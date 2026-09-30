@@ -6,10 +6,10 @@ import { createCollectionOps } from '../generic'
 import { memberships } from '../schema'
 
 /**
- * Payload's document shape for the `memberships` collection - see
+ * The original engine's document shape for the `memberships` collection - see
  * src/features/members/collections/Memberships.ts.
  *
- * Row-wrapped scalars (the `row` fields are pure layout - Payload flattens
+ * Row-wrapped scalars (the `row` fields are pure layout - the original engine flattens
  * them onto this table, same as every row-wrapped collection since Phase 3)
  * plus two single-target relationship fields (`user` -> users, `tier` ->
  * membership-tiers), each a plain `<name>_id` FK column - the same mechanism

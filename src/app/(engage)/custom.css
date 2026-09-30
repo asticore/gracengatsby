@@ -1,7 +1,7 @@
 /*
  * Asticore Engage — admin design system (Stage 12: full custom rebuild).
  *
- * This app no longer imports `@payloadcms/next/css` (see layout.tsx) - the
+ * This app no longer imports `the vendor package` (see layout.tsx) - the
  * admin was asked to stop depending on the vendor's own CSS/design system
  * entirely, not just override pieces of it. This file (pulled in from
  * tailwind.css via a real `@import`, see that file's own header) is now the
@@ -10,7 +10,7 @@
  *
  * IMPORTANT - why this still defines `--theme-elevation-*` / `--base` /
  * `--gutter-h` / `--theme-bg` / `--theme-text` / `--theme-input-bg` /
- * `--theme-success/warning/error-*` (real Payload's own variable NAMES):
+ * `--theme-success/warning/error-*` (the reference engine's own variable NAMES):
  * a dozen already-written, already-good-looking custom admin screens this
  * app owns outright - Dashboard.tsx, MediaGalleryView/Grid, EventsCalendar-
  * View, DatabaseView/DatabaseCleanupPanel, TranslationsView/Table - were
@@ -182,7 +182,7 @@
   --theme-border-color: var(--theme-elevation-150);
 }
 
-/* Dark: invert the elevation ramp (same shape real Payload's own stylesheet
+/* Dark: invert the elevation ramp (same shape the reference engine's own stylesheet
    used - elevation-0 becomes a DARK step, not white) and swap the surface
    roles. The base ramp itself is NOT redefined. */
 [data-theme='dark'] {
@@ -852,7 +852,7 @@ button {
 }
 
 /* ---------------------------------------------------------------- *
- * Shell layout (replaces the old @payloadcms/next/css grid wrapper) *
+ * Shell layout (replaces the old the vendor package grid wrapper) *
  * ---------------------------------------------------------------- */
 .admin-shell {
   display: flex;

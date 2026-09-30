@@ -1,17 +1,17 @@
 /**
- * REST API route (payload-removal-plan.md: Stage 7). Fully Payload-free.
+ * REST API route (the plan doc: Stage 7). Fully vendor-free.
  *
  * `handleCustomCollectionEndpoint` (`@/localapi/endpoints`) runs a
  * collection's own config `endpoints` first; then `handleRestRequest`
  * (`@/localapi/rest`) serves every collection/global route, auth, versions,
  * access, duplicate, bulk update/delete and the Stripe payment routes. It returns `null` for anything it does not recognise; that used to
- * fall through to real Payload's REST handler and now gets the same 404 body
- * real Payload sent for an unknown route (`Route not found "<pathname>"`).
+ * fall through to the reference engine's REST handler and now gets the same 404 body
+ * the reference engine sent for an unknown route (`Route not found "<pathname>"`).
  *
- * Real Payload's core routes this app never used and does not implement:
+ * The reference engine's core routes this app never used and does not implement:
  * `POST /users/verify/:token`, `/users/init`, `/users/first-register`,
- * `GET /:media/paste-url`, `GET /payload-jobs/run`. `PUT` has no core routes
- * at all. `OPTIONS` answers `200 {}` like real Payload does with no `cors`
+ * `GET /:media/paste-url`, `GET /engine-jobs/run`. `PUT` has no core routes
+ * at all. `OPTIONS` answers `200 {}` like the reference engine does with no `cors`
  * config (this app declares none).
  */
 import { createEngine } from '@/localapi/engine'
@@ -26,7 +26,7 @@ const notFound = (request: Request): Response =>
 const dispatch = async (request: Request, args: RouteArgs): Promise<Response> => {
   const { slug } = await args.params
   const engine = createEngine()
-  // Custom collection `endpoints` go first, like real Payload: otherwise `GET /form-submissions/export` would be read as findByID('export').
+  // Custom collection `endpoints` go first, like the reference engine: otherwise `GET /form-submissions/export` would be read as findByID('export').
   const response =
     (await handleCustomCollectionEndpoint(request, slug, engine)) ?? (await handleRestRequest(request, slug, engine))
   return response ?? notFound(request)

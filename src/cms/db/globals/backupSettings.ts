@@ -4,7 +4,7 @@ import { createGlobalOps } from '../generic'
 import { backupSettings, backupSettingsGroupFields } from '../schema'
 
 /**
- * Payload's document shape for the `backup-settings` global - see
+ * The original engine's document shape for the `backup-settings` global - see
  * src/globals/BackupSettings.ts.
  *
  * `destination` nests FOUR further groups inside it (`r2`, `s3`, `ftp`,
@@ -33,7 +33,7 @@ import { backupSettings, backupSettingsGroupFields } from '../schema'
  * updating any other group in this data layer.
  *
  * `runAndRestore` (`type: 'ui'`) gets no column at all, exactly like
- * Payload's own real table - a `ui` field is never backed by one (confirmed
+ * The original engine's own real table - a `ui` field is never backed by one (confirmed
  * against the real `ac_backup_settings`/`eg_backup_settings` DDL, which has
  * no such column) - stripped from the field list ../schema/index.ts feeds
  * generateTable (see its `backupSettingsSchemaConfig` doc comment), so it has
@@ -45,7 +45,7 @@ import { backupSettings, backupSettingsGroupFields } from '../schema'
  * `destination.s3.accessKeyId`, `destination.s3.secretAccessKey`,
  * `destination.ftp.password`, `destination.sftp.password`,
  * `destination.sftp.privateKey`. `findBackupSettings()` returns exactly
- * what's stored: a document Payload wrote comes back with all seven still
+ * what's stored: a document the original engine wrote comes back with all seven still
  * ciphertext, never decrypted plaintext - confirmed both directions in
  * tests/int/cms-db-backup-settings.int.spec.ts.
  *

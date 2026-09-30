@@ -6,12 +6,12 @@ import { createCollectionOps } from '../generic'
 import { media } from '../schema'
 
 /**
- * Payload's document shape for the `media` collection - see
+ * The original engine's document shape for the `media` collection - see
  * src/collections/Media.ts. `alt` is Media's one declared field; everything
- * else is Payload's own implicit upload columns (see
+ * else is the original engine's own implicit upload columns (see
  * ../schema/generate.ts's hasUpload/uploadColumns doc comment) - this data
  * layer only mirrors those columns, it does not perform an actual file
- * upload (storage/resizing is Payload's own upload handler's job, entirely
+ * upload (storage/resizing is the original engine's own upload handler's job, entirely
  * outside this data layer's scope, same as every other test in this
  * directory inserting a media row directly rather than through a real
  * upload - see e.g. tests/int/cms-db-page-templates.int.spec.ts's own note).

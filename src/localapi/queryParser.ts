@@ -1,18 +1,18 @@
 /**
  * REST + GraphQL API removal (Stage 7) - a hand-rolled bracket-notation
  * query-string parser for this app's future from-scratch REST handlers,
- * matching real Payload's own query wire format WITHOUT depending on the
- * `qs`/`qs-esm` package real Payload uses internally.
+ * matching the reference engine's own query wire format WITHOUT depending on the
+ * `qs`/`qs-esm` package the reference engine uses internally.
  *
  * ---------------------------------------------------------------------------
  * Why hand-rolled instead of a dependency
  * ---------------------------------------------------------------------------
- * Real Payload parses REST query strings with the `qs-esm` package
- * (`node_modules/payload/dist/utilities/parseParams.js` calls
+ * The reference engine parses REST query strings with the `qs-esm` package
+ * (`the vendor source` calls
  * `qs.parse(search, { allowEmptyArrays: true, arrayLimit: 1000, depth: 10,
  * ignoreQueryPrefix: true })`). `qs-esm` is only a TRANSITIVE dependency of
- * this app today (pulled in by `payload` itself) - it is not in this app's
- * own `package.json`, and would vanish the moment `payload` is finally
+ * this app today (pulled in by `engine` itself) - it is not in this app's
+ * own `package.json`, and would vanish the moment `engine` is finally
  * uninstalled. Every prior `localapi/` stage has held the line of "reproduce
  * the real behavior with Node/web-platform built-ins, add zero new runtime
  * dependencies" (see `auth.ts`'s own "Zero-new-dependency JWT" section for
@@ -22,14 +22,14 @@
  * ---------------------------------------------------------------------------
  * What this module reproduces, and what it deliberately narrows
  * ---------------------------------------------------------------------------
- * Real Payload's `parseParams` (full file read) extracts, from a parsed
+ * The reference engine's `parseParams` (full file read) extracts, from a parsed
  * query object: boolean params (`autosave`, `draft`, `trash`, `overrideLock`,
  * `pagination`, `flattenLocales`), number params (`depth`, `limit`, `page`),
  * and structured params via dedicated sub-parsers (`populate`, `select`,
  * `joins`, `sort`, `where`, plus a JSON `data` body param for multipart
  * requests). This module implements exactly the subset the Stage 7 hybrid
  * dispatcher's "in scope now" REST handlers actually need (see
- * payload-removal-plan.md's "REST + GraphQL API removal (Stage 7)" section):
+ * the plan doc's "REST + GraphQL API removal (Stage 7)" section):
  * `where`, `sort`, `limit`, `page`, `depth`, `pagination`, `draft`. It does
  * NOT implement `populate`/`select`/`joins`/`autosave`/`trash`/
  * `overrideLock`/`flattenLocales` - none of those are needed by the core
@@ -52,7 +52,7 @@
  * ---------------------------------------------------------------------------
  * `where[field][operator]=value` - a leaf condition on `field`.
  * `where[and][0][field][operator]=value` / `where[or][0][...]` - boolean
- * composition, matching real Payload's own `Where` shape
+ * composition, matching the reference engine's own `Where` shape
  * (`./access.ts`'s own `Where` type, re-declared there for the same
  * zero-dependency reason). Array indices in the path (`[0]`, `[1]`, ...)
  * are what distinguish an `and`/`or` branch from a field name at that
@@ -60,18 +60,18 @@
  * index and any other bracket segment as an object key, exactly like `qs`'s
  * own default (non-`indices: false`) behavior.
  * `sort=field` (ascending) / `sort=-field` (descending) / `sort=a,-b`
- * (comma-joined multi-field, matching real Payload's own REST client
+ * (comma-joined multi-field, matching the reference engine's own REST client
  * serialization of a `Sort` array).
  * `limit=20` / `page=2` / `depth=1` - plain integers.
  * `pagination=false` / `draft=true` - plain booleans (`"false"` is the only
  * string this module treats as `false`; anything else present is `true`,
- * matching real Payload's own boolean-param coercion in `parseParams.js`,
+ * matching the reference engine's own boolean-param coercion in `parseParams.js`,
  * which does exactly `value === 'false' ? false : Boolean(value)`).
  *
  * ---------------------------------------------------------------------------
  * Value coercion inside `where`
  * ---------------------------------------------------------------------------
- * A query string only ever carries strings. Real Payload's own downstream
+ * A query string only ever carries strings. The reference engine's own downstream
  * field-type-aware coercion happens deep inside its ORM sanitizer layer -
  * this app has no equivalent yet (see `./read-operations.ts`'s own `where`
  * handling and `src/cms/db/where.ts`'s `buildWhere`, which both already
@@ -79,7 +79,7 @@
  * number for a numeric comparison, a real boolean for `exists`, a real array
  * for `in`/`not_in`). `coerceWhereValue` below does the minimal, honest
  * version of that: `exists` becomes a boolean; `in`/`not_in`/`all` become an
- * array (splitting a single comma-joined string, matching real Payload's own
+ * array (splitting a single comma-joined string, matching the reference engine's own
  * REST client convention of sending `where[field][in]=1,2,3` rather than
  * indexed brackets for these three operators - though indexed brackets are
  * accepted too, since the generic bracket parser already produces an array
@@ -88,7 +88,7 @@
  * literal strings `"true"`/`"false"`, and the original string otherwise.
  * This is a best-effort, field-type-BLIND coercion (it cannot know a field
  * named `slug` should stay a string even if a document happened to be
- * titled `"123"`) - a real, documented limitation, not a bug: real Payload
+ * titled `"123"`) - a real, documented limitation, not a bug: the reference engine
  * avoids this exact ambiguity by validating against the actual field type
  * from the collection config, which this module deliberately does not have
  * access to (query parsing is a request-shape concern, not a schema one, in
@@ -170,7 +170,7 @@ function parseBracketParams(searchParams: URLSearchParams): Record<string, unkno
   return root
 }
 
-/** A value that round-trips through `Number(...)` as a finite number (and is non-empty) is treated as numeric - matching real Payload's own `parseParams.js` number-param handling (`Number.isNaN(Number(value)) ? undefined : Number(value)`, applied there only to `depth`/`limit`/`page`; applied here more broadly to any `where` leaf value, per the file header's "Value coercion" section). The literal strings `"true"`/`"false"` become real booleans. Anything else stays a string. */
+/** A value that round-trips through `Number(...)` as a finite number (and is non-empty) is treated as numeric - matching the reference engine's own `parseParams.js` number-param handling (`Number.isNaN(Number(value)) ? undefined : Number(value)`, applied there only to `depth`/`limit`/`page`; applied here more broadly to any `where` leaf value, per the file header's "Value coercion" section). The literal strings `"true"`/`"false"` become real booleans. Anything else stays a string. */
 function coerceScalar(value: string): string | number | boolean {
   if (value === 'true') return true
   if (value === 'false') return false
@@ -226,7 +226,7 @@ function coerceWhere(raw: unknown): Where | undefined {
   return sawAnyKey ? result : undefined
 }
 
-/** Real Payload's REST client (and every hand-typed URL this app's own 4 known REST fetch call sites build) sends multi-field sort as a single comma-joined string (`sort=-createdAt,title`), matching real Payload's own `Sort` type (`string | string[]`) collapsed to its wire form. A single field with no comma stays a plain string (matching `find`/`count`'s own `Sort` param, which accepts either shape - see `./read-operations.ts`). */
+/** The reference engine's REST client (and every hand-typed URL this app's own 4 known REST fetch call sites build) sends multi-field sort as a single comma-joined string (`sort=-createdAt,title`), matching the reference engine's own `Sort` type (`string | string[]`) collapsed to its wire form. A single field with no comma stays a plain string (matching `find`/`count`'s own `Sort` param, which accepts either shape - see `./read-operations.ts`). */
 function coerceSort(raw: unknown): Sort | undefined {
   if (typeof raw !== 'string' || raw === '') return undefined
   return raw.includes(',') ? raw.split(',') : raw
@@ -245,7 +245,7 @@ function coerceBoolean(raw: unknown): boolean | undefined {
 
 /**
  * The one function this module exports for real use: parses a request's
- * query string into the subset of Payload's REST query params this stage's
+ * query string into the subset of the original engine's REST query params this stage's
  * REST handlers understand (see the file header for the full list and what
  * is deliberately out of scope). Takes a `URLSearchParams` directly (not a
  * raw string) so a real Next.js route handler can hand it

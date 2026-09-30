@@ -2,7 +2,7 @@
  * Engine seam: admin UI components and field hooks.
  *
  * Stage 11 (Admin UI rebuild, option 1 - full custom admin): this file used
- * to re-export the vendor's own client components from `@payloadcms/ui`. It
+ * to re-export the vendor's own client components from `the vendor package`. It
  * now re-exports our own from-scratch replacements instead, under
  * `src/admin/{context,ui}`. Every one of them was written to match the exact
  * call signature the existing custom field/nav components already depend on
@@ -11,7 +11,7 @@
  * SettingsRefresh.tsx), so none of those consumer files needed to change.
  *
  * See ./index.ts for what this directory is and the rules that govern it.
- * See claude/payload-removal-plan.md, "Admin UI rebuild (Stage 11)" for the
+ * See claude/the plan doc, "Admin UI rebuild (Stage 11)" for the
  * full architecture.
  */
 

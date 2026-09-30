@@ -11,16 +11,16 @@ import { GlobalEditView } from './GlobalEditView'
 import { LoginView } from './LoginView'
 
 /**
- * The from-scratch replacement for real Payload's own `RootPage`
- * (`@payloadcms/next/views`) - the single server component every admin URL
+ * The from-scratch replacement for the reference engine's own `RootPage`
+ * (`the vendor package`) - the single server component every admin URL
  * renders through (`src/app/(engage)/admin/[[...segments]]/page.tsx`, a
  * `[[...segments]]` catch-all - unmodified, see that file's own header:
- * it just calls this function with the same 4 args real Payload's own
+ * it just calls this function with the same 4 args the reference engine's own
  * `RootPage` always took).
  *
  * `config`/`importMap` are accepted for call-site compatibility with that
  * unmodified page.tsx (and `not-found.tsx`, `admin/importMap.js`) but
- * unused here: `importMap` was real Payload's mechanism for resolving an
+ * unused here: `importMap` was the reference engine's mechanism for resolving an
  * `admin.components.*` override string to a real component at render time -
  * this admin has its own, `@/admin/componentRegistry`'s `resolveComponent`/
  * `CUSTOM_ADMIN_VIEWS`, built and wired into FieldRenderer/this file
@@ -54,7 +54,7 @@ type Args = {
 }
 
 /**
- * Matches real Payload's own custom-view path syntax (`:name` for a required
+ * Matches the reference engine's own custom-view path syntax (`:name` for a required
  * param, `:name?` for an optional trailing one - the only param position
  * `CUSTOM_ADMIN_VIEWS`'s one parameterized entry, the visual editor, uses:
  * `/visual-editor/:mode/:slug/:id?`) against a `/`-joined pathname.
@@ -94,13 +94,13 @@ function findCustomView(pathname: string): (typeof CUSTOM_ADMIN_VIEWS)[number] |
 }
 
 /**
- * Builds the props real Payload's own admin-view components (Dashboard,
+ * Builds the props the reference engine's own admin-view components (Dashboard,
  * TranslationsView, DatabaseView, ABResultsView - every `CUSTOM_ADMIN_VIEWS`
  * entry except the visual editor, which takes no props at all) already
- * destructure (`i18n`/`payload`/`permissions`/`user`/`visibleEntities`/
+ * destructure (`i18n`/`engine`/`permissions`/`user`/`visibleEntities`/
  * `searchParams` - confirmed by reading each of those 4 files directly; none
  * of them reads anything else off `AdminViewServerProps`). `AdminViewServerProps`
- * is real Payload's own large type (out of this cutover's scope, same as
+ * is the reference engine's own large type (out of this cutover's scope, same as
  * `Access`/`CollectionConfig`/`Field` - see `@/engine`'s own header), so this
  * builds only the real subset those 4 components actually read and casts the
  * rest away, the same established convention `AdminNav.tsx`'s own loosely
@@ -109,7 +109,7 @@ function findCustomView(pathname: string): (typeof CUSTOM_ADMIN_VIEWS)[number] |
 function buildViewProps(context: AdminContext, searchParams: Record<string, string | string[]>): AdminViewServerProps {
   return {
     i18n: context.i18n,
-    payload: context.engine,
+    engine: context.engine,
     permissions: context.permissions,
     searchParams,
     user: context.user,

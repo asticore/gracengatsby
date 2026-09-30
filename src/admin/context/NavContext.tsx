@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * From-scratch sidebar state - no longer a straight port of `@payloadcms/ui`'s
+ * From-scratch sidebar state - no longer a straight port of `the vendor package`'s
  * `useNav` (Stage 12: full custom rebuild adds a real collapsible/compressible
  * desktop rail, matching the shadcn sidebar pattern the user pointed at:
  * https://ui.shadcn.com/docs/components/base/sidebar).

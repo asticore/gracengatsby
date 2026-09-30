@@ -272,8 +272,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "payload_locked_documents": {
-      "name": "payload_locked_documents",
+    "eg_locked_documents": {
+      "name": "eg_locked_documents",
       "columns": {
         "id": {
           "name": "id",
@@ -307,18 +307,18 @@
         }
       },
       "indexes": {
-        "payload_locked_documents_global_slug_idx": {
-          "name": "payload_locked_documents_global_slug_idx",
+        "eg_locked_documents_global_slug_idx": {
+          "name": "eg_locked_documents_global_slug_idx",
           "columns": ["global_slug"],
           "isUnique": false
         },
-        "payload_locked_documents_updated_at_idx": {
-          "name": "payload_locked_documents_updated_at_idx",
+        "eg_locked_documents_updated_at_idx": {
+          "name": "eg_locked_documents_updated_at_idx",
           "columns": ["updated_at"],
           "isUnique": false
         },
-        "payload_locked_documents_created_at_idx": {
-          "name": "payload_locked_documents_created_at_idx",
+        "eg_locked_documents_created_at_idx": {
+          "name": "eg_locked_documents_created_at_idx",
           "columns": ["created_at"],
           "isUnique": false
         }
@@ -328,8 +328,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "payload_locked_documents_rels": {
-      "name": "payload_locked_documents_rels",
+    "eg_locked_documents_rels": {
+      "name": "eg_locked_documents_rels",
       "columns": {
         "id": {
           "name": "id",
@@ -375,54 +375,54 @@
         }
       },
       "indexes": {
-        "payload_locked_documents_rels_order_idx": {
-          "name": "payload_locked_documents_rels_order_idx",
+        "eg_locked_documents_rels_order_idx": {
+          "name": "eg_locked_documents_rels_order_idx",
           "columns": ["order"],
           "isUnique": false
         },
-        "payload_locked_documents_rels_parent_idx": {
-          "name": "payload_locked_documents_rels_parent_idx",
+        "eg_locked_documents_rels_parent_idx": {
+          "name": "eg_locked_documents_rels_parent_idx",
           "columns": ["parent_id"],
           "isUnique": false
         },
-        "payload_locked_documents_rels_path_idx": {
-          "name": "payload_locked_documents_rels_path_idx",
+        "eg_locked_documents_rels_path_idx": {
+          "name": "eg_locked_documents_rels_path_idx",
           "columns": ["path"],
           "isUnique": false
         },
-        "payload_locked_documents_rels_users_id_idx": {
-          "name": "payload_locked_documents_rels_users_id_idx",
+        "eg_locked_documents_rels_users_id_idx": {
+          "name": "eg_locked_documents_rels_users_id_idx",
           "columns": ["users_id"],
           "isUnique": false
         },
-        "payload_locked_documents_rels_media_id_idx": {
-          "name": "payload_locked_documents_rels_media_id_idx",
+        "eg_locked_documents_rels_media_id_idx": {
+          "name": "eg_locked_documents_rels_media_id_idx",
           "columns": ["media_id"],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "payload_locked_documents_rels_parent_fk": {
-          "name": "payload_locked_documents_rels_parent_fk",
-          "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "payload_locked_documents",
+        "eg_locked_documents_rels_parent_fk": {
+          "name": "eg_locked_documents_rels_parent_fk",
+          "tableFrom": "eg_locked_documents_rels",
+          "tableTo": "eg_locked_documents",
           "columnsFrom": ["parent_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_users_fk": {
-          "name": "payload_locked_documents_rels_users_fk",
-          "tableFrom": "payload_locked_documents_rels",
+        "eg_locked_documents_rels_users_fk": {
+          "name": "eg_locked_documents_rels_users_fk",
+          "tableFrom": "eg_locked_documents_rels",
           "tableTo": "users",
           "columnsFrom": ["users_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_media_fk": {
-          "name": "payload_locked_documents_rels_media_fk",
-          "tableFrom": "payload_locked_documents_rels",
+        "eg_locked_documents_rels_media_fk": {
+          "name": "eg_locked_documents_rels_media_fk",
+          "tableFrom": "eg_locked_documents_rels",
           "tableTo": "media",
           "columnsFrom": ["media_id"],
           "columnsTo": ["id"],
@@ -434,8 +434,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "payload_preferences": {
-      "name": "payload_preferences",
+    "eg_preferences": {
+      "name": "eg_preferences",
       "columns": {
         "id": {
           "name": "id",
@@ -476,18 +476,18 @@
         }
       },
       "indexes": {
-        "payload_preferences_key_idx": {
-          "name": "payload_preferences_key_idx",
+        "eg_preferences_key_idx": {
+          "name": "eg_preferences_key_idx",
           "columns": ["key"],
           "isUnique": false
         },
-        "payload_preferences_updated_at_idx": {
-          "name": "payload_preferences_updated_at_idx",
+        "eg_preferences_updated_at_idx": {
+          "name": "eg_preferences_updated_at_idx",
           "columns": ["updated_at"],
           "isUnique": false
         },
-        "payload_preferences_created_at_idx": {
-          "name": "payload_preferences_created_at_idx",
+        "eg_preferences_created_at_idx": {
+          "name": "eg_preferences_created_at_idx",
           "columns": ["created_at"],
           "isUnique": false
         }
@@ -497,8 +497,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "payload_preferences_rels": {
-      "name": "payload_preferences_rels",
+    "eg_preferences_rels": {
+      "name": "eg_preferences_rels",
       "columns": {
         "id": {
           "name": "id",
@@ -537,40 +537,40 @@
         }
       },
       "indexes": {
-        "payload_preferences_rels_order_idx": {
-          "name": "payload_preferences_rels_order_idx",
+        "eg_preferences_rels_order_idx": {
+          "name": "eg_preferences_rels_order_idx",
           "columns": ["order"],
           "isUnique": false
         },
-        "payload_preferences_rels_parent_idx": {
-          "name": "payload_preferences_rels_parent_idx",
+        "eg_preferences_rels_parent_idx": {
+          "name": "eg_preferences_rels_parent_idx",
           "columns": ["parent_id"],
           "isUnique": false
         },
-        "payload_preferences_rels_path_idx": {
-          "name": "payload_preferences_rels_path_idx",
+        "eg_preferences_rels_path_idx": {
+          "name": "eg_preferences_rels_path_idx",
           "columns": ["path"],
           "isUnique": false
         },
-        "payload_preferences_rels_users_id_idx": {
-          "name": "payload_preferences_rels_users_id_idx",
+        "eg_preferences_rels_users_id_idx": {
+          "name": "eg_preferences_rels_users_id_idx",
           "columns": ["users_id"],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "payload_preferences_rels_parent_fk": {
-          "name": "payload_preferences_rels_parent_fk",
-          "tableFrom": "payload_preferences_rels",
-          "tableTo": "payload_preferences",
+        "eg_preferences_rels_parent_fk": {
+          "name": "eg_preferences_rels_parent_fk",
+          "tableFrom": "eg_preferences_rels",
+          "tableTo": "eg_preferences",
           "columnsFrom": ["parent_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_preferences_rels_users_fk": {
-          "name": "payload_preferences_rels_users_fk",
-          "tableFrom": "payload_preferences_rels",
+        "eg_preferences_rels_users_fk": {
+          "name": "eg_preferences_rels_users_fk",
+          "tableFrom": "eg_preferences_rels",
           "tableTo": "users",
           "columnsFrom": ["users_id"],
           "columnsTo": ["id"],
@@ -582,8 +582,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "payload_migrations": {
-      "name": "payload_migrations",
+    "eg_migrations": {
+      "name": "eg_migrations",
       "columns": {
         "id": {
           "name": "id",
@@ -624,13 +624,13 @@
         }
       },
       "indexes": {
-        "payload_migrations_updated_at_idx": {
-          "name": "payload_migrations_updated_at_idx",
+        "eg_migrations_updated_at_idx": {
+          "name": "eg_migrations_updated_at_idx",
           "columns": ["updated_at"],
           "isUnique": false
         },
-        "payload_migrations_created_at_idx": {
-          "name": "payload_migrations_created_at_idx",
+        "eg_migrations_created_at_idx": {
+          "name": "eg_migrations_created_at_idx",
           "columns": ["created_at"],
           "isUnique": false
         }

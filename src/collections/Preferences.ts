@@ -3,15 +3,15 @@ import type { CollectionConfig } from '@/engine'
 import { PREFERENCES_SLUG } from '@/features/accounts/types'
 
 /**
- * Real Payload's own internal `payload-preferences` collection, reproduced
+ * The reference engine's own internal `engine-preferences` collection, reproduced
  * just enough to back this app's local `engine.find/create/update` calls
  * (`src/features/accounts/preferences.ts`, `AdminNav.tsx`, `NavGroup.tsx` -
  * confirmed the only real callers, all via the plain Local API, never the
- * REST `/:key` convenience endpoint real Payload also exposes - that
+ * REST `/:key` convenience endpoint the reference engine also exposes - that
  * endpoint is deliberately NOT reproduced here, see rest.ts's header for
  * why).
  *
- * FIDELITY NOTE - the `user` field: real Payload declares this as
+ * FIDELITY NOTE - the `user` field: the reference engine declares this as
  * `relationTo: [...every auth-enabled collection]`, which is why the real
  * `eg_preferences` table has NO `user_id` column of its own and instead
  * carries the relationship through the shared `eg_preferences_rels` table
@@ -19,7 +19,7 @@ import { PREFERENCES_SLUG } from '@/features/accounts/types'
  * the plan doc's architecture-reference section). This app has exactly one
  * auth collection (`users`), so `relationTo: ['users']` here is not a
  * simplification - it is the exact real shape, just with a one-element
- * array instead of Payload's own multi-collection one. Declaring it as an
+ * array instead of the original engine's own multi-collection one. Declaring it as an
  * array (rather than a plain single-target `relationTo: 'users'`) is what
  * routes it through `generateRelsTable`/`createCollectionOps`'s
  * `topLevelRelsFieldTargets` machinery instead of a plain `user_id` column -
@@ -30,7 +30,7 @@ import { PREFERENCES_SLUG } from '@/features/accounts/types'
  * exactly (id, key, value, updated_at, created_at - confirmed, no other
  * columns exist).
  *
- * No `access` block is declared: real Payload restricts read/update/delete
+ * No `access` block is declared: the reference engine restricts read/update/delete
  * to the owning user and leaves create to any logged-in user via a
  * dedicated access function this app has no caller that depends on (see
  * `preferences.ts`'s own header - every write already locates its row
@@ -40,7 +40,7 @@ import { PREFERENCES_SLUG } from '@/features/accounts/types'
  * `callAccessFn`), a safe, documented approximation rather than a fabricated
  * per-row ownership rule nothing in this app currently needs.
  */
-export const PayloadPreferences: CollectionConfig = {
+export const Preferences: CollectionConfig = {
   slug: PREFERENCES_SLUG,
   dbName: 'eg_preferences',
   fields: [

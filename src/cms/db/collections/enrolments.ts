@@ -5,7 +5,7 @@ import { Enrolments } from '@/features/courses/collections/Enrolments'
 import { createCollectionOps } from '../generic'
 import { enrolments } from '../schema'
 
-/** Payload's document shape for the `enrolments` collection - see src/features/courses/collections/Enrolments.ts. */
+/** The original engine's document shape for the `enrolments` collection - see src/features/courses/collections/Enrolments.ts. */
 export type EnrolmentDoc = {
   id: number
   user: number

@@ -11,6 +11,6 @@ import { getEngine } from '@/lib/engine'
 // surface - and Next bundles a route's imports by what the module graph
 // actually reaches, not just by what's re-exported and unused. Going through
 // the barrel here dragged that whole admin dependency chain into this public,
-// high-traffic tracking endpoint's chunk, which is what surfaced as payload
+// high-traffic tracking endpoint's chunk, which is what surfaced as engine
 // still appearing in this route's build output/dependency graph.
 export const POST = async (request: Request) => handleTrackRequest(await getEngine(), request)

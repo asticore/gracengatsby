@@ -7,7 +7,7 @@ import { currencyField, orderItemsField } from './shared'
 /**
  * SHADOW config for the ecommerce plugin's real `orders` collection - see
  * ./Products.ts's header comment. Reproduced from `createOrdersCollection.js`
- * (`@payloadcms/plugin-ecommerce@3.88.0`, read directly from
+ * (`the vendor package@3.88.0`, read directly from
  * `node_modules/.pnpm/.../dist/collections/orders/createOrdersCollection.js` -
  * there is no `hooks/` subdirectory under `dist/collections/orders/` at all
  * in this plugin version, so `stripeWebhook`/`sendOrderEmail`/
@@ -20,19 +20,19 @@ import { currencyField, orderItemsField } from './shared'
  * `isCustomer` only checks the caller's ROLE (any authenticated non-admin),
  * not whether THIS order belongs to them. Any signed-in customer could list
  * or fetch-by-id every OTHER customer's orders (shipping address, line
- * items, amount, linked transaction ids). Real Payload's own access is
+ * items, amount, linked transaction ids). The reference engine's own access is
  * `accessOR(isAdmin, isDocumentOwner)` - fixed to match. `create`/`update`/
  * `delete` were already correct (`isAdmin`-only, matching the real plugin
  * exactly).
  *
- * Also matched real Payload's own field-level lockdown on `transactions`
+ * Also matched the reference engine's own field-level lockdown on `transactions`
  * (`adminOnlyFieldAccess` for create/read/update) - a customer reading their
  * own order via REST shouldn't see the linked internal `transactions`
  * relationship ids either; only admins should. Checked: no customer-facing
  * code in this app reads `order.transactions` (only server-side writes with
  * `overrideAccess: true`, which skip field access entirely).
  *
- * `status` was a plain `text` field here; real Payload defines it as a
+ * `status` was a plain `text` field here; the reference engine defines it as a
  * `select` with exactly 4 options (`processing`/`completed`/`cancelled`/
  * `refunded`) and `defaultValue: 'processing'`. Converted to match - checked
  * every place in this app that writes or queries an order's `status`
@@ -81,10 +81,10 @@ export const Orders: CollectionConfig = {
     {
       name: 'transactions',
       type: 'relationship',
-      // shopPlugin() is REMOVED (payload-removal-plan.md: ecommerce
-      // cutover) and 'transactions' is no longer a real Payload collection
+      // shopPlugin() is REMOVED (the plan doc: ecommerce
+      // cutover) and 'transactions' is no longer a the reference engine collection
       // (only 'products' still is, as a stub - see engage.config.ts), so
-      // real Payload's own generated `CollectionSlug` union no longer
+      // the reference engine's own generated `CollectionSlug` union no longer
       // includes it. This field is on a SHADOW config never passed through
       // `buildConfig()` (never sanitized/validated against that union at
       // runtime), so the cast is safe - this app's own REST/GraphQL hybrid

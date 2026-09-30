@@ -1,10 +1,10 @@
 /**
  * From-scratch reimplementation of the Local API's `.logger` surface - the
  * smallest of the four remaining `@/engine` shims scoped in
- * payload-removal-plan.md's "Full-removal cutover prerequisites" section
- * (logger/config/collections/db.migrate). Real Payload's `Engine.logger` is a
- * real Pino `Logger` instance (`payload/dist/utilities/logger.d.ts`:
- * `export type PayloadLogger = Logger` from the `pino` package, confirmed by
+ * the plan doc's "Full-removal cutover prerequisites" section
+ * (logger/config/collections/db.migrate). The reference engine's `Engine.logger` is a
+ * real Pino `Logger` instance (the vendor source:
+ * a type alias over the `pino` package's `Logger`, confirmed by
  * reading that file directly) - a large, general-purpose structured logger
  * with `trace`/`debug`/`info`/`warn`/`error`/`fatal`/`silent` levels, child
  * loggers, and a printf-style extra-args overload on every level method.
@@ -19,7 +19,7 @@
  * below are hand-rolled to match exactly that real, narrower surface - not
  * Pino's full generic `LogFn` (whose `ParseLogFnArgs<TMsg>` printf-argument
  * machinery this app never exercises) - per this directory's one hard rule of
- * never importing from the `payload` package (and, by the same reasoning
+ * never importing from the `engine` package (and, by the same reasoning
  * applied to `signJWT`/`verifyJWT` in `auth.ts`, not pulling in `pino` either
  * just to describe a shape this app already reimplemented by hand).
  *
@@ -40,8 +40,8 @@
  * `consoleLogger` below is the piece that does NOT exist anywhere in this app
  * yet: `engage.config.ts` currently passes `logger: isProduction ?
  * cloudflareLogger : undefined` (`engage.config.ts:1111`), relying on real
- * Payload's own internal default (a real Pino instance with pino-pretty) for
- * local dev when that `undefined` is handed to `getPayload()`. Once `payload`
+ * The original engine's own internal default (a real Pino instance with pino-pretty) for
+ * local dev when that `undefined` is handed to `getEngine()`. Once `engine`
  * is gone there is no default left to fall back to, so a real `@/engine`
  * cutover needs SOME logger for dev too. `consoleLogger` fills that gap with
  * the exact same plain JSON-line format `cloudflareLogger` already uses in
@@ -62,7 +62,7 @@
  */
 export type LogFn = (objOrMsg: string | Record<string, unknown>, msg?: string) => void
 
-/** The narrow slice of real Payload's `Logger` (a Pino instance) this app's Local API surface actually calls. */
+/** The narrow slice of the reference engine's `Logger` (a Pino instance) this app's Local API surface actually calls. */
 export type EngineLogger = {
   info: LogFn
   warn: LogFn

@@ -15,7 +15,7 @@
  * WRITES go through the REST API (`fetch`), not the Local API directly -
  * unlike ListView/EditView's/GlobalEditView's reads. Two reasons: this is a
  * CLIENT component (the interactive form itself), and the browser's own
- * `payload-token` cookie only flows automatically into a real HTTP request,
+ * `engage-token` cookie only flows automatically into a real HTTP request,
  * not a server-side Local API call made on this component's behalf. See
  * `src/localapi/rest.ts`'s own doc comment for the exact wire shapes relied
  * on below:
@@ -24,7 +24,7 @@
  *   - `POST /api/globals/<slug>` (global update - POST, not PATCH):
  *     `{result, message}`, 200 - the one collection/global response-shape
  *     divergence `rest.ts` itself flags.
- * A plain JSON body (not multipart/`_payload`) is fine for every non-upload
+ * A plain JSON body (not multipart/`_data`) is fine for every non-upload
  * collection - `readRequestBody` only reaches for its multipart parser when
  * the request's own `Content-Type` says so (see that function's doc comment)
  * - and no upload-collection document is ever edited through this form yet
@@ -75,7 +75,7 @@ function extractErrorMessage(body: unknown): string {
 
 /**
  * Stage 11 Phase 2: a `draftsEnabled` collection (Posts/Products/Events/
- * Pages/Courses) gets two buttons instead of one, matching real Payload's
+ * Pages/Courses) gets two buttons instead of one, matching the reference engine's
  * own draft/publish split. Save Draft sends `_status: 'draft'` in the body
  * AND the `?draft=true` query flag; Publish sends `_status: 'published'`
  * with no query flag. The `_status` field is sent explicitly in BOTH cases
@@ -118,7 +118,7 @@ const SaveButton: React.FC<SaveTarget> = ({ collectionSlug, globalSlug, id, draf
       reportUpdate({ entitySlug: collectionSlug ?? globalSlug ?? '', updatedAt: new Date().toISOString() })
 
       // A successful CREATE (no `id` yet, a real collection doc) moves the
-      // URL to the new document's own edit route - matching real Payload's
+      // URL to the new document's own edit route - matching the reference engine's
       // own post-create-redirect behavior, and giving the now-existing `id`
       // to every subsequent save on this same document.
       if (collectionSlug && !id) {
@@ -159,11 +159,11 @@ export const EditForm: React.FC<EditFormProps> = ({ collectionSlug, doc, draftsE
     <DocumentInfoProvider value={{ collectionSlug, globalSlug, id }}>
       <FormProvider initialFields={initialFields}>
         {/* Was a single flat `edit-form` div, which matches zero CSS rules -
-            neither stock `@payloadcms/next/css` nor this app's own
+            neither stock admin CSS nor this app's own
             custom.css. This nesting instead matches both: `document-fields`/
             `document-fields__edit` picks up stock CSS's own padding, and
             `collection-edit__form`/`global-edit__form` picks up custom.css's
-            soft-card theming (`@layer payload` block shared with
+            soft-card theming (`@layer engine` block shared with
             `.collection-list__wrap`/`.table`/`.dashboard__card`/`.card`). */}
         <div className="document-fields">
           <div className="document-fields__edit">

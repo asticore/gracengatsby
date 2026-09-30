@@ -25,13 +25,13 @@ type I18nLike = { language?: string; t: (key: string) => string }
 
 type AdminNavProps = {
   i18n: I18nLike
-  payload: Engine
+  engine: Engine
   permissions?: {
     collections?: Record<string, { read?: boolean } | undefined>
     globals?: Record<string, { read?: boolean } | undefined>
   }
   req?: {
-    payload: Engine
+    engine: Engine
     user?: { collection: string; id: number | string } | null
   }
   visibleEntities: {
@@ -51,8 +51,8 @@ async function getNavPreferences(req: AdminNavProps['req']): Promise<NavPreferen
   if (!req?.user?.collection) return null
 
   try {
-    const result = await req.payload.find({
-      collection: 'payload-preferences',
+    const result = await req.engine.find({
+      collection: 'preferences',
       depth: 0,
       limit: 1,
       pagination: false,
@@ -75,7 +75,7 @@ async function getNavPreferences(req: AdminNavProps['req']): Promise<NavPreferen
 }
 
 export const AdminNav: React.FC<AdminNavProps> = async (props) => {
-  const { i18n, payload: engine, permissions, req, visibleEntities } = props
+  const { i18n, engine, permissions, req, visibleEntities } = props
 
   if (!engine?.config) return null
 

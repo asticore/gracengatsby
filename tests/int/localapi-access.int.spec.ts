@@ -28,7 +28,7 @@ describe('combineQueries', () => {
     expect(combineQueries(undefined, access)).toEqual({ and: [{ _status: { equals: 'published' } }] })
   })
 
-  it('where undefined, access `true` -> { and: [] }, NOT {} (real Payload edge case)', () => {
+  it('where undefined, access `true` -> { and: [] }, NOT {} (the reference engine edge case)', () => {
     expect(combineQueries(undefined, true)).toEqual({ and: [] })
   })
 
@@ -139,7 +139,7 @@ describe('executeFieldAccess', () => {
     await expect(executeFieldAccess(fn, { req: anonReq })).resolves.toBe(false)
   })
 
-  it('a falsy non-boolean return is coerced to false (real Payload only declares boolean, but a misbehaving fn should not crash the pipeline)', async () => {
+  it('a falsy non-boolean return is coerced to false (the reference engine only declares boolean, but a misbehaving fn should not crash the pipeline)', async () => {
     const brokenFn = (): undefined => undefined
     const fn = brokenFn as unknown as FieldAccessFn
     await expect(executeFieldAccess(fn, { req: anonReq })).resolves.toBe(false)

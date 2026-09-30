@@ -219,7 +219,7 @@ describe('select', () => {
     expect(select('free', { options: FREE_PAID_OPTIONS })).toBe(true)
   })
 
-  it('fails a value that matches no option (invalid selection - real Payload behavior beyond the task summary, confirmed against validations.js)', () => {
+  it('fails a value that matches no option (invalid selection - the reference engine behavior beyond the task summary, confirmed against validations.js)', () => {
     expect(select('nonsense', { options: FREE_PAID_OPTIONS })).not.toBe(true)
   })
 
@@ -251,7 +251,7 @@ describe('select', () => {
     expect(select([], { required: true, hasMany: true, options: FREE_PAID_OPTIONS })).not.toBe(true)
   })
 
-  it('required on non-hasMany does NOT fail on an empty string, once the empty string is itself a valid option (matches real, slightly surprising, Payload behavior - required only checks undefined/null/hasMany-empty-array, never string length)', () => {
+  it('required on non-hasMany does NOT fail on an empty string, once the empty string is itself a valid option (matches real, slightly surprising, the original engine behavior - required only checks undefined/null/hasMany-empty-array, never string length)', () => {
     const optionsWithEmpty = [{ label: 'None', value: '' }, ...FREE_PAID_OPTIONS]
     expect(select('', { required: true, options: optionsWithEmpty })).toBe(true)
   })

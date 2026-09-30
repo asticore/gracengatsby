@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * From-scratch replacement for `@payloadcms/ui`'s form context.
+ * From-scratch replacement for `the vendor package`'s form context.
  *
  * Backs `useField`, `useFormFields`, and `useFormModified` (re-exported from
  * `@/engine/ui`) with the exact call signatures the existing custom field

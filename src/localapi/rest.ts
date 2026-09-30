@@ -1,8 +1,8 @@
 /**
  * REST + GraphQL API removal (Stage 7), sub-step 3: the REST handler layer
  * itself - a hand-rolled, from-scratch replacement for the SUBSET of real
- * Payload's REST surface this stage puts in scope (see
- * payload-removal-plan.md's "REST + GraphQL API removal (Stage 7)" section
+ * The original engine's REST surface this stage puts in scope (see
+ * the plan doc's "REST + GraphQL API removal (Stage 7)" section
  * for the full scoping decision): collection list/byID/create/update
  * (byID)/delete (byID)/count, global find/update, and the six core auth
  * endpoints (login/logout/me/refresh-token/forgot-password/reset-password/
@@ -16,7 +16,7 @@
  * separately-verified step). `handleRestRequest` is the one function a
  * future thin wrapper in that route file will call: it returns a real
  * `Response` for anything in scope, or `null` to signal "not handled here,
- * fall through to real Payload's REST_GET/POST/PATCH/DELETE" for anything
+ * fall through to the reference engine's REST_GET/POST/PATCH/DELETE" for anything
  * still deferred (versions/drafts LIST/history,
  * locked-documents/preferences, GraphQL, and any collection/global this
  * module doesn't recognize). `/:id/duplicate`, bulk update/delete, and
@@ -25,9 +25,9 @@
  * `handleAccessRoot`/`handleCollectionAccess`/`handleGlobalAccess` below).
  *
  * ---------------------------------------------------------------------------
- * Real Payload's endpoint-matching precedence, reproduced here
+ * The reference engine's endpoint-matching precedence, reproduced here
  * ---------------------------------------------------------------------------
- * Real Payload's `sanitizeCollection` (`collections/config/sanitize.js`)
+ * The reference engine's `sanitizeCollection` (`collections/config/sanitize.js`)
  * pushes `authCollectionEndpoints` (login/logout/me/refresh-token/
  * forgot-password/unlock/reset-password/first-register/verify/init) onto a
  * collection's endpoint list BEFORE `defaultCollectionEndpoints` (find/
@@ -49,15 +49,15 @@
  * constant, not a config lookup.
  *
  * ---------------------------------------------------------------------------
- * Response envelopes, confirmed by reading `node_modules/payload@3.88.0` and
- * `node_modules/@payloadcms/next` directly (see the plan doc for the same
+ * Response envelopes, confirmed by reading `node_modules/engine@3.88.0` and
+ * `node_modules/the vendor package` directly (see the plan doc for the same
  * ground truth, restated here for the functions that actually implement it)
  * ---------------------------------------------------------------------------
  * - GET (list): the raw `PaginatedDocs` shape, no wrapper (`find.js`).
  * - GET /:id: the raw doc, no wrapper (`findByID.js`).
  * - POST (create): `{doc, message}`, 201 (`create.js`).
  * - PATCH /:id: `{doc, message}`, 200 (`updateByID.js`).
- * - DELETE /:id: `{doc, message}`, 200 (`deleteByID.js`). Real Payload's own
+ * - DELETE /:id: `{doc, message}`, 200 (`deleteByID.js`). The reference engine's own
  *   `deleteByIDOperation` returns `null` on a missing doc and its HANDLER
  *   special-cases that into a bare `{message}` 404 (no `errors` array) -
  *   this app's own `./operations.ts`'s `deleteDocument` instead THROWS its
@@ -78,10 +78,10 @@
  *   explicitly.
  * - GET /count: `{totalDocs}` (`count.js`).
  * - Auth endpoints: see each handler's own doc comment below for its exact
- *   envelope, all confirmed by reading `node_modules/payload/dist/auth/
+ *   envelope, all confirmed by reading `the vendor source
  *   endpoints/*.js` directly.
  * - Errors: `{errors: [{name?, message, data?}]}` (`utilities/
- *   formatErrors.js`), with the status code real Payload's own error
+ *   formatErrors.js`), with the status code the reference engine's own error
  *   classes carry (`errors/{APIError,AuthenticationError,Forbidden,
  *   NotFound,ValidationError,Locked}.js`, all read directly): 400
  *   (ValidationError), 401 (AuthenticationError), 403 (Forbidden), 404
@@ -90,18 +90,18 @@
  *   `ValidationError`/`NotFound`, `./read-operations.ts`'s own separate
  *   `NotFound`, `./auth.ts`'s `AuthenticationError`/`LockedAuth`/
  *   `InvalidResetToken`) carry only a `message` (confirmed by reading each
- *   directly - none carry a `.status`, unlike real Payload's `APIError`-
+ *   directly - none carry a `.status`, unlike the reference engine's `APIError`-
  *   derived classes), so `errorToResponse` below does by `instanceof`
- *   dispatch what real Payload's own `err.status` field does for free - the
+ *   dispatch what the reference engine's own `err.status` field does for free - the
  *   same "reproduce the behavior, the vendor's own carrier field doesn't
  *   exist here" pattern this whole project already follows. Anything NOT
  *   one of those recognized classes is treated as an internal error and
- *   masked to a generic message at 500, matching real Payload's own
+ *   masked to a generic message at 500, matching the reference engine's own
  *   `isErrorPublic`/`routeError.js` policy of hiding non-public error detail
  *   unless `config.debug` is true (this app never sets it).
  *
  * ---------------------------------------------------------------------------
- * Deliberately NOT implemented here (falls through to real Payload;
+ * Deliberately NOT implemented here (falls through to the reference engine;
  * see the plan doc's "Explicitly deferred to a later sub-stage" list)
  * ---------------------------------------------------------------------------
  * Versions/drafts endpoints (LIST/history/restore); the admin panel's own
@@ -116,21 +116,21 @@
  * ---------------------------------------------------------------------------
  * This module's `media` entry in `readRegistry.collections` (Stage 6a)
  * always made `handleRestRequest` claim `/api/media` requests over real
- * Payload's own, but `handleCreate`/`handleUpdateByID` originally only ever
+ * The original engine's own, but `handleCreate`/`handleUpdateByID` originally only ever
  * read a JSON body - a real multipart/form-data upload POST (including
- * every upload real Payload's OWN admin panel UI sends, which already uses
+ * every upload the reference engine's OWN admin panel UI sends, which already uses
  * the wire shape reproduced below) silently lost its file. Fixed here by
  * teaching `handleCreate`/`handleUpdateByID` to branch on `Content-Type`:
  * a `multipart/*` request is parsed via the standard Fetch API's own
  * `Request.formData()` (built into both Node's undici and this app's real
  * Cloudflare Workers runtime - no busboy/vendor parser needed, unlike real
- * Payload's own Node-specific `uploads/fetchAPI-multipart/*`), reproducing
- * real Payload's own `addDataAndFileToRequest.js` wire shape: the document's
- * own fields arrive as a JSON string in a `_payload` form field, and the
+ * The original engine's own Node-specific `uploads/fetchAPI-multipart/*`), reproducing
+ * the reference engine's own `addDataAndFileToRequest.js` wire shape: the document's
+ * own fields arrive as a JSON string in a `_data` form field, and the
  * uploaded file arrives as a standard `File` in a `file` form field. See
  * `readMultipartBody`'s own doc comment for the full citation.
  *
- * Also added: `GET /api/media/file/:filename`, real Payload's own file-
+ * Also added: `GET /api/media/file/:filename`, the reference engine's own file-
  * serving route (`uploads/endpoints/getFile.js`), reproduced via
  * `./storage.ts`'s `getMediaObjectResponse` - see that module's header for
  * why no access check is needed here (`media`'s `access.read` is the
@@ -139,11 +139,11 @@
  * ---------------------------------------------------------------------------
  * Message text
  * ---------------------------------------------------------------------------
- * Real Payload's success messages are i18n-looked-up and, for
+ * The reference engine's success messages are i18n-looked-up and, for
  * create/update/delete, interpolate the collection's own singular/plural
  * label (`general:successfullyCreated` etc, via `getTranslation`). This
  * module uses the same English source strings (confirmed by reading
- * `@payloadcms/translations`' `en.js` directly - see each handler's doc
+ * `the vendor package`' `en.js` directly - see each handler's doc
  * comment) but WITHOUT the per-collection label interpolation - a fixed
  * generic string instead (e.g. `'Successfully created.'` rather than
  * `'Faq successfully created.'`). This app never configures a second
@@ -180,22 +180,22 @@ const AUTH_COLLECTION_SLUG = 'users'
 /** This app's one upload-enabled collection - same hardcoding convention as `AUTH_COLLECTION_SLUG` above (see `./uploads.ts`'s and `./storage.ts`'s own file headers for why). */
 const UPLOAD_COLLECTION_SLUG = 'media'
 
-const COOKIE_NAME = 'payload-token'
+const COOKIE_NAME = 'engage-token'
 
 /* -------------------------------------------------------------------------- */
 /* Cookie helpers                                                              */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Reproduces real Payload's `generatePayloadCookie` (`auth/cookies.js`) for
+ * Reproduces the reference engine's the original cookie generator for
  * this app's own (unoverridden) auth-cookie config, confirmed by reading
  * `./config.ts` directly: `cookies: {sameSite: 'Lax', secure: false}`,
  * `tokenExpiration` defaults to `./auth.ts`'s own `TOKEN_EXPIRATION_SECONDS`
  * (7200s). Attribute order and casing (`HttpOnly=true`, not the bare
  * `HttpOnly` flag) match `auth/cookies.js`'s own `generateCookie` byte for
  * byte - no `Domain`/`Max-Age`/`Secure` attributes, since this app sets none
- * of those. `cookiePrefix` is real Payload's default (`'payload'`,
- * unoverridden - already hardcoded as `payload-token` throughout
+ * of those. `cookiePrefix` is the reference engine's default (`'engine'`,
+ * unoverridden - already hardcoded as `engage-token` throughout
  * `./auth.ts`), reused here as the same literal constant.
  */
 function buildAuthCookie(token: string, expiresInSeconds: number): string {
@@ -203,13 +203,13 @@ function buildAuthCookie(token: string, expiresInSeconds: number): string {
   return `${COOKIE_NAME}=${token}; Expires=${expires.toUTCString()}; Path=/; HttpOnly=true; SameSite=Lax`
 }
 
-/** Reproduces real Payload's `generateExpiredPayloadCookie` - same attributes as `buildAuthCookie`, empty value, an already-past `Expires` so the browser drops it immediately. */
+/** Reproduces the reference engine's the original expired-cookie generator - same attributes as `buildAuthCookie`, empty value, an already-past `Expires` so the browser drops it immediately. */
 function buildExpiredAuthCookie(): string {
   const expires = new Date(Date.now() - 1000)
   return `${COOKIE_NAME}=; Expires=${expires.toUTCString()}; Path=/; HttpOnly=true; SameSite=Lax`
 }
 
-/** Reads the `payload-token` cookie's raw value out of a request's `Cookie` header, for `extractTokenFromRequest`'s cookie fallback - deliberately NOT reusing `./auth.ts`'s own private `extractCookieToken` (unexported), so this is a second, small, independently-correct implementation of the same "last pair for this key wins" parsing `./auth.ts`'s own doc comment already documents matching real Payload's `parseCookies` on. */
+/** Reads the `engage-token` cookie's raw value out of a request's `Cookie` header, for `extractTokenFromRequest`'s cookie fallback - deliberately NOT reusing `./auth.ts`'s own private `extractCookieToken` (unexported), so this is a second, small, independently-correct implementation of the same "last pair for this key wins" parsing `./auth.ts`'s own doc comment already documents matching the reference engine's `parseCookies` on. */
 function readCookieToken(request: Request): string | null {
   const raw = request.headers.get('Cookie')
   if (!raw) return null
@@ -221,20 +221,20 @@ function readCookieToken(request: Request): string | null {
     try {
       found = decodeURI(eqIdx === -1 ? '' : part.slice(eqIdx + 1))
     } catch {
-      // Same as real Payload's own parseCookies.js - ignore an undecodable value.
+      // Same as the reference engine's own parseCookies.js - ignore an undecodable value.
     }
   }
   return found
 }
 
 /**
- * Extracts the caller's own raw JWT string from a request, in real Payload's
+ * Extracts the caller's own raw JWT string from a request, in the reference engine's
  * `extractJWT.js` order (`jwtOrder` defaults to `['JWT', 'Bearer', 'cookie']`,
  * confirmed unoverridden in `engage.config.ts` - see `./auth.ts`'s own header
  * comment, ground-truth point 11): `Authorization: JWT <token>`, then
- * `Authorization: Bearer <token>`, then the `payload-token` cookie.
+ * `Authorization: Bearer <token>`, then the `engage-token` cookie.
  *
- * Added after a real-Payload REST parity test caught `handleMe` originally
+ * Added after a reference-engine REST parity test caught `handleMe` originally
  * calling `readCookieToken` alone: real `meHandler`'s own `extractJWT(req)`
  * call checks ALL THREE forms, so a caller authenticated via an
  * `Authorization` header (as this app's own REST clients and most API
@@ -248,12 +248,12 @@ function extractTokenFromRequest(request: Request): string | null {
   return readCookieToken(request)
 }
 
-/** Decodes a JWT's middle (payload) segment WITHOUT verifying its signature - only ever called on a token this module has already independently verified via `engine.auth()` (see `handleMe`), purely to read the `exp` claim back out for the response body, matching real Payload's own `meHandler` (`decodeJwt` from `jose`, also signature-blind - it trusts `req.user` having already been set by the strategy that ran earlier in the same request). Returns `null` on anything malformed rather than throwing. */
+/** Decodes a JWT's middle (engine) segment WITHOUT verifying its signature - only ever called on a token this module has already independently verified via `engine.auth()` (see `handleMe`), purely to read the `exp` claim back out for the response body, matching the reference engine's own `meHandler` (`decodeJwt` from `jose`, also signature-blind - it trusts `req.user` having already been set by the strategy that ran earlier in the same request). Returns `null` on anything malformed rather than throwing. */
 function decodeJwtExpUnsafe(token: string): number | null {
   try {
-    const payloadSegment = token.split('.')[1]
-    if (!payloadSegment) return null
-    const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/')
+    const claimsSegment = token.split('.')[1]
+    if (!claimsSegment) return null
+    const base64 = claimsSegment.replace(/-/g, '+').replace(/_/g, '/')
     const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
     const json = JSON.parse(Buffer.from(padded, 'base64').toString('utf8')) as { exp?: unknown }
     return typeof json.exp === 'number' ? json.exp : null
@@ -268,7 +268,7 @@ function decodeJwtExpUnsafe(token: string): number | null {
 
 type ErrorResponseBody = { errors: Array<{ name?: string; message: string; data?: unknown }> }
 
-/** See this file's header, "Errors", for the full mapping rationale and the real Payload source this reproduces. */
+/** See this file's header, "Errors", for the full mapping rationale and the the reference engine source this reproduces. */
 function errorToResponse(err: unknown): { status: number; body: ErrorResponseBody } {
   if (err instanceof ValidationError) {
     return { status: 400, body: { errors: [{ name: 'ValidationError', message: err.message, data: { errors: err.errors } }] } }
@@ -288,14 +288,14 @@ function errorToResponse(err: unknown): { status: number; body: ErrorResponseBod
   if (err instanceof InvalidResetToken) {
     return { status: 400, body: { errors: [{ name: 'InvalidResetToken', message: err.message }] } }
   }
-  // Matching real Payload's own isErrorPublic/routeError.js policy: an
+  // Matching the reference engine's own isErrorPublic/routeError.js policy: an
   // unrecognized error is never shown to the caller verbatim (it could
   // carry anything, including sensitive internals) - masked to a generic
-  // message at 500, same as real Payload's own debug-mode-off default.
+  // message at 500, same as the reference engine's own debug-mode-off default.
   return { status: 500, body: { errors: [{ message: 'Something went wrong.' }] } }
 }
 
-/** Best-effort JSON body parse for a request that may have none, or malformed JSON - mirrors real Payload's own defensive `typeof req.data?.x === 'string' ? req.data.x : ''` coercion pattern (confirmed by reading every auth handler directly) rather than letting a malformed body throw an uncaught, unmapped `SyntaxError`. */
+/** Best-effort JSON body parse for a request that may have none, or malformed JSON - mirrors the reference engine's own defensive `typeof req.data?.x === 'string' ? req.data.x : ''` coercion pattern (confirmed by reading every auth handler directly) rather than letting a malformed body throw an uncaught, unmapped `SyntaxError`. */
 async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
   try {
     const data: unknown = await request.json()
@@ -312,7 +312,7 @@ function stringField(data: Record<string, unknown>, key: string): string {
 
 /**
  * Whether `request`'s `Content-Type` is a `multipart/*` body - the same
- * eligibility check real Payload's own `utilities/addDataAndFileToRequest.js`
+ * eligibility check the reference engine's own `utilities/addDataAndFileToRequest.js`
  * makes before routing to its own busboy-based multipart parser (confirmed
  * by reading it directly: `contentType?.includes('multipart/')`, `contentType`
  * itself being the header value split on its first `;`).
@@ -323,12 +323,12 @@ function isMultipartRequest(request: Request): boolean {
 }
 
 /**
- * Reproduces real Payload's own multipart request wire shape
+ * Reproduces the reference engine's own multipart request wire shape
  * (`utilities/addDataAndFileToRequest.js` + `uploads/fetchAPI-multipart/*`,
  * confirmed by reading both directly): the document's own fields travel as
- * a single JSON string in a `_payload` form field - NOT as individual named
+ * a single JSON string in a `_data` form field - NOT as individual named
  * form fields - and the uploaded file travels in a form field named `file`.
- * Real Payload's OWN admin panel upload UI already submits exactly this
+ * The reference engine's OWN admin panel upload UI already submits exactly this
  * shape, which is what makes matching it (rather than inventing a simpler
  * one) the fix for the real, previously-live bug where a real multipart
  * upload POST to `/api/media` was silently misrouted into the JSON-only
@@ -336,13 +336,13 @@ function isMultipartRequest(request: Request): boolean {
  *
  * Uses the standard Fetch API's own `Request.formData()`/`File` - built
  * into both Node's undici (this app's test runtime) and the Cloudflare
- * Workers runtime this app actually deploys to - rather than real Payload's
+ * Workers runtime this app actually deploys to - rather than the reference engine's
  * own busboy-based parser (`uploads/fetchAPI-multipart/processMultipart.js`,
  * Node-stream-specific and not something this app's Workers runtime can
  * run), per this project's standing zero-new-runtime-dependencies rule.
  *
- * Bracket-notation nested fields (real Payload's own `uploads/
- * fetchAPI-multipart/processNested.js`) are NOT reproduced - real Payload
+ * Bracket-notation nested fields (the reference engine's own `uploads/
+ * fetchAPI-multipart/processNested.js`) are NOT reproduced - the reference engine
  * itself only applies that parsing when a caller opts in (`parseNested`,
  * default `false`, confirmed in `fetchAPI-multipart/index.js`), and this
  * app's only upload collection (`media`) has no field that would ever need
@@ -353,14 +353,14 @@ async function readMultipartBody(request: Request): Promise<{ data: Record<strin
   const formData = await request.formData()
 
   let data: Record<string, unknown> = {}
-  const payloadField = formData.get('_payload')
-  if (typeof payloadField === 'string') {
+  const dataField = formData.get('_data')
+  if (typeof dataField === 'string') {
     try {
-      const parsed: unknown = JSON.parse(payloadField)
+      const parsed: unknown = JSON.parse(dataField)
       if (typeof parsed === 'object' && parsed !== null) data = parsed as Record<string, unknown>
     } catch {
       // Matches readJsonBody's own defensive fallback - a malformed
-      // `_payload` value is treated as "no fields", not a thrown error.
+      // `_data` value is treated as "no fields", not a thrown error.
     }
   }
 
@@ -384,9 +384,9 @@ async function readMultipartBody(request: Request): Promise<{ data: Record<strin
  * everything else. Originally written (and named `readCreateOrUpdateBody`)
  * for just `handleCreate`/`handleUpdateByID`, on the assumption that only a
  * real file upload would ever arrive as multipart. That assumption was
- * wrong: `@payloadcms/ui`'s generic `<Form>` component - confirmed by
- * reading `node_modules/@payloadcms/ui/dist/forms/Form/index.js` directly -
- * ALWAYS submits via `createFormData()` (`_payload: JSON.stringify(data)`
+ * wrong: `the vendor package`'s generic `<Form>` component - confirmed by
+ * reading `the vendor source` directly -
+ * ALWAYS submits via `createFormData()` (`_data: JSON.stringify(data)`
  * plus a `file` field only when the doc's collection is upload-enabled AND a
  * file was picked), for every form it renders: collection create/update,
  * GLOBAL update, and - this is what actually broke production - the admin
@@ -411,10 +411,10 @@ async function readRequestBody(request: Request): Promise<{ data: Record<string,
 // `overrideAccess: false` on every REST-facing read below (What's left #2's
 // Addresses fix surfaced this live 2026-09-26 - see incident log): this
 // app's own Local API defaults `overrideAccess` to `true` when unset,
-// deliberately mirroring real Payload's own Local API default for TRUSTED
+// deliberately mirroring the reference engine's own Local API default for TRUSTED
 // server-side callers (`read-operations.ts`'s file header, point 1). A REST
 // request is the untrusted, caller-facing side and must explicitly opt back
-// INTO access enforcement, exactly like real Payload's own generated REST
+// INTO access enforcement, exactly like the reference engine's own generated REST
 // route handlers do - omitting it here silently skipped every collection's
 // `access.read` (both collection- and field-level, `overrideAccess` gates
 // both) for every GET, confirmed live via an anonymous request returning a
@@ -465,26 +465,26 @@ async function handleUpdateByID(engine: Engine, collection: string, id: number, 
 }
 
 /**
- * `PATCH /api/<collection>` (no id) - real Payload's own bulk update,
- * reproduced from `payload/dist/collections/{endpoints,operations}/update.js`
+ * `PATCH /api/<collection>` (no id) - the reference engine's own bulk update,
+ * reproduced from the vendor source
  * (read directly from `node_modules` to confirm wire shape). `where` is
- * REQUIRED - real Payload throws a 400 `APIError` for a missing/falsy
+ * REQUIRED - the reference engine throws a 400 `APIError` for a missing/falsy
  * `where`, confirmed at `operations/update.js` ("Missing 'where' query of
  * documents to update."), reproduced here as the same inline 400 this
  * module already uses for its own hand-rolled validation errors (cart
  * handlers above) rather than routing through `errorToResponse` (no local
- * error class carries that exact real-Payload message).
+ * error class carries that exact reference-engine message).
  *
  * Per-doc update failures don't abort the whole batch - each doc is updated
  * independently (`engine.update` one at a time; confirmed unused in this
  * app's own code per the plan doc, so no engine-level bulk primitive exists
- * to call instead), matching real Payload's own `Promise.allSettled`-style
+ * to call instead), matching the reference engine's own `Promise.allSettled`-style
  * per-doc error collection: a failed doc's error goes in `errors` (this
- * module's own generic `{message}` shape, not real Payload's full
+ * module's own generic `{message}` shape, not the reference engine's full
  * `{id, isPublic, message}` - the `isPublic` flag has no equivalent among
  * this app's own error classes, and no known caller reads it). Overall
  * status is 200 if every matched doc succeeded, 400 if any failed - matching
- * real Payload's own `result.errors.length > 0` branch. Zero matched docs is
+ * the reference engine's own `result.errors.length > 0` branch. Zero matched docs is
  * still a 200 with empty `docs`/`errors`, not an error.
  */
 async function handleBulkUpdate(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
@@ -510,7 +510,7 @@ async function handleBulkUpdate(engine: Engine, collection: string, request: Req
   return Response.json({ docs, errors, message }, { status })
 }
 
-/** `GET /api/media/file/:filename` - real Payload's own `getFile.js` handler, reproduced for this app's one upload collection. No access check here: see `./storage.ts`'s own header for why `media`'s unconditional `access.read: () => true` means real Payload's own `checkFileAccess` short-circuits to "allowed, no doc lookup" for it. `getMediaObjectResponse` does the actual R2 fetch/range/headers work; this handler only maps its `null` ("no such object") to a 404 in this module's own error-envelope shape. */
+/** `GET /api/media/file/:filename` - the reference engine's own `getFile.js` handler, reproduced for this app's one upload collection. No access check here: see `./storage.ts`'s own header for why `media`'s unconditional `access.read: () => true` means the reference engine's own `checkFileAccess` short-circuits to "allowed, no doc lookup" for it. `getMediaObjectResponse` does the actual R2 fetch/range/headers work; this handler only maps its `null` ("no such object") to a 404 in this module's own error-envelope shape. */
 async function handleGetMediaFile(filename: string, request: Request): Promise<Response> {
   const response = await getMediaObjectResponse(filename, request)
   if (!response) return Response.json({ errors: [{ name: 'NotFound', message: 'Not Found' }] }, { status: 404 })
@@ -522,7 +522,7 @@ async function handleDeleteByID(engine: Engine, collection: string, id: number, 
   return Response.json({ doc, message: 'Deleted successfully.' }, { status: 200 })
 }
 
-/** `DELETE /api/<collection>` (no id) - real Payload's own bulk delete, same shape/rationale as `handleBulkUpdate` above (see its doc comment): `where` required (400 if missing), per-doc `engine.delete` calls collected into `docs`/`errors`, 200 unless any doc failed. */
+/** `DELETE /api/<collection>` (no id) - the reference engine's own bulk delete, same shape/rationale as `handleBulkUpdate` above (see its doc comment): `where` required (400 if missing), per-doc `engine.delete` calls collected into `docs`/`errors`, 200 unless any doc failed. */
 async function handleBulkDelete(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const query = parseSearchParams(new URL(request.url).searchParams)
   if (!query.where) {
@@ -546,12 +546,12 @@ async function handleBulkDelete(engine: Engine, collection: string, request: Req
 }
 
 /**
- * `POST /api/<collection>/:id/duplicate` - real Payload's own duplicate
- * endpoint, reproduced from `payload/dist/collections/endpoints/duplicate.js`
+ * `POST /api/<collection>/:id/duplicate` - the reference engine's own duplicate
+ * endpoint, reproduced from the vendor source
  * (read directly from `node_modules` to confirm the wire shape below).
  *
- * `applyBeforeDuplicate` reproduces real Payload's DEFAULT `beforeDuplicate`
- * field hook (`payload/dist/fields/setDefaultBeforeDuplicate.js`), which is
+ * `applyBeforeDuplicate` reproduces the reference engine's DEFAULT `beforeDuplicate`
+ * field hook (the vendor source), which is
  * the only variant this app needs: grepped every field literal under `src/`
  * for a custom `hooks.beforeDuplicate` - none declare one, so only the
  * default behavior ever applies. That default only touches `unique` fields
@@ -567,15 +567,15 @@ async function handleBulkDelete(engine: Engine, collection: string, request: Req
  *
  * `readRegistry.collections[slug].config` is typed as the narrower
  * `ReadEntityConfig`, but the actual object at runtime IS the real,
- * sanitized Payload collection config (same object `admin/auth.ts`'s own
+ * sanitized the original engine collection config (same object `admin/auth.ts`'s own
  * `allCollectionConfigs` casts for the same reason - see that file's
  * header) - safe to cast to `FieldConfigLike[]` here to read `.unique`,
  * which `ReadEntityConfig`'s own field type doesn't declare.
  *
- * Message text doesn't chase real Payload's exact translated string
+ * Message text doesn't chase the reference engine's exact translated string
  * (`general:successfullyDuplicated`) - this module already uses its own
  * terse messages for create/update/delete (see those handlers above), not
- * real Payload's i18n keys, so duplicate matches that existing convention
+ * the reference engine's i18n keys, so duplicate matches that existing convention
  * instead of introducing a one-off exact-string dependency.
  */
 const UNIQUE_STRING_TYPES = new Set(['code', 'json', 'text', 'textarea'])
@@ -625,7 +625,7 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
   delete data.createdAt
   delete data.updatedAt
   // A fresh doc gets its own draft/published state via the `draft: true`
-  // passed to `engine.create` below (matching real Payload's own default),
+  // passed to `engine.create` below (matching the reference engine's own default),
   // not the source doc's copied `_status`.
   delete data._status
 
@@ -640,7 +640,7 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
 /* /api/access (root), POST /api/<collection>/access/:id?, POST               */
 /* /api/globals/<slug>/access - Stage 7                                       */
 /*                                                                            */
-/* Reproduced from `payload/dist/auth/{endpoints,operations}/access.js`,      */
+/* Reproduced from the vendor source,      */
 /* `auth/getAccessResults.js`, `utilities/getEntityPermissions/               */
 /* {getEntityPermissions,populateFieldPermissions}.js`,                       */
 /* `utilities/sanitizePermissions.js`, `collections/endpoints/docAccess.js`,  */
@@ -656,7 +656,7 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
 /* `POST /api/globals/<slug>/access` (no id - globals are singletons).        */
 /*                                                                            */
 /* Default when an entity/field declares NO access function for an operation */
-/* is `isLoggedIn` (real Payload's own default, confirmed in                 */
+/* is `isLoggedIn` (the reference engine's own default, confirmed in                 */
 /* `getEntityPermissions.js` - NOT unconditional `true`, and deliberately    */
 /* NOT this module's own `admin/auth.ts`'s `evaluateAccess` helper, which     */
 /* defaults to `true` for a different, narrower caller). A field WITH no      */
@@ -665,7 +665,7 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
 /* `populateFieldPermissions.js`.                                            */
 /*                                                                            */
 /* An access function that returns a `Where` query object (rather than a     */
-/* plain boolean) is, per real Payload's own `processWhereQuery`, resolved   */
+/* plain boolean) is, per the reference engine's own `processWhereQuery`, resolved   */
 /* against the actual document ONLY when `fetchData` is true (the id-present */
 /* per-collection/global case) - otherwise (root, and the no-id per-         */
 /* collection case) it's left unresolved as `{permission: true, where}`.     */
@@ -679,8 +679,8 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
 /* already reproduces exactly).                                              */
 /* -------------------------------------------------------------------------- */
 
-/** A real Payload access function's call shape, as every access fn in this app's own `src/collections/*`/`src/globals/*` configs is already written against (`({req}) => ...`, occasionally reading `id`/`data` too - real Payload's full signature is `({req, id, data, siblingData})`, this module only ever needs `req`/`id`/`data`). */
-type AccessFn = (args: { req: { user: unknown; payload: Engine }; id?: unknown; data?: unknown }) => unknown
+/** A the reference engine access function's call shape, as every access fn in this app's own `src/collections/*`/`src/globals/*` configs is already written against (`({req}) => ...`, occasionally reading `id`/`data` too - the reference engine's full signature is `({req, id, data, siblingData})`, this module only ever needs `req`/`id`/`data`). */
+type AccessFn = (args: { req: { user: unknown; engine: Engine }; id?: unknown; data?: unknown }) => unknown
 
 type EntityAccessConfigLike = {
   create?: AccessFn
@@ -692,7 +692,7 @@ type EntityAccessConfigLike = {
   admin?: AccessFn
 }
 
-/** A hand-rolled structural mirror of real Payload's `Field` type, scoped to exactly what this module's field-permission recursion needs (name/type/nesting/`access`) - same "structural mirror, not an import" convention as `./operations.ts`'s own `FieldConfigLike` (see that type's doc comment), just widened with `access` and `tabs`, neither of which `FieldConfigLike` declares (that type was built for `applyBeforeDuplicate`'s narrower needs). */
+/** A hand-rolled structural mirror of the reference engine's `Field` type, scoped to exactly what this module's field-permission recursion needs (name/type/nesting/`access`) - same "structural mirror, not an import" convention as `./operations.ts`'s own `FieldConfigLike` (see that type's doc comment), just widened with `access` and `tabs`, neither of which `FieldConfigLike` declares (that type was built for `applyBeforeDuplicate`'s narrower needs). */
 type AccessFieldLike = {
   name?: string
   type: string
@@ -717,7 +717,7 @@ async function callAccessFn(fn: AccessFn | undefined, isLoggedIn: boolean, id: u
   if (typeof fn !== 'function') return { permission: isLoggedIn }
   let result: unknown
   try {
-    result = await fn({ req: { user, payload: engine }, id, data })
+    result = await fn({ req: { user, engine }, id, data })
   } catch {
     return { permission: false }
   }
@@ -726,14 +726,14 @@ async function callAccessFn(fn: AccessFn | undefined, isLoggedIn: boolean, id: u
   return { permission: Boolean(result) }
 }
 
-/** Real Payload's `sanitizePermissions.js` wire value for one resolved operation: omitted entirely (`undefined`) when denied, literal `true` when allowed with no `where` restriction, or the unresolved `{permission: true, where}` object when allowed-with-a-where (see this section's header comment). */
+/** The reference engine's `sanitizePermissions.js` wire value for one resolved operation: omitted entirely (`undefined`) when denied, literal `true` when allowed with no `where` restriction, or the unresolved `{permission: true, where}` object when allowed-with-a-where (see this section's header comment). */
 function accessPermissionValue(result: AccessResult): true | { permission: true; where: Where } | undefined {
   if (!result.permission) return undefined
   if (result.where) return { permission: true, where: result.where }
   return true
 }
 
-/** A `fields`/`blocks` container collapses to literal `true` (real Payload's own `sanitizePermissions.js` behavior) only when it has at least one entry and every entry is itself literal `true`. */
+/** A `fields`/`blocks` container collapses to literal `true` (the reference engine's own `sanitizePermissions.js` behavior) only when it has at least one entry and every entry is itself literal `true`. */
 function collapseIfAllTrue(obj: Record<string, unknown>): Record<string, unknown> | true {
   const keys = Object.keys(obj)
   if (keys.length > 0 && keys.every((k) => obj[k] === true)) return true
@@ -748,7 +748,7 @@ function collapseIfAllTrue(obj: Record<string, unknown>): Record<string, unknown
  * output); named `group`/`array` fields nest under `fields`; `blocks` fields
  * nest per-block-slug under `blocks`; named `tabs` nest like a named group,
  * unnamed tabs recurse transparently. `delete`/`readVersions`/`unlock` are
- * never field-level operations (real Payload's own `continue` for those -
+ * never field-level operations (the reference engine's own `continue` for those -
  * confirmed reading the source) - only `create`/`read`/`update` reach here.
  */
 async function buildFieldPermissions(fields: AccessFieldLike[], operations: string[], parent: Record<string, AccessResult>, data: unknown, user: unknown, engine: Engine): Promise<Record<string, unknown>> {
@@ -878,7 +878,7 @@ async function handleAccessRoot(engine: Engine, user: unknown): Promise<Response
   return Response.json(body, { status: 200 })
 }
 
-/** Best-effort parse of a POST body's JSON `data` object - real Payload's `req.data`, used by access functions that read doc/sibling values. A missing/unparseable body is `undefined`, not an error (matching `docAccessOperation`'s own `hasData` check falling through to a DB fetch instead of throwing). */
+/** Best-effort parse of a POST body's JSON `data` object - the reference engine's `req.data`, used by access functions that read doc/sibling values. A missing/unparseable body is `undefined`, not an error (matching `docAccessOperation`'s own `hasData` check falling through to a DB fetch instead of throwing). */
 async function parseAccessRequestData(request: Request): Promise<unknown> {
   try {
     const body = await request.clone().json()
@@ -888,7 +888,7 @@ async function parseAccessRequestData(request: Request): Promise<unknown> {
   }
 }
 
-/** `POST /api/<collection>/access/:id?` - `id` is OPTIONAL (real Payload's own route is `/access/:id?`, confirmed in `collections/endpoints/docAccess.js`): the no-id case is how the real admin UI checks "can I create a new one at all" (`fetchData: false` in real Payload). When `id` is present and the POST body carried no usable `data`, this fetches the real doc (`overrideAccess: true`, matching real Payload's own fallback fetch) so field-level access functions that read doc values still see them - see this section's header comment for the one documented `Where`-object fidelity gap. */
+/** `POST /api/<collection>/access/:id?` - `id` is OPTIONAL (the reference engine's own route is `/access/:id?`, confirmed in `collections/endpoints/docAccess.js`): the no-id case is how the real admin UI checks "can I create a new one at all" (`fetchData: false` in the reference engine). When `id` is present and the POST body carried no usable `data`, this fetches the real doc (`overrideAccess: true`, matching the reference engine's own fallback fetch) so field-level access functions that read doc values still see them - see this section's header comment for the one documented `Where`-object fidelity gap. */
 async function handleCollectionAccess(engine: Engine, collection: string, id: number | undefined, request: Request, user: unknown): Promise<Response> {
   const config = readRegistry.collections[collection]?.config as unknown as AccessEntityConfigLike
   let data = await parseAccessRequestData(request)
@@ -899,7 +899,7 @@ async function handleCollectionAccess(engine: Engine, collection: string, id: nu
   return Response.json(result, { status: 200 })
 }
 
-/** `POST /api/globals/<slug>/access` - globals are singletons, so real Payload always fetches the current doc (`fetchData: true` unconditionally, confirmed in `globals/endpoints/docAccess.js`) unless the POST body already carried usable `data`. */
+/** `POST /api/globals/<slug>/access` - globals are singletons, so the reference engine always fetches the current doc (`fetchData: true` unconditionally, confirmed in `globals/endpoints/docAccess.js`) unless the POST body already carried usable `data`. */
 async function handleGlobalAccess(engine: Engine, globalSlug: string, request: Request, user: unknown): Promise<Response> {
   const config = readRegistry.globals[globalSlug]?.config as unknown as AccessEntityConfigLike
   let data = await parseAccessRequestData(request)
@@ -915,7 +915,7 @@ async function handleGlobalAccess(engine: Engine, globalSlug: string, request: R
 /* Cart item endpoints (Stage 10 Ecommerce, Layer 2 remainder)                */
 /*                                                                            */
 /* Reproduced from the real ecommerce plugin's 5 cart endpoints              */
-/* (`@payloadcms/plugin-ecommerce@3.88.0`'s `collections/carts/endpoints/*`  */
+/* (`the vendor package@3.88.0`'s `collections/carts/endpoints/*`  */
 /* + `collections/carts/operations/*`, read directly from `node_modules` to  */
 /* confirm exact request/response shapes, validation messages, and status   */
 /* codes below). Simplified for this app's shop config (`engage.config.ts`: */
@@ -1101,7 +1101,7 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
 /* `payments/adapters/stripe/endpoints/webhooks.js` - this one route serves  */
 /* the UNRELATED membership-subscription flow (`@/features/members/          */
 /* webhooks.ts`'s `membershipWebhooks`), not cart checkout, and used to be   */
-/* deliberately left to real Payload's own `stripeAdapter()` registration    */
+/* deliberately left to the reference engine's own `stripeAdapter()` registration    */
 /* for exactly that reason. Now reproduced here too - see                   */
 /* `handlePaymentsStripeWebhooks` below and `stripeAdapter.ts`'s header.     */
 /*                                                                            */
@@ -1112,7 +1112,7 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
 /*    `priceIn${currency}` lookup or supported-currency-list check.         */
 /*  - the real endpoint falls back to `user.cart.docs[0]` when `cartID` is  */
 /*    omitted from the body - this app's actual client (`usePayments()`,    */
-/*    `@payloadcms/plugin-ecommerce/client/react`, read directly to confirm */
+/*    `the vendor package`, read directly to confirm */
 /*    the exact request body shape) always sends `cartID` explicitly, so    */
 /*    that branch is dead code for this app and is not reproduced.          */
 /* -------------------------------------------------------------------------- */
@@ -1229,12 +1229,12 @@ async function handlePaymentsStripeConfirmOrder(engine: Engine, request: Request
  * `STRIPE_SECRET_KEY` aren't both configured (e.g. this sandbox, where both
  * are blank) the whole body is skipped and this always answers `{received:
  * true}` at 200, matching the real handler's own early-exit shape. Dispatch
- * to `membershipWebhooks[event.type]` uses the same `{req: {payload:
+ * to `membershipWebhooks[event.type]` uses the same `{req: {engine:
  * engine}}` minimal-shape cast this codebase already uses to call a
- * real-Payload-typed function from the engine layer (see
+ * reference-engine-typed function from the engine layer (see
  * `src/admin/auth.ts`'s `evaluateAccess`) rather than casting a fake object
- * through `EngineRequest` (real Payload's `PayloadRequest`) - `req` here is
- * never touched except via `.payload`.
+ * through `EngineRequest` (the reference engine's `EngineRequest`) - `req` here is
+ * never touched except via `.engine`.
  */
 async function handlePaymentsStripeWebhooks(engine: Engine, request: Request): Promise<Response> {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -1257,10 +1257,10 @@ async function handlePaymentsStripeWebhooks(engine: Engine, request: Request): P
 
       if (event) {
         const handler = membershipWebhooks[event.type as keyof typeof membershipWebhooks] as unknown as
-          | ((args: { event: Stripe.Event; req: { payload: Engine }; stripe: Stripe }) => Promise<void>)
+          | ((args: { event: Stripe.Event; req: { engine: Engine }; stripe: Stripe }) => Promise<void>)
           | undefined
         if (typeof handler === 'function') {
-          await handler({ event, req: { payload: engine }, stripe })
+          await handler({ event, req: { engine }, stripe })
         }
       }
     }
@@ -1295,8 +1295,8 @@ async function handleGlobalUpdate(engine: Engine, slug: string, request: Request
  *
  * **Live-production bug fixed here (2026-09-18)**: this handler used to call
  * `readJsonBody` directly. The admin panel's own login page - like every
- * page built on `@payloadcms/ui`'s generic `<Form>` component - submits as
- * `multipart/form-data` (a `_payload` field holding the JSON-stringified
+ * page built on `the vendor package`'s generic `<Form>` component - submits as
+ * `multipart/form-data` (a `_data` field holding the JSON-stringified
  * `{email, password}`), never `application/json` - see `readRequestBody`'s
  * own doc comment for the full citation. `request.json()` on a multipart
  * body throws, which surfaced to a real user as a bare, unmapped 500 - easily
@@ -1313,7 +1313,7 @@ async function handleLogin(engine: Engine, collection: string, request: Request)
   return Response.json({ message: 'Authentication Passed', ...result }, { status: 200, headers })
 }
 
-/** `POST /logout` - `{message: 'Logout successful.'}` plus an expired `Set-Cookie` (`auth/endpoints/logout.js`, `authentication:logoutSuccessful`). This app's own `./auth.ts`'s `logout()` never throws (an already-invalid/missing token is a no-op success, by design - see its own doc comment), so there is no failure branch to reproduce from real Payload's own `error:logoutFailed` 400 case. */
+/** `POST /logout` - `{message: 'Logout successful.'}` plus an expired `Set-Cookie` (`auth/endpoints/logout.js`, `authentication:logoutSuccessful`). This app's own `./auth.ts`'s `logout()` never throws (an already-invalid/missing token is a no-op success, by design - see its own doc comment), so there is no failure branch to reproduce from the reference engine's own `error:logoutFailed` 400 case. */
 async function handleLogout(engine: Engine, collection: string, request: Request): Promise<Response> {
   const url = new URL(request.url)
   await engine.logout({ collection, headers: request.headers, allSessions: url.searchParams.get('allSessions') === 'true' })
@@ -1322,7 +1322,7 @@ async function handleLogout(engine: Engine, collection: string, request: Request
   return Response.json({ message: 'Logout successful.' }, { status: 200, headers })
 }
 
-/** `GET /me` - `{user, message: 'Account'}`, plus `token`/`exp` when authenticated (`auth/endpoints/me.js`, `authentication:account`). Built from `engine.auth()` (this module's own equivalent of real Payload's strategy-already-ran `req.user`) rather than a dedicated `engine.me()` - no such member exists on `Engine` (see `./engine.ts`'s own confirmed 16-member interface), and `verifyAuth`'s own return value is already exactly what real `meOperation` computes for `result.user` in the one-token-one-collection case this app has. */
+/** `GET /me` - `{user, message: 'Account'}`, plus `token`/`exp` when authenticated (`auth/endpoints/me.js`, `authentication:account`). Built from `engine.auth()` (this module's own equivalent of the reference engine's strategy-already-ran `req.user`) rather than a dedicated `engine.me()` - no such member exists on `Engine` (see `./engine.ts`'s own confirmed 16-member interface), and `verifyAuth`'s own return value is already exactly what real `meOperation` computes for `result.user` in the one-token-one-collection case this app has. */
 async function handleMe(engine: Engine, request: Request): Promise<Response> {
   const { user } = await engine.auth({ headers: request.headers })
   const body: Record<string, unknown> = { user, message: 'Account' }
@@ -1342,7 +1342,7 @@ async function handleMe(engine: Engine, request: Request): Promise<Response> {
   return Response.json(body, { status: 200 })
 }
 
-/** `POST /refresh-token` - `{message: 'Token refresh successful.', exp, refreshedToken, setCookie, strategy, user}` plus a `Set-Cookie` when `setCookie` is true (`auth/endpoints/refresh.js`, `authentication:tokenRefreshSuccessful`). `Engine['refreshToken']`'s own return field is named `token` (this app's own naming, confirmed in `./engine.ts`), renamed to the real wire field `refreshedToken` here - the one field-name translation this handler does between the engine layer and the real REST wire shape. `strategy` is always the literal `'local-jwt'` for a password-based session, matching real Payload's own `_strategy` value confirmed throughout Stage 7's ground-truth research. */
+/** `POST /refresh-token` - `{message: 'Token refresh successful.', exp, refreshedToken, setCookie, strategy, user}` plus a `Set-Cookie` when `setCookie` is true (`auth/endpoints/refresh.js`, `authentication:tokenRefreshSuccessful`). `Engine['refreshToken']`'s own return field is named `token` (this app's own naming, confirmed in `./engine.ts`), renamed to the real wire field `refreshedToken` here - the one field-name translation this handler does between the engine layer and the real REST wire shape. `strategy` is always the literal `'local-jwt'` for a password-based session, matching the reference engine's own `_strategy` value confirmed throughout Stage 7's ground-truth research. */
 async function handleRefreshToken(engine: Engine, collection: string, request: Request): Promise<Response> {
   const result = await engine.refreshToken({ collection, headers: request.headers })
   const headers = new Headers()
@@ -1350,7 +1350,7 @@ async function handleRefreshToken(engine: Engine, collection: string, request: R
   return Response.json({ message: 'Token refresh successful.', exp: result.exp, refreshedToken: result.token, setCookie: result.setCookie, strategy: 'local-jwt', user: result.user }, { status: 200, headers })
 }
 
-/** `POST /forgot-password` - always `{message: 'Success'}` at 200, whether or not the email matches a real user (real Payload's own `forgotPasswordHandler` never branches on the operation's own result - by design, so a caller can't use this endpoint to enumerate valid emails; `./auth.ts`'s own `forgotPassword()` already returns `null` rather than throwing for an unknown email, matching this). */
+/** `POST /forgot-password` - always `{message: 'Success'}` at 200, whether or not the email matches a real user (the reference engine's own `forgotPasswordHandler` never branches on the operation's own result - by design, so a caller can't use this endpoint to enumerate valid emails; `./auth.ts`'s own `forgotPassword()` already returns `null` rather than throwing for an unknown email, matching this). */
 async function handleForgotPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
   await engine.forgotPassword({ collection, data: { email: stringField(data, 'email') } })
@@ -1372,21 +1372,21 @@ async function handleResetPassword(engine: Engine, collection: string, request: 
  * `unlockUser()` throws `AuthenticationError` for an unknown email (401, via
  * `errorToResponse`) and a bare `Error` for a missing email (falls through
  * `errorToResponse`'s generic 500 case - a documented, minor gap: real
- * Payload's own equivalent validation failure would be a 400, not a 500, but
+ * The original engine's own equivalent validation failure would be a 400, not a 500, but
  * this is only reachable via a malformed request with no email field at all,
  * not a real client flow).
  *
- * **Access check, added after a real-Payload REST parity test caught its
+ * **Access check, added after a reference-engine REST parity test caught its
  * absence**: `unlockOperation` (`auth/operations/unlock.js`) runs
  * `executeAccess({req}, collectionConfig.access.unlock)` at the REST layer
  * (unlike this app's own `engine.unlock` Local API wrapper, which - like
  * every other Local API call in this project - defaults `overrideAccess` to
  * bypass it). This app's `users` collection (`src/collections/Users.ts`)
- * does not define its own `access.unlock`, so real Payload's sanitize step
+ * does not define its own `access.unlock`, so the reference engine's sanitize step
  * fills in its own default, `auth/defaultAccess.js`: `({req:{user}}) =>
  * Boolean(user)` - ANY authenticated user (not admin-only) may unlock ANY
  * account, but an anonymous request is denied with 403. Confirmed
- * empirically: an anonymous `POST /api/users/unlock` against real Payload's
+ * empirically: an anonymous `POST /api/users/unlock` against the reference engine's
  * own REST route returns 403, not 200. Reproduced here with the same
  * `Boolean(user)` check via `Forbidden`, since `readRegistry`'s narrow
  * `ReadEntityConfig` (`{slug, fields, access?}` - see `./read-operations.ts`)
@@ -1411,8 +1411,7 @@ const AUTH_ROUTE_NAMES = new Set(['login', 'logout', 'me', 'refresh-token', 'for
 /* Versions: GET /:c/versions, GET /:c/versions/:id, POST /:c/versions/:id    */
 /* -------------------------------------------------------------------------- */
 //
-// Real Payload's `payload/dist/collections/endpoints/{findVersions,
-// findVersionByID,restoreVersion}.js`, reproduced for the 5 collections that
+// The reference engine's the vendor source, reproduced for the 5 collections that
 // declare `versions.drafts` (see `versionsRegistry`); every other collection
 // falls through (`null`) since it has no versions at all. Wire shapes:
 //   - a version doc: `{id, parent, version: {...docFields, createdAt,
@@ -1422,7 +1421,7 @@ const AUTH_ROUTE_NAMES = new Set(['login', 'logout', 'me', 'refresh-token', 'for
 //   - list: the usual paginated envelope, default sort `-updatedAt`, default
 //     limit 10.
 //   - restore: `{...restoredDoc, message}` (flat, unlike create/update's
-//     `{doc, message}`) - real Payload's collection restore shape.
+//     `{doc, message}`) - the reference engine's collection restore shape.
 //
 // DOCUMENTED SIMPLIFICATIONS (all deliberate, none reachable from this app's
 // own callers - the admin UI's version views are not built here yet):
@@ -1586,7 +1585,7 @@ async function handleRestoreVersion(engine: Engine, collection: string, versionI
  * this module (an unrecognized collection/global slug, or a recognized one
  * but a route this stage deliberately defers - see this file's header) so a
  * caller (the future hybrid-dispatcher route file) can fall through to real
- * Payload's own REST handlers. `engine` defaults to a freshly-built
+ * The original engine's own REST handlers. `engine` defaults to a freshly-built
  * `createEngine()` (cheap and synchronous, per `./engine.ts`'s own doc
  * comment) but is injectable for tests, the same dependency-injection
  * pattern this module's own dependencies (`./read-operations.ts`'s
@@ -1614,7 +1613,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       return null
     }
 
-    // Root `GET /api/access` - real Payload's own root endpoint (no
+    // Root `GET /api/access` - the reference engine's own root endpoint (no
     // `collections`/`globals` prefix, not gated on a recognized collection
     // slug), needs no auth (works anonymously, see `handleAccessRoot`'s doc
     // comment).
@@ -1623,7 +1622,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       return await handleAccessRoot(engine, user)
     }
 
-    // `payments` is not a collection or global slug - a real Payload
+    // `payments` is not a collection or global slug - a the reference engine
     // custom top-level endpoint (`config.endpoints`), fully reproduced here
     // now including `webhooks` - see the handler functions' own header
     // comments. `webhooks` is checked first and deliberately skips

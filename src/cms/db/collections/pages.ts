@@ -15,14 +15,14 @@ import {
   pagesVersionsRelsTargetColumns,
 } from '../schema'
 
-/** One block instance as Payload's own API returns it - see ./pageTemplates.ts's PageTemplateBlock doc comment, same idea. */
+/** One block instance as the original engine's own API returns it - see ./pageTemplates.ts's PageTemplateBlock doc comment, same idea. */
 export type PageBlock = {
   id: string
   blockType: string
   blockName?: string | null
 } & Record<string, unknown>
 
-/** Payload's document shape for the `pages` collection - see src/collections/Pages.ts. */
+/** The original engine's document shape for the `pages` collection - see src/collections/Pages.ts. */
 export type PageDoc = {
   id: number
   title: string
@@ -103,7 +103,7 @@ export const createPageVersion = versionsOps.createVersion as unknown as (
 // Plain baseOps exports for engageD1Adapter's dispatch - same double-write
 // landmine and fix as events.ts's own comment above its equivalent block
 // (see that comment for the full explanation, confirmed against
-// payload/dist/collections/operations/create.js:194-221). adapter.count and
+// engine/dist/collections/operations/create.js:194-221). adapter.count and
 // adapter.deleteOne reuse the existing countPages/deletePage above unchanged
 // (createDraftOps doesn't override count/deleteByID).
 export const findPagesPaginated = baseOps.findPaginated as unknown as (args?: {

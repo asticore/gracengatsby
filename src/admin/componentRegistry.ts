@@ -11,10 +11,10 @@
  * it imports - ends up in the browser bundle. It must therefore hold ONLY client-safe
  * field widgets, never a server admin view (Dashboard/TranslationsView/DatabaseView/
  * ABResultsView all read the database directly) or anything else that pulls in real
- * `payload`'s own Node-only internals (pino-pretty, migrations, `node:assert`, ...).
+ * `engine`'s own Node-only internals (pino-pretty, migrations, `node:assert`, ...).
  * That split used to be a single file with everything in it, which - once EditForm.tsx
  * gave FieldRenderer a real path into an actual page's build graph - broke the client
- * bundle outright (`ABResultsView` -> `@/lib/engine` -> real `payload` -> Node-only
+ * bundle outright (`ABResultsView` -> `@/lib/engine` -> real `engine` -> Node-only
  * deps, none of which webpack can put in a browser bundle). See `./adminViewRegistry.ts`
  * for the server-only counterpart (`CUSTOM_ADMIN_VIEWS`, consumed only by the server
  * component `./views/RootPage.tsx`) - nothing in this file should ever import from it,

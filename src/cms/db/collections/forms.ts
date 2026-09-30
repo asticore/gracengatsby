@@ -32,7 +32,7 @@ export type FormFieldRow = {
   conditional?: { enabled?: boolean | null; action?: string | null; match?: string | null; rules?: FormFieldConditionalRuleRow[] | null } | null
 }
 
-/** Payload's document shape for the `forms` collection - see src/features/forms/collections/Forms.ts. `settings`/`notification`/`confirmation`/`spam`/`payment` are top-level groups flattened onto eg_forms via the already-proven top-level group mechanism; `payment.product` is a single-target relationship inside one of them, same mechanism as any other single-target relationship inside a group. */
+/** The original engine's document shape for the `forms` collection - see src/features/forms/collections/Forms.ts. `settings`/`notification`/`confirmation`/`spam`/`payment` are top-level groups flattened onto eg_forms via the already-proven top-level group mechanism; `payment.product` is a single-target relationship inside one of them, same mechanism as any other single-target relationship inside a group. */
 export type FormDoc = {
   id: number
   title: string

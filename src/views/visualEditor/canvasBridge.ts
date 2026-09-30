@@ -6,7 +6,7 @@ import type { NodePath } from './treeOps'
  * The canvas iframe (src/app/(frontend)/visual-editor-canvas) renders the
  * block tree with the site's own styles.css and Header/Footer, so what you
  * see while editing is pixel-exact with the live page - loading that CSS into
- * the same document as the Payload admin UI would corrupt it instead (the
+ * the same document as the the original engine admin UI would corrupt it instead (the
  * stylesheet resets `body`, `h1`, buttons, etc. with bare selectors, no
  * scoping). An iframe is the only boundary that keeps the two safely apart.
  *

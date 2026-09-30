@@ -51,8 +51,12 @@
      used to compute this from these same two inputs - dropping that
      stylesheet means computing it ourselves, not dropping the formula every
      already-written admin screen's arbitrary-value classes rely on). */
+  /* --base is 17px. The divisor is the browser's root font size (16px, since
+     nothing in the admin overrides it), so the unit comes out at exactly
+     17px. It was 12.5 before, which made --base ~21.8px and inflated every
+     title, body line and gap by about 28%. */
   --base-px: 17;
-  --base-body-size: 12.5;
+  --base-body-size: 16;
   --base: calc((var(--base-px) / var(--base-body-size)) * 1rem);
 
   --gutter-h: 48px;

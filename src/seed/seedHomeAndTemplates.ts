@@ -42,6 +42,7 @@ export async function seedHomeAndTemplates(
   // ---- Home page ----
   const { totalDocs: homepageCount } = await engine.find({
     collection: 'pages',
+    overrideAccess: true,
     where: { isHomepage: { equals: true } },
     limit: 1,
     depth: 0,
@@ -50,6 +51,7 @@ export async function seedHomeAndTemplates(
   if (homepageCount === 0) {
     await engine.create({
       collection: 'pages',
+      overrideAccess: true,
       data: {
         title: 'Home',
         slug: 'home',
@@ -97,6 +99,7 @@ export async function seedHomeAndTemplates(
   // ---- Starter Page Templates ----
   const { totalDocs: templateCount } = await engine.find({
     collection: 'page-templates',
+    overrideAccess: true,
     limit: 1,
     depth: 0,
   })
@@ -104,6 +107,7 @@ export async function seedHomeAndTemplates(
   if (templateCount === 0) {
     await engine.create({
       collection: 'page-templates',
+      overrideAccess: true,
       data: {
         name: 'Homepage Starter',
         description: 'Hero, intro copy, a product grid, and a call-to-action banner - a full landing page in one click.',
@@ -125,6 +129,7 @@ export async function seedHomeAndTemplates(
 
     await engine.create({
       collection: 'page-templates',
+      overrideAccess: true,
       data: {
         name: 'About / Story',
         description: 'Hero, a longer story section, and an FAQ - good for About or brand-story pages.',
@@ -143,6 +148,7 @@ export async function seedHomeAndTemplates(
 
     await engine.create({
       collection: 'page-templates',
+      overrideAccess: true,
       data: {
         name: 'Simple Landing',
         description: 'A minimal one-section landing page - hero plus a single call-to-action banner.',

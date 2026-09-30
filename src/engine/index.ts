@@ -66,6 +66,7 @@
  */
 
 import { createEngine, type Engine as LocalEngine } from '@/localapi/engine'
+import { ensureInitialised } from '@/migrations/ensureInitialised'
 
 /* -------------------------------------------------------------------------- */
 /* Core types                                                                  */
@@ -116,4 +117,8 @@ export type {
  * Payload's `getPayload()` - the from-scratch replacement built and proven
  * across Stages 1-6d.
  */
-export const getEngine = async (): Promise<Engine> => createEngine()
+export const getEngine = async (): Promise<Engine> => {
+  const engine = createEngine()
+  await ensureInitialised(engine)
+  return engine
+}

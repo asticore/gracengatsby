@@ -7,11 +7,12 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
-    "deploy": "pnpm run deploy:database && pnpm run deploy:app && pnpm run deploy:migrate && pnpm run deploy:seed",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:full": "pnpm run deploy:database && pnpm run deploy:app && pnpm run deploy:migrate && pnpm run deploy:seed",
     "deploy:app": "opennextjs-cloudflare build --env=$CLOUDFLARE_ENV && opennextjs-cloudflare deploy --env=$CLOUDFLARE_ENV",
-    "deploy:migrate": "curl -sf -X POST https://gracengatsby.com/api/internal-migrate -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Schema call failed (non-fatal) - check /api/internal-migrate manually.'",
-    "deploy:seed": "curl -sf -X POST https://gracengatsby.com/api/internal-seed -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Seed call failed (non-fatal) - check /api/internal-seed manually.'",
-    "deploy:database": "wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part1.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part2.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part3.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --file=./src/migrations/sql/20260822_120859_fix_blocks_rels_tables_part4.sql --env=$CLOUDFLARE_ENV --remote && wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",
+    "deploy:migrate": "curl -sf -X POST ${SITE_URL:-https://gracengatsby.com}/api/internal-migrate -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Schema call failed (non-fatal) - check /api/internal-migrate manually.'",
+    "deploy:seed": "curl -sf -X POST ${SITE_URL:-https://gracengatsby.com}/api/internal-seed -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Seed call failed (non-fatal) - check /api/internal-seed manually.'",
+    "deploy:database": "wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && rm -rf .open-next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:types": "pnpm run generate:types:cloudflare",
@@ -84,7 +85,7 @@
   "cloudflare": {
     "bindings": {
       "ENGAGE_SECRET": {
-        "description": "Signs sessions and encrypts secret settings fields. Generate a random string using `openssl rand -hex 32`. (PAYLOAD_SECRET is derived from this automatically at build time - it does not need its own secret.)"
+        "description": "Signs sessions and encrypts secret settings fields. Generate a random string using `openssl rand -hex 32`."
       },
       "INTERNAL_ROUTE_KEY": {
         "description": "Guards the internal maintenance routes (migrate/seed/backup). Generate with `openssl rand -hex 32`."

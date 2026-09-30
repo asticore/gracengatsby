@@ -17,7 +17,7 @@ let cached: Db | undefined
  * D1. Not the vendor package either way, just the Cloudflare/Next runtime
  * glue this app already depends on everywhere.
  */
-async function resolveD1Binding(): Promise<D1Database> {
+export async function resolveD1Binding(): Promise<D1Database> {
   const isProduction = process.env.NODE_ENV === 'production' && !process.env.VITEST
   if (!isProduction) {
     const { getPlatformProxy } = await import(/* webpackIgnore: true */ `${'__wrangler'.replaceAll('_', '')}`)

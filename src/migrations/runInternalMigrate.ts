@@ -115,6 +115,7 @@ import { migrations as ALL_MIGRATIONS } from '@/migrations'
 
 import { renameTables } from './schema/applyRenames'
 import { applySchemaAdditions } from './schema/applySchema'
+import { BLOCKS_RELS_STATEMENTS } from './schema/blocksRelsTables'
 import { bootstrapEngineTables, type EngineDb } from './schema/engineBootstrap'
 import { ENGINE_TABLE_RENAMES } from './schema/engineTables'
 import { SCHEMA_SETS, withoutRenamedTables } from './schema/freshInstallSchemaSets'
@@ -202,6 +203,26 @@ export async function runInternalMigrate(rawDb: D1Database, logger: EngineLogger
   const renamedAwayBeforeRename = new Set(
     [...TABLE_RENAMES, ...ENGINE_TABLE_RENAMES].filter((entry) => presentBeforeRename.has(entry.to)).map((entry) => entry.from),
   )
+
+  // Step 3b: per-block child tables (formerly the hand-run `deploy:database`
+  // SQL files). Idempotent; statements aimed at a table that has already been
+  // renamed to its `eg_` name are skipped so a migrated database never grows
+  // empty duplicates under the retired names.
+  const blocksErrors: { statement: string; error: string }[] = []
+  let blocksApplied = 0
+  for (const statement of BLOCKS_RELS_STATEMENTS) {
+    const target = statement.match(/^CREATE (?:UNIQUE )?(?:TABLE|INDEX) IF NOT EXISTS `[^`]+`(?: ON `([^`]+)`)?/)
+    const table = statement.startsWith('CREATE TABLE') ? statement.match(/^CREATE TABLE IF NOT EXISTS `([^`]+)`/)?.[1] : target?.[1]
+    if (table && renamedAwayBeforeRename.has(table)) continue
+    try {
+      await rawDb.prepare(statement).run()
+      blocksApplied += 1
+    } catch (err) {
+      blocksErrors.push({ statement: statement.slice(0, 80), error: err instanceof Error ? err.message : String(err) })
+    }
+  }
+  errorCount += blocksErrors.length
+  results['blocks-tables'] = { applied: blocksApplied, errors: blocksErrors }
 
   for (const rawSet of SCHEMA_SETS) {
     const set = withoutRenamedTables(rawSet, renamedAwayBeforeRename)

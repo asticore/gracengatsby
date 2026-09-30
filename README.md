@@ -6,7 +6,7 @@ Editors sign in at `/admin` to build pages, run the shop, publish events and pos
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/asticore/gracengatsby)
 
-Cloudflare provisions the Worker, D1 database and R2 bucket from `wrangler.jsonc` and, per the `cloudflare.bindings` block in `package.json`, prompts for the secrets/vars listed in [Environment variables](#environment-variables) below. `wrangler.jsonc` currently carries this project's own live database ID and bucket name - a new deploy on a different Cloudflare account provisions its own D1/R2 resources with new IDs, per Cloudflare's standard Deploy-to-Workers behavior, but that path has not been exercised end-to-end from this repo, so treat it as unverified until someone runs it. After the first deploy finishes, run the four steps under [Deploying](#deploying) once by hand (`pnpm run deploy`, with your local `.env` filled in and pointed at the new database) so the page-builder schema and starter content land - the button's own build only ships the app, it doesn't run `deploy:database`, `deploy:migrate` or `deploy:seed`.
+Cloudflare provisions the Worker, D1 database and R2 bucket from `wrangler.jsonc` and, per the `cloudflare.bindings` block in `package.json`, prompts for the secrets/vars listed in [Environment variables](#environment-variables) below. `wrangler.jsonc` currently carries this project's own live database ID and bucket name - a new deploy on a different Cloudflare account provisions its own D1/R2 resources with new IDs, per Cloudflare's standard Deploy-to-Workers behavior, but that path has not been exercised end-to-end from this repo, so treat it as unverified until someone runs it. The button's build runs `pnpm run deploy` (OpenNext build + deploy). It needs no manual follow-up: the first request to the new site detects the empty database and runs the full schema migration and starter-content seed by itself (`src/migrations/ensureInitialised.ts`), then `/admin` lets you create the first admin user. Use `pnpm run deploy:full` for later upgrades to an existing database.
 
 ---
 
@@ -33,8 +33,7 @@ Neither group name appears in a URL — parentheses make them organisational onl
 
 ```
 src/
-  engage.config.ts    single source of truth: collections, globals, plugins, admin UI
-  engage-types.ts     GENERATED from the config — never edit, never committed
+  engage-types.ts     content types for collections and globals (committed, edited by hand)
   lib/engine.ts       getEngine(): the initialised CMS client used server-side
   collections/        Pages, Posts, Faqs, Events, EventRSVPs, PageTemplates,
                       FieldGroups, Media, Users
@@ -73,7 +72,7 @@ Wrangler creates local emulated D1 and R2 bindings automatically — no connecti
 | Variable | Required | Notes |
 | -------- | -------- | ----- |
 | `ENGAGE_SECRET` | yes | Signs sessions and encrypts secret settings fields. Generate with `openssl rand -base64 32`. This is the only secret the Cloudflare deploy button asks for. |
-| `PAYLOAD_SECRET` | no | Legacy name for the same secret, read directly by the underlying CMS engine's own CLI (`pnpm cms migrate`/`generate:*`) — that vendor code can't be pointed at `ENGAGE_SECRET`. The `build`/`generate:*`/`cms` scripts now derive it from `ENGAGE_SECRET` automatically when it isn't set, so you don't need to set both. Only set it yourself if you want it to differ from `ENGAGE_SECRET` (not recommended). |
+| `PAYLOAD_SECRET` | no | Legacy fallback for `ENGAGE_SECRET`, read only when `ENGAGE_SECRET` is empty so an older deployment keeps the same signing key. New installs should leave it unset. |
 | `SITE_URL` | for prod | Used by `sitemap.xml`, `robots.txt` and canonical/OG URLs. |
 | `STRIPE_*` | shop only | Leave blank to deploy with the Shop feature off. |
 | `INTERNAL_ROUTE_KEY` | recommended | Guards the four internal maintenance routes (`/api/internal-migrate`, `/api/internal-seed`, `/api/internal-backup-run`, `/api/internal-backup-restore`). Not a hard security boundary — none of those routes can drop or modify data — but worth setting so a stray request can't run up unbounded D1 work. Falls back to a retired default if unset, so an install that hasn't set it yet still works. Generate with `openssl rand -hex 32`. |
@@ -84,15 +83,16 @@ Wrangler creates local emulated D1 and R2 bindings automatically — no connecti
 | Command | Does |
 | ------- | ---- |
 | `pnpm dev` | Local dev server |
-| `pnpm build` | Import map → types → `next build` |
-| `pnpm generate:types` | Regenerates `cloudflare-env.d.ts` and `src/engage-types.ts` |
-| `pnpm generate:importmap` | Regenerates the admin component import map |
+| `pnpm build` | `next build` |
+| `pnpm generate:types` | Regenerates `cloudflare-env.d.ts` (Worker binding types) |
 | `pnpm lint` | ESLint |
 | `pnpm test` | Vitest integration tests + Playwright e2e |
-| `pnpm cms <cmd>` | Passthrough to the CMS CLI (`migrate`, `migrate:create`, …) |
+| `pnpm deploy` | OpenNext build + deploy to Cloudflare (what the deploy button runs) |
+| `pnpm deploy:full` | Owner flow: hand-built SQL, deploy, then `/api/internal-migrate` and `/api/internal-seed` against `SITE_URL` |
+| `pnpm db:local` | Prepare and migrate a local standalone database |
 | `pnpm preview` | Builds and serves the real Worker bundle locally |
 
-`src/engage-types.ts` is generated on every build and is **not** committed — the config is the single source of truth. If your editor complains about missing types after pulling, run `pnpm generate:types`.
+`src/engage-types.ts` holds the content types (collections and globals) and is committed. Nothing regenerates it any more, so update it by hand when you add or change a collection field.
 
 ---
 
@@ -142,7 +142,7 @@ The CLI's `migrate:create` emits a **full-schema dump, not a diff**, because thi
 
 To regenerate a schema set after changing the config:
 
-1. `pnpm cms migrate:create <name>` — produces the full-schema dump.
+1. Write the new tables/columns as an idempotent schema set under `src/migrations/schema/` (see the worked example above).
 2. Build a **TARGET** database: apply that dump to an empty SQLite file, first seeding any table the dump omits (it skips tables it considers unchanged) from the current database's own DDL.
 3. Diff TARGET against the current database — `.wrangler`'s local D1 tracks the same migration state as production. Collect tables, columns and indexes present only in TARGET.
 4. Emit those three lists, rewriting every `CREATE` as `IF NOT EXISTS`.
@@ -154,7 +154,7 @@ The canonical worked example is `src/migrations/20260822_234701_builder_sections
 
 - **Additive only.** Down migrations for schema sets are deliberate no-ops; rolling one back would drop live content.
 - The generated `.json` snapshots next to migrations are gitignored — each is a ~500KB full-schema dump this project cannot rely on anyway.
-- If you ever apply a schema change to production D1 by hand (e.g. the Cloudflare dashboard's D1 console), **also insert a matching row into the `payload_migrations` table** so the engine does not try to reapply it on the next deploy. That table, along with `payload_preferences` and `payload_locked_documents*`, is internal engine bookkeeping — do not rename them.
+- If you ever apply a schema change to production D1 by hand (e.g. the Cloudflare dashboard's D1 console), **also insert a matching row into the `eg_migrations` table** so the engine does not try to reapply it on the next deploy. That table, along with the other `eg_*` engine tables, is internal bookkeeping — do not rename them.
 
 ---
 
@@ -186,9 +186,9 @@ Turning a feature off **hides**; it never deletes.
 
 The short version: `--color-base-0 … --color-base-1000` is **one** ramp running light → dark, not one ramp per theme. The base stylesheet maps it onto `--theme-elevation-*` and inverts that mapping for dark mode. Supplying a second, already-inverted ramp inverts twice and produces light text on light surfaces. Define the ramp once, define all 21 steps, and let the inversion happen.
 
-Override documented CSS custom properties, not class names. Declare inside `@layer payload` — that layer name is not ours to choose; the underlying CMS engine declares `@layer payload-default, payload;` and reserves the second layer for the host app, so a later layer always wins and nothing needs `!important`.
+Override documented CSS custom properties, not class names, and declare overrides in a later cascade layer so nothing needs `!important`.
 
-Brand marks live in `src/components/branding/`, and the browser-tab identity (title, description, favicon) is set explicitly in `admin.meta` in `engage.config.ts`.
+Brand marks live in `src/components/branding/`, and the browser-tab identity (title, description, favicon) is set explicitly in the admin `RootLayout` metadata.
 
 ---
 
@@ -196,6 +196,6 @@ Brand marks live in `src/components/branding/`, and the browser-tab identity (ti
 
 - **Paid Workers plan required** — the bundle exceeds the 3 MB free-tier [size limit](https://developers.cloudflare.com/workers/platform/limits/#worker-size).
 - **GraphQL** is not guaranteed when deployed, pending an [upstream workerd fix](https://github.com/cloudflare/workerd/issues/5175). The REST API is unaffected.
-- **Logging is opt-in** in the Cloudflare panel because it draws on your quota. The custom console logger in `engage.config.ts` exists because the default logger uses `pino-pretty`, which needs Node APIs Workers does not have and fails with `fs.write is not implemented`. It is production-only; dev keeps the prettier default.
+- **Logging is opt-in** in the Cloudflare panel because it draws on your quota. The custom console logger in `src/localapi/logger.ts` exists because the default logger uses `pino-pretty`, which needs Node APIs Workers does not have and fails with `fs.write is not implemented`. It is production-only; dev keeps the prettier default.
 - **No image processing.** `crop` and `focalPoint` are disabled on the Media collection because `sharp` is not available on Workers. Resizing/optimisation is expected to come from Cloudflare's image pipeline instead.
 - **"Failed to publish diagnostic channel message"** entries in observability logs come from the `undici` HTTP client and are noise rather than a fault.

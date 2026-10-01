@@ -12,8 +12,27 @@
 import type { Field } from '@/engine'
 import type { FieldsMap } from '@/admin/context/FormContext'
 
+/** `isHomepage` / `meta_title` / `og-image` -> `Is Homepage` / `Meta Title` / `Og Image`. */
+export function humanizeName(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase())
+}
+
+/**
+ * The label a field is shown with: its own `label` when the config sets one
+ * (`label: false` hides it), otherwise a readable form of its `name`. The
+ * engine's config sanitizer does not add default labels, so without this
+ * every field whose config omits `label` (most of them) showed no label at all.
+ */
 export function fieldLabel(field: Field): string | Record<string, string> | undefined {
-  return (field as { label?: string | Record<string, string> }).label
+  const label = (field as { label?: string | Record<string, string> | false }).label
+  if (label === false) return undefined
+  if (label !== undefined) return label
+  const name = 'name' in field ? field.name : undefined
+  return name ? humanizeName(name) : undefined
 }
 
 export function fieldRequired(field: Field): boolean | undefined {

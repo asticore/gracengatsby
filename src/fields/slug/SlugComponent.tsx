@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { FieldLabel, TextInput, useField, useFormFields } from '@/engine/ui'
 import type { TextFieldClientProps } from '@/engine'
+import { humanizeName } from '@/admin/fields/shared'
 
 import { slugify } from '@/utilities/formatSlug'
 
@@ -21,7 +22,9 @@ type SlugComponentProps = TextFieldClientProps & {
 export const SlugComponent: React.FC<SlugComponentProps> = ({ field, path, fieldToUse = 'title', readOnly }) => {
   const { setValue, value } = useField<string>({ path })
   const sourceValue = useFormFields(([fields]) => fields?.[fieldToUse]?.value) as string | undefined
-  const [hasEdited, setHasEdited] = useState(false)
+  // An existing document keeps the slug it already has: auto-filling is only for a slug that is still empty.
+  // (Without this, merely opening a page whose slug differs from its title rewrote the slug and marked the form changed.)
+  const [hasEdited, setHasEdited] = useState(() => typeof value === 'string' && value.length > 0)
 
   useEffect(() => {
     if (hasEdited) return
@@ -34,7 +37,7 @@ export const SlugComponent: React.FC<SlugComponentProps> = ({ field, path, field
 
   return (
     <div className="field-type text slug-field-component">
-      <FieldLabel htmlFor={`field-${path}`} label={field?.label} required={field?.required} />
+      <FieldLabel htmlFor={`field-${path}`} label={field?.label ?? humanizeName(path.split('.').pop() ?? '')} required={field?.required} />
       <TextInput
         path={path}
         value={value || ''}

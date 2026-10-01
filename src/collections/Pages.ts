@@ -110,7 +110,6 @@ export const Pages: CollectionConfig = {
     {
       name: 'blocks',
       type: 'blocks',
-      minRows: 1,
       labels: { singular: 'Section', plural: 'Sections' },
       blocks: pageBuilderBlocks,
       admin: { initCollapsed: true },

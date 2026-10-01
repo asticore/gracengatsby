@@ -32,12 +32,13 @@
  * a by-ID text input, not a real file picker - Phase 3 polish item).
  */
 
-import { useRouter } from 'next/navigation'
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import type { Field } from '@/engine'
-import { DocumentInfoProvider, FormProvider, useDocumentEvents, useFormFields, useResetFormModified } from '@/admin/context'
+import { DocumentInfoProvider, FormProvider } from '@/admin/context'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
-import { flattenDoc, unflattenFields } from '@/admin/fields/shared'
+import { flattenDoc } from '@/admin/fields/shared'
+import { DocumentPanel, type DocumentPanelInfo } from './DocumentPanel'
+import { useDocumentSave, type SaveTarget } from './useDocumentSave'
 
 export type EditFormProps = {
   collectionSlug?: string
@@ -48,131 +49,119 @@ export type EditFormProps = {
   readOnly?: boolean
   /** Stage 11 Phase 2: true for one of the 5 `versions: {drafts: true}` collections - see SaveButton's doc comment for what this changes. Globals never have drafts in this app, so GlobalEditView never sets it. */
   draftsEnabled?: boolean
-}
-
-type SaveTarget = { collectionSlug?: string; globalSlug?: string; id?: number; draftsEnabled?: boolean }
-
-/**
- * `draft` picks the query-string flag (`?draft=true`), which is what
- * actually changes DB behavior (see `src/cms/db/generic.ts`'s
- * `createDraftOps` doc comment): on an UPDATE it makes the write hit only a
- * new version row and leaves the live row untouched; on a CREATE it lets
- * validation skip incomplete required fields. Publishing is the ABSENCE of
- * that flag on both create and update, which is why it is only ever added,
- * never sent as an explicit `draft=false`.
- */
-function saveRequest({ collectionSlug, globalSlug, id }: SaveTarget, draft: boolean): { url: string; method: 'POST' | 'PATCH' } {
-  const suffix = draft ? '?draft=true' : ''
-  if (globalSlug) return { url: `/api/globals/${globalSlug}`, method: 'POST' }
-  if (id) return { url: `/api/${collectionSlug}/${id}${suffix}`, method: 'PATCH' }
-  return { url: `/api/${collectionSlug}${suffix}`, method: 'POST' }
-}
-
-function extractErrorMessage(body: unknown): string {
-  const errors = (body as { errors?: Array<{ message?: string }> } | null)?.errors
-  return errors?.[0]?.message || 'Save failed.'
+  /** Collections only: turns on the two-column layout with the right-hand DocumentPanel. */
+  panel?: DocumentPanelInfo
+  /**
+   * Name of the page-builder `blocks` field that the visual editor owns. It is
+   * left out of this form (still held in form state, so every save sends it
+   * back unchanged) and replaced by a small "Page content" card.
+   */
+  visualBlocksField?: string
+  /** Section count of the stored page-builder field, for the card. */
+  visualBlocksCount?: number
 }
 
 /**
- * Stage 11 Phase 2: a `draftsEnabled` collection (Posts/Products/Events/
- * Pages/Courses) gets two buttons instead of one, matching the reference engine's
- * own draft/publish split. Save Draft sends `_status: 'draft'` in the body
- * AND the `?draft=true` query flag; Publish sends `_status: 'published'`
- * with no query flag. The `_status` field is sent explicitly in BOTH cases
- * rather than relying on the DB layer's own defaulting, because a CREATE's
- * live row defaults to 'draft' via its own SQL column default when the
- * caller sets nothing (see `createDraftOps`'s doc comment) - a "Publish"
- * click that didn't say so explicitly would silently create a draft.
- * A non-drafts collection (and every global) keeps the old single "Save"
- * button, unchanged.
+ * Plain single-button save bar for globals and the few places that do not
+ * use the panel. A `draftsEnabled` collection gets Save Draft + Publish,
+ * everything else keeps the old single "Save" button - the request rules
+ * (draft flag, `_status`) live in `useDocumentSave`.
  */
-const SaveButton: React.FC<SaveTarget> = ({ collectionSlug, globalSlug, id, draftsEnabled }) => {
-  const router = useRouter()
-  const resetModified = useResetFormModified()
-  const { reportUpdate } = useDocumentEvents()
-  const fields = useFormFields(([f]) => f)
-  const [saving, setSaving] = useState<'draft' | 'published' | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSave = async (status: 'draft' | 'published') => {
-    setSaving(status)
-    setError(null)
-    try {
-      const data = unflattenFields(fields)
-      if (draftsEnabled) data._status = status
-      const { url, method } = saveRequest({ collectionSlug, globalSlug, id }, status === 'draft')
-      const response = await fetch(url, {
-        body: JSON.stringify(data),
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        method,
-      })
-      const body: unknown = await response.json().catch((): unknown => null)
-
-      if (!response.ok) {
-        setError(extractErrorMessage(body))
-        return
-      }
-
-      resetModified()
-      reportUpdate({ entitySlug: collectionSlug ?? globalSlug ?? '', updatedAt: new Date().toISOString() })
-
-      // A successful CREATE (no `id` yet, a real collection doc) moves the
-      // URL to the new document's own edit route - matching the reference engine's
-      // own post-create-redirect behavior, and giving the now-existing `id`
-      // to every subsequent save on this same document.
-      if (collectionSlug && !id) {
-        const newId = (body as { doc?: { id?: number } } | null)?.doc?.id
-        if (newId !== undefined) {
-          router.push(`/admin/collections/${collectionSlug}/${newId}`)
-          return
-        }
-      }
-
-      router.refresh()
-    } catch {
-      setError('Save failed - check your connection and try again.')
-    } finally {
-      setSaving(null)
-    }
-  }
-
+const SaveButton: React.FC<SaveTarget> = (target) => {
+  const { busy, error, save } = useDocumentSave(target)
+  const { draftsEnabled } = target
   return (
     <div style={{ alignItems: 'center', display: 'flex', gap: 12, marginTop: 24 }}>
       {draftsEnabled && (
-        <button className="btn" disabled={saving !== null} onClick={() => handleSave('draft')} type="button">
-          {saving === 'draft' ? 'Saving…' : 'Save Draft'}
+        <button className="btn" disabled={busy !== null} onClick={() => save('draft')} type="button">
+          {busy === 'draft' ? 'Saving…' : 'Save Draft'}
         </button>
       )}
-      <button className="btn btn--primary" disabled={saving !== null} onClick={() => handleSave('published')} type="button">
-        {saving === 'published' ? 'Saving…' : draftsEnabled ? 'Publish' : 'Save'}
+      <button className="btn btn--primary" disabled={busy !== null} onClick={() => save('published')} type="button">
+        {busy === 'published' ? 'Saving…' : draftsEnabled ? 'Publish' : 'Save'}
       </button>
       {error && <span style={{ color: 'var(--theme-error-500, #b3261e)' }}>{error}</span>}
     </div>
   )
 }
 
-export const EditForm: React.FC<EditFormProps> = ({ collectionSlug, doc, draftsEnabled, fields, globalSlug, id, readOnly }) => {
+const isSidebarField = (field: Field): boolean => (field as { admin?: { position?: string } }).admin?.position === 'sidebar'
+
+/** Main column vs right panel, by `admin.position`; the visual editor's blocks field is dropped from the main column. */
+export function splitFields(fields: Field[], visualBlocksField?: string): { main: Field[]; sidebar: Field[] } {
+  const main: Field[] = []
+  const sidebar: Field[] = []
+  for (const field of fields) {
+    if (isSidebarField(field)) sidebar.push(field)
+    else if (visualBlocksField && field.type === 'blocks' && 'name' in field && field.name === visualBlocksField) continue
+    else main.push(field)
+  }
+  return { main, sidebar }
+}
+
+const PageContentCard: React.FC<{ count?: number; href?: string; isNew: boolean }> = ({ count, href, isNew }) => (
+  <div className="doc-content-card">
+    <div>
+      <strong>Page content</strong>
+      <p className="doc-muted">
+        {isNew
+          ? 'Save first, then open the visual editor to build the layout.'
+          : `${count ?? 0} ${count === 1 ? 'section' : 'sections'}. The layout is edited in the visual editor.`}
+      </p>
+    </div>
+    {href && !isNew && (
+      <a className="btn btn--primary" href={href}>
+        Edit in visual editor
+      </a>
+    )}
+  </div>
+)
+
+export const EditForm: React.FC<EditFormProps> = ({
+  collectionSlug,
+  doc,
+  draftsEnabled,
+  fields,
+  globalSlug,
+  id,
+  panel,
+  readOnly,
+  visualBlocksCount,
+  visualBlocksField,
+}) => {
+  // Built from ALL fields (including the one hidden from view) so a save sends it back untouched.
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
+  const { main, sidebar } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, sidebar: [] }), [fields, panel, visualBlocksField])
 
   return (
     <DocumentInfoProvider value={{ collectionSlug, globalSlug, id }}>
       <FormProvider initialFields={initialFields}>
-        {/* Was a single flat `edit-form` div, which matches zero CSS rules -
-            neither stock admin CSS nor this app's own
-            custom.css. This nesting instead matches both: `document-fields`/
-            `document-fields__edit` picks up stock CSS's own padding, and
-            `collection-edit__form`/`global-edit__form` picks up custom.css's
-            soft-card theming (`@layer engine` block shared with
-            `.collection-list__wrap`/`.table`/`.dashboard__card`/`.card`). */}
-        <div className="document-fields">
-          <div className="document-fields__edit">
-            <div className={globalSlug ? 'global-edit__form' : 'collection-edit__form'}>
-              <FieldRenderer fields={fields} readOnly={readOnly} />
-              {!readOnly && <SaveButton collectionSlug={collectionSlug} draftsEnabled={draftsEnabled} globalSlug={globalSlug} id={id} />}
+        {panel ? (
+          <div className="document-edit">
+            <div className="document-edit__main">
+              <div className="collection-edit__form">
+                <FieldRenderer fields={main} readOnly={readOnly} />
+                {visualBlocksField && <PageContentCard count={visualBlocksCount} href={panel.visualEditorHref} isNew={id === undefined} />}
+              </div>
+            </div>
+            <aside className="document-edit__side">
+              <DocumentPanel info={panel} readOnly={readOnly} sidebarFields={sidebar} />
+            </aside>
+          </div>
+        ) : (
+          /* Was a single flat `edit-form` div, which matched zero CSS rules.
+             This nesting matches both stock admin CSS (`document-fields`) and
+             custom.css's soft-card theming (`collection-edit__form` /
+             `global-edit__form`). */
+          <div className="document-fields">
+            <div className="document-fields__edit">
+              <div className={globalSlug ? 'global-edit__form' : 'collection-edit__form'}>
+                <FieldRenderer fields={fields} readOnly={readOnly} />
+                {!readOnly && <SaveButton collectionSlug={collectionSlug} draftsEnabled={draftsEnabled} globalSlug={globalSlug} id={id} />}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </FormProvider>
     </DocumentInfoProvider>
   )

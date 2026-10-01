@@ -96,7 +96,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 
   return (
     <div className="collection-edit">
-      <nav aria-label="Breadcrumb" className="doc-breadcrumb">
+      <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
         <Link href="/admin">Dashboard</Link>
         <span aria-hidden="true">/</span>
         <Link href={`/admin/collections/${collectionSlug}`}>{pluralLabel}</Link>

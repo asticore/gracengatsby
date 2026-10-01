@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Field } from '@/engine'
 import { splitFields } from '@/admin/views/EditForm'
-import { flattenDoc, unflattenFields } from '@/admin/fields/shared'
+import { fieldLabel, flattenDoc, humanizeName, unflattenFields } from '@/admin/fields/shared'
 import { VISUAL_EDITOR_SURFACES } from '@/views/visualEditor/surfaces'
 import { Pages } from '@/collections/Pages'
 
@@ -42,5 +42,13 @@ describe('edit screen field split', () => {
     const sent = unflattenFields(state)
     expect(sent.blocks).toEqual(doc.blocks)
     expect(sent.title).toBe('About')
+  })
+
+  it('labels fields from their name when the config sets no label', () => {
+    expect(humanizeName('isHomepage')).toBe('Is Homepage')
+    expect(humanizeName('meta_title')).toBe('Meta Title')
+    expect(fieldLabel({ name: 'title', type: 'text' } as Field)).toBe('Title')
+    expect(fieldLabel({ name: 'title', type: 'text', label: 'Page Title' } as Field)).toBe('Page Title')
+    expect(fieldLabel({ name: 'title', type: 'text', label: false } as unknown as Field)).toBeUndefined()
   })
 })

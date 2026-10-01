@@ -9,6 +9,7 @@ import { ListView } from './ListView'
 import { EditView } from './EditView'
 import { GlobalEditView } from './GlobalEditView'
 import { LoginView } from './LoginView'
+import { VersionsView } from './VersionsView'
 
 /**
  * The from-scratch replacement for the reference engine's own `RootPage`
@@ -40,6 +41,7 @@ import { LoginView } from './LoginView'
  *   - `/admin/collections/:slug`              -> ListView
  *   - `/admin/collections/:slug/create`       -> EditView (blank)
  *   - `/admin/collections/:slug/:id`          -> EditView (seeded)
+ *   - `/admin/collections/:slug/:id/versions` -> VersionsView
  *   - `/admin/globals/:slug`                  -> GlobalEditView
  *   - any `CUSTOM_ADMIN_VIEWS` path (translations/database/ab-test-results/
  *     visual-editor) -> that view's own registered `Component`
@@ -148,6 +150,11 @@ export async function RootPage({ params, searchParams }: Args) {
 
     if (segments.length === 2) return <ListView collectionSlug={collectionSlug} />
     if (segments.length === 3 && segments[2] === 'create') return <EditView collectionSlug={collectionSlug} />
+    if (segments.length === 4 && segments[3] === 'versions') {
+      const id = Number(segments[2])
+      if (!Number.isFinite(id)) notFound()
+      return <VersionsView collectionSlug={collectionSlug} id={id} />
+    }
     if (segments.length === 3) {
       const id = Number(segments[2])
       if (!Number.isFinite(id)) notFound()
@@ -186,6 +193,8 @@ export async function generatePageMetadata({ params }: Args): Promise<Metadata> 
   if (segments[0] === 'login') return { title: 'Login - Admin' }
 
   if (segments[0] === 'collections' && segments[1]) {
+    if (segments[3] === 'versions') return { title: 'Versions - Admin' }
+
     const engine = await getEngine()
     const collection = getCollectionConfig(engine, segments[1])
     const label = collection && typeof collection.labels?.plural === 'string' ? collection.labels.plural : segments[1]

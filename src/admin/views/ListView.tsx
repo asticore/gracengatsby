@@ -3,6 +3,21 @@ import { notFound, redirect } from 'next/navigation'
 import type { Field } from '@/engine'
 import { getAdminContext, getCollectionConfig } from '@/admin/auth'
 import { resolveCellFormatter } from '@/admin/cellRegistry'
+import {
+  parseListSearchParams,
+  deriveColumns,
+  getListDefaults,
+  buildFindArgs,
+  resolveVisibleColumns,
+  type ListState,
+  type ColumnDef,
+} from '@/admin/list/listQuery'
+import { loadListPrefs, type ListPrefs } from '@/admin/list/listPrefs'
+import { ListToolbar } from './ListToolbar'
+import { formatCellValue } from '@/admin/list/cellFormatting'
+import { VIEW_TABS, resolveActiveTab, type ViewTab } from '@/admin/list/viewTabs'
+import { MediaGalleryView } from '@/views/media/MediaGalleryView'
+import { EventsCalendarView } from '@/views/events/EventsCalendarView'
 
 /**
  * Generic list view for any collection - one component instead of 21
@@ -38,7 +53,14 @@ function findColumnField(fields: Field[], name: string): Field | undefined {
   }
   return undefined
 }
-export async function ListView({ collectionSlug }: { collectionSlug: string }) {
+
+export async function ListView({
+  collectionSlug,
+  searchParams = {},
+}: {
+  collectionSlug: string
+  searchParams?: Record<string, string | string[] | undefined>
+}) {
   const context = await getAdminContext()
   if (!context.isAdmin) redirect('/admin/login')
 
@@ -48,24 +70,72 @@ export async function ListView({ collectionSlug }: { collectionSlug: string }) {
     return <p>You don&apos;t have access to {collectionSlug}.</p>
   }
 
-  const result = await context.engine.find({
+  // Parse URL search params
+  const urlState = parseListSearchParams(searchParams)
+
+  // Load saved user preferences
+  const savedPrefs = await loadListPrefs(context.engine, context.user, collectionSlug)
+
+  // Get defaults for this collection
+  const useAsTitle = (collection.admin as { useAsTitle?: string } | undefined)?.useAsTitle
+  const defaults = getListDefaults(collectionSlug, useAsTitle, (collection.admin as { defaultColumns?: string[] } | undefined)?.defaultColumns)
+
+  // Effective state: URL > saved pref > default
+  const effectiveState: ListState = {
+    q: urlState.q || '',
+    sort: urlState.sort || savedPrefs.sort || defaults.sort,
+    limit: urlState.limit || savedPrefs.limit || defaults.limit,
+    page: urlState.page,
+    cols: urlState.cols || savedPrefs.cols || null,
+    view: urlState.view || savedPrefs.view || null,
+    filters: urlState.filters,
+  }
+
+  // Derive all possible columns from collection fields
+  const hasDrafts = Boolean((collection.versions as { drafts?: boolean } | undefined)?.drafts)
+  const allColumns = deriveColumns(collection.fields, { drafts: hasDrafts })
+
+  // Resolve which columns should be visible
+  const { visibleColumns, visibleNames } = resolveVisibleColumns(
+    allColumns,
+    effectiveState.cols,
+    savedPrefs.cols,
+    defaults.columns,
+  )
+
+  // Build find args for engine query
+  const findArgs = buildFindArgs({
     collection: collectionSlug,
-    limit: 50,
-    user: context.user,
+    urlParams: effectiveState,
+    allColumns,
   })
 
-  const useAsTitle = (collection.admin as { useAsTitle?: string } | undefined)?.useAsTitle
-  const configuredColumns = (collection.admin as { defaultColumns?: string[] } | undefined)?.defaultColumns
-  const columns = configuredColumns?.length ? configuredColumns : [useAsTitle || 'id']
+  // Execute find
+  const result = await context.engine.find({
+    collection: collectionSlug,
+    where: findArgs.where as any,
+    sort: findArgs.sort,
+    page: findArgs.page,
+    limit: findArgs.limit,
+    user: context.user,
+    depth: 1,
+  })
 
   const canCreate = context.permissions.collections?.[collectionSlug]?.create
+  const label = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
 
-  const label =
-    typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
+  // Resolve view tabs and active tab
+  const viewTabs = VIEW_TABS[collectionSlug as keyof typeof VIEW_TABS] || [{ view: 'list', label: 'List' }]
+  const activeTab = resolveActiveTab(viewTabs, effectiveState.view)
+
+  // Total pages calculation
+  const totalPages = Math.ceil((result.totalDocs || 0) / effectiveState.limit)
+  const hasPrevPage = effectiveState.page > 1
+  const hasNextPage = effectiveState.page < totalPages
 
   return (
-    <div className="collection-list">
-      <div className="flex items-center justify-between mb-[calc(var(--base)*0.9)]">
+    <div className="list-view">
+      <div className="list-header">
         <h1>{label}</h1>
         {canCreate && (
           <Link className="btn btn--primary" href={`/admin/collections/${collectionSlug}/create`}>
@@ -74,53 +144,201 @@ export async function ListView({ collectionSlug }: { collectionSlug: string }) {
         )}
       </div>
 
-      {result.docs.length === 0 ? (
-        <p className="text-[var(--theme-elevation-600)]">No documents yet.</p>
-      ) : (
-        <div className="table">
-          <table>
-            <thead>
-              <tr>
-                {columns.map((column) => (
-                  <th key={column}>{column}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {result.docs.map((doc) => (
-                <tr key={doc.id}>
-                  {columns.map((column, index) => {
-                    const cell = doc[column]
-                    const columnField = findColumnField(collection.fields, column)
-                    const cellOverride = (columnField as { admin?: { components?: { Cell?: string } } } | undefined)?.admin?.components?.Cell
-                    const formatter = resolveCellFormatter(cellOverride)
-                    const text = formatter
-                      ? formatter(cell, doc)
-                      : cell === undefined || cell === null
-                        ? ''
-                        : typeof cell === 'object'
-                          ? JSON.stringify(cell)
-                          : String(cell)
-                    return (
-                      <td key={column}>
-                        {index === 0 ? (
-                          <Link href={`/admin/collections/${collectionSlug}/${doc.id}`}>{text || `#${doc.id}`}</Link>
-                        ) : (
-                          text
-                        )}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <ListToolbar
+        collectionSlug={collectionSlug}
+        state={effectiveState}
+        columns={allColumns}
+        visibleNames={visibleNames}
+        limit={effectiveState.limit}
+        hasSavedPrefs={!!(savedPrefs.cols || savedPrefs.sort || savedPrefs.limit)}
+        totalDocs={result.totalDocs || 0}
+        view={activeTab.view}
+      />
+
+      {/* Active filters as chips */}
+      {effectiveState.filters.length > 0 && (
+        <div className="list-active-filters">
+          {effectiveState.filters.map((filter, idx) => {
+            const colDef = allColumns.find((c) => c.name === filter.field)
+            return (
+              <div key={idx} className="list-filter-chip">
+                <span>
+                  {colDef?.label || filter.field} {filter.op} {filter.value}
+                </span>
+                <button
+                  onClick={async () => {
+                    const newFilters = effectiveState.filters.filter((_, i) => i !== idx)
+                    const search = new URLSearchParams()
+                    Object.entries(effectiveState).forEach(([k, v]) => {
+                      if (k === 'filters') return
+                      if (v === null || v === '' || (Array.isArray(v) && v.length === 0)) return
+                      if (k === 'cols' && Array.isArray(v)) search.append(k, v.join(','))
+                      else if (!Array.isArray(v)) search.append(k, String(v))
+                    })
+                    newFilters.forEach((f) => {
+                      search.append('f', `${f.field}:${f.op}:${f.value}`)
+                    })
+                    const url = `/admin/collections/${collectionSlug}?${search.toString()}`
+                    window.location.href = url
+                  }}
+                  className="list-filter-chip-remove"
+                  type="button"
+                  aria-label="Remove filter"
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
 
-      <p className="mt-[calc(var(--base)*0.6)] text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-500)]">
-        {result.totalDocs} total{result.totalDocs > result.docs.length ? ` (showing first ${result.docs.length})` : ''}
-      </p>
+      {/* View tabs */}
+      {viewTabs.length > 1 && (
+        <div className="list-tabs">
+          {viewTabs.map((tab) => (
+            <a
+              key={tab.view}
+              href={`?view=${tab.view}&page=1`}
+              className={`list-tab ${activeTab.view === tab.view ? 'list-tab--active' : ''}`}
+            >
+              {tab.label}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* List view (or other tab view) */}
+      {activeTab.view === 'list' && (
+        <>
+          {result.docs.length === 0 ? (
+            <p className="list-empty">No documents yet.</p>
+          ) : (
+            <div className="list-table-wrapper">
+              <table className="list-table">
+                <thead>
+                  <tr>
+                    {visibleColumns.map((column) => (
+                      <th key={column.name} className="list-th">
+                        <a
+                          href={`?${new URLSearchParams({
+                            ...Object.fromEntries(
+                              Object.entries(effectiveState).filter(
+                                ([k]) => k !== 'sort' && k !== 'page'
+                              ) as [string, any][]
+                            ),
+                            sort: effectiveState.sort === column.name
+                              ? `-${column.name}`
+                              : effectiveState.sort === `-${column.name}`
+                                ? ''
+                                : column.name,
+                            page: '1',
+                          })}`}
+                          className="list-sort-link"
+                        >
+                          {column.label}
+                        </a>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.docs.map((doc) => (
+                    <tr key={doc.id} className="list-row">
+                      {visibleColumns.map((column, index) => {
+                        const cell = (doc as Record<string, unknown>)[column.name]
+                        const columnField = findColumnField(collection.fields, column.name)
+                        const cellOverride = (columnField as { admin?: { components?: { Cell?: string } } } | undefined)?.admin?.components?.Cell
+                        const formatter = resolveCellFormatter(cellOverride)
+                        const text = formatCellValue(cell, doc, columnField, formatter)
+
+                        return (
+                          <td key={column.name} className="list-td">
+                            {index === 0 ? (
+                              <Link href={`/admin/collections/${collectionSlug}/${doc.id}`} className="list-link">
+                                {text || `#${doc.id}`}
+                              </Link>
+                            ) : (
+                              text
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="list-pagination">
+              {hasPrevPage && (
+                <a
+                  href={`?${new URLSearchParams({
+                    ...Object.fromEntries(
+                      Object.entries(effectiveState).filter(
+                        ([k]) => k !== 'page'
+                      ) as [string, any][]
+                    ),
+                    page: String(effectiveState.page - 1),
+                  })}`}
+                  className="list-pagination-btn"
+                >
+                  Prev
+                </a>
+              )}
+              <span className="list-pagination-info">
+                Page {effectiveState.page} of {totalPages}
+              </span>
+              {hasNextPage && (
+                <a
+                  href={`?${new URLSearchParams({
+                    ...Object.fromEntries(
+                      Object.entries(effectiveState).filter(
+                        ([k]) => k !== 'page'
+                      ) as [string, any][]
+                    ),
+                    page: String(effectiveState.page + 1),
+                  })}`}
+                  className="list-pagination-btn"
+                >
+                  Next
+                </a>
+              )}
+              <span className="list-pagination-total">
+                Total: {result.totalDocs}
+              </span>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Gallery view for media */}
+      {activeTab.view === 'gallery' && (
+        <MediaGalleryView
+          collectionConfig={{ slug: collectionSlug }}
+          data={{ docs: result.docs, totalDocs: result.totalDocs, page: effectiveState.page }}
+          hasCreatePermission={canCreate}
+          newDocumentURL={`/admin/collections/${collectionSlug}/create`}
+          engine={context.engine}
+          searchParams={{ ...searchParams, view: 'gallery' }}
+        />
+      )}
+
+      {/* Calendar view for events */}
+      {activeTab.view === 'calendar' && (
+        <EventsCalendarView
+          collectionConfig={{ slug: collectionSlug }}
+          data={{ docs: result.docs, totalDocs: result.totalDocs, page: effectiveState.page }}
+          hasCreatePermission={canCreate}
+          newDocumentURL={`/admin/collections/${collectionSlug}/create`}
+          engine={context.engine}
+          searchParams={{ ...searchParams, view: 'calendar' }}
+          user={context.user}
+        />
+      )}
     </div>
   )
 }

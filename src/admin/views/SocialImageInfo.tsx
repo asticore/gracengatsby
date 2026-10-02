@@ -64,6 +64,8 @@ function getSourceLabel(source: ImageSource | null): string {
 type MediaObject = {
   id: string
   filename?: string
+  url?: string
+  mimeType?: string
   alt?: string
   width?: number
   height?: number
@@ -204,7 +206,7 @@ interface ImagePreviewProps {
 
 function ImagePreview({ media }: ImagePreviewProps) {
   // Try to build a URL if we have an ID; otherwise skip the image
-  const url = media.filename ? `/api/media/${media.id}` : undefined
+  const url = media.url || undefined
 
   return (
     <div className="seo-image-preview">

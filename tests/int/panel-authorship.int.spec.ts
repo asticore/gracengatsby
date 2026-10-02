@@ -89,35 +89,53 @@ describe('panel authorship helpers', () => {
   })
 
   describe('Details box rendering logic', () => {
-    it('shows last edited by and created by rows when authorship data is present', () => {
-      const info: Record<string, unknown> & { updatedByName?: string; createdByName?: string } = {
+    it('shows last edited by and created by rows when trackAuthorship is true', () => {
+      const info: Record<string, unknown> & { updatedByName?: string; createdByName?: string; trackAuthorship?: boolean } = {
         updatedByName: 'Jane',
         createdByName: 'John',
         updatedAt: '2026-01-02T00:00:00Z',
+        trackAuthorship: true,
       }
-      const hasEditByInfo = info.updatedByName !== undefined || info.createdByName !== undefined
-      expect(hasEditByInfo).toBe(true)
+      expect(info.trackAuthorship).toBe(true)
     })
 
-    it('hides authorship rows when no user tracking exists', () => {
-      const info: Record<string, unknown> & { updatedByName?: string; createdByName?: string } = {
+    it('hides authorship rows when trackAuthorship is false', () => {
+      const info: Record<string, unknown> & { trackAuthorship?: boolean } = {
+        trackAuthorship: false,
+      }
+      expect(info.trackAuthorship).toBe(false)
+    })
+
+    it('always shows authorship rows when collection has createdBy field', () => {
+      const info: Record<string, unknown> & { updatedByName?: string; createdByName?: string; trackAuthorship?: boolean } = {
         updatedByName: undefined,
         createdByName: undefined,
+        trackAuthorship: true,
       }
-      const hasEditByInfo = info.updatedByName !== undefined || info.createdByName !== undefined
-      expect(hasEditByInfo).toBe(false)
+      // When trackAuthorship is true, rows should show with 'Unknown' for missing names
+      expect(info.trackAuthorship).toBe(true)
+      const displayUpdated = info.updatedByName || 'Unknown'
+      const displayCreated = info.createdByName || 'Unknown'
+      expect(displayUpdated).toBe('Unknown')
+      expect(displayCreated).toBe('Unknown')
     })
 
-    it('uses Unknown when updatedByName is null/undefined', () => {
+    it('uses Unknown when updatedByName is null/undefined but trackAuthorship is true', () => {
       const updatedByName: string | undefined = undefined
-      const display = updatedByName || 'Unknown'
-      expect(display).toBe('Unknown')
+      const trackAuthorship = true
+      if (trackAuthorship) {
+        const display = updatedByName || 'Unknown'
+        expect(display).toBe('Unknown')
+      }
     })
 
-    it('uses Unknown when createdByName is null/undefined', () => {
+    it('uses Unknown when createdByName is null/undefined but trackAuthorship is true', () => {
       const createdByName: string | undefined = undefined
-      const display = createdByName || 'Unknown'
-      expect(display).toBe('Unknown')
+      const trackAuthorship = true
+      if (trackAuthorship) {
+        const display = createdByName || 'Unknown'
+        expect(display).toBe('Unknown')
+      }
     })
   })
 })

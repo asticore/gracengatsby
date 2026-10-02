@@ -6,6 +6,23 @@ import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { useFormFields } from '@/admin/context'
 import { SocialImageInfo } from './SocialImageInfo'
 
+function SchemaDisplay() {
+  const { schemaType } = useFormFields(([fields]) => ({
+    schemaType: fields['schemaType']?.value as string | undefined,
+  }))
+
+  const displayValue = schemaType || 'Not set'
+
+  return (
+    <div className="seo-schema">
+      <p>
+        <strong>Structured data type:</strong> {displayValue}
+      </p>
+      <p className="doc-muted">Change it in the Page type box on the right.</p>
+    </div>
+  )
+}
+
 export type SeoCardProps = {
   seoField: Field
   readOnly?: boolean
@@ -69,7 +86,7 @@ function SnippetPreview({ liveHref }: { liveHref?: string }) {
 }
 
 export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }) => {
-  const [activeTab, setActiveTab] = useState<'seo' | 'social'>('seo')
+  const [activeTab, setActiveTab] = useState<'seo' | 'social' | 'schema'>('seo')
 
   const seoFields = ((seoField.fields as Field[] | undefined) || []).filter((f) => {
     const name = 'name' in f ? (f as { name?: string }).name : undefined
@@ -122,6 +139,17 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
         >
           Social
         </button>
+        <button
+          type="button"
+          role="tab"
+          id="seo-tab-schema"
+          aria-controls="seo-panel-schema"
+          aria-selected={activeTab === 'schema'}
+          onClick={() => setActiveTab('schema')}
+          className="doc-seo-card__tab"
+        >
+          Schema
+        </button>
       </div>
 
       <div className="doc-seo-card__tab-content">
@@ -132,6 +160,9 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
         <div id="seo-panel-social" role="tabpanel" aria-labelledby="seo-tab-social" hidden={activeTab !== 'social'}>
           <FieldRenderer fields={[restrictedSocialField]} readOnly={readOnly} />
           <SocialImageInfo />
+        </div>
+        <div id="seo-panel-schema" role="tabpanel" aria-labelledby="seo-tab-schema" hidden={activeTab !== 'schema'}>
+          <SchemaDisplay />
         </div>
       </div>
     </section>

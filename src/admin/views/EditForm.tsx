@@ -90,14 +90,17 @@ const SaveButton: React.FC<SaveTarget> = (target) => {
 
 const isSettingsField = (field: Field): boolean => (field as { admin?: { position?: string } }).admin?.position === 'sidebar'
 
-/** Main column vs settings card, by `admin.position`; the visual editor's blocks field is dropped from the main column; the seo and pageType groups are extracted separately. */
-export function splitFields(fields: Field[], visualBlocksField?: string): { main: Field[]; settings: Field[]; seo?: Field; pageType?: Field } {
+/** Main column vs settings card, by `admin.position`; the visual editor's blocks field is dropped from the main column; the seo, access (membersOnly), and pageType groups are extracted separately. */
+export function splitFields(fields: Field[], visualBlocksField?: string): { main: Field[]; settings: Field[]; access?: Field; seo?: Field; pageType?: Field } {
   const main: Field[] = []
   const settings: Field[] = []
+  let access: Field | undefined
   let seo: Field | undefined
   let pageType: Field | undefined
   for (const field of fields) {
-    if (field.type === 'group' && 'name' in field && field.name === 'seo') {
+    if (field.type === 'group' && 'name' in field && field.name === 'membersOnly') {
+      access = field
+    } else if (field.type === 'group' && 'name' in field && field.name === 'seo') {
       seo = field
     } else if (field.type === 'select' && 'name' in field && field.name === 'schemaType') {
       pageType = field
@@ -105,7 +108,7 @@ export function splitFields(fields: Field[], visualBlocksField?: string): { main
     else if (visualBlocksField && field.type === 'blocks' && 'name' in field && field.name === visualBlocksField) continue
     else main.push(field)
   }
-  return { main, settings, seo, pageType }
+  return { main, settings, access, seo, pageType }
 }
 
 const PageContentCard: React.FC<{ count?: number; href?: string; isNew: boolean }> = ({ count, href, isNew }) => (
@@ -141,7 +144,7 @@ export const EditForm: React.FC<EditFormProps> = ({
 }) => {
   // Built from ALL fields (including the one hidden from view) so a save sends it back untouched.
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
-  const { main, settings, seo, pageType } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, settings: [], seo: undefined, pageType: undefined }), [fields, panel, visualBlocksField])
+  const { main, settings, access, seo, pageType } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, settings: [], access: undefined, seo: undefined, pageType: undefined }), [fields, panel, visualBlocksField])
   // Use either the extracted pageType or the one passed in (EditView extracts and passes it)
   const resolvedPageTypeField = pageTypeField || pageType
 
@@ -158,6 +161,14 @@ export const EditForm: React.FC<EditFormProps> = ({
                     <h2 className="doc-settings-card__title">Settings</h2>
                     <div className="doc-settings">
                       <FieldRenderer fields={settings} readOnly={readOnly} />
+                    </div>
+                  </section>
+                )}
+                {access && (
+                  <section className="doc-access-card">
+                    <h2 className="doc-access-card__title">Access</h2>
+                    <div className="doc-access">
+                      <FieldRenderer fields={[access]} readOnly={readOnly} />
                     </div>
                   </section>
                 )}

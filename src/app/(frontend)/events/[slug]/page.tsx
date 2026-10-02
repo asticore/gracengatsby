@@ -10,6 +10,7 @@ import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import { PageJsonLd } from '@/features/seo'
 import type { Event, EventRsvp, Media, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -72,6 +73,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="page-shell">
+      <PageJsonLd collection="events" doc={event} path={`/events/${slug}`} />
       {cover?.url && (
         <div className="relative mb-12 aspect-[16/6] w-full bg-[var(--color-cream-dim)]">
           <Image src={cover.url} alt={cover.alt || event.title} fill style={{ objectFit: 'cover' }} />

@@ -19,6 +19,7 @@ interface MediaGalleryViewProps {
   newDocumentURL?: string
   engine?: Engine
   searchParams?: Record<string, string | string[] | undefined>
+  embedded?: boolean
 }
 
 type ViewMode = 'gallery' | 'list'
@@ -85,7 +86,7 @@ function formatDate(value: unknown): string {
  * RenderServerComponent for that isRSC branch.
  */
 export async function MediaGalleryView(props: MediaGalleryViewProps) {
-  const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams } = props
+  const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams, embedded } = props
   const docs = data?.docs ?? []
   const adminRoute = engine?.config?.routes?.admin ?? '/admin'
   const slug = collectionConfig?.slug ?? 'media'
@@ -153,64 +154,68 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
 
   return (
     <div className="flex flex-col gap-[calc(var(--base)*1.25)] px-[var(--gutter-h)] pt-[calc(var(--base)*1.5)] pb-[calc(var(--base)*3)]">
-      <header className="flex flex-wrap items-end justify-between gap-[var(--base)] border-b border-[var(--theme-elevation-150)] pb-[calc(var(--base)*0.75)]">
-        <div>
-          <h1 className="m-0 text-[calc(var(--base)*1.5)] leading-[1.2] font-semibold">Media</h1>
-          <p className="mx-0 mb-0 mt-[calc(var(--base)*0.25)] text-[calc(var(--base)*0.8)] text-[var(--theme-elevation-600)]">
-            {totalDocs} file{totalDocs === 1 ? '' : 's'}
-          </p>
-        </div>
-        {hasCreatePermission && newDocumentURL ? (
-          <Link
-            href={newDocumentURL}
-            className="inline-flex items-center gap-[calc(var(--base)*0.35)] rounded-[4px] border border-[var(--ac-gold)] px-[calc(var(--base)*0.9)] py-[calc(var(--base)*0.5)] text-[calc(var(--base)*0.82)] font-medium text-[var(--ac-gold)] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[var(--ac-gold)] hover:text-[var(--theme-elevation-0)]"
-          >
-            Upload new
-          </Link>
-        ) : null}
-      </header>
-
-      <div className="flex flex-wrap items-center justify-between gap-[var(--base)]">
-        <div className="flex items-center gap-[calc(var(--base)*0.4)]">
-          <Link href={buildHref({ view: undefined })} className={tabClass(view === 'gallery')}>
-            Gallery
-          </Link>
-          <Link href={buildHref({ view: 'list' })} className={tabClass(view === 'list')}>
-            List
-          </Link>
-        </div>
-
-        {view === 'list' ? (
-          <form method="GET" className="flex items-center gap-[calc(var(--base)*0.4)]">
-            <input type="hidden" name="view" value="list" />
-            {currentSort ? <input type="hidden" name="sort" value={currentSort} /> : null}
-            <input
-              type="search"
-              name="search"
-              defaultValue={currentSearch}
-              placeholder="Search filename..."
-              className="rounded-[4px] border border-[var(--theme-elevation-200)] bg-transparent px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-900)] outline-none focus:border-[var(--ac-gold)]"
-            />
-            <button
-              type="submit"
-              className="rounded-[4px] border border-[var(--theme-elevation-200)] px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-700)] hover:border-[var(--ac-gold)] hover:text-[var(--ac-gold)]"
+      {!embedded && (
+        <header className="flex flex-wrap items-end justify-between gap-[var(--base)] border-b border-[var(--theme-elevation-150)] pb-[calc(var(--base)*0.75)]">
+          <div>
+            <h1 className="m-0 text-[calc(var(--base)*1.5)] leading-[1.2] font-semibold">Media</h1>
+            <p className="mx-0 mb-0 mt-[calc(var(--base)*0.25)] text-[calc(var(--base)*0.8)] text-[var(--theme-elevation-600)]">
+              {totalDocs} file{totalDocs === 1 ? '' : 's'}
+            </p>
+          </div>
+          {hasCreatePermission && newDocumentURL ? (
+            <Link
+              href={newDocumentURL}
+              className="inline-flex items-center gap-[calc(var(--base)*0.35)] rounded-[4px] border border-[var(--ac-gold)] px-[calc(var(--base)*0.9)] py-[calc(var(--base)*0.5)] text-[calc(var(--base)*0.82)] font-medium text-[var(--ac-gold)] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[var(--ac-gold)] hover:text-[var(--theme-elevation-0)]"
             >
-              Search
-            </button>
-            {currentSearch ? (
-              <Link href={buildHref({ search: undefined })} className="text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-500)] no-underline hover:text-[var(--ac-gold)]">
-                Clear
-              </Link>
-            ) : null}
-          </form>
-        ) : null}
-      </div>
+              Upload new
+            </Link>
+          ) : null}
+        </header>
+      )}
+
+      {!embedded && (
+        <div className="flex flex-wrap items-center justify-between gap-[var(--base)]">
+          <div className="flex items-center gap-[calc(var(--base)*0.4)]">
+            <Link href={buildHref({ view: undefined })} className={tabClass(view === 'gallery')}>
+              Gallery
+            </Link>
+            <Link href={buildHref({ view: 'list' })} className={tabClass(view === 'list')}>
+              List
+            </Link>
+          </div>
+
+          {view === 'list' ? (
+            <form method="GET" className="flex items-center gap-[calc(var(--base)*0.4)]">
+              <input type="hidden" name="view" value="list" />
+              {currentSort ? <input type="hidden" name="sort" value={currentSort} /> : null}
+              <input
+                type="search"
+                name="search"
+                defaultValue={currentSearch}
+                placeholder="Search filename..."
+                className="rounded-[4px] border border-[var(--theme-elevation-200)] bg-transparent px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-900)] outline-none focus:border-[var(--ac-gold)]"
+              />
+              <button
+                type="submit"
+                className="rounded-[4px] border border-[var(--theme-elevation-200)] px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-700)] hover:border-[var(--ac-gold)] hover:text-[var(--ac-gold)]"
+              >
+                Search
+              </button>
+              {currentSearch ? (
+                <Link href={buildHref({ search: undefined })} className="text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-500)] no-underline hover:text-[var(--ac-gold)]">
+                  Clear
+                </Link>
+              ) : null}
+            </form>
+          ) : null}
+        </div>
+      )}
 
       {galleryDocs.length === 0 ? (
         <p className="m-0 rounded-[4px] border border-dashed border-[var(--theme-elevation-200)] p-[calc(var(--base)*1.25)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-600)]">
           {currentSearch ? `No files match "${currentSearch}".` : 'No media uploaded yet.'}
         </p>
-      ) : view === 'gallery' ? (
+      ) : embedded || view === 'gallery' ? (
         <MediaGalleryGrid docs={galleryDocs} />
       ) : (
         <div className="overflow-x-auto rounded-[4px] border border-[var(--theme-elevation-150)]">
@@ -266,7 +271,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
         </div>
       )}
 
-      {totalPages > 1 ? (
+      {!embedded && totalPages > 1 ? (
         <nav className="flex items-center justify-center gap-[calc(var(--base)*0.5)] pt-[calc(var(--base)*0.5)]">
           <Link
             href={data?.hasPrevPage ? pageHref(page - 1) : '#'}

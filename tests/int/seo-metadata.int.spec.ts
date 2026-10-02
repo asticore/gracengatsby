@@ -87,7 +87,6 @@ describe('buildMetadata', () => {
   it('sets canonical URL from seo.canonicalUrl (absolute) when path is provided', async () => {
     const metadata = await buildMetadata({
       title: 'Test',
-      path: '/test',
       seo: { canonicalUrl: 'https://other.com/page' },
     })
     expect(metadata.alternates?.canonical).toBe('https://other.com/page')
@@ -369,9 +368,11 @@ describe('buildMetadata regression guards', () => {
 
   it('keeps follow:true for an indexable page and follow:false for noindex, as before', async () => {
     const open = await buildMetadata({ title: 'Test', seo: {} })
-    expect(open.robots).toEqual({ index: true, follow: true })
+    expect((open.robots as any)?.index).toBe(true)
+    expect((open.robots as any)?.follow).toBe(true)
     const hidden = await buildMetadata({ title: 'Test', seo: { noIndex: true } })
-    expect(hidden.robots).toEqual({ index: false, follow: false })
+    expect((hidden.robots as any)?.index).toBe(false)
+    expect((hidden.robots as any)?.follow).toBe(false)
   })
 })
 

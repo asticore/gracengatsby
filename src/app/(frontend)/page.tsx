@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const homepage = await getHomepage()
-  return buildMetadata({ title: homepage?.title || 'Grace & Gatsby', seo: homepage?.seo })
+  return buildMetadata({ title: homepage?.title || 'Grace & Gatsby', seo: homepage?.seo, path: '/' })
 }
 
 export default async function HomePage() {

@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { findPageByPath } from '@/utilities/pagePaths'
 import { buildMetadata } from '@/utilities/seo'
+import { PageJsonLd } from '@/features/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,7 @@ export default async function BuiltPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="built-page">
+      <PageJsonLd collection="pages" doc={page} path={`/${slug.join('/')}`} />
       {ancestors.length > 0 && (
         <nav
           className="mx-auto flex max-w-[var(--max-width)] flex-wrap gap-2 px-6 pt-4 text-[0.8rem] tracking-[0.04em] text-[rgba(20,17,15,0.6)]"

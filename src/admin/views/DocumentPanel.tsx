@@ -30,6 +30,8 @@ export type DocumentPanelInfo = {
   updatedByName?: string
   /** Display name for who created the document. */
   createdByName?: string
+  /** Whether this collection tracks authorship (has createdBy/updatedBy fields). */
+  trackAuthorship?: boolean
   /** Visual editor entry for this document, when the collection has one. */
   visualEditorHref?: string
   /** Public URL of the document, when it has one. */
@@ -157,13 +159,12 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
 const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
   const [copied, setCopied] = useState(false)
   const apiPath = info.id ? `/api/${info.collectionSlug}/${info.id}` : undefined
-  const hasEditByInfo = info.updatedByName !== undefined || info.createdByName !== undefined
   return (
     <Box id="details" title="Details">
       <dl className="doc-details">
         <dt>ID</dt>
         <dd>{info.id ?? '-'}</dd>
-        {hasEditByInfo && (
+        {info.trackAuthorship && (
           <>
             <dt>Last edited by</dt>
             <dd>{info.updatedByName || 'Unknown'} on {formatDate(info.updatedAt)}</dd>

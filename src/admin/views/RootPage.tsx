@@ -148,7 +148,7 @@ export async function RootPage({ params, searchParams }: Args) {
     if (!collectionSlug) notFound()
     if (!getCollectionConfig(context.engine, collectionSlug)) notFound()
 
-    if (segments.length === 2) return <ListView collectionSlug={collectionSlug} />
+    if (segments.length === 2) return <ListView collectionSlug={collectionSlug} searchParams={search} />
     if (segments.length === 3 && segments[2] === 'create') return <EditView collectionSlug={collectionSlug} />
     if (segments.length === 4 && segments[3] === 'versions') {
       const id = Number(segments[2])

@@ -63,7 +63,9 @@ export const DEFAULT_SCHEMA_TYPE: Record<string, string> = {
 export const schemaTypeField = (collection: keyof typeof SCHEMA_TYPES_BY_COLLECTION): Field => {
   const options = SCHEMA_TYPES_BY_COLLECTION[collection]
   const defaultType = DEFAULT_SCHEMA_TYPE[collection]
-  const defaultLabel = options.find((o) => o.value === defaultType)?.label || defaultType
+  const defaultLabelRaw = options.find((o) => o.value === defaultType)?.label || defaultType
+  // Strip trailing " (default)" from the option label for a cleaner placeholder
+  const defaultLabel = defaultLabelRaw.endsWith(' (default)') ? defaultLabelRaw.slice(0, -10) : defaultLabelRaw
   const placeholderText = `Default (${defaultLabel})`
 
   return {

@@ -66,6 +66,61 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('adds authorship, schema_type, and product SEO columns', async () => {
+    const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+      for (const col of expectedColumns) {
+        expect(columnNames, `${table} should have column ${col}`).toContain(col)
+      }
+    }
+
+    const authorshipCols = ['created_by_id', 'updated_by_id', 'schema_type']
+    const authorshipVersionCols = ['version_created_by_id', 'version_updated_by_id', 'version_schema_type']
+    const productSeoExtraCols = ['seo_canonical_url', 'seo_no_follow', 'seo_social_title', 'seo_social_description', 'seo_x_card', 'seo_x_image_id']
+    const productSeoExtraVersionCols = ['version_seo_canonical_url', 'version_seo_no_follow', 'version_seo_social_title', 'version_seo_social_description', 'version_seo_x_card', 'version_seo_x_image_id']
+
+    // Pages
+    if (tables.includes('eg_pages')) {
+      await checkColumns('eg_pages', authorshipCols)
+    }
+    if (tables.includes('_eg_pages_v')) {
+      await checkColumns('_eg_pages_v', authorshipVersionCols)
+    }
+
+    // Posts
+    if (tables.includes('eg_posts')) {
+      await checkColumns('eg_posts', authorshipCols)
+    }
+    if (tables.includes('_eg_posts_v')) {
+      await checkColumns('_eg_posts_v', authorshipVersionCols)
+    }
+
+    // Products (authorship + extra SEO/social fields)
+    if (tables.includes('eg_products')) {
+      await checkColumns('eg_products', [...authorshipCols, ...productSeoExtraCols])
+    }
+    if (tables.includes('_eg_products_v')) {
+      await checkColumns('_eg_products_v', [...authorshipVersionCols, ...productSeoExtraVersionCols])
+    }
+
+    // Events
+    if (tables.includes('eg_events')) {
+      await checkColumns('eg_events', authorshipCols)
+    }
+    if (tables.includes('_eg_events_v')) {
+      await checkColumns('_eg_events_v', authorshipVersionCols)
+    }
+
+    // Courses
+    if (tables.includes('eg_courses')) {
+      await checkColumns('eg_courses', authorshipCols)
+    }
+    if (tables.includes('_eg_courses_v')) {
+      await checkColumns('_eg_courses_v', authorshipVersionCols)
+    }
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

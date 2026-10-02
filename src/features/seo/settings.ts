@@ -14,6 +14,12 @@ export type DocumentSeo = {
   metaDescription?: string | null
   ogImage?: (number | string | Media) | null
   noIndex?: boolean | null
+  canonicalUrl?: string | null
+  noFollow?: boolean | null
+  socialTitle?: string | null
+  socialDescription?: string | null
+  xCard?: 'summary' | 'summary_large_image' | null
+  xImage?: (number | string | Media) | null
 } | null
 
 /**

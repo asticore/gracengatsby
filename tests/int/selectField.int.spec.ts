@@ -61,6 +61,33 @@ describe('SelectField placeholder support', () => {
 
       expect(placeholderText).toBe('Default (Blog post (default))')
     })
+
+    it('should strip trailing " (default)" from option label when building placeholder', () => {
+      const options = [
+        { label: 'Web page (default)', value: 'WebPage' },
+        { label: 'About page', value: 'AboutPage' },
+      ]
+      const defaultValue = 'WebPage'
+      const defaultLabelRaw = options.find((o) => o.value === defaultValue)?.label || defaultValue
+      // Strip trailing " (default)" from the option label for a cleaner placeholder
+      const defaultLabel = defaultLabelRaw.endsWith(' (default)') ? defaultLabelRaw.slice(0, -10) : defaultLabelRaw
+      const placeholderText = `Default (${defaultLabel})`
+
+      expect(placeholderText).toBe('Default (Web page)')
+    })
+
+    it('should not strip " (default)" from labels that do not have it', () => {
+      const options = [
+        { label: 'Article', value: 'Article' },
+        { label: 'News article', value: 'NewsArticle' },
+      ]
+      const defaultValue = 'Article'
+      const defaultLabelRaw = options.find((o) => o.value === defaultValue)?.label || defaultValue
+      const defaultLabel = defaultLabelRaw.endsWith(' (default)') ? defaultLabelRaw.slice(0, -10) : defaultLabelRaw
+      const placeholderText = `Default (${defaultLabel})`
+
+      expect(placeholderText).toBe('Default (Article)')
+    })
   })
 
   describe('field configuration validation', () => {

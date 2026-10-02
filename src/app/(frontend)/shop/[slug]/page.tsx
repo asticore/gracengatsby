@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const product = await getProduct(slug)
   if (!product) return {}
-  return buildMetadata({ title: product.title, seo: product.seo })
+  return buildMetadata({ title: product.title, seo: product.seo, path: `/shop/${slug}` })
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {

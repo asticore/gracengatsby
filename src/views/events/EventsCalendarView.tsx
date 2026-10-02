@@ -18,6 +18,7 @@ interface EventsCalendarViewProps {
   engine?: Engine
   searchParams?: Record<string, string | string[] | undefined>
   user?: EngineRequest['user']
+  embedded?: boolean
 }
 
 type ViewMode = 'list' | 'calendar'
@@ -83,7 +84,7 @@ function parseMonthParam(value: string | undefined): { year: number; month: numb
  * the stock list would enforce).
  */
 export async function EventsCalendarView(props: EventsCalendarViewProps) {
-  const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams, user } = props
+  const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams, user, embedded } = props
   const adminRoute = engine?.config?.routes?.admin ?? '/admin'
   const slug = collectionConfig?.slug ?? 'events'
 
@@ -118,7 +119,7 @@ export async function EventsCalendarView(props: EventsCalendarViewProps) {
         : 'border-[var(--theme-elevation-200)] text-[var(--theme-elevation-600)] hover:border-[var(--theme-elevation-400)]'
     }`
 
-  const header = (totalCount: number) => (
+  const header = (totalCount: number) => embedded ? null : (
     <header className="flex flex-wrap items-end justify-between gap-[var(--base)] border-b border-[var(--theme-elevation-150)] pb-[calc(var(--base)*0.75)]">
       <div>
         <h1 className="m-0 text-[calc(var(--base)*1.5)] leading-[1.2] font-semibold">Events</h1>
@@ -137,7 +138,7 @@ export async function EventsCalendarView(props: EventsCalendarViewProps) {
     </header>
   )
 
-  const modeTabs = (
+  const modeTabs = embedded ? null : (
     <div className="flex items-center gap-[calc(var(--base)*0.4)]">
       <Link href={buildHref({ view: undefined })} className={tabClass(view === 'list')}>
         List

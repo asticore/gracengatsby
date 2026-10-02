@@ -13,6 +13,19 @@ const idOf = (value: unknown): number | string | undefined => {
   return typeof value === 'number' || typeof value === 'string' ? value : undefined
 }
 
+/** Get user display name from a user object or ID; returns name if available, else email, else the ID as string. */
+function userDisplayName(user: unknown): string | undefined {
+  if (!user) return undefined
+  if (typeof user === 'string' || typeof user === 'number') return String(user)
+  if (typeof user === 'object') {
+    const u = user as { name?: unknown; email?: unknown; id?: unknown }
+    if (typeof u.name === 'string' && u.name) return u.name
+    if (typeof u.email === 'string' && u.email) return u.email
+    if (u.id !== undefined) return String(u.id)
+  }
+  return undefined
+}
+
 /** Public URL of a page: its slug under every ancestor's slug (the parent chain is the URL; see utilities/pagePaths.ts). */
 async function pageLiveHref(engine: AdminEngine, doc: Record<string, unknown>): Promise<string | undefined> {
   if (doc.isHomepage) return '/'
@@ -80,19 +93,37 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const blocksCount = Array.isArray(rawBlocks) ? rawBlocks.length : 0
 
   const docRecord = doc as Record<string, unknown> | null
+
+  // Resolve updatedBy and createdBy display names (relationship may be an id or a populated user).
+  const resolveName = async (value: unknown): Promise<string | undefined> => {
+    if (value === null || value === undefined) return undefined
+    if (typeof value === 'object') return userDisplayName(value)
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) return userDisplayName(value)
+    const user = await context.engine.findByID({ collection: 'users', id: numeric, depth: 0, overrideAccess: true }).catch((): null => null)
+    return userDisplayName(user) ?? userDisplayName(value)
+  }
+  const updatedByName = docRecord ? await resolveName(docRecord.updatedBy) : undefined
+  const createdByName = docRecord ? await resolveName(docRecord.createdBy) : undefined
+
   const panel: DocumentPanelInfo = {
     canCreate: Boolean(canCreate),
     canDelete: true, // the REST delete route enforces the real access check
     collectionSlug,
     createdAt: typeof docRecord?.createdAt === 'string' ? docRecord.createdAt : undefined,
+    createdByName,
     draftsEnabled,
     id,
     label,
     liveHref: docRecord ? await liveHrefFor(context.engine, collectionSlug, docRecord) : undefined,
     status,
     updatedAt: typeof docRecord?.updatedAt === 'string' ? docRecord.updatedAt : undefined,
+    updatedByName,
     visualEditorHref: surface?.kind === 'collection' && id !== undefined ? `/admin/visual-editor/collection/${collectionSlug}/${id}` : undefined,
   }
+
+  // Extract pageType field if it exists
+  const pageTypeField = collection.fields.find((f) => f.type === 'select' && 'name' in f && f.name === 'schemaType')
 
   return (
     <div className="collection-edit">
@@ -110,6 +141,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
         draftsEnabled={draftsEnabled}
         fields={sanitizeFieldsForClient(collection.fields)}
         id={id}
+        pageTypeField={pageTypeField ? sanitizeFieldsForClient([pageTypeField])[0] : undefined}
         panel={panel}
         visualBlocksCount={blocksCount}
         visualBlocksField={hasBlocksField ? blocksField : undefined}

@@ -7,7 +7,7 @@ import { buildMetadata } from '@/utilities/seo'
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return buildMetadata({ title: 'Courses' })
+  return buildMetadata({ title: 'Courses', path: '/courses' })
 }
 
 export default async function CoursesIndexRoute() {

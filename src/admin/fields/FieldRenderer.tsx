@@ -151,12 +151,13 @@ const SingleFieldRenderer: React.FC<{
   parentPath: string
   readOnly?: boolean
 }> = ({ field, parentPath, readOnly }) => {
+  const hidden = Boolean((field as { admin?: { hidden?: boolean } }).admin?.hidden)
   const visible = useFieldVisible(field, parentPath)
 
   const overridePath = (field as { admin?: { components?: { Field?: string } } }).admin?.components?.Field
   const Override = resolveComponent(overridePath)
 
-  if (!visible) return null
+  if (hidden || !visible) return null
 
   const fieldReadOnly = readOnly || Boolean((field as { admin?: { readOnly?: boolean } }).admin?.readOnly)
 

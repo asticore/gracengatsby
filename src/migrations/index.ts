@@ -16,6 +16,7 @@ import * as migration_20260828_130000_backups from './20260828_130000_backups';
 import * as migration_20260830_110000_members from './20260830_110000_members';
 import * as migration_20260830_120000_courses from './20260830_120000_courses';
 import * as migration_20260830_130000_ab_testing from './20260830_130000_ab_testing';
+import * as migration_20261002_100000_seo_social_fields from './20261002_100000_seo_social_fields';
 
 export const migrations = [
   {
@@ -107,5 +108,10 @@ export const migrations = [
     up: migration_20260830_130000_ab_testing.up,
     down: migration_20260830_130000_ab_testing.down,
     name: '20260830_130000_ab_testing',
+  },
+  {
+    up: migration_20261002_100000_seo_social_fields.up,
+    down: migration_20261002_100000_seo_social_fields.down,
+    name: '20261002_100000_seo_social_fields',
   },
 ];

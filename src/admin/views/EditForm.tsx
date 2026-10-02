@@ -38,6 +38,7 @@ import { DocumentInfoProvider, FormProvider } from '@/admin/context'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { flattenDoc } from '@/admin/fields/shared'
 import { DocumentPanel, type DocumentPanelInfo } from './DocumentPanel'
+import { SeoCard } from './SeoCard'
 import { useDocumentSave, type SaveTarget } from './useDocumentSave'
 
 export type EditFormProps = {
@@ -87,16 +88,19 @@ const SaveButton: React.FC<SaveTarget> = (target) => {
 
 const isSettingsField = (field: Field): boolean => (field as { admin?: { position?: string } }).admin?.position === 'sidebar'
 
-/** Main column vs settings card, by `admin.position`; the visual editor's blocks field is dropped from the main column. */
-export function splitFields(fields: Field[], visualBlocksField?: string): { main: Field[]; settings: Field[] } {
+/** Main column vs settings card, by `admin.position`; the visual editor's blocks field is dropped from the main column; the seo group is extracted separately. */
+export function splitFields(fields: Field[], visualBlocksField?: string): { main: Field[]; settings: Field[]; seo?: Field } {
   const main: Field[] = []
   const settings: Field[] = []
+  let seo: Field | undefined
   for (const field of fields) {
-    if (isSettingsField(field)) settings.push(field)
+    if (field.type === 'group' && 'name' in field && field.name === 'seo') {
+      seo = field
+    } else if (isSettingsField(field)) settings.push(field)
     else if (visualBlocksField && field.type === 'blocks' && 'name' in field && field.name === visualBlocksField) continue
     else main.push(field)
   }
-  return { main, settings }
+  return { main, settings, seo }
 }
 
 const PageContentCard: React.FC<{ count?: number; href?: string; isNew: boolean }> = ({ count, href, isNew }) => (
@@ -131,7 +135,7 @@ export const EditForm: React.FC<EditFormProps> = ({
 }) => {
   // Built from ALL fields (including the one hidden from view) so a save sends it back untouched.
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
-  const { main, settings } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, settings: [] }), [fields, panel, visualBlocksField])
+  const { main, settings, seo } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, settings: [], seo: undefined }), [fields, panel, visualBlocksField])
 
   return (
     <DocumentInfoProvider value={{ collectionSlug, globalSlug, id }}>
@@ -149,6 +153,7 @@ export const EditForm: React.FC<EditFormProps> = ({
                     </div>
                   </section>
                 )}
+                {seo && <SeoCard seoField={seo} readOnly={readOnly} liveHref={panel.liveHref} />}
                 {visualBlocksField && <PageContentCard count={visualBlocksCount} href={panel.visualEditorHref} isNew={id === undefined} />}
               </div>
             </div>

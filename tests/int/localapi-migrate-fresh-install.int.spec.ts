@@ -17,7 +17,7 @@
 // project already use, just pointed at nothing instead of the persistent dev
 // state directory - no new dependency needed.
 //
-// This test runs every one of this app's 18 real migrations (the same
+// This test runs every one of this app's real migrations (the same
 // `src/migrations/index.ts` barrel `pnpm cms migrate` itself would have run)
 // against that empty database via `runMigrations`, then proves the two things
 // the acceptance requirement actually cares about: (a) `eg_migrations`
@@ -94,13 +94,13 @@ describe('localapi/migrate - fresh-install acceptance proof (genuinely empty D1,
     expect(tables).toEqual([])
   })
 
-  it("runs every one of this app's 18 real migrations, in barrel order, against nothing", async () => {
+  it("runs every one of this app's real migrations, in barrel order, against nothing", async () => {
     const result = await runMigrations({ db, engineDb, logger: consoleLogger, migrations: REAL_MIGRATIONS })
 
     expect(result.skipped).toEqual([])
     expect(result.batch).toBe(1)
     expect(result.ran).toEqual(migrations.map((m) => m.name))
-    expect(result.ran).toHaveLength(18)
+    expect(result.ran).toHaveLength(migrations.length)
   }, 60_000)
 
   it('records one eg_migrations row per migration file, in the correct order and batch', async () => {

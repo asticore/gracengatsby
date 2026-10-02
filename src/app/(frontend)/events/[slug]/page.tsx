@@ -37,7 +37,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const event = await getEvent(slug)
   if (!event) return {}
-  return buildMetadata({ title: event.title })
+  return buildMetadata({
+    title: event.title,
+    path: `/events/${slug}`,
+    kind: 'article',
+    publishedAt: event.createdAt,
+    updatedAt: event.updatedAt,
+  })
 }
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {

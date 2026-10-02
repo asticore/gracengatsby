@@ -25,26 +25,31 @@ export function formatCellValue(
   // Field type-specific formatting
   if (columnField) {
     const fieldType = (columnField as { type?: string }).type
+    const fieldName = (columnField as { name?: string }).name
 
     // Checkbox -> Yes/No
     if (fieldType === 'checkbox') {
       return cell === true ? 'Yes' : 'No'
     }
 
-    // Date -> locale date
-    if (fieldType === 'date' || fieldType === 'datetime') {
+    // System columns: createdAt/updatedAt (type may be unset)
+    // or explicit date/datetime fields
+    if (fieldName === 'createdAt' || fieldName === 'updatedAt' || fieldType === 'date' || fieldType === 'datetime') {
       if (typeof cell === 'string') {
         const d = new Date(cell)
         if (!Number.isNaN(d.getTime())) {
-          return d.toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            ...(fieldType === 'datetime' && { hour: '2-digit', minute: '2-digit' }),
+          return d.toLocaleString(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
           })
         }
       }
       return String(cell)
+    }
+
+    // Status column -> capitalize ('published' -> 'Published', 'draft' -> 'Draft')
+    if (fieldName === '_status' && typeof cell === 'string') {
+      return cell.charAt(0).toUpperCase() + cell.slice(1).toLowerCase()
     }
 
     // Select -> option label

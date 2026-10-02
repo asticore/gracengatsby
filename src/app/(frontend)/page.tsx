@@ -8,6 +8,7 @@ import { ProductCard } from '@/components/ProductCard'
 import { getEngine } from '@/lib/engine'
 import { getHomepage } from '@/utilities/pagePaths'
 import { buildMetadata } from '@/utilities/seo'
+import { PageJsonLd } from '@/features/seo'
 import type { Event, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -26,6 +27,7 @@ export default async function HomePage() {
   if (homepage) {
     return (
       <div className="built-page">
+        <PageJsonLd collection="pages" doc={homepage} path="/" />
         {(homepage.blocks || []).map((block, index) => (
           <BlockRenderer key={block.id || index} block={block} index={index} />
         ))}

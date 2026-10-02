@@ -16,6 +16,7 @@ import type { Field } from '@/engine'
 import { useFormModified } from '@/admin/context'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { resolveName } from './authorName'
+import { useAuthorNames } from './useAuthorNames'
 import { useDocumentSave } from './useDocumentSave'
 
 export type DocumentPanelInfo = {
@@ -121,10 +122,11 @@ const ConfirmButton: React.FC<{
 
 const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: string }> = ({ collectionSlug, id, updatedAt }) => {
   const [state, setState] = useState<{ total: number; latest?: string; updatedBy?: unknown } | 'loading' | 'unavailable'>('loading')
+  const resolveName_ = useAuthorNames(state !== 'loading' && typeof state === 'object' ? [state.updatedBy] : [])
 
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt&depth=1`, { credentials: 'include' })
+    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt&depth=0`, { credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) throw new Error('versions unavailable')
         const body = (await response.json()) as { docs?: Array<{ updatedAt?: string; updatedBy?: unknown; version?: { updatedBy?: unknown } }>; totalDocs?: number }
@@ -147,7 +149,7 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
           <p className="doc-line">
             <strong>{state.total}</strong> {state.total === 1 ? 'version' : 'versions'}
           </p>
-          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)} by {resolveName(state.updatedBy)}</p>}
+          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)} by {resolveName_(state.updatedBy)}</p>}
           <Link className="doc-link" href={`/admin/collections/${collectionSlug}/${id}/versions`}>
             View past drafts
           </Link>

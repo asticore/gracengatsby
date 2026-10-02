@@ -189,7 +189,7 @@ function flattenFieldsForColumns(fields: Field[]): Field[] {
  * Supports: text, textarea, email, number, checkbox, select, date, relationship/upload (hasMany false).
  * Includes synthetic columns: id, createdAt, updatedAt, _status (when drafts).
  */
-export function deriveColumns(fields: Field[], opts: { drafts: boolean }): ColumnDef[] {
+export function deriveColumns(fields: Field[], opts: { drafts: boolean; collectionSlug?: string }): ColumnDef[] {
   const columns: ColumnDef[] = []
   const fieldNames = new Set<string>()
 
@@ -261,6 +261,17 @@ export function deriveColumns(fields: Field[], opts: { drafts: boolean }): Colum
   }
 
   // Synthetic columns
+  // Thumbnail column for media collection (non-sortable, non-filterable display column)
+  if (opts.collectionSlug === 'media') {
+    columns.push({
+      name: 'thumbnail',
+      label: 'Thumbnail',
+      type: 'thumbnail',
+      sortable: false,
+      filterable: false,
+    })
+  }
+
   if (!fieldNames.has('id')) {
     columns.push({
       name: 'id',
@@ -378,7 +389,7 @@ export const LIST_DEFAULTS: Record<string, CollectionListDefaults> = {
     limit: 25,
   },
   media: {
-    columns: ['alt', 'createdAt', 'updatedAt'],
+    columns: ['thumbnail', 'alt', 'createdAt', 'updatedAt'],
     searchFields: ['alt'],
     sort: '-createdAt',
     limit: 25,

@@ -483,7 +483,7 @@ describe('admin/list/listQuery', () => {
     })
 
     it('all default columns exist via deriveColumns for media', () => {
-      const cols = deriveColumns(Media.fields, { drafts: false })
+      const cols = deriveColumns(Media.fields, { drafts: false, collectionSlug: 'media' })
       const colNames = new Set(cols.map((c) => c.name))
       const defaults = LIST_DEFAULTS.media.columns
       for (const colName of defaults) {

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import React from 'react'
+import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
 
 import { AddToCartButton } from '@/components/AddToCartButton'
@@ -32,7 +33,7 @@ async function getEvent(slug: string) {
   return docs[0] || null
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const event = await getEvent(slug)
   if (!event) return {}

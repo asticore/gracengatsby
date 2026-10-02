@@ -5,6 +5,7 @@ import { CourseScreen, courseBySlug } from '@/features/courses'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import { PageJsonLd } from '@/features/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function CourseRoute({ params }: { params: Promise<{ slug: string }> }) {
+  const flags = await getFeatureFlags()
   const { slug } = await params
-  return <CourseScreen slug={slug} />
+  const course = flags.lms ? await courseBySlug(await getEngine(), slug) : null
+
+  return (
+    <>
+      {course && <PageJsonLd collection="courses" doc={course} path={`/courses/${slug}`} />}
+      <CourseScreen slug={slug} />
+    </>
+  )
 }

@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
   const engine = await getEngine()
   const settings = (await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)) as BlogSetting | null
-  return buildMetadata({ title: settings?.archiveTitle || 'Journal' })
+  return buildMetadata({ title: settings?.archiveTitle || 'Journal', path: '/blog' })
 }
 
 export default async function BlogArchivePage() {

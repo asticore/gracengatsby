@@ -106,6 +106,8 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const updatedByName = docRecord ? await resolveName(docRecord.updatedBy) : undefined
   const createdByName = docRecord ? await resolveName(docRecord.createdBy) : undefined
 
+  const trackAuthorship = collection.fields.some((f) => 'name' in f && f.name === 'createdBy')
+
   const panel: DocumentPanelInfo = {
     canCreate: Boolean(canCreate),
     canDelete: true, // the REST delete route enforces the real access check
@@ -117,6 +119,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
     label,
     liveHref: docRecord ? await liveHrefFor(context.engine, collectionSlug, docRecord) : undefined,
     status,
+    trackAuthorship,
     updatedAt: typeof docRecord?.updatedAt === 'string' ? docRecord.updatedAt : undefined,
     updatedByName,
     visualEditorHref: surface?.kind === 'collection' && id !== undefined ? `/admin/visual-editor/collection/${collectionSlug}/${id}` : undefined,

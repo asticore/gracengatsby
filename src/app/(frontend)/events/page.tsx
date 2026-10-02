@@ -8,7 +8,7 @@ import { buildMetadata } from '@/utilities/seo'
 import type { Event } from '@/engage-types'
 
 export async function generateMetadata() {
-  return buildMetadata({ title: 'Events' })
+  return buildMetadata({ title: 'Events', path: '/events' })
 }
 
 export const dynamic = 'force-dynamic'

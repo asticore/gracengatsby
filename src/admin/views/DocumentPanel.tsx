@@ -12,7 +12,9 @@
 
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
+import type { Field } from '@/engine'
 import { useFormModified } from '@/admin/context'
+import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { useDocumentSave } from './useDocumentSave'
 
 export type DocumentPanelInfo = {
@@ -24,6 +26,10 @@ export type DocumentPanelInfo = {
   status?: string
   createdAt?: string
   updatedAt?: string
+  /** Display name for who last edited the document. */
+  updatedByName?: string
+  /** Display name for who created the document. */
+  createdByName?: string
   /** Visual editor entry for this document, when the collection has one. */
   visualEditorHref?: string
   /** Public URL of the document, when it has one. */
@@ -151,11 +157,20 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
 const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
   const [copied, setCopied] = useState(false)
   const apiPath = info.id ? `/api/${info.collectionSlug}/${info.id}` : undefined
+  const hasEditByInfo = info.updatedByName !== undefined || info.createdByName !== undefined
   return (
     <Box id="details" title="Details">
       <dl className="doc-details">
         <dt>ID</dt>
         <dd>{info.id ?? '-'}</dd>
+        {hasEditByInfo && (
+          <>
+            <dt>Last edited by</dt>
+            <dd>{info.updatedByName || 'Unknown'} on {formatDate(info.updatedAt)}</dd>
+            <dt>Created by</dt>
+            <dd>{info.createdByName || 'Unknown'}</dd>
+          </>
+        )}
         <dt>Last modified</dt>
         <dd>{formatDate(info.updatedAt)}</dd>
         <dt>Created</dt>
@@ -191,7 +206,8 @@ const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
 export const DocumentPanel: React.FC<{
   info: DocumentPanelInfo
   readOnly?: boolean
-}> = ({ info, readOnly }) => {
+  pageTypeField?: Field
+}> = ({ info, readOnly, pageTypeField }) => {
   const modified = useFormModified()
   const { busy, duplicate, error, remove, save, savedAt } = useDocumentSave({
     collectionSlug: info.collectionSlug,
@@ -276,6 +292,13 @@ export const DocumentPanel: React.FC<{
 
       {info.draftsEnabled && !isNew && info.id !== undefined && (
         <RevisionsBox collectionSlug={info.collectionSlug} id={info.id} updatedAt={info.updatedAt} />
+      )}
+
+      {pageTypeField && (
+        <Box id="pagetype" title="Page type">
+          <FieldRenderer fields={[pageTypeField]} readOnly={readOnly} />
+          <p className="doc-muted">Used for search engine structured data.</p>
+        </Box>
       )}
 
       {!isNew && <DetailsBox info={info} />}

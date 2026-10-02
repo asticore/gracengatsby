@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+import { resolveSeo } from '@/features/seo/resolve'
+import { getSeoContext } from '@/features/seo/settings'
 import { getEngine } from '@/lib/engine'
 import type { Media, SiteSetting } from '@/engage-types'
 
@@ -73,63 +75,96 @@ const resolveCanonical = (baseUrl: string, path: string | undefined, customCanon
 }
 
 /**
- * Merges a document's own SEO fields with the site-wide defaults from
- * Site Settings > SEO. Used by every public route's generateMetadata().
+ * Merges a document's own SEO fields with the site-wide defaults (Site Settings > SEO
+ * and, when the SEO feature is on, the SEO & Analytics settings). Used by every public
+ * route's generateMetadata().
+ *
+ * The page-level metadata replaces the layout-level one wholesale, so everything the
+ * layout would have added (canonical, og:url, site name, X handle, image size, article
+ * type) has to be produced here as well.
  */
 export const buildMetadata = async (opts: {
   title: string
   seo?: SeoLike
   path?: string
   featuredImage?: (number | string | Media) | null
+  kind?: 'website' | 'article'
+  publishedAt?: string | null
+  updatedAt?: string | null
 }): Promise<Metadata> => {
   const engine = await getEngine()
   const settings = (await engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null)) as SiteSetting | null
+  const context = await getSeoContext()
+  const resolved = context.enabled
+    ? resolveSeo(context, {
+        title: opts.title,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        seo: opts.seo as any,
+        path: opts.path,
+        featuredImage: opts.featuredImage,
+        kind: opts.kind,
+        publishedAt: opts.publishedAt,
+        updatedAt: opts.updatedAt,
+      })
+    : null
 
+  // The document's own meta title wins over its name, then the site template is applied.
+  const pageTitle = opts.seo?.metaTitle?.trim() || opts.title
+  const featureTemplate = context.settings?.defaults?.titleTemplate?.trim()
   const template = settings?.seo?.titleTemplate || '%s'
-  const title = template.includes('%s') ? template.replace('%s', opts.title) : opts.title
-  const description = opts.seo?.metaDescription || settings?.seo?.defaultDescription || undefined
+  const title =
+    resolved && featureTemplate
+      ? resolved.title
+      : template.includes('%s')
+        ? template.replace('%s', pageTitle)
+        : pageTitle
+  const description = opts.seo?.metaDescription || resolved?.description || settings?.seo?.defaultDescription || undefined
 
-  // Open Graph / Social title and description
-  // socialTitle falls back to the same (templated) title as before
+  // Share title and description fall back to the page's normal ones.
   const socialTitle = opts.seo?.socialTitle || title
   const socialDescription = opts.seo?.socialDescription || description
 
-  // Image fallback chain: ogImage > featuredImage > site default
-  const ogImageUrl = resolveSocialImage(opts.seo?.ogImage, opts.featuredImage, settings?.seo?.defaultOgImage)
-
-  // Twitter/X image fallback chain: xImage > social image chain
-  const xImageUrl = resolveTwitterImage(opts.seo?.xImage, ogImageUrl)
-
-  // X card type: explicit choice, otherwise the large image card as before
-  const xCard = opts.seo?.xCard || 'summary_large_image'
+  // Image fallback chain: social image > featured image > site default.
+  const ogImageUrl = resolveSocialImage(opts.seo?.ogImage, opts.featuredImage, settings?.seo?.defaultOgImage) || resolved?.image?.url
+  const xImageUrl = resolveTwitterImage(opts.seo?.xImage, ogImageUrl) || resolved?.twitterImage?.url
+  const imageSize = resolved?.image && resolved.image.url === ogImageUrl ? { width: resolved.image.width, height: resolved.image.height } : {}
+  const xCard = opts.seo?.xCard || resolved?.twitterCard || 'summary_large_image'
 
   const siteIndexable = settings?.seo?.siteIndexable !== false
-  const noIndex = Boolean(opts.seo?.noIndex) || !siteIndexable
+  const noIndex = Boolean(opts.seo?.noIndex) || !siteIndexable || Boolean(resolved?.noIndex)
   const noFollow = Boolean(opts.seo?.noFollow) || noIndex
 
-  // Only an explicit canonical is emitted here; the layout-level SEO feature already provides the default one.
-  const siteUrl = process.env.SITE_URL || 'https://gracengatsby.com'
-  const baseUrl = siteUrl.replace(/\/+$/, '')
-  const canonical = opts.seo?.canonicalUrl ? resolveCanonical(baseUrl, opts.path, opts.seo.canonicalUrl) : undefined
+  // An explicit canonical always wins; otherwise the path-based one when the route told us its path.
+  const baseUrl = (resolved ? context.baseUrl : process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
+  const canonical = opts.seo?.canonicalUrl
+    ? resolveCanonical(baseUrl, opts.path, opts.seo.canonicalUrl)
+    : resolved && opts.path
+      ? resolved.canonical
+      : undefined
 
-  return {
+  const metadata: Metadata = {
     title,
     description,
-    robots: {
-      index: !noIndex,
-      follow: !noFollow,
-    },
+    robots: resolved
+      ? { index: !noIndex, follow: !noFollow, googleBot: { index: !noIndex, follow: !noFollow } }
+      : { index: !noIndex, follow: !noFollow },
     openGraph: {
+      ...(resolved ? { type: resolved.kind, siteName: resolved.siteName || undefined } : {}),
+      ...(resolved && canonical ? { url: canonical } : {}),
       title: socialTitle || title,
       description: socialDescription || description,
-      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
+      images: ogImageUrl ? [{ url: ogImageUrl, ...imageSize }] : undefined,
+      ...(resolved?.kind === 'article' ? { publishedTime: resolved.publishedAt, modifiedTime: resolved.updatedAt } : {}),
     },
     twitter: {
       card: xCard as 'summary' | 'summary_large_image',
       title: socialTitle || title,
       description: socialDescription || description,
       images: xImageUrl ? [xImageUrl] : undefined,
+      ...(resolved?.twitterHandle ? { site: resolved.twitterHandle, creator: resolved.twitterHandle } : {}),
     },
     alternates: canonical ? { canonical } : undefined,
   }
+  if (resolved) metadata.metadataBase = new URL(context.baseUrl)
+  return metadata
 }

@@ -84,9 +84,10 @@ describe('buildMetadata', () => {
     expect((metadata.robots as any)?.follow).toBe(false)
   })
 
-  it('sets canonical URL from seo.canonicalUrl (absolute)', async () => {
+  it('sets canonical URL from seo.canonicalUrl (absolute) when path is provided', async () => {
     const metadata = await buildMetadata({
       title: 'Test',
+      path: '/test',
       seo: { canonicalUrl: 'https://other.com/page' },
     })
     expect(metadata.alternates?.canonical).toBe('https://other.com/page')
@@ -119,10 +120,10 @@ describe('buildMetadata', () => {
     expect(twitter?.card).toBe('summary_large_image')
   })
 
-  it('keeps the large image card by default (unchanged behaviour)', async () => {
+  it('keeps the large image card by default when an image is present', async () => {
     const metadata = await buildMetadata({
       title: 'Test',
-      seo: {},
+      seo: { ogImage: 'https://example.com/image.jpg' },
     })
     const twitter = metadata.twitter as { card?: string }
     expect(twitter?.card).toBe('summary_large_image')
@@ -371,5 +372,76 @@ describe('buildMetadata regression guards', () => {
     expect(open.robots).toEqual({ index: true, follow: true })
     const hidden = await buildMetadata({ title: 'Test', seo: { noIndex: true } })
     expect(hidden.robots).toEqual({ index: false, follow: false })
+  })
+})
+
+describe('buildMetadata with kind and publishedAt/updatedAt', () => {
+  it('accepts kind parameter for article type', async () => {
+    const metadata = await buildMetadata({
+      title: 'Blog Post',
+      path: '/blog/post',
+      kind: 'article',
+    })
+    expect(metadata.openGraph).toBeDefined()
+  })
+
+  it('accepts publishedAt parameter for articles', async () => {
+    const metadata = await buildMetadata({
+      title: 'Blog Post',
+      path: '/blog/post',
+      kind: 'article',
+      publishedAt: '2024-01-15T10:00:00Z',
+    })
+    expect(metadata).toBeDefined()
+  })
+
+  it('accepts updatedAt parameter for articles', async () => {
+    const metadata = await buildMetadata({
+      title: 'Blog Post',
+      path: '/blog/post',
+      kind: 'article',
+      publishedAt: '2024-01-15T10:00:00Z',
+      updatedAt: '2024-01-20T15:30:00Z',
+    })
+    expect(metadata).toBeDefined()
+  })
+
+  it('includes canonical URL when path is provided', async () => {
+    const metadata = await buildMetadata({
+      title: 'Test Page',
+      path: '/blog/post',
+    })
+    expect(metadata.alternates?.canonical).toBeDefined()
+  })
+
+  it('does not include canonical when path is not provided', async () => {
+    const metadata = await buildMetadata({
+      title: 'No Path',
+    })
+    expect(metadata.alternates).toBeUndefined()
+  })
+
+  it('accepts custom canonicalUrl in seo field', async () => {
+    const metadata = await buildMetadata({
+      title: 'Test',
+      path: '/blog/post',
+      seo: { canonicalUrl: 'https://other.com/page' },
+    })
+    expect(metadata.alternates?.canonical).toBe('https://other.com/page')
+  })
+
+  it('backward compatible: no changes when new fields are not set', async () => {
+    const metadata = await buildMetadata({
+      title: 'Page Title',
+      seo: {
+        metaDescription: 'Meta Desc',
+        ogImage: 'https://example.com/og.jpg',
+        noIndex: false,
+      },
+    })
+    expect(metadata.title).toBe('Page Title')
+    expect(metadata.description).toBe('Meta Desc')
+    expect((metadata.robots as any)?.index).toBe(true)
+    expect((metadata.robots as any)?.follow).toBe(true)
   })
 })

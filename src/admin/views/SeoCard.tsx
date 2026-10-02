@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import type { Field } from '@/engine'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { useFormFields } from '@/admin/context'
+import { SocialImageInfo } from './SocialImageInfo'
 
 export type SeoCardProps = {
   seoField: Field
@@ -130,6 +131,7 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
         </div>
         <div id="seo-panel-social" role="tabpanel" aria-labelledby="seo-tab-social" hidden={activeTab !== 'social'}>
           <FieldRenderer fields={[restrictedSocialField]} readOnly={readOnly} />
+          <SocialImageInfo />
         </div>
       </div>
     </section>

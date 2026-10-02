@@ -3,6 +3,8 @@ import type { CollectionConfig } from '@/engine'
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
+import { schemaTypeField } from '../fields/schemaType'
+import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { membersOnlyField } from '@/features/members'
@@ -68,5 +70,10 @@ export const Posts: CollectionConfig = {
     seoFields,
     customFieldsField,
     membersOnlyField,
+    ...authorshipFields,
+    schemaTypeField('posts'),
   ],
+  hooks: {
+    beforeChange: [authorshipBeforeChange],
+  },
 }

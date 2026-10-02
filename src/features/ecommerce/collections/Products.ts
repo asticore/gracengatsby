@@ -4,6 +4,9 @@ import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
 
 import { pageBuilderBlocks } from '@/blocks'
 import { richTextEditor } from '@/engine/editor'
+import { seoFields } from '@/fields/seo'
+import { schemaTypeField } from '@/fields/schemaType'
+import { authorshipFields, authorshipBeforeChange } from '@/fields/authorship'
 
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see
@@ -125,17 +128,7 @@ export const Products: CollectionConfig = {
       type: 'blocks',
       blocks: pageBuilderBlocks,
     },
-    {
-      type: 'group',
-      name: 'seo',
-      label: 'SEO',
-      fields: [
-        { name: 'metaTitle', type: 'text' },
-        { name: 'metaDescription', type: 'textarea' },
-        { name: 'ogImage', type: 'upload', relationTo: 'media' },
-        { name: 'noIndex', type: 'checkbox' },
-      ],
-    },
+    seoFields,
     { name: 'customFields', type: 'json' },
     { name: 'inventory', type: 'number', defaultValue: 0, min: 0 },
     {
@@ -154,5 +147,10 @@ export const Products: CollectionConfig = {
         },
       ],
     },
+    ...authorshipFields,
+    schemaTypeField('products'),
   ],
+  hooks: {
+    beforeChange: [authorshipBeforeChange],
+  },
 }

@@ -12,6 +12,7 @@ import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import { PageJsonLd } from '@/features/seo'
 import type { Faq, Media, Product, ShopSetting } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -71,6 +72,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="page-shell grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">
+      <PageJsonLd collection="products" doc={product} path={`/shop/${slug}`} />
       <div className="grid gap-4">
         {images.length > 0 ? (
           images.map((img) => (

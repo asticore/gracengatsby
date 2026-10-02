@@ -8,6 +8,7 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import { PageJsonLd } from '@/features/seo'
 import type { Media, Post, User } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -51,6 +52,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <article className="page-shell">
+      <PageJsonLd collection="posts" doc={post} path={`/blog/${slug}`} />
       <header className="mx-auto mb-8 max-w-[720px] text-center">
         {post.categories?.length ? (
           <span className="uppercase text-[0.7rem] tracking-[0.08em] text-[var(--color-gold)]">

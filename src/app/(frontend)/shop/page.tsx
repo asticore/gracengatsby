@@ -10,7 +10,7 @@ import { buildMetadata } from '@/utilities/seo'
 import type { Product, ShopSetting } from '@/engage-types'
 
 export async function generateMetadata() {
-  return buildMetadata({ title: 'Shop' })
+  return buildMetadata({ title: 'Shop', path: '/shop' })
 }
 
 export const dynamic = 'force-dynamic'

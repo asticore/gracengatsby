@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
   const engine = await getEngine()
   const settings = (await engine.findGlobal({ slug: 'faq-settings' }).catch((): null => null)) as FaqSetting | null
-  return buildMetadata({ title: settings?.pageTitle || 'FAQ' })
+  return buildMetadata({ title: settings?.pageTitle || 'FAQ', path: '/faq' })
 }
 
 export default async function FaqPage() {

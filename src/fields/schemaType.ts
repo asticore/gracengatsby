@@ -60,16 +60,23 @@ export const DEFAULT_SCHEMA_TYPE: Record<string, string> = {
  * The `schemaType` field for a collection. Lives in the right-hand panel's
  * "Page type" box (the edit screen pulls it out by name), not in the settings card.
  */
-export const schemaTypeField = (collection: keyof typeof SCHEMA_TYPES_BY_COLLECTION): Field =>
-  ({
+export const schemaTypeField = (collection: keyof typeof SCHEMA_TYPES_BY_COLLECTION): Field => {
+  const options = SCHEMA_TYPES_BY_COLLECTION[collection]
+  const defaultType = DEFAULT_SCHEMA_TYPE[collection]
+  const defaultLabel = options.find((o) => o.value === defaultType)?.label || defaultType
+  const placeholderText = `Default (${defaultLabel})`
+
+  return {
     name: 'schemaType',
     type: 'select',
     label: 'Page type',
-    options: SCHEMA_TYPES_BY_COLLECTION[collection],
+    options,
     admin: {
+      placeholder: placeholderText,
       description: 'Tells search engines what kind of page this is. Used for structured data. Leave as the default if unsure.',
     },
-  }) as Field
+  } as Field
+}
 
 export type JsonLdTypeInfo = { type: string; extra?: Record<string, unknown> }
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { resolveName } from './authorName'
+import { useAuthorNames } from './useAuthorNames'
 
 interface Version {
   id: number
@@ -71,17 +72,15 @@ export function VersionsList({
   const [confirming, setConfirming] = useState<number | null>(null)
   const [confirmAction, setConfirmAction] = useState<'draft' | 'publish' | null>(null)
 
+  // Collect all updatedBy values from versions for bulk resolution
+  const authorIds = versions.map((v) => (v.version as Record<string, unknown>).updatedBy)
+  const resolveName_ = useAuthorNames(authorIds)
+
   const fetchVersions = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const query = new URLSearchParams({
-        'where[parent][equals]': String(id),
-        limit: '50',
-        'sort': '-updatedAt',
-        'depth': '1',
-      })
-      const response = await fetch(`/api/${collectionSlug}/versions?${query}`, {
+      const response = await fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=50&sort=-updatedAt&depth=0`, {
         credentials: 'include',
       })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -185,7 +184,7 @@ export function VersionsList({
                     {version.latest && ' (Latest)'}
                   </span>
                 </td>
-                <td>{resolveName((version.version as Record<string, unknown>).updatedBy)}</td>
+                <td>{resolveName_((version.version as Record<string, unknown>).updatedBy)}</td>
                 <td>{String(version.version[titleField] || `(${version.id})`)}</td>
                 <td>{changedText}</td>
                 <td>

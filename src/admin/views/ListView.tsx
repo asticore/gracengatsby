@@ -93,7 +93,7 @@ export async function ListView({
 
   // Derive all possible columns from collection fields
   const hasDrafts = Boolean((collection.versions as { drafts?: boolean } | undefined)?.drafts)
-  const allColumns = deriveColumns(collection.fields, { drafts: hasDrafts })
+  const allColumns = deriveColumns(collection.fields, { drafts: hasDrafts, collectionSlug })
 
   // Resolve which columns should be visible
   const { visibleColumns, visibleNames } = resolveVisibleColumns(
@@ -252,6 +252,24 @@ export async function ListView({
                         const formatter = resolveCellFormatter(cellOverride)
                         const text = formatCellValue(cell, doc, columnField, formatter)
 
+                        // Handle thumbnail column specially
+                        if (column.name === 'thumbnail' && column.type === 'thumbnail') {
+                          const thumbUrl = doc.url
+                          if (typeof thumbUrl === 'string' && String(doc.mimeType ?? '').startsWith('image/')) {
+                            return (
+                              <td key={column.name} className="list-td">
+                                <img
+                                  src={thumbUrl}
+                                  alt=""
+                                  loading="lazy"
+                                  style={{ height: '50px', width: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                />
+                              </td>
+                            )
+                          }
+                          return <td key={column.name} className="list-td" />
+                        }
+
                         return (
                           <td key={column.name} className="list-td">
                             {index === 0 ? (
@@ -324,6 +342,7 @@ export async function ListView({
           newDocumentURL={`/admin/collections/${collectionSlug}/create`}
           engine={context.engine}
           searchParams={{ ...searchParams, view: 'gallery' }}
+          embedded={true}
         />
       )}
 
@@ -337,6 +356,7 @@ export async function ListView({
           engine={context.engine}
           searchParams={{ ...searchParams, view: 'calendar' }}
           user={context.user}
+          embedded={true}
         />
       )}
     </div>

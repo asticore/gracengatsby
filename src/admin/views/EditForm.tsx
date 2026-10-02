@@ -85,18 +85,18 @@ const SaveButton: React.FC<SaveTarget> = (target) => {
   )
 }
 
-const isSidebarField = (field: Field): boolean => (field as { admin?: { position?: string } }).admin?.position === 'sidebar'
+const isSettingsField = (field: Field): boolean => (field as { admin?: { position?: string } }).admin?.position === 'sidebar'
 
-/** Main column vs right panel, by `admin.position`; the visual editor's blocks field is dropped from the main column. */
-export function splitFields(fields: Field[], visualBlocksField?: string): { main: Field[]; sidebar: Field[] } {
+/** Main column vs settings card, by `admin.position`; the visual editor's blocks field is dropped from the main column. */
+export function splitFields(fields: Field[], visualBlocksField?: string): { main: Field[]; settings: Field[] } {
   const main: Field[] = []
-  const sidebar: Field[] = []
+  const settings: Field[] = []
   for (const field of fields) {
-    if (isSidebarField(field)) sidebar.push(field)
+    if (isSettingsField(field)) settings.push(field)
     else if (visualBlocksField && field.type === 'blocks' && 'name' in field && field.name === visualBlocksField) continue
     else main.push(field)
   }
-  return { main, sidebar }
+  return { main, settings }
 }
 
 const PageContentCard: React.FC<{ count?: number; href?: string; isNew: boolean }> = ({ count, href, isNew }) => (
@@ -131,7 +131,7 @@ export const EditForm: React.FC<EditFormProps> = ({
 }) => {
   // Built from ALL fields (including the one hidden from view) so a save sends it back untouched.
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
-  const { main, sidebar } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, sidebar: [] }), [fields, panel, visualBlocksField])
+  const { main, settings } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, settings: [] }), [fields, panel, visualBlocksField])
 
   return (
     <DocumentInfoProvider value={{ collectionSlug, globalSlug, id }}>
@@ -141,11 +141,19 @@ export const EditForm: React.FC<EditFormProps> = ({
             <div className="document-edit__main">
               <div className="collection-edit__form">
                 <FieldRenderer fields={main} readOnly={readOnly} />
+                {settings.length > 0 && (
+                  <section className="doc-settings-card">
+                    <h2 className="doc-settings-card__title">Settings</h2>
+                    <div className="doc-settings">
+                      <FieldRenderer fields={settings} readOnly={readOnly} />
+                    </div>
+                  </section>
+                )}
                 {visualBlocksField && <PageContentCard count={visualBlocksCount} href={panel.visualEditorHref} isNew={id === undefined} />}
               </div>
             </div>
             <aside className="document-edit__side">
-              <DocumentPanel info={panel} readOnly={readOnly} sidebarFields={sidebar} />
+              <DocumentPanel info={panel} readOnly={readOnly} />
             </aside>
           </div>
         ) : (

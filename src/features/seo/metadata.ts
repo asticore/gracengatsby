@@ -26,14 +26,16 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
     title: seo.title,
     description: seo.description,
     alternates: { canonical: seo.canonical },
-    robots: seo.noIndex
-      ? { index: false, follow: false, googleBot: { index: false, follow: false } }
-      : { index: true, follow: true, googleBot: { index: true, follow: true } },
+    robots: {
+      index: !seo.noIndex,
+      follow: !seo.noFollow,
+      googleBot: { index: !seo.noIndex, follow: !seo.noFollow },
+    },
     openGraph: {
       type: seo.kind,
       url: seo.canonical,
-      title: seo.title,
-      description: seo.description,
+      title: seo.socialTitle ? seo.socialTitle : seo.title,
+      description: seo.socialDescription || seo.description,
       siteName: seo.siteName || undefined,
       images,
       ...(seo.kind === 'article'
@@ -41,10 +43,10 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
         : {}),
     },
     twitter: {
-      card: images ? 'summary_large_image' : 'summary',
-      title: seo.title,
-      description: seo.description,
-      images: images?.map((image) => image.url),
+      card: seo.twitterCard,
+      title: seo.socialTitle ? seo.socialTitle : seo.title,
+      description: seo.socialDescription || seo.description,
+      images: (seo.twitterImage ? [seo.twitterImage] : images)?.map((image) => image.url),
       site: seo.twitterHandle,
       creator: seo.twitterHandle,
     },

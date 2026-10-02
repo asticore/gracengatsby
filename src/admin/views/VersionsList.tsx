@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { resolveName } from './authorName'
 
 interface Version {
   id: number
@@ -78,6 +79,7 @@ export function VersionsList({
         'where[parent][equals]': String(id),
         limit: '50',
         'sort': '-updatedAt',
+        'depth': '1',
       })
       const response = await fetch(`/api/${collectionSlug}/versions?${query}`, {
         credentials: 'include',
@@ -152,6 +154,7 @@ export function VersionsList({
           <tr>
             <th>Saved</th>
             <th>Status</th>
+            <th>Author</th>
             <th>Title</th>
             <th>Changes</th>
             <th>Actions</th>
@@ -182,6 +185,7 @@ export function VersionsList({
                     {version.latest && ' (Latest)'}
                   </span>
                 </td>
+                <td>{resolveName((version.version as Record<string, unknown>).updatedBy)}</td>
                 <td>{String(version.version[titleField] || `(${version.id})`)}</td>
                 <td>{changedText}</td>
                 <td>

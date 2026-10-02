@@ -15,6 +15,7 @@ type Option = { label: string; value: string }
 
 const SingleSelect: React.FC<{ field: Field; path: string; readOnly?: boolean; options: Option[] }> = ({ field, path, readOnly, options }) => {
   const { setValue, value } = useField<string>({ path })
+  const placeholder = (field as { admin?: { placeholder?: string } }).admin?.placeholder || '— Select —'
 
   return (
     <div className="field-type select">
@@ -26,7 +27,7 @@ const SingleSelect: React.FC<{ field: Field; path: string; readOnly?: boolean; o
         value={value || ''}
         onChange={(e) => setValue(e.target.value)}
       >
-        <option value="">— Select —</option>
+        <option value="">{placeholder}</option>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}

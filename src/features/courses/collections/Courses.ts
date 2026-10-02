@@ -2,6 +2,8 @@ import type { CollectionConfig } from '@/engine'
 
 import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
 import { seoFields } from '@/fields/seo'
+import { schemaTypeField } from '@/fields/schemaType'
+import { authorshipFields, authorshipBeforeChange } from '@/fields/authorship'
 import { formatSlugHook } from '@/utilities/formatSlug'
 
 import { COURSES_SLUG, LESSONS_SLUG } from '../types'
@@ -119,5 +121,10 @@ export const Courses: CollectionConfig = {
         description: 'Lessons in this course, in order. Add lessons from the Lessons screen and set their Order there.',
       },
     },
+    ...authorshipFields,
+    schemaTypeField('courses'),
   ],
+  hooks: {
+    beforeChange: [authorshipBeforeChange],
+  },
 }

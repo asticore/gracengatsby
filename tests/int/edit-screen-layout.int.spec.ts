@@ -8,20 +8,20 @@ import { Pages } from '@/collections/Pages'
 const fields = Pages.fields as Field[]
 
 describe('edit screen field split', () => {
-  it('moves position:sidebar fields to the right panel', () => {
-    const { main, sidebar } = splitFields(fields)
+  it('moves position:sidebar fields to the settings card', () => {
+    const { main, settings } = splitFields(fields)
     const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))
-    expect(names(sidebar)).toEqual(expect.arrayContaining(['slug', 'parent', 'template']))
+    expect(names(settings)).toEqual(expect.arrayContaining(['slug', 'parent', 'template']))
     expect(names(main)).not.toContain('slug')
     expect(names(main)).toContain('blocks')
   })
 
   it('drops only the visual editor blocks field from the main column', () => {
-    const { main, sidebar } = splitFields(fields, VISUAL_EDITOR_SURFACES.pages.blocksField)
+    const { main, settings } = splitFields(fields, VISUAL_EDITOR_SURFACES.pages.blocksField)
     const names = main.map((f) => ('name' in f ? f.name : f.type))
     expect(names).not.toContain('blocks')
     expect(names).toContain('customFields')
-    expect(sidebar.length).toBeGreaterThan(0)
+    expect(settings.length).toBeGreaterThan(0)
   })
 
   it('pages no longer require a section on creation (the visual editor builds them)', () => {

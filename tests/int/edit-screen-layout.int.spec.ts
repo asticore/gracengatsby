@@ -9,11 +9,21 @@ const fields = Pages.fields as Field[]
 
 describe('edit screen field split', () => {
   it('moves position:sidebar fields to the settings card', () => {
-    const { main, settings } = splitFields(fields)
+    const { main, settings, seo } = splitFields(fields)
     const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))
     expect(names(settings)).toEqual(expect.arrayContaining(['slug', 'parent', 'template']))
     expect(names(main)).not.toContain('slug')
     expect(names(main)).toContain('blocks')
+    expect(seo).toBeDefined()
+    expect('name' in seo! && seo.name).toBe('seo')
+  })
+
+  it('extracts the seo group from the split, removing it from both main and settings', () => {
+    const { main, settings, seo } = splitFields(fields)
+    const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))
+    expect(seo).toBeDefined()
+    expect(names(main)).not.toContain('seo')
+    expect(names(settings)).not.toContain('seo')
   })
 
   it('drops only the visual editor blocks field from the main column', () => {

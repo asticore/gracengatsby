@@ -18,6 +18,19 @@ describe('edit screen field split', () => {
     expect('name' in seo! && seo.name).toBe('seo')
   })
 
+  it('extracts the membersOnly (access) group from the split, removing it from main and settings', () => {
+    const { main, settings, access } = splitFields(fields)
+    const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))
+    // Check if membersOnly exists in the fields (Pages may not have it)
+    const hasMembersOnly = fields.some((f) => 'name' in f && f.name === 'membersOnly')
+    if (hasMembersOnly) {
+      expect(access).toBeDefined()
+      expect('name' in access! && access.name).toBe('membersOnly')
+      expect(names(main)).not.toContain('membersOnly')
+      expect(names(settings)).not.toContain('membersOnly')
+    }
+  })
+
   it('extracts the seo group from the split, removing it from both main and settings', () => {
     const { main, settings, seo, pageType } = splitFields(fields)
     const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))

@@ -3,6 +3,8 @@ import type { CollectionConfig } from '@/engine'
 import { richTextEditor } from '@/engine/editor'
 
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
+import { schemaTypeField } from '../fields/schemaType'
+import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 
@@ -170,5 +172,10 @@ export const Events: CollectionConfig = {
       },
     },
     customFieldsField,
+    ...authorshipFields,
+    schemaTypeField('events'),
   ],
+  hooks: {
+    beforeChange: [authorshipBeforeChange],
+  },
 }

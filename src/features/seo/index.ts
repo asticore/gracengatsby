@@ -25,4 +25,5 @@ export {
 
 export { SeoScripts, SeoBodyScripts } from './components/SeoScripts'
 export { SeoJsonLd } from './components/SeoJsonLd'
+export { PageJsonLd } from './PageJsonLd'
 export { CONSENT_STORAGE_KEY, CONSENT_EVENT, type ConsentValue } from './consent'

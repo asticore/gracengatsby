@@ -12,9 +12,7 @@
 
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-import type { Field } from '@/engine'
 import { useFormModified } from '@/admin/context'
-import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { useDocumentSave } from './useDocumentSave'
 
 export type DocumentPanelInfo = {
@@ -192,9 +190,8 @@ const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
 
 export const DocumentPanel: React.FC<{
   info: DocumentPanelInfo
-  sidebarFields: Field[]
   readOnly?: boolean
-}> = ({ info, sidebarFields, readOnly }) => {
+}> = ({ info, readOnly }) => {
   const modified = useFormModified()
   const { busy, duplicate, error, remove, save, savedAt } = useDocumentSave({
     collectionSlug: info.collectionSlug,
@@ -279,14 +276,6 @@ export const DocumentPanel: React.FC<{
 
       {info.draftsEnabled && !isNew && info.id !== undefined && (
         <RevisionsBox collectionSlug={info.collectionSlug} id={info.id} updatedAt={info.updatedAt} />
-      )}
-
-      {sidebarFields.length > 0 && (
-        <Box id="settings" title="Settings">
-          <div className="doc-settings">
-            <FieldRenderer fields={sidebarFields} readOnly={readOnly} />
-          </div>
-        </Box>
       )}
 
       {!isNew && <DetailsBox info={info} />}

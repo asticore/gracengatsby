@@ -3,6 +3,8 @@ import type { CollectionConfig, EngineRequest } from '@/engine'
 import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
+import { schemaTypeField } from '../fields/schemaType'
+import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 import { formatSlugHook, slugify } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { membersOnlyField } from '@/features/members'
@@ -116,6 +118,8 @@ export const Pages: CollectionConfig = {
     },
     customFieldsField,
     membersOnlyField,
+    ...authorshipFields,
+    schemaTypeField('pages'),
   ],
   hooks: {
     beforeValidate: [
@@ -136,6 +140,7 @@ export const Pages: CollectionConfig = {
       },
     ],
     beforeChange: [
+      authorshipBeforeChange,
       async ({ data, req, originalDoc }) => {
         // Only one page can be the homepage - unset any previous holder.
         if (data?.isHomepage) {

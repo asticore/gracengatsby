@@ -1482,7 +1482,7 @@ button {
 .list-toolbar {
   display: flex;
   gap: calc(var(--base) * 0.8);
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   padding: calc(var(--base) * 0.6);
   background-color: var(--ac-ground);
@@ -1493,7 +1493,9 @@ button {
   display: flex;
   gap: calc(var(--base) * 0.4);
   flex: 1;
-  min-width: 200px;
+  min-width: 0;
+  order: -1;
+  width: 100%;
 }
 
 .list-search-input {
@@ -1510,7 +1512,18 @@ button {
   color: var(--theme-elevation-400);
 }
 
-.list-search-btn,
+.list-search-btn {
+  padding: calc(var(--base) * 0.4) calc(var(--base) * 0.6);
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: var(--style-radius-s);
+  background-color: var(--ac-surface);
+  color: var(--theme-elevation-900);
+  font-size: calc(var(--base) * 0.9);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .list-limit-select,
 .list-column-picker-btn,
 .list-toolbar-btn {
@@ -1522,6 +1535,11 @@ button {
   font-size: calc(var(--base) * 0.9);
   cursor: pointer;
   white-space: nowrap;
+}
+
+.list-limit-select {
+  max-width: 150px;
+  flex-shrink: 0;
 }
 
 .list-search-btn:hover,

@@ -15,6 +15,7 @@ import React, { useEffect, useState } from 'react'
 import type { Field } from '@/engine'
 import { useFormModified } from '@/admin/context'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
+import { resolveName } from './authorName'
 import { useDocumentSave } from './useDocumentSave'
 
 export type DocumentPanelInfo = {
@@ -119,15 +120,15 @@ const ConfirmButton: React.FC<{
 }
 
 const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: string }> = ({ collectionSlug, id, updatedAt }) => {
-  const [state, setState] = useState<{ total: number; latest?: string } | 'loading' | 'unavailable'>('loading')
+  const [state, setState] = useState<{ total: number; latest?: string; updatedBy?: unknown } | 'loading' | 'unavailable'>('loading')
 
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt`, { credentials: 'include' })
+    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt&depth=1`, { credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) throw new Error('versions unavailable')
-        const body = (await response.json()) as { docs?: Array<{ updatedAt?: string }>; totalDocs?: number }
-        if (!cancelled) setState({ latest: body.docs?.[0]?.updatedAt, total: body.totalDocs ?? body.docs?.length ?? 0 })
+        const body = (await response.json()) as { docs?: Array<{ updatedAt?: string; updatedBy?: unknown; version?: { updatedBy?: unknown } }>; totalDocs?: number }
+        if (!cancelled) setState({ latest: body.docs?.[0]?.updatedAt, updatedBy: body.docs?.[0]?.version?.updatedBy ?? body.docs?.[0]?.updatedBy, total: body.totalDocs ?? body.docs?.length ?? 0 })
       })
       .catch(() => {
         if (!cancelled) setState('unavailable')
@@ -146,7 +147,7 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
           <p className="doc-line">
             <strong>{state.total}</strong> {state.total === 1 ? 'version' : 'versions'}
           </p>
-          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)}</p>}
+          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)} by {resolveName(state.updatedBy)}</p>}
           <Link className="doc-link" href={`/admin/collections/${collectionSlug}/${id}/versions`}>
             View past drafts
           </Link>

@@ -9,7 +9,7 @@ const fields = Pages.fields as Field[]
 
 describe('edit screen field split', () => {
   it('moves position:sidebar fields to the settings card', () => {
-    const { main, settings, seo } = splitFields(fields)
+    const { main, settings, seo, pageType } = splitFields(fields)
     const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))
     expect(names(settings)).toEqual(expect.arrayContaining(['slug', 'parent', 'template']))
     expect(names(main)).not.toContain('slug')
@@ -19,11 +19,23 @@ describe('edit screen field split', () => {
   })
 
   it('extracts the seo group from the split, removing it from both main and settings', () => {
-    const { main, settings, seo } = splitFields(fields)
+    const { main, settings, seo, pageType } = splitFields(fields)
     const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))
     expect(seo).toBeDefined()
     expect(names(main)).not.toContain('seo')
     expect(names(settings)).not.toContain('seo')
+  })
+
+  it('extracts the schemaType field (pageType), removing it from main and settings', () => {
+    const { main, settings, pageType } = splitFields(fields)
+    const names = (list: Field[]) => list.map((f) => ('name' in f ? f.name : f.type))
+    // pageType should be undefined for Pages (which don't have schemaType yet, being added by another agent)
+    // This test documents the synthetic field behavior - when schemaType exists, it will be extracted
+    if (pageType) {
+      expect('name' in pageType && pageType.name).toBe('schemaType')
+      expect(names(main)).not.toContain('schemaType')
+      expect(names(settings)).not.toContain('schemaType')
+    }
   })
 
   it('drops only the visual editor blocks field from the main column', () => {

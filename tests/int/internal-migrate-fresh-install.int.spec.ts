@@ -34,6 +34,38 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('adds SEO and social media columns to pages, posts, and courses', async () => {
+    const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+      for (const col of expectedColumns) {
+        expect(columnNames, `${table} should have column ${col}`).toContain(col)
+      }
+    }
+
+    const expectedCols = ['seo_canonical_url', 'seo_no_follow', 'seo_social_title', 'seo_social_description', 'seo_x_card', 'seo_x_image_id']
+    const expectedVersionCols = ['version_seo_canonical_url', 'version_seo_no_follow', 'version_seo_social_title', 'version_seo_social_description', 'version_seo_x_card', 'version_seo_x_image_id']
+
+    if (tables.includes('eg_pages')) {
+      await checkColumns('eg_pages', expectedCols)
+    }
+    if (tables.includes('_eg_pages_v')) {
+      await checkColumns('_eg_pages_v', expectedVersionCols)
+    }
+    if (tables.includes('eg_posts')) {
+      await checkColumns('eg_posts', expectedCols)
+    }
+    if (tables.includes('_eg_posts_v')) {
+      await checkColumns('_eg_posts_v', expectedVersionCols)
+    }
+    if (tables.includes('eg_courses')) {
+      await checkColumns('eg_courses', expectedCols)
+    }
+    if (tables.includes('_eg_courses_v')) {
+      await checkColumns('_eg_courses_v', expectedVersionCols)
+    }
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

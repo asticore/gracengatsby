@@ -7,6 +7,8 @@ import { ProductCard } from '@/components/ProductCard'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import { buildPageJsonLd } from '@/features/seo/pageSchema'
+import { getSeoContext } from '@/features/seo/settings'
 import type { Product, ShopSetting } from '@/engage-types'
 
 export async function generateMetadata() {
@@ -43,6 +45,17 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   ])) as unknown as [ShopSetting | null, { docs: Product[] }]
 
   const layout = settings?.archiveLayout || 'grid-4'
+  const context = await getSeoContext()
+  const jsonLd = context.enabled
+    ? buildPageJsonLd({
+        collection: 'pages',
+        schemaType: 'CollectionPage',
+        title: 'Shop',
+        url: context.baseUrl + '/shop',
+        baseUrl: context.baseUrl,
+        siteName: context.siteName,
+      })
+    : null
 
   const filterLinkClassName = (active: boolean) =>
     `border-b hover:border-[var(--color-gold)] hover:opacity-100 ${
@@ -51,6 +64,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="page-shell">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '</\\/') }}
+        />
+      )}
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
         settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (

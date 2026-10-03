@@ -456,7 +456,7 @@ describe('admin/list/listQuery', () => {
     })
 
     it('all default columns exist via deriveColumns for users', () => {
-      const cols = deriveColumns(Users.fields, { drafts: false })
+      const cols = deriveColumns(Users.fields, { drafts: false, collectionSlug: 'users' })
       const colNames = new Set(cols.map((c) => c.name))
       const defaults = LIST_DEFAULTS.users.columns
       for (const colName of defaults) {

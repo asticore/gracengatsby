@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { resolveName } from './authorName'
 import { useAuthorNames } from './useAuthorNames'
+import { diffVersion, type DiffEntry } from './versionDiff'
 
 interface Version {
   id: number
@@ -71,6 +72,8 @@ export function VersionsList({
   const [busy, setBusy] = useState<number | null>(null)
   const [confirming, setConfirming] = useState<number | null>(null)
   const [confirmAction, setConfirmAction] = useState<'draft' | 'publish' | 'delete' | null>(null)
+  const [expandedCompare, setExpandedCompare] = useState<number | null>(null)
+  const [diffs, setDiffs] = useState<Record<number, DiffEntry[]>>({})
 
   // Collect all updatedBy values from versions for bulk resolution
   const authorIds = versions.map((v) => (v.version as Record<string, unknown>).updatedBy)
@@ -168,6 +171,22 @@ export function VersionsList({
     setConfirmAction(null)
   }, [])
 
+  const toggleCompare = useCallback((versionId: number) => {
+    if (expandedCompare === versionId) {
+      setExpandedCompare(null)
+    } else {
+      setExpandedCompare(versionId)
+      // Calculate diff if not already cached
+      if (!diffs[versionId]) {
+        const version = versions.find((v) => v.id === versionId)
+        if (version) {
+          const diff = diffVersion(version.version, currentDoc)
+          setDiffs((prev) => ({ ...prev, [versionId]: diff }))
+        }
+      }
+    }
+  }, [expandedCompare, diffs, versions, currentDoc])
+
   if (loading) return <p>Loading versions...</p>
   if (versions.length === 0 && !error) return <p>No saved versions yet.</p>
 
@@ -187,10 +206,11 @@ export function VersionsList({
             <th>Title</th>
             <th>Differs from current</th>
             <th>Actions</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {versions.map((version) => {
+          {versions.flatMap((version) => {
             const changed = getChangedFields(version.version, currentDoc, titleField)
             const changedText =
               changed.length === 0
@@ -201,68 +221,119 @@ export function VersionsList({
 
             const isConfirmingThis = confirming === version.id
             const isPublished = version.version._status === 'published'
+            const isCompareExpanded = expandedCompare === version.id
+            const versionDiffs = diffs[version.id] || []
 
-            return (
+            const mainRow = (
               <tr key={version.id} className={version.latest ? 'opacity-60' : ''}>
-                <td>{formatDateTime(version.version.updatedAt || version.updatedAt)}</td>
-                <td>
-                  <span
-                    className={isPublished ? 'pill pill--accent' : 'pill'}
-                    style={{ textTransform: 'uppercase', fontSize: '0.75rem' }}
-                  >
-                    {version.version._status || 'unknown'}
-                    {version.latest && ' (Latest)'}
-                  </span>
-                </td>
-                <td>{resolveName_((version.version as Record<string, unknown>).updatedBy)}</td>
-                <td>{String(version.version[titleField] || `(${version.id})`)}</td>
-                <td>{changedText}</td>
-                <td>
-                  {isConfirmingThis ? (
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        className="btn btn--small"
-                        onClick={() =>
-                          confirmAction === 'delete' ? handleDelete(version.id) : handleRestore(version.id, confirmAction === 'draft')
-                        }
-                        disabled={busy !== null}
-                      >
-                        {confirmAction === 'delete' ? 'Yes, delete' : 'Yes'}
-                      </button>
-                      <button className="btn btn--small btn--secondary" onClick={cancelConfirm} disabled={busy !== null}>
-                        Cancel
-                      </button>
-                    </div>
+                  <td>{formatDateTime(version.version.updatedAt || version.updatedAt)}</td>
+                  <td>
+                    <span
+                      className={isPublished ? 'pill pill--accent' : 'pill'}
+                      style={{ textTransform: 'uppercase', fontSize: '0.75rem' }}
+                    >
+                      {version.version._status || 'unknown'}
+                      {version.latest && ' (Latest)'}
+                    </span>
+                  </td>
+                  <td>{resolveName_((version.version as Record<string, unknown>).updatedBy)}</td>
+                  <td>{String(version.version[titleField] || `(${version.id})`)}</td>
+                  <td>{changedText}</td>
+                  <td>
+                    {isConfirmingThis ? (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className="btn btn--small"
+                          onClick={() =>
+                            confirmAction === 'delete' ? handleDelete(version.id) : handleRestore(version.id, confirmAction === 'draft')
+                          }
+                          disabled={busy !== null}
+                        >
+                          {confirmAction === 'delete' ? 'Yes, delete' : 'Yes'}
+                        </button>
+                        <button className="btn btn--small btn--secondary" onClick={cancelConfirm} disabled={busy !== null}>
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className="btn btn--small"
+                          onClick={() => openConfirm(version.id, 'draft')}
+                          disabled={busy !== null}
+                        >
+                          Restore as draft
+                        </button>
+                        <button
+                          className="btn btn--small btn--accent"
+                          onClick={() => openConfirm(version.id, 'publish')}
+                          disabled={busy !== null}
+                        >
+                          Restore and publish
+                        </button>
+                        <button
+                          className="btn btn--small"
+                          onClick={() => openConfirm(version.id, 'delete')}
+                          disabled={busy !== null || version.latest}
+                          title={version.latest ? 'The latest version cannot be deleted' : 'Delete this version'}
+                          style={{ color: 'var(--theme-error-500)' }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn--small"
+                      onClick={() => toggleCompare(version.id)}
+                      disabled={busy !== null}
+                    >
+                      {isCompareExpanded ? 'Hide compare' : 'Compare'}
+                    </button>
+                  </td>
+              </tr>
+            )
+
+            const expandRow = isCompareExpanded ? (
+              <tr key={`expand-${version.id}`}>
+                <td colSpan={7} style={{ padding: '1rem', backgroundColor: 'var(--theme-bg-secondary, #f5f5f5)' }}>
+                  {versionDiffs.length === 0 ? (
+                    <p style={{ margin: 0, color: 'var(--theme-text-secondary)' }}>No differences from the current document.</p>
                   ) : (
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        className="btn btn--small"
-                        onClick={() => openConfirm(version.id, 'draft')}
-                        disabled={busy !== null}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table
+                        style={{
+                          width: '100%',
+                          borderCollapse: 'collapse',
+                          fontSize: '0.875rem',
+                          backgroundColor: 'var(--theme-bg)',
+                        }}
                       >
-                        Restore as draft
-                      </button>
-                      <button
-                        className="btn btn--small btn--accent"
-                        onClick={() => openConfirm(version.id, 'publish')}
-                        disabled={busy !== null}
-                      >
-                        Restore and publish
-                      </button>
-                      <button
-                        className="btn btn--small"
-                        onClick={() => openConfirm(version.id, 'delete')}
-                        disabled={busy !== null || version.latest}
-                        title={version.latest ? 'The latest version cannot be deleted' : 'Delete this version'}
-                        style={{ color: 'var(--theme-error-500)' }}
-                      >
-                        Delete
-                      </button>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--theme-border)' }}>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600 }}>Field</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600 }}>This version</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600 }}>Current</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {versionDiffs.map((diff) => (
+                            <tr key={diff.field} style={{ borderBottom: '1px solid var(--theme-border)' }}>
+                              <td style={{ padding: '0.5rem', fontWeight: 500 }}>{diff.label}</td>
+                              <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8125rem' }}>{diff.before}</td>
+                              <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8125rem' }}>{diff.after}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </td>
               </tr>
-            )
+            ) : null
+
+            return isCompareExpanded ? [mainRow, expandRow] : [mainRow]
           })}
         </tbody>
       </table>

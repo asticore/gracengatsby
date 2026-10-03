@@ -184,6 +184,110 @@ describe('buildMetadata', () => {
     expect((metadata.robots as any)?.index).toBe(true)
     expect((metadata.robots as any)?.follow).toBe(true)
   })
+
+  describe('Events metadata', () => {
+    it('event with seo group: metaTitle overrides title', async () => {
+      const metadata = await buildMetadata({
+        title: 'Summer Gala',
+        seo: { metaTitle: 'Exclusive Summer Gala 2024' },
+        path: '/events/summer-gala',
+        kind: 'article',
+        publishedAt: '2024-06-01T10:00:00Z',
+      })
+      expect(metadata.title).toBe('Exclusive Summer Gala 2024')
+    })
+
+    it('event with seo.metaDescription', async () => {
+      const metadata = await buildMetadata({
+        title: 'Summer Gala',
+        seo: { metaDescription: 'Join us for an exclusive evening' },
+        path: '/events/summer-gala',
+      })
+      expect(metadata.description).toBe('Join us for an exclusive evening')
+    })
+
+    it('event with seo.ogImage uses it for OG image', async () => {
+      const metadata = await buildMetadata({
+        title: 'Summer Gala',
+        seo: { ogImage: 'https://example.com/gala.jpg' },
+        path: '/events/summer-gala',
+      })
+      expect(metadata.openGraph?.images).toContainEqual({ url: 'https://example.com/gala.jpg' })
+    })
+
+    it('event with coverImage uses it as fallback OG image when seo.ogImage not set', async () => {
+      const metadata = await buildMetadata({
+        title: 'Summer Gala',
+        featuredImage: 'https://example.com/cover.jpg',
+        path: '/events/summer-gala',
+      })
+      expect(metadata.openGraph?.images).toContainEqual({ url: 'https://example.com/cover.jpg' })
+    })
+
+    it('event seo.ogImage takes precedence over coverImage', async () => {
+      const metadata = await buildMetadata({
+        title: 'Summer Gala',
+        seo: { ogImage: 'https://example.com/seo.jpg' },
+        featuredImage: 'https://example.com/cover.jpg',
+        path: '/events/summer-gala',
+      })
+      expect(metadata.openGraph?.images).toContainEqual({ url: 'https://example.com/seo.jpg' })
+    })
+
+    it('event without seo fields produces same output as before SEO addition', async () => {
+      const metadata = await buildMetadata({
+        title: 'Community Meetup',
+        path: '/events/community-meetup',
+        kind: 'article',
+        publishedAt: '2024-07-15T14:00:00Z',
+        updatedAt: '2024-07-20T14:00:00Z',
+      })
+      expect(metadata.title).toBe('Community Meetup')
+      expect(metadata.description).toBeUndefined() // falls back to site default
+      expect((metadata.robots as any)?.index).toBe(true)
+    })
+
+    it('event with seo.noIndex hides from search', async () => {
+      const metadata = await buildMetadata({
+        title: 'Private Event',
+        seo: { noIndex: true },
+        path: '/events/private',
+      })
+      expect((metadata.robots as any)?.index).toBe(false)
+      expect((metadata.robots as any)?.follow).toBe(false)
+    })
+
+    it('event with seo.socialTitle and socialDescription for sharing', async () => {
+      const metadata = await buildMetadata({
+        title: 'Summer Gala',
+        seo: {
+          socialTitle: 'You are invited to Summer Gala',
+          socialDescription: 'An exclusive evening of cocktails and dancing',
+        },
+        path: '/events/summer-gala',
+      })
+      expect(metadata.openGraph?.title).toBe('You are invited to Summer Gala')
+      expect(metadata.openGraph?.description).toBe('An exclusive evening of cocktails and dancing')
+    })
+
+    it('event accepts xCard setting for Twitter', async () => {
+      const metadata = await buildMetadata({
+        title: 'Event',
+        seo: { xCard: 'summary_large_image' },
+        path: '/events/test',
+      })
+      expect((metadata.twitter as any)?.card).toBe('summary_large_image')
+    })
+
+    it('event with xImage uses it for Twitter image', async () => {
+      const metadata = await buildMetadata({
+        title: 'Event',
+        seo: { xImage: 'https://example.com/twitter.jpg' },
+        path: '/events/test',
+      })
+      expect(metadata.twitter?.images).toContainEqual('https://example.com/twitter.jpg')
+    })
+  })
 })
 
 describe('resolveSeo', () => {

@@ -429,4 +429,12 @@ describe('Admin List View', () => {
       expect(formatCellValue(42, {}, undefined, undefined)).toBe('42')
     })
   })
+
+  describe('server component safety', () => {
+    it('ListView has no inline event handlers (server component)', async () => {
+      const { readFileSync } = await import('node:fs')
+      const src = readFileSync('src/admin/views/ListView.tsx', 'utf8')
+      expect(src).not.toMatch(/\bon[A-Z][A-Za-z]*=\{/)
+    })
+  })
 })

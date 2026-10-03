@@ -60,10 +60,25 @@ export function formatCellValue(
       return cell.charAt(0).toUpperCase() + cell.slice(1).toLowerCase()
     }
 
-    // Select -> option label
+    // Select -> option label (including hasMany multi-select)
     if (fieldType === 'select' || fieldType === 'radio') {
       const options = (columnField as { options?: Array<{ label?: string; value?: string }> }).options
-      if (Array.isArray(options) && typeof cell === 'string') {
+      const hasMany = (columnField as { hasMany?: boolean }).hasMany
+
+      if (Array.isArray(options) && hasMany && Array.isArray(cell)) {
+        // Multi-select: join labels
+        return cell
+          .map((val) => {
+            if (typeof val === 'string') {
+              const found = options.find((o) => o.value === val)
+              return found?.label || val
+            }
+            return ''
+          })
+          .filter(Boolean)
+          .join(', ')
+      } else if (Array.isArray(options) && typeof cell === 'string') {
+        // Single select
         const found = options.find((o) => o.value === cell)
         return found?.label || cell
       }

@@ -132,6 +132,22 @@ export type AdminContext = {
 }
 
 /**
+ * Builds collection-level permissions from a config and user. Exported for testing.
+ */
+export async function buildCollectionPermissions(
+  collection: SanitizedCollectionConfig,
+  user: unknown,
+  engine: Engine
+): Promise<{ create?: boolean; read?: boolean; update?: boolean; delete?: boolean }> {
+  return {
+    create: await evaluateAccess(collection.access?.create, user, engine),
+    read: await evaluateAccess(collection.access?.read, user, engine),
+    update: await evaluateAccess(collection.access?.update, user, engine),
+    delete: await evaluateAccess(collection.access?.delete, user, engine),
+  }
+}
+
+/**
  * Everything a Stage 11 admin page needs to decide what to show and whether
  * it may. Wrapped in React's `cache()` (same dedup convention
  * `resolveEntities.ts`'s own `readFeatureFlags` already uses) since
@@ -154,10 +170,7 @@ export const getAdminContext = cache(async (): Promise<AdminContext> => {
 
   const permissions: EntityPermissions = { collections: {}, globals: {} }
   for (const collection of collections) {
-    permissions.collections![collection.slug] = {
-      create: await evaluateAccess(collection.access?.create, user, engine),
-      read: await evaluateAccess(collection.access?.read, user, engine),
-    }
+    permissions.collections![collection.slug] = await buildCollectionPermissions(collection, user, engine)
   }
   for (const global of globals) {
     permissions.globals![global.slug] = { read: await evaluateAccess(global.access?.read, user, engine) }

@@ -272,6 +272,17 @@ export function deriveColumns(fields: Field[], opts: { drafts: boolean; collecti
     })
   }
 
+  // Auth collections: email is injected by the engine, not in fields
+  if (opts.collectionSlug === 'users' && !fieldNames.has('email')) {
+    columns.unshift({
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+      sortable: true,
+      filterable: true,
+    })
+  }
+
   if (!fieldNames.has('id')) {
     columns.push({
       name: 'id',
@@ -371,8 +382,8 @@ function humanizeName(str: string): string {
 
 export const LIST_DEFAULTS: Record<string, CollectionListDefaults> = {
   users: {
-    columns: ['roles', 'createdAt', 'updatedAt'],
-    searchFields: ['roles'],
+    columns: ['email', 'roles', 'createdAt', 'updatedAt'],
+    searchFields: ['email'],
     sort: '-updatedAt',
     limit: 25,
   },

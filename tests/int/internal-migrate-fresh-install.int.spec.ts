@@ -121,6 +121,32 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('creates three custom control tables', () => {
+    for (const table of ['eg_content_passwords', 'eg_scheduled_publishes', 'eg_edit_locks']) {
+      expect(tables, `${table} should be created`).toContain(table)
+    }
+  })
+
+  it('adds SEO columns to events', async () => {
+    const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+      for (const col of expectedColumns) {
+        expect(columnNames, `${table} should have column ${col}`).toContain(col)
+      }
+    }
+
+    const eventSeoExtraCols = ['seo_meta_title', 'seo_meta_description', 'seo_no_index', 'seo_og_image_id', 'seo_canonical_url', 'seo_no_follow', 'seo_social_title', 'seo_social_description', 'seo_x_card', 'seo_x_image_id']
+    const eventSeoExtraVersionCols = ['version_seo_meta_title', 'version_seo_meta_description', 'version_seo_no_index', 'version_seo_og_image_id', 'version_seo_canonical_url', 'version_seo_no_follow', 'version_seo_social_title', 'version_seo_social_description', 'version_seo_x_card', 'version_seo_x_image_id']
+
+    if (tables.includes('eg_events')) {
+      await checkColumns('eg_events', eventSeoExtraCols)
+    }
+    if (tables.includes('_eg_events_v')) {
+      await checkColumns('_eg_events_v', eventSeoExtraVersionCols)
+    }
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import React from 'react'
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { EventCard } from '@/components/EventCard'
@@ -9,22 +10,60 @@ import { getEngine } from '@/lib/engine'
 import { getHomepage } from '@/utilities/pagePaths'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
+import { PasswordGate } from '@/components/PasswordGate'
+import { getPasswordGateState } from '@/features/visibility/gate'
 import type { Event, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const homepage = await getHomepage()
+
+  // When password-protected, use generic metadata and mark as noindex
+  if (homepage) {
+    const cookieStore = await cookies()
+    const gateState = await getPasswordGateState({
+      collection: 'pages',
+      id: homepage.id,
+      cookies: cookieStore,
+    })
+
+    if (gateState === 'locked') {
+      return buildMetadata({
+        title: 'Password Protected',
+        seo: { ...homepage.seo, noIndex: true },
+        path: '/',
+      })
+    }
+  }
+
   return buildMetadata({ title: homepage?.title || 'Grace & Gatsby', seo: homepage?.seo, path: '/' })
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const sp = await searchParams
   const homepage = await getHomepage()
 
   // Once a Page is marked "Set as homepage" in the admin panel, it takes over
   // "/" completely and is edited like any other built page. Until then, this
   // curated default keeps the site looking finished out of the box.
   if (homepage) {
+    // Check password gate
+    const cookieStore = await cookies()
+    const gateState = await getPasswordGateState({
+      collection: 'pages',
+      id: homepage.id,
+      cookies: cookieStore,
+    })
+
+    if (gateState === 'locked') {
+      return <PasswordGate collection="pages" currentPath="/" id={homepage.id} wrongPassword={sp.pw === 'wrong'} />
+    }
+
     return (
       <div className="built-page">
         <PageJsonLd collection="pages" doc={homepage} path="/" />

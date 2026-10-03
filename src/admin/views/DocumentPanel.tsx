@@ -12,11 +12,7 @@
 
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-import type { Field } from '@/engine'
 import { useFormModified } from '@/admin/context'
-import { FieldRenderer } from '@/admin/fields/FieldRenderer'
-import { resolveName } from './authorName'
-import { useAuthorNames } from './useAuthorNames'
 import { useDocumentSave } from './useDocumentSave'
 
 export type DocumentPanelInfo = {
@@ -28,16 +24,12 @@ export type DocumentPanelInfo = {
   status?: string
   createdAt?: string
   updatedAt?: string
-  /** Display name for who last edited the document. */
-  updatedByName?: string
-  /** Display name for who created the document. */
-  createdByName?: string
-  /** Whether this collection tracks authorship (has createdBy/updatedBy fields). */
-  trackAuthorship?: boolean
   /** Visual editor entry for this document, when the collection has one. */
   visualEditorHref?: string
   /** Public URL of the document, when it has one. */
   liveHref?: string
+  /** Signed preview link for draft documents, when applicable. */
+  previewLink?: string
   canDelete: boolean
   canCreate: boolean
 }
@@ -121,16 +113,15 @@ const ConfirmButton: React.FC<{
 }
 
 const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: string }> = ({ collectionSlug, id, updatedAt }) => {
-  const [state, setState] = useState<{ total: number; latest?: string; updatedBy?: unknown } | 'loading' | 'unavailable'>('loading')
-  const resolveName_ = useAuthorNames(state !== 'loading' && typeof state === 'object' ? [state.updatedBy] : [])
+  const [state, setState] = useState<{ total: number; latest?: string } | 'loading' | 'unavailable'>('loading')
 
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt&depth=0`, { credentials: 'include' })
+    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt`, { credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) throw new Error('versions unavailable')
-        const body = (await response.json()) as { docs?: Array<{ updatedAt?: string; updatedBy?: unknown; version?: { updatedBy?: unknown } }>; totalDocs?: number }
-        if (!cancelled) setState({ latest: body.docs?.[0]?.updatedAt, updatedBy: body.docs?.[0]?.version?.updatedBy ?? body.docs?.[0]?.updatedBy, total: body.totalDocs ?? body.docs?.length ?? 0 })
+        const body = (await response.json()) as { docs?: Array<{ updatedAt?: string }>; totalDocs?: number }
+        if (!cancelled) setState({ latest: body.docs?.[0]?.updatedAt, total: body.totalDocs ?? body.docs?.length ?? 0 })
       })
       .catch(() => {
         if (!cancelled) setState('unavailable')
@@ -149,7 +140,7 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
           <p className="doc-line">
             <strong>{state.total}</strong> {state.total === 1 ? 'version' : 'versions'}
           </p>
-          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)} by {resolveName_(state.updatedBy)}</p>}
+          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)}</p>}
           <Link className="doc-link" href={`/admin/collections/${collectionSlug}/${id}/versions`}>
             View past drafts
           </Link>
@@ -167,14 +158,6 @@ const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
       <dl className="doc-details">
         <dt>ID</dt>
         <dd>{info.id ?? '-'}</dd>
-        {info.trackAuthorship && (
-          <>
-            <dt>Last edited by</dt>
-            <dd>{info.updatedByName || 'Unknown'} on {formatDate(info.updatedAt)}</dd>
-            <dt>Created by</dt>
-            <dd>{info.createdByName || 'Unknown'}</dd>
-          </>
-        )}
         <dt>Last modified</dt>
         <dd>{formatDate(info.updatedAt)}</dd>
         <dt>Created</dt>
@@ -210,8 +193,7 @@ const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
 export const DocumentPanel: React.FC<{
   info: DocumentPanelInfo
   readOnly?: boolean
-  pageTypeField?: Field
-}> = ({ info, readOnly, pageTypeField }) => {
+}> = ({ info, readOnly }) => {
   const modified = useFormModified()
   const { busy, duplicate, error, remove, save, savedAt } = useDocumentSave({
     collectionSlug: info.collectionSlug,
@@ -239,11 +221,16 @@ export const DocumentPanel: React.FC<{
           </a>
         ) : null}
 
-        {(info.liveHref || info.visualEditorHref) && !isNew && (
+        {(info.liveHref || info.visualEditorHref || info.previewLink) && !isNew && (
           <div className="doc-links">
             {info.liveHref && (
               <a className="doc-link" href={info.liveHref} rel="noreferrer" target="_blank">
                 View live
+              </a>
+            )}
+            {info.previewLink && (
+              <a className="doc-link" href={info.previewLink} rel="noreferrer" target="_blank">
+                Preview draft
               </a>
             )}
           </div>
@@ -296,13 +283,6 @@ export const DocumentPanel: React.FC<{
 
       {info.draftsEnabled && !isNew && info.id !== undefined && (
         <RevisionsBox collectionSlug={info.collectionSlug} id={info.id} updatedAt={info.updatedAt} />
-      )}
-
-      {pageTypeField && (
-        <Box id="pagetype" title="Page type">
-          <FieldRenderer fields={[pageTypeField]} readOnly={readOnly} />
-          <p className="doc-muted">Used for search engine structured data.</p>
-        </Box>
       )}
 
       {!isNew && <DetailsBox info={info} />}

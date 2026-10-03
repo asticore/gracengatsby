@@ -24,7 +24,8 @@ const detectLoggedIn = (opts: ApplyOptions): boolean => {
   const fromCookies = opts.request?.cookies?.get?.(AUTH_COOKIE)?.value
   if (fromCookies) return true
   const header = opts.request?.headers?.get?.('cookie') || ''
-  return header.split(';').some((part) => part.trim().startsWith(`${AUTH_COOKIE}=`))
+  // A password-unlock cookie means the response may contain protected content: treat like a session.
+  return header.split(';').some((part) => part.trim().startsWith(`${AUTH_COOKIE}=`) || part.trim().startsWith('eg_unlock_'))
 }
 
 const isCacheablePath = (pathname: string | undefined): boolean =>

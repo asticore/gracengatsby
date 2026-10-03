@@ -6,6 +6,10 @@ import type { ResolvedSpeed } from './types'
 const hasSession = (request: Request): boolean =>
   (request.headers.get('cookie') || '').split(';').some((part) => part.trim().startsWith(`${AUTH_COOKIE}=`))
 
+/** Visitors holding a password-unlock cookie may be seeing protected content: never store or serve shared copies. */
+const hasUnlockCookie = (request: Request): boolean =>
+  (request.headers.get('cookie') || '').split(';').some((part) => part.trim().startsWith('eg_unlock_'))
+
 /**
  * Serves a page from the Worker's edge cache, or builds it and stores it.
  *
@@ -32,6 +36,7 @@ export async function withPageCache(
     speed.caching.pageCache &&
     request.method === 'GET' &&
     !request.headers.has('range') &&
+    !hasUnlockCookie(request) &&
     (!hasSession(request) || speed.caching.cacheLoggedInUsers)
 
   if (!eligible) {

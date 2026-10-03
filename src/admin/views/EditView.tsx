@@ -13,19 +13,6 @@ const idOf = (value: unknown): number | string | undefined => {
   return typeof value === 'number' || typeof value === 'string' ? value : undefined
 }
 
-/** Get user display name from a user object or ID; returns name if available, else email, else the ID as string. */
-function userDisplayName(user: unknown): string | undefined {
-  if (!user) return undefined
-  if (typeof user === 'string' || typeof user === 'number') return String(user)
-  if (typeof user === 'object') {
-    const u = user as { name?: unknown; email?: unknown; id?: unknown }
-    if (typeof u.name === 'string' && u.name) return u.name
-    if (typeof u.email === 'string' && u.email) return u.email
-    if (u.id !== undefined) return String(u.id)
-  }
-  return undefined
-}
-
 /** Public URL of a page: its slug under every ancestor's slug (the parent chain is the URL; see utilities/pagePaths.ts). */
 async function pageLiveHref(engine: AdminEngine, doc: Record<string, unknown>): Promise<string | undefined> {
   if (doc.isHomepage) return '/'
@@ -64,7 +51,6 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 
   const canRead = context.permissions.collections?.[collectionSlug]?.read
   const canCreate = context.permissions.collections?.[collectionSlug]?.create
-  const canDelete = context.permissions.collections?.[collectionSlug]?.delete
   if (id === undefined ? !canCreate : !canRead) {
     return <p>You don&apos;t have access to {id === undefined ? 'create' : 'edit'} this document.</p>
   }
@@ -94,44 +80,41 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const blocksCount = Array.isArray(rawBlocks) ? rawBlocks.length : 0
 
   const docRecord = doc as Record<string, unknown> | null
-
-  // Resolve updatedBy and createdBy display names (relationship may be an id or a populated user).
-  const resolveName = async (value: unknown): Promise<string | undefined> => {
-    if (value === null || value === undefined) return undefined
-    if (typeof value === 'object') return userDisplayName(value)
-    const numeric = Number(value)
-    if (!Number.isFinite(numeric)) return userDisplayName(value)
-    const user = await context.engine.findByID({ collection: 'users', id: numeric, depth: 0, overrideAccess: true }).catch((): null => null)
-    return userDisplayName(user) ?? userDisplayName(value)
+  
+  // Generate preview link for draft documents
+  let previewLink: string | undefined
+  if (draftsEnabled && id !== undefined && status === 'draft') {
+    try {
+      const response = await fetch(`http://localhost:3000/api/preview-link?collection=${collectionSlug}&id=${id}`, {
+        headers: { 'Cookie': context.cookies ?? '' },
+      })
+      if (response.ok) {
+        const data = (await response.json()) as { url?: string }
+        previewLink = data.url
+      }
+    } catch {
+      // Preview link generation failed; continue without it
+    }
   }
-  const updatedByName = docRecord ? await resolveName(docRecord.updatedBy) : undefined
-  const createdByName = docRecord ? await resolveName(docRecord.createdBy) : undefined
-
-  const trackAuthorship = collection.fields.some((f) => 'name' in f && f.name === 'createdBy')
 
   const panel: DocumentPanelInfo = {
     canCreate: Boolean(canCreate),
-    canDelete: Boolean(canDelete),
+    canDelete: true, // the REST delete route enforces the real access check
     collectionSlug,
     createdAt: typeof docRecord?.createdAt === 'string' ? docRecord.createdAt : undefined,
-    createdByName,
     draftsEnabled,
     id,
     label,
     liveHref: docRecord ? await liveHrefFor(context.engine, collectionSlug, docRecord) : undefined,
+    previewLink,
     status,
-    trackAuthorship,
     updatedAt: typeof docRecord?.updatedAt === 'string' ? docRecord.updatedAt : undefined,
-    updatedByName,
     visualEditorHref: surface?.kind === 'collection' && id !== undefined ? `/admin/visual-editor/collection/${collectionSlug}/${id}` : undefined,
   }
 
-  // Extract pageType field if it exists
-  const pageTypeField = collection.fields.find((f) => f.type === 'select' && 'name' in f && f.name === 'schemaType')
-
   return (
     <div className="collection-edit">
-      <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
+      <nav aria-label="Breadcrumb" className="doc-breadcrumb">
         <Link href="/admin">Dashboard</Link>
         <span aria-hidden="true">/</span>
         <Link href={`/admin/collections/${collectionSlug}`}>{pluralLabel}</Link>
@@ -145,7 +128,6 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
         draftsEnabled={draftsEnabled}
         fields={sanitizeFieldsForClient(collection.fields)}
         id={id}
-        pageTypeField={pageTypeField ? sanitizeFieldsForClient([pageTypeField])[0] : undefined}
         panel={panel}
         visualBlocksCount={blocksCount}
         visualBlocksField={hasBlocksField ? blocksField : undefined}

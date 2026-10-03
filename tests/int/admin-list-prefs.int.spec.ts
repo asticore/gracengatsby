@@ -147,8 +147,10 @@ describe('loadListPrefs, saveListPrefs, resetListPrefs', () => {
     expect(result).toEqual({})
     expect(engine.find).toHaveBeenCalledWith({
       collection: 'preferences',
-      where: { key: { equals: 'collection-posts-list' }, user: { equals: 42 } },
+      where: { key: { equals: 'collection-posts-list' } },
       depth: 0,
+      limit: 1000,
+      pagination: false,
       user: mockUser,
       overrideAccess: true,
     })
@@ -163,8 +165,8 @@ describe('loadListPrefs, saveListPrefs, resetListPrefs', () => {
     await loadListPrefs(engine, mockUser, collectionSlug)
 
     const call = vi.mocked(engine.find).mock.calls[0][0] as Record<string, unknown>
-    // Verify user scoping
-    expect(((call.where as Record<string, unknown>).user as Record<string, unknown>).equals).toBe(42)
+    // Owner is matched in code (polymorphic user field cannot be queried)
+    expect(call.where).toEqual({ key: { equals: 'collection-posts-list' } })
   })
 
   it('loadListPrefs returns sanitized value from doc', async () => {
@@ -214,7 +216,7 @@ describe('loadListPrefs, saveListPrefs, resetListPrefs', () => {
     const createCall = vi.mocked(engine.create).mock.calls[0][0] as Record<string, unknown>
     expect(createCall.collection).toBe('preferences')
     expect((createCall.data as Record<string, unknown>).key).toBe('collection-posts-list')
-    expect((createCall.data as Record<string, unknown>).user).toBe(42)
+    expect((createCall.data as Record<string, unknown>).user).toEqual([42])
     expect(result).toEqual(prefs)
   })
 
@@ -270,7 +272,7 @@ describe('loadListPrefs, saveListPrefs, resetListPrefs', () => {
     await saveListPrefs(engine, mockUser, collectionSlug, { view: 'list' })
 
     const findCall = vi.mocked(engine.find).mock.calls[0][0] as Record<string, unknown>
-    expect(((findCall.where as Record<string, unknown>).user as Record<string, unknown>).equals).toBe(42)
+    expect(findCall.where).toEqual({ key: { equals: 'collection-posts-list' } })
   })
 
   it('resetListPrefs returns void when no user', async () => {
@@ -311,16 +313,14 @@ describe('loadListPrefs, saveListPrefs, resetListPrefs', () => {
     await resetListPrefs(engine, mockUser, collectionSlug)
 
     const findCall = vi.mocked(engine.find).mock.calls[0][0] as Record<string, unknown>
-    expect(((findCall.where as Record<string, unknown>).user as Record<string, unknown>).equals).toBe(42)
+    expect(findCall.where).toEqual({ key: { equals: 'collection-posts-list' } })
   })
 
-  it('saveListPrefs returns sanitized input on error', async () => {
+  it('saveListPrefs rejects on error so the route can report it', async () => {
     const engine = makeMockEngine()
     vi.mocked(engine.find).mockRejectedValueOnce(new Error('DB error'))
 
-    const result = await saveListPrefs(engine, mockUser, collectionSlug, { view: 'gallery' })
-
-    expect(result).toEqual({ view: 'gallery' })
+    await expect(saveListPrefs(engine, mockUser, collectionSlug, { view: 'gallery' })).rejects.toThrow('DB error')
   })
 
   it('resetListPrefs ignores errors silently', async () => {
@@ -330,5 +330,49 @@ describe('loadListPrefs, saveListPrefs, resetListPrefs', () => {
     // Should not throw
     await resetListPrefs(engine, mockUser, collectionSlug)
     expect(engine.delete).not.toHaveBeenCalled()
+  })
+  it('ignores rows that belong to another user', async () => {
+    const engine = makeMockEngine()
+    vi.mocked(engine.find).mockResolvedValueOnce({
+      docs: [{ id: 1, key: 'collection-posts-list', user: [99], value: { view: 'gallery' } }],
+    } as never)
+    expect(await loadListPrefs(engine, mockUser, collectionSlug)).toEqual({})
+  })
+
+  it('reads the row stored as [id]', async () => {
+    const engine = makeMockEngine()
+    vi.mocked(engine.find).mockResolvedValueOnce({
+      docs: [{ id: 1, key: 'collection-posts-list', user: [42], value: { view: 'gallery' } }],
+    } as never)
+    expect(await loadListPrefs(engine, mockUser, collectionSlug)).toEqual({ view: 'gallery' })
+  })
+
+  describe('owner matching', () => {
+    it('matches user id in where clause with equals filter', async () => {
+      const engine = makeMockEngine()
+      await loadListPrefs(engine, mockUser, collectionSlug)
+      const call = vi.mocked(engine.find).mock.calls[0][0] as Record<string, unknown>
+      expect(call.where).toEqual({ key: { equals: 'collection-posts-list' } })
+    })
+
+    it('handles array-format user field', async () => {
+      const engine = makeMockEngine()
+      vi.mocked(engine.find).mockResolvedValueOnce({
+        docs: [{ id: 1, key: 'collection-posts-list', user: [42], value: { view: 'gallery' } }],
+      } as never)
+
+      const result = await loadListPrefs(engine, mockUser, collectionSlug)
+      expect(result).toEqual({ view: 'gallery' })
+    })
+
+    it('rejects mismatched user ids', async () => {
+      const engine = makeMockEngine()
+      vi.mocked(engine.find).mockResolvedValueOnce({
+        docs: [{ id: 1, key: 'collection-posts-list', user: [99], value: { view: 'gallery' } }],
+      } as never)
+
+      const result = await loadListPrefs(engine, mockUser, collectionSlug)
+      expect(result).toEqual({})
+    })
   })
 })

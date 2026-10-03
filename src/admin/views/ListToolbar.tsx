@@ -31,6 +31,7 @@ export function ListToolbar({
   const searchParams = useSearchParams()
   const [showColumnPicker, setShowColumnPicker] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [showFilterBuilder, setShowFilterBuilder] = useState(false)
   const [tempFilters, setTempFilters] = useState<ListFilter[]>(state.filters)
   const columnPickerRef = useRef<HTMLDivElement>(null)
@@ -92,10 +93,13 @@ export function ListToolbar({
         }),
       })
       if (resp.ok) {
-        // Optionally show a toast or similar
+        setSaveError(null)
+        router.refresh()
+      } else {
+        setSaveError('Could not save your defaults')
       }
     } catch {
-      console.error('Failed to save preferences')
+      setSaveError('Could not save your defaults')
     } finally {
       setIsSaving(false)
     }
@@ -280,6 +284,11 @@ export function ListToolbar({
       >
         {isSaving ? 'Saving...' : 'Save as default'}
       </button>
+      {saveError && (
+        <span role="alert" className="list-toolbar-error">
+          {saveError}
+        </span>
+      )}
       {hasSavedPrefs && (
         <button
           onClick={handleResetPrefs}

@@ -19,6 +19,7 @@
  */
 @import 'tailwindcss';
 @import './custom.css';
+@import './list-popovers.css';
 
 @theme {
   /* Stage 12: single admin font (was the raw OS system-font stack before -

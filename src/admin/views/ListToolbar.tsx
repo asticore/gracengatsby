@@ -134,7 +134,11 @@ export function ListToolbar({
   }
 
   const handleApplyFilters = () => {
-    const newState = { ...state, filters: tempFilters, page: 1 }
+    // Drop rows with no value (an empty "equals" would match nothing); 'exists' needs no typed value
+    const filters = tempFilters
+      .map((f) => (f.op === 'exists' && !f.value ? { ...f, value: 'true' } : f))
+      .filter((f) => f.value !== '')
+    const newState = { ...state, filters, page: 1 }
     router.push(`${pathname}?${serializeListState(newState)}`)
     setShowFilterBuilder(false)
   }

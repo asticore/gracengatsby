@@ -111,21 +111,16 @@ export function splitFields(fields: Field[], visualBlocksField?: string): { main
   return { main, settings, access, seo, pageType }
 }
 
-const PageContentCard: React.FC<{ count?: number; href?: string; isNew: boolean }> = ({ count, href, isNew }) => (
+const PageContentCard: React.FC<{ count?: number; isNew: boolean }> = ({ count, isNew }) => (
   <div className="doc-content-card">
     <div>
       <strong>Page content</strong>
       <p className="doc-muted">
         {isNew
-          ? 'Save first, then open the visual editor to build the layout.'
+          ? 'Save first, then use "Edit in visual editor" in the panel to build the layout.'
           : `${count ?? 0} ${count === 1 ? 'section' : 'sections'}. The layout is edited in the visual editor.`}
       </p>
     </div>
-    {href && !isNew && (
-      <a className="btn btn--primary" href={href}>
-        Edit in visual editor
-      </a>
-    )}
   </div>
 )
 
@@ -173,7 +168,7 @@ export const EditForm: React.FC<EditFormProps> = ({
                   </section>
                 )}
                 {seo && <SeoCard seoField={seo} readOnly={readOnly} liveHref={panel.liveHref} />}
-                {visualBlocksField && <PageContentCard count={visualBlocksCount} href={panel.visualEditorHref} isNew={id === undefined} />}
+                {visualBlocksField && <PageContentCard count={visualBlocksCount} isNew={id === undefined} />}
               </div>
             </div>
             <aside className="document-edit__side">

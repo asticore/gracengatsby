@@ -12,7 +12,11 @@
 
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
+import type { Field } from '@/engine'
 import { useFormModified } from '@/admin/context'
+import { FieldRenderer } from '@/admin/fields/FieldRenderer'
+import { resolveName } from './authorName'
+import { useAuthorNames } from './useAuthorNames'
 import { useDocumentSave } from './useDocumentSave'
 
 export type DocumentPanelInfo = {
@@ -24,14 +28,20 @@ export type DocumentPanelInfo = {
   status?: string
   createdAt?: string
   updatedAt?: string
+  /** Display name for who last edited the document. */
+  updatedByName?: string
+  /** Display name for who created the document. */
+  createdByName?: string
+  /** Whether this collection tracks authorship (has createdBy/updatedBy fields). */
+  trackAuthorship?: boolean
   /** Visual editor entry for this document, when the collection has one. */
   visualEditorHref?: string
   /** Public URL of the document, when it has one. */
   liveHref?: string
-  /** Signed preview link for draft documents, when applicable. */
-  previewLink?: string
   canDelete: boolean
   canCreate: boolean
+  /** Whether a preview link can be generated for this document. */
+  canPreview: boolean
 }
 
 const BOX_STATE_KEY = 'ac-doc-panel-boxes'
@@ -112,16 +122,58 @@ const ConfirmButton: React.FC<{
   )
 }
 
+const PreviewButton: React.FC<{
+  collectionSlug: string
+  id: number
+  hasUnsavedChanges: boolean
+}> = ({ collectionSlug, id, hasUnsavedChanges }) => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handlePreview = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/preview-link?collection=${collectionSlug}&id=${id}`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: string }
+        throw new Error(body.error || 'Failed to generate preview link')
+      }
+      const data = (await response.json()) as { url?: string }
+      if (data.url) {
+        window.open(data.url, '_blank', 'noopener')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate preview link')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <button className="btn btn--secondary" disabled={loading} onClick={handlePreview} type="button">
+        {loading ? 'Generating…' : 'Preview'}
+      </button>
+      {hasUnsavedChanges && <p className="doc-muted">Preview shows the last saved version.</p>}
+      {error && <p className="doc-error">{error}</p>}
+    </>
+  )
+}
+
 const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: string }> = ({ collectionSlug, id, updatedAt }) => {
-  const [state, setState] = useState<{ total: number; latest?: string } | 'loading' | 'unavailable'>('loading')
+  const [state, setState] = useState<{ total: number; latest?: string; updatedBy?: unknown } | 'loading' | 'unavailable'>('loading')
+  const resolveName_ = useAuthorNames(state !== 'loading' && typeof state === 'object' ? [state.updatedBy] : [])
 
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt`, { credentials: 'include' })
+    fetch(`/api/${collectionSlug}/versions?where[parent][equals]=${id}&limit=1&sort=-updatedAt&depth=0`, { credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) throw new Error('versions unavailable')
-        const body = (await response.json()) as { docs?: Array<{ updatedAt?: string }>; totalDocs?: number }
-        if (!cancelled) setState({ latest: body.docs?.[0]?.updatedAt, total: body.totalDocs ?? body.docs?.length ?? 0 })
+        const body = (await response.json()) as { docs?: Array<{ updatedAt?: string; updatedBy?: unknown; version?: { updatedBy?: unknown } }>; totalDocs?: number }
+        if (!cancelled) setState({ latest: body.docs?.[0]?.updatedAt, updatedBy: body.docs?.[0]?.version?.updatedBy ?? body.docs?.[0]?.updatedBy, total: body.totalDocs ?? body.docs?.length ?? 0 })
       })
       .catch(() => {
         if (!cancelled) setState('unavailable')
@@ -140,7 +192,7 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
           <p className="doc-line">
             <strong>{state.total}</strong> {state.total === 1 ? 'version' : 'versions'}
           </p>
-          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)}</p>}
+          {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)} by {resolveName_(state.updatedBy)}</p>}
           <Link className="doc-link" href={`/admin/collections/${collectionSlug}/${id}/versions`}>
             View past drafts
           </Link>
@@ -158,6 +210,14 @@ const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
       <dl className="doc-details">
         <dt>ID</dt>
         <dd>{info.id ?? '-'}</dd>
+        {info.trackAuthorship && (
+          <>
+            <dt>Last edited by</dt>
+            <dd>{info.updatedByName || 'Unknown'} on {formatDate(info.updatedAt)}</dd>
+            <dt>Created by</dt>
+            <dd>{info.createdByName || 'Unknown'}</dd>
+          </>
+        )}
         <dt>Last modified</dt>
         <dd>{formatDate(info.updatedAt)}</dd>
         <dt>Created</dt>
@@ -193,7 +253,8 @@ const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
 export const DocumentPanel: React.FC<{
   info: DocumentPanelInfo
   readOnly?: boolean
-}> = ({ info, readOnly }) => {
+  pageTypeField?: Field
+}> = ({ info, readOnly, pageTypeField }) => {
   const modified = useFormModified()
   const { busy, duplicate, error, remove, save, savedAt } = useDocumentSave({
     collectionSlug: info.collectionSlug,
@@ -221,17 +282,15 @@ export const DocumentPanel: React.FC<{
           </a>
         ) : null}
 
-        {(info.liveHref || info.visualEditorHref || info.previewLink) && !isNew && (
+        {(info.liveHref || info.visualEditorHref || info.canPreview) && !isNew && (
           <div className="doc-links">
             {info.liveHref && (
               <a className="doc-link" href={info.liveHref} rel="noreferrer" target="_blank">
                 View live
               </a>
             )}
-            {info.previewLink && (
-              <a className="doc-link" href={info.previewLink} rel="noreferrer" target="_blank">
-                Preview draft
-              </a>
+            {info.canPreview && info.id !== undefined && (
+              <PreviewButton collectionSlug={info.collectionSlug} hasUnsavedChanges={modified} id={info.id} />
             )}
           </div>
         )}
@@ -283,6 +342,13 @@ export const DocumentPanel: React.FC<{
 
       {info.draftsEnabled && !isNew && info.id !== undefined && (
         <RevisionsBox collectionSlug={info.collectionSlug} id={info.id} updatedAt={info.updatedAt} />
+      )}
+
+      {pageTypeField && (
+        <Box id="pagetype" title="Page type">
+          <FieldRenderer fields={[pageTypeField]} readOnly={readOnly} />
+          <p className="doc-muted">Used for search engine structured data.</p>
+        </Box>
       )}
 
       {!isNew && <DetailsBox info={info} />}

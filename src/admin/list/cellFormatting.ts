@@ -22,6 +22,14 @@ export function formatCellValue(
     return ''
   }
 
+  // System columns (createdAt/updatedAt) have no field definition: format ISO strings
+  if (!columnField && typeof cell === 'string') {
+    const d = new Date(cell)
+    if (!Number.isNaN(d.getTime()) && /^\d{4}-\d\d-\d\dT/.test(cell)) {
+      return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+    }
+  }
+
   // Field type-specific formatting
   if (columnField) {
     const fieldType = (columnField as { type?: string }).type

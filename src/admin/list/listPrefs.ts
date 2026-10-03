@@ -66,6 +66,26 @@ export function prefsKey(collectionSlug: string): string {
 }
 
 /**
+ * The preferences `user` field is polymorphic (`relationTo: ['users']`), and
+ * the where-builder has no column for `user.relationTo` / `user.value`, so the
+ * row cannot be matched in the query. Look up by key, then keep only the row
+ * that belongs to this user.
+ */
+function ownerWhere(key: string, _user: TypedUser) {
+  return { key: { equals: key } }
+}
+
+function belongsTo(doc: unknown, user: TypedUser): boolean {
+  const owner = (doc as { user?: unknown }).user
+  const first = Array.isArray(owner) ? owner[0] : owner
+  if (first === null || first === undefined) return false
+  const value =
+    typeof first === 'object' ? (first as { value?: unknown; id?: unknown }).value ?? (first as { id?: unknown }).id : first
+  const id = typeof value === 'object' && value !== null ? (value as { id?: unknown }).id : value
+  return String(id) === String(user.id)
+}
+
+/**
  * Load the list preferences for a user and collection.
  * Returns the sanitized preferences object or {} if not found or on any error.
  */
@@ -80,14 +100,17 @@ export async function loadListPrefs(
     const key = prefsKey(collectionSlug)
     const docs = await engine.find({
       collection: 'preferences',
-      where: { key: { equals: key }, user: { equals: user.id } },
+      where: ownerWhere(key, user),
       depth: 0,
+      limit: 1000,
+      pagination: false,
       user,
       overrideAccess: true,
     })
 
-    if (docs.docs && docs.docs.length > 0) {
-      const doc = docs.docs[0]
+    const mine = (docs.docs ?? []).filter((d) => belongsTo(d, user))
+    if (mine.length > 0) {
+      const doc = mine[0]
       const value = (doc as { value?: unknown }).value
       return sanitizeListPrefs(value)
     }
@@ -113,53 +136,50 @@ export async function saveListPrefs(
 
   const sanitized = sanitizeListPrefs(prefs)
 
-  try {
-    const key = prefsKey(collectionSlug)
+  const key = prefsKey(collectionSlug)
 
-    // Find existing doc
-    const docs = await engine.find({
+  // Find existing doc
+  const docs = await engine.find({
+    collection: 'preferences',
+    where: ownerWhere(key, user),
+    depth: 0,
+    limit: 1000,
+    pagination: false,
+    user,
+    overrideAccess: true,
+  })
+
+  const mine = (docs.docs ?? []).filter((d) => belongsTo(d, user))
+  if (mine.length > 0) {
+    // Update existing doc - merge with existing value
+    const doc = mine[0]
+    const existing = sanitizeListPrefs((doc as { value?: unknown }).value)
+    const merged = { ...existing, ...sanitized }
+
+    await engine.update({
       collection: 'preferences',
-      where: { key: { equals: key }, user: { equals: user.id } },
-      depth: 0,
+      id: (doc as { id?: unknown }).id as number,
+      data: { value: merged },
       user,
       overrideAccess: true,
     })
 
-    if (docs.docs && docs.docs.length > 0) {
-      // Update existing doc - merge with existing value
-      const doc = docs.docs[0]
-      const existing = sanitizeListPrefs((doc as { value?: unknown }).value)
-      const merged = { ...existing, ...sanitized }
+    return merged
+  } else {
+    // Create new doc
+    await engine.create({
+      collection: 'preferences',
+      data: {
+        key,
+        user: [user.id],
+        value: sanitized,
+      } as never,
+      user,
+      overrideAccess: true,
+    })
 
-      await engine.update({
-        collection: 'preferences',
-        id: (doc as { id?: unknown }).id as number,
-        data: { value: merged },
-        user,
-        overrideAccess: true,
-      })
-
-      return merged
-    } else {
-      // Create new doc
-      await engine.create({
-        collection: 'preferences',
-        data: {
-          key,
-          user: user.id,
-          value: sanitized,
-        },
-        user,
-        overrideAccess: true,
-      })
-
-      return sanitized
-    }
-  } catch {
-    // On error, return the sanitized input anyway so the caller can proceed
+    return sanitized
   }
-
-  return sanitized
 }
 
 /**
@@ -176,14 +196,17 @@ export async function resetListPrefs(
     const key = prefsKey(collectionSlug)
     const docs = await engine.find({
       collection: 'preferences',
-      where: { key: { equals: key }, user: { equals: user.id } },
+      where: ownerWhere(key, user),
       depth: 0,
+      limit: 1000,
+      pagination: false,
       user,
       overrideAccess: true,
     })
 
-    if (docs.docs && docs.docs.length > 0) {
-      const doc = docs.docs[0]
+    const mine = (docs.docs ?? []).filter((d) => belongsTo(d, user))
+    if (mine.length > 0) {
+      const doc = mine[0]
       await engine.delete({
         collection: 'preferences',
         id: (doc as { id?: unknown }).id as number,

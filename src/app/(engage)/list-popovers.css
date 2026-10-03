@@ -18,3 +18,9 @@
 .list-filter-row {
   flex-wrap: wrap;
 }
+
+.list-toolbar-error {
+  align-self: center;
+  color: var(--theme-error-600);
+  font-size: calc(var(--base) * 0.85);
+}

@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
@@ -96,7 +97,7 @@ export default async function PreviewPage({ params, searchParams }: PreviewPageP
             className="mx-auto flex max-w-[var(--max-width)] flex-wrap gap-2 px-6 pt-4 text-[0.8rem] tracking-[0.04em] text-[rgba(20,17,15,0.6)]"
             aria-label="Breadcrumb"
           >
-            <a href="/">Home</a>
+            <Link href="/">Home</Link>
             {ancestors.map((ancestor, idx) => (
               <React.Fragment key={String(ancestor.id) || idx}>
                 <span className="opacity-50">/</span>

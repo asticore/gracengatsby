@@ -195,4 +195,19 @@ describe('formatCellValue', () => {
       expect(formatCellValue('2026 plan', {}, undefined, undefined)).toBe('2026 plan')
     })
   })
+
+  describe('multi-select', () => {
+    it('joins option labels for hasMany select', () => {
+      const field = {
+        name: 'roles',
+        type: 'select',
+        hasMany: true,
+        options: [
+          { label: 'Admin', value: 'admin' },
+          { label: 'Customer', value: 'customer' },
+        ],
+      } as unknown as Field
+      expect(formatCellValue(['admin', 'customer'], {}, field, undefined)).toBe('Admin, Customer')
+    })
+  })
 })

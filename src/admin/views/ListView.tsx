@@ -8,6 +8,7 @@ import {
   deriveColumns,
   getListDefaults,
   buildFindArgs,
+  serializeListState,
   resolveVisibleColumns,
   type ListState,
   type ColumnDef,
@@ -165,28 +166,15 @@ export async function ListView({
                 <span>
                   {colDef?.label || filter.field} {filter.op} {filter.value}
                 </span>
-                <button
-                  onClick={async () => {
-                    const newFilters = effectiveState.filters.filter((_, i) => i !== idx)
-                    const search = new URLSearchParams()
-                    Object.entries(effectiveState).forEach(([k, v]) => {
-                      if (k === 'filters') return
-                      if (v === null || v === '' || (Array.isArray(v) && v.length === 0)) return
-                      if (k === 'cols' && Array.isArray(v)) search.append(k, v.join(','))
-                      else if (!Array.isArray(v)) search.append(k, String(v))
-                    })
-                    newFilters.forEach((f) => {
-                      search.append('f', `${f.field}:${f.op}:${f.value}`)
-                    })
-                    const url = `/admin/collections/${collectionSlug}?${search.toString()}`
-                    window.location.href = url
-                  }}
+                <a
+                  href={`/admin/collections/${collectionSlug}?${serializeListState(effectiveState, {
+                    filters: effectiveState.filters.filter((_, i) => i !== idx),
+                  })}`}
                   className="list-filter-chip-remove"
-                  type="button"
                   aria-label="Remove filter"
                 >
                   ×
-                </button>
+                </a>
               </div>
             )
           })}

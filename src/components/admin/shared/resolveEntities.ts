@@ -41,7 +41,7 @@ export type ResolvedGroup = {
 }
 
 export type EntityPermissions = {
-  collections?: Record<string, { create?: boolean; read?: boolean } | undefined>
+  collections?: Record<string, { create?: boolean; read?: boolean; update?: boolean; delete?: boolean } | undefined>
   globals?: Record<string, { read?: boolean } | undefined>
 }
 

@@ -40,7 +40,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!event) return {}
   return buildMetadata({
     title: event.title,
+    // Event's generated type predates the seo group; the field exists at runtime.
+    seo: (event as Event & { seo?: Parameters<typeof buildMetadata>[0]['seo'] }).seo,
     path: `/events/${slug}`,
+    featuredImage: event.coverImage,
     kind: 'article',
     publishedAt: event.createdAt,
     updatedAt: event.updatedAt,

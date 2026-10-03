@@ -104,12 +104,12 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
       await checkColumns('_eg_products_v', [...authorshipVersionCols, ...productSeoExtraVersionCols])
     }
 
-    // Events
+    // Events (authorship + SEO columns)
     if (tables.includes('eg_events')) {
-      await checkColumns('eg_events', authorshipCols)
+      await checkColumns('eg_events', [...authorshipCols, ...productSeoExtraCols])
     }
     if (tables.includes('_eg_events_v')) {
-      await checkColumns('_eg_events_v', authorshipVersionCols)
+      await checkColumns('_eg_events_v', [...authorshipVersionCols, ...productSeoExtraVersionCols])
     }
 
     // Courses

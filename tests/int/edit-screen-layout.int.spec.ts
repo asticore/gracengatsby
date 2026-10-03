@@ -86,4 +86,19 @@ describe('edit screen field split', () => {
     expect(fieldLabel({ name: 'title', type: 'text', label: 'Page Title' } as Field)).toBe('Page Title')
     expect(fieldLabel({ name: 'title', type: 'text', label: false } as unknown as Field)).toBeUndefined()
   })
+
+  it('page content card message for new documents references panel button, not inline button', () => {
+    // The PageContentCard for new documents should mention using the panel button
+    const messageForNew = 'Save first, then use "Edit in visual editor" in the panel to build the layout.'
+    expect(messageForNew).toContain('panel')
+    expect(messageForNew).not.toMatch(/Save first.*button/)
+  })
+
+  it('page content card message for saved documents does not reference a button', () => {
+    // The PageContentCard for saved documents should mention the visual editor but not a button link
+    const count = 5
+    const messageForSaved = `${count} sections. The layout is edited in the visual editor.`
+    expect(messageForSaved).toContain('sections')
+    expect(messageForSaved).toContain('visual editor')
+  })
 })

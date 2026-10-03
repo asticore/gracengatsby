@@ -8,6 +8,8 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import { buildPageJsonLd } from '@/features/seo/pageSchema'
+import { getSeoContext } from '@/features/seo/settings'
 import type { BlogSetting, Media, Post } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -35,13 +37,33 @@ export default async function BlogArchivePage() {
 
   const layout = settings?.archiveLayout || 'grid'
 
+  const context = await getSeoContext()
+  const title = settings?.archiveTitle || 'Journal'
+  const jsonLd = context.enabled
+    ? buildPageJsonLd({
+        collection: 'pages',
+        schemaType: 'CollectionPage',
+        title,
+        description: settings?.archiveIntro,
+        url: context.baseUrl + '/blog',
+        baseUrl: context.baseUrl,
+        siteName: context.siteName,
+      })
+    : null
+
   return (
     <div className="page-shell">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '</\\/') }}
+        />
+      )}
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
         settings.introBlocks.map((block, index) => <BlockRenderer key={block.id || index} block={block} index={index} />)
       ) : (
         <div className="section-heading">
-          <h1>{settings?.archiveTitle || 'Journal'}</h1>
+          <h1>{title}</h1>
         </div>
       )}
       {settings?.archiveIntro && (

@@ -86,8 +86,8 @@ export type ValidateFieldOptions = {
   maxRows?: number
   /** `select` only. */
   options?: SelectOption[]
-  /** `relationship`/`upload` only. This app never configures a polymorphic `relationTo: [...]` array (confirmed by grep) - always a single collection slug string. */
-  relationTo?: string
+  /** `relationship`/`upload` only. A single collection slug, or a polymorphic `[...]` array (the preferences `user` field is the one in use). */
+  relationTo?: string | string[]
   /** `relationship`/`upload` only - defaults to `'number'`, this app's real default (see `IDType`'s doc comment). */
   idType?: IDType
   /** `json` only - set by the caller when it already tried `JSON.parse`-ing a string value and that threw, mirroring the reference engine's own field-level `beforeValidate` hook wiring `jsonError` in before calling this validator (validations.js:166-217 never parses JSON itself either). */
@@ -428,6 +428,19 @@ const relationshipOrUpload: ValidatorFn = (value, options) => {
       // though this app never exercises it.
       let requestedID: unknown
       if (typeof relationTo === 'string' && (val || typeof val === 'number')) requestedID = val
+      // Polymorphic `relationTo: [...]`: the value is `{ relationTo, value }`,
+      // and the target collection must be one of the allowed ones.
+      // A bare id is accepted when only one collection is allowed (the db layer
+      // keeps single-target rels fields as plain ids).
+      if (Array.isArray(relationTo) && relationTo.length === 1 && (typeof val === 'number' || typeof val === 'string')) {
+        requestedID = val
+      }
+      if (Array.isArray(relationTo) && val && typeof val === 'object') {
+        const poly = val as { relationTo?: unknown; value?: unknown }
+        if (typeof poly.relationTo === 'string' && relationTo.includes(poly.relationTo)) {
+          requestedID = typeof poly.value === 'object' && poly.value !== null ? (poly.value as { id?: unknown }).id : poly.value
+        }
+      }
       if (requestedID === null) return false
       return !isValidID(requestedID, idType)
     })

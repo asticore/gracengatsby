@@ -1,6 +1,8 @@
 import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
+import { getDb } from '@/cms/db/connect'
+import { getPasswordHash } from '@/cms/db/contentPasswords'
 
 import { getSeoContext, normalisePath, parsePathList, pathMatches } from './settings'
 
@@ -56,6 +58,7 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   const baseUrl = context.baseUrl
   const seen = new Set<string>()
   const entries: SitemapEntry[] = []
+  const db = await getDb()
 
   const add = (path: string, lastModified?: string | null, priority = 0.6) => {
     const normalised = normalisePath(path)
@@ -68,6 +71,15 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
       changeFrequency,
       priority,
     })
+  }
+
+  const isPasswordProtected = async (collection: string, docId: number): Promise<boolean> => {
+    try {
+      const hash = await getPasswordHash(db, collection, docId)
+      return hash !== null
+    } catch {
+      return false
+    }
   }
 
   const addCollection = async (collection: string, prefix: string, priority: number) => {
@@ -94,11 +106,13 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
 
   try {
     const pages = await getAllResolvedPages()
-    pages.forEach(({ page, path }) => {
-      if (page.isHomepage) return
-      if (page.seo?.noIndex) return
+    for (const { page, path } of pages) {
+      if (page.isHomepage) continue
+      if (page.seo?.noIndex) continue
+      // Exclude password-protected pages from sitemap
+      if (page.id && (await isPasswordProtected('pages', page.id))) continue
       add(`/${path.join('/')}`, page.updatedAt, 0.8)
-    })
+    }
   } catch {
     // Same reasoning as addCollection.
   }

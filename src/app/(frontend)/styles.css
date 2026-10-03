@@ -609,3 +609,15 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+.preview-notice {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #fef3c7;
+  border-bottom: 1px solid #f59e0b;
+  color: #78350f;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  text-align: center;
+}

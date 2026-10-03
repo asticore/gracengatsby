@@ -13,11 +13,14 @@
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import type { Field } from '@/engine'
-import { useField, useFormModified } from '@/admin/context'
+import { useFormModified } from '@/admin/context'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { resolveName } from './authorName'
 import { useAuthorNames } from './useAuthorNames'
 import { useDocumentSave } from './useDocumentSave'
+import { VisibilityPanel } from './VisibilityPanel'
+import { SchedulePanel } from './SchedulePanel'
+import { EditLockBanner } from './EditLockBanner'
 
 export type DocumentPanelInfo = {
   collectionSlug: string
@@ -250,44 +253,6 @@ const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
   )
 }
 
-const VisibilityControl: React.FC<{ collectionSlug: string; readOnly?: boolean }> = ({ collectionSlug, readOnly }) => {
-  const { value: membersOnlyValue, setValue: setMembersOnly } = useField<{
-    enabled?: boolean
-    tier?: unknown
-  }>({
-    path: 'membersOnly',
-  })
-
-  // Only show for pages and posts collections
-  if (collectionSlug !== 'pages' && collectionSlug !== 'posts') {
-    return null
-  }
-
-  const isEnabled = membersOnlyValue?.enabled ?? false
-
-  return (
-    <div className="doc-visibility">
-      <label className="doc-visibility__label">
-        Visibility
-      </label>
-      <select
-        className="doc-visibility__select"
-        disabled={readOnly}
-        onChange={(e) => {
-          const newEnabled = e.target.value === 'members-only'
-          setMembersOnly({
-            enabled: newEnabled,
-            tier: membersOnlyValue?.tier ?? null,
-          })
-        }}
-        value={isEnabled ? 'members-only' : 'public'}
-      >
-        <option value="public">Public</option>
-        <option value="members-only">Members only</option>
-      </select>
-    </div>
-  )
-}
 
 export const DocumentPanel: React.FC<{
   info: DocumentPanelInfo
@@ -302,12 +267,14 @@ export const DocumentPanel: React.FC<{
   })
   const isNew = info.id === undefined
   const isPublished = info.status === 'published'
-  const anyBusy = busy !== null
+  const [lockedByOther, setLockedByOther] = useState(false)
+  const anyBusy = busy !== null || lockedByOther
 
   const badge = isNew ? 'New' : info.draftsEnabled ? (isPublished ? 'Published' : 'Draft') : 'Saved'
 
   return (
     <div className="doc-panel">
+      <EditLockBanner collectionSlug={info.collectionSlug} id={info.id} onLockedByOther={setLockedByOther} />
       <div className="doc-panel__head">
         <div className="doc-status">
           <span className={isPublished ? 'pill pill--accent' : 'pill'}>{badge}</span>
@@ -337,7 +304,10 @@ export const DocumentPanel: React.FC<{
 
       {!readOnly && (
         <Box id="publish" title={info.draftsEnabled ? 'Publish' : 'Save'}>
-          <VisibilityControl collectionSlug={info.collectionSlug} readOnly={readOnly} />
+          <VisibilityPanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} />
+          {info.draftsEnabled && (
+            <SchedulePanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} status={info.status} />
+          )}
           <div className="doc-buttons">
             {info.draftsEnabled && (
               <button className="btn" disabled={anyBusy} onClick={() => save('draft')} type="button">

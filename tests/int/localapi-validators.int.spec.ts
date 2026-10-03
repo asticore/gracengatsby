@@ -378,3 +378,23 @@ describe('richText', () => {
     await expect(richText({ root: { children: [] } }, { required: false })).resolves.toBe(true)
   })
 })
+
+describe('relationship validator with polymorphic relationTo array', () => {
+  it('accepts a bare id when only one collection is allowed', () => {
+    expect(relationship([7], { relationTo: ['users'] })).toBe(true)
+    expect(relationship(7, { relationTo: ['users'] })).toBe(true)
+  })
+
+  it('accepts { relationTo, value } for an allowed collection', () => {
+    expect(relationship({ relationTo: 'users', value: 7 }, { relationTo: ['users'] })).toBe(true)
+  })
+
+  it('rejects a disallowed collection or bad id', () => {
+    expect(relationship({ relationTo: 'posts', value: 7 }, { relationTo: ['users'] })).not.toBe(true)
+    expect(relationship({ relationTo: 'users', value: 'nope' }, { relationTo: ['users'] })).not.toBe(true)
+  })
+
+  it('still requires a value when required', () => {
+    expect(relationship(undefined, { relationTo: ['users'], required: true })).not.toBe(true)
+  })
+})

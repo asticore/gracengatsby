@@ -3,12 +3,15 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
+import { cookies } from 'next/headers'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
+import { PasswordGate } from '@/components/PasswordGate'
+import { getPasswordGateState } from '@/features/visibility/gate'
 import type { Media, Post, User } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -28,6 +31,24 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) return {}
+
+  // When password-protected, use generic metadata and mark as noindex
+  const cookieStore = await cookies()
+  const gateState = await getPasswordGateState({
+    collection: 'posts',
+    id: post.id,
+    cookies: cookieStore,
+  })
+
+  if (gateState === 'locked') {
+    return buildMetadata({
+      title: 'Password Protected',
+      seo: { ...post.seo, noIndex: true },
+      path: `/blog/${slug}`,
+      kind: 'article',
+    })
+  }
+
   return buildMetadata({
     title: post.title,
     seo: post.seo,
@@ -39,7 +60,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BlogPostPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const sp = await searchParams
   const flags = await getFeatureFlags()
   if (!flags.blog) notFound()
 
@@ -47,12 +75,26 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const post = await getPost(slug)
   if (!post) notFound()
 
+  // Check password gate
+  const cookieStore = await cookies()
+  const gateState = await getPasswordGateState({
+    collection: 'posts',
+    id: post.id,
+    cookies: cookieStore,
+  })
+
+  const currentPath = `/blog/${slug}`
+
+  if (gateState === 'locked') {
+    return <PasswordGate collection="posts" currentPath={currentPath} id={post.id} wrongPassword={sp.pw === 'wrong'} />
+  }
+
   const image = post.featuredImage && typeof post.featuredImage === 'object' ? (post.featuredImage as Media) : null
   const author = post.author && typeof post.author === 'object' ? (post.author as User) : null
 
   return (
     <article className="page-shell">
-      <PageJsonLd collection="posts" doc={post} path={`/blog/${slug}`} />
+      <PageJsonLd collection="posts" doc={post} path={currentPath} />
       <header className="mx-auto mb-8 max-w-[720px] text-center">
         {post.categories?.length ? (
           <span className="uppercase text-[0.7rem] tracking-[0.08em] text-[var(--color-gold)]">

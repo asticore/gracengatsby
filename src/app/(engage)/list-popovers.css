@@ -1,0 +1,20 @@
+/*
+ * List toolbar popovers (Filter, Columns) sit at the right edge of the
+ * toolbar, so they open leftwards. Anchoring them to `left: 0` pushed the
+ * filter panel's value box and Apply button off the screen. Imported after
+ * custom.css (see tailwind.css) so these win at equal specificity.
+ */
+.list-filter-builder-menu,
+.list-column-picker-menu {
+  left: auto;
+  right: 0;
+  max-width: 90vw;
+}
+
+.list-filter-builder-menu {
+  min-width: min(400px, 90vw);
+}
+
+.list-filter-row {
+  flex-wrap: wrap;
+}

@@ -861,3 +861,15 @@ describe('admin/list/listQuery', () => {
     })
   })
 })
+
+describe('buildFindArgs empty filter values', () => {
+  it('skips filters with empty value', () => {
+    const allColumns = deriveColumns(Users.fields, { drafts: false, collectionSlug: 'users' })
+    const args = buildFindArgs({
+      collection: 'users',
+      urlParams: { q: '', sort: '', page: 1, limit: 25, filters: [{ field: 'email', op: 'equals', value: '' }], cols: null, view: null },
+      allColumns,
+    })
+    expect(args.where).toBeUndefined()
+  })
+})

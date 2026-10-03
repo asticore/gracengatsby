@@ -1,7 +1,7 @@
 import { getSeoContext, parsePathList } from './settings'
 
 /** Never useful in search results, whatever the settings say. */
-const ALWAYS_DISALLOWED = ['/admin', '/api', '/cart', '/checkout']
+const ALWAYS_DISALLOWED = ['/admin', '/api', '/cart', '/checkout', '/preview']
 
 /**
  * Produces the robots.txt body as text rather than as a structured object,

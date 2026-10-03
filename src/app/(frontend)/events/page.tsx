@@ -5,6 +5,8 @@ import { EventCard } from '@/components/EventCard'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
+import { buildPageJsonLd } from '@/features/seo/pageSchema'
+import { getSeoContext } from '@/features/seo/settings'
 import type { Event } from '@/engage-types'
 
 export async function generateMetadata() {
@@ -18,6 +20,7 @@ export default async function EventsPage() {
   if (!flags.events) notFound()
 
   const engine = await getEngine()
+  const context = await getSeoContext()
 
   const now = new Date().toISOString()
 
@@ -40,8 +43,26 @@ export default async function EventsPage() {
     }),
   ])) as unknown as [{ docs: Event[] }, { docs: Event[] }]
 
+  const jsonLd = context.enabled
+    ? buildPageJsonLd({
+        collection: 'pages',
+        schemaType: 'CollectionPage',
+        title: 'Events',
+        description: 'Trunk shows, styling nights, and gatherings worth putting on the calendar.',
+        url: context.baseUrl + '/events',
+        baseUrl: context.baseUrl,
+        siteName: context.siteName,
+      })
+    : null
+
   return (
     <div className="page-shell events-page">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '</\\/') }}
+        />
+      )}
       <header className="page-header">
         <h1>Events</h1>
         <p>Trunk shows, styling nights, and gatherings worth putting on the calendar.</p>

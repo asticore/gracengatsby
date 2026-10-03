@@ -531,6 +531,7 @@ export function buildFindArgs(opts: {
   for (const filter of opts.urlParams.filters) {
     const col = opts.allColumns.find((c) => c.name === filter.field)
     if (!col || !col.filterable) continue
+    if (filter.value === '' && filter.op !== 'exists') continue
 
     let value: unknown = filter.value
     if (col.type === 'checkbox') {

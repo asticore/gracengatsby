@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "main": ".open-next/worker.js",
+  "main": "cloudflare-worker.ts",
   "name": "gracengatsby",
   "compatibility_date": "2025-08-15",
   "compatibility_flags": [
@@ -68,6 +68,9 @@
       "persist": true,
       "head_sampling_rate": 1,
     },
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"],
   },
 
   // Here's how to configure an additional environment

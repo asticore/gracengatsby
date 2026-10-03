@@ -3,7 +3,7 @@ import type { Drizzle } from '@/localapi/migrate'
 
 /**
  * Data access for eg_scheduled_publishes table.
- * Tracks when documents should automatically publish/unpublish.
+ * Manages publish/unpublish schedules and tracks completion status.
  * Workers-safe: uses raw SQL with the same db handle as other custom-table code.
  */
 
@@ -23,33 +23,57 @@ export async function getSchedule(engineOrDb: Drizzle, collection: string, docId
   }
 }
 
-export async function setSchedule(engineOrDb: Drizzle, collection: string, docId: number, schedule: ScheduleEntry): Promise<void> {
+/**
+ * Set or update a schedule. When either date changes from its previous value,
+ * the matching done flag is reset to 0.
+ */
+export async function setSchedule(
+  engineOrDb: Drizzle,
+  collection: string,
+  docId: number,
+  schedule: ScheduleEntry,
+): Promise<void> {
   const now = new Date().toISOString()
+  const current = await getSchedule(engineOrDb, collection, docId)
 
-  // Check if publishAt changed to reset publish_done flag
-  const existing = (await engineOrDb.all(
-    sql`SELECT publish_at, unpublish_at FROM \`eg_scheduled_publishes\` WHERE collection = ${collection} AND doc_id = ${docId}`
-  )) as { publish_at: string | null; unpublish_at: string | null }[]
+  // Determine if done flags should reset
+  const resetPublishDone = current?.publishAt !== schedule.publishAt ? 1 : 0
+  const resetUnpublishDone = current?.unpublishAt !== schedule.unpublishAt ? 1 : 0
 
-  const publishAtChanged = existing.length === 0 || existing[0].publish_at !== schedule.publishAt
-  const unpublishAtChanged = existing.length === 0 || existing[0].unpublish_at !== schedule.unpublishAt
+  const publishDoneValue = resetPublishDone ? 0 : (current ? '`publish_done`' : '0')
+  const unpublishDoneValue = resetUnpublishDone ? 0 : (current ? '`unpublish_done`' : '0')
 
-  await engineOrDb.run(
-    sql`INSERT INTO \`eg_scheduled_publishes\` (collection, doc_id, publish_at, unpublish_at, publish_done, unpublish_done, updated_at)
-        VALUES (${collection}, ${docId}, ${schedule.publishAt}, ${schedule.unpublishAt}, 0, 0, ${now})
-        ON CONFLICT(collection, doc_id) DO UPDATE SET
-          publish_at = excluded.publish_at,
-          unpublish_at = excluded.unpublish_at,
-          publish_done = CASE WHEN excluded.publish_at != \`eg_scheduled_publishes\`.publish_at THEN 0 ELSE \`eg_scheduled_publishes\`.publish_done END,
-          unpublish_done = CASE WHEN excluded.unpublish_at != \`eg_scheduled_publishes\`.unpublish_at THEN 0 ELSE \`eg_scheduled_publishes\`.unpublish_done END,
-          updated_at = excluded.updated_at`
-  )
+  if (!current) {
+    // Insert new entry
+    await engineOrDb.run(
+      sql`INSERT INTO \`eg_scheduled_publishes\` (collection, doc_id, publish_at, unpublish_at, publish_done, unpublish_done, updated_at)
+          VALUES (${collection}, ${docId}, ${schedule.publishAt}, ${schedule.unpublishAt}, 0, 0, ${now})`
+    )
+  } else {
+    // Update existing entry with conditional reset of done flags
+    const newPublishDone = resetPublishDone ? 0 : (await getPublishDone(engineOrDb, collection, docId))
+    const newUnpublishDone = resetUnpublishDone ? 0 : (await getUnpublishDone(engineOrDb, collection, docId))
+
+    await engineOrDb.run(
+      sql`UPDATE \`eg_scheduled_publishes\`
+          SET publish_at = ${schedule.publishAt},
+              unpublish_at = ${schedule.unpublishAt},
+              publish_done = ${newPublishDone},
+              unpublish_done = ${newUnpublishDone},
+              updated_at = ${now}
+          WHERE collection = ${collection} AND doc_id = ${docId}`
+    )
+  }
 }
 
 export async function clearSchedule(engineOrDb: Drizzle, collection: string, docId: number): Promise<void> {
   await engineOrDb.run(sql`DELETE FROM \`eg_scheduled_publishes\` WHERE collection = ${collection} AND doc_id = ${docId}`)
 }
 
+/**
+ * List all due publishes/unpublishes across all collections.
+ * nowIso should be an ISO timestamp string.
+ */
 export interface DueAction {
   collection: string
   docId: number
@@ -58,29 +82,11 @@ export interface DueAction {
 
 export async function listDue(engineOrDb: Drizzle, nowIso: string): Promise<DueAction[]> {
   const rows = (await engineOrDb.all(
-    sql`SELECT collection, doc_id, publish_at, unpublish_at, publish_done, unpublish_done
-        FROM \`eg_scheduled_publishes\`
-        WHERE (publish_at IS NOT NULL AND publish_at <= ${nowIso} AND publish_done = 0)
-           OR (unpublish_at IS NOT NULL AND unpublish_at <= ${nowIso} AND unpublish_done = 0)`
-  )) as {
-    collection: string
-    doc_id: number
-    publish_at: string | null
-    unpublish_at: string | null
-    publish_done: number
-    unpublish_done: number
-  }[]
-
-  const due: DueAction[] = []
-  for (const row of rows) {
-    if (row.publish_at && row.publish_at <= nowIso && row.publish_done === 0) {
-      due.push({ collection: row.collection, docId: row.doc_id, action: 'publish' })
-    }
-    if (row.unpublish_at && row.unpublish_at <= nowIso && row.unpublish_done === 0) {
-      due.push({ collection: row.collection, docId: row.doc_id, action: 'unpublish' })
-    }
-  }
-  return due
+    sql`SELECT collection, doc_id, 'publish' as action FROM \`eg_scheduled_publishes\` WHERE publish_at <= ${nowIso} AND publish_done = 0
+        UNION ALL
+        SELECT collection, doc_id, 'unpublish' as action FROM \`eg_scheduled_publishes\` WHERE unpublish_at <= ${nowIso} AND unpublish_done = 0`
+  )) as { collection: string; doc_id: number; action: 'publish' | 'unpublish' }[]
+  return rows.map((row) => ({ collection: row.collection, docId: row.doc_id, action: row.action }))
 }
 
 export async function markDone(engineOrDb: Drizzle, collection: string, docId: number, action: 'publish' | 'unpublish'): Promise<void> {
@@ -95,6 +101,7 @@ export async function markDone(engineOrDb: Drizzle, collection: string, docId: n
   }
 }
 
+// Helper to get current publish_done state
 async function getPublishDone(engineOrDb: Drizzle, collection: string, docId: number): Promise<number> {
   const rows = (await engineOrDb.all(
     sql`SELECT publish_done FROM \`eg_scheduled_publishes\` WHERE collection = ${collection} AND doc_id = ${docId}`
@@ -102,6 +109,7 @@ async function getPublishDone(engineOrDb: Drizzle, collection: string, docId: nu
   return rows[0]?.publish_done ?? 0
 }
 
+// Helper to get current unpublish_done state
 async function getUnpublishDone(engineOrDb: Drizzle, collection: string, docId: number): Promise<number> {
   const rows = (await engineOrDb.all(
     sql`SELECT unpublish_done FROM \`eg_scheduled_publishes\` WHERE collection = ${collection} AND doc_id = ${docId}`

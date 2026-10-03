@@ -70,7 +70,7 @@ export function VersionsList({
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState<number | null>(null)
   const [confirming, setConfirming] = useState<number | null>(null)
-  const [confirmAction, setConfirmAction] = useState<'draft' | 'publish' | null>(null)
+  const [confirmAction, setConfirmAction] = useState<'draft' | 'publish' | 'delete' | null>(null)
 
   // Collect all updatedBy values from versions for bulk resolution
   const authorIds = versions.map((v) => (v.version as Record<string, unknown>).updatedBy)
@@ -132,7 +132,33 @@ export function VersionsList({
     [id, collectionSlug, router]
   )
 
-  const openConfirm = useCallback((versionId: number, action: 'draft' | 'publish') => {
+  const handleDelete = useCallback(
+    async (versionId: number) => {
+      setBusy(versionId)
+      setError(null)
+      try {
+        const response = await fetch(
+          `/api/admin-version-delete?collection=${encodeURIComponent(collectionSlug)}&parent=${id}&id=${versionId}`,
+          { method: 'DELETE', credentials: 'include' },
+        )
+        if (!response.ok) {
+          const body = (await response.json().catch(() => ({}))) as { error?: string }
+          setError(body.error || `HTTP ${response.status}`)
+          return
+        }
+        setVersions((prev) => prev.filter((v) => v.id !== versionId))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Delete failed')
+      } finally {
+        setBusy(null)
+        setConfirming(null)
+        setConfirmAction(null)
+      }
+    },
+    [id, collectionSlug],
+  )
+
+  const openConfirm = useCallback((versionId: number, action: 'draft' | 'publish' | 'delete') => {
     setConfirming(versionId)
     setConfirmAction(action)
   }, [])
@@ -143,11 +169,15 @@ export function VersionsList({
   }, [])
 
   if (loading) return <p>Loading versions...</p>
-  if (error) return <p style={{ color: 'var(--theme-error)' }}>{error}</p>
-  if (versions.length === 0) return <p>No saved versions yet.</p>
+  if (versions.length === 0 && !error) return <p>No saved versions yet.</p>
 
   return (
     <div className="table">
+      {error && (
+        <p role="alert" style={{ color: 'var(--theme-error-500)', padding: '0.5rem 0.75rem', margin: 0 }}>
+          {error}
+        </p>
+      )}
       <table>
         <thead>
           <tr>
@@ -155,7 +185,7 @@ export function VersionsList({
             <th>Status</th>
             <th>Author</th>
             <th>Title</th>
-            <th>Changes</th>
+            <th>Differs from current</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -192,10 +222,12 @@ export function VersionsList({
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         className="btn btn--small"
-                        onClick={() => handleRestore(version.id, confirmAction === 'draft')}
+                        onClick={() =>
+                          confirmAction === 'delete' ? handleDelete(version.id) : handleRestore(version.id, confirmAction === 'draft')
+                        }
                         disabled={busy !== null}
                       >
-                        Yes
+                        {confirmAction === 'delete' ? 'Yes, delete' : 'Yes'}
                       </button>
                       <button className="btn btn--small btn--secondary" onClick={cancelConfirm} disabled={busy !== null}>
                         Cancel
@@ -216,6 +248,15 @@ export function VersionsList({
                         disabled={busy !== null}
                       >
                         Restore and publish
+                      </button>
+                      <button
+                        className="btn btn--small"
+                        onClick={() => openConfirm(version.id, 'delete')}
+                        disabled={busy !== null || version.latest}
+                        title={version.latest ? 'The latest version cannot be deleted' : 'Delete this version'}
+                        style={{ color: 'var(--theme-error-500)' }}
+                      >
+                        Delete
                       </button>
                     </div>
                   )}

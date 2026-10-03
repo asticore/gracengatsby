@@ -527,5 +527,139 @@ describe('PageJsonLd component', () => {
       const html = (result as any)?.props?.dangerouslySetInnerHTML?.__html
       expect(html).toContain('"name":"author@example.com"')
     })
+
+    describe('Collection/List pages (CollectionPage)', () => {
+      it('CollectionPage schema type for blog list', () => {
+        const result = buildPageJsonLd({
+          collection: 'pages',
+          schemaType: 'CollectionPage',
+          title: 'Journal',
+          description: 'All blog posts',
+          url: 'https://example.com/blog',
+          baseUrl: 'https://example.com',
+          siteName: 'Example',
+        })
+        expect(result?.['@type']).toBe('CollectionPage')
+        expect(result?.name).toBe('Journal')
+        expect(result?.description).toBe('All blog posts')
+        expect(result?.url).toBe('https://example.com/blog')
+      })
+
+      it('CollectionPage schema type for shop/products list', () => {
+        const result = buildPageJsonLd({
+          collection: 'pages',
+          schemaType: 'CollectionPage',
+          title: 'Shop',
+          url: 'https://example.com/shop',
+          baseUrl: 'https://example.com',
+          siteName: 'Example',
+        })
+        expect(result?.['@type']).toBe('CollectionPage')
+        expect(result?.name).toBe('Shop')
+        expect(result?.url).toBe('https://example.com/shop')
+      })
+
+      it('CollectionPage schema type for events list', () => {
+        const result = buildPageJsonLd({
+          collection: 'pages',
+          schemaType: 'CollectionPage',
+          title: 'Events',
+          description: 'Upcoming events and gatherings',
+          url: 'https://example.com/events',
+          baseUrl: 'https://example.com',
+          siteName: 'Example',
+        })
+        expect(result?.['@type']).toBe('CollectionPage')
+        expect(result?.name).toBe('Events')
+        expect(result?.description).toBe('Upcoming events and gatherings')
+      })
+
+      it('CollectionPage includes isPartOf reference to website', () => {
+        const result = buildPageJsonLd({
+          collection: 'pages',
+          schemaType: 'CollectionPage',
+          title: 'Blog',
+          url: 'https://example.com/blog',
+          baseUrl: 'https://example.com',
+          siteName: 'Example',
+        })
+        expect(result?.isPartOf).toEqual({ '@id': 'https://example.com/#website' })
+      })
+
+      it('CollectionPage with image', () => {
+        const result = buildPageJsonLd({
+          collection: 'pages',
+          schemaType: 'CollectionPage',
+          title: 'Shop',
+          imageUrl: 'https://example.com/shop-hero.jpg',
+          url: 'https://example.com/shop',
+          baseUrl: 'https://example.com',
+          siteName: 'Example',
+        })
+        expect(result?.primaryImageOfPage).toEqual({
+          '@type': 'ImageObject',
+          url: 'https://example.com/shop-hero.jpg',
+        })
+      })
+
+      it('CollectionPage without description', () => {
+        const result = buildPageJsonLd({
+          collection: 'pages',
+          schemaType: 'CollectionPage',
+          title: 'Events',
+          url: 'https://example.com/events',
+          baseUrl: 'https://example.com',
+          siteName: 'Example',
+        })
+        expect(result?.description).toBeUndefined()
+      })
+    })
+
+    describe('List page JSON-LD when feature disabled', () => {
+      it('blog list returns null when feature disabled', async () => {
+        mockGetSeoContext.mockResolvedValue({
+          enabled: false,
+          settings: null,
+          siteName: 'Example',
+          baseUrl: 'https://example.com',
+        })
+        const result = await PageJsonLd({
+          collection: 'posts',
+          doc: undefined,
+          path: '/blog',
+        })
+        expect(result).toBeNull()
+      })
+
+      it('shop list returns null when feature disabled', async () => {
+        mockGetSeoContext.mockResolvedValue({
+          enabled: false,
+          settings: null,
+          siteName: 'Example',
+          baseUrl: 'https://example.com',
+        })
+        const result = await PageJsonLd({
+          collection: 'products',
+          doc: undefined,
+          path: '/shop',
+        })
+        expect(result).toBeNull()
+      })
+
+      it('events list returns null when feature disabled', async () => {
+        mockGetSeoContext.mockResolvedValue({
+          enabled: false,
+          settings: null,
+          siteName: 'Example',
+          baseUrl: 'https://example.com',
+        })
+        const result = await PageJsonLd({
+          collection: 'events',
+          doc: undefined,
+          path: '/events',
+        })
+        expect(result).toBeNull()
+      })
+    })
   })
 })

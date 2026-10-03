@@ -64,6 +64,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 
   const canRead = context.permissions.collections?.[collectionSlug]?.read
   const canCreate = context.permissions.collections?.[collectionSlug]?.create
+  const canDelete = context.permissions.collections?.[collectionSlug]?.delete
   if (id === undefined ? !canCreate : !canRead) {
     return <p>You don&apos;t have access to {id === undefined ? 'create' : 'edit'} this document.</p>
   }
@@ -110,7 +111,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 
   const panel: DocumentPanelInfo = {
     canCreate: Boolean(canCreate),
-    canDelete: true, // the REST delete route enforces the real access check
+    canDelete: Boolean(canDelete),
     collectionSlug,
     createdAt: typeof docRecord?.createdAt === 'string' ? docRecord.createdAt : undefined,
     createdByName,

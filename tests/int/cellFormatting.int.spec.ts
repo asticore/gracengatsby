@@ -183,4 +183,16 @@ describe('formatCellValue', () => {
       expect(result).toBe('')
     })
   })
+
+  describe('system columns without field definition', () => {
+    it('formats ISO date strings', () => {
+      const result = formatCellValue('2026-10-02T23:09:23.874Z', {}, undefined, undefined)
+      expect(result).not.toContain('T23:09')
+      expect(result).toMatch(/2026/)
+    })
+
+    it('leaves plain strings alone', () => {
+      expect(formatCellValue('2026 plan', {}, undefined, undefined)).toBe('2026 plan')
+    })
+  })
 })

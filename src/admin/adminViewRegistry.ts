@@ -17,6 +17,7 @@ import { AsticoreIcon } from '@/components/branding/AsticoreIcon'
 import { AsticoreLogo } from '@/components/branding/AsticoreLogo'
 import { Dashboard } from '@/views/dashboard/Dashboard'
 import { SettingsOverviewView } from '@/admin/views/SettingsOverviewView'
+import { HeaderFooterView } from '@/admin/views/HeaderFooterView'
 import { TranslationsView } from '@/features/multilingual/views/TranslationsView'
 import { DatabaseView } from '@/features/cleanup/DatabaseView'
 import { ABResultsView } from '@/features/abTesting/components/ABResultsView'
@@ -43,6 +44,15 @@ export const CUSTOM_ADMIN_VIEWS = [
     meta: {
       title: 'Settings',
       description: 'Manage all site settings and configuration.',
+    },
+  },
+  {
+    key: 'headerFooter',
+    Component: HeaderFooterView,
+    path: '/header-footer',
+    meta: {
+      title: 'Header and footer',
+      description: 'Manage site header and footer content.',
     },
   },
   {

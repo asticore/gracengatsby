@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { NAV_STRUCTURE, HIDDEN_FROM_NAV } from '@/components/admin/nav/navStructure'
+import { SETTINGS_DESCRIPTIONS } from '@/components/admin/nav/settingsDescriptions'
 
 describe('navStructure', () => {
   it('should have all old Settings entries either in new groups or hidden', () => {
     // Old flat Settings group entries (20 items total)
+    // Note: header and footer are now consolidated under header-footer view
     const oldSettings = [
       'site-settings',
-      'header',
-      'footer',
+      'header-footer', // Consolidated view replacing header and footer
       'seo-settings',
       'blog-settings',
       'faq-settings',
@@ -90,20 +91,35 @@ describe('navStructure', () => {
     expect(actualLabels).toEqual(expectedGroups)
   })
 
-  it('Site group should have Settings overview, site-settings, header, footer, language-settings, and translations', () => {
+  it('Site group should have Settings overview, site-settings, header-footer, language-settings, and translations', () => {
     const siteGroup = NAV_STRUCTURE.find((g) => g.label === 'Site')
     expect(siteGroup).toBeDefined()
 
     const expectedSlugs = [
       'settings-overview',
       'site-settings',
-      'header',
-      'footer',
+      'header-footer',
       'language-settings',
       'translations',
     ]
     const actualSlugs = siteGroup?.entities.map((e) => e.slug) || []
     expect(actualSlugs).toEqual(expectedSlugs)
+  })
+
+  it('header-footer should be a view type with href and label', () => {
+    const siteGroup = NAV_STRUCTURE.find((g) => g.label === 'Site')
+    const headerFooterRef = siteGroup?.entities.find((e) => e.slug === 'header-footer')
+
+    expect(headerFooterRef).toBeDefined()
+    expect(headerFooterRef?.type).toBe('view')
+    expect(headerFooterRef?.href).toBe('/header-footer')
+    expect(headerFooterRef?.label).toBe('Header and footer')
+  })
+
+  it('header and footer globals should still be in SETTINGS_DESCRIPTIONS for backward compatibility', () => {
+    expect(SETTINGS_DESCRIPTIONS['header']).toBeDefined()
+    expect(SETTINGS_DESCRIPTIONS['footer']).toBeDefined()
+    expect(SETTINGS_DESCRIPTIONS['header-footer']).toBeDefined()
   })
 
   it('Data and System group should include audit-log, database, backup-settings, and users', () => {
@@ -127,5 +143,33 @@ describe('navStructure', () => {
     expect(overviewRef?.type).toBe('view')
     expect(overviewRef?.href).toBe('/settings')
     expect(overviewRef?.label).toBe('Settings overview')
+  })
+
+  it('should mark the 7 settings groups with section=settings', () => {
+    const settingsGroupLabels = [
+      'Site',
+      'Marketing and SEO',
+      'Content settings',
+      'Commerce settings',
+      'Communication',
+      'Speed and Security',
+      'Data and System',
+    ]
+
+    for (const label of settingsGroupLabels) {
+      const group = NAV_STRUCTURE.find((g) => g.label === label)
+      expect(group).toBeDefined()
+      expect(group?.section).toBe('settings')
+    }
+  })
+
+  it('should not mark top-level groups with section field', () => {
+    const topLevelLabels = ['Content', 'Shop', 'Members', 'Courses']
+
+    for (const label of topLevelLabels) {
+      const group = NAV_STRUCTURE.find((g) => g.label === label)
+      expect(group).toBeDefined()
+      expect(group?.section).toBeUndefined()
+    }
   })
 })

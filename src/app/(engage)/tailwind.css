@@ -24,6 +24,8 @@
 @import './edit-lock.css';
 @import './schedule-panel.css';
 @import './settings-overview.css';
+@import './header-footer.css';
+@import './nav-sections.css';
 
 @theme {
   /* Stage 12: single admin font (was the raw OS system-font stack before -

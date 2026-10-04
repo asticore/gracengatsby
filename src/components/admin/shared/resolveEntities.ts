@@ -11,7 +11,7 @@ import {
   type FeatureKey,
 } from '@/features/registry'
 
-import { FALLBACK_GROUP_LABEL, NAV_STRUCTURE } from '../nav/navStructure'
+import { FALLBACK_GROUP_LABEL, NAV_STRUCTURE, HIDDEN_FROM_NAV } from '../nav/navStructure'
 
 /**
  * Works out what the signed-in user may see, and how it is grouped.
@@ -200,6 +200,7 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
 
   const leftovers = [...available.entries()]
     .filter(([key]) => !claimed.has(key))
+    .filter(([, entity]) => !HIDDEN_FROM_NAV.has(entity.slug))
     .map(([, entity]) => entity)
 
   if (leftovers.length > 0) groups.push({ label: FALLBACK_GROUP_LABEL, entities: leftovers })

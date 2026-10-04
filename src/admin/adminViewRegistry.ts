@@ -16,6 +16,7 @@ import { ExtensionDomSafetyProvider } from '@/components/admin/ExtensionDomSafet
 import { AsticoreIcon } from '@/components/branding/AsticoreIcon'
 import { AsticoreLogo } from '@/components/branding/AsticoreLogo'
 import { Dashboard } from '@/views/dashboard/Dashboard'
+import { SettingsOverviewView } from '@/admin/views/SettingsOverviewView'
 import { TranslationsView } from '@/features/multilingual/views/TranslationsView'
 import { DatabaseView } from '@/features/cleanup/DatabaseView'
 import { ABResultsView } from '@/features/abTesting/components/ABResultsView'
@@ -34,6 +35,15 @@ export const CUSTOM_ADMIN_VIEWS = [
     key: 'dashboard',
     Component: Dashboard,
     path: '/',
+  },
+  {
+    key: 'settingsOverview',
+    Component: SettingsOverviewView,
+    path: '/settings',
+    meta: {
+      title: 'Settings',
+      description: 'Manage all site settings and configuration.',
+    },
   },
   {
     key: 'translations',

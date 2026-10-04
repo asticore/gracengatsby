@@ -23,6 +23,7 @@
 @import './visibility-control.css';
 @import './edit-lock.css';
 @import './schedule-panel.css';
+@import './settings-overview.css';
 
 @theme {
   /* Stage 12: single admin font (was the raw OS system-font stack before -

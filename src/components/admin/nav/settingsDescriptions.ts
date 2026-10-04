@@ -7,6 +7,7 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'site-settings': 'Site name, logo, colours, fonts and basic brand settings.',
   'header': 'Navigation menu and header layout configuration.',
   'footer': 'Footer content and navigation menu.',
+  'header-footer': 'Site header, navigation and footer content.',
   'language-settings': 'Language and locale defaults, multilingual content setup.',
   'translations': 'Manage every translation in one table across all languages.',
   'seo-settings': 'Meta tags, schema, verification codes and SEO defaults.',

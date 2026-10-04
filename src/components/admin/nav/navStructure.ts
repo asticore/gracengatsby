@@ -48,7 +48,6 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'form-submissions', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },
       { slug: 'ab-test-results', type: 'view', href: '/ab-test-results', label: 'A/B results' },
-      { slug: 'redirects', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'media', type: 'collections' },
     ],
@@ -80,31 +79,67 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     ],
   },
   {
-    label: 'Settings',
+    label: 'Site',
     entities: [
+      { slug: 'settings-overview', type: 'view', href: '/settings', label: 'Settings overview' },
       { slug: 'site-settings', type: 'globals' },
       { slug: 'header', type: 'globals' },
       { slug: 'footer', type: 'globals' },
+      { slug: 'language-settings', type: 'globals' },
+      { slug: 'translations', type: 'view', href: '/translations', label: 'Translations' },
+    ],
+  },
+  {
+    label: 'Marketing and SEO',
+    entities: [
       { slug: 'seo-settings', type: 'globals' },
+      { slug: 'redirects', type: 'collections' },
+      { slug: 'integrations', type: 'globals' },
+    ],
+  },
+  {
+    label: 'Content settings',
+    entities: [
       { slug: 'blog-settings', type: 'globals' },
       { slug: 'faq-settings', type: 'globals' },
-      { slug: 'shop-settings', type: 'globals' },
-      { slug: 'member-settings', type: 'globals' },
-      { slug: 'email-settings', type: 'globals' },
+      { slug: 'form-settings', type: 'globals' },
       { slug: 'media-settings', type: 'globals' },
+    ],
+  },
+  {
+    label: 'Commerce settings',
+    entities: [
+      { slug: 'shop-settings', type: 'globals' },
+      { slug: 'payment-settings', type: 'globals' },
+      { slug: 'member-settings', type: 'globals' },
+    ],
+  },
+  {
+    label: 'Communication',
+    entities: [
+      { slug: 'email-settings', type: 'globals' },
+    ],
+  },
+  {
+    label: 'Speed and Security',
+    entities: [
       { slug: 'speed-settings', type: 'globals' },
       { slug: 'security-settings', type: 'globals' },
-      { slug: 'language-settings', type: 'globals' },
-      { slug: 'payment-settings', type: 'globals' },
-      { slug: 'form-settings', type: 'globals' },
+    ],
+  },
+  {
+    label: 'Data and System',
+    entities: [
       { slug: 'backup-settings', type: 'globals' },
-      { slug: 'integrations', type: 'globals' },
-      { slug: 'translations', type: 'view', href: '/translations', label: 'Translations' },
       { slug: 'database', type: 'view', href: '/database', label: 'Database' },
+      { slug: 'audit-log', type: 'collections' },
       { slug: 'users', type: 'collections' },
     ],
   },
 ]
+
+/** Entities that should not appear in the nav, including the fallback "Other" group. */
+export const HIDDEN_FROM_NAV = new Set<string>(['backups'])
 
 /** Group that catches any collection/global not named in NAV_STRUCTURE. */
 export const FALLBACK_GROUP_LABEL = 'Other'

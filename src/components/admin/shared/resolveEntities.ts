@@ -38,6 +38,7 @@ export type ResolvedEntity = {
 export type ResolvedGroup = {
   label: string
   entities: ResolvedEntity[]
+  section?: 'settings'
 }
 
 export type EntityPermissions = {
@@ -195,7 +196,11 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
       entities.push(entity)
       claimed.add(key)
     }
-    if (entities.length > 0) groups.push({ label: groupDef.label, entities })
+    if (entities.length > 0) {
+      const group: ResolvedGroup = { label: groupDef.label, entities }
+      if (groupDef.section) group.section = groupDef.section
+      groups.push(group)
+    }
   }
 
   const leftovers = [...available.entries()]

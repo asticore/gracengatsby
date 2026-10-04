@@ -32,6 +32,7 @@ export type NavEntityRef = {
 export type NavGroupDef = {
   label: string
   entities: NavEntityRef[]
+  section?: 'settings'
 }
 
 export const NAV_STRUCTURE: NavGroupDef[] = [
@@ -80,17 +81,18 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
   },
   {
     label: 'Site',
+    section: 'settings',
     entities: [
       { slug: 'settings-overview', type: 'view', href: '/settings', label: 'Settings overview' },
       { slug: 'site-settings', type: 'globals' },
-      { slug: 'header', type: 'globals' },
-      { slug: 'footer', type: 'globals' },
+      { slug: 'header-footer', type: 'view', href: '/header-footer', label: 'Header and footer' },
       { slug: 'language-settings', type: 'globals' },
       { slug: 'translations', type: 'view', href: '/translations', label: 'Translations' },
     ],
   },
   {
     label: 'Marketing and SEO',
+    section: 'settings',
     entities: [
       { slug: 'seo-settings', type: 'globals' },
       { slug: 'redirects', type: 'collections' },
@@ -99,6 +101,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
   },
   {
     label: 'Content settings',
+    section: 'settings',
     entities: [
       { slug: 'blog-settings', type: 'globals' },
       { slug: 'faq-settings', type: 'globals' },
@@ -108,6 +111,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
   },
   {
     label: 'Commerce settings',
+    section: 'settings',
     entities: [
       { slug: 'shop-settings', type: 'globals' },
       { slug: 'payment-settings', type: 'globals' },
@@ -116,12 +120,14 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
   },
   {
     label: 'Communication',
+    section: 'settings',
     entities: [
       { slug: 'email-settings', type: 'globals' },
     ],
   },
   {
     label: 'Speed and Security',
+    section: 'settings',
     entities: [
       { slug: 'speed-settings', type: 'globals' },
       { slug: 'security-settings', type: 'globals' },
@@ -129,6 +135,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
   },
   {
     label: 'Data and System',
+    section: 'settings',
     entities: [
       { slug: 'backup-settings', type: 'globals' },
       { slug: 'database', type: 'view', href: '/database', label: 'Database' },

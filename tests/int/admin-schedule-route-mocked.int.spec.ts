@@ -65,7 +65,7 @@ describe('admin-schedule route - mocked', () => {
 
   describe('GET /api/admin-schedule', () => {
     it('returns 401 for non-admin user', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: false })
+      getAdminContext.mockResolvedValue({ isAdmin: false, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=123')
       const response = await GET(request)
@@ -75,7 +75,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid collection', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=invalid&id=123')
       const response = await GET(request)
@@ -85,7 +85,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for missing id', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages')
       const response = await GET(request)
@@ -95,7 +95,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for non-integer id', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=abc')
       const response = await GET(request)
@@ -105,7 +105,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for zero id', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=0')
       const response = await GET(request)
@@ -115,7 +115,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for negative id', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=-5')
       const response = await GET(request)
@@ -125,7 +125,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 200 with schedule data when found', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
       const schedule = {
         publishAt: future1.toISOString(),
         unpublishAt: future2.toISOString(),
@@ -140,7 +140,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 200 with nulls when no schedule found', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
       getSchedule.mockResolvedValue(null)
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=123')
@@ -151,7 +151,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('calls getSchedule with correct collection and id', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=posts&id=456')
       await GET(request)
@@ -162,7 +162,7 @@ describe('admin-schedule route - mocked', () => {
 
   describe('PUT /api/admin-schedule', () => {
     it('returns 401 for non-admin user', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: false })
+      getAdminContext.mockResolvedValue({ isAdmin: false, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -180,7 +180,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid collection', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -198,7 +198,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for missing collection', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -214,7 +214,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid id', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -232,7 +232,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for publishAt in the past', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -250,7 +250,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for unpublishAt in the past', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -268,7 +268,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 when unpublishAt is before publishAt', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -286,7 +286,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid publishAt date string', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -304,7 +304,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid unpublishAt date string', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -322,7 +322,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 200 for valid PUT with both dates', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -340,7 +340,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 200 for valid PUT with only publishAt', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -358,7 +358,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('calls setSchedule with ISO values', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -379,7 +379,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid request body', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule', {
         method: 'PUT',
@@ -394,7 +394,7 @@ describe('admin-schedule route - mocked', () => {
 
   describe('DELETE /api/admin-schedule', () => {
     it('returns 401 for non-admin user', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: false })
+      getAdminContext.mockResolvedValue({ isAdmin: false, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=123', {
         method: 'DELETE',
@@ -406,7 +406,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid collection', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=invalid&id=123', {
         method: 'DELETE',
@@ -418,7 +418,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 400 for invalid id', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=abc', {
         method: 'DELETE',
@@ -430,7 +430,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('returns 200 for valid DELETE', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=pages&id=123', {
         method: 'DELETE',
@@ -442,7 +442,7 @@ describe('admin-schedule route - mocked', () => {
     })
 
     it('calls clearSchedule with correct arguments', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
+      getAdminContext.mockResolvedValue({ isAdmin: true, can: () => false })
 
       const request = new Request('http://x/api/admin-schedule?collection=posts&id=456', {
         method: 'DELETE',

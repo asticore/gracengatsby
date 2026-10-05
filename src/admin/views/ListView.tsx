@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import type { Field } from '@/engine'
-import { getAdminContext, getCollectionConfig } from '@/admin/auth'
+import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { resolveCellFormatter } from '@/admin/cellRegistry'
 import {
   parseListSearchParams,
@@ -20,6 +20,7 @@ import { VIEW_TABS, resolveActiveTab, type ViewTab } from '@/admin/list/viewTabs
 import { MediaGalleryView } from '@/views/media/MediaGalleryView'
 import { EventsCalendarView } from '@/views/events/EventsCalendarView'
 import { PagesTreeView } from './PagesTreeView'
+import { breadcrumbTitle } from '@/features/pagesTree/breadcrumb'
 
 /**
  * Generic list view for any collection - one component instead of 21
@@ -64,7 +65,7 @@ export async function ListView({
   searchParams?: Record<string, string | string[] | undefined>
 }) {
   const context = await getAdminContext()
-  if (!context.isAdmin) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
 
   const collection = getCollectionConfig(context.engine, collectionSlug)
   if (!collection) notFound()
@@ -122,6 +123,32 @@ export async function ListView({
     user: context.user,
     depth: 1,
   })
+
+  // For pages collection, fetch parent info for breadcrumb titles
+  const parentsByPageId: Record<number | string, { title?: string; parent?: number | string | null } | undefined> = {}
+  if (collectionSlug === 'pages' && visibleColumns.some((c) => c.name === 'title')) {
+    const pageIds = result.docs
+      .map((doc) => (doc as any)?.id)
+      .filter((id): id is number | string => typeof id === 'number' || typeof id === 'string')
+
+    if (pageIds.length > 0) {
+      try {
+        const parentPages = await context.engine.find({
+          collection: 'pages',
+          where: {} as any,
+          user: context.user,
+          depth: 0,
+          limit: 1000,
+        })
+        for (const page of parentPages.docs || []) {
+          const p = page as any
+          parentsByPageId[p.id] = { title: p.title, parent: p.parent }
+        }
+      } catch (err) {
+        console.error('Error fetching page parents for breadcrumbs:', err)
+      }
+    }
+  }
 
   const canCreate = context.permissions.collections?.[collectionSlug]?.create
   const label = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
@@ -239,7 +266,23 @@ export async function ListView({
                         const columnField = findColumnField(collection.fields, column.name)
                         const cellOverride = (columnField as { admin?: { components?: { Cell?: string } } } | undefined)?.admin?.components?.Cell
                         const formatter = resolveCellFormatter(cellOverride)
-                        const text = formatCellValue(cell, doc, columnField, formatter)
+                        let text = formatCellValue(cell, doc, columnField, formatter)
+
+                        // For pages list title column with depth > 0, show breadcrumb
+                        if (collectionSlug === 'pages' && column.name === 'title' && index === 0) {
+                          const docDepth = (doc as any)?.depth
+                          if (docDepth && docDepth > 0) {
+                            const breadcrumb = breadcrumbTitle(
+                              {
+                                id: (doc as any).id,
+                                title: (doc as any).title,
+                                parent: (doc as any).parent,
+                              },
+                              parentsByPageId,
+                            )
+                            text = breadcrumb || text
+                          }
+                        }
 
                         // Handle thumbnail column specially
                         if (column.name === 'thumbnail' && column.type === 'thumbnail') {

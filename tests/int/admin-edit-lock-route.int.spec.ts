@@ -28,7 +28,6 @@ describe('admin-edit-lock route', () => {
     it('returns 401 when user is not an admin', async () => {
       getAdminContext.mockResolvedValue({
         isAdmin: false, can: () => false,
-        can: () => false,
       })
 
       const request = new Request('http://x/api/admin-edit-lock?collection=pages&id=1')

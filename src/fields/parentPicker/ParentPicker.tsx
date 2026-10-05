@@ -58,12 +58,34 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
   }
 
   useEffect(() => {
-    const handle = setTimeout(() => {
-      void fetchPages()
-    }, 0)
-    return () => clearTimeout(handle)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    let cancelled = false
+    fetch('/api/pages?limit=1000&depth=0', { credentials: 'include' })
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: any) => {
+        if (cancelled || !data) return
+        const list = Array.isArray(data) ? data : data.docs || []
+        setPages(
+          list.map((page: any) => ({
+            id: Number(page.id),
+            title: page.title,
+            slug: page.slug,
+            parent:
+              page.parent && typeof page.parent === 'object'
+                ? Number(page.parent.id)
+                : page.parent
+                  ? Number(page.parent)
+                  : null,
+            sortOrder: 0,
+            isHomepage: page.isHomepage === true,
+            status: page._status === 'draft' ? ('draft' as const) : ('published' as const),
+          })),
+        )
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [value])
 
   // Get descendants of a page
   const getDescendants = (id: number, pagesArray: TreePage[]): Set<number> => {

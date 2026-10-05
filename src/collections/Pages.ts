@@ -99,6 +99,16 @@ export const Pages: CollectionConfig = {
       },
     },
     {
+      name: 'sortOrder',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        hidden: true,
+        position: 'sidebar',
+        description: 'Order among sibling pages. Set by dragging in the Tree view.',
+      },
+    },
+    {
       name: 'template',
       type: 'relationship',
       relationTo: 'page-templates',

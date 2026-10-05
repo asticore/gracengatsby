@@ -95,6 +95,9 @@ export const Pages: CollectionConfig = {
       relationTo: 'pages',
       admin: {
         position: 'sidebar',
+        components: {
+          Field: '@/fields/parentPicker/ParentPicker#ParentPicker',
+        },
         description: 'Optional - nest this page under another page (controls its URL and shows page structure).',
       },
     },

@@ -487,7 +487,7 @@
   right: 0;
   bottom: 0;
   z-index: 1000;
-  background: var(--theme-elevation-800, rgba(0, 0, 0, 0.5));
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;

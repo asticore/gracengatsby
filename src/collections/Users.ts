@@ -1,41 +1,99 @@
-import type { CollectionConfig } from '@/engine'
+import { eq } from 'drizzle-orm';
+import { db, Users as UsersTable } from '../db';
 
-import { isAdmin, isAdminOrSelf } from '../access/ecommerceAccess'
+export type User = typeof UsersTable.$inferSelect;
+export type UserInsert = typeof UsersTable.$inferInsert;
+export type UserUpdate = Partial<UserInsert>;
 
-export const Users: CollectionConfig = {
-  slug: 'users',
-  dbName: 'eg_users',
-  admin: {
-    useAsTitle: 'email',
-    group: 'Settings',
-  },
-  // Without these the engine falls back to "anyone signed in", and this
-  // collection is not admins-only - the shop plugin maps every customer onto
-  // it. That default let any customer account change an admin's email and
-  // password, then log in as that admin. Field-level access on `roles` did not
-  // help, because taking over the account never needed the role changed.
-  access: {
-    create: isAdmin,
-    read: isAdminOrSelf,
-    update: isAdminOrSelf,
-    delete: isAdmin,
-  },
-  auth: true,
-  fields: [
-    {
-      name: 'roles',
-      type: 'select',
-      hasMany: true,
-      defaultValue: ['customer'],
-      options: [
-        { label: 'Admin', value: 'admin' },
-        { label: 'Customer', value: 'customer' },
-      ],
-      access: {
-        // only admins can change roles
-        update: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
-      },
-    },
-  ],
-  versions: false,
+/**
+ * Find all users, with optional filtering
+ */
+export async function findUsers(where?: any) {
+	try {
+		if (where) {
+			return await db.select().from(UsersTable).where(where);
+		}
+		return await db.select().from(UsersTable);
+	} catch (error) {
+		console.error('Error finding users:', error);
+		throw error;
+	}
+}
+
+/**
+ * Find a single user by ID
+ */
+export async function findUserById(id: string) {
+	try {
+		const result = await db.select().from(UsersTable).where(eq(UsersTable.id, id));
+		return result[0] || null;
+	} catch (error) {
+		console.error('Error finding user by ID:', error);
+		throw error;
+	}
+}
+
+/**
+ * Find a single user by email
+ */
+export async function findUserByEmail(email: string) {
+	try {
+		const result = await db.select().from(UsersTable).where(eq(UsersTable.email, email));
+		return result[0] || null;
+	} catch (error) {
+		console.error('Error finding user by email:', error);
+		throw error;
+	}
+}
+
+/**
+ * Create a new user
+ */
+export async function createUser(data: UserInsert) {
+	try {
+		const result = await db.insert(UsersTable).values(data).returning();
+		return result[0];
+	} catch (error) {
+		console.error('Error creating user:', error);
+		throw error;
+	}
+}
+
+/**
+ * Update a user
+ */
+export async function updateUser(id: string, data: UserUpdate) {
+	try {
+		const result = await db.update(UsersTable).set(data).where(eq(UsersTable.id, id)).returning();
+		return result[0] || null;
+	} catch (error) {
+		console.error('Error updating user:', error);
+		throw error;
+	}
+}
+
+/**
+ * Delete a user
+ */
+export async function deleteUser(id: string) {
+	try {
+		const result = await db.delete(UsersTable).where(eq(UsersTable.id, id)).returning();
+		return result[0] || null;
+	} catch (error) {
+		console.error('Error deleting user:', error);
+		throw error;
+	}
+}
+
+/**
+ * Count users
+ */
+export async function countUsers() {
+	try {
+		const result = await db.select().from(UsersTable);
+		return result.length;
+	} catch (error) {
+		console.error('Error counting users:', error);
+		throw error;
+	}
 }

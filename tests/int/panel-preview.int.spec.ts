@@ -1,37 +1,11 @@
-import { describe, expect, it } from 'vitest'
-import type { DocumentPanelInfo } from '@/admin/views/DocumentPanel'
+import { expect, test } from '@playwright/test';
 
-describe('DocumentPanel Preview button', () => {
-  const baseInfo: DocumentPanelInfo = {
-    canCreate: true,
-    canDelete: true,
-    canPreview: false,
-    collectionSlug: 'pages',
-    draftsEnabled: true,
-    id: 123,
-    label: 'Page',
-  }
+test.describe('Panel preview', () => {
+	const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 
-  it('DocumentPanelInfo type includes canPreview field', () => {
-    const info: DocumentPanelInfo = { ...baseInfo, canPreview: false }
-    expect(info.canPreview).toBe(false)
-  })
-
-  it('canPreview can be set to true for pages', () => {
-    const info: DocumentPanelInfo = { ...baseInfo, canPreview: true, collectionSlug: 'pages' }
-    expect(info.canPreview).toBe(true)
-    expect(info.collectionSlug).toBe('pages')
-  })
-
-  it('canPreview can be set to true for posts', () => {
-    const info: DocumentPanelInfo = { ...baseInfo, canPreview: true, collectionSlug: 'posts' }
-    expect(info.canPreview).toBe(true)
-    expect(info.collectionSlug).toBe('posts')
-  })
-
-  it('canPreview is false when id is undefined', () => {
-    const info: DocumentPanelInfo = { ...baseInfo, canPreview: false, id: undefined }
-    expect(info.id).toBeUndefined()
-    expect(info.canPreview).toBe(false)
-  })
-})
+	test('should display panel preview correctly', async ({ page }) => {
+		await page.goto(`${baseUrl}/panel/preview`);
+		const content = page.locator('[data-testid="panel-content"]');
+		await expect(content).toBeVisible();
+	});
+});

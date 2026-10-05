@@ -19,6 +19,7 @@ import * as migration_20260830_130000_ab_testing from './20260830_130000_ab_test
 import * as migration_20261002_100000_seo_social_fields from './20261002_100000_seo_social_fields';
 import * as migration_20261002_120000_authorship_page_type_product_seo from './20261002_120000_authorship_page_type_product_seo';
 import * as migration_20261003_100000_visibility_schedule_lock_events_seo from './20261003_100000_visibility_schedule_lock_events_seo';
+import * as migration_20261005_100000_redirects from './20261005_100000_redirects';
 
 export const migrations = [
   {
@@ -125,5 +126,10 @@ export const migrations = [
     up: migration_20261003_100000_visibility_schedule_lock_events_seo.up,
     down: migration_20261003_100000_visibility_schedule_lock_events_seo.down,
     name: '20261003_100000_visibility_schedule_lock_events_seo',
+  },
+  {
+    up: migration_20261005_100000_redirects.up,
+    down: migration_20261005_100000_redirects.down,
+    name: '20261005_100000_redirects',
   },
 ];

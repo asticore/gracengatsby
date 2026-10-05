@@ -1,93 +1,109 @@
 import { describe, it, expect } from 'vitest'
-import { resolveEntityGroups, type ResolvedGroup } from '@/components/admin/shared/resolveEntities'
-import { NAV_STRUCTURE } from '@/components/admin/nav/navStructure'
+import { NAV_STRUCTURE, type NavGroupDef } from '@/components/admin/nav/navStructure'
 
-describe('AdminNavClient with Settings sections', () => {
-  it('should have ResolvedGroup with section field carrying settings marker', () => {
-    const settingsGroups = NAV_STRUCTURE.filter((g) => g.section === 'settings')
-    expect(settingsGroups.length).toBe(7)
+describe('AdminNavClient with flat rendering', () => {
+  it('should resolve groups without section field', () => {
+    const groups: NavGroupDef[] = NAV_STRUCTURE.map((groupDef) => ({
+      label: groupDef.label,
+      entities: groupDef.entities,
+    }))
 
-    const settingsLabels = [
+    for (const group of groups) {
+      // Groups no longer have section field - verify property doesn't exist
+      expect(Object.keys(group).includes('section')).toBe(false)
+    }
+  })
+
+  it('should have exactly 5 top-level groups', () => {
+    expect(NAV_STRUCTURE.length).toBe(5)
+    const labels = NAV_STRUCTURE.map((g) => g.label)
+    expect(labels).toEqual(['Content', 'Shop', 'Members', 'Courses', 'Settings'])
+  })
+
+  it('Settings group should be rendered as a regular NavGroup like others', () => {
+    const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
+    expect(settingsGroup).toBeDefined()
+    expect(Object.keys(settingsGroup || {}).includes('section')).toBe(false)
+    expect(settingsGroup?.entities.length).toBe(8)
+  })
+
+  it('Settings group should render 8 page links with proper structure', () => {
+    const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
+    expect(settingsGroup?.entities.length).toBe(8)
+
+    const expectedLabels = [
       'Site',
       'Marketing and SEO',
-      'Content settings',
-      'Commerce settings',
+      'Content',
+      'Commerce',
       'Communication',
-      'Speed and Security',
+      'Speed',
+      'Security',
       'Data and System',
     ]
 
-    for (const label of settingsLabels) {
-      const group = NAV_STRUCTURE.find((g) => g.label === label)
-      expect(group?.section).toBe('settings')
+    const actualLabels = settingsGroup?.entities.map((e) => e.label) || []
+    expect(actualLabels).toEqual(expectedLabels)
+  })
+
+  it('Content group should contain header-footer as a regular entity', () => {
+    const contentGroup = NAV_STRUCTURE.find((g) => g.label === 'Content')
+    const headerFooter = contentGroup?.entities.find((e) => e.slug === 'header-footer')
+
+    expect(headerFooter).toBeDefined()
+    expect(headerFooter?.type).toBe('view')
+    expect(headerFooter?.href).toBe('/header-footer')
+    expect(headerFooter?.label).toBe('Header and footer')
+  })
+
+  it('all groups should be rendered flat without nesting', () => {
+    // All groups at the same level - no group has a section marker
+    for (const group of NAV_STRUCTURE) {
+      expect(Object.keys(group).includes('section')).toBe(false)
     }
+
+    // Settings is just another group, not a parent
+    const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
+    expect(settingsGroup).toBeDefined()
+    expect(settingsGroup?.entities.length).toBeGreaterThan(0)
   })
 
-  it('should separate top-level groups from settings groups', () => {
-    const topLevelGroups = NAV_STRUCTURE.filter((g) => g.section !== 'settings')
-    expect(topLevelGroups.length).toBe(4) // Content, Shop, Members, Courses
+  it('Settings page links should be renderable as regular navigation links', () => {
+    const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
 
-    const topLevelLabels = topLevelGroups.map((g) => g.label)
-    expect(topLevelLabels).toEqual(['Content', 'Shop', 'Members', 'Courses'])
-  })
-
-  it('should preserve entity structure within settings groups', () => {
-    const siteGroup = NAV_STRUCTURE.find((g) => g.label === 'Site')
-    expect(siteGroup?.section).toBe('settings')
-    expect(siteGroup?.entities.length).toBeGreaterThan(0)
-
-    // Verify entities include settings overview link
-    const hasOverview = siteGroup?.entities.some((e) => e.slug === 'settings-overview')
-    expect(hasOverview).toBe(true)
-  })
-
-  it('Settings overview should be the first entity in Site group', () => {
-    const siteGroup = NAV_STRUCTURE.find((g) => g.label === 'Site')
-    expect(siteGroup?.entities[0].slug).toBe('settings-overview')
-  })
-
-  it('should have proper order: top-level groups, then Settings parent with 7 sub-groups, then Other', () => {
-    const topLevelCount = NAV_STRUCTURE.filter((g) => g.section !== 'settings').length
-    const settingsCount = NAV_STRUCTURE.filter((g) => g.section === 'settings').length
-
-    expect(topLevelCount).toBe(4) // Content, Shop, Members, Courses
-    expect(settingsCount).toBe(7) // 7 settings groups
-    // The order in NAV_STRUCTURE shows: Content, Shop, Members, Courses (top-level),
-    // then Site, Marketing and SEO, Content settings, Commerce settings, Communication,
-    // Speed and Security, Data and System (settings)
-    const labels = NAV_STRUCTURE.map((g) => g.label)
-    const firstSettingsIndex = labels.findIndex((l) => l === 'Site')
-    expect(firstSettingsIndex).toBe(4) // After 4 top-level groups
-  })
-
-  it('Settings parent accordion should contain exactly 7 sub-groups', () => {
-    const settingsGroups = NAV_STRUCTURE.filter((g) => g.section === 'settings')
-    expect(settingsGroups.length).toBe(7)
-
-    // Each should have entities
-    for (const group of settingsGroups) {
-      expect(group.entities.length).toBeGreaterThan(0)
-    }
-  })
-
-  it('all settings groups should have distinct labels', () => {
-    const settingsGroups = NAV_STRUCTURE.filter((g) => g.section === 'settings')
-    const labels = settingsGroups.map((g) => g.label)
-    const uniqueLabels = new Set(labels)
-    expect(uniqueLabels.size).toBe(labels.length)
-  })
-
-  it('each settings group entity should have correct structure for nested rendering', () => {
-    const siteGroup = NAV_STRUCTURE.find((g) => g.label === 'Site')
-    expect(siteGroup).toBeDefined()
-
-    for (const entity of siteGroup?.entities || []) {
+    for (const entity of settingsGroup?.entities || []) {
       expect(entity.slug).toBeDefined()
-      expect(entity.type).toMatch(/^(collections|globals|view)$/)
-      // view type entities have label, collections/globals may not in NAV_STRUCTURE
-      if (entity.type === 'view') {
-        expect(entity.label).toBeDefined()
+      expect(entity.type).toBe('view')
+      expect(entity.href).toBeDefined()
+      expect(entity.label).toBeDefined()
+    }
+  })
+
+  it('should have no nested accordion structure', () => {
+    // All groups are at the root level
+    const topLevelCount = NAV_STRUCTURE.length
+    expect(topLevelCount).toBe(5)
+
+    // No group has children that are themselves groups
+    for (const group of NAV_STRUCTURE) {
+      for (const entity of group.entities) {
+        // Entities are flat - they don't contain nested groups
+        expect(entity.type).toMatch(/^(collections|globals|view)$/)
       }
     }
+  })
+
+  it('active link detection should work on Settings page links', () => {
+    const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
+    const siteSettingsLink = settingsGroup?.entities.find((e) => e.slug === 'settings-site')
+
+    expect(siteSettingsLink?.href).toBe('/settings/site')
+
+    // Simulate active link detection (used in AdminNavClient)
+    const pathname = '/settings/site'
+    const href = siteSettingsLink?.href || ''
+    const isActive = pathname.startsWith(href) && ['/', undefined].includes(pathname[href.length])
+
+    expect(isActive).toBe(true)
   })
 })

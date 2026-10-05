@@ -1,12 +1,12 @@
 import { notFound, redirect } from 'next/navigation'
-import { getAdminContext, getGlobalConfig } from '@/admin/auth'
+import { getAdminContext, hasAdminPanelAccess, getGlobalConfig } from '@/admin/auth'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
 import { EditForm } from './EditForm'
 
 /** Generic edit view for any global - a global always exists (the reference engine creates it lazily on first read), so there is no create/blank branch here, unlike EditView. */
 export async function GlobalEditView({ globalSlug }: { globalSlug: string }) {
   const context = await getAdminContext()
-  if (!context.isAdmin) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
 
   // Redirect old header/footer URLs to the new combined view
   if (globalSlug === 'header' || globalSlug === 'footer') {

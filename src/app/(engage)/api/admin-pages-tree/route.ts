@@ -43,7 +43,7 @@ async function loadAllPages(engine: any): Promise<TreePage[]> {
 export async function GET(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
-    if (!context.isAdmin) {
+    if (!(context.isAdmin || context.can('admin-pages-tree', 'read'))) {
       return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
     }
 
@@ -60,7 +60,7 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
-    if (!context.isAdmin) {
+    if (!(context.isAdmin || context.can('admin-pages-tree', 'update'))) {
       return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
     }
 

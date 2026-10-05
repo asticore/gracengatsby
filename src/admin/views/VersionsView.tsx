@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { getAdminContext, getCollectionConfig } from '@/admin/auth'
+import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { VersionsList } from './VersionsList'
 
 /**
@@ -9,7 +9,8 @@ import { VersionsList } from './VersionsList'
  */
 export async function VersionsView({ collectionSlug, id }: { collectionSlug: string; id: number }) {
   const context = await getAdminContext()
-  if (!context.isAdmin) redirect('/admin/login')
+  const hasAdminAccess = hasAdminPanelAccess(context.user)
+  if (!hasAdminAccess) redirect('/admin/login')
 
   const collection = getCollectionConfig(context.engine, collectionSlug)
   if (!collection) notFound()

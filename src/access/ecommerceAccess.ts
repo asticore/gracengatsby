@@ -1,4 +1,5 @@
 import type { Access, FieldAccess } from '@/engine'
+import { can, type Action, type Resource } from '@/features/roles/permissions'
 
 const checkRole = (roles: string[], user: { roles?: string[] } | null | undefined) =>
   Boolean(user?.roles?.some((role) => roles.includes(role)))
@@ -60,3 +61,26 @@ export const hasCartSecretAccess: Access = ({ req }) => {
 
 /** True for a signed-out request - used to allow guest cart creation. */
 export const isGuest: Access = ({ req }) => !req.user
+
+/**
+ * Factory for role-based access to collections.
+ * Returns an access function that calls can() to check permissions based on the user's roles.
+ *
+ * Note: Custom role matrix is not available synchronously in the access layer,
+ * so this uses only the built-in role definitions. For custom roles, the REST/GraphQL
+ * layer must check permissions separately through the admin context.
+ *
+ * Example:
+ *   - Editor can read, create, update, delete content collections (pages, posts, etc.)
+ *   - Viewer can only read
+ *   - Admin has full access
+ *   - Secret resources (users, settings, payments) remain admin-only
+ */
+export function roleAccess(slug: Resource, action: Action): Access {
+  return ({ req }) => {
+    // Admin always has access
+    if (checkRole(['admin'], req.user)) return true
+    // Use can() with built-in role matrix (no custom matrix available here)
+    return can(req.user as any, slug, action, {})
+  }
+}

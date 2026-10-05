@@ -1,0 +1,7 @@
+tests/int/password-admin-route.int.spec.ts
+tests/int/admin-version-delete-route.int.spec.ts
+tests/int/preview-link-route.int.spec.ts
+tests/int/roles-guards.int.spec.ts
+src/collections/Users.ts
+src/admin/views/HeaderFooterView.tsx
+tests/int/panel-preview.int.spec.ts

@@ -96,6 +96,7 @@ import { Carts } from '@/features/ecommerce/collections/Carts'
 import { Orders } from '@/features/ecommerce/collections/Orders'
 import { Products } from '@/features/ecommerce/collections/Products'
 import { Transactions } from '@/features/ecommerce/collections/Transactions'
+import { Redirects } from '@/features/redirects/collection'
 
 import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
@@ -141,6 +142,7 @@ import {
   countPosts,
   countPreferences,
   countProducts,
+  countRedirects,
   countTransactions,
   countTranslations,
   countUsers,
@@ -169,6 +171,7 @@ import {
   createPost,
   createPreference,
   createProduct,
+  createRedirect,
   createTransaction,
   createTranslation,
   createUser,
@@ -197,6 +200,7 @@ import {
   deletePost,
   deletePreference,
   deleteProduct,
+  deleteRedirect,
   deleteTransaction,
   deleteTranslation,
   deleteUser,
@@ -262,6 +266,8 @@ import {
   findPreferencesPaginated,
   findProductByID,
   findProductsPaginated,
+  findRedirectByID,
+  findRedirectsPaginated,
   findSecuritySettings,
   findSeoSettings,
   findShopSettings,
@@ -310,6 +316,7 @@ import {
   updatePost,
   updatePreference,
   updateProduct,
+  updateRedirect,
   updateSecuritySettings,
   updateSeoSettings,
   updateShopSettings,
@@ -387,6 +394,7 @@ export const writeRegistry: {
     products: collectionOps(createProduct, updateProduct, deleteProduct, findProductByID),
     transactions: collectionOps(createTransaction, updateTransaction, deleteTransaction, findTransactionByID),
     'preferences': collectionOps(createPreference, updatePreference, deletePreference, findPreferenceByID),
+    redirects: collectionOps(createRedirect, updateRedirect, deleteRedirect, findRedirectByID),
     'locked-documents': collectionOps(createLockedDocument, updateLockedDocument, deleteLockedDocument, findLockedDocumentByID),
   },
   globals: {
@@ -448,6 +456,7 @@ export const readRegistry: ReadRegistry = {
     products: readEntry(Products, findProductsPaginated, findProductByID, countProducts),
     transactions: readEntry(Transactions, findTransactionsPaginated, findTransactionByID, countTransactions),
     'preferences': readEntry(Preferences, findPreferencesPaginated, findPreferenceByID, countPreferences),
+    redirects: readEntry(Redirects, findRedirectsPaginated, findRedirectByID, countRedirects),
     'locked-documents': readEntry(LockedDocuments, findLockedDocumentsPaginated, findLockedDocumentByID, countLockedDocuments),
   },
   globals: {
@@ -501,6 +510,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users]
+export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings]

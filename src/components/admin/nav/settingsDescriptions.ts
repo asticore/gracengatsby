@@ -3,11 +3,18 @@
  * Keyed by settings slug.
  */
 export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
-  'settings-overview': 'Browse and search all settings organized by category.',
+  'settings-site': 'Site name, logo, colours, fonts and languages.',
+  'settings-marketing-seo': 'Search engine settings, tracking and integrations.',
+  'settings-content': 'Blog, FAQ, form and media settings.',
+  'settings-commerce': 'Shop, payments and membership settings.',
+  'settings-communication': 'Email sending and templates.',
+  'settings-speed': 'Caching and performance.',
+  'settings-security': 'Security hardening and logs.',
+  'settings-data-system': 'Backups, database tools, users and audit log.',
+  'header-footer': 'Site header, navigation and footer content.',
   'site-settings': 'Site name, logo, colours, fonts and basic brand settings.',
   'header': 'Navigation menu and header layout configuration.',
   'footer': 'Footer content and navigation menu.',
-  'header-footer': 'Site header, navigation and footer content.',
   'language-settings': 'Language and locale defaults, multilingual content setup.',
   'translations': 'Manage every translation in one table across all languages.',
   'seo-settings': 'Meta tags, schema, verification codes and SEO defaults.',

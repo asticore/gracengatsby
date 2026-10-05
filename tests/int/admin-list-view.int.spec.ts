@@ -28,10 +28,11 @@ describe('Admin List View', () => {
       expect(tabs[1].view).toBe('list')
     })
 
-    it('should define tabs for pages (list only)', () => {
+    it('should define tabs for pages (list and tree)', () => {
       const tabs = VIEW_TABS.pages
-      expect(tabs).toHaveLength(1)
+      expect(tabs).toHaveLength(2)
       expect(tabs[0].view).toBe('list')
+      expect(tabs[1].view).toBe('tree')
     })
   })
 

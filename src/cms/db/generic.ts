@@ -1,6 +1,6 @@
 import type { CollectionConfig, GlobalConfig, Sort, Where } from '@/engine'
 
-import { and, asc, desc, eq, like, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, getTableName, like, sql } from 'drizzle-orm'
 import type { AnySQLiteTable, SQLiteColumn } from 'drizzle-orm/sqlite-core'
 
 import { capitalize, type GroupFieldMeta } from './schema/generate'
@@ -623,12 +623,17 @@ function createBlocksRelsOps(
     const withBlocks = { ...doc } as Record<string, unknown>
 
     for (const [fieldName, { blockTypes }] of Object.entries(blocksFields)) {
-      const perType: { slug: string; row: Record<string, unknown> }[] = []
-      for (const [slug, def] of Object.entries(blockTypes)) {
-        const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
-        const rows = await db.select().from(def.table).where(eq(blockColumns.parentId, ownerId)).orderBy(blockColumns.order)
-        for (const row of rows as Record<string, unknown>[]) perType.push({ slug, row })
-      }
+      // One select per block type, all in flight together: a page has about a dozen block tables and D1 is a
+      // network round trip per query, so running them one after another made every read (and every save, which
+      // reads the page several times) take seconds.
+      const perTypeRows = await Promise.all(
+        Object.entries(blockTypes).map(async ([slug, def]) => {
+          const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
+          const rows = await db.select().from(def.table).where(eq(blockColumns.parentId, ownerId)).orderBy(blockColumns.order)
+          return (rows as Record<string, unknown>[]).map((row) => ({ slug, row }))
+        }),
+      )
+      const perType: { slug: string; row: Record<string, unknown> }[] = perTypeRows.flat()
       perType.sort((a, b) => (a.row.order as number) - (b.row.order as number))
 
       withBlocks[fieldName] = await Promise.all(
@@ -653,10 +658,12 @@ function createBlocksRelsOps(
     for (const [fieldName, items] of Object.entries(blocks)) {
       const { blockTypes } = blocksFields[fieldName]
 
-      for (const def of Object.values(blockTypes)) {
-        const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
-        await db.delete(def.table).where(eq(blockColumns.parentId, ownerId))
-      }
+      await Promise.all(
+        Object.values(blockTypes).map((def) => {
+          const blockColumns = def.table as unknown as Record<string, SQLiteColumn>
+          return db.delete(def.table).where(eq(blockColumns.parentId, ownerId))
+        }),
+      )
       if (relsTable && relsColumns) {
         await db.delete(relsTable.table).where(and(eq(relsColumns.parentId, ownerId), like(relsColumns.path, `${pathPrefix}${fieldName}.%`)))
       }
@@ -784,6 +791,19 @@ function createJoinOps(joinFields: Record<string, { table: AnySQLiteTable; onCol
 }
 
 /**
+ * Runs `fn` over `items` a few at a time, keeping the original order. A read attaches a dozen child tables per
+ * document, and each of those is already issued in parallel, so mapping a whole list with Promise.all would put
+ * hundreds of queries in flight at once.
+ */
+async function mapInChunks<T, R>(items: T[], fn: (item: T) => Promise<R>, size = 4): Promise<R[]> {
+  const out: R[] = []
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...(await Promise.all(items.slice(i, i + size).map(fn))))
+  }
+  return out
+}
+
+/**
  * Read/write for the parallel `_<table>_v` versions table generateVersionsTable
  * produces. `array` and `blocks` fields, blocks' nested hasMany/polymorphic
  * subfields, AND top-level (not blocks-nested) hasMany/polymorphic fields are
@@ -862,7 +882,7 @@ export function createVersionsOps(
   async function findAllByParentID(parentId: number): Promise<Record<string, unknown>[]> {
     const db = await getDb()
     const rows = await db.select().from(table).where(eq(columns.parentId, parentId)).orderBy(desc(columns.id))
-    return Promise.all(rows.map((row) => attachExtras(row as Record<string, unknown>)))
+    return mapInChunks(rows, (row) => attachExtras(row as Record<string, unknown>))
   }
 
   /** Single version row by its OWN id (not its parent's) - backs `GET/POST /api/<collection>/versions/:id`. */
@@ -896,7 +916,29 @@ export function createVersionsOps(
     return attachExtras(row as Record<string, unknown>)
   }
 
-  return { findLatestByParentID, findAllByParentID, findByID, createVersion }
+  /**
+   * Called before the live row is deleted. Removes the deleted doc's own history, and clears every
+   * `version_<field>_id` column in this versions table that still points at the doc (for example a
+   * child page's old version snapshot whose `version_parent_id` is the deleted page). Those columns
+   * are declared `REFERENCES <live table>(id)` with no ON DELETE action, so left alone they make the
+   * live delete fail with a foreign key error (500).
+   */
+  async function purgeBeforeDelete(liveId: number): Promise<void> {
+    const db = await getDb()
+    await db.delete(table).where(eq(columns.parentId, liveId))
+    const versionsName = getTableName(table)
+    const liveName = versionsName.replace(/^_/, '').replace(/_v$/, '')
+    const fks = (await db.all(sql.raw(`PRAGMA foreign_key_list("${versionsName}")`))) as Array<{
+      from?: string
+      table?: string
+    }>
+    for (const fk of fks) {
+      if (fk.table !== liveName || !fk.from || !/^[a-z0-9_]+$/i.test(fk.from)) continue
+      await db.run(sql.raw(`UPDATE "${versionsName}" SET "${fk.from}" = NULL WHERE "${fk.from}" = ${Number(liveId)}`))
+    }
+  }
+
+  return { findLatestByParentID, findAllByParentID, findByID, createVersion, purgeBeforeDelete }
 }
 
 /**
@@ -1051,7 +1093,7 @@ export function createCollectionOps(
       .from(table)
       .where(condition)
       .limit(args.limit ?? 1000)) as Doc[]
-    return Promise.all(rows.map(attachExtras))
+    return mapInChunks(rows, attachExtras)
   }
 
   /**
@@ -1102,7 +1144,7 @@ export function createCollectionOps(
         : sortedQuery,
       count({ where: args.where }),
     ])
-    const docs = await Promise.all((rows as Doc[]).map(attachExtras))
+    const docs = await mapInChunks(rows as Doc[], attachExtras)
 
     if (!paginationEnabled) {
       return { docs, totalDocs, limit: 0, totalPages: 1, page: 1, pagingCounter: totalDocs === 0 ? 0 : 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null }
@@ -1317,7 +1359,25 @@ export function createDraftOps(
     return ops.findByID(id)
   }
 
-  return { ...ops, create, updateByID, findByID }
+  async function deleteByID(id: number): Promise<boolean> {
+    await versionsOps.purgeBeforeDelete(id)
+    try {
+      return await ops.deleteByID(id)
+    } catch (err) {
+      // A foreign key still points at this row (for example a page that still has sub-pages): answer with a
+      // clear 400 instead of a bare 500. Dynamic import: localapi/operations already depends on this layer.
+      const message = String((err as Error)?.message ?? '') + String((err as { cause?: Error })?.cause?.message ?? '')
+      if (/FOREIGN KEY constraint failed/i.test(message)) {
+        const { ValidationError } = await import('@/localapi/operations')
+        throw new ValidationError([
+          { path: 'id', message: 'Other records still depend on this one (for example sub-pages). Move or delete them first.' },
+        ])
+      }
+      throw err
+    }
+  }
+
+  return { ...ops, create, updateByID, findByID, deleteByID }
 }
 
 /**

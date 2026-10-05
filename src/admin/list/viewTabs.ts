@@ -22,7 +22,7 @@ export const VIEW_TABS: Record<string, ViewTab[]> = {
   ],
   pages: [
     { view: 'list', label: 'List' },
-    // { view: 'tree', label: 'Tree' }, // Coming later in task D
+    { view: 'tree', label: 'Tree' },
   ],
 }
 

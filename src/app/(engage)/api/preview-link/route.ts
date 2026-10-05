@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
-    if (!context.isAdmin) {
+    if (!(context.isAdmin || context.can('preview-link', 'create'))) {
       return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
     }
 

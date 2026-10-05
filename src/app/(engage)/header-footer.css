@@ -15,11 +15,7 @@
   color: var(--theme-elevation-900);
 }
 
-@media (prefers-color-scheme: dark) {
-  .header-footer-view__header h1 {
-    color: var(--theme-elevation-50);
-  }
-}
+
 
 /* Tab list */
 .header-footer-tabs {
@@ -32,11 +28,7 @@
   border-bottom: 1px solid var(--theme-elevation-200);
 }
 
-@media (prefers-color-scheme: dark) {
-  .header-footer-tabs__list {
-    border-bottom-color: var(--theme-elevation-700);
-  }
-}
+
 
 /* Tab buttons */
 .header-footer-tabs__button {
@@ -71,19 +63,7 @@
   background: var(--ac-gold, #c7a86a);
 }
 
-@media (prefers-color-scheme: dark) {
-  .header-footer-tabs__button {
-    color: var(--theme-elevation-400);
-  }
 
-  .header-footer-tabs__button:hover {
-    color: var(--theme-elevation-200);
-  }
-
-  .header-footer-tabs__button--active {
-    color: var(--theme-elevation-50);
-  }
-}
 
 /* Tab panels */
 .header-footer-panel {

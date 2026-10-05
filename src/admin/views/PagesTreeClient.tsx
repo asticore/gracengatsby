@@ -481,7 +481,7 @@ function TreeNodeItem({
       role="treeitem"
       aria-level={depth}
       aria-expanded={children.length > 0 ? isExpanded : undefined}
-      // eslint-disable-next-line jsx-a11y/role-has-required-aria-params
+      // eslint-disable-next-line jsx-a11y/role-has-required-aria-props
       className={`pages-tree__item ${isDragging ? 'pages-tree__item--dragging' : ''}`}
     >
       <div ref={setDropRef} className={`pages-tree__row${hint ? ` pages-tree__row--drop-${hint}` : ''}`}>

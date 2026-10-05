@@ -43,6 +43,7 @@ export type DocumentPanelInfo = {
   liveHref?: string
   canDelete: boolean
   canCreate: boolean
+  canUpdate: boolean
   /** Whether a preview link can be generated for this document. */
   canPreview: boolean
 }
@@ -302,7 +303,7 @@ export const DocumentPanel: React.FC<{
         )}
       </div>
 
-      {!readOnly && (
+      {!readOnly && info.canUpdate && (
         <Box id="publish" title={info.draftsEnabled ? 'Publish' : 'Save'}>
           <VisibilityPanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} />
           {info.draftsEnabled && (

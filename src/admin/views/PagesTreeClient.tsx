@@ -5,16 +5,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
   PointerSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  DragMoveEvent,
 } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 import type { TreePage, TreeNode } from '@/features/pagesTree/plan'
 import { buildTree, planMoves, pagePath } from '@/features/pagesTree/plan'
@@ -270,13 +271,31 @@ export function PagesTreeClient({ pages, canEdit, newDocumentURL }: PagesTreeCli
     useSensor(KeyboardSensor)
   )
 
+  const [dropHint, setDropHint] = useState<{ id: number; zone: 'before' | 'after' | 'inside' } | null>(null)
+
+  const pointerY = (event: { activatorEvent: Event; delta: { y: number } }): number | null => {
+    const a = event.activatorEvent as { clientY?: number } | null
+    return a && typeof a.clientY === 'number' ? a.clientY + event.delta.y : null
+  }
+
   const handleDragStart = (event: DragStartEvent) => {
     if (!canEdit) return
     setDraggedId(Number(event.active.id))
   }
 
+  const handleDragMove = (event: DragMoveEvent) => {
+    const over = event.over
+    const y = pointerY(event)
+    if (!over || y === null || Number(over.id) === Number(event.active.id)) {
+      setDropHint(null)
+      return
+    }
+    setDropHint({ id: Number(over.id), zone: dropZone(y, over.rect.top, over.rect.height) })
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggedId(null)
+    setDropHint(null)
 
     if (!canEdit) return
 
@@ -286,12 +305,8 @@ export function PagesTreeClient({ pages, canEdit, newDocumentURL }: PagesTreeCli
     if (!targetId) return
 
     // Top quarter of the row: before it. Bottom quarter: after it. Middle: becomes its child.
-    const dragged = event.active.rect.current.translated
-    const over = event.over?.rect
-    const zone =
-      dragged && over
-        ? dropZone(dragged.top + dragged.height / 2, over.top, over.height)
-        : 'inside'
+    const y = pointerY(event)
+    const zone = y !== null && event.over ? dropZone(y, event.over.rect.top, event.over.rect.height) : 'inside'
     handleDrop(draggedId, targetId, zone)
   }
 
@@ -318,8 +333,9 @@ export function PagesTreeClient({ pages, canEdit, newDocumentURL }: PagesTreeCli
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={pointerWithin}
         onDragStart={canEdit ? handleDragStart : undefined}
+        onDragMove={canEdit ? handleDragMove : undefined}
         onDragEnd={canEdit ? handleDragEnd : undefined}
       >
         <TreeNodeList
@@ -327,6 +343,7 @@ export function PagesTreeClient({ pages, canEdit, newDocumentURL }: PagesTreeCli
           pages={currentPages}
           expandedIds={expandedIds}
           draggedId={draggedId}
+          dropHint={dropHint}
           onToggleExpanded={toggleExpanded}
           onKeyDown={handleKeyDown}
           canEdit={canEdit}
@@ -376,6 +393,7 @@ interface TreeNodeListProps {
   pages: TreePage[]
   expandedIds: Set<number>
   draggedId: number | null
+  dropHint: { id: number; zone: 'before' | 'after' | 'inside' } | null
   onToggleExpanded: (id: number) => void
   onKeyDown: (e: React.KeyboardEvent, pageId: number, parentId: number | null, siblingIds: number[]) => void
   canEdit: boolean
@@ -386,14 +404,13 @@ function TreeNodeList({
   pages,
   expandedIds,
   draggedId,
+  dropHint,
   onToggleExpanded,
   onKeyDown,
   canEdit,
 }: TreeNodeListProps) {
-  const sortableIds = nodes.map(n => String(n.page.id))
-
   return (
-    <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+    <>
       <ul className="pages-tree__list" role="tree">
         {nodes.map(node => (
           <TreeNodeItem
@@ -402,13 +419,14 @@ function TreeNodeList({
             pages={pages}
             expandedIds={expandedIds}
             draggedId={draggedId}
+            dropHint={dropHint}
             onToggleExpanded={onToggleExpanded}
             onKeyDown={onKeyDown}
             canEdit={canEdit}
           />
         ))}
       </ul>
-    </SortableContext>
+    </>
   )
 }
 
@@ -417,6 +435,7 @@ interface TreeNodeItemProps {
   pages: TreePage[]
   expandedIds: Set<number>
   draggedId: number | null
+  dropHint: { id: number; zone: 'before' | 'after' | 'inside' } | null
   onToggleExpanded: (id: number) => void
   onKeyDown: (e: React.KeyboardEvent, pageId: number, parentId: number | null, siblingIds: number[]) => void
   canEdit: boolean
@@ -427,6 +446,7 @@ function TreeNodeItem({
   pages,
   expandedIds,
   draggedId,
+  dropHint,
   onToggleExpanded,
   onKeyDown,
   canEdit,
@@ -435,10 +455,12 @@ function TreeNodeItem({
   const isExpanded = expandedIds.has(page.id)
   const isDragging = draggedId === page.id
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({
     id: String(page.id),
     disabled: !canEdit,
   })
+  const { setNodeRef: setDropRef } = useDroppable({ id: String(page.id), disabled: !canEdit })
+  const hint = dropHint && dropHint.id === page.id ? dropHint.zone : null
 
   const pagePathStr = pagePath(pages, page.id) || '/'
 
@@ -454,22 +476,15 @@ function TreeNodeItem({
     )
   const siblingIds = siblings.map(s => s.id)
 
-  const sortableIds = children.map(c => String(c.page.id))
-
   return (
     <li
-      ref={setNodeRef}
       role="treeitem"
       aria-level={depth}
       aria-expanded={children.length > 0 ? isExpanded : undefined}
-      // eslint-disable-next-line jsx-a11y/role-has-required-aria-props
+      // eslint-disable-next-line jsx-a11y/role-has-required-aria-params
       className={`pages-tree__item ${isDragging ? 'pages-tree__item--dragging' : ''}`}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
     >
-      <div className="pages-tree__row">
+      <div ref={setDropRef} className={`pages-tree__row${hint ? ` pages-tree__row--drop-${hint}` : ''}`}>
         {children.length > 0 && (
           <button
             className="pages-tree__toggle"
@@ -484,6 +499,7 @@ function TreeNodeItem({
 
         {canEdit && (
           <button
+            ref={setDragRef}
             className="pages-tree__handle"
             {...attributes}
             {...listeners}
@@ -514,7 +530,7 @@ function TreeNodeItem({
       </div>
 
       {children.length > 0 && isExpanded && (
-        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+        <>
           <ul className="pages-tree__list">
             {children.map(child => (
               <TreeNodeItem
@@ -523,13 +539,14 @@ function TreeNodeItem({
                 pages={pages}
                 expandedIds={expandedIds}
                 draggedId={draggedId}
+                dropHint={dropHint}
                 onToggleExpanded={onToggleExpanded}
                 onKeyDown={onKeyDown}
                 canEdit={canEdit}
               />
             ))}
           </ul>
-        </SortableContext>
+        </>
       )}
     </li>
   )

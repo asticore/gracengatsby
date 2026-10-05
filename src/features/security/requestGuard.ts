@@ -92,10 +92,11 @@ async function tryRedirect(request: NextRequest, settings: SecuritySettings): Pr
     try {
       const { getCloudflareContext } = await import('@opennextjs/cloudflare')
       const context = await getCloudflareContext({ async: true })
-      const waitUntil = context?.ctx?.waitUntil
+      const ctx = context?.ctx
 
-      if (waitUntil) {
-        waitUntil(recordRedirectHit(resolved.id))
+      // Called as a method: Workers' waitUntil throws "Illegal invocation" when detached from ctx.
+      if (ctx && typeof ctx.waitUntil === 'function') {
+        ctx.waitUntil(recordRedirectHit(resolved.id))
       } else {
         void recordRedirectHit(resolved.id)
       }

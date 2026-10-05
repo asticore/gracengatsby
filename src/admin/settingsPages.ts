@@ -118,6 +118,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
       { kind: 'link', label: 'Database', href: '/database', description: 'Per-feature table usage and cleanup.', type: 'view' },
       { kind: 'link', label: 'Users', href: '/collections/users', description: 'Manage admin user accounts.', type: 'collection' },
       { kind: 'link', label: 'Audit log', href: '/collections/audit-log', description: 'View a record of all admin changes.', type: 'collection' },
+      { kind: 'link', label: 'Roles', href: '/roles', description: 'Manage role permissions with a matrix grid.', type: 'view' },
     ],
   },
 ]

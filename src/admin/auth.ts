@@ -5,6 +5,8 @@ import { getEngine } from '@/lib/engine'
 import { readRegistry } from '@/localapi/registry'
 import { buildEngineCollectionEntries } from '@/localapi/config'
 import { readFeatureFlags, resolveEntityGroups, type EntityPermissions, type ResolvedGroup, type VisibleEntitiesLike } from '@/components/admin/shared/resolveEntities'
+import { can, type Resource, type Action } from '@/features/roles/permissions'
+import { loadCustomMatrix, type UserWithCustomRole } from '@/features/roles/resolve'
 
 /**
  * `engine.config.collections`/`.globals` (the `Engine` interface's public
@@ -73,6 +75,16 @@ export function isAdminUser(user: unknown): boolean {
   return Boolean((user as { roles?: string[] } | null)?.roles?.includes('admin'))
 }
 
+/**
+ * Check if a user has admin access (admin role or editor/viewer roles).
+ * Used for gating access to the admin panel and its views.
+ */
+export function hasAdminPanelAccess(user: unknown): boolean {
+  const roles = (user as { roles?: string[] } | null)?.roles
+  if (!Array.isArray(roles)) return false
+  return roles.includes('admin') || roles.some((r) => ['editor', 'viewer'].includes(r))
+}
+
 function isHidden(hidden: unknown, user: unknown): boolean {
   if (typeof hidden === 'function') {
     try {
@@ -129,6 +141,7 @@ export type AdminContext = {
   permissions: EntityPermissions
   user: TypedUser | null
   visibleEntities: VisibleEntitiesLike
+  can: (resource: Resource, action: Action) => boolean
 }
 
 /**
@@ -176,6 +189,14 @@ export const getAdminContext = cache(async (): Promise<AdminContext> => {
     permissions.globals![global.slug] = { read: await evaluateAccess(global.access?.read, user, engine) }
   }
 
+  // Load custom role matrix once for this request
+  const customMatrix = await loadCustomMatrix(engine, user as unknown as UserWithCustomRole)
+
+  // Build the can() function that uses role-based permissions
+  const canFn = (resource: Resource, action: Action): boolean => {
+    return can(user as unknown as UserWithCustomRole, resource, action, customMatrix)
+  }
+
   return {
     engine,
     i18n: { language: 'en', t: (key: string) => key },
@@ -183,6 +204,7 @@ export const getAdminContext = cache(async (): Promise<AdminContext> => {
     permissions,
     user: user as TypedUser | null,
     visibleEntities,
+    can: canFn,
   }
 })
 
@@ -207,5 +229,7 @@ export async function resolveNavGroups(context: AdminContext): Promise<ResolvedG
     i18n: context.i18n,
     permissions: context.permissions,
     visibleEntities: context.visibleEntities,
+    isAdmin: context.isAdmin,
+    can: context.can as (resource: string, action: 'read' | 'create' | 'update' | 'delete') => boolean,
   })
 }

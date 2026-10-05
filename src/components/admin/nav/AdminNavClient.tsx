@@ -16,7 +16,6 @@ export type ResolvedNavEntity = {
 export type ResolvedNavGroup = {
   label: string
   entities: ResolvedNavEntity[]
-  section?: 'settings'
 }
 
 /** First letter of a label, for the collapsed rail's per-link badge (see custom.css's `.nav__link-badge`). */
@@ -35,12 +34,6 @@ function initialOf(label: string): string {
  * login while still respecting whatever the user opens afterwards (NavGroup
  * writes their choice back to their saved portal preferences on toggle).
  *
- * Settings groups are rendered under a collapsible parent Settings accordion.
- * The parent's open state is stored in preferences under the key 'Settings'.
- * Each sub-group maintains its own collapse state. When the current route
- * matches an entity in a settings group, both the parent and that group
- * auto-open.
- *
  * Stage 12: every link also renders a small lettered badge
  * (`nav__link-badge`), hidden by CSS unless the sidebar is in its collapsed
  * desktop-rail state - there is no per-entity icon set in this app's nav data
@@ -51,21 +44,6 @@ export const AdminNavClient: React.FC<{
   openGroups: Record<string, boolean>
 }> = ({ groups, openGroups }) => {
   const pathname = usePathname()
-
-  // Separate settings groups from others
-  const settingsGroups = groups.filter((g) => g.section === 'settings')
-  const otherGroups = groups.filter((g) => g.section !== 'settings')
-
-  // Determine which groups should be auto-opened based on current pathname
-  const groupsWithActiveEntity = new Set<string>()
-  for (const group of groups) {
-    for (const entity of group.entities) {
-      if (pathname.startsWith(entity.href) && ['/', undefined].includes(pathname[entity.href.length])) {
-        groupsWithActiveEntity.add(group.label)
-      }
-    }
-  }
-  const isSettingsRouteActive = settingsGroups.some((g) => groupsWithActiveEntity.has(g.label))
 
   const renderEntity = (entity: ResolvedNavEntity, entityKey: string) => {
     const isActive = pathname.startsWith(entity.href) && ['/', undefined].includes(pathname[entity.href.length])
@@ -97,35 +75,11 @@ export const AdminNavClient: React.FC<{
 
   return (
     <React.Fragment>
-      {/* Top-level groups (Content, Shop, Members, Courses, Other) */}
-      {otherGroups.map((group) => (
+      {groups.map((group) => (
         <NavGroup key={group.label} label={group.label} isOpen={openGroups[group.label] ?? false}>
           {group.entities.map((entity) => renderEntity(entity, entity.slug))}
         </NavGroup>
       ))}
-
-      {/* Settings parent accordion containing all settings sub-groups */}
-      {settingsGroups.length > 0 && (
-        <div className={`${baseClass}__settings-section`}>
-          <NavGroup
-            key="Settings"
-            label="Settings"
-            isOpen={isSettingsRouteActive || (openGroups['Settings'] ?? false)}
-            aria-label="Settings"
-          >
-            {settingsGroups.map((group) => (
-              <div key={group.label} className={`${baseClass}__settings-subgroup`}>
-                <NavGroup
-                  label={group.label}
-                  isOpen={groupsWithActiveEntity.has(group.label) || (openGroups[group.label] ?? false)}
-                >
-                  {group.entities.map((entity) => renderEntity(entity, entity.slug))}
-                </NavGroup>
-              </div>
-            ))}
-          </NavGroup>
-        </div>
-      )}
     </React.Fragment>
   )
 }

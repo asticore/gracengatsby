@@ -47,7 +47,7 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
         slug: page.slug,
         parent: page.parent && typeof page.parent === 'object' ? Number(page.parent.id) : page.parent ? Number(page.parent) : null,
         sortOrder: 0,
-        isHomepage: false,
+        isHomepage: page.isHomepage === true,
         status: page._status === 'draft' ? ('draft' as const) : ('published' as const),
       }))
 
@@ -82,9 +82,12 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
   // Get current parent's full path for display
   const getCurrentParentPath = () => {
     if (!value) return 'None - top level page'
-    const numValue = typeof value === 'string' ? parseInt(value, 10) : value
+    const raw: unknown =
+      typeof value === 'object' ? ((value as { id?: unknown; value?: unknown }).id ?? (value as { value?: unknown }).value) : value
+    const numValue = Number(raw)
+    if (!Number.isFinite(numValue) || numValue <= 0) return 'None - top level page'
     const parentPage = pages.find(p => p.id === numValue)
-    if (!parentPage) return 'None - top level page'
+    if (!parentPage) return `Page #${numValue}`
     const path = pagePath(pages, numValue)
     return path ? `${parentPage.title}  ${path}` : parentPage.title
   }

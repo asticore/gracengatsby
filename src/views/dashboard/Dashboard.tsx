@@ -238,86 +238,37 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
         )}
       </section>
 
-      {/* Top-level groups (Content, Shop, Members, Courses, Other) */}
-      {groups
-        .filter((g) => g.section !== 'settings')
-        .map((group) => (
-          <section key={group.label}>
-            <h2 className={sectionTitleClassName}>{group.label}</h2>
-            <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-[calc(var(--base)*0.3)] p-0">
-              {group.entities.map((entity) => (
-                <li
-                  className="flex items-stretch overflow-hidden rounded-[4px] border border-[var(--theme-elevation-150)] bg-[var(--ac-surface)] [transition:border-color_0.15s_ease] hover:border-[var(--theme-elevation-300)]"
-                  key={`${entity.type}:${entity.slug}`}
+      {/* All groups (Content, Shop, Members, Courses, Settings, Other) */}
+      {groups.map((group) => (
+        <section key={group.label}>
+          <h2 className={sectionTitleClassName}>{group.label}</h2>
+          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-[calc(var(--base)*0.3)] p-0">
+            {group.entities.map((entity) => (
+              <li
+                className="flex items-stretch overflow-hidden rounded-[4px] border border-[var(--theme-elevation-150)] bg-[var(--ac-surface)] [transition:border-color_0.15s_ease] hover:border-[var(--theme-elevation-300)]"
+                key={`${entity.type}:${entity.slug}`}
+              >
+                <Link
+                  className="flex-1 px-[calc(var(--base)*0.75)] py-[calc(var(--base)*0.5)] text-[calc(var(--base)*0.8)] text-[var(--theme-elevation-800)] no-underline hover:text-[var(--ac-gold)]"
+                  href={entity.href}
                 >
+                  {entity.label}
+                </Link>
+                {entity.createHref && (
                   <Link
-                    className="flex-1 px-[calc(var(--base)*0.75)] py-[calc(var(--base)*0.5)] text-[calc(var(--base)*0.8)] text-[var(--theme-elevation-800)] no-underline hover:text-[var(--ac-gold)]"
-                    href={entity.href}
+                    aria-label={`Create a new ${entity.singular.toLowerCase()}`}
+                    className="flex w-[calc(var(--base)*2)] items-center justify-center border-l border-[var(--theme-elevation-150)] text-[var(--theme-elevation-500)] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[var(--ac-gold)] hover:text-[var(--theme-elevation-0)]"
+                    href={entity.createHref}
+                    title={`New ${entity.singular.toLowerCase()}`}
                   >
-                    {entity.label}
+                    <PlusIcon />
                   </Link>
-                  {entity.createHref && (
-                    <Link
-                      aria-label={`Create a new ${entity.singular.toLowerCase()}`}
-                      className="flex w-[calc(var(--base)*2)] items-center justify-center border-l border-[var(--theme-elevation-150)] text-[var(--theme-elevation-500)] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[var(--ac-gold)] hover:text-[var(--theme-elevation-0)]"
-                      href={entity.createHref}
-                      title={`New ${entity.singular.toLowerCase()}`}
-                    >
-                      <PlusIcon />
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-
-      {/* Settings section with nested sub-sections */}
-      {groups.filter((g) => g.section === 'settings').length > 0 && (
-        <section>
-          <details className="group" open>
-            <summary className={`${sectionTitleClassName} cursor-pointer select-none hover:text-[var(--ac-gold)]`}>
-              Settings
-            </summary>
-            <div className="mt-[calc(var(--base)*0.75)]">
-              {groups
-                .filter((g) => g.section === 'settings')
-                .map((group) => (
-                  <details key={group.label} className="group mb-[calc(var(--base)*1.25)] last:mb-0" open>
-                    <summary className="mb-[calc(var(--base)*0.5)] text-[calc(var(--base)*0.75)] font-semibold uppercase tracking-[0.08em] text-[var(--theme-elevation-600)] cursor-pointer select-none hover:text-[var(--ac-gold)] group-open:text-[var(--theme-elevation-700)]">
-                      {group.label}
-                    </summary>
-                    <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-[calc(var(--base)*0.3)] p-0 ml-[calc(var(--base)*0.5)]">
-                      {group.entities.map((entity) => (
-                        <li
-                          className="flex items-stretch overflow-hidden rounded-[4px] border border-[var(--theme-elevation-150)] bg-[var(--ac-surface)] [transition:border-color_0.15s_ease] hover:border-[var(--theme-elevation-300)]"
-                          key={`${entity.type}:${entity.slug}`}
-                        >
-                          <Link
-                            className="flex-1 px-[calc(var(--base)*0.75)] py-[calc(var(--base)*0.5)] text-[calc(var(--base)*0.8)] text-[var(--theme-elevation-800)] no-underline hover:text-[var(--ac-gold)]"
-                            href={entity.href}
-                          >
-                            {entity.label}
-                          </Link>
-                          {entity.createHref && (
-                            <Link
-                              aria-label={`Create a new ${entity.singular.toLowerCase()}`}
-                              className="flex w-[calc(var(--base)*2)] items-center justify-center border-l border-[var(--theme-elevation-150)] text-[var(--theme-elevation-500)] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[var(--ac-gold)] hover:text-[var(--theme-elevation-0)]"
-                              href={entity.createHref}
-                              title={`New ${entity.singular.toLowerCase()}`}
-                            >
-                              <PlusIcon />
-                            </Link>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                ))}
-            </div>
-          </details>
+                )}
+              </li>
+            ))}
+          </ul>
         </section>
-      )}
+      ))}
     </div>
   )
 }

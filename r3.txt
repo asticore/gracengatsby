@@ -1,0 +1,7 @@
+src/admin/views/RootPage.tsx
+src/admin/views/EditView.tsx
+src/app/(engage)/api/admin-visibility-password/route.ts
+src/app/(engage)/api/admin-edit-lock/route.ts
+src/admin/adminViewRegistry.ts
+src/app/(engage)/api/admin-version-delete/route.ts
+src/features/pagesTree/breadcrumb.ts

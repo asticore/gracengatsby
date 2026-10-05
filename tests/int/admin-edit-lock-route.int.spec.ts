@@ -1,418 +1,178 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+// @vitest-environment node
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { ensureMigratedLocalDb } from '../helpers/migratedDb'
+import { createEngine, type Engine } from '@/localapi/engine'
+import type { TypedUser } from '@/engine'
 
 const { getAdminContext } = vi.hoisted(() => ({
   getAdminContext: vi.fn(),
 }))
 
-const editLocksMock = vi.hoisted(() => ({
-  getLock: vi.fn(),
-  acquire: vi.fn(),
-  release: vi.fn(),
-  takeOver: vi.fn(),
+const { acquireEditLock, releaseEditLock } = vi.hoisted(() => ({
+  acquireEditLock: vi.fn(),
+  releaseEditLock: vi.fn(),
 }))
 
 vi.mock('@/admin/auth', () => ({ getAdminContext }))
-vi.mock('@/cms/db/connect', () => ({
-  getDb: vi.fn(async () => ({})),
+vi.mock('@/features/editLock', () => ({
+  acquireEditLock,
+  releaseEditLock,
 }))
-vi.mock('@/cms/db/editLocks', () => editLocksMock)
 
-import { GET, POST } from '@/app/(engage)/api/admin-edit-lock/route'
+import { POST, DELETE } from '@/app/(engage)/api/admin-edit-lock/route'
+
+const uid = () => Math.random().toString(36).slice(2, 8)
+
+vi.setConfig({ testTimeout: 60_000 })
 
 describe('admin-edit-lock route', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+  let engine: Engine
+  let adminUser: TypedUser
+
+  beforeAll(async () => {
+    await ensureMigratedLocalDb()
+    engine = createEngine()
+    adminUser = (await engine.create({
+      collection: 'users',
+      data: {
+        uid: uid(),
+        email: 'admin@test.com',
+        nickname: 'Admin',
+        role: 'admin',
+        settings: {},
+        avatar_url: null,
+      },
+    })) as TypedUser
   })
 
-  describe('GET', () => {
-    it('returns 401 when user is not an admin', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: false })
-
-      const request = new Request('http://x/api/admin-edit-lock?collection=pages&id=1')
-      const response = await GET(request)
-
-      expect(response.status).toBe(401)
-      expect(await response.json()).toEqual({ error: 'unauthorised' })
-    })
-
-    it('returns 400 when collection is invalid', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
-
-      const request = new Request('http://x/api/admin-edit-lock?collection=unknown&id=1')
-      const response = await GET(request)
-
-      expect(response.status).toBe(400)
-      expect(await response.json()).toEqual({ error: 'Invalid collection or id' })
-    })
-
-    it('returns 400 when id is missing', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
-
-      const request = new Request('http://x/api/admin-edit-lock?collection=pages')
-      const response = await GET(request)
-
-      expect(response.status).toBe(400)
-      expect(await response.json()).toEqual({ error: 'Invalid collection or id' })
-    })
-
-    it('returns 400 when id is zero', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
-
-      const request = new Request('http://x/api/admin-edit-lock?collection=pages&id=0')
-      const response = await GET(request)
-
-      expect(response.status).toBe(400)
-    })
-
-    it('returns 400 when id is not an integer', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
-
-      const request = new Request('http://x/api/admin-edit-lock?collection=pages&id=abc')
-      const response = await GET(request)
-
-      expect(response.status).toBe(400)
-    })
-
-    it('returns {held: false} when no lock exists', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
-      editLocksMock.getLock.mockResolvedValue(null)
-
-      const request = new Request('http://x/api/admin-edit-lock?collection=pages&id=1')
-      const response = await GET(request)
-
-      expect(response.status).toBe(200)
-      const body = (await response.json()) as { held: boolean; by?: unknown }
-      expect(body.held).toBe(false)
-      expect(body.by).toBeUndefined()
-    })
-
-    it('returns {held: false, by: {...}} when another user holds lock', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
-      editLocksMock.getLock.mockResolvedValue({
-        userId: 2,
-        label: 'other@example.com',
+  describe('POST - acquire edit lock', () => {
+    it('acquires lock for authorized admin', async () => {
+      getAdminContext.mockResolvedValue({
+        user: adminUser,
+      })
+      acquireEditLock.mockResolvedValue({
+        lock_id: 'lock-123',
+        resource_id: 'page-456',
+        user_id: adminUser.id,
+        acquired_at: new Date().toISOString(),
       })
 
-      const request = new Request('http://x/api/admin-edit-lock?collection=pages&id=1')
-      const response = await GET(request)
-
-      expect(response.status).toBe(200)
-      const body = (await response.json()) as {
-        held: boolean
-        by?: { userId: number; label: string }
-      }
-      expect(body).toEqual({
-        held: false,
-        by: { userId: 2, label: 'other@example.com' },
-      })
-    })
-
-    it('sets no-store cache header', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true })
-      editLocksMock.getLock.mockResolvedValue(null)
-
-      const request = new Request('http://x/api/admin-edit-lock?collection=pages&id=1')
-      const response = await GET(request)
-
-      expect(response.headers.get('Cache-Control')).toBe('no-store')
-    })
-  })
-
-  describe('POST', () => {
-    it('returns 401 when user is not an admin', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: false })
-
-      const request = new Request('http://x/api/admin-edit-lock', {
+      const request = new Request('http://localhost', {
         method: 'POST',
         body: JSON.stringify({
-          collection: 'pages',
-          id: 1,
-          action: 'acquire',
+          resource_id: 'page-456',
+          resource_type: 'page',
+        }),
+      })
+
+      const response = await POST(request)
+      expect(response.status).toBe(200)
+      const body = await response.json()
+      expect(body.lock_id).toBe('lock-123')
+    })
+
+    it('returns 409 when resource is already locked', async () => {
+      getAdminContext.mockResolvedValue({
+        user: adminUser,
+      })
+      acquireEditLock.mockRejectedValue(new Error('Resource already locked'))
+
+      const request = new Request('http://localhost', {
+        method: 'POST',
+        body: JSON.stringify({
+          resource_id: 'page-456',
+          resource_type: 'page',
+        }),
+      })
+
+      const response = await POST(request)
+      expect(response.status).toBe(409)
+    })
+
+    it('returns 401 when not authenticated', async () => {
+      getAdminContext.mockResolvedValue(null)
+
+      const request = new Request('http://localhost', {
+        method: 'POST',
+        body: JSON.stringify({
+          resource_id: 'page-456',
+          resource_type: 'page',
         }),
       })
 
       const response = await POST(request)
       expect(response.status).toBe(401)
-      expect(await response.json()).toEqual({ error: 'unauthorised' })
     })
 
-    it('returns 400 when collection is invalid', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true, user: { id: 1, email: 'user@example.com' } })
+    it('returns 403 when user lacks admin role', async () => {
+      const regularUser = (await engine.create({
+        collection: 'users',
+        data: {
+          uid: uid(),
+          email: 'user@test.com',
+          nickname: 'User',
+          role: 'editor',
+          settings: {},
+          avatar_url: null,
+        },
+      })) as TypedUser
 
-      const request = new Request('http://x/api/admin-edit-lock', {
-        method: 'POST',
-        body: JSON.stringify({
-          collection: 'unknown',
-          id: 1,
-          action: 'acquire',
-        }),
-      })
-
-      const response = await POST(request)
-      expect(response.status).toBe(400)
-    })
-
-    it('returns 400 when id is invalid', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true, user: { id: 1, email: 'user@example.com' } })
-
-      const request = new Request('http://x/api/admin-edit-lock', {
-        method: 'POST',
-        body: JSON.stringify({
-          collection: 'pages',
-          id: 0,
-          action: 'acquire',
-        }),
-      })
-
-      const response = await POST(request)
-      expect(response.status).toBe(400)
-    })
-
-    it('returns 400 when action is invalid', async () => {
-      getAdminContext.mockResolvedValue({ isAdmin: true, user: { id: 1, email: 'user@example.com' } })
-
-      const request = new Request('http://x/api/admin-edit-lock', {
-        method: 'POST',
-        body: JSON.stringify({
-          collection: 'pages',
-          id: 1,
-          action: 'invalid',
-        }),
-      })
-
-      const response = await POST(request)
-      expect(response.status).toBe(400)
-      expect(await response.json()).toEqual({ error: 'Invalid action' })
-    })
-
-    describe('acquire action', () => {
-      it('calls editLocks.acquire and returns {held: true}', async () => {
-        getAdminContext.mockResolvedValue({
-          isAdmin: true,
-          user: { id: 1, email: 'user@example.com' },
-        })
-        editLocksMock.acquire.mockResolvedValue({ held: true })
-
-        const request = new Request('http://x/api/admin-edit-lock', {
-          method: 'POST',
-          body: JSON.stringify({
-            collection: 'pages',
-            id: 1,
-            action: 'acquire',
-          }),
-        })
-
-        const response = await POST(request)
-        expect(response.status).toBe(200)
-        expect(await response.json()).toEqual({ held: true })
-        expect(editLocksMock.acquire).toHaveBeenCalledWith(
-          {},
-          'pages',
-          1,
-          { userId: 1, label: 'user@example.com' }
-        )
-      })
-
-      it('returns {held: false, by: {...}} when another user holds it', async () => {
-        getAdminContext.mockResolvedValue({
-          isAdmin: true,
-          user: { id: 1, email: 'user@example.com' },
-        })
-        editLocksMock.acquire.mockResolvedValue({
-          held: false,
-          by: { userId: 2, label: 'other@example.com' },
-        })
-
-        const request = new Request('http://x/api/admin-edit-lock', {
-          method: 'POST',
-          body: JSON.stringify({
-            collection: 'pages',
-            id: 1,
-            action: 'acquire',
-          }),
-        })
-
-        const response = await POST(request)
-        expect(response.status).toBe(200)
-        expect(await response.json()).toEqual({
-          held: false,
-          by: { userId: 2, label: 'other@example.com' },
-        })
-      })
-    })
-
-    describe('heartbeat action', () => {
-      it('calls editLocks.acquire with the same args', async () => {
-        getAdminContext.mockResolvedValue({
-          isAdmin: true,
-          user: { id: 1, email: 'user@example.com' },
-        })
-        editLocksMock.acquire.mockResolvedValue({ held: true })
-
-        const request = new Request('http://x/api/admin-edit-lock', {
-          method: 'POST',
-          body: JSON.stringify({
-            collection: 'pages',
-            id: 1,
-            action: 'heartbeat',
-          }),
-        })
-
-        const response = await POST(request)
-        expect(response.status).toBe(200)
-        expect(editLocksMock.acquire).toHaveBeenCalledWith(
-          {},
-          'pages',
-          1,
-          { userId: 1, label: 'user@example.com' }
-        )
-      })
-    })
-
-    describe('release action', () => {
-      it('returns 403 when user does not hold the lock', async () => {
-        getAdminContext.mockResolvedValue({
-          isAdmin: true,
-          user: { id: 1, email: 'user@example.com' },
-        })
-        editLocksMock.getLock.mockResolvedValue({
-          userId: 2,
-          label: 'other@example.com',
-        })
-
-        const request = new Request('http://x/api/admin-edit-lock', {
-          method: 'POST',
-          body: JSON.stringify({
-            collection: 'pages',
-            id: 1,
-            action: 'release',
-          }),
-        })
-
-        const response = await POST(request)
-        expect(response.status).toBe(403)
-        expect(await response.json()).toEqual({ error: 'not_holder' })
-        expect(editLocksMock.release).not.toHaveBeenCalled()
-      })
-
-      it('calls editLocks.release when user holds the lock', async () => {
-        getAdminContext.mockResolvedValue({
-          isAdmin: true,
-          user: { id: 1, email: 'user@example.com' },
-        })
-        editLocksMock.getLock.mockResolvedValue({
-          userId: 1,
-          label: 'user@example.com',
-        })
-
-        const request = new Request('http://x/api/admin-edit-lock', {
-          method: 'POST',
-          body: JSON.stringify({
-            collection: 'pages',
-            id: 1,
-            action: 'release',
-          }),
-        })
-
-        const response = await POST(request)
-        expect(response.status).toBe(200)
-        expect(await response.json()).toEqual({ held: false })
-        expect(editLocksMock.release).toHaveBeenCalledWith({}, 'pages', 1, 1)
-      })
-
-      it('allows release when no lock exists', async () => {
-        getAdminContext.mockResolvedValue({
-          isAdmin: true,
-          user: { id: 1, email: 'user@example.com' },
-        })
-        editLocksMock.getLock.mockResolvedValue(null)
-
-        const request = new Request('http://x/api/admin-edit-lock', {
-          method: 'POST',
-          body: JSON.stringify({
-            collection: 'pages',
-            id: 1,
-            action: 'release',
-          }),
-        })
-
-        const response = await POST(request)
-        expect(response.status).toBe(200)
-        expect(editLocksMock.release).toHaveBeenCalledWith({}, 'pages', 1, 1)
-      })
-    })
-
-    describe('takeover action', () => {
-      it('calls editLocks.takeOver and returns {held: true}', async () => {
-        getAdminContext.mockResolvedValue({
-          isAdmin: true,
-          user: { id: 1, email: 'user@example.com' },
-        })
-
-        const request = new Request('http://x/api/admin-edit-lock', {
-          method: 'POST',
-          body: JSON.stringify({
-            collection: 'pages',
-            id: 1,
-            action: 'takeover',
-          }),
-        })
-
-        const response = await POST(request)
-        expect(response.status).toBe(200)
-        expect(await response.json()).toEqual({ held: true })
-        expect(editLocksMock.takeOver).toHaveBeenCalledWith(
-          {},
-          'pages',
-          1,
-          { userId: 1, label: 'user@example.com' }
-        )
-      })
-    })
-
-    it('sets no-store cache header', async () => {
       getAdminContext.mockResolvedValue({
-        isAdmin: true,
-        user: { id: 1, email: 'user@example.com' },
+        user: regularUser,
       })
-      editLocksMock.acquire.mockResolvedValue({ held: true })
 
-      const request = new Request('http://x/api/admin-edit-lock', {
+      const request = new Request('http://localhost', {
         method: 'POST',
         body: JSON.stringify({
-          collection: 'pages',
-          id: 1,
-          action: 'acquire',
+          resource_id: 'page-456',
+          resource_type: 'page',
         }),
       })
 
       const response = await POST(request)
-      expect(response.headers.get('Cache-Control')).toBe('no-store')
+      expect(response.status).toBe(403)
+    })
+  })
+
+  describe('DELETE - release edit lock', () => {
+    it('releases lock for authorized user', async () => {
+      getAdminContext.mockResolvedValue({
+        user: adminUser,
+      })
+      releaseEditLock.mockResolvedValue(true)
+
+      const request = new Request('http://localhost?lock_id=lock-123', {
+        method: 'DELETE',
+      })
+
+      const response = await DELETE(request)
+      expect(response.status).toBe(200)
     })
 
-    it('uses email as label when user has no name', async () => {
+    it('returns 404 when lock does not exist', async () => {
       getAdminContext.mockResolvedValue({
-        isAdmin: true,
-        user: { id: 1, email: 'user@example.com' },
+        user: adminUser,
       })
-      editLocksMock.acquire.mockResolvedValue({ held: true })
+      releaseEditLock.mockRejectedValue(new Error('Lock not found'))
 
-      const request = new Request('http://x/api/admin-edit-lock', {
-        method: 'POST',
-        body: JSON.stringify({
-          collection: 'pages',
-          id: 1,
-          action: 'acquire',
-        }),
+      const request = new Request('http://localhost?lock_id=nonexistent', {
+        method: 'DELETE',
       })
 
-      await POST(request)
-      expect(editLocksMock.acquire).toHaveBeenCalledWith(
-        {},
-        'pages',
-        1,
-        { userId: 1, label: 'user@example.com' }
-      )
+      const response = await DELETE(request)
+      expect(response.status).toBe(404)
+    })
+
+    it('returns 401 when not authenticated', async () => {
+      getAdminContext.mockResolvedValue(null)
+
+      const request = new Request('http://localhost?lock_id=lock-123', {
+        method: 'DELETE',
+      })
+
+      const response = await DELETE(request)
+      expect(response.status).toBe(401)
     })
   })
 })

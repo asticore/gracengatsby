@@ -22,15 +22,7 @@
   color: var(--theme-elevation-600);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__title {
-    color: var(--theme-elevation-50);
-  }
 
-  .settings-page__description {
-    color: var(--theme-elevation-400);
-  }
-}
 
 /* Jump bar (sticky) */
 .settings-page__jump-bar {
@@ -43,12 +35,7 @@
   border-bottom: 1px solid var(--theme-elevation-200);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__jump-bar {
-    background: var(--ac-surface);
-    border-bottom-color: var(--theme-elevation-700);
-  }
-}
+
 
 .settings-page__jump-bar-content {
   display: flex;
@@ -83,17 +70,7 @@
   color: var(--ac-gold-contrast);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__jump-link {
-    border-color: var(--theme-elevation-600);
-    color: var(--theme-elevation-400);
-  }
 
-  .settings-page__jump-link:hover {
-    border-color: var(--theme-elevation-500);
-    color: var(--theme-elevation-200);
-  }
-}
 
 /* Global sections */
 .settings-page__sections {
@@ -111,11 +88,7 @@
   scroll-margin-top: 80px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__section {
-    border-color: var(--theme-elevation-700);
-  }
-}
+
 
 .settings-page__section-header {
   margin-bottom: 24px;
@@ -123,11 +96,7 @@
   border-bottom: 1px solid var(--theme-elevation-150);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__section-header {
-    border-bottom-color: var(--theme-elevation-700);
-  }
-}
+
 
 .settings-page__section-title {
   margin: 0;
@@ -136,11 +105,7 @@
   color: var(--theme-elevation-900);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__section-title {
-    color: var(--theme-elevation-50);
-  }
-}
+
 
 .settings-page__section-content {
   /* EditForm renders with its own styles */
@@ -173,15 +138,7 @@
   box-shadow: 0 2px 8px rgba(199, 168, 106, 0.15);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__link-card {
-    border-color: var(--theme-elevation-700);
-  }
 
-  .settings-page__link-card:hover {
-    box-shadow: 0 2px 8px rgba(199, 168, 106, 0.1);
-  }
-}
 
 .settings-page__link-card-content {
   flex: 1;
@@ -197,11 +154,7 @@
   color: var(--theme-elevation-900);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__link-card-title {
-    color: var(--theme-elevation-50);
-  }
-}
+
 
 .settings-page__link-card-description {
   margin: 0;
@@ -209,11 +162,7 @@
   color: var(--theme-elevation-600);
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-page__link-card-description {
-    color: var(--theme-elevation-400);
-  }
-}
+
 
 .settings-page__link-card-icon {
   display: flex;

@@ -26,7 +26,7 @@ const ALLOWED_COLLECTIONS = ['pages', 'posts', 'events', 'courses', 'products']
 export async function GET(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
-    if (!context.isAdmin) {
+    if (!(context.isAdmin || context.can('admin-schedule', 'read'))) {
       return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
     }
 
@@ -55,7 +55,7 @@ export async function GET(request: Request): Promise<Response> {
 export async function PUT(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
-    if (!context.isAdmin) {
+    if (!(context.isAdmin || context.can('admin-schedule', 'update'))) {
       return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
     }
 
@@ -127,7 +127,7 @@ export async function PUT(request: Request): Promise<Response> {
 export async function DELETE(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
-    if (!context.isAdmin) {
+    if (!(context.isAdmin || context.can('admin-schedule', 'delete'))) {
       return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
     }
 

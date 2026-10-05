@@ -11,6 +11,32 @@ const ALLOWED_COLLECTIONS = new Set(['pages', 'posts'])
 const MIN_PASSWORD_LENGTH = 4
 
 /**
+ * Best-effort cache purge for the document's public URL, so a page already in
+ * the shared page cache stops being served once its password changes.
+ */
+async function purgeDocument(
+  context: Awaited<ReturnType<typeof getAdminContext>>,
+  collection: string,
+  id: number,
+  label: string,
+): Promise<void> {
+  try {
+    const doc = (await context.engine.findByID({
+      collection: collection as 'pages',
+      id,
+      depth: 0,
+      overrideAccess: true,
+    })) as { path?: string | null; slug?: string | null } | null
+    const raw = doc?.path || (doc?.slug ? `/${doc.slug}` : '')
+    if (!raw) return
+    await purgeCache(raw.startsWith('/') ? raw : `/${raw}`)
+  } catch (err) {
+    console.error(`admin-visibility-password ${label} purgeCache error:`, err)
+    // Never fail the request because of the purge
+  }
+}
+
+/**
  * GET: Check if a document has a password set.
  * Query: ?collection=<slug>&id=<document id>
  *
@@ -81,14 +107,7 @@ async function handlePost(request: Request): Promise<Response> {
     const db = await getDb()
     await setPasswordHash(db, collection, id, hash)
 
-    // Purge cache for the page's public URL (best-effort)
-    try {
-      const publicUrl = `/${id}`
-      await purgeCache(publicUrl)
-    } catch (err) {
-      console.error('admin-visibility-password POST purgeCache error:', err)
-      // Don't fail the request
-    }
+    await purgeDocument(context, collection, id, 'POST')
 
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (error) {
@@ -122,14 +141,7 @@ async function handleDelete(request: Request): Promise<Response> {
     const db = await getDb()
     await clearPassword(db, collection, id)
 
-    // Purge cache for the page's public URL (best-effort)
-    try {
-      const publicUrl = `/${id}`
-      await purgeCache(publicUrl)
-    } catch (err) {
-      console.error('admin-visibility-password DELETE purgeCache error:', err)
-      // Don't fail the request
-    }
+    await purgeDocument(context, collection, id, 'DELETE')
 
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (error) {
@@ -148,3 +160,4 @@ export async function POST(request: Request): Promise<Response> {
 
 export async function DELETE(request: Request): Promise<Response> {
   return handleDelete(request)
+}

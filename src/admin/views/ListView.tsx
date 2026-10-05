@@ -19,6 +19,7 @@ import { formatCellValue } from '@/admin/list/cellFormatting'
 import { VIEW_TABS, resolveActiveTab, type ViewTab } from '@/admin/list/viewTabs'
 import { MediaGalleryView } from '@/views/media/MediaGalleryView'
 import { EventsCalendarView } from '@/views/events/EventsCalendarView'
+import { PagesTreeView } from './PagesTreeView'
 
 /**
  * Generic list view for any collection - one component instead of 21
@@ -345,6 +346,16 @@ export async function ListView({
           searchParams={{ ...searchParams, view: 'calendar' }}
           user={context.user}
           embedded={true}
+        />
+      )}
+
+      {/* Tree view for pages */}
+      {activeTab.view === 'tree' && (
+        <PagesTreeView
+          engine={context.engine}
+          hasCreatePermission={canCreate}
+          newDocumentURL={`/admin/collections/${collectionSlug}/create`}
+          searchParams={searchParams}
         />
       )}
     </div>

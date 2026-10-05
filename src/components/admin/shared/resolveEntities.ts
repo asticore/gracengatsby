@@ -111,6 +111,8 @@ export type ResolveArgs = {
   i18n: I18nLike
   permissions?: EntityPermissions
   visibleEntities: VisibleEntitiesLike
+  isAdmin?: boolean
+  can?: (resource: string, action: 'read' | 'create' | 'update' | 'delete') => boolean
 }
 
 /**
@@ -119,7 +121,7 @@ export type ResolveArgs = {
  * collection is never silently invisible.
  */
 export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
-  const { engine, flags, i18n, permissions, visibleEntities } = args
+  const { engine, flags, i18n, permissions, visibleEntities, isAdmin = false, can } = args
 
   if (!engine?.config) return []
 
@@ -177,6 +179,15 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
       // structure itself.
       if (ref.type === 'view') {
         if (!ref.href) continue
+
+        // For settings pages (slug starts with 'settings-'), check permissions
+        // using the can() function for non-admin users
+        if (ref.slug.startsWith('settings-') && !isAdmin && can) {
+          // Extract the settings key from slug (e.g., 'settings-site' -> 'settings:site')
+          const settingsKey = `settings:${ref.slug.substring('settings-'.length)}`
+          if (!can(settingsKey, 'read')) continue
+        }
+
         entities.push({
           slug: ref.slug,
           type: 'collections',

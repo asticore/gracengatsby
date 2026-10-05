@@ -24,7 +24,7 @@ describe('admin-visibility-password route', () => {
       isAdmin: true,
       user: {},
       permissions: {},
-      engine: {},
+      engine: { findByID: vi.fn().mockResolvedValue({ slug: 'secret' }) },
     } as any)
     vi.mocked(getDb).mockResolvedValue({} as any)
     vi.mocked(setPasswordHash).mockResolvedValue(undefined)
@@ -43,7 +43,7 @@ describe('admin-visibility-password route', () => {
 
     const response = await POST(req)
     expect(response.status).toBe(200)
-    expect(purgeCache).toHaveBeenCalledWith('/1')
+    expect(purgeCache).toHaveBeenCalledWith('/secret')
   })
 
   it('does not fail request when purgeCache throws', async () => {
@@ -57,7 +57,7 @@ describe('admin-visibility-password route', () => {
       isAdmin: true,
       user: {},
       permissions: {},
-      engine: {},
+      engine: { findByID: vi.fn().mockResolvedValue({ slug: 'secret' }) },
     } as any)
     vi.mocked(getDb).mockResolvedValue({} as any)
     vi.mocked(setPasswordHash).mockResolvedValue(undefined)
@@ -83,7 +83,7 @@ describe('admin-visibility-password route', () => {
       isAdmin: true,
       user: {},
       permissions: {},
-      engine: {},
+      engine: { findByID: vi.fn().mockResolvedValue({ slug: 'secret' }) },
     } as any)
     vi.mocked(getDb).mockResolvedValue({} as any)
     vi.mocked(clearPassword).mockResolvedValue(undefined)
@@ -101,6 +101,6 @@ describe('admin-visibility-password route', () => {
 
     const response = await DELETE(req)
     expect(response.status).toBe(200)
-    expect(purgeCache).toHaveBeenCalledWith('/1')
+    expect(purgeCache).toHaveBeenCalledWith('/secret')
   })
 })

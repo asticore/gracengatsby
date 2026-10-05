@@ -52,16 +52,26 @@ const ownRow = async (engine: Engine, user: AccountUser): Promise<Row | null> =>
     .find({
       collection: PREFERENCES_SLUG,
       where: { key: { equals: ACCOUNT_PREFERENCE_KEY } },
-      limit: 1,
+      limit: 1000,
+      pagination: false,
       depth: 0,
-      // The store's own read rule narrows this to rows belonging to this user,
-      // so the key alone is enough to identify their row and only theirs.
       overrideAccess: false,
       user,
     })
     .catch(() => ({ docs: [] as unknown[] }))
 
-  return (docs[0] as Row) ?? null
+  // Filter by owner since the where-builder cannot map the polymorphic user field
+  const mine = (docs as Row[]).filter((doc) => {
+    const owner = (doc as { user?: unknown }).user
+    const first = Array.isArray(owner) ? owner[0] : owner
+    if (first === null || first === undefined) return false
+    const value =
+      typeof first === 'object' ? (first as { value?: unknown; id?: unknown }).value ?? (first as { id?: unknown }).id : first
+    const id = typeof value === 'object' && value !== null ? (value as { id?: unknown }).id : value
+    return String(id) === String(user.id)
+  })
+
+  return mine[0] ?? null
 }
 
 export const readPreferences = async (
@@ -94,7 +104,7 @@ export const writePreferences = async (
   await engine
     .create({
       collection: PREFERENCES_SLUG,
-      data: { key: ACCOUNT_PREFERENCE_KEY, value: next } as never,
+      data: { key: ACCOUNT_PREFERENCE_KEY, user: [user.id], value: next } as never,
       // The store stamps the owner from the session itself, so passing the
       // user is what makes the row theirs - there is no id to spoof.
       overrideAccess: true,

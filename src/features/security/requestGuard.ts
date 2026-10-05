@@ -7,6 +7,7 @@ import { SESSION_COOKIE, isSessionExpired } from './loginProtection'
 import { isDirectoryListingRequest, isProbePath } from './probePaths'
 import { classifyRoute, clientKey, hit, limitFor } from './rateLimit'
 import { readSecuritySettingsFromD1, type SecuritySettings } from './settings'
+import { resolveRedirect, recordRedirectHit } from '@/features/redirects'
 
 /**
  * Everything the Security screen enforces on the request itself, in one place
@@ -33,6 +34,85 @@ function blocked(): NextResponse {
     status: 404,
     headers: { 'content-type': 'text/plain; charset=utf-8' },
   })
+}
+
+/**
+ * Build redirect URL, preserving query string for path targets.
+ * For path targets (starting with '/'), append the request's query string
+ * to the target if it doesn't already have one.
+ */
+function buildRedirectUrl(requestUrl: URL, to: string): string {
+  // If target is absolute URL or has query string, use as-is
+  if (!to.startsWith('/') || to.includes('?')) {
+    return to
+  }
+
+  // For path targets without query, preserve request query string
+  const search = requestUrl.search
+  return search ? `${to}${search}` : to
+}
+
+/**
+ * Attempt to resolve and apply a redirect for the request.
+ * Runs regardless of security feature enabled status.
+ */
+async function tryRedirect(request: NextRequest, settings: SecuritySettings): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl
+  const method = request.method
+
+  // Only resolve GET and HEAD requests
+  if (method !== 'GET' && method !== 'HEAD') {
+    return null
+  }
+
+  // Skip paths that should never be redirected
+  if (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/preview')
+  ) {
+    return null
+  }
+
+  // Skip paths with file extensions in the last segment
+  const lastSegment = pathname.split('/').pop() || ''
+  if (lastSegment.includes('.')) {
+    return null
+  }
+
+  try {
+    const resolved = await resolveRedirect(pathname)
+
+    if (!resolved) {
+      return null
+    }
+
+    // Schedule the hit recording (fire and forget)
+    try {
+      const { getCloudflareContext } = await import('@opennextjs/cloudflare')
+      const context = await getCloudflareContext({ async: true })
+      const waitUntil = context?.ctx?.waitUntil
+
+      if (waitUntil) {
+        waitUntil(recordRedirectHit(resolved.id))
+      } else {
+        void recordRedirectHit(resolved.id)
+      }
+    } catch {
+      // Swallow errors in async recording
+    }
+
+    // Build the target URL with query string preservation
+    const targetUrl = buildRedirectUrl(request.nextUrl, resolved.to)
+    const redirectUrl = new URL(targetUrl, request.url)
+
+    const response = NextResponse.redirect(redirectUrl, resolved.status)
+    return applySecurityHeaders(response, settings, pathname)
+  } catch {
+    // Any error in redirect resolution falls through to passThrough
+    return null
+  }
 }
 
 export function applySecurityHeaders(
@@ -63,7 +143,12 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
     return applySecurityHeaders(response, settings, pathname)
   }
 
-  if (!settings.featureEnabled) return passThrough()
+  if (!settings.featureEnabled) {
+    // Try redirects even when security feature is disabled
+    const redirected = await tryRedirect(request, settings)
+    if (redirected) return redirected
+    return passThrough()
+  }
 
   const hardening = settings.hardening
 
@@ -119,6 +204,10 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
     response.cookies.delete(SESSION_COOKIE)
     return applySecurityHeaders(response, settings, pathname)
   }
+
+  // Try redirects after all security checks
+  const redirected = await tryRedirect(request, settings)
+  if (redirected) return redirected
 
   return passThrough()
 }

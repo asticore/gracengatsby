@@ -161,9 +161,20 @@ export const Pages: CollectionConfig = {
             },
             limit: 50,
             depth: 0,
+            // This is bookkeeping on the previous homepage, not something the editor asked to change,
+            // so it must not depend on the editor's own update rights, and it must keep that page's
+            // published/draft state (an update without _status would turn it back into a draft).
+            overrideAccess: true,
           })
           await Promise.all(
-            docs.map((doc) => req.engine.update({ collection: 'pages', id: doc.id, data: { isHomepage: false } })),
+            docs.map((doc) =>
+              req.engine.update({
+                collection: 'pages',
+                id: doc.id,
+                data: { isHomepage: false, _status: (doc as { _status?: 'draft' | 'published' })._status },
+                overrideAccess: true,
+              }),
+            ),
           )
         }
         return data

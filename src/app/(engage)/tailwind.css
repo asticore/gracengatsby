@@ -25,6 +25,7 @@
 @import './schedule-panel.css';
 @import './header-footer.css';
 @import './settings-page.css';
+@import './pages-tree.css';
 
 @theme {
   /* Stage 12: single admin font (was the raw OS system-font stack before -

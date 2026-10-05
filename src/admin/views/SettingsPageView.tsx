@@ -1,66 +1,106 @@
-'use client'
+import { notFound, redirect } from 'next/navigation'
+import type { Field } from '@/engine'
+import { getAdminContext, hasAdminPanelAccess, getGlobalConfig } from '@/admin/auth'
+import { readFeatureFlags } from '@/components/admin/shared/resolveEntities'
+import { isGlobalEnabled } from '@/features/registry'
+import { sanitizeFieldsForClient } from '@/admin/fields/shared'
+import { SETTINGS_PAGES, type SettingsPage, type GlobalSection, type LinkSection } from '@/admin/settingsPages'
+import { SettingsPageClient, type SettingsPageSection } from './SettingsPageClient'
 
-import React, { useState } from 'react'
-import styles from './SettingsPageView.module.css'
+/**
+ * Settings page view factory. Creates server components for each page in
+ * SETTINGS_PAGES, loaded with globals and rendered with feature-flag visibility.
+ *
+ * Renders:
+ * - Page title and description
+ * - A sticky jump-bar (anchor links) when 2+ sections
+ * - Global sections as titled cards with EditForms
+ * - Link sections as a grid of link cards
+ * - "No access" message if all sections are hidden by permissions
+ */
 
-export function SettingsPageView() {
-  const [settings, setSettings] = useState({
-    site_title: '',
-    site_description: '',
-    site_url: '',
-  })
+export async function SettingsPageView({ pageKey }: { pageKey: string }) {
+  const context = await getAdminContext()
+  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.currentTarget
-    setSettings((prev) => ({ ...prev, [name]: value }))
-  }
+  const page = SETTINGS_PAGES.find((p) => p.key === pageKey)
+  if (!page) notFound()
 
-  const handleSave = () => {
-    // Save settings
-    console.log('Settings saved:', settings)
-  }
+  const flags = await readFeatureFlags(context.engine)
+  const canRead = (slug: string) =>
+    Boolean(context.permissions.globals?.[slug]?.read) && isGlobalEnabled(slug, flags)
+  const collectionExists = (slug: string) =>
+    Boolean(context.permissions.collections?.[slug]?.read)
 
-  return (
-    <div className={styles.container}>
-      <h1>Settings</h1>
-      <form className={styles.form}>
-        <div className={styles.field}>
-          <label htmlFor="site_title">Site Title</label>
-          <input
-            id="site_title"
-            name="site_title"
-            type="text"
-            value={settings.site_title}
-            onChange={handleChange}
-            placeholder="My Awesome Site"
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="site_description">Site Description</label>
-          <input
-            id="site_description"
-            name="site_description"
-            type="text"
-            value={settings.site_description}
-            onChange={handleChange}
-            placeholder="A brief description of your site"
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="site_url">Site URL</label>
-          <input
-            id="site_url"
-            name="site_url"
-            type="url"
-            value={settings.site_url}
-            onChange={handleChange}
-            placeholder="https://example.com"
-          />
-        </div>
-        <button type="button" onClick={handleSave} className={styles.saveButton}>
-          Save Settings
-        </button>
-      </form>
-    </div>
+  // Load all globals in parallel
+  const loadedGlobals = await Promise.all(
+    page.sections
+      .filter((s): s is GlobalSection => s.kind === 'global')
+      .map(async (section) => {
+        if (!canRead(section.slug)) return null
+
+        const globalConfig = getGlobalConfig(context.engine, section.slug)
+        if (!globalConfig) return null
+
+        const doc = await context.engine.findGlobal({
+          slug: section.slug,
+          user: context.user,
+        })
+
+        return {
+          slug: section.slug,
+          label: typeof globalConfig.label === 'string' ? globalConfig.label : section.slug,
+          fields: sanitizeFieldsForClient(globalConfig.fields),
+          doc,
+        }
+      })
   )
+
+  const globalsBySlug = new Map(
+    loadedGlobals.filter((g) => g !== null).map((g) => [g.slug, g])
+  )
+
+  // Build visible sections (globals and links)
+  const visibleSections: SettingsPageSection[] = []
+  let hasAccessToAnyGlobal = false
+
+  for (const section of page.sections) {
+    if (section.kind === 'global') {
+      const global = globalsBySlug.get(section.slug)
+      if (global) {
+        visibleSections.push({
+          kind: 'global',
+          slug: global.slug,
+          label: global.label,
+          fields: global.fields,
+          doc: global.doc,
+        })
+        hasAccessToAnyGlobal = true
+      }
+    } else {
+      const link = section as LinkSection
+      if (link.type === 'collection') {
+        const slug = link.href.replace(/^\/collections\//, '')
+        if (!collectionExists(slug)) continue
+      }
+      visibleSections.push(link)
+    }
+  }
+
+  // If no globals are visible, show "no access" message
+  const hasGlobals = page.sections.some((s) => s.kind === 'global')
+  if (hasGlobals && !hasAccessToAnyGlobal) {
+    return <p>You do not have access to these settings.</p>
+  }
+
+  return <SettingsPageClient page={page} sections={visibleSections} />
 }
+
+export default SettingsPageView
+
+export const SETTINGS_PAGE_VIEWS = SETTINGS_PAGES.map((page) => ({
+  key: `settings-${page.key}`,
+  Component: () => SettingsPageView({ pageKey: page.key }),
+  path: page.path,
+  meta: { title: page.title, description: page.description },
+}))

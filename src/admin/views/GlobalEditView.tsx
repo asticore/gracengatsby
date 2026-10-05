@@ -8,6 +8,11 @@ export async function GlobalEditView({ globalSlug }: { globalSlug: string }) {
   const context = await getAdminContext()
   if (!context.isAdmin) redirect('/admin/login')
 
+  // Redirect old header/footer URLs to the new combined view
+  if (globalSlug === 'header' || globalSlug === 'footer') {
+    redirect('/admin/header-footer')
+  }
+
   const global = getGlobalConfig(context.engine, globalSlug)
   if (!global) notFound()
   if (!context.permissions.globals?.[globalSlug]?.read) {

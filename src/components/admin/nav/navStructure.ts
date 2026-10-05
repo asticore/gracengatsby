@@ -32,7 +32,6 @@ export type NavEntityRef = {
 export type NavGroupDef = {
   label: string
   entities: NavEntityRef[]
-  section?: 'settings'
 }
 
 export const NAV_STRUCTURE: NavGroupDef[] = [
@@ -41,6 +40,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     entities: [
       { slug: 'pages', type: 'collections' },
       { slug: 'posts', type: 'collections' },
+      { slug: 'header-footer', type: 'view', href: '/header-footer', label: 'Header and footer' },
       { slug: 'faqs', type: 'collections' },
       { slug: 'events', type: 'collections' },
       { slug: 'event-rsvps', type: 'collections' },
@@ -50,6 +50,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'ab-tests', type: 'collections' },
       { slug: 'ab-test-results', type: 'view', href: '/ab-test-results', label: 'A/B results' },
       { slug: 'field-groups', type: 'collections' },
+      { slug: 'redirects', type: 'collections' },
       { slug: 'media', type: 'collections' },
     ],
   },
@@ -80,73 +81,45 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     ],
   },
   {
-    label: 'Site',
-    section: 'settings',
+    label: 'Settings',
     entities: [
-      { slug: 'settings-overview', type: 'view', href: '/settings', label: 'Settings overview' },
-      { slug: 'site-settings', type: 'globals' },
-      { slug: 'header-footer', type: 'view', href: '/header-footer', label: 'Header and footer' },
-      { slug: 'language-settings', type: 'globals' },
-      { slug: 'translations', type: 'view', href: '/translations', label: 'Translations' },
-    ],
-  },
-  {
-    label: 'Marketing and SEO',
-    section: 'settings',
-    entities: [
-      { slug: 'seo-settings', type: 'globals' },
-      { slug: 'redirects', type: 'collections' },
-      { slug: 'integrations', type: 'globals' },
-    ],
-  },
-  {
-    label: 'Content settings',
-    section: 'settings',
-    entities: [
-      { slug: 'blog-settings', type: 'globals' },
-      { slug: 'faq-settings', type: 'globals' },
-      { slug: 'form-settings', type: 'globals' },
-      { slug: 'media-settings', type: 'globals' },
-    ],
-  },
-  {
-    label: 'Commerce settings',
-    section: 'settings',
-    entities: [
-      { slug: 'shop-settings', type: 'globals' },
-      { slug: 'payment-settings', type: 'globals' },
-      { slug: 'member-settings', type: 'globals' },
-    ],
-  },
-  {
-    label: 'Communication',
-    section: 'settings',
-    entities: [
-      { slug: 'email-settings', type: 'globals' },
-    ],
-  },
-  {
-    label: 'Speed and Security',
-    section: 'settings',
-    entities: [
-      { slug: 'speed-settings', type: 'globals' },
-      { slug: 'security-settings', type: 'globals' },
-    ],
-  },
-  {
-    label: 'Data and System',
-    section: 'settings',
-    entities: [
-      { slug: 'backup-settings', type: 'globals' },
-      { slug: 'database', type: 'view', href: '/database', label: 'Database' },
-      { slug: 'audit-log', type: 'collections' },
-      { slug: 'users', type: 'collections' },
+      { slug: 'settings-site', type: 'view', href: '/settings/site', label: 'Site' },
+      { slug: 'settings-marketing-seo', type: 'view', href: '/settings/marketing-seo', label: 'Marketing and SEO' },
+      { slug: 'settings-content', type: 'view', href: '/settings/content', label: 'Content' },
+      { slug: 'settings-commerce', type: 'view', href: '/settings/commerce', label: 'Commerce' },
+      { slug: 'settings-communication', type: 'view', href: '/settings/communication', label: 'Communication' },
+      { slug: 'settings-speed', type: 'view', href: '/settings/speed', label: 'Speed' },
+      { slug: 'settings-security', type: 'view', href: '/settings/security', label: 'Security' },
+      { slug: 'settings-data-system', type: 'view', href: '/settings/data-system', label: 'Data and System' },
     ],
   },
 ]
 
 /** Entities that should not appear in the nav, including the fallback "Other" group. */
-export const HIDDEN_FROM_NAV = new Set<string>(['backups'])
+export const HIDDEN_FROM_NAV = new Set<string>([
+  'backups',
+  'header',
+  'footer',
+  'site-settings',
+  'language-settings',
+  'seo-settings',
+  'blog-settings',
+  'faq-settings',
+  'form-settings',
+  'media-settings',
+  'shop-settings',
+  'payment-settings',
+  'member-settings',
+  'email-settings',
+  'speed-settings',
+  'security-settings',
+  'backup-settings',
+  'database',
+  'audit-log',
+  'users',
+  'integrations',
+  'translations',
+])
 
 /** Group that catches any collection/global not named in NAV_STRUCTURE. */
 export const FALLBACK_GROUP_LABEL = 'Other'

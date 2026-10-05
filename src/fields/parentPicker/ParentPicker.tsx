@@ -149,11 +149,11 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
     return results
   }, [pages, search, currentPageId])
 
-  const handleOpenModal = async () => {
+  const handleOpenModal = () => {
     if (!readOnly) {
       setIsOpen(true)
       setHighlightedIndex(0)
-      await fetchPages()
+      void fetchPages()
       // Focus search input on next render
       setTimeout(() => searchInputRef.current?.focus(), 0)
     }
@@ -233,6 +233,7 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
             <h2 className="parent-picker__title">Choose parent page</h2>
             <input
               ref={searchInputRef}
+              autoFocus
               type="text"
               placeholder="Search by page name or slug..."
               className="parent-picker__search"

@@ -26,18 +26,7 @@ export interface ParsedCsv {
  */
 function escapeField(field: string): string {
   if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-    return `"${field.replace(/"/g, '""')}"`;
-  }
-  return field
-}
-
-/**
- * Unquote and unescape a CSV field.
- * If the field is quoted, remove quotes and unescape internal doubled quotes.
- */
-function unquoteField(field: string): string {
-  if (field.startsWith('"') && field.endsWith('"')) {
-    return field.slice(1, -1).replace(/''/g, '"')
+    return `"${field.replace(/"/g, '""')}"`
   }
   return field
 }
@@ -151,11 +140,11 @@ export function parseCsv(text: string, existing: Array<{ id?: number; fromPath: 
       continue
     }
 
-    const fromPath = unquoteField(fields[0]).trim()
-    const toPath = unquoteField(fields[1]).trim()
-    const redirectType = unquoteField(fields[2]).trim()
-    const enabled = (fields[3] ? unquoteField(fields[3]).trim().toLowerCase() : 'true') !== 'false'
-    const note = fields[4] ? unquoteField(fields[4]).trim() : ''
+    const fromPath = fields[0].trim()
+    const toPath = fields[1].trim()
+    const redirectType = fields[2].trim()
+    const enabled = (fields[3] ? fields[3].trim().toLowerCase() : 'true') !== 'false'
+    const note = fields[4] ? fields[4].trim() : ''
 
     // Validate required fields
     if (!fromPath || !toPath || !redirectType) {

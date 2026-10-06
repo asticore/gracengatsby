@@ -22,6 +22,7 @@ export const Integrations: GlobalConfig = {
     {
       name: 'claudeApiKey',
       type: 'text',
+      label: 'Claude API key',
       access: {
         read: adminOnlyFieldAccess,
         update: adminOnlyFieldAccess,
@@ -32,12 +33,13 @@ export const Integrations: GlobalConfig = {
       },
       admin: {
         description:
-          'Your Claude API key (console.anthropic.com). Stored encrypted at rest, visible only to admins. Not wired to any feature yet - saved here so it is ready when you build one.',
+          'Found at console.anthropic.com. Stored encrypted at rest, visible only to admins.',
       },
     },
     {
       name: 'openaiApiKey',
       type: 'text',
+      label: 'OpenAI API key',
       access: {
         read: adminOnlyFieldAccess,
         update: adminOnlyFieldAccess,
@@ -47,7 +49,7 @@ export const Integrations: GlobalConfig = {
         afterRead: [decryptSecretHook],
       },
       admin: {
-        description: 'Your OpenAI API key. Stored encrypted at rest, visible only to admins.',
+        description: 'Found at platform.openai.com. Stored encrypted at rest, visible only to admins.',
       },
     },
     {
@@ -58,21 +60,25 @@ export const Integrations: GlobalConfig = {
         {
           name: 'ga4MeasurementId',
           type: 'text',
-          admin: { description: 'Google Analytics 4 measurement ID (G-XXXXXXXXXX).' },
+          label: 'Google Analytics 4 measurement ID (G-...)',
+          admin: { description: 'Found in Google Analytics > Admin > Data streams.' },
         },
         {
           name: 'gtmContainerId',
           type: 'text',
-          admin: { description: 'Google Tag Manager container ID (GTM-XXXXXXX).' },
+          label: 'Google Tag Manager container ID (GTM-...)',
+          admin: { description: 'Found in Google Tag Manager > Admin > Container settings.' },
         },
         {
           name: 'searchConsoleVerification',
           type: 'text',
-          admin: { description: 'Google Search Console verification code.' },
+          label: 'Search Console verification code',
+          admin: { description: 'Found in Google Search Console > Settings > Ownership verification.' },
         },
         {
           name: 'mapsApiKey',
           type: 'text',
+          label: 'Google Maps API key',
           access: {
             read: adminOnlyFieldAccess,
             update: adminOnlyFieldAccess,
@@ -82,7 +88,7 @@ export const Integrations: GlobalConfig = {
             afterRead: [decryptSecretHook],
           },
           admin: {
-            description: 'Google Maps API key. Stored encrypted at rest, visible only to admins.',
+            description: 'Found in Google Cloud Console > APIs & Services > Credentials. Stored encrypted at rest, visible only to admins.',
           },
         },
       ],
@@ -95,21 +101,24 @@ export const Integrations: GlobalConfig = {
         {
           name: 'version',
           type: 'select',
+          label: 'reCAPTCHA version',
           defaultValue: 'v3',
           options: [
             { label: 'v2 Checkbox', value: 'v2' },
             { label: 'v3', value: 'v3' },
           ],
-          admin: { description: 'Which reCAPTCHA version to use.' },
+          admin: { description: 'Which version to use. Found at google.com/recaptcha/admin.' },
         },
         {
           name: 'siteKey',
           type: 'text',
-          admin: { description: 'reCAPTCHA site key. Public, safe to embed.' },
+          label: 'reCAPTCHA site key',
+          admin: { description: 'Found at google.com/recaptcha/admin. Public, safe to embed.' },
         },
         {
           name: 'secretKey',
           type: 'text',
+          label: 'reCAPTCHA secret key',
           access: {
             read: adminOnlyFieldAccess,
             update: adminOnlyFieldAccess,
@@ -119,7 +128,7 @@ export const Integrations: GlobalConfig = {
             afterRead: [decryptSecretHook],
           },
           admin: {
-            description: 'reCAPTCHA secret key. Stored encrypted at rest, visible only to admins.',
+            description: 'Found at google.com/recaptcha/admin. Stored encrypted at rest, visible only to admins.',
           },
         },
       ],
@@ -132,7 +141,8 @@ export const Integrations: GlobalConfig = {
         {
           name: 'projectId',
           type: 'text',
-          admin: { description: 'Microsoft Clarity project ID.' },
+          label: 'Clarity project ID',
+          admin: { description: 'Found in Microsoft Clarity > Settings > Project ID.' },
         },
       ],
     },
@@ -144,7 +154,8 @@ export const Integrations: GlobalConfig = {
         {
           name: 'pixelId',
           type: 'text',
-          admin: { description: 'Meta Pixel ID.' },
+          label: 'Meta pixel ID',
+          admin: { description: 'Found in Meta Business Suite > Events Manager > Pixels.' },
         },
       ],
     },
@@ -156,11 +167,13 @@ export const Integrations: GlobalConfig = {
         {
           name: 'zoneId',
           type: 'text',
-          admin: { description: 'Cloudflare Zone ID.' },
+          label: 'Zone ID',
+          admin: { description: 'Found in Cloudflare > Account > Websites > Zone ID.' },
         },
         {
           name: 'apiToken',
           type: 'text',
+          label: 'API token',
           access: {
             read: adminOnlyFieldAccess,
             update: adminOnlyFieldAccess,
@@ -171,12 +184,13 @@ export const Integrations: GlobalConfig = {
           },
           admin: {
             description:
-              'Cloudflare API token with Zone > Cache Purge permission. Stored encrypted at rest, visible only to admins.',
+              'Found in Cloudflare > My Profile > API Tokens. Needs Zone > Cache Purge permission. Stored encrypted at rest, visible only to admins.',
           },
         },
         {
           name: 'purgeOnPublish',
           type: 'checkbox',
+          label: 'Purge cache on publish',
           defaultValue: true,
           admin: {
             description: 'Automatically purge Cloudflare cache when you publish content.',
@@ -196,16 +210,19 @@ export const Integrations: GlobalConfig = {
         {
           name: 'keys',
           type: 'array',
+          label: 'Keys',
           labels: { singular: 'Key', plural: 'Keys' },
           fields: [
             {
               name: 'name',
               type: 'text',
+              label: 'Name',
               admin: { description: 'A name to remember this key by.' },
             },
             {
               name: 'value',
               type: 'text',
+              label: 'Value',
               access: {
                 read: adminOnlyFieldAccess,
                 update: adminOnlyFieldAccess,
@@ -217,6 +234,12 @@ export const Integrations: GlobalConfig = {
               admin: {
                 description: 'The API key or credential value. Stored encrypted at rest, visible only to admins.',
               },
+            },
+            {
+              name: 'note',
+              type: 'text',
+              label: 'Note',
+              admin: { description: 'Optional note about this key or where to find it.' },
             },
           ],
         },

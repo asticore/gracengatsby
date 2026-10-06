@@ -6,6 +6,7 @@ import type { SectionNode } from '@/lib/sectionTree'
 import { defaultColumns } from '@/lib/sectionTree'
 
 import { getElementDef } from '@/lib/elements/registry'
+import { can } from '@/features/roles/permissions'
 
 import { getBlockDef } from './visualEditor/blockSchemas'
 import { CANVAS_ORIGIN, isBridgeMessage, type FrameToParentMessage } from './visualEditor/canvasBridge'
@@ -64,7 +65,7 @@ function resolveDropSlot(
 
 function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string } | null {
   if (typeof window === 'undefined') return null
-  const match = window.location.pathname.match(/\/admin\/visual-editor\/(collection|global)\/([^/]+)(?:\/([^/]+))?/)
+  const match = window.location.pathname.match(/\/admin\/visual-editor\/(collection|global)\/([^\/]+)(?:\/([^\/]+))?/)
   if (!match) return null
   return { mode: match[1] as 'collection' | 'global', slug: match[2], id: match[3] }
 }
@@ -97,6 +98,7 @@ export const VisualEditorView: React.FC = () => {
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'publishing' | 'published' | 'error'>('idle')
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [dockTab, setDockTab] = useState<DockTab>('elements')
+  const [userPermissions, setUserPermissions] = useState<{ canEditStyle: boolean; canEditLayout: boolean } | null>(null)
   // Where the next element/template pick lands. Always defined (unlike the
   // old popup's open/closed state) since the dock is always visible now -
   // defaults to the end of the page until a specific "+" sets it.
@@ -116,21 +118,28 @@ export const VisualEditorView: React.FC = () => {
     return surface.kind === 'global' ? `/api/globals/${surface.slug}` : `/api/${surface.slug}/${route.id}`
   }, [route, surface])
 
+  // Fetch document and user permissions
   useEffect(() => {
     if (!apiUrl || !surface) return
-    fetch(`${apiUrl}?depth=0`, { credentials: 'include' })
-      .then((res) => {
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-        return res.json()
-      })
-      .then((json) => {
-        const doc = json as Record<string, unknown>
-        const raw = (doc?.[surface.blocksField] as SectionNode[] | undefined) || []
-        const withStableIds = withIds(raw)
-        setBlocks(withStableIds)
-        setInsertTarget({ containerPath: [], at: withStableIds.length })
-        setDocTitle(surface.titleField ? String(doc?.[surface.titleField] || 'Untitled') : surface.label)
-        setStatus((doc?._status as string) || null)
+    Promise.all([
+      fetch(`${apiUrl}?depth=0`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+      fetch('/api/auth/user', { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+    ])
+      .then(([doc, user]: any[]) => {
+        if (doc && typeof doc === 'object') {
+          const raw = (doc[surface.blocksField] as SectionNode[] | undefined) || []
+          const withStableIds = withIds(raw)
+          setBlocks(withStableIds)
+          setInsertTarget({ containerPath: [], at: withStableIds.length })
+          setDocTitle(surface.titleField ? String(doc[surface.titleField] || 'Untitled') : surface.label)
+          setStatus((doc._status as string) || null)
+        }
+        if (user) {
+          setUserPermissions({
+            canEditStyle: can(user, 'content.editStyle', 'update'),
+            canEditLayout: can(user, 'content.editLayout', 'update'),
+          })
+        }
         setLoading(false)
       })
       .catch((err) => {
@@ -419,7 +428,7 @@ export const VisualEditorView: React.FC = () => {
 
   return (
     <div className="ve-root">
-      {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
+      { }
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
       <div className="ve-topbar">
         <div className="ve-topbar__left">
@@ -510,6 +519,7 @@ export const VisualEditorView: React.FC = () => {
           }}
           onDeleteSelected={() => selectedPath && deleteBlock(selectedPath)}
           onDuplicateSelected={() => selectedPath && duplicateBlock(selectedPath)}
+          userPermissions={userPermissions}
         />
 
         <div className="ve-canvas-wrap" role="presentation">

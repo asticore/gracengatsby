@@ -82,6 +82,14 @@ export async function purgeCache(paths: string[] | string): Promise<PurgeResult>
     }
   }
 
+  // Cloudflare zone cache (only when a zone and token are saved in Integrations
+  // and "purge on publish" is on there). Best effort, never throws.
+  const cloudflare = await purgeCloudflareByUrls(
+    list.flatMap((path) => Array.from(new Set([`${SITE_URL}${path}`, `${SITE_URL}${path.endsWith('/') ? path : `${path}/`}`]))),
+    { onPublish: true },
+  )
+  result.errors.push(...cloudflare.errors)
+
   return result
 }
 
@@ -100,4 +108,108 @@ export async function openEdgeCache(): Promise<EdgeCache | null> {
   } catch {
     return null
   }
+}
+
+export type CloudflareResult = {
+  ran: boolean
+  errors: string[]
+}
+
+/**
+ * Purge all cached pages from Cloudflare. Requires integrations.cloudflare.zoneId
+ * and integrations.cloudflare.apiToken to be set. Best effort - never throws.
+ */
+export async function purgeCloudflareCache(): Promise<CloudflareResult> {
+  const result: CloudflareResult = { ran: false, errors: [] }
+
+  try {
+    const { getEngine } = await import('@/lib/engine')
+    const engine = await getEngine()
+
+    const integrations = (await engine.findGlobal({
+      slug: 'integrations',
+      depth: 0,
+      overrideAccess: true,
+    }).catch((): null => null)) as any | null
+
+    if (!integrations?.cloudflare?.zoneId || !integrations?.cloudflare?.apiToken) {
+      return result
+    }
+
+    const { zoneId, apiToken } = integrations.cloudflare as { zoneId: string; apiToken: string }
+
+    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ purge_everything: true }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      result.errors.push(`Cloudflare API: ${response.status} ${error}`)
+      return result
+    }
+
+    result.ran = true
+  } catch (error) {
+    result.errors.push(`Cloudflare purge: ${String(error)}`)
+  }
+
+  return result
+}
+
+/**
+ * Batch Cloudflare cache purges by file URL (max 30 per request). Best effort - never throws.
+ */
+export async function purgeCloudflareByUrls(urls: string[], options: { onPublish?: boolean } = {}): Promise<CloudflareResult> {
+  const result: CloudflareResult = { ran: false, errors: [] }
+
+  if (urls.length === 0) return result
+
+  try {
+    const { getEngine } = await import('@/lib/engine')
+    const engine = await getEngine()
+
+    const integrations = (await engine.findGlobal({
+      slug: 'integrations',
+      depth: 0,
+      overrideAccess: true,
+    }).catch((): null => null)) as any | null
+
+    if (!integrations?.cloudflare?.zoneId || !integrations?.cloudflare?.apiToken) {
+      return result
+    }
+    if (options.onPublish && integrations.cloudflare.purgeOnPublish === false) {
+      return result
+    }
+
+    const { zoneId, apiToken } = integrations.cloudflare as { zoneId: string; apiToken: string }
+
+    // Batch into groups of 30
+    for (let i = 0; i < urls.length; i += 30) {
+      const batch = urls.slice(i, i + 30)
+      const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ files: batch }),
+      })
+
+      if (!response.ok) {
+        const error = await response.text()
+        result.errors.push(`Cloudflare API batch: ${response.status} ${error}`)
+      }
+    }
+
+    result.ran = true
+  } catch (error) {
+    result.errors.push(`Cloudflare batch purge: ${String(error)}`)
+  }
+
+  return result
 }

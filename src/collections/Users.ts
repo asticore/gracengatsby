@@ -1,7 +1,7 @@
 import type { CollectionConfig, CollectionBeforeChangeHook } from '@/engine'
 
-import { isAdmin, isAdminOrSelf } from '../access/ecommerceAccess'
-import { validateRoleChange } from '@/features/roles/permissions'
+import { isAdmin, isAdminOrSelf, adminOnlyFieldAccess } from '../access/ecommerceAccess'
+import { validateRoleChange, sanitizeOverrides } from '@/features/roles/permissions'
 import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 
 /**
@@ -45,6 +45,17 @@ const validateUserRoleChange: CollectionBeforeChangeHook = async (args: unknown)
   }
 }
 
+/**
+ * Sanitizes permission overrides to remove invalid resources/actions and ensure safe storage.
+ */
+const sanitizePermissionOverrides: CollectionBeforeChangeHook = async (args: unknown): Promise<void> => {
+  const { data } = args as any
+
+  if (data.permissionOverrides !== undefined) {
+    data.permissionOverrides = JSON.stringify(sanitizeOverrides(data.permissionOverrides))
+  }
+}
+
 export const Users: CollectionConfig = {
   slug: 'users',
   dbName: 'eg_users',
@@ -64,7 +75,7 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   auth: true,
-  beforeChange: [validateUserRoleChange, authorshipBeforeChange],
+  beforeChange: [validateUserRoleChange, sanitizePermissionOverrides, authorshipBeforeChange],
   fields: [
     ...authorshipFields,
     {
@@ -94,6 +105,20 @@ export const Users: CollectionConfig = {
       admin: {
         hidden: false,
         condition: ({ user }) => Boolean(user?.roles?.includes('admin')),
+      },
+    },
+    {
+      name: 'permissionOverrides',
+      type: 'json',
+      access: {
+        read: adminOnlyFieldAccess,
+        update: adminOnlyFieldAccess,
+      },
+      admin: {
+        description: 'Grant or deny single permissions for this user on top of their role.',
+        components: {
+          Field: '@/admin/components/UserPermissionOverridesField#UserPermissionOverridesField',
+        },
       },
     },
   ],

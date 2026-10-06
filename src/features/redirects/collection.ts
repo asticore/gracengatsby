@@ -2,7 +2,7 @@ import { invalidateRedirectsCache } from './resolve'
 import { validateRedirect, type RedirectType } from './validate'
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin } from '@/access/ecommerceAccess'
+import { roleAccess } from '@/access/ecommerceAccess'
 
 export const Redirects: CollectionConfig = {
   slug: 'redirects',
@@ -15,10 +15,10 @@ export const Redirects: CollectionConfig = {
     description: 'Send visitors from an old address to a new one. Matches the path exactly (a trailing slash and the query string are ignored).',
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
+    create: roleAccess('redirects', 'create'),
+    delete: roleAccess('redirects', 'delete'),
+    read: roleAccess('redirects', 'read'),
+    update: roleAccess('redirects', 'update'),
   },
   fields: [
     { name: 'fromPath', type: 'text', required: true, admin: { description: 'Old path, starts with /, e.g. /old-page' } },

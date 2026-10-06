@@ -162,6 +162,54 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('adds permission_overrides column to users', async () => {
+    const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+      for (const col of expectedColumns) {
+        expect(columnNames, `${table} should have column ${col}`).toContain(col)
+      }
+    }
+
+    if (tables.includes('eg_users')) {
+      await checkColumns('eg_users', ['permission_overrides'])
+    }
+  })
+
+  it('expands integrations table with new columns', async () => {
+    const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+      for (const col of expectedColumns) {
+        expect(columnNames, `${table} should have column ${col}`).toContain(col)
+      }
+    }
+
+    const integrationsCols = [
+      'google_ga4_measurement_id',
+      'google_gtm_container_id',
+      'google_search_console_verification',
+      'google_maps_api_key',
+      'recaptcha_version',
+      'recaptcha_site_key',
+      'recaptcha_secret_key',
+      'clarity_project_id',
+      'meta_pixel_pixel_id',
+      'cloudflare_zone_id',
+      'cloudflare_api_token',
+      'cloudflare_purge_on_publish',
+      'openai_api_key',
+    ]
+
+    if (tables.includes('eg_integrations')) {
+      await checkColumns('eg_integrations', integrationsCols)
+    }
+  })
+
+  it('creates custom keys child table for integrations', () => {
+    expect(tables, 'eg_integrations_custom_keys table should be created').toContain('eg_integrations_custom_keys')
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

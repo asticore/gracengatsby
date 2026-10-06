@@ -7,6 +7,7 @@ import { richTextEditor } from '@/engine/editor'
 import { seoFields } from '@/fields/seo'
 import { schemaTypeField } from '@/fields/schemaType'
 import { authorshipFields, authorshipBeforeChange } from '@/fields/authorship'
+import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
 
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see
@@ -151,6 +152,6 @@ export const Products: CollectionConfig = {
     schemaTypeField('products'),
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange],
+    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard],
   },
 }

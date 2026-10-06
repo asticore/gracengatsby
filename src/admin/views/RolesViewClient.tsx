@@ -4,19 +4,15 @@ import React, { useState, useCallback, useMemo } from 'react'
 import styles from '@/admin/admin.module.css'
 import {
   RESOURCES,
-  ACTIONS,
   BUILT_IN_ROLES,
-  SECRET_RESOURCES,
   type PermissionMatrix,
   type Resource,
 } from '@/features/roles/permissions'
+import { PermissionTable } from '@/admin/components/PermissionTable'
 import {
-  toggleCell,
   copyMatrix,
   validateRoleName,
   slugify,
-  groupResources,
-  isSecretResource,
 } from '@/features/roles/matrixUi'
 
 interface RoleDoc {
@@ -25,7 +21,7 @@ interface RoleDoc {
   slug: string
   description?: string
   builtIn?: boolean
-  permissions?: PermissionMatrix
+  permissions?: Partial<PermissionMatrix>
 }
 
 interface RolesViewClientProps {
@@ -53,21 +49,18 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
     [roles, selectedRoleId],
   )
 
-  // Group resources for display
-  const resourceGroups = useMemo(() => groupResources([...RESOURCES] as Resource[]), [])
-
   /**
-   * Handle cell toggle in matrix
+   * Handle permission matrix changes
    */
-  const handleToggleCell = useCallback(
-    (resource: Resource) => {
+  const handleMatrixChange = useCallback(
+    (newMatrix: Partial<PermissionMatrix>) => {
       if (!selectedRole || selectedRole.builtIn) return
       setRoles((prev) =>
         prev.map((r) => {
-          if (r.id !== selectedRole.id) return r
-          const perms = r.permissions || ({} as Partial<PermissionMatrix>)
-          const newPerms = toggleCell(perms as PermissionMatrix, resource, 'read')
-          return { ...r, permissions: newPerms }
+          if (r.id === selectedRole.id) {
+            return { ...r, permissions: newMatrix }
+          }
+          return r
         }),
       )
     },
@@ -340,65 +333,14 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
 
               {errorMsg && <div className={styles.error}>{errorMsg}</div>}
 
-              {/* Matrix grid */}
-              <div className={styles.matrixWrapper}>
-                <table className={styles.matrix}>
-                  <thead>
-                    <tr>
-                      <th>Resource</th>
-                      {ACTIONS.map((action) => (
-                        <th key={action} className={styles.actionHeader}>
-                          {action}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(resourceGroups).map(([group, resources]) => [
-                      <tr key={`group-${group}`} className={styles.groupHeader}>
-                        <td colSpan={ACTIONS.length + 1}>{group}</td>
-                      </tr>,
-                      ...resources.map((resource) => {
-                        const isSecret = isSecretResource(resource as Resource, SECRET_RESOURCES)
-                        const perms = selectedRole.permissions?.[resource as Resource] || {}
-
-                        return (
-                          <tr
-                            key={resource}
-                            className={`${styles.resourceRow} ${isSecret ? styles.secretRow : ''}`}
-                          >
-                            <td className={styles.resourceLabel}>
-                              {resource}
-                              {isSecret && <span className={styles.adminOnly}> (Admin only)</span>}
-                            </td>
-                            {ACTIONS.map((action) => {
-                              const isEnabled = perms[action] ?? false
-                              const isReadOnly = selectedRole.builtIn || isSecret
-
-                              return (
-                                <td
-                                  key={`${resource}-${action}`}
-                                  className={styles.cellContainer}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isEnabled}
-                                    onChange={() =>
-                                      handleToggleCell(resource as Resource)
-                                    }
-                                    disabled={isReadOnly}
-                                    className={styles.checkbox}
-                                  />
-                                </td>
-                              )
-                            })}
-                          </tr>
-                        )
-                      }),
-                    ])}
-                  </tbody>
-                </table>
-              </div>
+              {/* Permission matrix */}
+              <PermissionTable
+                value={selectedRole.permissions || {}}
+                onChange={handleMatrixChange}
+                readOnly={selectedRole.builtIn || !canEdit}
+                secretLocked={true}
+                mode="matrix"
+              />
             </div>
           ) : (
             <div className={styles.emptyState}>

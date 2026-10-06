@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin } from '../access/ecommerceAccess'
+import { roleAccess } from '../access/ecommerceAccess'
 
 /**
  * Advanced-custom-fields, defined from inside the portal.
@@ -27,9 +27,9 @@ export const FieldGroups: CollectionConfig = {
       'Define extra fields for your content - like Advanced Custom Fields. Pick which collections they appear on, and they show up as real inputs when editing those items. Use them in templates as {{field:the_field_name}}.',
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    update: isAdmin,
+    create: roleAccess('field-groups', 'create'),
+    delete: roleAccess('field-groups', 'delete'),
+    update: roleAccess('field-groups', 'update'),
     // Readable by any signed-in user so the editing panel can load definitions.
     read: () => true,
   },

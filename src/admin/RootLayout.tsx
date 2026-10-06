@@ -31,6 +31,7 @@ import { AdminShell } from '@/admin/ui/AdminShell'
 import { NavToggler } from '@/admin/ui/NavToggler'
 import { ThemeToggler } from '@/admin/ui/ThemeToggler'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
+import { SessionWatch } from '@/admin/SessionWatch'
 
 export async function RootLayout({ children }: { children: ReactNode; config?: unknown; importMap?: unknown; serverFunction?: unknown }) {
   const context = await getAdminContext()
@@ -47,14 +48,17 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
                 // flex layout - the sidebar beside the content - replacing the
                 // old TemplateDefaultWrapper, which existed only to trigger
                 // the vendor package's own CSS-grid rules. See AdminShell.tsx.
-                <AdminShell>
-                  <NavToggler />
-                  <ThemeToggler />
-                  <AdminNav i18n={context.i18n} engine={context.engine} permissions={context.permissions} visibleEntities={context.visibleEntities} user={context.user} />
-                  <div className="admin-shell__main">
-                    <main className="admin-shell__content">{children}</main>
-                  </div>
-                </AdminShell>
+                <>
+                  <SessionWatch />
+                  <AdminShell>
+                    <NavToggler />
+                    <ThemeToggler />
+                    <AdminNav i18n={context.i18n} engine={context.engine} permissions={context.permissions} visibleEntities={context.visibleEntities} user={context.user} />
+                    <div className="admin-shell__main">
+                      <main className="admin-shell__content">{children}</main>
+                    </div>
+                  </AdminShell>
+                </>
               ) : (
                 <main>{children}</main>
               )}

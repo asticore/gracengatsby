@@ -5,6 +5,7 @@
 
 import type { Field } from '@/engine'
 import type { CellFormatter } from '@/admin/cellRegistry'
+import { formatDateCell } from './dateFormatter'
 
 export function formatCellValue(
   cell: unknown,
@@ -24,10 +25,8 @@ export function formatCellValue(
 
   // System columns (createdAt/updatedAt) have no field definition: format ISO strings
   if (!columnField && typeof cell === 'string') {
-    const d = new Date(cell)
-    if (!Number.isNaN(d.getTime()) && /^\d{4}-\d\d-\d\dT/.test(cell)) {
-      return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-    }
+    const formatted = formatDateCell(cell)
+    if (formatted) return formatted
   }
 
   // Field type-specific formatting
@@ -44,13 +43,8 @@ export function formatCellValue(
     // or explicit date/datetime fields
     if (fieldName === 'createdAt' || fieldName === 'updatedAt' || fieldType === 'date' || fieldType === 'datetime') {
       if (typeof cell === 'string') {
-        const d = new Date(cell)
-        if (!Number.isNaN(d.getTime())) {
-          return d.toLocaleString(undefined, {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          })
-        }
+        const formatted = formatDateCell(cell)
+        if (formatted) return formatted
       }
       return String(cell)
     }

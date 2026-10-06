@@ -64,6 +64,11 @@ const POLICY_FREE_PREFIXES = ['/admin']
 export const isPolicyFreePath = (pathname: string): boolean =>
   POLICY_FREE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 
+const NOCACHE_PREFIXES = ['/admin']
+
+const isNoCachePath = (pathname: string): boolean =>
+  NOCACHE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+
 /**
  * Builds the header set for one response.
  *
@@ -75,6 +80,11 @@ export function securityHeaders(
   pathname = '/',
 ): HeaderMap {
   const headers: HeaderMap = {}
+
+  // Admin paths must not be cached
+  if (isNoCachePath(pathname)) {
+    headers['Cache-Control'] = 'no-store, private'
+  }
 
   if (!settings.featureEnabled) return headers
 

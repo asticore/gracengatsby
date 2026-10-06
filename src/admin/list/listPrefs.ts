@@ -11,6 +11,7 @@ import type { Engine, TypedUser } from '@/engine'
 
 export type ListPrefs = {
   cols?: string[]
+  colsOrder?: string[] // Explicit column order; if missing, cols array defines order
   sort?: string
   limit?: number
   view?: string
@@ -19,7 +20,8 @@ export type ListPrefs = {
 /**
  * Sanitize unknown input into a valid ListPrefs object.
  * Accepts only:
- * - cols: array of up to 30 strings matching /^[A-Za-z0-9_.]+$/
+ * - cols: array of up to 30 strings matching /^[A-Za-z0-9_.]+$/ (deprecated, use colsOrder)
+ * - colsOrder: array of up to 30 strings matching /^[A-Za-z0-9_.]+$/ (explicit column order)
  * - sort: string matching /^-?[A-Za-z0-9_.]+$/
  * - limit: one of 10, 25, 50, 100
  * - view: one of 'list', 'gallery', 'calendar', 'tree'
@@ -31,12 +33,20 @@ export function sanitizeListPrefs(input: unknown): ListPrefs {
   const result: ListPrefs = {}
   const obj = input as Record<string, unknown>
 
-  // Sanitize cols
+  // Sanitize cols (deprecated, for backward compatibility)
   if (Array.isArray(obj.cols)) {
     const sanitized = obj.cols
       .slice(0, 30)
       .filter((col) => typeof col === 'string' && /^[A-Za-z0-9_.]+$/.test(col))
     if (sanitized.length > 0) result.cols = sanitized
+  }
+
+  // Sanitize colsOrder (explicit column order)
+  if (Array.isArray(obj.colsOrder)) {
+    const sanitized = obj.colsOrder
+      .slice(0, 30)
+      .filter((col) => typeof col === 'string' && /^[A-Za-z0-9_.]+$/.test(col))
+    if (sanitized.length > 0) result.colsOrder = sanitized
   }
 
   // Sanitize sort

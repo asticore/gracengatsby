@@ -11,8 +11,8 @@ describe('formatCellValue', () => {
       } as unknown as Field
 
       const result = formatCellValue('2026-08-22T13:57:22.140Z', {}, field, undefined)
-      expect(result).toMatch(/Aug.*2026/)
-      expect(result).toMatch(/PM|AM/)
+      expect(result).toMatch(/08\/2026/)
+      expect(result).toMatch(/13:57/)
     })
 
     it('formats updatedAt column as locale date+time', () => {
@@ -22,8 +22,8 @@ describe('formatCellValue', () => {
       } as unknown as Field
 
       const result = formatCellValue('2026-08-22T13:57:22.140Z', {}, field, undefined)
-      expect(result).toMatch(/Aug.*2026/)
-      expect(result).toMatch(/PM|AM/)
+      expect(result).toMatch(/08\/2026/)
+      expect(result).toMatch(/13:57/)
     })
 
     it('formats date field type as locale date+time', () => {
@@ -33,8 +33,8 @@ describe('formatCellValue', () => {
       } as unknown as Field
 
       const result = formatCellValue('2026-08-22T13:57:22.140Z', {}, field, undefined)
-      expect(result).toMatch(/Aug.*2026/)
-      expect(result).toMatch(/PM|AM/)
+      expect(result).toMatch(/08\/2026/)
+      expect(result).toMatch(/13:57/)
     })
 
     it('formats datetime field type as locale date+time', () => {
@@ -44,8 +44,8 @@ describe('formatCellValue', () => {
       } as unknown as Field
 
       const result = formatCellValue('2026-08-22T13:57:22.140Z', {}, field, undefined)
-      expect(result).toMatch(/Aug.*2026/)
-      expect(result).toMatch(/PM|AM/)
+      expect(result).toMatch(/08\/2026/)
+      expect(result).toMatch(/13:57/)
     })
 
     it('returns empty string for null/undefined', () => {

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin } from '../access/ecommerceAccess'
+import { roleAccess } from '../access/ecommerceAccess'
 import { customFieldsField } from '../fields/customFields'
 
 export const Faqs: CollectionConfig = {
@@ -14,10 +14,10 @@ export const Faqs: CollectionConfig = {
     description: 'Reusable Q&A entries. Show them on the site FAQ page, or drop the FAQ block into any page/product.',
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
+    create: roleAccess('faqs', 'create'),
+    delete: roleAccess('faqs', 'delete'),
     read: () => true,
-    update: isAdmin,
+    update: roleAccess('faqs', 'update'),
   },
   fields: [
     { name: 'question', type: 'text', required: true },

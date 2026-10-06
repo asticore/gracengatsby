@@ -335,7 +335,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
 
               {/* Permission matrix */}
               <PermissionTable
-                value={selectedRole.permissions || {}}
+                value={selectedRole.builtIn ? BUILT_IN_ROLES[selectedRole.slug] : (selectedRole.permissions || {})}
                 onChange={handleMatrixChange}
                 readOnly={selectedRole.builtIn || !canEdit}
                 secretLocked={true}

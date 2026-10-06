@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin } from '@/access/ecommerceAccess'
+import { isAdmin, roleAccess } from '@/access/ecommerceAccess'
 
 import { exportEndpoint } from '../exportEndpoint'
 import { FORMS_SLUG } from '../slugs'
@@ -35,8 +35,8 @@ export const FormSubmissions: CollectionConfig = {
   access: {
     create: () => false,
     delete: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
+    read: roleAccess('form-submissions', 'read'),
+    update: roleAccess('form-submissions', 'update'),
   },
   endpoints: [exportEndpoint],
   fields: [

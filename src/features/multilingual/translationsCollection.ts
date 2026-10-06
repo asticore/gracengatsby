@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin } from '@/access/ecommerceAccess'
+import { roleAccess } from '@/access/ecommerceAccess'
 
 /**
  * The store behind `eg_translations`: one row per translated string.
@@ -30,10 +30,10 @@ export const Translations: CollectionConfig = {
     description: 'Individual translated strings. Edit these on the Translations screen.',
   },
   access: {
-    read: isAdmin,
-    create: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    read: roleAccess('translations', 'read'),
+    create: roleAccess('translations', 'create'),
+    update: roleAccess('translations', 'update'),
+    delete: roleAccess('translations', 'delete'),
   },
   fields: [
     {

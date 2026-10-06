@@ -2,7 +2,7 @@ import type { CollectionConfig } from '@/engine'
 
 import { richTextEditor } from '@/engine/editor'
 
-import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
+import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
 import { seoFields } from '../fields/seo'
 import { schemaTypeField } from '../fields/schemaType'
 import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
@@ -29,10 +29,10 @@ export const Events: CollectionConfig = {
     },
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    read: adminOrPublishedStatus,
-    update: isAdmin,
+    create: roleAccess('events', 'create'),
+    delete: roleAccess('events', 'delete'),
+    read: roleOrPublished('events'),
+    update: roleAccess('events', 'update'),
   },
   versions: {
     drafts: true,

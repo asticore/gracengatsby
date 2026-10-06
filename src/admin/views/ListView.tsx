@@ -21,6 +21,8 @@ import { MediaGalleryView } from '@/views/media/MediaGalleryView'
 import { EventsCalendarView } from '@/views/events/EventsCalendarView'
 import { PagesTreeView } from './PagesTreeView'
 import { breadcrumbTitle } from '@/features/pagesTree/breadcrumb'
+import { ListRowActions } from './ListRowActions'
+import { shouldShowRowActions } from '@/admin/list/quickEdit'
 
 /**
  * Generic list view for any collection - one component instead of 21
@@ -151,6 +153,8 @@ export async function ListView({
   }
 
   const canCreate = context.permissions.collections?.[collectionSlug]?.create
+  const canUpdate = context.permissions.collections?.[collectionSlug]?.update
+  const showRowActions = shouldShowRowActions(collectionSlug, hasDrafts)
   const label = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
 
   // Resolve view tabs and active tab
@@ -256,6 +260,11 @@ export async function ListView({
                         </a>
                       </th>
                     ))}
+                    {showRowActions && (
+                      <th key="actions" className="list-th">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -314,6 +323,17 @@ export async function ListView({
                           </td>
                         )
                       })}
+                      {showRowActions && (
+                        <td key="actions" className="list-td">
+                          <ListRowActions
+                            collectionSlug={collectionSlug}
+                            doc={doc as Record<string, unknown>}
+                            hasDrafts={hasDrafts}
+                            canDuplicate={canCreate}
+                            canUpdate={canUpdate}
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

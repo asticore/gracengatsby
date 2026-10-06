@@ -8,6 +8,7 @@ import { schemaTypeField } from '../fields/schemaType'
 import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
+import { publishGuard } from '@/features/roles/contentEditGuard'
 
 export const Events: CollectionConfig = {
   slug: 'events',
@@ -178,6 +179,6 @@ export const Events: CollectionConfig = {
     schemaTypeField('events'),
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange],
+    beforeChange: [authorshipBeforeChange, publishGuard],
   },
 }

@@ -1,6 +1,6 @@
 import type { CollectionConfig, EngineRequest } from '@/engine'
 
-import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
+import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
 import { schemaTypeField } from '../fields/schemaType'
@@ -19,7 +19,7 @@ export const Pages: CollectionConfig = {
     defaultColumns: ['title', 'slug', 'parent', 'isHomepage', '_status'],
     group: 'Content',
     description:
-      'Every page on the site, including the homepage. Build sections from the block library (drag the ⟿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header. Click "Edit visually" above to lay it out on a drag-and-drop canvas instead.',
+      'Every page on the site, including the homepage. Build sections from the block library (drag the ⚿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header. Click "Edit visually" above to lay it out on a drag-and-drop canvas instead.',
     components: {
       edit: {
         beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
@@ -27,10 +27,10 @@ export const Pages: CollectionConfig = {
     },
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    read: adminOrPublishedStatus,
-    update: isAdmin,
+    create: roleAccess('pages', 'create'),
+    delete: roleAccess('pages', 'delete'),
+    read: roleOrPublished('pages'),
+    update: roleAccess('pages', 'update'),
   },
   versions: {
     drafts: true,

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { adminOrPublishedStatus, isAdmin } from '../access/ecommerceAccess'
+import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { seoFields } from '../fields/seo'
 import { schemaTypeField } from '../fields/schemaType'
@@ -26,10 +26,10 @@ export const Posts: CollectionConfig = {
     },
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    read: adminOrPublishedStatus,
-    update: isAdmin,
+    create: roleAccess('posts', 'create'),
+    delete: roleAccess('posts', 'delete'),
+    read: roleOrPublished('posts'),
+    update: roleAccess('posts', 'update'),
   },
   versions: { drafts: true },
   fields: [

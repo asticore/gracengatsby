@@ -147,6 +147,21 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('adds authorship columns to users', async () => {
+    const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+      for (const col of expectedColumns) {
+        expect(columnNames, `${table} should have column ${col}`).toContain(col)
+      }
+    }
+
+    const authorshipCols = ['created_by_id', 'updated_by_id']
+    if (tables.includes('eg_users')) {
+      await checkColumns('eg_users', authorshipCols)
+    }
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

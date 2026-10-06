@@ -32,6 +32,7 @@ export const EditorDock: React.FC<{
   onCloseSelected: () => void
   onDeleteSelected: () => void
   onDuplicateSelected: () => void
+  userPermissions?: { canEditStyle: boolean; canEditLayout: boolean } | null
 }> = ({
   collapsed,
   tab,
@@ -45,6 +46,7 @@ export const EditorDock: React.FC<{
   onCloseSelected,
   onDeleteSelected,
   onDuplicateSelected,
+  userPermissions,
 }) => {
   // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
   // use the full width, same as Elementor's panel-collapse - nothing renders
@@ -86,6 +88,7 @@ export const EditorDock: React.FC<{
             onClose={onCloseSelected}
             onDelete={onDeleteSelected}
             onDuplicate={onDuplicateSelected}
+            userPermissions={userPermissions}
           />
         ) : (
           <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>

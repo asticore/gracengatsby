@@ -70,6 +70,14 @@ export function ListToolbar({
     router.push(`${pathname}?${serializeListState(newState)}`)
   }
 
+  const handleColumnReorder = (fromIdx: number, toIdx: number) => {
+    const newCols = [...visibleNames]
+    const [removed] = newCols.splice(fromIdx, 1)
+    newCols.splice(toIdx, 0, removed)
+    const newState = { ...state, cols: newCols, page: 1 }
+    router.push(`${pathname}?${serializeListState(newState)}`)
+  }
+
   const handleLimitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLimit = Number(e.target.value)
     const newState = { ...state, limit: newLimit, page: 1 }
@@ -261,16 +269,42 @@ export function ListToolbar({
         </button>
         {showColumnPicker && (
           <div className="list-column-picker-menu">
-            {columns.map((col) => (
-              <label key={col.name} className="list-column-checkbox">
-                <input
-                  type="checkbox"
-                  checked={visibleNames.includes(col.name)}
-                  onChange={() => handleColumnToggle(col.name)}
-                />
-                {col.label}
-              </label>
-            ))}
+            {columns.map((col, idx) => {
+              const isVisible = visibleNames.includes(col.name)
+              const visibleIdx = visibleNames.indexOf(col.name)
+              return (
+                <div key={col.name} className="list-column-picker-row">
+                  <label className="list-column-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={isVisible}
+                      onChange={() => handleColumnToggle(col.name)}
+                    />
+                    {col.label}
+                  </label>
+                  {isVisible && visibleIdx > 0 && (
+                    <button
+                      onClick={() => handleColumnReorder(visibleIdx, visibleIdx - 1)}
+                      className="list-column-up-btn"
+                      title="Move up"
+                      type="button"
+                    >
+                      ↑
+                    </button>
+                  )}
+                  {isVisible && visibleIdx < visibleNames.length - 1 && (
+                    <button
+                      onClick={() => handleColumnReorder(visibleIdx, visibleIdx + 1)}
+                      className="list-column-down-btn"
+                      title="Move down"
+                      type="button"
+                    >
+                      ↓
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -299,6 +333,240 @@ export function ListToolbar({
           {isSaving ? 'Resetting...' : 'Reset to default'}
         </button>
       )}
+
+      {/* Collection-specific actions */}
+      {collectionSlug === 'redirects' && (
+        <RedirectsToolbarActions />
+      )}
     </div>
+  )
+}
+
+/**
+ * Redirects-specific toolbar actions: CSV export/import and URL testing
+ */
+function RedirectsToolbarActions() {
+  const [showImport, setShowImport] = useState(false)
+  const [showTest, setShowTest] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [testUrl, setTestUrl] = useState('')
+  const [importResult, setImportResult] = useState<Record<string, unknown> | null>(null)
+  const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const importRef = useRef<HTMLDivElement>(null)
+  const testRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+
+  // Close modals on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (importRef.current && !importRef.current.contains(e.target as Node)) {
+        setShowImport(false)
+      }
+      if (testRef.current && !testRef.current.contains(e.target as Node)) {
+        setShowTest(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleExportCsv = async () => {
+    try {
+      const response = await fetch('/api/admin-redirects-csv')
+      if (!response.ok) throw new Error('Export failed')
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `redirects-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      alert('Failed to export CSV')
+    }
+  }
+
+  const handleImportSubmit = async (confirm?: boolean) => {
+    if (!importFile) return
+
+    setIsLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', importFile)
+
+      const queryString = confirm ? '' : '?dryRun=1'
+      const response = await fetch(`/api/admin-redirects-csv${queryString}`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error('Import failed')
+      const result = (await response.json()) as Record<string, unknown>
+      setImportResult(result)
+
+      // If confirmed (not dry-run), refresh the list
+      if (confirm && result.success) {
+        setTimeout(() => {
+          router.refresh()
+          setShowImport(false)
+          setImportFile(null)
+          setImportResult(null)
+        }, 500)
+      }
+    } catch (_error) {
+      alert('Failed to import CSV')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleTestUrl = async () => {
+    if (!testUrl.trim()) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/admin-redirects-test?path=${encodeURIComponent(testUrl)}`)
+      if (!response.ok) throw new Error('Test failed')
+      const result = (await response.json()) as Record<string, unknown>
+      setTestResult(result)
+    } catch (_error) {
+      alert('Failed to test URL')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <button onClick={handleExportCsv} className="list-toolbar-btn" title="Export redirects to CSV">
+        Export CSV
+      </button>
+
+      <div className="list-import-modal" ref={importRef}>
+        <button
+          onClick={() => {
+            setShowImport(!showImport)
+            setImportResult(null)
+          }}
+          className="list-toolbar-btn"
+          title="Import redirects from CSV"
+        >
+          Import CSV
+        </button>
+        {showImport && (
+          <div className="list-import-panel">
+            {!importResult ? (
+              <>
+                <label className="list-import-label">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => {
+                      setImportFile(e.target.files?.[0] || null)
+                    }}
+                    className="list-import-input"
+                  />
+                  Choose CSV file
+                </label>
+                <button
+                  onClick={() => handleImportSubmit(false)}
+                  disabled={!importFile || isLoading}
+                  className="list-import-btn"
+                >
+                  {isLoading ? 'Loading...' : 'Preview'}
+                </button>
+              </>
+            ) : (
+              <div className="list-import-result">
+                <p>
+                  Valid: {String((importResult as Record<string, unknown>).validRows)} | Errors:{' '}
+                  {String((importResult as Record<string, unknown>).errorRows)}
+                </p>
+                {((importResult as Record<string, unknown>).errors as Array<{ line: number; message: string }> | undefined)?.length > 0 && (
+                  <ul className="list-import-errors">
+                    {((importResult as Record<string, unknown>).errors as Array<{ line: number; message: string }> | undefined)?.slice(0, 3).map((e, i) => (
+                      <li key={i}>
+                        Line {e.line}: {e.message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  onClick={() => handleImportSubmit(true)}
+                  disabled={isLoading || ((importResult as Record<string, unknown>).validRows as number) === 0}
+                  className="list-import-btn list-import-btn--confirm"
+                >
+                  {isLoading ? 'Importing...' : `Import ${String((importResult as Record<string, unknown>).validRows)}`}
+                </button>
+                <button
+                  onClick={() => {
+                    setImportResult(null)
+                    setImportFile(null)
+                  }}
+                  className="list-import-btn"
+                >
+                  Back
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="list-test-modal" ref={testRef}>
+        <button
+          onClick={() => {
+            setShowTest(!showTest)
+            setTestResult(null)
+          }}
+          className="list-toolbar-btn"
+          title="Test a redirect URL"
+        >
+          Test URL
+        </button>
+        {showTest && (
+          <div className="list-test-panel">
+            <input
+              type="text"
+              placeholder="/old-path"
+              value={testUrl}
+              onChange={(e) => setTestUrl(e.target.value)}
+              className="list-test-input"
+            />
+            <button
+              onClick={handleTestUrl}
+              disabled={!testUrl.trim() || isLoading}
+              className="list-test-btn"
+            >
+              {isLoading ? 'Testing...' : 'Test'}
+            </button>
+            {testResult && (
+              <div className="list-test-result">
+                {(testResult as Record<string, unknown>).match ? (
+                  <>
+                    <p>
+                      <strong>Redirects to:</strong> {String((testResult as Record<string, unknown>).toPath)}
+                    </p>
+                    <p>
+                      <strong>Type:</strong> {String((testResult as Record<string, unknown>).redirectType)}
+                    </p>
+                    {((testResult as Record<string, unknown>).chainLength as number) > 1 && (
+                      <p>
+                        <strong>Chain length:</strong> {String((testResult as Record<string, unknown>).chainLength)}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p>No redirect found</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   )
 }

@@ -33,7 +33,8 @@ export const FieldPanel: React.FC<{
   onClose: () => void
   onDelete: () => void
   onDuplicate: () => void
-}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate }) => {
+  userPermissions?: { canEditStyle: boolean; canEditLayout: boolean } | null
+}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions }) => {
   const [tab, setTab] = useState<PanelTab>('content')
 
   const setField = (name: string, value: unknown) => onChange({ ...data, [name]: value })
@@ -78,6 +79,7 @@ export const FieldPanel: React.FC<{
             <SectionLayoutFields
               columns={parseColumns(data.columns)}
               onChange={(columns) => setField('columns', columns)}
+              canEditLayout={userPermissions?.canEditLayout !== false}
             />
           ) : isElement ? (
             elementDef ? (
@@ -106,7 +108,13 @@ export const FieldPanel: React.FC<{
           ))}
 
         {tab === 'design' && (
-          <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} />
+          !userPermissions?.canEditStyle ? (
+            <div className="ve-panel__hint" style={{ padding: '1rem', color: 'var(--color-text-secondary, #666)' }}>
+              Your role can edit text only. Styling is locked.
+            </div>
+          ) : (
+            <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} />
+          )
         )}
       </div>
 
@@ -140,7 +148,8 @@ const WIDTH_KEY: Record<WidthDevice, 'widthDesktop' | 'widthTablet' | 'widthMobi
 const SectionLayoutFields: React.FC<{
   columns: SectionColumn[]
   onChange: (columns: SectionColumn[]) => void
-}> = ({ columns, onChange }) => {
+  canEditLayout?: boolean
+}> = ({ columns, onChange, canEditLayout = true }) => {
   const [device, setDevice] = useState<WidthDevice>('desktop')
   const widthKey = WIDTH_KEY[device]
 
@@ -186,7 +195,7 @@ const SectionLayoutFields: React.FC<{
       {device !== 'desktop' && (
         <p className="ve-field__help">
           Leave a column on &quot;Match {device === 'tablet' ? 'desktop' : 'tablet'}&quot; to inherit its width from{' '}
-          {device === 'tablet' ? 'desktop' : 'tablet (or desktop, if tablet is also unset)'}.
+          {device === 'tablet' ? 'desktop' : 'tablet (or desktop, if tablet is also unset)'}.  
         </p>
       )}
 
@@ -242,8 +251,9 @@ const SectionLayoutFields: React.FC<{
               type="button"
               className="ve-icon-btn"
               onClick={() => removeColumn(index)}
+              disabled={!canEditLayout}
               aria-label={`Remove column ${index + 1}`}
-              title="Remove column"
+              title={canEditLayout ? "Remove column" : "You cannot modify layout"}
             >
               ✕
             </button>
@@ -251,7 +261,7 @@ const SectionLayoutFields: React.FC<{
         )
       })}
 
-      <button type="button" className="ve-btn ve-btn--ghost" onClick={addColumn}>
+      <button type="button" className="ve-btn ve-btn--ghost" onClick={addColumn} disabled={!canEditLayout}>
         + Add column
       </button>
     </div>

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin } from '../access/ecommerceAccess'
+import { roleAccess } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 
 export const PageTemplates: CollectionConfig = {
@@ -19,10 +19,10 @@ export const PageTemplates: CollectionConfig = {
     },
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
+    create: roleAccess('page-templates', 'create'),
+    delete: roleAccess('page-templates', 'delete'),
+    read: roleAccess('page-templates', 'read'),
+    update: roleAccess('page-templates', 'update'),
   },
   fields: [
     { name: 'name', type: 'text', required: true },

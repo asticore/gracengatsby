@@ -8,6 +8,7 @@ export type AnalyticsIds = {
   gtmContainerId?: string
   ga4MeasurementId?: string
   metaPixelId?: string
+  clarityProjectId?: string
 }
 
 export type AnalyticsLoaderProps = AnalyticsIds & {
@@ -49,7 +50,7 @@ const appendScript = (attributes: Record<string, string>, inline?: string) => {
 // One injection per page load, however many times the component re-renders.
 let injected = false
 
-const injectTags = ({ gtmContainerId, ga4MeasurementId, metaPixelId }: AnalyticsIds) => {
+const injectTags = ({ gtmContainerId, ga4MeasurementId, metaPixelId, clarityProjectId }: AnalyticsIds) => {
   if (injected) return
   injected = true
 
@@ -85,6 +86,16 @@ const injectTags = ({ gtmContainerId, ga4MeasurementId, metaPixelId }: Analytics
         `t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}` +
         `(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');` +
         `fbq('init',${JSON.stringify(metaPixelId)});fbq('track','PageView');`,
+    )
+  }
+
+  if (clarityProjectId) {
+    appendScript(
+      {},
+      `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};` +
+        `t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;` +
+        `y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);` +
+        `})(window, document, "clarity", "script", ${JSON.stringify(clarityProjectId)});`,
     )
   }
 }
@@ -138,7 +149,7 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({ requireConsent
   const [askConsent, setAskConsent] = useState(false)
 
   useEffect(() => {
-    if (!ids.gtmContainerId && !ids.ga4MeasurementId && !ids.metaPixelId) return
+    if (!ids.gtmContainerId && !ids.ga4MeasurementId && !ids.metaPixelId && !ids.clarityProjectId) return
 
     if (!requireConsent) {
       injectTags(ids)
@@ -165,16 +176,15 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({ requireConsent
       live = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requireConsent, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId])
+  }, [requireConsent, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId, ids.clarityProjectId])
 
   const decide = useCallback(
     (value: ConsentValue) => {
       writeConsent(value)
       setAskConsent(false)
       if (value === 'granted') injectTags(ids)
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId],
+    [ids],
   )
 
   if (!askConsent) return null

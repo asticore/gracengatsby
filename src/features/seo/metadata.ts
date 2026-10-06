@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { resolveSeo, type SeoInput } from './resolve'
 import { getSeoContext } from './settings'
+import { getPublicIds } from '@/features/integrations/publicIds'
 
 /**
  * Builds the whole <head> block for a route: title, description, canonical,
@@ -16,6 +17,8 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
 
   const seo = resolveSeo(context, input)
   const verification = context.settings?.verification
+  // Google's code now lives in Site settings > Integrations (falls back to the old field).
+  const googleVerification = (await getPublicIds()).searchConsoleVerification
 
   const images = seo.image
     ? [{ url: seo.image.url, width: seo.image.width, height: seo.image.height }]
@@ -58,9 +61,9 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
   if (verification?.bing) other['msvalidate.01'] = verification.bing
   if (verification?.pinterest) other['p:domain_verify'] = verification.pinterest
 
-  if (verification?.google || Object.keys(other).length > 0) {
+  if (googleVerification || Object.keys(other).length > 0) {
     metadata.verification = {
-      ...(verification?.google ? { google: verification.google } : {}),
+      ...(googleVerification ? { google: googleVerification } : {}),
       ...(Object.keys(other).length > 0 ? { other } : {}),
     }
   }

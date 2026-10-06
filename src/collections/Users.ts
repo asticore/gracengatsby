@@ -2,6 +2,7 @@ import type { CollectionConfig, CollectionBeforeChangeHook } from '@/engine'
 
 import { isAdmin, isAdminOrSelf } from '../access/ecommerceAccess'
 import { validateRoleChange } from '@/features/roles/permissions'
+import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 
 /**
  * Validates role changes to prevent removing the last admin or self-lockout.
@@ -63,8 +64,9 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   auth: true,
-  beforeChange: [validateUserRoleChange],
+  beforeChange: [validateUserRoleChange, authorshipBeforeChange],
   fields: [
+    ...authorshipFields,
     {
       name: 'roles',
       type: 'select',

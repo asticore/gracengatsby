@@ -76,6 +76,22 @@ export const isGuest: Access = ({ req }) => !req.user
  *   - Admin has full access
  *   - Secret resources (users, settings, payments) remain admin-only
  */
+/**
+ * Role-based access combined with published status fallback for reads.
+ * Admin -> true; user with read permission -> true; otherwise -> published-only where clause.
+ * Used for collections that should be published-only for unauthorized users.
+ */
+export function roleOrPublished(slug: Resource): Access {
+  return ({ req }) => {
+    // Admin always has access
+    if (checkRole(['admin'], req.user)) return true
+    // Check if user has read permission via can()
+    if (can(req.user as any, slug, 'read', {})) return true
+    // Otherwise restrict to published documents
+    return { _status: { equals: 'published' } }
+  }
+}
+
 export function roleAccess(slug: Resource, action: Action): Access {
   return ({ req }) => {
     // Admin always has access

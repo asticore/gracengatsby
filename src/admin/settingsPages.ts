@@ -43,6 +43,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     description: 'Site name, logo, colors, fonts and basic brand settings.',
     sections: [
       { kind: 'global', slug: 'site-settings' },
+      { kind: 'global', slug: 'integrations' },
       { kind: 'global', slug: 'language-settings' },
       { kind: 'link', label: 'Translations', href: '/translations', description: 'Manage every translation in one table.', type: 'view' },
     ],
@@ -51,10 +52,9 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     key: 'marketing-seo',
     path: '/settings/marketing-seo',
     title: 'Marketing and SEO',
-    description: 'Search engine optimization, integrations and redirects.',
+    description: 'Search engine optimization and redirects.',
     sections: [
       { kind: 'global', slug: 'seo-settings' },
-      { kind: 'global', slug: 'integrations' },
       { kind: 'link', label: 'Redirects', href: '/collections/redirects', description: 'Create and manage URL redirects.', type: 'collection' },
     ],
   },

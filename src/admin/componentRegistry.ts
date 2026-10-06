@@ -29,6 +29,9 @@ import { BackupPanel } from '@/features/backups/admin/BackupPanel'
 import { SendTestEmailButton } from '@/features/email/admin/SendTestEmailButton'
 import { ParentPicker } from '@/fields/parentPicker/ParentPicker'
 import { PriceInput } from '@/features/ecommerce/admin/PriceInput'
+import { CloudflarePurgeOnPublishField } from '@/admin/components/CloudflarePurgeOnPublishField'
+import { ColorPickerField } from '@/admin/components/ColorPickerField'
+import { UserPermissionOverridesField } from '@/admin/components/UserPermissionOverridesField'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/fields/slug/SlugComponent#SlugComponent': SlugComponent,
@@ -38,6 +41,9 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/email/admin/SendTestEmailButton#SendTestEmailButton': SendTestEmailButton,
   '@/features/ecommerce/admin/PriceInput#PriceInput': PriceInput,
   '@/fields/parentPicker/ParentPicker#ParentPicker': ParentPicker,
+  '@/admin/components/CloudflarePurgeOnPublishField#CloudflarePurgeOnPublishField': CloudflarePurgeOnPublishField,
+  '@/admin/components/ColorPickerField#ColorPickerField': ColorPickerField,
+  '@/admin/components/UserPermissionOverridesField#UserPermissionOverridesField': UserPermissionOverridesField,
 }
 
 export function resolveComponent(path: string | undefined | null): ComponentType<any> | undefined {

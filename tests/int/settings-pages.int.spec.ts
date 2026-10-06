@@ -47,7 +47,9 @@ describe('Settings Pages Configuration', () => {
       const markedting = SETTINGS_PAGES.find((p) => p.key === 'marketing-seo')
       expect(markedting).toBeTruthy()
       expect(markedting?.sections).toContainEqual({ kind: 'global', slug: 'seo-settings' })
-      expect(markedting?.sections).toContainEqual({ kind: 'global', slug: 'integrations' })
+      expect(markedting?.sections).not.toContainEqual({ kind: 'global', slug: 'integrations' })
+      const site = SETTINGS_PAGES.find((p) => p.key === 'site')
+      expect(site?.sections).toContainEqual({ kind: 'global', slug: 'integrations' })
       expect(markedting?.sections.some((s) => s.kind === 'link' && s.label === 'Redirects')).toBe(true)
     })
 

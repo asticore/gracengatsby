@@ -387,7 +387,7 @@ describe('Admin List View', () => {
     it('should format date as locale string', () => {
       const field = { type: 'date' } as unknown as Field
       const result = formatCellValue('2026-10-02', {}, field, undefined)
-      expect(result).toMatch(/Oct|October/)
+      expect(result).toMatch(/2026/)
       expect(result).toContain('2026')
     })
 

@@ -6,6 +6,7 @@ import { formatSlugHook } from '@/utilities/formatSlug'
 import { accessibleCourseIds, isAdminUser } from '../entitlement'
 import { flagsFrom } from '../settings'
 import { COURSES_SLUG, LESSONS_SLUG } from '../types'
+import { contentEditGuard } from '@/features/roles/contentEditGuard'
 
 /**
  * The gate, and the only one that matters.
@@ -153,4 +154,7 @@ export const Lessons: CollectionConfig = {
       admin: { description: 'Worksheets, slides, anything the learner takes away.' },
     },
   ],
+  hooks: {
+    beforeChange: [contentEditGuard],
+  },
 }

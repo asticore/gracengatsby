@@ -23,6 +23,8 @@ import * as migration_20261005_100000_redirects from './20261005_100000_redirect
 import * as migration_20261005_110000_pages_sort_order from './20261005_110000_pages_sort_order';
 import * as migration_20261006_100000_roles from './20261006_100000_roles';
 import * as migration_20261007_100000_users_authorship from './20261007_100000_users_authorship';
+import * as migration_20261008_100000_integrations_expand from './20261008_100000_integrations_expand';
+import * as migration_20261009_100000_user_permission_overrides from './20261009_100000_user_permission_overrides';
 
 export const migrations = [
   {
@@ -149,5 +151,15 @@ export const migrations = [
     up: migration_20261007_100000_users_authorship.up,
     down: migration_20261007_100000_users_authorship.down,
     name: '20261007_100000_users_authorship',
+  },
+  {
+    up: migration_20261008_100000_integrations_expand.up,
+    down: migration_20261008_100000_integrations_expand.down,
+    name: '20261008_100000_integrations_expand',
+  },
+  {
+    up: migration_20261009_100000_user_permission_overrides.up,
+    down: migration_20261009_100000_user_permission_overrides.down,
+    name: '20261009_100000_user_permission_overrides',
   },
 ];

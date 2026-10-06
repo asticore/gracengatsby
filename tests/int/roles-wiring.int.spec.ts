@@ -2,6 +2,7 @@ import { describe, expect, it, beforeAll } from 'vitest'
 import { getEngine, type Engine } from '@/lib/engine'
 import { buildCollectionPermissions, hasAdminPanelAccess } from '@/admin/auth'
 import { can } from '@/features/roles/permissions'
+import { roleAccess, roleOrPublished } from '@/access/ecommerceAccess'
 
 describe('roles-wiring', () => {
   let engine: Engine
@@ -196,6 +197,50 @@ describe('roles-wiring', () => {
       expect(can(viewerUser, 'pages', 'create', {})).toBe(false)
       expect(can(viewerUser, 'pages', 'update', {})).toBe(false)
       expect(can(viewerUser, 'pages', 'delete', {})).toBe(false)
+    })
+  })
+
+  describe('collection access functions (pages example)', () => {
+    it('editor user gets true from pages update and create', () => {
+      const editorUser = { id: 2, roles: ['editor'] }
+      const updateAccess = roleAccess('pages', 'update')({ req: { user: editorUser } } as never)
+      const createAccess = roleAccess('pages', 'create')({ req: { user: editorUser } } as never)
+      expect(updateAccess).toBe(true)
+      expect(createAccess).toBe(true)
+    })
+
+    it('viewer gets false for update and true for read', () => {
+      const viewerUser = { id: 3, roles: ['viewer'] }
+      const updateAccess = roleAccess('pages', 'update')({ req: { user: viewerUser } } as never)
+      const readAccess = roleOrPublished('pages')({ req: { user: viewerUser } } as never)
+      expect(updateAccess).toBe(false)
+      expect(readAccess).toBe(true)
+    })
+
+    it('customer gets published-only where object for read and false for update', () => {
+      const customerUser = { id: 4, roles: ['customer'] }
+      const readAccess = roleOrPublished('pages')({ req: { user: customerUser } } as never)
+      const updateAccess = roleAccess('pages', 'update')({ req: { user: customerUser } } as never)
+      expect(readAccess).toEqual({ _status: { equals: 'published' } })
+      expect(updateAccess).toBe(false)
+    })
+
+    it('admin gets true for all actions', () => {
+      const adminUser = { id: 1, roles: ['admin'] }
+      const updateAccess = roleAccess('pages', 'update')({ req: { user: adminUser } } as never)
+      const createAccess = roleAccess('pages', 'create')({ req: { user: adminUser } } as never)
+      const deleteAccess = roleAccess('pages', 'delete')({ req: { user: adminUser } } as never)
+      const readAccess = roleOrPublished('pages')({ req: { user: adminUser } } as never)
+      expect(updateAccess).toBe(true)
+      expect(createAccess).toBe(true)
+      expect(deleteAccess).toBe(true)
+      expect(readAccess).toBe(true)
+    })
+
+    it('user with permissionOverrides grant gets true for update', () => {
+      const viewerWithOverride = { id: 5, roles: ['viewer'], permissionOverrides: { grant: { pages: { update: true } } } }
+      const updateAccess = roleAccess('pages', 'update')({ req: { user: viewerWithOverride } } as never)
+      expect(updateAccess).toBe(true)
     })
   })
 })

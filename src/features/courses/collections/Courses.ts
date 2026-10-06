@@ -5,6 +5,7 @@ import { seoFields } from '@/fields/seo'
 import { schemaTypeField } from '@/fields/schemaType'
 import { authorshipFields, authorshipBeforeChange } from '@/fields/authorship'
 import { formatSlugHook } from '@/utilities/formatSlug'
+import { publishGuard } from '@/features/roles/contentEditGuard'
 
 import { COURSES_SLUG, LESSONS_SLUG } from '../types'
 
@@ -125,6 +126,6 @@ export const Courses: CollectionConfig = {
     schemaTypeField('courses'),
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange],
+    beforeChange: [authorshipBeforeChange, publishGuard],
   },
 }

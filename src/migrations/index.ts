@@ -22,6 +22,7 @@ import * as migration_20261003_100000_visibility_schedule_lock_events_seo from '
 import * as migration_20261005_100000_redirects from './20261005_100000_redirects';
 import * as migration_20261005_110000_pages_sort_order from './20261005_110000_pages_sort_order';
 import * as migration_20261006_100000_roles from './20261006_100000_roles';
+import * as migration_20261007_100000_users_authorship from './20261007_100000_users_authorship';
 
 export const migrations = [
   {
@@ -143,5 +144,10 @@ export const migrations = [
     up: migration_20261006_100000_roles.up,
     down: migration_20261006_100000_roles.down,
     name: '20261006_100000_roles',
+  },
+  {
+    up: migration_20261007_100000_users_authorship.up,
+    down: migration_20261007_100000_users_authorship.down,
+    name: '20261007_100000_users_authorship',
   },
 ];

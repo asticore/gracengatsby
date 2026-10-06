@@ -153,7 +153,15 @@ export function PermissionTable({
         <thead>
           <tr>
             <th style={{ textAlign: 'left', width: '200px' }}>Resource</th>
-            {['read', 'create', 'update', 'delete', 'publish'].map((action) => (
+            {['read', 'create', 'update', 'delete', 'publish'].map((action) => {
+              const actionLabels: Record<string, string> = {
+                read: 'Read',
+                create: 'Create',
+                update: 'Edit',
+                delete: 'Delete',
+                publish: 'Publish',
+              }
+              return (
               <th key={action} className={styles.actionHeader}>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <input
@@ -162,10 +170,11 @@ export function PermissionTable({
                     disabled={readOnly}
                     className={styles.checkbox}
                   />
-                  <span style={{ fontSize: '0.85rem' }}>{action}</span>
+                  <span style={{ fontSize: '0.85rem' }}>{actionLabels[action]}</span>
                 </label>
               </th>
-            ))}
+            )
+            })}
           </tr>
         </thead>
         <tbody>

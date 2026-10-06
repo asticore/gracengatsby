@@ -1,6 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
-import { isAdmin } from '../access/ecommerceAccess'
+import { roleAccess } from '../access/ecommerceAccess'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -24,10 +24,10 @@ export const Media: CollectionConfig = {
   // any customer to upload arbitrary files served from this origin (an SVG or
   // HTML upload is a stored-XSS vector) and to delete existing images.
   access: {
-    create: isAdmin,
+    create: roleAccess('media', 'create'),
     read: () => true,
-    update: isAdmin,
-    delete: isAdmin,
+    update: roleAccess('media', 'update'),
+    delete: roleAccess('media', 'delete'),
   },
   fields: [
     {

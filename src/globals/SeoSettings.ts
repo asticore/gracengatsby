@@ -125,7 +125,15 @@ export const SeoSettings: GlobalConfig = {
         {
           type: 'row',
           fields: [
-            { name: 'google', type: 'text', admin: { width: '33%', description: 'From Google Search Console.' } },
+            {
+              name: 'google',
+              type: 'text',
+              admin: {
+                width: '33%',
+                hidden: true,
+                description: 'Moved to Site settings > Integrations > Google.',
+              },
+            },
             { name: 'bing', type: 'text', admin: { width: '33%', description: 'From Bing Webmaster Tools.' } },
             { name: 'pinterest', type: 'text', admin: { width: '33%', description: 'From Pinterest business settings.' } },
           ],
@@ -147,17 +155,29 @@ export const SeoSettings: GlobalConfig = {
             {
               name: 'ga4MeasurementId',
               type: 'text',
-              admin: { width: '33%', description: 'Google Analytics 4, looks like G-XXXXXXXXXX.' },
+              admin: {
+                width: '33%',
+                hidden: true,
+                description: 'Moved to Site settings > Integrations > Google.',
+              },
             },
             {
               name: 'gtmContainerId',
               type: 'text',
-              admin: { width: '33%', description: 'Google Tag Manager, looks like GTM-XXXXXXX.' },
+              admin: {
+                width: '33%',
+                hidden: true,
+                description: 'Moved to Site settings > Integrations > Google.',
+              },
             },
             {
               name: 'metaPixelId',
               type: 'text',
-              admin: { width: '33%', description: 'Meta (Facebook) pixel - a long number.' },
+              admin: {
+                width: '33%',
+                hidden: true,
+                description: 'Moved to Site settings > Integrations > Meta Pixel.',
+              },
             },
           ],
         },

@@ -1,4 +1,5 @@
 import React from 'react'
+import { pickPublicIds } from '@/features/integrations/publicIds'
 
 import { getSeoContext } from '../settings'
 import { AnalyticsLoader } from './AnalyticsLoader'
@@ -43,13 +44,30 @@ export const SeoScripts = async ({ position = 'head' }: SeoScriptsProps): Promis
 
   const headHtml = custom?.headScripts?.trim()
 
+  // Public IDs: Integrations first, falling back field by field to the old
+  // SEO & Analytics values (see pickPublicIds).
+  let integrations: Record<string, unknown> | null = null
+  try {
+    const { getEngine } = await import('@/lib/engine')
+    const engine = await getEngine()
+    integrations = (await engine
+      .findGlobal({ slug: 'integrations', depth: 0, overrideAccess: true })
+      .catch((): null => null)) as Record<string, unknown> | null
+  } catch {
+    // No integrations row yet: fall back to the SEO values only.
+  }
+  const { gtmContainerId, ga4MeasurementId, metaPixelId, clarityProjectId } = pickPublicIds(integrations, {
+    analytics: analytics as Record<string, unknown> | undefined,
+  })
+
   return (
     <>
       {headHtml ? <CustomCode html={headHtml} label="head" /> : null}
       <AnalyticsLoader
-        gtmContainerId={analytics?.gtmContainerId?.trim() || undefined}
-        ga4MeasurementId={analytics?.ga4MeasurementId?.trim() || undefined}
-        metaPixelId={analytics?.metaPixelId?.trim() || undefined}
+        gtmContainerId={gtmContainerId}
+        ga4MeasurementId={ga4MeasurementId}
+        metaPixelId={metaPixelId}
+        clarityProjectId={clarityProjectId}
         requireConsent={analytics?.requireCookieConsent !== false}
       />
     </>

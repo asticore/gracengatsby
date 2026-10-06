@@ -1,6 +1,6 @@
 import type { CollectionConfig, Field } from '@/engine'
 
-import { isAdmin } from '@/access/ecommerceAccess'
+import { roleAccess } from '@/access/ecommerceAccess'
 
 import { submitEndpoint } from '../submitEndpoint'
 
@@ -132,9 +132,9 @@ export const Forms: CollectionConfig = {
       'Build a form, then drop it onto any page with the Form block. Entries appear under Form Submissions.',
   },
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    update: isAdmin,
+    create: roleAccess('forms', 'create'),
+    delete: roleAccess('forms', 'delete'),
+    update: roleAccess('forms', 'update'),
     // Public: the front-end renderer loads the form definition to draw it.
     // Only the allow-listed subset in settings.ts ever reaches the browser.
     read: () => true,

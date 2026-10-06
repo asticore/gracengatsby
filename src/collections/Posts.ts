@@ -8,6 +8,7 @@ import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { membersOnlyField } from '@/features/members'
+import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -74,6 +75,6 @@ export const Posts: CollectionConfig = {
     schemaTypeField('posts'),
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange],
+    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard],
   },
 }

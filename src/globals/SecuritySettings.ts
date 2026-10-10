@@ -1,6 +1,6 @@
 import type { GlobalConfig } from '@/engine'
 
-import { isAdmin } from '../access/ecommerceAccess'
+import { adminOnlyFieldAccess, isAdmin } from '../access/ecommerceAccess'
 
 /**
  * Login protection, response headers, rate limiting and the audit log.
@@ -267,6 +267,74 @@ export const SecuritySettings: GlobalConfig = {
               },
             },
           ],
+        },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'approval',
+      label: 'Content approval',
+      admin: {
+        description:
+          'Require a second person to approve changes before they go live. Editors submit for review instead of publishing; reviewers approve or send the change back. Admins can always publish directly. Off by default.',
+      },
+      fields: [
+        {
+          name: 'enabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: { description: 'Turn on review for the content types set below. Nothing changes for anyone until this is on.' },
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'pagesApprovals', type: 'number', defaultValue: 0, admin: { width: '20%', description: 'Pages. 0 = no review.' } },
+            { name: 'postsApprovals', type: 'number', defaultValue: 0, admin: { width: '20%', description: 'Posts. 0 = no review.' } },
+            { name: 'eventsApprovals', type: 'number', defaultValue: 0, admin: { width: '20%', description: 'Events. 0 = no review.' } },
+            { name: 'coursesApprovals', type: 'number', defaultValue: 0, admin: { width: '20%', description: 'Courses. 0 = no review.' } },
+            { name: 'productsApprovals', type: 'number', defaultValue: 0, admin: { width: '20%', description: 'Products. 0 = no review.' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'allowSelfApproval',
+              type: 'checkbox',
+              defaultValue: false,
+              admin: {
+                width: '50%',
+                description: 'Let a reviewer approve their own change. Off means a second person must approve every change.',
+              },
+            },
+            {
+              name: 'adminsMaySelfApprove',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                width: '50%',
+                description:
+                  'Let an admin approve their own change even when the setting above is off. On by default so a solo admin can still publish. Off means admins also need a second person.',
+              },
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'notifyReviewers',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: { width: '50%', description: 'Email reviewers when something is submitted for review.' },
+            },
+          ],
+        },
+        {
+          name: 'notifyEmails',
+          type: 'textarea',
+          access: { read: adminOnlyFieldAccess, update: adminOnlyFieldAccess },
+          admin: { description: 'Extra addresses to email on every submission, one per line. Optional. Only admins can see this list.' },
         },
       ],
     },

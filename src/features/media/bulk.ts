@@ -111,7 +111,11 @@ export async function reoptimiseBatch(
 
     // An untransformed URL means the record fell back to plain R2 - there is
     // nothing at the edge to warm, and fetching it would only burn a subrequest.
-    const transformed = Boolean(target) && url !== doc.url
+    // Versioned plain URLs (see withVersion) differ from doc.url without being
+    // transformed, so the test is whether the URL points at the transform path.
+    const transformed =
+      Boolean(target) &&
+      (url.includes('/cdn-cgi/image/') || (config.deliveryPrefix !== '' && url.startsWith(config.deliveryPrefix)))
 
     if (transformed && warmRequests < MAX_WARM_REQUESTS) {
       warmRequests += 1

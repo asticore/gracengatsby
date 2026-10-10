@@ -1,7 +1,28 @@
 import Link from 'next/link'
 import type { Engine } from '@/engine'
 
+import { IMAGES_UNAVAILABLE_MESSAGE, resolveOptimiseSettings } from '@/features/media/optimise'
+import { resolveImagesBinding } from '@/features/media/imagesBinding'
+import { distinctFolders } from '@/features/media/folders'
+import { describeSaving, formatBytes } from '@/features/media/admin/mediaApi'
+
 import { MediaGalleryGrid, type GalleryDoc } from './MediaGalleryGrid'
+
+/** The slice of the engine this view reads. Typed loosely so it does not depend on the engine's generics. */
+type MediaFinder = {
+  find: (args: Record<string, unknown>) => Promise<{
+    docs: Array<Record<string, unknown>>
+    totalDocs?: number
+    page?: number
+    totalPages?: number
+    hasPrevPage?: boolean
+    hasNextPage?: boolean
+  }>
+  findGlobal?: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null>
+}
+
+/** Folder-filtered pages are read here; this many pictures to a page. */
+const FOLDER_PAGE_SIZE = 48
 
 interface MediaListData {
   docs: Array<Record<string, unknown>>
@@ -32,11 +53,15 @@ const SORTABLE_COLUMNS = [
 ] as const
 
 function formatFilesize(bytes: unknown): string {
-  const n = typeof bytes === 'number' ? bytes : Number(bytes)
-  if (!n || n <= 0 || Number.isNaN(n)) return ''
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+  return formatBytes(typeof bytes === 'number' ? bytes : Number(bytes))
+}
+
+/** Size column for the list: the stored size, plus the saving once a picture has been optimised. */
+function sizeText(doc: Record<string, unknown>): string {
+  const original = typeof doc.originalSize === 'number' ? doc.originalSize : null
+  const optimised = typeof doc.optimizedSize === 'number' ? doc.optimizedSize : null
+  if (original && optimised && original !== optimised) return describeSaving(original, optimised)
+  return formatFilesize(doc.filesize)
 }
 
 function formatDate(value: unknown): string {
@@ -87,9 +112,9 @@ function formatDate(value: unknown): string {
  */
 export async function MediaGalleryView(props: MediaGalleryViewProps) {
   const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams, embedded } = props
-  const docs = data?.docs ?? []
   const adminRoute = engine?.config?.routes?.admin ?? '/admin'
   const slug = collectionConfig?.slug ?? 'media'
+  const finder = engine as unknown as MediaFinder | undefined
 
   const sp = searchParams ?? {}
   const strParam = (key: string): string | undefined => {
@@ -99,6 +124,52 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
   const view: ViewMode = strParam('view') === 'list' ? 'list' : 'gallery'
   const currentSort = strParam('sort') ?? ''
   const currentSearch = strParam('search') ?? ''
+  const currentFolder = (strParam('folder') ?? '').trim()
+
+  // The engine's own list has no folder filter, so a folder view is read here
+  // with a where clause on the folder column. Everything else uses `data`.
+  let docs: Array<Record<string, unknown>> = data?.docs ?? []
+  let pager = {
+    page: data?.page ?? 1,
+    totalPages: data?.totalPages ?? 1,
+    hasPrevPage: data?.hasPrevPage ?? false,
+    hasNextPage: data?.hasNextPage ?? false,
+    totalDocs: data?.totalDocs ?? 0,
+  }
+  if (currentFolder && finder) {
+    const requested = Math.max(1, Number(strParam('page') ?? '1') || 1)
+    const result = await finder.find({
+      collection: slug,
+      where: { folder: { equals: currentFolder } },
+      limit: FOLDER_PAGE_SIZE,
+      page: requested,
+      depth: 0,
+      pagination: true,
+      sort: '-updatedAt',
+    })
+    docs = result.docs
+    pager = {
+      page: result.page ?? requested,
+      totalPages: result.totalPages ?? 1,
+      hasPrevPage: Boolean(result.hasPrevPage),
+      hasNextPage: Boolean(result.hasNextPage),
+      totalDocs: result.totalDocs ?? docs.length,
+    }
+  }
+
+  // Folder list and optimisation state, read once for the filter and the bulk tools.
+  let folders: string[] = []
+  if (finder) {
+    const all = await finder
+      .find({ collection: slug, limit: 1000, page: 1, depth: 0, pagination: true })
+      .catch((): { docs: Array<Record<string, unknown>> } => ({ docs: [] }))
+    folders = distinctFolders(all.docs as Array<{ folder?: string | null }>)
+  }
+  const settings = resolveOptimiseSettings(
+    finder?.findGlobal ? await finder.findGlobal({ slug: 'media-settings', depth: 0 }).catch((): null => null) : null,
+  )
+  const binding = settings.enabled ? await resolveImagesBinding() : null
+  const noticeFromServer = settings.enabled && !binding ? IMAGES_UNAVAILABLE_MESSAGE : undefined
 
   // Builds a URL preserving every current param except the ones passed in
   // `overrides` (a key set to `undefined` removes that param). `page` is
@@ -128,12 +199,15 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
     mimeType: typeof doc.mimeType === 'string' ? doc.mimeType : undefined,
     filesize: typeof doc.filesize === 'number' ? doc.filesize : undefined,
     editHref: `${adminRoute}/collections/${slug}/${String(doc.id)}`,
+    folder: typeof doc.folder === 'string' ? doc.folder : undefined,
+    originalSize: typeof doc.originalSize === 'number' ? doc.originalSize : undefined,
+    optimizedSize: typeof doc.optimizedSize === 'number' ? doc.optimizedSize : undefined,
   }))
 
-  const page = data?.page ?? 1
-  const totalPages = data?.totalPages ?? 1
+  const page = pager.page
+  const totalPages = pager.totalPages
   const pageHref = (targetPage: number) => buildHref({ page: String(targetPage) }, true)
-  const totalDocs = data?.totalDocs ?? 0
+  const totalDocs = pager.totalDocs
 
   const sortHref = (field: string): string => {
     const next = currentSort === field ? `-${field}` : field
@@ -184,9 +258,40 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
             </Link>
           </div>
 
+          <div className="flex flex-wrap items-center gap-[calc(var(--base)*0.4)]">
+            {folders.length > 0 ? (
+              <form method="GET" className="flex items-center gap-[calc(var(--base)*0.4)]">
+                {view === 'list' ? <input type="hidden" name="view" value="list" /> : null}
+                {currentSort ? <input type="hidden" name="sort" value={currentSort} /> : null}
+                {currentSearch ? <input type="hidden" name="search" value={currentSearch} /> : null}
+                <label className="text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-600)]">
+                  Folder
+                  <select
+                    name="folder"
+                    defaultValue={currentFolder}
+                    className="ml-[calc(var(--base)*0.4)] rounded-[4px] border border-[var(--theme-elevation-200)] bg-transparent px-[calc(var(--base)*0.5)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-900)]"
+                  >
+                    <option value="">All folders</option>
+                    {folders.map((folder) => (
+                      <option key={folder} value={folder}>
+                        {folder}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  className="rounded-[4px] border border-[var(--theme-elevation-200)] px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-700)] hover:border-[var(--ac-gold)] hover:text-[var(--ac-gold)]"
+                >
+                  Show
+                </button>
+              </form>
+            ) : null}
+
           {view === 'list' ? (
             <form method="GET" className="flex items-center gap-[calc(var(--base)*0.4)]">
               <input type="hidden" name="view" value="list" />
+              {currentFolder ? <input type="hidden" name="folder" value={currentFolder} /> : null}
               {currentSort ? <input type="hidden" name="sort" value={currentSort} /> : null}
               <input
                 type="search"
@@ -208,6 +313,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
               ) : null}
             </form>
           ) : null}
+          </div>
         </div>
       )}
 
@@ -216,7 +322,14 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
           {currentSearch ? `No files match "${currentSearch}".` : 'No media uploaded yet.'}
         </p>
       ) : embedded || view === 'gallery' ? (
-        <MediaGalleryGrid docs={galleryDocs} />
+        <MediaGalleryGrid
+          docs={galleryDocs}
+          folders={folders}
+          currentFolder={currentFolder}
+          batchSize={settings.batchSize}
+          optimisationOn={settings.enabled}
+          noticeFromServer={noticeFromServer}
+        />
       ) : (
         <div className="overflow-x-auto rounded-[4px] border border-[var(--theme-elevation-150)]">
           <table className="w-full border-collapse text-[calc(var(--base)*0.8)]">
@@ -231,6 +344,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
                     </Link>
                   </th>
                 ))}
+                <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">Folder</th>
                 <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">Alt</th>
               </tr>
             </thead>
@@ -258,8 +372,9 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
                       </Link>
                     </td>
                     <td className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.4)] text-[var(--theme-elevation-600)]">{mimeType ?? ''}</td>
-                    <td className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.4)] text-[var(--theme-elevation-600)]">{formatFilesize(doc.filesize)}</td>
+                    <td className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.4)] text-[var(--theme-elevation-600)]">{sizeText(doc)}</td>
                     <td className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.4)] text-[var(--theme-elevation-600)]">{formatDate(doc.updatedAt)}</td>
+                    <td className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.4)] text-[var(--theme-elevation-600)]">{typeof doc.folder === 'string' ? doc.folder : ''}</td>
                     <td className="max-w-[calc(var(--base)*14)] truncate px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.4)] text-[var(--theme-elevation-600)]">
                       {typeof doc.alt === 'string' ? doc.alt : ''}
                     </td>
@@ -274,10 +389,10 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
       {!embedded && totalPages > 1 ? (
         <nav className="flex items-center justify-center gap-[calc(var(--base)*0.5)] pt-[calc(var(--base)*0.5)]">
           <Link
-            href={data?.hasPrevPage ? pageHref(page - 1) : '#'}
-            aria-disabled={!data?.hasPrevPage}
+            href={pager.hasPrevPage ? pageHref(page - 1) : '#'}
+            aria-disabled={!pager.hasPrevPage}
             className={`rounded-[4px] border border-[var(--theme-elevation-200)] px-[calc(var(--base)*0.7)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.8)] no-underline ${
-              data?.hasPrevPage
+              pager.hasPrevPage
                 ? 'text-[var(--theme-elevation-700)] hover:border-[var(--ac-gold)] hover:text-[var(--ac-gold)]'
                 : 'pointer-events-none text-[var(--theme-elevation-300)]'
             }`}
@@ -288,10 +403,10 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
             Page {page} of {totalPages}
           </span>
           <Link
-            href={data?.hasNextPage ? pageHref(page + 1) : '#'}
-            aria-disabled={!data?.hasNextPage}
+            href={pager.hasNextPage ? pageHref(page + 1) : '#'}
+            aria-disabled={!pager.hasNextPage}
             className={`rounded-[4px] border border-[var(--theme-elevation-200)] px-[calc(var(--base)*0.7)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.8)] no-underline ${
-              data?.hasNextPage
+              pager.hasNextPage
                 ? 'text-[var(--theme-elevation-700)] hover:border-[var(--ac-gold)] hover:text-[var(--ac-gold)]'
                 : 'pointer-events-none text-[var(--theme-elevation-300)]'
             }`}

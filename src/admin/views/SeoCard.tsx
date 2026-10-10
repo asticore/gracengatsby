@@ -5,6 +5,7 @@ import type { Field } from '@/engine'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { useFormFields } from '@/admin/context'
 import { SocialImageInfo } from './SocialImageInfo'
+import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 
 function SchemaDisplay() {
   const { schemaType } = useFormFields(([fields]) => ({
@@ -113,8 +114,7 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
   }
 
   return (
-    <section className="doc-seo-card">
-      <h2 className="doc-seo-card__title">SEO</h2>
+    <CollapsibleCard id="seo" title="SEO" className="doc-seo-card">
 
       <div role="tablist" className="doc-seo-card__tabs">
         <button
@@ -165,6 +165,6 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
           <SchemaDisplay />
         </div>
       </div>
-    </section>
+    </CollapsibleCard>
   )
 }

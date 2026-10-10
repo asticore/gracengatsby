@@ -9,6 +9,7 @@ import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { publishGuard } from '@/features/roles/contentEditGuard'
+import { reviewFields } from '@/features/approval/fields'
 
 export const Events: CollectionConfig = {
   slug: 'events',
@@ -176,6 +177,7 @@ export const Events: CollectionConfig = {
     customFieldsField,
     seoFields,
     ...authorshipFields,
+    ...reviewFields,
     schemaTypeField('events'),
   ],
   hooks: {

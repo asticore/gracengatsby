@@ -169,3 +169,40 @@
     min-height: 36px;
   }
 }
+
+/*
+ * Flat cards: the edit form is already one box, so each option card inside it
+ * is a section with a divider line instead of another bordered box (boxes
+ * within boxes wasted width). The whole header row is the click target.
+ */
+.collection-edit__form .ec-card,
+.collection-edit__form .doc-settings-card,
+.collection-edit__form .doc-seo-card,
+.collection-edit__form .doc-content-card {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ec-border);
+  border-radius: 0;
+  padding: 12px 0 4px;
+  margin-top: 16px;
+}
+
+.ec-card__toggle {
+  padding: 4px 0;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.ec-card__chevron {
+  width: 1.25em;
+  font-size: 14px;
+}
+
+.ec-card--closed {
+  padding-bottom: 8px;
+}
+
+/* Fields inside a card use the full width. */
+.collection-edit__form .ec-card .ec-card__body {
+  margin-top: 8px;
+}

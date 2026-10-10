@@ -84,15 +84,28 @@
   border: 1px solid var(--theme-elevation-200);
   border-radius: var(--style-radius-m);
   background: var(--ac-surface);
-  padding: 24px;
+  padding: 20px;
   scroll-margin-top: 80px;
+}
+
+/* One box only: the section is the card, so the form inside it must not draw
+   its own border, background and padding (that made boxes within boxes and
+   ate the width). */
+.settings-page__section .global-edit__form,
+.settings-page__section .document-fields__edit,
+.settings-page__section .collection-edit__form {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 
 
 .settings-page__section-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--theme-elevation-150);
 }
 

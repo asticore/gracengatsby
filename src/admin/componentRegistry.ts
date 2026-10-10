@@ -32,6 +32,8 @@ import { PriceInput } from '@/features/ecommerce/admin/PriceInput'
 import { CloudflarePurgeOnPublishField } from '@/admin/components/CloudflarePurgeOnPublishField'
 import { ColorPickerField } from '@/admin/components/ColorPickerField'
 import { UserPermissionOverridesField } from '@/admin/components/UserPermissionOverridesField'
+import { FontPickerField } from '@/admin/components/FontPickerField'
+import { FontsManagerField } from '@/admin/components/FontsManagerField'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/fields/slug/SlugComponent#SlugComponent': SlugComponent,
@@ -44,6 +46,8 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/admin/components/CloudflarePurgeOnPublishField#CloudflarePurgeOnPublishField': CloudflarePurgeOnPublishField,
   '@/admin/components/ColorPickerField#ColorPickerField': ColorPickerField,
   '@/admin/components/UserPermissionOverridesField#UserPermissionOverridesField': UserPermissionOverridesField,
+  '@/admin/components/FontPickerField#FontPickerField': FontPickerField,
+  '@/admin/components/FontsManagerField#FontsManagerField': FontsManagerField,
 }
 
 export function resolveComponent(path: string | undefined | null): ComponentType<any> | undefined {

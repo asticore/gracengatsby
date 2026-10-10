@@ -160,6 +160,16 @@ export function setCardOpen(id: string, open: boolean): void {
   dispatch({ type: 'set', ids: [id], closed: !open })
 }
 
+/** Snapshot of the closed ids (for tests and non-React callers). */
+export function getClosedIds(): string[] {
+  return [...closed]
+}
+
+/** Flips one card: opens it when it is shut, shuts it when it is open. */
+export function toggleCard(id: string): void {
+  setCardOpen(id, closed.has(id))
+}
+
 /** Closes the given cards, or every registered card when no ids are given. */
 export function collapseAll(ids?: string[]): void {
   const targets = ids ?? [...knownIds]
@@ -198,6 +208,6 @@ export function useCardOpen(id: string): [open: boolean, toggle: () => void] {
     registerCardId(id)
   }, [id])
   const open = !closedSet.has(id)
-  const toggle = () => setCardOpen(id, !closed.has(id))
+  const toggle = () => toggleCard(id)
   return [open, toggle]
 }

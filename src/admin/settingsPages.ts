@@ -68,6 +68,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
       { kind: 'global', slug: 'faq-settings' },
       { kind: 'global', slug: 'form-settings' },
       { kind: 'global', slug: 'media-settings' },
+      { kind: 'link', label: 'Options pages', href: '/options', description: 'Site-wide field values, such as contact details and opening hours.', type: 'view' },
     ],
   },
   {

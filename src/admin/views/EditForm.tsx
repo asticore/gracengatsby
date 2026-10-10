@@ -39,6 +39,9 @@ import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { flattenDoc } from '@/admin/fields/shared'
 import { DocumentPanel, type DocumentPanelInfo } from './DocumentPanel'
 import { SeoCard } from './SeoCard'
+import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
+import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
+import { SectionOutline } from '@/admin/components/SectionOutline'
 import { useDocumentSave, type SaveTarget } from './useDocumentSave'
 
 export type EditFormProps = {
@@ -111,17 +114,15 @@ export function splitFields(fields: Field[], visualBlocksField?: string): { main
   return { main, settings, access, seo, pageType }
 }
 
-const PageContentCard: React.FC<{ count?: number; isNew: boolean }> = ({ count, isNew }) => (
-  <div className="doc-content-card">
-    <div>
-      <strong>Page content</strong>
-      <p className="doc-muted">
-        {isNew
-          ? 'Save first, then use "Edit in visual editor" in the panel to build the layout.'
-          : `${count ?? 0} ${count === 1 ? 'section' : 'sections'}. The layout is edited in the visual editor.`}
-      </p>
-    </div>
-  </div>
+const PageContentCard: React.FC<{ count?: number; isNew: boolean; blocksField: string }> = ({ count, isNew, blocksField }) => (
+  <CollapsibleCard id="page-content" title="Page content" className="doc-content-card">
+    <p className="doc-muted">
+      {isNew
+        ? 'Save first, then use "Edit in visual editor" in the panel to build the layout.'
+        : `${count ?? 0} ${count === 1 ? 'section' : 'sections'}. The layout is edited in the visual editor.`}
+    </p>
+    <SectionOutline blocksField={blocksField} />
+  </CollapsibleCard>
 )
 
 export const EditForm: React.FC<EditFormProps> = ({
@@ -149,26 +150,25 @@ export const EditForm: React.FC<EditFormProps> = ({
         {panel ? (
           <div className="document-edit">
             <div className="document-edit__main">
+              <CollapseAllBar />
               <div className="collection-edit__form">
                 <FieldRenderer fields={main} readOnly={readOnly} />
                 {settings.length > 0 && (
-                  <section className="doc-settings-card">
-                    <h2 className="doc-settings-card__title">Settings</h2>
+                  <CollapsibleCard id="settings" title="Settings" className="doc-settings-card">
                     <div className="doc-settings">
                       <FieldRenderer fields={settings} readOnly={readOnly} />
                     </div>
-                  </section>
+                  </CollapsibleCard>
                 )}
                 {access && (
-                  <section className="doc-access-card">
-                    <h2 className="doc-access-card__title">Access</h2>
+                  <CollapsibleCard id="access" title="Access" className="doc-access-card">
                     <div className="doc-access">
                       <FieldRenderer fields={[access]} readOnly={readOnly} />
                     </div>
-                  </section>
+                  </CollapsibleCard>
                 )}
                 {seo && <SeoCard seoField={seo} readOnly={readOnly} liveHref={panel.liveHref} />}
-                {visualBlocksField && <PageContentCard count={visualBlocksCount} isNew={id === undefined} />}
+                {visualBlocksField && <PageContentCard blocksField={visualBlocksField} count={visualBlocksCount} isNew={id === undefined} />}
               </div>
             </div>
             <aside className="document-edit__side">

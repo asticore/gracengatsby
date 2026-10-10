@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { safeUrl } from '@/lib/mergeTags'
+
 export type HeadingElementProps = {
   text?: string
   tag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
@@ -15,9 +17,10 @@ export type HeadingElementProps = {
 export const HeadingElement: React.FC<HeadingElementProps> = ({ text, tag = 'h2', align = 'left', link }) => {
   const Tag = tag
   const body = <Tag style={{ textAlign: align, margin: 0 }}>{text || 'New heading'}</Tag>
-  if (!link) return body
+  const href = safeUrl(link)
+  if (!href) return body
   return (
-    <a href={link} style={{ textAlign: align, display: 'block', textDecoration: 'none', color: 'inherit' }}>
+    <a href={href} style={{ textAlign: align, display: 'block', textDecoration: 'none', color: 'inherit' }}>
       {body}
     </a>
   )

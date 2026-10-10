@@ -45,6 +45,58 @@ const RESIZING_SEGMENT = '/cdn-cgi/image/'
 /** Formats that cannot be re-encoded, so asking for WebP would only corrupt them. */
 const UNTRANSFORMABLE = new Set(['image/svg+xml', 'image/gif', 'application/pdf'])
 
+/** Crop presets offered in the admin. `free` means no fixed shape. */
+export const CROP_RATIOS = ['free', '1:1', '4:3', '16:9'] as const
+
+const RATIO_VALUES: Record<string, number> = {
+  '1:1': 1,
+  '4:3': 4 / 3,
+  '16:9': 16 / 9,
+}
+
+/** The numeric width/height ratio of a crop preset, or null for free / unknown values. */
+export function cropRatio(value: unknown): number | null {
+  if (typeof value !== 'string') return null
+  return RATIO_VALUES[value.trim()] ?? null
+}
+
+/** Where a fixed-shape crop keeps its subject, as Cloudflare's `gravity=XxY` fractions. */
+export type TransformFocus = { ratio?: number | null; gravity?: string }
+
+const clampPercent = (value: unknown): number | undefined => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  return Math.min(100, Math.max(0, value))
+}
+
+/** Pure: the crop and focal settings of one record, in the form the transform needs. */
+export function focusFor(media: MediaLike): TransformFocus {
+  const ratio = cropRatio(media.crop?.ratio)
+  const x = clampPercent(media.focalX)
+  const y = clampPercent(media.focalY)
+  if (x === undefined || y === undefined) return { ratio }
+  return { ratio, gravity: `${(x / 100).toFixed(2)}x${(y / 100).toFixed(2)}` }
+}
+
+/** The CSS object-position for a picture's focal point, or undefined when none is set. */
+export function objectPositionFor(media: MediaLike): string | undefined {
+  const x = clampPercent(media.focalX)
+  const y = clampPercent(media.focalY)
+  if (x === undefined || y === undefined) return undefined
+  return `${x}% ${y}%`
+}
+
+/**
+ * Adds the record's last-change time to its URL, so a replaced or re-optimised
+ * file is fetched fresh rather than served from a cache that still holds the
+ * old bytes. Returns the URL unchanged when there is no timestamp.
+ */
+export function withVersion(url: string, updatedAt?: string | null): string {
+  if (!url || !updatedAt) return url
+  const stamp = new Date(updatedAt).getTime()
+  if (!Number.isFinite(stamp)) return url
+  return `${url}${url.includes('?') ? '&' : '?'}v=${stamp}`
+}
+
 const isTransformable = (media: MediaLike): boolean =>
   !media.mimeType || !UNTRANSFORMABLE.has(media.mimeType)
 
@@ -61,16 +113,21 @@ const formatParam = (format: DeliveryFormat): string | null =>
  * variant. The option names are identical between the two, which is the only
  * reason one builder can serve both.
  */
-export function buildTransformParams(config: MediaConfig, request: ImageRequest = {}): string {
-  const fit = request.fit ?? 'scale-down'
+export function buildTransformParams(config: MediaConfig, request: ImageRequest = {}, focus: TransformFocus = {}): string {
+  // A chosen crop preset asks for a fixed shape, so it fills the box rather than
+  // fitting inside it - unless the caller asked for a fit explicitly.
+  const fit = request.fit ?? (focus.ratio ? 'cover' : 'scale-down')
   const parts: string[] = []
 
   // An explicit width still gets clamped: max width is enforced on the way out,
   // not on the way in, because the original in R2 is never resized.
-  parts.push(`width=${clampWidth(request.width ?? config.maxWidth, config)}`)
+  const width = clampWidth(request.width ?? config.maxWidth, config)
+  parts.push(`width=${width}`)
 
   if (request.height) {
     parts.push(`height=${Math.max(1, Math.round(request.height))}`)
+  } else if (focus.ratio) {
+    parts.push(`height=${Math.max(1, Math.round(width / focus.ratio))}`)
   } else if (fit === 'scale-down' || fit === 'contain') {
     // With a non-cropping fit, width and height are a bounding box, so this
     // caps height without changing the aspect ratio. Skipped for cover/crop,
@@ -79,6 +136,8 @@ export function buildTransformParams(config: MediaConfig, request: ImageRequest 
   }
 
   parts.push(`fit=${fit}`)
+  // The focal point only means something when the picture is cropped to fit.
+  if (focus.gravity && (fit === 'cover' || fit === 'crop')) parts.push(`gravity=${focus.gravity}`)
   parts.push(`quality=${config.quality}`)
 
   const format = formatParam(config.format)
@@ -125,14 +184,14 @@ export function buildImageUrl(
   config: MediaConfig,
   request: ImageRequest = {},
 ): string {
-  const source = media.url ?? ''
+  const source = withVersion(media.url ?? '', media.updatedAt)
 
   if (!source) return source
   if (!config.enabled) return source
   if (!isTransformable(media)) return source
   if (source.includes(RESIZING_SEGMENT)) return source
 
-  const params = buildTransformParams(config, request)
+  const params = buildTransformParams(config, request, focusFor(media))
 
   if (config.provider === 'cloudflare-resizing') {
     return resizingUrl(source, params)
@@ -195,13 +254,15 @@ function intrinsicSize(
 ): { width?: number; height?: number } {
   const naturalWidth = media.width || undefined
   const naturalHeight = media.height || undefined
+  const ratio = cropRatio(media.crop?.ratio)
 
   if (!naturalWidth || !naturalHeight) return { width: request.width, height: request.height }
 
   const target = Math.min(request.width ?? naturalWidth, naturalWidth, config.enabled ? config.maxWidth : naturalWidth)
   return {
     width: Math.round(target),
-    height: Math.round((naturalHeight / naturalWidth) * target),
+    // A fixed-shape crop fixes the height from the width, not from the original.
+    height: Math.round(ratio ? target / ratio : (naturalHeight / naturalWidth) * target),
   }
 }
 

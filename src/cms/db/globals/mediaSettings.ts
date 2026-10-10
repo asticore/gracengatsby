@@ -36,6 +36,7 @@ export type MediaSettingsDoc = {
     convertToWebp?: boolean | null
     convertToAvif?: boolean | null
     stripMetadata?: boolean | null
+    keepOriginals?: boolean | null
   } | null
   resizing?: {
     maxWidth?: number | null
@@ -49,6 +50,11 @@ export type MediaSettingsDoc = {
   } | null
   bulk?: {
     batchSize?: number | null
+  } | null
+  stock?: {
+    unsplashAccessKey?: string | null
+    pexelsApiKey?: string | null
+    pixabayApiKey?: string | null
   } | null
   updatedAt: string
   createdAt: string

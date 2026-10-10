@@ -84,6 +84,7 @@ export const SECRET_PATHS: Readonly<Record<string, readonly string[]>> = {
     'destination.sftp.privateKey',
   ],
   'form-settings': ['turnstileSecretKey'],
+  'media-settings': ['stock.unsplashAccessKey', 'stock.pexelsApiKey', 'stock.pixabayApiKey'],
 }
 
 /** Top-level fields that every document carries and the engine regenerates. */

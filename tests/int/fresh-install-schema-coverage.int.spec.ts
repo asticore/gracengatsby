@@ -274,6 +274,14 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     }
   })
 
+  it('adds the custom fonts column to site settings', async () => {
+    const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`eg_site_settings\`)`).all()
+    const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+    expect(columnNames).toContain('theme_custom_fonts')
+    expect(columnNames).toContain('theme_heading_font')
+    expect(columnNames).toContain('theme_body_font')
+  })
+
   it('is safe to run migrations a second time (idempotent)', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

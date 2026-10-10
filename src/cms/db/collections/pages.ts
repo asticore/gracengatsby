@@ -35,6 +35,10 @@ export type PageDoc = {
   customFields?: unknown
   membersOnly?: { enabled?: boolean | null; tier?: number | null }
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
   updatedAt: string
   createdAt: string
 }
@@ -58,6 +62,10 @@ export type PageVersion = {
   versionUpdatedAt: string | null
   versionCreatedAt: string | null
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
 } & Omit<PageDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
 const baseOps = createCollectionOps(pages, Pages, {}, {

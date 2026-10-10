@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import React from 'react'
 
+import { safeUrl } from '@/lib/mergeTags'
+
 export const CtaBannerBlock: React.FC<{
   heading: string
   text?: string | null
@@ -8,6 +10,7 @@ export const CtaBannerBlock: React.FC<{
   buttonUrl?: string | null
   style?: 'dark' | 'light' | null
 }> = ({ heading, text, buttonLabel, buttonUrl, style }) => {
+  const href = safeUrl(buttonUrl)
   return (
     <section
       className={`built-block px-6 py-20 text-center ${
@@ -17,8 +20,8 @@ export const CtaBannerBlock: React.FC<{
       <div className="mx-auto max-w-[640px]">
         <h2>{heading}</h2>
         {text && <p className="mb-6 opacity-85">{text}</p>}
-        {buttonLabel && buttonUrl && (
-          <Link href={buttonUrl} className="btn btn--primary">
+        {buttonLabel && href && (
+          <Link href={href} className="btn btn--primary">
             {buttonLabel}
           </Link>
         )}

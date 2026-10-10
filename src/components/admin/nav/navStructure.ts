@@ -51,6 +51,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'ab-test-results', type: 'view', href: '/ab-test-results', label: 'A/B results' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'redirects', type: 'collections' },
+      { slug: 'review-queue', type: 'view', href: '/review-queue', label: 'Review queue' },
       { slug: 'media', type: 'collections' },
     ],
   },
@@ -98,6 +99,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
 /** Entities that should not appear in the nav, including the fallback "Other" group. */
 export const HIDDEN_FROM_NAV = new Set<string>([
   'backups',
+  'review-events',
   'header',
   'footer',
   'site-settings',

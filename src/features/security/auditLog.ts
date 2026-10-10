@@ -29,6 +29,7 @@ export type AuditAction =
   | 'update'
   | 'delete'
   | 'settings.update'
+  | 'consent.update'
   | 'rate-limit.blocked'
   | 'probe.blocked'
   | 'two-factor.enrolled'

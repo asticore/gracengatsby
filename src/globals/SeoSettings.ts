@@ -278,6 +278,187 @@ export const SeoSettings: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'siteFiles',
+      label: 'Site files',
+      admin: {
+        description:
+          'Small plain-text files that search engines, AI tools and security researchers look for at fixed addresses. A file with nothing to say is not served.',
+      },
+      fields: [
+        {
+          name: 'overview',
+          type: 'text',
+          admin: {
+            components: {
+              Field: '@/features/seo/admin/SiteFilesField#SiteFilesField',
+            },
+          },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'llmsEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                width: '50%',
+                description: 'Serve /llms.txt and /llms-full.txt, a plain-text guide to your site for AI tools.',
+              },
+            },
+            {
+              name: 'llmsIncludeCollections',
+              type: 'select',
+              hasMany: true,
+              defaultValue: ['pages', 'posts'],
+              options: [
+                { label: 'Pages', value: 'pages' },
+                { label: 'Posts', value: 'posts' },
+                { label: 'Products', value: 'products' },
+                { label: 'Events', value: 'events' },
+              ],
+              admin: {
+                width: '50%',
+                description: 'Which content goes into llms.txt. Leave every box empty to use Pages and Posts.',
+              },
+            },
+          ],
+        },
+        {
+          name: 'llmsTitle',
+          type: 'text',
+          admin: { description: 'The heading of llms.txt. Leave blank to use your site name.' },
+        },
+        {
+          name: 'llmsSummary',
+          type: 'textarea',
+          admin: { description: 'A short paragraph describing the site, placed under the heading.' },
+        },
+        {
+          name: 'llmsExcludePaths',
+          type: 'textarea',
+          admin: { description: 'Addresses to leave out of llms.txt and llms-full.txt. One per line.' },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'securityTxtContact',
+              type: 'text',
+              admin: {
+                width: '50%',
+                description: 'Where to report security problems: an email address or a URL. Required for security.txt.',
+              },
+            },
+            {
+              name: 'securityTxtExpires',
+              type: 'text',
+              admin: {
+                width: '50%',
+                description: 'When this security.txt stops being valid, as a date such as 2027-12-31. Required; the file is not served once this date has passed.',
+              },
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'securityTxtPolicy',
+              type: 'text',
+              admin: { width: '50%', description: 'Link to your vulnerability disclosure policy.' },
+            },
+            {
+              name: 'securityTxtLanguages',
+              type: 'text',
+              admin: { width: '50%', description: 'Languages people can report in, such as en, fr.' },
+            },
+          ],
+        },
+        {
+          name: 'securityTxtCustom',
+          type: 'textarea',
+          admin: {
+            description:
+              'Leave blank to build security.txt from the fields above. Anything typed here is served exactly as written instead.',
+          },
+        },
+        {
+          name: 'adsTxt',
+          type: 'textarea',
+          admin: { description: 'Contents of /ads.txt, the list of advertising sellers you authorise. Served exactly as written.' },
+        },
+        {
+          name: 'appAdsTxt',
+          type: 'textarea',
+          admin: { description: 'Contents of /app-ads.txt, for mobile app advertising. Served exactly as written.' },
+        },
+        {
+          name: 'humansTxt',
+          type: 'textarea',
+          admin: { description: 'Contents of /humans.txt, credits for the people who built the site. Served exactly as written.' },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'manifestName',
+              type: 'text',
+              admin: { width: '50%', description: 'Full app name for the web app manifest. Leave blank to use your site name.' },
+            },
+            {
+              name: 'manifestShortName',
+              type: 'text',
+              admin: { width: '50%', description: 'Short name shown under home-screen icons.' },
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'manifestThemeColor',
+              type: 'text',
+              admin: { width: '33%', description: 'Colour of the browser toolbar, e.g. #1f2230.' },
+            },
+            {
+              name: 'manifestBackgroundColor',
+              type: 'text',
+              admin: { width: '33%', description: 'Colour shown while the app loads.' },
+            },
+            {
+              name: 'manifestDisplay',
+              type: 'select',
+              defaultValue: 'standalone',
+              options: [
+                { label: 'Standalone (looks like an app)', value: 'standalone' },
+                { label: 'Minimal UI', value: 'minimal-ui' },
+                { label: 'Browser', value: 'browser' },
+              ],
+              admin: { width: '33%' },
+            },
+          ],
+        },
+        {
+          name: 'serverResponseHeaders',
+          type: 'textarea',
+          admin: {
+            description:
+              'Extra HTTP headers added to every public page, one per line as "Name: value", for example "X-Robots-Tag: noarchive". Cookie, length and host headers cannot be set here.',
+          },
+        },
+        {
+          name: 'serverBlockedPaths',
+          type: 'textarea',
+          admin: {
+            description:
+              'Addresses that should answer 404 Not Found, one per line, for example /old-catalogue. The address and anything beneath it are blocked. The admin area is never blocked.',
+          },
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'customCode',
       label: 'Custom code',
       admin: {

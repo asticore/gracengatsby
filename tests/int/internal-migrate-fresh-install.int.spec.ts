@@ -176,6 +176,12 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('adds theme_custom_fonts to site settings', async () => {
+    const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`eg_site_settings\`)`).all()
+    const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+    expect(columnNames).toContain('theme_custom_fonts')
+  })
+
   it('expands integrations table with new columns', async () => {
     const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
       const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()

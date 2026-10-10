@@ -54,6 +54,11 @@
     //   "bucket_name": "<BUCKET_NAME>",
     // },
   ],
+  // Cloudflare Images transformations, used by media optimisation
+  // (src/features/media/optimise.ts). Needs Images transformations enabled on the account.
+  "images": {
+    "binding": "IMAGES",
+  },
   "observability": {
     "enabled": false,
     "head_sampling_rate": 1,

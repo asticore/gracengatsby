@@ -26,6 +26,11 @@ import * as migration_20261007_100000_users_authorship from './20261007_100000_u
 import * as migration_20261008_100000_integrations_expand from './20261008_100000_integrations_expand';
 import * as migration_20261009_100000_user_permission_overrides from './20261009_100000_user_permission_overrides';
 import * as migration_20261010_100000_site_fonts from './20261010_100000_site_fonts';
+import * as migration_20261011_100000_site_files from './20261011_100000_site_files';
+import * as migration_20261011_110000_cookie_consent from './20261011_110000_cookie_consent';
+import * as migration_20261011_120000_media_library from './20261011_120000_media_library';
+import * as migration_20261011_130000_content_approval from './20261011_130000_content_approval';
+import * as migration_20261011_140000_custom_fields_v2 from './20261011_140000_custom_fields_v2';
 
 export const migrations = [
   {
@@ -167,5 +172,30 @@ export const migrations = [
     up: migration_20261010_100000_site_fonts.up,
     down: migration_20261010_100000_site_fonts.down,
     name: '20261010_100000_site_fonts',
+  },
+  {
+    up: migration_20261011_100000_site_files.up,
+    down: migration_20261011_100000_site_files.down,
+    name: '20261011_100000_site_files',
+  },
+  {
+    up: migration_20261011_110000_cookie_consent.up,
+    down: migration_20261011_110000_cookie_consent.down,
+    name: '20261011_110000_cookie_consent',
+  },
+  {
+    up: migration_20261011_120000_media_library.up,
+    down: migration_20261011_120000_media_library.down,
+    name: '20261011_120000_media_library',
+  },
+  {
+    up: migration_20261011_130000_content_approval.up,
+    down: migration_20261011_130000_content_approval.down,
+    name: '20261011_130000_content_approval',
+  },
+  {
+    up: migration_20261011_140000_custom_fields_v2.up,
+    down: migration_20261011_140000_custom_fields_v2.down,
+    name: '20261011_140000_custom_fields_v2',
   },
 ];

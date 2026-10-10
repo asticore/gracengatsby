@@ -1,6 +1,7 @@
 import type { GlobalConfig } from '@/engine'
 
-import { isAdmin } from '../access/ecommerceAccess'
+import { adminOnlyFieldAccess, isAdmin } from '../access/ecommerceAccess'
+import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
 
 /**
  * Image compression and delivery, aimed at Cloudflare.
@@ -102,6 +103,15 @@ export const MediaSettings: GlobalConfig = {
             },
           ],
         },
+        {
+          name: 'keepOriginals',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Keep the untouched copy of each picture (stored under original/) so an optimisation can be undone. Uses extra storage, so it is off by default.',
+          },
+        },
       ],
     },
     {
@@ -201,6 +211,41 @@ export const MediaSettings: GlobalConfig = {
             description:
               'How many pictures the Media bulk action works through at a time. Lower this if a run does not finish.',
           },
+        },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'stock',
+      label: 'Stock photo search',
+      admin: {
+        description:
+          'Keys for the stock photo libraries offered in the Media gallery. Openverse needs no key. Each key is stored encrypted and is visible only to admins.',
+      },
+      fields: [
+        {
+          name: 'unsplashAccessKey',
+          type: 'text',
+          label: 'Unsplash access key',
+          access: { read: adminOnlyFieldAccess, update: adminOnlyFieldAccess },
+          hooks: { beforeChange: [encryptSecretHook], afterRead: [decryptSecretHook] },
+          admin: { description: 'The Access Key from your Unsplash developer application.' },
+        },
+        {
+          name: 'pexelsApiKey',
+          type: 'text',
+          label: 'Pexels API key',
+          access: { read: adminOnlyFieldAccess, update: adminOnlyFieldAccess },
+          hooks: { beforeChange: [encryptSecretHook], afterRead: [decryptSecretHook] },
+          admin: { description: 'Found in your Pexels account under API.' },
+        },
+        {
+          name: 'pixabayApiKey',
+          type: 'text',
+          label: 'Pixabay API key',
+          access: { read: adminOnlyFieldAccess, update: adminOnlyFieldAccess },
+          hooks: { beforeChange: [encryptSecretHook], afterRead: [decryptSecretHook] },
+          admin: { description: 'Found on your Pixabay account page under API.' },
         },
       ],
     },

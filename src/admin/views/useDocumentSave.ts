@@ -58,7 +58,8 @@ export function useDocumentSave(target: SaveTarget) {
 
   const entitySlug = target.collectionSlug ?? target.globalSlug ?? ''
 
-  const save = async (status: SaveStatus) => {
+  /** Resolves true when the document was saved, false when it was not (the error is in `error`). */
+  const save = async (status: SaveStatus): Promise<boolean> => {
     setBusy(status)
     setError(null)
     try {
@@ -75,7 +76,7 @@ export function useDocumentSave(target: SaveTarget) {
       const body: unknown = await response.json().catch((): unknown => null)
       if (!response.ok) {
         setError(extractErrorMessage(body))
-        return
+        return false
       }
 
       resetModified()
@@ -87,12 +88,14 @@ export function useDocumentSave(target: SaveTarget) {
         const newId = (body as { doc?: { id?: number } } | null)?.doc?.id
         if (newId !== undefined) {
           router.push(`/admin/collections/${target.collectionSlug}/${newId}`)
-          return
+          return true
         }
       }
       router.refresh()
+      return true
     } catch {
       setError('Save failed - check your connection and try again.')
+      return false
     } finally {
       setBusy(null)
     }

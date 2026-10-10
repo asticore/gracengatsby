@@ -12,15 +12,20 @@ import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { PasswordGate } from '@/components/PasswordGate'
 import { getPasswordGateState } from '@/features/visibility/gate'
+import { resolveDocumentContent } from '@/features/customFields/server'
 import type { Media, Post, User } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * Published posts only. Drafts are seen through the signed preview route (src/app/(frontend)/preview),
+ * which checks a token rather than the visitor's session, so this lookup never needs to return them.
+ */
 async function getPost(slug: string) {
   const engine = await getEngine()
   const { docs } = (await engine.find({
     collection: 'posts',
-    where: { slug: { equals: slug } },
+    where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
     limit: 1,
     depth: 1,
   })) as unknown as { docs: Post[] }
@@ -92,6 +97,9 @@ export default async function BlogPostPage({
   const image = post.featuredImage && typeof post.featuredImage === 'object' ? (post.featuredImage as Media) : null
   const author = post.author && typeof post.author === 'object' ? (post.author as User) : null
 
+  // Merge tags ({{field:...}}, {{title}}, ...) are resolved here; unknown braces stay as typed.
+  const content = await resolveDocumentContent('posts', post)
+
   return (
     <article className="page-shell">
       <PageJsonLd collection="posts" doc={post} path={currentPath} />
@@ -115,10 +123,10 @@ export default async function BlogPostPage({
       )}
 
       <div className="mx-auto max-w-[720px]">
-        <RichText data={post.content} />
+        <RichText data={content.content} />
       </div>
 
-      {(post.layout || []).map((block, index) => (
+      {(content.layout || []).map((block, index) => (
         <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
     </article>

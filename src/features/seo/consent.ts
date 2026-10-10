@@ -1,13 +1,15 @@
 /**
- * Shared between the client-side loader and anything else that wants to read
- * or react to the visitor's choice. Kept out of the loader module because a
- * 'use client' file's exports become client references and cannot be read
- * during a server render.
+ * Compatibility exports for the pre-categories consent helper.
+ *
+ * The banner now lives in features/consent. These names remain because
+ * features/seo/index.ts re-exports them. CONSENT_STORAGE_KEY is the OLD key:
+ * the new code reads it once, migrates the value, and clears it.
  */
 
-export const CONSENT_STORAGE_KEY = 'engage-cookie-consent'
+export {
+  CONSENT_EVENT,
+  LEGACY_CONSENT_STORAGE_KEY as CONSENT_STORAGE_KEY,
+} from '@/features/consent/consent'
 
-/** Dispatched on `window` with `detail: 'granted' | 'denied'` when a choice is made. */
-export const CONSENT_EVENT = 'engage:cookie-consent'
-
+/** The pre-categories value. New code uses ConsentRecord. */
 export type ConsentValue = 'granted' | 'denied'

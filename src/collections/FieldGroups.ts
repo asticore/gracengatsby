@@ -30,8 +30,13 @@ export const FieldGroups: CollectionConfig = {
     create: roleAccess('field-groups', 'create'),
     delete: roleAccess('field-groups', 'delete'),
     update: roleAccess('field-groups', 'update'),
-    // Readable by any signed-in user so the editing panel can load definitions.
-    read: () => true,
+    // Admin panel users only. The editing panel and merge tags read through
+    // /api/admin-field-groups (normalised) or server-side with overrideAccess, so
+    // the public REST endpoint no longer leaks field definitions.
+    read: ({ req }) => {
+      const roles = (req?.user as { roles?: unknown } | null | undefined)?.roles
+      return Array.isArray(roles) && roles.some((r) => r === 'admin' || r === 'editor' || r === 'viewer')
+    },
   },
   fields: [
     { name: 'name', type: 'text', required: true, admin: { description: 'e.g. "Product details", "Event extras".' } },
@@ -56,11 +61,33 @@ export const FieldGroups: CollectionConfig = {
       admin: { description: 'Optional note shown above the fields when editing.' },
     },
     {
+      name: 'definition',
+      type: 'json',
+      label: 'Fields (builder)',
+      admin: {
+        description: 'The fields in this group, with their types, rules, conditions and nested layouts.',
+        components: {
+          Field: '@/features/customFields/admin/FieldGroupBuilderField#FieldGroupBuilderField',
+        },
+      },
+    },
+    {
+      name: 'location',
+      type: 'json',
+      label: 'Show on',
+      admin: {
+        description: 'Where these fields appear. When set, this replaces the quick "Applies to" list above.',
+        components: {
+          Field: '@/features/customFields/admin/FieldGroupLocationField#FieldGroupLocationField',
+        },
+      },
+    },
+    {
       name: 'fields',
       type: 'array',
       labels: { singular: 'Field', plural: 'Fields' },
       minRows: 1,
-      admin: { initCollapsed: true },
+      admin: { initCollapsed: true, description: 'Legacy field list. New fields go in the Fields builder above; this list is kept so older groups keep working.' },
       fields: [
         {
           type: 'row',
@@ -95,8 +122,24 @@ export const FieldGroups: CollectionConfig = {
                 { label: 'Link / URL', value: 'url' },
                 { label: 'Date', value: 'date' },
                 { label: 'Colour', value: 'color' },
+                { label: 'Radio buttons', value: 'radio' },
+                { label: 'Button group', value: 'button-group' },
+                { label: 'File', value: 'file' },
+                { label: 'Gallery', value: 'gallery' },
+                { label: 'Email', value: 'email' },
+                { label: 'Phone', value: 'phone' },
+                { label: 'Date and time', value: 'datetime' },
+                { label: 'Time', value: 'time' },
+                { label: 'Link', value: 'link' },
+                { label: 'Relationship', value: 'relationship' },
+                { label: 'Embed (video / audio)', value: 'oembed' },
+                { label: 'Map location', value: 'map' },
+                { label: 'Rich text (markdown)', value: 'wysiwyg' },
+                { label: 'Group', value: 'group' },
+                { label: 'Repeater', value: 'repeater' },
+                { label: 'Flexible content', value: 'flexible' },
               ],
-              admin: { width: '50%' },
+              admin: { width: '50%', description: 'Legacy list. New groups are built in the Fields builder below.' },
             },
             { name: 'required', type: 'checkbox', defaultValue: false, admin: { width: '50%' } },
           ],

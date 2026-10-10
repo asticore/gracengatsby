@@ -64,6 +64,19 @@ export type SecuritySettingsDoc = {
     enabled?: boolean | null
     retentionDays?: number | null
   }
+  /** Content approval rules - see src/features/approval/settings.ts. */
+  approval?: {
+    enabled?: boolean | null
+    pagesApprovals?: number | null
+    postsApprovals?: number | null
+    eventsApprovals?: number | null
+    coursesApprovals?: number | null
+    productsApprovals?: number | null
+    allowSelfApproval?: boolean | null
+    adminsMaySelfApprove?: boolean | null
+    notifyReviewers?: boolean | null
+    notifyEmails?: string | null
+  }
   updatedAt: string
   createdAt: string
 }

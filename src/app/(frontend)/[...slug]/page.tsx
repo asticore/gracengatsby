@@ -10,6 +10,7 @@ import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { PasswordGate } from '@/components/PasswordGate'
 import { getPasswordGateState } from '@/features/visibility/gate'
+import { resolveDocumentContent } from '@/features/customFields/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,6 +69,9 @@ export default async function BuiltPage({
     return <PasswordGate collection="pages" currentPath={currentPath} id={page.id} wrongPassword={sp.pw === 'wrong'} />
   }
 
+  // Merge tags ({{field:...}}, {{title}}, ...) are resolved here; unknown braces stay as typed.
+  const content = await resolveDocumentContent('pages', page)
+
   return (
     <div className="built-page">
       <PageJsonLd collection="pages" doc={page} path={currentPath} />
@@ -87,7 +91,7 @@ export default async function BuiltPage({
           <span className="text-[var(--color-ink)]">{page.title}</span>
         </nav>
       )}
-      {(page.blocks || []).map((block, index) => (
+      {(content.blocks || []).map((block, index) => (
         <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
     </div>

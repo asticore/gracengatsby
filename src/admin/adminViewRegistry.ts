@@ -23,6 +23,7 @@ import { DatabaseView } from '@/features/cleanup/DatabaseView'
 import { ABResultsView } from '@/features/abTesting/components/ABResultsView'
 import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
+import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
 // still declares (Nav/providers/graphics overrides) even though nothing yet
@@ -91,6 +92,15 @@ export const CUSTOM_ADMIN_VIEWS = [
     meta: {
       title: 'Roles',
       description: 'Manage role permissions with a matrix grid.',
+    },
+  },
+  {
+    key: 'settingsTransfer',
+    Component: SettingsTransferView,
+    path: '/settings-transfer',
+    meta: {
+      title: 'Export and import',
+      description: 'Export settings, content and users, or import them from another site.',
     },
   },
 ] as const

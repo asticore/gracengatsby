@@ -33,6 +33,33 @@ import { integrations } from '../schema'
 export type IntegrationsDoc = {
   id: number
   claudeApiKey?: string | null
+  /**
+   * The `consent` group (cookie banner and gating). Column names are
+   * `consent_<field>` in eg_integrations; the cookie list is the child table
+   * eg_integrations_consent_cookie_list. Read through pickPublicIds /
+   * normaliseConsentConfig, which tolerate every field being null.
+   */
+  consentEnabled?: boolean | null
+  consentMode?: string | null
+  consentPolicyVersion?: number | null
+  consentBannerTitle?: string | null
+  consentBannerText?: string | null
+  consentAcceptLabel?: string | null
+  consentRejectLabel?: string | null
+  consentCustomiseLabel?: string | null
+  consentSaveLabel?: string | null
+  consentPosition?: string | null
+  consentTheme?: string | null
+  consentBannerBackground?: string | null
+  consentBannerTextColor?: string | null
+  consentButtonColor?: string | null
+  consentPrivacyPolicyUrl?: string | null
+  consentCookieSettingsLabel?: string | null
+  consentGeoLogging?: boolean | null
+  consentLogConsent?: boolean | null
+  consentConsentModeV2?: boolean | null
+  consentHeadScriptCategory?: string | null
+  consentBodyScriptCategory?: string | null
   updatedAt: string
   createdAt: string
 }

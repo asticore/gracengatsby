@@ -62,6 +62,7 @@ export const RESOURCES = [
   'versions.restore',
   'cache.purge',
   'redirects.import',
+  'review',
 ] as const
 
 export type Resource = (typeof RESOURCES)[number]
@@ -106,7 +107,7 @@ export const BUILT_IN_ROLES: Record<string, PermissionMatrix> = {
         ...(r === 'preview-link' ? { create: true } : {}),
         ...(r === 'admin-schedule' ? { update: true } : {}),
         ...(r === 'versions.restore' || r === 'content.editStyle' || r === 'content.editLayout' || r === 'content.editSeo' || r === 'cache.purge' || r === 'redirects.import' ? { update: true } : {}),
-        ...(['pages', 'posts', 'events', 'products', 'courses'].includes(r) ? { publish: true } : {}),
+        ...(['pages', 'posts', 'events', 'products', 'courses', 'review'].includes(r) ? { publish: true } : {}),
       },
     ]),
   ) as PermissionMatrix,
@@ -135,6 +136,8 @@ export const BUILT_IN_ROLES: Record<string, PermissionMatrix> = {
     'versions.restore': { update: true },
     'cache.purge': { update: true },
     'redirects.import': { update: true },
+    // Editors send their work for review and comment on it. Approving needs review.publish.
+    review: { read: true, update: true },
   } as PermissionMatrix,
 
   viewer: {
@@ -152,6 +155,7 @@ export const BUILT_IN_ROLES: Record<string, PermissionMatrix> = {
     preferences: { read: true },
     translations: { read: true },
     'admin-pages-tree': { read: true },
+    review: { read: true },
   } as PermissionMatrix,
 
   customer: {} as PermissionMatrix,
@@ -263,7 +267,7 @@ export function effectiveMatrix(
         ...(resource === 'admin-version-delete' || resource === 'versions.delete' ? { delete: true } : {}),
         ...(resource === 'preview-link' ? { create: true } : {}),
         ...(resource === 'admin-schedule' ? { update: true } : {}),
-        ...(['pages', 'posts', 'events', 'products', 'courses'].includes(resource) ? { publish: true } : {}),
+        ...(['pages', 'posts', 'events', 'products', 'courses', 'review'].includes(resource) ? { publish: true } : {}),
       }
     }
     return result
@@ -416,6 +420,12 @@ export const PERMISSION_CATEGORIES: Array<{
       { resource: 'form-submissions', label: 'Form submissions', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'redirects', label: 'Redirects', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'translations', label: 'Translations', actions: ['read', 'create', 'update', 'delete'] },
+      {
+        resource: 'review',
+        label: 'Content review',
+        description: 'Read: see the review queue and history. Update: submit for review and comment. Publish: approve, request changes, and publish approved content.',
+        actions: ['read', 'update', 'publish'],
+      },
     ],
   },
   {

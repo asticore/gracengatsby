@@ -17,6 +17,11 @@ import {
 } from './dashboardData'
 
 import { loadGettingStartedProgress } from '@/features/gettingStarted/load'
+import { getAdminContext } from '@/admin/auth'
+import { loadApprovalSettings } from '@/features/approval/settings'
+import { loadReviewQueue, type ReviewEngine } from '@/features/approval/handlers'
+import { viewerFromContext } from '@/features/approval/viewer'
+import { ReviewQueueTable } from '@/features/approval/views/ReviewQueueTable'
 import { GettingStartedCard } from '@/features/gettingStarted/GettingStartedCard'
 
 /**
@@ -88,6 +93,15 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
   ])
   const { progress: gettingStartedProgress, manualDoneIds } = gettingStartedResult
 
+  // The review card appears only while content approval is on, and only for people who can read the queue.
+  const reviewContext = await getAdminContext()
+  const reviewViewer = viewerFromContext(reviewContext)
+  const reviewSettings = await loadApprovalSettings(engine as unknown as ReviewEngine)
+  const reviewRows =
+    reviewViewer && reviewSettings.enabled && (reviewViewer.isAdmin || reviewViewer.can('review', 'read'))
+      ? await loadReviewQueue({ engine: engine as unknown as ReviewEngine, viewer: reviewViewer, settings: reviewSettings, limit: 6 })
+      : null
+
   const now = new Date()
 
   const quickCreates = QUICK_CREATE_SLUGS.map((slug) => findEntity(groups, slug)).filter(
@@ -125,6 +139,13 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
       </header>
 
       <GettingStartedCard progress={gettingStartedProgress} initialDoneIds={manualDoneIds} />
+
+      {reviewRows !== null && (
+        <section>
+          <h2 className={sectionTitleClassName}>Awaiting review</h2>
+          <ReviewQueueTable now={now.getTime()} rows={reviewRows} />
+        </section>
+      )}
 
       {quickCreates.length > 0 && (
         <section>

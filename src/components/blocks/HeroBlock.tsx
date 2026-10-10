@@ -3,6 +3,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import type { Media } from '@/engage-types'
+import { safeUrl } from '@/lib/mergeTags'
 
 type Props = {
   heading: string
@@ -24,6 +25,8 @@ export const HeroBlock: React.FC<Props> = ({
   secondaryCtaUrl,
 }) => {
   const image = backgroundImage && typeof backgroundImage === 'object' ? backgroundImage : null
+  const primaryHref = safeUrl(primaryCtaUrl)
+  const secondaryHref = safeUrl(secondaryCtaUrl)
 
   return (
     <section className="hero built-block built-block--hero">
@@ -37,13 +40,13 @@ export const HeroBlock: React.FC<Props> = ({
         {subheading && <p className="hero__tagline">{subheading}</p>}
         {(primaryCtaLabel || secondaryCtaLabel) && (
           <div className="hero__actions">
-            {primaryCtaLabel && primaryCtaUrl && (
-              <Link href={primaryCtaUrl} className="btn btn--primary">
+            {primaryCtaLabel && primaryHref && (
+              <Link href={primaryHref} className="btn btn--primary">
                 {primaryCtaLabel}
               </Link>
             )}
-            {secondaryCtaLabel && secondaryCtaUrl && (
-              <Link href={secondaryCtaUrl} className="btn btn--ghost">
+            {secondaryCtaLabel && secondaryHref && (
+              <Link href={secondaryHref} className="btn btn--ghost">
                 {secondaryCtaLabel}
               </Link>
             )}

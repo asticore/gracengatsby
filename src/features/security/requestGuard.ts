@@ -8,6 +8,8 @@ import { isDirectoryListingRequest, isProbePath } from './probePaths'
 import { classifyRoute, clientKey, hit, limitFor } from './rateLimit'
 import { readSecuritySettingsFromD1, type SecuritySettings } from './settings'
 import { resolveRedirect, recordRedirectHit } from '@/features/redirects'
+import { readServerRules, type ServerRules } from '@/features/seo/serverRules'
+import { isBlockedPath } from '@/features/seo/siteFiles'
 
 /**
  * Everything the Security screen enforces on the request itself, in one place
@@ -132,22 +134,78 @@ export function applySecurityHeaders(
   return response
 }
 
+/** The admin portal and the JSON API never get the Site files response headers or blocked-path rules. */
+const isAppPath = (pathname: string): boolean =>
+  ['/admin', '/api', '/_next'].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+
+/**
+ * Applies the Site files "extra response headers" to a public response. These
+ * come from the SEO & Analytics settings and are set after the security headers,
+ * so an explicit rule can override one of them on purpose.
+ */
+export function applyServerResponseHeaders(response: NextResponse, rules: ServerRules, pathname: string): NextResponse {
+  if (isAppPath(pathname)) return response
+  for (const [name, value] of rules.headers) {
+    // A value the runtime refuses is skipped on its own. It must never turn a
+    // public page into an error.
+    try {
+      response.headers.set(name, value)
+    } catch {
+      // Skipped: the rest of the rules still apply.
+    }
+  }
+  return response
+}
+
+/**
+ * The path the blocked-paths rule compares against. Percent-encoding is decoded
+ * (a malformed sequence keeps the raw path rather than throwing), then empty and
+ * `.` segments are dropped and `..` is resolved, so `//`, `/./`, `%2F` and a
+ * trailing slash cannot step around a rule. Case is handled by isBlockedPath.
+ */
+export function normaliseRequestPath(pathname: string): string {
+  let decoded = pathname
+  try {
+    decoded = decodeURIComponent(pathname)
+  } catch {
+    // Malformed encoding: match on the raw path.
+  }
+  const segments: string[] = []
+  for (const segment of decoded.split('/')) {
+    if (segment === '' || segment === '.') continue
+    if (segment === '..') {
+      segments.pop()
+      continue
+    }
+    segments.push(segment)
+  }
+  return `/${segments.join('/')}`
+}
+
 export async function securityMiddleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   const settings = await readSecuritySettingsFromD1()
+  // Fails open to no rules, so a settings read problem cannot take the site down.
+  const rules = await readServerRules()
 
   // Preserved from the original middleware: the frontend layout reads this to
   // know which page it is rendering.
   const passThrough = (): NextResponse => {
     const response = NextResponse.next()
     response.headers.append('x-pathname', pathname)
-    return applySecurityHeaders(response, settings, pathname)
+    return applyServerResponseHeaders(applySecurityHeaders(response, settings, pathname), rules, pathname)
+  }
+
+  // Blocked paths (Site files > Server blocked paths) answer 404 before any
+  // other rule runs, on every public path, whatever the security toggle says.
+  if (!isAppPath(pathname) && isBlockedPath(normaliseRequestPath(pathname), rules.blockedPaths)) {
+    return applyServerResponseHeaders(applySecurityHeaders(blocked(), settings, pathname), rules, pathname)
   }
 
   if (!settings.featureEnabled) {
     // Try redirects even when security feature is disabled
     const redirected = await tryRedirect(request, settings)
-    if (redirected) return redirected
+    if (redirected) return applyServerResponseHeaders(redirected, rules, pathname)
     return passThrough()
   }
 
@@ -208,7 +266,7 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
 
   // Try redirects after all security checks
   const redirected = await tryRedirect(request, settings)
-  if (redirected) return redirected
+  if (redirected) return applyServerResponseHeaders(redirected, rules, pathname)
 
   return passThrough()
 }

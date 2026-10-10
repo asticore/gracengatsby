@@ -3,29 +3,53 @@
 import React, { useEffect, useState } from 'react'
 
 import { MERGE_TAG_LIBRARY } from '@/lib/mergeTags'
-import { fetchFieldGroups, type FieldGroupDoc } from '@/fields/customFields/types'
+import { fetchFieldGroups, type CustomFieldDef, type FieldGroupDoc } from '@/fields/customFields/types'
 
 /**
  * Dropdown that inserts a merge tag into a text field.
  *
- * Shown next to any field marked `supportsMergeTags`, and most useful when
- * editing a Page Template that a Loop block renders per item. Custom fields
- * defined via Field Groups are listed alongside the built-in tags, so a field
- * someone added in the portal is immediately usable in a template.
+ * Shown next to any field marked `supportsMergeTags`. Custom fields are listed
+ * from the Field Groups that apply to `collection` when it is given (eg when
+ * editing a post), otherwise from every group (eg a Page Template, which a Loop
+ * can render for any collection). Nested fields show their dotted tag too.
  */
-export const MergeTagPicker: React.FC<{ onInsert: (tag: string) => void }> = ({ onInsert }) => {
+
+const TYPE_HINT: Partial<Record<CustomFieldDef['type'], string>> = {
+  link: 'link: url / title / target',
+  map: 'map: address / lat / lng / zoom',
+  gallery: 'gallery: .0, .1 = image URLs',
+  repeater: 'repeater: .0.field',
+  flexible: 'flexible: .0.layout / .0.field',
+  group: 'group: .field',
+  checkbox: 'checkbox: Yes / No',
+}
+
+function tagsFor(defs: CustomFieldDef[], prefix: string): { tag: string; label: string }[] {
+  const out: { tag: string; label: string }[] = []
+  for (const def of defs) {
+    const key = `${prefix}${def.name}`
+    out.push({ tag: `{{field:${key}}}`, label: def.label + (TYPE_HINT[def.type] ? ` (${TYPE_HINT[def.type]})` : '') })
+    if (def.type === 'group') {
+      for (const sub of def.subFields ?? []) out.push({ tag: `{{field:${key}.${sub.name}}}`, label: `${def.label} › ${sub.label}` })
+    }
+  }
+  return out
+}
+
+export const MergeTagPicker: React.FC<{ onInsert: (tag: string) => void; collection?: string }> = ({ onInsert, collection }) => {
   const [open, setOpen] = useState(false)
-  const [customGroups, setCustomGroups] = useState<FieldGroupDoc[]>([])
+  const [groups, setGroups] = useState<FieldGroupDoc[] | null>(null)
 
   useEffect(() => {
-    if (!open || customGroups.length > 0) return
-    // Any group counts here - a template can be looped over any collection, so
-    // every defined custom field is a potentially valid tag.
-    fetch('/api/field-groups?limit=100&depth=0', { credentials: 'include' })
-      .then((res) => (res.ok ? res.json() : { docs: [] as FieldGroupDoc[] }))
-      .then((json: { docs?: FieldGroupDoc[] }) => setCustomGroups(json.docs || []))
-      .catch(() => setCustomGroups([]))
-  }, [open, customGroups.length])
+    if (!open || groups !== null) return
+    let cancelled = false
+    fetchFieldGroups(collection ?? '').then(({ groups: docs }) => {
+      if (!cancelled) setGroups(docs)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, groups, collection])
 
   const insert = (tag: string) => {
     onInsert(tag)
@@ -64,29 +88,25 @@ export const MergeTagPicker: React.FC<{ onInsert: (tag: string) => void }> = ({ 
               </div>
             ))}
 
-            {customGroups.length > 0 && (
-              <div className="ve-tagpicker__group">
-                <h5>Custom fields</h5>
-                {customGroups.flatMap((group) =>
-                  (group.fields || []).map((field) => (
-                    <button
-                      key={`${group.id}-${field.name}`}
-                      type="button"
-                      className="ve-tagpicker__item"
-                      onClick={() => insert(`{{field:${field.name}}}`)}
-                    >
-                      <code>{`{{field:${field.name}}}`}</code>
-                      <span>{field.label}</span>
+            {groups === null && <p className="ve-tagpicker__hint">Loading custom fields…</p>}
+            {(groups ?? []).map((group) => {
+              const tags = tagsFor(group.fields, '')
+              if (tags.length === 0) return null
+              return (
+                <div className="ve-tagpicker__group" key={group.id}>
+                  <h5>{group.name}</h5>
+                  {tags.map((entry) => (
+                    <button key={entry.tag} type="button" className="ve-tagpicker__item" onClick={() => insert(entry.tag)}>
+                      <code>{entry.tag}</code>
+                      <span>{entry.label}</span>
                     </button>
-                  )),
-                )}
-              </div>
-            )}
+                  ))}
+                </div>
+              )
+            })}
           </div>
         </>
       )}
     </div>
   )
 }
-
-export { fetchFieldGroups }

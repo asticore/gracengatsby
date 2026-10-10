@@ -5,6 +5,14 @@
 
 import type { CollectionBeforeChangeHook } from '@/engine'
 import { can } from './permissions'
+import { loadApprovalSettings, publishBlockMessage } from '@/features/approval/settings'
+import {
+  hashReviewedContent,
+  parseStatus,
+  parseStoredReview,
+  resetOnEdit,
+  serializeStoredReview,
+} from '@/features/approval/stateMachine'
 
 /**
  * Pure function to apply content-only edit restrictions.
@@ -174,46 +182,115 @@ export const contentEditGuard: CollectionBeforeChangeHook = async (args: unknown
   Object.assign(data, result.data)
 }
 
+/** A relationship value may arrive as an id or as a populated object. Stored form is the id. */
+const relationId = (value: unknown): number | null => {
+  const raw = typeof value === 'object' && value !== null ? (value as { id?: unknown }).id : value
+  const id = Number(raw)
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
 /**
- * Before-change hook for enforcing publish permissions.
+ * Keeps the review fields server-owned. On create they start empty. On update they come from the
+ * stored document, whatever the client sent. An approved document that is edited goes back to
+ * review with its approvals cleared (the approval was for the old content). A document in review
+ * whose content changed keeps its place in review but loses its approvals, for the same reason.
+ * "Changed" is judged by a hash of the reviewed content, stored with the approvals.
+ */
+function applyReviewFieldRules(data: Record<string, any>, originalDoc: Record<string, any> | undefined, operation: string): void {
+  if (operation === 'create' || !originalDoc) {
+    data.reviewStatus = 'none'
+    data.reviewRequestedBy = null
+    data.reviewRequestedAt = null
+    data.reviewApprovals = []
+    return
+  }
+
+  const stored = parseStoredReview(originalDoc.reviewApprovals)
+  const status = parseStatus(originalDoc.reviewStatus)
+  // The document as it will be after this save. Fields the client did not send keep their stored value.
+  const merged = { ...originalDoc, ...data }
+  const contentHash = hashReviewedContent(merged)
+  // Without a stored hash (rows from before hashes were kept) the approvals cannot be matched to the content, so they are dropped.
+  const contentChanged = stored.hash === null || stored.hash !== contentHash
+
+  const next = resetOnEdit(
+    { status, requestedBy: relationId(originalDoc.reviewRequestedBy), approvals: stored.approvals },
+    contentChanged,
+  )
+  data.reviewStatus = next.status
+  data.reviewRequestedBy = next.requestedBy
+  data.reviewRequestedAt = originalDoc.reviewRequestedAt ?? null
+  data.reviewApprovals = serializeStoredReview({
+    hash: next.status === 'in_review' ? contentHash : null,
+    approvals: next.approvals,
+  })
+}
+
+/**
+ * Before-change hook for enforcing publish permissions and content approval.
  * Applied to collections with drafts: Pages, Posts, Products, Events, Courses.
  *
  * Non-publishers can only save drafts. If a document is already published,
  * non-publishers cannot modify it.
  *
  * Behavior:
- * - On create: force _status = 'draft'
- * - On update: if !can(publish) and would become published, force 'draft'
+ * - On create: force _status = 'draft' for non-publishers
  * - On update: if !can(publish) and original is published, throw error (cannot edit published)
+ * - On update: if !can(publish) and would become published, force 'draft'
+ * - Review (when the approval rules require it for this collection): a non-admin cannot leave a
+ *   document published from an ordinary save. Publishing a reviewed document goes through the
+ *   approval routes, which write without a user and so are not guarded here.
+ * - Review fields are server-owned on every user write (see applyReviewFieldRules).
+ * - Admins skip the publish checks but not the review field rules.
  */
 export const publishGuard: CollectionBeforeChangeHook = async (args: unknown): Promise<void> => {
   const { data, originalDoc, req, operation, collection } = args as any
 
   // System writes (cron, scheduled publish, scripts) have no user: never guard them.
   if (!req?.user) return
-  // Skip for admins
-  if (req.user.roles?.includes('admin')) return
 
-  // Check if user has publish permission
-  const canPublish = can(req.user, collection?.slug as any, 'publish')
+  const isAdmin = Boolean(req.user.roles?.includes('admin'))
+  const slug = String(collection?.slug ?? '')
 
-  if (operation === 'create') {
-    // Always draft on create for non-publishers
-    if (!canPublish) {
-      data._status = 'draft'
+  applyReviewFieldRules(data, originalDoc, operation)
+
+  if (!isAdmin) {
+    // Check if user has publish permission
+    const canPublish = can(req.user, slug as any, 'publish')
+
+    if (operation === 'create') {
+      // Always draft on create for non-publishers
+      if (!canPublish) {
+        data._status = 'draft'
+      }
+    } else if (operation === 'update') {
+      // If original was published and user can't publish, block the update
+      if (originalDoc?._status === 'published' && !canPublish) {
+        await throwValidation('_status', 'Your role can save drafts but not change a published document. Ask an editor to publish.')
+      }
+
+      // If trying to publish and user can't, force to draft
+      if (data._status === 'published' && !canPublish) {
+        data._status = 'draft'
+      }
     }
-    return
+
+    const effectiveStatus = data._status ?? (operation === 'update' ? originalDoc?._status : undefined)
+    if (effectiveStatus === 'published') {
+      const settings = await loadApprovalSettings(req.engine)
+      const reason = publishBlockMessage({ settings, collection: slug, reviewStatus: data.reviewStatus, isAdmin: false })
+      if (reason) {
+        await throwValidation('_status', reason)
+      }
+    }
   }
 
-  if (operation === 'update') {
-    // If original was published and user can't publish, block the update
-    if (originalDoc?._status === 'published' && !canPublish) {
-      await throwValidation('_status', 'Your role can save drafts but not change a published document. Ask an editor to publish.')
-    }
-
-    // If trying to publish and user can't, force to draft
-    if (data._status === 'published' && !canPublish) {
-      data._status = 'draft'
-    }
+  // Publishing ends any review: the document is no longer waiting on anyone.
+  const effectiveStatus = data._status ?? (operation === 'update' ? originalDoc?._status : undefined)
+  if (effectiveStatus === 'published') {
+    data.reviewStatus = 'none'
+    data.reviewRequestedBy = null
+    data.reviewRequestedAt = null
+    data.reviewApprovals = []
   }
 }

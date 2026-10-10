@@ -80,10 +80,35 @@ export async function putMediaObject(key: string, data: Uint8Array, contentType:
   await bucket.put(key, data, { httpMetadata: { contentType } })
 }
 
-/** `deleteFile.js`, ported. */
+/** Where an untouched copy of a picture is kept when Media Settings asks for it. Never served by the public file route. */
+export const ORIGINAL_PREFIX = 'original/'
+
+/** `deleteFile.js`, ported. Also removes the kept original (see `putOriginalIfMissing`), so a deleted picture leaves nothing behind. */
 export async function deleteMediaObject(key: string): Promise<void> {
   const bucket = await getMediaBucket()
-  await bucket.delete(key)
+  await bucket.delete([key, `${ORIGINAL_PREFIX}${key}`])
+}
+
+/**
+ * Stores the untouched bytes of a picture under `original/<filename>`, but only
+ * if no copy is there yet - so the first version ever seen is the one kept, not
+ * the most recent. Returns whether a copy was written.
+ */
+export async function putOriginalIfMissing(filename: string, data: Uint8Array, contentType: string): Promise<boolean> {
+  const bucket = await getMediaBucket()
+  const key = `${ORIGINAL_PREFIX}${filename}`
+  if (await bucket.head(key)) return false
+  await bucket.put(key, data, { httpMetadata: { contentType } })
+  return true
+}
+
+/** Reads a stored picture's bytes back, for optimisation and alt text. Returns null when the object is missing. */
+export async function readMediaObject(key: string): Promise<{ data: Uint8Array; contentType: string } | null> {
+  const bucket = await getMediaBucket()
+  const object = await bucket.get(key)
+  if (!object) return null
+  const data = new Uint8Array(await object.arrayBuffer())
+  return { data, contentType: object.httpMetadata?.contentType ?? 'application/octet-stream' }
 }
 
 /**
@@ -121,7 +146,21 @@ function parseRangeHeader(rangeHeader: string | null): R2Range | undefined {
  * always-public-read shape (see this file's header). Returns `null` when the
  * object doesn't exist (caller maps that to 404) rather than throwing.
  */
+/**
+ * Whether a requested filename may be served by the public file route. Refuses
+ * anything that could reach outside the flat media namespace (path separators,
+ * `..`), and anything that starts with `original`, so the kept copies under
+ * `original/<name>` (see `putOriginalIfMissing`) are never publicly readable.
+ */
+export function isServableMediaFilename(filename: string): boolean {
+  if (!filename || filename.includes('\0')) return false
+  if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) return false
+  if (filename.toLowerCase().startsWith('original')) return false
+  return true
+}
+
 export async function getMediaObjectResponse(key: string, request: Request): Promise<Response | null> {
+  if (!isServableMediaFilename(key)) return null
   const bucket = await getMediaBucket()
   const requestedRange = parseRangeHeader(request.headers.get('Range'))
   const object = await bucket.get(key, requestedRange ? { range: requestedRange } : undefined)

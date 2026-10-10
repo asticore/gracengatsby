@@ -1,8 +1,10 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 
-import { CONSENT_EVENT, CONSENT_STORAGE_KEY, type ConsentValue } from '../consent'
+import { effectiveChoices, type ConsentChoices } from '@/features/consent/consent'
+import { consentDefaultSnippet, consentUpdateSnippet } from '@/features/consent/googleConsentMode'
+import { getConsentState, SERVER_CONSENT_STATE, subscribeConsent, type ConsentState } from '@/features/consent/store'
 
 export type AnalyticsIds = {
   gtmContainerId?: string
@@ -12,32 +14,10 @@ export type AnalyticsIds = {
 }
 
 export type AnalyticsLoaderProps = AnalyticsIds & {
-  requireConsent: boolean
-}
-
-/**
- * Consent is kept in localStorage rather than a cookie: nothing server-side
- * needs to read it (the tags are injected in the browser either way), and a
- * cookie set purely to remember that cookies were refused is the exact thing
- * the flag exists to avoid.
- */
-const readConsent = (): ConsentValue | null => {
-  try {
-    const stored = window.localStorage.getItem(CONSENT_STORAGE_KEY)
-    return stored === 'granted' || stored === 'denied' ? stored : null
-  } catch {
-    return null
-  }
-}
-
-const writeConsent = (value: ConsentValue) => {
-  try {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, value)
-  } catch {
-    // Private browsing and blocked storage both land here. The choice applies
-    // to this page view and is simply asked again next time.
-  }
-  window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: value }))
+  /** Visitor must choose before optional tags load (see requireOptIn). */
+  optIn: boolean
+  policyVersion: number
+  consentModeV2: boolean
 }
 
 const appendScript = (attributes: Record<string, string>, inline?: string) => {
@@ -47,23 +27,41 @@ const appendScript = (attributes: Record<string, string>, inline?: string) => {
   document.head.appendChild(script)
 }
 
-// One injection per page load, however many times the component re-renders.
-let injected = false
+/*
+ * Tag state for this page load. Tags cannot be unloaded, so once one is in
+ * the document it stays for the rest of the visit.
+ *
+ * With Consent Mode v2 on, a refusal after load changes the consent signals
+ * Google receives, and new tags stop loading on the next page view.
+ *
+ * With Consent Mode v2 off there are no signals to change, so a tag that has
+ * already loaded keeps running until the page reloads. ConsentManager reloads
+ * the page when analytics or marketing is withdrawn, so a refusal takes effect
+ * straight away; the reload is what makes withdrawal after load real.
+ */
+const tagState = {
+  consentDefaultPushed: false,
+  lastSignalKey: '',
+  gtm: false,
+  analytics: false,
+  marketing: false,
+}
 
-const injectTags = ({ gtmContainerId, ga4MeasurementId, metaPixelId, clarityProjectId }: AnalyticsIds) => {
-  if (injected) return
-  injected = true
-
+const loadGtm = (gtmContainerId?: string) => {
+  if (tagState.gtm || !gtmContainerId) return
+  tagState.gtm = true
   const w = window as unknown as Record<string, unknown>
+  w.dataLayer = (w.dataLayer as unknown[]) || []
+  ;(w.dataLayer as unknown[]).push({ 'gtm.start': Date.now(), event: 'gtm.js' })
+  appendScript({
+    async: 'true',
+    src: `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(gtmContainerId)}`,
+  })
+}
 
-  if (gtmContainerId) {
-    w.dataLayer = (w.dataLayer as unknown[]) || []
-    ;(w.dataLayer as unknown[]).push({ 'gtm.start': Date.now(), event: 'gtm.js' })
-    appendScript({
-      async: 'true',
-      src: `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(gtmContainerId)}`,
-    })
-  }
+const loadAnalyticsTags = ({ ga4MeasurementId, clarityProjectId }: AnalyticsIds) => {
+  if (tagState.analytics) return
+  tagState.analytics = true
 
   if (ga4MeasurementId) {
     appendScript({
@@ -74,18 +72,6 @@ const injectTags = ({ gtmContainerId, ga4MeasurementId, metaPixelId, clarityProj
       {},
       `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}` +
         `gtag('js',new Date());gtag('config',${JSON.stringify(ga4MeasurementId)});`,
-    )
-  }
-
-  if (metaPixelId) {
-    appendScript(
-      {},
-      `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?` +
-        `n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;` +
-        `n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;` +
-        `t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}` +
-        `(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');` +
-        `fbq('init',${JSON.stringify(metaPixelId)});fbq('track','PageView');`,
     )
   }
 
@@ -100,106 +86,68 @@ const injectTags = ({ gtmContainerId, ga4MeasurementId, metaPixelId, clarityProj
   }
 }
 
-const bannerStyles: Record<string, React.CSSProperties> = {
-  bar: {
-    position: 'fixed',
-    insetInline: 0,
-    bottom: 0,
-    zIndex: 2147483000,
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.75rem',
-    padding: '0.9rem 1.25rem',
-    background: '#111',
-    color: '#fff',
-    font: '400 0.875rem/1.4 system-ui, sans-serif',
-  },
-  text: { margin: 0, maxWidth: '48rem' },
-  button: {
-    cursor: 'pointer',
-    border: '1px solid #fff',
-    borderRadius: '999px',
-    padding: '0.4rem 1.1rem',
-    font: 'inherit',
-    background: 'transparent',
-    color: '#fff',
-  },
-  accept: {
-    cursor: 'pointer',
-    border: '1px solid #fff',
-    borderRadius: '999px',
-    padding: '0.4rem 1.1rem',
-    font: 'inherit',
-    background: '#fff',
-    color: '#111',
-  },
+const loadMarketingTags = ({ metaPixelId }: AnalyticsIds) => {
+  if (tagState.marketing || !metaPixelId) return
+  tagState.marketing = true
+  appendScript(
+    {},
+    `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?` +
+      `n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;` +
+      `n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;` +
+      `t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}` +
+      `(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');` +
+      `fbq('init',${JSON.stringify(metaPixelId)});fbq('track','PageView');`,
+  )
 }
 
 /**
- * Injects the analytics tags in the browser, never in the server render.
+ * Brings the page's tags in line with the visitor's choices.
  *
- * Doing it client-side is what makes the consent flag enforceable: when it is
- * on, no third-party request is made and no tag is in the document until the
- * visitor has actually said yes. Server-rendering the snippets and hiding them
- * behind a banner would still have loaded them.
+ * Consent Mode goes first: the default (or, on a later change, an update) is
+ * pushed before any Google tag is added, so no tag can see a stale state. The
+ * tags for a category load only once that category is granted.
  */
-export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({ requireConsent, ...ids }) => {
-  const [askConsent, setAskConsent] = useState(false)
+export function syncAnalyticsTags(ids: AnalyticsIds, consentModeV2: boolean, choices: ConsentChoices): void {
+  const hasTags = Boolean(ids.gtmContainerId || ids.ga4MeasurementId || ids.metaPixelId || ids.clarityProjectId)
+  if (!hasTags) return
+
+  const signalKey = JSON.stringify(choices)
+  if (consentModeV2) {
+    if (!tagState.consentDefaultPushed) {
+      tagState.consentDefaultPushed = true
+      appendScript({}, consentDefaultSnippet(choices))
+    } else if (signalKey !== tagState.lastSignalKey) {
+      appendScript({}, consentUpdateSnippet(choices))
+    }
+  }
+  tagState.lastSignalKey = signalKey
+
+  // Without Consent Mode, GTM also carries marketing tags, so it waits for both
+  // categories. With Consent Mode, Google's signals cover a refusal and GTM
+  // loads on analytics alone, as before.
+  const gtmGranted = consentModeV2 ? choices.analytics : choices.analytics && choices.marketing
+  if (gtmGranted) loadGtm(ids.gtmContainerId)
+  if (choices.analytics) loadAnalyticsTags(ids)
+  if (choices.marketing) loadMarketingTags(ids)
+}
+
+/**
+ * Renders nothing. Exists to run the tag loader in the browser, where the
+ * consent decision is known; the server never renders a tag.
+ *
+ * Doing it client-side is what makes the consent gate real: with opt-in on,
+ * no third-party request is made until the visitor has said yes.
+ */
+export const AnalyticsLoader = ({ optIn, policyVersion, consentModeV2, ...ids }: AnalyticsLoaderProps): null => {
+  const consent = useSyncExternalStore(subscribeConsent, getConsentState, (): ConsentState => SERVER_CONSENT_STATE)
+  const choices = effectiveChoices(consent.record, policyVersion, !optIn)
+  const signalKey = JSON.stringify(choices)
 
   useEffect(() => {
-    if (!ids.gtmContainerId && !ids.ga4MeasurementId && !ids.metaPixelId && !ids.clarityProjectId) return
-
-    if (!requireConsent) {
-      injectTags(ids)
-      return
-    }
-
-    const decision = readConsent()
-    if (decision === 'granted') {
-      injectTags(ids)
-      return
-    }
-    if (decision === 'denied') return
-
-    // Deferred rather than set straight away: showing the banner is a second
-    // render, and doing that synchronously inside the effect makes it cascade
-    // off the first paint. A microtask is late enough to avoid that and early
-    // enough that nobody sees a gap. The flag guards against the component
-    // unmounting in between.
-    let live = true
-    queueMicrotask(() => {
-      if (live) setAskConsent(true)
-    })
-    return () => {
-      live = false
-    }
+    syncAnalyticsTags(ids, consentModeV2, JSON.parse(signalKey) as ConsentChoices)
+    // The ids are primitives; the choice is passed as its key, so this runs once per real change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requireConsent, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId, ids.clarityProjectId])
+  }, [signalKey, consentModeV2, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId, ids.clarityProjectId])
 
-  const decide = useCallback(
-    (value: ConsentValue) => {
-      writeConsent(value)
-      setAskConsent(false)
-      if (value === 'granted') injectTags(ids)
-    },
-    [ids],
-  )
-
-  if (!askConsent) return null
-
-  return (
-    <div role="dialog" aria-label="Cookie consent" style={bannerStyles.bar}>
-      <p style={bannerStyles.text}>
-        We use cookies to understand how this site is used. Nothing is loaded until you agree.
-      </p>
-      <button type="button" style={bannerStyles.button} onClick={() => decide('denied')}>
-        Decline
-      </button>
-      <button type="button" style={bannerStyles.accept} onClick={() => decide('granted')}>
-        Accept
-      </button>
-    </div>
-  )
+  return null
 }

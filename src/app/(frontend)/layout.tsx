@@ -35,6 +35,9 @@ import type { Footer as FooterGlobal, Header as HeaderGlobal, Media, SiteSetting
 
 import { SeoBodyScripts, SeoJsonLd, SeoScripts } from '@/features/seo'
 import { SpeedHead } from '@/features/speed'
+import { buildFontCss, preloadLinks, remoteStylesheetUrls, resolveThemeFont } from '@/features/fonts/css'
+import { sanitizeInstalledFonts } from '@/features/fonts/installed'
+import type { InstalledFont } from '@/features/fonts/types'
 
 import './styles.css'
 
@@ -139,12 +142,25 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const logo = settings?.logo && typeof settings.logo === 'object' ? (settings.logo as Media) : null
   const theme = settings?.theme
 
+  // Only the installed fonts actually picked for heading or body get CSS,
+  // links and preloads; the built-in faces keep coming from @fontsource above.
+  const customFonts = sanitizeInstalledFonts((theme as { customFonts?: unknown } | null | undefined)?.customFonts)
+  const heading = resolveThemeFont(theme?.headingFont, HEADING_FONT_VARS, 'cormorant', customFonts)
+  const body = resolveThemeFont(theme?.bodyFont, BODY_FONT_VARS, 'jost', customFonts)
+  const fontsInUse = [heading.installed, body.installed]
+    .filter((font): font is InstalledFont => font !== null)
+    .filter((font, index, all) => all.findIndex((other) => other.id === font.id) === index)
+  const fontCss = buildFontCss(fontsInUse)
+  const googleStylesheets = remoteStylesheetUrls(fontsInUse)
+  const fontPreloads = preloadLinks(fontsInUse, fontsInUse.map((font) => font.family))
+  const usesFontsource = fontsInUse.some((font) => font.source === 'fontsource' && !font.local)
+
   const themeVars = [
     theme?.primaryColor ? `--color-ink: ${theme.primaryColor};` : '',
     theme?.accentColor ? `--color-gold: ${theme.accentColor};` : '',
     theme?.backgroundColor ? `--color-cream: ${theme.backgroundColor};` : '',
-    `--font-display: ${HEADING_FONT_VARS[theme?.headingFont || 'cormorant']};`,
-    `--font-body: ${BODY_FONT_VARS[theme?.bodyFont || 'jost']};`,
+    `--font-display: ${heading.stack};`,
+    `--font-body: ${body.stack};`,
     `--radius: ${RADIUS_VALUES[theme?.cornerStyle || 'soft']};`,
   ].join(' ')
 
@@ -156,6 +172,16 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     >
       <head>
         <SpeedHead />
+        {googleStylesheets.length > 0 && <link rel="preconnect" href="https://fonts.googleapis.com" />}
+        {googleStylesheets.length > 0 && <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />}
+        {usesFontsource && <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />}
+        {googleStylesheets.map((href) => (
+          <link key={href} rel="stylesheet" href={href} />
+        ))}
+        {fontPreloads.map((preload) => (
+          <link key={preload.href} rel="preload" as="font" type={preload.type} href={preload.href} crossOrigin="anonymous" />
+        ))}
+        {fontCss && <style dangerouslySetInnerHTML={{ __html: fontCss }} />}
       </head>
       <body>
         <SeoScripts />

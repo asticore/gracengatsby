@@ -76,17 +76,27 @@ export type GeneratedUploadFields = {
   filesize: number
   width?: number
   height?: number
+  originalSize?: number
+  optimizedSize?: number
 }
 
 /* -------------------------------------------------------------------------- */
 /* isImage - the vendor source, verbatim list                  */
 /* -------------------------------------------------------------------------- */
 
-const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp'])
+const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp', 'image/avif'])
 
-/** The reference engine's own `isImage()` list also includes `image/avif`/`image/jxl` - deliberately excluded here since `probeImageDimensions` below has no decoder for either (see this file's header). Any upload claiming one of those two mimetypes skips width/height entirely rather than reaching a prober that would just throw - a narrower, more forgiving deviation than the reference engine's own behavior, and not reachable by any of this app's own real upload flows (confirmed: nothing in `src/`, the admin UI's own accepted-file affordances, or this app's test fixtures ever produces an avif/jxl file). */
+/**
+ * Lowercases a declared mimetype and drops any `;` parameters (`text/html; charset=utf-8`
+ * becomes `text/html`). Every type check in this module compares normalised values.
+ */
+export function normaliseMimeType(mimeType: string | null | undefined): string {
+  return (mimeType ?? '').split(';')[0].trim().toLowerCase()
+}
+
+/** The reference engine's own `isImage()` list also includes `image/jxl`, which is deliberately not here: there is no decoder for it. AVIF is included; its dimensions are read from the `ispe` box, and an AVIF without one is accepted without width/height (see `generateUploadFields`). */
 export function isImageMimeType(mimeType: string): boolean {
-  return IMAGE_MIME_TYPES.has(mimeType)
+  return IMAGE_MIME_TYPES.has(normaliseMimeType(mimeType))
 }
 
 /* -------------------------------------------------------------------------- */
@@ -130,15 +140,33 @@ const RESTRICTED_FILE_EXT_AND_TYPES: Array<{ extensions: string[]; mimeType: str
   { extensions: ['command'], mimeType: 'application/x-command' },
 ]
 
-function checkRestrictedFileType(file: UploadFile): void {
-  const isRestricted = RESTRICTED_FILE_EXT_AND_TYPES.some(
-    ({ extensions, mimeType }) => extensions.some((ext) => file.name.toLowerCase().endsWith(ext)) || mimeType === file.mimetype,
-  )
+/**
+ * Markup and script-capable types. Served back from this origin they can run
+ * script, so they are refused whatever the browser says they are - an SVG is
+ * the same risk as an HTML page. This is a deliberate deny, not a side effect
+ * of the blocklist above.
+ */
+const DENIED_MIME_TYPES = new Set(['text/html', 'application/xhtml+xml', 'text/xml', 'application/xml', 'image/svg+xml'])
+const DENIED_EXTENSIONS = new Set(['html', 'htm', 'xhtml', 'xml', 'svg', 'svgz'])
+
+/** The extension of a filename, lowercased, with any `?query` cut off. Empty when there is none. */
+function extensionOf(name: string): string {
+  if (!name.includes('.')) return ''
+  return (name.split('.').pop() ?? '').split('?')[0].toLowerCase()
+}
+
+/** Refuses a file whose normalised mimetype or extension is on a blocklist. `mimeType` must already be normalised. */
+function checkRestrictedFileType(name: string, mimeType: string): void {
+  const ext = extensionOf(name)
+  const isRestricted =
+    DENIED_MIME_TYPES.has(mimeType) ||
+    DENIED_EXTENSIONS.has(ext) ||
+    RESTRICTED_FILE_EXT_AND_TYPES.some(({ extensions, mimeType: restricted }) => extensions.includes(ext) || restricted === mimeType)
   if (isRestricted) {
     throw new ValidationError([
       {
         path: 'file',
-        message: `File type '${file.mimetype}' not allowed for ${file.name}: restricted file type detected -- set 'allowRestrictedFileTypes' to true to skip this check for this collection.`,
+        message: `File type '${mimeType}' not allowed for ${name}: restricted file type detected -- set 'allowRestrictedFileTypes' to true to skip this check for this collection.`,
       },
     ])
   }
@@ -295,14 +323,30 @@ function probeSvg(bytes: Uint8Array): ImageDimensions | null {
   return null
 }
 
+/** AVIF: the image's pixel size is in an `ispe` (image spatial extents) item property box inside the file's `meta` box, which sits near the start of the file. Its layout is size(4) 'ispe' version/flags(4) width(4) height(4), so the width and height follow the fourCC at +8 and +12. */
+function probeAvif(bytes: Uint8Array): ImageDimensions | null {
+  if (bytes.length < 32 || asciiAt(bytes, 4, 4) !== 'ftyp') return null
+  const dv = view(bytes)
+  // Scans up to the last offset at which a whole ispe box (16 bytes) still fits.
+  const limit = Math.min(bytes.length - 15, 8192)
+  for (let i = 0; i < limit; i++) {
+    if (bytes[i] === 0x69 && bytes[i + 1] === 0x73 && bytes[i + 2] === 0x70 && bytes[i + 3] === 0x65) {
+      return { width: dv.getUint32(i + 8, false), height: dv.getUint32(i + 12, false) }
+    }
+  }
+  return null
+}
+
 /** Throws (matching real `probeImageSize.js`'s own "Unsupported image type" throw, via `generateFileData.js`'s enclosing try/catch) rather than returning a partial/zero result, since a stored media doc with an image mimetype and no width/height would be a silent data-quality regression no caller of this collection expects. */
 export function probeImageDimensions(data: Uint8Array, mimeType: string): ImageDimensions {
   let result: ImageDimensions | null = null
-  if (mimeType === 'image/png') result = probePng(data)
-  else if (mimeType === 'image/gif') result = probeGif(data)
-  else if (mimeType === 'image/jpeg') result = probeJpeg(data)
-  else if (mimeType === 'image/webp') result = probeWebp(data)
-  else if (mimeType === 'image/svg+xml') result = probeSvg(data)
+  const type = normaliseMimeType(mimeType)
+  if (type === 'image/png') result = probePng(data)
+  else if (type === 'image/gif') result = probeGif(data)
+  else if (type === 'image/jpeg') result = probeJpeg(data)
+  else if (type === 'image/webp') result = probeWebp(data)
+  else if (type === 'image/svg+xml') result = probeSvg(data)
+  else if (type === 'image/avif') result = probeAvif(data)
   if (!result || !result.width || !result.height) {
     throw new ValidationError([{ path: 'file', message: 'Unsupported image type: unable to determine dimensions.' }])
   }
@@ -324,33 +368,52 @@ export function probeImageDimensions(data: Uint8Array, mimeType: string): ImageD
  * shape decisions (`/api/media/file/:filename`, always-null respectively),
  * left to the caller (`./engine.ts`) rather than duplicated here.
  */
-export async function generateUploadFields(args: { file: UploadFile; filenameExists: (filename: string) => Promise<boolean> }): Promise<GeneratedUploadFields> {
-  const { file, filenameExists } = args
+export async function generateUploadFields(args: {
+  file: UploadFile
+  filenameExists: (filename: string) => Promise<boolean>
+  /**
+   * Set by the optimise-on-upload hook (see src/features/media/uploadHook.ts)
+   * when the bytes in `file` were re-encoded: `originalSize` is the size the
+   * visitor sent, and `optimised` says whether `file` is the smaller copy.
+   */
+  optimisation?: { originalSize: number; optimised: boolean }
+}): Promise<GeneratedUploadFields> {
+  const { file, filenameExists, optimisation } = args
 
-  checkRestrictedFileType(file)
+  // The declared type is normalised before any check, so `Text/HTML; charset=utf-8`
+  // is judged exactly like `text/html`.
+  const mimeType = normaliseMimeType(file.mimetype)
+  checkRestrictedFileType(file.name, mimeType)
 
-  const ext = file.name.includes('.') ? (file.name.split('.').pop()?.split('?')[0] ?? '') : ''
-  let mimeType = file.mimetype
-  // The reference engine's own "fromBuffer modifies it" SVG correction - harmless to
-  // keep even though this app's no-sharp path never runs `fileTypeFromBuffer`,
-  // since a browser or API client can independently send an SVG upload with
-  // `Content-Type: application/xml`/`text/xml` instead of `image/svg+xml`.
-  if ((mimeType === 'application/xml' || mimeType === 'text/xml') && ext.toLowerCase() === 'svg') {
-    mimeType = 'image/svg+xml'
-  }
-
+  // Only letters and digits survive in the extension, so it can never carry a
+  // path separator into the stored key.
+  const ext = extensionOf(file.name).replace(/[^a-z0-9]/g, '').slice(0, 10)
   const baseFilename = sanitizeFilename(file.name.substring(0, file.name.lastIndexOf('.')) || file.name)
+  // A name that sanitises to nothing (`???.jpg`, `..`) has no safe stored form, so it is refused before anything is written.
+  if (!baseFilename) {
+    throw new ValidationError([{ path: 'file', message: 'This file needs a name that uses letters or numbers.' }])
+  }
   let filename = `${baseFilename}${ext ? `.${ext}` : ''}`
   while (await filenameExists(filename)) {
     filename = incrementName(filename)
   }
 
   const fields: GeneratedUploadFields = { filename, mimeType, filesize: file.size }
+  // Every upload records its own size as the original, so the field is always
+  // filled in; the optimised size is only recorded when a re-encode happened.
+  fields.originalSize = optimisation?.originalSize ?? file.size
+  if (optimisation?.optimised) fields.optimizedSize = file.size
 
   if (isImageMimeType(mimeType)) {
-    const dimensions = probeImageDimensions(file.data, mimeType)
-    fields.width = dimensions.width
-    fields.height = dimensions.height
+    try {
+      const dimensions = probeImageDimensions(file.data, mimeType)
+      fields.width = dimensions.width
+      fields.height = dimensions.height
+    } catch (error) {
+      // An AVIF without a readable `ispe` box is still a valid picture; it is
+      // stored without dimensions. Every other image type must probe.
+      if (mimeType !== 'image/avif') throw error
+    }
   }
 
   return fields

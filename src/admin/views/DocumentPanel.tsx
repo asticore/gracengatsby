@@ -21,6 +21,7 @@ import { useDocumentSave } from './useDocumentSave'
 import { VisibilityPanel } from './VisibilityPanel'
 import { SchedulePanel } from './SchedulePanel'
 import { EditLockBanner } from './EditLockBanner'
+import { setCardOpen, useCardOpen } from '@/admin/components/collapseStore'
 
 export type DocumentPanelInfo = {
   collectionSlug: string
@@ -48,41 +49,20 @@ export type DocumentPanelInfo = {
   canPreview: boolean
 }
 
-const BOX_STATE_KEY = 'ac-doc-panel-boxes'
-
-function readBoxState(): Record<string, boolean> {
-  try {
-    const raw = window.localStorage.getItem(BOX_STATE_KEY)
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {}
-  } catch {
-    return {}
-  }
-}
-
-function writeBoxState(state: Record<string, boolean>) {
-  try {
-    window.localStorage.setItem(BOX_STATE_KEY, JSON.stringify(state))
-  } catch {
-    // Storage can be blocked; boxes just open by default next time.
-  }
-}
-
+/**
+ * A collapsible box in the side panel. Open state is remembered per user via
+ * the shared edit-screen store (ids are namespaced `panel:<id>`).
+ */
 const Box: React.FC<{ id: string; title: string; children: React.ReactNode }> = ({ id, title, children }) => {
-  const [open, setOpen] = useState(true)
-  useEffect(() => {
-    // localStorage is only readable after mount (reading it during render would not match the server HTML).
-    const stored = readBoxState()[id]
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (stored !== undefined) setOpen(stored)
-  }, [id])
+  const storeId = `panel:${id}`
+  const [open] = useCardOpen(storeId)
   return (
     <details
       className="doc-box"
       open={open}
       onToggle={(event) => {
-        const next = (event.currentTarget as HTMLDetailsElement).open
-        setOpen(next)
-        writeBoxState({ ...readBoxState(), [id]: next })
+        // Fires for user clicks and for our own `open` prop changes; setCardOpen ignores no-ops.
+        setCardOpen(storeId, (event.currentTarget as HTMLDetailsElement).open)
       }}
     >
       <summary className="doc-box__title">{title}</summary>

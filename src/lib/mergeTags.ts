@@ -3,22 +3,69 @@
  * design for the Loop block, and lets any text field pull in values from the
  * document being rendered.
  *
- * Syntax: {{title}}, {{price}}, {{url}}, {{field:my_custom_field}}
+ * Syntax: {{title}}, {{price}}, {{url}}, {{field:my_custom_field}},
+ * {{field:repeater.0.sub}}, {{field:gallery.0}}, {{option:site.phone}}
  *
  * A tag that resolves to nothing is replaced with an empty string rather than
  * left as literal braces, so a half-filled item never shows "{{excerpt}}" to a
  * visitor. Tags are resolved against a flat record built by buildMergeContext.
  */
 
+import { buildGuessedCustomContext } from '@/features/customFields/stringify'
+
 export type MergeContext = Record<string, string>
+
+export type ResolveOptions = {
+  /**
+   * Leave tags with no matching key untouched. Single pages use this so text
+   * that happens to contain braces is not mangled. Loops keep the default
+   * (replace with ''), so a half-filled card never shows a literal tag.
+   * `field:` and `option:` tags always resolve, to '' when empty.
+   */
+  keepUnknown?: boolean
+}
 
 const TAG_PATTERN = /\{\{\s*([a-zA-Z0-9_:.-]+)\s*\}\}/g
 
-/** Replaces every merge tag in a string. Non-strings pass through untouched. */
-export function resolveTags(input: unknown, context: MergeContext): unknown {
+const hasOwn = (object: object, key: string): boolean => Object.prototype.hasOwnProperty.call(object, key)
+
+/**
+ * Replaces every merge tag in a string. Non-strings pass through untouched. Only the context's own
+ * keys count: a tag such as {{constructor}} or {{toString}} must not reach Object.prototype.
+ * Resolved values are plain text; React escapes them, so nothing is escaped here. URL attributes
+ * are the exception and go through safeUrl().
+ */
+export function resolveTags(input: unknown, context: MergeContext, options: ResolveOptions = {}): unknown {
   if (typeof input !== 'string') return input
   if (!input.includes('{{')) return input
-  return input.replace(TAG_PATTERN, (_match, key: string) => context[key] ?? '')
+  return input.replace(TAG_PATTERN, (match, key: string) => {
+    if (hasOwn(context, key)) return context[key] ?? ''
+    if (key.startsWith('field:') || key.startsWith('option:')) return ''
+    return options.keepUnknown ? match : ''
+  })
+}
+
+/** Schemes a link or image may use. Anything else (javascript:, data:, vbscript:, ...) is refused. */
+const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:'])
+
+/**
+ * Returns the URL when it is safe to put in an href or src, otherwise null. Allowed: http, https,
+ * mailto and tel links, root-relative paths ("/shop") and in-page anchors ("#top"). Control
+ * characters are stripped first, as browsers ignore them inside a scheme ("java\tscript:").
+ */
+export function safeUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const cleaned = value.replace(/[\u0000-\u001F\u007F]/g, '').trim()
+  if (!cleaned) return null
+  if (cleaned.startsWith('#')) return cleaned
+  // Root-relative only: "//host/path" is a protocol-relative link to another site, and "/\\" is read as one by some browsers.
+  if (cleaned.startsWith('/')) return cleaned.startsWith('//') || cleaned.startsWith('/\\') ? null : cleaned
+  try {
+    const url = new URL(cleaned)
+    return SAFE_URL_PROTOCOLS.has(url.protocol) ? cleaned : null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -26,17 +73,38 @@ export function resolveTags(input: unknown, context: MergeContext): unknown {
  * Rich text (Lexical) nodes are plain nested objects, so this reaches the text
  * inside them too.
  */
-export function resolveTagsDeep<T>(value: T, context: MergeContext): T {
-  if (typeof value === 'string') return resolveTags(value, context) as T
-  if (Array.isArray(value)) return value.map((item) => resolveTagsDeep(item, context)) as unknown as T
+export function resolveTagsDeep<T>(value: T, context: MergeContext, options: ResolveOptions = {}): T {
+  if (typeof value === 'string') return resolveTags(value, context, options) as T
+  if (Array.isArray(value)) return value.map((item) => resolveTagsDeep(item, context, options)) as unknown as T
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {}
     for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
-      out[key] = resolveTagsDeep(entry, context)
+      out[key] = resolveTagsDeep(entry, context, options)
     }
     return out as T
   }
   return value
+}
+
+/**
+ * Resolves tags in a single page's or post's blocks. A Loop block's `template`
+ * is left alone: its tags belong to each loop item, and are resolved there.
+ */
+export function resolveDocumentBlocks<T>(blocks: T, context: MergeContext): T {
+  const walk = (value: unknown): unknown => {
+    if (typeof value === 'string') return resolveTags(value, context, { keepUnknown: true })
+    if (Array.isArray(value)) return value.map(walk)
+    if (value && typeof value === 'object') {
+      const node = value as Record<string, unknown>
+      const out: Record<string, unknown> = {}
+      for (const [key, entry] of Object.entries(node)) {
+        out[key] = node.blockType === 'loop' && key === 'template' ? entry : walk(entry)
+      }
+      return out
+    }
+    return value
+  }
+  return walk(blocks) as T
 }
 
 /** The tags offered in the editor's autocomplete, by source collection. */
@@ -113,6 +181,7 @@ export function buildMergeContext(
   item: Record<string, unknown>,
   source: LoopSource,
   formatPrice?: (amount: number) => string,
+  customContext?: MergeContext,
 ): MergeContext {
   const slug = str(item.slug)
   const context: MergeContext = {
@@ -150,10 +219,14 @@ export function buildMergeContext(
   }
 
   // Custom fields (see the Field Groups collection) live in one JSON column.
-  const custom = item.customFields
-  if (custom && typeof custom === 'object' && !Array.isArray(custom)) {
-    for (const [key, value] of Object.entries(custom as Record<string, unknown>)) {
-      context[`field:${key}`] = str(value) || imageUrl(value)
+  // Callers with the group definitions pass a precise map; otherwise the values
+  // are stringified by their shape so a template still prints something sensible.
+  if (customContext) {
+    Object.assign(context, customContext)
+  } else {
+    const custom = item.customFields
+    if (custom && typeof custom === 'object' && !Array.isArray(custom)) {
+      Object.assign(context, buildGuessedCustomContext(custom as Record<string, unknown>))
     }
   }
 

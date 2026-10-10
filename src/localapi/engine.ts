@@ -99,7 +99,8 @@ import { createDocument, deleteDocument, updateDocument, updateGlobalDocument, V
 import { collectionConfigs, globalConfigs, readRegistry, writeRegistry } from './registry'
 import type { Doc, PaginatedDocs, Sort } from './read-operations'
 import { count as readCount, find as readFind, findByID as readFindByID, findGlobal as readFindGlobal } from './read-operations'
-import { deleteMediaObject, putMediaObject } from './storage'
+import { deleteMediaObject } from './storage'
+import { prepareUploadFile, storePreparedUpload, type PreparedUpload } from '@/features/media/uploadHook'
 import { generateUploadFields, type UploadFile } from './uploads'
 
 import { findUserAuthRowByID, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db'
@@ -266,6 +267,7 @@ export function createEngine(): Engine {
       const localReq = toLocalReq(engine, { user, req })
 
       let finalData = data
+      let prepared: PreparedUpload | undefined
       if (collection === MEDIA_COLLECTION_SLUG) {
         // The reference engine's own default (`filesRequiredOnCreate !== false`,
         // unoverridden by Media.ts, and this collection has no drafts to
@@ -274,7 +276,12 @@ export function createEngine(): Engine {
         // metadata computation (this call) happens BEFORE the DB write,
         // mirroring real `generateFileData` running in `beforeOperation`.
         if (!file) throw new ValidationError([{ path: 'file', message: 'A file is required to create a media document.' }])
-        const uploadFields = await generateUploadFields({ file, filenameExists: (filename) => mediaFilenameExists(localReq, filename) })
+        prepared = await prepareUploadFile(file)
+        const uploadFields = await generateUploadFields({
+          file: prepared.file,
+          filenameExists: (filename) => mediaFilenameExists(localReq, filename),
+          optimisation: prepared,
+        })
         finalData = { ...data, ...uploadFields, url: `/api/media/file/${encodeURIComponent(uploadFields.filename)}` }
       }
 
@@ -287,8 +294,8 @@ export function createEngine(): Engine {
       // afterChange hook re-throws on an upload failure too, so a caller
       // sees the same "the request failed" outcome even though the DB row
       // was already committed - not this app's own regression to fix.
-      if (collection === MEDIA_COLLECTION_SLUG && file) {
-        await putMediaObject(String((created as Record<string, unknown>).filename), file.data, String((created as Record<string, unknown>).mimeType))
+      if (collection === MEDIA_COLLECTION_SLUG && file && prepared) {
+        await storePreparedUpload(String((created as Record<string, unknown>).filename), prepared)
       }
 
       return created
@@ -302,19 +309,25 @@ export function createEngine(): Engine {
 
       let finalData = data
       let previousFilename: string | undefined
+      let preparedUpdate: PreparedUpload | undefined
       if (collection === MEDIA_COLLECTION_SLUG && file) {
         const existing = await db.findByID(id)
         const existingFilename = existing ? (existing as unknown as Record<string, unknown>).filename : undefined
         previousFilename = typeof existingFilename === 'string' ? existingFilename : undefined
-        const uploadFields = await generateUploadFields({ file, filenameExists: (filename) => mediaFilenameExists(localReq, filename) })
+        preparedUpdate = await prepareUploadFile(file)
+        const uploadFields = await generateUploadFields({
+          file: preparedUpdate.file,
+          filenameExists: (filename) => mediaFilenameExists(localReq, filename),
+          optimisation: preparedUpdate,
+        })
         finalData = { ...data, ...uploadFields, url: `/api/media/file/${encodeURIComponent(uploadFields.filename)}` }
       }
 
       const updated = await updateDocument({ collection: entry.config, db, id, data: finalData, req: localReq, overrideAccess, draft })
 
-      if (collection === MEDIA_COLLECTION_SLUG && file && updated) {
+      if (collection === MEDIA_COLLECTION_SLUG && file && updated && preparedUpdate) {
         const updatedRecord = updated as unknown as Record<string, unknown>
-        await putMediaObject(String(updatedRecord.filename), file.data, String(updatedRecord.mimeType))
+        await storePreparedUpload(String(updatedRecord.filename), preparedUpdate)
         // Delete the previous file only after the new upload has succeeded
         // (same ordering rationale as real `getAfterChangeHook` - see
         // ./storage.ts's header), and only if the filename actually

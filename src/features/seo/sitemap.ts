@@ -1,9 +1,7 @@
 import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
-import { getDb } from '@/cms/db/connect'
-import { getPasswordHash } from '@/cms/db/contentPasswords'
-
+import { isNoIndexedPage, readPasswordGate } from './indexable'
 import { getSeoContext, normalisePath, parsePathList, pathMatches } from './settings'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
@@ -58,8 +56,6 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   const baseUrl = context.baseUrl
   const seen = new Set<string>()
   const entries: SitemapEntry[] = []
-  const db = await getDb()
-
   const add = (path: string, lastModified?: string | null, priority = 0.6) => {
     const normalised = normalisePath(path)
     if (seen.has(normalised)) return
@@ -73,10 +69,11 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     })
   }
 
-  const isPasswordProtected = async (collection: string, docId: number): Promise<boolean> => {
+  // A failed lookup leaves the document listed, as it was before this helper
+  // existed. The llms.txt builder makes the opposite choice, on purpose.
+  const isPasswordProtected = async (collection: 'pages' | 'posts', docId: number): Promise<boolean> => {
     try {
-      const hash = await getPasswordHash(db, collection, docId)
-      return hash !== null
+      return await readPasswordGate(collection, docId)
     } catch {
       return false
     }
@@ -108,7 +105,7 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     const pages = await getAllResolvedPages()
     for (const { page, path } of pages) {
       if (page.isHomepage) continue
-      if (page.seo?.noIndex) continue
+      if (isNoIndexedPage(page)) continue
       // Exclude password-protected pages from sitemap
       if (page.id && (await isPasswordProtected('pages', page.id))) continue
       add(`/${path.join('/')}`, page.updatedAt, 0.8)

@@ -1,0 +1,171 @@
+/*
+ * Styles for collapsible option cards, the collapse-all bar and the page
+ * structure outline on the edit screen. Classes are prefixed `ec-`.
+ * Dark theme is keyed on [data-theme='dark'] only, never on the OS preference.
+ */
+
+:root {
+  --ec-border: var(--theme-elevation-150, #e4e4e7);
+  --ec-muted: var(--theme-elevation-600, #71717a);
+  --ec-hover: var(--theme-elevation-50, #f4f4f5);
+  --ec-line: var(--theme-elevation-200, #d4d4d8);
+  --ec-focus: #2563eb;
+}
+
+[data-theme='dark'] {
+  --ec-border: #3f3f46;
+  --ec-muted: #a1a1aa;
+  --ec-hover: #27272a;
+  --ec-line: #52525b;
+  --ec-focus: #60a5fa;
+}
+
+/* Cards: the header button fills the heading row. */
+.ec-card__heading {
+  margin: 0;
+  font-size: inherit;
+}
+
+.ec-card__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ec-card__toggle:hover .ec-card__title {
+  text-decoration: underline;
+}
+
+.ec-card__toggle:focus-visible,
+.ec-collapse-bar__button:focus-visible,
+.ec-outline__toggle:focus-visible {
+  outline: 2px solid var(--ec-focus);
+  outline-offset: 2px;
+}
+
+.ec-card__chevron {
+  display: inline-block;
+  width: 1em;
+  color: var(--ec-muted);
+}
+
+.ec-card__body[hidden],
+.ec-outline__list[hidden] {
+  display: none;
+}
+
+/* Cards that were flex rows (doc-content-card) become stacked blocks with a header. */
+.doc-content-card.ec-card {
+  display: block;
+}
+
+.doc-content-card.ec-card .ec-card__body {
+  margin-top: 8px;
+}
+
+/* Collapse-all bar above the main column. */
+.ec-collapse-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ec-collapse-bar__button {
+  padding: 4px 10px;
+  border: 1px solid var(--ec-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ec-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ec-collapse-bar__button:hover {
+  background: var(--ec-hover);
+}
+
+/* Page structure outline. Indent is padding-left per depth (set inline). */
+.ec-outline {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.ec-outline__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ec-outline__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  border-bottom: 1px solid var(--ec-border);
+}
+
+.ec-outline__row[data-depth]:not([data-depth='0'])::before {
+  content: '';
+  width: 8px;
+  height: 0;
+  border-top: 1px solid var(--ec-line);
+  margin-right: 2px;
+}
+
+.ec-outline__toggle,
+.ec-outline__bullet {
+  display: inline-block;
+  width: 16px;
+  flex: none;
+  text-align: center;
+}
+
+.ec-outline__toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-muted);
+  cursor: pointer;
+}
+
+.ec-outline__bullet::before {
+  content: '•';
+  color: var(--ec-line);
+}
+
+.ec-outline__label {
+  font-weight: 500;
+}
+
+.ec-outline__meta {
+  margin-left: auto;
+  padding-right: 4px;
+  color: var(--ec-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ec-outline__empty {
+  margin: 8px 0 0;
+}
+
+@media (max-width: 640px) {
+  .ec-collapse-bar {
+    justify-content: stretch;
+  }
+
+  .ec-collapse-bar__button {
+    flex: 1;
+    min-height: 36px;
+  }
+}

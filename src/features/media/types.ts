@@ -52,6 +52,13 @@ export type MediaLike = {
    * cloudflare-images path degrades instead of guessing an id.
    */
   cloudflareImageId?: string | null
+  /** Subject position, 0-100 from the left and from the top. Absent means centred. */
+  focalX?: number | null
+  focalY?: number | null
+  /** Crop preset chosen in the admin. `free` or absent means no fixed shape. */
+  crop?: { ratio?: string | null } | null
+  /** Bumped on every save or file replacement, so a changed picture is not served from an old cache entry. */
+  updatedAt?: string | null
 }
 
 /** Everything an <img> needs, ready to spread. */

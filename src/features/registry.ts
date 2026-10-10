@@ -37,6 +37,7 @@ export type FeatureKey =
   | 'multilingual'
   | 'accounts'
   | 'lms'
+  | 'approval'
 
 export type FeatureDef = {
   key: FeatureKey
@@ -218,6 +219,16 @@ export const FEATURES: FeatureDef[] = [
     collections: ['courses', 'lessons', 'enrolments', 'lesson-progress'],
     globals: [],
     tables: ['courses', 'lessons', 'enrolments', 'lesson_progress'],
+    implemented: true,
+  },
+  {
+    key: 'approval',
+    label: 'Content approval',
+    description: 'Require a second person to approve pages, posts, events, courses and products before they publish. The rules themselves are set under Settings > Security.',
+    defaultEnabled: false,
+    collections: ['review-events'],
+    globals: [],
+    tables: ['review_events'],
     implemented: true,
   },
 ]

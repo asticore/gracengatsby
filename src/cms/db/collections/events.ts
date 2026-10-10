@@ -23,6 +23,10 @@ export type EventDoc = {
   customFields?: unknown
   rsvps?: { docs: number[]; hasNextPage: boolean }
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
   updatedAt: string
   createdAt: string
 }
@@ -37,6 +41,10 @@ export type EventVersion = {
   versionUpdatedAt: string | null
   versionCreatedAt: string | null
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
 } & Omit<EventDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
 const baseOps = createCollectionOps(events, Events, {}, { groupFields: eventsGenerated.groupFields, joinFields: eventsJoinFields })

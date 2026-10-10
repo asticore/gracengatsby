@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import type { ImageRequest, MediaLike } from './types'
 
 import { getMediaConfig } from './settings'
-import { resolveImage } from './url'
+import { objectPositionFor, resolveImage } from './url'
 
 /**
  * The one image component the front end should use.
@@ -52,6 +52,10 @@ export async function EngageImage({
 
   if (!resolved.src) return null
 
+  // The focal point keeps the subject in frame when the box crops the picture.
+  const objectPosition = objectPositionFor(media)
+  const mergedStyle: CSSProperties | undefined = objectPosition || style ? { ...(objectPosition ? { objectPosition } : {}), ...style } : undefined
+
   return (
     // eslint-disable-next-line @next/next/no-img-element -- see the note above
     <img
@@ -65,7 +69,7 @@ export async function EngageImage({
       decoding={resolved.decoding}
       fetchPriority={resolved.fetchPriority}
       className={className}
-      style={style}
+      style={mergedStyle}
     />
   )
 }

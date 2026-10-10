@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyCardOp, sanitizeCardIds } from '@/admin/components/collapseStore'
+import { applyCardOp, expandAll, getClosedIds, sanitizeCardIds, setCardOpen, toggleCard } from '@/admin/components/collapseStore'
 
 describe('sanitizeCardIds', () => {
   it('keeps valid unique ids and drops the rest', () => {
@@ -29,5 +29,23 @@ describe('applyCardOp', () => {
 
   it('clear empties the set', () => {
     expect(applyCardOp(new Set(['a', 'b']), { type: 'clear' }).size).toBe(0)
+  })
+})
+
+describe('toggleCard', () => {
+  it('closes an open card and opens a closed one', () => {
+    expandAll()
+    toggleCard('t-card')
+    expect(getClosedIds()).toContain('t-card')
+    toggleCard('t-card')
+    expect(getClosedIds()).not.toContain('t-card')
+  })
+
+  it('setCardOpen false closes and true opens', () => {
+    expandAll()
+    setCardOpen('t-card', false)
+    expect(getClosedIds()).toEqual(['t-card'])
+    setCardOpen('t-card', true)
+    expect(getClosedIds()).toEqual([])
   })
 })

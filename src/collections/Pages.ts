@@ -9,6 +9,7 @@ import { formatSlugHook, slugify } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { membersOnlyField } from '@/features/members'
 import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
+import { reviewFields } from '@/features/approval/fields'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -133,6 +134,7 @@ export const Pages: CollectionConfig = {
     customFieldsField,
     membersOnlyField,
     ...authorshipFields,
+    ...reviewFields,
     schemaTypeField('pages'),
   ],
   hooks: {

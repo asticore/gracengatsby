@@ -25,6 +25,7 @@ import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
 import '@fontsource/inter/600.css'
 import React from 'react'
+import { headers } from 'next/headers'
 
 import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
@@ -85,6 +86,8 @@ type LinkSource = { label?: string | null; linkType?: string | null; page?: unkn
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
+  // Cloudflare's two-letter country for the visitor; drives the cookie banner's opt-in rule.
+  const country = (await headers()).get('cf-ipcountry')
   const engine = await getEngine()
 
   const [settings, header, footer, resolvedPages] = (await Promise.all([
@@ -184,7 +187,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {fontCss && <style dangerouslySetInnerHTML={{ __html: fontCss }} />}
       </head>
       <body>
-        <SeoScripts />
+        <SeoScripts country={country} />
         <SeoJsonLd />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${FONT_FACE_VARS} }` }} />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${themeVars} }` }} />

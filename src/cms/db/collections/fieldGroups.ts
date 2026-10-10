@@ -15,6 +15,7 @@ export type FieldGroupFieldRow = {
   name?: string | null
   type?: string | null
   required?: boolean | null
+  // Legacy rows only: the builder's `definition` column supersedes these (see normalize.ts).
   options?: FieldGroupFieldOptionRow[] | null
   helpText?: string | null
   defaultValue?: string | null
@@ -27,6 +28,10 @@ export type FieldGroupDoc = {
   targetCollections?: string[] | null
   description?: string | null
   fields?: FieldGroupFieldRow[] | null
+  /** Builder definition (src/fields/customFields/types.ts CustomFieldDef[]), stored as JSON text. Empty = use `fields`. */
+  definition?: unknown[] | string | null
+  /** Show-on rules (src/fields/customFields/types.ts LocationGroups), stored as JSON text. Empty = use `targetCollections`. */
+  location?: unknown[] | string | null
   updatedAt: string
   createdAt: string
 }

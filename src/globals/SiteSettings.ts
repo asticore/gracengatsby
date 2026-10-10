@@ -105,28 +105,41 @@ export const SiteSettings: GlobalConfig = {
           type: 'row',
           fields: [
             {
+              // Stores a built-in key (cormorant, playfair, ...) or the id of a
+              // font installed in customFonts below. FontPickerField lists both.
               name: 'headingFont',
-              type: 'select',
+              type: 'text',
               defaultValue: 'cormorant',
-              admin: { width: '50%' },
-              options: [
-                { label: 'Cormorant Garamond (elegant serif)', value: 'cormorant' },
-                { label: 'Playfair Display (bold serif)', value: 'playfair' },
-                { label: 'Cinzel (Art Deco display)', value: 'cinzel' },
-              ],
+              admin: {
+                width: '50%',
+                description: 'Built-in font or one installed below.',
+                fontRole: 'heading',
+                components: { Field: '@/admin/components/FontPickerField#FontPickerField' },
+              },
             },
             {
               name: 'bodyFont',
-              type: 'select',
+              type: 'text',
               defaultValue: 'jost',
-              admin: { width: '50%' },
-              options: [
-                { label: 'Jost (geometric sans)', value: 'jost' },
-                { label: 'Montserrat', value: 'montserrat' },
-                { label: 'Inter', value: 'inter' },
-              ],
+              admin: {
+                width: '50%',
+                description: 'Built-in font or one installed below.',
+                fontRole: 'body',
+                components: { Field: '@/admin/components/FontPickerField#FontPickerField' },
+              },
             },
           ],
+        },
+        {
+          // Fonts added from the Fontsource/Google catalog or uploaded. The
+          // FontsManagerField is the only UI for this value; it is a JSON array
+          // of InstalledFont (see src/features/fonts/types.ts).
+          name: 'customFonts',
+          type: 'json',
+          admin: {
+            description: 'Install fonts from the Google Fonts or Fontsource catalog, or upload your own, then pick them above.',
+            components: { Field: '@/admin/components/FontsManagerField#FontsManagerField' },
+          },
         },
         {
           type: 'row',

@@ -97,6 +97,7 @@ import { Orders } from '@/features/ecommerce/collections/Orders'
 import { Products } from '@/features/ecommerce/collections/Products'
 import { Transactions } from '@/features/ecommerce/collections/Transactions'
 import { Redirects } from '@/features/redirects/collection'
+import { ReviewEvents } from '@/features/approval/collection'
 import { Roles } from '@/collections/Roles'
 
 import { BackupSettings } from '@/globals/BackupSettings'
@@ -144,6 +145,7 @@ import {
   countPreferences,
   countProducts,
   countRedirects,
+  countReviewEvents,
   countRoles,
   countTransactions,
   countTranslations,
@@ -174,6 +176,7 @@ import {
   createPreference,
   createProduct,
   createRedirect,
+  createReviewEvent,
   createRole,
   createTransaction,
   createTranslation,
@@ -204,6 +207,7 @@ import {
   deletePreference,
   deleteProduct,
   deleteRedirect,
+  deleteReviewEvent,
   deleteRole,
   deleteTransaction,
   deleteTranslation,
@@ -272,6 +276,8 @@ import {
   findProductsPaginated,
   findRedirectByID,
   findRedirectsPaginated,
+  findReviewEventByID,
+  findReviewEventsPaginated,
   findRoleByID,
   findRolesPaginated,
   findSecuritySettings,
@@ -323,6 +329,7 @@ import {
   updatePreference,
   updateProduct,
   updateRedirect,
+  updateReviewEvent,
   updateRole,
   updateSecuritySettings,
   updateSeoSettings,
@@ -402,6 +409,7 @@ export const writeRegistry: {
     transactions: collectionOps(createTransaction, updateTransaction, deleteTransaction, findTransactionByID),
     'preferences': collectionOps(createPreference, updatePreference, deletePreference, findPreferenceByID),
     redirects: collectionOps(createRedirect, updateRedirect, deleteRedirect, findRedirectByID),
+    'review-events': collectionOps(createReviewEvent, updateReviewEvent, deleteReviewEvent, findReviewEventByID),
     roles: collectionOps(createRole, updateRole, deleteRole, findRoleByID),
     'locked-documents': collectionOps(createLockedDocument, updateLockedDocument, deleteLockedDocument, findLockedDocumentByID),
   },
@@ -465,6 +473,7 @@ export const readRegistry: ReadRegistry = {
     transactions: readEntry(Transactions, findTransactionsPaginated, findTransactionByID, countTransactions),
     'preferences': readEntry(Preferences, findPreferencesPaginated, findPreferenceByID, countPreferences),
     redirects: readEntry(Redirects, findRedirectsPaginated, findRedirectByID, countRedirects),
+    'review-events': readEntry(ReviewEvents, findReviewEventsPaginated, findReviewEventByID, countReviewEvents),
     roles: readEntry(Roles, findRolesPaginated, findRoleByID, countRoles),
     'locked-documents': readEntry(LockedDocuments, findLockedDocumentsPaginated, findLockedDocumentByID, countLockedDocuments),
   },
@@ -519,6 +528,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, Roles]
+export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ReviewEvents, Roles]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings]

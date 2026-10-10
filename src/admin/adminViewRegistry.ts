@@ -24,6 +24,7 @@ import { ABResultsView } from '@/features/abTesting/components/ABResultsView'
 import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
+import { OptionsView } from '@/features/customFields/admin/OptionsView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
 // still declares (Nav/providers/graphics overrides) even though nothing yet
@@ -56,6 +57,15 @@ export const CUSTOM_ADMIN_VIEWS = [
     meta: {
       title: 'Translations',
       description: 'Write every translation in one table.',
+    },
+  },
+  {
+    key: 'options',
+    Component: OptionsView,
+    path: '/options',
+    meta: {
+      title: 'Options pages',
+      description: 'Site-wide custom field values.',
     },
   },
   {

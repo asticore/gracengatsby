@@ -43,6 +43,10 @@ export type PostDoc = {
   customFields?: unknown
   membersOnly?: { enabled?: boolean | null; tier?: number | null }
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
   updatedAt: string
   createdAt: string
 }
@@ -64,6 +68,10 @@ export type PostVersion = {
   versionUpdatedAt: string | null
   versionCreatedAt: string | null
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
 } & Omit<PostDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
 const baseOps = createCollectionOps(

@@ -26,6 +26,17 @@ export type MediaDoc = {
   filesize?: number | null
   width?: number | null
   height?: number | null
+  caption?: string | null
+  folder?: string | null
+  focalX?: number | null
+  focalY?: number | null
+  crop?: { ratio?: string | null } | null
+  credit?: string | null
+  license?: string | null
+  sourceUrl?: string | null
+  source?: string | null
+  originalSize?: number | null
+  optimizedSize?: number | null
   updatedAt: string
   createdAt: string
 }

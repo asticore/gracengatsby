@@ -2,7 +2,22 @@ import type { Metadata } from 'next'
 
 import { resolveSeo, type SeoInput } from './resolve'
 import { getSeoContext } from './settings'
+import { getSiteIcons } from './siteFilesData'
 import { getPublicIds } from '@/features/integrations/publicIds'
+
+/**
+ * Icon links from Site settings' favicon and logo. Kept outside the SEO toggle
+ * on purpose: the browser tab icon is not a search feature.
+ */
+const iconMetadata = async (): Promise<Metadata['icons'] | undefined> => {
+  const icons = await getSiteIcons()
+  const icon = icons.favicon ?? icons.logo
+  if (!icon) return undefined
+  return {
+    icon: [{ url: icon }],
+    apple: [{ url: icons.logo ?? icon }],
+  }
+}
 
 /**
  * Builds the whole <head> block for a route: title, description, canonical,
@@ -12,8 +27,9 @@ import { getPublicIds } from '@/features/integrations/publicIds'
  * unconditionally and Next simply falls back to whatever the layout declares.
  */
 export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadata> => {
+  const icons = await iconMetadata()
   const context = await getSeoContext()
-  if (!context.enabled) return {}
+  if (!context.enabled) return icons ? { icons } : {}
 
   const seo = resolveSeo(context, input)
   const verification = context.settings?.verification
@@ -26,6 +42,8 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
 
   const metadata: Metadata = {
     metadataBase: new URL(context.baseUrl),
+    manifest: '/manifest.webmanifest',
+    ...(icons ? { icons } : {}),
     title: seo.title,
     description: seo.description,
     alternates: { canonical: seo.canonical },

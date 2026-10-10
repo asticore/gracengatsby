@@ -1,0 +1,222 @@
+/* Export and import admin view. Classes are prefixed st-. Dark styles only
+   apply under [data-theme='dark']; light is the default. */
+
+.st-page {
+  padding: 16px;
+  max-width: 880px;
+  box-sizing: border-box;
+}
+
+.st-header {
+  margin-bottom: 24px;
+}
+
+.st-title {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--theme-elevation-900, #1a1a1a);
+}
+
+.st-heading {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.st-subheading {
+  margin: 16px 0 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.st-muted {
+  color: var(--color-text-secondary, #666);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.st-card {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 24px;
+  background: var(--color-bg, #fff);
+  box-sizing: border-box;
+}
+
+.st-fieldset {
+  border: 0;
+  margin: 0 0 16px 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.st-legend {
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.st-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.st-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.st-check input[type='checkbox'] {
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+.st-check-label {
+  display: block;
+  font-weight: 500;
+}
+
+.st-check-hint {
+  display: block;
+  margin-top: 2px;
+}
+
+.st-secrets {
+  border-top: 1px solid var(--color-border, #ddd);
+  margin-top: 8px;
+  padding-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.st-field {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.st-label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.st-input {
+  max-width: 420px;
+  margin-bottom: 0;
+}
+
+.st-file {
+  max-width: 100%;
+}
+
+.st-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.st-error {
+  margin-top: 12px;
+}
+
+.st-result {
+  margin-top: 8px;
+}
+
+.st-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.st-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.st-table th,
+.st-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border, #e5e5e5);
+}
+
+.st-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+.st-error-count {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.st-issues {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.st-issues summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.st-issues ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
+.st-issues li {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 600px) {
+  .st-page {
+    padding: 16px;
+  }
+
+  .st-card {
+    padding: 16px;
+  }
+
+  .st-actions > * {
+    flex: 1 1 100%;
+  }
+}
+
+[data-theme='dark'] .st-title {
+  color: #f2f2f2;
+}
+
+[data-theme='dark'] .st-card {
+  background: #1b1b1f;
+  border-color: #3a3a40;
+}
+
+[data-theme='dark'] .st-muted {
+  color: #a8a8b0;
+}
+
+[data-theme='dark'] .st-secrets {
+  border-color: #3a3a40;
+}
+
+[data-theme='dark'] .st-table th,
+[data-theme='dark'] .st-table td {
+  border-color: #3a3a40;
+}
+
+[data-theme='dark'] .st-error-count {
+  color: #ff8a80;
+}

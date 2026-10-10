@@ -25,6 +25,7 @@ import * as migration_20261006_100000_roles from './20261006_100000_roles';
 import * as migration_20261007_100000_users_authorship from './20261007_100000_users_authorship';
 import * as migration_20261008_100000_integrations_expand from './20261008_100000_integrations_expand';
 import * as migration_20261009_100000_user_permission_overrides from './20261009_100000_user_permission_overrides';
+import * as migration_20261010_100000_site_fonts from './20261010_100000_site_fonts';
 
 export const migrations = [
   {
@@ -161,5 +162,10 @@ export const migrations = [
     up: migration_20261009_100000_user_permission_overrides.up,
     down: migration_20261009_100000_user_permission_overrides.down,
     name: '20261009_100000_user_permission_overrides',
+  },
+  {
+    up: migration_20261010_100000_site_fonts.up,
+    down: migration_20261010_100000_site_fonts.down,
+    name: '20261010_100000_site_fonts',
   },
 ];

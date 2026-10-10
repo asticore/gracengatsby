@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { resolveName } from './authorName'
 import { useAuthorNames } from './useAuthorNames'
 import { diffVersion, type DiffEntry } from './versionDiff'
+import { useReviewState } from '@/features/approval/ui/useReviewState'
+import { ReviewBox } from '@/features/approval/ui/ReviewPanel'
 
 interface Version {
   id: number
@@ -103,6 +105,9 @@ export function VersionsList({
     fetchVersions()
   }, [fetchVersions])
 
+  // Declared after the versions fetch so the versions request is still the first one on mount.
+  const review = useReviewState(collectionSlug, id, undefined)
+
   const handleRestore = useCallback(
     async (versionId: number, draft: boolean) => {
       setBusy(versionId)
@@ -191,6 +196,13 @@ export function VersionsList({
   if (versions.length === 0 && !error) return <p>No saved versions yet.</p>
 
   return (
+    <>
+      {review.state?.enabled && (
+        <section style={{ marginBottom: '1rem' }}>
+          <h3 style={{ margin: '0 0 0.5rem' }}>Review history</h3>
+          <ReviewBox review={review} />
+        </section>
+      )}
     <div className="table">
       {error && (
         <p role="alert" style={{ color: 'var(--theme-error-500)', padding: '0.5rem 0.75rem', margin: 0 }}>
@@ -338,5 +350,6 @@ export function VersionsList({
         </tbody>
       </table>
     </div>
+    </>
   )
 }

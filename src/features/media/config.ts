@@ -50,11 +50,11 @@ function resolveFormat(webp: boolean, avif: boolean): MediaConfig['format'] {
  * as stored.
  */
 export function resolveMediaConfig(settings: unknown, featureEnabled: boolean): MediaConfig {
-  const raw = (settings ?? {}) as Record<string, any>
-  const optimisation = (raw.optimisation ?? {}) as Record<string, any>
-  const resizing = (raw.resizing ?? {}) as Record<string, any>
-  const delivery = (raw.delivery ?? {}) as Record<string, any>
-  const bulk = (raw.bulk ?? {}) as Record<string, any>
+  const raw = (settings ?? {}) as Record<string, Record<string, unknown> | undefined>
+  const optimisation = raw.optimisation ?? {}
+  const resizing = raw.resizing ?? {}
+  const delivery = raw.delivery ?? {}
+  const bulk = raw.bulk ?? {}
 
   const provider = (clean(optimisation.provider) || 'none') as MediaProvider
   const batchSize = toPositiveInt(bulk.batchSize, DISABLED_CONFIG.batchSize)

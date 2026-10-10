@@ -47,6 +47,10 @@ export type ProductDoc = {
   priceInAUDEnabled?: boolean | null
   priceInAUD?: number | null
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
   deletedAt?: string | null
   updatedAt: string
   createdAt: string
@@ -62,6 +66,10 @@ export type ProductVersion = {
   versionUpdatedAt: string | null
   versionCreatedAt: string | null
   _status?: string | null
+  reviewStatus?: 'none' | 'in_review' | 'changes_requested' | 'approved' | null
+  reviewRequestedBy?: number | null
+  reviewRequestedAt?: string | null
+  reviewApprovals?: Array<{ userId: number; name: string; at: string }> | null
 } & Omit<ProductDoc, 'id' | 'updatedAt' | 'createdAt' | '_status'>
 
 // `images` (upload, hasMany) and `faqs` (relationship, hasMany) are both

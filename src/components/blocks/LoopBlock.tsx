@@ -3,6 +3,7 @@ import React from 'react'
 import { getEngine } from '@/lib/engine'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { buildMergeContext, resolveTagsDeep } from '@/lib/mergeTags'
+import { buildItemTagContexts } from '@/features/customFields/server'
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { StyledBlock } from './StyledBlock'
@@ -63,7 +64,8 @@ export async function LoopBlock({
 
   // 'pages' has no category field, so only apply the filter where it exists.
   const supportsCategory = collection === 'products' || collection === 'faqs' || collection === 'posts'
-  const hasDraftStatus = collection === 'products' || collection === 'posts' || collection === 'pages'
+  // Anything with drafts: only published items are listed, so an unpublished event never shows.
+  const hasDraftStatus = collection === 'products' || collection === 'posts' || collection === 'pages' || collection === 'events'
 
   let items: Record<string, unknown>[] = []
   try {
@@ -86,6 +88,9 @@ export async function LoopBlock({
 
   if (items.length === 0) return null
 
+  // Custom fields per item: only groups whose location matches that item, with media URLs fetched once.
+  const tagContexts = await buildItemTagContexts(collection, items, { needsOptions: JSON.stringify(templateBlocks).includes('{{option:') })
+
   const columnCount = Math.min(Math.max(columns || 3, 1), 6)
 
   return (
@@ -97,8 +102,8 @@ export async function LoopBlock({
           </div>
         )}
         <div className="be-loop-grid" style={{ ['--loop-columns' as string]: String(columnCount) }}>
-          {items.map((item) => {
-            const context = buildMergeContext(item, collection, (amount) => formatPriceInAUD(amount, 'AUD'))
+          {items.map((item, index) => {
+            const context = buildMergeContext(item, collection, (amount) => formatPriceInAUD(amount, 'AUD'), tagContexts[index])
             const resolved = resolveTagsDeep(templateBlocks, context)
 
             return (

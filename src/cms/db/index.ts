@@ -13,6 +13,7 @@
 
 export * from './collections/faqs'
 export * from './collections/redirects'
+export * from './collections/reviewEvents'
 export * from './collections/media'
 export * from './collections/eventRSVPs'
 export * from './collections/membershipTiers'

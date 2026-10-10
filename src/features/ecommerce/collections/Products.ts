@@ -8,6 +8,8 @@ import { seoFields } from '@/fields/seo'
 import { schemaTypeField } from '@/fields/schemaType'
 import { authorshipFields, authorshipBeforeChange } from '@/fields/authorship'
 import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
+import { customFieldsField } from '@/fields/customFields'
+import { reviewFields } from '@/features/approval/fields'
 
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see
@@ -130,7 +132,7 @@ export const Products: CollectionConfig = {
       blocks: pageBuilderBlocks,
     },
     seoFields,
-    { name: 'customFields', type: 'json' },
+    customFieldsField,
     { name: 'inventory', type: 'number', defaultValue: 0, min: 0 },
     {
       type: 'row',
@@ -149,6 +151,7 @@ export const Products: CollectionConfig = {
       ],
     },
     ...authorshipFields,
+    ...reviewFields,
     schemaTypeField('products'),
   ],
   hooks: {

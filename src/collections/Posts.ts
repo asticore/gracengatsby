@@ -9,6 +9,7 @@ import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { membersOnlyField } from '@/features/members'
 import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
+import { reviewFields } from '@/features/approval/fields'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -72,6 +73,7 @@ export const Posts: CollectionConfig = {
     customFieldsField,
     membersOnlyField,
     ...authorshipFields,
+    ...reviewFields,
     schemaTypeField('posts'),
   ],
   hooks: {

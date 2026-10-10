@@ -1,4 +1,5 @@
 import type { FeatureKey } from '@/features/registry'
+import type { InstalledFont } from '@/features/fonts/types'
 
 import { SiteSettings } from '@/globals/SiteSettings'
 
@@ -42,6 +43,8 @@ export type SiteSettingsDoc = {
     backgroundColor?: string | null
     headingFont?: string | null
     bodyFont?: string | null
+    /** Fonts installed by the admin (json column theme_custom_fonts). */
+    customFonts?: InstalledFont[] | null
     buttonStyle?: string | null
     cornerStyle?: string | null
     hoverEffect?: string | null

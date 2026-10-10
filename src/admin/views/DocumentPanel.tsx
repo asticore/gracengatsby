@@ -22,6 +22,8 @@ import { VisibilityPanel } from './VisibilityPanel'
 import { SchedulePanel } from './SchedulePanel'
 import { EditLockBanner } from './EditLockBanner'
 import { setCardOpen, useCardOpen } from '@/admin/components/collapseStore'
+import { ReviewActions, ReviewBox, ReviewStatusPill, publishHidden } from '@/features/approval/ui/ReviewPanel'
+import { useReviewState } from '@/features/approval/ui/useReviewState'
 
 export type DocumentPanelInfo = {
   collectionSlug: string
@@ -250,6 +252,9 @@ export const DocumentPanel: React.FC<{
   const isPublished = info.status === 'published'
   const [lockedByOther, setLockedByOther] = useState(false)
   const anyBusy = busy !== null || lockedByOther
+  // Review state is read from the approval route, so it is re-read after every save.
+  const review = useReviewState(info.collectionSlug, info.id, savedAt)
+  const hidePublish = !isNew && publishHidden(review.state)
 
   const badge = isNew ? 'New' : info.draftsEnabled ? (isPublished ? 'Published' : 'Draft') : 'Saved'
 
@@ -259,6 +264,7 @@ export const DocumentPanel: React.FC<{
       <div className="doc-panel__head">
         <div className="doc-status">
           <span className={isPublished ? 'pill pill--accent' : 'pill'}>{badge}</span>
+          <ReviewStatusPill state={review.state} />
           {modified && <span className="doc-unsaved">Unsaved changes</span>}
           {!modified && savedAt && <span className="doc-saved">Saved</span>}
         </div>
@@ -289,15 +295,26 @@ export const DocumentPanel: React.FC<{
           {info.draftsEnabled && (
             <SchedulePanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} status={info.status} />
           )}
+          {info.draftsEnabled && !isNew && (
+            <ReviewActions
+              busy={anyBusy}
+              isPublished={isPublished}
+              modified={modified}
+              onSaveDraft={() => save('draft')}
+              review={review}
+            />
+          )}
           <div className="doc-buttons">
             {info.draftsEnabled && (
               <button className="btn" disabled={anyBusy} onClick={() => save('draft')} type="button">
                 {busy === 'draft' ? 'Saving…' : 'Save draft'}
               </button>
             )}
-            <button className="btn btn--primary" disabled={anyBusy} onClick={() => save('published')} type="button">
-              {busy === 'published' ? 'Saving…' : info.draftsEnabled ? (isPublished ? 'Update' : 'Publish') : 'Save'}
-            </button>
+            {!hidePublish && (
+              <button className="btn btn--primary" disabled={anyBusy} onClick={() => save('published')} type="button">
+                {busy === 'published' ? 'Saving…' : info.draftsEnabled ? (isPublished ? 'Update' : 'Publish') : 'Save'}
+              </button>
+            )}
           </div>
           {info.draftsEnabled && isPublished && !isNew && (
             <ConfirmButton
@@ -328,6 +345,12 @@ export const DocumentPanel: React.FC<{
               )}
             </div>
           )}
+        </Box>
+      )}
+
+      {!isNew && review.state?.enabled && (
+        <Box id="review" title="Review">
+          <ReviewBox review={review} />
         </Box>
       )}
 

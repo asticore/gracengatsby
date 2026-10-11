@@ -27,6 +27,8 @@ export type PageTemplateDoc = {
   name: string
   description?: string | null
   blocks?: PageTemplateBlock[] | null
+  /** Section/document locks (src/features/roles/locks.ts). */
+  locks?: unknown
   updatedAt: string
   createdAt: string
 }

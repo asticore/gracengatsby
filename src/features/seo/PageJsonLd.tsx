@@ -17,6 +17,7 @@ export const PageJsonLd = async ({
   collection,
   doc,
   path,
+  extra,
 }: {
   collection: string
   doc?: {
@@ -33,6 +34,8 @@ export const PageJsonLd = async ({
     location?: { venueName?: string; address?: string } | null
   } | null
   path: string
+  /** Extra schema.org properties merged into the node (a product's offers and aggregateRating). */
+  extra?: Record<string, unknown>
 }): Promise<React.ReactElement | null> => {
   const context = await getSeoContext()
 
@@ -86,6 +89,7 @@ export const PageJsonLd = async ({
     datePublished,
     dateModified,
     authorName,
+    extra,
   })
 
   if (!jsonLd) return null

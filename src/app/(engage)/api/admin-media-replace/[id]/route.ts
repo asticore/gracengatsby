@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server'
 
 import { authorizeMedia, parseId } from '@/features/media/access'
+import { inspectUpload } from '@/features/media/fileTypes'
 import { resolveImagesBinding } from '@/features/media/imagesBinding'
 import { isCompatibleReplacement, replaceStoredMedia } from '@/features/media/library'
 import { prepareUploadFile } from '@/features/media/uploadHook'
-import { loadMedia, mediaUpdater, readOptimiseSettings, type MediaEngine } from '@/features/media/store'
+import { readLimitedForm } from '@/features/media/readBody'
+import { loadMedia, mediaUpdater, readOptimiseSettings, readUploadPolicy, type MediaEngine } from '@/features/media/store'
 import { ValidationError } from '@/localapi/operations'
 import type { UploadFile } from '@/localapi/uploads'
-
-/** Largest replacement accepted. Matches the admin's own upload limit for pictures and PDFs. */
-const MAX_REPLACE_BYTES = 25 * 1024 * 1024
 
 /**
  * POST /api/admin-media-replace/:id   (multipart: file)
  *
  * Replaces the file behind a document while keeping its filename, so every URL
  * already on the site shows the new picture. Only a compatible type is accepted
- * (picture for picture, PDF for PDF). Optimisation applies when Media Settings
+ * (picture for picture, and any other file for the same type of file). Optimisation applies when Media Settings
  * asks for it.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
@@ -33,15 +32,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'This picture has no stored file to replace.' }, { status: 409 })
   }
 
-  let form: FormData
-  try {
-    form = await request.formData()
-  } catch {
-    return NextResponse.json({ error: 'Send a multipart form with a file.' }, { status: 400 })
-  }
+  const policy = await readUploadPolicy(engine)
+  // Refuse an oversized body before it is read into memory (also when no Content-Length is sent).
+  const read = await readLimitedForm(request, policy.maxBytes)
+  if ('response' in read) return read.response
+  const form = read.form
   const file = form.get('file')
   if (!(file instanceof File) || file.size === 0) return NextResponse.json({ error: 'Choose a file to upload.' }, { status: 400 })
-  if (file.size > MAX_REPLACE_BYTES) return NextResponse.json({ error: 'Files must be 25 MB or smaller.' }, { status: 413 })
+
+  // Refuse on the declared size before reading the body into memory.
+  if (file.size > policy.maxBytes) {
+    return NextResponse.json({ error: `Files must be ${Math.round(policy.maxBytes / (1024 * 1024))} MB or smaller.` }, { status: 413 })
+  }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
   const upload: UploadFile = {
@@ -51,19 +53,31 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     size: bytes.length,
   }
 
-  if (!isCompatibleReplacement(doc.mimeType, upload.mimetype)) {
+  const settings = await readOptimiseSettings(engine)
+  const binding = await resolveImagesBinding()
+  let prepared
+  try {
+    // Checks the type from the file's own bytes, not the browser's claim.
+    prepared = await prepareUploadFile(upload, {
+      readSettings: async () => settings,
+      binding: async () => binding,
+      readPolicy: async () => policy,
+    })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.errors[0]?.message ?? 'This file cannot be used.' }, { status: 415 })
+    }
+    throw error
+  }
+
+  // Compared on the type found from the bytes (before any re-encode), not the declared one.
+  const detected = inspectUpload(upload, policy).mimeType
+  if (!isCompatibleReplacement(doc.mimeType, detected)) {
     return NextResponse.json(
       { error: `This file is ${doc.mimeType}. Upload a file of the same kind to replace it.` },
       { status: 415 },
     )
   }
-
-  const settings = await readOptimiseSettings(engine)
-  const binding = await resolveImagesBinding()
-  const prepared = await prepareUploadFile(upload, {
-    readSettings: async () => settings,
-    binding: async () => binding,
-  })
 
   try {
     const result = await replaceStoredMedia(

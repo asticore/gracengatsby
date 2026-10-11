@@ -1,4 +1,4 @@
-import { CONSENT_CATEGORIES, isCookieCategory, type CookieCategory } from './consent'
+import { CATEGORY_COPY, CONSENT_CATEGORIES, isCookieCategory, type CookieCategory } from './consent'
 import { CONSENT_MODES, type ConsentMode } from './regions'
 
 /**
@@ -42,6 +42,16 @@ export type ConsentConfig = {
   buttonColor: string | null
   privacyPolicyUrl: string | null
   cookieSettingsLabel: string
+  showRejectButton: boolean
+  privacyPolicyLabel: string
+  categoryCopy: Record<CookieCategory, { label: string; description: string }>
+  accentColor: string | null
+  /** Pixels, 0 to 32, or null for the default look. */
+  borderRadius: number | null
+  /** Pixels, 12 to 20, or null for the default size. */
+  fontSize: number | null
+  /** Set only when the logo is switched on and the URL is valid. */
+  logoUrl: string | null
   cookieList: CookieListItem[]
   geoLogging: boolean
   logConsent: boolean
@@ -59,6 +69,7 @@ export const DEFAULT_CONSENT_TEXT = {
   customiseLabel: 'Customise',
   saveLabel: 'Save choices',
   cookieSettingsLabel: 'Cookie settings',
+  privacyPolicyLabel: 'Privacy policy',
 } as const
 
 const MAX_TEXT = 1000
@@ -85,12 +96,59 @@ export const cleanColour = (value: unknown): string | null => {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed) ? trimmed : null
 }
 
+/** A whole number in [min, max], or null when blank or not a number. Out-of-range values are clamped. */
+export const cleanNumber = (value: unknown, min: number, max: number): number | null => {
+  const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value
+  if (typeof n !== 'number' || !Number.isFinite(n)) return null
+  return Math.min(Math.max(Math.round(n), min), max)
+}
+
+/**
+ * Black or white, whichever reads better on the given hex colour. Used for
+ * button text, so a light or dark button colour never ends up unreadable.
+ * Returns null for anything that is not a valid hex colour.
+ */
+export const readableTextOn = (hex: string | null): string | null => {
+  const clean = cleanColour(hex)
+  if (!clean) return null
+  const digits = clean.slice(1)
+  const full = digits.length === 3 ? digits.split('').map((d) => d + d).join('') : digits
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255)
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+  return luminance > 0.4 ? '#111111' : '#ffffff'
+}
+
 /** Relative paths and http(s) links only. Nothing that could run as script. */
 export const cleanUrl = (value: unknown): string | null => {
   const url = optionalText(value, 500)
   if (!url) return null
   if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\')) return url
   return /^https?:\/\/[^\s"'<>]+$/i.test(url) ? url : null
+}
+
+/**
+ * The logo: a path on this site only, such as /api/media/file/logo.png. No other host. A single
+ * leading slash, and no whitespace or backslash, because a browser strips tabs and newlines from a
+ * URL, so "/<tab>/host" would otherwise become "//host".
+ */
+export const cleanLogoUrl = (value: unknown): string | null => {
+  const url = optionalText(value, 500)
+  if (!url) return null
+  return /^\/(?![/\\])[^\s\\"'<>]*$/.test(url) ? url : null
+}
+
+const categoryCopy = (raw: Record<string, unknown>): ConsentConfig['categoryCopy'] => {
+  const entry = (category: CookieCategory) => ({
+    label: text(raw[`${category}Label`], CATEGORY_COPY[category].label, 60),
+    description: text(raw[`${category}Description`], CATEGORY_COPY[category].description, 300),
+  })
+  return {
+    necessary: entry('necessary'),
+    preferences: entry('preferences'),
+    analytics: entry('analytics'),
+    marketing: entry('marketing'),
+  }
 }
 
 const cookieList = (value: unknown): CookieListItem[] => {
@@ -148,6 +206,13 @@ export function normaliseConsentConfig(integrations: unknown, legacyAnalytics: u
     buttonColor: cleanColour(raw.buttonColor),
     privacyPolicyUrl: cleanUrl(raw.privacyPolicyUrl),
     cookieSettingsLabel: text(raw.cookieSettingsLabel, DEFAULT_CONSENT_TEXT.cookieSettingsLabel, 60),
+    showRejectButton: raw.showRejectButton !== false,
+    privacyPolicyLabel: text(raw.privacyPolicyLabel, DEFAULT_CONSENT_TEXT.privacyPolicyLabel, 60),
+    categoryCopy: categoryCopy(raw),
+    accentColor: cleanColour(raw.accentColor),
+    borderRadius: cleanNumber(raw.borderRadius, 0, 32),
+    fontSize: cleanNumber(raw.fontSize, 12, 20),
+    logoUrl: raw.showLogo === true ? cleanLogoUrl(raw.logoUrl) : null,
     cookieList: cookieList(raw.cookieList),
     geoLogging: raw.geoLogging === true,
     logConsent: raw.logConsent !== false,

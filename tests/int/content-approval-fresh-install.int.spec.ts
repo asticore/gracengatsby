@@ -4,6 +4,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPlatformProxy } from 'wrangler'
 
+import { getTableColumns } from 'drizzle-orm'
+
+import { approvalWorkflows, approvalWorkflowsSteps } from '@/cms/db/schema/approvalWorkflows'
 import { consoleLogger } from '@/localapi/logger'
 import { runInternalMigrate, type InternalMigrateResult } from '@/migrations/runInternalMigrate'
 
@@ -83,10 +86,48 @@ describe('runInternalMigrate - content approval on an empty D1', () => {
     expect(columns).toContain('eg_review_events_id')
   })
 
+  it('creates the approval workflow tables to match the collection schema', async () => {
+    for (const [table, drizzleTable] of [
+      ['eg_approval_workflows', approvalWorkflows],
+      ['eg_approval_workflows_steps', approvalWorkflowsSteps],
+    ] as const) {
+      expect(tables, table).toContain(table)
+      const actual = await columnsOf(table)
+      const declared = Object.values(getTableColumns(drizzleTable)).map((column) => (column as { name: string }).name)
+      for (const column of declared) expect(actual, `${table} should have ${column}`).toContain(column)
+    }
+    const indexes = await proxy.env.D1.prepare(`PRAGMA index_list(\`eg_approval_workflows_steps\`)`).all()
+    expect((indexes.results as { name: string }[]).map((r) => r.name)).toContain('eg_approval_workflows_steps_parent_id_idx')
+  })
+
+  it('adds the review step to every drafts collection (live and versions) and the step to review events', async () => {
+    for (const live of ['eg_pages', 'eg_posts', 'eg_events', 'eg_courses', 'eg_products']) {
+      if (tables.includes(live)) expect(await columnsOf(live), live).toContain('review_step')
+      if (tables.includes(`_${live}_v`)) expect(await columnsOf(`_${live}_v`), `_${live}_v`).toContain('version_review_step')
+    }
+    expect(await columnsOf('eg_review_events')).toContain('step')
+    expect(await columnsOf('eg_locked_documents_rels')).toContain('eg_approval_workflows_id')
+  })
+
+  it('stores a workflow with its steps and removes the steps with the workflow', async () => {
+    const db = proxy.env.D1
+    const inserted = await db.prepare(`INSERT INTO eg_approval_workflows (name, collection, active, submitter_roles) VALUES ('Flow', 'pages', 1, '["editor"]') RETURNING id`).first<{ id: number }>()
+    const id = inserted!.id
+    await db.prepare(`INSERT INTO eg_approval_workflows_steps (_order, _parent_id, id, name, approver_roles, approvals_needed) VALUES (1, ?, 'a', 'Legal', '["legal"]', 2)`).bind(id).run()
+    const steps = await db.prepare(`SELECT name, approvals_needed FROM eg_approval_workflows_steps WHERE _parent_id = ?`).bind(id).all()
+    expect(steps.results).toEqual([{ name: 'Legal', approvals_needed: 2 }])
+    await db.prepare('PRAGMA foreign_keys = ON').run()
+    await db.prepare(`DELETE FROM eg_approval_workflows WHERE id = ?`).bind(id).run()
+    const left = await db.prepare(`SELECT COUNT(*) AS n FROM eg_approval_workflows_steps WHERE _parent_id = ?`).bind(id).first<{ n: number }>()
+    expect(left!.n).toBe(0)
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)
     const columns = await columnsOf('eg_pages')
     expect(columns.filter((column) => column === 'review_status')).toHaveLength(1)
+    expect(columns.filter((column) => column === 'review_step')).toHaveLength(1)
+    expect(tables).toContain('eg_approval_workflows')
   }, 300_000)
 })

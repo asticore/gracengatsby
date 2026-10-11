@@ -14,6 +14,8 @@ import { pathKey, type NodePath } from './treeOps'
 
 export type CanvasHandlers = {
   selectedKey: string | null
+  /** Lock state by node path key (see lockState.ts). A blocked node has its move/duplicate/delete disabled. */
+  locks?: Record<string, { mode: 'structure' | 'full'; blocked: boolean }>
   onSelect: (path: NodePath) => void
   onAdd: (containerPath: NodePath, at: number) => void
   onDelete: (path: NodePath) => void
@@ -85,6 +87,8 @@ const CanvasNode: React.FC<{
   const isSelected = handlers.selectedKey === key
   const def = getBlockDef(node.blockType)
   const design = asBlockStyle(node.design)
+  const lock = handlers.locks?.[key]
+  const blocked = Boolean(lock?.blocked)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: key })
 
@@ -98,7 +102,7 @@ const CanvasNode: React.FC<{
   return (
     <div
       ref={setNodeRef}
-      className={`ve-node ${isSelected ? 've-node--selected' : ''} ve-node--depth-${Math.min(depth, 3)}`}
+      className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ve-node--depth-${Math.min(depth, 3)}`}
       style={wrapperStyle}
       onClick={(event) => {
         // Stop the click bubbling to an ancestor section, so clicking a nested
@@ -108,10 +112,15 @@ const CanvasNode: React.FC<{
       }}
     >
       <div className="ve-node__toolbar">
-        <button type="button" className="ve-drag-handle" {...attributes} {...listeners} aria-label="Drag to reorder">
+        <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to reorder">
           ⠿
         </button>
         <span className="ve-node__label">
+          {lock && (
+            <span className="ve-node__lock" role="img" aria-label={lock.mode === 'full' ? 'Fully locked' : 'Structure locked'} title={lock.mode === 'full' ? 'Fully locked' : 'Structure locked: text only'}>
+              🔒{' '}
+            </span>
+          )}
           {def?.icon} {def?.label || node.blockType}
         </span>
         <span className="ve-node__spacer" />
@@ -122,7 +131,7 @@ const CanvasNode: React.FC<{
             e.stopPropagation()
             handlers.onMove(path, -1)
           }}
-          disabled={index === 0}
+          disabled={blocked || index === 0}
           aria-label="Move up"
           title="Move up"
         >
@@ -135,7 +144,7 @@ const CanvasNode: React.FC<{
             e.stopPropagation()
             handlers.onMove(path, 1)
           }}
-          disabled={index === total - 1}
+          disabled={blocked || index === total - 1}
           aria-label="Move down"
           title="Move down"
         >
@@ -144,6 +153,7 @@ const CanvasNode: React.FC<{
         <button
           type="button"
           className="ve-node__act"
+          disabled={blocked}
           onClick={(e) => {
             e.stopPropagation()
             handlers.onDuplicate(path)
@@ -156,6 +166,7 @@ const CanvasNode: React.FC<{
         <button
           type="button"
           className="ve-node__act ve-node__act--danger"
+          disabled={blocked}
           onClick={(e) => {
             e.stopPropagation()
             handlers.onDelete(path)

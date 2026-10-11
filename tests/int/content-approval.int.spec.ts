@@ -87,7 +87,6 @@ describe('state machine', () => {
     expect(first.ok && first.state).toMatchObject({ status: 'in_review' })
     if (!first.ok) throw new Error('first approval should succeed')
     expect(first.state.approvals).toHaveLength(1)
-
     const second = transition({ state: first.state, action: 'approve', actor: reviewer(10), required: 2, allowSelfApproval: false, now: NOW })
     expect(second).toMatchObject({ ok: true, state: { status: 'approved' } })
 
@@ -716,7 +715,7 @@ describe('reviewer lookup pages through every user', () => {
     const addresses = await reviewerAddresses(engine as never, 'pages', null)
     expect(addresses).toHaveLength(1200)
     expect(addresses).toContain('a1150@x.test')
-    expect(engine.find).toHaveBeenCalledTimes(3)
+    expect(engine.find.mock.calls.filter(([args]) => (args as { collection: string }).collection === 'users')).toHaveLength(3)
   })
 
   it('stops at the cap, however many users there are', async () => {
@@ -726,7 +725,7 @@ describe('reviewer lookup pages through every user', () => {
     }
     await reviewerAddresses(engine as never, 'pages', null)
     expect(MAX_REVIEWER_SCAN).toBe(5000)
-    expect(engine.find).toHaveBeenCalledTimes(MAX_REVIEWER_SCAN / 500)
+    expect(engine.find.mock.calls.filter(([args]) => (args as { collection: string }).collection === 'users')).toHaveLength(MAX_REVIEWER_SCAN / 500)
   })
 })
 

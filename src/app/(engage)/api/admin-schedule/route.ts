@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { drizzle } from 'drizzle-orm/d1'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { getAdminContext } from '@/admin/auth'
+import { assertDocAccess, docAccessDenied } from '@/features/roles/docAccess'
 import { getSchedule, setSchedule, clearSchedule } from '@/cms/db/scheduledPublishes'
 
 export const dynamic = 'force-dynamic'
@@ -40,6 +41,9 @@ export async function GET(request: Request): Promise<Response> {
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
     }
+
+    const access = await assertDocAccess(context, collection, id, 'read')
+    if (!access.ok) return docAccessDenied(access)
 
     const { env } = await getCloudflareContext({ async: true })
     const db = drizzle(env.D1)
@@ -110,6 +114,9 @@ export async function PUT(request: Request): Promise<Response> {
       }
     }
 
+    const access = await assertDocAccess(context, String(collection), id as number, 'update')
+    if (!access.ok) return docAccessDenied(access)
+
     const { env } = await getCloudflareContext({ async: true })
     const db = drizzle(env.D1)
     await setSchedule(db, String(collection), id as number, {
@@ -141,6 +148,9 @@ export async function DELETE(request: Request): Promise<Response> {
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
     }
+
+    const access = await assertDocAccess(context, collection, id, 'update')
+    if (!access.ok) return docAccessDenied(access)
 
     const { env } = await getCloudflareContext({ async: true })
     const db = drizzle(env.D1)

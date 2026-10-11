@@ -2,6 +2,7 @@ import { purgeCache } from '@/features/speed/purge'
 import {
   loadApprovalSettings,
   requiredApprovalsFor,
+  activeWorkflowFor,
   publishBlockMessage,
   isApprovalCollection,
   SETTINGS_UNAVAILABLE_MESSAGE,
@@ -21,7 +22,9 @@ import {
   type ReviewActor,
 } from './stateMachine'
 import { reviewPermissions, type ReviewViewer } from './permissions'
-import { notifyRequester, notifySubmitted } from './notify'
+import { notifyRequester, notifyStepReady, notifySubmitted } from './notify'
+import { clampStep, describeAwaiting, type ApprovalWorkflow } from './workflows'
+import { roleSlugsOfUser } from './roleSlugs'
 
 /**
  * The approval routes' logic, separated from Next.js so it can be tested with a fake engine. The
@@ -72,14 +75,61 @@ export const parseDocRef = (collection: unknown, id: unknown): { collection: App
   return { collection, id: numericId }
 }
 
-function actorFor(viewer: ReviewViewer, collection: string): ReviewActor {
+function actorFor(viewer: ReviewViewer, collection: string, roleSlugs: string[] = []): ReviewActor {
   const perms = reviewPermissions(viewer, collection)
   return {
     id: viewer.id,
     name: viewer.name,
     isAdmin: viewer.isAdmin,
     can: { submit: perms.canSubmit, comment: perms.canComment, review: perms.canReview, publish: perms.canPublish },
+    roleSlugs,
   }
+}
+
+/** The viewer's role slugs, read only when a workflow needs them. Admins need none; a failed read means no roles (fail closed). */
+async function viewerRoleSlugs(engine: ReviewEngine, viewer: ReviewViewer, workflow: ApprovalWorkflow | null): Promise<string[]> {
+  if (!workflow || viewer.isAdmin) return viewer.isAdmin ? ['admin'] : []
+  return roleSlugsOfUser(engine, viewer.id)
+}
+
+/**
+ * Ids of the people who approved an earlier step of the current review round. The history rows since
+ * the last submit hold this, so no column is needed. Empty without a workflow or at the first step.
+ */
+async function priorApproversThisRound(
+  engine: ReviewEngine,
+  collection: string,
+  id: number,
+  workflow: ApprovalWorkflow | null,
+  index: number,
+): Promise<number[]> {
+  if (!workflow || index === 0) return []
+  const current = workflow.steps[index].name
+  const earlier = new Set(workflow.steps.slice(0, index).map((step) => step.name).filter((name) => name !== current))
+  if (earlier.size === 0) return []
+  const { docs } = await engine.find({
+    collection: 'review-events',
+    where: {
+      and: [
+        { collection: { equals: collection } },
+        { docId: { equals: id } },
+        { action: { in: ['submitted', 'approved'] } },
+      ],
+    },
+    sort: '-createdAt',
+    limit: 500,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const ids: number[] = []
+  for (const event of docs) {
+    if (event.action === 'submitted') break
+    const approverId = relationId(event.actor)
+    if (event.action === 'approved' && approverId !== null && typeof event.step === 'string' && earlier.has(event.step)) {
+      ids.push(approverId)
+    }
+  }
+  return ids
 }
 
 /** Which actions the viewer may take right now, worked out by asking the state machine. */
@@ -89,6 +139,8 @@ function allowedActions(args: {
   required: number
   allowSelfApproval: boolean
   adminsMaySelfApprove: boolean
+  workflow?: ApprovalWorkflow | null
+  priorApprovers?: number[]
   now: string
 }): Record<'submit' | 'withdraw' | 'approve' | 'approveAndPublish' | 'requestChanges' | 'comment' | 'publish', boolean> {
   const base = {
@@ -97,6 +149,8 @@ function allowedActions(args: {
     required: args.required,
     allowSelfApproval: args.allowSelfApproval,
     adminsMaySelfApprove: args.adminsMaySelfApprove,
+    workflow: args.workflow ?? null,
+    priorApprovers: args.priorApprovers ?? [],
     now: args.now,
   }
   const ok = (input: Parameters<typeof transition>[0]) => transition(input).ok
@@ -123,7 +177,25 @@ async function loadState(engine: ReviewEngine, collection: string, id: number): 
       status: parseStatus(doc.reviewStatus),
       requestedBy: relationId(doc.reviewRequestedBy),
       approvals: parseApprovals(doc.reviewApprovals),
+      step: Math.max(0, Math.floor(Number(doc.reviewStep)) || 0),
     },
+  }
+}
+
+/** The workflow part of a GET: which flow, which step is awaited and who is waited on. */
+function workflowInfo(workflow: ApprovalWorkflow | null, state: ReviewDocState): Record<string, unknown> | null {
+  if (!workflow) return null
+  const index = clampStep(state.step, workflow.steps.length)
+  const current = workflow.steps[index]
+  const waiting = state.status === 'in_review'
+  return {
+    id: workflow.id,
+    name: workflow.name,
+    stepCount: workflow.steps.length,
+    step: waiting
+      ? { index, name: current.name, approverRoles: current.approverNames, approvalsNeeded: current.approvalsNeeded, total: workflow.steps.length }
+      : null,
+    awaiting: waiting ? describeAwaiting(workflow, index) : null,
   }
 }
 
@@ -145,15 +217,19 @@ export async function handleReviewGet(args: {
   const loaded = await loadState(args.engine, ref.collection, ref.id)
   if (!loaded) return json(404, { error: 'Not found' })
 
-  const required = requiredApprovalsFor(settings, ref.collection)
-  const actor = actorFor(args.viewer, ref.collection)
+  const workflow = activeWorkflowFor(settings, ref.collection)
+  const required = workflow ? workflow.steps[clampStep(loaded.state.step, workflow.steps.length)].approvalsNeeded : requiredApprovalsFor(settings, ref.collection)
+  const actor = actorFor(args.viewer, ref.collection, await viewerRoleSlugs(args.engine, args.viewer, workflow))
   const now = args.now ?? new Date().toISOString()
+  const priorApprovers = await priorApproversThisRound(args.engine, ref.collection, ref.id, workflow, clampStep(loaded.state.step, workflow?.steps.length ?? 1))
   const allowed = allowedActions({
     state: loaded.state,
     actor,
     required,
     allowSelfApproval: settings.allowSelfApproval,
     adminsMaySelfApprove: settings.adminsMaySelfApprove,
+    workflow,
+    priorApprovers,
     now,
   })
 
@@ -174,15 +250,17 @@ export async function handleReviewGet(args: {
     id: ref.id,
     status: loaded.state.status,
     requiredApprovals: required,
+    workflow: workflowInfo(workflow, loaded.state),
     requestedBy: loaded.state.requestedBy === null ? null : { id: loaded.state.requestedBy, name: requestedByName ?? UNKNOWN_USER },
     requestedAt: typeof loaded.doc.reviewRequestedAt === 'string' ? loaded.doc.reviewRequestedAt : null,
     approvals: loaded.state.approvals,
-    publishBlocked: publishBlockMessage({ settings, collection: ref.collection, reviewStatus: loaded.state.status, isAdmin: args.viewer.isAdmin }),
+    publishBlocked: publishBlockMessage({ settings, collection: ref.collection, reviewStatus: loaded.state.status, reviewStep: loaded.state.step, isAdmin: args.viewer.isAdmin }),
     allowed: { ...allowed, comment: allowed.comment && settings.enabled },
     history: history.docs.map((event) => ({
       id: event.id,
       action: event.action,
       note: event.note ?? null,
+      ...(typeof event.step === 'string' && event.step ? { step: event.step } : {}),
       actorName: event.actorName ?? null,
       createdAt: event.createdAt ?? null,
     })),
@@ -228,11 +306,15 @@ export async function handleReviewPost(args: {
   }
 
   const now = args.now ?? new Date().toISOString()
-  const required = requiredApprovalsFor(settings, ref.collection)
+  const workflow = activeWorkflowFor(settings, ref.collection)
+  const required = workflow ? workflow.steps[clampStep(loaded.state.step, workflow.steps.length)].approvalsNeeded : requiredApprovalsFor(settings, ref.collection)
+  const priorApprovers = action === 'approve' ? await priorApproversThisRound(args.engine, ref.collection, ref.id, workflow, clampStep(loaded.state.step, workflow?.steps.length ?? 1)) : []
   const result = transition({
     state: loaded.state,
     action,
-    actor: actorFor(args.viewer, ref.collection),
+    actor: actorFor(args.viewer, ref.collection, await viewerRoleSlugs(args.engine, args.viewer, workflow)),
+    workflow,
+    priorApprovers,
     required,
     allowSelfApproval: settings.allowSelfApproval,
     adminsMaySelfApprove: settings.adminsMaySelfApprove,
@@ -247,7 +329,8 @@ export async function handleReviewPost(args: {
   const stateChanged =
     next.status !== loaded.state.status ||
     next.requestedBy !== loaded.state.requestedBy ||
-    JSON.stringify(next.approvals) !== JSON.stringify(loaded.state.approvals)
+    JSON.stringify(next.approvals) !== JSON.stringify(loaded.state.approvals) ||
+    (workflow !== null && (next.step ?? 0) !== (loaded.state.step ?? 0))
 
   if (result.publish || stateChanged) {
     // Optimistic concurrency: re-read the review fields and the timestamp right before the write.
@@ -265,6 +348,8 @@ export async function handleReviewPost(args: {
       // The approvals are tied to the content as it is now, so a later edit can be detected.
       reviewApprovals: serializeStoredReview({ hash: hashReviewedContent(loaded.doc), approvals: next.approvals }),
     }
+    if (workflow) data.reviewStep = next.step ?? 0
+    else if (loaded.state.step) data.reviewStep = 0
     if (result.publish) data._status = 'published'
     await args.engine.update({ collection: ref.collection, id: ref.id, data, overrideAccess: true })
   }
@@ -278,6 +363,7 @@ export async function handleReviewPost(args: {
         docTitle: title,
         action: event.action,
         note: event.note,
+        ...(event.step ? { step: event.step } : {}),
         actor: args.viewer.id,
         actorName: args.viewer.name,
       },
@@ -295,6 +381,21 @@ export async function handleReviewPost(args: {
       title,
       requesterName: args.viewer.name,
       requesterId: args.viewer.id,
+      origin: args.origin,
+      workflow,
+    })
+  }
+  if (action === 'approve' && workflow && result.advancedTo !== undefined) {
+    await notifyStepReady({
+      engine: args.engine,
+      settings,
+      collection: ref.collection,
+      id: ref.id,
+      title,
+      workflow,
+      step: result.advancedTo,
+      approverName: args.viewer.name,
+      requesterId: loaded.state.requestedBy,
       origin: args.origin,
     })
   }
@@ -317,6 +418,7 @@ export async function handleReviewPost(args: {
     status: next.status,
     approvals: next.approvals,
     requiredApprovals: required,
+    ...(workflow && next.status === 'in_review' ? { step: next.step ?? 0, awaiting: describeAwaiting(workflow, next.step ?? 0) } : {}),
     published: result.publish,
     events: result.events.map((event: { action: ReviewEventAction }) => event.action),
   })
@@ -329,6 +431,8 @@ export type ReviewQueueRow = {
   requestedBy: string
   requestedAt: string | null
   href: string
+  /** Workflow step the document waits at ("Step 2 of 3: Legal review"), when a workflow is active. */
+  awaiting?: string
 }
 
 /**
@@ -350,6 +454,7 @@ export async function loadReviewQueue({
   if (!active.enabled) return []
   const collections: ApprovalCollection[] = ['pages', 'posts', 'events', 'courses', 'products']
   const rows: ReviewQueueRow[] = []
+  let roleSlugs: string[] | null = null
 
   for (const collection of collections) {
     const perms = reviewPermissions(viewer, collection)
@@ -368,8 +473,20 @@ export async function loadReviewQueue({
       depth: 1,
       overrideAccess: true,
     })
+    const workflow = activeWorkflowFor(active, collection)
+    if (workflow && !viewer.isAdmin && roleSlugs === null) roleSlugs = await roleSlugsOfUser(engine, viewer.id)
     for (const doc of docs) {
       const id = Number(doc.id)
+      let awaiting: string | undefined
+      if (workflow) {
+        const index = clampStep(doc.reviewStep, workflow.steps.length)
+        const step = workflow.steps[index]
+        awaiting = `Step ${index + 1} of ${workflow.steps.length}: ${step.name}`
+        // Reviewers see what waits on their step; the people who submitted a document still see it.
+        const ownSubmission = relationId(doc.reviewRequestedBy) === viewer.id
+        const mayAct = viewer.isAdmin || step.approverRoles.some((slug) => (roleSlugs ?? []).includes(slug))
+        if (!mayAct && !ownSubmission) continue
+      }
       const requester = doc.reviewRequestedBy as { name?: unknown } | number | null | undefined
       const requestedBy = requester && typeof requester === 'object' && typeof requester.name === 'string' && requester.name ? requester.name : UNKNOWN_USER
       rows.push({
@@ -379,6 +496,7 @@ export async function loadReviewQueue({
         requestedBy,
         requestedAt: typeof doc.reviewRequestedAt === 'string' ? doc.reviewRequestedAt : null,
         href: `/admin/collections/${collection}/${id}`,
+        ...(awaiting ? { awaiting } : {}),
       })
     }
   }

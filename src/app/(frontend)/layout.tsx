@@ -35,6 +35,8 @@ import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
 import type { Footer as FooterGlobal, Header as HeaderGlobal, Media, SiteSetting } from '@/engage-types'
 
 import { SeoBodyScripts, SeoJsonLd, SeoScripts } from '@/features/seo'
+import { AdsRoot } from '@/features/ads/components/AdsRoot'
+import { AdPlacements } from '@/features/ads/components/AdPlacements'
 import { SpeedHead } from '@/features/speed'
 import { buildFontCss, preloadLinks, remoteStylesheetUrls, resolveThemeFont } from '@/features/fonts/css'
 import { sanitizeInstalledFonts } from '@/features/fonts/installed'
@@ -189,6 +191,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       <body>
         <SeoScripts country={country} />
         <SeoJsonLd />
+        <AdsRoot />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${FONT_FACE_VARS} }` }} />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${themeVars} }` }} />
         <Providers>
@@ -204,7 +207,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             announcementBar={header?.announcementBar}
             socials={header?.socials}
           />
+          <AdPlacements position="header" />
           <main>{children}</main>
+          <AdPlacements position="footer" />
           <Footer
             siteName={settings?.siteName || undefined}
             logoUrl={logo?.url || undefined}

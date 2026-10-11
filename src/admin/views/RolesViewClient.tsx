@@ -14,6 +14,9 @@ import {
   validateRoleName,
   slugify,
 } from '@/features/roles/matrixUi'
+import { errorMessageFrom, unwrapDoc, type WorkflowRecord } from '@/features/approval/workflowForm'
+import { ApprovalWorkflowsPanel } from './ApprovalWorkflowsPanel'
+import './roles-workflows.css'
 
 interface RoleDoc {
   id: number
@@ -27,12 +30,19 @@ interface RoleDoc {
 interface RolesViewClientProps {
   roles: RoleDoc[]
   canEdit: boolean
+  /** Approval workflows, managed on the second tab. */
+  workflows?: WorkflowRecord[]
+  /** Whether content approval is switched on in Security settings. */
+  approvalEnabled?: boolean
 }
+
+type RolesTab = 'permissions' | 'workflows'
 
 /**
  * Roles admin view client: list, select, create, edit matrix, save, delete.
  */
-export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClientProps) {
+export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], approvalEnabled = true }: RolesViewClientProps) {
+  const [tab, setTab] = useState<RolesTab>('permissions')
 
   // UI state
   const [roles, setRoles] = useState<RoleDoc[]>(initialRoles)
@@ -84,13 +94,15 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
       })
 
       if (!res.ok) {
-        const error = (await res.json()) as Record<string, unknown>
-        setErrorMsg((error.message as string) || 'Failed to save role')
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to save role'))
       } else {
-        const updated = (await res.json()) as RoleDoc
-        setRoles((prev) =>
-          prev.map((r) => (r.id === selectedRole.id ? updated : r)),
-        )
+        // REST answers { doc, message }
+        const updated = unwrapDoc<RoleDoc>(await res.json().catch((): null => null))
+        if (updated) {
+          setRoles((prev) =>
+            prev.map((r) => (r.id === selectedRole.id ? updated : r)),
+          )
+        }
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Network error'
@@ -127,12 +139,13 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
       })
 
       if (!res.ok) {
-        const error = (await res.json()) as Record<string, unknown>
-        setErrorMsg((error.message as string) || 'Failed to create role')
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to create role'))
       } else {
-        const newRole = (await res.json()) as RoleDoc
-        setRoles((prev: RoleDoc[]) => [...prev, newRole])
-        setSelectedRoleId(newRole.id)
+        const newRole = unwrapDoc<RoleDoc>(await res.json().catch((): null => null))
+        if (newRole) {
+          setRoles((prev: RoleDoc[]) => [...prev, newRole])
+          setSelectedRoleId(newRole.id)
+        }
         setShowCreateDialog(false)
         setCreateForm({ name: '', description: '' })
       }
@@ -168,12 +181,13 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
       })
 
       if (!res.ok) {
-        const error = (await res.json()) as Record<string, unknown>
-        setErrorMsg((error.message as string) || 'Failed to duplicate role')
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to duplicate role'))
       } else {
-        const newRole = (await res.json()) as RoleDoc
-        setRoles((prev: RoleDoc[]) => [...prev, newRole])
-        setSelectedRoleId(newRole.id)
+        const newRole = unwrapDoc<RoleDoc>(await res.json().catch((): null => null))
+        if (newRole) {
+          setRoles((prev: RoleDoc[]) => [...prev, newRole])
+          setSelectedRoleId(newRole.id)
+        }
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Network error'
@@ -202,8 +216,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
       })
 
       if (!res.ok) {
-        const error = (await res.json()) as Record<string, unknown>
-        setErrorMsg((error.message as string) || 'Failed to delete role')
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to delete role'))
       } else {
         setRoles((prev) => prev.filter((r) => r.id !== selectedRole.id))
         setSelectedRoleId(null)
@@ -221,10 +234,30 @@ export function RolesViewClient({ roles: initialRoles, canEdit }: RolesViewClien
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Roles</h1>
-        <p>Manage role permissions with a matrix grid.</p>
+        <p>Manage role permissions with a matrix grid, and set up approval workflows.</p>
       </div>
 
-      <div className={styles.rolesContainer}>
+      <div className="rw-tabs" role="tablist" aria-label="Roles sections">
+        <button type="button" role="tab" id="roles-tab-permissions" aria-selected={tab === 'permissions'} aria-controls="roles-panel-permissions" className="rw-tab" onClick={() => setTab('permissions')}>
+          Permissions
+        </button>
+        <button type="button" role="tab" id="roles-tab-workflows" aria-selected={tab === 'workflows'} aria-controls="roles-panel-workflows" className="rw-tab" onClick={() => setTab('workflows')}>
+          Approval workflows
+        </button>
+      </div>
+
+      {tab === 'workflows' && (
+        <div role="tabpanel" id="roles-panel-workflows" aria-labelledby="roles-tab-workflows">
+          <ApprovalWorkflowsPanel
+            workflows={workflows}
+            roles={roles}
+            canEdit={canEdit}
+            approvalEnabled={approvalEnabled}
+          />
+        </div>
+      )}
+
+      <div className={styles.rolesContainer} role="tabpanel" id="roles-panel-permissions" aria-labelledby="roles-tab-permissions" style={tab !== 'permissions' ? { display: 'none' } : undefined}>
         {/* Left: role list */}
         <div className={styles.rolesList}>
           <div className={styles.rolesHeader}>

@@ -1043,11 +1043,11 @@ button {
   min-width: 0;
 }
 
+/* The side panel grows with its content; the whole page scrolls, never the panel alone. */
 .document-edit__side {
-  position: sticky;
-  top: calc(var(--app-header-height) + var(--base) * 0.5);
-  max-height: calc(100vh - var(--app-header-height) - var(--base));
-  overflow-y: auto;
+  position: static;
+  max-height: none;
+  overflow: visible;
 }
 
 @media (max-width: 1000px) {

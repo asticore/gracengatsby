@@ -226,9 +226,9 @@ export const FEATURES: FeatureDef[] = [
     label: 'Content approval',
     description: 'Require a second person to approve pages, posts, events, courses and products before they publish. The rules themselves are set under Settings > Security.',
     defaultEnabled: false,
-    collections: ['review-events'],
+    collections: ['review-events', 'approval-workflows'],
     globals: [],
-    tables: ['review_events'],
+    tables: ['review_events', 'approval_workflows'],
     implemented: true,
   },
 ]

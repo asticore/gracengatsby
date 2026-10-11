@@ -5,6 +5,12 @@ import { hasCartSecretAccess, isAdmin, isAuthenticated, isDocumentOwner, isGuest
 import { beforeChangeCart, cartStatusAfterRead } from '../hooks/cartHooks'
 import { cartItemsField, currencyField } from './shared'
 
+const serverOnlyFieldAccess = {
+  create: () => false,
+  update: () => false,
+  read: ({ req }: { req: { user?: { roles?: string[] } | null } }) => Boolean(req.user?.roles?.includes('admin')),
+}
+
 /**
  * SHADOW config for the ecommerce plugin's real `carts` collection - see
  * ./Products.ts's header comment. Reproduced from `createCartsCollection.js`
@@ -106,5 +112,12 @@ export const Carts: CollectionConfig = {
       admin: { position: 'sidebar' },
       fields: [{ name: 'subtotal', type: 'number' }, currencyField],
     },
+    // Abandoned-cart bookkeeping: written only by the server (checkout and the
+    // reminder cron), never settable through the cart API.
+    { name: 'email', type: 'email', index: true, access: serverOnlyFieldAccess, admin: { position: 'sidebar', readOnly: true, description: 'Captured at checkout.' } },
+    { name: 'remindersSent', type: 'number', defaultValue: 0, access: serverOnlyFieldAccess, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'lastReminderAt', type: 'date', access: serverOnlyFieldAccess, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'recoveredAt', type: 'date', access: serverOnlyFieldAccess, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'unsubscribed', type: 'checkbox', defaultValue: false, access: serverOnlyFieldAccess, admin: { position: 'sidebar', readOnly: true } },
   ],
 }

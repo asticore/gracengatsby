@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { setCardOpen } from '@/admin/components/collapseStore'
 import { createElement as h } from 'react'
 import { VersionsList } from '@/admin/views/VersionsList'
 
@@ -18,6 +19,31 @@ import { useRouter } from 'next/navigation'
 const mockPush = vi.fn()
 const mockRefresh = vi.fn()
 
+const HISTORY_CARD_ID = 'ver:history'
+const PREFS_URL = '/api/admin-edit-prefs'
+let fetchQueue: ReturnType<typeof vi.fn>
+
+/**
+ * The collapse store GETs the user's saved card state on mount. Answer that
+ * here (empty saved set) so the queued responses are only the ones each test sets up.
+ */
+function installFetch(): ReturnType<typeof vi.fn> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const queued: any = vi.fn()
+  global.fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) =>
+    String(input).startsWith(PREFS_URL)
+      ? Promise.resolve({ ok: true, json: async (): Promise<unknown> => ({ open: [] }) })
+      : queued(input, init)
+  ) as unknown as typeof fetch
+  return queued
+}
+
+/** VersionsList sits in a CollapsibleCard that starts folded. Reset the store, then open it. */
+function openHistoryCard() {
+  act(() => setCardOpen(HISTORY_CARD_ID, false))
+  act(() => setCardOpen(HISTORY_CARD_ID, true))
+}
+
 describe('VersionsList component - delete functionality', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -25,11 +51,12 @@ describe('VersionsList component - delete functionality', () => {
       push: mockPush,
       refresh: mockRefresh,
     })
-    global.fetch = vi.fn()
+    fetchQueue = installFetch()
+    openHistoryCard()
   })
 
   it('renders table when versions are loaded', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -67,7 +94,7 @@ describe('VersionsList component - delete functionality', () => {
       }),
     })
 
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ id: 1, name: 'Jane Doe' }),
     })
@@ -90,7 +117,7 @@ describe('VersionsList component - delete functionality', () => {
 
 
   it('calls delete endpoint with correct params when deleting a non-latest version', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -128,12 +155,12 @@ describe('VersionsList component - delete functionality', () => {
       }),
     })
 
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ id: 1, name: 'Jane Doe' }),
     })
 
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ ok: true }),
     })
@@ -172,7 +199,7 @@ describe('VersionsList component - delete functionality', () => {
   })
 
   it('shows error alert on 409 response from delete endpoint', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -210,12 +237,12 @@ describe('VersionsList component - delete functionality', () => {
       }),
     })
 
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ id: 1, name: 'Jane Doe' }),
     })
 
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: false,
       status: 409,
       json: async () => ({ error: 'The latest version cannot be deleted' }),
@@ -239,7 +266,7 @@ describe('VersionsList component - delete functionality', () => {
   })
 
   it('calls handleDelete with correct endpoint URL format', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -264,7 +291,7 @@ describe('VersionsList component - delete functionality', () => {
       }),
     })
 
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ id: 1, name: 'Jane Doe' }),
     })
@@ -302,7 +329,9 @@ describe('VersionsList component - delete controls', () => {
     cleanup()
     vi.clearAllMocks()
     ;(useRouter as ReturnType<typeof vi.fn>).mockReturnValue({ push: mockPush, refresh: mockRefresh })
-    global.fetch = vi.fn().mockResolvedValue({
+    fetchQueue = installFetch()
+    openHistoryCard()
+    fetchQueue.mockResolvedValue({
       ok: true,
       json: async () => ({ docs: [doc(12, true), doc(11, false)], totalDocs: 2, limit: 50, totalPages: 1, page: 1 }),
     })

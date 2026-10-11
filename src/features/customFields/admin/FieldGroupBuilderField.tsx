@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState } from 'react'
 import { useField } from '@/engine/ui'
 
 import { CustomFieldInput, MergeTagHint } from '@/fields/customFields/CustomFieldInput'
+import { HeaderFieldsImport, type HeaderTarget } from '@/fields/customFields/SpreadsheetImport'
 import { CONDITION_OPERATORS, CUSTOM_FIELD_TYPES, type ConditionRule, type CustomFieldDef, type CustomFieldType, type FlexibleLayout } from '@/fields/customFields/types'
 import type { MergeTagMode, MergeTagParent } from '../mergeTagHint'
 
@@ -547,6 +548,23 @@ function moveAt<T>(list: T[], index: number, delta: -1 | 1): T[] {
   return next
 }
 
+/** Names already taken where imported fields will land. */
+function namesFor(list: CustomFieldDef[], target: HeaderTarget): string[] {
+  if (target.kind === 'fields') return list.map((f) => f.name)
+  if (target.kind === 'repeater') return (list[target.index]?.subFields ?? []).map((f) => f.name)
+  return []
+}
+
+/** Adds imported fields to the set, into a repeater's columns, or as a new repeater. */
+function addImported(list: CustomFieldDef[], target: HeaderTarget, defs: CustomFieldDef[]): CustomFieldDef[] {
+  if (target.kind === 'fields') return [...list, ...defs]
+  if (target.kind === 'repeater') return list.map((f, i) => (i === target.index ? { ...f, subFields: [...(f.subFields ?? []), ...defs] } : f))
+  const taken = new Set(list.map((f) => f.name))
+  let name = toFieldName(target.label.trim() || 'table').replace(/^_+|_+$/g, '') || 'table'
+  for (let n = 2; taken.has(name); n++) name = `${toFieldName(target.label.trim() || 'table')}_${n}`
+  return [...list, { label: target.label.trim() || 'Table', name, type: 'repeater', required: false, subFields: defs }]
+}
+
 /** Registered as the admin component for the `definition` field of field-groups. */
 export const FieldGroupBuilderField: React.FC<{ path?: string }> = ({ path = 'definition' }) => {
   const { value, setValue } = useField<unknown>({ path })
@@ -605,6 +623,13 @@ export const FieldGroupBuilderField: React.FC<{ path?: string }> = ({ path = 'de
           </p>
         )}
         <SubList title="" defs={list} depth={1} parents={[]} onChange={(next) => setValue(next)} />
+        <div>
+          <HeaderFieldsImport
+            existingNames={(target) => namesFor(list, target)}
+            repeaters={list.map((f, index) => ({ f, index })).filter(({ f }) => f.type === 'repeater').map(({ f, index }) => ({ index, label: f.label || f.name }))}
+            onAdd={(target, defs) => setValue(addImported(list, target, defs))}
+          />
+        </div>
         <p className="m-0 text-[11px] opacity-65">
           Use a field on the site as {'{{field:name}}'}. Values inside repeating rows use dots, eg {'{{field:rows.0.title}}'}. Inside a Loop, the same tags fill in per item.
         </p>

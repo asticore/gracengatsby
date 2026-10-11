@@ -32,7 +32,7 @@
  *   - `filesize` is `file.size` as given, not re-measured.
  *   - width/height are computed via `getImageSize` -> (no sharp, no
  *     tempFilePath on this app's Workers runtime) -> `probeImageSize(file.
- *     data)`, a pure-JS buffer-header prober. The reference engine's own version of
+ * data)`, a pure-JS buffer-header prober. The reference engine's own version of
  *     that prober is backed by the `image-dimensions` npm package - this
  *     app's zero-new-runtime-dependencies rule means `probeImageDimensions`
  *     below is a hand-written replacement covering exactly the five
@@ -59,6 +59,8 @@
  * upload - the reference engine's own `/paste-url` endpoint, never wired into this
  * app's REST layer), and `withMetadata`/EXIF handling (sharp-only).
  */
+
+import { DEFAULT_UPLOAD_POLICY, inspectUpload, UploadRefusal, type UploadPolicy } from '@/features/media/fileTypes'
 
 import { ValidationError } from './operations'
 
@@ -104,73 +106,6 @@ export function isImageMimeType(mimeType: string): boolean {
 /* `else` branch only (see this file's header - the `mimeTypes`-configured    */
 /* branch is dead code for this app's one upload collection)                  */
 /* -------------------------------------------------------------------------- */
-
-/** Verbatim data port of `RESTRICTED_FILE_EXT_AND_TYPES` (the vendor source) - the fixed blocklist the reference engine checks an upload against when a collection (like this app's `media`) sets no `mimeTypes` allowlist of its own. This is the security-relevant check `src/collections/Media.ts`'s own access-control comment already flags the stakes of (a stored-XSS vector via an uploaded SVG/HTML file served back from this origin) - closing this gap is as much a part of "replace the original engine's upload handling" as the metadata computation is. */
-const RESTRICTED_FILE_EXT_AND_TYPES: Array<{ extensions: string[]; mimeType: string }> = [
-  { extensions: ['exe', 'dll'], mimeType: 'application/x-msdownload' },
-  { extensions: ['exe', 'com', 'app', 'action'], mimeType: 'application/x-executable' },
-  { extensions: ['bat', 'cmd'], mimeType: 'application/x-msdos-program' },
-  { extensions: ['exe', 'com'], mimeType: 'application/x-ms-dos-executable' },
-  { extensions: ['dmg'], mimeType: 'application/x-apple-diskimage' },
-  { extensions: ['deb'], mimeType: 'application/x-debian-package' },
-  { extensions: ['rpm'], mimeType: 'application/x-redhat-package-manager' },
-  { extensions: ['exe', 'dll'], mimeType: 'application/vnd.microsoft.portable-executable' },
-  { extensions: ['msi'], mimeType: 'application/x-msi' },
-  { extensions: ['jar', 'ear', 'war'], mimeType: 'application/java-archive' },
-  { extensions: ['desktop'], mimeType: 'application/x-desktop' },
-  { extensions: ['cpl'], mimeType: 'application/x-cpl' },
-  { extensions: ['lnk'], mimeType: 'application/x-ms-shortcut' },
-  { extensions: ['pkg'], mimeType: 'application/x-apple-installer' },
-  { extensions: ['htm', 'html', 'shtml', 'xhtml'], mimeType: 'text/html' },
-  { extensions: ['php', 'phtml'], mimeType: 'application/x-httpd-php' },
-  { extensions: ['js', 'jse'], mimeType: 'text/javascript' },
-  { extensions: ['jsp'], mimeType: 'application/x-jsp' },
-  { extensions: ['py'], mimeType: 'text/x-python' },
-  { extensions: ['rb'], mimeType: 'text/x-ruby' },
-  { extensions: ['pl'], mimeType: 'text/x-perl' },
-  { extensions: ['ps1', 'psc1', 'psd1', 'psh', 'psm1'], mimeType: 'application/x-powershell' },
-  { extensions: ['vbe', 'vbs'], mimeType: 'application/x-vbscript' },
-  { extensions: ['ws', 'wsc', 'wsf', 'wsh'], mimeType: 'application/x-ms-wsh' },
-  { extensions: ['scr'], mimeType: 'application/x-msdownload' },
-  { extensions: ['asp', 'aspx'], mimeType: 'application/x-asp' },
-  { extensions: ['hta'], mimeType: 'application/x-hta' },
-  { extensions: ['reg'], mimeType: 'application/x-registry' },
-  { extensions: ['url'], mimeType: 'application/x-url' },
-  { extensions: ['workflow'], mimeType: 'application/x-workflow' },
-  { extensions: ['command'], mimeType: 'application/x-command' },
-]
-
-/**
- * Markup and script-capable types. Served back from this origin they can run
- * script, so they are refused whatever the browser says they are - an SVG is
- * the same risk as an HTML page. This is a deliberate deny, not a side effect
- * of the blocklist above.
- */
-const DENIED_MIME_TYPES = new Set(['text/html', 'application/xhtml+xml', 'text/xml', 'application/xml', 'image/svg+xml'])
-const DENIED_EXTENSIONS = new Set(['html', 'htm', 'xhtml', 'xml', 'svg', 'svgz'])
-
-/** The extension of a filename, lowercased, with any `?query` cut off. Empty when there is none. */
-function extensionOf(name: string): string {
-  if (!name.includes('.')) return ''
-  return (name.split('.').pop() ?? '').split('?')[0].toLowerCase()
-}
-
-/** Refuses a file whose normalised mimetype or extension is on a blocklist. `mimeType` must already be normalised. */
-function checkRestrictedFileType(name: string, mimeType: string): void {
-  const ext = extensionOf(name)
-  const isRestricted =
-    DENIED_MIME_TYPES.has(mimeType) ||
-    DENIED_EXTENSIONS.has(ext) ||
-    RESTRICTED_FILE_EXT_AND_TYPES.some(({ extensions, mimeType: restricted }) => extensions.includes(ext) || restricted === mimeType)
-  if (isRestricted) {
-    throw new ValidationError([
-      {
-        path: 'file',
-        message: `File type '${mimeType}' not allowed for ${name}: restricted file type detected -- set 'allowRestrictedFileTypes' to true to skip this check for this collection.`,
-      },
-    ])
-  }
-}
 
 /* -------------------------------------------------------------------------- */
 /* Filename sanitization/dedup - `sanitize-filename` + `getSafeFilename.js`    */
@@ -376,29 +311,27 @@ export async function generateUploadFields(args: {
    * when the bytes in `file` were re-encoded: `originalSize` is the size the
    * visitor sent, and `optimised` says whether `file` is the smaller copy.
    */
-  optimisation?: { originalSize: number; optimised: boolean }
+  optimisation?: { originalSize: number; optimised: boolean; policy?: UploadPolicy }
 }): Promise<GeneratedUploadFields> {
   const { file, filenameExists, optimisation } = args
 
-  // The declared type is normalised before any check, so `Text/HTML; charset=utf-8`
-  // is judged exactly like `text/html`.
-  const mimeType = normaliseMimeType(file.mimetype)
-  checkRestrictedFileType(file.name, mimeType)
-
-  // Only letters and digits survive in the extension, so it can never carry a
-  // path separator into the stored key.
-  const ext = extensionOf(file.name).replace(/[^a-z0-9]/g, '').slice(0, 10)
-  const baseFilename = sanitizeFilename(file.name.substring(0, file.name.lastIndexOf('.')) || file.name)
-  // A name that sanitises to nothing (`???.jpg`, `..`) has no safe stored form, so it is refused before anything is written.
-  if (!baseFilename) {
-    throw new ValidationError([{ path: 'file', message: 'This file needs a name that uses letters or numbers.' }])
+  // The browser's declared type is never trusted: the extension must be on the
+  // allow-list and the first bytes must match that kind of file. The type that
+  // is stored is the one the bytes show (see ../features/media/fileTypes.ts).
+  let inspected: ReturnType<typeof inspectUpload>
+  try {
+    inspected = inspectUpload(file, optimisation?.policy ?? DEFAULT_UPLOAD_POLICY, { enforceAllowList: !optimisation?.optimised })
+  } catch (error) {
+    if (error instanceof UploadRefusal) throw new ValidationError([{ path: 'file', message: error.message }])
+    throw error
   }
-  let filename = `${baseFilename}${ext ? `.${ext}` : ''}`
+  const mimeType = inspected.mimeType
+  let filename = inspected.name
   while (await filenameExists(filename)) {
     filename = incrementName(filename)
   }
 
-  const fields: GeneratedUploadFields = { filename, mimeType, filesize: file.size }
+  const fields: GeneratedUploadFields = { filename, mimeType, filesize: file.data.byteLength }
   // Every upload records its own size as the original, so the field is always
   // filled in; the optimised size is only recorded when a re-encode happened.
   fields.originalSize = optimisation?.originalSize ?? file.size

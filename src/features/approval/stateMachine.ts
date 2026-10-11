@@ -12,7 +12,19 @@
  *   approved ---publish---> none (published)        [approve + publish in one step also ends at none]
  *   any ---comment---> same state
  *   any edit to an approved document ---> in_review, approvals cleared (see resetOnEdit)
+ *
+ * With an active approval workflow (see workflows.ts) the count is replaced by steps. A document
+ * in review sits at one step; only that step's approver roles (and admins) may approve or send it
+ * back; reaching the step's approvals moves it to the next step with approvals cleared, and the
+ * last step's approvals make it 'approved'. Sending it back, or editing its content, returns it
+ * to step 0. Without a workflow `step` is never read.
+ *
+ * With a workflow, a non-admin who already approved an earlier step of the same review round may
+ * not approve a later one (separation of duties). The route works out those people from the
+ * history and passes them in as `priorApprovers`.
  */
+
+import { clampStep, mayActOnStep, maySubmitUnder, type WorkflowRule } from './workflows'
 
 export const REVIEW_STATUSES = ['none', 'in_review', 'changes_requested', 'approved'] as const
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number]
@@ -29,7 +41,10 @@ export type ReviewDocState = {
   status: ReviewStatus
   /** The user who submitted the current review, or null when nothing is in review. */
   requestedBy: number | null
+  /** Approvals given at the current step (all of them when there is no workflow). */
   approvals: ReviewApproval[]
+  /** Zero-based workflow step awaiting approval. Absent means 0. */
+  step?: number
 }
 
 /** What the acting user may do on this collection, worked out by the route. */
@@ -48,6 +63,8 @@ export type ReviewActor = {
   }
   /** Admins may approve their own work when they are the reviewer. */
   isAdmin: boolean
+  /** Role slugs the user holds (built-in and custom), used only for workflow steps. Absent means none. */
+  roleSlugs?: string[]
 }
 
 export type TransitionInput = {
@@ -66,9 +83,17 @@ export type TransitionInput = {
   now: string
   /** Approve and publish in one step. Only honoured when the approval completes the review. */
   alsoPublish?: boolean
+  /** The active workflow for this content type. When set it replaces `required`. */
+  workflow?: WorkflowRule | null
+  /**
+   * Ids of people who approved an earlier step of this review round. Only checked with a workflow;
+   * admins are exempt. Absent means none.
+   */
+  priorApprovers?: number[]
 }
 
-export type TransitionEvent = { action: ReviewEventAction; note: string | null }
+/** `step` is the workflow step name the event belongs to; present only when a workflow is active. */
+export type TransitionEvent = { action: ReviewEventAction; note: string | null; step?: string | null }
 
 export type TransitionOk = {
   ok: true
@@ -76,6 +101,8 @@ export type TransitionOk = {
   /** True when the document should be set to published by this transition. */
   publish: boolean
   events: TransitionEvent[]
+  /** Set when an approval completed a step and the document moved on: the index of the step now awaited. */
+  advancedTo?: number
 }
 
 export type TransitionFail = {
@@ -99,22 +126,45 @@ const clean = (note: string | undefined): string | null => {
 /** Approvals needed, never less than one: a collection with review switched on needs someone to approve. */
 export const effectiveRequired = (required: number): number => Math.max(1, Math.floor(required))
 
+const stepOf = (state: ReviewDocState, workflow: WorkflowRule): number => clampStep(state.step, workflow.steps.length)
+
+const emptyState = (): ReviewDocState => ({ status: 'none', requestedBy: null, approvals: [], step: 0 })
+
 export function transition(input: TransitionInput): TransitionResult {
   const { state, action, actor, now } = input
   const note = clean(input.note)
+  const workflow = input.workflow ?? null
   const needed = effectiveRequired(input.required)
+  const roleSlugs = actor.roleSlugs ?? []
+
+  /** The workflow step this document is at, with its name for history rows; null without a workflow. */
+  const current = workflow ? workflow.steps[stepOf(state, workflow)] : null
+  const withStep = (event: TransitionEvent, step = current): TransitionEvent => (step ? { ...event, step: step.name } : event)
+  /** A reviewer may act only on the step the document is at. Without a workflow anyone with review rights may. */
+  const stepBlock = (): TransitionFail | null => {
+    if (!workflow || !current) return null
+    if (mayActOnStep(current, roleSlugs, actor.isAdmin)) return null
+    return fail(403, `This is waiting on ${describe(current.approverNames)} (step ${stepOf(state, workflow) + 1} of ${workflow.steps.length}: ${current.name}). Your role cannot approve this step.`)
+  }
+  const describe = (names: string[]): string => (names.length === 0 ? 'an admin' : names.join(' or '))
 
   switch (action) {
     case 'submit': {
       if (!actor.can.submit) return fail(403, 'Your role cannot submit content for review.')
+      if (workflow && !maySubmitUnder(workflow, roleSlugs, actor.isAdmin)) {
+        return fail(403, 'Your role cannot submit this content for review under the approval workflow.')
+      }
       if (state.status !== 'none' && state.status !== 'changes_requested') {
         return fail(409, state.status === 'in_review' ? 'This is already in review.' : 'This is already approved.')
       }
+      const first = workflow ? workflow.steps[0] : null
       return {
         ok: true,
-        state: { status: 'in_review', requestedBy: actor.id, approvals: [] },
+        state: workflow
+          ? { status: 'in_review', requestedBy: actor.id, approvals: [], step: 0 }
+          : { status: 'in_review', requestedBy: actor.id, approvals: [] },
         publish: false,
-        events: [{ action: 'submitted', note }],
+        events: [withStep({ action: 'submitted', note }, first)],
       }
     }
 
@@ -122,17 +172,24 @@ export function transition(input: TransitionInput): TransitionResult {
       if (state.status !== 'in_review') return fail(409, 'Only a document in review can be withdrawn.')
       const isRequester = state.requestedBy === actor.id && actor.can.submit
       if (!actor.can.review && !isRequester) return fail(403, 'Only the person who submitted this, or a reviewer, can withdraw it.')
+      // A reviewer who is not the requester must be one of the step's approvers.
+      if (!isRequester) {
+        const blocked = stepBlock()
+        if (blocked) return blocked
+      }
       return {
         ok: true,
-        state: { status: 'none', requestedBy: null, approvals: [] },
+        state: workflow ? emptyState() : { status: 'none', requestedBy: null, approvals: [] },
         publish: false,
-        events: [{ action: 'withdrawn', note }],
+        events: [withStep({ action: 'withdrawn', note })],
       }
     }
 
     case 'approve': {
       if (!actor.can.review) return fail(403, 'Your role cannot approve content.')
       if (state.status !== 'in_review') return fail(409, 'Only a document in review can be approved.')
+      const blocked = stepBlock()
+      if (blocked) return blocked
       const adminMaySelf = actor.isAdmin && (input.adminsMaySelfApprove ?? true)
       if (state.requestedBy === actor.id && !(input.allowSelfApproval || adminMaySelf)) {
         return fail(403, 'You cannot approve your own change.')
@@ -140,37 +197,50 @@ export function transition(input: TransitionInput): TransitionResult {
       if (state.approvals.some((approval) => approval.userId === actor.id)) {
         return fail(409, 'You have already approved this.')
       }
+      if (workflow && !actor.isAdmin && (input.priorApprovers ?? []).includes(actor.id)) {
+        return fail(403, 'You already approved an earlier step.')
+      }
       const approvals = [...state.approvals, { userId: actor.id, name: actor.name, at: now }]
-      const events: TransitionEvent[] = [{ action: 'approved', note }]
+      const events: TransitionEvent[] = [withStep({ action: 'approved', note })]
+      const stepNeeded = workflow && current ? current.approvalsNeeded : needed
+      const index = workflow ? stepOf(state, workflow) : 0
+      const keep = (extra: Partial<ReviewDocState>): ReviewDocState => ({ status: 'in_review', requestedBy: state.requestedBy, approvals, ...(workflow ? { step: index } : {}), ...extra })
 
-      if (approvals.length < needed) {
-        return { ok: true, state: { status: 'in_review', requestedBy: state.requestedBy, approvals }, publish: false, events }
+      if (approvals.length < stepNeeded) {
+        return { ok: true, state: keep({}), publish: false, events }
+      }
+
+      // The step is complete. Another step follows: move on with approvals cleared.
+      if (workflow && index < workflow.steps.length - 1) {
+        return { ok: true, state: keep({ approvals: [], step: index + 1 }), publish: false, events, advancedTo: index + 1 }
       }
 
       if (input.alsoPublish) {
         if (!actor.can.publish) return fail(403, 'Your role cannot publish this content.')
         events.push({ action: 'published', note: null })
-        return { ok: true, state: { status: 'none', requestedBy: null, approvals: [] }, publish: true, events }
+        return { ok: true, state: workflow ? emptyState() : { status: 'none', requestedBy: null, approvals: [] }, publish: true, events }
       }
-      return { ok: true, state: { status: 'approved', requestedBy: state.requestedBy, approvals }, publish: false, events }
+      return { ok: true, state: keep({ status: 'approved' }), publish: false, events }
     }
 
     case 'request_changes': {
       if (!actor.can.review) return fail(403, 'Your role cannot ask for changes.')
       if (state.status !== 'in_review') return fail(409, 'Only a document in review can be sent back.')
+      const blocked = stepBlock()
+      if (blocked) return blocked
       if (!note) return fail(400, 'Say what needs to change.')
       return {
         ok: true,
-        state: { status: 'changes_requested', requestedBy: state.requestedBy, approvals: [] },
+        state: { status: 'changes_requested', requestedBy: state.requestedBy, approvals: [], ...(workflow ? { step: 0 } : {}) },
         publish: false,
-        events: [{ action: 'changes_requested', note }],
+        events: [withStep({ action: 'changes_requested', note })],
       }
     }
 
     case 'comment': {
       if (!actor.can.comment) return fail(403, 'Your role cannot comment on content.')
       if (!note) return fail(400, 'Write a comment first.')
-      return { ok: true, state, publish: false, events: [{ action: 'comment', note }] }
+      return { ok: true, state, publish: false, events: [withStep({ action: 'comment', note })] }
     }
 
     case 'publish': {
@@ -178,7 +248,7 @@ export function transition(input: TransitionInput): TransitionResult {
       if (state.status !== 'approved') return fail(409, 'Only an approved document can be published from review.')
       return {
         ok: true,
-        state: { status: 'none', requestedBy: null, approvals: [] },
+        state: workflow ? emptyState() : { status: 'none', requestedBy: null, approvals: [] },
         publish: true,
         events: [{ action: 'published', note: null }],
       }
@@ -192,8 +262,10 @@ export function transition(input: TransitionInput): TransitionResult {
  * content of a document that is in review also clears its approvals, but it stays in review.
  */
 export function resetOnEdit(state: ReviewDocState, contentChanged = false): ReviewDocState {
-  if (state.status === 'approved') return { status: 'in_review', requestedBy: state.requestedBy, approvals: [] }
-  if (state.status === 'in_review' && contentChanged) return { status: 'in_review', requestedBy: state.requestedBy, approvals: [] }
+  // The approvals were for the old content, so a workflow starts again from its first step.
+  const restart: Partial<ReviewDocState> = state.step === undefined ? {} : { step: 0 }
+  if (state.status === 'approved') return { status: 'in_review', requestedBy: state.requestedBy, approvals: [], ...restart }
+  if (state.status === 'in_review' && contentChanged) return { status: 'in_review', requestedBy: state.requestedBy, approvals: [], ...restart }
   return state
 }
 

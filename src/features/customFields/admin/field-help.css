@@ -1,0 +1,190 @@
+/* Help box at the top of the extra fields builder, and the merge tag info buttons. */
+
+.cf-help {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--theme-elevation-150, #d6d2e0);
+  border-left: 4px solid #2e3192;
+  border-radius: 6px;
+  background: var(--theme-elevation-50, #f5f4f9);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: inherit;
+}
+
+.cf-help__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cf-help p {
+  margin: 0;
+}
+
+.cf-help__list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cf-help code {
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(46, 49, 146, 0.08);
+  white-space: nowrap;
+}
+
+/* Merge tag info button and its tooltip. */
+
+.cf-tag-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cf-tag-hint__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--theme-elevation-300, #8f8a9c);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cf-tag-hint__btn:hover,
+.cf-tag-hint__btn:focus-visible {
+  border-color: #2e3192;
+  color: #2e3192;
+  outline: 2px solid #2e3192;
+  outline-offset: 2px;
+}
+
+.cf-tag-hint__pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: min(300px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #b9b5c6;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1d1b26;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.cf-tag-hint__pop[hidden] {
+  display: none;
+}
+
+.cf-tag-hint__pop code {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: #f1f0f6;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.cf-tag-hint__note {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.cf-tag-hint__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cf-tag-hint__copy {
+  margin: 0;
+  padding: 3px 9px;
+  border: 1px solid #8f8a9c;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.cf-tag-hint__copy:hover,
+.cf-tag-hint__copy:focus-visible {
+  border-color: #2e3192;
+  color: #2e3192;
+}
+
+.cf-tag-hint__status {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+:root[data-theme='dark'] .cf-help {
+  border-color: #4a4753;
+  border-left-color: #8f93e0;
+  background: #26242e;
+  color: #f1efe9;
+}
+
+:root[data-theme='dark'] .cf-help code {
+  background: rgba(143, 147, 224, 0.18);
+}
+
+:root[data-theme='dark'] .cf-tag-hint__btn {
+  border-color: #8f8a9c;
+  color: #f1efe9;
+}
+
+:root[data-theme='dark'] .cf-tag-hint__btn:hover,
+:root[data-theme='dark'] .cf-tag-hint__btn:focus-visible {
+  border-color: #8f93e0;
+  color: #b7b9f0;
+  outline-color: #8f93e0;
+}
+
+:root[data-theme='dark'] .cf-tag-hint__pop {
+  border-color: #4a4753;
+  background: #26242e;
+  color: #f1efe9;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='dark'] .cf-tag-hint__pop code {
+  background: #34313d;
+}
+
+:root[data-theme='dark'] .cf-tag-hint__copy {
+  border-color: #8f8a9c;
+  color: #f1efe9;
+}
+
+:root[data-theme='dark'] .cf-tag-hint__copy:hover,
+:root[data-theme='dark'] .cf-tag-hint__copy:focus-visible {
+  border-color: #8f93e0;
+  color: #b7b9f0;
+}

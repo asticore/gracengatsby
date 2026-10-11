@@ -8,7 +8,7 @@ import { matchesLocation, type LocationContext } from '@/features/customFields/l
 import { applyDefaults, definitionsFor, validateFieldValues } from '@/features/customFields/validate'
 import { collectMediaIds } from '@/features/customFields/stringify'
 
-import { CustomFieldInput, CustomFieldMediaContext, useMediaUrlsFor, type MediaUrlMap } from './CustomFieldInput'
+import { CustomFieldInput, CustomFieldMediaContext, MergeTagHint, useMediaUrlsFor, type MediaUrlMap } from './CustomFieldInput'
 import { fetchFieldGroups, type CustomFieldValues, type FieldGroupDoc } from './types'
 
 /**
@@ -138,6 +138,7 @@ export const CustomFieldsPanel: React.FC<{ path?: string }> = ({ path = 'customF
                     value={values[def.name]}
                     error={errorFor(def.name)}
                     onChange={(next) => setFieldValue(def.name, next)}
+                    hint={<MergeTagHint name={def.name} type={def.type} />}
                   />
                 ))}
               </div>

@@ -27,6 +27,7 @@ const post = (message: FrameToParentMessage) => {
 export const CanvasFrame: React.FC = () => {
   const [blocks, setBlocks] = useState<SectionNode[]>([])
   const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
+  const [locks, setLocks] = useState<NonNullable<CanvasHandlers['locks']>>({})
   const [dragHoverKey, setDragHoverKey] = useState<string | null>(null)
   // Which "+" is currently open (Elementor-style: it stays lit, not just a hover flash, until
   // dismissed) - purely local, since it's canvas UI state rather than document content the
@@ -45,6 +46,7 @@ export const CanvasFrame: React.FC = () => {
       const msg = data as ParentToFrameMessage
       if (msg.type === 'init') {
         setBlocks(msg.blocks)
+        setLocks(msg.locks ?? {})
         setSelectedPath(msg.selectedPath)
         setOpenInsertKey(null)
       } else if (msg.type === 'selected') {
@@ -60,6 +62,7 @@ export const CanvasFrame: React.FC = () => {
 
   const handlers: CanvasHandlers = {
     selectedKey: selectedPath ? pathKey(selectedPath) : null,
+    locks,
     dragHoverKey,
     openInsertKey,
     onSelect: (path) => {

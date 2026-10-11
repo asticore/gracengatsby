@@ -32,6 +32,8 @@ export type PageDoc = {
   template?: number | null
   seo?: { metaTitle?: string | null; metaDescription?: string | null; ogImage?: number | null; noIndex?: boolean | null }
   blocks?: PageBlock[] | null
+  /** Section/document locks (src/features/roles/locks.ts). */
+  locks?: unknown
   customFields?: unknown
   membersOnly?: { enabled?: boolean | null; tier?: number | null }
   _status?: string | null

@@ -92,6 +92,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'settings-speed', type: 'view', href: '/settings/speed', label: 'Speed' },
       { slug: 'settings-security', type: 'view', href: '/settings/security', label: 'Security' },
       { slug: 'settings-data-system', type: 'view', href: '/settings/data-system', label: 'Data and System' },
+      { slug: 'roles', type: 'collections' },
     ],
   },
 ]

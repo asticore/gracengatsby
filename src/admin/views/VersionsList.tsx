@@ -7,6 +7,7 @@ import { useAuthorNames } from './useAuthorNames'
 import { diffVersion, type DiffEntry } from './versionDiff'
 import { useReviewState } from '@/features/approval/ui/useReviewState'
 import { ReviewBox } from '@/features/approval/ui/ReviewPanel'
+import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 
 interface Version {
   id: number
@@ -192,10 +193,11 @@ export function VersionsList({
     }
   }, [expandedCompare, diffs, versions, currentDoc])
 
-  if (loading) return <p>Loading versions...</p>
-  if (versions.length === 0 && !error) return <p>No saved versions yet.</p>
-
-  return (
+  const body = loading ? (
+    <p>Loading versions...</p>
+  ) : versions.length === 0 && !error ? (
+    <p>No saved versions yet.</p>
+  ) : (
     <>
       {review.state?.enabled && (
         <section style={{ marginBottom: '1rem' }}>
@@ -351,5 +353,11 @@ export function VersionsList({
       </table>
     </div>
     </>
+  )
+
+  return (
+    <CollapsibleCard id="ver:history" title="Version history">
+      {body}
+    </CollapsibleCard>
   )
 }

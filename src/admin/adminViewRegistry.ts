@@ -24,6 +24,7 @@ import { ABResultsView } from '@/features/abTesting/components/ABResultsView'
 import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
+import { CookieConsentView } from '@/admin/views/CookieConsentView'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
@@ -102,6 +103,15 @@ export const CUSTOM_ADMIN_VIEWS = [
     meta: {
       title: 'Roles',
       description: 'Manage role permissions with a matrix grid.',
+    },
+  },
+  {
+    key: 'cookieConsent',
+    Component: CookieConsentView,
+    path: '/cookie-consent',
+    meta: {
+      title: 'Cookie consent',
+      description: 'Customise the cookie banner, preview it and see the consent log.',
     },
   },
   {

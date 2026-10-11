@@ -33,6 +33,11 @@ import * as migration_20261011_130000_content_approval from './20261011_130000_c
 import * as migration_20261011_140000_custom_fields_v2 from './20261011_140000_custom_fields_v2';
 import * as migration_20261012_100000_approval_workflows from './20261012_100000_approval_workflows';
 import * as migration_20261012_110000_consent_banner from './20261012_110000_consent_banner';
+import * as migration_20261013_100000_ads from './20261013_100000_ads';
+import * as migration_20261013_110000_custom_role_rules from './20261013_110000_custom_role_rules';
+import * as migration_20261013_120000_shop_catalogue from './20261013_120000_shop_catalogue';
+import * as migration_20261013_130000_shop_orders from './20261013_130000_shop_orders';
+import * as migration_20261013_140000_media_upload from './20261013_140000_media_upload';
 
 export const migrations = [
   {
@@ -209,5 +214,30 @@ export const migrations = [
     up: migration_20261012_110000_consent_banner.up,
     down: migration_20261012_110000_consent_banner.down,
     name: '20261012_110000_consent_banner',
+  },
+  {
+    up: migration_20261013_100000_ads.up,
+    down: migration_20261013_100000_ads.down,
+    name: '20261013_100000_ads',
+  },
+  {
+    up: migration_20261013_110000_custom_role_rules.up,
+    down: migration_20261013_110000_custom_role_rules.down,
+    name: '20261013_110000_custom_role_rules',
+  },
+  {
+    up: migration_20261013_120000_shop_catalogue.up,
+    down: migration_20261013_120000_shop_catalogue.down,
+    name: '20261013_120000_shop_catalogue',
+  },
+  {
+    up: migration_20261013_130000_shop_orders.up,
+    down: migration_20261013_130000_shop_orders.down,
+    name: '20261013_130000_shop_orders',
+  },
+  {
+    up: migration_20261013_140000_media_upload.up,
+    down: migration_20261013_140000_media_upload.down,
+    name: '20261013_140000_media_upload',
   },
 ];

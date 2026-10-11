@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/admin/auth'
+import { assertDocAccess, docAccessDenied } from '@/features/roles/docAccess'
 import { deleteVersionRow, isVersionedCollection } from '@/cms/db/versionDelete'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,9 @@ export async function DELETE(request: Request): Promise<Response> {
     if (!Number.isInteger(versionId) || versionId <= 0 || !Number.isInteger(parentId) || parentId <= 0) {
       return NextResponse.json({ error: 'Invalid id or parent' }, { status: 400 })
     }
+
+    const access = await assertDocAccess(context, collection, parentId, 'update')
+    if (!access.ok) return docAccessDenied(access)
 
     const result = await deleteVersionRow(collection, versionId, parentId)
     if (result === 'deleted') return NextResponse.json({ ok: true }, { status: 200 })

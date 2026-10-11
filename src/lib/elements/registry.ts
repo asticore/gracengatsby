@@ -82,6 +82,19 @@ export const ELEMENTS: ElementDef[] = [
   },
 ]
 
+ELEMENTS.push({
+  type: 'ad',
+  label: 'Ad',
+  icon: '📢',
+  category: 'marketing',
+  description: 'An ad slot. Shows a labelled placeholder here; real ads load on the live site after marketing consent.',
+  fields: [
+    { name: 'placement', label: 'Placement key', type: 'text', helpText: 'The key of a placement under Ads > Placements.' },
+    { name: 'unit', label: 'Or ad unit key', type: 'text', helpText: 'Use a unit key directly if you have no placement.' },
+  ],
+  defaultProps: () => ({ placement: '' }),
+})
+
 export function getElementDef(type: string): ElementDef | undefined {
   return ELEMENTS.find((e) => e.type === type)
 }

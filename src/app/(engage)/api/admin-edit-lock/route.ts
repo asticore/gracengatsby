@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/admin/auth'
+import { assertDocAccess, docAccessDenied } from '@/features/roles/docAccess'
 import { getDb } from '@/cms/db/connect'
 import { readRegistry } from '@/localapi/registry'
 import * as editLocks from '@/cms/db/editLocks'
@@ -37,6 +38,9 @@ export async function GET(request: Request): Promise<Response> {
     if (!isValidCollectionSlug(collection) || !isValidDocId(id)) {
       return NextResponse.json({ error: 'Invalid collection or id' }, { status: 400 })
     }
+
+    const access = await assertDocAccess(context, collection, id, 'read')
+    if (!access.ok) return docAccessDenied(access)
 
     const db = await getDb()
     const lock = await editLocks.getLock(db, collection, id)
@@ -77,6 +81,9 @@ export async function POST(request: Request): Promise<Response> {
     if (!['acquire', 'heartbeat', 'release', 'takeover'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
+
+    const access = await assertDocAccess(context, collection, id as number, 'update')
+    if (!access.ok) return docAccessDenied(access)
 
     const db = await getDb()
     const userId = context.user?.id ?? -1

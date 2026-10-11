@@ -14,6 +14,10 @@ import {
   toggleColumn,
   filterBySearch,
   setOverrideState,
+  supportsScope,
+  hasScopedAction,
+  getScope,
+  setScope,
 } from '@/features/roles/permissionTable'
 
 
@@ -208,6 +212,19 @@ export function PermissionTable({
                         <td className={styles.resourceLabel}>
                           {row.label}
                           {isSecret && <span className={styles.adminOnly}> Admin only</span>}
+                          {mode === 'matrix' && supportsScope(row.resource) && hasScopedAction(matrix, row.resource) && (
+                            <select
+                              aria-label={`${row.label}: which items`}
+                              data-testid={`scope-${row.resource}`}
+                              value={getScope(matrix, row.resource)}
+                              disabled={readOnly}
+                              onChange={(e) => onChange(setScope(matrix, row.resource, e.target.value === 'own' ? 'own' : 'all'))}
+                              style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', maxWidth: '100%' }}
+                            >
+                              <option value="all">All items</option>
+                              <option value="own">Only items they created</option>
+                            </select>
+                          )}
                         </td>
                         {['read', 'create', 'update', 'delete', 'publish'].map((action) => {
                           if (!row.actions.includes(action as Action)) {

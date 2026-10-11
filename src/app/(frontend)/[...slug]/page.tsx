@@ -4,6 +4,7 @@ import React from 'react'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 
+import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { findPageByPath } from '@/utilities/pagePaths'
 import { buildMetadata } from '@/utilities/seo'
@@ -74,6 +75,7 @@ export default async function BuiltPage({
 
   return (
     <div className="built-page">
+      <AdsPageScope collection="pages" noAds={(page as { noAds?: boolean }).noAds} />
       <PageJsonLd collection="pages" doc={page} path={currentPath} />
       {ancestors.length > 0 && (
         <nav

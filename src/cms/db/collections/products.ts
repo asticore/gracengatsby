@@ -5,6 +5,10 @@ import { Products } from '@/features/ecommerce/collections/Products'
 import { createCollectionOps, createDraftOps, createVersionsOps } from '../generic'
 import {
   products,
+  productsAttributes,
+  productsVariations,
+  productsVersionsAttributes,
+  productsVersionsVariations,
   productsBlockTypes,
   productsGenerated,
   productsRels,
@@ -44,6 +48,8 @@ export type ProductDoc = {
   seo?: { metaTitle?: string | null; metaDescription?: string | null; ogImage?: number | null; noIndex?: boolean | null }
   customFields?: unknown
   inventory?: number | null
+  ratingAverage?: number | null
+  ratingCount?: number | null
   priceInAUDEnabled?: boolean | null
   priceInAUD?: number | null
   _status?: string | null
@@ -77,16 +83,19 @@ export type ProductVersion = {
 // drafts-enabled collection with one, so both the live AND versioned side
 // need `topLevelRelsFieldTargets` (see generic.ts's createVersionsOps doc
 // comment for the versioned-side gap this closed).
-const baseOps = createCollectionOps(products, Products, {}, {
+const catalogueRels = { images: 'media', faqs: 'faqs', downloads: 'media', groupedProducts: 'products', upsells: 'products', crossSells: 'products' }
+
+const baseOps = createCollectionOps(products, Products, { attributes: productsAttributes, variations: productsVariations }, {
   relsTable: { table: productsRels, targetColumns: productsRelsTargetColumns },
-  topLevelRelsFieldTargets: { images: 'media', faqs: 'faqs' },
+  topLevelRelsFieldTargets: catalogueRels,
   blocksFields: { layout: { blockTypes: productsBlockTypes } },
   groupFields: productsGenerated.groupFields,
 })
 
 const versionsOps = createVersionsOps(productsVersions, productsGenerated.groupFields, {
+  arrayTables: { attributes: productsVersionsAttributes, variations: productsVersionsVariations },
   relsTable: { table: productsVersionsRels, targetColumns: productsVersionsRelsTargetColumns },
-  topLevelRelsFieldTargets: { images: 'media', faqs: 'faqs' },
+  topLevelRelsFieldTargets: catalogueRels,
   blocksFields: { layout: { blockTypes: productsVersionsBlockTypes } },
 })
 

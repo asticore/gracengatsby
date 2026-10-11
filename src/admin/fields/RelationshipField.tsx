@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { FieldLabel, useField } from '@/engine/ui'
 import type { Field } from '@/engine'
 import { fieldLabel, fieldRequired } from './shared'
+import { MediaUploader } from '@/views/media/MediaUploader'
 
 type ScalarFieldRendererProps = {
   field: Field
@@ -114,6 +115,9 @@ function SingleRelationPicker({ field, path, readOnly }: ScalarFieldRendererProp
           )}
         </div>
       )}
+      {!readOnly && collection === 'media' && (
+        <MediaUploader scope="inline" multiple={false} label="Upload a file" onUploaded={(docs) => setValue(docs[0]?.id)} />
+      )}
       {!readOnly && (
         <>
           <input
@@ -174,6 +178,9 @@ function MultiRelationPicker({ field, path, readOnly }: ScalarFieldRendererProps
           </span>
         ))}
       </div>
+      {!readOnly && collection === 'media' && (
+        <MediaUploader scope="inline" label="Upload files" onUploaded={(docs) => setValue([...selected, ...docs.map((d) => d.id).filter((id) => !selected.includes(id))])} />
+      )}
       {!readOnly && (
         <>
           <input

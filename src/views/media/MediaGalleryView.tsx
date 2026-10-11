@@ -7,6 +7,8 @@ import { distinctFolders } from '@/features/media/folders'
 import { describeSaving, formatBytes } from '@/features/media/admin/mediaApi'
 
 import { MediaGalleryGrid, type GalleryDoc } from './MediaGalleryGrid'
+import { FileIcon } from './FileIcon'
+import { MediaPageUploader } from './MediaUploader'
 
 /** The slice of the engine this view reads. Typed loosely so it does not depend on the engine's generics. */
 type MediaFinder = {
@@ -241,11 +243,13 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
               href={newDocumentURL}
               className="inline-flex items-center gap-[calc(var(--base)*0.35)] rounded-[4px] border border-[var(--ac-gold)] px-[calc(var(--base)*0.9)] py-[calc(var(--base)*0.5)] text-[calc(var(--base)*0.82)] font-medium text-[var(--ac-gold)] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[var(--ac-gold)] hover:text-[var(--theme-elevation-0)]"
             >
-              Upload new
+              Upload with details
             </Link>
           ) : null}
         </header>
       )}
+
+      {hasCreatePermission ? <MediaPageUploader folder={currentFolder || undefined} /> : null}
 
       {!embedded && (
         <div className="flex flex-wrap items-center justify-between gap-[var(--base)]">
@@ -319,7 +323,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
 
       {galleryDocs.length === 0 ? (
         <p className="m-0 rounded-[4px] border border-dashed border-[var(--theme-elevation-200)] p-[calc(var(--base)*1.25)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-600)]">
-          {currentSearch ? `No files match "${currentSearch}".` : 'No media uploaded yet.'}
+          {currentSearch ? `No files match "${currentSearch}".` : 'No media uploaded yet. Use Upload files above, or drop files onto this page.'}
         </p>
       ) : embedded || view === 'gallery' ? (
         <MediaGalleryGrid
@@ -362,7 +366,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
                           // eslint-disable-next-line @next/next/no-img-element -- thumbnail, sized via CSS (see doc comment above)
                           <img src={url} alt={typeof doc.alt === 'string' ? doc.alt : ''} loading="lazy" className="h-full w-full object-cover" />
                         ) : (
-                          <span className="text-[calc(var(--base)*0.6)] text-[var(--theme-elevation-500)]">file</span>
+                          <FileIcon mimeType={mimeType} filename={typeof doc.filename === 'string' ? doc.filename : undefined} size={22} />
                         )}
                       </Link>
                     </td>

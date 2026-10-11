@@ -1,0 +1,97 @@
+import { sendEmail } from '@/features/email'
+import { escapeHtml } from '../lib/invoice'
+import { formatCents } from '../lib/money'
+import { ORDER_STATUS_LABELS, isOrderStatus } from '../lib/orderStatus'
+
+type Engine = { findGlobal: (a: unknown) => Promise<Record<string, unknown>> }
+export type EmailKind = 'processing' | 'completed' | 'onHold' | 'cancelled' | 'refunded' | 'failed' | 'customerNote'
+
+const STATUS_TO_KIND: Record<string, EmailKind | undefined> = {
+  processing: 'processing',
+  completed: 'completed',
+  'on-hold': 'onHold',
+  cancelled: 'cancelled',
+  refunded: 'refunded',
+  failed: 'failed',
+}
+export const kindForStatus = (status: string): EmailKind | null => STATUS_TO_KIND[status] ?? null
+
+const DEFAULTS: Record<EmailKind, { subject: string; body: string }> = {
+  processing: { subject: 'Thanks - we received order #{{order_id}}', body: 'Hi {{customer_name}},\n\nThanks for your order. We are getting it ready. Order total: {{order_total}}.' },
+  completed: { subject: 'Your order #{{order_id}} is complete', body: 'Hi {{customer_name}},\n\nYour order #{{order_id}} is complete.' },
+  onHold: { subject: 'Your order #{{order_id}} is on hold', body: 'Hi {{customer_name}},\n\nYour order #{{order_id}} is on hold. We will be in touch.' },
+  cancelled: { subject: 'Your order #{{order_id}} was cancelled', body: 'Hi {{customer_name}},\n\nYour order #{{order_id}} has been cancelled.' },
+  refunded: { subject: 'Your order #{{order_id}} was refunded', body: 'Hi {{customer_name}},\n\nA refund has been issued for order #{{order_id}}. {{note}}' },
+  failed: { subject: 'Payment failed for order #{{order_id}}', body: 'Hi {{customer_name}},\n\nThe payment for order #{{order_id}} did not go through.' },
+  customerNote: { subject: 'A note about your order #{{order_id}}', body: 'Hi {{customer_name}},\n\nThere is a note on your order #{{order_id}}:\n\n{{note}}' },
+}
+
+/** Replaces {{field}} with already-escaped values; unknown fields become empty. */
+export function mergeFields(template: string, values: Record<string, string>, escape: boolean): string {
+  return template.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (_m, key: string) => {
+    const v = values[key] ?? ''
+    return escape ? escapeHtml(v) : v
+  })
+}
+
+export function renderOrderEmail(kind: EmailKind, order: Record<string, unknown>, opts: { note?: string; siteName?: string; bodyOverride?: string }) {
+  const addr = (order.shippingAddress ?? {}) as Record<string, unknown>
+  const name = [addr.firstName, addr.lastName].filter((x) => typeof x === 'string' && x).join(' ') || 'there'
+  const status = String(order.status ?? '')
+  const values: Record<string, string> = {
+    order_id: String(order.id ?? ''),
+    customer_name: name,
+    order_total: formatCents(order.amount as number, (order.currency as string) || 'AUD'),
+    status: isOrderStatus(status) ? ORDER_STATUS_LABELS[status] : status,
+    note: opts.note ?? '',
+    site_name: opts.siteName ?? '',
+  }
+  const tpl = DEFAULTS[kind]
+  const subject = mergeFields(tpl.subject, values, false).replace(/[\r\n]+/g, ' ')
+  const bodyTpl = opts.bodyOverride && kind !== 'customerNote' ? opts.bodyOverride : tpl.body
+  const text = mergeFields(bodyTpl, values, false)
+  const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5">${mergeFields(bodyTpl, values, true).replace(/\n/g, '<br>')}</div>`
+  return { subject, text, html }
+}
+
+/** Sends one order email if its toggle is on. Never throws. */
+export async function sendOrderEmail(engine: Engine, order: Record<string, unknown>, kind: EmailKind, note?: string): Promise<boolean> {
+  try {
+    const to = typeof order.customerEmail === 'string' ? order.customerEmail : ''
+    if (!to) return false
+    const settings = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true })) as { emails?: Record<string, unknown> }
+    const emails = settings.emails ?? {}
+    const defaultOn = kind !== 'failed'
+    if ((emails[kind] ?? defaultOn) === false || emails[kind] === 0) return false
+    const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch(() => ({}))) as { siteName?: string }
+    const msg = renderOrderEmail(kind, order, { note, siteName: site.siteName, bodyOverride: typeof emails.bodyTemplate === 'string' && emails.bodyTemplate.trim() ? emails.bodyTemplate : undefined })
+    const result = await sendEmail({ to, ...msg })
+    return result.ok
+  } catch {
+    return false
+  }
+}
+
+export async function sendAdminNewOrderEmail(engine: Engine, order: Record<string, unknown>): Promise<void> {
+  try {
+    const settings = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true })) as { emails?: Record<string, unknown> }
+    const emails = settings.emails ?? {}
+    const to = typeof emails.adminEmail === 'string' ? emails.adminEmail : ''
+    if (!to || !emails.newOrderAdmin) return
+    await sendEmail({ to, subject: `New order #${order.id}`, text: `New order #${order.id}, total ${formatCents(order.amount as number)}.` })
+  } catch {
+    /* notification only */
+  }
+}
+
+/** Tells the shop admin an order needs a person's attention (late payment, oversold, mismatch). Never throws. */
+export async function sendAdminAttentionEmail(engine: Engine, orderId: number, text: string): Promise<void> {
+  try {
+    const settings = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true })) as { emails?: Record<string, unknown> }
+    const to = typeof settings.emails?.adminEmail === 'string' ? settings.emails.adminEmail : ''
+    if (!to) return
+    await sendEmail({ to, subject: `Order #${orderId} needs attention`, text: `Order #${orderId} needs attention: ${text}` })
+  } catch {
+    /* notification only */
+  }
+}

@@ -43,12 +43,9 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'header-footer', type: 'view', href: '/header-footer', label: 'Header and footer' },
       { slug: 'faqs', type: 'collections' },
       { slug: 'events', type: 'collections' },
-      { slug: 'event-rsvps', type: 'collections' },
       { slug: 'page-templates', type: 'collections' },
       { slug: 'forms', type: 'collections' },
-      { slug: 'form-submissions', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },
-      { slug: 'ab-test-results', type: 'view', href: '/ab-test-results', label: 'A/B results' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'redirects', type: 'collections' },
       { slug: 'review-queue', type: 'view', href: '/review-queue', label: 'Review queue' },
@@ -59,7 +56,14 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     label: 'Shop',
     entities: [
       { slug: 'products', type: 'collections' },
+      { slug: 'product-attributes', type: 'collections' },
+      { slug: 'shipping-classes', type: 'collections' },
+      { slug: 'product-reviews', type: 'collections' },
       { slug: 'orders', type: 'collections' },
+      { slug: 'order-refunds', type: 'collections' },
+      { slug: 'coupons', type: 'collections' },
+      { slug: 'shipping-zones', type: 'collections' },
+      { slug: 'tax-rates', type: 'collections' },
       { slug: 'transactions', type: 'collections' },
       { slug: 'carts', type: 'collections' },
       { slug: 'addresses', type: 'collections' },
@@ -82,6 +86,16 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     ],
   },
   {
+    label: 'Ads',
+    entities: [
+      { slug: 'ads-overview', type: 'view', href: '/ads-overview', label: 'Overview' },
+      { slug: 'ad-units', type: 'collections' },
+      { slug: 'ad-placements', type: 'collections' },
+      { slug: 'ads-report', type: 'view', href: '/ads-report', label: 'Report' },
+      { slug: 'ad-settings', type: 'globals' },
+    ],
+  },
+  {
     label: 'Settings',
     entities: [
       { slug: 'settings-site', type: 'view', href: '/settings/site', label: 'Site' },
@@ -92,13 +106,23 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'settings-speed', type: 'view', href: '/settings/speed', label: 'Speed' },
       { slug: 'settings-security', type: 'view', href: '/settings/security', label: 'Security' },
       { slug: 'settings-data-system', type: 'view', href: '/settings/data-system', label: 'Data and System' },
-      { slug: 'roles', type: 'collections' },
+      { slug: 'roles', type: 'view', href: '/roles', label: 'Roles' },
     ],
   },
 ]
 
-/** Entities that should not appear in the nav, including the fallback "Other" group. */
+/**
+ * Entities that should not appear in the nav, including the fallback "Other" group.
+ *
+ * The RSVP and form-submission lists are reached through the Results tab on
+ * their event or form's edit page, and the Roles screen has its own nav entry
+ * (type 'view', /roles), so the collections behind them must stay out of the
+ * "Other" group. Their routes still work for deep links.
+ */
 export const HIDDEN_FROM_NAV = new Set<string>([
+  'event-rsvps',
+  'form-submissions',
+  'roles',
   'backups',
   'review-events',
   'header',

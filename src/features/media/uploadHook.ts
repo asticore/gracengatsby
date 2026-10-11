@@ -10,7 +10,10 @@
  */
 
 import type { UploadFile } from '@/localapi/uploads'
+import { ValidationError } from '@/localapi/operations'
 import { putMediaObject, putOriginalIfMissing } from '@/localapi/storage'
+
+import { DEFAULT_UPLOAD_POLICY, inspectUpload, resolveUploadPolicy, UploadRefusal, type UploadPolicy } from './fileTypes'
 
 import {
   IMAGES_UNAVAILABLE_MESSAGE,
@@ -31,6 +34,8 @@ export type PreparedUpload = {
   originalSize: number
   /** The untouched upload, kept only when keepOriginals is on and the bytes were changed. */
   keepOriginal: { data: Uint8Array; mimetype: string } | null
+  /** The upload rules the file was checked against, passed on so the engine's field step applies the same ones. */
+  policy?: UploadPolicy
   /** Why optimisation was asked for but did not happen. Shown to the admin, never an error. */
   skipped?: string
 }
@@ -38,6 +43,8 @@ export type PreparedUpload = {
 export type PrepareDeps = {
   readSettings: () => Promise<OptimiseSettings>
   binding: () => Promise<ImagesBinding | null>
+  /** Allowed types and size limit from Media settings. Omitted means the defaults. */
+  readPolicy?: () => Promise<UploadPolicy>
 }
 
 /** Reads Media Settings through the engine. Imported lazily to keep the engine and this module out of each other's load graph. */
@@ -52,13 +59,42 @@ async function readSettingsFromEngine(): Promise<OptimiseSettings> {
   }
 }
 
+/** Reads the upload allow-list and size limit from Media settings. Falls back to the defaults, never throws. */
+async function readPolicyFromEngine(): Promise<UploadPolicy> {
+  try {
+    const { getEngine } = await import('@/lib/engine')
+    const engine = await getEngine()
+    const raw = await engine.findGlobal({ slug: 'media-settings', depth: 0, overrideAccess: true }).catch((): null => null)
+    return resolveUploadPolicy(raw)
+  } catch {
+    return DEFAULT_UPLOAD_POLICY
+  }
+}
+
 const defaultDeps: PrepareDeps = {
+  readPolicy: readPolicyFromEngine,
   readSettings: readSettingsFromEngine,
   binding: resolveImagesBinding,
 }
 
-export async function prepareUploadFile(file: UploadFile, deps: PrepareDeps = defaultDeps): Promise<PreparedUpload> {
-  const untouched: PreparedUpload = { file, optimised: false, originalSize: file.size, keepOriginal: null }
+export async function prepareUploadFile(input: UploadFile, deps: PrepareDeps = defaultDeps): Promise<PreparedUpload> {
+  // The type check comes first and is the one step that is allowed to fail the
+  // upload. The name and type are replaced by the checked ones, so nothing later
+  // sees the browser's claims.
+  const policy = deps.readPolicy ? await deps.readPolicy() : DEFAULT_UPLOAD_POLICY
+  let file: UploadFile
+  try {
+    const inspected = inspectUpload(input, policy)
+    // The same object when the checked name and type match what was sent, so callers can tell nothing was changed.
+    file =
+      inspected.name === input.name && inspected.mimeType === input.mimetype && input.size === input.data.byteLength
+        ? input
+        : { data: input.data, mimetype: inspected.mimeType, name: inspected.name, size: input.data.byteLength }
+  } catch (error) {
+    if (error instanceof UploadRefusal) throw new ValidationError([{ path: 'file', message: error.message }])
+    throw error
+  }
+  const untouched: PreparedUpload = { file, optimised: false, originalSize: file.size, keepOriginal: null, policy }
   try {
     if (!isOptimisableMimeType(file.mimetype)) return untouched
 
@@ -82,6 +118,7 @@ export async function prepareUploadFile(file: UploadFile, deps: PrepareDeps = de
       optimised: true,
       originalSize: file.size,
       keepOriginal: settings.keepOriginals ? { data: file.data, mimetype: file.mimetype } : null,
+      policy,
     }
   } catch (error) {
     // Optimisation is a convenience: a failure stores the upload as sent.

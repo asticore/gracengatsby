@@ -32,7 +32,7 @@
  *   - `filesize` is `file.size` as given, not re-measured.
  *   - width/height are computed via `getImageSize` -> (no sharp, no
  *     tempFilePath on this app's Workers runtime) -> `probeImageSize(file.
- * data)`, a pure-JS buffer-header prober. The reference engine's own version of
+ *     data)`, a pure-JS buffer-header prober. The reference engine's own version of
  *     that prober is backed by the `image-dimensions` npm package - this
  *     app's zero-new-runtime-dependencies rule means `probeImageDimensions`
  *     below is a hand-written replacement covering exactly the five

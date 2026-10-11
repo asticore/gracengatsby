@@ -3,8 +3,14 @@ import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
 import { VISUAL_EDITOR_SURFACES } from '@/views/visualEditor/surfaces'
+import type { ReactNode } from 'react'
 import { EditForm } from './EditForm'
 import type { DocumentPanelInfo } from './DocumentPanel'
+import { EditTabs } from './EditTabs'
+import { resultsTabFor } from './results/resultsTabs'
+import { ABResultsTab } from './results/ABResultsTab'
+import { EventResultsTab } from './results/EventResultsTab'
+import { FormResultsTab } from './results/FormResultsTab'
 
 type AdminEngine = Awaited<ReturnType<typeof getAdminContext>>['engine']
 
@@ -24,6 +30,21 @@ function userDisplayName(user: unknown): string | undefined {
     if (u.id !== undefined) return String(u.id)
   }
   return undefined
+}
+
+/**
+ * The panel behind an edit page's results tab, or null for a slug without one.
+ * Chosen here, not in a map: the A/B panel is a server component and cannot
+ * sit in a client module's map, and the other two need the document's id.
+ */
+function resultsPanelFor(slug: string, id: number, doc: Record<string, unknown> | null): ReactNode {
+  if (slug === 'events') {
+    const capacity = typeof doc?.capacity === 'number' ? doc.capacity : null
+    return <EventResultsTab capacity={capacity} eventId={id} />
+  }
+  if (slug === 'forms') return <FormResultsTab formId={id} />
+  if (slug === 'ab-tests') return <ABResultsTab testId={id} />
+  return null
 }
 
 /** Public URL of a page: its slug under every ancestor's slug (the parent chain is the URL; see utilities/pagePaths.ts). */
@@ -133,6 +154,28 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   // Extract pageType field if it exists
   const pageTypeField = collection.fields.find((f) => f.type === 'select' && 'name' in f && f.name === 'schemaType')
 
+  // Existing documents only: a results tab, if the user may read what it shows.
+  const resultsTab = resultsTabFor(collectionSlug, id, {
+    isAdmin: context.isAdmin,
+    canRead: (slug) => Boolean(context.permissions.collections?.[slug]?.read),
+    canUpdate: (slug) => Boolean(context.permissions.collections?.[slug]?.update),
+  })
+  const resultsPanel = resultsTab && id !== undefined ? resultsPanelFor(collectionSlug, id, docRecord) : null
+
+  const editForm = (
+    <EditForm
+      collectionSlug={collectionSlug}
+      doc={doc}
+      draftsEnabled={draftsEnabled}
+      fields={sanitizeFieldsForClient(collection.fields)}
+      id={id}
+      pageTypeField={pageTypeField ? sanitizeFieldsForClient([pageTypeField])[0] : undefined}
+      panel={panel}
+      visualBlocksCount={blocksCount}
+      visualBlocksField={hasBlocksField ? blocksField : undefined}
+    />
+  )
+
   return (
     <div className="collection-edit">
       <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
@@ -143,17 +186,11 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
         <span>{id === undefined ? 'Create' : docTitle || `#${id}`}</span>
       </nav>
       <h1 className="doc-title">{id === undefined ? `Create ${label}` : docTitle || `Edit ${label}`}</h1>
-      <EditForm
-        collectionSlug={collectionSlug}
-        doc={doc}
-        draftsEnabled={draftsEnabled}
-        fields={sanitizeFieldsForClient(collection.fields)}
-        id={id}
-        pageTypeField={pageTypeField ? sanitizeFieldsForClient([pageTypeField])[0] : undefined}
-        panel={panel}
-        visualBlocksCount={blocksCount}
-        visualBlocksField={hasBlocksField ? blocksField : undefined}
-      />
+      {resultsTab && resultsPanel ? (
+        <EditTabs resultsLabel={resultsTab.label} edit={editForm} results={resultsPanel} />
+      ) : (
+        editForm
+      )}
     </div>
   )
 }

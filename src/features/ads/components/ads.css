@@ -1,0 +1,8 @@
+.engage-ad{display:block;margin:1rem auto;text-align:center;min-height:calc(var(--ad-h-m,0px) + 16px);max-width:100%}
+.engage-ad[data-ad-reserve="0"]{display:none}
+.engage-ad[data-ad-state="skipped"]{display:none}
+@media (min-width:768px){.engage-ad{min-height:calc(var(--ad-h-t,var(--ad-h-m,0px)) + 16px)}}
+@media (min-width:1024px){.engage-ad{min-height:calc(var(--ad-h-d,var(--ad-h-t,var(--ad-h-m,0px))) + 16px)}}
+.engage-ad__label{display:block;height:16px;line-height:16px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;opacity:.6}
+.engage-ad__slot{display:block;margin:0 auto}
+.engage-ad--placeholder{border:1px dashed rgba(127,127,127,.6);background:rgba(127,127,127,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px}

@@ -250,6 +250,18 @@ export const renderSecurityTxt = async (now: Date = new Date()): Promise<string 
 
 export const renderAdsTxt = async (): Promise<string | null> => {
   const ctx = await readContext()
+  // Lines generated from the enabled ad networks are appended to the editor's own text, never replacing it.
+  let generated: string[] = []
+  try {
+    const { readGeneratedAdsTxtLines } = await import('@/features/ads/d1')
+    generated = await readGeneratedAdsTxtLines()
+  } catch {
+    generated = []
+  }
+  if (generated.length > 0) {
+    const { mergeAdsTxt } = await import('@/features/ads/builders')
+    return mergeAdsTxt(ctx.enabled ? ctx.settings.adsTxt : '', generated)
+  }
   if (!ctx.enabled) return null
   return buildPlainTextFile(ctx.settings.adsTxt)
 }

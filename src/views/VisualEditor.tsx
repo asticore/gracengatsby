@@ -85,6 +85,10 @@ function withIds(nodes: SectionNode[]): SectionNode[] {
   })
 }
 
+import { parseLocks, serializeLocks, type LockEntry, type Locks, type LockUser } from '@/features/roles/locks'
+import { canInsertInto, effectiveLock, lockedKeySet, lockKeyOf, lockMapForCanvas, withNodeLock } from './visualEditor/lockState'
+import type { LockUi } from './visualEditor/LockControls'
+
 export const VisualEditorView: React.FC = () => {
   const route = useMemo(() => parsePath(), [])
   const surface = route ? VISUAL_EDITOR_SURFACES[route.slug] : undefined
@@ -108,6 +112,11 @@ export const VisualEditorView: React.FC = () => {
   })
   const [dockCollapsed, setDockCollapsed] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const [locks, setLocks] = useState<Locks>({ nodes: {} })
+  const [locksDirty, setLocksDirty] = useState(false)
+  const [lockUser, setLockUser] = useState<(LockUser & { canManageLocks?: boolean }) | null>(null)
+  const [roleChoices, setRoleChoices] = useState<string[]>(['editor', 'viewer'])
+  const [lockNotice, setLockNotice] = useState<string | null>(null)
   const [frameReady, setFrameReady] = useState(false)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -123,7 +132,7 @@ export const VisualEditorView: React.FC = () => {
     if (!apiUrl || !surface) return
     Promise.all([
       fetch(`${apiUrl}?depth=0`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
-      fetch('/api/auth/user', { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+      fetch('/api/users/me', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then((r: any) => r?.user ?? null),
     ])
       .then(([doc, user]: any[]) => {
         if (doc && typeof doc === 'object') {
@@ -133,8 +142,10 @@ export const VisualEditorView: React.FC = () => {
           setInsertTarget({ containerPath: [], at: withStableIds.length })
           setDocTitle(surface.titleField ? String(doc[surface.titleField] || 'Untitled') : surface.label)
           setStatus((doc._status as string) || null)
+          setLocks(parseLocks(doc.locks))
         }
         if (user) {
+          setLockUser({ ...user, canManageLocks: can(user, 'locks', 'update') })
           setUserPermissions({
             canEditStyle: can(user, 'content.editStyle', 'update'),
             canEditLayout: can(user, 'content.editLayout', 'update'),
@@ -148,6 +159,16 @@ export const VisualEditorView: React.FC = () => {
       })
   }, [apiUrl, surface])
 
+  useEffect(() => {
+    fetch('/api/roles?depth=0&limit=100', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res: any) => {
+        const slugs = (res?.docs ?? []).map((d: any) => d.slug).filter((x: unknown): x is string => typeof x === 'string' && x !== 'admin' && x !== 'customer')
+        if (slugs.length) setRoleChoices(Array.from(new Set(['editor', 'viewer', ...slugs])))
+      })
+      .catch(() => {})
+  }, [])
+
   // Warns before a tab close/refresh discards unsaved edits.
   useEffect(() => {
     if (!dirty) return
@@ -160,6 +181,30 @@ export const VisualEditorView: React.FC = () => {
   }, [dirty])
 
   const selectedNode = selectedPath ? getNode(blocks, selectedPath) : undefined
+
+  // Latest tree/locks/user for the mutation callbacks below (they are memoised without them).
+  const lockCtx = useRef({ blocks, locks, lockUser })
+  useEffect(() => {
+    lockCtx.current = { blocks, locks, lockUser }
+  }, [blocks, locks, lockUser])
+  /** True (and tells the person why) when a locked section stops this edit. */
+  const lockedOut = useCallback((path: NodePath): boolean => {
+    const { blocks: b, locks: l, lockUser: u } = lockCtx.current
+    const lock = effectiveLock(b, path, l, u)
+    if (lock?.blocked) {
+      setLockNotice(`"${lock.label}" is locked. ${lock.unlockRoles.length ? `Roles that can unlock it: ${lock.unlockRoles.join(', ')}.` : 'Only an admin can unlock it.'}`)
+      setTimeout(() => setLockNotice(null), 5000)
+      return true
+    }
+    return false
+  }, [])
+  const insertBlocked = useCallback((containerPath: NodePath): boolean => {
+    const { blocks: b, locks: l, lockUser: u } = lockCtx.current
+    if (canInsertInto(b, containerPath, l, u)) return false
+    setLockNotice('This part of the page is locked, so nothing can be added here.')
+    setTimeout(() => setLockNotice(null), 5000)
+    return true
+  }, [])
   // For an `element` node, swap in the specific element's label/icon (from
   // the registry) so the panel header reads "Heading", not the generic
   // "Element" - the block def itself doesn't know which element it holds.
@@ -205,13 +250,14 @@ export const VisualEditorView: React.FC = () => {
       const node = buildNode(blockType)
       if (!node) return
       const { containerPath, at } = insertTarget
+      if (insertBlocked(containerPath)) return
 
       setBlocks((prev) => insertNode(prev, containerPath, at, node))
       setSelectedPath([...containerPath, at])
       setDockTab('settings')
       setDirty(true)
     },
-    [insertTarget, buildNode],
+    [insertTarget, buildNode, insertBlocked],
   )
 
   /** Same as addBlock, but for a drag-and-drop from the library that already knows its own target. */
@@ -219,6 +265,7 @@ export const VisualEditorView: React.FC = () => {
     (blockType: string, containerPath: NodePath, at: number) => {
       const node = buildNode(blockType)
       if (!node) return
+      if (insertBlocked(containerPath)) return
 
       setBlocks((prev) => insertNode(prev, containerPath, at, node))
       setSelectedPath([...containerPath, at])
@@ -226,7 +273,7 @@ export const VisualEditorView: React.FC = () => {
       setDockTab('settings')
       setDirty(true)
     },
-    [buildNode],
+    [buildNode, insertBlocked],
   )
 
   /** Templates (a curated preset or a saved Page Template) insert several blocks at once. */
@@ -234,6 +281,7 @@ export const VisualEditorView: React.FC = () => {
     (templateBlocks: SectionNode[]) => {
       if (templateBlocks.length === 0) return
       const { containerPath, at } = insertTarget
+      if (insertBlocked(containerPath)) return
       const withFreshIds = templateBlocks.map((node) => cloneNode({ ...node, _id: undefined }, nextId))
 
       setBlocks((prev) => insertNodes(prev, containerPath, at, withFreshIds))
@@ -241,16 +289,18 @@ export const VisualEditorView: React.FC = () => {
       setDockTab('settings')
       setDirty(true)
     },
-    [insertTarget],
+    [insertTarget, insertBlocked],
   )
 
   const deleteBlock = useCallback((path: NodePath) => {
+    if (lockedOut(path)) return
     setBlocks((prev) => updateNode(prev, path, () => null))
     setSelectedPath(null)
     setDirty(true)
-  }, [])
+  }, [lockedOut])
 
   const duplicateBlock = useCallback((path: NodePath) => {
+    if (lockedOut(path)) return
     const { containerPath, index } = splitPath(path)
     setBlocks((prev) => {
       const original = getNode(prev, path)
@@ -258,18 +308,21 @@ export const VisualEditorView: React.FC = () => {
       return insertNode(prev, containerPath, index + 1, cloneNode(original, nextId))
     })
     setDirty(true)
-  }, [])
+  }, [lockedOut])
 
   const moveBlock = useCallback((path: NodePath, direction: -1 | 1) => {
+    if (lockedOut(path)) return
     const { containerPath, index } = splitPath(path)
     setBlocks((prev) => reorderWithin(prev, containerPath, index, index + direction))
     setSelectedPath([...containerPath, index + direction])
     setDirty(true)
-  }, [])
+  }, [lockedOut])
 
   const updateSelected = useCallback(
     (next: Record<string, unknown>) => {
       if (!selectedPath) return
+      const lock = effectiveLock(lockCtx.current.blocks, selectedPath, lockCtx.current.locks, lockCtx.current.lockUser)
+      if (lock?.blocked && lock.mode === 'full') return
       setBlocks((prev) => updateNode(prev, selectedPath, (node) => ({ ...(next as SectionNode), _id: node._id })))
       setDirty(true)
     },
@@ -277,10 +330,12 @@ export const VisualEditorView: React.FC = () => {
   )
 
   const reorderBlock = useCallback((containerPath: NodePath, from: number, to: number) => {
+    if (lockedOut([...containerPath, from]) || lockedOut([...containerPath, to])) return
+    if (containerPath.length === 0 && lockCtx.current.locks.document && effectiveLock(lockCtx.current.blocks, [from], lockCtx.current.locks, lockCtx.current.lockUser)?.blocked) return
     setBlocks((prev) => reorderWithin(prev, containerPath, from, to))
     setSelectedPath(null)
     setDirty(true)
-  }, [])
+  }, [lockedOut])
 
   /* ---------------------------------------------------------------------- */
   /* Canvas iframe bridge - see visualEditor/canvasBridge.ts                */
@@ -332,10 +387,10 @@ export const VisualEditorView: React.FC = () => {
   useEffect(() => {
     if (!frameReady) return
     iframeRef.current?.contentWindow?.postMessage(
-      { source: 've-canvas', type: 'init', blocks, selectedPath },
+      { source: 've-canvas', type: 'init', blocks, selectedPath, locks: lockMapForCanvas(blocks, locks, lockUser) },
       CANVAS_ORIGIN(),
     )
-  }, [frameReady, blocks, selectedPath])
+  }, [frameReady, blocks, selectedPath, locks, lockUser])
 
   const sendDragHover = useCallback((key: string | null) => {
     if (lastHoverKey.current === key) return
@@ -389,7 +444,8 @@ export const VisualEditorView: React.FC = () => {
     if (!apiUrl || !surface) return
     setSaving(publish ? 'publishing' : 'saving')
     try {
-      const body: Record<string, unknown> = { [surface.blocksField]: stripEditorIds(blocks) }
+      const body: Record<string, unknown> = { [surface.blocksField]: stripEditorIds(blocks, lockedKeySet(locks)) }
+      if (locksDirty && lockable) body.locks = serializeLocks(locks)
       if (publish) body._status = 'published'
 
       const res = await fetch(apiUrl, {
@@ -403,12 +459,42 @@ export const VisualEditorView: React.FC = () => {
       setSaving(publish ? 'published' : 'saved')
       if (publish) setStatus('published')
       setDirty(false)
+      setLocksDirty(false)
       setTimeout(() => setSaving('idle'), 2000)
     } catch (err) {
       setSaving('error')
       setError(String((err as Error).message || err))
     }
   }
+
+  const lockable = surface?.slug === 'pages' || surface?.slug === 'page-templates'
+  const selectedLock = selectedPath ? effectiveLock(blocks, selectedPath, locks, lockUser) : null
+  const selectedKey = selectedPath ? lockKeyOf(selectedNode, selectedPath) : undefined
+  const ownEntry = selectedKey ? locks.nodes[selectedKey] : undefined
+  const canEditOwn = Boolean(lockUser?.roles?.includes('admin') || lockUser?.canManageLocks || (ownEntry && !selectedLock?.blocked))
+  const textTypes = new Set(['text', 'textarea', 'richText'])
+  const lockFieldDefs = selectedNode
+    ? selectedNode.blockType === 'element'
+      ? getElementDef(String((selectedNode as { elementType?: string }).elementType || ''))?.fields ?? []
+      : selectedDef?.fields ?? []
+    : []
+  const lockUi: LockUi | undefined =
+    lockable && selectedNode
+      ? {
+          lock: selectedLock,
+          entry: ownEntry,
+          hasKey: Boolean(selectedKey),
+          canEditLock: canEditOwn,
+          textFields: lockFieldDefs.filter((f) => textTypes.has(f.type)).map((f) => ({ name: f.name, label: f.label })),
+          roleChoices,
+          onChangeLock: (entry: LockEntry | null) => {
+            if (!selectedKey) return
+            setLocks((prev) => withNodeLock(prev, selectedKey, entry))
+            setLocksDirty(true)
+            setDirty(true)
+          },
+        }
+      : undefined
 
   const backHref = surface
     ? surface.kind === 'global'
@@ -520,9 +606,15 @@ export const VisualEditorView: React.FC = () => {
           onDeleteSelected={() => selectedPath && deleteBlock(selectedPath)}
           onDuplicateSelected={() => selectedPath && duplicateBlock(selectedPath)}
           userPermissions={userPermissions}
+          lockUi={lockUi}
         />
 
         <div className="ve-canvas-wrap" role="presentation">
+          {lockNotice && (
+            <p className="ve-error" role="status" style={{ padding: 12 }}>
+              🔒 {lockNotice}
+            </p>
+          )}
           {error && (
             <p className="ve-error" style={{ padding: 12 }}>
               {error}

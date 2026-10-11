@@ -74,6 +74,8 @@ export type EditFormProps = {
   onlyGroups?: string[]
   /** Hide these top-level group fields (by name). Same save behaviour as onlyGroups. */
   excludeGroups?: string[]
+  /** Do not render this form's own Collapse all / Expand all bar (the host page renders one). Default false. */
+  hideCollapseBar?: boolean
 }
 
 /**
@@ -207,6 +209,7 @@ export const EditForm: React.FC<EditFormProps> = ({
   excludeGroups,
   fields,
   globalSlug,
+  hideCollapseBar = false,
   id,
   onlyGroups,
   panel,
@@ -232,7 +235,7 @@ export const EditForm: React.FC<EditFormProps> = ({
         {panel ? (
           <div className="document-edit">
             <div className="document-edit__main">
-              <CollapseAllBar />
+              {!hideCollapseBar && <CollapseAllBar />}
               <div className="collection-edit__form">
                 {main.length > 0 && (
                   <CollapsibleCard id="main-fields" title="Content">
@@ -273,7 +276,7 @@ export const EditForm: React.FC<EditFormProps> = ({
                   sections.map((section) => <FieldRenderer key={section.key} fields={section.fields} parentPath={section.parentPath} readOnly={readOnly} />)
                 ) : (
                   <>
-                    {sections.length > 0 && <CollapseAllBar />}
+                    {sections.length > 0 && !hideCollapseBar && <CollapseAllBar />}
                     {sections.map((section) => (
                       <CollapsibleCard key={section.key} id={`${cardScope}:${section.key}`} title={section.title} className="doc-group-card">
                         <FieldRenderer fields={section.fields} parentPath={section.parentPath} readOnly={readOnly} />

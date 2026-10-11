@@ -9,6 +9,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import type { ComputedProgress } from './compute'
 import { GETTING_STARTED_ITEMS } from './items'
+import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 import styles from './GettingStartedCard.module.css'
 
 export type GettingStartedCardProps = {
@@ -94,7 +95,6 @@ export const GettingStartedCard: React.FC<GettingStartedCardProps> = ({
 }) => {
   const [isDismissed, setIsDismissed] = useState(false)
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set(initialDoneIds))
-  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleItemToggle = async (id: string, done: boolean) => {
     const newIds = new Set(doneIds)
@@ -139,23 +139,17 @@ export const GettingStartedCard: React.FC<GettingStartedCardProps> = ({
     return null
   }
 
+  // The card is a CollapsibleCard (closed by default, remembered per user). Its
+  // title is the card heading; the subtitle, progress and dismiss sit in the body.
   return (
-    <div className={styles.card} data-theme={typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') : 'light'}>
+    <CollapsibleCard id="home:getting-started" title="Getting started" className={styles.card}>
       <div className={styles.header}>
         <div className={styles.titleArea}>
-          <h2 className={styles.title}>Getting started</h2>
           <p className={styles.subtitle}>
             {progress.done} of {progress.total} tasks complete
           </p>
         </div>
         <div className={styles.controls}>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={styles.collapseBtn}
-            aria-label={isCollapsed ? 'Expand' : 'Collapse'}
-          >
-            {isCollapsed ? '▼' : '▲'}
-          </button>
           <button
             onClick={handleDismiss}
             className={styles.dismissBtn}
@@ -168,34 +162,32 @@ export const GettingStartedCard: React.FC<GettingStartedCardProps> = ({
 
       <ProgressBar percent={progress.percent} />
 
-      {!isCollapsed && (
-        <div className={styles.content}>
-          {Object.entries(progress.byCategory)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([category, counts]) => (
-              <div key={category} className={styles.category}>
-                <h3 className={styles.categoryTitle}>
-                  {category}
-                  <span className={styles.categoryCount}>
-                    {counts.done}/{counts.total}
-                  </span>
-                </h3>
-                <div className={styles.items}>
-                  {GETTING_STARTED_ITEMS.filter((item) => item.category === category).map(
-                    (item) => (
-                      <ChecklistItem
-                        key={item.id}
-                        {...item}
-                        isDone={doneIds.has(item.id)}
-                        onToggle={handleItemToggle}
-                      />
-                    ),
-                  )}
-                </div>
+      <div className={styles.content}>
+        {Object.entries(progress.byCategory)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([category, counts]) => (
+            <div key={category} className={styles.category}>
+              <h3 className={styles.categoryTitle}>
+                {category}
+                <span className={styles.categoryCount}>
+                  {counts.done}/{counts.total}
+                </span>
+              </h3>
+              <div className={styles.items}>
+                {GETTING_STARTED_ITEMS.filter((item) => item.category === category).map(
+                  (item) => (
+                    <ChecklistItem
+                      key={item.id}
+                      {...item}
+                      isDone={doneIds.has(item.id)}
+                      onToggle={handleItemToggle}
+                    />
+                  ),
+                )}
               </div>
-            ))}
-        </div>
-      )}
-    </div>
+            </div>
+          ))}
+      </div>
+    </CollapsibleCard>
   )
 }

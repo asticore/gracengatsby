@@ -38,6 +38,7 @@ export type FeatureKey =
   | 'accounts'
   | 'lms'
   | 'approval'
+  | 'ads'
 
 export type FeatureDef = {
   key: FeatureKey
@@ -66,9 +67,9 @@ export const FEATURES: FeatureDef[] = [
     label: 'Shop',
     description: 'Products, cart, checkout and orders.',
     defaultEnabled: true,
-    collections: ['products', 'orders', 'transactions', 'carts', 'addresses'],
+    collections: ['products', 'product-attributes', 'shipping-classes', 'product-reviews', 'orders', 'order-refunds', 'coupons', 'shipping-zones', 'tax-rates', 'transactions', 'carts', 'addresses'],
     globals: ['shop-settings'],
-    tables: ['products', 'orders', 'transactions', 'carts', 'addresses'],
+    tables: ['products', 'product_attributes', 'shipping_classes', 'product_reviews', 'orders', 'order_refunds', 'coupons', 'shipping_zones', 'tax_rates', 'transactions', 'carts', 'addresses'],
     implemented: true,
   },
   {
@@ -229,6 +230,16 @@ export const FEATURES: FeatureDef[] = [
     collections: ['review-events', 'approval-workflows'],
     globals: [],
     tables: ['review_events', 'approval_workflows'],
+    implemented: true,
+  },
+  {
+    key: 'ads',
+    label: 'Ads',
+    description: 'Show ads from Google AdSense, Google Ad Manager and Prebid header bidding. Loads only after a visitor accepts marketing cookies.',
+    defaultEnabled: false,
+    collections: ['ad-units', 'ad-placements'],
+    globals: ['ad-settings'],
+    tables: ['ad_units', 'ad_placements', 'ad_settings', 'ad_stats'],
     implemented: true,
   },
 ]

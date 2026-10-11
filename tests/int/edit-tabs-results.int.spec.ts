@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createElement } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createElement, isValidElement, type ReactElement, type ReactNode } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import { EditTabs } from '@/admin/views/EditTabs'
@@ -19,6 +19,28 @@ import {
   sumGuests,
 } from '@/admin/views/results/rows'
 import type { FormDoc } from '@/features/forms/types'
+import { EditView } from '@/admin/views/EditView'
+import { ABResultsTab } from '@/admin/views/results/ABResultsTab'
+import { EventResultsTab } from '@/admin/views/results/EventResultsTab'
+import { FormResultsTab } from '@/admin/views/results/FormResultsTab'
+import { isAdmin, roleAccess, roleOrPublished } from '@/access/ecommerceAccess'
+import { isAdminOrRsvpOwner } from '@/features/accounts/access'
+
+// EditView is a server component; these stand in for what it would fetch and render, and the
+// tests read the element tree it returns.
+const { getAdminContext } = vi.hoisted(() => ({ getAdminContext: vi.fn() }))
+
+vi.mock('@/admin/auth', () => ({
+  getAdminContext,
+  hasAdminPanelAccess: () => true,
+  getCollectionConfig: (_engine: unknown, slug: string) => ({ slug, labels: { singular: slug }, fields: [] as unknown[], admin: {} }),
+}))
+vi.mock('@/admin/fields/shared', () => ({ sanitizeFieldsForClient: (fields: unknown): unknown => fields }))
+vi.mock('@/views/visualEditor/surfaces', () => ({ VISUAL_EDITOR_SURFACES: {} }))
+vi.mock('@/admin/views/EditForm', () => ({ EditForm: (): null => null }))
+vi.mock('@/admin/views/results/ABResultsTab', () => ({ ABResultsTab: (): null => null }))
+vi.mock('@/admin/views/results/EventResultsTab', () => ({ EventResultsTab: (): null => null }))
+vi.mock('@/admin/views/results/FormResultsTab', () => ({ FormResultsTab: (): null => null }))
 
 describe('resultsTabFor', () => {
   const everything: ResultsAccess = { isAdmin: true, canRead: () => true, canUpdate: () => true }
@@ -265,5 +287,77 @@ describe('EditTabs', () => {
     expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'RSVPs' }))
     fireEvent.keyDown(screen.getByRole('tab', { name: 'RSVPs' }), { key: 'Home' })
     expect(screen.getByRole('tab', { name: 'Edit' }).getAttribute('aria-selected')).toBe('true')
+  })
+})
+
+describe('EditView results tab for an admin', () => {
+  type Grant = (args: { req: { user: unknown; engine: unknown } }) => unknown
+  const allowed = (grant: Grant, user: unknown) => {
+    const result = grant({ req: { user, engine: undefined } })
+    return result !== false && result !== undefined && result !== null
+  }
+
+  // Each grant is the real access helper the collection uses, run for the signed-in user.
+  const ADMIN = { id: 1, roles: ['admin'] }
+  const permissionsFor = (user: unknown) => {
+    const grants: Record<string, Record<string, Grant>> = {
+      events: { read: roleOrPublished('events') as Grant, create: roleAccess('events', 'create') as Grant, update: roleAccess('events', 'update') as Grant },
+      'event-rsvps': { read: isAdminOrRsvpOwner as Grant, update: isAdmin as Grant },
+      forms: { read: isAdmin as Grant, update: isAdmin as Grant },
+      'form-submissions': { read: isAdmin as Grant, update: isAdmin as Grant },
+      'ab-tests': { read: isAdmin as Grant, update: isAdmin as Grant },
+      pages: { read: roleOrPublished('pages') as Grant, update: roleAccess('pages', 'update') as Grant },
+    }
+    const collections: Record<string, Record<string, boolean>> = {}
+    for (const [slug, rules] of Object.entries(grants)) {
+      collections[slug] = Object.fromEntries(Object.entries(rules).map(([action, grant]) => [action, allowed(grant, user)]))
+    }
+    return { collections, globals: {} }
+  }
+
+  const context = () => ({
+    engine: { findByID: vi.fn(async ({ id }: { id: number }) => ({ id, title: 'Doc', capacity: 40 })) },
+    user: ADMIN,
+    isAdmin: true,
+    permissions: permissionsFor(ADMIN),
+  })
+
+  // The tab bar is the EditTabs element somewhere under the page's wrapper div.
+  const findEditTabs = (node: ReactNode): ReactElement<{ resultsLabel: string; results: ReactNode }> | undefined => {
+    if (!isValidElement(node)) return undefined
+    if (node.type === EditTabs) return node as ReactElement<{ resultsLabel: string; results: ReactNode }>
+    const children = ([] as ReactNode[]).concat((node.props as { children?: ReactNode }).children)
+    for (const child of children) {
+      const found = findEditTabs(child)
+      if (found) return found
+    }
+    return undefined
+  }
+
+  beforeEach(() => {
+    getAdminContext.mockReset()
+    getAdminContext.mockResolvedValue(context())
+  })
+
+  it.each([
+    ['events', 'RSVPs', EventResultsTab],
+    ['forms', 'Submissions', FormResultsTab],
+    ['ab-tests', 'Results', ABResultsTab],
+  ] as const)('shows the %s results tab on an existing document', async (slug, label, panel) => {
+    const page = await EditView({ collectionSlug: slug, id: 4 })
+    const tabs = findEditTabs(page)
+    expect(tabs, `${slug} edit page should wrap its form in the tab bar`).toBeDefined()
+    expect(tabs?.props.resultsLabel).toBe(label)
+    expect((tabs?.props.results as ReactElement).type).toBe(panel)
+  })
+
+  it('shows no results tab on the create page of those collections', async () => {
+    expect(findEditTabs(await EditView({ collectionSlug: 'events' }))).toBeUndefined()
+    expect(findEditTabs(await EditView({ collectionSlug: 'forms' }))).toBeUndefined()
+    expect(findEditTabs(await EditView({ collectionSlug: 'ab-tests' }))).toBeUndefined()
+  })
+
+  it('shows no results tab for a collection that has none', async () => {
+    expect(findEditTabs(await EditView({ collectionSlug: 'pages', id: 4 }))).toBeUndefined()
   })
 })

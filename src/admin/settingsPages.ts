@@ -35,6 +35,23 @@ export interface SettingsPage {
   sections: (GlobalSection | LinkSection)[]
 }
 
+/**
+ * Picks the tab to show for a URL hash (with or without the leading '#').
+ * Returns the hash's slug when it names one of `slugs`, otherwise the first slug
+ * (or '' when there are none). Pure, so it can be unit tested.
+ */
+export function resolveActiveTab(hash: string, slugs: readonly string[]): string {
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash
+  let candidate = raw
+  try {
+    candidate = decodeURIComponent(raw)
+  } catch {
+    // Malformed escape sequence: fall back to the raw value.
+  }
+  if (candidate && slugs.includes(candidate)) return candidate
+  return slugs[0] ?? ''
+}
+
 export const SETTINGS_PAGES: SettingsPage[] = [
   {
     key: 'site',
@@ -44,6 +61,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     sections: [
       { kind: 'global', slug: 'site-settings' },
       { kind: 'global', slug: 'integrations' },
+      { kind: 'link', label: 'Cookie consent', href: '/cookie-consent', description: 'Banner text, colours, preview and consent log', type: 'view' },
       { kind: 'global', slug: 'language-settings' },
       { kind: 'link', label: 'Translations', href: '/translations', description: 'Manage every translation in one table.', type: 'view' },
     ],

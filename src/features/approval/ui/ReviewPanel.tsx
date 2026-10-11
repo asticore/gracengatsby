@@ -45,8 +45,10 @@ function formatDate(value: string | null | undefined): string {
 
 export const ReviewStatusPill: React.FC<{ state: ReviewState | null | undefined }> = ({ state }) => {
   if (!isGated(state) || !state) return null
-  const label =
-    state.status === 'approved' || state.status === 'in_review'
+  const step = state.status === 'in_review' ? state.workflow?.step : null
+  const label = step
+    ? `${STATUS_LABELS.in_review}: step ${step.index + 1} of ${step.total} (${state.approvals.length}/${state.requiredApprovals})`
+    : state.status === 'approved' || state.status === 'in_review'
       ? `${STATUS_LABELS[state.status]} (${state.approvals.length}/${state.requiredApprovals})`
       : STATUS_LABELS[state.status]
   return <span className={state.status === 'none' ? 'pill' : 'pill pill--accent'}>{label}</span>
@@ -176,9 +178,15 @@ export const ReviewBox: React.FC<{ review: UseReviewState }> = ({ review }) => {
           Sent by {state.requestedBy.name} on {formatDate(state.requestedAt)}
         </p>
       )}
+      {state.workflow && (
+        <p className="doc-muted">
+          Workflow: {state.workflow.name} ({state.workflow.stepCount} {state.workflow.stepCount === 1 ? 'step' : 'steps'})
+        </p>
+      )}
+      {state.workflow?.awaiting && state.status === 'in_review' && <p className="doc-line doc-review-awaiting">{state.workflow.awaiting}</p>}
       {isGated(state) && state.status === 'in_review' && (
         <p className="doc-muted">
-          Approvals: {state.approvals.length} of {state.requiredApprovals}
+          Approvals{state.workflow?.step ? ` for ${state.workflow.step.name}` : ''}: {state.approvals.length} of {state.requiredApprovals}
           {state.approvals.length > 0 && `: ${state.approvals.map((approval) => approval.name).join(', ')}`}
         </p>
       )}
@@ -189,6 +197,7 @@ export const ReviewBox: React.FC<{ review: UseReviewState }> = ({ review }) => {
             <li key={String(event.id)} style={{ marginBottom: '0.5rem' }}>
               <div>
                 <strong>{ACTION_LABELS[event.action]}</strong> {event.actorName ? `by ${event.actorName}` : ''}
+                {event.step ? <span className="doc-muted"> ({event.step})</span> : null}
               </div>
               <div className="doc-muted">{formatDate(event.createdAt)}</div>
               {event.note && <div style={{ whiteSpace: 'pre-wrap' }}>{event.note}</div>}

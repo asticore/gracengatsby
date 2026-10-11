@@ -1,11 +1,13 @@
 /**
- * Per-user memory of which edit-screen option cards are collapsed.
+ * Per-user memory of which edit-screen option cards the user has OPENED. Cards
+ * are closed by default, so only the opened ids are stored.
  *
  * Stored in the shared `preferences` collection under one fixed key, with the
- * value `{ closed: string[] }` listing the card ids that the user has folded
- * away. Ids are opaque strings chosen by the components (for example
- * `settings`, `panel:publish`, `outline:0.1`); anything that does not match
- * ID_PATTERN is dropped on the way in and on the way out.
+ * value `{ open: string[] }`. The key is new (`edit-screen-open`), so rows saved
+ * by the earlier closed-list version under `edit-screen-collapse` are never read.
+ * Ids are opaque strings chosen by the components (for example `main-fields`,
+ * `header:socials`, `panel:publish`, `outline:0.1`); anything that does not
+ * match ID_PATTERN is dropped on the way in and on the way out.
  *
  * Mirrors src/admin/list/listPrefs.ts for owner handling: the polymorphic
  * `user` field cannot be queried, so rows are looked up by key and filtered to
@@ -15,31 +17,31 @@
 
 import type { Engine, TypedUser } from '@/engine'
 
-export const EDIT_PREFS_KEY = 'edit-screen-collapse'
+export const EDIT_PREFS_KEY = 'edit-screen-open'
 
-export const MAX_CLOSED_IDS = 100
+export const MAX_OPEN_IDS = 100
 
 const ID_PATTERN = /^[A-Za-z0-9_.:-]{1,60}$/
 
 export type EditPrefs = {
-  closed: string[]
+  open: string[]
 }
 
 /**
  * Sanitize unknown input into a valid EditPrefs object.
- * Keeps at most MAX_CLOSED_IDS entries from the first slice of the input,
+ * Keeps at most MAX_OPEN_IDS entries from the first slice of the input,
  * drops duplicates and anything not matching ID_PATTERN, and drops other fields.
  */
 export function sanitizeEditPrefs(input: unknown): EditPrefs {
-  if (typeof input !== 'object' || input === null) return { closed: [] }
-  const raw = (input as { closed?: unknown }).closed
-  if (!Array.isArray(raw)) return { closed: [] }
+  if (typeof input !== 'object' || input === null) return { open: [] }
+  const raw = (input as { open?: unknown }).open
+  if (!Array.isArray(raw)) return { open: [] }
 
   const seen = new Set<string>()
-  for (const id of raw.slice(0, MAX_CLOSED_IDS)) {
+  for (const id of raw.slice(0, MAX_OPEN_IDS)) {
     if (typeof id === 'string' && ID_PATTERN.test(id)) seen.add(id)
   }
-  return { closed: [...seen] }
+  return { open: [...seen] }
 }
 
 /**
@@ -63,11 +65,11 @@ function belongsTo(doc: unknown, user: TypedUser): boolean {
 }
 
 /**
- * Load the collapsed-card state for a user.
- * Returns `{ closed: [] }` when there is no user, no row, or on any error.
+ * Load the opened-card state for a user.
+ * Returns `{ open: [] }` when there is no user, no row, or on any error.
  */
 export async function loadEditPrefs(engine: Engine, user: TypedUser | null): Promise<EditPrefs> {
-  if (!user) return { closed: [] }
+  if (!user) return { open: [] }
 
   try {
     const docs = await engine.find({
@@ -89,15 +91,15 @@ export async function loadEditPrefs(engine: Engine, user: TypedUser | null): Pro
     // Silently fall back to empty prefs on any error
   }
 
-  return { closed: [] }
+  return { open: [] }
 }
 
 /**
- * Save the collapsed-card state for a user. `closed` is the full list, so the
+ * Save the opened-card state for a user. `open` is the full list, so the
  * stored value is replaced rather than appended to.
  */
 export async function saveEditPrefs(engine: Engine, user: TypedUser | null, input: unknown): Promise<EditPrefs> {
-  if (!user) return { closed: [] }
+  if (!user) return { open: [] }
 
   const sanitized = sanitizeEditPrefs(input)
 

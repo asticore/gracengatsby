@@ -82,6 +82,9 @@ export const FieldGroupLocationField: React.FC<{ path?: string }> = ({ path = 'l
       <p className="m-0 text-[12px] opacity-70">
         Rows in one block must all match (AND). Blocks are alternatives (OR). Leave empty to use the quick &quot;Applies to&quot; list instead.
       </p>
+      <p className="m-0 text-[12px] opacity-70">
+        For an options page, choose &quot;Options page&quot; and type its name, eg &quot;business&quot;. Its tags then look like {'{{option:business.phone}}'}.
+      </p>
       {groups.map((rules, gi) => (
         <div key={gi} className="flex flex-col gap-[6px] rounded-[6px] border border-[var(--theme-elevation-150,#e2ded4)] p-[10px]">
           {gi > 0 && <span className="text-[11px] font-semibold uppercase opacity-60">or</span>}

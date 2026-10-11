@@ -16,6 +16,8 @@ const addressFields: Field[] = [
 
 const cartItemFields: Field[] = [
   { name: 'product', type: 'relationship', relationTo: 'products' },
+  // Id of the chosen variation of a variable product; the server re-checks it against the product.
+  { name: 'variation', type: 'text' },
   { name: 'quantity', type: 'number', required: true },
 ]
 

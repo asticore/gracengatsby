@@ -8,7 +8,7 @@ import type { FieldGroupDoc } from '@/fields/customFields/types'
 
 /**
  * Admin screen for Options pages (site-wide values that belong to no
- * collection). Lists every options page that has at least one Field Group
+ * collection). Lists every options page that has at least one set of extra fields
  * pointing at it, and edits the chosen one with the normal field inputs.
  *
  * Route: /admin/options?page=<slug>. Registered in src/admin/adminViewRegistry.ts.
@@ -35,7 +35,7 @@ export async function OptionsView({ searchParams }: { searchParams?: Record<stri
       <div className="flex flex-col gap-[12px] p-[24px]">
         <h1 className="m-0 text-[22px]">Options pages</h1>
         <p className="m-0 text-[14px] opacity-75">
-          No options pages yet. Create a Field Group and set its &quot;Show on&quot; rule to an options page slug, for example
+          No options pages yet. Create a set of extra fields and set its &quot;Show on&quot; rule to an options page slug, for example
           &quot;Options page: site-contact&quot;.
         </p>
       </div>

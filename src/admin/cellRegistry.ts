@@ -20,11 +20,13 @@
  */
 
 import { formatPriceCell } from '@/features/ecommerce/admin/priceCell'
+import { formatLockCell } from '@/fields/locks/lockCell'
 
 export type CellFormatter = (value: unknown, doc: Record<string, unknown>) => string
 
 export const CELL_REGISTRY: Record<string, CellFormatter> = {
   '@/features/ecommerce/admin/priceCell#formatPriceCell': formatPriceCell,
+  '@/fields/locks/lockCell#formatLockCell': formatLockCell,
 }
 
 export function resolveCellFormatter(path: string | undefined | null): CellFormatter | undefined {

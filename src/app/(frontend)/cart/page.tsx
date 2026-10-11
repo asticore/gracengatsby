@@ -4,6 +4,7 @@ import { useCart } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React from 'react'
 
+import { resolveCartLine, type CatalogueProduct } from '@/features/ecommerce/catalogue'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import type { Product } from '@/engage-types'
 
@@ -34,6 +35,9 @@ export default function CartPage() {
           <ul className="mb-8 list-none border-t border-[var(--color-line)] p-0">
             {items.map((item) => {
               const product = item.product as unknown as Product
+              // Display only: the server prices the cart from the database (see the cart hook).
+              const line = typeof product === 'object' ? resolveCartLine(product as unknown as CatalogueProduct, item.variation ?? null, 1) : null
+              const unitPrice = line && line.ok ? line.unitPrice : typeof product === 'object' ? product.priceInAUD : null
               return (
                 <li
                   key={item.id}
@@ -41,9 +45,8 @@ export default function CartPage() {
                 >
                   <div>
                     <h3>{typeof product === 'object' ? product.title : 'Item'}</h3>
-                    <p>
-                      {typeof product === 'object' ? formatPriceInAUD(product.priceInAUD) : ''}
-                    </p>
+                    {line && line.ok && line.variationLabel ? <p className="opacity-70">{line.variationLabel}</p> : null}
+                    <p>{formatPriceInAUD(unitPrice)}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button

@@ -2,6 +2,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 
+import { priceRange, type CatalogueProduct } from '@/features/ecommerce/catalogue'
+import { priceInfo } from '@/features/ecommerce/pricing'
+import { computeStockStatus } from '@/features/ecommerce/stock'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import type { Media, Product } from '@/engage-types'
 
@@ -19,6 +22,11 @@ export const ProductCard: React.FC<{
   aspect?: 'portrait' | 'square'
 }> = ({ product, showShortDescription = false, aspect = 'portrait' }) => {
   const imageURL = getImageURL(product)
+  const catalogue = product as unknown as CatalogueProduct
+  const range = priceRange(catalogue)
+  const info = priceInfo(catalogue)
+  const variable = catalogue.productType === 'variable' && range.min !== null && range.max !== null && range.min !== range.max
+  const soldOut = (catalogue.productType ?? 'simple') === 'simple' && computeStockStatus(catalogue) === 'outofstock'
 
   return (
     <Link
@@ -47,7 +55,18 @@ export const ProductCard: React.FC<{
         </span>
         <h3>{product.title}</h3>
         <p className="mt-1 font-[family-name:var(--font-display)] text-[1.25rem]">
-          {formatPriceInAUD(product.priceInAUD)}
+          {info.onSale && info.regular !== null && info.price !== null ? (
+            <>
+              <s className="mr-2 opacity-50">{formatPriceInAUD(info.regular)}</s>
+              {formatPriceInAUD(info.price)}
+              <span className="sale-badge ml-2 text-[0.65rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">Sale</span>
+            </>
+          ) : variable ? (
+            <>From {formatPriceInAUD(range.min)}</>
+          ) : (
+            formatPriceInAUD(range.min ?? product.priceInAUD)
+          )}
+          {soldOut ? <span className="ml-2 text-[0.65rem] uppercase tracking-[0.1em] opacity-60">Sold out</span> : null}
         </p>
         {showShortDescription && product.shortDescription && (
           <p className="mt-1.5 text-[0.85rem] opacity-75">{product.shortDescription}</p>

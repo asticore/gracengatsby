@@ -5,9 +5,12 @@ import type { Product } from '@/engage-types'
 
 import { addressForCustomer, addressesForCustomer } from '../addresses'
 import { bookingsForCustomer } from '../bookings'
+import { ORDERS_SLUG } from '../types'
 import { requireCustomer } from '../guards'
 import { formatAmount, formatDate, orderForCustomer, ordersForCustomer } from '../orders'
 import { readPreferences } from '../preferences'
+import { ORDER_STATUS_LABELS, isOrderStatus } from '@/features/ecommerce/lib/orderStatus'
+import { ReorderButton } from './ReorderButton'
 import { AccountShell } from './AccountShell'
 import { AddressForm, AddressRowActions, EmailForm, NameForm, PasswordForm } from './AccountForms'
 
@@ -20,6 +23,8 @@ import { AddressForm, AddressRowActions, EmailForm, NameForm, PasswordForm } fro
  * "belongs to me?" test anywhere in this file, because there is nothing here
  * that could have been fetched if it did not.
  */
+
+const statusLabel = (status?: string | null): string => (status && isOrderStatus(status) ? ORDER_STATUS_LABELS[status] : (status ?? '-'))
 
 const displayName = (name: string, email: string): string => name || email
 
@@ -98,7 +103,7 @@ export const OrdersScreen: React.FC = async () => {
                   <Link href={`/account/orders/${order.id}`}>#{order.id}</Link>
                 </td>
                 <td>{formatDate(order.createdAt)}</td>
-                <td>{order.status ?? '-'}</td>
+                <td>{statusLabel(order.status)}</td>
                 <td>{formatAmount(order.amount, order.currency)}</td>
               </tr>
             ))}
@@ -124,11 +129,27 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
 
   const shipping = order.shippingAddress
   const lines = order.items ?? []
+  // Ownership was just proven by the access-enforced read above, so the customer-visible
+  // notes can be read with access overridden. Internal notes are never selected.
+  const full = (await engine
+    .findByID({ collection: ORDERS_SLUG, id: order.id, depth: 0, overrideAccess: true })
+    .catch((): null => null)) as unknown as {
+    notes?: { type: string; text: string; createdAt: string }[]
+    subtotal?: number
+    discountTotal?: number
+    shippingTotal?: number
+    taxTotal?: number
+    pricesIncludeTax?: boolean
+  } | null
+  const notes = (full?.notes ?? []).filter((n) => n.type === 'customer')
+  const reorder = lines
+    .map((l) => ({ product: typeof l.product === 'object' && l.product ? Number((l.product as { id: number }).id) : Number(l.product), quantity: l.quantity }))
+    .filter((l) => l.product > 0)
 
   return (
     <AccountShell title={`Order #${order.id}`} current="/account/orders">
       <p>
-        Placed {formatDate(order.createdAt)} · {order.status ?? 'processing'} ·{' '}
+        Placed {formatDate(order.createdAt)} · {statusLabel(order.status ?? 'processing')} ·{' '}
         {formatAmount(order.amount, order.currency)}
       </p>
 
@@ -178,7 +199,34 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
         </section>
       ) : null}
 
+      {full && typeof full.subtotal === 'number' ? (
+        <section className="account-section">
+          <h2>Totals</h2>
+          <p>
+            Subtotal {formatAmount(full.subtotal, order.currency)}
+            {full.discountTotal ? <> · Discount -{formatAmount(full.discountTotal, order.currency)}</> : null}
+            {full.shippingTotal ? <> · Shipping {formatAmount(full.shippingTotal, order.currency)}</> : null}
+            {full.taxTotal ? <> · GST {full.pricesIncludeTax ? 'included' : ''} {formatAmount(full.taxTotal, order.currency)}</> : null}
+            {' '}· <strong>Total {formatAmount(order.amount, order.currency)}</strong>
+          </p>
+        </section>
+      ) : null}
+
+      {notes.length > 0 ? (
+        <section className="account-section">
+          <h2>Notes from the shop</h2>
+          {notes.map((n, i) => (
+            <p key={i}>
+              {n.text}
+              <br />
+              <small>{formatDate(n.createdAt)}</small>
+            </p>
+          ))}
+        </section>
+      ) : null}
+
       <div className="account-link-row">
+        <ReorderButton items={reorder} />
         <Link href="/account/orders">Back to orders</Link>
       </div>
     </AccountShell>

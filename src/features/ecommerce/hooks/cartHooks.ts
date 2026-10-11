@@ -15,7 +15,12 @@
 
 import crypto from 'crypto'
 
-type CartItem = { product?: number | { id: number } | null; quantity?: number | null }
+import { resolveCartLine, type CatalogueProduct } from '../catalogue'
+
+type CartItem = { product?: number | { id: number } | null; variation?: string | null; quantity?: number | null }
+
+const productIdOf = (item: CartItem): number | null | undefined =>
+  item.product && typeof item.product === 'object' ? item.product.id : (item.product as number | null | undefined)
 
 /**
  * `beforeChange` on the Carts collection.
@@ -25,17 +30,13 @@ type CartItem = { product?: number | { id: number } | null; quantity?: number | 
  *   `customer` (an authenticated user's cart doesn't need one; access is
  *   already `isDocumentOwner`).
  * - Recalculates `subtotal` from the current `items` array every save, so a
- *   client can never post its own total.
+ *   client can never post its own total. Each line is priced from the database copy of the
+ *   product (or the chosen variation) through `resolveCartLine`: sale schedule, stock and
+ *   purchasability are checked server-side, and a line that cannot be bought is refused
+ *   unless it was already in the cart unchanged (so a cart can always be tidied).
  */
-// Untyped params deliberately (matches this repo's other inline collection
-// hooks, e.g. Enrolments.ts's beforeChange) so this is assignable to
-// whatever the real `BeforeChangeHook<any>` type from `@/engine`'s
-// `CollectionConfig.hooks.beforeChange` array element actually is, without
-// fighting the reference engine's generated per-collection `findByID` overload
-// (its return type is the named `Product` type, not a plain
-// `Record<string, unknown>`) - the loose casts below get back to a shape
-// this function can work with either way.
-export const beforeChangeCart = async ({ data, operation, req }: Record<string, unknown> & { data: Record<string, unknown> }) => {
+// Untyped params deliberately (matches this repo's other inline collection hooks).
+export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Record<string, unknown> & { data: Record<string, unknown> }) => {
   if (operation === 'create' && !data.customer && !data.secret) {
     data.secret = crypto.randomBytes(20).toString('hex')
   }
@@ -43,14 +44,29 @@ export const beforeChangeCart = async ({ data, operation, req }: Record<string, 
   const items = data.items as CartItem[] | undefined
   if (Array.isArray(items)) {
     let subtotal = 0
-    const engine = (req as { engine: { findByID: (args: { collection: string; id: number; depth?: number }) => Promise<unknown> } }).engine
-    for (const item of items) {
-      const productId: number | null | undefined =
-        item.product && typeof item.product === 'object' ? item.product.id : (item.product as number | null | undefined)
+    const engine = (req as { engine: { findByID: (args: { collection: string; id: number; depth?: number; overrideAccess?: boolean }) => Promise<unknown> } }).engine
+    const before = ((originalDoc as { items?: CartItem[] } | undefined)?.items ?? []).map((item) => `${productIdOf(item)}|${item.variation ?? ''}|${item.quantity}`)
+    const seen = new Map<string, number>()
+    const errors: Array<{ path: string; message: string }> = []
+    for (const [index, item] of items.entries()) {
+      const productId = productIdOf(item)
       if (!productId || !item.quantity) continue
-      const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0 }).catch((): null => null)) as { priceInAUD?: number } | null
-      const price = product?.priceInAUD
-      if (typeof price === 'number') subtotal += price * item.quantity
+      const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0, overrideAccess: true }).catch((): null => null)) as CatalogueProduct | null
+      const key = `${productId}|${item.variation ?? ''}`
+      const already = seen.get(key) ?? 0
+      seen.set(key, already + item.quantity)
+      const line = resolveCartLine(product, item.variation ?? null, item.quantity, new Date(), already)
+      if (line.ok) {
+        subtotal += line.unitPrice * item.quantity
+        continue
+      }
+      const unchanged = before.includes(`${productId}|${item.variation ?? ''}|${item.quantity}`)
+      if (!unchanged) errors.push({ path: `items.${index}`, message: (line as { error: string }).error })
+      else if (product && typeof product.priceInAUD === 'number') subtotal += product.priceInAUD * item.quantity
+    }
+    if (errors.length > 0) {
+      const { ValidationError } = await import('@/localapi/operations')
+      throw new ValidationError(errors)
     }
     data.subtotal = subtotal
   } else {

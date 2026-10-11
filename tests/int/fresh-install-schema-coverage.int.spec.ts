@@ -11,6 +11,8 @@ import { runInternalMigrate, type InternalMigrateResult } from '@/migrations/run
 
 // Import all schema exports to inspect
 import * as schemaModule from '@/cms/db/schema/index'
+import * as adsSchema from '@/cms/db/schema/ads'
+import * as catalogueSchema from '@/cms/db/schema/shopCatalogue'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -153,7 +155,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         'languageSettings', 'languageSettingsMultilingualActiveLocales',
         'seoSettings', 'seoSettingsSchemaSameAs', 'speedSettings', 'speedSettingsAdvancedPreconnectOrigins', 'speedSettingsAdvancedPrefetchDns',
         'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings',
-        'addresses', 'carts', 'cartsItems', 'orders', 'ordersItems', 'ordersRels', 'transactions', 'transactionsItems', 'products', 'productsRels', 'productsVersions', 'productsVersionsRels',
+        'addresses', 'carts', 'cartsItems', 'orders', 'ordersItems', 'ordersRels', 'transactions', 'transactionsItems', 'products', 'productsRels', 'productsVersions', 'productsVersionsRels', 'productsAttributes', 'productsVariations', 'productsVersionsAttributes', 'productsVersionsVariations', 'cartsItems',
         'preferences', 'preferencesRels', 'lockedDocuments', 'lockedDocumentsRels',
       ]
 
@@ -168,6 +170,18 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Collect all tables to check
       const drizzleTables: { name: string; table: any }[] = []
+
+      // Ads tables live in their own schema file
+      for (const [exportName, exportValue] of Object.entries(adsSchema)) {
+        if (exportName === 'adSettingsGenerated') continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Catalogue tables (attributes, shipping classes, reviews) live in their own schema file
+      for (const [exportName, exportValue] of Object.entries(catalogueSchema)) {
+        if (exportName.endsWith('Generated')) continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
 
       // Direct table exports
       for (const exportName of tableExports) {
@@ -280,6 +294,28 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(columnNames).toContain('theme_custom_fonts')
     expect(columnNames).toContain('theme_heading_font')
     expect(columnNames).toContain('theme_body_font')
+  })
+
+  it('adds the section lock columns (live, versions, templates)', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_pages')).toContain('locks')
+    expect(await columnsOf('_eg_pages_v')).toContain('version_locks')
+    expect(await columnsOf('eg_page_templates')).toContain('locks')
+  })
+
+  it('creates the ads tables, flag column and No ads columns', async () => {
+    const cols = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    for (const t of ['eg_ad_units', 'eg_ad_placements', 'eg_ad_settings', 'eg_ad_stats']) expect(createdTables.has(t), t).toBe(true)
+    expect(await cols('eg_site_settings')).toContain('features_ads')
+    expect(await cols('eg_pages')).toContain('no_ads')
+    expect(await cols('_eg_pages_v')).toContain('version_no_ads')
+    expect(await cols('eg_posts')).toContain('no_ads')
+    expect(await cols('eg_products')).toContain('no_ads')
+    expect(await cols('eg_locked_documents_rels')).toContain('eg_ad_units_id')
   })
 
   it('is safe to run migrations a second time (idempotent)', async () => {

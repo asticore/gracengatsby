@@ -139,6 +139,7 @@ import type { AccessFn, AccessResult, FieldAccessFn, LocalReq, Where } from './a
 import { combineQueries, executeAccess, executeFieldAccess } from './access'
 import type { AfterReadFieldHookArgs } from './hooks'
 import { runFieldHook } from './hooks'
+import { ValidationError } from './operations'
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */
@@ -653,6 +654,66 @@ async function traverseFields(fields: ReadFieldConfig[], siblingData: Record<str
 /* findByID                                                                    */
 /* -------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------- */
+/* where / sort on fields the caller cannot read                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Field paths (dotted, and underscore-joined for group columns) whose field-level `access.read` denies this
+ * request's user. Evaluated once per request and only when a `where` or `sort` is present. Access functions that
+ * look at the document are called with an empty one, so a field that is readable only on some documents counts as
+ * denied here (fails closed).
+ */
+async function deniedFieldPaths(fields: ReadFieldConfig[] | undefined, req: LocalReq, prefix: string[] = [], out: Set<string> = new Set()): Promise<Set<string>> {
+  for (const field of fields ?? []) {
+    const path = field.name ? [...prefix, field.name] : prefix
+    if (field.name && field.access?.read) {
+      const allowed = await executeFieldAccess(field.access.read, { req, data: {}, doc: {}, siblingData: {} })
+      if (!allowed) {
+        out.add(path.join('.'))
+        out.add(path.join('_'))
+        continue
+      }
+    }
+    if ((field.type === 'group' || field.type === 'row') && field.fields) await deniedFieldPaths(field.fields, req, path, out)
+  }
+  return out
+}
+
+const isDeniedKey = (key: string, denied: Set<string>): boolean => {
+  if (denied.has(key)) return true
+  for (const path of denied) if (key.startsWith(`${path}.`)) return true
+  return false
+}
+
+function findDeniedInWhere(where: unknown, denied: Set<string>): string | null {
+  if (!where || typeof where !== 'object') return null
+  for (const [key, value] of Object.entries(where as Record<string, unknown>)) {
+    if (key === 'and' || key === 'or') {
+      for (const part of Array.isArray(value) ? value : []) {
+        const hit = findDeniedInWhere(part, denied)
+        if (hit) return hit
+      }
+      continue
+    }
+    if (isDeniedKey(key, denied)) return key
+  }
+  return null
+}
+
+/** Rejects (400) a `where` or `sort` that targets a field the current user is not allowed to read: filtering on it would leak its value one comparison at a time. */
+async function assertQueryableFields(entry: ReadRegistry['collections'][string], req: LocalReq, where: Where | undefined, sort: Sort | undefined): Promise<void> {
+  if (!where && !sort) return
+  const denied = await deniedFieldPaths(entry.config.fields as ReadFieldConfig[] | undefined, req)
+  if (denied.size === 0) return
+  const hit = findDeniedInWhere(where, denied)
+  if (hit) throw new ValidationError([{ path: hit, message: 'You cannot filter by this field.' }])
+  for (const item of (Array.isArray(sort) ? sort : sort ? [sort] : []).flatMap((term) => String(term).split(','))) {
+    const name = item.trim().replace(/^-/, '')
+    if (name && isDeniedKey(name, denied)) throw new ValidationError([{ path: name, message: 'You cannot sort by this field.' }])
+  }
+}
+
 /**
  * Shared by the public `findByID` and `populateOne` (population is, in real
  * The original engine, exactly a nested `find`/`findByID` call - see the file header's
@@ -739,6 +800,7 @@ export async function find(registry: ReadRegistry, collection: string, args: Fin
   let accessResult: AccessResult = true
   if (!overrideAccess) {
     accessResult = await executeAccess(entry.config.access?.read, { req, disableErrors })
+    if (accessResult !== false) await assertQueryableFields(entry, req, where, sort)
     if (accessResult === false) {
       // Exact shape of the reference engine's own denied-with-disableErrors empty
       // result (find.js:53-63) - including `limit` echoing the caller's own
@@ -810,6 +872,7 @@ export async function count(registry: ReadRegistry, collection: string, args: Co
   if (!overrideAccess) {
     accessResult = await executeAccess(entry.config.access?.read, { req, disableErrors })
     if (accessResult === false) return { totalDocs: 0 }
+    await assertQueryableFields(entry, req, where, undefined)
   }
 
   const fullWhere = combineQueries(where, accessResult)

@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore, 
 
 import {
   allChoices,
-  CATEGORY_COPY,
   CONSENT_CATEGORIES,
   effectiveChoices,
   isCurrentRecord,
@@ -12,7 +11,7 @@ import {
   type ConsentChoices,
   type CookieCategory,
 } from './consent'
-import type { ConsentConfig } from './config'
+import { readableTextOn, type ConsentConfig } from './config'
 import { activateGatedMarkup } from './gate'
 import { configureConsent, type ConsentState, getConsentState, saveConsent, SERVER_CONSENT_STATE, subscribeConsent } from './store'
 
@@ -33,15 +32,39 @@ export type ConsentManagerProps = {
   optIn: boolean
   /** Whether the server could see a current choice in the cookie (avoids a banner flash). */
   initialDecided: boolean
+  /**
+   * Admin preview. Renders the same banner and dialog, but inside the nearest
+   * positioned frame instead of over the page, and touches nothing outside
+   * itself: no cookie, no localStorage, no consent log, no tag or embed
+   * activation, no page reload, no focus stealing.
+   */
+  previewMode?: boolean
+  /** Preview only: what to show. 'link' is the small "Cookie settings" button shown after a choice. */
+  previewView?: 'banner' | 'dialog' | 'link'
+  /** Preview only: light or dark, used when the settings follow the site theme. */
+  previewTheme?: 'light' | 'dark'
+  /** Preview only: apply the small-screen layout (the frame is narrower than the window). */
+  previewNarrow?: boolean
 }
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
 
-const colourVariables = (config: ConsentConfig): CSSProperties => {
+/**
+ * Every value here has been through normaliseConsentConfig (hex colours only,
+ * clamped numbers), so nothing from the settings reaches a style attribute raw.
+ */
+export const consentStyleVariables = (config: ConsentConfig): CSSProperties => {
   const vars: Record<string, string> = {}
   if (config.bannerBackground) vars['--engage-consent-bg'] = config.bannerBackground
   if (config.bannerTextColor) vars['--engage-consent-fg'] = config.bannerTextColor
-  if (config.buttonColor) vars['--engage-consent-btn'] = config.buttonColor
+  if (config.buttonColor) {
+    vars['--engage-consent-btn'] = config.buttonColor
+    const on = readableTextOn(config.buttonColor)
+    if (on) vars['--engage-consent-btn-fg'] = on
+  }
+  if (config.accentColor) vars['--engage-consent-accent'] = config.accentColor
+  if (config.borderRadius !== null) vars['--engage-consent-radius'] = `${config.borderRadius}px`
+  if (config.fontSize !== null) vars['--engage-consent-size'] = `${config.fontSize}px`
   return vars as CSSProperties
 }
 
@@ -53,33 +76,46 @@ const colourVariables = (config: ConsentConfig): CSSProperties => {
  * run in that case, so custom code gated as "necessary" or with consent off
  * is activated as normal.
  */
-export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManagerProps) => {
+export const ConsentManager = ({ config, optIn, initialDecided, previewMode, previewView = 'banner', previewTheme = 'light', previewNarrow }: ConsentManagerProps) => {
+  const preview = previewMode === true
   const consent = useSyncExternalStore(subscribeConsent, getConsentState, (): ConsentState => SERVER_CONSENT_STATE)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [draft, setDraft] = useState<ConsentChoices>(() => allChoices(false))
+  const [draft, setDraft] = useState<ConsentChoices>(() => (previewMode === true ? effectiveChoices(null, config.policyVersion, !optIn) : allChoices(false)))
   const dialogRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
 
   const { policyVersion, logConsent } = config
-  const decided = consent.loaded ? isCurrentRecord(consent.record, policyVersion) : initialDecided
-  const choices = effectiveChoices(consent.record, policyVersion, !optIn)
+  const decided = preview ? previewView === 'link' : consent.loaded ? isCurrentRecord(consent.record, policyVersion) : initialDecided
+  const choices = effectiveChoices(preview ? null : consent.record, policyVersion, !optIn)
   const choicesKey = JSON.stringify(choices)
 
   useEffect(() => {
+    if (preview) return
     configureConsent({ policyVersion, defaultGranted: !optIn, logConsent })
-  }, [policyVersion, optIn, logConsent])
+  }, [preview, policyVersion, optIn, logConsent])
 
   useEffect(() => {
+    if (preview) return
     activateGatedMarkup(document, JSON.parse(choicesKey) as ConsentChoices)
-  }, [choicesKey])
+  }, [preview, choicesKey])
 
   const openSettings = useCallback(() => {
-    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    setDraft(effectiveChoices(getConsentState().record, policyVersion, !optIn))
+    if (!preview) openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    setDraft(effectiveChoices(preview ? null : getConsentState().record, policyVersion, !optIn))
     setDialogOpen(true)
-  }, [policyVersion, optIn])
+  }, [preview, policyVersion, optIn])
+
+  // The dialog's checkboxes start from the visitor's region (opt-out regions start ticked).
+  // In the preview the draft resets whenever its inputs change. This runs during render, not in an effect.
+  const draftInputs = `${preview}|${policyVersion}|${optIn}`
+  const [syncedDraftInputs, setSyncedDraftInputs] = useState(draftInputs)
+  if (syncedDraftInputs !== draftInputs) {
+    setSyncedDraftInputs(draftInputs)
+    if (preview) setDraft(effectiveChoices(null, policyVersion, !optIn))
+  }
 
   useEffect(() => {
+    if (preview) return
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest('[data-cookie-settings]') : null
       if (!target) return
@@ -92,21 +128,36 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
       document.removeEventListener('click', onClick)
       window.removeEventListener(COOKIE_SETTINGS_EVENT, openSettings)
     }
-  }, [openSettings])
+  }, [preview, openSettings])
 
   // Focus moves into the dialog when it opens and back to its opener when it closes.
   useEffect(() => {
+    if (preview) return
     if (dialogOpen) {
       dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
       return
     }
     openerRef.current?.focus()
     openerRef.current = null
-  }, [dialogOpen])
+  }, [preview, dialogOpen])
 
-  if (!config.enabled) return null
+  // In the preview a view change resets the dialog, so each view starts clean. This runs during render, not in an effect.
+  const viewKey = `${preview}|${previewView}`
+  const [syncedViewKey, setSyncedViewKey] = useState(viewKey)
+  if (syncedViewKey !== viewKey) {
+    setSyncedViewKey(viewKey)
+    if (preview) setDialogOpen(false)
+  }
+
+  if (!config.enabled && !preview) return null
+
+  const dialogShown = preview ? previewView === 'dialog' || dialogOpen : dialogOpen
 
   const decide = (next: ConsentChoices) => {
+    if (preview) {
+      setDialogOpen(false)
+      return
+    }
     const before = effectiveChoices(getConsentState().record, policyVersion, !optIn)
     const withdrew = (before.analytics && !next.analytics) || (before.marketing && !next.marketing)
     saveConsent(next)
@@ -123,7 +174,7 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
       setDialogOpen(false)
       return
     }
-    if (event.key !== 'Tab' || !dialogRef.current) return
+    if (preview || event.key !== 'Tab' || !dialogRef.current) return
     const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
     const first = items[0]
     const last = items[items.length - 1]
@@ -140,16 +191,28 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
   const privacy = config.privacyPolicyUrl ? (
     <>
       {' '}
-      <a href={config.privacyPolicyUrl} className="engage-consent__link">
-        Privacy policy
+      <a
+        href={config.privacyPolicyUrl}
+        className="engage-consent__link"
+        {...(preview ? { onClick: (event: React.MouseEvent) => event.preventDefault() } : {})}
+      >
+        {config.privacyPolicyLabel}
       </a>
     </>
   ) : null
 
   return (
-    <div className="engage-consent-root" data-theme={config.theme === 'auto' ? undefined : config.theme} style={colourVariables(config)}>
+    <div
+      className={`engage-consent-root${preview ? ' engage-consent-root--preview' : ''}${preview && previewNarrow ? ' engage-consent-root--narrow' : ''}`}
+      data-theme={config.theme === 'auto' ? (preview ? previewTheme : undefined) : config.theme}
+      style={consentStyleVariables(config)}
+    >
       {!decided ? (
         <section className={`engage-consent engage-consent--${config.position}`} role="region" aria-label={config.bannerTitle}>
+          {config.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="engage-consent__logo" src={config.logoUrl} alt="" width={40} height={40} />
+          ) : null}
           <div className="engage-consent__text">
             <p className="engage-consent__title">{config.bannerTitle}</p>
             <p className="engage-consent__body">
@@ -158,9 +221,11 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
             </p>
           </div>
           <div className="engage-consent__actions">
-            <button type="button" className="engage-consent__button" onClick={() => decide(allChoices(false))}>
-              {config.rejectLabel}
-            </button>
+            {config.showRejectButton ? (
+              <button type="button" className="engage-consent__button" onClick={() => decide(allChoices(false))}>
+                {config.rejectLabel}
+              </button>
+            ) : null}
             <button type="button" className="engage-consent__button" onClick={openSettings}>
               {config.customiseLabel}
             </button>
@@ -170,17 +235,21 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
           </div>
         </section>
       ) : (
-        <button type="button" className="engage-consent__settings" data-cookie-settings>
+        <button
+          type="button"
+          className="engage-consent__settings"
+          {...(preview ? { onClick: openSettings } : { 'data-cookie-settings': true })}
+        >
           {config.cookieSettingsLabel}
         </button>
       )}
 
-      {dialogOpen ? (
+      {dialogShown ? (
         <div className="engage-consent__overlay">
           <div
             ref={dialogRef}
             role="dialog"
-            aria-modal="true"
+            aria-modal={preview ? undefined : true}
             aria-labelledby="engage-consent-title"
             className="engage-consent__dialog"
             onKeyDown={onDialogKeyDown}
@@ -197,6 +266,7 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
                 <CategoryRow
                   key={category}
                   category={category}
+                  copy={config.categoryCopy[category]}
                   checked={draft[category]}
                   cookies={config.cookieList.filter((cookie) => cookie.category === category)}
                   onToggle={(granted) => setDraft((current) => withCategory(current, category, granted))}
@@ -204,9 +274,11 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
               ))}
             </ul>
             <div className="engage-consent__actions">
-              <button type="button" className="engage-consent__button" onClick={() => decide(allChoices(false))}>
-                {config.rejectLabel}
-              </button>
+              {config.showRejectButton ? (
+                <button type="button" className="engage-consent__button" onClick={() => decide(allChoices(false))}>
+                  {config.rejectLabel}
+                </button>
+              ) : null}
               <button type="button" className="engage-consent__button" onClick={() => decide(draft)}>
                 {config.saveLabel}
               </button>
@@ -223,13 +295,13 @@ export const ConsentManager = ({ config, optIn, initialDecided }: ConsentManager
 
 type CategoryRowProps = {
   category: CookieCategory
+  copy: { label: string; description: string }
   checked: boolean
   cookies: ConsentConfig['cookieList']
   onToggle: (granted: boolean) => void
 }
 
-const CategoryRow = ({ category, checked, cookies, onToggle }: CategoryRowProps) => {
-  const copy = CATEGORY_COPY[category]
+const CategoryRow = ({ category, copy, checked, cookies, onToggle }: CategoryRowProps) => {
   const id = `engage-consent-${category}`
   const necessary = category === 'necessary'
   return (
@@ -244,7 +316,7 @@ const CategoryRow = ({ category, checked, cookies, onToggle }: CategoryRowProps)
           onChange={(event) => onToggle(event.target.checked)}
         />
       </label>
-      <p className="engage-consent__category-text">{necessary ? `${copy.description} Always on.` : copy.description}</p>
+      <p className="engage-consent__category-text">{necessary && !/always on/i.test(copy.description) ? `${copy.description} Always on.` : copy.description}</p>
       {cookies.length > 0 ? (
         <ul className="engage-consent__cookies">
           {cookies.map((cookie) => (

@@ -6,7 +6,7 @@ import type { Field } from '@/engine'
  * write (see src/features/roles/contentEditGuard.ts), so a client cannot set it by hand.
  *
  * Column names this produces (live table; versions get the `version_` prefix) are listed in
- * src/migrations/20261011_130000_content_approval.ts.
+ * src/migrations/20261011_130000_content_approval.ts (and review_step in 20261012_100000_approval_workflows.ts).
  */
 export const REVIEW_STATUS_OPTIONS = [
   { label: 'Not in review', value: 'none' },
@@ -37,6 +37,13 @@ export const reviewFields: Field[] = [
   {
     name: 'reviewApprovals',
     type: 'json',
+    admin: { hidden: true, readOnly: true },
+  },
+  {
+    // Zero-based index of the workflow step awaiting approval. Always 0 without an active workflow.
+    name: 'reviewStep',
+    type: 'number',
+    defaultValue: 0,
     admin: { hidden: true, readOnly: true },
   },
 ]

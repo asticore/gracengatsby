@@ -14,7 +14,7 @@ const create = (name: string, cols: string[]): string =>
   `CREATE TABLE IF NOT EXISTS \`${name}\` (\n  \`id\` integer PRIMARY KEY NOT NULL,\n${cols.map((c) => '  ' + c).join(',\n')},\n${TS}\n)`
 
 const child = (name: string, parent: string, cols: string[], versioned = false): string =>
-  `CREATE TABLE IF NOT EXISTS \`${name}\` (\n  \`_order\` integer NOT NULL,\n  \`_parent_id\` integer NOT NULL,\n  \`id\` ${versioned ? 'integer' : 'text'} PRIMARY KEY NOT NULL,\n${cols.map((c) => '  ' + c).join(',\n')}${versioned ? ',\n  \`_uuid\` text' : ''},\n  FOREIGN KEY (\`_parent_id\`) REFERENCES \`${parent}\`(\`id\`) ON UPDATE no action ON DELETE cascade\n)`
+  `CREATE TABLE IF NOT EXISTS \`${name}\` (\n  \`_order\` integer NOT NULL,\n  \`_parent_id\` integer NOT NULL,\n  \`id\` ${versioned ? 'integer' : 'text'} PRIMARY KEY NOT NULL,\n${cols.map((c) => '  ' + c).join(',\n')}${versioned ? ',\n  `_uuid` text' : ''},\n  FOREIGN KEY (\`_parent_id\`) REFERENCES \`${parent}\`(\`id\`) ON UPDATE no action ON DELETE cascade\n)`
 
 /** Columns of one variation row (the same in the live and the versioned child table). */
 const VARIATION_COLS = [

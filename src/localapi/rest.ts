@@ -161,7 +161,9 @@ import { Forbidden } from './access'
 import { AuthenticationError, InvalidResetToken, LockedAuth } from './auth'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
-import { confirmStripeOrder, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
+import { confirmStripeOrder, finalizePaidIntent, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
+import { CheckoutError } from '@/features/ecommerce/server/pricing'
+import { markOrderFailed } from '@/features/ecommerce/server/orders'
 import { membershipWebhooks } from '@/features/members/webhooks'
 import type Stripe from 'stripe'
 
@@ -628,6 +630,8 @@ async function handleDuplicate(engine: Engine, collection: string, id: number, r
   // passed to `engine.create` below (matching the reference engine's own default),
   // not the source doc's copied `_status`.
   delete data._status
+  // Section/page locks belong to the source document; a copy starts unlocked (and lockGuard would 403 non-managers on create).
+  delete data.locks
 
   const fields = (readRegistry.collections[collection]?.config.fields ?? []) as unknown as FieldConfigLike[]
   applyBeforeDuplicate(fields, data)
@@ -937,7 +941,7 @@ async function handleGlobalAccess(engine: Engine, globalSlug: string, request: R
 /* verified by hand in the `where` clause/prior lookup.                     */
 /* -------------------------------------------------------------------------- */
 
-type CartItemRow = { id?: string; product?: number | { id: number } | null; quantity?: number }
+type CartItemRow = { id?: string; product?: number | { id: number } | null; variation?: string | null; quantity?: number }
 
 function cartItemProductId(item: CartItemRow): number | null {
   if (item.product && typeof item.product === 'object') return item.product.id
@@ -962,7 +966,9 @@ async function handleCartAddItem(engine: Engine, cartId: number, request: Reques
   const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
   if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
   const items = (cart.items as CartItemRow[] | undefined) ?? []
-  const existingIndex = items.findIndex((existing) => cartItemProductId(existing) === productId)
+  // A variable product's lines are told apart by variation id; the cart hook re-checks price and stock from the database.
+  const variation = typeof item.variation === 'string' && item.variation ? item.variation.slice(0, 64) : null
+  const existingIndex = items.findIndex((existing) => cartItemProductId(existing) === productId && (existing.variation || null) === variation)
   let updatedItems: CartItemRow[]
   let message: string
   if (existingIndex !== -1) {
@@ -970,7 +976,7 @@ async function handleCartAddItem(engine: Engine, cartId: number, request: Reques
     updatedItems[existingIndex] = { ...updatedItems[existingIndex], quantity: (updatedItems[existingIndex].quantity ?? 0) + quantity }
     message = 'Item quantity updated'
   } else {
-    updatedItems = [...items, { product: productId, quantity }]
+    updatedItems = [...items, { product: productId, ...(variation ? { variation } : {}), quantity }]
     message = 'Item added to cart'
   }
   const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
@@ -1069,7 +1075,7 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
   const mergedItems = [...targetItems]
   for (const sourceItem of sourceItems) {
     const sourceProductId = cartItemProductId(sourceItem)
-    const existingIndex = mergedItems.findIndex((it) => cartItemProductId(it) === sourceProductId)
+    const existingIndex = mergedItems.findIndex((it) => cartItemProductId(it) === sourceProductId && (it.variation || null) === (sourceItem.variation || null))
     if (existingIndex !== -1) {
       mergedItems[existingIndex] = { ...mergedItems[existingIndex], quantity: (mergedItems[existingIndex].quantity ?? 0) + (sourceItem.quantity ?? 0) }
     } else {
@@ -1167,34 +1173,22 @@ async function handlePaymentsStripeInitiate(engine: Engine, request: Request, us
     return Response.json({ message: 'Cart is required and must contain at least one item.' }, { status: 400 })
   }
 
-  for (const item of cart.items) {
-    const productId = cartItemProductId(item)
-    if (!productId) continue
-    const quantity = item.quantity || 1
-    const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0 })) as { inventory?: number; priceInAUD?: number } | null
-    if (!product) {
-      return Response.json({ message: `Product with ID ${productId} not found.` }, { status: 404 })
-    }
-    if (!product.priceInAUD) {
-      return Response.json({ message: 'Product does not have a price in AUD.' }, { status: 400 })
-    }
-    if (product.inventory === 0 || (typeof product.inventory === 'number' && product.inventory < quantity)) {
-      return Response.json({ message: 'Product is out of stock or does not have enough inventory.' }, { status: 400 })
-    }
-  }
+  // Price and availability are checked once, server-side, by initiateStripePayment (server/pricing.ts: loadPricedLines/resolveCartLine).
 
   try {
     const result = await initiateStripePayment({
       engine,
       cart,
-      currency: cart.currency || 'AUD',
+      currency: 'AUD', // the shop sells in AUD only; never trust the cart's or the client's currency
       customerEmail,
       billingAddress: data.billingAddress as Record<string, unknown> | undefined,
       shippingAddress: data.shippingAddress as Record<string, unknown> | undefined,
       user,
+      checkout: data,
     })
     return Response.json(result)
-  } catch {
+  } catch (error) {
+    if (error instanceof CheckoutError) return Response.json({ message: error.message }, { status: 400 })
     return Response.json({ message: 'Error initiating payment.' }, { status: 500 })
   }
 }
@@ -1255,7 +1249,19 @@ async function handlePaymentsStripeWebhooks(engine: Engine, request: Request): P
         returnStatus = 400
       }
 
-      if (event) {
+      if (event && (event.type === 'payment_intent.succeeded' || event.type === 'payment_intent.payment_failed')) {
+        // Shop orders: idempotent, so a replay or a race with the browser confirm is harmless.
+        const intent = event.data.object as Stripe.PaymentIntent
+        if (intent.metadata?.orderID) {
+          try {
+            if (event.type === 'payment_intent.succeeded') await finalizePaidIntent(engine, intent)
+            else await markOrderFailed(engine as never, Number(intent.metadata.orderID))
+          } catch (err) {
+            console.error(`Shop webhook ${event.type} failed: ${err instanceof Error ? err.message : String(err)}`)
+            returnStatus = 500
+          }
+        }
+      } else if (event) {
         const handler = membershipWebhooks[event.type as keyof typeof membershipWebhooks] as unknown as
           | ((args: { event: Stripe.Event; req: { engine: Engine }; stripe: Stripe }) => Promise<void>)
           | undefined

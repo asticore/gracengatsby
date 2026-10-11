@@ -178,7 +178,8 @@
 .collection-edit__form .ec-card,
 .collection-edit__form .doc-settings-card,
 .collection-edit__form .doc-seo-card,
-.collection-edit__form .doc-content-card {
+.collection-edit__form .doc-content-card,
+.global-edit__form .ec-card {
   background: transparent;
   border: 0;
   border-top: 1px solid var(--ec-border);
@@ -203,6 +204,7 @@
 }
 
 /* Fields inside a card use the full width. */
-.collection-edit__form .ec-card .ec-card__body {
+.collection-edit__form .ec-card .ec-card__body,
+.global-edit__form .ec-card .ec-card__body {
   margin-top: 8px;
 }

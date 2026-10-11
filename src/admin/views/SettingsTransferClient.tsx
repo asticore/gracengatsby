@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import styles from '@/admin/admin.module.css'
+import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 import './settings-transfer.css'
 import {
   IMPORT_SECTIONS,
@@ -279,8 +280,7 @@ export function SettingsTransferClient() {
         </p>
       </header>
 
-      <section className="st-card" aria-labelledby="st-export-heading">
-        <h2 id="st-export-heading" className="st-heading">Export</h2>
+      <CollapsibleCard id="st:export" title="Export" className="st-card">
         <fieldset className="st-fieldset" disabled={exportBusy}>
           <legend className="st-legend">What to include</legend>
           <ul className="st-checks">
@@ -345,10 +345,9 @@ export function SettingsTransferClient() {
             {exportBusy ? 'Preparing...' : 'Download export'}
           </button>
         </div>
-      </section>
+      </CollapsibleCard>
 
-      <section className="st-card" aria-labelledby="st-import-heading">
-        <h2 id="st-import-heading" className="st-heading">Import</h2>
+      <CollapsibleCard id="st:import" title="Import" className="st-card">
         <p className="st-muted">
           Choose a file exported from this admin. Run the check first. Apply becomes available only when the check finds
           no errors. Secrets missing from the file keep their current values, and existing users are left unchanged.
@@ -454,7 +453,7 @@ export function SettingsTransferClient() {
             <IssueList report={applied} />
           </div>
         ) : null}
-      </section>
+      </CollapsibleCard>
     </div>
   )
 }

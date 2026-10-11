@@ -6,8 +6,18 @@
  * anything and the publish paths behave exactly as before.
  */
 
-export const APPROVAL_COLLECTIONS = ['pages', 'posts', 'events', 'courses', 'products'] as const
-export type ApprovalCollection = (typeof APPROVAL_COLLECTIONS)[number]
+import {
+  APPROVAL_COLLECTIONS,
+  clampStep,
+  describeAwaiting,
+  isApprovalCollection,
+  loadActiveWorkflows,
+  type ApprovalCollection,
+  type ApprovalWorkflow,
+} from './workflows'
+
+export { APPROVAL_COLLECTIONS, isApprovalCollection }
+export type { ApprovalCollection }
 
 export type ApprovalSettings = {
   enabled: boolean
@@ -23,6 +33,11 @@ export type ApprovalSettings = {
   notifyReviewers: boolean
   /** Extra addresses that hear about every submission. */
   notifyEmails: string[]
+  /**
+   * Active approval workflows by content type. A content type with one uses it instead of the
+   * count above. Loaded with the settings; empty when the rules are off.
+   */
+  workflows?: Partial<Record<ApprovalCollection, ApprovalWorkflow>>
   /**
    * True when the settings could not be read and no earlier good copy exists. Non-admins are
    * then blocked from publishing (fail closed); admins are not affected.
@@ -56,9 +71,6 @@ export const APPROVAL_SINGULAR: Record<ApprovalCollection, string> = {
   products: 'product',
 }
 
-export const isApprovalCollection = (value: unknown): value is ApprovalCollection =>
-  typeof value === 'string' && (APPROVAL_COLLECTIONS as readonly string[]).includes(value)
-
 const clampApprovals = (value: unknown): number => {
   const number = Math.floor(Number(value))
   if (!Number.isFinite(number) || number <= 0) return 0
@@ -90,9 +102,20 @@ export function approvalSettingsFromGlobal(doc: unknown): ApprovalSettings {
   }
 }
 
-/** Approvals a collection needs under these settings. Zero when the rules are off. */
+/** The active workflow for a content type, or null: none set up, or the rules are off. */
+export function activeWorkflowFor(settings: ApprovalSettings, collection: string): ApprovalWorkflow | null {
+  if (!settings.enabled || !isApprovalCollection(collection)) return null
+  return settings.workflows?.[collection] ?? null
+}
+
+/**
+ * Approvals a collection needs under these settings. Zero when the rules are off. With an active
+ * workflow it is the approvals the first step needs (the workflow decides the rest).
+ */
 export function requiredApprovalsFor(settings: ApprovalSettings, collection: string): number {
   if (!settings.enabled || !isApprovalCollection(collection)) return 0
+  const workflow = activeWorkflowFor(settings, collection)
+  if (workflow) return workflow.steps[0].approvalsNeeded
   return settings.requiredApprovals[collection]
 }
 
@@ -109,11 +132,14 @@ export function publishBlockMessage({
   settings,
   collection,
   reviewStatus,
+  reviewStep,
   isAdmin,
 }: {
   settings: ApprovalSettings
   collection: string
   reviewStatus: unknown
+  /** The stored review step. Only read when a workflow is active. */
+  reviewStep?: unknown
   isAdmin: boolean
 }): string | null {
   if (isAdmin) return null
@@ -121,6 +147,13 @@ export function publishBlockMessage({
   if (!reviewRequired(settings, collection)) return null
   if (reviewStatus === 'approved') return null
   const noun = isApprovalCollection(collection) ? APPROVAL_SINGULAR[collection] : 'document'
+  const workflow = activeWorkflowFor(settings, collection)
+  if (workflow) {
+    if (reviewStatus === 'in_review') {
+      return `This ${noun} needs approval before it can be published. ${describeAwaiting(workflow, clampStep(reviewStep, workflow.steps.length))}`
+    }
+    return `This ${noun} needs approval through "${workflow.name}" before it can be published. Submit it for review first.`
+  }
   return `This ${noun} needs approval before it can be published.`
 }
 
@@ -129,12 +162,27 @@ export function publishBlockMessage({
  * process. If there are none, the result is flagged `unknown`, which blocks non-admin publishing
  * (fail closed) rather than quietly switching review off.
  */
-export async function loadApprovalSettings(engine: { findGlobal: (args: { slug: string; depth?: number; overrideAccess?: boolean }) => Promise<unknown> } | null | undefined): Promise<ApprovalSettings> {
+export async function loadApprovalSettings(
+  engine:
+    | {
+        findGlobal: (args: { slug: string; depth?: number; overrideAccess?: boolean }) => Promise<unknown>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the real engine's find has a typed argument; only `collection`, `where` etc. are passed
+        find?: (args: any) => Promise<{ docs: any[] }>
+      }
+    | null
+    | undefined,
+): Promise<ApprovalSettings> {
   if (!engine) return DISABLED_APPROVAL_SETTINGS
   try {
     const doc = await engine.findGlobal({ slug: 'security-settings', depth: 0, overrideAccess: true })
-    const settings = approvalSettingsFromGlobal(doc)
-    lastKnownGood = settings
+    let settings = approvalSettingsFromGlobal(doc)
+    if (settings.enabled && engine.find) {
+      // Active workflows replace the counts. Unreadable workflows fail closed, like unreadable settings.
+      const loaded = await loadActiveWorkflows({ find: engine.find.bind(engine) })
+      settings = loaded.unknown ? { ...settings, workflows: {}, unknown: true } : { ...settings, workflows: loaded.workflows }
+    }
+    // A flagged-unknown copy is not a good copy to fall back on.
+    if (!settings.unknown) lastKnownGood = settings
     return settings
   } catch (error) {
     console.error('approval settings could not be loaded', error)

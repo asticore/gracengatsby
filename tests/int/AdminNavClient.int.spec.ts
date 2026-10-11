@@ -14,10 +14,10 @@ describe('AdminNavClient with flat rendering', () => {
     }
   })
 
-  it('should have exactly 5 top-level groups', () => {
-    expect(NAV_STRUCTURE.length).toBe(5)
+  it('should have exactly 6 top-level groups', () => {
+    expect(NAV_STRUCTURE.length).toBe(6)
     const labels = NAV_STRUCTURE.map((g) => g.label)
-    expect(labels).toEqual(['Content', 'Shop', 'Members', 'Courses', 'Settings'])
+    expect(labels).toEqual(['Content', 'Shop', 'Members', 'Courses', 'Ads', 'Settings'])
   })
 
   it('Settings group should be rendered as a regular NavGroup like others', () => {
@@ -27,12 +27,12 @@ describe('AdminNavClient with flat rendering', () => {
     expect(settingsGroup?.entities.length).toBe(9)
   })
 
-  it('Settings group should render 8 page links plus the roles collection link', () => {
+  it('Settings group should render 8 page links plus the Roles view link', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
     expect(settingsGroup?.entities.length).toBe(9)
     const viewEntities = settingsGroup?.entities.filter((e) => e.type === 'view') || []
-    expect(viewEntities.length).toBe(8)
-    expect(settingsGroup?.entities.at(-1)).toEqual({ slug: 'roles', type: 'collections' })
+    expect(viewEntities.length).toBe(9)
+    expect(settingsGroup?.entities.at(-1)).toEqual({ slug: 'roles', type: 'view', href: '/roles', label: 'Roles' })
 
     const expectedLabels = [
       'Site',
@@ -43,6 +43,7 @@ describe('AdminNavClient with flat rendering', () => {
       'Speed',
       'Security',
       'Data and System',
+      'Roles',
     ]
 
     const actualLabels = viewEntities.map((e) => e.label)
@@ -85,7 +86,7 @@ describe('AdminNavClient with flat rendering', () => {
   it('should have no nested accordion structure', () => {
     // All groups are at the root level
     const topLevelCount = NAV_STRUCTURE.length
-    expect(topLevelCount).toBe(5)
+    expect(topLevelCount).toBe(6)
 
     // No group has children that are themselves groups
     for (const group of NAV_STRUCTURE) {

@@ -4,8 +4,8 @@
  * - Filter/count/cycle tri-state
  */
 
-import type { PermissionMatrix, PermissionOverrides, Resource, Action } from './permissions'
-import { PERMISSION_CATEGORIES } from './permissions'
+import type { PermissionMatrix, PermissionOverrides, Resource, Action, Scope } from './permissions'
+import { PERMISSION_CATEGORIES, OWNABLE_RESOURCES, SCOPED_ACTIONS } from './permissions'
 
 /**
  * Get all resources in a category.
@@ -194,4 +194,27 @@ export function setOverrideState(
   }
 
   return result
+}
+
+/** True when the row can carry an "own items only" limit: the collection records its author. */
+export function supportsScope(resource: Resource): boolean {
+  return OWNABLE_RESOURCES.includes(resource)
+}
+
+/** True when any of read/update/delete is on for the row, so the scope select is meaningful. */
+export function hasScopedAction(value: Partial<PermissionMatrix>, resource: Resource): boolean {
+  const perms = value[resource]
+  return Boolean(perms && SCOPED_ACTIONS.some((a) => perms[a]))
+}
+
+export function getScope(value: Partial<PermissionMatrix>, resource: Resource): Scope {
+  return value[resource]?.scope === 'own' ? 'own' : 'all'
+}
+
+/** Sets the ownership scope of a row. 'all' removes the key so existing role JSON stays unchanged. */
+export function setScope(value: Partial<PermissionMatrix>, resource: Resource, scope: Scope): Partial<PermissionMatrix> {
+  const perms = { ...(value[resource] ?? {}) }
+  if (scope === 'own' && supportsScope(resource)) perms.scope = 'own'
+  else delete perms.scope
+  return { ...value, [resource]: perms }
 }

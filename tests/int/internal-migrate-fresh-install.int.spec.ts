@@ -212,6 +212,22 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('creates the approval workflow tables and review step columns', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_approval_workflows')
+    expect(tables).toContain('eg_approval_workflows_steps')
+    expect(await columnsOf('eg_approval_workflows')).toEqual(expect.arrayContaining(['name', 'collection', 'active', 'submitter_roles']))
+    expect(await columnsOf('eg_approval_workflows_steps')).toEqual(expect.arrayContaining(['_order', '_parent_id', 'id', 'name', 'approver_roles', 'approvals_needed']))
+    expect(await columnsOf('eg_review_events')).toContain('step')
+    for (const live of ['eg_pages', 'eg_posts', 'eg_events', 'eg_courses', 'eg_products']) {
+      if (tables.includes(live)) expect(await columnsOf(live), live).toContain('review_step')
+      if (tables.includes(`_${live}_v`)) expect(await columnsOf(`_${live}_v`), `_${live}_v`).toContain('version_review_step')
+    }
+  })
+
   it('creates custom keys child table for integrations', () => {
     expect(tables, 'eg_integrations_custom_keys table should be created').toContain('eg_integrations_custom_keys')
   })

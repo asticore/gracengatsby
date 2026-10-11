@@ -202,6 +202,7 @@ function applyReviewFieldRules(data: Record<string, any>, originalDoc: Record<st
     data.reviewRequestedBy = null
     data.reviewRequestedAt = null
     data.reviewApprovals = []
+    data.reviewStep = 0
     return
   }
 
@@ -214,10 +215,12 @@ function applyReviewFieldRules(data: Record<string, any>, originalDoc: Record<st
   const contentChanged = stored.hash === null || stored.hash !== contentHash
 
   const next = resetOnEdit(
-    { status, requestedBy: relationId(originalDoc.reviewRequestedBy), approvals: stored.approvals },
+    { status, requestedBy: relationId(originalDoc.reviewRequestedBy), approvals: stored.approvals, step: Math.max(0, Math.floor(Number(originalDoc.reviewStep)) || 0) },
     contentChanged,
   )
   data.reviewStatus = next.status
+  // Server-owned like the rest: the stored step, or the first step again when the content changed.
+  data.reviewStep = next.step ?? 0
   data.reviewRequestedBy = next.requestedBy
   data.reviewRequestedAt = originalDoc.reviewRequestedAt ?? null
   data.reviewApprovals = serializeStoredReview({
@@ -278,7 +281,7 @@ export const publishGuard: CollectionBeforeChangeHook = async (args: unknown): P
     const effectiveStatus = data._status ?? (operation === 'update' ? originalDoc?._status : undefined)
     if (effectiveStatus === 'published') {
       const settings = await loadApprovalSettings(req.engine)
-      const reason = publishBlockMessage({ settings, collection: slug, reviewStatus: data.reviewStatus, isAdmin: false })
+      const reason = publishBlockMessage({ settings, collection: slug, reviewStatus: data.reviewStatus, reviewStep: data.reviewStep, isAdmin: false })
       if (reason) {
         await throwValidation('_status', reason)
       }
@@ -292,5 +295,6 @@ export const publishGuard: CollectionBeforeChangeHook = async (args: unknown): P
     data.reviewRequestedBy = null
     data.reviewRequestedAt = null
     data.reviewApprovals = []
+    data.reviewStep = 0
   }
 }

@@ -97,6 +97,63 @@ import { Orders } from '@/features/ecommerce/collections/Orders'
 import { Products } from '@/features/ecommerce/collections/Products'
 import { Transactions } from '@/features/ecommerce/collections/Transactions'
 import { Redirects } from '@/features/redirects/collection'
+import { ShippingZones } from '@/features/ecommerce/collections/ShippingZones'
+import { TaxRates } from '@/features/ecommerce/collections/TaxRates'
+import { Coupons } from '@/features/ecommerce/collections/Coupons'
+import { OrderRefunds } from '@/features/ecommerce/collections/OrderRefunds'
+import {
+  countShippingZones,
+  createShippingZone,
+  deleteShippingZone,
+  findShippingZoneByID,
+  findShippingZonesPaginated,
+  updateShippingZone,
+  countTaxRates,
+  createTaxRate,
+  deleteTaxRate,
+  findTaxRateByID,
+  findTaxRatesPaginated,
+  updateTaxRate,
+  countCoupons,
+  createCoupon,
+  deleteCoupon,
+  findCouponByID,
+  findCouponsPaginated,
+  updateCoupon,
+  countOrderRefunds,
+  createOrderRefund,
+  deleteOrderRefund,
+  findOrderRefundByID,
+  findOrderRefundsPaginated,
+  updateOrderRefund,
+} from '@/cms/db'
+import { ProductAttributes } from '@/features/ecommerce/collections/ProductAttributes'
+import { ProductReviews } from '@/features/ecommerce/collections/ProductReviews'
+import { ShippingClasses } from '@/features/ecommerce/collections/ShippingClasses'
+import {
+  countProductAttributes,
+  countProductReviews,
+  countShippingClasses,
+  createProductAttribute,
+  createProductReview,
+  createShippingClass,
+  deleteProductAttribute,
+  deleteProductReview,
+  deleteShippingClass,
+  findProductAttributeByID,
+  findProductAttributesPaginated,
+  findProductReviewByID,
+  findProductReviewsPaginated,
+  findShippingClassByID,
+  findShippingClassesPaginated,
+  updateProductAttribute,
+  updateProductReview,
+  updateShippingClass,
+} from '@/cms/db'
+import { AdPlacements } from '@/features/ads/collections/AdPlacements'
+import { AdUnits } from '@/features/ads/collections/AdUnits'
+import { AdSettings } from '@/features/ads/settings'
+import { countAdPlacements, countAdUnits, createAdPlacement, createAdUnit, deleteAdPlacement, deleteAdUnit, findAdPlacementByID, findAdPlacementsPaginated, findAdSettings, findAdUnitByID, findAdUnitsPaginated, updateAdPlacement, updateAdSettings, updateAdUnit } from '@/cms/db/collections/ads'
 import { ReviewEvents } from '@/features/approval/collection'
 import { ApprovalWorkflows } from '@/features/approval/workflowCollection'
 import { Roles } from '@/collections/Roles'
@@ -416,6 +473,15 @@ export const writeRegistry: {
     transactions: collectionOps(createTransaction, updateTransaction, deleteTransaction, findTransactionByID),
     'preferences': collectionOps(createPreference, updatePreference, deletePreference, findPreferenceByID),
     redirects: collectionOps(createRedirect, updateRedirect, deleteRedirect, findRedirectByID),
+    'shipping-zones': collectionOps(createShippingZone, updateShippingZone, deleteShippingZone, findShippingZoneByID),
+    'tax-rates': collectionOps(createTaxRate, updateTaxRate, deleteTaxRate, findTaxRateByID),
+    'coupons': collectionOps(createCoupon, updateCoupon, deleteCoupon, findCouponByID),
+    'order-refunds': collectionOps(createOrderRefund, updateOrderRefund, deleteOrderRefund, findOrderRefundByID),
+    'product-attributes': collectionOps(createProductAttribute, updateProductAttribute, deleteProductAttribute, findProductAttributeByID),
+    'shipping-classes': collectionOps(createShippingClass, updateShippingClass, deleteShippingClass, findShippingClassByID),
+    'product-reviews': collectionOps(createProductReview, updateProductReview, deleteProductReview, findProductReviewByID),
+    'ad-units': collectionOps(createAdUnit as never, updateAdUnit as never, deleteAdUnit, findAdUnitByID as never),
+    'ad-placements': collectionOps(createAdPlacement as never, updateAdPlacement as never, deleteAdPlacement, findAdPlacementByID as never),
     'review-events': collectionOps(createReviewEvent, updateReviewEvent, deleteReviewEvent, findReviewEventByID),
     'approval-workflows': collectionOps(createApprovalWorkflow, updateApprovalWorkflow, deleteApprovalWorkflow, findApprovalWorkflowByID),
     roles: collectionOps(createRole, updateRole, deleteRole, findRoleByID),
@@ -437,6 +503,7 @@ export const writeRegistry: {
     'backup-settings': globalOps(findBackupSettings, updateBackupSettings),
     'language-settings': globalOps(findLanguageSettings, updateLanguageSettings),
     'seo-settings': globalOps(findSeoSettings, updateSeoSettings),
+    'ad-settings': globalOps(findAdSettings as never, updateAdSettings as never),
     'speed-settings': globalOps(findSpeedSettings, updateSpeedSettings),
     'media-settings': globalOps(findMediaSettings, updateMediaSettings),
   },
@@ -481,6 +548,15 @@ export const readRegistry: ReadRegistry = {
     transactions: readEntry(Transactions, findTransactionsPaginated, findTransactionByID, countTransactions),
     'preferences': readEntry(Preferences, findPreferencesPaginated, findPreferenceByID, countPreferences),
     redirects: readEntry(Redirects, findRedirectsPaginated, findRedirectByID, countRedirects),
+    'shipping-zones': readEntry(ShippingZones, findShippingZonesPaginated, findShippingZoneByID, countShippingZones),
+    'tax-rates': readEntry(TaxRates, findTaxRatesPaginated, findTaxRateByID, countTaxRates),
+    'coupons': readEntry(Coupons, findCouponsPaginated, findCouponByID, countCoupons),
+    'order-refunds': readEntry(OrderRefunds, findOrderRefundsPaginated, findOrderRefundByID, countOrderRefunds),
+    'product-attributes': readEntry(ProductAttributes, findProductAttributesPaginated, findProductAttributeByID, countProductAttributes),
+    'shipping-classes': readEntry(ShippingClasses, findShippingClassesPaginated, findShippingClassByID, countShippingClasses),
+    'product-reviews': readEntry(ProductReviews, findProductReviewsPaginated, findProductReviewByID, countProductReviews),
+    'ad-units': readEntry(AdUnits, findAdUnitsPaginated as never, findAdUnitByID as never, countAdUnits),
+    'ad-placements': readEntry(AdPlacements, findAdPlacementsPaginated as never, findAdPlacementByID as never, countAdPlacements),
     'review-events': readEntry(ReviewEvents, findReviewEventsPaginated, findReviewEventByID, countReviewEvents),
     'approval-workflows': readEntry(ApprovalWorkflows, findApprovalWorkflowsPaginated, findApprovalWorkflowByID, countApprovalWorkflows),
     roles: readEntry(Roles, findRolesPaginated, findRoleByID, countRoles),
@@ -504,6 +580,7 @@ export const readRegistry: ReadRegistry = {
     'seo-settings': globalReadEntry(SeoSettings, findSeoSettings),
     'speed-settings': globalReadEntry(SpeedSettings, findSpeedSettings),
     'media-settings': globalReadEntry(MediaSettings, findMediaSettings),
+    'ad-settings': globalReadEntry(AdSettings, findAdSettings as never),
   },
 }
 
@@ -537,6 +614,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ReviewEvents, ApprovalWorkflows, Roles]
+export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements]
 
-export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings]
+export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

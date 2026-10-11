@@ -9,6 +9,7 @@ import { MediaPicker } from '@/views/visualEditor/MediaPicker'
 import { mergeTagFor, type MergeTagMode, type MergeTagParent } from '@/features/customFields/mergeTagHint'
 import '@/features/customFields/admin/field-help.css'
 
+import { RepeaterImport, TemplateLink } from './SpreadsheetImport'
 import type { CustomFieldDef, FlexibleLayout } from './types'
 
 /**
@@ -406,7 +407,7 @@ function RepeaterInput({ def, value, onChange, idPrefix }: { def: CustomFieldDef
           />
         </div>
       ))}
-      <div>
+      <div className="flex flex-wrap items-center gap-[8px]">
         <button
           type="button"
           className={btnClassName}
@@ -415,7 +416,11 @@ function RepeaterInput({ def, value, onChange, idPrefix }: { def: CustomFieldDef
         >
           Add row
         </button>
+        <RepeaterImport def={def} rows={rows} onApply={(next) => set(next)} />
       </div>
+      <p className={helpClassName}>
+        Fill many rows at once from a spreadsheet: <TemplateLink def={def} />, fill it in, then import it.
+      </p>
     </div>
   )
 }

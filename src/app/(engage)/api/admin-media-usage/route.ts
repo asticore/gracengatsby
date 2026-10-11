@@ -27,6 +27,7 @@ export async function GET(request: Request): Promise<Response> {
     url: typeof doc.url === 'string' ? doc.url : null,
     filename: doc.filename,
     mimeType: doc.mimeType,
+    filesize: doc.filesize,
     width: doc.width,
     height: doc.height,
     alt: typeof doc.alt === 'string' ? doc.alt : '',

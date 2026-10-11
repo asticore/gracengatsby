@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/admin/auth'
+import { assertDocAccess, docAccessDenied } from '@/features/roles/docAccess'
 import { signPreviewToken } from '@/utilities/previewToken'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,9 @@ export async function GET(request: Request): Promise<Response> {
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
     }
+
+    const access = await assertDocAccess(context, collection, id, 'read')
+    if (!access.ok) return docAccessDenied(access)
 
     // Sign the token
     const ttlSeconds = 3600

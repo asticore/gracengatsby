@@ -180,6 +180,18 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
       if (ref.type === 'view') {
         if (!ref.href) continue
 
+        // The Ads screens only exist while the Ads feature is on.
+        if (ref.slug.startsWith('ads-') && !flags.ads) continue
+
+        // The Ads overview and report need the matching read permission.
+        if (!isAdmin && can) {
+          if (ref.slug === 'ads-overview' && !can('ad-units', 'read')) continue
+          if (ref.slug === 'ads-report' && !can('ad-reports', 'read')) continue
+        }
+
+        // The Roles screen redirects anyone who is not an admin, so its link is admin-only too.
+        if (ref.slug === 'roles' && !isAdmin) continue
+
         // For settings pages (slug starts with 'settings-'), check permissions
         // using the can() function for non-admin users
         if (ref.slug.startsWith('settings-') && !isAdmin && can) {

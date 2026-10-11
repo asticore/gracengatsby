@@ -7,14 +7,28 @@ export type ReviewHistoryRow = {
   id: number | string
   action: 'submitted' | 'approved' | 'changes_requested' | 'comment' | 'published' | 'withdrawn'
   note: string | null
+  /** The workflow step this event belongs to, when a workflow was active. */
+  step?: string | null
   actorName: string | null
   createdAt: string | null
+}
+
+export type ReviewWorkflowInfo = {
+  id: number
+  name: string
+  stepCount: number
+  step: { index: number; name: string; approverRoles: string[]; approvalsNeeded: number; total: number } | null
+  /** "Step 2 of 3 (Legal review), waiting on Legal." Only while in review. */
+  awaiting: string | null
 }
 
 export type ReviewState = {
   enabled: boolean
   status: 'none' | 'in_review' | 'changes_requested' | 'approved'
+  /** Approvals the current step needs (the global count when there is no workflow). */
   requiredApprovals: number
+  /** The active approval workflow for this content type, with the step now awaited. */
+  workflow?: ReviewWorkflowInfo | null
   requestedBy: { id: number; name: string } | null
   requestedAt: string | null
   approvals: Array<{ userId: number; name: string; at: string }>

@@ -3,6 +3,7 @@
 import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
 import { EditForm } from './EditForm'
+import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
 import { resolveActiveTab, type SettingsPage, type LinkSection } from '@/admin/settingsPages'
 import '@/app/(engage)/settings-tabs.css'
 
@@ -92,6 +93,12 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
       <div className="settings-page__header">
         <h1 className="settings-page__title">{page.title}</h1>
         <p className="settings-page__description">{page.description}</p>
+        {/* One bar for every card on the page, above the box (outside it). */}
+        {globalSections.length > 0 && (
+          <div className="settings-page__actions">
+            <CollapseAllBar />
+          </div>
+        )}
       </div>
 
       {/* Global sections: one box, tabs on top (when 2+), the active panel below */}
@@ -142,7 +149,7 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
                   tabIndex={showTabs ? 0 : undefined}
                   className="settings-tabs__panel"
                 >
-                  <EditForm doc={section.doc} fields={section.fields} globalSlug={section.slug} />
+                  <EditForm doc={section.doc} fields={section.fields} globalSlug={section.slug} hideCollapseBar />
                 </div>
               )
             })}

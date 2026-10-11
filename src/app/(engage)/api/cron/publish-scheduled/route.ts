@@ -60,6 +60,14 @@ async function handleCronRequest(request: Request): Promise<Response> {
     const nowIso = new Date().toISOString()
     const result = await runDueSchedules(engine, db, nowIso)
 
+    // Abandoned-cart reminders (does nothing unless switched on in Shop settings).
+    try {
+      const { runAbandonedCartReminders } = await import('@/features/ecommerce/server/abandoned')
+      await runAbandonedCartReminders(engine as never)
+    } catch (error) {
+      console.error('cron abandoned-cart error:', error)
+    }
+
     return NextResponse.json(result, {
       status: 200,
       headers: { 'Cache-Control': 'no-store' },

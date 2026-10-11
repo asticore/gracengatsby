@@ -38,6 +38,35 @@ interface RolesViewClientProps {
 
 type RolesTab = 'permissions' | 'workflows'
 
+/*
+ * Inline on purpose: the tab bar must read as tabs even when the stylesheet
+ * loses a cascade fight with the admin theme. Colours come from the
+ * --rw-* tokens that roles-workflows.css defines for light and dark.
+ */
+const TAB_BAR_STYLE: React.CSSProperties = {
+  display: 'flex',
+  gap: 4,
+  margin: '0 0 1.5rem',
+  borderBottom: '1px solid var(--rw-border, #e4e4e7)',
+}
+
+function tabStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '0.6rem 1rem',
+    margin: '0 0 -1px',
+    border: '1px solid transparent',
+    borderBottom: `3px solid ${active ? 'var(--rw-accent, #2563eb)' : 'transparent'}`,
+    borderRadius: '4px 4px 0 0',
+    background: 'transparent',
+    color: active ? 'var(--rw-accent, #2563eb)' : 'inherit',
+    font: 'inherit',
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  }
+}
+
 /**
  * Roles admin view client: list, select, create, edit matrix, save, delete.
  */
@@ -237,11 +266,11 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
         <p>Manage role permissions with a matrix grid, and set up approval workflows.</p>
       </div>
 
-      <div className="rw-tabs" role="tablist" aria-label="Roles sections">
-        <button type="button" role="tab" id="roles-tab-permissions" aria-selected={tab === 'permissions'} aria-controls="roles-panel-permissions" className="rw-tab" onClick={() => setTab('permissions')}>
+      <div className="rw-tabs" role="tablist" aria-label="Roles sections" style={TAB_BAR_STYLE}>
+        <button type="button" role="tab" id="roles-tab-permissions" aria-selected={tab === 'permissions'} aria-controls="roles-panel-permissions" className="rw-tab" style={tabStyle(tab === 'permissions')} onClick={() => setTab('permissions')}>
           Permissions
         </button>
-        <button type="button" role="tab" id="roles-tab-workflows" aria-selected={tab === 'workflows'} aria-controls="roles-panel-workflows" className="rw-tab" onClick={() => setTab('workflows')}>
+        <button type="button" role="tab" id="roles-tab-workflows" aria-selected={tab === 'workflows'} aria-controls="roles-panel-workflows" className="rw-tab" style={tabStyle(tab === 'workflows')} onClick={() => setTab('workflows')}>
           Approval workflows
         </button>
       </div>

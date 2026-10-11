@@ -1,7 +1,7 @@
 import { ShopSettings } from '@/globals/ShopSettings'
 
 import { createGlobalOps } from '../generic'
-import { shopSettings, shopSettingsBlockTypes, shopSettingsRels, shopSettingsRelsTargetColumns } from '../schema'
+import { shopSettings, shopSettingsBlockTypes, shopSettingsCheckoutFields, shopSettingsGroupFields, shopSettingsRels, shopSettingsRelsTargetColumns } from '../schema'
 
 /**
  * One `introBlocks` block instance as the original engine's own API returns it - same
@@ -24,11 +24,16 @@ export type ShopSettingsDoc = {
   showRelatedProducts?: boolean | null
   showShortDescriptionOnCard?: boolean | null
   productImageAspect?: string | null
+  tax?: Record<string, unknown> | null
+  emails?: Record<string, unknown> | null
+  abandonedCart?: Record<string, unknown> | null
+  checkoutFields?: Record<string, unknown>[] | null
   updatedAt: string
   createdAt: string
 }
 
-const ops = createGlobalOps(shopSettings, ShopSettings, {}, {
+const ops = createGlobalOps(shopSettings, ShopSettings, { checkoutFields: shopSettingsCheckoutFields }, {
+  groupFields: shopSettingsGroupFields,
   relsTable: { table: shopSettingsRels, targetColumns: shopSettingsRelsTargetColumns },
   blocksFields: { introBlocks: { blockTypes: shopSettingsBlockTypes } },
 })

@@ -23,6 +23,11 @@
   color: var(--theme-elevation-600);
 }
 
+/* Collapse all / Expand all bar: right aligned above the box (the bar itself is flex-end). */
+.settings-page__actions {
+  margin-top: 16px;
+}
+
 
 
 /* Global sections */

@@ -55,7 +55,8 @@ export const Integrations: GlobalConfig = {
     {
       type: 'group',
       name: 'google',
-      label: 'Google',
+      label: 'Google (Analytics, Tag Manager, Maps)',
+      admin: { description: 'Measurement IDs and keys for Google services. Tags only load once the visitor agrees, see Cookie consent.' },
       fields: [
         {
           name: 'ga4MeasurementId',
@@ -96,7 +97,8 @@ export const Integrations: GlobalConfig = {
     {
       type: 'group',
       name: 'recaptcha',
-      label: 'reCAPTCHA',
+      label: 'reCAPTCHA (form spam protection)',
+      admin: { description: 'Protects public forms from bots. The secret key is stored encrypted.' },
       fields: [
         {
           name: 'version',
@@ -136,7 +138,8 @@ export const Integrations: GlobalConfig = {
     {
       type: 'group',
       name: 'clarity',
-      label: 'Microsoft Clarity',
+      label: 'Microsoft Clarity (session recordings)',
+      admin: { description: 'Heatmaps and session recordings. Loads only after analytics consent.' },
       fields: [
         {
           name: 'projectId',
@@ -149,7 +152,8 @@ export const Integrations: GlobalConfig = {
     {
       type: 'group',
       name: 'metaPixel',
-      label: 'Meta Pixel',
+      label: 'Meta Pixel (Facebook and Instagram ads)',
+      admin: { description: 'Ad conversion tracking. Loads only after marketing consent.' },
       fields: [
         {
           name: 'pixelId',
@@ -162,7 +166,8 @@ export const Integrations: GlobalConfig = {
     {
       type: 'group',
       name: 'cloudflare',
-      label: 'Cloudflare',
+      label: 'Cloudflare (cache purge)',
+      admin: { description: 'Lets the site clear Cloudflare\'s cache when you publish.' },
       fields: [
         {
           name: 'zoneId',
@@ -206,6 +211,11 @@ export const Integrations: GlobalConfig = {
       name: 'consent',
       label: 'Cookie consent',
       admin: {
+        // Edited on its own page (Settings > Cookie consent, /admin/cookie-consent), so it is
+        // hidden from this form. A hidden group still loads and still saves unchanged with the
+        // rest of the form (EditForm builds its state from every field). The Cookie consent
+        // view clears this flag on its own copy of the fields.
+        hidden: true,
         description:
           'The cookie banner and the gate in front of analytics, marketing tags and custom scripts. Changing the policy version asks every visitor again.',
       },
@@ -244,6 +254,22 @@ export const Integrations: GlobalConfig = {
         { name: 'rejectLabel', type: 'text', label: 'Reject all button label' },
         { name: 'customiseLabel', type: 'text', label: 'Customise button label' },
         { name: 'saveLabel', type: 'text', label: 'Save choices button label' },
+        {
+          name: 'showRejectButton',
+          type: 'checkbox',
+          label: 'Show the Reject all button',
+          defaultValue: true,
+          admin: { description: 'Some regulators expect refusing to be as easy as accepting. Switch off only if your advice says so.' },
+        },
+        { name: 'privacyPolicyLabel', type: 'text', label: 'Privacy policy link text' },
+        { name: 'necessaryLabel', type: 'text', label: 'Necessary category name' },
+        { name: 'necessaryDescription', type: 'textarea', label: 'Necessary category description' },
+        { name: 'preferencesLabel', type: 'text', label: 'Preferences category name' },
+        { name: 'preferencesDescription', type: 'textarea', label: 'Preferences category description' },
+        { name: 'analyticsLabel', type: 'text', label: 'Analytics category name' },
+        { name: 'analyticsDescription', type: 'textarea', label: 'Analytics category description' },
+        { name: 'marketingLabel', type: 'text', label: 'Marketing category name' },
+        { name: 'marketingDescription', type: 'textarea', label: 'Marketing category description' },
         {
           name: 'position',
           type: 'select',
@@ -284,6 +310,35 @@ export const Integrations: GlobalConfig = {
           type: 'text',
           label: 'Button colour',
           admin: { components: { Field: '@/admin/components/ColorPickerField#ColorPickerField' } },
+        },
+        {
+          name: 'accentColor',
+          type: 'text',
+          label: 'Accent colour (switches and focus ring)',
+          admin: { components: { Field: '@/admin/components/ColorPickerField#ColorPickerField' } },
+        },
+        {
+          name: 'borderRadius',
+          type: 'number',
+          label: 'Corner radius (px)',
+          min: 0,
+          max: 32,
+          admin: { description: 'Rounds the banner, dialog and buttons. Leave blank for the default look.' },
+        },
+        {
+          name: 'fontSize',
+          type: 'number',
+          label: 'Text size (px)',
+          min: 12,
+          max: 20,
+          admin: { description: 'Leave blank for 14.' },
+        },
+        { name: 'showLogo', type: 'checkbox', label: 'Show a logo in the banner' },
+        {
+          name: 'logoUrl',
+          type: 'text',
+          label: 'Logo image URL',
+          admin: { description: 'Use a path like /api/media/file/logo.png (a file in the media library). Only used when the logo is switched on.' },
         },
         { name: 'privacyPolicyUrl', type: 'text', label: 'Privacy policy URL' },
         { name: 'cookieSettingsLabel', type: 'text', label: 'Cookie settings link label' },
@@ -362,8 +417,8 @@ export const Integrations: GlobalConfig = {
     {
       type: 'group',
       name: 'custom',
-      label: 'Custom Keys',
-      admin: { description: 'Add your own API keys and credentials.' },
+      label: 'Custom keys',
+      admin: { description: 'Your own API keys and credentials, for custom code and integrations.' },
       fields: [
         {
           name: 'keys',

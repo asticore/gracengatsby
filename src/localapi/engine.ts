@@ -102,6 +102,7 @@ import { count as readCount, find as readFind, findByID as readFindByID, findGlo
 import { deleteMediaObject } from './storage'
 import { prepareUploadFile, storePreparedUpload, type PreparedUpload } from '@/features/media/uploadHook'
 import { generateUploadFields, type UploadFile } from './uploads'
+import { attachCustomRole } from '@/features/roles/customRoleCache'
 
 import { findUserAuthRowByID, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db'
 import { getDb } from '@/cms/db/connect'
@@ -384,7 +385,11 @@ export function createEngine(): Engine {
     },
     resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret }),
     forgotPassword: (args) => authForgotPassword(authDb, { email: args.data.email.trim().toLowerCase(), expirationMs: args.expiration ?? 60 * 60 * 1000 }),
-    auth: (args) => verifyAuth(authDb, { headers: args.headers, secret }),
+    auth: async (args) => {
+      const result = await verifyAuth(authDb, { headers: args.headers, secret })
+      // Access functions are synchronous: carry the user's custom role matrix on the session user.
+      return { ...result, user: await attachCustomRole(engine as never, result.user as never) } as typeof result
+    },
     logout: (args) => authLogout(authDb, { headers: args.headers, secret, allSessions: args.allSessions }),
     refreshToken: (args) => authRefreshToken(authDb, { headers: args.headers, secret }),
     unlock: (args) => authUnlockUser(authDb, { email: args.data.email }),

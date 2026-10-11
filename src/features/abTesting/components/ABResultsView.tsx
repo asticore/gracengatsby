@@ -109,6 +109,36 @@ const TestCard: React.FC<{ test: ActiveTest; status: string; goals: GoalResult[]
   </section>
 )
 
+/**
+ * One test's results card, for embedding in that test's own edit page (its
+ * Results tab). Same numbers and the same card as the cross-test screen above.
+ * Server-rendered: the rollup is a handful of rows for this one test.
+ */
+export async function ABTestResultsPanel({ testId }: { testId: number | string }): Promise<React.ReactElement> {
+  const engine = await getEngine()
+  const enabled = await abTestingEnabled(engine)
+
+  const doc = await engine
+    .findByID({ collection: AB_TESTS_SLUG as CollectionSlug, id: testId as number, depth: 0, overrideAccess: true })
+    .catch((): null => null)
+  if (!doc) return <p className={mutedClassName}>This test could not be found.</p>
+
+  const raw = doc as Record<string, unknown>
+  const test = toActiveTest(raw)
+  const goals = buildResults(test, await readStats(test.id))
+
+  return (
+    <div className="py-[var(--base,1rem)]">
+      {!enabled && (
+        <p className={`mx-0 mt-0 mb-[1rem] max-w-[44rem] ${mutedClassName}`}>
+          A/B testing is currently switched off in Site Settings, so nothing new is being recorded.
+        </p>
+      )}
+      <TestCard test={test} status={String(raw.status ?? 'draft')} goals={goals} />
+    </div>
+  )
+}
+
 export const ABResultsView: React.FC<AdminViewServerProps> = async () => {
   const engine = await getEngine()
   const enabled = await abTestingEnabled(engine)

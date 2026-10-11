@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import type { ListState, ColumnDef, ListFilter } from '@/admin/list/listQuery'
 import { serializeListState } from '@/admin/list/listQuery'
+import { ProductsCsvActions } from '@/features/ecommerce/admin/ProductsCsvActions'
 
 interface ListToolbarProps {
   collectionSlug: string
@@ -338,6 +339,7 @@ export function ListToolbar({
       {collectionSlug === 'redirects' && (
         <RedirectsToolbarActions />
       )}
+      {collectionSlug === 'products' && <ProductsCsvActions />}
     </div>
   )
 }

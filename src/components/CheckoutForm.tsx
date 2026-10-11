@@ -4,13 +4,24 @@ import { useAddresses, useCart, usePayments } from '@/engine/commerce/react'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { loadStripe, type Stripe } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
+
+import { CheckoutExtras, type CheckoutInput } from '@/components/CheckoutExtras'
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
 
 type InitiatePaymentResult = {
   clientSecret?: string
   message?: string
+}
+
+function readStoredCart(): { id: number; secret: string } | null {
+  try {
+    const raw = window.localStorage.getItem('gracengatsby-cart')
+    return raw ? (JSON.parse(raw) as { id: number; secret: string }) : null
+  } catch {
+    return null
+  }
 }
 
 const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
@@ -23,6 +34,14 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const [extras, setExtras] = useState<CheckoutInput | null>(null)
+  const [extrasReady, setExtrasReady] = useState(false)
+  const onExtras = useCallback((v: CheckoutInput, ready: boolean) => {
+    setExtras(v)
+    setExtrasReady(ready)
+  }, [])
+  const cartRef = useMemo(() => (cart?.id && cart.secret ? { id: cart.id, secret: String(cart.secret) } : readStoredCart()), [cart])
 
   const hasItems = (cart?.items?.length || 0) > 0
 
@@ -38,9 +57,12 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
     try {
       const result = (await initiatePayment('stripe', {
         additionalData: {
-          billingAddress: addresses?.[0],
+          billingAddress: extras?.address ?? addresses?.[0],
           customerEmail: email,
-          shippingAddress: addresses?.[0],
+          shippingAddress: extras?.address ?? addresses?.[0],
+          couponCode: extras?.couponCode,
+          shippingOptionId: extras?.shippingOptionId,
+          checkoutFields: extras?.checkoutFields,
         },
       })) as InitiatePaymentResult
 
@@ -111,8 +133,9 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
             className="border border-[var(--color-line)] bg-[var(--color-cream)] p-3 font-[family-name:var(--font-body)] text-base"
           />
         </label>
+        <CheckoutExtras cartRef={cartRef} email={email} onChange={onExtras} />
         {error && <p className="form-error">{error}</p>}
-        <button type="submit" className="btn btn--primary" disabled={isLoading}>
+        <button type="submit" className="btn btn--primary" disabled={isLoading || !extrasReady}>
           {isLoading ? 'Preparing checkout…' : 'Continue to payment'}
         </button>
       </form>

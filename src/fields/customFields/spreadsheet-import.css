@@ -1,0 +1,215 @@
+/* Import dialogs for CSV / Excel (repeater rows and header-row field creation). */
+
+.ssi-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 20, 30, 0.55);
+}
+
+.ssi-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(780px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  border: 1px solid var(--theme-elevation-150, #d6d2e0);
+  border-radius: 8px;
+  background: var(--theme-bg, #fff);
+  color: var(--theme-text, #1d1d24);
+  padding: 18px;
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.ssi-dialog:focus {
+  outline: none;
+}
+
+.ssi-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ssi-note {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.ssi-error {
+  margin: 0;
+  border: 1px solid #b3453a;
+  border-radius: 5px;
+  padding: 8px;
+  font-size: 12px;
+  color: #b3453a;
+}
+
+.ssi-warn {
+  margin: 0;
+  font-size: 12px;
+  color: #8a5a00;
+}
+
+.ssi-scroll {
+  overflow: auto;
+  border: 1px solid var(--theme-elevation-150, #d6d2e0);
+  border-radius: 5px;
+}
+
+.ssi-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+
+.ssi-table th,
+.ssi-table td {
+  border-bottom: 1px solid var(--theme-elevation-100, #e6e3ee);
+  padding: 4px 8px;
+  text-align: left;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ssi-table th {
+  background: var(--theme-elevation-50, #f5f4f9);
+  font-weight: 600;
+}
+
+.ssi-map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.ssi-input,
+.ssi-select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--theme-elevation-150, #cac7d1);
+  border-radius: 5px;
+  background: var(--theme-input-bg, #fff);
+  padding: 5px 8px;
+  font: inherit;
+  color: inherit;
+}
+
+.ssi-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ssi-btn {
+  cursor: pointer;
+  border: 1px solid var(--theme-elevation-150, #cac7d1);
+  border-radius: 5px;
+  background: transparent;
+  padding: 6px 12px;
+  font: inherit;
+  color: inherit;
+}
+
+.ssi-btn:hover:not(:disabled) {
+  border-color: #2e3192;
+}
+
+.ssi-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ssi-btn--primary {
+  border-color: #2e3192;
+  background: #2e3192;
+  color: #fff;
+}
+
+.ssi-skipped {
+  margin: 0;
+  max-height: 140px;
+  overflow: auto;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.ssi-link {
+  color: #2e3192;
+  text-decoration: underline;
+}
+
+.ssi-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.ssi-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme='dark'] .ssi-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme='dark'] .ssi-dialog {
+  background: var(--theme-bg, #1c1c22);
+  color: var(--theme-text, #ececf1);
+  border-color: var(--theme-elevation-150, #3a3a46);
+}
+
+[data-theme='dark'] .ssi-table th {
+  background: var(--theme-elevation-100, #2a2a33);
+}
+
+[data-theme='dark'] .ssi-table th,
+[data-theme='dark'] .ssi-table td,
+[data-theme='dark'] .ssi-scroll {
+  border-color: var(--theme-elevation-150, #3a3a46);
+}
+
+[data-theme='dark'] .ssi-input,
+[data-theme='dark'] .ssi-select {
+  background: var(--theme-input-bg, #24242c);
+  border-color: var(--theme-elevation-150, #3a3a46);
+}
+
+[data-theme='dark'] .ssi-error {
+  color: #ff8b7f;
+  border-color: #ff8b7f;
+}
+
+[data-theme='dark'] .ssi-warn {
+  color: #e8b44a;
+}
+
+[data-theme='dark'] .ssi-link {
+  color: #9aa0ff;
+}
+
+[data-theme='dark'] .ssi-btn--primary {
+  background: #4a4fd0;
+  border-color: #4a4fd0;
+}
+
+@media (max-width: 560px) {
+  .ssi-map {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

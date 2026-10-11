@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { ProductCard } from '@/components/ProductCard'
+import { availableFilterOptions, filterHref, matchesAttributeFilters, parseAttributeFilters } from '@/features/ecommerce/filters'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -25,14 +26,16 @@ const CATEGORIES = [
   { label: 'Gifting', value: 'gifting' },
 ]
 
-export default async function ShopPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+export default async function ShopPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const flags = await getFeatureFlags()
   if (!flags.ecommerce) notFound()
 
-  const { category } = await searchParams
+  const params = await searchParams
+  const category = typeof params.category === 'string' ? params.category.slice(0, 40) : undefined
+  const filters = parseAttributeFilters(params)
   const engine = await getEngine()
 
-  const [settings, { docs: products }] = (await Promise.all([
+  const [settings, { docs: scanned }] = (await Promise.all([
     engine.findGlobal({ slug: 'shop-settings' }).catch((): null => null),
     engine.find({
       collection: 'products',
@@ -40,9 +43,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         and: [{ _status: { equals: 'published' } }, ...(category ? [{ category: { equals: category } }] : [])],
       },
       sort: '-createdAt',
-      limit: 100,
+      // Filters are applied to this bounded scan of published products.
+      limit: 300,
     }),
   ])) as unknown as [ShopSetting | null, { docs: Product[] }]
+  const products = scanned.filter((product) => matchesAttributeFilters(product as never, filters)).slice(0, 100)
+  const filterOptions = availableFilterOptions(scanned as never[])
 
   const layout = settings?.archiveLayout || 'grid-4'
   const context = await getSeoContext()
@@ -92,6 +98,21 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             >
               {cat.label}
             </Link>
+          ))}
+        </div>
+      )}
+
+      {filterOptions.length > 0 && (
+        <div className="mb-8 grid gap-3 text-[0.8rem]">
+          {filterOptions.map((option) => (
+            <div key={option.name} className="flex flex-wrap items-center gap-3">
+              <span className="uppercase tracking-[0.06em] opacity-70">{option.name}</span>
+              {option.values.map((value) => (
+                <Link key={value} href={filterHref({ category }, filters, { name: option.name, value })} className={filterLinkClassName(filters[option.name]?.toLowerCase() === value.toLowerCase())}>
+                  {value}
+                </Link>
+              ))}
+            </div>
           ))}
         </div>
       )}

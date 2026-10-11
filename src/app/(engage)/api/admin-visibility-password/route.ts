@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/admin/auth'
+import { assertDocAccess, docAccessDenied } from '@/features/roles/docAccess'
 import { getDb } from '@/cms/db/connect'
 import { getPasswordHash, setPasswordHash, clearPassword } from '@/cms/db/contentPasswords'
 import { hashPassword } from '@/features/visibility/password'
@@ -59,6 +60,9 @@ async function handleGet(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
 
+  const access = await assertDocAccess(context, collection, id, 'read')
+  if (!access.ok) return docAccessDenied(access)
+
   try {
     const db = await getDb()
     const hash = await getPasswordHash(db, collection, id)
@@ -102,6 +106,9 @@ async function handlePost(request: Request): Promise<Response> {
     return NextResponse.json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` }, { status: 400 })
   }
 
+  const access = await assertDocAccess(context, collection, id, 'update')
+  if (!access.ok) return docAccessDenied(access)
+
   try {
     const hash = await hashPassword(password)
     const db = await getDb()
@@ -136,6 +143,9 @@ async function handleDelete(request: Request): Promise<Response> {
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
+
+  const access = await assertDocAccess(context, collection, id, 'update')
+  if (!access.ok) return docAccessDenied(access)
 
   try {
     const db = await getDb()

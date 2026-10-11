@@ -37,11 +37,15 @@ describe('navStructure', () => {
       'settings-data-system',
     ]
 
-    const actualSlugs = settingsGroup?.entities.map((e) => e.slug) || []
+    const viewEntities = (settingsGroup?.entities || []).filter((e) => e.type === 'view')
+    const actualSlugs = viewEntities.map((e) => e.slug)
     expect(actualSlugs).toEqual(expectedSlugs)
 
-    // All should be type 'view'
-    for (const entity of settingsGroup?.entities || []) {
+    // roles is the collection entry that follows the eight settings views
+    expect(settingsGroup?.entities.at(-1)).toEqual({ slug: 'roles', type: 'collections' })
+
+    // All settings views should be type 'view'
+    for (const entity of viewEntities) {
       expect(entity.type).toBe('view')
       expect(entity.href).toBeDefined()
       expect(entity.label).toBeDefined()
@@ -50,7 +54,7 @@ describe('navStructure', () => {
 
   it('Settings group entries should have correct hrefs and labels', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
-    const entries = settingsGroup?.entities || []
+    const entries = (settingsGroup?.entities || []).filter((e) => e.type === 'view')
 
     const expectedMapping: Record<string, { href: string; label: string }> = {
       'settings-site': { href: '/settings/site', label: 'Site' },

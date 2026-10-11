@@ -13,6 +13,11 @@
 
 export * from './collections/faqs'
 export * from './collections/redirects'
+export * from './collections/shippingZones'
+export * from './collections/taxRates'
+export * from './collections/coupons'
+export * from './collections/orderRefunds'
+export * from './collections/shopCatalogue'
 export * from './collections/reviewEvents'
 export * from './collections/approvalWorkflows'
 export * from './collections/media'

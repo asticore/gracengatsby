@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET: The current user's collapsed option cards on the edit screen.
- * Returns: { closed: string[] }
+ * Returns: { open: string[] }
  */
 export async function GET(): Promise<Response> {
   try {
@@ -26,8 +26,8 @@ export async function GET(): Promise<Response> {
 
 /**
  * POST: Replace the current user's collapsed option cards.
- * Body: { closed: string[] }
- * Returns: { ok: true, closed: string[] }
+ * Body: { open: string[] }
+ * Returns: { ok: true, open: string[] }
  */
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -46,7 +46,7 @@ export async function POST(request: Request): Promise<Response> {
 
     const saved = await saveEditPrefs(context.engine, context.user, body)
 
-    return NextResponse.json({ ok: true, closed: saved.closed }, { status: 200 })
+    return NextResponse.json({ ok: true, open: saved.open }, { status: 200 })
   } catch (error) {
     console.error('admin-edit-prefs POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

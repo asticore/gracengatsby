@@ -1,15 +1,17 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { createContext, useContext, useState } from 'react'
 import { useField } from '@/engine/ui'
 
-import { CustomFieldInput } from '@/fields/customFields/CustomFieldInput'
+import { CustomFieldInput, MergeTagHint } from '@/fields/customFields/CustomFieldInput'
 import { CONDITION_OPERATORS, CUSTOM_FIELD_TYPES, type ConditionRule, type CustomFieldDef, type CustomFieldType, type FlexibleLayout } from '@/fields/customFields/types'
+import type { MergeTagMode, MergeTagParent } from '../mergeTagHint'
 
-import { findDuplicateNames, MAX_FIELD_DEPTH, rawDefinitionList } from '../normalize'
+import { findDuplicateNames, MAX_FIELD_DEPTH, rawDefinitionList, rawLocationGroups } from '../normalize'
+import './field-help.css'
 
 /**
- * The Fields builder on a Field Group. Edits the group's `definition` JSON
+ * The Fields builder on an extra fields set. Edits the set's `definition` JSON
  * (a list of CustomFieldDef) and previews each field as it will render.
  *
  * Nested sub-fields (group, repeater, flexible layouts) are edited with the same
@@ -40,9 +42,12 @@ const TYPE_LABELS: Record<CustomFieldType, string> = {
   oembed: 'Embed (video / audio)',
   map: 'Map location',
   group: 'Group',
-  repeater: 'Repeater',
-  flexible: 'Flexible content',
+  repeater: 'Repeating rows (table)',
+  flexible: 'Flexible layouts',
 }
+
+/** Whether the set sits on an options page (and which one), so each field's merge tag is right. */
+const TagModeContext = createContext<{ mode: MergeTagMode; optionsSlug: string | null }>({ mode: 'document', optionsSlug: null })
 
 const TEXT_LIKE = new Set<CustomFieldType>(['text', 'textarea', 'wysiwyg', 'url', 'email', 'phone'])
 const CHOICE = new Set<CustomFieldType>(['select', 'radio', 'button-group'])
@@ -159,6 +164,7 @@ function FieldEditor({
   def,
   list,
   depth,
+  parents,
   onChange,
   onRemove,
   onMove,
@@ -168,6 +174,8 @@ function FieldEditor({
   def: CustomFieldDef
   list: CustomFieldDef[]
   depth: number
+  /** Enclosing fields, outermost first. Used for the merge tag. */
+  parents: MergeTagParent[]
   onChange: (next: CustomFieldDef) => void
   onRemove: () => void
   onMove: (delta: -1 | 1) => void
@@ -175,6 +183,7 @@ function FieldEditor({
   canDown: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const tagMode = useContext(TagModeContext)
   const set = (patch: Partial<CustomFieldDef>) => onChange({ ...def, ...patch })
   const nestable = depth < MAX_FIELD_DEPTH
   const type = def.type
@@ -186,6 +195,7 @@ function FieldEditor({
           {open ? '▾' : '▸'}
         </button>
         <strong className="text-[13px]">{def.label || def.name}</strong>
+        {def.name && <MergeTagHint name={def.name} type={type} parentPath={parents} mode={tagMode.mode} optionsSlug={tagMode.optionsSlug} />}
         <span className="text-[11px] opacity-60">
           {TYPE_LABELS[type]} · {def.name}
           {def.required ? ' · required' : ''}
@@ -348,11 +358,17 @@ function FieldEditor({
           )}
 
           {(type === 'group' || type === 'repeater') && nestable && (
-            <SubList title={type === 'group' ? 'Group fields' : 'Row fields'} defs={def.subFields ?? []} depth={depth + 1} onChange={(subFields) => set({ subFields })} />
+            <SubList
+              title={type === 'group' ? 'Fields inside this group' : 'Columns (sub fields)'}
+              defs={def.subFields ?? []}
+              depth={depth + 1}
+              parents={[...parents, { name: def.name, type }]}
+              onChange={(subFields) => set({ subFields })}
+            />
           )}
 
           {type === 'flexible' && nestable && (
-            <LayoutsEditor layouts={def.layouts ?? []} depth={depth + 1} onChange={(layouts) => set({ layouts })} />
+            <LayoutsEditor layouts={def.layouts ?? []} depth={depth + 1} parents={[...parents, { name: def.name, type }]} onChange={(layouts) => set({ layouts })} />
           )}
 
           <ConditionEditor def={def} list={list} onChange={(conditions) => set({ conditions })} />
@@ -414,17 +430,30 @@ function OptionsEditor({ def, onChange }: { def: CustomFieldDef; onChange: (patc
 }
 
 /** A list of fields (top-level, group sub-fields or repeater row fields). */
-function SubList({ title, defs, depth, onChange }: { title: string; defs: CustomFieldDef[]; depth: number; onChange: (next: CustomFieldDef[]) => void }) {
+function SubList({
+  title,
+  defs,
+  depth,
+  parents = [],
+  onChange,
+}: {
+  title: string
+  defs: CustomFieldDef[]
+  depth: number
+  parents?: MergeTagParent[]
+  onChange: (next: CustomFieldDef[]) => void
+}) {
   const set = (next: CustomFieldDef[]) => onChange(next)
   return (
     <div className="flex flex-col gap-[8px] rounded-[6px] bg-[rgba(0,0,0,0.02)] p-[8px]">
-      <span className="text-[12px] font-semibold">{title}</span>
+      {title && <span className="text-[12px] font-semibold">{title}</span>}
       {defs.map((def, index) => (
         <FieldEditor
           key={`${index}-${def.name}`}
           def={def}
           list={defs}
           depth={depth}
+          parents={parents}
           onChange={(next) => set(defs.map((d, i) => (i === index ? next : d)))}
           onRemove={() => set(defs.filter((_, i) => i !== index))}
           onMove={(delta) => set(moveAt(defs, index, delta))}
@@ -441,7 +470,17 @@ function SubList({ title, defs, depth, onChange }: { title: string; defs: Custom
   )
 }
 
-function LayoutsEditor({ layouts, depth, onChange }: { layouts: FlexibleLayout[]; depth: number; onChange: (next: FlexibleLayout[]) => void }) {
+function LayoutsEditor({
+  layouts,
+  depth,
+  parents,
+  onChange,
+}: {
+  layouts: FlexibleLayout[]
+  depth: number
+  parents: MergeTagParent[]
+  onChange: (next: FlexibleLayout[]) => void
+}) {
   return (
     <div className="flex flex-col gap-[8px] rounded-[6px] bg-[rgba(0,0,0,0.02)] p-[8px]">
       <span className="text-[12px] font-semibold">Layouts</span>
@@ -471,6 +510,7 @@ function LayoutsEditor({ layouts, depth, onChange }: { layouts: FlexibleLayout[]
             title="Fields in this layout"
             defs={layout.subFields}
             depth={depth}
+            parents={parents}
             onChange={(subFields) => onChange(layouts.map((l, i) => (i === index ? { ...l, subFields } : l)))}
           />
         </div>
@@ -510,26 +550,66 @@ function moveAt<T>(list: T[], index: number, delta: -1 | 1): T[] {
 /** Registered as the admin component for the `definition` field of field-groups. */
 export const FieldGroupBuilderField: React.FC<{ path?: string }> = ({ path = 'definition' }) => {
   const { value, setValue } = useField<unknown>({ path })
+  // The "Show on" rules sit in the same form; an options page rule changes the merge tag to {{option:slug.name}}.
+  const { value: locationValue } = useField<unknown>({ path: 'location' })
   // Raw list so a row being renamed or retyped stays put; the server normalises on save.
   const list = rawDefinitionList(value)
   const duplicates = findDuplicateNames(list)
 
+  const optionsRule = rawLocationGroups(locationValue)
+    .flat()
+    .find((rule) => rule.param === 'optionsPage' && rule.operator === 'equals')
+  const tagMode: { mode: MergeTagMode; optionsSlug: string | null } = optionsRule
+    ? { mode: 'option', optionsSlug: String(optionsRule.value ?? '').trim() || null }
+    : { mode: 'document', optionsSlug: null }
+
   return (
-    <div className="mb-[24px] flex flex-col gap-[10px]">
-      <div className="flex items-baseline justify-between">
-        <h3 className="m-0 text-[15px]">Fields</h3>
-        <span className="text-[12px] opacity-65">{list.length} field{list.length === 1 ? '' : 's'}</span>
-      </div>
-      {duplicates.length > 0 && (
-        <p role="alert" className="m-0 rounded-[5px] border border-[#b3453a] p-[8px] text-[12px] text-[#b3453a]">
-          These names are used more than once in this group: {duplicates.join(', ')}. Only the first one is saved; rename the others.
+    <TagModeContext.Provider value={tagMode}>
+      <div className="mb-[24px] flex flex-col gap-[10px]">
+        <section className="cf-help" aria-labelledby="cf-help-how">
+          <h4 id="cf-help-how" className="cf-help__title">How this works</h4>
+          <ol className="cf-help__list">
+            <li>
+              <strong>Add fields.</strong> Click Add field below and choose a type for each one, such as text, image or date.
+            </li>
+            <li>
+              <strong>Choose where the set shows.</strong> Use Show on, below this list, to pick the pages, posts, products, events or options pages it appears on.
+            </li>
+            <li>
+              <strong>Fill them in, then show them on the site.</strong> When you edit a page, fill in the fields. To show a value on the site, paste its merge tag, like{' '}
+              {'{{field:name}}'}. Press the (i) button next to any field to copy its exact tag.
+            </li>
+          </ol>
+        </section>
+
+        <section className="cf-help" aria-labelledby="cf-help-tables">
+          <h4 id="cf-help-tables" className="cf-help__title">Tables</h4>
+          <p>
+            For table data, such as a price list or opening times, add a field of type <strong>Repeating rows (table)</strong>. Then add each column as a sub field inside it.
+          </p>
+          <p>
+            Editors click <strong>Add row</strong> to fill in the table, one row at a time.
+          </p>
+          <p>
+            To show the table on the site, use a <strong>Loop</strong> block and one tag per column, like {'{{field:rows.0.column}}'}.
+          </p>
+        </section>
+
+        <div className="flex items-baseline justify-between">
+          <h3 className="m-0 text-[15px]">Fields</h3>
+          <span className="text-[12px] opacity-65">{list.length} field{list.length === 1 ? '' : 's'}</span>
+        </div>
+        {duplicates.length > 0 && (
+          <p role="alert" className="m-0 rounded-[5px] border border-[#b3453a] p-[8px] text-[12px] text-[#b3453a]">
+            These names are used more than once in this set: {duplicates.join(', ')}. Only the first one is saved; rename the others.
+          </p>
+        )}
+        <SubList title="" defs={list} depth={1} parents={[]} onChange={(next) => setValue(next)} />
+        <p className="m-0 text-[11px] opacity-65">
+          Use a field on the site as {'{{field:name}}'}. Values inside repeating rows use dots, eg {'{{field:rows.0.title}}'}. Inside a Loop, the same tags fill in per item.
         </p>
-      )}
-      <SubList title="" defs={list} depth={1} onChange={(next) => setValue(next)} />
-      <p className="m-0 text-[11px] opacity-65">
-        Use a field in templates as {'{{field:name}}'}. Nested values use dots, eg {'{{field:repeater.0.title}}'}. Inside a Loop, the same tags fill in per item.
-      </p>
-    </div>
+      </div>
+    </TagModeContext.Provider>
   )
 }
 

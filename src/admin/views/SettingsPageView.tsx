@@ -13,8 +13,8 @@ import { SettingsPageClient, type SettingsPageSection } from './SettingsPageClie
  *
  * Renders:
  * - Page title and description
- * - A sticky jump-bar (anchor links) when 2+ sections
- * - Global sections as titled cards with EditForms
+ * - Tabs (one per global section) when 2+ global sections, else one titled section
+ * - Global sections as tab panels with EditForms
  * - Link sections as a grid of link cards
  * - "No access" message if all sections are hidden by permissions
  */

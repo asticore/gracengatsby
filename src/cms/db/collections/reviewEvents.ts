@@ -11,6 +11,7 @@ export type ReviewEventDoc = {
   docTitle?: string | null
   action: 'submitted' | 'approved' | 'changes_requested' | 'comment' | 'published' | 'withdrawn'
   note?: string | null
+  step?: string | null
   actor?: number | null
   actorName?: string | null
   updatedAt: string

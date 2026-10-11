@@ -553,16 +553,27 @@ button {
 }
 
 @media (min-width: 769px) {
+  /* Desktop: the sidebar is a plain flex item of .admin-shell. It has no sticky
+     position, no fixed height and no scroll of its own, so it scrolls with the
+     page. align-self: stretch (the default) makes it as tall as the page row,
+     which keeps its background and border running the full page height. */
   .nav {
-    position: sticky;
-    top: 0;
-    height: 100vh;
+    position: relative;
+    inset: auto;
+    flex-shrink: 0;
+    align-self: stretch;
+    height: auto;
     width: var(--nav-width);
     transform: none;
   }
 
   .nav--collapsed {
     width: var(--nav-width-collapsed);
+  }
+
+  .nav__scroll {
+    overflow: visible;
+    min-height: auto;
   }
 }
 

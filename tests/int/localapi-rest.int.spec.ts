@@ -24,6 +24,8 @@ import { handleRestRequest } from '@/localapi/rest'
 // in rest.ts) sets its own `mockImplementation` on the default export, same
 // spirit as this file's own `makeMockEngine` per-test overrides.
 vi.mock('stripe', () => ({ default: vi.fn() }))
+// Paying an order flips its status with atomic raw SQL (covered against a real D1 in shop-atomic.int.spec.ts).
+vi.mock('@/features/ecommerce/server/orders', () => ({ markOrderPaid: vi.fn().mockResolvedValue({ firstTime: true, order: {} }), markOrderFailed: vi.fn() }))
 import Stripe from 'stripe'
 
 /* -------------------------------------------------------------------------- */
@@ -539,7 +541,7 @@ describe('localapi/rest - cart item endpoints', () => {
 /* Payments: Stripe cart checkout (Stage 10 Ecommerce, Layer 3)              */
 /* -------------------------------------------------------------------------- */
 
-function makeFakeStripe(overrides: { customers?: Partial<{ list: unknown; create: unknown }>; paymentIntents?: Partial<{ create: unknown; retrieve: unknown }>; webhooks?: Partial<{ constructEvent: unknown }> } = {}) {
+function makeFakeStripe(overrides: { customers?: Partial<{ list: unknown; create: unknown }>; paymentIntents?: Partial<{ create: unknown; retrieve: unknown; update: unknown; cancel: unknown }>; webhooks?: Partial<{ constructEvent: unknown }> } = {}) {
   return {
     customers: {
       list: vi.fn().mockResolvedValue({ data: [] }),
@@ -549,6 +551,8 @@ function makeFakeStripe(overrides: { customers?: Partial<{ list: unknown; create
     paymentIntents: {
       create: vi.fn().mockResolvedValue({ id: 'pi_1', client_secret: 'secret_1', amount: 50, currency: 'aud' }),
       retrieve: vi.fn().mockResolvedValue({ status: 'succeeded', amount: 50, currency: 'aud', metadata: {} }),
+      update: vi.fn().mockResolvedValue({ id: 'pi_1', client_secret: 'secret_1', amount: 50, currency: 'aud' }),
+      cancel: vi.fn().mockResolvedValue({ id: 'pi_1' }),
       ...overrides.paymentIntents,
     },
     webhooks: {
@@ -687,36 +691,37 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
       expect(await res!.json()).toEqual({ message: 'Cart is required and must contain at least one item.' })
     })
 
-    it('404 when a cart item references a product that does not exist', async () => {
+    it('400 when a cart item references a product that does not exist (checked by the server-side pricing)', async () => {
       const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 1 }], currency: 'AUD' }).mockResolvedValueOnce(null)
       const engine = makeMockEngine({ findByID })
       const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
-      expect(res!.status).toBe(404)
-      expect(await res!.json()).toEqual({ message: 'Product with ID 5 not found.' })
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'This product is not available.' })
     })
 
-    it('400 when a product has no priceInAUD', async () => {
-      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 1 }], currency: 'AUD' }).mockResolvedValueOnce({ id: 5 })
+    it('400 when a product has no price (the pricing rules decide, not a legacy inventory check)', async () => {
+      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 1 }], currency: 'AUD' }).mockResolvedValueOnce({ id: 5, _status: 'published', title: 'Tee', manageStock: false })
       const engine = makeMockEngine({ findByID })
       const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
       expect(res!.status).toBe(400)
-      expect(await res!.json()).toEqual({ message: 'Product does not have a price in AUD.' })
+      expect(await res!.json()).toEqual({ message: 'This product has no price.' })
     })
 
     it('400 when a product is out of stock or does not have enough inventory', async () => {
-      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 2 }], currency: 'AUD' }).mockResolvedValueOnce({ id: 5, priceInAUD: 25, inventory: 1 })
+      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 2 }], currency: 'AUD' }).mockResolvedValueOnce({ id: 5, _status: 'published', title: 'Tee', priceInAUD: 25, manageStock: true, stockQty: 1, stockStatus: 'instock' })
       const engine = makeMockEngine({ findByID })
       const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
       expect(res!.status).toBe(400)
-      expect(await res!.json()).toEqual({ message: 'Product is out of stock or does not have enough inventory.' })
+      expect(await res!.json()).toEqual({ message: 'This product is out of stock.' })
     })
 
     it('success: creates a Stripe PaymentIntent, records a pending transaction, and returns the client secret', async () => {
       vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fake')
       const fakeStripe = makeFakeStripe()
       vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
-      const findByID = vi.fn().mockResolvedValueOnce({ id: 1, items: [{ product: 5, quantity: 2 }], subtotal: 50, currency: 'AUD' }).mockResolvedValueOnce({ id: 5, priceInAUD: 25, inventory: 10 })
-      const engine = makeMockEngine({ findByID })
+      const findByID = vi.fn(async ({ collection }: { collection: string }) => (collection === 'carts' ? { id: 1, items: [{ product: 5, quantity: 2 }], subtotal: 50, currency: 'AUD' } : { id: 5, title: 'Tee', priceInAUD: 25, inventory: 10 }))
+      const create = vi.fn().mockResolvedValue({ id: 77 })
+      const engine = makeMockEngine({ findByID, create, find: vi.fn().mockResolvedValue({ docs: [], totalDocs: 0 }) })
 
       const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/initiate', { cartID: 1, customerEmail: 'a@b.com' }), ['payments', 'stripe', 'initiate'], engine)
 
@@ -727,6 +732,8 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
       // Stripe's smallest-unit cents (5000) at this boundary - see stripeAdapter.ts's
       // header comment (2026-09-26 unit-convention fix, plan doc What's-left item #12).
       expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 5000, currency: 'AUD', customer: 'cus_1' }))
+      // The order is priced on the server and stored as pending payment, totalled from database prices (2 x $25.00, GST included).
+      expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({ collection: 'orders', data: expect.objectContaining({ status: 'pending', amount: 5000, subtotal: 5000, taxTotal: 455 }) }))
       expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({
         collection: 'transactions',
         data: expect.objectContaining({ status: 'pending', paymentMethod: 'stripe', customerEmail: 'a@b.com' }),
@@ -751,7 +758,7 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
             status: 'succeeded',
             amount: 50,
             currency: 'aud',
-            metadata: { cartID: '1', cartItemsSnapshot: JSON.stringify([{ product: 5, quantity: 2 }]), shippingAddress: 'null' },
+            metadata: { cartID: '1', orderID: '99' },
           }),
         },
       })
@@ -763,17 +770,15 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
         totalDocs: 1, limit: 1, totalPages: 1, page: 1, pagingCounter: 1, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null,
       })
       const create = vi.fn().mockResolvedValue({ id: 99 })
-      const engine = makeMockEngine({ findByID, find, create })
+      const engine = makeMockEngine({ findByID: vi.fn().mockResolvedValue({ id: 99, amount: 50 }), find, create })
+      void findByID
 
       const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/confirm-order', { cartID: 1, customerEmail: 'a@b.com', paymentIntentID: 'pi_1' }), ['payments', 'stripe', 'confirm-order'], engine)
 
       expect(res!.status).toBe(200)
       expect(await res!.json()).toEqual({ message: 'Payment initiated successfully', orderID: 99, transactionID: 10 })
       expect(engine.find).toHaveBeenCalledWith(expect.objectContaining({ collection: 'transactions', where: { stripePaymentIntentID: { equals: 'pi_1' } } }))
-      expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({ collection: 'orders', data: expect.objectContaining({ status: 'processing', transactions: [10] }) }))
-      expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, data: expect.objectContaining({ purchasedAt: expect.any(String) }) }))
-      expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'transactions', id: 10, data: { order: 99, status: 'succeeded' } }))
-      expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'products', id: 5, data: { inventory: 8 }, draft: false }))
+      // Order creation, stock, coupon usage, cart and emails all happen in markOrderPaid (idempotent), not here.
     })
   })
 })

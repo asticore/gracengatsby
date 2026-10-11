@@ -1,3 +1,4 @@
+import { noAdsField } from '@/features/ads/fields'
 import type { CollectionConfig } from '@/engine'
 
 import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
@@ -75,6 +76,7 @@ export const Posts: CollectionConfig = {
     ...authorshipFields,
     ...reviewFields,
     schemaTypeField('posts'),
+    noAdsField,
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard],

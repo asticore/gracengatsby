@@ -1,5 +1,5 @@
 import type { Access, FieldAccess } from '@/engine'
-import { can, type Action, type Resource } from '@/features/roles/permissions'
+import { resolveAccess, OWNABLE_RESOURCES, type Action, type Resource } from '@/features/roles/permissions'
 
 const checkRole = (roles: string[], user: { roles?: string[] } | null | undefined) =>
   Boolean(user?.roles?.some((role) => roles.includes(role)))
@@ -63,12 +63,14 @@ export const hasCartSecretAccess: Access = ({ req }) => {
 export const isGuest: Access = ({ req }) => !req.user
 
 /**
- * Factory for role-based access to collections.
- * Returns an access function that calls can() to check permissions based on the user's roles.
+ * Role-based access factories. They call resolveAccess(), the union of the user's built-in roles,
+ * their custom role matrix (carried on the session user as `customRolePermissions`, see
+ * src/features/roles/customRoleCache.ts) and per-user overrides. Nothing here is async.
  *
- * Note: Custom role matrix is not available synchronously in the access layer,
- * so this uses only the built-in role definitions. For custom roles, the REST/GraphQL
- * layer must check permissions separately through the admin context.
+ * A custom role can limit read/update/delete to "only items they created" (matrix scope 'own'). That
+ * becomes a Where on `createdBy`, so lists are filtered and single-document updates/deletes are
+ * refused for other people's documents. Collections without a `createdBy` field cannot be scoped:
+ * an 'own' scope there fails closed.
  *
  * Example:
  *   - Editor can read, create, update, delete content collections (pages, posts, etc.)
@@ -76,17 +78,28 @@ export const isGuest: Access = ({ req }) => !req.user
  *   - Admin has full access
  *   - Secret resources (users, settings, payments) remain admin-only
  */
+const ownWhere = (slug: Resource, user: { id?: unknown } | null | undefined) => {
+  if (!OWNABLE_RESOURCES.includes(slug)) return false
+  if (user?.id === undefined || user?.id === null) return false
+  return { createdBy: { equals: user.id } }
+}
+
 /**
  * Role-based access combined with published status fallback for reads.
- * Admin -> true; user with read permission -> true; otherwise -> published-only where clause.
+ * Admin -> true; user with read permission -> true (or their own documents plus published ones when
+ * the grant is limited to own items); otherwise -> published-only where clause.
  * Used for collections that should be published-only for unauthorized users.
  */
 export function roleOrPublished(slug: Resource): Access {
   return ({ req }) => {
     // Admin always has access
     if (checkRole(['admin'], req.user)) return true
-    // Check if user has read permission via can()
-    if (can(req.user as any, slug, 'read', {})) return true
+    const level = resolveAccess(req.user as any, slug, 'read')
+    if (level === 'all') return true
+    if (level === 'own') {
+      const own = ownWhere(slug, req.user as any)
+      return own ? { or: [own, { _status: { equals: 'published' } }] } : { _status: { equals: 'published' } }
+    }
     // Otherwise restrict to published documents
     return { _status: { equals: 'published' } }
   }
@@ -96,7 +109,9 @@ export function roleAccess(slug: Resource, action: Action): Access {
   return ({ req }) => {
     // Admin always has access
     if (checkRole(['admin'], req.user)) return true
-    // Use can() with built-in role matrix (no custom matrix available here)
-    return can(req.user as any, slug, action, {})
+    const level = resolveAccess(req.user as any, slug, action)
+    if (level === 'all') return true
+    if (level === 'own') return ownWhere(slug, req.user as any)
+    return false
   }
 }

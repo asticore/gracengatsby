@@ -2,6 +2,8 @@ import type { CollectionConfig } from '@/engine'
 
 import { roleAccess } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { locksField } from '../fields/locks'
+import { lockGuard } from '@/features/roles/lockGuard'
 
 export const PageTemplates: CollectionConfig = {
   slug: 'page-templates',
@@ -9,12 +11,13 @@ export const PageTemplates: CollectionConfig = {
   labels: { singular: 'Page Template', plural: 'Page Templates' },
   admin: {
     useAsTitle: 'name',
+    defaultColumns: ['name', 'description', 'locks'],
     group: 'Content',
     description:
       'Starter layouts for new pages. Build one here, then pick it from the "Start from template" field when creating a new Page - its sections get copied in.',
     components: {
       edit: {
-        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton', '@/fields/locks/DocumentLockControl#DocumentLockControl'],
       },
     },
   },
@@ -34,5 +37,9 @@ export const PageTemplates: CollectionConfig = {
       blocks: pageBuilderBlocks,
       admin: { initCollapsed: true },
     },
+    locksField,
   ],
+  hooks: {
+    beforeChange: [lockGuard],
+  },
 }

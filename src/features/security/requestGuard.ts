@@ -10,6 +10,8 @@ import { readSecuritySettingsFromD1, type SecuritySettings } from './settings'
 import { resolveRedirect, recordRedirectHit } from '@/features/redirects'
 import { readServerRules, type ServerRules } from '@/features/seo/serverRules'
 import { isBlockedPath } from '@/features/seo/siteFiles'
+import { readAdsCspAdditions } from '@/features/ads/d1'
+import { extendCsp, type CspAdditions } from '@/features/ads/builders'
 
 /**
  * Everything the Security screen enforces on the request itself, in one place
@@ -118,6 +120,13 @@ async function tryRedirect(request: NextRequest, settings: SecuritySettings): Pr
   }
 }
 
+/** Extends the default Content-Security-Policy with the ad hosts. A policy typed into Security settings is left exactly as written. */
+function applyAdsCsp(response: NextResponse, additions: CspAdditions, customPolicy: string): void {
+  if (customPolicy) return
+  const current = response.headers.get('Content-Security-Policy')
+  if (current) response.headers.set('Content-Security-Policy', extendCsp(current, additions))
+}
+
 export function applySecurityHeaders(
   response: NextResponse,
   settings: SecuritySettings,
@@ -187,13 +196,17 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
   const settings = await readSecuritySettingsFromD1()
   // Fails open to no rules, so a settings read problem cannot take the site down.
   const rules = await readServerRules()
+  // Ad hosts are added to the default CSP of public pages, and only while Ads is on.
+  const adsCsp = isAppPath(pathname) ? null : await readAdsCspAdditions().catch((): null => null)
 
   // Preserved from the original middleware: the frontend layout reads this to
   // know which page it is rendering.
   const passThrough = (): NextResponse => {
     const response = NextResponse.next()
     response.headers.append('x-pathname', pathname)
-    return applyServerResponseHeaders(applySecurityHeaders(response, settings, pathname), rules, pathname)
+    applySecurityHeaders(response, settings, pathname)
+    if (adsCsp) applyAdsCsp(response, adsCsp, settings.headers.contentSecurityPolicy)
+    return applyServerResponseHeaders(response, rules, pathname)
   }
 
   // Blocked paths (Site files > Server blocked paths) answer 404 before any

@@ -8,7 +8,9 @@
   --engage-consent-btn: #1a1a1a;
   --engage-consent-btn-fg: #ffffff;
   --engage-consent-border: rgba(0, 0, 0, 0.18);
-  font: 400 0.875rem/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --engage-consent-accent: currentColor;
+  --engage-consent-size: 0.875rem;
+  font: 400 var(--engage-consent-size) / 1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--engage-consent-fg);
 }
 
@@ -49,7 +51,7 @@
   align-items: stretch;
   width: 26rem;
   border: 1px solid var(--engage-consent-border);
-  border-radius: 12px;
+  border-radius: var(--engage-consent-radius, 12px);
 }
 
 .engage-consent--bottom-left {
@@ -67,12 +69,21 @@
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(32rem, calc(100vw - 2rem));
+  /* Dims the page behind, so the centred box reads as a modal. */
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45);
+}
+
+.engage-consent__logo {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .engage-consent__text { margin: 0; flex: 1 1 22rem; }
 .engage-consent__title { margin: 0 0 0.25rem; font-weight: 600; }
 .engage-consent__body { margin: 0; }
-.engage-consent__link { color: inherit; text-underline-offset: 2px; }
+.engage-consent__link { color: inherit; text-decoration-color: var(--engage-consent-accent); text-underline-offset: 2px; }
 
 .engage-consent__actions {
   display: flex;
@@ -87,7 +98,7 @@
   cursor: pointer;
   font: inherit;
   border: 1px solid var(--engage-consent-fg);
-  border-radius: 999px;
+  border-radius: var(--engage-consent-radius, 999px);
   padding: 0.4rem 1rem;
   background: transparent;
   color: var(--engage-consent-fg);
@@ -103,9 +114,11 @@
 .engage-consent__settings:focus-visible,
 .engage-consent-gate__actions button:focus-visible,
 .engage-consent__category-label input:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--engage-consent-accent);
   outline-offset: 2px;
 }
+
+.engage-consent__category-label input { accent-color: var(--engage-consent-accent); }
 
 .engage-consent__settings {
   position: fixed;
@@ -134,7 +147,7 @@
   max-height: 85vh;
   overflow: auto;
   padding: 1.25rem 1.5rem;
-  border-radius: 12px;
+  border-radius: var(--engage-consent-radius, 12px);
   background: var(--engage-consent-bg);
   color: var(--engage-consent-fg);
   border: 1px solid var(--engage-consent-border);
@@ -206,3 +219,33 @@
   .engage-consent__actions { justify-content: stretch; }
   .engage-consent__button { flex: 1 1 auto; }
 }
+
+/* Admin preview: the same markup, held inside the mock-site frame that wraps it
+ * (the frame is position: relative with overflow hidden) instead of covering
+ * the window. */
+.engage-consent-root--preview .engage-consent,
+.engage-consent-root--preview .engage-consent__settings,
+.engage-consent-root--preview .engage-consent__overlay {
+  position: absolute;
+  z-index: 2;
+}
+
+.engage-consent-root--preview .engage-consent--center {
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45);
+}
+
+.engage-consent-root--preview .engage-consent__dialog { max-height: 90%; }
+
+/* Small-screen layout, applied by class because the frame is narrower than the window. */
+.engage-consent-root--narrow .engage-consent--bottom-left,
+.engage-consent-root--narrow .engage-consent--bottom-right,
+.engage-consent-root--narrow .engage-consent--center {
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  top: auto;
+  width: auto;
+  transform: none;
+}
+.engage-consent-root--narrow .engage-consent__actions { justify-content: stretch; }
+.engage-consent-root--narrow .engage-consent__button { flex: 1 1 auto; }

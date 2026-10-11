@@ -4,7 +4,10 @@ import { useEffect, useState, type FormEvent } from 'react'
 
 import { useDocumentInfo } from '@/engine/ui'
 
+import { MediaUploader } from '@/views/media/MediaUploader'
+
 import { describeSaving, postJson, requestJson } from './mediaApi'
+import { loadUploadRules } from './uploadClient'
 
 type Provider = 'claude' | 'openai'
 
@@ -24,8 +27,8 @@ const buttonClass =
   'rounded-[4px] border border-[var(--theme-elevation-200)] px-[10px] py-[6px] text-[12px] text-[var(--theme-elevation-800)] hover:border-[var(--ac-gold)] hover:text-[var(--ac-gold)] disabled:opacity-50'
 
 /**
- * Tools shown above the form on a media document: replace the file, optimise
- * it, write alt text, and see where it is used.
+ * Tools shown above the form on a media document: replace the file, copy its
+ * address, optimise it and write alt text (pictures only), and see where it is used.
  *
  * Changes made here are saved straight to the picture, not through the form.
  * So after one succeeds the page reloads - otherwise the form would save the
@@ -33,8 +36,30 @@ const buttonClass =
  */
 export function MediaEditPanel() {
   const { id, collectionSlug } = useDocumentInfo()
-  if (collectionSlug !== 'media' || id === undefined || id === null) return null
+  if (collectionSlug !== 'media') return null
+  if (id === undefined || id === null) return <MediaCreatePanel />
   return <MediaEditPanelInner id={Number(id)} />
+}
+
+/**
+ * The create screen. The form below it has no file input of its own, so a
+ * document could never be created from it; this is where the file is chosen.
+ * Uploading saves straight away and opens the new file's page to add details.
+ */
+function MediaCreatePanel() {
+  return (
+    <section aria-label="Upload files" className="mb-[16px] flex flex-col gap-[8px] rounded-[6px] border border-[var(--theme-elevation-150)] p-[14px]">
+      <p className="m-0 text-[12px] text-[var(--theme-elevation-600)]">
+        Choose a file (or several) to upload. It is saved straight away; if you upload one file its page opens so you can add a caption, credit and folder.
+      </p>
+      <MediaUploader
+        scope="inline"
+        onUploaded={(docs) => {
+          window.location.assign(docs.length === 1 ? `/admin/collections/media/${docs[0].id}` : '/admin/collections/media')
+        }}
+      />
+    </section>
+  )
 }
 
 function MediaEditPanelInner({ id }: { id: number }) {
@@ -44,6 +69,8 @@ function MediaEditPanelInner({ id }: { id: number }) {
   const [provider, setProvider] = useState<Provider>('claude')
   const [keys, setKeys] = useState<Record<Provider, boolean> | null>(null)
   const [file, setFile] = useState<File | null>(null)
+  const [stored, setStored] = useState<{ url: string | null; mimeType: string | null } | null>(null)
+  const [accept, setAccept] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     let active = true
@@ -56,6 +83,32 @@ function MediaEditPanelInner({ id }: { id: number }) {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    let active = true
+    void requestJson<{ media: { url: string | null; mimeType: string | null } }>(`/api/admin-media-usage?id=${id}&scan=0`).then((result) => {
+      if (active && result.ok === true) setStored({ url: result.data.media.url, mimeType: result.data.media.mimeType })
+    })
+    void loadUploadRules().then((rules) => {
+      if (active && rules) setAccept(rules.accept.join(','))
+    })
+    return () => {
+      active = false
+    }
+  }, [id])
+
+  const isPicture = stored?.mimeType ? stored.mimeType.startsWith('image/') : true
+
+  const copyUrl = async () => {
+    if (!stored?.url) return
+    const absolute = new URL(stored.url, window.location.origin).toString()
+    try {
+      await navigator.clipboard.writeText(absolute)
+      setMessage({ kind: 'ok', text: 'Address copied.' })
+    } catch {
+      window.prompt('Copy this address', absolute)
+    }
+  }
 
   const run = async (label: string, task: () => Promise<{ ok: true; text: string; reload: boolean } | { ok: false; error: string }>) => {
     setBusy(label)
@@ -127,10 +180,23 @@ function MediaEditPanelInner({ id }: { id: number }) {
       </p>
 
       <div className="flex flex-wrap items-center gap-[8px]">
-        <button type="button" className={buttonClass} disabled={busy !== null} onClick={optimise}>
-          {busy === 'optimise' ? 'Optimising...' : 'Optimise this picture'}
-        </button>
+        {isPicture ? (
+          <button type="button" className={buttonClass} disabled={busy !== null} onClick={optimise}>
+            {busy === 'optimise' ? 'Optimising...' : 'Optimise this picture'}
+          </button>
+        ) : null}
+        {stored?.url ? (
+          <>
+            <button type="button" className={buttonClass} onClick={copyUrl}>
+              Copy URL
+            </button>
+            <a href={stored.url} target="_blank" rel="noopener noreferrer" className={`${buttonClass} no-underline`}>
+              {isPicture ? 'Open' : 'Download'}
+            </a>
+          </>
+        ) : null}
 
+        {isPicture ? (
         <label className="flex items-center gap-[6px] text-[12px] text-[var(--theme-elevation-700)]">
           Alt text with
           <select
@@ -146,9 +212,12 @@ function MediaEditPanelInner({ id }: { id: number }) {
             </option>
           </select>
         </label>
-        <button type="button" className={buttonClass} disabled={busy !== null} onClick={writeAlt}>
-          {busy === 'alt' ? 'Writing...' : 'Generate alt text'}
-        </button>
+        ) : null}
+        {isPicture ? (
+          <button type="button" className={buttonClass} disabled={busy !== null} onClick={writeAlt}>
+            {busy === 'alt' ? 'Writing...' : 'Generate alt text'}
+          </button>
+        ) : null}
 
         <button type="button" className={buttonClass} disabled={busy !== null} onClick={checkUsage}>
           {busy === 'usage' ? 'Checking...' : 'Where is this used?'}
@@ -158,7 +227,7 @@ function MediaEditPanelInner({ id }: { id: number }) {
       <form onSubmit={replace} className="flex flex-wrap items-center gap-[8px]">
         <input
           type="file"
-          accept="image/jpeg,image/png,image/webp,application/pdf"
+          accept={accept}
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           className="text-[12px]"
         />

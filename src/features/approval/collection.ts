@@ -42,6 +42,8 @@ export const ReviewEvents: CollectionConfig = {
       admin: { readOnly: true },
     },
     { name: 'note', type: 'textarea', admin: { readOnly: true } },
+    // The workflow step this event belongs to. Empty when no workflow was active.
+    { name: 'step', type: 'text', admin: { readOnly: true } },
     { name: 'actor', type: 'relationship', relationTo: 'users', admin: { readOnly: true } },
     { name: 'actorName', type: 'text', admin: { readOnly: true } },
   ],

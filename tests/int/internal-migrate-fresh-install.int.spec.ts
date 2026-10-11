@@ -29,7 +29,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
   })
 
   it('creates foundation, block, feature and engine tables', () => {
-    for (const table of ['eg_users', 'eg_pages', 'eg_migrations', 'eg_forms', 'eg_posts_blocks_hero', 'eg_locked_documents_rels', 'eg_roles']) {
+    for (const table of ['eg_users', 'eg_pages', 'eg_migrations', 'eg_forms', 'eg_posts_blocks_hero', 'eg_locked_documents_rels', 'eg_roles', 'eg_ad_units', 'eg_ad_placements', 'eg_ad_settings', 'eg_ad_stats']) {
       expect(tables, table).toContain(table)
     }
   })
@@ -226,6 +226,67 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
       if (tables.includes(live)) expect(await columnsOf(live), live).toContain('review_step')
       if (tables.includes(`_${live}_v`)) expect(await columnsOf(`_${live}_v`), `_${live}_v`).toContain('version_review_step')
     }
+  })
+
+  it('adds the section lock columns to pages, their versions and page templates', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_pages')).toContain('locks')
+    expect(await columnsOf('_eg_pages_v')).toContain('version_locks')
+    expect(await columnsOf('eg_page_templates')).toContain('locks')
+  })
+
+  it('creates the shop orders, shipping, tax, coupon and refund tables and columns', async () => {
+    for (const table of [
+      'eg_shipping_zones',
+      'eg_shipping_zones_regions',
+      'eg_shipping_zones_methods',
+      'eg_shipping_zones_methods_table_rates',
+      'eg_shipping_zones_methods_class_surcharges',
+      'eg_tax_rates',
+      'eg_coupons',
+      'eg_order_refunds',
+      'eg_shop_settings_checkout_fields',
+    ]) {
+      expect(tables, table).toContain(table)
+    }
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_orders')).toEqual(expect.arrayContaining(['refunded_total', 'tax_lines', 'line_items', 'notes', 'payment_intent_id', 'coupon_usage_applied']))
+    expect(await columnsOf('eg_carts')).toEqual(expect.arrayContaining(['email', 'reminders_sent', 'recovered_at', 'unsubscribed']))
+    expect(await columnsOf('eg_shop_settings')).toEqual(expect.arrayContaining(['tax_abn', 'emails_processing', 'abandoned_cart_enabled']))
+  })
+
+  it('creates the shop catalogue tables and product columns', async () => {
+    for (const table of [
+      'eg_product_attributes',
+      'eg_product_attributes_terms',
+      'eg_shipping_classes',
+      'eg_product_reviews',
+      'eg_products_attributes',
+      'eg_products_variations',
+      '_eg_products_v_version_attributes',
+      '_eg_products_v_version_variations',
+    ]) {
+      expect(tables, table).toContain(table)
+    }
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_products')).toEqual(
+      expect.arrayContaining(['product_type', 'sku', 'gtin', 'sale_price', 'sale_from', 'sale_to', 'manage_stock', 'stock_qty', 'backorders', 'low_stock_threshold', 'stock_status', 'weight', 'shipping_class_id', 'tax_class', 'external_url', 'rating_average', 'rating_count']),
+    )
+    expect(await columnsOf('_eg_products_v')).toEqual(expect.arrayContaining(['version_product_type', 'version_sku', 'version_stock_qty', 'version_shipping_class_id']))
+    expect(await columnsOf('eg_products_variations')).toEqual(expect.arrayContaining(['attribute_values', 'sku', 'gtin', 'price_in_a_u_d', 'stock_qty', 'image_id', 'enabled']))
+    expect(await columnsOf('eg_products_rels')).toContain('eg_products_id')
+    expect(await columnsOf('eg_carts_items')).toContain('variation')
+    expect(await columnsOf('eg_shop_settings')).toEqual(expect.arrayContaining(['reviews_enabled', 'low_stock_emails', 'stock_email_to']))
+    expect(await columnsOf('eg_locked_documents_rels')).toEqual(expect.arrayContaining(['eg_product_attributes_id', 'eg_shipping_classes_id', 'eg_product_reviews_id']))
   })
 
   it('creates custom keys child table for integrations', () => {

@@ -38,9 +38,28 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
-      required: true,
+      // Required for pictures only (checked below). The column itself is NOT NULL,
+      // so a document or video stores an empty string rather than nothing.
+      required: false,
+      hooks: {
+        beforeValidate: [({ value }: { value?: unknown }) => (typeof value === 'string' ? value : '')],
+      },
+      validate: async (
+        value: unknown,
+        { data, id, req }: { data?: Record<string, unknown>; id?: unknown; req?: { engine?: { findByID?: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null> } } },
+      ) => {
+        if (typeof value === 'string' && value.trim()) return true
+        let mimeType = typeof data?.mimeType === 'string' ? data.mimeType : undefined
+        if (!mimeType && id !== undefined && id !== null) {
+          // An edit that does not carry the file: look up what the stored file is.
+          const existing = await req?.engine?.findByID?.({ collection: 'media', id, depth: 0, overrideAccess: true }).catch((): null => null)
+          mimeType = typeof existing?.mimeType === 'string' ? existing.mimeType : undefined
+        }
+        // Only pictures need a description. A new document with no type yet is held to the picture rule.
+        return !mimeType || mimeType.startsWith('image/') ? 'Alt text is required for pictures.' : true
+      },
       admin: {
-        description: 'Describes the picture for screen readers and search engines. The gallery can draft this for you.',
+        description: 'Describes the picture for screen readers and search engines. Required for pictures; optional for documents, audio and video. The gallery can draft this for you.',
       },
     },
     {

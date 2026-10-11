@@ -7,6 +7,7 @@ import type { SectionNode } from '@/lib/sectionTree'
 import type { BlockDef } from './blockSchemas'
 import { ElementLibrary } from './ElementLibrary'
 import { FieldPanel } from './FieldPanel'
+import type { LockUi } from './LockControls'
 
 export type DockTab = 'elements' | 'settings'
 
@@ -33,6 +34,7 @@ export const EditorDock: React.FC<{
   onDeleteSelected: () => void
   onDuplicateSelected: () => void
   userPermissions?: { canEditStyle: boolean; canEditLayout: boolean } | null
+  lockUi?: LockUi
 }> = ({
   collapsed,
   tab,
@@ -47,6 +49,7 @@ export const EditorDock: React.FC<{
   onDeleteSelected,
   onDuplicateSelected,
   userPermissions,
+  lockUi,
 }) => {
   // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
   // use the full width, same as Elementor's panel-collapse - nothing renders
@@ -89,6 +92,7 @@ export const EditorDock: React.FC<{
             onDelete={onDeleteSelected}
             onDuplicate={onDuplicateSelected}
             userPermissions={userPermissions}
+            lockUi={lockUi}
           />
         ) : (
           <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>

@@ -6,6 +6,7 @@ import { CustomFieldInput, CustomFieldMediaContext, useMediaUrlsFor, type MediaU
 import type { CustomFieldDef, FieldGroupDoc } from '@/fields/customFields/types'
 import { isFieldVisible } from '../conditions'
 import { collectMediaIds } from '../stringify'
+import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 
 /**
  * The form for one Options page. Values come from the server (initial render),
@@ -86,10 +87,14 @@ export function OptionsForm({ slug, groups, initialValues, initialUpdatedAt, ini
     <CustomFieldMediaContext.Provider value={{ urls: mediaUrls, remember }}>
       <div className="flex flex-col gap-[20px]">
         {groups.map((group) => (
-          <section key={group.id} className="rounded-[6px] border border-[var(--theme-elevation-150,#e2ded4)] p-[18px]">
-            <h2 className="m-0 mb-[4px] text-[15px]">{group.name}</h2>
+          <CollapsibleCard
+            key={group.id}
+            id={`opt:${slug.replace(/[^A-Za-z0-9_.-]/g, '-').slice(0, 30)}:${group.id}`}
+            title={group.name}
+            className="border-t border-[var(--theme-elevation-150,#e2ded4)] pt-[12px]"
+          >
             {group.description && <p className="m-0 mb-[12px] text-[12px] opacity-70">{group.description}</p>}
-            <div className="flex flex-wrap gap-[16px]">
+            <div className="flex flex-wrap gap-[16px] pt-[8px]">
               {group.fields
                 .filter((def) => isFieldVisible(def, values))
                 .map((def) => (
@@ -103,7 +108,7 @@ export function OptionsForm({ slug, groups, initialValues, initialUpdatedAt, ini
                   />
                 ))}
             </div>
-          </section>
+          </CollapsibleCard>
         ))}
 
         <div className="flex items-center gap-[12px]">

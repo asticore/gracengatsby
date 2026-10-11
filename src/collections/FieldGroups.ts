@@ -18,13 +18,13 @@ import { roleAccess } from '../access/ecommerceAccess'
 export const FieldGroups: CollectionConfig = {
   slug: 'field-groups',
   dbName: 'eg_field_groups',
-  labels: { singular: 'Field Group', plural: 'Field Groups' },
+  labels: { singular: 'Extra fields set', plural: 'Extra fields' },
   admin: {
     useAsTitle: 'name',
     group: 'Content',
     defaultColumns: ['name', 'targetCollections'],
     description:
-      'Define extra fields for your content - like Advanced Custom Fields. Pick which collections they appear on, and they show up as real inputs when editing those items. Use them in templates as {{field:the_field_name}}.',
+      'A set of extra fields you attach to pages, posts, products or events, for things like price, opening hours or a table of data.',
   },
   access: {
     create: roleAccess('field-groups', 'create'),
@@ -43,6 +43,7 @@ export const FieldGroups: CollectionConfig = {
     {
       name: 'targetCollections',
       type: 'select',
+      label: 'Applies to',
       hasMany: true,
       required: true,
       defaultValue: ['pages'],
@@ -53,19 +54,19 @@ export const FieldGroups: CollectionConfig = {
         { label: 'Events', value: 'events' },
         { label: 'FAQs', value: 'faqs' },
       ],
-      admin: { description: 'Which content types these fields appear on.' },
+      admin: { description: 'Which content types this set of extra fields appears on.' },
     },
     {
       name: 'description',
       type: 'textarea',
-      admin: { description: 'Optional note shown above the fields when editing.' },
+      admin: { description: 'Optional note shown above the extra fields when editing.' },
     },
     {
       name: 'definition',
       type: 'json',
-      label: 'Fields (builder)',
+      label: 'Fields',
       admin: {
-        description: 'The fields in this group, with their types, rules, conditions and nested layouts.',
+        description: 'The extra fields in this set, with their types, rules, conditions and nested layouts.',
         components: {
           Field: '@/features/customFields/admin/FieldGroupBuilderField#FieldGroupBuilderField',
         },
@@ -76,7 +77,7 @@ export const FieldGroups: CollectionConfig = {
       type: 'json',
       label: 'Show on',
       admin: {
-        description: 'Where these fields appear. When set, this replaces the quick "Applies to" list above.',
+        description: 'Where these extra fields appear. When set, this replaces the quick "Applies to" list above.',
         components: {
           Field: '@/features/customFields/admin/FieldGroupLocationField#FieldGroupLocationField',
         },
@@ -87,7 +88,7 @@ export const FieldGroups: CollectionConfig = {
       type: 'array',
       labels: { singular: 'Field', plural: 'Fields' },
       minRows: 1,
-      admin: { initCollapsed: true, description: 'Legacy field list. New fields go in the Fields builder above; this list is kept so older groups keep working.' },
+      admin: { initCollapsed: true, description: 'Older list of extra fields. New fields go in the Fields section above; this list is kept so older sets keep working.' },
       fields: [
         {
           type: 'row',
@@ -136,10 +137,10 @@ export const FieldGroups: CollectionConfig = {
                 { label: 'Map location', value: 'map' },
                 { label: 'Rich text (markdown)', value: 'wysiwyg' },
                 { label: 'Group', value: 'group' },
-                { label: 'Repeater', value: 'repeater' },
-                { label: 'Flexible content', value: 'flexible' },
+                { label: 'Repeating rows (table)', value: 'repeater' },
+                { label: 'Flexible layouts', value: 'flexible' },
               ],
-              admin: { width: '50%', description: 'Legacy list. New groups are built in the Fields builder below.' },
+              admin: { width: '50%', description: 'Older list. New sets are built in the Fields section above.' },
             },
             { name: 'required', type: 'checkbox', defaultValue: false, admin: { width: '50%' } },
           ],

@@ -1,3 +1,4 @@
+import { noAdsField } from '@/features/ads/fields'
 import type { CollectionConfig, EngineRequest } from '@/engine'
 
 import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
@@ -9,6 +10,8 @@ import { formatSlugHook, slugify } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { membersOnlyField } from '@/features/members'
 import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
+import { lockGuard } from '@/features/roles/lockGuard'
+import { locksField } from '../fields/locks'
 import { reviewFields } from '@/features/approval/fields'
 
 export const Pages: CollectionConfig = {
@@ -23,7 +26,7 @@ export const Pages: CollectionConfig = {
       'Every page on the site, including the homepage. Build sections from the block library (drag the ⚿ handle to reorder), set a Parent to nest it under another page, and add it to the menu under Header. Click "Edit visually" above to lay it out on a drag-and-drop canvas instead.',
     components: {
       edit: {
-        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton', '@/fields/locks/DocumentLockControl#DocumentLockControl'],
       },
     },
   },
@@ -131,11 +134,13 @@ export const Pages: CollectionConfig = {
       blocks: pageBuilderBlocks,
       admin: { initCollapsed: true },
     },
+    locksField,
     customFieldsField,
     membersOnlyField,
     ...authorshipFields,
     ...reviewFields,
     schemaTypeField('pages'),
+    noAdsField,
   ],
   hooks: {
     beforeValidate: [
@@ -185,6 +190,7 @@ export const Pages: CollectionConfig = {
         }
         return data
       },
+      lockGuard,
       contentEditGuard,
       publishGuard,
     ],

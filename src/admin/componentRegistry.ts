@@ -24,13 +24,16 @@
 import type { ComponentType } from 'react'
 import { SlugComponent } from '@/fields/slug/SlugComponent'
 import { OpenVisualEditorButton } from '@/fields/visualEditor/OpenVisualEditorButton'
+import { DocumentLockControl } from '@/fields/locks/DocumentLockControl'
 import { CustomFieldsPanel } from '@/fields/customFields/CustomFieldsPanel'
 import { FieldGroupBuilderField } from '@/features/customFields/admin/FieldGroupBuilderField'
 import { FieldGroupLocationField } from '@/features/customFields/admin/FieldGroupLocationField'
 import { BackupPanel } from '@/features/backups/admin/BackupPanel'
 import { SendTestEmailButton } from '@/features/email/admin/SendTestEmailButton'
 import { ParentPicker } from '@/fields/parentPicker/ParentPicker'
+import { OrderNotesPanel, OrderRefundsPanel, OrderInvoicePanel } from '@/features/ecommerce/admin/OrderPanels'
 import { PriceInput } from '@/features/ecommerce/admin/PriceInput'
+import { GenerateVariationsField } from '@/features/ecommerce/admin/GenerateVariationsField'
 import { CloudflarePurgeOnPublishField } from '@/admin/components/CloudflarePurgeOnPublishField'
 import { ColorPickerField } from '@/admin/components/ColorPickerField'
 import { UserPermissionOverridesField } from '@/admin/components/UserPermissionOverridesField'
@@ -39,17 +42,23 @@ import { FontsManagerField } from '@/admin/components/FontsManagerField'
 import { MediaFocalPointField } from '@/features/media/admin/MediaFocalPointField'
 import { MediaCropField } from '@/features/media/admin/MediaCropField'
 import { MediaEditPanel } from '@/features/media/admin/MediaEditPanel'
+import { BiddersField } from '@/features/ads/admin/BiddersField'
 import { SiteFilesField } from '@/features/seo/admin/SiteFilesField'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/fields/slug/SlugComponent#SlugComponent': SlugComponent,
   '@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton': OpenVisualEditorButton,
+  '@/fields/locks/DocumentLockControl#DocumentLockControl': DocumentLockControl,
   '@/fields/customFields/CustomFieldsPanel#CustomFieldsPanel': CustomFieldsPanel,
   '@/features/customFields/admin/FieldGroupBuilderField#FieldGroupBuilderField': FieldGroupBuilderField,
   '@/features/customFields/admin/FieldGroupLocationField#FieldGroupLocationField': FieldGroupLocationField,
   '@/features/backups/admin/BackupPanel#BackupPanel': BackupPanel,
   '@/features/email/admin/SendTestEmailButton#SendTestEmailButton': SendTestEmailButton,
   '@/features/ecommerce/admin/PriceInput#PriceInput': PriceInput,
+  '@/features/ecommerce/admin/GenerateVariationsField#GenerateVariationsField': GenerateVariationsField,
+  '@/features/ecommerce/admin/OrderPanels#OrderNotesPanel': OrderNotesPanel,
+  '@/features/ecommerce/admin/OrderPanels#OrderRefundsPanel': OrderRefundsPanel,
+  '@/features/ecommerce/admin/OrderPanels#OrderInvoicePanel': OrderInvoicePanel,
   '@/fields/parentPicker/ParentPicker#ParentPicker': ParentPicker,
   '@/admin/components/CloudflarePurgeOnPublishField#CloudflarePurgeOnPublishField': CloudflarePurgeOnPublishField,
   '@/admin/components/ColorPickerField#ColorPickerField': ColorPickerField,
@@ -60,6 +69,7 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/media/admin/MediaCropField#MediaCropField': MediaCropField,
   '@/features/media/admin/MediaEditPanel#MediaEditPanel': MediaEditPanel,
   '@/features/seo/admin/SiteFilesField#SiteFilesField': SiteFilesField,
+  '@/features/ads/admin/BiddersField#BiddersField': BiddersField,
 }
 
 export function resolveComponent(path: string | undefined | null): ComponentType<any> | undefined {

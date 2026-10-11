@@ -98,6 +98,7 @@ import { Products } from '@/features/ecommerce/collections/Products'
 import { Transactions } from '@/features/ecommerce/collections/Transactions'
 import { Redirects } from '@/features/redirects/collection'
 import { ReviewEvents } from '@/features/approval/collection'
+import { ApprovalWorkflows } from '@/features/approval/workflowCollection'
 import { Roles } from '@/collections/Roles'
 
 import { BackupSettings } from '@/globals/BackupSettings'
@@ -145,6 +146,7 @@ import {
   countPreferences,
   countProducts,
   countRedirects,
+  countApprovalWorkflows,
   countReviewEvents,
   countRoles,
   countTransactions,
@@ -176,6 +178,7 @@ import {
   createPreference,
   createProduct,
   createRedirect,
+  createApprovalWorkflow,
   createReviewEvent,
   createRole,
   createTransaction,
@@ -207,6 +210,7 @@ import {
   deletePreference,
   deleteProduct,
   deleteRedirect,
+  deleteApprovalWorkflow,
   deleteReviewEvent,
   deleteRole,
   deleteTransaction,
@@ -276,6 +280,8 @@ import {
   findProductsPaginated,
   findRedirectByID,
   findRedirectsPaginated,
+  findApprovalWorkflowByID,
+  findApprovalWorkflowsPaginated,
   findReviewEventByID,
   findReviewEventsPaginated,
   findRoleByID,
@@ -329,6 +335,7 @@ import {
   updatePreference,
   updateProduct,
   updateRedirect,
+  updateApprovalWorkflow,
   updateReviewEvent,
   updateRole,
   updateSecuritySettings,
@@ -410,6 +417,7 @@ export const writeRegistry: {
     'preferences': collectionOps(createPreference, updatePreference, deletePreference, findPreferenceByID),
     redirects: collectionOps(createRedirect, updateRedirect, deleteRedirect, findRedirectByID),
     'review-events': collectionOps(createReviewEvent, updateReviewEvent, deleteReviewEvent, findReviewEventByID),
+    'approval-workflows': collectionOps(createApprovalWorkflow, updateApprovalWorkflow, deleteApprovalWorkflow, findApprovalWorkflowByID),
     roles: collectionOps(createRole, updateRole, deleteRole, findRoleByID),
     'locked-documents': collectionOps(createLockedDocument, updateLockedDocument, deleteLockedDocument, findLockedDocumentByID),
   },
@@ -474,6 +482,7 @@ export const readRegistry: ReadRegistry = {
     'preferences': readEntry(Preferences, findPreferencesPaginated, findPreferenceByID, countPreferences),
     redirects: readEntry(Redirects, findRedirectsPaginated, findRedirectByID, countRedirects),
     'review-events': readEntry(ReviewEvents, findReviewEventsPaginated, findReviewEventByID, countReviewEvents),
+    'approval-workflows': readEntry(ApprovalWorkflows, findApprovalWorkflowsPaginated, findApprovalWorkflowByID, countApprovalWorkflows),
     roles: readEntry(Roles, findRolesPaginated, findRoleByID, countRoles),
     'locked-documents': readEntry(LockedDocuments, findLockedDocumentsPaginated, findLockedDocumentByID, countLockedDocuments),
   },
@@ -528,6 +537,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ReviewEvents, Roles]
+export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ReviewEvents, ApprovalWorkflows, Roles]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings]

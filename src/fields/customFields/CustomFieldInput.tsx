@@ -1,11 +1,13 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useId, useRef, useState } from 'react'
 
 import { defaultValueFor } from '@/features/customFields/normalize'
 import { isFieldVisible } from '@/features/customFields/conditions'
 import { oembedEmbedUrl } from '@/features/customFields/oembed'
 import { MediaPicker } from '@/views/visualEditor/MediaPicker'
+import { mergeTagFor, type MergeTagMode, type MergeTagParent } from '@/features/customFields/mergeTagHint'
+import '@/features/customFields/admin/field-help.css'
 
 import type { CustomFieldDef, FlexibleLayout } from './types'
 
@@ -21,6 +23,107 @@ export const CustomFieldMediaContext = createContext<{ urls: MediaUrlMap; rememb
   urls: {},
   remember: () => undefined,
 })
+
+/**
+ * Small (i) button that shows the merge tag to paste for a field. Opens on
+ * hover or focus, and a click pins it open (so it works on touch). Escape or
+ * a click outside closes it. The tooltip stays in the DOM so the button can
+ * point at it with aria-describedby.
+ */
+export function MergeTagHint({
+  name,
+  type,
+  parentPath,
+  mode,
+  optionsSlug,
+}: {
+  name: string
+  type?: string
+  parentPath?: MergeTagParent[]
+  mode?: MergeTagMode
+  optionsSlug?: string | null
+}) {
+  const info = mergeTagFor({ name, type, parentPath, mode, optionsSlug })
+  const [open, setOpen] = useState(false)
+  const [pinned, setPinned] = useState(false)
+  const [status, setStatus] = useState('')
+  const wrapRef = useRef<HTMLSpanElement>(null)
+  const tipId = useId()
+
+  const close = () => {
+    setOpen(false)
+    setPinned(false)
+  }
+
+  // Click outside closes a pinned tooltip (covers Safari, which does not focus buttons on click).
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (e: Event) => {
+      if (!wrapRef.current?.contains(e.target as Node)) close()
+    }
+    document.addEventListener('pointerdown', onPointer)
+    return () => document.removeEventListener('pointerdown', onPointer)
+  }, [open])
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(info.tag)
+      setStatus('Copied')
+    } catch {
+      setStatus('Could not copy. Select the tag and copy it yourself.')
+    }
+  }
+
+  return (
+    <span
+      className="cf-tag-hint"
+      ref={wrapRef}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => {
+        if (!pinned) setOpen(false)
+      }}
+      onFocus={() => setOpen(true)}
+      onBlur={(e) => {
+        if (!wrapRef.current?.contains(e.relatedTarget as Node | null)) close()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation()
+          close()
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="cf-tag-hint__btn"
+        aria-label="Show merge tag"
+        aria-expanded={open}
+        aria-describedby={tipId}
+        onClick={() => {
+          const next = !pinned
+          setPinned(next)
+          setOpen(next)
+          setStatus('')
+        }}
+      >
+        i
+      </button>
+      <span id={tipId} role="tooltip" className="cf-tag-hint__pop" hidden={!open}>
+        <span>Paste this tag where you want the value to appear:</span>
+        <code>{info.tag}</code>
+        {info.note && <span className="cf-tag-hint__note">{info.note}</span>}
+        <span className="cf-tag-hint__row">
+          <button type="button" className="cf-tag-hint__copy" onClick={copy}>
+            Copy
+          </button>
+          <span className="cf-tag-hint__status" role="status" aria-live="polite">
+            {status}
+          </span>
+        </span>
+      </span>
+    </span>
+  )
+}
 
 const shell = 'flex min-w-0 flex-[1_1_260px] flex-col gap-[5px]'
 const shellFull = 'flex min-w-0 flex-[1_1_100%] flex-col gap-[5px]'
@@ -377,7 +480,9 @@ export const CustomFieldInput: React.FC<{
   onChange: (value: unknown) => void
   error?: string
   idPrefix?: string
-}> = ({ def, value: rawValue, onChange, error, idPrefix = 'cf' }) => {
+  /** Shown next to the field label, eg the merge tag info button in the document panel. */
+  hint?: React.ReactNode
+}> = ({ def, value: rawValue, onChange, error, idPrefix = 'cf', hint }) => {
   const id = `${idPrefix}-${def.name}`
   // Show the default for a field the document has not set yet. The server
   // stores it on create, so what the editor sees is what is saved.
@@ -385,11 +490,19 @@ export const CustomFieldInput: React.FC<{
   const isWide = def.type === 'repeater' || def.type === 'flexible' || def.type === 'group' || def.type === 'gallery' || def.width === 'full'
   const wrapClass = isWide ? shellFull : shell
 
-  const label = (
+  const labelEl = (
     <label className={labelClassName} htmlFor={id}>
       {def.label}
       {def.required ? <span className="text-[#b3453a]"> *</span> : null}
     </label>
+  )
+  const label = hint ? (
+    <span className="flex flex-wrap items-center gap-[6px]">
+      {labelEl}
+      {hint}
+    </span>
+  ) : (
+    labelEl
   )
   const help = def.helpText ? <p className={helpClassName}>{def.helpText}</p> : null
   const err = error ? <p className={errorClassName} role="alert">{error}</p> : null
@@ -433,6 +546,7 @@ export const CustomFieldInput: React.FC<{
             {def.trueLabel || def.label}
             {def.required ? <span className="text-[#b3453a]"> *</span> : null}
           </label>
+          {hint}
           {help}
           {err}
         </div>

@@ -154,7 +154,8 @@ describe('optimiseBytes', () => {
 })
 
 describe('prepareUploadFile (optimise on upload)', () => {
-  const upload: UploadFile = { data: bytes(1000), mimetype: 'image/jpeg', name: 'Harbour.jpg', size: 1000 }
+  // Real JPEG signature: uploads are checked by their first bytes, not by the declared type.
+  const upload: UploadFile = { data: Uint8Array.from([0xff, 0xd8, 0xff, ...bytes(997)]), mimetype: 'image/jpeg', name: 'Harbour.jpg', size: 1000 }
 
   it('stores the optimised copy under a matching name and keeps the original when asked', async () => {
     const { binding } = fakeBinding(bytes(250))

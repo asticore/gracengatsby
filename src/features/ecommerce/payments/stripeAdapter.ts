@@ -48,6 +48,9 @@ import Stripe from 'stripe'
 
 import type { Engine } from '@/localapi/engine'
 
+import { CheckoutError, priceCart, validateCheckoutValues, type PricingEngine } from '../server/pricing'
+import { flagMismatch, markOrderPaid } from '../server/orders'
+
 // The real plugin's own `initiatePayment.js`/`confirmOrder.js` each hardcode
 // a DIFFERENT default apiVersion ('2025-06-30.preview' vs
 // '2025-03-31.basil') - confirmed by reading both directly, an apparent
@@ -79,97 +82,160 @@ export type InitiateStripePaymentArgs = {
   billingAddress: Record<string, unknown> | undefined
   shippingAddress: Record<string, unknown> | undefined
   user: { id: number } | null | undefined
+  /** Raw checkout body: `couponCode`, `shippingOptionId`, `checkoutFields`. Only ids and text; never totals. */
+  checkout?: Record<string, unknown>
 }
 
 export type InitiateStripePaymentResult = { clientSecret: string; message: string; paymentIntentID: string }
 
+const ADDRESS_KEYS = ['title', 'firstName', 'lastName', 'company', 'addressLine1', 'addressLine2', 'city', 'state', 'postalCode', 'country', 'phone']
+
+function cleanAddress(a: Record<string, unknown> | undefined | null): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const k of ADDRESS_KEYS) if (typeof a?.[k] === 'string') out[k] = (a[k] as string).trim().slice(0, 200)
+  return out
+}
+
 /**
- * Reproduced from the real plugin's `initiatePayment.js` (the ADAPTER half -
- * cart/currency/product-price/inventory validation is the caller's job,
- * `handlePaymentsStripeInitiate` in `src/localapi/rest.ts`, matching the
- * real plugin's own split between `endpoints/initiatePayment.js` and this
- * file). Creates or reuses a Stripe Customer by email, creates a
- * PaymentIntent for the cart's subtotal, and records a `transactions` row
- * (`status: 'pending'`) - `overrideAccess: true` on that create matches real
- * The original engine's own Local API default (`engine.create()` with no
- * `overrideAccess` defaults to `true` there, confirmed against
- * the vendor source; this app's own
- * `engine.create()` defaults the OPPOSITE way - `false` - so it must be
- * passed explicitly to match).
- *
- * `cart.subtotal` is built by summing `priceInAUD * quantity`
- * (`cartHooks.ts`), and `priceInAUD` is stored in WHOLE currency units (e.g.
- * `29.99` meaning $29.99 - confirmed 2026-09-26, plan doc What's-left item
- * #12) - but Stripe's own API requires `amount` in the currency's SMALLEST
- * unit (cents for AUD). This used to pass `cart.subtotal` straight through
- * with no conversion at all, which would have sent Stripe an amount ~100x
- * too small (or a non-integer amount Stripe rejects outright) for any real
- * charge - never caught because `STRIPE_SECRET_KEY` is blank in this
- * environment and the test suite mocks Stripe entirely (asserting the buggy
- * behavior as if it were correct). Fixed by converting to cents right at
- * this boundary, the one place the reference engine's own plugin does the same
- * conversion (per `pricing.ts`'s doc comment). `transactions.amount`/
- * `orders.amount` are populated FROM Stripe's own response
- * (`paymentIntent.amount`) elsewhere in this file, so they were already
- * correctly cents-denominated and needed no change.
+ * Prices the cart ON THE SERVER (database prices, coupon, shipping, tax - see
+ * ../server/pricing.ts), stores a pending-payment order holding that snapshot,
+ * and creates the Stripe PaymentIntent for exactly the order total. The browser
+ * supplies only ids, quantities and the chosen shipping option id. A cart that
+ * already has a pending order reuses it (and updates its PaymentIntent), so
+ * retries do not pile up orders.
  */
 export async function initiateStripePayment(args: InitiateStripePaymentArgs): Promise<InitiateStripePaymentResult> {
-  const { engine, cart, currency, customerEmail, billingAddress, shippingAddress, user } = args
-  const secretKey = process.env.STRIPE_SECRET_KEY
-  const subtotal = cart.subtotal
-  const amount = typeof subtotal === 'number' ? Math.round(subtotal * 100) : subtotal
-
-  if (!secretKey) throw new Error('Stripe secret key is required.')
-  if (!currency) throw new Error('Currency is required.')
+  const { engine, cart, customerEmail, billingAddress, shippingAddress, user } = args
+  const currency = 'AUD' // single-currency shop: whatever the caller passed is ignored
   if (!cart.items || cart.items.length === 0) throw new Error('Cart is empty or not provided.')
   if (!customerEmail || typeof customerEmail !== 'string') throw new Error('A valid customer email is required to make a purchase.')
-  if (!subtotal || typeof subtotal !== 'number' || subtotal <= 0) throw new Error('A valid amount is required to initiate a payment.')
+  const checkout = args.checkout ?? {}
 
-  const stripe = getStripeClient(secretKey)
+  const address = cleanAddress(shippingAddress)
+  const priced = await priceCart(
+    engine as unknown as PricingEngine,
+    {
+      items: cart.items as never,
+      address: { country: address.country, state: address.state, postalCode: address.postalCode },
+      email: customerEmail,
+      couponCode: typeof checkout.couponCode === 'string' ? checkout.couponCode : null,
+      shippingOptionId: typeof checkout.shippingOptionId === 'string' ? checkout.shippingOptionId : null,
+      strict: true,
+      cartId: cart.id,
+    },
+  )
+  const { totals, config, lines } = priced
+  const fields = validateCheckoutValues(config.fields, (checkout.checkoutFields ?? {}) as Record<string, unknown>)
+  if (fields.ok === false || !('values' in fields)) throw new CheckoutError(Object.values((fields as unknown as { errors: Record<string, string> }).errors)[0] ?? 'Check the highlighted fields.')
+  const amount = totals.totalCents
+  if (!Number.isInteger(amount) || amount <= 0) throw new CheckoutError('A valid amount is required to initiate a payment.')
 
-  let customer = (await stripe.customers.list({ email: customerEmail })).data[0]
-  if (!customer?.id) {
-    customer = await stripe.customers.create({ email: customerEmail })
+  // Fields the editor maps onto the address / the order note.
+  for (const key of ['company', 'phone', 'addressLine2'] as const) if ((fields as { values: Record<string, { value: string }> }).values[key]) address[key] = (fields as { values: Record<string, { value: string }> }).values[key].value
+  const customerNote = (fields as { values: Record<string, { value: string }> }).values.orderNotes?.value
+  const email = customerEmail.trim().toLowerCase()
+
+  const orderData = {
+    items: lines.map((l) => ({ product: Number(l.productId), quantity: l.quantity })),
+    lineItems: totals.lines.map((l) => ({
+      productId: Number(l.productId),
+      variationId: (l as unknown as { variationId?: string | null }).variationId ?? null,
+      name: l.name,
+      sku: l.sku ?? null,
+      quantity: l.quantity,
+      unitCents: l.unitCents,
+      lineCents: l.lineCents,
+      discountCents: l.discountCents,
+      taxCents: l.taxCents,
+    })),
+    shippingAddress: address,
+    ...(user ? { customer: user.id } : {}),
+    customerEmail: email,
+    status: 'pending',
+    amount,
+    currency: currency.toUpperCase(),
+    subtotal: totals.subtotalCents,
+    discountTotal: totals.discountCents,
+    shippingTotal: totals.shippingCents,
+    taxTotal: totals.taxCents,
+    pricesIncludeTax: totals.pricesIncludeTax,
+    shippingMethod: totals.shippingOption ? { id: totals.shippingOption.id, title: totals.shippingOption.title, costCents: totals.shippingOption.costCents, type: totals.shippingOption.type } : null,
+    taxLines: totals.taxLines,
+    couponLines: totals.coupon ? [totals.coupon] : [],
+    checkoutFields: (fields as { values: Record<string, { value: string }> }).values,
+    customerNote: customerNote ?? null,
+    cartId: cart.id,
   }
 
-  // No `variant`/custom item fields to preserve (this app's cart items are
-  // just `{product, quantity}` - `../collections/shared.ts`'s
-  // `cartItemFields`), so the flattening real `initiatePayment.js` does is
-  // just this.
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (!secretKey) throw new Error('Stripe secret key is required.')
+  const stripe = getStripeClient(secretKey)
+  let customer = (await stripe.customers.list({ email: customerEmail })).data[0]
+  if (!customer?.id) customer = await stripe.customers.create({ email: customerEmail })
+
   const flattenedCart = cart.items.map((item) => ({ product: cartItemProductId(item), quantity: item.quantity }))
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount,
-    automatic_payment_methods: { enabled: true },
-    currency,
-    customer: customer.id,
-    metadata: {
-      cartID: String(cart.id),
-      cartItemsSnapshot: JSON.stringify(flattenedCart),
-      shippingAddress: JSON.stringify(shippingAddress ?? null),
-    },
-  })
+  // Reuse this cart's pending order if there is one.
+  const existing = await engine
+    .find({ collection: 'orders', where: { cartId: { equals: cart.id }, status: { equals: 'pending' } }, limit: 1, depth: 0, overrideAccess: true })
+    .then((r) => (r?.docs?.[0] as { id: number; paymentIntentId?: string } | undefined) ?? undefined)
+    .catch((): undefined => undefined)
 
-  await engine.create({
-    collection: 'transactions',
-    data: {
-      ...(user ? { customer: user.id } : { customerEmail }),
-      amount: paymentIntent.amount,
-      billingAddress: billingAddress ?? null,
-      cart: cart.id,
-      currency: paymentIntent.currency.toUpperCase(),
-      items: flattenedCart,
-      paymentMethod: 'stripe',
-      status: 'pending',
-      stripe: { customerID: customer.id, paymentIntentID: paymentIntent.id },
-    },
-    overrideAccess: true,
-  })
+  let paymentIntent
+  let orderId: number
+  if (existing?.paymentIntentId) {
+    try {
+      // Stripe metadata values are capped at 500 characters, so only ids go in (nothing is read back from it).
+      paymentIntent = await stripe.paymentIntents.update(existing.paymentIntentId, { amount, metadata: { cartID: String(cart.id), orderID: String(existing.id) } })
+    } catch {
+      paymentIntent = undefined
+    }
+  }
+  if (paymentIntent && existing) {
+    orderId = existing.id
+    await engine.update({ collection: 'orders', id: orderId, data: orderData as never, overrideAccess: true })
+  } else {
+    // The PaymentIntent is created first: if Stripe refuses, no pending order is left behind.
+    paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      automatic_payment_methods: { enabled: true },
+      currency,
+      customer: customer.id,
+      metadata: { cartID: String(cart.id) },
+    })
+    try {
+      const order = await engine.create({ collection: 'orders', data: { ...orderData, paymentIntentId: paymentIntent.id } as never, overrideAccess: true })
+      orderId = order.id as number
+      paymentIntent = await stripe.paymentIntents.update(paymentIntent.id, { metadata: { cartID: String(cart.id), orderID: String(orderId) } })
+    } catch (error) {
+      await stripe.paymentIntents.cancel(paymentIntent.id).catch((): null => null)
+      throw error
+    }
+    await engine.create({
+      collection: 'transactions',
+      data: {
+        ...(user ? { customer: user.id } : { customerEmail }),
+        amount: paymentIntent.amount,
+        billingAddress: billingAddress ?? null,
+        cart: cart.id,
+        currency: paymentIntent.currency.toUpperCase(),
+        items: flattenedCart,
+        order: orderId,
+        paymentMethod: 'stripe',
+        status: 'pending',
+        stripe: { customerID: customer.id, paymentIntentID: paymentIntent.id },
+      },
+      overrideAccess: true,
+    })
+  }
+
+  // Remember the email so an abandoned-cart reminder can be sent (see ../server/abandoned.ts).
+  await engine.update({ collection: 'carts', id: cart.id, data: { email } as never, overrideAccess: true }).catch((): null => null)
 
   return {
-    clientSecret: paymentIntent.client_secret || '',
+    clientSecret: paymentIntent!.client_secret || '',
     message: 'Payment initiated successfully',
-    paymentIntentID: paymentIntent.id,
+    paymentIntentID: paymentIntent!.id,
   }
 }
 
@@ -183,44 +249,17 @@ export type ConfirmStripeOrderArgs = {
 export type ConfirmStripeOrderResult = { message: string; orderID: number; transactionID: number }
 
 /**
- * Reproduced from the real plugin's `confirmOrder.js`. Looks the pending
- * transaction up by its stored PaymentIntent id, confirms with Stripe that
- * the PaymentIntent actually succeeded (never trusts the client's own
- * report - see this project's `membershipWebhooks`' header comment for the
- * same principle applied to the subscription side), creates the `orders`
- * row from the cart-items snapshot stashed in the PaymentIntent's metadata,
- * marks the cart purchased and the transaction succeeded, then decrements
- * product inventory.
- *
- * The `where` clause below queries `stripePaymentIntentID`, NOT the real
- * plugin's dotted `'stripe.paymentIntentID'` - confirmed by reading
- * `src/cms/db/schema/generate.ts`'s `processGroupField` directly: a group
- * field's subfields are flattened onto the parent table under a
- * `<groupName><CapitalizedSubfieldName>` JS key (`stripe.paymentIntentID` ->
- * column key `stripePaymentIntentID`), and `src/cms/db/where.ts`'s
- * `buildWhere` looks a `where` key up in that same flat `columns` map
- * verbatim - there is no dotted-path resolution in this app's own query
- * engine the way the reference engine's does. The nested `transaction.stripe.*`
- * shape is only reconstructed on READ (by `nestGroups`), never accepted on
- * the `where` side.
- *
- * Inventory decrement: the reference engine does this via a raw
- * `engine.db.updateOne` (`endpoints/confirmOrder.js`) that writes straight
- * to the live table, bypassing hooks/access/versions entirely - this
- * engine has no such bypass, so `engine.update(..., overrideAccess: true,
- * draft: false)` is used instead. Documented simplification, not a
- * functional gap: `products` has `versions: {drafts: true}` (Products.ts),
- * so this technically also writes a version-snapshot row the reference engine's raw
- * DB write wouldn't - the live inventory value this engine's own read path
- * serves ends up correct either way, which is what actually matters for the
- * storefront.
+ * Confirms with Stripe that the PaymentIntent really succeeded (never trusting
+ * the browser), checks the charged amount equals the stored order total, then
+ * marks the pending order paid through `markOrderPaid` - the same idempotent
+ * path the webhook uses, so a double confirm or a webhook race does stock,
+ * coupon usage and emails exactly once.
  */
 export async function confirmStripeOrder(args: ConfirmStripeOrderArgs): Promise<ConfirmStripeOrderResult> {
-  const { engine, customerEmail, paymentIntentID, user } = args
+  const { engine, paymentIntentID } = args
   const secretKey = process.env.STRIPE_SECRET_KEY
   if (!secretKey) throw new Error('Stripe secret key is required')
   if (!paymentIntentID) throw new Error('PaymentIntent ID is required')
-
   const stripe = getStripeClient(secretKey)
 
   const transactionsResult = await engine.find({
@@ -230,52 +269,26 @@ export async function confirmStripeOrder(args: ConfirmStripeOrderArgs): Promise<
     depth: 0,
     overrideAccess: true,
   })
-  const transaction = transactionsResult.docs[0] as { id: number; items?: PaymentsCartItem[] } | undefined
+  const transaction = transactionsResult.docs[0] as { id: number } | undefined
   if (!transactionsResult.totalDocs || !transaction) throw new Error('No transaction found for the provided PaymentIntent ID')
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentID)
   if (paymentIntent.status !== 'succeeded') throw new Error('Payment not completed.')
+  const result = await finalizePaidIntent(engine, paymentIntent, transaction.id)
+  return { message: 'Payment initiated successfully', orderID: result.orderId, transactionID: transaction.id }
+}
 
-  const cartID = paymentIntent.metadata.cartID
-  const cartItemsSnapshot = paymentIntent.metadata.cartItemsSnapshot
-    ? (JSON.parse(paymentIntent.metadata.cartItemsSnapshot) as PaymentsCartItem[])
-    : undefined
-  const shippingAddress = paymentIntent.metadata.shippingAddress ? JSON.parse(paymentIntent.metadata.shippingAddress) : undefined
-  if (!cartID) throw new Error('Cart ID not found in the PaymentIntent metadata')
-  if (!cartItemsSnapshot || !Array.isArray(cartItemsSnapshot)) throw new Error('Cart items snapshot not found or invalid in the PaymentIntent metadata')
-
-  const order = await engine.create({
-    collection: 'orders',
-    data: {
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency.toUpperCase(),
-      ...(user ? { customer: user.id } : { customerEmail }),
-      items: cartItemsSnapshot,
-      shippingAddress: shippingAddress ?? null,
-      status: 'processing',
-      transactions: [transaction.id],
-    },
-    overrideAccess: true,
-  })
-
-  const timestamp = new Date().toISOString()
-  await engine.update({ collection: 'carts', id: Number(cartID), data: { purchasedAt: timestamp }, overrideAccess: true })
-  await engine.update({ collection: 'transactions', id: transaction.id, data: { order: order.id, status: 'succeeded' }, overrideAccess: true })
-
-  for (const item of transaction.items ?? []) {
-    const productId = cartItemProductId(item)
-    if (!productId || !item.quantity) continue
-    const product = await engine.findByID({ collection: 'products', id: productId, depth: 0, overrideAccess: true })
-    const currentInventory = (product as { inventory?: number } | null)?.inventory
-    // `undefined`/`null` inventory means unlimited stock (matching the real
-    // plugin's own `defaultProductsValidation.js` reading of the same
-    // field) - nothing to decrement.
-    if (typeof currentInventory !== 'number') continue
-    await engine.update({ collection: 'products', id: productId, data: { inventory: currentInventory - item.quantity }, overrideAccess: true, draft: false })
+/** Shared by confirm and the `payment_intent.succeeded` webhook. */
+export async function finalizePaidIntent(engine: Engine, paymentIntent: Stripe.PaymentIntent, transactionId?: number): Promise<{ orderId: number; firstTime: boolean }> {
+  const orderId = Number(paymentIntent.metadata?.orderID)
+  if (!orderId) throw new Error('Order ID not found in the PaymentIntent metadata')
+  const order = (await engine.findByID({ collection: 'orders', id: orderId, depth: 0, overrideAccess: true })) as { amount?: number } | null
+  if (!order) throw new Error('Order not found')
+  if (typeof order.amount === 'number' && order.amount !== paymentIntent.amount_received && order.amount !== paymentIntent.amount) {
+    // Never 500 forever (Stripe would retry the webhook for days): record it for staff and acknowledge.
+    await flagMismatch(engine as never, orderId, `Payment ${paymentIntent.id} of ${paymentIntent.amount_received ?? paymentIntent.amount} cents does not match the order total of ${order.amount} cents.`)
+    return { orderId, firstTime: false }
   }
-
-  // `message` here really is 'Payment initiated successfully', not a typo
-  // introduced by this port - the real plugin's own `confirmOrder.js`
-  // returns that exact string on a successful CONFIRM, reproduced verbatim.
-  return { message: 'Payment initiated successfully', orderID: order.id as number, transactionID: transaction.id }
+  const { firstTime } = await markOrderPaid(engine as never, orderId, { paymentIntentId: paymentIntent.id, transactionId })
+  return { orderId, firstTime }
 }

@@ -33,6 +33,22 @@ const CONSENT_COLUMNS = [
   'consent_consent_mode_v2',
   'consent_head_script_category',
   'consent_body_script_category',
+  // Banner customisation (migration 20261012_110000_consent_banner)
+  'consent_show_reject_button',
+  'consent_privacy_policy_label',
+  'consent_necessary_label',
+  'consent_necessary_description',
+  'consent_preferences_label',
+  'consent_preferences_description',
+  'consent_analytics_label',
+  'consent_analytics_description',
+  'consent_marketing_label',
+  'consent_marketing_description',
+  'consent_accent_color',
+  'consent_border_radius',
+  'consent_font_size',
+  'consent_show_logo',
+  'consent_logo_url',
 ]
 
 const CHILD_COLUMNS = ['_order', '_parent_id', 'id', 'category', 'name', 'provider', 'purpose', 'duration']

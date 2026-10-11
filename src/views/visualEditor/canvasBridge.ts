@@ -25,7 +25,7 @@ import type { NodePath } from './treeOps'
 const SOURCE = 've-canvas' as const
 
 export type ParentToFrameMessage =
-  | { source: typeof SOURCE; type: 'init'; blocks: SectionNode[]; selectedPath: NodePath | null }
+  | { source: typeof SOURCE; type: 'init'; blocks: SectionNode[]; selectedPath: NodePath | null; locks?: Record<string, { mode: 'structure' | 'full'; blocked: boolean }> }
   | { source: typeof SOURCE; type: 'selected'; selectedPath: NodePath | null }
   /** Highlights the insert slot a library-card drag is currently over (or clears it with null).
    *  The parent resolves the target itself via elementFromPoint - see VisualEditor.tsx - since

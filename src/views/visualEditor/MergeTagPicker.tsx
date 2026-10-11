@@ -9,7 +9,7 @@ import { fetchFieldGroups, type CustomFieldDef, type FieldGroupDoc } from '@/fie
  * Dropdown that inserts a merge tag into a text field.
  *
  * Shown next to any field marked `supportsMergeTags`. Custom fields are listed
- * from the Field Groups that apply to `collection` when it is given (eg when
+ * from the extra field sets that apply to `collection` when it is given (eg when
  * editing a post), otherwise from every group (eg a Page Template, which a Loop
  * can render for any collection). Nested fields show their dotted tag too.
  */
@@ -18,8 +18,8 @@ const TYPE_HINT: Partial<Record<CustomFieldDef['type'], string>> = {
   link: 'link: url / title / target',
   map: 'map: address / lat / lng / zoom',
   gallery: 'gallery: .0, .1 = image URLs',
-  repeater: 'repeater: .0.field',
-  flexible: 'flexible: .0.layout / .0.field',
+  repeater: 'repeating rows (table): .0.field',
+  flexible: 'flexible layouts: .0.layout / .0.field',
   group: 'group: .field',
   checkbox: 'checkbox: Yes / No',
 }

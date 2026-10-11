@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getAdminContext } from '@/admin/auth'
+import { loadApprovalSettings } from '@/features/approval/settings'
+import type { WorkflowRecord } from '@/features/approval/workflowForm'
 import { RolesViewClient } from './RolesViewClient'
 
 /**
@@ -28,10 +30,19 @@ export async function RolesView() {
   }
   const rolesDocs = (roles || []) as RoleRecord[]
 
+  // Approval workflows are admin-managed configuration; only admins reach this view (checked above).
+  const workflowDocs = await context.engine
+    .find({ collection: 'approval-workflows', limit: 200, depth: 0, sort: 'name', overrideAccess: true })
+    .then((result) => (result.docs || []) as unknown as WorkflowRecord[])
+    .catch((): WorkflowRecord[] => [])
+  const approvalEnabled = (await loadApprovalSettings(context.engine as never)).enabled
+
   return (
     <RolesViewClient
       roles={rolesDocs}
       canEdit={context.isAdmin}
+      workflows={workflowDocs}
+      approvalEnabled={approvalEnabled}
     />
   )
 }

@@ -159,6 +159,32 @@ export function isServableMediaFilename(filename: string): boolean {
   return true
 }
 
+/** Pictures a browser may display inline from this origin. SVG is deliberately absent: it can carry script. */
+const INLINE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'])
+
+/**
+ * Headers that keep an uploaded file from running as part of this site.
+ * Everything is served with `nosniff` so the browser cannot reinterpret the
+ * bytes. PDFs are served inline (application/pdf, sandboxed). Anything that is not a plain picture or a PDF is sent as a download
+ * (`Content-Disposition: attachment`), so an uploaded document opens in the
+ * visitor's own viewer instead of in this origin. Set at serve time rather than
+ * at upload so files stored before this rule existed are covered as well.
+ */
+export function applySafeServingHeaders(headers: Headers, filename: string): void {
+  headers.set('X-Content-Type-Options', 'nosniff')
+  const type = (headers.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase()
+  if (type === 'application/pdf') {
+    // PDFs open in the browser's viewer. The sandbox directive stops any script inside the file from running
+    // with this site's origin; nosniff (above) stops the browser treating the bytes as something else.
+    headers.set('Content-Disposition', 'inline')
+    headers.set('Content-Security-Policy', 'sandbox')
+  } else if (!INLINE_TYPES.has(type)) {
+    const safeName = filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+    headers.set('Content-Disposition', `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(filename)}`)
+    headers.set('Content-Security-Policy', "default-src 'none'; sandbox")
+  }
+}
+
 export async function getMediaObjectResponse(key: string, request: Request): Promise<Response | null> {
   if (!isServableMediaFilename(key)) return null
   const bucket = await getMediaBucket()
@@ -186,6 +212,7 @@ export async function getMediaObjectResponse(key: string, request: Request): Pro
   if (metadata?.cacheExpiry) headers.set('Expires', metadata.cacheExpiry.toUTCString())
   headers.set('etag', object.httpEtag)
   headers.set('Accept-Ranges', 'bytes')
+  applySafeServingHeaders(headers, key)
 
   // Gated on `requestedRange` (whether the caller actually asked for a
   // range), not merely on `object.range` being set - wrangler's local dev R2

@@ -6,6 +6,7 @@
 
 import type { StoredMedia } from './library'
 import { parseId } from './access'
+import { resolveUploadPolicy, type UploadPolicy } from './fileTypes'
 import { resolveOptimiseSettings, type OptimiseSettings } from './optimise'
 import type { KeyedProvider, StockKeys } from './stock'
 
@@ -48,6 +49,11 @@ export async function readMediaSettings(engine: MediaEngine): Promise<Record<str
 
 export async function readOptimiseSettings(engine: MediaEngine): Promise<OptimiseSettings> {
   return resolveOptimiseSettings(await readMediaSettings(engine))
+}
+
+/** The upload allow-list and size limit from Media settings (defaults when unset). */
+export async function readUploadPolicy(engine: MediaEngine): Promise<UploadPolicy> {
+  return resolveUploadPolicy(await readMediaSettings(engine))
 }
 
 /** Reads the stock photo keys. The global's field hooks decrypt them. */

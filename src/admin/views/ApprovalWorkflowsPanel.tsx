@@ -23,7 +23,7 @@ import {
 } from '@/features/approval/workflowForm'
 import './roles-workflows.css'
 
-type RoleRow = { id: number; name: string; slug: string; builtIn?: boolean; permissions?: Record<string, Record<string, boolean>> | null }
+type RoleRow = { id: number; name: string; slug: string; builtIn?: boolean; permissions?: Record<string, Record<string, boolean | string | undefined>> | null }
 
 type Props = {
   workflows: WorkflowRecord[]

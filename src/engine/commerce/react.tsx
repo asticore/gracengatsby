@@ -40,6 +40,7 @@ type StoredCartRef = { id: number; secret: string }
 export type CartItemDoc = {
   id: string
   product: number | Record<string, unknown>
+  variation?: string | null
   quantity: number
 }
 
@@ -61,7 +62,8 @@ type ConfirmOrderResult = { orderID?: number; transactionID?: number; message?: 
 type CartContextValue = {
   cart: CartDoc | null
   cartLoading: boolean
-  addItem: (item: { product: number }, quantity?: number) => Promise<void>
+  /** Resolves to null on success, or the server's reason (out of stock, unavailable option ...). */
+  addItem: (item: { product: number; variation?: string | null }, quantity?: number) => Promise<string | null>
   incrementItem: (itemID: string) => Promise<void>
   decrementItem: (itemID: string) => Promise<void>
   removeItem: (itemID: string) => Promise<void>
@@ -188,7 +190,7 @@ export const EcommerceProvider: React.FC<{ children: React.ReactNode; defaultCur
     }
   }, [])
 
-  const mutateCart = useCallback(async (ref: StoredCartRef, path: string, body: Record<string, unknown>) => {
+  const mutateCart = useCallback(async (ref: StoredCartRef, path: string, body: Record<string, unknown>): Promise<string | null> => {
     setCartLoading(true)
     try {
       const res = await fetch(`${API_ROUTE}/carts/${ref.id}/${path}`, {
@@ -204,19 +206,20 @@ export const EcommerceProvider: React.FC<{ children: React.ReactNode; defaultCur
         // take a depth of their own (see rest.ts's cart-item handlers).
         const refreshed = await fetchCart(ref)
         if (refreshed) setCart(refreshed)
-      } else {
-        const failure = (await res.json().catch((): null => null)) as { message?: string } | null
-        console.error(`Cart update failed (${path}): ${failure?.message ?? res.status}`)
+        return null
       }
+      const failure = (await res.json().catch((): null => null)) as { message?: string; errors?: Array<{ message?: string }> } | null
+      console.error(`Cart update failed (${path}): ${failure?.message ?? res.status}`)
+      return failure?.errors?.[0]?.message || failure?.message || 'Could not update your cart.'
     } finally {
       setCartLoading(false)
     }
   }, [])
 
   const addItem = useCallback(
-    async (item: { product: number }, quantity = 1) => {
-      if (!cartRef) return
-      await mutateCart(cartRef, 'add-item', { item, quantity })
+    async (item: { product: number; variation?: string | null }, quantity = 1): Promise<string | null> => {
+      if (!cartRef) return 'Your cart is not ready yet.'
+      return mutateCart(cartRef, 'add-item', { item, quantity })
     },
     [cartRef, mutateCart],
   )

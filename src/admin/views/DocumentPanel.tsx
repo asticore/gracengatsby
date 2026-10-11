@@ -55,9 +55,23 @@ export type DocumentPanelInfo = {
  * A collapsible box in the side panel. Open state is remembered per user via
  * the shared edit-screen store (ids are namespaced `panel:<id>`).
  */
-const Box: React.FC<{ id: string; title: string; children: React.ReactNode }> = ({ id, title, children }) => {
+const Box: React.FC<{ id: string; title: string; children: React.ReactNode; alwaysOpen?: boolean }> = ({
+  id,
+  title,
+  children,
+  alwaysOpen,
+}) => {
   const storeId = `panel:${id}`
   const [open] = useCardOpen(storeId)
+  // The Save / Publish box holds the only save button, so it is never collapsed.
+  if (alwaysOpen) {
+    return (
+      <details className="doc-box" open onToggle={(event) => ((event.currentTarget as HTMLDetailsElement).open = true)}>
+        <summary className="doc-box__title">{title}</summary>
+        <div className="doc-box__body">{children}</div>
+      </details>
+    )
+  }
   return (
     <details
       className="doc-box"
@@ -290,7 +304,7 @@ export const DocumentPanel: React.FC<{
       </div>
 
       {!readOnly && info.canUpdate && (
-        <Box id="publish" title={info.draftsEnabled ? 'Publish' : 'Save'}>
+        <Box alwaysOpen id="publish" title={info.draftsEnabled ? 'Publish' : 'Save'}>
           <VisibilityPanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} />
           {info.draftsEnabled && (
             <SchedulePanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} status={info.status} />

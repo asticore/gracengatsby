@@ -24,12 +24,15 @@ describe('AdminNavClient with flat rendering', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
     expect(settingsGroup).toBeDefined()
     expect(Object.keys(settingsGroup || {}).includes('section')).toBe(false)
-    expect(settingsGroup?.entities.length).toBe(8)
+    expect(settingsGroup?.entities.length).toBe(9)
   })
 
-  it('Settings group should render 8 page links with proper structure', () => {
+  it('Settings group should render 8 page links plus the roles collection link', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
-    expect(settingsGroup?.entities.length).toBe(8)
+    expect(settingsGroup?.entities.length).toBe(9)
+    const viewEntities = settingsGroup?.entities.filter((e) => e.type === 'view') || []
+    expect(viewEntities.length).toBe(8)
+    expect(settingsGroup?.entities.at(-1)).toEqual({ slug: 'roles', type: 'collections' })
 
     const expectedLabels = [
       'Site',
@@ -42,7 +45,7 @@ describe('AdminNavClient with flat rendering', () => {
       'Data and System',
     ]
 
-    const actualLabels = settingsGroup?.entities.map((e) => e.label) || []
+    const actualLabels = viewEntities.map((e) => e.label)
     expect(actualLabels).toEqual(expectedLabels)
   })
 
@@ -71,7 +74,7 @@ describe('AdminNavClient with flat rendering', () => {
   it('Settings page links should be renderable as regular navigation links', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
 
-    for (const entity of settingsGroup?.entities || []) {
+    for (const entity of settingsGroup?.entities.filter((e) => e.type === 'view') || []) {
       expect(entity.slug).toBeDefined()
       expect(entity.type).toBe('view')
       expect(entity.href).toBeDefined()

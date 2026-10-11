@@ -1,0 +1,281 @@
+/* Edit-page tabs (Edit / results) and the results tables under them.
+   Classes are prefixed et-. Light is the default; dark applies only under
+   [data-theme='dark']. */
+
+.et-root {
+  min-width: 0;
+}
+
+.et-tablist {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 16px 0;
+  border-bottom: 1px solid #e2e2e2;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.et-tablist::-webkit-scrollbar {
+  display: none;
+}
+
+.et-tab {
+  flex: 0 0 auto;
+  margin: 0 0 -1px 0;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  color: #555;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.et-tab:hover {
+  color: #1a1a1a;
+}
+
+.et-tab:focus-visible {
+  outline: 2px solid #3b6fd4;
+  outline-offset: 2px;
+}
+
+.et-tab--active {
+  color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+}
+
+.et-panel {
+  min-width: 0;
+}
+
+.et-panel[hidden] {
+  display: none !important;
+}
+
+.et-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.et-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.et-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.et-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.et-stat__value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.et-stat__label {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.et-button {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.et-button:hover:not(:disabled) {
+  background: #f3f3f3;
+}
+
+.et-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.et-button:focus-visible {
+  outline: 2px solid #3b6fd4;
+  outline-offset: 2px;
+}
+
+.et-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e2e2;
+  border-radius: 4px;
+}
+
+.et-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.et-table th,
+.et-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ececec;
+  text-align: left;
+  vertical-align: top;
+}
+
+.et-table th {
+  background: #fafafa;
+  font-weight: 600;
+  color: #444;
+}
+
+.et-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.et-num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.et-nowrap {
+  white-space: nowrap;
+}
+
+/* Long answers are cut to one line here; the full text is in the cell's title. */
+.et-clip {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.et-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.et-muted {
+  margin: 0;
+  color: #666;
+}
+
+.et-warning {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid #b58900;
+  background: #fbf7e8;
+}
+
+.et-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid #b3261e;
+  background: #fbeceb;
+  color: #7a1b15;
+}
+
+.et-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .et-tab {
+    padding: 8px 12px;
+  }
+
+  .et-pager {
+    justify-content: space-between;
+  }
+}
+
+[data-theme='dark'] .et-tablist {
+  border-bottom-color: #3a3a3a;
+}
+
+[data-theme='dark'] .et-tab {
+  color: #a8a8a8;
+}
+
+[data-theme='dark'] .et-tab:hover {
+  color: #f0f0f0;
+}
+
+[data-theme='dark'] .et-tab--active {
+  color: #f0f0f0;
+  border-bottom-color: #f0f0f0;
+}
+
+[data-theme='dark'] .et-results,
+[data-theme='dark'] .et-table td {
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] .et-stat__label,
+[data-theme='dark'] .et-muted {
+  color: #9a9a9a;
+}
+
+[data-theme='dark'] .et-button {
+  background: #232323;
+  border-color: #4a4a4a;
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] .et-button:hover:not(:disabled) {
+  background: #2e2e2e;
+}
+
+[data-theme='dark'] .et-table-wrap {
+  border-color: #3a3a3a;
+}
+
+[data-theme='dark'] .et-table th {
+  background: #1f1f1f;
+  color: #c8c8c8;
+}
+
+[data-theme='dark'] .et-table th,
+[data-theme='dark'] .et-table td {
+  border-bottom-color: #2e2e2e;
+}
+
+[data-theme='dark'] .et-warning {
+  background: #2e2a18;
+}
+
+[data-theme='dark'] .et-error {
+  background: #3a1d1b;
+  color: #f4c7c3;
+}

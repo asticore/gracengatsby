@@ -36,7 +36,7 @@ import React, { useMemo } from 'react'
 import type { Field } from '@/engine'
 import { DocumentInfoProvider, FormProvider } from '@/admin/context'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
-import { flattenDoc } from '@/admin/fields/shared'
+import { flattenDoc, fieldLabel, humanizeName } from '@/admin/fields/shared'
 import { DocumentPanel, type DocumentPanelInfo } from './DocumentPanel'
 import { SeoCard } from './SeoCard'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
@@ -65,6 +65,81 @@ export type EditFormProps = {
   visualBlocksCount?: number
   /** The schemaType field extracted by splitFields, to pass to DocumentPanel. */
   pageTypeField?: Field
+  /**
+   * Show only these top-level group fields (by name). Ungrouped top-level
+   * fields are dropped too. Used to show a subset of a global. Every field
+   * stays in form state, so a save still sends the hidden ones back unchanged.
+   * With exactly one name, that group's fields render without a card.
+   */
+  onlyGroups?: string[]
+  /** Hide these top-level group fields (by name). Same save behaviour as onlyGroups. */
+  excludeGroups?: string[]
+}
+
+/**
+ * Narrows the top-level fields to the group names given. `onlyGroups` keeps
+ * only the named groups (and drops everything else); `excludeGroups` removes
+ * the named groups. Fields that are not groups are dropped only by onlyGroups.
+ */
+export function scopeGroupFields(fields: Field[], scope: { onlyGroups?: string[]; excludeGroups?: string[] } = {}): Field[] {
+  const { onlyGroups, excludeGroups } = scope
+  if (!onlyGroups && !excludeGroups) return fields
+  return fields.filter((field) => {
+    if (field.type === 'group' && 'name' in field && typeof field.name === 'string') {
+      if (onlyGroups && !onlyGroups.includes(field.name)) return false
+      return !excludeGroups?.includes(field.name)
+    }
+    return !onlyGroups
+  })
+}
+
+/** One card on the non-panel form: a top-level group, a named tab, or the General bucket. */
+export type FieldSection = {
+  /** Stable key within one form; the card id is `<form>:<key>`. */
+  key: string
+  title: string
+  fields: Field[]
+  /** Data path the fields sit under: the group or tab name, '' for General. */
+  parentPath: string
+}
+
+const isHiddenField = (field: Field): boolean => Boolean((field as { admin?: { hidden?: boolean } }).admin?.hidden)
+
+const titleFor = (field: { label?: unknown }, name: string): string => {
+  const label = fieldLabel(field as Field)
+  return typeof label === 'string' ? label : humanizeName(name)
+}
+
+/**
+ * Splits top-level fields into one section per group (titled by its label),
+ * one per named tab, and one 'General' section holding every ungrouped field.
+ * Groups come first in config order; General comes first when it exists.
+ * Hidden groups are left out. A group keeps its own field wrapper, so its
+ * admin conditions still apply.
+ */
+export function splitFieldSections(fields: Field[]): FieldSection[] {
+  const general: Field[] = []
+  const sections: FieldSection[] = []
+  for (const field of fields) {
+    if (field.type === 'group' && 'name' in field && typeof field.name === 'string') {
+      if (isHiddenField(field)) continue
+      sections.push({ key: field.name, title: titleFor(field, field.name), fields: [field], parentPath: '' })
+    } else if (field.type === 'tabs') {
+      if (isHiddenField(field)) continue
+      for (const tab of field.tabs) {
+        if (!('name' in tab) || !tab.name) {
+          // An unnamed tab keeps its fields at the parent level, so they belong with General.
+          general.push(...tab.fields)
+          continue
+        }
+        sections.push({ key: tab.name, title: titleFor(tab as { label?: unknown }, tab.name), fields: tab.fields, parentPath: tab.name })
+      }
+    } else {
+      general.push(field)
+    }
+  }
+  if (general.length > 0) sections.unshift({ key: '_general', title: 'General', fields: general, parentPath: '' })
+  return sections
 }
 
 /**
@@ -129,20 +204,27 @@ export const EditForm: React.FC<EditFormProps> = ({
   collectionSlug,
   doc,
   draftsEnabled,
+  excludeGroups,
   fields,
   globalSlug,
   id,
+  onlyGroups,
   panel,
   pageTypeField,
   readOnly,
   visualBlocksCount,
   visualBlocksField,
 }) => {
-  // Built from ALL fields (including the one hidden from view) so a save sends it back untouched.
+  // Built from ALL fields (including the ones hidden from view) so a save sends them back untouched.
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
-  const { main, settings, access, seo, pageType } = useMemo(() => (panel ? splitFields(fields, visualBlocksField) : { main: fields, settings: [], access: undefined, seo: undefined, pageType: undefined }), [fields, panel, visualBlocksField])
+  const scoped = useMemo(() => scopeGroupFields(fields, { onlyGroups, excludeGroups }), [fields, onlyGroups, excludeGroups])
+  const { main, settings, access, seo, pageType } = useMemo(() => (panel ? splitFields(scoped, visualBlocksField) : { main: scoped, settings: [], access: undefined, seo: undefined, pageType: undefined }), [scoped, panel, visualBlocksField])
+  const sections = useMemo(() => (panel ? [] : splitFieldSections(scoped)), [panel, scoped])
   // Use either the extracted pageType or the one passed in (EditView extracts and passes it)
   const resolvedPageTypeField = pageTypeField || pageType
+  // One named group on its own reads as plain fields, not a card.
+  const flat = onlyGroups?.length === 1
+  const cardScope = globalSlug ?? collectionSlug ?? 'form'
 
   return (
     <DocumentInfoProvider value={{ collectionSlug, globalSlug, id }}>
@@ -152,7 +234,11 @@ export const EditForm: React.FC<EditFormProps> = ({
             <div className="document-edit__main">
               <CollapseAllBar />
               <div className="collection-edit__form">
-                <FieldRenderer fields={main} readOnly={readOnly} />
+                {main.length > 0 && (
+                  <CollapsibleCard id="main-fields" title="Content">
+                    <FieldRenderer fields={main} readOnly={readOnly} />
+                  </CollapsibleCard>
+                )}
                 {settings.length > 0 && (
                   <CollapsibleCard id="settings" title="Settings" className="doc-settings-card">
                     <div className="doc-settings">
@@ -183,7 +269,18 @@ export const EditForm: React.FC<EditFormProps> = ({
           <div className="document-fields">
             <div className="document-fields__edit">
               <div className={globalSlug ? 'global-edit__form' : 'collection-edit__form'}>
-                <FieldRenderer fields={fields} readOnly={readOnly} />
+                {flat ? (
+                  sections.map((section) => <FieldRenderer key={section.key} fields={section.fields} parentPath={section.parentPath} readOnly={readOnly} />)
+                ) : (
+                  <>
+                    {sections.length > 0 && <CollapseAllBar />}
+                    {sections.map((section) => (
+                      <CollapsibleCard key={section.key} id={`${cardScope}:${section.key}`} title={section.title} className="doc-group-card">
+                        <FieldRenderer fields={section.fields} parentPath={section.parentPath} readOnly={readOnly} />
+                      </CollapsibleCard>
+                    ))}
+                  </>
+                )}
                 {!readOnly && <SaveButton collectionSlug={collectionSlug} draftsEnabled={draftsEnabled} globalSlug={globalSlug} id={id} />}
               </div>
             </div>

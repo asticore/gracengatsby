@@ -172,18 +172,19 @@ export function cloneNode(node: SectionNode, makeId: () => string): SectionNode 
   return clone
 }
 
-/** Strips editor-only ids before the tree is written back to the CMS. */
-export function stripEditorIds(nodes: SectionNode[]): SectionNode[] {
+/**
+ * Strips editor-only ids before the tree is written back to the CMS. A nested node whose id is in
+ * `keep` (it carries a section lock) keeps it: that id is the lock's saved identity.
+ */
+export function stripEditorIds(nodes: SectionNode[], keep?: ReadonlySet<string>, nested = false): SectionNode[] {
   return nodes.map((node) => {
-    const { _id: _ignored, ...rest } = node as SectionNode & { _id?: string }
+    const { _id: ownId, ...rest } = node as SectionNode & { _id?: string }
     const cleaned: SectionNode = { ...rest }
+    if (nested && keep && typeof ownId === 'string' && keep.has(ownId)) cleaned._id = ownId
     if (Array.isArray(node.columns)) {
       cleaned.columns = node.columns.map((column) => {
         const { _id: _ignoredColumnId, ...restColumn } = column as SectionColumn & { _id?: string }
-        return {
-          ...restColumn,
-          blocks: stripEditorIds(column.blocks || []),
-        }
+        return { ...restColumn, blocks: stripEditorIds(column.blocks || [], keep, true) }
       })
     }
     return cleaned

@@ -276,7 +276,7 @@ export const SecuritySettings: GlobalConfig = {
       label: 'Content approval',
       admin: {
         description:
-          'Require a second person to approve changes before they go live. Editors submit for review instead of publishing; reviewers approve or send the change back. Admins can always publish directly. Off by default.',
+          'Require a second person to approve changes before they go live. Editors submit for review instead of publishing; reviewers approve or send the change back. Admins can always publish directly. For multi-step review with named roles, create an approval workflow on the Roles page: a content type with an active workflow uses it instead of the counts below. Off by default.',
       },
       fields: [
         {

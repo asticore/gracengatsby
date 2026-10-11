@@ -25,13 +25,46 @@ export const MediaSettings: GlobalConfig = {
   admin: {
     group: 'Settings',
     description:
-      'How pictures are compressed, resized and delivered. Sensible defaults are already set - the main reason to come here is to switch on a Cloudflare image plan.',
+      'Which files may be uploaded, and how pictures are compressed, resized and delivered. Sensible defaults are already set - the main reason to come here is to switch on a Cloudflare image plan.',
   },
   access: {
     read: () => true,
     update: isAdmin,
   },
   fields: [
+    {
+      type: 'group',
+      name: 'uploads',
+      label: 'Uploads',
+      admin: {
+        description:
+          'Which files can be uploaded to the library and how large they may be. Every file is checked by its contents, not just its name or the type the browser reports. HTML, SVG, scripts and programs are always refused and cannot be switched on here.',
+      },
+      fields: [
+        {
+          name: 'allowedExtensions',
+          type: 'textarea',
+          label: 'Allowed file types',
+          defaultValue: 'jpg, jpeg, png, gif, webp, avif, pdf, doc, docx, xls, xlsx, ppt, pptx, csv, txt, zip, mp3, wav, mp4, webm, mov',
+          admin: {
+            description:
+              'File extensions separated by commas. Remove any you do not want editors to upload. Only the types in the default list are understood: anything else typed here (for example svg, html or exe) is ignored. Leave blank to allow the whole default list.',
+          },
+        },
+        {
+          name: 'maxUploadMb',
+          type: 'number',
+          label: 'Largest upload (MB)',
+          defaultValue: 25,
+          min: 1,
+          max: 100,
+          admin: {
+            description:
+              'Largest single file, in megabytes. The default is 25. The whole file is held in memory while it uploads, so values above about 50 are risky and 100 is the hard limit of the hosting platform. Bigger files (long videos, large archives) need R2 multipart upload, which this library does not do yet: put those on a video host or upload them to R2 directly and link to them.',
+          },
+        },
+      ],
+    },
     {
       type: 'group',
       name: 'optimisation',

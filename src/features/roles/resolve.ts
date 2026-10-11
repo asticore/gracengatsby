@@ -5,7 +5,7 @@
 
 import type { Engine } from '@/engine'
 import type { PermissionMatrix, Resource, Action } from './permissions'
-import { can } from './permissions'
+import { can, parseCustomMatrix } from './permissions'
 
 /**
  * Represents a user object with optional customRole field.
@@ -29,6 +29,10 @@ export async function loadCustomMatrix(
   engine: Engine,
   user: UserWithCustomRole | null | undefined,
 ): Promise<PermissionMatrix | undefined> {
+  // The session user already carries the matrix (see customRoleCache.ts attachCustomRole).
+  const carried = parseCustomMatrix((user as { customRolePermissions?: unknown } | null | undefined)?.customRolePermissions)
+  if (carried) return carried as PermissionMatrix
+
   if (!user?.customRole) return undefined
 
   // Extract the role ID (handle both id and populated object)

@@ -7,6 +7,7 @@ import { GalleryBlock } from '@/components/blocks/GalleryBlock'
 import { HeroBlock } from '@/components/blocks/HeroBlock'
 import { ImageTextBlock } from '@/components/blocks/ImageTextBlock'
 import { RichTextBlock } from '@/components/blocks/RichTextBlock'
+import { AdPlaceholder } from '@/features/ads/components/AdPlaceholder'
 import { renderElement } from '@/components/blocks/elements/renderElement'
 
 import type { Media } from '@/engage-types'
@@ -62,6 +63,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
     case 'element': {
       const elementType = (data.elementType as string) || ''
       const props = (data.props as Record<string, unknown>) || {}
+      if (elementType === 'ad') return <AdPlaceholder label={`Ad: ${String(props.placement || props.unit || 'choose a placement')}`} />
       return renderElement(elementType, props) ?? (
         <DynamicPlaceholder icon="🧩" label={elementType || 'Element'} data={data} detail="Unknown element type." />
       )

@@ -2,9 +2,10 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
-import { RichText } from '@/engine/editor/react'
 import { cookies } from 'next/headers'
 
+import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
+import { AdRichText } from '@/features/ads/components/AdRichText'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
@@ -102,6 +103,7 @@ export default async function BlogPostPage({
 
   return (
     <article className="page-shell">
+      <AdsPageScope collection="posts" noAds={(post as { noAds?: boolean }).noAds} />
       <PageJsonLd collection="posts" doc={post} path={currentPath} />
       <header className="mx-auto mb-8 max-w-[720px] text-center">
         {post.categories?.length ? (
@@ -123,7 +125,7 @@ export default async function BlogPostPage({
       )}
 
       <div className="mx-auto max-w-[720px]">
-        <RichText data={content.content} />
+        <AdRichText content={content.content} />
       </div>
 
       {(content.layout || []).map((block, index) => (

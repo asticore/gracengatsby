@@ -15,6 +15,8 @@ import { ProductGridBlock } from './ProductGridBlock'
 import { RichTextBlock } from './RichTextBlock'
 import { SectionBlock } from './SectionBlock'
 import { StyledBlock } from './StyledBlock'
+import { AdSlot } from '@/features/ads/components/AdSlot'
+import { AdRichText } from '@/features/ads/components/AdRichText'
 import { renderElement } from './elements/renderElement'
 
 /**
@@ -61,7 +63,13 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
       )
 
     case 'richText':
-      return <RichTextBlock content={get('content')} />
+      return (
+        <section className="built-block">
+          <div className="mx-auto max-w-[760px] px-6 py-16">
+            <AdRichText content={get('content')} />
+          </div>
+        </section>
+      )
 
     case 'imageText':
       return <ImageTextBlock image={get('image')} content={get('content')} imageSide={get('imageSide')} />
@@ -107,6 +115,10 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
       )
 
     case 'element':
+      if (get<string>('elementType') === 'ad') {
+        const props = get<Record<string, unknown>>('props') || {}
+        return <AdSlot placement={typeof props.placement === 'string' ? props.placement : undefined} unit={typeof props.unit === 'string' ? props.unit : undefined} />
+      }
       return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {})
 
     default:

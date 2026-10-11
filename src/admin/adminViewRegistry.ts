@@ -25,6 +25,7 @@ import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
+import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
@@ -114,6 +115,8 @@ export const CUSTOM_ADMIN_VIEWS = [
       description: 'Customise the cookie banner, preview it and see the consent log.',
     },
   },
+  { key: 'adsOverview', Component: AdsOverviewView, path: '/ads-overview', meta: { title: 'Ads overview', description: 'Status, placeholders and generated ads.txt lines.' } },
+  { key: 'adsReport', Component: AdsReportView, path: '/ads-report', meta: { title: 'Ads report', description: 'Viewable impressions per ad unit.' } },
   {
     key: 'settingsTransfer',
     Component: SettingsTransferView,

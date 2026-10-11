@@ -75,6 +75,12 @@ const EXPECTED_EXTENSIONS: Record<string, string[]> = {
   'image/avif': ['avif'],
   'image/gif': ['gif'],
   'application/pdf': ['pdf'],
+  'application/zip': ['zip'],
+  'audio/mpeg': ['mp3'],
+  'audio/wav': ['wav'],
+  'video/mp4': ['mp4'],
+  'video/webm': ['webm'],
+  'video/quicktime': ['mov'],
 }
 
 /**
@@ -227,7 +233,7 @@ export async function replaceStoredMedia(
   const fields = await generateUploadFields({
     file: prepared.file,
     filenameExists: async () => false,
-    optimisation: { originalSize: prepared.originalSize, optimised: prepared.optimised },
+    optimisation: prepared,
   })
 
   // Read the version being replaced before anything is written. It is kept if

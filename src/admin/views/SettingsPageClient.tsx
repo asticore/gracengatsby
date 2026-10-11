@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
 import { EditForm } from './EditForm'
-import type { SettingsPage, LinkSection } from '@/admin/settingsPages'
+import { resolveActiveTab, type SettingsPage, type LinkSection } from '@/admin/settingsPages'
+import '@/app/(engage)/settings-tabs.css'
 
 export type SettingsPageSection =
   | {
@@ -20,38 +21,69 @@ interface SettingsPageClientProps {
   sections: SettingsPageSection[]
 }
 
+/** Fired after a tab click so the hash subscription re-reads the URL (replaceState does not fire hashchange). */
+const TAB_SELECT_EVENT = 'settings-tabs:select'
+
+function subscribeToHash(onChange: () => void) {
+  window.addEventListener('hashchange', onChange)
+  window.addEventListener('popstate', onChange)
+  window.addEventListener(TAB_SELECT_EVENT, onChange)
+  return () => {
+    window.removeEventListener('hashchange', onChange)
+    window.removeEventListener('popstate', onChange)
+    window.removeEventListener(TAB_SELECT_EVENT, onChange)
+  }
+}
+
+const readHash = () => window.location.hash
+// Server render and hydration both see no hash, so the first tab is shown until the client reads the URL.
+const readServerHash = () => ''
+
 /**
  * Client component for settings pages. Renders:
  * - Page title and description
- * - Jump bar (sticky, with anchor links) when 2+ global sections
- * - Global sections as titled cards
- * - Link sections as a grid of cards
+ * - One box with tabs (2+ global sections) or a single titled section, each global section's EditForm in its panel
+ * - Link sections as a grid of cards, visible on every tab
  */
 export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, sections }) => {
-  const [activeAnchor, setActiveAnchor] = useState<string>('')
-
-  useEffect(() => {
-    const read = () => {
-      if (window.location.hash) setActiveAnchor(window.location.hash.slice(1))
-    }
-    // Deferred so the initial hash read is not a synchronous setState in the effect body.
-    const t = setTimeout(read, 0)
-    window.addEventListener('hashchange', read)
-    return () => {
-      clearTimeout(t)
-      window.removeEventListener('hashchange', read)
-    }
-  }, [])
-
   const globalSections = sections.filter((s) => s.kind === 'global')
   const linkSections = sections.filter((s) => s.kind === 'link')
-  const showJumpBar = globalSections.length >= 2
+  const showTabs = globalSections.length >= 2
+  const tabSlugs = globalSections.map((s) => s.slug)
 
-  const handleAnchorClick = (slug: string) => {
-    setActiveAnchor(slug)
-    const el = document.getElementById(slug)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+  const hash = useSyncExternalStore(subscribeToHash, readHash, readServerHash)
+  const activeSlug = resolveActiveTab(hash, tabSlugs)
+
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const selectTab = (slug: string) => {
     window.history.replaceState(null, '', `#${slug}`)
+    window.dispatchEvent(new Event(TAB_SELECT_EVENT))
+  }
+
+  // WAI-ARIA tabs pattern: arrows move and activate, Home/End jump to the ends.
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const last = tabSlugs.length - 1
+    let next: number
+    switch (event.key) {
+      case 'ArrowRight':
+        next = index === last ? 0 : index + 1
+        break
+      case 'ArrowLeft':
+        next = index === 0 ? last : index - 1
+        break
+      case 'Home':
+        next = 0
+        break
+      case 'End':
+        next = last
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+    selectTab(tabSlugs[next])
+    tabRefs.current[next]?.focus()
   }
 
   return (
@@ -62,37 +94,61 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
         <p className="settings-page__description">{page.description}</p>
       </div>
 
-      {/* Jump bar */}
-      {showJumpBar && (
-        <div className="settings-page__jump-bar">
-          <div className="settings-page__jump-bar-content">
-            {globalSections.map((section) => (
-              <button
-                key={section.slug}
-                className={`settings-page__jump-link${activeAnchor === section.slug ? ' settings-page__jump-link--active' : ''}`}
-                onClick={() => handleAnchorClick(section.slug)}
-                type="button"
-              >
-                {section.label}
-              </button>
-            ))}
+      {/* Global sections: one box, tabs on top (when 2+), the active panel below */}
+      {globalSections.length > 0 && (
+        <div className="settings-page__sections">
+          <div className="settings-page__section settings-tabs">
+            {showTabs ? (
+              <div role="tablist" aria-label={page.title} className="settings-tabs__list">
+                {globalSections.map((section, index) => {
+                  const selected = section.slug === activeSlug
+                  return (
+                    <button
+                      key={section.slug}
+                      ref={(el) => {
+                        tabRefs.current[index] = el
+                      }}
+                      id={`settings-tab-${section.slug}`}
+                      role="tab"
+                      type="button"
+                      aria-selected={selected}
+                      aria-controls={`settings-panel-${section.slug}`}
+                      tabIndex={selected ? 0 : -1}
+                      className="settings-tabs__tab"
+                      onClick={() => selectTab(section.slug)}
+                      onKeyDown={(event) => handleTabKeyDown(event, index)}
+                    >
+                      {section.label}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="settings-tabs__heading">
+                <h2 className="settings-page__section-title">{globalSections[0].label}</h2>
+              </div>
+            )}
+
+            {/* Panels stay mounted and are hidden, so unsaved edits survive a tab switch. */}
+            {globalSections.map((section) => {
+              const selected = !showTabs || section.slug === activeSlug
+              return (
+                <div
+                  key={section.slug}
+                  id={`settings-panel-${section.slug}`}
+                  role={showTabs ? 'tabpanel' : undefined}
+                  aria-labelledby={showTabs ? `settings-tab-${section.slug}` : undefined}
+                  hidden={!selected}
+                  tabIndex={showTabs ? 0 : undefined}
+                  className="settings-tabs__panel"
+                >
+                  <EditForm doc={section.doc} fields={section.fields} globalSlug={section.slug} />
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
-
-      {/* Global sections */}
-      <div className="settings-page__sections">
-        {globalSections.map((section) => (
-          <div key={section.slug} className="settings-page__section" id={section.slug}>
-            <div className="settings-page__section-header">
-              <h2 className="settings-page__section-title">{section.label}</h2>
-            </div>
-            <div className="settings-page__section-content">
-              <EditForm doc={section.doc} fields={section.fields} globalSlug={section.slug} />
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Link sections */}
       {linkSections.length > 0 && (

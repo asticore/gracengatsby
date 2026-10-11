@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { setCardOpen } from '@/admin/components/collapseStore'
 import { createElement as h } from 'react'
 import { VersionsList } from '@/admin/views/VersionsList'
 
@@ -18,6 +19,31 @@ import { useRouter } from 'next/navigation'
 const mockPush = vi.fn()
 const mockRefresh = vi.fn()
 
+const HISTORY_CARD_ID = 'ver:history'
+const PREFS_URL = '/api/admin-edit-prefs'
+let fetchQueue: ReturnType<typeof vi.fn>
+
+/**
+ * The collapse store GETs the user's saved card state on mount. Answer that
+ * here (empty saved set) so the queued responses are only the ones each test sets up.
+ */
+function installFetch(): ReturnType<typeof vi.fn> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const queued: any = vi.fn()
+  global.fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) =>
+    String(input).startsWith(PREFS_URL)
+      ? Promise.resolve({ ok: true, json: async (): Promise<unknown> => ({ open: [] }) })
+      : queued(input, init)
+  ) as unknown as typeof fetch
+  return queued
+}
+
+/** VersionsList sits in a CollapsibleCard that starts folded. Reset the store, then open it. */
+function openHistoryCard() {
+  act(() => setCardOpen(HISTORY_CARD_ID, false))
+  act(() => setCardOpen(HISTORY_CARD_ID, true))
+}
+
 describe('VersionsList component - compare functionality', () => {
   beforeEach(() => {
     cleanup()
@@ -26,11 +52,12 @@ describe('VersionsList component - compare functionality', () => {
       push: mockPush,
       refresh: mockRefresh,
     })
-    global.fetch = vi.fn()
+    fetchQueue = installFetch()
+    openHistoryCard()
   })
 
   it('renders Compare button for each version', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -86,7 +113,7 @@ describe('VersionsList component - compare functionality', () => {
   })
 
   it('shows diff table when Compare is clicked for a changed version', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -135,7 +162,7 @@ describe('VersionsList component - compare functionality', () => {
   })
 
   it('shows "No differences from the current document." for identical version', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -184,7 +211,7 @@ describe('VersionsList component - compare functionality', () => {
   })
 
   it('only one compare panel is open at a time', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [
@@ -256,7 +283,7 @@ describe('VersionsList component - compare functionality', () => {
   })
 
   it('toggles Compare button text between Compare and Hide compare', async () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    ;fetchQueue.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         docs: [

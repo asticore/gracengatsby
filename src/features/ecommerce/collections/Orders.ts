@@ -1,45 +1,25 @@
 import type { CollectionConfig, CollectionSlug } from '@/engine'
 
-import { adminOnlyFieldAccess, isAdmin, isDocumentOwner } from '@/access/ecommerceAccess'
+import { adminOnlyFieldAccess } from '@/access/ecommerceAccess'
 
+import { ordersAccess, staffFieldAccess } from '../access'
+import { ORDER_STATUSES, ORDER_STATUS_LABELS, transitionError } from '../lib/orderStatus'
 import { currencyField, orderItemsField } from './shared'
 
 /**
- * SHADOW config for the ecommerce plugin's real `orders` collection - see
- * ./Products.ts's header comment. Reproduced from `createOrdersCollection.js`
- * (`the vendor package@3.88.0`, read directly from
- * `node_modules/.pnpm/.../dist/collections/orders/createOrdersCollection.js` -
- * there is no `hooks/` subdirectory under `dist/collections/orders/` at all
- * in this plugin version, so `stripeWebhook`/`sendOrderEmail`/
- * `sendDigitalAccessEmail` hooks this file's comment used to cite as
- * "deferred" don't exist to defer - they were never real. Nothing to model
- * there.).
+ * Orders. Money is whole CENTS here (unlike product prices, which are dollars):
+ * `amount` is the grand total, and `subtotal`/`discountTotal`/`shippingTotal`/
+ * `taxTotal`/`refundedTotal` are its parts. Everything is computed on the
+ * server from database prices (../server/pricing.ts); the admin fields are
+ * read-only so a total is never hand-typed.
  *
- * Ecommerce cutover (Orders gap, 2026-09-26): same access-control bug shape
- * as `./Addresses.ts` - `read` used to be `isAdmin || isCustomer`, and
- * `isCustomer` only checks the caller's ROLE (any authenticated non-admin),
- * not whether THIS order belongs to them. Any signed-in customer could list
- * or fetch-by-id every OTHER customer's orders (shipping address, line
- * items, amount, linked transaction ids). The reference engine's own access is
- * `accessOR(isAdmin, isDocumentOwner)` - fixed to match. `create`/`update`/
- * `delete` were already correct (`isAdmin`-only, matching the real plugin
- * exactly).
+ * Access: admins and roles with `orders.*` permissions, plus a customer READING
+ * their own orders only (`customer` = their id). Internal notes, payment ids
+ * and bookkeeping flags are staff-only at field level, so a customer reading
+ * their own order never sees them.
  *
- * Also matched the reference engine's own field-level lockdown on `transactions`
- * (`adminOnlyFieldAccess` for create/read/update) - a customer reading their
- * own order via REST shouldn't see the linked internal `transactions`
- * relationship ids either; only admins should. Checked: no customer-facing
- * code in this app reads `order.transactions` (only server-side writes with
- * `overrideAccess: true`, which skip field access entirely).
- *
- * `status` was a plain `text` field here; the reference engine defines it as a
- * `select` with exactly 4 options (`processing`/`completed`/`cancelled`/
- * `refunded`) and `defaultValue: 'processing'`. Converted to match - checked
- * every place in this app that writes or queries an order's `status`
- * (`stripeAdapter.ts`, `entitlement.ts`'s `PAID_ORDER_STATUSES`, both
- * `selfTest.mts` files) and all of them already only ever use `'processing'`
- * or `'completed'`, both valid options, so this is a pure tightening with no
- * behavior change for existing code paths.
+ * Status moves are checked against the transition map (../lib/orderStatus.ts);
+ * the order edit page carries Notes, Refunds and Invoice panels (ui fields).
  */
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -48,12 +28,32 @@ export const Orders: CollectionConfig = {
   admin: {
     group: 'Ecommerce',
     useAsTitle: 'createdAt',
+    defaultColumns: ['id', 'status', 'customerEmail', 'amount', 'createdAt'],
   },
   access: {
-    create: (args) => isAdmin(args),
-    read: (args) => isAdmin(args) || isDocumentOwner(args),
-    update: (args) => isAdmin(args),
-    delete: (args) => isAdmin(args),
+    create: ordersAccess('create'),
+    read: ordersAccess('read'),
+    update: ordersAccess('update'),
+    delete: ordersAccess('delete'),
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, originalDoc, operation }) => {
+        if (!data || typeof data.status !== 'string') return data
+        if (operation === 'update') {
+          const from = (originalDoc as { status?: string } | undefined)?.status
+          const problem = transitionError(from, data.status)
+          if (problem) throw new Error(problem)
+        }
+        return data
+      },
+    ],
+    afterChange: [
+      async (args) => {
+        const { runOrderAfterChange } = await import('../server/orderHooks')
+        return runOrderAfterChange(args as never)
+      },
+    ],
   },
   timestamps: true,
   fields: [
@@ -81,14 +81,8 @@ export const Orders: CollectionConfig = {
     {
       name: 'transactions',
       type: 'relationship',
-      // shopPlugin() is REMOVED (the plan doc: ecommerce
-      // cutover) and 'transactions' is no longer a the reference engine collection
-      // (only 'products' still is, as a stub - see engage.config.ts), so
-      // the reference engine's own generated `CollectionSlug` union no longer
-      // includes it. This field is on a SHADOW config never passed through
-      // `buildConfig()` (never sanitized/validated against that union at
-      // runtime), so the cast is safe - this app's own REST/GraphQL hybrid
-      // dispatchers are what actually resolve this relationship.
+      // 'transactions' is not in the engine's generated CollectionSlug union;
+      // see Transactions.ts for why this shadow config can cast it.
       relationTo: 'transactions' as CollectionSlug,
       hasMany: true,
       admin: { position: 'sidebar' },
@@ -101,16 +95,66 @@ export const Orders: CollectionConfig = {
     {
       name: 'status',
       type: 'select',
-      admin: { position: 'sidebar' },
-      defaultValue: 'processing',
-      options: [
-        { label: 'Processing', value: 'processing' },
-        { label: 'Completed', value: 'completed' },
-        { label: 'Cancelled', value: 'cancelled' },
-        { label: 'Refunded', value: 'refunded' },
+      admin: { position: 'sidebar', description: 'Moves are limited to the allowed transitions (for example, a refunded order is final).' },
+      defaultValue: 'pending',
+      options: ORDER_STATUSES.map((value) => ({ label: ORDER_STATUS_LABELS[value], value })),
+    },
+    { name: 'amount', type: 'number', admin: { position: 'sidebar', readOnly: true, description: 'Grand total, in cents.' } },
+    currencyField,
+    {
+      type: 'row',
+      fields: [
+        { name: 'subtotal', type: 'number', admin: { readOnly: true, description: 'Cents.' } },
+        { name: 'discountTotal', type: 'number', admin: { readOnly: true } },
+        { name: 'shippingTotal', type: 'number', admin: { readOnly: true } },
+        { name: 'taxTotal', type: 'number', admin: { readOnly: true } },
+        { name: 'refundedTotal', type: 'number', defaultValue: 0, admin: { readOnly: true } },
       ],
     },
-    { name: 'amount', type: 'number', admin: { position: 'sidebar' } },
-    currencyField,
+    { name: 'pricesIncludeTax', type: 'checkbox', defaultValue: true, admin: { readOnly: true } },
+    { name: 'shippingMethod', type: 'json', admin: { readOnly: true } },
+    { name: 'taxLines', type: 'json', admin: { readOnly: true } },
+    { name: 'couponLines', type: 'json', admin: { readOnly: true } },
+    { name: 'lineItems', type: 'json', admin: { readOnly: true, description: 'Prices and names as they were when the order was placed.' } },
+    { name: 'checkoutFields', type: 'json', admin: { readOnly: true, description: 'Answers to the optional checkout fields.' } },
+    { name: 'customerNote', type: 'textarea', admin: { readOnly: true } },
+    { name: 'paidAt', type: 'date', admin: { position: 'sidebar', readOnly: true, date: { pickerAppearance: 'dayAndTime' } } },
+    {
+      name: 'notes',
+      type: 'json',
+      admin: { hidden: true },
+      access: { create: staffFieldAccess, read: staffFieldAccess, update: staffFieldAccess },
+    },
+    {
+      name: 'paymentIntentId',
+      type: 'text',
+      index: true,
+      admin: { hidden: true },
+      access: { create: staffFieldAccess, read: staffFieldAccess, update: staffFieldAccess },
+    },
+    {
+      name: 'cartId',
+      type: 'number',
+      index: true,
+      admin: { hidden: true },
+      access: { create: staffFieldAccess, read: staffFieldAccess, update: staffFieldAccess },
+    },
+    { name: 'couponUsageApplied', type: 'checkbox', defaultValue: false, admin: { hidden: true }, access: { create: staffFieldAccess, read: staffFieldAccess, update: staffFieldAccess } },
+    { name: 'stockAdjusted', type: 'checkbox', defaultValue: false, admin: { hidden: true }, access: { create: staffFieldAccess, read: staffFieldAccess, update: staffFieldAccess } },
+    {
+      type: 'collapsible',
+      label: 'Notes',
+      fields: [{ name: 'notesPanel', type: 'ui', admin: { components: { Field: '@/features/ecommerce/admin/OrderPanels#OrderNotesPanel' } } }],
+    },
+    {
+      type: 'collapsible',
+      label: 'Refunds',
+      fields: [{ name: 'refundsPanel', type: 'ui', admin: { components: { Field: '@/features/ecommerce/admin/OrderPanels#OrderRefundsPanel' } } }],
+    },
+    {
+      type: 'collapsible',
+      label: 'Invoice and packing slip',
+      fields: [{ name: 'invoicePanel', type: 'ui', admin: { components: { Field: '@/features/ecommerce/admin/OrderPanels#OrderInvoicePanel' } } }],
+    },
   ],
 }

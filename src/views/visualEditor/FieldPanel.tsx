@@ -17,6 +17,7 @@ import { DesignPanel } from './DesignPanel'
 import { hasRichFormatting, lexicalToPlainText, plainTextToLexical } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
+import { LockControls, type LockUi } from './LockControls'
 
 type MediaThumb = { id: number; url?: string | null; alt?: string | null }
 type PanelTab = 'content' | 'design'
@@ -34,7 +35,10 @@ export const FieldPanel: React.FC<{
   onDelete: () => void
   onDuplicate: () => void
   userPermissions?: { canEditStyle: boolean; canEditLayout: boolean } | null
-}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions }) => {
+  lockUi?: LockUi
+}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions, lockUi }) => {
+  const blocked = Boolean(lockUi?.lock?.blocked)
+  const fieldDisabled = (name: string) => blocked && (lockUi?.lock?.mode === 'full' || !lockUi?.lock?.editableProps.includes(name))
   const [tab, setTab] = useState<PanelTab>('content')
 
   const setField = (name: string, value: unknown) => onChange({ ...data, [name]: value })
@@ -56,6 +60,8 @@ export const FieldPanel: React.FC<{
         </button>
       </div>
 
+      {lockUi && <LockControls ui={lockUi} />}
+
       <div className="ve-panel__tabs">
         <button
           type="button"
@@ -76,32 +82,28 @@ export const FieldPanel: React.FC<{
       <div className="ve-panel__body">
         {tab === 'content' &&
           (isSection ? (
-            <SectionLayoutFields
-              columns={parseColumns(data.columns)}
-              onChange={(columns) => setField('columns', columns)}
-              canEditLayout={userPermissions?.canEditLayout !== false}
-            />
+            <fieldset className="ve-lockset" disabled={blocked}>
+              <SectionLayoutFields
+                columns={parseColumns(data.columns)}
+                onChange={(columns) => setField('columns', columns)}
+                canEditLayout={userPermissions?.canEditLayout !== false}
+              />
+            </fieldset>
           ) : isElement ? (
             elementDef ? (
               elementDef.fields.map((field) => (
-                <FieldInput
-                  key={field.name}
-                  field={field}
-                  value={elementProps[field.name]}
-                  onChange={(v) => setElementProp(field.name, v)}
-                />
+                <fieldset key={field.name} className="ve-lockset" disabled={fieldDisabled(field.name)}>
+                  <FieldInput field={field} value={elementProps[field.name]} onChange={(v) => setElementProp(field.name, v)} />
+                </fieldset>
               ))
             ) : (
               <p className="ve-panel__empty">Unknown element type &quot;{String(data.elementType)}&quot;.</p>
             )
           ) : blockDef.fields.length > 0 ? (
             blockDef.fields.map((field) => (
-              <FieldInput
-                key={field.name}
-                field={field}
-                value={data[field.name]}
-                onChange={(v) => setField(field.name, v)}
-              />
+              <fieldset key={field.name} className="ve-lockset" disabled={fieldDisabled(field.name)}>
+                <FieldInput field={field} value={data[field.name]} onChange={(v) => setField(field.name, v)} />
+              </fieldset>
             ))
           ) : (
             <p className="ve-panel__empty">This element has no content settings - use the Design tab.</p>
@@ -113,16 +115,18 @@ export const FieldPanel: React.FC<{
               Your role can edit text only. Styling is locked.
             </div>
           ) : (
-            <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} />
+            <fieldset className="ve-lockset" disabled={blocked}>
+              <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} />
+            </fieldset>
           )
         )}
       </div>
 
       <div className="ve-panel__footer">
-        <button type="button" className="ve-btn ve-btn--ghost" onClick={onDuplicate}>
+        <button type="button" className="ve-btn ve-btn--ghost" onClick={onDuplicate} disabled={blocked}>
           Duplicate
         </button>
-        <button type="button" className="ve-btn ve-btn--danger" onClick={onDelete}>
+        <button type="button" className="ve-btn ve-btn--danger" onClick={onDelete} disabled={blocked}>
           Delete
         </button>
       </div>

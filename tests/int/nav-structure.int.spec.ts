@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { NAV_STRUCTURE, HIDDEN_FROM_NAV } from '@/components/admin/nav/navStructure'
 import { SETTINGS_DESCRIPTIONS } from '@/components/admin/nav/settingsDescriptions'
+import { resolveEntityGroups } from '@/components/admin/shared/resolveEntities'
 
 describe('navStructure', () => {
   it('should have all top-level groups in correct order', () => {
@@ -9,6 +10,7 @@ describe('navStructure', () => {
       'Shop',
       'Members',
       'Courses',
+      'Ads',
       'Settings',
     ]
 
@@ -22,7 +24,7 @@ describe('navStructure', () => {
     }
   })
 
-  it('Settings group should have exactly 8 view entries in correct order', () => {
+  it('Settings group should have the 8 settings views and then the Roles view, in order', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
     expect(settingsGroup).toBeDefined()
 
@@ -35,14 +37,15 @@ describe('navStructure', () => {
       'settings-speed',
       'settings-security',
       'settings-data-system',
+      'roles',
     ]
 
     const viewEntities = (settingsGroup?.entities || []).filter((e) => e.type === 'view')
     const actualSlugs = viewEntities.map((e) => e.slug)
     expect(actualSlugs).toEqual(expectedSlugs)
 
-    // roles is the collection entry that follows the eight settings views
-    expect(settingsGroup?.entities.at(-1)).toEqual({ slug: 'roles', type: 'collections' })
+    // Roles is the last Settings entry and opens the /roles screen, not the plain collection list.
+    expect(settingsGroup?.entities.at(-1)).toEqual({ slug: 'roles', type: 'view', href: '/roles', label: 'Roles' })
 
     // All settings views should be type 'view'
     for (const entity of viewEntities) {
@@ -65,6 +68,7 @@ describe('navStructure', () => {
       'settings-speed': { href: '/settings/speed', label: 'Speed' },
       'settings-security': { href: '/settings/security', label: 'Security' },
       'settings-data-system': { href: '/settings/data-system', label: 'Data and System' },
+      roles: { href: '/roles', label: 'Roles' },
     }
 
     for (const entity of entries) {
@@ -92,6 +96,27 @@ describe('navStructure', () => {
     expect(headerFooterRef?.type).toBe('view')
     expect(headerFooterRef?.href).toBe('/header-footer')
     expect(headerFooterRef?.label).toBe('Header and footer')
+  })
+
+  it('the standalone results pages are no longer in the nav (their tabs live on the edit pages)', () => {
+    const allSlugs = NAV_STRUCTURE.flatMap((g) => g.entities.map((e) => e.slug))
+    expect(allSlugs).not.toContain('ab-test-results')
+    expect(allSlugs).not.toContain('event-rsvps')
+    expect(allSlugs).not.toContain('form-submissions')
+
+    // ...but the collections stay hidden so they do not fall into the "Other" group, and the
+    // A/B tests collection itself is still listed.
+    expect(HIDDEN_FROM_NAV.has('event-rsvps')).toBe(true)
+    expect(HIDDEN_FROM_NAV.has('form-submissions')).toBe(true)
+    expect(allSlugs).toContain('ab-tests')
+    expect(allSlugs).toContain('events')
+    expect(allSlugs).toContain('forms')
+  })
+
+  it('the roles collection is hidden from the nav, so the Roles view is its only entry', () => {
+    expect(HIDDEN_FROM_NAV.has('roles')).toBe(true)
+    const rolesEntries = NAV_STRUCTURE.flatMap((g) => g.entities).filter((e) => e.slug === 'roles')
+    expect(rolesEntries).toEqual([{ slug: 'roles', type: 'view', href: '/roles', label: 'Roles' }])
   })
 
   it('should have no duplicate entries across all groups', () => {
@@ -181,5 +206,42 @@ describe('navStructure', () => {
     for (const slug of oldSlugs) {
       expect(SETTINGS_DESCRIPTIONS[slug]).toBeDefined()
     }
+  })
+
+  it('the sidebar shows the Roles view to admins only, and never as a collection link', () => {
+    const engine = { config: { routes: { admin: '/admin' }, collections: [], globals: [] } } as never
+    const base = {
+      engine,
+      flags: {} as never,
+      i18n: { language: 'en', t: (key: never) => key },
+      visibleEntities: { collections: [] as string[], globals: [] as string[] },
+      permissions: { collections: {}, globals: {} },
+    }
+    const rolesIn = (groups: ReturnType<typeof resolveEntityGroups>) =>
+      groups.flatMap((g) => g.entities).filter((e) => e.slug === 'roles')
+
+    const adminRoles = rolesIn(resolveEntityGroups({ ...base, isAdmin: true }))
+    expect(adminRoles).toHaveLength(1)
+    expect(adminRoles[0]).toMatchObject({ type: 'collections', href: '/admin/roles', label: 'Roles' })
+
+    expect(rolesIn(resolveEntityGroups({ ...base, isAdmin: false }))).toHaveLength(0)
+  })
+
+  it('hides the Ads overview and report links from users without ad-units / ad-reports read', () => {
+    const engine = { config: { routes: { admin: '/admin' }, collections: [], globals: [] } } as never
+    const base = {
+      engine,
+      flags: { ads: true } as never,
+      i18n: { language: 'en', t: (key: never) => key },
+      visibleEntities: { collections: [] as string[], globals: [] as string[] },
+      permissions: { collections: {}, globals: {} },
+      isAdmin: false,
+    }
+    const slugs = (can: (resource: string, action: string) => boolean) =>
+      resolveEntityGroups({ ...base, can: can as never }).flatMap((g) => g.entities).map((e) => e.slug).filter((s) => s.startsWith('ads-'))
+    expect(slugs(() => false)).toEqual([])
+    expect(slugs((r) => r === 'ad-units')).toEqual(['ads-overview'])
+    expect(slugs((r) => r === 'ad-reports')).toEqual(['ads-report'])
+    expect(slugs(() => true).sort()).toEqual(['ads-overview', 'ads-report'])
   })
 })

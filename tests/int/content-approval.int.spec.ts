@@ -87,6 +87,7 @@ describe('state machine', () => {
     expect(first.ok && first.state).toMatchObject({ status: 'in_review' })
     if (!first.ok) throw new Error('first approval should succeed')
     expect(first.state.approvals).toHaveLength(1)
+
     const second = transition({ state: first.state, action: 'approve', actor: reviewer(10), required: 2, allowSelfApproval: false, now: NOW })
     expect(second).toMatchObject({ ok: true, state: { status: 'approved' } })
 

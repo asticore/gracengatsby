@@ -23,6 +23,7 @@ import { loadReviewQueue, type ReviewEngine } from '@/features/approval/handlers
 import { viewerFromContext } from '@/features/approval/viewer'
 import { ReviewQueueTable } from '@/features/approval/views/ReviewQueueTable'
 import { GettingStartedCard } from '@/features/gettingStarted/GettingStartedCard'
+import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 
 /**
  * The portal's landing page.
@@ -49,6 +50,14 @@ const PlusIcon: React.FC = () => (
     <path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
   </svg>
 )
+
+/** Stable, id-safe slug for a group label (ids allow only [A-Za-z0-9_.:-]). */
+const groupSlug = (label: string): string =>
+  label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
 
 const findEntity = (groups: ResolvedGroup[], slug: string): ResolvedEntity | undefined => {
   for (const group of groups) {
@@ -113,8 +122,6 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
   const account = user as { email?: string; name?: string } | null | undefined
   const displayName = account?.name || account?.email?.split('@')[0] || 'there'
 
-  const sectionTitleClassName =
-    'mb-[calc(var(--base)*0.6)] mt-0 text-[calc(var(--base)*0.7)] font-semibold uppercase tracking-[0.08em] text-[var(--theme-elevation-500)]'
   const mutedClassName = 'whitespace-nowrap text-[var(--theme-elevation-600)]'
 
   return (
@@ -141,15 +148,13 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
       <GettingStartedCard progress={gettingStartedProgress} initialDoneIds={manualDoneIds} />
 
       {reviewRows !== null && (
-        <section>
-          <h2 className={sectionTitleClassName}>Awaiting review</h2>
+        <CollapsibleCard id="dash:awaiting-review" title="Awaiting review">
           <ReviewQueueTable now={now.getTime()} rows={reviewRows} />
-        </section>
+        </CollapsibleCard>
       )}
 
       {quickCreates.length > 0 && (
-        <section>
-          <h2 className={sectionTitleClassName}>Create</h2>
+        <CollapsibleCard id="dash:create" title="Create">
           <div className="flex flex-wrap gap-[calc(var(--base)*0.5)]">
             {quickCreates.map((entity) => (
               <Link
@@ -162,12 +167,11 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
               </Link>
             ))}
           </div>
-        </section>
+        </CollapsibleCard>
       )}
 
       {stats.length > 0 && (
-        <section>
-          <h2 className={sectionTitleClassName}>At a glance</h2>
+        <CollapsibleCard id="dash:at-a-glance" title="At a glance">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-[calc(var(--base)*0.5)] max-md:grid-cols-[repeat(auto-fill,minmax(120px,1fr))]">
             {stats.map((stat) => (
               <Link
@@ -182,17 +186,16 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
               </Link>
             ))}
           </div>
-        </section>
+        </CollapsibleCard>
       )}
 
-      <section>
-        <h2 className={sectionTitleClassName}>Recently edited</h2>
+      <CollapsibleCard id="dash:recently-edited" title="Recently edited">
         {recent.length === 0 ? (
           <p className="m-0 rounded-[4px] border border-dashed border-[var(--theme-elevation-200)] p-[calc(var(--base)*1.25)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-600)]">
             Nothing has been edited yet. Create a page to get started.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-[4px] border border-[var(--theme-elevation-150)] bg-[var(--ac-surface)]">
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-[calc(var(--base)*0.8)]">
               <thead>
                 <tr>
@@ -264,12 +267,11 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
             </table>
           </div>
         )}
-      </section>
+      </CollapsibleCard>
 
       {/* All groups (Content, Shop, Members, Courses, Settings, Other) */}
       {groups.map((group) => (
-        <section key={group.label}>
-          <h2 className={sectionTitleClassName}>{group.label}</h2>
+        <CollapsibleCard id={`dash:group-${groupSlug(group.label)}`} key={group.label} title={group.label}>
           <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-[calc(var(--base)*0.3)] p-0">
             {group.entities.map((entity) => (
               <li
@@ -295,7 +297,7 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
               </li>
             ))}
           </ul>
-        </section>
+        </CollapsibleCard>
       ))}
     </div>
   )

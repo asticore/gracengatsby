@@ -123,6 +123,7 @@ function resolveTargetTable(slug: string): string {
   if (slug === Media.slug) return tableNameFor(Media)
   if (slug === Transactions.slug) return tableNameFor(Transactions)
   if (slug === Users.slug) return tableNameFor(Users)
+  if (slug === Products.slug) return tableNameFor(Products)
   throw new Error(`cms/db/schema: no known table for target collection "${slug}" - add it to resolveTargetTable in schema/index.ts.`)
 }
 
@@ -694,6 +695,11 @@ export const shopSettingsBlockTypes = Object.fromEntries(
 
 export const shopSettingsRelsTargetColumns = shopSettingsRelsGenerated.targetColumns
 
+// Checkout field editor rows (flat array) - see src/globals/ShopSettings.ts.
+const [shopSettingsCheckoutFieldsField] = shopSettingsGenerated.arrayFields
+export const shopSettingsCheckoutFields = generateArrayTable(ShopSettings.slug, shopSettingsGenerated.tableName, shopSettingsCheckoutFieldsField).table
+export const shopSettingsGroupFields = shopSettingsGenerated.groupFields
+
 /**
  * SiteSettings: no blocks/hasMany/rels at all - `logo`/`favicon`/
  * `seo.defaultOgImage` are single (non-hasMany) upload fields, which
@@ -964,7 +970,7 @@ export const carts = cartsGenerated.table
 const [cartsItemsField] = cartsGenerated.arrayFields
 export const cartsItems = generateArrayTable(Carts.slug, cartsGenerated.tableName, cartsItemsField).table
 
-export const ordersGenerated = generateTable(Orders)
+export const ordersGenerated = generateTable({ ...Orders, fields: stripUiFields(Orders.fields) })
 export const orders = ordersGenerated.table
 const [ordersItemsField] = ordersGenerated.arrayFields
 export const ordersItems = generateArrayTable(Orders.slug, ordersGenerated.tableName, ordersItemsField).table
@@ -977,8 +983,14 @@ export const transactions = transactionsGenerated.table
 const [transactionsItemsField] = transactionsGenerated.arrayFields
 export const transactionsItems = generateArrayTable(Transactions.slug, transactionsGenerated.tableName, transactionsItemsField).table
 
-export const productsGenerated = generateTable(Products)
+const productsSchemaConfig = { ...Products, fields: stripUiFields(Products.fields) }
+export const productsGenerated = generateTable(productsSchemaConfig)
 export const products = productsGenerated.table
+
+// Catalogue arrays: attributes then variations (field order in ecommerce/collections/productFields.ts).
+const [productsAttributesField, productsVariationsField] = productsGenerated.arrayFields
+export const productsAttributes = generateArrayTable(Products.slug, productsGenerated.tableName, productsAttributesField).table
+export const productsVariations = generateArrayTable(Products.slug, productsGenerated.tableName, productsVariationsField).table
 
 const [productsBlocksField] = productsGenerated.blocksFields
 const productsBlockDefs = generateBlockTables(Products.slug, productsGenerated.tableName, productsBlocksField)
@@ -996,8 +1008,12 @@ export const productsBlockTypes = Object.fromEntries(
 )
 export const productsRelsTargetColumns = productsRelsGenerated.targetColumns
 
-export const productsVersionsGenerated = generateVersionsTable(Products, productsGenerated.tableName)
+export const productsVersionsGenerated = generateVersionsTable(productsSchemaConfig, productsGenerated.tableName)
 export const productsVersions = productsVersionsGenerated.table
+
+const [productsVersionsAttributesField, productsVersionsVariationsField] = productsVersionsGenerated.arrayFields
+export const productsVersionsAttributes = generateArrayTable(Products.slug, productsVersionsGenerated.tableName, productsVersionsAttributesField, true, true).table
+export const productsVersionsVariations = generateArrayTable(Products.slug, productsVersionsGenerated.tableName, productsVersionsVariationsField, true, true).table
 
 const [productsVersionsBlocksField] = productsVersionsGenerated.blocksFields
 const productsVersionsBlockDefs = generateBlockTables(Products.slug, productsVersionsGenerated.tableName, productsVersionsBlocksField, true, true)

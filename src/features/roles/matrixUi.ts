@@ -31,12 +31,12 @@ export function copyMatrix(
   sourceMatrix: Partial<PermissionMatrix>,
   allResources: Resource[],
 ): PermissionMatrix {
-  const newMatrix: Record<string, Record<string, boolean>> = {}
+  const newMatrix: Record<string, Record<string, boolean | string | undefined>> = {}
   for (const resource of allResources) {
     const sourcePerms = sourceMatrix[resource]
     newMatrix[resource] = sourcePerms ? { ...sourcePerms } : {}
   }
-  return newMatrix as PermissionMatrix
+  return newMatrix as unknown as PermissionMatrix
 }
 
 /**

@@ -1,3 +1,4 @@
+import { noAdsField } from '@/features/ads/fields'
 import type { CollectionConfig } from '@/engine'
 
 import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
@@ -10,6 +11,9 @@ import { authorshipFields, authorshipBeforeChange } from '@/fields/authorship'
 import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
 import { customFieldsField } from '@/fields/customFields'
 import { reviewFields } from '@/features/approval/fields'
+import { catalogueFields, productTypeField } from './productFields'
+import { catalogueBeforeChange } from '../productHooks'
+import { stockAlertAfterChange } from '../stockAlerts'
 
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see
@@ -113,6 +117,7 @@ export const Products: CollectionConfig = {
   fields: [
     { name: 'title', type: 'text', required: true, unique: true },
     { name: 'slug', type: 'text', unique: true, index: true },
+    productTypeField,
     {
       name: 'category',
       type: 'select',
@@ -150,11 +155,14 @@ export const Products: CollectionConfig = {
         },
       ],
     },
+    ...catalogueFields,
     ...authorshipFields,
     ...reviewFields,
     schemaTypeField('products'),
+    noAdsField,
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard],
+    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange],
+    afterChange: [stockAlertAfterChange],
   },
 }

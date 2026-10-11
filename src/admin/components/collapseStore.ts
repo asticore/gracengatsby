@@ -1,10 +1,15 @@
 /**
- * Client store for the collapsed/expanded state of edit-screen option cards.
+ * Client store for the open/closed state of edit-screen option cards.
  *
  * One module-level store shared by every card on the page. State is the set of
- * closed card ids; anything not in the set is open. On first subscribe the
- * store fetches the user's saved set from /api/admin-edit-prefs, and every
- * change is saved back after a short debounce.
+ * OPENED card ids; every card is closed unless its id is in that set. So a
+ * card that was never touched starts folded, on every edit screen (collections,
+ * the page panel, globals, settings and the home page alike).
+ *
+ * The server snapshot is always the empty set, so the server render and the
+ * first client render agree (all cards closed, no flash of open content). On
+ * first subscribe the store fetches the user's saved opened set from
+ * /api/admin-edit-prefs, and every change is saved back after a short debounce.
  *
  * Failure behaviour: if the GET fails, cards still toggle locally and nothing
  * is written back (so a transient failure cannot wipe the saved set). The GET
@@ -23,7 +28,7 @@ const MAX_IDS = 100
 const SAVE_DELAY_MS = 400
 const RETRY_AFTER_MS = 30_000
 
-export type CardOp = { type: 'set'; ids: string[]; closed: boolean } | { type: 'clear' }
+export type CardOp = { type: 'set'; ids: string[]; open: boolean } | { type: 'clear' }
 
 /** Keeps the first MAX_IDS unique strings that match ID_PATTERN. */
 export function sanitizeCardIds(input: unknown): string[] {
@@ -35,12 +40,12 @@ export function sanitizeCardIds(input: unknown): string[] {
   return [...seen]
 }
 
-/** Pure reducer over the closed-id set. */
-export function applyCardOp(closed: ReadonlySet<string>, op: CardOp): ReadonlySet<string> {
+/** Pure reducer over the opened-id set. `clear` closes every card. */
+export function applyCardOp(opened: ReadonlySet<string>, op: CardOp): ReadonlySet<string> {
   if (op.type === 'clear') return new Set<string>()
-  const next = new Set(closed)
+  const next = new Set(opened)
   for (const id of op.ids) {
-    if (op.closed) next.add(id)
+    if (op.open) next.add(id)
     else next.delete(id)
   }
   return next
@@ -48,7 +53,7 @@ export function applyCardOp(closed: ReadonlySet<string>, op: CardOp): ReadonlySe
 
 const EMPTY: ReadonlySet<string> = new Set<string>()
 
-let closed: ReadonlySet<string> = EMPTY
+let opened: ReadonlySet<string> = EMPTY
 const knownIds = new Set<string>()
 const listeners = new Set<() => void>()
 /** Ops made before the server state arrived; replayed on top of it. */
@@ -64,7 +69,7 @@ function emit(): void {
 }
 
 function commit(next: ReadonlySet<string>): void {
-  closed = next
+  opened = next
   emit()
 }
 
@@ -82,14 +87,14 @@ async function sendSave(body: string, keepalive: boolean): Promise<void> {
   }
 }
 
-/** Writes the current closed set now. Queued behind any save already in flight. */
+/** Writes the current opened set now. Queued behind any save already in flight. */
 function persistNow(keepalive: boolean): void {
   if (saveTimer !== undefined) {
     clearTimeout(saveTimer)
     saveTimer = undefined
   }
   if (loadState !== 'ready') return
-  const body = JSON.stringify({ closed: sanitizeCardIds([...closed]) })
+  const body = JSON.stringify({ open: sanitizeCardIds([...opened]) })
   if (keepalive) {
     void sendSave(body, true)
     return
@@ -128,8 +133,8 @@ function ensureLoaded(): void {
     fetch(CARD_PREFS_ENDPOINT, { credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) throw new Error(`status ${response.status}`)
-        const body = (await response.json()) as { closed?: unknown }
-        let next: ReadonlySet<string> = new Set(sanitizeCardIds(body.closed))
+        const body = (await response.json()) as { open?: unknown }
+        let next: ReadonlySet<string> = new Set(sanitizeCardIds(body.open))
         for (const op of pendingOps) next = applyCardOp(next, op)
         const hadOps = pendingOps.length > 0
         pendingOps = []
@@ -145,41 +150,43 @@ function ensureLoaded(): void {
 
 function dispatch(op: CardOp): void {
   if (loadState !== 'ready') pendingOps.push(op)
-  commit(applyCardOp(closed, op))
+  commit(applyCardOp(opened, op))
   scheduleSave()
 }
 
-/** Registers a card id so collapseAll() with no arguments covers it. */
+/** Registers a card id so collapseAll() / expandAll() with no arguments cover it. */
 export function registerCardId(id: string): void {
   knownIds.add(id)
 }
 
-/** Sets one card open or closed. */
+/** Opens or closes one card. */
 export function setCardOpen(id: string, open: boolean): void {
-  if (closed.has(id) === !open) return
-  dispatch({ type: 'set', ids: [id], closed: !open })
+  if (opened.has(id) === open) return
+  dispatch({ type: 'set', ids: [id], open })
 }
 
-/** Snapshot of the closed ids (for tests and non-React callers). */
-export function getClosedIds(): string[] {
-  return [...closed]
+/** Snapshot of the opened ids (for tests and non-React callers). */
+export function getOpenIds(): string[] {
+  return [...opened]
 }
 
 /** Flips one card: opens it when it is shut, shuts it when it is open. */
 export function toggleCard(id: string): void {
-  setCardOpen(id, closed.has(id))
+  setCardOpen(id, !opened.has(id))
 }
 
 /** Closes the given cards, or every registered card when no ids are given. */
 export function collapseAll(ids?: string[]): void {
   const targets = ids ?? [...knownIds]
   if (targets.length === 0) return
-  dispatch({ type: 'set', ids: targets, closed: true })
+  dispatch({ type: 'set', ids: targets, open: false })
 }
 
-/** Opens every card. */
+/** Opens every registered card. Cards that were never registered keep their state. */
 export function expandAll(): void {
-  dispatch({ type: 'clear' })
+  const targets = [...knownIds]
+  if (targets.length === 0) return
+  dispatch({ type: 'set', ids: targets, open: true })
 }
 
 function subscribe(listener: () => void): () => void {
@@ -191,7 +198,7 @@ function subscribe(listener: () => void): () => void {
 }
 
 function getSnapshot(): ReadonlySet<string> {
-  return closed
+  return opened
 }
 
 function getServerSnapshot(): ReadonlySet<string> {
@@ -199,15 +206,16 @@ function getServerSnapshot(): ReadonlySet<string> {
 }
 
 /**
- * Open state for one card: `[open, toggle]`. Cards default to open.
- * The id is registered once mounted so collapseAll() covers it.
+ * Open state for one card: `[open, toggle]`. Cards default to CLOSED, both on
+ * the server render and until the user's saved set has loaded.
+ * The id is registered once mounted so collapseAll() / expandAll() cover it.
  */
 export function useCardOpen(id: string): [open: boolean, toggle: () => void] {
-  const closedSet = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const openedSet = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
   useEffect(() => {
     registerCardId(id)
   }, [id])
-  const open = !closedSet.has(id)
+  const open = openedSet.has(id)
   const toggle = () => toggleCard(id)
   return [open, toggle]
 }

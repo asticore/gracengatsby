@@ -31,6 +31,8 @@ import * as migration_20261011_110000_cookie_consent from './20261011_110000_coo
 import * as migration_20261011_120000_media_library from './20261011_120000_media_library';
 import * as migration_20261011_130000_content_approval from './20261011_130000_content_approval';
 import * as migration_20261011_140000_custom_fields_v2 from './20261011_140000_custom_fields_v2';
+import * as migration_20261012_100000_approval_workflows from './20261012_100000_approval_workflows';
+import * as migration_20261012_110000_consent_banner from './20261012_110000_consent_banner';
 
 export const migrations = [
   {
@@ -197,5 +199,15 @@ export const migrations = [
     up: migration_20261011_140000_custom_fields_v2.up,
     down: migration_20261011_140000_custom_fields_v2.down,
     name: '20261011_140000_custom_fields_v2',
+  },
+  {
+    up: migration_20261012_100000_approval_workflows.up,
+    down: migration_20261012_100000_approval_workflows.down,
+    name: '20261012_100000_approval_workflows',
+  },
+  {
+    up: migration_20261012_110000_consent_banner.up,
+    down: migration_20261012_110000_consent_banner.down,
+    name: '20261012_110000_consent_banner',
   },
 ];

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/admin/auth'
 import { createEngine } from '@/localapi/engine'
+import { assertDocAccess, docAccessDenied } from '@/features/roles/docAccess'
 import { planMoves, type TreePage, type MoveInput } from '@/features/pagesTree/plan'
 import { purgeCache } from '@/features/speed/purge'
 import { invalidateRedirectsCache } from '@/features/redirects'
@@ -104,6 +105,12 @@ export async function POST(request: Request): Promise<Response> {
     // Validate mode
     if (mode !== 'preview' && mode !== 'commit') {
       return NextResponse.json({ error: 'mode must be "preview" or "commit"' }, { status: 400 })
+    }
+
+    // An own-scoped pages grant may only move pages the user created.
+    for (const m of moves as { id: number }[]) {
+      const access = await assertDocAccess(context, 'pages', m.id, 'update')
+      if (!access.ok) return docAccessDenied(access)
     }
 
     // Load pages

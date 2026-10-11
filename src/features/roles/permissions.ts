@@ -8,7 +8,14 @@ export const RESOURCES = [
   'posts',
   'media',
   'products',
+  'product-attributes',
+  'shipping-classes',
+  'product-reviews',
   'orders',
+  'order-refunds',
+  'coupons',
+  'shipping-zones',
+  'tax-rates',
   'events',
   'forms',
   'redirects',
@@ -29,6 +36,10 @@ export const RESOURCES = [
   'transactions',
   'addresses',
   'ab-tests',
+  'ad-units',
+  'ad-placements',
+  'ad-reports',
+  'settings:ad-settings',
   'audit-log',
   'backups',
   'translations',
@@ -63,6 +74,7 @@ export const RESOURCES = [
   'cache.purge',
   'redirects.import',
   'review',
+  'locks',
 ] as const
 
 export type Resource = (typeof RESOURCES)[number]
@@ -71,7 +83,17 @@ export type Action = 'read' | 'create' | 'update' | 'delete' | 'publish'
 export const ACTIONS: Action[] = ['read', 'create', 'update', 'delete']
 export const ALL_ACTIONS: Action[] = [...ACTIONS, 'publish']
 
-export type PermissionMatrix = Record<Resource, Partial<Record<Action, boolean>>>
+/** 'own' limits read/update/delete to documents the user created (custom role matrices only). */
+export type Scope = 'all' | 'own'
+
+export type ResourcePermissions = Partial<Record<Action, boolean>> & { scope?: Scope }
+
+export type PermissionMatrix = Record<Resource, ResourcePermissions>
+
+/** Collections that carry createdBy (src/fields/authorship.ts), so an "own items only" scope can be enforced. */
+export const OWNABLE_RESOURCES: readonly Resource[] = ['pages', 'posts', 'events', 'products', 'courses']
+
+export const SCOPED_ACTIONS: readonly Action[] = ['read', 'update', 'delete']
 
 export type PermissionOverrides = {
   grant?: Partial<PermissionMatrix>
@@ -168,15 +190,29 @@ export const BUILT_IN_ROLES: Record<string, PermissionMatrix> = {
  * Deny overrides always take precedence.
  */
 export function can(
-  user: { roles?: string[]; id?: number; permissionOverrides?: string | PermissionOverrides | null } | null | undefined,
+  user: PermissionUser | null | undefined,
   resource: Resource,
   action: Action,
   customMatrix?: Partial<PermissionMatrix>,
 ): boolean {
+  return resolveAccess(user, resource, action, customMatrix) !== false
+}
+
+/**
+ * Same union as can(), but says how far the grant reaches: 'all' (every document) or 'own' (only
+ * documents the user created). 'own' only ever comes from a custom role matrix, and only when no
+ * built-in role, grant override or other source grants the action without the limit.
+ */
+export function resolveAccess(
+  user: PermissionUser | null | undefined,
+  resource: Resource,
+  action: Action,
+  customMatrix?: Partial<PermissionMatrix>,
+): false | Scope {
   if (!user) return false
 
   // Admin always has access
-  if (user.roles?.includes('admin')) return true
+  if (user.roles?.includes('admin')) return 'all'
 
   // Secret resources always denied for non-admin
   if (SECRET_RESOURCES.includes(resource)) return false
@@ -199,22 +235,55 @@ export function can(
     }
   }
 
-  if (customMatrix) {
-    matrices.push(customMatrix)
+  // The matrix the session carries (loaded once per request, see customRoleCache.ts) unless the caller
+  // passes one. A user whose custom role could not be loaded carries an empty matrix: no custom grants.
+  const custom = customMatrix ?? parseCustomMatrix(user.customRolePermissions)
+  if (custom) {
+    matrices.push(custom)
   }
 
   // Add grant overrides to the union
-  if (overrides.grant) {
-    matrices.push(overrides.grant)
+  const grant = overrides.grant
+  if (grant) {
+    matrices.push(grant)
   }
 
-  // Any matrix grants the permission = union (OR logic)
+  // Any matrix grants the permission = union (OR logic). Only the custom matrix can narrow the grant to
+  // the user's own documents; a grant from anywhere else is unrestricted.
+  let narrowed = false
   for (const matrix of matrices) {
     const perms = matrix[resource as Resource]
-    if (perms?.[action]) return true
+    if (!perms?.[action]) continue
+    if (matrix === custom && perms.scope === 'own' && SCOPED_ACTIONS.includes(action)) {
+      narrowed = true
+      continue
+    }
+    return 'all'
   }
 
-  return false
+  return narrowed ? 'own' : false
+}
+
+/** Type of the user object that can() reads: built-in roles, per-user overrides and the session's custom role matrix. */
+export type PermissionUser = {
+  roles?: string[]
+  id?: number
+  permissionOverrides?: string | PermissionOverrides | null
+  customRolePermissions?: unknown
+}
+
+/** A matrix from a session or a role row, or undefined when it is not a plain object (fail closed). */
+export function parseCustomMatrix(input: unknown): Partial<PermissionMatrix> | undefined {
+  let value = input
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value)
+    } catch {
+      return undefined
+    }
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  return value as Partial<PermissionMatrix>
 }
 
 /**
@@ -244,7 +313,7 @@ function parsePermissionOverrides(input: string | PermissionOverrides | null | u
  * Returns the full computed matrix considering roles, custom matrix, and overrides.
  */
 export function effectiveMatrix(
-  user: { roles?: string[]; id?: number; permissionOverrides?: string | PermissionOverrides | null } | null | undefined,
+  user: PermissionUser | null | undefined,
   customMatrix?: Partial<PermissionMatrix>,
 ): PermissionMatrix {
   const result: PermissionMatrix = {} as PermissionMatrix
@@ -285,8 +354,9 @@ export function effectiveMatrix(
     }
   }
 
-  if (customMatrix) {
-    matrices.push(customMatrix)
+  const custom = customMatrix ?? parseCustomMatrix(user.customRolePermissions)
+  if (custom) {
+    matrices.push(custom)
   }
 
   const overrides = parsePermissionOverrides(user.permissionOverrides)
@@ -438,7 +508,14 @@ export const PERMISSION_CATEGORIES: Array<{
     label: 'Shop',
     rows: [
       { resource: 'products', label: 'Products', actions: ['read', 'create', 'update', 'delete', 'publish'] },
+      { resource: 'product-attributes', label: 'Product attributes', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'shipping-classes', label: 'Shipping classes', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'product-reviews', label: 'Product reviews', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'orders', label: 'Orders', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'order-refunds', label: 'Order refunds', description: 'Create: issue a refund. Read: see refund history.', actions: ['read', 'create'] },
+      { resource: 'coupons', label: 'Coupons', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'shipping-zones', label: 'Shipping zones', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'tax-rates', label: 'Tax rates', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'carts', label: 'Carts', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'transactions', label: 'Transactions', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'addresses', label: 'Addresses', actions: ['read', 'create', 'update', 'delete'] },
@@ -463,6 +540,21 @@ export const PERMISSION_CATEGORIES: Array<{
     rows: [{ resource: 'ab-tests', label: 'A/B tests', actions: ['read', 'create', 'update', 'delete'] }],
   },
   {
+    id: 'ads',
+    label: 'Ads',
+    rows: [
+      { resource: 'ad-units', label: 'Ad units', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'ad-placements', label: 'Ad placements', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'ad-reports', label: 'Ad reports', actions: ['read'] },
+      {
+        resource: 'settings:ad-settings',
+        label: 'Ads settings (admin-equivalent)',
+        description: 'Update can load third-party ad scripts on every page of the site, so grant it only to people you would trust with admin access.',
+        actions: ['read', 'update'],
+      },
+    ],
+  },
+  {
     id: 'editing',
     label: 'Editing rights',
     rows: [
@@ -475,6 +567,12 @@ export const PERMISSION_CATEGORIES: Array<{
       { resource: 'admin-schedule', label: 'Schedule publish', actions: ['update'] },
       { resource: 'admin-visibility-password', label: 'Password protect', actions: ['update'] },
       { resource: 'admin-edit-lock', label: 'Lock document', actions: ['update'] },
+      {
+        resource: 'locks',
+        label: 'Manage section locks',
+        description: 'Lock or unlock sections, templates and pages. Roles named on a lock may always edit it.',
+        actions: ['update'],
+      },
       { resource: 'preview-link', label: 'Preview link', actions: ['create'] },
       { resource: 'admin-pages-tree', label: 'Pages tree', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'cache.purge', label: 'Purge cache', actions: ['update'] },

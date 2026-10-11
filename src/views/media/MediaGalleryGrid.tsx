@@ -6,6 +6,9 @@ import { useEffect, useState } from 'react'
 
 import { describeSaving, formatBytes, postJson, requestJson } from '@/features/media/admin/mediaApi'
 
+import { INLINE_IMAGE_TYPES } from '@/features/media/fileTypes'
+
+import { FileIcon } from './FileIcon'
 import { StockPhotoDialog } from './StockPhotoDialog'
 
 export interface GalleryDoc {
@@ -194,6 +197,18 @@ export function MediaGalleryGrid({
 
   const optimiseOne = (id: string) => optimiseIds([Number(id)])
 
+  const copyUrl = async (doc: GalleryDoc) => {
+    if (!doc.url) return
+    const absolute = new URL(doc.url, window.location.origin).toString()
+    try {
+      await navigator.clipboard.writeText(absolute)
+      setNotice({ kind: 'ok', text: `Copied the address of ${doc.filename ?? 'the file'}.` })
+    } catch {
+      // Clipboard access can be refused (insecure context, permissions): show the address so it can be copied by hand.
+      window.prompt('Copy this address', absolute)
+    }
+  }
+
   const tileSizeButtons = (['sm', 'md', 'lg'] as const).map((option) => (
     <button
       key={option}
@@ -312,7 +327,7 @@ export function MediaGalleryGrid({
               </label>
               <Link href={doc.editHref} className="flex flex-col no-underline">
                 <div className="flex aspect-square items-center justify-center overflow-hidden bg-[var(--theme-elevation-50)]">
-                  {doc.url && doc.mimeType?.startsWith('image/') ? (
+                  {doc.url && doc.mimeType && INLINE_IMAGE_TYPES.has(doc.mimeType) ? (
                     // eslint-disable-next-line @next/next/no-img-element -- external/proxied original, sized on-screen via CSS rather than a fixed next/image variant (see MediaGalleryView doc comment)
                     <img
                       src={doc.url}
@@ -321,9 +336,7 @@ export function MediaGalleryGrid({
                       className="h-full w-full object-cover [transition:transform_0.15s_ease] group-hover:scale-105"
                     />
                   ) : (
-                    <span className="px-[calc(var(--base)*0.3)] text-center text-[calc(var(--base)*0.7)] text-[var(--theme-elevation-500)]">
-                      {doc.mimeType ?? 'file'}
-                    </span>
+                    <FileIcon mimeType={doc.mimeType} filename={doc.filename} />
                   )}
                 </div>
                 <div className="flex flex-col gap-[calc(var(--base)*0.1)] px-[calc(var(--base)*0.5)] pt-[calc(var(--base)*0.4)]">
@@ -332,13 +345,23 @@ export function MediaGalleryGrid({
                   {doc.folder ? <span className="truncate text-[calc(var(--base)*0.65)] text-[var(--theme-elevation-500)]">{doc.folder}</span> : null}
                 </div>
               </Link>
-              {canOptimise ? (
-                <div className="px-[calc(var(--base)*0.5)] pb-[calc(var(--base)*0.4)] pt-[calc(var(--base)*0.3)]">
+              <div className="flex flex-wrap items-center gap-[6px] px-[calc(var(--base)*0.5)] pb-[calc(var(--base)*0.4)] pt-[calc(var(--base)*0.3)]">
+                {doc.url ? (
+                  <>
+                    <button type="button" className={buttonClass} onClick={() => copyUrl(doc)} aria-label={`Copy address of ${doc.filename ?? doc.id}`}>
+                      Copy URL
+                    </button>
+                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className={`${buttonClass} no-underline`}>
+                      {doc.mimeType && INLINE_IMAGE_TYPES.has(doc.mimeType) ? 'Open' : 'Download'}
+                    </a>
+                  </>
+                ) : null}
+                {canOptimise ? (
                   <button type="button" className={buttonClass} disabled={busy !== null} onClick={() => optimiseOne(doc.id)}>
                     {busy === 'optimise' ? 'Optimising...' : 'Optimise'}
                   </button>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
           )
         })}

@@ -713,6 +713,14 @@ html[data-theme='dark'] .ve-root {
   outline: 2px solid var(--ve-select);
   outline-offset: -2px;
 }
+.ve-node--locked { box-shadow: inset 0 0 0 1px rgba(180, 120, 0, 0.55); }
+.ve-node__lock { margin-right: 2px; }
+.ve-lockset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.ve-lockset legend { font-size: 12px; font-weight: 600; padding: 0; }
+.ve-lock { padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 12px; }
+.ve-lock__status { margin: 0 0 6px; }
+.ve-lock__form { display: grid; gap: 6px; }
+.ve-lock__check { display: inline-flex; gap: 4px; margin-right: 10px; }
 
 .ve-node__toolbar {
   position: absolute;

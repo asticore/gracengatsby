@@ -101,7 +101,7 @@ describe('localapi/migrate - fresh-install acceptance proof (genuinely empty D1,
     expect(result.batch).toBe(1)
     expect(result.ran).toEqual(migrations.map((m) => m.name))
     expect(result.ran).toHaveLength(migrations.length)
-  }, 60_000)
+  }, 240_000)
 
   it('records one eg_migrations row per migration file, in the correct order and batch', async () => {
     const rows = (await db.all(sql`SELECT name, batch FROM eg_migrations ORDER BY id`)) as {

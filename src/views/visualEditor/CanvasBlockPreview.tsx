@@ -8,11 +8,26 @@ import { HeroBlock } from '@/components/blocks/HeroBlock'
 import { ImageTextBlock } from '@/components/blocks/ImageTextBlock'
 import { RichTextBlock } from '@/components/blocks/RichTextBlock'
 import { AdPlaceholder } from '@/features/ads/components/AdPlaceholder'
+import { DataViewCanvasPreview } from '@/features/dataViews/components/DataViewCanvasPreview'
 import { renderElement } from '@/components/blocks/elements/renderElement'
 
 import type { Media } from '@/engage-types'
 
+import { FieldView } from '@/features/forms/components/FieldView'
+import '@/features/forms/components/forms.css'
+import { HTML_ELEMENT, STEP_ELEMENT, isFieldElementType, nodeToField, type LayoutNode } from '@/features/forms/layout'
+
 import { useResolvedMedia, useResolvedMediaList } from './useResolvedMedia'
+
+/** A form field as it will look on the site. Typing in it does nothing: the canvas is for arranging. */
+const FormFieldPreview: React.FC<{ node: LayoutNode }> = ({ node }) => {
+  const field = nodeToField(node, new Set(), 0)
+  return (
+    <div className="engage-form">
+      <FieldView field={{ ...field, name: field.name || String(node._id) }} value={field.defaultValue ?? ''} onChange={() => {}} idPrefix="canvas" inert />
+    </div>
+  )
+}
 
 /**
  * Renders an on-brand preview of each block inside the visual editor canvas.
@@ -63,6 +78,26 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
     case 'element': {
       const elementType = (data.elementType as string) || ''
       const props = (data.props as Record<string, unknown>) || {}
+      if (elementType === 'data-view') {
+        const raw = props.view
+        const id = raw && typeof raw === 'object' ? Number((raw as { id?: unknown }).id) : Number(raw)
+        return <DataViewCanvasPreview viewId={Number.isInteger(id) && id > 0 ? id : null} />
+      }
+      if (elementType === STEP_ELEMENT) {
+        return (
+          <div className="ve-dynamic-placeholder">
+            <div className="ve-dynamic-placeholder__icon">⇥</div>
+            <div>
+              <strong>Step break{props.title ? `: ${String(props.title)}` : ''}</strong>
+              <p>The form continues on a new step from here. Keep step breaks at the top level, between sections.</p>
+            </div>
+          </div>
+        )
+      }
+      if (elementType === HTML_ELEMENT) {
+        return <div className="engage-form" dangerouslySetInnerHTML={{ __html: String(props.html || '') }} />
+      }
+      if (isFieldElementType(elementType)) return <FormFieldPreview node={data as LayoutNode} />
       if (elementType === 'ad') return <AdPlaceholder label={`Ad: ${String(props.placement || props.unit || 'choose a placement')}`} />
       return renderElement(elementType, props) ?? (
         <DynamicPlaceholder icon="🧩" label={elementType || 'Element'} data={data} detail="Unknown element type." />

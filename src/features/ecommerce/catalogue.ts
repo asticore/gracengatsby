@@ -9,7 +9,7 @@ import { effectivePrice, type PriceFields } from './pricing'
 import { canPurchase, computeStockStatus, type StockFields, type StockStatus } from './stock'
 import { decodeAttributeValues, findVariation, type VariationRow } from './variations'
 
-export type ProductType = 'simple' | 'variable' | 'grouped' | 'external'
+export type ProductType = 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard'
 
 export type CatalogueProduct = PriceFields &
   StockFields & {

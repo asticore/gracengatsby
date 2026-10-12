@@ -2,13 +2,19 @@ import type { Endpoint, EngineRequest } from '@/engine'
 
 import type { FormDoc } from './types'
 
+import { can } from '@/features/roles/permissions'
+
 import { buildCsv, csvFilename, type ExportRow } from './csv'
 import { FORMS_SLUG, SUBMISSIONS_SLUG } from './slugs'
+import { parseSubmissionFilters, submissionsWhere } from './submissionsApi'
 
 /**
- * GET /api/form-submissions/export?form=<id>
+ * GET /api/form-submissions/export?form=<id>[&status=..&assignee=..&from=..&to=..&q=..]
  *
- * Admin-only, because an export is every answer every visitor has ever given -
+ * Administrators, and anyone a role has been granted "Form entries: download
+ * CSV" (resource `forms.export`). The filters are the same ones the entries
+ * list uses (submissionsApi.ts), so an export matches what was on screen.
+ * Because an export is every answer every visitor has ever given -
  * names, addresses, whatever was typed into a message box - in one file. The
  * check is explicit rather than inherited from the collection's `read` access:
  * this endpoint reads with `overrideAccess` so the page loop is not filtered
@@ -21,6 +27,12 @@ import { FORMS_SLUG, SUBMISSIONS_SLUG } from './slugs'
  * to become a streamed response, which is a change to this function only.
  */
 
+const assigneeName = (value: unknown): string | undefined => {
+  if (!value || typeof value !== 'object') return undefined
+  const user = value as { name?: string; email?: string }
+  return user.name || user.email || undefined
+}
+
 const PAGE_SIZE = 500
 const MAX_ROWS = 50_000
 
@@ -28,8 +40,9 @@ export const exportEndpoint: Endpoint = {
   path: '/export',
   method: 'get',
   handler: async (req: EngineRequest): Promise<Response> => {
-    const roles = (req.user as { roles?: string[] } | null)?.roles || []
-    if (!roles.includes('admin')) {
+    const user = req.user as Parameters<typeof can>[0] & { roles?: string[] }
+    const roles = user?.roles || []
+    if (!roles.includes('admin') && !(user && can(user, 'forms.export', 'read'))) {
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
@@ -64,11 +77,11 @@ export const exportEndpoint: Endpoint = {
     for (;;) {
       const result = await engine.find({
         collection: SUBMISSIONS_SLUG,
-        where: { form: { equals: formID } },
+        where: submissionsWhere({ ...parseSubmissionFilters(url.searchParams), form: Number(formID) || undefined }) as never,
         // Oldest first so a re-export appends rather than reshuffling, which
         // matters to anyone diffing two exports.
         sort: 'createdAt',
-        depth: 0,
+        depth: 1,
         limit: PAGE_SIZE,
         page,
         overrideAccess: true,
@@ -81,6 +94,9 @@ export const exportEndpoint: Endpoint = {
           ip: doc.ip as string,
           total: doc.total as number,
           paymentStatus: doc.paymentStatus as string,
+          status: doc.status as string | undefined,
+          assignee: assigneeName(doc.assignee),
+          notes: doc.notes as string | undefined,
           values: (doc.values || {}) as Record<string, unknown>,
         })
       }

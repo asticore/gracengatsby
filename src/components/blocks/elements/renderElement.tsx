@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { ButtonElement } from './ButtonElement'
 import { HeadingElement } from './HeadingElement'
 
 /**
@@ -18,6 +19,15 @@ export const renderElement = (elementType: string, props: Record<string, unknown
           tag={props.tag as HeadingElementProps['tag']}
           align={props.align as HeadingElementProps['align']}
           link={props.link as string}
+        />
+      )
+    case 'button':
+      return (
+        <ButtonElement
+          text={props.text as string}
+          url={props.url as string}
+          variant={props.variant as 'primary' | 'plain'}
+          align={props.align as 'left' | 'center' | 'right'}
         />
       )
     default:

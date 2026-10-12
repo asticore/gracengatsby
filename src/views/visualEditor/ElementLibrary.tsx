@@ -27,14 +27,16 @@ export const ElementLibrary: React.FC<{
   targetLabel: string
   onPickBlock: (blockType: string) => void
   onPickTemplate: (blocks: SectionNode[]) => void
-}> = ({ targetLabel, onPickBlock, onPickTemplate }) => {
+  /** Form builder: only layout and form fields are offered, and page templates are hidden. */
+  formMode?: boolean
+}> = ({ targetLabel, onPickBlock, onPickTemplate, formMode }) => {
   const [source, setSource] = useState<Source>('blocks')
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('all')
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return libraryCards().filter((block) => {
+    return libraryCards({ formMode }).filter((block) => {
       if (category !== 'all' && block.category !== category) return false
       if (!needle) return true
       return (
@@ -43,7 +45,7 @@ export const ElementLibrary: React.FC<{
         block.slug.toLowerCase().includes(needle)
       )
     })
-  }, [query, category])
+  }, [query, category, formMode])
 
   const grouped = useMemo(() => {
     const map = new Map<string, BlockDef[]>()
@@ -68,15 +70,17 @@ export const ElementLibrary: React.FC<{
           >
             Blocks
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={source === 'templates'}
-            className={`ve-library__source-tab ${source === 'templates' ? 've-library__source-tab--active' : ''}`}
-            onClick={() => setSource('templates')}
-          >
-            Templates
-          </button>
+          {!formMode && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={source === 'templates'}
+              className={`ve-library__source-tab ${source === 'templates' ? 've-library__source-tab--active' : ''}`}
+              onClick={() => setSource('templates')}
+            >
+              Templates
+            </button>
+          )}
         </div>
 
         {source === 'blocks' && (

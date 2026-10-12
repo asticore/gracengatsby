@@ -148,3 +148,146 @@ export function formatWhen(iso: string): string {
   const date = new Date(iso)
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
+
+/* -------------------------------------------------------------------------- */
+/* Across every form / every event (the list page's Submissions and RSVPs tabs) */
+/* -------------------------------------------------------------------------- */
+
+export const PAYMENT_STATUSES = ['none', 'unpaid', 'paid'] as const
+
+/** Search text from a query string: trimmed, capped, and never a wildcard-only string. */
+export function parseSearch(raw: string | null): string {
+  return (raw ?? '').trim().slice(0, 100)
+}
+
+/** The start of a `YYYY-MM-DD` day (UTC) as an ISO string, or null when it is not a date. */
+export function dayStart(raw: string | null): string | null {
+  if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null
+  const date = new Date(`${raw}T00:00:00.000Z`)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+/** The last moment of a `YYYY-MM-DD` day (UTC) as an ISO string, or null when it is not a date. */
+export function dayEnd(raw: string | null): string | null {
+  if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null
+  const date = new Date(`${raw}T23:59:59.999Z`)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+type Clause = Record<string, unknown>
+
+/** A `createdAt` range clause list from `from` and `to` query values (either may be missing). */
+function dateClauses(from: string | null, to: string | null): Clause[] {
+  const clauses: Clause[] = []
+  const start = dayStart(from)
+  const end = dayEnd(to)
+  if (start) clauses.push({ createdAt: { greater_than_equal: start } })
+  if (end) clauses.push({ createdAt: { less_than_equal: end } })
+  return clauses
+}
+
+/** The `where` for the all-submissions list: optional form, payment status, summary search and date range. */
+/** Narrows a `where` to rows whose `field` is one of `ids` (an empty list matches nothing). */
+export function restrictToIds(where: Record<string, unknown> | undefined, field: string, ids: Array<number | string>): Record<string, unknown> {
+  const clause = { [field]: { in: ids.length ? ids : [-1] } }
+  return where ? { and: [where, clause] } : clause
+}
+
+export function buildSubmissionsWhere(params: {
+  form: number | null
+  status: string | null
+  q: string
+  from: string | null
+  to: string | null
+}): Record<string, unknown> | undefined {
+  const clauses: Clause[] = []
+  if (params.form !== null) clauses.push({ form: { equals: params.form } })
+  if (params.status && (PAYMENT_STATUSES as readonly string[]).includes(params.status)) {
+    clauses.push({ paymentStatus: { equals: params.status } })
+  }
+  if (params.q) clauses.push({ summary: { contains: params.q } })
+  clauses.push(...dateClauses(params.from, params.to))
+  if (clauses.length === 0) return undefined
+  return clauses.length === 1 ? clauses[0] : { and: clauses }
+}
+
+/** The `where` for the all-RSVPs list: optional event, name or email search and date range. */
+export function buildRsvpsWhere(params: {
+  event: number | null
+  q: string
+  from: string | null
+  to: string | null
+}): Record<string, unknown> | undefined {
+  const clauses: Clause[] = []
+  if (params.event !== null) clauses.push({ event: { equals: params.event } })
+  if (params.q) clauses.push({ or: [{ name: { contains: params.q } }, { email: { contains: params.q } }] })
+  clauses.push(...dateClauses(params.from, params.to))
+  if (clauses.length === 0) return undefined
+  return clauses.length === 1 ? clauses[0] : { and: clauses }
+}
+
+export type AllSubmissionRow = {
+  id: number | string
+  formId: number | string
+  formTitle: string
+  submittedAt: string
+  summary: string
+  paymentStatus: string
+  total: number | null
+}
+
+/** A relationship value (id or populated object) as its id. */
+export function relationId(value: unknown): number | string {
+  if (value && typeof value === 'object') return idOf((value as { id?: unknown }).id)
+  return idOf(value)
+}
+
+export function mapAllSubmissionRow(doc: Record<string, unknown>): AllSubmissionRow {
+  const form = doc.form
+  const formId = relationId(form)
+  const title = form && typeof form === 'object' ? text((form as { title?: unknown }).title) : ''
+  return {
+    id: idOf(doc.id),
+    formId,
+    formTitle: title || (formId === '' ? 'Unknown form' : `Form #${formId}`),
+    submittedAt: text(doc.submittedAt) || text(doc.createdAt),
+    summary: text(doc.summary),
+    paymentStatus: text(doc.paymentStatus) || 'none',
+    total: typeof doc.total === 'number' ? doc.total : null,
+  }
+}
+
+export function buildAllSubmissionsCsv(rows: AllSubmissionRow[]): string {
+  const header = ['Entry ID', 'Form', 'Submitted', 'Summary', 'Payment', 'Total']
+  const lines = [header.map(csvCell).join(',')]
+  for (const row of rows) {
+    lines.push([row.id, row.formTitle, row.submittedAt, row.summary, row.paymentStatus, row.total ?? ''].map(csvCell).join(','))
+  }
+  return `${lines.join('\r\n')}\r\n`
+}
+
+export type AllRsvpRow = RsvpRow & { eventId: number | string; eventTitle: string }
+
+export function mapAllRsvpRow(doc: Record<string, unknown>): AllRsvpRow {
+  const event = doc.event
+  const eventId = relationId(event)
+  const title = event && typeof event === 'object' ? text((event as { title?: unknown }).title) : ''
+  return {
+    ...mapRsvpRow(doc),
+    eventId,
+    eventTitle: title || (eventId === '' ? 'Unknown event' : `Event #${eventId}`),
+  }
+}
+
+export function buildAllRsvpsCsv(rows: AllRsvpRow[]): string {
+  const header = ['Entry ID', 'Event', 'Name', 'Email', 'Guests', 'Notes', 'Registered']
+  const lines = [header.map(csvCell).join(',')]
+  for (const row of rows) {
+    lines.push([row.id, row.eventTitle, row.name, row.email, row.guestCount, row.notes, row.createdAt].map(csvCell).join(','))
+  }
+  return `${lines.join('\r\n')}\r\n`
+}
+
+export function allCsvFilename(kind: 'submissions' | 'rsvps', now = new Date()): string {
+  return `all-${kind}-${now.toISOString().slice(0, 10)}.csv`
+}

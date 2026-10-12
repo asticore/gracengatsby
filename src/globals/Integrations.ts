@@ -92,6 +92,23 @@ export const Integrations: GlobalConfig = {
             description: 'Found in Google Cloud Console > APIs & Services > Credentials. Stored encrypted at rest, visible only to admins.',
           },
         },
+        {
+          name: 'pageSpeedApiKey',
+          type: 'text',
+          label: 'PageSpeed Insights API key',
+          access: {
+            read: adminOnlyFieldAccess,
+            update: adminOnlyFieldAccess,
+          },
+          hooks: {
+            beforeChange: [encryptSecretHook],
+            afterRead: [decryptSecretHook],
+          },
+          admin: {
+            description:
+              'Optional. Speed tests work without it but Google allows only a few per minute for everyone sharing the free allowance. A free key (Google Cloud Console > enable "PageSpeed Insights API" > Credentials) gives you your own, much larger quota. Stored encrypted at rest, visible only to admins.',
+          },
+        },
       ],
     },
     {

@@ -731,7 +731,7 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
       // cart.subtotal (50, built from priceInAUD - whole dollars) must be converted to
       // Stripe's smallest-unit cents (5000) at this boundary - see stripeAdapter.ts's
       // header comment (2026-09-26 unit-convention fix, plan doc What's-left item #12).
-      expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 5000, currency: 'AUD', customer: 'cus_1' }))
+      expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 5000, currency: 'aud', customer: 'cus_1' }))
       // The order is priced on the server and stored as pending payment, totalled from database prices (2 x $25.00, GST included).
       expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({ collection: 'orders', data: expect.objectContaining({ status: 'pending', amount: 5000, subtotal: 5000, taxTotal: 455 }) }))
       expect(engine.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -981,8 +981,7 @@ describe('localapi/rest - error mapping', () => {
 /* Fixtures use real registry slugs whose real access functions this test    */
 /* file can reason about directly (not mocked - the registry itself isn't    */
 /* injectable, see this file's own header): `faqs` (`access.read: () => true`*/
-/* unconditionally, `create`/`update`/`delete: isAdmin`, no field-level       */
-/* access anywhere - a clean "collapses to `true`/omitted" fixture), and     */
+/* unconditionally, `create`/`update`/`delete: isAdmin`, no field-level access anywhere - a clean "collapses to `true`/omitted" fixture), and     */
 /* `users` (`access.read`/`update: isAdminOrSelf` - returns a `Where` object */
 /* for a non-admin matching self, `false` otherwise; `access.create`/        */
 /* `delete: isAdmin`; the `roles` field has its own `access.update` -        */

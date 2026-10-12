@@ -112,6 +112,7 @@ describe('Settings Pages Configuration', () => {
       'security-settings',
       'language-settings',
       'payment-settings',
+      'shipping-settings',
       'form-settings',
       'backup-settings',
       'integrations',

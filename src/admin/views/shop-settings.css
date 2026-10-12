@@ -1,0 +1,66 @@
+/* Shop settings screen. Light by default; dark values only under [data-theme='dark']. */
+.shop-settings__preview {
+  margin-top: 16px;
+}
+
+.shop-settings__preview-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.shop-settings__preview-frame {
+  width: 100%;
+  height: 640px;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.shop-settings__links ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+[data-theme='dark'] .shop-settings__preview-frame {
+  border-color: #4a4a4a;
+}
+
+.shop-test-panel {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+}
+
+.shop-test-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.shop-test-row__ok {
+  color: #1a7f37;
+}
+
+.shop-test-row__bad {
+  color: #b42318;
+}
+
+.shop-test-carrier {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+[data-theme='dark'] .shop-test-panel,
+[data-theme='dark'] .shop-test-carrier {
+  border-color: #4a4a4a;
+}
+
+[data-theme='dark'] .shop-test-row__ok {
+  color: #56d364;
+}
+
+[data-theme='dark'] .shop-test-row__bad {
+  color: #ff8a80;
+}

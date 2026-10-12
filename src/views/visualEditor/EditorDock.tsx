@@ -9,7 +9,7 @@ import { ElementLibrary } from './ElementLibrary'
 import { FieldPanel } from './FieldPanel'
 import type { LockUi } from './LockControls'
 
-export type DockTab = 'elements' | 'settings'
+export type DockTab = 'elements' | 'settings' | 'form'
 
 /**
  * The persistent left dock - Elementor's left sidebar, not a popup: Elements
@@ -35,6 +35,8 @@ export const EditorDock: React.FC<{
   onDuplicateSelected: () => void
   userPermissions?: { canEditStyle: boolean; canEditLayout: boolean } | null
   lockUi?: LockUi
+  /** Form builder: the Form settings tab body. Its presence also puts the dock in form mode. */
+  formPanel?: React.ReactNode
 }> = ({
   collapsed,
   tab,
@@ -50,6 +52,7 @@ export const EditorDock: React.FC<{
   onDuplicateSelected,
   userPermissions,
   lockUi,
+  formPanel,
 }) => {
   // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
   // use the full width, same as Elementor's panel-collapse - nothing renders
@@ -78,11 +81,24 @@ export const EditorDock: React.FC<{
         >
           ⚙ Settings
         </button>
+        {formPanel && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'form'}
+            className={`ve-dock__tab ${tab === 'form' ? 've-dock__tab--active' : ''}`}
+            onClick={() => onTabChange('form')}
+          >
+            Form
+          </button>
+        )}
       </div>
 
       <div className="ve-dock__body">
-        {tab === 'elements' ? (
-          <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} />
+        {tab === 'form' && formPanel ? (
+          formPanel
+        ) : tab === 'elements' ? (
+          <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} formMode={Boolean(formPanel)} />
         ) : selectedNode && selectedDef ? (
           <FieldPanel
             blockDef={selectedDef}

@@ -48,8 +48,11 @@ import Stripe from 'stripe'
 
 import type { Engine } from '@/localapi/engine'
 
-import { CheckoutError, priceCart, validateCheckoutValues, type PricingEngine } from '../server/pricing'
+import { CheckoutError, priceCart, shopCurrency, validateCheckoutValues, type PricingEngine } from '../server/pricing'
+import { loadPaymentSettings, methodTypesFor, resolveStripeSecret, stripeShipping } from './config'
+import { cardAmountOf } from '../lib/storedValueOrder'
 import { flagMismatch, markOrderPaid } from '../server/orders'
+import { consumeStoredValue, quoteStoredValue } from '../server/storedValue'
 
 // The real plugin's own `initiatePayment.js`/`confirmOrder.js` each hardcode
 // a DIFFERENT default apiVersion ('2025-06-30.preview' vs
@@ -86,7 +89,14 @@ export type InitiateStripePaymentArgs = {
   checkout?: Record<string, unknown>
 }
 
-export type InitiateStripePaymentResult = { clientSecret: string; message: string; paymentIntentID: string }
+export type InitiateStripePaymentResult = {
+  clientSecret: string
+  message: string
+  paymentIntentID: string
+  /** True when gift cards and store credit covered the whole order: no card payment is needed and the order is already paid. */
+  paidInFull?: boolean
+  orderID?: number
+}
 
 const ADDRESS_KEYS = ['title', 'firstName', 'lastName', 'company', 'addressLine1', 'addressLine2', 'city', 'state', 'postalCode', 'country', 'phone']
 
@@ -106,7 +116,6 @@ function cleanAddress(a: Record<string, unknown> | undefined | null): Record<str
  */
 export async function initiateStripePayment(args: InitiateStripePaymentArgs): Promise<InitiateStripePaymentResult> {
   const { engine, cart, customerEmail, billingAddress, shippingAddress, user } = args
-  const currency = 'AUD' // single-currency shop: whatever the caller passed is ignored
   if (!cart.items || cart.items.length === 0) throw new Error('Cart is empty or not provided.')
   if (!customerEmail || typeof customerEmail !== 'string') throw new Error('A valid customer email is required to make a purchase.')
   const checkout = args.checkout ?? {}
@@ -125,10 +134,24 @@ export async function initiateStripePayment(args: InitiateStripePaymentArgs): Pr
     },
   )
   const { totals, config, lines } = priced
+  const currency = shopCurrency(config).toLowerCase() // single-currency shop: whatever the caller passed is ignored
   const fields = validateCheckoutValues(config.fields, (checkout.checkoutFields ?? {}) as Record<string, unknown>)
   if (fields.ok === false || !('values' in fields)) throw new CheckoutError(Object.values((fields as unknown as { errors: Record<string, string> }).errors)[0] ?? 'Check the highlighted fields.')
-  const amount = totals.totalCents
-  if (!Number.isInteger(amount) || amount <= 0) throw new CheckoutError('A valid amount is required to initiate a payment.')
+  const totalCents = totals.totalCents
+  if (!Number.isInteger(totalCents) || totalCents <= 0) throw new CheckoutError('A valid amount is required to initiate a payment.')
+
+  // Gift cards and store credit: the browser sends only the typed codes and a yes/no for credit.
+  const giftCodes = Array.isArray(checkout.giftCardCodes) ? (checkout.giftCardCodes as unknown[]) : []
+  const stored = await quoteStoredValue(engine as never, {
+    codes: giftCodes,
+    useCredit: checkout.useStoreCredit === true,
+    userId: user?.id ?? null,
+    totalCents,
+    lines: totals.lines.map((l) => ({ productId: l.productId, netCents: l.lineCents - l.discountCents, isGiftCard: Boolean(l.isGiftCard) })),
+    currency: currency.toUpperCase(),
+  })
+  if (giftCodes.length > 0 && stored.errors.length > 0) throw new CheckoutError('That gift card cannot be used.')
+  const amount = stored.plan.payableCents // what the card pays
 
   // Fields the editor maps onto the address / the order note.
   for (const key of ['company', 'phone', 'addressLine2'] as const) if ((fields as { values: Record<string, { value: string }> }).values[key]) address[key] = (fields as { values: Record<string, { value: string }> }).values[key].value
@@ -147,12 +170,16 @@ export async function initiateStripePayment(args: InitiateStripePaymentArgs): Pr
       lineCents: l.lineCents,
       discountCents: l.discountCents,
       taxCents: l.taxCents,
+      ...(l.isGiftCard ? { isGiftCard: true, giftAmountCents: (l as unknown as { giftAmountCents?: number }).giftAmountCents, recipient: (l as unknown as { recipient?: unknown }).recipient } : {}),
     })),
     shippingAddress: address,
     ...(user ? { customer: user.id } : {}),
     customerEmail: email,
     status: 'pending',
-    amount,
+    amount: totalCents,
+    giftCardTotal: stored.plan.giftCards.reduce((n, c) => n + c.cents, 0),
+    storeCreditTotal: stored.plan.creditCents,
+    storedValue: stored.snapshot,
     currency: currency.toUpperCase(),
     subtotal: totals.subtotalCents,
     discountTotal: totals.discountCents,
@@ -167,9 +194,15 @@ export async function initiateStripePayment(args: InitiateStripePaymentArgs): Pr
     cartId: cart.id,
   }
 
-  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (amount === 0) return payInFullWithStoredValue(engine, cart.id, orderData, email)
+
+  const paySettings = await loadPaymentSettings(engine as never)
+  const secretKey = resolveStripeSecret(paySettings)
   if (!secretKey) throw new Error('Stripe secret key is required.')
   const stripe = getStripeClient(secretKey)
+  // Pay-later methods (Afterpay, Klarna) are offered only when switched on and the order fits their rules.
+  const methodTypes = methodTypesFor(paySettings, amount, address.country, currency)
+  const shipping = methodTypes && methodTypes.length > 1 ? stripeShipping(address) : undefined
   let customer = (await stripe.customers.list({ email: customerEmail })).data[0]
   if (!customer?.id) customer = await stripe.customers.create({ email: customerEmail })
 
@@ -186,7 +219,7 @@ export async function initiateStripePayment(args: InitiateStripePaymentArgs): Pr
   if (existing?.paymentIntentId) {
     try {
       // Stripe metadata values are capped at 500 characters, so only ids go in (nothing is read back from it).
-      paymentIntent = await stripe.paymentIntents.update(existing.paymentIntentId, { amount, metadata: { cartID: String(cart.id), orderID: String(existing.id) } })
+      paymentIntent = await stripe.paymentIntents.update(existing.paymentIntentId, { amount, ...(methodTypes ? { payment_method_types: methodTypes } : {}), ...(shipping ? { shipping } : {}), metadata: { cartID: String(cart.id), orderID: String(existing.id) } })
     } catch {
       paymentIntent = undefined
     }
@@ -198,7 +231,8 @@ export async function initiateStripePayment(args: InitiateStripePaymentArgs): Pr
     // The PaymentIntent is created first: if Stripe refuses, no pending order is left behind.
     paymentIntent = await stripe.paymentIntents.create({
       amount,
-      automatic_payment_methods: { enabled: true },
+      ...(methodTypes ? { payment_method_types: methodTypes } : { automatic_payment_methods: { enabled: true } }),
+      ...(shipping ? { shipping } : {}),
       currency,
       customer: customer.id,
       metadata: { cartID: String(cart.id) },
@@ -257,7 +291,7 @@ export type ConfirmStripeOrderResult = { message: string; orderID: number; trans
  */
 export async function confirmStripeOrder(args: ConfirmStripeOrderArgs): Promise<ConfirmStripeOrderResult> {
   const { engine, paymentIntentID } = args
-  const secretKey = process.env.STRIPE_SECRET_KEY
+  const secretKey = resolveStripeSecret(await loadPaymentSettings(engine as never))
   if (!secretKey) throw new Error('Stripe secret key is required')
   if (!paymentIntentID) throw new Error('PaymentIntent ID is required')
   const stripe = getStripeClient(secretKey)
@@ -278,15 +312,45 @@ export async function confirmStripeOrder(args: ConfirmStripeOrderArgs): Promise<
   return { message: 'Payment initiated successfully', orderID: result.orderId, transactionID: transaction.id }
 }
 
+/**
+ * Gift cards and store credit cover the whole order, so there is no card step. The order is saved, the stored
+ * value is taken in strict mode (a shortfall undoes it and refuses the checkout), and then the order is marked
+ * paid through the same idempotent path a card payment uses.
+ */
+async function payInFullWithStoredValue(engine: Engine, cartId: number, orderData: Record<string, unknown>, email: string): Promise<InitiateStripePaymentResult> {
+  const existing = await engine
+    .find({ collection: 'orders', where: { cartId: { equals: cartId }, status: { equals: 'pending' } }, limit: 1, depth: 0, overrideAccess: true })
+    .then((r) => (r?.docs?.[0] as { id: number; paymentIntentId?: string } | undefined) ?? undefined)
+    .catch((): undefined => undefined)
+  const data = { ...orderData, paymentIntentId: null as string | null, ...(existing ? { storedValueApplied: false } : {}) }
+  let orderId: number
+  if (existing) {
+    orderId = existing.id
+    await engine.update({ collection: 'orders', id: orderId, data: data as never, overrideAccess: true })
+    const key = existing.paymentIntentId ? resolveStripeSecret(await loadPaymentSettings(engine as never)) : null
+    if (existing.paymentIntentId && key) await getStripeClient(key).paymentIntents.cancel(existing.paymentIntentId).catch((): null => null)
+  } else {
+    orderId = (await engine.create({ collection: 'orders', data: data as never, overrideAccess: true })).id as number
+  }
+  const order = await engine.findByID({ collection: 'orders', id: orderId, depth: 0, overrideAccess: true })
+  const taken = await consumeStoredValue(engine as never, order as never, 'strict')
+  if (!taken.ok) throw new CheckoutError('A gift card or store credit balance changed. Please review your order and try again.')
+  await markOrderPaid(engine as never, orderId, {})
+  await engine.update({ collection: 'carts', id: cartId, data: { email } as never, overrideAccess: true }).catch((): null => null)
+  return { clientSecret: '', message: 'Order paid with gift card and store credit', paymentIntentID: '', paidInFull: true, orderID: orderId }
+}
+
 /** Shared by confirm and the `payment_intent.succeeded` webhook. */
 export async function finalizePaidIntent(engine: Engine, paymentIntent: Stripe.PaymentIntent, transactionId?: number): Promise<{ orderId: number; firstTime: boolean }> {
   const orderId = Number(paymentIntent.metadata?.orderID)
   if (!orderId) throw new Error('Order ID not found in the PaymentIntent metadata')
-  const order = (await engine.findByID({ collection: 'orders', id: orderId, depth: 0, overrideAccess: true })) as { amount?: number } | null
+  const order = (await engine.findByID({ collection: 'orders', id: orderId, depth: 0, overrideAccess: true })) as { amount?: number; giftCardTotal?: number; storeCreditTotal?: number } | null
   if (!order) throw new Error('Order not found')
-  if (typeof order.amount === 'number' && order.amount !== paymentIntent.amount_received && order.amount !== paymentIntent.amount) {
+  // The card pays the total less any gift card / store credit applied to the order.
+  const expected = cardAmountOf(order)
+  if (typeof order.amount === 'number' && expected !== paymentIntent.amount_received && expected !== paymentIntent.amount) {
     // Never 500 forever (Stripe would retry the webhook for days): record it for staff and acknowledge.
-    await flagMismatch(engine as never, orderId, `Payment ${paymentIntent.id} of ${paymentIntent.amount_received ?? paymentIntent.amount} cents does not match the order total of ${order.amount} cents.`)
+    await flagMismatch(engine as never, orderId, `Payment ${paymentIntent.id} of ${paymentIntent.amount_received ?? paymentIntent.amount} cents does not match the amount due by card of ${expected} cents.`)
     return { orderId, firstTime: false }
   }
   const { firstTime } = await markOrderPaid(engine as never, orderId, { paymentIntentId: paymentIntent.id, transactionId })

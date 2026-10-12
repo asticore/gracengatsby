@@ -31,7 +31,7 @@ export const staffFieldAccess: FieldAccess = ({ req }) => isOrderStaff(req.user 
 
 /** Plain permission check for the shop's own collections (refunds, coupons, ...). */
 export const shopAccess =
-  (resource: 'order-refunds' | 'coupons' | 'shipping-zones' | 'tax-rates', action: Action): Access =>
+  (resource: 'order-refunds' | 'coupons' | 'shipping-zones' | 'tax-rates' | 'gift-cards' | 'store-credits' | 'credit-ledger' | 'shipping-manifests', action: Action): Access =>
   ({ req }) => {
     const user = req.user as U
     if (isAdminUser(user)) return true

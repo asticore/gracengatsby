@@ -15,6 +15,10 @@ export type EditorFieldType =
   | 'media'
   | 'mediaMulti'
   | 'relationship'
+  /** Form builder: an editable list of label / value / price rows (src/features/forms/editor). */
+  | 'formOptions'
+  /** Form builder: the conditional-logic rule builder. Reads the other fields from FormEditorContext. */
+  | 'formLogic'
 
 export type EditorField = {
   name: string

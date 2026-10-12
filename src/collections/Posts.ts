@@ -1,4 +1,6 @@
 import { noAdsField } from '@/features/ads/fields'
+import { pageSpeedFields } from '@/features/pagespeed/fields'
+import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import type { CollectionConfig } from '@/engine'
 
 import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
@@ -11,6 +13,9 @@ import { customFieldsField } from '../fields/customFields'
 import { membersOnlyField } from '@/features/members'
 import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuard'
 import { reviewFields } from '@/features/approval/fields'
+import { readingTimeField, stickyField, trashedAtField } from '@/features/editScreens/fields'
+import { seoEditGuard, trashGuard } from '@/features/editScreens/guards'
+import { readingTimeBeforeChange } from '@/features/editScreens/readingTime'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -77,8 +82,13 @@ export const Posts: CollectionConfig = {
     ...reviewFields,
     schemaTypeField('posts'),
     noAdsField,
+    ...pageSpeedFields,
+    stickyField,
+    readingTimeField,
+    trashedAtField,
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard],
+    beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, readingTimeBeforeChange, contentEditGuard, publishGuard, pageSpeedBeforeChange],
+    afterChange: [pageSpeedAfterChange('posts')],
   },
 }

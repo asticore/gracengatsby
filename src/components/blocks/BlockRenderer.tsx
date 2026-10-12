@@ -17,6 +17,8 @@ import { SectionBlock } from './SectionBlock'
 import { StyledBlock } from './StyledBlock'
 import { AdSlot } from '@/features/ads/components/AdSlot'
 import { AdRichText } from '@/features/ads/components/AdRichText'
+import { DataViewBlock } from '@/features/dataViews/components/DataViewBlock'
+import { RichTextWithForms } from '@/features/forms/components/RichTextWithForms'
 import { renderElement } from './elements/renderElement'
 
 /**
@@ -66,7 +68,7 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
       return (
         <section className="built-block">
           <div className="mx-auto max-w-[760px] px-6 py-16">
-            <AdRichText content={get('content')} />
+            <RichTextWithForms content={get('content')} />
           </div>
         </section>
       )
@@ -118,6 +120,12 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
       if (get<string>('elementType') === 'ad') {
         const props = get<Record<string, unknown>>('props') || {}
         return <AdSlot placement={typeof props.placement === 'string' ? props.placement : undefined} unit={typeof props.unit === 'string' ? props.unit : undefined} />
+      }
+      if (get<string>('elementType') === 'data-view') {
+        const props = get<Record<string, unknown>>('props') || {}
+        const raw = props.view
+        const ref = raw && typeof raw === 'object' ? (raw as { id?: unknown }).id : raw
+        return <DataViewBlock viewRef={typeof ref === 'number' || typeof ref === 'string' ? ref : null} />
       }
       return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {})
 

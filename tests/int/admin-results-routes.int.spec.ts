@@ -231,3 +231,65 @@ describe('GET /api/admin-form-submissions', () => {
     expect((find.mock.calls[0][0] as { where: unknown }).where).toEqual({ form: { equals: 5 } })
   })
 })
+
+describe('across every event and every form (all=1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('lists RSVPs of every event with the event title, filtered by event, search and dates', async () => {
+    const find = pagedFind([rsvp(1, { event: { id: 3, title: 'Gala' } }), rsvp(2, { event: 4 })])
+    getAdminContext.mockResolvedValue(adminContext({ engine: { find } }))
+    const response = await rsvpGET(eventRequest('all=1&event=3&q=ada&from=2026-10-01&to=2026-10-31'))
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { docs: Array<Record<string, unknown>>; totalDocs: number }
+    expect(body.docs[0]).toMatchObject({ eventId: 3, eventTitle: 'Gala' })
+    expect(body.docs[1]).toMatchObject({ eventId: 4, eventTitle: 'Event #4' })
+    const call = find.mock.calls[0][0] as { where: { and: unknown[] }; depth: number }
+    expect(call.depth).toBe(1)
+    expect(call.where.and).toHaveLength(4)
+  })
+
+  it('still needs event update rights for the all-RSVPs list', async () => {
+    getAdminContext.mockResolvedValue(
+      adminContext({ roles: ['editor'], collections: { 'event-rsvps': { read: true }, events: { read: true, update: false } }, engine: { find: vi.fn() } }),
+    )
+    expect((await rsvpGET(eventRequest('all=1'))).status).toBe(403)
+    expect((await rsvpGET(eventRequest('all=1&format=csv'))).status).toBe(403)
+  })
+
+  it('exports the filtered RSVPs as CSV', async () => {
+    getAdminContext.mockResolvedValue(adminContext({ engine: { find: pagedFind([rsvp(1, { event: { id: 3, title: 'Gala' } })]) } }))
+    const response = await rsvpGET(eventRequest('all=1&format=csv'))
+    expect(response.headers.get('Content-Disposition')).toMatch(/all-rsvps-\d{4}-\d{2}-\d{2}\.csv/)
+    const text = new TextDecoder().decode(await response.arrayBuffer())
+    expect(text).toContain('Gala')
+  })
+
+  it('lists submissions of every form with the form title and filters', async () => {
+    const find = pagedFind([{ id: 1, form: { id: 5, title: 'Contact' }, summary: 'Ada', createdAt: '2026-10-02', paymentStatus: 'paid' }])
+    getAdminContext.mockResolvedValue(adminContext({ engine: { find } }))
+    const response = await submissionsGET(formRequest('all=1&status=paid&q=ada'))
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { docs: Array<Record<string, unknown>> }
+    expect(body.docs[0]).toMatchObject({ formId: 5, formTitle: 'Contact', summary: 'Ada', paymentStatus: 'paid' })
+    expect((find.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      and: [{ paymentStatus: { equals: 'paid' } }, { summary: { contains: 'ada' } }],
+    })
+  })
+
+  it('refuses the all-submissions list without read permission', async () => {
+    getAdminContext.mockResolvedValue(adminContext({ collections: { 'form-submissions': { read: false } } }))
+    expect((await submissionsGET(formRequest('all=1'))).status).toBe(403)
+  })
+
+  it('exports the filtered submissions as CSV', async () => {
+    const find = pagedFind([{ id: 1, form: { id: 5, title: 'Contact' }, summary: '=1+1', createdAt: '2026-10-02' }])
+    getAdminContext.mockResolvedValue(adminContext({ engine: { find } }))
+    const response = await submissionsGET(formRequest('all=1&format=csv'))
+    expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8')
+    const text = new TextDecoder().decode(await response.arrayBuffer())
+    expect(text).toContain('Contact')
+    expect(text).toContain('\t=1+1')
+  })
+})

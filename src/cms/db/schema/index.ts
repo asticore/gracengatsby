@@ -42,6 +42,7 @@ import { LanguageSettings } from '@/globals/LanguageSettings'
 import { MediaSettings } from '@/globals/MediaSettings'
 import { MemberSettings } from '@/globals/MemberSettings'
 import { PaymentSettings } from '@/globals/PaymentSettings'
+import { ShippingSettings } from '@/globals/ShippingSettings'
 import { SecuritySettings } from '@/globals/SecuritySettings'
 import { SeoSettings } from '@/globals/SeoSettings'
 import { ShopSettings } from '@/globals/ShopSettings'
@@ -776,6 +777,9 @@ export const emailSettings = emailSettingsGenerated.table
  */
 export const paymentSettingsGenerated = generateTable(PaymentSettings)
 export const paymentSettings = paymentSettingsGenerated.table
+
+export const shippingSettingsGenerated = generateTable(ShippingSettings)
+export const shippingSettings = shippingSettingsGenerated.table
 
 export const formSettingsGenerated = generateTable(FormSettings)
 export const formSettings = formSettingsGenerated.table

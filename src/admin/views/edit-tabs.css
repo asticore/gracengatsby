@@ -50,6 +50,16 @@
   border-bottom-color: #1a1a1a;
 }
 
+.et-tab--disabled {
+  color: #777;
+  font-weight: 400;
+  cursor: help;
+}
+
+.et-tab__lock {
+  font-size: 12px;
+}
+
 .et-panel {
   min-width: 0;
 }
@@ -278,4 +288,8 @@
 [data-theme='dark'] .et-error {
   background: #3a1d1b;
   color: #f4c7c3;
+}
+
+[data-theme='dark'] .et-tab--disabled {
+  color: #8a8a8a;
 }

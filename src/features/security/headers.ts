@@ -69,6 +69,29 @@ const POLICY_FREE_PREFIXES = ['/admin']
 export const isPolicyFreePath = (pathname: string): boolean =>
   POLICY_FREE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 
+/**
+ * The one place a page may be framed by other sites: the shareable table and chart page
+ * (src/app/(embed)/embed/data). Every other path keeps the configured X-Frame-Options.
+ */
+const FRAMEABLE_PREFIXES = ['/embed/data/']
+
+export const isFrameablePath = (pathname: string): boolean => FRAMEABLE_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+
+/**
+ * Framing is open on the embed page because public views are meant to be embedded anywhere. Private views
+ * (shown only to a signed-in reader) are protected by the page itself, which blanks its content when it is
+ * framed by another origin (see EmbedDataPage), since a header cannot depend on the view from here.
+ */
+
+/** Removes any frame-ancestors directive from a policy and adds the open one. */
+function allowFraming(csp: string): string {
+  const kept = csp
+    .split(';')
+    .map((part) => part.trim())
+    .filter((part) => part && !/^frame-ancestors\b/i.test(part))
+  return [...kept, 'frame-ancestors *'].join('; ')
+}
+
 const NOCACHE_PREFIXES = ['/admin']
 
 const isNoCachePath = (pathname: string): boolean =>
@@ -89,6 +112,11 @@ export function securityHeaders(
   // Admin paths must not be cached
   if (isNoCachePath(pathname)) {
     headers['Cache-Control'] = 'no-store, private'
+  }
+
+  // The embed page may show a private view to a signed-in reader; never let a shared cache keep it.
+  if (isFrameablePath(pathname)) {
+    headers['Cache-Control'] = 'private, no-store'
   }
 
   if (!settings.featureEnabled) return headers
@@ -121,6 +149,13 @@ export function securityHeaders(
 
   if (csp) {
     headers['Content-Security-Policy'] = csp
+  }
+
+  // Framing is allowed on the embed page only; the header and the policy must agree.
+  if (isFrameablePath(pathname)) {
+    delete headers['X-Frame-Options']
+    if (headers['Content-Security-Policy']) headers['Content-Security-Policy'] = allowFraming(headers['Content-Security-Policy'])
+    else headers['Content-Security-Policy'] = "frame-ancestors *"
   }
 
   return headers

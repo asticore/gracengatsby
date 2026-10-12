@@ -19,6 +19,13 @@ const cartItemFields: Field[] = [
   // Id of the chosen variation of a variable product; the server re-checks it against the product.
   { name: 'variation', type: 'text' },
   { name: 'quantity', type: 'number', required: true },
+  // Gift card lines: the amount the buyer chose (cents) and who it goes to. The server validates all of it.
+  { name: 'customAmount', type: 'number' },
+  { name: 'giftName', type: 'text' },
+  { name: 'giftEmail', type: 'text' },
+  { name: 'giftSenderName', type: 'text' },
+  { name: 'giftMessage', type: 'text' },
+  { name: 'giftSendAt', type: 'text' },
 ]
 
 const transactionItemFields: Field[] = [

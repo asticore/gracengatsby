@@ -5,6 +5,8 @@ export type SurfaceConfig = {
   label: string
   blocksField: string
   titleField: string
+  /** The Forms collection: the layout is a form, saved with its own publish model (see features/forms). */
+  formMode?: boolean
 }
 
 export const VISUAL_EDITOR_SURFACES: Record<string, SurfaceConfig> = {
@@ -19,6 +21,7 @@ export const VISUAL_EDITOR_SURFACES: Record<string, SurfaceConfig> = {
   products: { kind: 'collection', slug: 'products', label: 'Product', blocksField: 'layout', titleField: 'title' },
   posts: { kind: 'collection', slug: 'posts', label: 'Post', blocksField: 'layout', titleField: 'title' },
   lessons: { kind: 'collection', slug: 'lessons', label: 'Lesson', blocksField: 'content', titleField: 'title' },
+  forms: { kind: 'collection', slug: 'forms', label: 'Form', blocksField: 'layout', titleField: 'title', formMode: true },
   'shop-settings': {
     kind: 'global',
     slug: 'shop-settings',

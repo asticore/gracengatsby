@@ -127,6 +127,38 @@ import {
   findOrderRefundsPaginated,
   updateOrderRefund,
 } from '@/cms/db'
+import { CreditLedger } from '@/features/ecommerce/collections/CreditLedger'
+import { ShippingManifests } from '@/features/ecommerce/collections/ShippingManifests'
+import {
+  countShippingManifests,
+  createShippingManifest,
+  deleteShippingManifest,
+  findShippingManifestByID,
+  findShippingManifestsPaginated,
+  updateShippingManifest,
+} from '@/cms/db'
+import { GiftCards } from '@/features/ecommerce/collections/GiftCards'
+import { StoreCredits } from '@/features/ecommerce/collections/StoreCredits'
+import {
+  countCreditLedgerEntries,
+  countGiftCards,
+  countStoreCredits,
+  createCreditLedgerEntry,
+  createGiftCard,
+  createStoreCredit,
+  deleteCreditLedgerEntry,
+  deleteGiftCard,
+  deleteStoreCredit,
+  findCreditLedgerEntriesPaginated,
+  findCreditLedgerEntryByID,
+  findGiftCardByID,
+  findGiftCardsPaginated,
+  findStoreCreditByID,
+  findStoreCreditsPaginated,
+  updateCreditLedgerEntry,
+  updateGiftCard,
+  updateStoreCredit,
+} from '@/cms/db'
 import { ProductAttributes } from '@/features/ecommerce/collections/ProductAttributes'
 import { ProductReviews } from '@/features/ecommerce/collections/ProductReviews'
 import { ShippingClasses } from '@/features/ecommerce/collections/ShippingClasses'
@@ -157,6 +189,8 @@ import { countAdPlacements, countAdUnits, createAdPlacement, createAdUnit, delet
 import { ReviewEvents } from '@/features/approval/collection'
 import { ApprovalWorkflows } from '@/features/approval/workflowCollection'
 import { Roles } from '@/collections/Roles'
+import { DataViews } from '@/features/dataViews/collections/DataViews'
+import { countDataViews, createDataView, deleteDataView, findDataViewByID, findDataViewsPaginated, updateDataView } from '@/cms/db/collections/dataViews'
 
 import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
@@ -170,6 +204,7 @@ import { LanguageSettings } from '@/globals/LanguageSettings'
 import { MediaSettings } from '@/globals/MediaSettings'
 import { MemberSettings } from '@/globals/MemberSettings'
 import { PaymentSettings } from '@/globals/PaymentSettings'
+import { ShippingSettings } from '@/globals/ShippingSettings'
 import { SecuritySettings } from '@/globals/SecuritySettings'
 import { SeoSettings } from '@/globals/SeoSettings'
 import { ShopSettings } from '@/globals/ShopSettings'
@@ -329,6 +364,8 @@ import {
   findPageTemplateByID,
   findPageTemplatesPaginated,
   findPaymentSettings,
+  findShippingSettings,
+  updateShippingSettings,
   findPostByID,
   findPostsPaginated,
   findPreferenceByID,
@@ -421,7 +458,6 @@ import type { CollectionReadEntry, GlobalReadEntry, ReadRegistry } from './read-
 /** Type-erased doc shape every `CollectionDbOps`/`GlobalDbOps` map entry is cast to - see this file's header "TYPE-ERASURE NOTE". */
 export type AnyDoc = Record<string, unknown> & { id: number }
 
- 
 function collectionOps(
   create: (data: any) => Promise<any>,
   updateByID: (id: number, data: any, opts?: { draft?: boolean }) => Promise<any>,
@@ -480,11 +516,16 @@ export const writeRegistry: {
     'product-attributes': collectionOps(createProductAttribute, updateProductAttribute, deleteProductAttribute, findProductAttributeByID),
     'shipping-classes': collectionOps(createShippingClass, updateShippingClass, deleteShippingClass, findShippingClassByID),
     'product-reviews': collectionOps(createProductReview, updateProductReview, deleteProductReview, findProductReviewByID),
+    'shipping-manifests': collectionOps(createShippingManifest, updateShippingManifest, deleteShippingManifest, findShippingManifestByID),
+    'gift-cards': collectionOps(createGiftCard, updateGiftCard, deleteGiftCard, findGiftCardByID),
+    'store-credits': collectionOps(createStoreCredit, updateStoreCredit, deleteStoreCredit, findStoreCreditByID),
+    'credit-ledger': collectionOps(createCreditLedgerEntry, updateCreditLedgerEntry, deleteCreditLedgerEntry, findCreditLedgerEntryByID),
     'ad-units': collectionOps(createAdUnit as never, updateAdUnit as never, deleteAdUnit, findAdUnitByID as never),
     'ad-placements': collectionOps(createAdPlacement as never, updateAdPlacement as never, deleteAdPlacement, findAdPlacementByID as never),
     'review-events': collectionOps(createReviewEvent, updateReviewEvent, deleteReviewEvent, findReviewEventByID),
     'approval-workflows': collectionOps(createApprovalWorkflow, updateApprovalWorkflow, deleteApprovalWorkflow, findApprovalWorkflowByID),
     roles: collectionOps(createRole, updateRole, deleteRole, findRoleByID),
+    'data-views': collectionOps(createDataView as never, updateDataView as never, deleteDataView, findDataViewByID as never),
     'locked-documents': collectionOps(createLockedDocument, updateLockedDocument, deleteLockedDocument, findLockedDocumentByID),
   },
   globals: {
@@ -492,6 +533,7 @@ export const writeRegistry: {
     'blog-settings': globalOps(findBlogSettings, updateBlogSettings),
     integrations: globalOps(findIntegrations, updateIntegrations),
     'payment-settings': globalOps(findPaymentSettings, updatePaymentSettings),
+    'shipping-settings': globalOps(findShippingSettings, updateShippingSettings),
     'form-settings': globalOps(findFormSettings, updateFormSettings),
     'site-settings': globalOps(findSiteSettings, updateSiteSettings),
     'member-settings': globalOps(findMemberSettings, updateMemberSettings),
@@ -555,11 +597,16 @@ export const readRegistry: ReadRegistry = {
     'product-attributes': readEntry(ProductAttributes, findProductAttributesPaginated, findProductAttributeByID, countProductAttributes),
     'shipping-classes': readEntry(ShippingClasses, findShippingClassesPaginated, findShippingClassByID, countShippingClasses),
     'product-reviews': readEntry(ProductReviews, findProductReviewsPaginated, findProductReviewByID, countProductReviews),
+    'shipping-manifests': readEntry(ShippingManifests, findShippingManifestsPaginated, findShippingManifestByID, countShippingManifests),
+    'gift-cards': readEntry(GiftCards, findGiftCardsPaginated, findGiftCardByID, countGiftCards),
+    'store-credits': readEntry(StoreCredits, findStoreCreditsPaginated, findStoreCreditByID, countStoreCredits),
+    'credit-ledger': readEntry(CreditLedger, findCreditLedgerEntriesPaginated, findCreditLedgerEntryByID, countCreditLedgerEntries),
     'ad-units': readEntry(AdUnits, findAdUnitsPaginated as never, findAdUnitByID as never, countAdUnits),
     'ad-placements': readEntry(AdPlacements, findAdPlacementsPaginated as never, findAdPlacementByID as never, countAdPlacements),
     'review-events': readEntry(ReviewEvents, findReviewEventsPaginated, findReviewEventByID, countReviewEvents),
     'approval-workflows': readEntry(ApprovalWorkflows, findApprovalWorkflowsPaginated, findApprovalWorkflowByID, countApprovalWorkflows),
     roles: readEntry(Roles, findRolesPaginated, findRoleByID, countRoles),
+    'data-views': readEntry(DataViews, findDataViewsPaginated as never, findDataViewByID as never, countDataViews),
     'locked-documents': readEntry(LockedDocuments, findLockedDocumentsPaginated, findLockedDocumentByID, countLockedDocuments),
   },
   globals: {
@@ -567,6 +614,7 @@ export const readRegistry: ReadRegistry = {
     'blog-settings': globalReadEntry(BlogSettings, findBlogSettings),
     integrations: globalReadEntry(Integrations, findIntegrations),
     'payment-settings': globalReadEntry(PaymentSettings, findPaymentSettings),
+    'shipping-settings': globalReadEntry(ShippingSettings, findShippingSettings),
     'form-settings': globalReadEntry(FormSettings, findFormSettings),
     'site-settings': globalReadEntry(SiteSettings, findSiteSettings),
     'member-settings': globalReadEntry(MemberSettings, findMemberSettings),
@@ -614,6 +662,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements]
+export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews]
 
-export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]
+export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

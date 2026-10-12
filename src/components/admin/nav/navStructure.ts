@@ -47,6 +47,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'forms', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
+      { slug: 'data-views', type: 'collections' },
       { slug: 'redirects', type: 'collections' },
       { slug: 'review-queue', type: 'view', href: '/review-queue', label: 'Review queue' },
       { slug: 'media', type: 'collections' },
@@ -59,6 +60,11 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'product-attributes', type: 'collections' },
       { slug: 'shipping-classes', type: 'collections' },
       { slug: 'product-reviews', type: 'collections' },
+      { slug: 'gift-cards', type: 'collections' },
+      { slug: 'store-credits', type: 'collections' },
+      { slug: 'store-credit', type: 'view', href: '/store-credit', label: 'Add or deduct credit' },
+      { slug: 'credit-ledger', type: 'collections' },
+      { slug: 'shipping-manifests', type: 'collections' },
       { slug: 'orders', type: 'collections' },
       { slug: 'order-refunds', type: 'collections' },
       { slug: 'coupons', type: 'collections' },
@@ -114,8 +120,9 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
 /**
  * Entities that should not appear in the nav, including the fallback "Other" group.
  *
- * The RSVP and form-submission lists are reached through the Results tab on
- * their event or form's edit page, and the Roles screen has its own nav entry
+ * The RSVP and form-submission lists are reached through the RSVPs and
+ * Submissions tabs at the top of the Events and Forms list pages (and the
+ * results tab on each item's edit page), and the Roles screen has its own nav entry
  * (type 'view', /roles), so the collections behind them must stay out of the
  * "Other" group. Their routes still work for deep links.
  */
@@ -136,6 +143,7 @@ export const HIDDEN_FROM_NAV = new Set<string>([
   'media-settings',
   'shop-settings',
   'payment-settings',
+  'shipping-settings',
   'member-settings',
   'email-settings',
   'speed-settings',

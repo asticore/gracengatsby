@@ -1065,4 +1065,3 @@ export async function updateGlobalDocument<TDoc>(args: UpdateGlobalDocumentArgs<
 
   return finalDoc
 }
-

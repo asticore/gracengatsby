@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import type { ListState, ColumnDef, ListFilter } from '@/admin/list/listQuery'
 import { serializeListState } from '@/admin/list/listQuery'
+import { OrdersManifestAction } from '@/features/ecommerce/admin/OrdersManifestAction'
 import { ProductsCsvActions } from '@/features/ecommerce/admin/ProductsCsvActions'
 
 interface ListToolbarProps {
@@ -30,6 +31,8 @@ export function ListToolbar({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  // The trash view (?trash=1) is part of the address, not of the list state: keep it across searches and filters.
+  const withTrash = (query: string): string => (searchParams.get('trash') === '1' ? `${query}${query ? '&' : ''}trash=1` : query)
   const [showColumnPicker, setShowColumnPicker] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -60,7 +63,7 @@ export function ListToolbar({
     const formData = new FormData(e.currentTarget)
     const q = formData.get('q') as string
     const newState = { ...state, q: q || undefined, page: 1 }
-    router.push(`${pathname}?${serializeListState(newState)}`)
+    router.push(`${pathname}?${withTrash(serializeListState(newState))}`)
   }
 
   const handleColumnToggle = (colName: string) => {
@@ -68,7 +71,7 @@ export function ListToolbar({
       ? visibleNames.filter((c) => c !== colName)
       : [...visibleNames, colName]
     const newState = { ...state, cols: newCols, page: 1 }
-    router.push(`${pathname}?${serializeListState(newState)}`)
+    router.push(`${pathname}?${withTrash(serializeListState(newState))}`)
   }
 
   const handleColumnReorder = (fromIdx: number, toIdx: number) => {
@@ -76,13 +79,13 @@ export function ListToolbar({
     const [removed] = newCols.splice(fromIdx, 1)
     newCols.splice(toIdx, 0, removed)
     const newState = { ...state, cols: newCols, page: 1 }
-    router.push(`${pathname}?${serializeListState(newState)}`)
+    router.push(`${pathname}?${withTrash(serializeListState(newState))}`)
   }
 
   const handleLimitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLimit = Number(e.target.value)
     const newState = { ...state, limit: newLimit, page: 1 }
-    router.push(`${pathname}?${serializeListState(newState)}`)
+    router.push(`${pathname}?${withTrash(serializeListState(newState))}`)
   }
 
   const handleSavePrefs = async () => {
@@ -152,14 +155,14 @@ export function ListToolbar({
       .map((f) => (f.op === 'exists' && !f.value ? { ...f, value: 'true' } : f))
       .filter((f) => f.value !== '')
     const newState = { ...state, filters, page: 1 }
-    router.push(`${pathname}?${serializeListState(newState)}`)
+    router.push(`${pathname}?${withTrash(serializeListState(newState))}`)
     setShowFilterBuilder(false)
   }
 
   const handleRemoveActiveFilter = (index: number) => {
     const newFilters = state.filters.filter((_, i) => i !== index)
     const newState = { ...state, filters: newFilters, page: 1 }
-    router.push(`${pathname}?${serializeListState(newState)}`)
+    router.push(`${pathname}?${withTrash(serializeListState(newState))}`)
   }
 
   return (
@@ -340,6 +343,7 @@ export function ListToolbar({
         <RedirectsToolbarActions />
       )}
       {collectionSlug === 'products' && <ProductsCsvActions />}
+      {collectionSlug === 'orders' && <OrdersManifestAction />}
     </div>
   )
 }

@@ -2,6 +2,11 @@ import type { FormDoc, Inherited, PublicFormConfig, ResolvedFormSettings } from 
 
 import { FEATURE_MAP } from '@/features/registry'
 
+import { normaliseFormConfig } from './config'
+import { sanitiseHtml, sanitiseLayoutHtml } from './htmlSanitize'
+import { resolveLayout } from './layout'
+import { computePrefill } from './prefill'
+
 /**
  * Reads the site-wide Form Settings and folds a single form's overrides into it.
  *
@@ -36,6 +41,10 @@ export const DEFAULT_FORM_SETTINGS: ResolvedFormSettings = {
   turnstile: false,
   turnstileSiteKey: '',
   turnstileSecretKey: '',
+  captchaProvider: 'turnstile',
+  recaptchaSiteKey: '',
+  recaptchaSecretKey: '',
+  recaptchaMinScore: 0.5,
   submitButtonLabel: 'Submit',
   successMessage: 'Thank you - we have received your message and will be in touch shortly.',
   errorMessage: 'Sorry, something went wrong and your message was not sent. Please try again.',
@@ -55,6 +64,10 @@ type SettingsDoc = {
     turnstile?: boolean
     turnstileSiteKey?: string
     turnstileSecretKey?: string
+    captchaProvider?: string
+    recaptchaSiteKey?: string
+    recaptchaSecretKey?: string
+    recaptchaMinScore?: number
   }
   defaults?: {
     submitButtonLabel?: string
@@ -116,6 +129,10 @@ export const getFormSettings = async (engine: EngineLike): Promise<ResolvedFormS
     turnstile: bool(doc.spam?.turnstile, DEFAULT_FORM_SETTINGS.turnstile),
     turnstileSiteKey: text(doc.spam?.turnstileSiteKey, ''),
     turnstileSecretKey: text(doc.spam?.turnstileSecretKey, ''),
+    captchaProvider: doc.spam?.captchaProvider === 'recaptcha' ? 'recaptcha' : 'turnstile',
+    recaptchaSiteKey: text(doc.spam?.recaptchaSiteKey, ''),
+    recaptchaSecretKey: text(doc.spam?.recaptchaSecretKey, ''),
+    recaptchaMinScore: num(doc.spam?.recaptchaMinScore, DEFAULT_FORM_SETTINGS.recaptchaMinScore),
     submitButtonLabel: text(doc.defaults?.submitButtonLabel, DEFAULT_FORM_SETTINGS.submitButtonLabel),
     successMessage: text(doc.defaults?.successMessage, DEFAULT_FORM_SETTINGS.successMessage),
     errorMessage: text(doc.defaults?.errorMessage, DEFAULT_FORM_SETTINGS.errorMessage),
@@ -126,60 +143,124 @@ const override = (choice: Inherited | undefined, inherited: boolean): boolean =>
   choice === 'on' ? true : choice === 'off' ? false : inherited
 
 /** Site settings with one form's own choices applied on top. */
-export const resolveForForm = (form: FormDoc, settings: ResolvedFormSettings): ResolvedFormSettings => ({
-  ...settings,
-  honeypot: override(form?.spam?.honeypot, settings.honeypot),
-  turnstile: override(form?.spam?.turnstile, settings.turnstile),
-  // Off means no wait at all, so this cannot go through `override` - it is a
-  // number gated by a three-state choice, not a boolean.
-  minimumFillTimeSeconds:
-    form?.spam?.minimumFillTime === 'off' ? 0 : settings.minimumFillTimeSeconds,
-  submitButtonLabel: text(form?.settings?.submitButtonLabel, settings.submitButtonLabel),
-  successMessage: text(form?.settings?.successMessage, settings.successMessage),
-  errorMessage: text(form?.settings?.errorMessage, settings.errorMessage),
-})
+export const resolveForForm = (form: FormDoc, settings: ResolvedFormSettings): ResolvedFormSettings => {
+  const config = normaliseFormConfig(form?.formConfig)
+  return {
+    ...settings,
+    honeypot: override(form?.spam?.honeypot, settings.honeypot),
+    turnstile: override(form?.spam?.turnstile, settings.turnstile),
+    // Off means no wait at all, so this cannot go through `override` - it is a
+    // number gated by a three-state choice, not a boolean.
+    minimumFillTimeSeconds:
+      form?.spam?.minimumFillTime === 'off' ? 0 : settings.minimumFillTimeSeconds,
+    submitButtonLabel: text(form?.settings?.submitButtonLabel, settings.submitButtonLabel),
+    successMessage: text(config.success?.message, text(form?.settings?.successMessage, settings.successMessage)),
+    errorMessage: text(form?.settings?.errorMessage, settings.errorMessage),
+    retentionDays: config.retentionDays !== undefined ? config.retentionDays : settings.retentionDays,
+  }
+}
+
+export type PublicConfigOptions = {
+  /** The page's query string, for pre-filling whitelisted fields. */
+  query?: Record<string, string | string[] | undefined>
+  /** Draw the working copy rather than the published one (editor preview only). */
+  draft?: boolean
+  /** Layout with media ids already resolved to documents by the caller. */
+  layout?: unknown[]
+  /** Absolute origin for posts when drawn on another website. */
+  apiBase?: string
+}
 
 /**
  * The form as the browser is allowed to see it.
  *
  * Built explicitly rather than by deleting keys from the stored document: the
- * Turnstile secret, the notification recipients and the confirmation wording
- * all live on the same document, and an allow-list cannot leak a field somebody
- * adds later.
+ * captcha secrets, the notification recipients, the webhook secrets and the
+ * confirmation wording all live on the same document, and an allow-list cannot
+ * leak a field somebody adds later.
  */
-export const toPublicConfig = (form: FormDoc, resolved: ResolvedFormSettings): PublicFormConfig => ({
-  id: form.id,
-  title: form.title || '',
-  fields: (form.fields || []).map((field) => ({
-    id: field.id,
-    type: field.type,
-    label: field.label,
-    name: field.name,
-    required: field.required,
-    placeholder: field.placeholder,
-    helpText: field.helpText,
-    defaultValue: field.defaultValue,
-    options: (field.options || []).map((option) => ({
-      label: option.label,
-      value: option.value,
-      price: option.price,
+export const toPublicConfig = (
+  form: FormDoc,
+  resolved: ResolvedFormSettings,
+  options: PublicConfigOptions = {},
+): PublicFormConfig => {
+  const config = normaliseFormConfig(form?.formConfig)
+  const layout = resolveLayout(form, { draft: options.draft })
+  const fields = layout.fields
+
+  const captcha: PublicFormConfig['captcha'] = resolved.turnstile
+    ? resolved.captchaProvider === 'recaptcha'
+      ? resolved.recaptchaSiteKey
+        ? { provider: 'recaptcha', siteKey: resolved.recaptchaSiteKey }
+        : undefined
+      : resolved.turnstileSiteKey
+        ? { provider: 'turnstile', siteKey: resolved.turnstileSiteKey }
+        : undefined
+    : undefined
+
+  const redirect =
+    config.success?.mode === 'redirect' && config.success.redirectUrl
+      ? config.success.redirectUrl
+      : form.settings?.redirectUrl || undefined
+
+  return {
+    id: form.id,
+    key: form.embedKey || undefined,
+    title: form.title || '',
+    // The flat list the rules engine (visibility, calculations, pricing) works from.
+    fields: fields.map((field) => ({
+      id: field.id,
+      type: field.type,
+      label: field.label,
+      name: field.name,
+      required: field.required,
+      placeholder: field.placeholder,
+      helpText: field.helpText,
+      defaultValue: field.defaultValue,
+      options: (field.options || []).map((option) => ({
+        label: option.label,
+        value: option.value,
+        price: option.price,
+      })),
+      rows: field.rows,
+      width: field.width,
+      html: field.html ? sanitiseHtml(field.html) : field.html,
+      min: field.min,
+      max: field.max,
+      accept: field.accept,
+      maxFileMb: field.maxFileMb,
+      scaleMax: field.scaleMax,
+      appointment: field.appointment,
+      addressLookup: field.addressLookup,
+      consentLink: field.consentLink,
+      validation: field.validation,
+      conditional: field.conditional,
+      calculation: field.calculation,
+      pricing: field.pricing,
     })),
-    width: field.width,
-    html: field.html,
-    min: field.min,
-    max: field.max,
-    accept: field.accept,
-    conditional: field.conditional,
-    calculation: field.calculation,
-    pricing: field.pricing,
-  })),
-  submitButtonLabel: resolved.submitButtonLabel,
-  successMessage: resolved.successMessage,
-  errorMessage: resolved.errorMessage,
-  redirectUrl: form.settings?.redirectUrl || undefined,
-  honeypot: resolved.honeypot,
-  minimumFillTimeSeconds: resolved.minimumFillTimeSeconds,
-  turnstileSiteKey: resolved.turnstile ? resolved.turnstileSiteKey || undefined : undefined,
-  purchasable: Boolean(form.payment?.purchasable),
-  currency: form.payment?.currency || 'AUD',
-})
+    layout: sanitiseLayoutHtml((options.layout as unknown[]) || (layout.legacy ? undefined : layout.layout)),
+    stylePreset: config.style?.preset || 'theme',
+    accent: config.style?.accent,
+    customCss: config.style?.customCss || undefined,
+    steps: {
+      showProgress: config.steps?.showProgress !== false,
+      progressStyle: config.steps?.progressStyle || 'bar',
+      nextLabel: config.steps?.nextLabel || 'Next',
+      backLabel: config.steps?.backLabel || 'Back',
+      titles: layout.stepTitles,
+    },
+    prefill: computePrefill(fields, config.prefillKeys, options.query),
+    captcha,
+    saveForLater: config.saveForLater === true,
+    apiBase: options.apiBase,
+    submitButtonLabel: resolved.submitButtonLabel,
+    successMessage: resolved.successMessage,
+    errorMessage: resolved.errorMessage,
+    redirectUrl: redirect,
+    honeypot: resolved.honeypot,
+    minimumFillTimeSeconds: resolved.minimumFillTimeSeconds,
+    turnstileSiteKey: captcha?.provider === 'turnstile' ? captcha.siteKey : undefined,
+    purchasable: Boolean(form.payment?.purchasable),
+    currency: form.payment?.currency || 'AUD',
+  }
+}

@@ -15,7 +15,6 @@ export const ProductGridBlock: Block = {
       type: 'select',
       admin: { description: 'Leave blank to show products from every category.' },
       options: [
-        { label: 'Apparel', value: 'apparel' },
         { label: 'Accessories', value: 'accessories' },
         { label: 'Jewellery', value: 'jewellery' },
         { label: 'Homeware', value: 'homeware' },

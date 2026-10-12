@@ -2,6 +2,7 @@ import type { GlobalConfig } from '@/engine'
 
 import { isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { generalGroup, giftCardsGroup, invoiceGroup, orderNumbersGroup, storefrontGroup, templatesGroup } from '../features/ecommerce/settingsFields'
 
 export const ShopSettings: GlobalConfig = {
   slug: 'shop-settings',
@@ -84,6 +85,7 @@ export const ShopSettings: GlobalConfig = {
       fields: [
         { name: 'processing', type: 'checkbox', defaultValue: true, label: 'Order received (processing)' },
         { name: 'completed', type: 'checkbox', defaultValue: true },
+        { name: 'shipped', type: 'checkbox', defaultValue: true, label: 'Order shipped (with tracking)' },
         { name: 'onHold', type: 'checkbox', defaultValue: true },
         { name: 'cancelled', type: 'checkbox', defaultValue: true },
         { name: 'refunded', type: 'checkbox', defaultValue: true },
@@ -128,5 +130,11 @@ export const ShopSettings: GlobalConfig = {
     { name: 'reviewsEnabled', type: 'checkbox', defaultValue: true, admin: { description: 'Let customers submit product reviews. Every review waits for approval under Product reviews.' } },
     { name: 'lowStockEmails', type: 'checkbox', defaultValue: true, admin: { description: 'Email when a product runs low or sells out.' } },
     { name: 'stockEmailTo', type: 'email', admin: { description: 'Where stock emails go. Leave blank to use the order notification email.' } },
+    generalGroup,
+    orderNumbersGroup,
+    invoiceGroup,
+    giftCardsGroup,
+    templatesGroup,
+    storefrontGroup,
   ],
 }

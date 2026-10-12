@@ -22,11 +22,14 @@ export function EditTabs({
   resultsLabel,
   edit,
   results,
+  deniedReason,
 }: {
   editLabel?: string
   resultsLabel: string
   edit: ReactNode
   results: ReactNode
+  /** Set when the user may not open the results tab: the tab stays, marked unavailable, and its panel explains why. */
+  deniedReason?: string
 }) {
   const [active, setActive] = useState<TabKey>('edit')
   const [resultsMounted, setResultsMounted] = useState(false)
@@ -91,17 +94,20 @@ export function EditTabs({
         </button>
         <button
           aria-controls="et-panel-results"
+          aria-disabled={deniedReason ? true : undefined}
           aria-selected={active === 'results'}
-          className={tabClass('results')}
+          className={`${tabClass('results')}${deniedReason ? ' et-tab--disabled' : ''}`}
           id="et-tab-results"
           onClick={() => select('results')}
           onKeyDown={onKeyDown}
           ref={resultsTab}
           role="tab"
           tabIndex={active === 'results' ? 0 : -1}
+          title={deniedReason}
           type="button"
         >
           {resultsLabel}
+          {deniedReason ? <span className="et-tab__lock"> (no access)</span> : null}
         </button>
       </div>
 
@@ -109,7 +115,7 @@ export function EditTabs({
         {edit}
       </div>
       <div aria-labelledby="et-tab-results" className="et-panel" hidden={active !== 'results'} id="et-panel-results" role="tabpanel">
-        {resultsMounted ? results : null}
+        {deniedReason ? <p className="et-warning" role="status">{deniedReason}</p> : resultsMounted ? results : null}
       </div>
     </div>
   )

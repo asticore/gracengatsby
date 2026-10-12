@@ -26,6 +26,7 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'media-settings': 'Image optimization, sizing and media library settings.',
   'shop-settings': 'Shop layout, product display and catalogue options.',
   'payment-settings': 'Payment processor configuration and checkout setup.',
+  'shipping-settings': 'Ship-from address, package sizes and carrier keys.',
   'member-settings': 'Member tiers, access levels and membership options.',
   'email-settings': 'Email provider configuration and email templates.',
   'speed-settings': 'Caching, CDN and performance optimization.',

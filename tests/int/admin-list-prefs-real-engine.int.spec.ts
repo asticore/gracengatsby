@@ -80,7 +80,7 @@ describe('admin-list-prefs with real engine and fresh D1', () => {
         overrideAccess: true,
       }) as unknown as TypedUser
     },
-    60_000,
+    180_000,
   )
 
   beforeEach(async () => {

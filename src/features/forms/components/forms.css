@@ -1,0 +1,448 @@
+/*
+ * The look of a form. Everything reads the site's own theme variables
+ * (--color-ink, --color-cream, --color-gold, --color-line, --radius) so a form
+ * is in the theme without any setup, and the style presets only change the
+ * shape of the controls. --eg-accent is set per form when an accent colour is
+ * chosen; otherwise it is the theme accent.
+ */
+
+.engage-form {
+  --eg-accent: var(--color-gold, #2e3192);
+  --eg-ink: var(--color-ink, #1f2230);
+  --eg-bg: var(--color-cream, #f5f3f5);
+  --eg-line: var(--color-line, rgba(31, 34, 48, 0.25));
+  --eg-radius: var(--radius, 6px);
+  --eg-field-bg: #fff;
+  position: relative;
+  color: var(--eg-ink);
+  max-width: 100%;
+}
+
+[data-theme='dark'] .engage-form {
+  --eg-field-bg: rgba(255, 255, 255, 0.06);
+}
+
+.engage-form *,
+.engage-form *::before,
+.engage-form *::after {
+  box-sizing: border-box;
+}
+
+/* The layout tree: sections of columns, the same markup the pages use. */
+.engage-form .be-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.engage-form .be-column {
+  min-width: 0;
+  flex: 1 1 var(--be-col-d, 100%);
+  max-width: var(--be-col-d, 100%);
+}
+
+@media (max-width: 900px) {
+  .engage-form .be-column {
+    flex-basis: var(--be-col-t, var(--be-col-d, 100%));
+    max-width: var(--be-col-t, var(--be-col-d, 100%));
+  }
+}
+
+@media (max-width: 600px) {
+  .engage-form .be-column {
+    flex-basis: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
+    max-width: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
+  }
+}
+
+.engage-form__step[hidden] {
+  display: none;
+}
+
+.form-field {
+  margin-bottom: 1rem;
+  min-width: 0;
+}
+
+.form-field > label,
+.form-field > legend,
+.form-field__group > legend {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.form-field abbr {
+  text-decoration: none;
+  color: #b3261e;
+}
+
+.form-field input[type='text'],
+.form-field input[type='email'],
+.form-field input[type='tel'],
+.form-field input[type='number'],
+.form-field input[type='date'],
+.form-field input[type='time'],
+.form-field input[type='datetime-local'],
+.form-field input[type='file'],
+.form-field textarea,
+.form-field select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--eg-line);
+  border-radius: var(--eg-radius);
+  background: var(--eg-field-bg);
+  color: inherit;
+  font: inherit;
+}
+
+.form-field input:focus-visible,
+.form-field textarea:focus-visible,
+.form-field select:focus-visible,
+.engage-form button:focus-visible {
+  outline: 2px solid var(--eg-accent);
+  outline-offset: 1px;
+}
+
+.form-field__group {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.form-field__choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+  font-weight: 400;
+}
+
+.form-field__help {
+  display: block;
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+
+.form-field__error,
+.form-error {
+  display: block;
+  margin-top: 0.25rem;
+  color: #b3261e;
+}
+
+.form-field--error input,
+.form-field--error textarea,
+.form-field--error select {
+  border-color: #b3261e;
+}
+
+.form-field--section h3 {
+  margin: 0 0 0.25rem;
+}
+
+.form-field__calculation {
+  display: block;
+  font-weight: 700;
+}
+
+/* Rating and NPS */
+.form-rating {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.form-rating button {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--eg-line);
+  border-radius: var(--eg-radius);
+  background: var(--eg-field-bg);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.form-rating button[aria-pressed='true'] {
+  background: var(--eg-accent);
+  border-color: var(--eg-accent);
+  color: #fff;
+}
+
+.form-rating__ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* Matrix */
+.form-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.form-matrix th,
+.form-matrix td {
+  padding: 0.4rem;
+  text-align: center;
+  border-bottom: 1px solid var(--eg-line);
+}
+
+.form-matrix th:first-child,
+.form-matrix td:first-child {
+  text-align: left;
+}
+
+.form-field--matrix {
+  overflow-x: auto;
+}
+
+/* Signature */
+.form-signature canvas {
+  display: block;
+  width: 100%;
+  height: 140px;
+  border: 1px dashed var(--eg-line);
+  border-radius: var(--eg-radius);
+  background: var(--eg-field-bg);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.form-signature__clear {
+  margin-top: 0.35rem;
+  background: none;
+  border: 0;
+  color: var(--eg-accent);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  font: inherit;
+}
+
+/* Appointment slots */
+.form-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.form-slots button {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--eg-line);
+  border-radius: var(--eg-radius);
+  background: var(--eg-field-bg);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.form-slots button[aria-pressed='true'] {
+  background: var(--eg-accent);
+  border-color: var(--eg-accent);
+  color: #fff;
+}
+
+/* Address */
+.form-address {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.form-address > :first-child,
+.form-address > :nth-child(2),
+.form-address__suggestions {
+  grid-column: 1 / -1;
+}
+
+.form-address__suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--eg-line);
+  border-radius: var(--eg-radius);
+  background: var(--eg-field-bg);
+}
+
+.form-address__suggestions button {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.form-address__suggestions button:hover {
+  background: rgba(127, 127, 127, 0.15);
+}
+
+/* Progress */
+.engage-form__progress {
+  margin: 0 0 1rem;
+}
+
+.engage-form__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--eg-line);
+  overflow: hidden;
+}
+
+.engage-form__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--eg-accent);
+  transition: width 0.25s ease;
+}
+
+.engage-form__steps {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.engage-form__steps li {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--eg-line);
+  font-size: 0.85rem;
+}
+
+.engage-form__steps li[aria-current='step'] {
+  background: var(--eg-accent);
+  border-color: var(--eg-accent);
+  color: #fff;
+}
+
+.engage-form__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.engage-form__total {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--eg-line);
+  margin-top: 0.5rem;
+}
+
+.engage-form--success {
+  padding: 1rem;
+  border: 1px solid var(--eg-line);
+  border-radius: var(--eg-radius);
+}
+
+/* Presets */
+.engage-form--minimal .form-field input,
+.engage-form--minimal .form-field textarea,
+.engage-form--minimal .form-field select {
+  border-radius: 0;
+}
+
+.engage-form--rounded {
+  --eg-radius: 14px;
+}
+
+.engage-form--underline .form-field input[type='text'],
+.engage-form--underline .form-field input[type='email'],
+.engage-form--underline .form-field input[type='tel'],
+.engage-form--underline .form-field input[type='number'],
+.engage-form--underline .form-field input[type='date'],
+.engage-form--underline .form-field textarea,
+.engage-form--underline .form-field select {
+  border: 0;
+  border-bottom: 2px solid var(--eg-line);
+  border-radius: 0;
+  background: transparent;
+  padding-left: 0;
+}
+
+.engage-form--card {
+  padding: 1.5rem;
+  border: 1px solid var(--eg-line);
+  border-radius: calc(var(--eg-radius) * 2);
+  background: var(--eg-field-bg);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.engage-form--dark {
+  --eg-ink: #f3f4f8;
+  --eg-field-bg: rgba(255, 255, 255, 0.08);
+  --eg-line: rgba(255, 255, 255, 0.28);
+  background: #14161f;
+  padding: 1.5rem;
+  border-radius: calc(var(--eg-radius) * 2);
+}
+
+/* The embed page has no site chrome around it. */
+.eg-embed-body {
+  margin: 0;
+  padding: 1rem;
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .form-address {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Fields stack inside a column; a width on the field lets several share a row. */
+.engage-form .be-column {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  align-content: flex-start;
+}
+
+.engage-form .form-block,
+.form-field--full {
+  width: 100%;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.form-field--half {
+  width: calc(50% - 0.5rem);
+}
+
+.form-field--third {
+  width: calc(33.333% - 0.667rem);
+}
+
+.form-field--two-thirds {
+  width: calc(66.667% - 0.333rem);
+}
+
+.form-field--quarter {
+  width: calc(25% - 0.75rem);
+}
+
+@media (max-width: 600px) {
+  .form-field--half,
+  .form-field--third,
+  .form-field--two-thirds,
+  .form-field--quarter {
+    width: 100%;
+  }
+}

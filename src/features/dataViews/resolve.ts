@@ -98,7 +98,6 @@ async function resolveFromCollection(view: DataViewDef, deps: ResolveDeps): Prom
     deps.findDocs(collection, { versioned: source.versioned, sort: source.readSort, limit: LIMITS.maxFetchedDocs }),
     deps.protectedIds(collection),
   ])
-
   const truncatedInput = docs.length >= LIMITS.maxFetchedDocs
 
   const records: { values: Map<string, Cell> }[] = []

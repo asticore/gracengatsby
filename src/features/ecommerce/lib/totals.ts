@@ -15,6 +15,11 @@ export type PricedLine = {
   weightGrams?: number | null
   shippingClass?: string | number | null
   requiresShipping?: boolean
+  lengthCm?: number | null
+  widthCm?: number | null
+  heightCm?: number | null
+  /** Gift card lines are never discounted by a coupon. */
+  isGiftCard?: boolean
 }
 
 export type OrderTotals = {
@@ -52,6 +57,10 @@ export function computeOrderTotals(args: {
   email?: string | null
   usesByThisCustomer?: number
   shippingOptionId?: string | null
+  /** Live carrier rates fetched by the caller; they replace the zone's paid options. */
+  liveOptions?: ShippingOption[]
+  /** Live carrier rates are switched on: an empty live answer with no zone option must fail, never become free shipping. */
+  liveRatesOn?: boolean
   /** When true a missing/invalid shipping choice is an error instead of "not chosen yet". */
   requireShipping?: boolean
   now?: Date
@@ -71,7 +80,7 @@ export function computeOrderTotals(args: {
   let couponError: string | undefined
   if (args.couponCode) {
     const result = applyCoupon(args.coupon ?? null, {
-      lines: lines.map((l) => ({ key: l.key, productId: l.productId, categories: l.categories, quantity: l.quantity, unitCents: l.unitCents, onSale: l.onSale })),
+      lines: lines.filter((l) => !l.isGiftCard).map((l) => ({ key: l.key, productId: l.productId, categories: l.categories, quantity: l.quantity, unitCents: l.unitCents, onSale: l.onSale })),
       email: args.email,
       now: args.now,
       usesByThisCustomer: args.usesByThisCustomer,
@@ -87,7 +96,7 @@ export function computeOrderTotals(args: {
   }
 
   const afterDiscount = subtotalCents - discountCents
-  const shippingOptions = quoteShipping(
+  const zoneOptions = quoteShipping(
     {
       subtotalCents: afterDiscount,
       freeShipping,
@@ -102,10 +111,13 @@ export function computeOrderTotals(args: {
     address,
     args.zones,
   )
+  const liveOptions = args.liveOptions ?? []
+  const shippingOptions = freeShipping || liveOptions.length === 0 ? zoneOptions : [...liveOptions, ...zoneOptions.filter((o) => o.type === 'local_pickup' || o.type === 'free_over_amount')]
   const needsShipping = lines.some((l) => l.requiresShipping !== false)
+  if (needsShipping && args.liveRatesOn && !freeShipping && liveOptions.length === 0 && zoneOptions.length === 0) return { ok: false, error: 'Shipping rates are unavailable right now. Please try again in a moment.' }
   let shippingOption: ShippingOption | null = null
   // A shop with no zones configured charges no shipping (existing stores keep working).
-  if (needsShipping && args.zones.length > 0) {
+  if (needsShipping && (args.zones.length > 0 || liveOptions.length > 0)) {
     if (shippingOptions.length === 0 && args.requireShipping) return { ok: false, error: 'Sorry, we do not ship to that address.' }
     if (args.shippingOptionId) {
       shippingOption = shippingOptions.find((o) => o.id === args.shippingOptionId) ?? null

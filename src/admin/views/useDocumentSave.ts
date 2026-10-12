@@ -45,7 +45,7 @@ export function extractErrorMessage(body: unknown, fallback = 'Save failed.'): s
   return errors?.[0]?.message || fallback
 }
 
-export type BusyAction = SaveStatus | 'duplicate' | 'delete'
+export type BusyAction = SaveStatus | 'duplicate' | 'delete' | 'trash' | 'restore'
 
 export function useDocumentSave(target: SaveTarget) {
   const router = useRouter()
@@ -163,5 +163,34 @@ export function useDocumentSave(target: SaveTarget) {
     }
   }
 
-  return { busy, duplicate, error, remove, save, savedAt }
+  /** Moves the document to the trash, or takes it out again. Goes through the bulk route so the Delete permission and the row checks apply. */
+  const setTrashed = async (action: 'trash' | 'restore') => {
+    if (!target.collectionSlug || !target.id) return
+    setBusy(action)
+    setError(null)
+    try {
+      const response = await fetch('/api/admin-bulk', {
+        body: JSON.stringify({ collection: target.collectionSlug, ids: [target.id], action }),
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      const body = (await response.json().catch((): null => null)) as { error?: string; results?: Array<{ ok: boolean; error?: string }> } | null
+      const row = body?.results?.[0]
+      if (!response.ok || !row?.ok) {
+        setError(body?.error ?? row?.error ?? (action === 'trash' ? 'Could not move to the trash.' : 'Could not restore.'))
+        return
+      }
+      resetModified()
+      reportUpdate({ entitySlug, updatedAt: new Date().toISOString() })
+      if (action === 'trash') router.push(`/admin/collections/${target.collectionSlug}`)
+      router.refresh()
+    } catch {
+      setError('Could not do that - check your connection and try again.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return { busy, duplicate, error, remove, save, savedAt, setTrashed }
 }

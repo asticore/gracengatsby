@@ -458,6 +458,7 @@ import type { CollectionReadEntry, GlobalReadEntry, ReadRegistry } from './read-
 /** Type-erased doc shape every `CollectionDbOps`/`GlobalDbOps` map entry is cast to - see this file's header "TYPE-ERASURE NOTE". */
 export type AnyDoc = Record<string, unknown> & { id: number }
 
+ 
 function collectionOps(
   create: (data: any) => Promise<any>,
   updateByID: (id: number, data: any, opts?: { draft?: boolean }) => Promise<any>,

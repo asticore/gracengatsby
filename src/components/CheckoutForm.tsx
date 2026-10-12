@@ -13,6 +13,8 @@ const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
 type InitiatePaymentResult = {
   clientSecret?: string
   message?: string
+  paidInFull?: boolean
+  orderID?: number
 }
 
 function readStoredCart(): { id: number; secret: string } | null {
@@ -63,8 +65,16 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
           couponCode: extras?.couponCode,
           shippingOptionId: extras?.shippingOptionId,
           checkoutFields: extras?.checkoutFields,
+          giftCardCodes: extras?.giftCardCodes,
+          useStoreCredit: extras?.useStoreCredit,
         },
       })) as InitiatePaymentResult
+
+      // Gift cards and store credit covered everything: the order is already paid, no card step.
+      if (result?.paidInFull) {
+        router.push(`/checkout/success${result.orderID ? `?order=${result.orderID}` : ''}`)
+        return
+      }
 
       if (!result?.clientSecret) {
         throw new Error(result?.message || 'Unable to start checkout.')

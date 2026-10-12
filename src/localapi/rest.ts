@@ -161,6 +161,7 @@ import { Forbidden } from './access'
 import { AuthenticationError, InvalidResetToken, LockedAuth } from './auth'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
+import { clientKey, hit } from '@/features/security/rateLimit'
 import { confirmStripeOrder, finalizePaidIntent, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
 import { CheckoutError } from '@/features/ecommerce/server/pricing'
 import { markOrderFailed } from '@/features/ecommerce/server/orders'
@@ -941,7 +942,7 @@ async function handleGlobalAccess(engine: Engine, globalSlug: string, request: R
 /* verified by hand in the `where` clause/prior lookup.                     */
 /* -------------------------------------------------------------------------- */
 
-type CartItemRow = { id?: string; product?: number | { id: number } | null; variation?: string | null; quantity?: number }
+type CartItemRow = { id?: string; product?: number | { id: number } | null; variation?: string | null; quantity?: number; customAmount?: number | null; giftName?: string; giftEmail?: string; giftSenderName?: string; giftMessage?: string; giftSendAt?: string }
 
 function cartItemProductId(item: CartItemRow): number | null {
   if (item.product && typeof item.product === 'object') return item.product.id
@@ -968,7 +969,21 @@ async function handleCartAddItem(engine: Engine, cartId: number, request: Reques
   const items = (cart.items as CartItemRow[] | undefined) ?? []
   // A variable product's lines are told apart by variation id; the cart hook re-checks price and stock from the database.
   const variation = typeof item.variation === 'string' && item.variation ? item.variation.slice(0, 64) : null
-  const existingIndex = items.findIndex((existing) => cartItemProductId(existing) === productId && (existing.variation || null) === variation)
+  // A gift card line carries its own amount and recipient, so each one is its own line.
+  const str = (v: unknown, max: number): string | undefined => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined)
+  const giftFields: Partial<CartItemRow> =
+    typeof item.customAmount === 'number' && Number.isInteger(item.customAmount)
+      ? {
+          customAmount: item.customAmount,
+          giftName: str(item.giftName, 100),
+          giftEmail: str(item.giftEmail, 200),
+          giftSenderName: str(item.giftSenderName, 100),
+          giftMessage: str(item.giftMessage, 500),
+          giftSendAt: str(item.giftSendAt, 40),
+        }
+      : {}
+  const isGift = giftFields.customAmount !== undefined
+  const existingIndex = isGift ? -1 : items.findIndex((existing) => cartItemProductId(existing) === productId && (existing.variation || null) === variation && existing.customAmount == null)
   let updatedItems: CartItemRow[]
   let message: string
   if (existingIndex !== -1) {
@@ -976,7 +991,7 @@ async function handleCartAddItem(engine: Engine, cartId: number, request: Reques
     updatedItems[existingIndex] = { ...updatedItems[existingIndex], quantity: (updatedItems[existingIndex].quantity ?? 0) + quantity }
     message = 'Item quantity updated'
   } else {
-    updatedItems = [...items, { product: productId, ...(variation ? { variation } : {}), quantity }]
+    updatedItems = [...items, { product: productId, ...(variation ? { variation } : {}), ...giftFields, quantity }]
     message = 'Item added to cart'
   }
   const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
@@ -1075,7 +1090,7 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
   const mergedItems = [...targetItems]
   for (const sourceItem of sourceItems) {
     const sourceProductId = cartItemProductId(sourceItem)
-    const existingIndex = mergedItems.findIndex((it) => cartItemProductId(it) === sourceProductId && (it.variation || null) === (sourceItem.variation || null))
+    const existingIndex = sourceItem.customAmount != null ? -1 : mergedItems.findIndex((it) => cartItemProductId(it) === sourceProductId && (it.variation || null) === (sourceItem.variation || null) && it.customAmount == null)
     if (existingIndex !== -1) {
       mergedItems[existingIndex] = { ...mergedItems[existingIndex], quantity: (mergedItems[existingIndex].quantity ?? 0) + (sourceItem.quantity ?? 0) }
     } else {
@@ -1164,6 +1179,9 @@ async function resolvePaymentsCart(
 
 /** `POST /payments/stripe/initiate` - body `{cartID, secret?, customerEmail?, billingAddress?, shippingAddress?}`. Validates every cart item's product has a price and enough inventory (`defaultProductsValidation.js`, simplified as above) before handing off to `initiateStripePayment`. */
 async function handlePaymentsStripeInitiate(engine: Engine, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
+  // Doubles as a gift-card code checker, so it is limited per client.
+  const limited = hit(`initiate:${clientKey(request)}`, 20)
+  if (limited.limited) return Response.json({ message: 'Too many requests. Try again in a moment.' }, { status: 429, headers: { 'Retry-After': String(limited.retryAfterSeconds) } })
   const { data } = await readRequestBody(request)
   const resolved = await resolvePaymentsCart(engine, data, user)
   if (resolved instanceof Response) return resolved

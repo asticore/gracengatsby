@@ -13,6 +13,9 @@ import { runInternalMigrate, type InternalMigrateResult } from '@/migrations/run
 import * as schemaModule from '@/cms/db/schema/index'
 import * as adsSchema from '@/cms/db/schema/ads'
 import * as catalogueSchema from '@/cms/db/schema/shopCatalogue'
+import * as dataViewsSchema from '@/cms/db/schema/dataViews'
+import * as storedValueSchema from '@/cms/db/schema/shopStoredValue'
+import * as shippingSchema from '@/cms/db/schema/shopShipping'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -149,7 +152,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         'fieldGroups', 'fieldGroupsFields', 'fieldGroupsFieldsOptions', 'fieldGroupsTargetCollections',
         'forms', 'formsFields', 'formsFieldsOptions', 'formsFieldsConditionalRules',
         'faqSettings', 'faqSettingsRels', 'blogSettings', 'blogSettingsRels', 'shopSettings', 'shopSettingsRels',
-        'siteSettings', 'memberSettings', 'securitySettings', 'integrations', 'emailSettings', 'paymentSettings', 'formSettings',
+        'siteSettings', 'memberSettings', 'securitySettings', 'integrations', 'emailSettings', 'paymentSettings', 'shippingSettings', 'formSettings',
         'header', 'headerMenu', 'headerMenuChildren', 'headerSocialsLinks',
         'footer', 'footerColumns', 'footerColumnsLinks', 'footerSocialsLinks',
         'languageSettings', 'languageSettingsMultilingualActiveLocales',
@@ -179,6 +182,23 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Catalogue tables (attributes, shipping classes, reviews) live in their own schema file
       for (const [exportName, exportValue] of Object.entries(catalogueSchema)) {
+        if (exportName.endsWith('Generated')) continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Tables and charts (data views) live in their own schema file
+      for (const [exportName, exportValue] of Object.entries(dataViewsSchema)) {
+        if (exportName.endsWith('Generated')) continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      for (const [exportName, exportValue] of Object.entries(shippingSchema)) {
+        if (exportName.endsWith('Generated')) continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Gift card, store credit and ledger tables
+      for (const [exportName, exportValue] of Object.entries(storedValueSchema)) {
         if (exportName.endsWith('Generated')) continue
         drizzleTables.push({ name: exportName, table: exportValue })
       }
@@ -316,6 +336,16 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(await cols('eg_posts')).toContain('no_ads')
     expect(await cols('eg_products')).toContain('no_ads')
     expect(await cols('eg_locked_documents_rels')).toContain('eg_ad_units_id')
+  })
+
+  it('creates the data views table, its unique link name index and the locking column', async () => {
+    const cols = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(createdTables.has('eg_data_views')).toBe(true)
+    expect(await cols('eg_data_views')).toEqual(expect.arrayContaining(['id', 'title', 'kind', 'source', 'slug', 'is_public', 'config', 'updated_at', 'created_at']))
+    expect(await cols('eg_locked_documents_rels')).toContain('eg_data_views_id')
+    const indexes = (await proxy.env.D1.prepare('PRAGMA index_list(`eg_data_views`)').all()).results as { name: string; unique: number }[]
+    expect(indexes.find((i) => i.name === 'eg_data_views_slug_idx')?.unique).toBe(1)
   })
 
   it('is safe to run migrations a second time (idempotent)', async () => {

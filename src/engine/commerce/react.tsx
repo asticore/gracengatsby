@@ -55,15 +55,27 @@ export type CartDoc = {
 
 export type AddressDoc = { id: number; [key: string]: unknown }
 
+/** What can be added to the cart. A gift card line also carries the buyer's amount (cents) and the recipient details. */
+export type AddItemInput = {
+  product: number
+  variation?: string | null
+  customAmount?: number
+  giftName?: string
+  giftEmail?: string
+  giftSenderName?: string
+  giftMessage?: string
+  giftSendAt?: string
+}
+
 type PaymentArgs = { additionalData?: Record<string, unknown> }
-type InitiatePaymentResult = { clientSecret?: string; message?: string }
+type InitiatePaymentResult = { clientSecret?: string; message?: string; paidInFull?: boolean; orderID?: number }
 type ConfirmOrderResult = { orderID?: number; transactionID?: number; message?: string }
 
 type CartContextValue = {
   cart: CartDoc | null
   cartLoading: boolean
   /** Resolves to null on success, or the server's reason (out of stock, unavailable option ...). */
-  addItem: (item: { product: number; variation?: string | null }, quantity?: number) => Promise<string | null>
+  addItem: (item: AddItemInput, quantity?: number) => Promise<string | null>
   incrementItem: (itemID: string) => Promise<void>
   decrementItem: (itemID: string) => Promise<void>
   removeItem: (itemID: string) => Promise<void>
@@ -217,7 +229,7 @@ export const EcommerceProvider: React.FC<{ children: React.ReactNode; defaultCur
   }, [])
 
   const addItem = useCallback(
-    async (item: { product: number; variation?: string | null }, quantity = 1): Promise<string | null> => {
+    async (item: AddItemInput, quantity = 1): Promise<string | null> => {
       if (!cartRef) return 'Your cart is not ready yet.'
       return mutateCart(cartRef, 'add-item', { item, quantity })
     },
@@ -259,7 +271,14 @@ export const EcommerceProvider: React.FC<{ children: React.ReactNode; defaultCur
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cartID: cartRef.id, secret: cartRef.secret, ...args.additionalData }),
         })
-        return (await res.json()) as InitiatePaymentResult
+        const result = (await res.json()) as InitiatePaymentResult
+        if (res.ok && result.paidInFull) {
+          // Gift cards / store credit paid the whole order: the cart is purchased server-side.
+          writeStoredCart(null)
+          setCartRef(null)
+          setCart(null)
+        }
+        return result
       } finally {
         setPaymentsLoading(false)
       }

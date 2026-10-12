@@ -1,0 +1,222 @@
+/* Edit-screens audit UI: ticket tiers, draft recovery banner, bulk actions, trash, author box.
+   Classes are prefixed es-. Dark theme only under [data-theme='dark']. */
+
+.es-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.es-muted {
+  margin: 0 0 8px 0;
+  color: #666;
+  font-size: 13px;
+}
+
+.es-tier {
+  margin: 0 0 12px 0;
+  padding: 12px;
+  border: 1px solid #d8d8d8;
+  border-radius: 4px;
+}
+
+.es-tier label {
+  display: block;
+  margin: 0 0 8px 0;
+  font-size: 13px;
+}
+
+.es-tier input {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.es-tier__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.es-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px 0;
+  padding: 10px 14px;
+  border-left: 3px solid #b58900;
+  background: #fbf7e8;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.es-banner--trash {
+  border-left-color: #b3261e;
+  background: #fbeceb;
+}
+
+.es-banner p {
+  margin: 0;
+  flex: 1 1 280px;
+}
+
+.es-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px 0;
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #f7f7f7;
+  font-size: 14px;
+}
+
+.es-bulk select,
+.es-bulk input[type='text'] {
+  padding: 5px 8px;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 13px;
+}
+
+.es-bulk__count {
+  font-weight: 600;
+}
+
+.es-bulk__confirm {
+  flex: 1 1 100%;
+  padding: 8px 10px;
+  border-left: 3px solid #b58900;
+  background: #fbf7e8;
+  color: #1a1a1a;
+}
+
+.es-bulk__confirm--danger {
+  border-left-color: #b3261e;
+  background: #fbeceb;
+}
+
+.es-bulk__result {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 13px;
+}
+
+.es-bulk__result ul {
+  margin: 4px 0 0 18px;
+  padding: 0;
+}
+
+.es-trash-links {
+  display: flex;
+  gap: 12px;
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+.es-trash-links a[aria-current='true'] {
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+}
+
+.es-check {
+  width: 36px;
+  text-align: center;
+}
+
+.es-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 8px 0;
+  font-size: 13px;
+}
+
+.es-field-row select,
+.es-field-row input,
+.es-field-row textarea {
+  padding: 5px 8px;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  font: inherit;
+}
+
+.es-tool-diff {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.es-tool-diff mark {
+  padding: 0 2px;
+  background: #fff0a8;
+  color: inherit;
+}
+
+.es-tool-diff del {
+  color: #b3261e;
+}
+
+.es-tool-diff ins {
+  color: #2e7d32;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .es-muted {
+  color: #9a9a9a;
+}
+
+[data-theme='dark'] .es-tier {
+  border-color: #4a4a4a;
+}
+
+[data-theme='dark'] .es-banner,
+[data-theme='dark'] .es-bulk__confirm {
+  background: #2e2a18;
+  color: #eee;
+}
+
+[data-theme='dark'] .es-banner--trash,
+[data-theme='dark'] .es-bulk__confirm--danger {
+  background: #3a1d1b;
+  color: #f4c7c3;
+}
+
+[data-theme='dark'] .es-bulk {
+  background: #1f1f1f;
+  border-color: #3a3a3a;
+}
+
+[data-theme='dark'] .es-bulk select,
+[data-theme='dark'] .es-bulk input[type='text'],
+[data-theme='dark'] .es-field-row select,
+[data-theme='dark'] .es-field-row input,
+[data-theme='dark'] .es-field-row textarea {
+  background: #232323;
+  border-color: #4a4a4a;
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] .es-tool-diff mark {
+  background: #5a4d12;
+}
+
+[data-theme='dark'] .es-tool-diff del {
+  color: #f4a39b;
+}
+
+[data-theme='dark'] .es-tool-diff ins {
+  color: #7fd185;
+}

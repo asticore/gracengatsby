@@ -11,6 +11,8 @@ import { resolveRedirect, recordRedirectHit } from '@/features/redirects'
 import { readServerRules, type ServerRules } from '@/features/seo/serverRules'
 import { isBlockedPath } from '@/features/seo/siteFiles'
 import { readAdsCspAdditions } from '@/features/ads/d1'
+import { readEmbedFrameDecision } from '@/features/forms/embedD1'
+import { applyEmbedFrame, embedPathKey } from '@/features/forms/embedFrame'
 import { extendCsp, type CspAdditions } from '@/features/ads/builders'
 
 /**
@@ -281,5 +283,16 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
   const redirected = await tryRedirect(request, settings)
   if (redirected) return applyServerResponseHeaders(redirected, rules, pathname)
 
-  return passThrough()
+  const response = passThrough()
+
+  // The one place the site may be framed by others: a form's embed page, limited to that form's own allow-list.
+  const embedKey = embedPathKey(pathname)
+  if (embedKey) {
+    try {
+      applyEmbedFrame(response.headers, await readEmbedFrameDecision(embedKey))
+    } catch {
+      // Fails closed: the site-wide frame header stays.
+    }
+  }
+  return response
 }

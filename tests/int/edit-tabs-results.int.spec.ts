@@ -320,6 +320,7 @@ describe('EditView results tab for an admin', () => {
     user: ADMIN,
     isAdmin: true,
     permissions: permissionsFor(ADMIN),
+    can: () => true,
   })
 
   // The tab bar is the EditTabs element somewhere under the page's wrapper div.

@@ -11,6 +11,7 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
 import type { CatalogueProduct } from '@/features/ecommerce/catalogue'
+import { normaliseGiftCardSettings } from '@/features/ecommerce/lib/storedValue'
 import { aggregateRatingJsonLd, summariseRatings } from '@/features/ecommerce/reviews'
 import { buildProductView, offersJsonLd } from '@/features/ecommerce/storefront'
 import { getEngine } from '@/lib/engine'
@@ -80,6 +81,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const asDocs = (value: unknown): Array<Record<string, unknown> & { id: number }> =>
     (Array.isArray(value) ? value : []).filter((entry): entry is Record<string, unknown> & { id: number } => typeof entry === 'object' && entry !== null)
+  const giftSettings = normaliseGiftCardSettings((settings as { giftCards?: unknown } | null)?.giftCards)
+  const giftConfig = view.type === 'giftcard' && giftSettings.enabled ? { presets: giftSettings.presetAmounts, allowCustom: giftSettings.allowCustomAmount, min: giftSettings.minAmount, max: giftSettings.maxAmount } : undefined
   const grouped: GroupedChild[] = view.type === 'grouped'
     ? asDocs(catalogue.groupedProducts)
         .filter((child) => child._status === 'published' && child.id !== product.id)
@@ -141,7 +144,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <p className="mb-6 text-[rgba(20,17,15,0.7)]">{product.shortDescription}</p>
         )}
 
-        <ProductPurchase productId={product.id} view={view} grouped={grouped} />
+        <ProductPurchase productId={product.id} view={view} grouped={grouped} giftConfig={giftConfig} />
 
         {view.details.length > 0 && (
           <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[0.9rem]">

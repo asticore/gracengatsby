@@ -1,4 +1,6 @@
 import { noAdsField } from '@/features/ads/fields'
+import { pageSpeedFields } from '@/features/pagespeed/fields'
+import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import type { CollectionConfig } from '@/engine'
 
 import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
@@ -122,7 +124,6 @@ export const Products: CollectionConfig = {
       name: 'category',
       type: 'select',
       options: [
-        { label: 'Apparel', value: 'apparel' },
         { label: 'Digital', value: 'digital' },
         { label: 'Physical', value: 'physical' },
       ],
@@ -160,9 +161,10 @@ export const Products: CollectionConfig = {
     ...reviewFields,
     schemaTypeField('products'),
     noAdsField,
+    ...pageSpeedFields,
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange],
-    afterChange: [stockAlertAfterChange],
+    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
+    afterChange: [stockAlertAfterChange, pageSpeedAfterChange('products')],
   },
 }

@@ -4,6 +4,7 @@ import { assertDocAccess, docAccessDenied } from '@/features/roles/docAccess'
 import { getDb } from '@/cms/db/connect'
 import { getPasswordHash, setPasswordHash, clearPassword } from '@/cms/db/contentPasswords'
 import { hashPassword } from '@/features/visibility/password'
+import { noteDocumentChanged } from '@/features/dataViews/cache'
 import { purgeCache } from '@/features/speed/purge'
 
 export const dynamic = 'force-dynamic'
@@ -114,6 +115,7 @@ async function handlePost(request: Request): Promise<Response> {
     const db = await getDb()
     await setPasswordHash(db, collection, id, hash)
 
+    noteDocumentChanged(collection)
     await purgeDocument(context, collection, id, 'POST')
 
     return NextResponse.json({ ok: true }, { status: 200 })
@@ -151,6 +153,7 @@ async function handleDelete(request: Request): Promise<Response> {
     const db = await getDb()
     await clearPassword(db, collection, id)
 
+    noteDocumentChanged(collection)
     await purgeDocument(context, collection, id, 'DELETE')
 
     return NextResponse.json({ ok: true }, { status: 200 })

@@ -95,8 +95,10 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     title: 'Commerce',
     description: 'Shop, payments and membership settings.',
     sections: [
+      { kind: 'link', label: 'Shop settings', href: '/shop-settings', description: 'Units, payments, shipping, invoices, gift cards, checkout and emails', type: 'view' },
       { kind: 'global', slug: 'shop-settings' },
       { kind: 'global', slug: 'payment-settings' },
+      { kind: 'global', slug: 'shipping-settings' },
       { kind: 'global', slug: 'member-settings' },
     ],
   },

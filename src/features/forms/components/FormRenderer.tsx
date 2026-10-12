@@ -4,13 +4,30 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { FormFieldDef, PublicFormConfig, SubmissionValues } from '../types'
 
-import { applyCalculations, resolveVisibility, splitIntoPages } from '../conditions'
+import { renderElement } from '@/components/blocks/elements/renderElement'
+import { SectionBlock } from '@/components/blocks/SectionBlock'
+import { StyledBlock } from '@/components/blocks/StyledBlock'
+import type { SectionNode } from '@/lib/sectionTree'
+import { applyCalculations, resolveVisibility } from '../conditions'
+import { scopeClass, scopeCustomCss } from '../customCss'
 import { roundTo } from '../expression'
+import {
+  HTML_ELEMENT,
+  isFieldNode,
+  isStepNode,
+  splitLayoutIntoSteps,
+  upgradeFieldsToLayout,
+  type LayoutNode,
+} from '../layout'
 import { priceSubmission } from '../pricing'
-import { HONEYPOT_FIELD, RENDERED_AT_FIELD, TURNSTILE_FIELD } from '../spam'
+import { HONEYPOT_FIELD, RECAPTCHA_FIELD, RENDERED_AT_FIELD, TURNSTILE_FIELD } from '../spam'
+import { validateSubmission } from '../validate'
+import { FieldView } from './FieldView'
+import './forms.css'
 
 /**
- * The front-end form.
+ * The front-end form: draws the layout tree (sections, columns, headings,
+ * fields) and runs it.
  *
  * Conditional logic and calculations run here on every keystroke, using the
  * exact same functions the server uses when the form is submitted. That is the
@@ -20,54 +37,133 @@ import { HONEYPOT_FIELD, RENDERED_AT_FIELD, TURNSTILE_FIELD } from '../spam'
  * trusted - it is only what the visitor was shown.
  */
 
-const WIDTH_CLASS: Record<string, string> = {
-  full: 'form-field--full',
-  half: 'form-field--half',
-  third: 'form-field--third',
-  twoThirds: 'form-field--two-thirds',
-  quarter: 'form-field--quarter',
-}
-
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 
-type TurnstileApi = {
-  render: (element: HTMLElement, options: { sitekey: string; callback: (token: string) => void }) => string
-  reset: (id?: string) => void
+type CaptchaApi = {
+  turnstile?: { render: (element: HTMLElement, options: { sitekey: string; callback: (token: string) => void }) => string }
+  grecaptcha?: { ready: (callback: () => void) => void; execute: (key: string, options: { action: string }) => Promise<string> }
 }
 
-const initialValues = (fields: FormFieldDef[]): SubmissionValues => {
+const initialValues = (fields: FormFieldDef[], prefill: Record<string, string> | undefined): SubmissionValues => {
   const values: SubmissionValues = {}
   for (const field of fields || []) {
     if (!field?.name) continue
     if (field.type === 'checkbox' && (field.options || []).length > 0) {
       values[field.name] = field.defaultValue ? [field.defaultValue] : []
-    } else if (field.type === 'checkbox') {
+    } else if (field.type === 'checkbox' || field.type === 'consent') {
       values[field.name] = field.defaultValue === 'true'
+    } else if (field.type === 'matrix' || field.type === 'address') {
+      values[field.name] = {}
     } else {
       values[field.name] = field.defaultValue ?? ''
+    }
+    if (prefill && prefill[field.name] !== undefined) {
+      values[field.name] = field.type === 'checkbox' && (field.options || []).length > 0 ? [prefill[field.name]] : prefill[field.name]
     }
   }
   return values
 }
 
-export const FormRenderer: React.FC<{ config: PublicFormConfig }> = ({ config }) => {
-  const fields = useMemo(() => config.fields || [], [config.fields])
+/** Pairs every field/HTML/step node with the flat definition it produced, in the same order walkLayout used. */
+/**
+ * What identifies a node after SectionBlock has copied it: its id, or failing
+ * that its `props` object (the copy shares it by reference).
+ */
+const nodeKey = (node: { _id?: unknown; props?: unknown }): unknown => (typeof node._id === 'string' ? node._id : node.props)
 
-  const [values, setValues] = useState<SubmissionValues>(() => initialValues(fields))
+function pairNodes(layout: LayoutNode[], fields: FormFieldDef[]): Map<unknown, FormFieldDef> {
+  const pairs = new Map<unknown, FormFieldDef>()
+  let cursor = 0
+  const visit = (node: LayoutNode, topLevel: boolean) => {
+    if (!node || typeof node !== 'object') return
+    if (isStepNode(node)) {
+      if (topLevel) cursor += 1
+      return
+    }
+    if (isFieldNode(node) || (node.blockType === 'element' && node.elementType === HTML_ELEMENT)) {
+      const field = fields[cursor]
+      cursor += 1
+      if (field) pairs.set(nodeKey(node), field)
+      return
+    }
+    if (Array.isArray(node.columns)) {
+      for (const column of node.columns) for (const child of column?.blocks || []) visit(child, false)
+    }
+  }
+  layout.forEach((node) => visit(node, true))
+  return pairs
+}
+
+function fieldsIn(nodes: LayoutNode[], pairs: Map<unknown, FormFieldDef>): FormFieldDef[] {
+  const out: FormFieldDef[] = []
+  const visit = (node: LayoutNode) => {
+    if (!node || typeof node !== 'object') return
+    const field = pairs.get(nodeKey(node))
+    if (field) {
+      out.push(field)
+      return
+    }
+    if (Array.isArray(node.columns)) {
+      for (const column of node.columns) for (const child of column?.blocks || []) visit(child)
+    }
+  }
+  nodes.forEach(visit)
+  return out
+}
+
+const safeRedirect = (url: string): string | null => {
+  try {
+    const parsed = new URL(url, window.location.href)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null
+  } catch {
+    return null
+  }
+}
+
+const loadScript = (src: string, marker: string): Promise<void> =>
+  new Promise((resolve) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[data-eg="${marker}"]`)
+    if (existing) {
+      if (existing.dataset.loaded === 'true') resolve()
+      else existing.addEventListener('load', () => resolve())
+      return
+    }
+    const script = document.createElement('script')
+    script.src = src
+    script.async = true
+    script.dataset.eg = marker
+    script.addEventListener('load', () => {
+      script.dataset.loaded = 'true'
+      resolve()
+    })
+    script.addEventListener('error', () => resolve())
+    document.head.appendChild(script)
+  })
+
+export const FormRenderer: React.FC<{
+  config: PublicFormConfig
+  /** True on the /embed page: reports its height to the parent window. */
+  embed?: boolean
+}> = ({ config, embed }) => {
+  const layout = useMemo<LayoutNode[]>(
+    () => (Array.isArray(config.layout) && config.layout.length > 0 ? (config.layout as LayoutNode[]) : upgradeFieldsToLayout(config.fields)),
+    [config.layout, config.fields],
+  )
+  const fields = useMemo(() => config.fields || [], [config.fields])
+  const pairs = useMemo(() => pairNodes(layout, fields), [layout, fields])
+  const steps = useMemo(() => splitLayoutIntoSteps(layout), [layout])
+  const isMultiStep = steps.length > 1
+
+  const [values, setValues] = useState<SubmissionValues>(() => initialValues(fields, config.prefill))
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [pageIndex, setPageIndex] = useState(0)
+  const [stepIndex, setStepIndex] = useState(0)
   const [turnstileToken, setTurnstileToken] = useState('')
 
-  // Captured once, when the form first draws, and posted back so the server can
-  // tell how long it took to fill in. A ref rather than state: it must never
-  // change, and it must not cause a re-render. Filled in an effect rather than
-  // inline, because reading the clock during render is not idempotent - and
-  // during hydration would give a different answer on the client than the
-  // server already committed to.
   const renderedAt = useRef<number>(0)
   const turnstileRef = useRef<HTMLDivElement | null>(null)
+  const rootRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     renderedAt.current = Date.now()
@@ -79,17 +175,10 @@ export const FormRenderer: React.FC<{ config: PublicFormConfig }> = ({ config })
   const pricing = useMemo(
     () =>
       config.purchasable
-        ? priceSubmission(
-            { id: config.id, title: config.title, fields, payment: { purchasable: true, currency: config.currency } },
-            computed,
-            visible,
-          )
+        ? priceSubmission({ id: config.id, title: config.title, fields, payment: { purchasable: true, currency: config.currency } }, computed, visible)
         : null,
     [config, fields, computed, visible],
   )
-
-  const pages = useMemo(() => splitIntoPages(fields), [fields])
-  const isMultiStep = pages.length > 1
 
   const setValue = useCallback((name: string, value: unknown) => {
     setValues((previous) => ({ ...previous, [name]: value }))
@@ -101,104 +190,122 @@ export const FormRenderer: React.FC<{ config: PublicFormConfig }> = ({ config })
     })
   }, [])
 
-  /**
-   * Turnstile is rendered explicitly rather than by the script scanning the
-   * page: the widget's container is created by React, which the implicit
-   * scanner has usually already run past by the time it exists.
-   */
+  const captcha = config.captcha || (config.turnstileSiteKey ? { provider: 'turnstile' as const, siteKey: config.turnstileSiteKey } : undefined)
+
+  /** Turnstile is rendered explicitly: its container is created by React, after the implicit scan has run. */
   useEffect(() => {
-    if (!config.turnstileSiteKey || !turnstileRef.current) return
-
+    if (captcha?.provider !== 'turnstile') return
     let cancelled = false
-
-    const mount = () => {
-      const api = (window as unknown as { turnstile?: TurnstileApi }).turnstile
+    void loadScript('https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit', 'turnstile').then(() => {
+      const api = (window as unknown as CaptchaApi).turnstile
       if (cancelled || !api || !turnstileRef.current || turnstileRef.current.childElementCount > 0) return
-      api.render(turnstileRef.current, {
-        sitekey: config.turnstileSiteKey,
-        callback: (token: string) => setTurnstileToken(token),
-      })
-    }
-
-    const existing = document.querySelector<HTMLScriptElement>('script[data-eg-turnstile]')
-    if (existing) {
-      if ((window as unknown as { turnstile?: TurnstileApi }).turnstile) mount()
-      else existing.addEventListener('load', mount)
-    } else {
-      const script = document.createElement('script')
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-      script.async = true
-      script.defer = true
-      script.dataset.egTurnstile = 'true'
-      script.addEventListener('load', mount)
-      document.head.appendChild(script)
-    }
-
+      api.render(turnstileRef.current, { sitekey: captcha.siteKey, callback: (token: string) => setTurnstileToken(token) })
+    })
     return () => {
       cancelled = true
     }
-  }, [config.turnstileSiteKey])
+  }, [captcha?.provider, captcha?.siteKey])
 
-  /** Required fields on the current page only, so a step cannot be skipped past. */
-  const validatePage = (index: number): boolean => {
-    const found: Record<string, string> = {}
-    for (const field of pages[index] || []) {
-      if (!field?.name || !field.required || !visible.has(field.name)) continue
-      const value = computed[field.name]
-      const blank =
-        value === null ||
-        value === undefined ||
-        (Array.isArray(value) ? value.length === 0 : String(value).trim() === '') ||
-        value === false
-      if (blank) found[field.name] = `${field.label || field.name} is required.`
+  useEffect(() => {
+    if (captcha?.provider !== 'recaptcha') return
+    void loadScript(`https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(captcha.siteKey)}`, 'recaptcha')
+  }, [captcha?.provider, captcha?.siteKey])
+
+  /** Tell the page that embeds this form how tall it is. Height only: no answers ever leave through here. */
+  useEffect(() => {
+    if (!embed || typeof ResizeObserver === 'undefined' || !rootRef.current) return
+    const target = rootRef.current
+    const post = () => window.parent?.postMessage({ type: 'eg-form-resize', key: config.key || String(config.id), height: Math.ceil(target.getBoundingClientRect().height) + 24 }, '*')
+    const observer = new ResizeObserver(post)
+    observer.observe(target)
+    post()
+    return () => observer.disconnect()
+  }, [embed, config.key, config.id])
+
+  const stepFields = useCallback((index: number): FormFieldDef[] => fieldsIn(steps[index] || [], pairs), [steps, pairs])
+
+  /** The same rules the server applies, on the current step only, so a step cannot be skipped past. */
+  const validateStep = (index: number): boolean => {
+    const list = stepFields(index)
+    const { errors: found } = validateSubmission(list, computed, visible)
+    for (const field of list) {
+      if (field.type !== 'file' || !field.name || !field.required || !visible.has(field.name)) continue
+      const chosen = computed[field.name]
+      if (!Array.isArray(chosen) || chosen.length === 0) found[field.name] = `${field.label || field.name} is required.`
     }
     setErrors(found)
     return Object.keys(found).length === 0
   }
 
+  const apiBase = (config.apiBase || '').replace(/\/$/, '')
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (status === 'submitting') return
-    if (!validatePage(pageIndex)) return
+    if (!validateStep(stepIndex)) return
 
     setStatus('submitting')
     setMessage(null)
     setErrors({})
 
-    // Only what the visitor could actually see is sent. The server drops hidden
-    // fields again regardless - this just keeps the request honest.
-    const submission: Record<string, unknown> = {}
+    const answers: Record<string, unknown> = {}
+    const files: [string, File][] = []
     for (const [key, value] of Object.entries(computed)) {
-      if (visible.has(key)) submission[key] = value
+      if (!visible.has(key)) continue
+      if (Array.isArray(value) && value.length > 0 && value[0] instanceof File) {
+        for (const file of value as File[]) files.push([key, file])
+        continue
+      }
+      if (Array.isArray(value) && value.some((entry) => entry instanceof File)) continue
+      answers[key] = value
     }
 
-    submission[HONEYPOT_FIELD] = ''
-    submission[RENDERED_AT_FIELD] = renderedAt.current
-    if (turnstileToken) submission[TURNSTILE_FIELD] = turnstileToken
+    const system: Record<string, unknown> = { [HONEYPOT_FIELD]: '', [RENDERED_AT_FIELD]: renderedAt.current, eg_source: typeof document !== 'undefined' ? document.referrer || window.location.href : '' }
+    if (turnstileToken) system[TURNSTILE_FIELD] = turnstileToken
+    if (captcha?.provider === 'recaptcha') {
+      const api = (window as unknown as CaptchaApi).grecaptcha
+      if (api) {
+        try {
+          system[RECAPTCHA_FIELD] = await new Promise<string>((resolve, reject) => api.ready(() => api.execute(captcha.siteKey, { action: 'submit' }).then(resolve, reject)))
+        } catch {
+          // The server decides what a missing token means.
+        }
+      }
+    }
 
     try {
-      const response = await fetch(`/api/forms/${config.id}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submission),
-      })
+      let init: RequestInit
+      if (files.length > 0) {
+        const body = new FormData()
+        body.append('eg_json', JSON.stringify(answers))
+        for (const [key, value] of Object.entries(system)) body.append(key, String(value))
+        for (const [key, file] of files) body.append(key, file, file.name)
+        init = { method: 'POST', body }
+      } else {
+        init = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...answers, ...system }) }
+      }
 
-      const body = (await response.json().catch((): null => null)) as {
-        ok?: boolean
-        message?: string
-        errors?: Record<string, string>
-        redirectUrl?: string
-      } | null
+      const response = await fetch(`${apiBase}/api/forms/${encodeURIComponent(config.key || String(config.id))}/submit`, init)
+      const body = (await response.json().catch((): null => null)) as { ok?: boolean; message?: string; errors?: Record<string, string>; redirectUrl?: string } | null
 
       if (!response.ok || !body?.ok) {
         setErrors(body?.errors || {})
         setStatus('error')
         setMessage(body?.message || config.errorMessage)
+        // Take the visitor to the first step that has an error.
+        const firstBad = Object.keys(body?.errors || {})[0]
+        if (firstBad) {
+          const index = steps.findIndex((_, i) => stepFields(i).some((field) => field.name === firstBad))
+          if (index >= 0) setStepIndex(index)
+        }
         return
       }
 
-      if (body.redirectUrl) {
-        window.location.assign(body.redirectUrl)
+      const target = body.redirectUrl ? safeRedirect(body.redirectUrl) : null
+      if (target) {
+        // In an embed the whole top page navigates, not just the frame.
+        if (embed && window.top) window.top.location.assign(target)
+        else window.location.assign(target)
         return
       }
 
@@ -210,330 +317,156 @@ export const FormRenderer: React.FC<{ config: PublicFormConfig }> = ({ config })
     }
   }
 
+  const renderNode = useCallback(
+    (node: SectionNode, key: string): React.ReactNode => {
+      const layoutNode = node as unknown as LayoutNode
+      const field = pairs.get(nodeKey(layoutNode))
+      if (field) {
+        if (field.type === 'html') {
+          return <div key={key} className="form-field form-field--full form-field--html" dangerouslySetInnerHTML={{ __html: field.html || '' }} />
+        }
+        return (
+          <FieldView
+            key={key}
+            field={field}
+            value={computed[field.name || '']}
+            error={errors[field.name || '']}
+            hidden={Boolean(field.name) && !visible.has(field.name!)}
+            onChange={setValue}
+            idPrefix={`f${config.id}`}
+            currency={config.currency}
+          />
+        )
+      }
+      if (node.blockType === 'element') {
+        const props = ((node as { props?: unknown }).props || {}) as Record<string, unknown>
+        const type = String((node as { elementType?: unknown }).elementType || '')
+        if (type.startsWith('ff-')) return null
+        return (
+          <div key={key} className="form-block">
+            {renderElement(type, props)}
+          </div>
+        )
+      }
+      return null
+    },
+    [pairs, computed, errors, visible, setValue, config.id, config.currency],
+  )
+
+  const drawNodes = (nodes: LayoutNode[]) =>
+    nodes.map((node, index) => {
+      const key = node._id || `n${index}`
+      if (node.blockType === 'section') {
+        return (
+          <StyledBlock key={key} style={node.design} index={index}>
+            <SectionBlock columns={node.columns} renderNode={renderNode} />
+          </StyledBlock>
+        )
+      }
+      return <StyledBlock key={key} style={node.design} index={index}>{renderNode(node as unknown as SectionNode, key)}</StyledBlock>
+    })
+
+  const scope = scopeClass(config.id)
+  const css = scopeCustomCss(config.customCss, config.id)
+  const presetClass = config.stylePreset && config.stylePreset !== 'theme' ? ` engage-form--${config.stylePreset}` : ''
+  const accentStyle = config.accent ? ({ '--eg-accent': config.accent } as React.CSSProperties) : undefined
+
   if (status === 'success') {
     return (
-      <div className="engage-form engage-form--success" role="status">
+      <div className={`engage-form engage-form--success${presetClass} ${scope}`} style={accentStyle} role="status" ref={rootRef}>
+        {css && <style>{css}</style>}
         <p>{message}</p>
       </div>
     )
   }
 
-  const currentPage = pages[pageIndex] || []
-  const isLastPage = pageIndex === pages.length - 1
+  const lastStep = stepIndex === steps.length - 1
+  const stepConfig = config.steps
+  const titles = stepConfig?.titles || []
+  const percent = Math.round(((stepIndex + 1) / steps.length) * 100)
 
   return (
-    <form className="engage-form" onSubmit={handleSubmit} noValidate>
-      {isMultiStep && (
-        <p className="engage-form__progress">
-          Step {pageIndex + 1} of {pages.length}
-        </p>
-      )}
+    <div ref={rootRef}>
+      <form className={`engage-form${presetClass} ${scope}`} style={accentStyle} onSubmit={handleSubmit} noValidate>
+        {css && <style>{css}</style>}
 
-      <div className="engage-form__fields">
-        {currentPage.map((field, index) => (
-          <FieldView
-            key={field.name || field.id || `${field.type}-${index}`}
-            field={field}
-            value={computed[field.name]}
-            error={errors[field.name]}
-            hidden={Boolean(field.name) && !visible.has(field.name)}
-            onChange={setValue}
-          />
+        {isMultiStep && stepConfig?.showProgress !== false && (
+          <div className="engage-form__progress">
+            {stepConfig?.progressStyle === 'steps' ? (
+              <ol className="engage-form__steps">
+                {steps.map((_, index) => (
+                  <li key={index} aria-current={index === stepIndex ? 'step' : undefined}>
+                    {titles[index] || `Step ${index + 1}`}
+                  </li>
+                ))}
+              </ol>
+            ) : stepConfig?.progressStyle === 'text' ? (
+              <p>
+                Step {stepIndex + 1} of {steps.length}
+                {titles[stepIndex] ? `: ${titles[stepIndex]}` : ''}
+              </p>
+            ) : (
+              <div className="engage-form__bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={`Step ${stepIndex + 1} of ${steps.length}`}>
+                <span style={{ width: `${percent}%` }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {steps.map((nodes, index) => (
+          <div key={index} className="engage-form__step" hidden={index !== stepIndex}>
+            {drawNodes(nodes)}
+          </div>
         ))}
-      </div>
 
-      {/*
-        The honeypot. Hidden with inline styles rather than a class so it stays
-        invisible even where the site's stylesheet has not loaded, and marked
-        aria-hidden with tabIndex -1 so a screen reader or keyboard user never
-        lands on it and fills it in by accident.
-      */}
-      {config.honeypot && (
-        <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }}>
-          <label htmlFor={`${config.id}-${HONEYPOT_FIELD}`}>Leave this field empty</label>
-          <input
-            id={`${config.id}-${HONEYPOT_FIELD}`}
-            name={HONEYPOT_FIELD}
-            type="text"
-            tabIndex={-1}
-            autoComplete="off"
-            defaultValue=""
-          />
-        </div>
-      )}
-
-      {config.turnstileSiteKey && <div className="engage-form__turnstile" ref={turnstileRef} />}
-
-      {pricing && pricing.total > 0 && (
-        <div className="engage-form__total">
-          <span>Total</span>
-          <strong>
-            {pricing.currency} {roundTo(pricing.total, 2).toFixed(2)}
-          </strong>
-        </div>
-      )}
-
-      {message && status === 'error' && <p className="form-error">{message}</p>}
-
-      <div className="engage-form__actions">
-        {isMultiStep && pageIndex > 0 && (
-          <button type="button" className="btn" onClick={() => setPageIndex((page) => page - 1)}>
-            Back
-          </button>
+        {/* Hidden with inline styles so it stays invisible even before the stylesheet loads; never focusable. */}
+        {config.honeypot && (
+          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }}>
+            <label htmlFor={`${config.id}-${HONEYPOT_FIELD}`}>Leave this field empty</label>
+            <input id={`${config.id}-${HONEYPOT_FIELD}`} name={HONEYPOT_FIELD} type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+          </div>
         )}
 
-        {isMultiStep && !isLastPage ? (
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={() => {
-              if (validatePage(pageIndex)) setPageIndex((page) => page + 1)
-            }}
-          >
-            Next
-          </button>
-        ) : (
-          <button type="submit" className="btn btn--primary" disabled={status === 'submitting'}>
-            {status === 'submitting' ? 'Sending…' : config.submitButtonLabel}
-          </button>
+        {captcha?.provider === 'turnstile' && <div className="engage-form__turnstile" ref={turnstileRef} />}
+
+        {pricing && pricing.total > 0 && (
+          <div className="engage-form__total">
+            <span>Total</span>
+            <strong>
+              {pricing.currency} {roundTo(pricing.total, 2).toFixed(2)}
+            </strong>
+          </div>
         )}
-      </div>
-    </form>
-  )
-}
 
-const FieldView: React.FC<{
-  field: FormFieldDef
-  value: unknown
-  error?: string
-  hidden: boolean
-  onChange: (name: string, value: unknown) => void
-}> = ({ field, value, error, hidden, onChange }) => {
-  if (hidden) return null
+        {message && status === 'error' && (
+          <p className="form-error" role="alert">
+            {message}
+          </p>
+        )}
 
-  const width = WIDTH_CLASS[field.width || 'full'] || WIDTH_CLASS.full
-  const id = `field-${field.name || field.id}`
-  const describedBy = field.helpText ? `${id}-help` : undefined
-
-  const wrap = (children: React.ReactNode) => (
-    <div className={`form-field ${width}${error ? ' form-field--error' : ''}`}>
-      {children}
-      {field.helpText && (
-        <small className="form-field__help" id={describedBy}>
-          {field.helpText}
-        </small>
-      )}
-      {error && <small className="form-field__error">{error}</small>}
+        <div className="engage-form__actions">
+          {isMultiStep && stepIndex > 0 && (
+            <button type="button" className="btn" onClick={() => setStepIndex((index) => index - 1)}>
+              {stepConfig?.backLabel || 'Back'}
+            </button>
+          )}
+          {isMultiStep && !lastStep ? (
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => {
+                if (validateStep(stepIndex)) setStepIndex((index) => index + 1)
+              }}
+            >
+              {stepConfig?.nextLabel || 'Next'}
+            </button>
+          ) : (
+            <button type="submit" className="btn btn--primary" disabled={status === 'submitting'}>
+              {status === 'submitting' ? 'Sending…' : config.submitButtonLabel}
+            </button>
+          )}
+        </div>
+      </form>
     </div>
   )
-
-  const label = (
-    <label htmlFor={id}>
-      {field.label}
-      {field.required && <abbr title="required"> *</abbr>}
-    </label>
-  )
-
-  switch (field.type) {
-    case 'section':
-      return (
-        <div className={`form-field ${WIDTH_CLASS.full} form-field--section`}>
-          {field.label && <h3>{field.label}</h3>}
-          {/*
-            Author-written markup, rendered as written. Only site admins can
-            edit a form, so this is the same trust level as the rich-text
-            content elsewhere on the page - but it is worth being explicit that
-            nothing here is escaped.
-          */}
-          {field.html && <div dangerouslySetInnerHTML={{ __html: field.html }} />}
-        </div>
-      )
-
-    case 'html':
-      return (
-        <div
-          className={`form-field ${width} form-field--html`}
-          dangerouslySetInnerHTML={{ __html: field.html || '' }}
-        />
-      )
-
-    case 'page':
-      return null
-
-    case 'hidden':
-      return <input type="hidden" name={field.name} value={String(value ?? '')} readOnly />
-
-    case 'calculation': {
-      const decimals = field.calculation?.decimalPlaces ?? 2
-      return wrap(
-        <>
-          {label}
-          <output className="form-field__calculation" htmlFor={id} id={id}>
-            {field.calculation?.prefix || ''}
-            {roundTo(Number(value) || 0, decimals).toFixed(Math.max(0, decimals))}
-            {field.calculation?.suffix ? ` ${field.calculation.suffix}` : ''}
-          </output>
-        </>,
-      )
-    }
-
-    case 'textarea':
-      return wrap(
-        <>
-          {label}
-          <textarea
-            id={id}
-            name={field.name}
-            rows={5}
-            required={field.required}
-            placeholder={field.placeholder || undefined}
-            aria-describedby={describedBy}
-            value={String(value ?? '')}
-            onChange={(event) => onChange(field.name, event.target.value)}
-          />
-        </>,
-      )
-
-    case 'select':
-      return wrap(
-        <>
-          {label}
-          <select
-            id={id}
-            name={field.name}
-            required={field.required}
-            aria-describedby={describedBy}
-            value={String(value ?? '')}
-            onChange={(event) => onChange(field.name, event.target.value)}
-          >
-            <option value="">{field.placeholder || 'Please choose...'}</option>
-            {(field.options || []).map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </>,
-      )
-
-    case 'radio':
-      return wrap(
-        <fieldset className="form-field__group">
-          <legend>
-            {field.label}
-            {field.required && <abbr title="required"> *</abbr>}
-          </legend>
-          {(field.options || []).map((option) => (
-            <label key={option.value} className="form-field__choice">
-              <input
-                type="radio"
-                name={field.name}
-                value={option.value}
-                checked={String(value ?? '') === option.value}
-                onChange={() => onChange(field.name, option.value)}
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>,
-      )
-
-    case 'checkbox': {
-      // Two quite different controls share one type, as they do in every form
-      // builder: with options it is a multi-select group, without them it is a
-      // single yes/no consent box.
-      if ((field.options || []).length === 0) {
-        return wrap(
-          <label className="form-field__choice">
-            <input
-              id={id}
-              type="checkbox"
-              name={field.name}
-              checked={value === true || value === 'true'}
-              onChange={(event) => onChange(field.name, event.target.checked)}
-            />
-            {field.label}
-            {field.required && <abbr title="required"> *</abbr>}
-          </label>,
-        )
-      }
-
-      const selected = Array.isArray(value) ? value.map(String) : []
-
-      return wrap(
-        <fieldset className="form-field__group">
-          <legend>
-            {field.label}
-            {field.required && <abbr title="required"> *</abbr>}
-          </legend>
-          {(field.options || []).map((option) => (
-            <label key={option.value} className="form-field__choice">
-              <input
-                type="checkbox"
-                value={option.value}
-                checked={selected.includes(option.value)}
-                onChange={(event) =>
-                  onChange(
-                    field.name,
-                    event.target.checked
-                      ? [...selected, option.value]
-                      : selected.filter((entry) => entry !== option.value),
-                  )
-                }
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>,
-      )
-    }
-
-    case 'file':
-      return wrap(
-        <>
-          {label}
-          <input
-            id={id}
-            type="file"
-            name={field.name}
-            required={field.required}
-            accept={field.accept || undefined}
-            aria-describedby={describedBy}
-            // Only the filename travels - see the note in submitEndpoint.ts.
-            onChange={(event) => onChange(field.name, event.target.files?.[0]?.name || '')}
-          />
-        </>,
-      )
-
-    default: {
-      const inputType =
-        field.type === 'email'
-          ? 'email'
-          : field.type === 'phone'
-            ? 'tel'
-            : field.type === 'number'
-              ? 'number'
-              : field.type === 'date'
-                ? 'date'
-                : 'text'
-
-      return wrap(
-        <>
-          {label}
-          <input
-            id={id}
-            type={inputType}
-            name={field.name}
-            required={field.required}
-            placeholder={field.placeholder || undefined}
-            aria-describedby={describedBy}
-            min={field.type === 'number' && typeof field.min === 'number' ? field.min : undefined}
-            max={field.type === 'number' && typeof field.max === 'number' ? field.max : undefined}
-            value={String(value ?? '')}
-            onChange={(event) => onChange(field.name, event.target.value)}
-          />
-        </>,
-      )
-    }
-  }
 }

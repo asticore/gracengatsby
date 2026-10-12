@@ -19,7 +19,6 @@ export async function generateMetadata() {
 export const dynamic = 'force-dynamic'
 
 const CATEGORIES = [
-  { label: 'Apparel', value: 'apparel' },
   { label: 'Accessories', value: 'accessories' },
   { label: 'Jewellery', value: 'jewellery' },
   { label: 'Homeware', value: 'homeware' },

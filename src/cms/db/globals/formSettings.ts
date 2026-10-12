@@ -67,6 +67,10 @@ export type FormSettingsDoc = {
     turnstile?: boolean | null
     turnstileSiteKey?: string | null
     turnstileSecretKey?: string | null
+    captchaProvider?: string | null
+    recaptchaSiteKey?: string | null
+    recaptchaSecretKey?: string | null
+    recaptchaMinScore?: number | null
   } | null
   defaults?: {
     submitButtonLabel?: string | null

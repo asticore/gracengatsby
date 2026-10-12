@@ -38,7 +38,10 @@ import { DocumentInfoProvider, FormProvider } from '@/admin/context'
 import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { flattenDoc, fieldLabel, humanizeName } from '@/admin/fields/shared'
 import { DocumentPanel, type DocumentPanelInfo } from './DocumentPanel'
+import { PageSpeedCard } from '@/features/pagespeed/ui/PageSpeedCard'
+import { isPageSpeedCollection } from '@/features/pagespeed/types'
 import { SeoCard } from './SeoCard'
+import { TrashBanner } from '@/features/editScreens/admin/TrashBanner'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
 import { SectionOutline } from '@/admin/components/SectionOutline'
@@ -74,6 +77,14 @@ export type EditFormProps = {
   onlyGroups?: string[]
   /** Hide these top-level group fields (by name). Same save behaviour as onlyGroups. */
   excludeGroups?: string[]
+  /**
+   * Show only the top-level fields with these names (groups, arrays or plain fields). A row or
+   * collapsible is kept when any field inside it is named. Every field stays in form state, so a
+   * save still sends the hidden ones back unchanged. Used to split one global across tabs.
+   */
+  onlyFields?: string[]
+  /** Extra content rendered inside the form provider, after the fields (so it can read live form values). */
+  afterFields?: React.ReactNode
   /** Do not render this form's own Collapse all / Expand all bar (the host page renders one). Default false. */
   hideCollapseBar?: boolean
 }
@@ -83,15 +94,21 @@ export type EditFormProps = {
  * only the named groups (and drops everything else); `excludeGroups` removes
  * the named groups. Fields that are not groups are dropped only by onlyGroups.
  */
-export function scopeGroupFields(fields: Field[], scope: { onlyGroups?: string[]; excludeGroups?: string[] } = {}): Field[] {
-  const { onlyGroups, excludeGroups } = scope
-  if (!onlyGroups && !excludeGroups) return fields
+export function scopeGroupFields(fields: Field[], scope: { onlyGroups?: string[]; excludeGroups?: string[]; onlyFields?: string[] } = {}): Field[] {
+  const { onlyGroups, excludeGroups, onlyFields } = scope
+  if (!onlyGroups && !excludeGroups && !onlyFields) return fields
+  const hasNamed = (field: Field, names: string[]): boolean => {
+    if ('name' in field && typeof field.name === 'string') return names.includes(field.name)
+    if ((field.type === 'row' || field.type === 'collapsible') && 'fields' in field) return (field.fields as Field[]).some((f) => hasNamed(f, names))
+    return false
+  }
   return fields.filter((field) => {
+    if (onlyFields && !hasNamed(field, onlyFields)) return false
     if (field.type === 'group' && 'name' in field && typeof field.name === 'string') {
       if (onlyGroups && !onlyGroups.includes(field.name)) return false
       return !excludeGroups?.includes(field.name)
     }
-    return !onlyGroups
+    return !onlyGroups || Boolean(onlyFields)
   })
 }
 
@@ -203,10 +220,12 @@ const PageContentCard: React.FC<{ count?: number; isNew: boolean; blocksField: s
 )
 
 export const EditForm: React.FC<EditFormProps> = ({
+  afterFields,
   collectionSlug,
   doc,
   draftsEnabled,
   excludeGroups,
+  onlyFields,
   fields,
   globalSlug,
   hideCollapseBar = false,
@@ -220,13 +239,13 @@ export const EditForm: React.FC<EditFormProps> = ({
 }) => {
   // Built from ALL fields (including the ones hidden from view) so a save sends them back untouched.
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
-  const scoped = useMemo(() => scopeGroupFields(fields, { onlyGroups, excludeGroups }), [fields, onlyGroups, excludeGroups])
+  const scoped = useMemo(() => scopeGroupFields(fields, { onlyGroups, excludeGroups, onlyFields }), [fields, onlyGroups, excludeGroups, onlyFields])
   const { main, settings, access, seo, pageType } = useMemo(() => (panel ? splitFields(scoped, visualBlocksField) : { main: scoped, settings: [], access: undefined, seo: undefined, pageType: undefined }), [scoped, panel, visualBlocksField])
   const sections = useMemo(() => (panel ? [] : splitFieldSections(scoped)), [panel, scoped])
   // Use either the extracted pageType or the one passed in (EditView extracts and passes it)
   const resolvedPageTypeField = pageTypeField || pageType
   // One named group on its own reads as plain fields, not a card.
-  const flat = onlyGroups?.length === 1
+  const flat = onlyGroups?.length === 1 || (Boolean(onlyFields) && scoped.length === 1 && scoped[0].type === 'group')
   const cardScope = globalSlug ?? collectionSlug ?? 'form'
 
   return (
@@ -235,6 +254,9 @@ export const EditForm: React.FC<EditFormProps> = ({
         {panel ? (
           <div className="document-edit">
             <div className="document-edit__main">
+              {panel.trashedAt && panel.id !== undefined && collectionSlug && (
+                <TrashBanner canDelete={panel.canDelete} collectionSlug={collectionSlug} id={panel.id} label={panel.label} trashedAt={panel.trashedAt} />
+              )}
               {!hideCollapseBar && <CollapseAllBar />}
               <div className="collection-edit__form">
                 {main.length > 0 && (
@@ -256,7 +278,13 @@ export const EditForm: React.FC<EditFormProps> = ({
                     </div>
                   </CollapsibleCard>
                 )}
-                {seo && <SeoCard seoField={seo} readOnly={readOnly} liveHref={panel.liveHref} />}
+                {seo && (
+                  <>
+                    {panel.canEditSeo === false && <p className="doc-muted">Your role cannot edit SEO settings, so they are shown read-only.</p>}
+                    <SeoCard seoField={seo} readOnly={readOnly || panel.canEditSeo === false} liveHref={panel.liveHref} />
+                  </>
+                )}
+                {isPageSpeedCollection(collectionSlug) && <PageSpeedCard collectionSlug={collectionSlug} id={id} />}
                 {visualBlocksField && <PageContentCard blocksField={visualBlocksField} count={visualBlocksCount} isNew={id === undefined} />}
               </div>
             </div>
@@ -284,6 +312,7 @@ export const EditForm: React.FC<EditFormProps> = ({
                     ))}
                   </>
                 )}
+                {afterFields}
                 {!readOnly && <SaveButton collectionSlug={collectionSlug} draftsEnabled={draftsEnabled} globalSlug={globalSlug} id={id} />}
               </div>
             </div>

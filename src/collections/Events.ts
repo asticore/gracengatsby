@@ -6,10 +6,14 @@ import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
 import { seoFields } from '../fields/seo'
 import { schemaTypeField } from '../fields/schemaType'
 import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
+import { pageSpeedFields } from '@/features/pagespeed/fields'
+import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { publishGuard } from '@/features/roles/contentEditGuard'
 import { reviewFields } from '@/features/approval/fields'
+import { recurrenceField, ticketTiersField, trashedAtField } from '@/features/editScreens/fields'
+import { seoEditGuard, trashGuard } from '@/features/editScreens/guards'
 
 export const Events: CollectionConfig = {
   slug: 'events',
@@ -122,6 +126,8 @@ export const Events: CollectionConfig = {
         },
       ],
     },
+    recurrenceField,
+    ticketTiersField,
     {
       name: 'eventType',
       type: 'select',
@@ -179,8 +185,11 @@ export const Events: CollectionConfig = {
     ...authorshipFields,
     ...reviewFields,
     schemaTypeField('events'),
+    ...pageSpeedFields,
+    trashedAtField,
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange, publishGuard],
+    beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, publishGuard, pageSpeedBeforeChange],
+    afterChange: [pageSpeedAfterChange('events')],
   },
 }

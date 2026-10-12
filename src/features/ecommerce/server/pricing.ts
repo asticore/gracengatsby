@@ -3,9 +3,11 @@ import { resolveCheckoutFields, validateCheckoutValues, type CheckoutField } fro
 import { normalizeCode, type CouponDoc } from '../lib/coupons'
 import { normalizeEmail } from '../lib/email'
 import { toCents } from '../lib/money'
+import { cleanRecipient, giftAmountError, normaliseGiftCardSettings } from '../lib/storedValue'
 import { PAID_STATUSES } from '../lib/orderStatus'
-import type { ShippingAddress, ShippingZone } from '../lib/shipping'
+import type { ShippingAddress, ShippingOption, ShippingZone } from '../lib/shipping'
 import { DEFAULT_TAX_SETTINGS, type TaxClass, type TaxRate, type TaxSettings } from '../lib/tax'
+import { fetchLiveRates, normaliseShippingConfig } from '../shipping/registry'
 import { computeOrderTotals, type OrderTotals, type PricedLine } from '../lib/totals'
 
 type Doc = Record<string, unknown>
@@ -16,6 +18,9 @@ export type PricingEngine = {
 }
 
 export class CheckoutError extends Error {}
+
+/** The shop's currency (single-currency shop; AUD unless shop settings say otherwise). */
+export const shopCurrency = (config: { settings: Record<string, unknown> }): string => (typeof config.settings.currency === 'string' && /^[A-Za-z]{3}$/.test(config.settings.currency) ? config.settings.currency.toUpperCase() : 'AUD')
 
 export type ShopConfig = { tax: TaxSettings; zones: ShippingZone[]; rates: TaxRate[]; fields: CheckoutField[]; settings: Doc }
 
@@ -48,17 +53,70 @@ export async function loadShopConfig(engine: PricingEngine): Promise<ShopConfig>
 
 const idOf = (v: unknown): number | null => (typeof v === 'number' ? v : v && typeof v === 'object' && 'id' in v ? Number((v as { id: number }).id) : Number(v) || null)
 
-export type CartItemInput = { product?: unknown; quantity?: number; variation?: string | null }
+export type CartItemInput = {
+  product?: unknown
+  quantity?: number
+  variation?: string | null
+  /** Gift card lines: amount in cents chosen by the buyer, and who receives it. Validated here, never trusted. */
+  customAmount?: number | null
+  giftName?: string | null
+  giftEmail?: string | null
+  giftSenderName?: string | null
+  giftMessage?: string | null
+  giftSendAt?: string | null
+}
+
+async function loadGiftSettings(engine: PricingEngine) {
+  try {
+    const shop = await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true })
+    return normaliseGiftCardSettings((shop as Doc | undefined)?.giftCards)
+  } catch {
+    return normaliseGiftCardSettings(null)
+  }
+}
+
+/** A gift card line: the buyer's amount (checked against the shop's presets and limits) and recipient, no stock, no tax, no shipping. */
+export function giftCardLine(product: Doc, item: CartItemInput, key: string, quantity: number, settings: ReturnType<typeof normaliseGiftCardSettings>): PricedLine {
+  if (product._status != null && product._status !== 'published') throw new CheckoutError('This product is not available.')
+  if (!settings.enabled) throw new CheckoutError('Gift cards are not available right now.')
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) throw new CheckoutError('You can buy up to 10 gift cards at a time.')
+  const amountError = giftAmountError(item.customAmount, settings)
+  if (amountError) throw new CheckoutError(amountError)
+  const recipient = cleanRecipient({ name: item.giftName, email: item.giftEmail, senderName: item.giftSenderName, message: item.giftMessage, sendAt: item.giftSendAt })
+  if (recipient.ok === false) throw new CheckoutError(recipient.error)
+  const cents = item.customAmount as number
+  return {
+    key,
+    productId: String(product.id),
+    name: `${String(product.title ?? 'Gift card')} (${(cents / 100).toFixed(2)})`,
+    sku: null,
+    unitCents: cents,
+    quantity,
+    taxClass: 'zero',
+    categories: [],
+    onSale: false,
+    weightGrams: 0,
+    shippingClass: null,
+    requiresShipping: false,
+    isGiftCard: true,
+    ...({ giftAmountCents: cents, recipient: recipient.value } as object),
+  } as PricedLine
+}
 
 /** Loads each cart line from the database and prices it. Nothing here comes from the browser except ids and quantities. */
 export async function loadPricedLines(engine: PricingEngine, items: CartItemInput[], now = new Date()): Promise<PricedLine[]> {
   const lines: PricedLine[] = []
+  let giftSettings: ReturnType<typeof normaliseGiftCardSettings> | null = null
   const inCart = new Map<string, number>() // the same product listed twice must be available for the sum
   for (const [i, item] of items.entries()) {
     const productId = idOf(item.product)
     if (!productId) continue
     const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0, overrideAccess: true })) as (CatalogueProduct & Doc) | null
     const quantity = item.quantity ?? 1
+    if (product && product.productType === 'giftcard') {
+      lines.push(giftCardLine(product as Doc, item, String(i), quantity, giftSettings ?? (giftSettings = await loadGiftSettings(engine))))
+      continue
+    }
     const stockKey = `${productId}:${item.variation ?? ''}`
     const resolved = resolveCartLine(product, item.variation ?? null, quantity, now, inCart.get(stockKey) ?? 0)
     inCart.set(stockKey, (inCart.get(stockKey) ?? 0) + (Number.isInteger(quantity) ? quantity : 0))
@@ -101,6 +159,9 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
       categories,
       onSale: typeof p.salePrice === 'number' && unitPrice === p.salePrice,
       weightGrams: Math.round(weight * 1000),
+      lengthCm: typeof p.length === 'number' ? p.length : null,
+      widthCm: typeof p.width === 'number' ? p.width : null,
+      heightCm: typeof p.height === 'number' ? p.height : null,
       shippingClass: idOf(p.shippingClass),
       requiresShipping: !virtual,
       // carried for the order snapshot
@@ -161,6 +222,44 @@ export type PriceInput = {
   cartId?: number
 }
 
+type LiveResult = { options: ShippingOption[]; liveOn: boolean }
+const LIVE_TTL_MS = 5 * 60_000
+const LIVE_CACHE_MAX = 200
+const liveCache = new Map<string, { at: number; options: ShippingOption[] }>()
+
+/** Clears the short live-rate cache (tests). */
+export const clearLiveRateCache = (): void => liveCache.clear()
+
+/** Live carrier rates for the cart. `liveOn` says live rates are switched on, so an empty answer must not mean free shipping. Never throws. */
+async function liveShippingOptions(engine: PricingEngine, lines: PricedLine[], address: ShippingAddress): Promise<LiveResult> {
+  let liveOn = false
+  try {
+    if (!lines.some((l) => l.requiresShipping !== false) || !address.country || !address.postalCode) return { options: [], liveOn }
+    const doc = await engine.findGlobal({ slug: 'shipping-settings', depth: 0, overrideAccess: true })
+    const cfg = normaliseShippingConfig(doc)
+    if (!cfg.liveRates) return { options: [], liveOn }
+    liveOn = true
+    const ship = lines.filter((l) => l.requiresShipping !== false)
+    // Same destination postcode and same parcels give the same carrier answer, so repeat quotes reuse it for 5 minutes.
+    const cacheKey = JSON.stringify([address.country, address.postalCode, ship.map((l) => [l.quantity, l.weightGrams ?? 0, l.lengthCm ?? null, l.widthCm ?? null, l.heightCm ?? null]), lines.reduce((s, l) => s + l.unitCents * l.quantity, 0)])
+    const hitEntry = liveCache.get(cacheKey)
+    if (hitEntry && Date.now() - hitEntry.at < LIVE_TTL_MS) return { options: hitEntry.options, liveOn }
+    const a = address as Record<string, string | null | undefined>
+    const out = await fetchLiveRates(cfg, {
+      destination: { city: a.city ?? '', state: a.state ?? '', postcode: a.postalCode ?? '', country: a.country ?? '' },
+      items: lines.filter((l) => l.requiresShipping !== false).map((l) => ({ quantity: l.quantity, weightKg: (l.weightGrams ?? 0) / 1000, lengthCm: l.lengthCm, widthCm: l.widthCm, heightCm: l.heightCm })),
+      declaredValueCents: lines.reduce((s, l) => s + l.unitCents * l.quantity, 0),
+    })
+    if (out.options.length > 0) {
+      if (liveCache.size >= LIVE_CACHE_MAX) liveCache.delete(liveCache.keys().next().value as string)
+      liveCache.set(cacheKey, { at: Date.now(), options: out.options })
+    }
+    return { options: out.options, liveOn }
+  } catch {
+    return { options: [], liveOn }
+  }
+}
+
 export async function priceCart(engine: PricingEngine, input: PriceInput, cfg?: ShopConfig): Promise<{ totals: OrderTotals; config: ShopConfig; lines: PricedLine[] }> {
   const config = cfg ?? (await loadShopConfig(engine))
   const lines = await loadPricedLines(engine, input.items)
@@ -172,7 +271,10 @@ export async function priceCart(engine: PricingEngine, input: PriceInput, cfg?: 
     const held = await couponReservations(engine, code, { excludeCartId: input.cartId })
     coupon = { ...coupon, usageCount: (coupon.usageCount ?? 0) + held }
   }
+  const live = await liveShippingOptions(engine, lines, input.address)
   const result = computeOrderTotals({
+    liveOptions: live.options,
+    liveRatesOn: live.liveOn,
     lines,
     address: input.address,
     zones: config.zones,

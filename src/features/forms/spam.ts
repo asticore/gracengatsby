@@ -59,7 +59,7 @@ export function checkFillTime(
   if (!minimumSeconds || minimumSeconds <= 0) return PASS
 
   const stamp = typeof renderedAt === 'number' ? renderedAt : Number.parseInt(String(renderedAt ?? ''), 10)
-  if (!Number.isFinite(stamp) || stamp <= 0) return PASS
+  if (!Number.isFinite(stamp) || stamp <= 0) return { spam: true, reason: 'too-fast', detail: 'No render time was sent.' }
 
   // A stamp in the future is a clock-skew artefact, not evidence of anything.
   const elapsedSeconds = (now - stamp) / 1000
@@ -70,7 +70,65 @@ export function checkFillTime(
     : PASS
 }
 
-const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+/** Hidden field name Google reCAPTCHA puts its token in. */
+export const RECAPTCHA_FIELD = 'g-recaptcha-response'
+
+const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify'
+
+/**
+ * Verifies a reCAPTCHA (v2 checkbox or v3) token with Google. Same failure
+ * policy as Turnstile: with no secret key, or Google unreachable, the
+ * submission is let through and the reason is logged - losing every enquiry
+ * to a CAPTCHA outage is worse than letting a few bots through. A v3 score
+ * below `recaptchaMinScore` is treated as a bot.
+ */
+export async function checkRecaptcha(
+  token: unknown,
+  settings: ResolvedFormSettings,
+  remoteIp?: string,
+  fetcher: typeof fetch = fetch,
+): Promise<SpamVerdict> {
+  if (!settings.turnstile || settings.captchaProvider !== 'recaptcha') return PASS
+  if (!settings.recaptchaSecretKey) {
+    return { spam: true, reason: 'turnstile-unavailable', detail: 'No reCAPTCHA secret key is set.' }
+  }
+  const response = typeof token === 'string' ? token.trim() : ''
+  if (!response) return { spam: true, reason: 'turnstile', detail: 'No challenge response was sent.' }
+
+  const body = new URLSearchParams({ secret: settings.recaptchaSecretKey, response })
+  if (remoteIp) body.set('remoteip', remoteIp)
+
+  try {
+    const result = await fetcher(RECAPTCHA_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    })
+    const json = (await result.json()) as { success?: boolean; score?: number; 'error-codes'?: string[] }
+    if (!json?.success) {
+      return { spam: true, reason: 'turnstile', detail: (json?.['error-codes'] || []).join(', ') || 'Google rejected the challenge.' }
+    }
+    if (typeof json.score === 'number' && json.score < (settings.recaptchaMinScore ?? 0.5)) {
+      return { spam: true, reason: 'turnstile', detail: `Score ${json.score} is below the minimum.` }
+    }
+    return PASS
+  } catch (error) {
+    return { spam: true, reason: 'turnstile-unavailable', detail: error instanceof Error ? error.message : 'reCAPTCHA could not be reached.' }
+  }
+}
+
+/** Whichever challenge the settings chose. Turnstile and reCAPTCHA share the "captcha" slot, one at a time. */
+export async function checkCaptcha(
+  tokens: { turnstile?: unknown; recaptcha?: unknown },
+  settings: ResolvedFormSettings,
+  remoteIp?: string,
+): Promise<SpamVerdict> {
+  if (!settings.turnstile) return PASS
+  if (settings.captchaProvider === 'recaptcha') return checkRecaptcha(tokens.recaptcha, settings, remoteIp)
+  return checkTurnstile(tokens.turnstile, settings, remoteIp)
+}
+
+const TURNSTILE_VERIFY_URL ='https://challenges.cloudflare.com/turnstile/v0/siteverify'
 
 /**
  * Verifies a Turnstile token with Cloudflare.
@@ -86,9 +144,9 @@ export async function checkTurnstile(
   settings: ResolvedFormSettings,
   remoteIp?: string,
 ): Promise<SpamVerdict> {
-  if (!settings.turnstile) return PASS
+  if (!settings.turnstile || settings.captchaProvider === 'recaptcha') return PASS
   if (!settings.turnstileSecretKey) {
-    return { spam: false, reason: 'turnstile-unavailable', detail: 'No Turnstile secret key is set.' }
+    return { spam: true, reason: 'turnstile-unavailable', detail: 'No Turnstile secret key is set.' }
   }
 
   const response = typeof token === 'string' ? token.trim() : ''
@@ -114,7 +172,7 @@ export async function checkTurnstile(
     }
   } catch (error) {
     return {
-      spam: false,
+      spam: true,
       reason: 'turnstile-unavailable',
       detail: error instanceof Error ? error.message : 'Turnstile could not be reached.',
     }

@@ -28,9 +28,22 @@ export type FormFieldType =
   | 'section'
   | 'page'
   | 'calculation'
+  | 'time'
+  | 'datetime'
+  | 'rating'
+  | 'nps'
+  | 'signature'
+  | 'matrix'
+  | 'appointment'
+  | 'address'
+  | 'consent'
+  | 'payment'
 
 /** Types that never carry a value a visitor typed. */
-export const PRESENTATIONAL_TYPES: FormFieldType[] = ['html', 'section', 'page']
+export const PRESENTATIONAL_TYPES: FormFieldType[] = ['html', 'section', 'page', 'payment']
+
+/** Types whose answer is an object or a data URL rather than a short string. */
+export const STRUCTURED_TYPES: FormFieldType[] = ['matrix', 'address', 'signature']
 
 export type FieldWidth = 'full' | 'half' | 'third' | 'twoThirds' | 'quarter'
 
@@ -83,6 +96,34 @@ export type FormFieldDef = {
   /** `file` only: comma-separated extensions, e.g. ".pdf,.jpg". */
   accept?: string
   conditional?: ConditionalLogic
+  /** Text validation, enforced in the browser and again on the server. */
+  validation?: {
+    minLength?: number
+    maxLength?: number
+    /** A regular expression source, without delimiters. Tested with the `u` flag. */
+    pattern?: string
+    patternMessage?: string
+  }
+  /** `rating` / `nps`: the highest value (rating 1-10, default 5; nps is always 0-10). */
+  scaleMax?: number
+  /** `matrix`: rows are the questions, options are the shared columns. */
+  rows?: FormFieldOption[]
+  /** `appointment`: slot start times offered ("09:00"), the weekdays that are open (0 = Sunday) and the booking window. */
+  appointment?: {
+    slots?: string[]
+    weekdays?: number[]
+    daysAhead?: number
+    /** Longest booking horizon, in days. */
+    maxDaysAhead?: number
+  }
+  /** `address`: which lookup helps the visitor type, if any. */
+  addressLookup?: 'none' | 'nominatim' | 'google'
+  /** `consent`: link to the privacy policy shown in the label. */
+  consentLink?: string
+  /** `file`: largest file in megabytes (never above the Media upload limit). */
+  maxFileMb?: number
+  /** Query-string key that pre-fills this field, when that key is whitelisted here. */
+  prefillKey?: string
   calculation?: {
     formula?: string
     decimalPlaces?: number
@@ -124,10 +165,76 @@ export type FormPayment = {
   product?: number | string | { id?: number | string }
 }
 
+export type FormStatus = 'draft' | 'published'
+
+export type FormStylePreset = 'theme' | 'minimal' | 'rounded' | 'underline' | 'card' | 'dark'
+
+/** Per-form options stored as one JSON column. Always read through normaliseFormConfig. */
+export type FormConfig = {
+  style?: {
+    preset?: FormStylePreset
+    accent?: string
+    /** Author-written CSS, scoped to this form when rendered. See customCss.ts. */
+    customCss?: string
+  }
+  steps?: {
+    showProgress?: boolean
+    progressStyle?: 'bar' | 'steps' | 'text'
+    nextLabel?: string
+    backLabel?: string
+  }
+  success?: {
+    mode?: 'message' | 'redirect'
+    message?: string
+    redirectUrl?: string
+  }
+  embed?: {
+    /** Allow-list of origins that may embed or post to this form. Empty means any origin. */
+    allowedOrigins?: string[]
+    /** Frameable on other websites at /embed/forms/<key>. */
+    enabled?: boolean
+  }
+  notifications?: FormNotificationRule[]
+  webhooks?: FormWebhook[]
+  retentionDays?: number
+  /** Let a visitor save progress and resume from an emailed link. */
+  saveForLater?: boolean
+  /** Query-string keys that may pre-fill fields. A field only fills when its `prefillKey` is in here. */
+  prefillKeys?: string[]
+}
+
+export type FormNotificationRule = {
+  id?: string
+  name?: string
+  enabled?: boolean
+  recipients?: string
+  subject?: string
+  message?: string
+  /** Only send when these rules match. Empty means always. */
+  conditions?: ConditionalLogic
+}
+
+export type FormWebhook = {
+  id?: string
+  name?: string
+  enabled?: boolean
+  url?: string
+  /** Signing secret. Never leaves the server. */
+  secret?: string
+}
+
 export type FormDoc = {
   id?: number | string
   title?: string
   fields?: FormFieldDef[]
+  /** The working copy the visual editor saves. */
+  layout?: unknown
+  /** What visitors see: a snapshot of `layout` taken at the last Publish. */
+  publishedLayout?: unknown
+  /** Absent on forms made before the visual builder: those count as published. */
+  formStatus?: FormStatus | null
+  embedKey?: string | null
+  formConfig?: FormConfig | null
   settings?: {
     submitButtonLabel?: string
     successMessage?: string
@@ -176,6 +283,10 @@ export type ResolvedFormSettings = {
   turnstile: boolean
   turnstileSiteKey: string
   turnstileSecretKey: string
+  captchaProvider: 'turnstile' | 'recaptcha'
+  recaptchaSiteKey: string
+  recaptchaSecretKey: string
+  recaptchaMinScore: number
   submitButtonLabel: string
   successMessage: string
   errorMessage: string
@@ -185,8 +296,21 @@ export type ResolvedFormSettings = {
 /** The subset of a form the browser needs. Never includes secrets. */
 export type PublicFormConfig = {
   id: number | string
+  /** Stable public key used by the embed route. */
+  key?: string
   title: string
   fields: FormFieldDef[]
+  /** The layout tree (sections, columns, headings, fields...) to draw. Absent for a legacy flat form. */
+  layout?: unknown[]
+  stylePreset?: FormStylePreset
+  accent?: string
+  customCss?: string
+  steps?: { showProgress: boolean; progressStyle: 'bar' | 'steps' | 'text'; nextLabel: string; backLabel: string; titles: string[] }
+  prefill?: Record<string, string>
+  captcha?: { provider: 'turnstile' | 'recaptcha'; siteKey: string }
+  saveForLater?: boolean
+  /** Set when rendered on a page of another website: posts go to this absolute origin. */
+  apiBase?: string
   submitButtonLabel: string
   successMessage: string
   errorMessage: string

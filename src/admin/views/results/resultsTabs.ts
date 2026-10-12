@@ -16,12 +16,27 @@ export type ResultsTab = {
    * the event's full list, so an owner of one RSVP (who can read it but not the event) must not see it.
    */
   updateOf?: string
+  /** Shown on the disabled tab when the user may not open it. */
+  deniedReason: string
 }
 
 const RESULTS_TABS: Record<string, ResultsTab> = {
-  events: { label: 'RSVPs', collection: 'event-rsvps', updateOf: 'events' },
-  forms: { label: 'Submissions', collection: 'form-submissions' },
-  'ab-tests': { label: 'Results', collection: 'ab-tests' },
+  events: {
+    label: 'RSVPs',
+    collection: 'event-rsvps',
+    updateOf: 'events',
+    deniedReason: 'Seeing the RSVPs needs an administrator, or a role that can read RSVPs and edit events.',
+  },
+  forms: {
+    label: 'Submissions',
+    collection: 'form-submissions',
+    deniedReason: 'Your role cannot read form submissions. Ask an administrator to give your role Read on Form Submissions.',
+  },
+  'ab-tests': {
+    label: 'Results',
+    collection: 'ab-tests',
+    deniedReason: 'Your role cannot read A/B test results.',
+  },
 }
 
 /** What the signed-in user may do, as the edit page knows it. */
@@ -45,6 +60,24 @@ export function resultsTabFor(slug: string, id: number | undefined, access: Resu
   if (!access.canRead(tab.collection)) return null
   if (tab.updateOf && !access.isAdmin && !access.canUpdate(tab.updateOf)) return null
   return tab
+}
+
+export type ResultsTabState = ResultsTab & {
+  /** False when the tab is shown but the user may not open it (see `deniedReason`). */
+  allowed: boolean
+}
+
+/**
+ * Like resultsTabFor, but a tab the user may not open is returned marked
+ * `allowed: false` instead of being dropped, so the page can show it disabled
+ * with the reason rather than leaving people wondering where it went. Still null on
+ * the create page and for a slug without a results tab.
+ */
+export function resultsTabState(slug: string, id: number | undefined, access: ResultsAccess): ResultsTabState | null {
+  if (id === undefined) return null
+  const tab = Object.prototype.hasOwnProperty.call(RESULTS_TABS, slug) ? RESULTS_TABS[slug] : undefined
+  if (!tab) return null
+  return { ...tab, allowed: resultsTabFor(slug, id, access) !== null }
 }
 
 /** `#results` selects the results tab; anything else is the edit tab. */

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getAdminContext } from '@/admin/auth'
+import { resolveAccess } from '@/features/roles/permissions'
 import type { InvoiceOrder, InvoiceStore } from '../lib/invoice'
 
 type Doc = Record<string, unknown>
@@ -16,7 +17,7 @@ export type AdminEngine = {
 export async function authorizeOrders(action: 'read' | 'update') {
   const context = await getAdminContext()
   if (!context.user) return { ok: false as const, response: NextResponse.json({ error: 'Unauthorised' }, { status: 401 }) }
-  if (!(context.isAdmin || context.can('orders', action))) return { ok: false as const, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  if (!(context.isAdmin || resolveAccess(context.user as never, 'orders', action) === 'all')) return { ok: false as const, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   return { ok: true as const, context, engine: context.engine as unknown as AdminEngine, user: context.user as unknown as { id: number; email?: string } }
 }
 
@@ -46,7 +47,7 @@ export function htmlResponse(html: string): Response {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
-      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'",
+      'Content-Security-Policy': "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'",
       'X-Content-Type-Options': 'nosniff',
     },
   })

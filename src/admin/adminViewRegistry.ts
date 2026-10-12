@@ -25,6 +25,8 @@ import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
+import { ShopSettingsView } from '@/admin/views/ShopSettingsView'
+import { StoreCreditView } from '@/admin/views/StoreCreditView'
 import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 
@@ -114,6 +116,18 @@ export const CUSTOM_ADMIN_VIEWS = [
       title: 'Cookie consent',
       description: 'Customise the cookie banner, preview it and see the consent log.',
     },
+  },
+  {
+    key: 'storeCredit',
+    Component: StoreCreditView,
+    path: '/store-credit',
+    meta: { title: 'Store credit', description: 'Add or deduct store credit with a reason.' },
+  },
+  {
+    key: 'shopSettings',
+    Component: ShopSettingsView,
+    path: '/shop-settings',
+    meta: { title: 'Shop settings', description: 'Currency and units, payments, shipping, invoices, gift cards, checkout and emails.' },
   },
   { key: 'adsOverview', Component: AdsOverviewView, path: '/ads-overview', meta: { title: 'Ads overview', description: 'Status, placeholders and generated ads.txt lines.' } },
   { key: 'adsReport', Component: AdsReportView, path: '/ads-report', meta: { title: 'Ads report', description: 'Viewable impressions per ad unit.' } },

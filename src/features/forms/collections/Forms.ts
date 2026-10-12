@@ -1,8 +1,18 @@
-import type { CollectionConfig, Field } from '@/engine'
+import type { CollectionConfig, Field, FieldAccess } from '@/engine'
 
 import { roleAccess } from '@/access/ecommerceAccess'
 
+import { formConfigAfterRead, formsBeforeChange } from '../configHooks'
 import { submitEndpoint } from '../submitEndpoint'
+
+/** Field-level access that follows a role permission on the Forms resource. */
+const forAction =
+  (action: 'update' | 'publish'): FieldAccess =>
+  ({ req }) =>
+    roleAccess('forms', action)({ req } as never) === true
+
+const canEditForms = forAction('update')
+const canPublishForms = forAction('publish')
 
 /**
  * A form, defined from inside the portal.
@@ -129,16 +139,28 @@ export const Forms: CollectionConfig = {
     group: 'Content',
     defaultColumns: ['title', 'updatedAt'],
     description:
-      'Build a form, then drop it onto any page with the Form block. Entries appear under Form Submissions.',
+      'Click "Edit visually" to build the form on the same canvas as your pages: add fields, set their widths, split it into steps, then Publish. Entries appear under Form Submissions.',
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+      },
+    },
   },
   access: {
     create: roleAccess('forms', 'create'),
     delete: roleAccess('forms', 'delete'),
     update: roleAccess('forms', 'update'),
-    // Public: the front-end renderer loads the form definition to draw it.
-    // Only the allow-listed subset in settings.ts ever reaches the browser.
-    read: () => true,
+    // Anyone can read a published form (the site draws it from this); drafts
+    // are for people who can read forms. Secrets are protected per field below,
+    // and only the allow-listed subset in settings.ts ever reaches a browser
+    // that was not served by this site's own server.
+    read: ({ req }) => {
+      const open = roleAccess('forms', 'read')({ req } as never)
+      if (open === true) return true
+      return { or: [{ formStatus: { equals: 'published' } }, { formStatus: { exists: false } }] }
+    },
   },
+  hooks: { beforeChange: [formsBeforeChange] },
   endpoints: [submitEndpoint],
   fields: [
     {
@@ -151,10 +173,10 @@ export const Forms: CollectionConfig = {
       name: 'fields',
       type: 'array',
       labels: { singular: 'Field', plural: 'Fields' },
-      minRows: 1,
       admin: {
         initCollapsed: true,
-        description: 'Drag to reorder. This is the order visitors see.',
+        description:
+          'The original flat field list. Forms built before the visual builder keep working from it; opening one in the visual editor converts it to a layout without changing it. New forms are built visually and leave this empty.',
       },
       fields: [
         {
@@ -367,6 +389,46 @@ export const Forms: CollectionConfig = {
       ],
     },
     {
+      name: 'formStatus',
+      type: 'select',
+      defaultValue: 'draft',
+      index: true,
+      options: [
+        { label: 'Draft - not shown on the site', value: 'draft' },
+        { label: 'Published - live', value: 'published' },
+      ],
+      access: { update: canPublishForms },
+      admin: {
+        position: 'sidebar',
+        description: 'Publish from the visual editor. A draft form is hidden from visitors; forms made before the visual builder count as published.',
+      },
+    },
+    {
+      name: 'embedKey',
+      type: 'text',
+      index: true,
+      admin: { position: 'sidebar', readOnly: true, description: 'The public key in the embed address. Set once, never changes.' },
+    },
+    {
+      name: 'layout',
+      type: 'json',
+      access: { read: canEditForms },
+      admin: { hidden: true, description: 'The working copy the visual editor saves.' },
+    },
+    {
+      name: 'publishedLayout',
+      type: 'json',
+      access: { update: canPublishForms },
+      admin: { hidden: true, description: 'What visitors see: a snapshot of the layout taken at Publish.' },
+    },
+    {
+      name: 'formConfig',
+      type: 'json',
+      access: { read: canEditForms },
+      hooks: { afterRead: [formConfigAfterRead] },
+      admin: { hidden: true, description: 'Style, steps, success message, embed settings, notification rules and webhooks. Edited in the visual editor.' },
+    },
+    {
       type: 'group',
       name: 'settings',
       label: 'Wording',
@@ -389,6 +451,7 @@ export const Forms: CollectionConfig = {
       type: 'group',
       name: 'notification',
       label: 'Notification email',
+      access: { read: canEditForms },
       admin: { description: 'The email you receive when someone submits this form.' },
       fields: [
         {
@@ -428,6 +491,7 @@ export const Forms: CollectionConfig = {
       type: 'group',
       name: 'confirmation',
       label: 'Confirmation email',
+      access: { read: canEditForms },
       admin: { description: 'An optional receipt sent to whoever filled the form in.' },
       fields: [
         { name: 'enabled', type: 'checkbox', defaultValue: false },

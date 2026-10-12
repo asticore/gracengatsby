@@ -1,4 +1,6 @@
 import { noAdsField } from '@/features/ads/fields'
+import { pageSpeedFields } from '@/features/pagespeed/fields'
+import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import type { CollectionConfig, EngineRequest } from '@/engine'
 
 import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
@@ -13,6 +15,8 @@ import { contentEditGuard, publishGuard } from '@/features/roles/contentEditGuar
 import { lockGuard } from '@/features/roles/lockGuard'
 import { locksField } from '../fields/locks'
 import { reviewFields } from '@/features/approval/fields'
+import { pageExcerptField, pageFeaturedImageField, trashedAtField } from '@/features/editScreens/fields'
+import { seoEditGuard, trashGuard } from '@/features/editScreens/guards'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -126,6 +130,8 @@ export const Pages: CollectionConfig = {
           'Pick a starting template - its sections are copied in only when creating a brand-new page with no sections yet.',
       },
     },
+    pageFeaturedImageField,
+    pageExcerptField,
     seoFields,
     {
       name: 'blocks',
@@ -141,6 +147,8 @@ export const Pages: CollectionConfig = {
     ...reviewFields,
     schemaTypeField('pages'),
     noAdsField,
+    ...pageSpeedFields,
+    trashedAtField,
   ],
   hooks: {
     beforeValidate: [
@@ -160,8 +168,12 @@ export const Pages: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [pageSpeedAfterChange('pages')],
     beforeChange: [
       authorshipBeforeChange,
+      trashGuard,
+      seoEditGuard,
+      pageSpeedBeforeChange,
       async ({ data, req, originalDoc }) => {
         // Only one page can be the homepage - unset any previous holder.
         if (data?.isHomepage) {

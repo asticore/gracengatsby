@@ -1,6 +1,8 @@
 import type { FormDoc, FormFieldDef, SubmissionValues } from './types'
 
+import { displayValue } from './format'
 import { PRESENTATIONAL_TYPES } from './types'
+import { withResolvedFields } from './layout'
 
 /**
  * CSV export of stored entries.
@@ -35,7 +37,7 @@ const cell = (value: unknown): string => {
 
 /** Fields that hold an answer, in the order the form asks for them. */
 export const answerFields = (form: FormDoc): FormFieldDef[] =>
-  (form?.fields || []).filter((field) => field?.name && !PRESENTATIONAL_TYPES.includes(field.type))
+  withResolvedFields(form || {}).fields.filter((field) => field?.name && !PRESENTATIONAL_TYPES.includes(field.type!))
 
 export type ExportRow = {
   id: number | string
@@ -43,6 +45,10 @@ export type ExportRow = {
   ip?: string
   total?: number
   paymentStatus?: string
+  /** Inbox fields. The columns appear only when at least one row carries them. */
+  status?: string
+  assignee?: string
+  notes?: string
   values: SubmissionValues
 }
 
@@ -57,6 +63,8 @@ export function buildCsv(form: FormDoc, rows: ExportRow[]): string {
     }
   }
 
+  const withInbox = rows.some((row) => row.status !== undefined || row.assignee !== undefined || row.notes !== undefined)
+
   const header = [
     'Entry ID',
     'Submitted',
@@ -65,6 +73,7 @@ export function buildCsv(form: FormDoc, rows: ExportRow[]): string {
     ...extras,
     'Total',
     'Payment status',
+    ...(withInbox ? ['Status', 'Assigned to', 'Notes'] : []),
   ]
 
   const lines = [header.map((value) => escape(value)).join(',')]
@@ -76,10 +85,11 @@ export function buildCsv(form: FormDoc, rows: ExportRow[]): string {
         cell(row.id),
         cell(row.createdAt),
         cell(row.ip),
-        ...names.map((name) => cell(values[name])),
+        ...defined.map((field) => cell(displayValue(field, values[field.name], false) || null)),
         ...extras.map((name) => cell(values[name])),
         cell(row.total),
         cell(row.paymentStatus),
+        ...(withInbox ? [cell(row.status), cell(row.assignee), cell(row.notes)] : []),
       ].join(','),
     )
   }

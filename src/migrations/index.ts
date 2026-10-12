@@ -38,6 +38,14 @@ import * as migration_20261013_110000_custom_role_rules from './20261013_110000_
 import * as migration_20261013_120000_shop_catalogue from './20261013_120000_shop_catalogue';
 import * as migration_20261013_130000_shop_orders from './20261013_130000_shop_orders';
 import * as migration_20261013_140000_media_upload from './20261013_140000_media_upload';
+import * as migration_20261014_100000_edit_screens from './20261014_100000_edit_screens';
+import * as migration_20261014_200000_shop_settings_extras from './20261014_200000_shop_settings_extras';
+import * as migration_20261014_210000_gift_cards from './20261014_210000_gift_cards';
+import * as migration_20261014_220000_shipping from './20261014_220000_shipping';
+import * as migration_20261014_230000_remove_apparel_category from './20261014_230000_remove_apparel_category';
+import * as migration_20261014_300000_pagespeed from './20261014_300000_pagespeed';
+import * as migration_20261014_400000_data_views from './20261014_400000_data_views';
+import * as migration_20261014_500000_forms_builder from './20261014_500000_forms_builder';
 
 export const migrations = [
   {
@@ -239,5 +247,45 @@ export const migrations = [
     up: migration_20261013_140000_media_upload.up,
     down: migration_20261013_140000_media_upload.down,
     name: '20261013_140000_media_upload',
+  },
+  {
+    up: migration_20261014_100000_edit_screens.up,
+    down: migration_20261014_100000_edit_screens.down,
+    name: '20261014_100000_edit_screens',
+  },
+  {
+    up: migration_20261014_200000_shop_settings_extras.up,
+    down: migration_20261014_200000_shop_settings_extras.down,
+    name: '20261014_200000_shop_settings_extras',
+  },
+  {
+    up: migration_20261014_210000_gift_cards.up,
+    down: migration_20261014_210000_gift_cards.down,
+    name: '20261014_210000_gift_cards',
+  },
+  {
+    up: migration_20261014_220000_shipping.up,
+    down: migration_20261014_220000_shipping.down,
+    name: '20261014_220000_shipping',
+  },
+  {
+    up: migration_20261014_230000_remove_apparel_category.up,
+    down: migration_20261014_230000_remove_apparel_category.down,
+    name: '20261014_230000_remove_apparel_category',
+  },
+  {
+    up: migration_20261014_300000_pagespeed.up,
+    down: migration_20261014_300000_pagespeed.down,
+    name: '20261014_300000_pagespeed',
+  },
+  {
+    up: migration_20261014_400000_data_views.up,
+    down: migration_20261014_400000_data_views.down,
+    name: '20261014_400000_data_views',
+  },
+  {
+    up: migration_20261014_500000_forms_builder.up,
+    down: migration_20261014_500000_forms_builder.down,
+    name: '20261014_500000_forms_builder',
   },
 ];

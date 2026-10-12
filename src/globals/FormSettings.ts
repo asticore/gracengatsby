@@ -163,6 +163,61 @@ export const FormSettings: GlobalConfig = {
             },
           ],
         },
+        {
+          name: 'captchaProvider',
+          type: 'select',
+          defaultValue: 'turnstile',
+          options: [
+            { label: 'Cloudflare Turnstile', value: 'turnstile' },
+            { label: 'Google reCAPTCHA v3', value: 'recaptcha' },
+          ],
+          admin: {
+            description: 'Which challenge runs when the challenge switch above is on.',
+            condition: (_, s) => Boolean(s?.turnstile),
+          },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'recaptchaSiteKey',
+              type: 'text',
+              admin: {
+                width: '50%',
+                description: 'reCAPTCHA v3 site key. Public - it appears in the form itself.',
+                condition: (_, s) => Boolean(s?.turnstile) && s?.captchaProvider === 'recaptcha',
+              },
+            },
+            {
+              name: 'recaptchaSecretKey',
+              type: 'text',
+              access: {
+                read: adminOnlyFieldAccess,
+                update: adminOnlyFieldAccess,
+              },
+              hooks: {
+                beforeChange: [encryptSecretHook],
+                afterRead: [decryptSecretHook],
+              },
+              admin: {
+                width: '50%',
+                description: 'reCAPTCHA v3 secret key. Stored encrypted at rest, visible only to admins.',
+                condition: (_, s) => Boolean(s?.turnstile) && s?.captchaProvider === 'recaptcha',
+              },
+            },
+          ],
+        },
+        {
+          name: 'recaptchaMinScore',
+          type: 'number',
+          defaultValue: 0.5,
+          min: 0,
+          max: 1,
+          admin: {
+            description: 'Lowest reCAPTCHA score treated as a person (0 to 1). 0.5 is the usual starting point.',
+            condition: (_, s) => Boolean(s?.turnstile) && s?.captchaProvider === 'recaptcha',
+          },
+        },
       ],
     },
     {

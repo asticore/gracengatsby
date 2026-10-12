@@ -23,6 +23,11 @@ import {
   type NodePath,
 } from './visualEditor/treeOps'
 import { VISUAL_EDITOR_SURFACES } from './visualEditor/surfaces'
+import { normaliseFormConfig } from '@/features/forms/config'
+import { hasUnpublishedChanges as formHasUnpublishedChanges, upgradeFieldsToLayout, walkLayout } from '@/features/forms/layout'
+import type { FormConfig } from '@/features/forms/types'
+import { FormEditorContext } from './visualEditor/formInputs'
+import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
 
 let idCounter = 0
@@ -118,6 +123,12 @@ export const VisualEditorView: React.FC = () => {
   const [roleChoices, setRoleChoices] = useState<string[]>(['editor', 'viewer'])
   const [lockNotice, setLockNotice] = useState<string | null>(null)
   const [frameReady, setFrameReady] = useState(false)
+  // Form builder state (only used when the surface is the Forms collection).
+  const [formConfig, setFormConfig] = useState<FormConfig>(() => normaliseFormConfig(null))
+  const [formStatus, setFormStatus] = useState<'draft' | 'published'>('draft')
+  const [embedKey, setEmbedKey] = useState<string | undefined>(undefined)
+  const [publishedLayout, setPublishedLayout] = useState<unknown>(null)
+  const formMode = surface?.formMode === true
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const lastHoverKey = useRef<string | null>(null)
@@ -136,12 +147,21 @@ export const VisualEditorView: React.FC = () => {
     ])
       .then(([doc, user]: any[]) => {
         if (doc && typeof doc === 'object') {
-          const raw = (doc[surface.blocksField] as SectionNode[] | undefined) || []
+          let raw = (doc[surface.blocksField] as SectionNode[] | undefined) || []
+          if (surface.formMode) {
+            // A form made before the visual builder has only a flat field list: show it as a layout. Nothing is
+            // written back until the person saves, and the upgrade gives the same tree every time.
+            if (!Array.isArray(raw) || raw.length === 0) raw = upgradeFieldsToLayout(doc.fields) as unknown as SectionNode[]
+            setFormConfig(normaliseFormConfig(doc.formConfig))
+            setFormStatus(doc.formStatus === 'draft' ? 'draft' : 'published')
+            setEmbedKey(typeof doc.embedKey === 'string' ? doc.embedKey : undefined)
+            setPublishedLayout(doc.publishedLayout ?? null)
+          }
           const withStableIds = withIds(raw)
           setBlocks(withStableIds)
           setInsertTarget({ containerPath: [], at: withStableIds.length })
           setDocTitle(surface.titleField ? String(doc[surface.titleField] || 'Untitled') : surface.label)
-          setStatus((doc._status as string) || null)
+          setStatus(surface.formMode ? (doc.formStatus === 'draft' ? 'draft' : 'published') : (doc._status as string) || null)
           setLocks(parseLocks(doc.locks))
         }
         if (user) {
@@ -440,13 +460,22 @@ export const VisualEditorView: React.FC = () => {
     [addBlockAt, sendDragHover],
   )
 
-  const save = async (publish: boolean) => {
+  const save = async (publish: boolean, options: { unpublish?: boolean } = {}) => {
     if (!apiUrl || !surface) return
     setSaving(publish ? 'publishing' : 'saving')
     try {
       const body: Record<string, unknown> = { [surface.blocksField]: stripEditorIds(blocks, lockedKeySet(locks)) }
       if (locksDirty && lockable) body.locks = serializeLocks(locks)
-      if (publish) body._status = 'published'
+      if (surface.formMode) {
+        // Draft saves touch the working copy only; Publish also takes the snapshot visitors see.
+        body.formConfig = formConfig
+        if (publish) {
+          body.publishedLayout = body[surface.blocksField]
+          body.formStatus = 'published'
+        } else if (options.unpublish) {
+          body.formStatus = 'draft'
+        }
+      } else if (publish) body._status = 'published'
 
       const res = await fetch(apiUrl, {
         method: 'PATCH',
@@ -457,7 +486,18 @@ export const VisualEditorView: React.FC = () => {
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
 
       setSaving(publish ? 'published' : 'saved')
-      if (publish) setStatus('published')
+      if (surface.formMode) {
+        const saved = (await res.json().catch((): null => null)) as { doc?: { embedKey?: string; publishedLayout?: unknown; formStatus?: string } } | null
+        if (saved?.doc?.embedKey) setEmbedKey(saved.doc.embedKey)
+        if (publish) {
+          setFormStatus('published')
+          setStatus('published')
+          setPublishedLayout(body.publishedLayout)
+        } else if (options.unpublish) {
+          setFormStatus('draft')
+          setStatus('draft')
+        }
+      } else if (publish) setStatus('published')
       setDirty(false)
       setLocksDirty(false)
       setTimeout(() => setSaving('idle'), 2000)
@@ -495,6 +535,13 @@ export const VisualEditorView: React.FC = () => {
           },
         }
       : undefined
+
+  const formFieldChoices = useMemo(
+    () => (formMode ? walkLayout(blocks).fields.filter((f) => f.name && f.type !== 'page').map((f) => ({ name: f.name!, label: f.label || f.name! })) : []),
+    [formMode, blocks],
+  )
+  const formUnpublished = formMode ? formHasUnpublishedChanges({ layout: stripEditorIds(blocks, lockedKeySet(locks)), publishedLayout } as never) : false
+  const isAdmin = Boolean(lockUser?.roles?.includes('admin'))
 
   const backHref = surface
     ? surface.kind === 'global'
@@ -588,6 +635,7 @@ export const VisualEditorView: React.FC = () => {
         </div>
       </div>
 
+      <FormEditorContext.Provider value={{ fields: formFieldChoices }}>
       <div className="ve-body">
         <EditorDock
           collapsed={dockCollapsed}
@@ -607,6 +655,25 @@ export const VisualEditorView: React.FC = () => {
           onDuplicateSelected={() => selectedPath && duplicateBlock(selectedPath)}
           userPermissions={userPermissions}
           lockUi={lockUi}
+          formPanel={
+            formMode ? (
+              <FormSettingsPanel
+                config={formConfig}
+                onChange={(next) => {
+                  setFormConfig(next)
+                  setDirty(true)
+                }}
+                formId={route?.id}
+                embedKey={embedKey}
+                formStatus={formStatus}
+                hasUnpublishedChanges={formUnpublished}
+                isAdmin={isAdmin}
+                busy={saving === 'saving' || saving === 'publishing'}
+                onPublish={() => save(true)}
+                onUnpublish={() => save(false, { unpublish: true })}
+              />
+            ) : undefined
+          }
         />
 
         <div className="ve-canvas-wrap" role="presentation">
@@ -649,6 +716,7 @@ export const VisualEditorView: React.FC = () => {
           </div>
         </div>
       </div>
+      </FormEditorContext.Provider>
     </div>
   )
 }

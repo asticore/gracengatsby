@@ -17,7 +17,20 @@ import crypto from 'crypto'
 
 import { resolveCartLine, type CatalogueProduct } from '../catalogue'
 
-type CartItem = { product?: number | { id: number } | null; variation?: string | null; quantity?: number | null }
+import { giftCardLine, type CartItemInput } from '../server/pricing'
+import { normaliseGiftCardSettings } from '../lib/storedValue'
+
+type CartItem = {
+  product?: number | { id: number } | null
+  variation?: string | null
+  quantity?: number | null
+  customAmount?: number | null
+  giftName?: string | null
+  giftEmail?: string | null
+  giftSenderName?: string | null
+  giftMessage?: string | null
+  giftSendAt?: string | null
+}
 
 const productIdOf = (item: CartItem): number | null | undefined =>
   item.product && typeof item.product === 'object' ? item.product.id : (item.product as number | null | undefined)
@@ -44,7 +57,7 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
   const items = data.items as CartItem[] | undefined
   if (Array.isArray(items)) {
     let subtotal = 0
-    const engine = (req as { engine: { findByID: (args: { collection: string; id: number; depth?: number; overrideAccess?: boolean }) => Promise<unknown> } }).engine
+    const engine = (req as { engine: { findByID: (args: { collection: string; id: number; depth?: number; overrideAccess?: boolean }) => Promise<unknown>; findGlobal: (args: { slug: string; depth?: number; overrideAccess?: boolean }) => Promise<unknown> } }).engine
     const before = ((originalDoc as { items?: CartItem[] } | undefined)?.items ?? []).map((item) => `${productIdOf(item)}|${item.variation ?? ''}|${item.quantity}`)
     const seen = new Map<string, number>()
     const errors: Array<{ path: string; message: string }> = []
@@ -52,6 +65,17 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
       const productId = productIdOf(item)
       if (!productId || !item.quantity) continue
       const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0, overrideAccess: true }).catch((): null => null)) as CatalogueProduct | null
+      if (product && (product as { productType?: string }).productType === 'giftcard') {
+        // A gift card is priced from the buyer's amount, checked against the shop's limits and recipient rules.
+        const shop = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true }).catch((): null => null)) as { giftCards?: unknown } | null
+        try {
+          const g = giftCardLine(product as never, item as CartItemInput, String(index), item.quantity, normaliseGiftCardSettings(shop?.giftCards))
+          subtotal += (g.unitCents * item.quantity) / 100
+        } catch (error) {
+          errors.push({ path: `items.${index}`, message: error instanceof Error ? error.message : 'This gift card is not valid.' })
+        }
+        continue
+      }
       const key = `${productId}|${item.variation ?? ''}`
       const already = seen.get(key) ?? 0
       seen.set(key, already + item.quantity)

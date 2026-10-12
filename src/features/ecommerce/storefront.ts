@@ -24,7 +24,7 @@ export type VariationView = {
 }
 
 export type ProductView = {
-  type: 'simple' | 'variable' | 'grouped' | 'external'
+  type: 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard'
   price: number | null
   regular: number | null
   onSale: boolean

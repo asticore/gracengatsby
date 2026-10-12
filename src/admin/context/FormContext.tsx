@@ -25,6 +25,8 @@ type FormContextValue = {
   modified: boolean
   resetModified: () => void
   setValue: (path: string, value: unknown) => void
+  /** Replaces the values of many paths at once and marks the form changed (used to restore a recovered draft). */
+  setValues: (values: Record<string, unknown>) => void
 }
 
 const FormContext = createContext<FormContextValue | null>(null)
@@ -41,11 +43,20 @@ export const FormProvider: React.FC<{
     setModified(true)
   }, [])
 
+  const setValues = useCallback((values: Record<string, unknown>) => {
+    setFields((prev) => {
+      const next = { ...prev }
+      for (const [path, entry] of Object.entries(values)) next[path] = { value: entry }
+      return next
+    })
+    setModified(true)
+  }, [])
+
   const resetModified = useCallback(() => setModified(false), [])
 
   const value = useMemo(
-    () => ({ fields, modified, resetModified, setValue }),
-    [fields, modified, resetModified, setValue],
+    () => ({ fields, modified, resetModified, setValue, setValues }),
+    [fields, modified, resetModified, setValue, setValues],
   )
 
   return <FormContext.Provider value={value}>{children}</FormContext.Provider>

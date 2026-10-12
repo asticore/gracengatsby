@@ -548,3 +548,5 @@ export async function ListView({
     </div>
   )
 }
+
+export default ListView

@@ -18,6 +18,7 @@ import { hasRichFormatting, lexicalToPlainText, plainTextToLexical } from './ric
 import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
 import { LockControls, type LockUi } from './LockControls'
+import { FormLogicInput, FormOptionsInput } from './formInputs'
 
 type MediaThumb = { id: number; url?: string | null; alt?: string | null }
 type PanelTab = 'content' | 'design'
@@ -134,6 +135,16 @@ export const FieldPanel: React.FC<{
   )
 }
 
+/** One-click column layouts, as 12-grid fractions: 1/1, 1/2, 1/3, 2/3, 1/4 and their common pairings. */
+const COLUMN_PRESETS: { label: string; widths: number[] }[] = [
+  { label: '1/1', widths: [12] },
+  { label: '1/2 + 1/2', widths: [6, 6] },
+  { label: '1/3 x 3', widths: [4, 4, 4] },
+  { label: '2/3 + 1/3', widths: [8, 4] },
+  { label: '1/3 + 2/3', widths: [4, 8] },
+  { label: '1/4 x 4', widths: [3, 3, 3, 3] },
+]
+
 type WidthDevice = 'desktop' | 'tablet' | 'mobile'
 const WIDTH_KEY: Record<WidthDevice, 'widthDesktop' | 'widthTablet' | 'widthMobile'> = {
   desktop: 'widthDesktop',
@@ -166,6 +177,25 @@ const SectionLayoutFields: React.FC<{
 
   const removeColumn = (index: number) => {
     onChange(columns.filter((_, i) => i !== index))
+  }
+
+  /** Rebuilds the row to the given desktop widths, keeping the content of the columns that already exist. */
+  const applyPreset = (widths: number[]) => {
+    // Content of columns beyond the new count moves into the last one rather than being thrown away.
+    const extra = columns.slice(widths.length).flatMap((column) => column.blocks || [])
+    onChange(
+      widths.map((value, index): SectionColumn => {
+        const existing: SectionColumn = columns[index] || { _id: `col-${Date.now()}-${index}`, design: {}, blocks: [] }
+        return {
+          ...existing,
+          width: undefined,
+          widthDesktop: { value, unit: 'fraction' },
+          widthTablet: undefined,
+          widthMobile: undefined,
+          blocks: index === widths.length - 1 ? [...(existing.blocks || []), ...extra] : existing.blocks || [],
+        }
+      }),
+    )
   }
 
   const addColumn = () => {
@@ -202,6 +232,21 @@ const SectionLayoutFields: React.FC<{
           {device === 'tablet' ? 'desktop' : 'tablet (or desktop, if tablet is also unset)'}.  
         </p>
       )}
+
+      <div className="ve-col-presets" role="group" aria-label="Column presets">
+        {COLUMN_PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            className="ve-btn ve-btn--ghost"
+            disabled={!canEditLayout}
+            onClick={() => applyPreset(preset.widths)}
+            title={`Use ${preset.label} columns`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
 
       {columns.length === 0 && <p className="ve-panel__empty">No columns yet - add one below.</p>}
 
@@ -345,6 +390,10 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
   )
 
   switch (field.type) {
+    case 'formOptions':
+      return <FormOptionsInput label={field.label} value={value} onChange={onChange} />
+    case 'formLogic':
+      return <FormLogicInput value={value} onChange={onChange} />
     case 'text':
       return (
         <label className={`ve-field ${widthClass}`}>
@@ -502,7 +551,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
     case 'relationship': {
       // page-templates is a single-select (a loop has one card design); other
       // relationships on the canvas are multi-select lists.
-      const single = field.relationTo === 'page-templates'
+      const single = field.relationTo === 'page-templates' || field.relationTo === 'data-views'
 
       if (single) {
         const current = typeof value === 'number' ? value : (value as { id?: number })?.id

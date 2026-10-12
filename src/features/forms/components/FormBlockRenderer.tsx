@@ -2,8 +2,9 @@ import React from 'react'
 
 import type { FormDoc } from '../types'
 
+import { isPublished } from '../layout'
 import { formsEnabled, getFormSettings, resolveForForm, toPublicConfig } from '../settings'
-import { FORMS_SLUG } from '../slugs'
+import { loadForm } from '../server'
 import { FormRenderer } from './FormRenderer'
 
 /**
@@ -41,11 +42,11 @@ export async function FormBlockRenderer({
   const doc =
     typeof form === 'object'
       ? (form as FormDoc)
-      : ((await engine
-          .findByID({ collection: FORMS_SLUG, id: form as number, depth: 0 })
-          .catch((): null => null)) as FormDoc | null)
+      : await loadForm(engine as never, form as number | string)
 
   if (!doc?.id) return null
+  // A draft is never shown to visitors; a form made before the builder has no status and counts as live.
+  if (!isPublished(doc)) return null
 
   const resolved = resolveForForm(doc, await getFormSettings(engine))
   const config = toPublicConfig(doc, resolved)

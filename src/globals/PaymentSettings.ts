@@ -1,4 +1,4 @@
-import type { GlobalConfig } from '@/engine'
+import type { Field, GlobalConfig } from '@/engine'
 
 import { adminOnlyFieldAccess, isAdmin } from '../access/ecommerceAccess'
 import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
@@ -17,6 +17,22 @@ import { decryptSecretHook, encryptSecretHook } from '../utilities/secretField'
  * holding them can move money, so they are encrypted at rest and readable only
  * by admins. Rotate them at the gateway if the database is ever exposed.
  */
+const bnplGroup = (name: 'afterpay' | 'klarna', label: string, description: string, link: string): Field => ({
+  type: 'group',
+  name,
+  label,
+  admin: { description: `${description} Dashboard: ${link}` },
+  fields: [
+    { name: 'enabled', type: 'checkbox', defaultValue: false, admin: { description: `Offer ${label} at checkout, when the order fits the rules below.` } },
+    { name: 'minOrder', type: 'number', min: 0, admin: { description: 'Smallest order (in dollars) that can use this method. 0 for no minimum. Left blank, the provider\'s own minimum is used.' } },
+    { name: 'maxOrder', type: 'number', min: 0, admin: { description: 'Largest order (in dollars) that can use this method. 0 for no maximum. Left blank, the provider\'s own maximum is used.' } },
+    { name: 'countries', type: 'text', admin: { description: 'Countries it is offered in, as two-letter codes separated by commas, for example AU, NZ. Matches the shipping country. Blank uses the provider\'s list.' } },
+    { name: 'currencies', type: 'text', admin: { description: 'Currencies it is offered in, for example AUD, NZD. Blank uses the provider\'s list.' } },
+    { name: 'showMessaging', type: 'checkbox', defaultValue: true, admin: { description: 'Show "or 4 payments of $25.00 with ..." on product pages and the cart.' } },
+    { name: 'instalments', type: 'number', min: 2, max: 12, defaultValue: 4, admin: { description: 'Number of payments quoted in the message. Afterpay is always 4.' } },
+  ],
+})
+
 export const PaymentSettings: GlobalConfig = {
   slug: 'payment-settings',
   label: 'Payments',
@@ -160,6 +176,18 @@ export const PaymentSettings: GlobalConfig = {
         },
       ],
     },
+    bnplGroup('afterpay', 'Afterpay / Clearpay', 'Customers split the cost into 4 interest-free payments and you are paid up front. Works through Stripe: turn on Afterpay / Clearpay under Settings > Payment methods in your Stripe dashboard first.', 'https://dashboard.stripe.com/settings/payment_methods'),
+    bnplGroup('klarna', 'Klarna', 'Pay later and pay in instalments. Works through Stripe: turn on Klarna under Settings > Payment methods in your Stripe dashboard first.', 'https://dashboard.stripe.com/settings/payment_methods'),
+    {
+      type: 'group',
+      name: 'wallets',
+      label: 'Apple Pay and Google Pay',
+      admin: { description: 'One-tap wallet payments. They run through Stripe\'s card payments, so they need Stripe switched on above, a domain verified for Apple Pay in your Stripe dashboard (Settings > Payment methods > Apple Pay), and a secure (https) site.' },
+      fields: [
+        { name: 'applePay', type: 'checkbox', defaultValue: true, admin: { description: 'Show Apple Pay to customers on Safari and iPhone when Stripe cards are on.' } },
+        { name: 'googlePay', type: 'checkbox', defaultValue: true, admin: { description: 'Show Google Pay to customers on Chrome and Android when Stripe cards are on.' } },
+      ],
+    },
     {
       type: 'group',
       name: 'general',
@@ -173,7 +201,7 @@ export const PaymentSettings: GlobalConfig = {
               name: 'currency',
               type: 'select',
               defaultValue: 'AUD',
-              admin: { width: '33%', description: 'The currency prices are charged in.' },
+              admin: { width: '33%', hidden: true, description: 'Set in Shop settings > General.' },
               options: [
                 { label: 'Australian dollar (AUD)', value: 'AUD' },
                 { label: 'US dollar (USD)', value: 'USD' },

@@ -53,6 +53,7 @@ export const OrderRefunds: CollectionConfig = {
       options: [
         { label: 'Automatic (card refund if paid by card)', value: 'auto' },
         { label: 'Manual (record only)', value: 'manual' },
+        { label: 'To store credit (customer account balance)', value: 'store-credit' },
       ],
       admin: { description: 'Manual records the refund without moving money - use it when you refunded outside the shop.' },
     },

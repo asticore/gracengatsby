@@ -17,12 +17,13 @@ export const productTypeField: Field = {
   name: 'productType',
   type: 'select',
   defaultValue: 'simple',
-  admin: { description: 'Simple: one price. Variable: options such as size or colour, each with its own price and stock. Grouped: a set of related products. External: sold on another site.' },
+  admin: { description: 'Simple: one price. Variable: options such as size or colour, each with its own price and stock. Grouped: a set of related products. External: sold on another site. Gift card: the buyer chooses an amount and the card is emailed to the recipient (set amounts in Shop settings > Gift cards).' },
   options: [
     { label: 'Simple product', value: 'simple' },
     { label: 'Variable product', value: 'variable' },
     { label: 'Grouped product', value: 'grouped' },
     { label: 'External / affiliate product', value: 'external' },
+    { label: 'Gift card', value: 'giftcard' },
   ],
 }
 

@@ -1,3 +1,5 @@
+import { FORM_ELEMENTS } from '@/features/forms/elementDefs'
+
 import type { EditorField } from './fieldTypes'
 
 /**
@@ -13,7 +15,7 @@ import type { EditorField } from './fieldTypes'
  * flag any element that reads better under a different category once more of
  * them exist.
  */
-export type ElementCategory = 'text' | 'media' | 'interactive' | 'marketing' | 'layout' | 'commerce' | 'siteMeta'
+export type ElementCategory = 'text' | 'media' | 'interactive' | 'marketing' | 'layout' | 'commerce' | 'siteMeta' | 'formFields'
 
 export const ELEMENT_CATEGORIES: { key: ElementCategory; label: string }[] = [
   { key: 'text', label: 'Text' },
@@ -23,6 +25,7 @@ export const ELEMENT_CATEGORIES: { key: ElementCategory; label: string }[] = [
   { key: 'layout', label: 'Layout' },
   { key: 'commerce', label: 'Shop' },
   { key: 'siteMeta', label: 'Site' },
+  { key: 'formFields', label: 'Form fields' },
 ]
 
 export type ElementDef = {
@@ -94,6 +97,19 @@ ELEMENTS.push({
   ],
   defaultProps: () => ({ placement: '' }),
 })
+
+ELEMENTS.push({
+  type: 'data-view',
+  label: 'Table or chart',
+  icon: '📊',
+  category: 'interactive',
+  description: 'A saved table or chart from Content > Tables and charts. It shows the live data on the page and a preview here.',
+  fields: [{ name: 'view', label: 'Table or chart', type: 'relationship', relationTo: 'data-views', helpText: 'Pick one you built under Content > Tables and charts.' }],
+  defaultProps: () => ({ view: undefined }),
+})
+// Form-builder elements (form fields, steps, the Form placement, Button). Kept in the forms feature so
+// this file only gains one registration.
+ELEMENTS.push(...FORM_ELEMENTS)
 
 export function getElementDef(type: string): ElementDef | undefined {
   return ELEMENTS.find((e) => e.type === type)

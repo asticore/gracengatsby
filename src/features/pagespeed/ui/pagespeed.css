@@ -1,0 +1,238 @@
+/*
+ * PageSpeed card on the edit screen and the PageSpeed column in list views. Classes are prefixed `ps-`.
+ * Dark theme is keyed on [data-theme='dark'] only, never on the OS preference.
+ */
+
+:root {
+  --ps-good: #15803d;
+  --ps-good-bg: #dcfce7;
+  --ps-mid: #b45309;
+  --ps-mid-bg: #fef3c7;
+  --ps-poor: #b91c1c;
+  --ps-poor-bg: #fee2e2;
+  --ps-muted: var(--theme-elevation-600, #71717a);
+  --ps-line: var(--theme-elevation-150, #e4e4e7);
+  --ps-track: var(--theme-elevation-100, #e4e4e7);
+}
+
+[data-theme='dark'] {
+  --ps-good: #4ade80;
+  --ps-good-bg: #14532d;
+  --ps-mid: #fbbf24;
+  --ps-mid-bg: #451a03;
+  --ps-poor: #f87171;
+  --ps-poor-bg: #450a0a;
+  --ps-muted: #a1a1aa;
+  --ps-line: #3f3f46;
+  --ps-track: #3f3f46;
+}
+
+.ps-band--good { --ps-color: var(--ps-good); --ps-bg: var(--ps-good-bg); }
+.ps-band--needs-work { --ps-color: var(--ps-mid); --ps-bg: var(--ps-mid-bg); }
+.ps-band--poor { --ps-color: var(--ps-poor); --ps-bg: var(--ps-poor-bg); }
+.ps-band--none { --ps-color: var(--ps-muted); --ps-bg: transparent; }
+
+/* List column badge */
+.ps-badge {
+  display: inline-block;
+  min-width: 2.25em;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--ps-bg);
+  color: var(--ps-color);
+  font-weight: 600;
+  text-align: center;
+}
+
+.ps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ps__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ps__tabs {
+  display: inline-flex;
+  border: 1px solid var(--ps-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ps__tab {
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ps__tab[aria-pressed='true'] {
+  background: var(--theme-elevation-100, #e4e4e7);
+  font-weight: 600;
+}
+
+[data-theme='dark'] .ps__tab[aria-pressed='true'] {
+  background: #3f3f46;
+}
+
+.ps__muted {
+  color: var(--ps-muted);
+  font-size: 0.875em;
+}
+
+.ps__error {
+  margin: 0;
+  color: var(--ps-poor);
+}
+
+.ps__rings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 12px;
+}
+
+.ps-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.ps-ring__svg {
+  width: 72px;
+  height: 72px;
+}
+
+.ps-ring__track {
+  fill: none;
+  stroke: var(--ps-track);
+  stroke-width: 6;
+}
+
+.ps-ring__value {
+  fill: none;
+  stroke: var(--ps-color);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.ps-ring__text {
+  fill: var(--ps-color);
+  font-size: 22px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.ps-ring__label {
+  font-size: 0.8125em;
+  cursor: help;
+}
+
+.ps-delta {
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.ps-delta--up { color: var(--ps-good); }
+.ps-delta--down { color: var(--ps-poor); }
+.ps-delta--same { color: var(--ps-muted); }
+
+.ps__h {
+  margin: 0 0 6px;
+  font-size: 0.9375em;
+  font-weight: 600;
+}
+
+.ps__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ps__table th,
+.ps__table td {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--ps-line);
+  text-align: left;
+  font-weight: normal;
+  vertical-align: top;
+}
+
+.ps__table td:last-child,
+.ps__table th:last-child {
+  text-align: right;
+}
+
+.ps__tip {
+  cursor: help;
+  border-bottom: 1px dotted var(--ps-muted);
+}
+
+.ps-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--ps-color);
+}
+
+.ps__value {
+  color: var(--ps-color);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ps__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ps__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--ps-line);
+}
+
+.ps__saving {
+  flex: none;
+  color: var(--ps-muted);
+  white-space: nowrap;
+}
+
+.ps-chart {
+  width: 100%;
+  height: 90px;
+}
+
+.ps-chart__grid {
+  stroke: var(--ps-line);
+  stroke-width: 1;
+}
+
+.ps-chart__line {
+  fill: none;
+  stroke: var(--ps-muted);
+  stroke-width: 2;
+}
+
+.ps-chart__dot {
+  fill: var(--ps-color);
+}
+
+.ps__help {
+  margin: 0;
+}

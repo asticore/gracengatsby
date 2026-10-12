@@ -6,7 +6,7 @@ import { useDocumentInfo } from '@/engine/ui'
 
 type Note = { id: string; type: 'internal' | 'customer'; text: string; author: string; createdAt: string }
 type Refund = { id: number; amount: number; reason?: string; method?: string; createdAt: string; providerRefundId?: string }
-type RefundInfo = { refunds: Refund[]; amount: number; refundedTotal: number; status?: string; lineItems: { name?: string; quantity?: number }[]; canCardRefund: boolean }
+type RefundInfo = { refunds: Refund[]; amount: number; refundedTotal: number; status?: string; lineItems: { name?: string; quantity?: number }[]; canCardRefund: boolean; canStoreCredit?: boolean }
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
 const box: React.CSSProperties = { border: '1px solid var(--theme-elevation-150, #ddd)', padding: 12, marginBottom: 12 }
@@ -81,6 +81,7 @@ export function OrderRefundsPanel() {
   const [reason, setReason] = useState('')
   const [restock, setRestock] = useState(false)
   const [manual, setManual] = useState(false)
+  const [toCredit, setToCredit] = useState(false)
   const [lineQty, setLineQty] = useState<Record<number, number>>({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -98,11 +99,11 @@ export function OrderRefundsPanel() {
   const left = info ? Math.max(0, info.amount - info.refundedTotal) : 0
   const submit = async (full: boolean) => {
     const cents = full ? left : Math.round(Number(amount) * 100)
-    if (!window.confirm(`Refund ${money(cents)}${manual ? ' (record only)' : ''}? This cannot be undone.`)) return
+    if (!window.confirm(`Refund ${money(cents)}${toCredit ? ' to store credit' : manual ? ' (record only)' : ''}? This cannot be undone.`)) return
     setBusy(true); setError('')
     try {
       const items = Object.entries(lineQty).filter(([, q]) => q > 0).map(([index, quantity]) => ({ index: Number(index), quantity }))
-      await call(`/api/admin-order-refund/${id}`, { method: 'POST', body: JSON.stringify({ amountCents: cents, reason, restock, manual: manual || !info?.canCardRefund, items }) })
+      await call(`/api/admin-order-refund/${id}`, { method: 'POST', body: JSON.stringify({ amountCents: cents, reason, restock, manual: !toCredit && (manual || !info?.canCardRefund), toStoreCredit: toCredit, items }) })
       setAmount(''); setReason(''); setLineQty({}); await load()
       window.location.reload()
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed.') } finally { setBusy(false) }
@@ -129,6 +130,9 @@ export function OrderRefundsPanel() {
               )}
               <label style={{ display: 'block', marginTop: 8 }}><input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock refunded items</label>
               <label style={{ display: 'block' }}><input type="checkbox" checked={manual || !info.canCardRefund} disabled={!info.canCardRefund} onChange={(e) => setManual(e.target.checked)} /> Manual refund (record only, no card refund)</label>
+              {info.canStoreCredit && (
+                <label style={{ display: 'block' }}><input type="checkbox" checked={toCredit} onChange={(e) => setToCredit(e.target.checked)} /> Refund to the customer&apos;s store credit instead of the card</label>
+              )}
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button type="button" className="btn btn--style-secondary" disabled={busy || !(Number(amount) > 0)} onClick={() => submit(false)}>Refund amount</button>
                 <button type="button" className="btn btn--style-secondary" disabled={busy} onClick={() => submit(true)}>Refund everything left</button>
@@ -149,6 +153,69 @@ export function OrderInvoicePanel() {
     <div className="field-type" style={{ marginBottom: 24, display: 'flex', gap: 8 }}>
       <a className="btn btn--style-secondary" href={`/api/admin-order-invoice/${id}`} target="_blank" rel="noopener">View / print invoice</a>
       <a className="btn btn--style-secondary" href={`/api/admin-order-packing-slip/${id}`} target="_blank" rel="noopener">View / print packing slip</a>
+    </div>
+  )
+}
+
+type LabelInfo = {
+  carriers: { id: string; label: string; labels: boolean }[]
+  chosen: { carrier: string; serviceCode: string } | null
+  shipments: { id?: string; carrier?: string; service?: string; trackingNumber?: string; labelUrl?: string; manifestId?: string | number | null }[]
+}
+
+export function OrderShippingPanel() {
+  const id = useOrderId()
+  const [info, setInfo] = useState<LabelInfo | null>(null)
+  const [carrier, setCarrier] = useState('')
+  const [service, setService] = useState('')
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!id) return
+    call<LabelInfo>(`/api/admin-order-label/${id}`)
+      .then((r) => {
+        setInfo(r)
+        setCarrier(r.chosen?.carrier ?? r.carriers[0]?.id ?? '')
+        setService(r.chosen?.serviceCode ?? '')
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : 'Could not load shipping.'))
+  }, [id])
+  if (!id) return <p>Save the order first.</p>
+  const buy = async () => {
+    setBusy(true); setError(''); setNotice('')
+    try {
+      const r = await call<{ emailed: boolean }>(`/api/admin-order-label/${id}`, { method: 'POST', body: JSON.stringify({ carrier, serviceCode: service }) })
+      setNotice(r.emailed ? 'Label bought. The customer was emailed their tracking number.' : 'Label bought.')
+      window.location.reload()
+    } catch (e) { setError(e instanceof Error ? e.message : 'Failed.') } finally { setBusy(false) }
+  }
+  return (
+    <div className="field-type" style={{ marginBottom: 24 }}>
+      {info?.shipments.map((s, i) => (
+        <div key={s.id ?? i} style={box}>
+          {s.carrier} {s.service ? `- ${s.service}` : ''} - <strong>{s.trackingNumber}</strong>
+          {s.labelUrl ? <> - <a href={s.labelUrl} target="_blank" rel="noopener noreferrer">Open label</a></> : null}
+          {s.manifestId ? ' - on a manifest' : ''}
+        </div>
+      ))}
+      {info && info.carriers.length === 0 && <p>No carrier is switched on. Add one in Shop settings &gt; Shipping, or type the tracking number into the fields beside this order.</p>}
+      {info && info.carriers.length > 0 && (
+        <div style={box}>
+          <label>Carrier{' '}
+            <select value={carrier} onChange={(e) => setCarrier(e.target.value)}>
+              {info.carriers.map((c) => <option key={c.id} value={c.id}>{c.label}{c.labels ? '' : ' (labels not built in)'}</option>)}
+            </select>
+          </label>{' '}
+          <label>Service code <input type="text" value={service} onChange={(e) => setService(e.target.value)} placeholder="from the carrier" /></label>
+          <div style={{ marginTop: 8 }}>
+            <button type="button" className="btn btn--style-secondary" disabled={busy || !carrier || !service} onClick={buy}>Buy label</button>
+          </div>
+          {info.chosen && <p style={{ marginTop: 8 }}>The customer chose {info.chosen.carrier} / {info.chosen.serviceCode} at checkout.</p>}
+        </div>
+      )}
+      {notice && <p role="status">{notice}</p>}
+      {error && <p role="alert" style={{ color: 'var(--theme-error-500, #b00)' }}>{error}</p>}
     </div>
   )
 }

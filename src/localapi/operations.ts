@@ -64,6 +64,8 @@ import { runCollectionHooks, runFieldHooks } from './hooks'
 
 import { hashPassword } from './auth'
 
+import { noteDocumentChanged } from '@/features/dataViews/cache'
+
 export { Forbidden } from './access'
 
 /* -------------------------------------------------------------------------- */
@@ -795,6 +797,7 @@ export async function createDocument<TDoc extends { id: number }>(args: CreateDo
   } catch (error) {
     throw uniqueConstraintErrorToValidationError(error) ?? error
   }
+  noteDocumentChanged(collection.slug)
 
   // afterRead - Fields (BEFORE afterChange)
   const resultDoc: Record<string, unknown> = { ...created }
@@ -905,6 +908,7 @@ export async function updateDocument<TDoc extends { id: number }>(args: UpdateDo
     throw uniqueConstraintErrorToValidationError(error) ?? error
   }
   if (!updated) throw new NotFound()
+  noteDocumentChanged(collection.slug)
 
   // afterRead - Fields (BEFORE afterChange)
   const resultDoc: Record<string, unknown> = { ...updated }
@@ -954,6 +958,7 @@ export async function deleteDocument<TDoc extends { id: number }>(args: DeleteDo
 
   const deleted = await db.deleteByID(id)
   if (!deleted) throw new NotFound()
+  noteDocumentChanged(collection.slug)
 
   // afterRead - Fields (BEFORE afterDelete) - on the pre-deletion snapshot.
   const resultDoc: Record<string, unknown> = { ...docRecord }
@@ -1060,3 +1065,4 @@ export async function updateGlobalDocument<TDoc>(args: UpdateGlobalDocumentArgs<
 
   return finalDoc
 }
+

@@ -205,6 +205,43 @@ export const SpeedSettings: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'pagespeed',
+      label: 'PageSpeed tests',
+      admin: {
+        description:
+          'Scores from Google PageSpeed Insights are measured on the live page from the edit screen (PageSpeed card). Results vary a little from run to run, and Google limits how many tests can run.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'testAfterPublish',
+              type: 'checkbox',
+              defaultValue: false,
+              admin: {
+                width: '50%',
+                description:
+                  'Run a mobile test about 5 minutes after a page, post, product or event is published, so the score in the list stays current. Off by default. Uses part of your Google allowance.',
+              },
+            },
+            {
+              name: 'dailyCap',
+              type: 'number',
+              defaultValue: 20,
+              min: 1,
+              max: 200,
+              admin: {
+                width: '50%',
+                description: 'Most automatic tests per day (UTC). Tests you start yourself are not counted. Without a Google API key keep this low.',
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'advanced',
       label: 'Advanced',
       admin: {

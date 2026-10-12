@@ -1,0 +1,184 @@
+/* Tab bar at the top of the Forms, Events and A/B tests list pages.
+   Classes are prefixed lst-. Light is the default; dark applies only under
+   [data-theme='dark']. */
+
+.lst-tablist {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 16px 0;
+  border-bottom: 2px solid #d0d0d0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.lst-tablist::-webkit-scrollbar {
+  display: none;
+}
+
+.lst-tab {
+  flex: 0 0 auto;
+  margin: 0 0 -2px 0;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: #f2f2f2;
+  color: #444;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lst-tab:hover {
+  background: #e8e8e8;
+  color: #111;
+}
+
+.lst-tab:focus-visible {
+  outline: 2px solid #3b6fd4;
+  outline-offset: 2px;
+}
+
+.lst-tab--active {
+  background: #fff;
+  color: #111;
+  border-color: #d0d0d0;
+  border-bottom-color: #b8860b;
+}
+
+.lst-tab--disabled {
+  color: #777;
+  font-weight: 500;
+  cursor: help;
+}
+
+.lst-tab__lock {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.lst-panel {
+  min-width: 0;
+}
+
+.lst-denied {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #b58900;
+  background: #fbf7e8;
+  color: #1a1a1a;
+}
+
+.lst-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 0 0 12px 0;
+}
+
+.lst-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #555;
+}
+
+.lst-filter input,
+.lst-filter select {
+  min-width: 150px;
+  padding: 6px 8px;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 13px;
+}
+
+.lst-overview-note {
+  margin: 0 0 12px 0;
+  color: #555;
+  font-size: 13px;
+}
+
+.lst-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid #c8c8c8;
+  border-radius: 10px;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.lst-pill--win {
+  border-color: #2e7d32;
+  color: #2e7d32;
+}
+
+@media (max-width: 640px) {
+  .lst-tab {
+    padding: 9px 14px;
+  }
+
+  .lst-filter input,
+  .lst-filter select {
+    min-width: 120px;
+  }
+}
+
+[data-theme='dark'] .lst-tablist {
+  border-bottom-color: #444;
+}
+
+[data-theme='dark'] .lst-tab {
+  background: #262626;
+  color: #c8c8c8;
+}
+
+[data-theme='dark'] .lst-tab:hover {
+  background: #303030;
+  color: #fff;
+}
+
+[data-theme='dark'] .lst-tab--active {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #444;
+  border-bottom-color: #d4a537;
+}
+
+[data-theme='dark'] .lst-tab--disabled {
+  color: #8a8a8a;
+}
+
+[data-theme='dark'] .lst-denied {
+  background: #2e2a18;
+  color: #eee;
+}
+
+[data-theme='dark'] .lst-filter {
+  color: #aaa;
+}
+
+[data-theme='dark'] .lst-filter input,
+[data-theme='dark'] .lst-filter select {
+  background: #232323;
+  border-color: #4a4a4a;
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] .lst-overview-note {
+  color: #aaa;
+}
+
+[data-theme='dark'] .lst-pill {
+  border-color: #555;
+}
+
+[data-theme='dark'] .lst-pill--win {
+  border-color: #6fbf73;
+  color: #6fbf73;
+}

@@ -1,14 +1,20 @@
-import type { FormDoc, SubmissionValues } from './types'
+import type { FormDoc, FormFieldDef, SubmissionValues } from './types'
 
 import { clientKey, getSecuritySettings, hit, limitFor } from '@/features/security'
+import { resolveUploadPolicy } from '@/features/media/fileTypes'
 
+import { normaliseFormConfig } from './config'
 import { sanitiseValues } from './conditions'
+import { isPublished, withResolvedFields } from './layout'
 import { summarise, sendSubmissionEmails } from './notify'
 import { buildCheckoutHandoff, priceSubmission, type CheckoutHandoff } from './pricing'
 import { formsEnabled, getFormSettings, resolveForForm } from './settings'
+import { loadForm } from './server'
 import { FORMS_SLUG, SUBMISSIONS_SLUG, type CreateArgs, type UpdateArgs } from './slugs'
-import { checkFillTime, checkHoneypot, checkTurnstile } from './spam'
-import { PRESENTATIONAL_TYPES } from './types'
+import { checkCaptcha, checkFillTime, checkHoneypot } from './spam'
+import { inspectFiles, storeFiles, getUploadBucket, type PendingFile, type StoredFile } from './upload'
+import { validateSubmission } from './validate'
+import { buildPayload, deliver, summariseAttempts, type WebhookAttempt } from './webhooks'
 
 /**
  * Everything that happens between a visitor pressing send and the entry
@@ -18,14 +24,17 @@ import { PRESENTATIONAL_TYPES } from './types'
  * The order matters and is deliberate:
  *
  *   1. feature flag        - nothing at all when Forms is off
- *   2. rate limit          - before any database read, so a flood is cheap
- *   3. load the form       - the only source of truth for what is allowed
- *   4. spam filters        - before validation, so a bot never sees a hint
- *   5. sanitise            - drop hidden fields, recompute calculations
- *   6. validate            - required fields, but only the ones still visible
+ *   2. load the form       - the only source of truth for what is allowed
+ *   3. spam filters        - before validation, so a bot never sees a hint
+ *   4. sanitise            - drop hidden fields, recompute calculations
+ *   5. validate            - every field type, but only the ones still visible
+ *   6. inspect files       - type and size against the allow-list, from the bytes
  *   7. price               - from the sanitised values, never from the request
- *   8. store               - with overrideAccess, having earned it above
- *   9. notify              - last, because it can fail without costing the entry
+ *   8. store the files     - to R2, only once the answers are known to be good
+ *   9. store the entry     - with overrideAccess, having earned it above
+ *  10. notify + webhooks   - last, because they can fail without costing the entry
+ *
+ * (The caller has already checked the origin and the rate limit.)
  *
  * The engine is passed in rather than imported: see the note in settings.ts on
  * why nothing in this feature may reach for `@/lib/engine`.
@@ -34,6 +43,7 @@ import { PRESENTATIONAL_TYPES } from './types'
 /** The engine surface a submission needs. `req.engine` satisfies it. */
 export type SubmitEngine = {
   findByID: (args: Record<string, unknown>) => Promise<unknown>
+  find: (args: Record<string, unknown>) => Promise<{ docs: unknown[] }>
   create: (args: CreateArgs) => Promise<{ id?: number | string }>
   update: (args: UpdateArgs) => Promise<unknown>
   findGlobal: (args: { slug: string; depth?: number }) => Promise<Record<string, unknown>>
@@ -53,61 +63,44 @@ export type SubmitOutcome = {
 }
 
 export type SubmitInput = {
+  /** Numeric id or embed key. Ignored when `form` is given. */
   formID: string | number
+  /** The form, when the caller already loaded it. */
+  form?: FormDoc | null
   values: SubmissionValues
+  /** Files by field name, already read from a multipart body. */
+  files?: Record<string, PendingFile[]>
   honeypot?: unknown
   renderedAt?: unknown
   turnstileToken?: unknown
+  recaptchaToken?: unknown
   ip?: string
   userAgent?: string
+  /** Where the form was sent from: the embedding site's origin or the page URL. */
+  sourceUrl?: string
+  now?: Date
+  /** Test seam: replaces the R2 binding. */
+  bucket?: Parameters<typeof storeFiles>[0]
+  /** Test seam: replaces fetch for webhooks and captcha. */
+  fetcher?: typeof fetch
 }
 
 const GENERIC_REJECTION = 'Your message could not be sent. Please try again.'
 
-const isBlank = (value: unknown): boolean => {
-  if (value === null || value === undefined) return true
-  if (Array.isArray(value)) return value.length === 0
-  if (typeof value === 'boolean') return value === false
-  return String(value).trim() === ''
-}
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-/** Required-field and format checks, over the fields that survived the logic. */
-function validate(form: FormDoc, values: SubmissionValues, visible: Set<string>): Record<string, string> {
-  const errors: Record<string, string> = {}
-
-  for (const field of form.fields || []) {
-    if (!field?.name || PRESENTATIONAL_TYPES.includes(field.type)) continue
-    if (field.type === 'calculation') continue
-    if (!visible.has(field.name)) continue
-
-    const value = values[field.name]
-
-    if (field.required && isBlank(value)) {
-      errors[field.name] = `${field.label || field.name} is required.`
-      continue
-    }
-
-    if (isBlank(value)) continue
-
-    if (field.type === 'email' && !EMAIL_PATTERN.test(String(value).trim())) {
-      errors[field.name] = 'That does not look like an email address.'
-    }
-
-    if (field.type === 'number') {
-      const parsed = Number(String(value).replace(/[^0-9.+-]/g, ''))
-      if (!Number.isFinite(parsed)) {
-        errors[field.name] = 'Please enter a number.'
-      } else if (typeof field.min === 'number' && parsed < field.min) {
-        errors[field.name] = `Must be ${field.min} or more.`
-      } else if (typeof field.max === 'number' && parsed > field.max) {
-        errors[field.name] = `Must be ${field.max} or less.`
-      }
-    }
+/** Marks the consent answers, with the time, as the record of what was agreed. */
+function consentRecord(fields: FormFieldDef[], values: SubmissionValues, at: string): Record<string, unknown>[] {
+  const records: Record<string, unknown>[] = []
+  for (const field of fields) {
+    if (field.type !== 'consent' || !field.name) continue
+    if (values[field.name] !== true) continue
+    records.push({
+      field: field.name,
+      text: (field.label || '').slice(0, 500),
+      link: field.consentLink || undefined,
+      at,
+    })
   }
-
-  return errors
+  return records
 }
 
 export async function handleSubmission(engine: SubmitEngine, input: SubmitInput): Promise<SubmitOutcome> {
@@ -117,13 +110,14 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
     return { ok: false, status: 404, message: 'Not found' }
   }
 
-  const form = (await engine
-    .findByID({ collection: FORMS_SLUG, id: input.formID, depth: 0 })
-    .catch((): null => null)) as FormDoc | null
+  const rawForm = input.form ?? (await loadForm(engine, input.formID))
+  // A draft form does not exist as far as the public is concerned.
+  if (!rawForm || !isPublished(rawForm)) return { ok: false, status: 404, message: 'Not found' }
 
-  if (!form) return { ok: false, status: 404, message: 'Not found' }
-
+  const form = withResolvedFields(rawForm)
+  const config = normaliseFormConfig(form.formConfig)
   const settings = resolveForForm(form, await getFormSettings(engine))
+  const now = input.now || new Date()
 
   const honeypot = checkHoneypot(input.honeypot, settings.honeypot)
   if (honeypot.spam) {
@@ -133,35 +127,66 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
     return { ok: true, status: 200, message: settings.successMessage }
   }
 
-  const fillTime = checkFillTime(input.renderedAt, settings.minimumFillTimeSeconds)
+  const fillTime = checkFillTime(input.renderedAt, settings.minimumFillTimeSeconds, now.getTime())
   if (fillTime.spam) {
-    engine.logger.info(
-      { form: form.id, reason: fillTime.reason, detail: fillTime.detail },
-      'Form submission discarded as spam',
-    )
+    engine.logger.info({ form: form.id, reason: fillTime.reason, detail: fillTime.detail }, 'Form submission discarded as spam')
     return { ok: true, status: 200, message: settings.successMessage }
   }
 
-  const turnstile = await checkTurnstile(input.turnstileToken, settings, input.ip)
-  if (turnstile.spam) {
+  const captcha = await checkCaptcha({ turnstile: input.turnstileToken, recaptcha: input.recaptchaToken }, settings, input.ip)
+  if (captcha.spam) {
     return { ok: false, status: 400, message: 'Please complete the challenge and try again.' }
   }
-  if (turnstile.reason === 'turnstile-unavailable') {
-    engine.logger.warn(
-      { form: form.id, detail: turnstile.detail },
-      'Turnstile could not be checked - the submission was let through',
-    )
+  if (captcha.reason === 'turnstile-unavailable') {
+    engine.logger.warn({ form: form.id, detail: captcha.detail }, 'The captcha could not be checked - the submission was let through')
   }
 
-  const { values, visible } = sanitiseValues(form.fields || [], input.values || {})
+  const { values: sanitised, visible } = sanitiseValues(form.fields || [], input.values || {})
 
-  const errors = validate(form, values, visible)
+  const { errors, values } = validateSubmission(form.fields || [], sanitised, visible, now)
+
+  // Files: any value the request sent for a file field is dropped - only what
+  // we store from the uploaded bytes may appear in an entry.
+  const fileFields = (form.fields || []).filter((field) => field.type === 'file' && field.name)
+  const toStore: { name: string; files: ReturnType<typeof inspectFiles>['ok'] }[] = []
+  if (fileFields.length > 0) {
+    const sitePolicy = resolveUploadPolicy(await engine.findGlobal({ slug: 'media-settings', depth: 0 }).catch((): null => null))
+    for (const field of fileFields) {
+      delete values[field.name!]
+      if (!visible.has(field.name!)) continue
+      const pending = input.files?.[field.name!] || []
+      if (pending.length === 0) {
+        if (field.required) errors[field.name!] = `${field.label || field.name} is required.`
+        continue
+      }
+      const inspected = inspectFiles(field, pending, sitePolicy)
+      if (inspected.error) errors[field.name!] = inspected.error
+      else toStore.push({ name: field.name!, files: inspected.ok })
+    }
+  }
+
   if (Object.keys(errors).length > 0) {
     return { ok: false, status: 400, message: 'Please check the highlighted fields.', errors }
   }
 
   const pricing = priceSubmission(form, values, visible)
 
+  // Files are only kept when the entry that owns them is kept; otherwise they
+  // would sit in R2 with nothing pointing at them.
+  if (toStore.length > 0 && settings.storeSubmissions) {
+    try {
+      const bucket = input.bucket || (await getUploadBucket())
+      for (const entry of toStore) {
+        values[entry.name] = (await storeFiles(bucket, form.id as string | number, entry.files || [], now)) as StoredFile[]
+      }
+    } catch (error) {
+      engine.logger.error({ err: error, form: form.id }, 'A form attachment could not be stored')
+      return { ok: false, status: 500, message: settings.errorMessage || GENERIC_REJECTION }
+    }
+  }
+
+  const submittedAt = now.toISOString()
+  const consent = consentRecord(form.fields || [], values, submittedAt)
   let submissionID: number | string | undefined
 
   if (settings.storeSubmissions) {
@@ -176,9 +201,12 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
           form: form.id,
           summary: summarise(form, values),
           values,
-          submittedAt: new Date().toISOString(),
+          submittedAt,
           ip: input.ip,
           userAgent: input.userAgent,
+          sourceUrl: input.sourceUrl ? input.sourceUrl.slice(0, 500) : undefined,
+          consent: consent.length ? consent : undefined,
+          status: 'new',
           total: pricing.total || undefined,
           currency: pricing.total ? pricing.currency : undefined,
           lineItems: pricing.lines.length ? pricing.lines : undefined,
@@ -188,32 +216,53 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
       submissionID = created?.id
     } catch (error) {
       engine.logger.error({ err: error, form: form.id }, 'A form entry could not be stored')
+      if (toStore.length > 0) {
+        const { deleteEntryFiles } = await import('./maintenance')
+        await deleteEntryFiles(values, input.bucket as unknown as Parameters<typeof deleteEntryFiles>[1]).catch((): number => 0)
+      }
       return { ok: false, status: 500, message: settings.errorMessage || GENERIC_REJECTION }
     }
   }
 
-  const emails = await sendSubmissionEmails(form, values, settings, pricing)
+  const emails = await sendSubmissionEmails(form, values, settings, pricing, { entryId: submissionID, submittedAt })
 
-  if (submissionID && (emails.notification || emails.confirmation)) {
-    const status = [
+  // In parallel so one slow endpoint does not hold the visitor up for the sum
+  // of them all. A failed delivery is recorded and retried by the cron.
+  const settled = await Promise.allSettled(
+    (config.webhooks || [])
+      .filter((hook) => hook.enabled !== false && hook.url)
+      .map((hook) => {
+        const payload = buildPayload(form, form.fields || [], submissionID, values, submittedAt, `${submissionID ?? 'x'}-${hook.id}-1`)
+        return deliver(hook, payload, 1, input.fetcher)
+      }),
+  )
+  const attempts: WebhookAttempt[] = settled.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
+
+  if (submissionID) {
+    const statusParts = [
       emails.notification ? `notification ${emails.notification}` : '',
+      ...(emails.rules || []).map((line) => `rule ${line}`),
       emails.confirmation ? `confirmation ${emails.confirmation}` : '',
-    ]
-      .filter(Boolean)
-      .join('; ')
+    ].filter(Boolean)
 
-    // Best-effort: the entry already exists, and failing the request now would
-    // tell the visitor their message did not arrive when it did.
-    await engine
-      .update({
-        collection: SUBMISSIONS_SLUG,
-        id: submissionID,
-        overrideAccess: true,
-        data: { notificationStatus: status },
-      } as unknown as UpdateArgs)
-      .catch((error: unknown) => {
-        engine.logger.warn({ err: error }, 'Could not record the email status on a form entry')
-      })
+    const webhook = summariseAttempts(attempts)
+    const patch: Record<string, unknown> = {}
+    if (statusParts.length) patch.notificationStatus = statusParts.join('; ').slice(0, 1000)
+    if (attempts.length) {
+      patch.webhookDeliveries = attempts
+      patch.webhookState = webhook.state
+      patch.webhookRetryAt = webhook.retryAt || undefined
+    }
+
+    if (Object.keys(patch).length > 0) {
+      // Best-effort: the entry already exists, and failing the request now would
+      // tell the visitor their message did not arrive when it did.
+      await engine
+        .update({ collection: SUBMISSIONS_SLUG, id: submissionID, overrideAccess: true, data: patch } as unknown as UpdateArgs)
+        .catch((error: unknown) => {
+          engine.logger.warn({ err: error }, 'Could not record the delivery status on a form entry')
+        })
+    }
   }
 
   return {
@@ -221,10 +270,13 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
     status: 200,
     message: settings.successMessage,
     submissionID,
-    redirectUrl: form.settings?.redirectUrl || undefined,
+    redirectUrl: (config.success?.mode === 'redirect' && config.success.redirectUrl) || form.settings?.redirectUrl || undefined,
     checkout: form.payment?.purchasable ? buildCheckoutHandoff(form, pricing, submissionID) : undefined,
   }
 }
+
+/** Per-client, per-form ceiling used when the Security feature has no form limit of its own. */
+export const FALLBACK_FORM_LIMIT_PER_MINUTE = 30
 
 /**
  * The rate-limit decision for one submission.
@@ -232,18 +284,20 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
  * Uses the Security feature's limiter so forms share the same budget and the
  * same caveats as everything else - read the note at the top of rateLimit.ts
  * before trusting the number. Keyed per form as well as per client so a busy
- * newsletter signup cannot exhaust the allowance for the contact form.
+ * newsletter signup cannot exhaust the allowance for the contact form. When
+ * the Security feature is off (or has no form limit) a fallback still applies:
+ * an embeddable endpoint must never be completely unmetered.
  */
 export async function rateLimitSubmission(
   engine: SubmitEngine,
   request: Request,
   formID: string | number,
 ): Promise<{ limited: boolean; retryAfterSeconds: number }> {
-  const security = await getSecuritySettings(engine)
-  const limit = limitFor(security, 'form')
-
-  if (!limit) return { limited: false, retryAfterSeconds: 0 }
+  const security = await getSecuritySettings(engine as never)
+  const limit = limitFor(security, 'form') ?? FALLBACK_FORM_LIMIT_PER_MINUTE
 
   const decision = hit(`form:${formID}:${clientKey(request)}`, limit)
   return { limited: decision.limited, retryAfterSeconds: decision.retryAfterSeconds }
 }
+
+export { FORMS_SLUG }

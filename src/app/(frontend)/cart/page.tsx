@@ -4,6 +4,7 @@ import { useCart } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React from 'react'
 
+import { PayLaterMessage } from '@/components/PayLaterMessage'
 import { resolveCartLine, type CatalogueProduct } from '@/features/ecommerce/catalogue'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import type { Product } from '@/engage-types'
@@ -80,6 +81,7 @@ export default function CartPage() {
             })}
           </ul>
 
+          <PayLaterMessage amountDollars={typeof cart?.subtotal === 'number' ? cart.subtotal : null} />
           <div className="flex items-center justify-between">
             <p>
               Subtotal: <strong>{formatPriceInAUD(cart?.subtotal)}</strong>

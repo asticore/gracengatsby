@@ -7,7 +7,9 @@ import type { ReactNode } from 'react'
 import { EditForm } from './EditForm'
 import type { DocumentPanelInfo } from './DocumentPanel'
 import { EditTabs } from './EditTabs'
-import { resultsTabFor } from './results/resultsTabs'
+import { bulkPermissions, isBulkCollection } from '@/features/editScreens/authors'
+import { actionRefusal } from '@/features/editScreens/bulk'
+import { resultsTabState } from './results/resultsTabs'
 import { ABResultsTab } from './results/ABResultsTab'
 import { EventResultsTab } from './results/EventResultsTab'
 import { FormResultsTab } from './results/FormResultsTab'
@@ -137,6 +139,11 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
     canDelete: Boolean(canDelete),
     canPreview: id !== undefined && (collectionSlug === 'pages' || collectionSlug === 'posts'),
     canUpdate: Boolean(canUpdate),
+    trashEnabled: isBulkCollection(collectionSlug),
+    trashedAt: typeof docRecord?.trashedAt === 'string' ? docRecord.trashedAt : undefined,
+    canEditSeo: context.isAdmin || context.can('content.editSeo', 'update'),
+    canChangeAuthor: id !== undefined && isBulkCollection(collectionSlug) && actionRefusal('changeAuthor', bulkPermissions(context as never, collectionSlug)) === null,
+    authorId: Number(idOf(docRecord?.createdBy) ?? idOf(docRecord?.author)) || undefined,
     collectionSlug,
     createdAt: typeof docRecord?.createdAt === 'string' ? docRecord.createdAt : undefined,
     createdByName,
@@ -155,12 +162,12 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const pageTypeField = collection.fields.find((f) => f.type === 'select' && 'name' in f && f.name === 'schemaType')
 
   // Existing documents only: a results tab, if the user may read what it shows.
-  const resultsTab = resultsTabFor(collectionSlug, id, {
+  const resultsTab = resultsTabState(collectionSlug, id, {
     isAdmin: context.isAdmin,
     canRead: (slug) => Boolean(context.permissions.collections?.[slug]?.read),
     canUpdate: (slug) => Boolean(context.permissions.collections?.[slug]?.update),
   })
-  const resultsPanel = resultsTab && id !== undefined ? resultsPanelFor(collectionSlug, id, docRecord) : null
+  const resultsPanel = resultsTab?.allowed && id !== undefined ? resultsPanelFor(collectionSlug, id, docRecord) : null
 
   const editForm = (
     <EditForm
@@ -186,8 +193,13 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
         <span>{id === undefined ? 'Create' : docTitle || `#${id}`}</span>
       </nav>
       <h1 className="doc-title">{id === undefined ? `Create ${label}` : docTitle || `Edit ${label}`}</h1>
-      {resultsTab && resultsPanel ? (
-        <EditTabs resultsLabel={resultsTab.label} edit={editForm} results={resultsPanel} />
+      {resultsTab ? (
+        <EditTabs
+          deniedReason={resultsTab.allowed ? undefined : resultsTab.deniedReason}
+          edit={editForm}
+          results={resultsPanel}
+          resultsLabel={resultsTab.label}
+        />
       ) : (
         editForm
       )}

@@ -28,7 +28,7 @@ export const FormSubmissions: CollectionConfig = {
   admin: {
     useAsTitle: 'summary',
     group: 'Content',
-    defaultColumns: ['summary', 'form', 'createdAt', 'paymentStatus'],
+    defaultColumns: ['summary', 'form', 'status', 'assignee', 'createdAt'],
     description:
       'Entries people have sent through your forms. Download them as a spreadsheet from /api/form-submissions/export?form=<id>.',
   },
@@ -39,6 +39,15 @@ export const FormSubmissions: CollectionConfig = {
     update: roleAccess('form-submissions', 'update'),
   },
   endpoints: [exportEndpoint],
+  hooks: {
+    // An entry's attachments live in R2 and must go with it (also when retention deletes it).
+    afterDelete: [
+      async ({ doc }: { doc?: { values?: unknown } }) => {
+        const { deleteEntryFiles } = await import('../maintenance')
+        await deleteEntryFiles(doc?.values)
+      },
+    ],
+  },
   fields: [
     {
       name: 'form',
@@ -120,6 +129,56 @@ export const FormSubmissions: CollectionConfig = {
       name: 'lineItems',
       type: 'json',
       admin: { readOnly: true, description: 'The priced rows this entry produced.' },
+    },
+    {
+      name: 'status',
+      type: 'select',
+      defaultValue: 'new',
+      index: true,
+      options: [
+        { label: 'New', value: 'new' },
+        { label: 'Read', value: 'read' },
+        { label: 'Spam', value: 'spam' },
+        { label: 'Archived', value: 'archived' },
+      ],
+      admin: { position: 'sidebar', description: 'Where this entry is in your inbox.' },
+    },
+    {
+      name: 'assignee',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: { position: 'sidebar', description: 'Who is dealing with this entry.' },
+    },
+    {
+      name: 'notes',
+      type: 'textarea',
+      admin: { description: 'Private notes. Never shown to the visitor.' },
+    },
+    {
+      name: 'sourceUrl',
+      type: 'text',
+      admin: { readOnly: true, description: 'The page the form was sent from, or the website that embeds it.' },
+    },
+    {
+      name: 'consent',
+      type: 'json',
+      admin: { readOnly: true, description: 'Consent given with this entry: the wording, the time and the policy link, kept as the record of consent.' },
+    },
+    {
+      name: 'webhookDeliveries',
+      type: 'json',
+      admin: { readOnly: true, description: 'Every webhook attempt for this entry, newest last.' },
+    },
+    {
+      name: 'webhookState',
+      type: 'text',
+      index: true,
+      admin: { readOnly: true, description: 'none, ok, retry or failed.' },
+    },
+    {
+      name: 'webhookRetryAt',
+      type: 'text',
+      admin: { readOnly: true, description: 'When the next webhook retry is due.' },
     },
     {
       name: 'notificationStatus',

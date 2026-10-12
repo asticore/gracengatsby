@@ -96,10 +96,11 @@ export function resetRateLimiter(): void {
  */
 export function clientKey(request: Request): string {
   const headers = request.headers
+  // The other headers are client-controlled, so they only count outside production.
+  const dev = process.env.NODE_ENV !== 'production'
   const ip =
     headers.get('cf-connecting-ip') ||
-    headers.get('x-real-ip') ||
-    headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    (dev && (headers.get('x-real-ip') || headers.get('x-forwarded-for')?.split(',')[0]?.trim())) ||
     'unknown'
 
   return ip

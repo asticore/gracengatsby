@@ -1,6 +1,7 @@
 import type { StockFields } from '../stock'
 import { rawD1, runChanges, SQL } from './db'
 import { stockAlerts, sendStockAlerts, type StockAlert } from '../stockAlerts'
+import { consumeStoredValue, issueGiftCards } from './storedValue'
 import { sendAdminAttentionEmail, sendAdminNewOrderEmail, sendOrderEmail } from './emails'
 
 type Doc = Record<string, unknown>
@@ -218,6 +219,23 @@ export async function markOrderPaid(engine: Engine, orderId: number, info: { pay
   }
 
   const { oversold } = await takeStock(engine, order, orderId)
+
+  // Gift cards / store credit applied to this order are taken now (a no-op when already taken before payment).
+  try {
+    const sv = await consumeStoredValue(engine, order, 'lenient')
+    if (!sv.ok) {
+      await runChanges(d1, `UPDATE eg_orders SET status = 'on-hold' WHERE id = ?1 AND status = 'processing'`, orderId)
+      await flagAttention(engine, orderId, `Stored value shortfall: ${(sv.shortfallCents / 100).toFixed(2)} of gift card or store credit could not be taken (balance changed since checkout). The order is on hold.`)
+    }
+  } catch (error) {
+    await flagAttention(engine, orderId, `Gift card or store credit could not be applied: ${error instanceof Error ? error.message : 'unknown error'}.`)
+  }
+  // Gift cards bought on this order are created and emailed now.
+  try {
+    await issueGiftCards(engine, order)
+  } catch (error) {
+    await flagAttention(engine, orderId, `Gift cards for this order were not issued: ${error instanceof Error ? error.message : 'unknown error'}. A replayed payment will try again.`)
+  }
 
   // Coupon usage: counted now, atomically, never past the limit.
   try {

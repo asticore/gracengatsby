@@ -4,6 +4,8 @@ import { useCart } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
 
+import { GiftCardForm, type GiftCardConfig } from '@/components/GiftCardForm'
+import { PayLaterMessage } from '@/components/PayLaterMessage'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import type { ProductView, VariationView } from '@/features/ecommerce/storefront'
 
@@ -73,7 +75,7 @@ function AddControl({ productId, variationId, disabled, label = 'Add to cart' }:
   )
 }
 
-export function ProductPurchase({ productId, view, grouped = [] }: { productId: number; view: ProductView; grouped?: GroupedChild[] }) {
+export function ProductPurchase({ productId, view, grouped = [], giftConfig }: { productId: number; view: ProductView; grouped?: GroupedChild[]; giftConfig?: GiftCardConfig }) {
   const [selection, setSelection] = useState<Record<string, string>>({})
 
   const chosen: VariationView | null = useMemo(() => {
@@ -81,6 +83,10 @@ export function ProductPurchase({ productId, view, grouped = [] }: { productId: 
     if (view.options.some((option) => !selection[option.name])) return null
     return view.variations.find((variation) => view.options.every((option) => (variation.attributes[option.name] ?? '').toLowerCase() === selection[option.name].toLowerCase())) ?? null
   }, [selection, view])
+
+  if (view.type === 'giftcard') {
+    return giftConfig ? <GiftCardForm productId={productId} config={giftConfig} /> : <p>Gift cards are not available right now.</p>
+  }
 
   if (view.type === 'external') {
     return (
@@ -163,6 +169,7 @@ export function ProductPurchase({ productId, view, grouped = [] }: { productId: 
   return (
     <div>
       <PriceLine price={view.price} regular={view.regular} onSale={view.onSale} />
+      <PayLaterMessage amountDollars={view.price} />
       <p className="text-[0.9rem]" data-stock={view.stockStatus}>
         {view.stockMessage}
       </p>

@@ -461,8 +461,8 @@ export function parseProductsCsv(text: string): ImportPlan {
       upsellSkus: parseList(cell(row, 'Upsells')),
       groupedSkus: parseList(cell(row, 'Grouped products')),
     }
-    if (product.data.category && !['apparel', 'digital', 'physical'].includes(product.data.category)) {
-      plan.errors.push({ line, message: `Category must be apparel, digital or physical (got "${clip(product.data.category, 30)}").` })
+    if (product.data.category && !['digital', 'physical'].includes(product.data.category)) {
+      plan.errors.push({ line, message: `Category must be digital or physical (got "${clip(product.data.category, 30)}").` })
     }
     if (product.data.externalUrl && !/^https?:\/\//i.test(product.data.externalUrl)) plan.errors.push({ line, message: 'External URL must start with http:// or https://.' })
     if (plan.errors.length > errorsBefore) return

@@ -24,6 +24,7 @@ import { EditLockBanner } from './EditLockBanner'
 import { setCardOpen, useCardOpen } from '@/admin/components/collapseStore'
 import { ReviewActions, ReviewBox, ReviewStatusPill, publishHidden } from '@/features/approval/ui/ReviewPanel'
 import { useReviewState } from '@/features/approval/ui/useReviewState'
+import { AuthorBox } from '@/features/editScreens/admin/AuthorBox'
 
 export type DocumentPanelInfo = {
   collectionSlug: string
@@ -49,6 +50,16 @@ export type DocumentPanelInfo = {
   canUpdate: boolean
   /** Whether a preview link can be generated for this document. */
   canPreview: boolean
+  /** Pages, posts and events: Delete becomes "Move to trash". */
+  trashEnabled?: boolean
+  /** ISO time the document was trashed, when it is in the trash. */
+  trashedAt?: string
+  /** Whether the user may change who the author is (administrator, or can edit other people's work). */
+  canChangeAuthor?: boolean
+  /** The current author's user id (createdBy), for the Author box. */
+  authorId?: number
+  /** Whether the user holds "Edit SEO settings". Without it the SEO card is read-only. */
+  canEditSeo?: boolean
 }
 
 /**
@@ -257,7 +268,7 @@ export const DocumentPanel: React.FC<{
   pageTypeField?: Field
 }> = ({ info, readOnly, pageTypeField }) => {
   const modified = useFormModified()
-  const { busy, duplicate, error, remove, save, savedAt } = useDocumentSave({
+  const { busy, duplicate, error, remove, save, savedAt, setTrashed } = useDocumentSave({
     collectionSlug: info.collectionSlug,
     draftsEnabled: info.draftsEnabled,
     id: info.id,
@@ -347,7 +358,17 @@ export const DocumentPanel: React.FC<{
                   {busy === 'duplicate' ? 'Duplicating…' : 'Duplicate'}
                 </button>
               )}
-              {info.canDelete && (
+              {info.canDelete && info.trashEnabled && !info.trashedAt && (
+                <ConfirmButton
+                  busy={busy === 'trash'}
+                  confirmLabel={busy === 'trash' ? 'Moving…' : `Yes, move this ${info.label.toLowerCase()} to the trash`}
+                  danger
+                  disabled={anyBusy}
+                  label="Move to trash"
+                  onConfirm={() => setTrashed('trash')}
+                />
+              )}
+              {info.canDelete && !info.trashEnabled && (
                 <ConfirmButton
                   busy={busy === 'delete'}
                   confirmLabel={busy === 'delete' ? 'Deleting…' : `Yes, delete this ${info.label.toLowerCase()}`}
@@ -370,6 +391,12 @@ export const DocumentPanel: React.FC<{
 
       {info.draftsEnabled && !isNew && info.id !== undefined && (
         <RevisionsBox collectionSlug={info.collectionSlug} id={info.id} updatedAt={info.updatedAt} />
+      )}
+
+      {!isNew && info.canChangeAuthor && info.id !== undefined && (
+        <Box id="author" title="Author">
+          <AuthorBox authorId={info.authorId} authorName={info.createdByName} collection={info.collectionSlug} id={info.id} />
+        </Box>
       )}
 
       {pageTypeField && (

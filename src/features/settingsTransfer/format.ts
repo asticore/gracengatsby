@@ -1,3 +1,5 @@
+import { CARRIERS } from '@/features/ecommerce/shipping/catalogue'
+import { groupName } from '@/features/ecommerce/shipping/registry'
 /**
  * The settings export file format, shared by the server (export/import), the
  * admin UI and the tests. Pure data and helpers only: no engine import, so the
@@ -33,6 +35,7 @@ export const SETTINGS_GLOBALS = [
   'blog-settings',
   'integrations',
   'payment-settings',
+  'shipping-settings',
   'form-settings',
   'site-settings',
   'member-settings',
@@ -64,6 +67,7 @@ export const SECRET_PATHS: Readonly<Record<string, readonly string[]>> = {
     'custom.keys.*.value',
   ],
   'payment-settings': ['stripe.secretKey', 'stripe.webhookSigningSecret', 'paypal.clientSecret'],
+  'shipping-settings': CARRIERS.flatMap((c) => c.fields.filter((f) => f.secret).map((f) => `${groupName(c.id)}.${f.key}`)),
   'email-settings': [
     'resend.apiKey',
     'sesApi.accessKeyId',

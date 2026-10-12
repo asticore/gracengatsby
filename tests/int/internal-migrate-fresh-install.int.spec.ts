@@ -29,7 +29,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
   })
 
   it('creates foundation, block, feature and engine tables', () => {
-    for (const table of ['eg_users', 'eg_pages', 'eg_migrations', 'eg_forms', 'eg_posts_blocks_hero', 'eg_locked_documents_rels', 'eg_roles', 'eg_ad_units', 'eg_ad_placements', 'eg_ad_settings', 'eg_ad_stats']) {
+    for (const table of ['eg_users', 'eg_pages', 'eg_migrations', 'eg_forms', 'eg_posts_blocks_hero', 'eg_locked_documents_rels', 'eg_roles', 'eg_ad_units', 'eg_ad_placements', 'eg_ad_settings', 'eg_ad_stats', 'eg_data_views']) {
       expect(tables, table).toContain(table)
     }
   })
@@ -287,6 +287,75 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_carts_items')).toContain('variation')
     expect(await columnsOf('eg_shop_settings')).toEqual(expect.arrayContaining(['reviews_enabled', 'low_stock_emails', 'stock_email_to']))
     expect(await columnsOf('eg_locked_documents_rels')).toEqual(expect.arrayContaining(['eg_product_attributes_id', 'eg_shipping_classes_id', 'eg_product_reviews_id']))
+  })
+
+  it('creates the PageSpeed tables, list columns, API key and settings columns', async () => {
+    for (const table of ['eg_pagespeed_results', 'eg_pagespeed_queue']) {
+      expect(tables, table).toContain(table)
+    }
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    for (const table of ['eg_pages', 'eg_posts', 'eg_products', 'eg_events']) {
+      expect(await columnsOf(table), table).toEqual(expect.arrayContaining(['pagespeed_score', 'pagespeed_at']))
+      expect(await columnsOf(`_${table}_v`), `_${table}_v`).toEqual(expect.arrayContaining(['version_pagespeed_score', 'version_pagespeed_at']))
+    }
+    expect(await columnsOf('eg_integrations')).toContain('google_page_speed_api_key')
+    expect(await columnsOf('eg_speed_settings')).toEqual(expect.arrayContaining(['pagespeed_test_after_publish', 'pagespeed_daily_cap']))
+    expect(await columnsOf('eg_pagespeed_results')).toEqual(expect.arrayContaining(['collection', 'doc_id', 'url', 'strategy', 'performance', 'accessibility', 'best_practices', 'seo', 'metrics', 'field_data', 'suggestions', 'fetched_at']))
+  })
+
+  it('adds the edit screens columns (trash, excerpt, sticky, reading time, recurrence, tiers, check-in)', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_pages')).toEqual(expect.arrayContaining(['trashed_at', 'excerpt', 'featured_image_id']))
+    expect(await columnsOf('_eg_pages_v')).toEqual(expect.arrayContaining(['version_trashed_at', 'version_excerpt', 'version_featured_image_id']))
+    expect(await columnsOf('eg_posts')).toEqual(expect.arrayContaining(['trashed_at', 'sticky', 'reading_time']))
+    expect(await columnsOf('_eg_posts_v')).toEqual(expect.arrayContaining(['version_trashed_at', 'version_sticky', 'version_reading_time']))
+    expect(await columnsOf('eg_events')).toEqual(
+      expect.arrayContaining(['trashed_at', 'recurrence_frequency', 'recurrence_interval', 'recurrence_until', 'recurrence_exceptions', 'ticket_tiers']),
+    )
+    expect(await columnsOf('_eg_events_v')).toEqual(
+      expect.arrayContaining(['version_trashed_at', 'version_recurrence_frequency', 'version_recurrence_exceptions', 'version_ticket_tiers']),
+    )
+    expect(await columnsOf('eg_event_rsvps')).toEqual(expect.arrayContaining(['checked_in', 'checked_in_at']))
+  })
+
+  it('adds the shop settings extras columns', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_shop_settings')).toEqual(
+      expect.arrayContaining(['emails_shipped', 'general_unit_system', 'general_currency', 'order_numbers_next_number', 'invoice_accent_color', 'gift_cards_enabled', 'templates_shipped_subject', 'storefront_feeds_enabled']),
+    )
+  })
+
+  it('creates the gift card, store credit and ledger tables and the order and cart columns', async () => {
+    for (const table of ['eg_gift_cards', 'eg_store_credits', 'eg_credit_ledger']) expect(tables, table).toContain(table)
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_gift_cards')).toEqual(expect.arrayContaining(['code', 'initial_amount', 'balance', 'restrict_product_id', 'send_at']))
+    expect(await columnsOf('eg_credit_ledger')).toEqual(expect.arrayContaining(['kind', 'balance_after', 'gift_card_id', 'user_id']))
+    expect(await columnsOf('eg_orders')).toEqual(expect.arrayContaining(['gift_card_total', 'store_credit_total', 'stored_value', 'order_number']))
+    expect(await columnsOf('eg_carts_items')).toEqual(expect.arrayContaining(['custom_amount', 'gift_email']))
+  })
+
+  it('creates the shipping settings, manifests and pay-later columns', async () => {
+    for (const table of ['eg_shipping_manifests', 'eg_shipping_settings']) expect(tables, table).toContain(table)
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_shipping_settings')).toEqual(expect.arrayContaining(['origin_postcode', 'rates_live_rates', 'packages', 'carrier_sendle_api_key', 'carrier_auspost_pac_key']))
+    expect(await columnsOf('eg_payment_settings')).toEqual(expect.arrayContaining(['afterpay_enabled', 'klarna_max_order', 'wallets_apple_pay']))
+    expect(await columnsOf('eg_orders')).toEqual(expect.arrayContaining(['shipments', 'tracking_number', 'shipped_at']))
+    expect(await columnsOf('eg_shipping_manifests')).toEqual(expect.arrayContaining(['number', 'order_ids', 'parcel_count']))
   })
 
   it('creates custom keys child table for integrations', () => {

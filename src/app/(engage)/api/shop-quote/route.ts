@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { getEngine } from '@/engine'
-import { priceCart, loadShopConfig, CheckoutError, type PricingEngine } from '@/features/ecommerce/server/pricing'
+import { quoteStoredValue, loadGiftCardSettings, creditBalance, type StoredValueEngine } from '@/features/ecommerce/server/storedValue'
+import { priceCart, loadShopConfig, shopCurrency, CheckoutError, type PricingEngine } from '@/features/ecommerce/server/pricing'
 import { clientKey, hit } from '@/features/security/rateLimit'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic'
  * doubles as a coupon-code checker.
  */
 export async function POST(request: Request): Promise<Response> {
-  const decision = hit(`shop-quote:${clientKey(request)}`, 40)
+  const decision = hit(`shop-quote:${clientKey(request)}`, 20)
   if (decision.limited) {
     return NextResponse.json({ error: 'Too many requests. Try again in a moment.' }, { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } })
   }
@@ -40,8 +41,33 @@ export async function POST(request: Request): Promise<Response> {
       },
       config,
     )
+    // Gift cards and store credit: only typed codes and a yes/no for credit come from the browser.
+    const codes = Array.isArray(body.giftCardCodes) ? (body.giftCardCodes as unknown[]).slice(0, 5) : []
+    const auth = await (engine as unknown as { auth: (a: unknown) => Promise<{ user?: { id?: number } | null }> }).auth({ headers: request.headers }).catch((): { user: { id?: number } | null } => ({ user: null }))
+    const userId = auth.user?.id ? Number(auth.user.id) : null
+    const giftSettings = await loadGiftCardSettings(engine as unknown as StoredValueEngine)
+    const stored = await quoteStoredValue(engine as unknown as StoredValueEngine, {
+      codes,
+      useCredit: body.useStoreCredit === true,
+      userId,
+      totalCents: totals.totalCents,
+      lines: totals.lines.map((l) => ({ productId: l.productId, netCents: l.lineCents - l.discountCents, isGiftCard: Boolean(l.isGiftCard) })),
+      currency: shopCurrency(config),
+    })
+    const storedValue = {
+      giftCardsEnabled: giftSettings.enabled,
+      creditAvailable: giftSettings.storeCreditEnabled && userId !== null,
+      creditBalanceCents: giftSettings.storeCreditEnabled && userId !== null ? await creditBalance(userId) : 0,
+      cards: stored.cards,
+      creditCents: stored.plan.creditCents,
+      coveredCents: stored.plan.coveredCents,
+      payableCents: stored.plan.payableCents,
+      // One generic message: never say whether a code exists or why it was refused.
+      error: codes.length > 0 && stored.errors.length > 0 ? 'That gift card cannot be used.' : null,
+    }
     return NextResponse.json(
       {
+        storedValue,
         lines: totals.lines.map((l) => ({ name: l.name, quantity: l.quantity, lineCents: l.lineCents, discountCents: l.discountCents })),
         subtotalCents: totals.subtotalCents,
         discountCents: totals.discountCents,

@@ -1,0 +1,70 @@
+/* Field tooltips. Light by default; dark values only under [data-theme='dark']. */
+.field-help-wrap {
+  position: relative;
+}
+
+.field-help {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 5;
+}
+
+.field-help__btn {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid #b8b8b8;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #555555;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  cursor: help;
+}
+
+.field-help__btn:hover,
+.field-help__btn:focus-visible {
+  border-color: #2b2b2b;
+  color: #111111;
+}
+
+.field-help__tip {
+  display: none;
+  position: absolute;
+  top: 24px;
+  right: 0;
+  width: max-content;
+  max-width: min(320px, 80vw);
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: #1f1f1f;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  white-space: normal;
+}
+
+.field-help:hover .field-help__tip,
+.field-help:focus-within .field-help__tip {
+  display: block;
+}
+
+[data-theme='dark'] .field-help__btn {
+  border-color: #6a6a6a;
+  background: #2a2a2a;
+  color: #cfcfcf;
+}
+
+[data-theme='dark'] .field-help__btn:hover,
+[data-theme='dark'] .field-help__btn:focus-visible {
+  border-color: #e6e6e6;
+  color: #ffffff;
+}
+
+[data-theme='dark'] .field-help__tip {
+  background: #f1f1f1;
+  color: #111111;
+}

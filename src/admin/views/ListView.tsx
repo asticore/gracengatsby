@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import type { Field } from '@/engine'
@@ -16,13 +17,22 @@ import {
 import { loadListPrefs, type ListPrefs } from '@/admin/list/listPrefs'
 import { ListToolbar } from './ListToolbar'
 import { formatCellValue } from '@/admin/list/cellFormatting'
-import { VIEW_TABS, resolveActiveTab, type ViewTab } from '@/admin/list/viewTabs'
+import { VIEW_TABS, resolveActiveTab, resolveSectionTab, resolveSectionTabs, type ViewTab } from '@/admin/list/viewTabs'
+import { ListSectionTabs, SECTION_PANEL_ID, sectionTabId } from './ListSectionTabs'
+import { AllSubmissionsTab } from './results/AllSubmissionsTab'
+import { AllRsvpsTab } from './results/AllRsvpsTab'
+import { ABResultsOverview } from './results/ABResultsOverview'
 import { MediaGalleryView } from '@/views/media/MediaGalleryView'
 import { EventsCalendarView } from '@/views/events/EventsCalendarView'
 import { PagesTreeView } from './PagesTreeView'
 import { breadcrumbTitle } from '@/features/pagesTree/breadcrumb'
 import { ListRowActions } from './ListRowActions'
 import { shouldShowRowActions } from '@/admin/list/quickEdit'
+import { PageSpeedBadge } from '@/features/pagespeed/ui/PageSpeedBadge'
+import { BulkActionsBar } from '@/features/editScreens/admin/BulkActionsBar'
+import { actionRefusal } from '@/features/editScreens/bulk'
+import { bulkPermissions, isBulkCollection } from '@/features/editScreens/authors'
+import '@/features/editScreens/admin/edit-screens.css'
 
 /**
  * Generic list view for any collection - one component instead of 21
@@ -75,6 +85,49 @@ export async function ListView({
     return <p>You don&apos;t have access to {collectionSlug}.</p>
   }
 
+  // Section tabs (Forms | Submissions, Events | RSVPs, Tests | Results): the tab bar sits above everything.
+  const sectionTabs = resolveSectionTabs(collectionSlug, {
+    isAdmin: context.isAdmin,
+    canRead: (slug) => Boolean(context.permissions.collections?.[slug]?.read),
+    canUpdate: (slug) => Boolean(context.permissions.collections?.[slug]?.update),
+  })
+  const requestedTab = typeof searchParams.tab === 'string' ? searchParams.tab : null
+  const activeSection = sectionTabs.length > 0 ? resolveSectionTab(sectionTabs, requestedTab) : null
+  const sectionLabel = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
+  const tabBar = activeSection ? (
+    <ListSectionTabs
+      activeKey={activeSection.key}
+      label={`${sectionLabel} sections`}
+      tabs={sectionTabs.map((tab) => ({ key: tab.key, label: tab.label, allowed: tab.allowed, primary: tab.primary, deniedReason: tab.deniedReason }))}
+    />
+  ) : null
+
+  if (activeSection && !activeSection.primary) {
+    let panel: ReactNode
+    if (!activeSection.allowed) {
+      panel = <p className="lst-denied" role="status">{activeSection.deniedReason}</p>
+    } else if (collectionSlug === 'forms') {
+      const forms = await context.engine.find({ collection: 'forms', depth: 0, limit: 200, sort: 'title', user: context.user }).catch(() => ({ docs: [] as unknown[] }))
+      panel = <AllSubmissionsTab forms={forms.docs.map((doc) => ({ id: (doc as { id: number }).id, title: String((doc as { title?: unknown }).title ?? `Form #${(doc as { id: number }).id}`) }))} />
+    } else if (collectionSlug === 'events') {
+      const events = await context.engine.find({ collection: 'events', depth: 0, limit: 200, sort: '-startDate', user: context.user }).catch(() => ({ docs: [] as unknown[] }))
+      panel = <AllRsvpsTab events={events.docs.map((doc) => ({ id: (doc as { id: number }).id, title: String((doc as { title?: unknown }).title ?? `Event #${(doc as { id: number }).id}`) }))} />
+    } else {
+      panel = <ABResultsOverview engine={context.engine} user={context.user} />
+    }
+    return (
+      <div className="list-view">
+        <div className="list-header">
+          <h1>{sectionLabel}</h1>
+        </div>
+        {tabBar}
+        <div aria-labelledby={sectionTabId(activeSection.key)} className="lst-panel" id={SECTION_PANEL_ID} role="tabpanel">
+          {panel}
+        </div>
+      </div>
+    )
+  }
+
   // Parse URL search params
   const urlState = parseListSearchParams(searchParams)
 
@@ -115,10 +168,19 @@ export async function ListView({
     allColumns,
   })
 
+  // Trash (pages, posts, events): the list hides trashed items; ?trash=1 shows only them.
+  const bulkCollection = isBulkCollection(collectionSlug) ? collectionSlug : null
+  const trashView = bulkCollection !== null && searchParams.trash === '1'
+  const trashClause = bulkCollection ? { trashedAt: { exists: trashView } } : null
+  const listWhere = trashClause ? (findArgs.where ? { and: [findArgs.where, trashClause] } : trashClause) : findArgs.where
+  const trashCount = bulkCollection
+    ? await context.engine.count({ collection: collectionSlug, where: { trashedAt: { exists: true } } as any, user: context.user }).then((r) => r.totalDocs).catch(() => 0)
+    : 0
+
   // Execute find
   const result = await context.engine.find({
     collection: collectionSlug,
-    where: findArgs.where as any,
+    where: listWhere as any,
     sort: findArgs.sort,
     page: findArgs.page,
     limit: findArgs.limit,
@@ -157,6 +219,10 @@ export async function ListView({
   const showRowActions = shouldShowRowActions(collectionSlug, hasDrafts)
   const label = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
 
+  const bulkPerms = bulkCollection ? bulkPermissions(context as never, bulkCollection) : null
+  const showBulk = bulkPerms !== null && (bulkPerms.update || bulkPerms.publish || bulkPerms.delete)
+  const trashQs: Record<string, string> = trashView ? { trash: '1' } : {}
+
   // Resolve view tabs and active tab
   const viewTabs = VIEW_TABS[collectionSlug as keyof typeof VIEW_TABS] || [{ view: 'list', label: 'List' }]
   const activeTab = resolveActiveTab(viewTabs, effectiveState.view)
@@ -177,6 +243,14 @@ export async function ListView({
         )}
       </div>
 
+      {tabBar}
+
+      <div
+        aria-labelledby={activeSection ? sectionTabId(activeSection.key) : undefined}
+        className="lst-panel"
+        id={activeSection ? SECTION_PANEL_ID : undefined}
+        role={activeSection ? 'tabpanel' : undefined}
+      >
       <ListToolbar
         collectionSlug={collectionSlug}
         state={effectiveState}
@@ -228,16 +302,43 @@ export async function ListView({
         </div>
       )}
 
+      {/* Trash (pages, posts, events) */}
+      {bulkCollection && activeTab.view === 'list' && (
+        <nav aria-label="Trash" className="es-trash-links">
+          <a aria-current={!trashView ? 'true' : undefined} href={`/admin/collections/${collectionSlug}`}>
+            All
+          </a>
+          <a aria-current={trashView ? 'true' : undefined} href={`/admin/collections/${collectionSlug}?trash=1`}>
+            Trash ({trashCount})
+          </a>
+        </nav>
+      )}
+
       {/* List view (or other tab view) */}
       {activeTab.view === 'list' && (
         <>
+          {showBulk && bulkCollection && bulkPerms && (
+            <BulkActionsBar
+              canChangeAuthor={actionRefusal('changeAuthor', bulkPerms) === null}
+              canDelete={bulkPerms.delete}
+              canPublish={bulkPerms.publish}
+              collection={bulkCollection}
+              noun={bulkCollection.slice(0, -1)}
+              trashView={trashView}
+            />
+          )}
           {result.docs.length === 0 ? (
-            <p className="list-empty">No documents yet.</p>
+            <p className="list-empty">{trashView ? 'The trash is empty.' : 'No documents yet.'}</p>
           ) : (
             <div className="list-table-wrapper">
               <table className="list-table">
                 <thead>
                   <tr>
+                    {showBulk && (
+                      <th className="list-th es-check" scope="col">
+                        <input aria-label="Select all on this page" data-bulk-all type="checkbox" />
+                      </th>
+                    )}
                     {visibleColumns.map((column) => (
                       <th key={column.name} className="list-th">
                         <a
@@ -253,6 +354,7 @@ export async function ListView({
                                 ? ''
                                 : column.name,
                             page: '1',
+                            ...trashQs,
                           })}`}
                           className="list-sort-link"
                         >
@@ -270,6 +372,17 @@ export async function ListView({
                 <tbody>
                   {result.docs.map((doc) => (
                     <tr key={doc.id} className="list-row">
+                      {showBulk && (
+                        <td className="list-td es-check">
+                          <input
+                            aria-label={`Select ${String((doc as Record<string, unknown>)[useAsTitle ?? 'title'] ?? `#${doc.id}`)}`}
+                            data-bulk-label={String((doc as Record<string, unknown>)[useAsTitle ?? 'title'] ?? `#${doc.id}`)}
+                            data-bulk-row
+                            type="checkbox"
+                            value={String(doc.id)}
+                          />
+                        </td>
+                      )}
                       {visibleColumns.map((column, index) => {
                         const cell = (doc as Record<string, unknown>)[column.name]
                         const columnField = findColumnField(collection.fields, column.name)
@@ -291,6 +404,14 @@ export async function ListView({
                             )
                             text = breadcrumb || text
                           }
+                        }
+
+                        if (column.name === 'pagespeedScore') {
+                          return (
+                            <td key={column.name} className="list-td">
+                              <PageSpeedBadge score={cell} testedAt={(doc as Record<string, unknown>).pagespeedAt} />
+                            </td>
+                          )
                         }
 
                         // Handle thumbnail column specially
@@ -353,6 +474,7 @@ export async function ListView({
                       ) as [string, any][]
                     ),
                     page: String(effectiveState.page - 1),
+                    ...trashQs,
                   })}`}
                   className="list-pagination-btn"
                 >
@@ -371,6 +493,7 @@ export async function ListView({
                       ) as [string, any][]
                     ),
                     page: String(effectiveState.page + 1),
+                    ...trashQs,
                   })}`}
                   className="list-pagination-btn"
                 >
@@ -421,8 +544,7 @@ export async function ListView({
           searchParams={searchParams}
         />
       )}
+      </div>
     </div>
   )
 }
-
-export default ListView

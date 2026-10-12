@@ -15,6 +15,16 @@ export type Quote = {
   coupon: { code: string } | null
   couponError: string | null
   fields: QuoteField[]
+  storedValue?: {
+    giftCardsEnabled: boolean
+    creditAvailable: boolean
+    creditBalanceCents: number
+    cards: { code: string; cents: number; balanceCents: number }[]
+    creditCents: number
+    coveredCents: number
+    payableCents: number
+    error: string | null
+  }
 }
 
 export type CheckoutInput = {
@@ -22,6 +32,8 @@ export type CheckoutInput = {
   couponCode: string
   shippingOptionId: string
   checkoutFields: Record<string, string>
+  giftCardCodes: string[]
+  useStoreCredit: boolean
 }
 
 const money = (c: number) => `$${(c / 100).toFixed(2)}`
@@ -46,6 +58,9 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
   const [appliedCoupon, setAppliedCoupon] = useState('')
   const [shipId, setShipId] = useState('')
   const [values, setValues] = useState<Record<string, string>>({})
+  const [giftInput, setGiftInput] = useState('')
+  const [giftCodes, setGiftCodes] = useState<string[]>([])
+  const [useCredit, setUseCredit] = useState(false)
   const [quote, setQuote] = useState<Quote | null>(null)
   const [error, setError] = useState('')
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,7 +71,7 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
       const res = await fetch('/api/shop-quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cartID: cartRef.id, secret: cartRef.secret, address, email, couponCode: appliedCoupon, shippingOptionId: shipId }),
+        body: JSON.stringify({ cartID: cartRef.id, secret: cartRef.secret, address, email, couponCode: appliedCoupon, shippingOptionId: shipId, giftCardCodes: giftCodes, useStoreCredit: useCredit }),
       })
       const body = (await res.json()) as Quote & { error?: string }
       if (!res.ok) {
@@ -69,7 +84,7 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
     } catch {
       setError('Could not price your cart.')
     }
-  }, [cartRef, address, email, appliedCoupon, shipId])
+  }, [cartRef, address, email, appliedCoupon, shipId, giftCodes, useCredit])
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current)
@@ -82,8 +97,8 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
   useEffect(() => {
     const needsShip = (quote?.shippingOptions.length ?? 0) > 0
     const ready = Boolean(quote) && (!needsShip || Boolean(shipId)) && Boolean(address.addressLine1 && address.country)
-    onChange({ address: { ...address, ...(values.company ? { company: values.company } : {}) }, couponCode: appliedCoupon, shippingOptionId: shipId, checkoutFields: values }, ready)
-  }, [address, appliedCoupon, shipId, values, quote, onChange])
+    onChange({ address: { ...address, ...(values.company ? { company: values.company } : {}) }, couponCode: appliedCoupon, shippingOptionId: shipId, checkoutFields: values, giftCardCodes: giftCodes, useStoreCredit: useCredit }, ready)
+  }, [address, appliedCoupon, shipId, values, quote, onChange, giftCodes, useCredit])
 
   const input = 'border border-[var(--color-line)] bg-[var(--color-cream)] p-3 text-base'
   return (
@@ -112,6 +127,36 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
         <button type="button" className="btn" onClick={() => setAppliedCoupon(coupon.trim())}>Apply</button>
       </div>
       {quote?.couponError && <p className="form-error">{quote.couponError}</p>}
+      {quote?.storedValue?.giftCardsEnabled && (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input className={`${input} flex-1`} placeholder="Gift card code" value={giftInput} onChange={(e) => setGiftInput(e.target.value)} />
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                const code = giftInput.trim()
+                if (code && !giftCodes.includes(code) && giftCodes.length < 5) setGiftCodes([...giftCodes, code])
+                setGiftInput('')
+              }}
+            >
+              Use gift card
+            </button>
+          </div>
+          {giftCodes.map((c) => (
+            <span key={c} className="flex gap-2 text-[0.85rem]">
+              {c.length > 4 ? `Card ending ${c.slice(-4).toUpperCase()}` : c}
+              <button type="button" className="underline" onClick={() => setGiftCodes(giftCodes.filter((x) => x !== c))}>Remove</button>
+            </span>
+          ))}
+          {quote.storedValue.error && <p className="form-error">{quote.storedValue.error}</p>}
+        </div>
+      )}
+      {quote?.storedValue?.creditAvailable && quote.storedValue.creditBalanceCents > 0 && (
+        <label className="flex gap-2">
+          <input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} /> Use my store credit ({money(quote.storedValue.creditBalanceCents)} available)
+        </label>
+      )}
       {quote && quote.shippingOptions.length > 0 && (
         <fieldset className="flex flex-col gap-2">
           <legend className="text-[0.85rem] uppercase">Shipping</legend>
@@ -129,6 +174,13 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
           {quote.shippingOptions.length > 0 && (<><dt>Shipping</dt><dd>{money(quote.shippingCents)}</dd></>)}
           {quote.taxLines.map((t) => (<React.Fragment key={t.name + t.ratePct}><dt>{t.name} ({t.ratePct}%){quote.pricesIncludeTax ? ' included' : ''}</dt><dd>{money(t.taxCents)}</dd></React.Fragment>))}
           <dt className="font-bold">Total</dt><dd className="font-bold">{money(quote.totalCents)}</dd>
+          {quote.storedValue && quote.storedValue.coveredCents > 0 && (
+            <>
+              {quote.storedValue.cards.map((c) => (<React.Fragment key={c.code}><dt>Gift card {c.code}</dt><dd>-{money(c.cents)}</dd></React.Fragment>))}
+              {quote.storedValue.creditCents > 0 && (<><dt>Store credit</dt><dd>-{money(quote.storedValue.creditCents)}</dd></>)}
+              <dt className="font-bold">To pay by card</dt><dd className="font-bold">{money(quote.storedValue.payableCents)}</dd>
+            </>
+          )}
         </dl>
       )}
       {error && <p className="form-error">{error}</p>}

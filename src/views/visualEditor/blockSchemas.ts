@@ -11,6 +11,7 @@
 
 import type { EditorField } from '@/lib/elements/fieldTypes'
 import { ELEMENTS } from '@/lib/elements/registry'
+import { FORM_ONLY_ELEMENT_TYPES } from '@/features/forms/elementDefs'
 
 // Re-exported from src/lib/elements/fieldTypes.ts, which also backs the
 // per-element-type registry (src/lib/elements/registry.ts) - kept there
@@ -18,7 +19,7 @@ import { ELEMENTS } from '@/lib/elements/registry'
 export type { EditorField, EditorFieldType } from '@/lib/elements/fieldTypes'
 
 /** Groups the element library into browsable sections. */
-export type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic' | 'elements'
+export type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic' | 'elements' | 'formFields'
 
 export const BLOCK_CATEGORIES: { key: BlockCategory; label: string }[] = [
   { key: 'layout', label: 'Layout' },
@@ -30,6 +31,7 @@ export const BLOCK_CATEGORIES: { key: BlockCategory; label: string }[] = [
   // rest of the ~40-element library lands (Phase 4) this splits into the
   // registry's own ELEMENT_CATEGORIES instead of one bucket.
   { key: 'elements', label: 'Elements' },
+  { key: 'formFields', label: 'Form fields' },
 ]
 
 export type BlockDef = {
@@ -49,7 +51,6 @@ export type BlockDef = {
 }
 
 const CATEGORY_OPTIONS = [
-  { label: 'Apparel', value: 'apparel' },
   { label: 'Accessories', value: 'accessories' },
   { label: 'Jewellery', value: 'jewellery' },
   { label: 'Homeware', value: 'homeware' },
@@ -289,17 +290,24 @@ export function getBlockDef(blockType: string): BlockDef | undefined {
  * turns an "element:<type>" pick into a real node, before a BlockDef lookup
  * ever happens.
  */
-export function libraryCards(): BlockDef[] {
-  const elementCards: BlockDef[] = ELEMENTS.map(
+export function libraryCards(options: { formMode?: boolean } = {}): BlockDef[] {
+  const formMode = options.formMode === true
+  // In the form builder only layout (sections/columns), headings, buttons and the form fields make sense;
+  // everywhere else the form-only fields are hidden.
+  const elementCards: BlockDef[] = ELEMENTS.filter((el) => {
+    const formOnly = FORM_ONLY_ELEMENT_TYPES.has(el.type)
+    return formMode ? formOnly || el.type === 'heading' || el.type === 'button' : !formOnly
+  }).map(
     (el): BlockDef => ({
       slug: `element:${el.type}`,
       label: el.label,
       icon: el.icon,
-      category: 'elements',
+      category: FORM_ONLY_ELEMENT_TYPES.has(el.type) ? 'formFields' : 'elements',
       description: el.description,
       fields: [],
       defaultValue: () => ({ blockType: 'element', elementType: el.type, props: el.defaultProps() }),
     }),
   )
-  return [...VISUAL_BLOCKS.filter((b) => !b.hiddenFromLibrary), ...elementCards]
+  const blocks = VISUAL_BLOCKS.filter((b) => !b.hiddenFromLibrary && (!formMode || b.slug === 'section'))
+  return [...blocks, ...elementCards]
 }

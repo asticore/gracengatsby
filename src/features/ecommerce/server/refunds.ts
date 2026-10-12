@@ -2,17 +2,30 @@ import { validateRefund } from '../lib/orderStatus'
 import { rawD1, runChanges, SQL } from './db'
 import { sendOrderEmail } from './emails'
 import { addOrderNote, restockedSoFar, restockOrder } from './orders'
+import { cardAmountOf } from '../lib/storedValueOrder'
+import { refundToStoreCredit } from './storedValue'
 
 type Doc = Record<string, unknown>
 type Req = { engine: { findByID: (a: unknown) => Promise<Doc | null>; update: (a: unknown) => Promise<Doc>; find: (a: unknown) => Promise<{ docs: Doc[] }>; findGlobal: (a: unknown) => Promise<Doc> }; user?: { id?: number; email?: string } | null }
 const orderIdOf = (v: unknown) => (typeof v === 'object' && v ? Number((v as { id: number }).id) : Number(v))
 
-async function stripeRefund(paymentIntentId: string, amount: number, orderId: number): Promise<string> {
-  const key = process.env.STRIPE_SECRET_KEY
+async function stripeRefund(engine: unknown, paymentIntentId: string, amount: number, orderId: number): Promise<string> {
+  const { loadPaymentSettings, resolveStripeSecret } = await import('../payments/config')
+  const key = resolveStripeSecret(await loadPaymentSettings(engine as never))
   if (!key) throw new Error('Card refunds are not available (Stripe is not configured). Use the manual method to record a refund made elsewhere.')
   const { getStripeClient } = await import('../payments/stripeAdapter')
   const refund = await getStripeClient(key).refunds.create({ payment_intent: paymentIntentId, amount, metadata: { orderId: String(orderId) } })
   return refund.id
+}
+
+/** An order that bought gift cards cannot be refunded to store credit while those cards are still spendable (that would pay out twice). */
+async function assertGiftCardsSettled(engine: Req['engine'], order: Doc): Promise<void> {
+  const lines = (Array.isArray(order.lineItems) ? order.lineItems : []) as { isGiftCard?: boolean }[]
+  if (!lines.some((l) => l.isGiftCard)) return
+  const { docs } = await engine.find({ collection: 'gift-cards', where: { order: { equals: Number(order.id) } }, limit: 500, depth: 0, overrideAccess: true })
+  if (docs.some((c) => c.status !== 'disabled' && Number(c.balance ?? 0) > 0)) {
+    throw new Error('This order bought gift cards that can still be spent. Disable those cards first (or refund to the card or manually), then refund to store credit.')
+  }
 }
 
 /**
@@ -33,8 +46,23 @@ export async function runRefundBeforeChange({ data, operation, req }: { data: Do
   if ((await runChanges(d1, SQL.reserveRefund, orderId, amount)) === 0) throw new Error('The refund exceeds what is left to refund on this order.')
   let providerId: string | undefined
   try {
-    if (data.method !== 'manual' && order.paymentIntentId) providerId = await stripeRefund(String(order.paymentIntentId), amount, orderId)
-    else if (data.method !== 'manual' && !order.paymentIntentId) data.method = 'manual'
+    if (data.method === 'store-credit') {
+      const settings = (await req.engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { giftCards?: { storeCreditEnabled?: boolean; refundToStoreCredit?: boolean } }
+      if (settings.giftCards?.storeCreditEnabled === false || settings.giftCards?.refundToStoreCredit === false) throw new Error('Refunds to store credit are switched off in Shop settings > Gift cards and store credit.')
+      await assertGiftCardsSettled(req.engine, order)
+      await refundToStoreCredit(req.engine as never, order, amount, { reason: `Refund of order #${orderId}${data.reason ? `: ${data.reason}` : ''}`, createdBy: req.user?.id })
+    } else if (data.method !== 'manual' && order.paymentIntentId) {
+      // Only what the card paid can go back to the card; the rest was gift card or store credit.
+      const cardPaid = cardAmountOf(order as never)
+      const { docs: earlier } = await req.engine.find({ collection: 'order-refunds', where: { order: { equals: orderId } }, limit: 500, depth: 0, overrideAccess: true })
+      const cardRefunded = earlier.filter((r) => r.providerRefundId).reduce((n, r) => n + Number(r.amount ?? 0), 0)
+      if (amount > cardPaid - cardRefunded) {
+        throw new Error(`Only $${(Math.max(0, cardPaid - cardRefunded) / 100).toFixed(2)} can go back to the card. The rest of this order was paid with a gift card or store credit: refund that part to store credit, or record it as a manual refund.`)
+      }
+      providerId = await stripeRefund(req.engine, String(order.paymentIntentId), amount, orderId)
+    } else if (data.method !== 'manual' && !order.paymentIntentId) {
+      data.method = 'manual'
+    }
   } catch (error) {
     await runChanges(d1, SQL.releaseRefund, orderId, amount)
     throw error instanceof Error ? error : new Error('The refund failed.')
@@ -83,7 +111,7 @@ export async function runRefundAfterChange({ doc, operation, req }: { doc: Doc; 
       }
       if (only.size > 0) await restockOrder(req.engine as never, order, 'refund', only)
     }
-    await addOrderNote(req.engine as never, orderId, { type: 'internal', text: `Refund of ${money} recorded${doc.reason ? `: ${doc.reason}` : ''} (${doc.providerRefundId ? 'card refund ' + doc.providerRefundId : 'manual'}).`, author: req.user?.email ?? 'Admin' })
+    await addOrderNote(req.engine as never, orderId, { type: 'internal', text: `Refund of ${money} recorded${doc.reason ? `: ${doc.reason}` : ''} (${doc.providerRefundId ? 'card refund ' + doc.providerRefundId : doc.method === 'store-credit' ? 'to store credit' : 'manual'}).`, author: req.user?.email ?? 'Admin' })
     await sendOrderEmail(req.engine as never, { ...order, status: 'refunded' }, 'refunded', `Refund: ${money}${doc.reason ? ` - ${doc.reason}` : ''}`)
   } catch {
     /* the refund itself is already recorded */

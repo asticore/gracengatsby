@@ -18,6 +18,7 @@ import { AccountStyles } from './styles'
 const LINKS: { href: string; label: string }[] = [
   { href: '/account', label: 'Overview' },
   { href: '/account/orders', label: 'Orders' },
+  { href: '/account/store-credit', label: 'Store credit' },
   { href: '/account/addresses', label: 'Addresses' },
   { href: '/account/bookings', label: 'Event bookings' },
   { href: '/account/profile', label: 'Profile' },

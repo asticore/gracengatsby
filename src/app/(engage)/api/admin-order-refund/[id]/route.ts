@@ -13,7 +13,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const refunds = await auth.engine.find({ collection: 'order-refunds', where: { order: { equals: id } }, sort: '-createdAt', limit: 100, depth: 0, overrideAccess: true })
   return NextResponse.json(
-    { refunds: refunds.docs, amount: order.amount ?? 0, refundedTotal: order.refundedTotal ?? 0, status: order.status, lineItems: order.lineItems ?? [], canCardRefund: Boolean(order.paymentIntentId) },
+    { refunds: refunds.docs, amount: order.amount ?? 0, refundedTotal: order.refundedTotal ?? 0, status: order.status, lineItems: order.lineItems ?? [], canCardRefund: Boolean(order.paymentIntentId), canStoreCredit: Boolean(order.customer) },
     { headers: { 'Cache-Control': 'no-store' } },
   )
 }
@@ -36,7 +36,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         amount: body.amountCents,
         reason: typeof body.reason === 'string' ? body.reason.slice(0, 500) : undefined,
         restock: body.restock === true,
-        method: body.manual === true ? 'manual' : 'auto',
+        method: body.toStoreCredit === true ? 'store-credit' : body.manual === true ? 'manual' : 'auto',
         items: Array.isArray(body.items) ? body.items : undefined,
       },
       overrideAccess: true,

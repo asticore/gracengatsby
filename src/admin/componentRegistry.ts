@@ -31,7 +31,8 @@ import { FieldGroupLocationField } from '@/features/customFields/admin/FieldGrou
 import { BackupPanel } from '@/features/backups/admin/BackupPanel'
 import { SendTestEmailButton } from '@/features/email/admin/SendTestEmailButton'
 import { ParentPicker } from '@/fields/parentPicker/ParentPicker'
-import { OrderNotesPanel, OrderRefundsPanel, OrderInvoicePanel } from '@/features/ecommerce/admin/OrderPanels'
+import { OrderNotesPanel, OrderRefundsPanel, OrderInvoicePanel, OrderShippingPanel } from '@/features/ecommerce/admin/OrderPanels'
+import { StoreCreditPanel } from '@/features/ecommerce/admin/StoreCreditPanel'
 import { PriceInput } from '@/features/ecommerce/admin/PriceInput'
 import { GenerateVariationsField } from '@/features/ecommerce/admin/GenerateVariationsField'
 import { CloudflarePurgeOnPublishField } from '@/admin/components/CloudflarePurgeOnPublishField'
@@ -44,6 +45,8 @@ import { MediaCropField } from '@/features/media/admin/MediaCropField'
 import { MediaEditPanel } from '@/features/media/admin/MediaEditPanel'
 import { BiddersField } from '@/features/ads/admin/BiddersField'
 import { SiteFilesField } from '@/features/seo/admin/SiteFilesField'
+import { TicketTiersField } from '@/features/editScreens/admin/TicketTiersField'
+import { DataViewEditorField } from '@/features/dataViews/admin/DataViewEditorField'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/fields/slug/SlugComponent#SlugComponent': SlugComponent,
@@ -56,9 +59,11 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/email/admin/SendTestEmailButton#SendTestEmailButton': SendTestEmailButton,
   '@/features/ecommerce/admin/PriceInput#PriceInput': PriceInput,
   '@/features/ecommerce/admin/GenerateVariationsField#GenerateVariationsField': GenerateVariationsField,
+  '@/features/ecommerce/admin/StoreCreditPanel#StoreCreditPanel': StoreCreditPanel,
   '@/features/ecommerce/admin/OrderPanels#OrderNotesPanel': OrderNotesPanel,
   '@/features/ecommerce/admin/OrderPanels#OrderRefundsPanel': OrderRefundsPanel,
   '@/features/ecommerce/admin/OrderPanels#OrderInvoicePanel': OrderInvoicePanel,
+  '@/features/ecommerce/admin/OrderPanels#OrderShippingPanel': OrderShippingPanel,
   '@/fields/parentPicker/ParentPicker#ParentPicker': ParentPicker,
   '@/admin/components/CloudflarePurgeOnPublishField#CloudflarePurgeOnPublishField': CloudflarePurgeOnPublishField,
   '@/admin/components/ColorPickerField#ColorPickerField': ColorPickerField,
@@ -70,6 +75,8 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/media/admin/MediaEditPanel#MediaEditPanel': MediaEditPanel,
   '@/features/seo/admin/SiteFilesField#SiteFilesField': SiteFilesField,
   '@/features/ads/admin/BiddersField#BiddersField': BiddersField,
+  '@/features/editScreens/admin/TicketTiersField#TicketTiersField': TicketTiersField,
+  '@/features/dataViews/admin/DataViewEditorField#DataViewEditorField': DataViewEditorField,
 }
 
 export function resolveComponent(path: string | undefined | null): ComponentType<any> | undefined {

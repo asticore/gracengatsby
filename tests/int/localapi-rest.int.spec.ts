@@ -981,7 +981,8 @@ describe('localapi/rest - error mapping', () => {
 /* Fixtures use real registry slugs whose real access functions this test    */
 /* file can reason about directly (not mocked - the registry itself isn't    */
 /* injectable, see this file's own header): `faqs` (`access.read: () => true`*/
-/* unconditionally, `create`/`update`/`delete: isAdmin`, no field-level access anywhere - a clean "collapses to `true`/omitted" fixture), and     */
+/* unconditionally, `create`/`update`/`delete: isAdmin`, no field-level       */
+/* access anywhere - a clean "collapses to `true`/omitted" fixture), and     */
 /* `users` (`access.read`/`update: isAdminOrSelf` - returns a `Where` object */
 /* for a non-admin matching self, `false` otherwise; `access.create`/        */
 /* `delete: isAdmin`; the `roles` field has its own `access.update` -        */

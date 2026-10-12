@@ -46,6 +46,7 @@ import { resolveComponent } from '@/admin/componentRegistry'
 import { FieldLabel, useField, useFormFields } from '@/engine/ui'
 import { childPath, fieldLabel, fieldRequired, getAtPath, reviveCondition, unflattenFields } from './shared'
 
+import { FieldHelp } from './FieldHelp'
 import { ArrayFieldRenderer } from './ArrayField'
 import { BlocksFieldRenderer } from './BlocksField'
 import { CheckboxFieldRenderer } from './CheckboxField'
@@ -169,7 +170,7 @@ const SingleFieldRenderer: React.FC<{
     // JSX tag gets is stable across renders even though the lint rule can't
     // see that through the function call.
     // eslint-disable-next-line react-hooks/static-components
-    return <Override field={field} path={path} readOnly={fieldReadOnly} />
+    return withHelp(field, <Override field={field} path={path} readOnly={fieldReadOnly} />)
   }
 
   switch (field.type) {
@@ -208,6 +209,22 @@ const SingleFieldRenderer: React.FC<{
   if (!name) return null
   const path = childPath(parentPath, name)
 
+  return withHelp(field, renderLeaf(field, path, fieldReadOnly))
+}
+
+/** A leaf field's own plain-text description, shown as a tooltip beside it. Fields with no description render exactly as before. */
+function withHelp(field: Field, node: React.ReactNode): React.ReactNode {
+  const description = (field as { admin?: { description?: unknown } }).admin?.description
+  if (typeof description !== 'string' || !description.trim() || node === null) return node
+  return (
+    <div className="field-help-wrap">
+      {node}
+      <FieldHelp text={description} />
+    </div>
+  )
+}
+
+function renderLeaf(field: Field, path: string, fieldReadOnly: boolean): React.ReactNode {
   switch (field.type) {
     case 'text':
       return <TextFieldRenderer field={field} path={path} readOnly={fieldReadOnly} />

@@ -57,6 +57,8 @@ export type CartItemInput = {
   product?: unknown
   quantity?: number
   variation?: string | null
+  /** Name-your-price lines: the buyer's amount in cents. Checked against the minimum here; ignored for normal products. */
+  priceCents?: number | null
   /** Gift card lines: amount in cents chosen by the buyer, and who receives it. Validated here, never trusted. */
   customAmount?: number | null
   giftName?: string | null
@@ -118,7 +120,7 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
       continue
     }
     const stockKey = `${productId}:${item.variation ?? ''}`
-    const resolved = resolveCartLine(product, item.variation ?? null, quantity, now, inCart.get(stockKey) ?? 0)
+    const resolved = resolveCartLine(product, item.variation ?? null, quantity, now, inCart.get(stockKey) ?? 0, item.priceCents ?? null)
     inCart.set(stockKey, (inCart.get(stockKey) ?? 0) + (Number.isInteger(quantity) ? quantity : 0))
     let unitPrice: number
     let title: string

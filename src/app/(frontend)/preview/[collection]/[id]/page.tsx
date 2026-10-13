@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
+import { annotatePage } from '@/features/editScreens/toc'
 import { getEngine } from '@/lib/engine'
 import { verifyPreviewToken } from '@/utilities/previewToken'
 import type { Media, Post } from '@/engage-types'
@@ -125,8 +126,9 @@ export default async function PreviewPage({ params, searchParams }: PreviewPageP
 
   if (collection === 'posts') {
     const title = typeof docRecord.title === 'string' ? docRecord.title : 'Untitled Post'
-    const blocks = Array.isArray(docRecord.blocks) ? docRecord.blocks : []
-    const content = docRecord.content
+    const annotated = annotatePage({ body: docRecord.content, blocks: Array.isArray(docRecord.blocks) ? docRecord.blocks : [] })
+    const blocks = annotated.blocks
+    const content = annotated.body
     const featuredImage = docRecord.featuredImage && typeof docRecord.featuredImage === 'object' ? (docRecord.featuredImage as Media) : null
 
     return (

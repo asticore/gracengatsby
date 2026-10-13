@@ -107,9 +107,9 @@ export const FEATURES: FeatureDef[] = [
     label: 'Forms',
     description: 'Build forms and embed them as blocks. Supports submissions, calculations and payments.',
     defaultEnabled: false,
-    collections: ['forms', 'form-submissions'],
+    collections: ['forms', 'form-submissions', 'form-drafts'],
     globals: [],
-    tables: ['forms', 'form_submissions'],
+    tables: ['forms', 'form_submissions', 'form_drafts'],
     implemented: true,
   },
   {

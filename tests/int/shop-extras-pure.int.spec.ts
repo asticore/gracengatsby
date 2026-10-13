@@ -328,7 +328,7 @@ describe('Sendle and Australia Post over a fake network', () => {
     expect(quotes.map((q) => [q.serviceCode, q.costCents])).toEqual([['AUS_PARCEL_REGULAR', 2100], ['AUS_PARCEL_EXPRESS', 3000]])
     expect((seen[0].init?.headers as Record<string, string>)['AUTH-KEY']).toBe('key')
     await expect(new AusPostAdapter().getRates({ values: { pacKey: 'key' }, testMode: false }, { ...req, destination: { ...req.destination, country: 'NZ' } })).rejects.toThrow(/Australian/)
-    await expect(new AusPostAdapter().createLabel({ values: {}, testMode: true }, { ...req, reference: '1', serviceCode: 'x' })).rejects.toThrow(/not connected/)
+    await expect(new AusPostAdapter().createLabel({ values: {}, testMode: true }, { ...req, reference: '1', serviceCode: 'x' })).rejects.toThrow(/account number/)
   })
 })
 

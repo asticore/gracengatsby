@@ -107,15 +107,21 @@ function cleanAddress(a: Record<string, unknown> | undefined | null): Record<str
 }
 
 /**
- * Prices the cart ON THE SERVER (database prices, coupon, shipping, tax - see
- * ../server/pricing.ts), stores a pending-payment order holding that snapshot,
- * and creates the Stripe PaymentIntent for exactly the order total. The browser
- * supplies only ids, quantities and the chosen shipping option id. A cart that
- * already has a pending order reuses it (and updates its PaymentIntent), so
- * retries do not pile up orders.
+ * The priced order both card methods save as `pending`: server-side prices, coupon, shipping, tax, gift cards and
+ * store credit. `amount` is what the card (Stripe or PayPal) must pay, the total less stored value.
  */
-export async function initiateStripePayment(args: InitiateStripePaymentArgs): Promise<InitiateStripePaymentResult> {
-  const { engine, cart, customerEmail, billingAddress, shippingAddress, user } = args
+export type OrderDraft = {
+  orderData: Record<string, unknown>
+  amount: number
+  totalCents: number
+  /** Lower case, as Stripe wants it. PayPal callers upper-case it. */
+  currency: string
+  address: Record<string, string>
+  email: string
+}
+
+export async function buildOrderDraft(args: InitiateStripePaymentArgs): Promise<OrderDraft> {
+  const { engine, cart, customerEmail, shippingAddress, user } = args
   if (!cart.items || cart.items.length === 0) throw new Error('Cart is empty or not provided.')
   if (!customerEmail || typeof customerEmail !== 'string') throw new Error('A valid customer email is required to make a purchase.')
   const checkout = args.checkout ?? {}
@@ -170,6 +176,7 @@ export async function initiateStripePayment(args: InitiateStripePaymentArgs): Pr
       lineCents: l.lineCents,
       discountCents: l.discountCents,
       taxCents: l.taxCents,
+      ...(l.preorder ? { preorder: { releaseDate: l.preorder.releaseDate ?? null, note: l.preorder.note ?? null } } : {}),
       ...(l.isGiftCard ? { isGiftCard: true, giftAmountCents: (l as unknown as { giftAmountCents?: number }).giftAmountCents, recipient: (l as unknown as { recipient?: unknown }).recipient } : {}),
     })),
     shippingAddress: address,
@@ -194,6 +201,20 @@ export async function initiateStripePayment(args: InitiateStripePaymentArgs): Pr
     cartId: cart.id,
   }
 
+  return { orderData, amount, totalCents, currency, address, email }
+}
+
+/**
+ * Prices the cart ON THE SERVER (database prices, coupon, shipping, tax - see
+ * ../server/pricing.ts), stores a pending-payment order holding that snapshot,
+ * and creates the Stripe PaymentIntent for exactly the order total. The browser
+ * supplies only ids, quantities and the chosen shipping option id. A cart that
+ * already has a pending order reuses it (and updates its PaymentIntent), so
+ * retries do not pile up orders.
+ */
+export async function initiateStripePayment(args: InitiateStripePaymentArgs): Promise<InitiateStripePaymentResult> {
+  const { engine, cart, customerEmail, billingAddress, user } = args
+  const { orderData, amount, currency, address, email } = await buildOrderDraft(args)
   if (amount === 0) return payInFullWithStoredValue(engine, cart.id, orderData, email)
 
   const paySettings = await loadPaymentSettings(engine as never)
@@ -317,7 +338,7 @@ export async function confirmStripeOrder(args: ConfirmStripeOrderArgs): Promise<
  * value is taken in strict mode (a shortfall undoes it and refuses the checkout), and then the order is marked
  * paid through the same idempotent path a card payment uses.
  */
-async function payInFullWithStoredValue(engine: Engine, cartId: number, orderData: Record<string, unknown>, email: string): Promise<InitiateStripePaymentResult> {
+export async function payInFullWithStoredValue(engine: Engine, cartId: number, orderData: Record<string, unknown>, email: string): Promise<InitiateStripePaymentResult> {
   const existing = await engine
     .find({ collection: 'orders', where: { cartId: { equals: cartId }, status: { equals: 'pending' } }, limit: 1, depth: 0, overrideAccess: true })
     .then((r) => (r?.docs?.[0] as { id: number; paymentIntentId?: string } | undefined) ?? undefined)

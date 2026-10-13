@@ -404,6 +404,16 @@ export const Forms: CollectionConfig = {
       },
     },
     {
+      name: 'allowSaveForLater',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow save and continue',
+      admin: {
+        position: 'sidebar',
+        description: 'Visitors can save their answers and finish later from a link sent to their email. Off by default.',
+      },
+    },
+    {
       name: 'embedKey',
       type: 'text',
       index: true,

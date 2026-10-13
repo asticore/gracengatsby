@@ -218,6 +218,12 @@ export async function markOrderPaid(engine: Engine, orderId: number, info: { pay
     return { firstTime: false, order }
   }
 
+  // The invoice number is taken once, on the first payment (a failure here is retried when the invoice is opened).
+  try {
+    const { ensureInvoiceNumber } = await import('../numbering')
+    await ensureInvoiceNumber(d1, orderId)
+  } catch { /* the invoice route assigns it later */ }
+
   const { oversold } = await takeStock(engine, order, orderId)
 
   // Gift cards / store credit applied to this order are taken now (a no-op when already taken before payment).

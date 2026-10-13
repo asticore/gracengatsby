@@ -95,6 +95,8 @@ export type CarrierDef = {
   /** Where in the carrier's dashboard the keys are found. */
   keysHelp: string
   fields: CarrierField[]
+  /** Fields that must all be filled before labels can be bought. Omitted = every field. */
+  labelKeys?: string[]
   /** What the built-in adapter really does. `false` means: settings and test only, use zone rates and record tracking by hand. */
   live: { rates: boolean; labels: boolean }
 }

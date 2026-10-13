@@ -15,6 +15,7 @@ import { ProductGridBlock } from './ProductGridBlock'
 import { RichTextBlock } from './RichTextBlock'
 import { SectionBlock } from './SectionBlock'
 import { StyledBlock } from './StyledBlock'
+import { TableOfContentsBlock } from './TableOfContentsBlock'
 import { AdSlot } from '@/features/ads/components/AdSlot'
 import { AdRichText } from '@/features/ads/components/AdRichText'
 import { DataViewBlock } from '@/features/dataViews/components/DataViewBlock'
@@ -102,6 +103,16 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
           heading={get('heading')}
           showTitle={get('showTitle')}
           intro={get('intro')}
+        />
+      )
+
+    case 'toc':
+      return (
+        <TableOfContentsBlock
+          title={get('title')}
+          levels={get('levels')}
+          collapsible={get('collapsible')}
+          headings={get('headings')}
         />
       )
 

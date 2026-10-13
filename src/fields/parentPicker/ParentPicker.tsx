@@ -41,7 +41,7 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
 
       const data: any = await response.json()
       const pagesList = Array.isArray(data) ? data : (data.docs || [])
-      const pagesArray: TreePage[] = pagesList.map((page: any) => ({
+      const pagesArray: TreePage[] = pagesList.filter((page: any) => !page.trashedAt).map((page: any) => ({
         id: Number(page.id),
         title: page.title,
         slug: page.slug,
@@ -65,7 +65,7 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
         if (cancelled || !data) return
         const list = Array.isArray(data) ? data : data.docs || []
         setPages(
-          list.map((page: any) => ({
+          list.filter((page: any) => !page.trashedAt).map((page: any) => ({
             id: Number(page.id),
             title: page.title,
             slug: page.slug,

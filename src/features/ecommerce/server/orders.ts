@@ -14,7 +14,7 @@ type Engine = {
 }
 
 export type OrderNote = { id: string; type: 'internal' | 'customer'; text: string; author: string; createdAt: string }
-type LineItem = { productId?: number | string; variationId?: string | null; quantity?: number }
+type LineItem = { productId?: number | string; variationId?: string | null; quantity?: number; preorder?: unknown }
 
 /** Appends a note. Not atomic across concurrent writers (notes are low volume); never throws. */
 export async function addOrderNote(engine: Engine, orderId: number, note: { type: 'internal' | 'customer'; text: string; author: string }): Promise<OrderNote | null> {
@@ -86,7 +86,8 @@ async function applyStock(engine: Engine, lines: LineItem[], sign: 1 | -1, only?
         if (taken === 0) {
           // Not enough left. Take it anyway (the customer has paid) and say so.
           await d1.prepare(`UPDATE ${table} SET stock_qty = COALESCE(stock_qty,0) - ?1 WHERE ${where} AND manage_stock = 1`).bind(qty, ...params).run()
-          out.oversold.push(label)
+          // A pre-order is meant to go below zero until it is restocked, so it does not put the order on hold.
+          if (!line.preorder) out.oversold.push(label)
         }
       }
       await d1.prepare(`UPDATE ${table} SET stock_status = ${STATUS_SQL} WHERE ${where} AND manage_stock = 1 AND ?1 IS NOT NULL`).bind(qty, ...params).run()

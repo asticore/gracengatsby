@@ -59,6 +59,7 @@ export const recurrenceField: Field = {
       label: 'Repeat',
       options: [
         { label: 'Does not repeat', value: 'none' },
+        { label: 'Every day', value: 'daily' },
         { label: 'Every week', value: 'weekly' },
         { label: 'Every month', value: 'monthly' },
       ],
@@ -69,8 +70,40 @@ export const recurrenceField: Field = {
       defaultValue: 1,
       min: 1,
       max: 52,
-      label: 'Every how many weeks or months',
-      admin: { description: '1 means every week or month, 2 means every other one.', condition: (_data, siblingData) => Boolean(siblingData?.frequency) && siblingData?.frequency !== 'none' },
+      label: 'Every how many days, weeks or months',
+      admin: { description: '1 means every day, week or month, 2 means every other one.', condition: (_data, siblingData) => Boolean(siblingData?.frequency) && siblingData?.frequency !== 'none' },
+    },
+    {
+      name: 'weekdays',
+      type: 'text',
+      label: 'On these days (weekly)',
+      admin: {
+        placeholder: 'Mon, Wed',
+        description: 'For a weekly repeat: the days of the week, for example Mon, Wed. Leave blank to use the day of the first date.',
+        condition: (_data, siblingData) => siblingData?.frequency === 'weekly',
+      },
+    },
+    {
+      name: 'monthlyBy',
+      type: 'select',
+      defaultValue: 'dayOfMonth',
+      label: 'Monthly repeat on',
+      options: [
+        { label: 'The same date each month', value: 'dayOfMonth' },
+        { label: 'The same weekday each month (for example the second Tuesday)', value: 'nthWeekday' },
+      ],
+      admin: { condition: (_data, siblingData) => siblingData?.frequency === 'monthly' },
+    },
+    {
+      name: 'count',
+      type: 'number',
+      min: 1,
+      max: 52,
+      label: 'Number of dates',
+      admin: {
+        description: 'Stop after this many dates, counting the first one. Leave blank to use the stop date instead. At most 52.',
+        condition: (_data, siblingData) => Boolean(siblingData?.frequency) && siblingData?.frequency !== 'none',
+      },
     },
     {
       name: 'until',
@@ -101,6 +134,32 @@ export const ticketTiersField: Field = {
     description: 'Different kinds of ticket (for example Standard and VIP) shown on the event page. Prices are in dollars.',
     components: { Field: '@/features/editScreens/admin/TicketTiersField#TicketTiersField' },
   },
+}
+
+/** The event this one was made from by "Generate occurrences". Set by the generator only. */
+export const seriesOfField: Field = {
+  name: 'seriesOf',
+  type: 'relationship',
+  relationTo: 'events',
+  hasMany: false,
+  admin: { hidden: true, readOnly: true, description: 'The repeating event this date belongs to.' },
+}
+
+/** Button under the Repeats group: creates the other dates as drafts. Needs a saved event. */
+export const generateOccurrencesField: Field = {
+  name: 'generateOccurrences',
+  type: 'ui',
+  // virtual: no column; the schema generator skips it (the button only runs an action).
+  virtual: true,
+  admin: { components: { Field: '@/features/editScreens/admin/GenerateOccurrencesField#GenerateOccurrencesField' } },
+}
+
+/** The ticket type an RSVP was made for (a name from the event's ticket tiers). */
+export const rsvpTicketTierField: Field = {
+  name: 'ticketTier',
+  type: 'text',
+  label: 'Ticket type',
+  admin: { description: 'The ticket type chosen on the event page. Blank when the event has no ticket types.' },
 }
 
 export const rsvpCheckInFields: Field[] = [

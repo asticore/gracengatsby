@@ -41,7 +41,7 @@ export const RESIZE_SCRIPT = `(function(){function send(){var h=Math.ceil(docume
 
 /** Spreadsheet programs run text that starts with = + - @ as a formula; such text gets a leading apostrophe. */
 export function guardFormula(value: string): string {
-  // Leading whitespace and control characters (\x00-\x20, \x7f-\x9f,  / ) are skipped before the check.
+  // Leading whitespace and control characters (\x00-\x20, \x7f-\x9f, Unicode line separators) are skipped before the check.
   if (!/^[\s\x00-\x20\x7f-\x9f]*[=+\-@]/.test(value)) return value
   // A plain number such as -12.5 is not a formula.
   return parseNumber(value) !== null && /^-?[\d.,]+$/.test(value) ? value : `'${value}`

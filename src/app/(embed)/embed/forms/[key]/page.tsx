@@ -3,6 +3,7 @@ import React from 'react'
 
 import { FormRenderer } from '@/features/forms/components/FormRenderer'
 import { normaliseFormConfig } from '@/features/forms/config'
+import { readPlacesBrowserKey } from '@/features/forms/placesKey'
 import { loadPublishedForm } from '@/features/forms/server'
 import { formsEnabled, getFormSettings, resolveForForm, toPublicConfig } from '@/features/forms/settings'
 import { getEngine } from '@/lib/engine'
@@ -35,7 +36,8 @@ export default async function EmbedFormPage({
   if (normaliseFormConfig(form.formConfig).embed?.enabled === false) notFound()
 
   const resolved = resolveForForm(form, await getFormSettings(engine))
-  const config = toPublicConfig(form, resolved, { query })
+  const base = toPublicConfig(form, resolved, { query })
+  const config = { ...base, mapsKey: await readPlacesBrowserKey(engine, base.fields) }
 
   return <FormRenderer config={config} embed />
 }

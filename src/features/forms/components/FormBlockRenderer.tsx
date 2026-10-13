@@ -4,6 +4,7 @@ import type { FormDoc } from '../types'
 
 import { isPublished } from '../layout'
 import { formsEnabled, getFormSettings, resolveForForm, toPublicConfig } from '../settings'
+import { readPlacesBrowserKey } from '../placesKey'
 import { loadForm } from '../server'
 import { FormRenderer } from './FormRenderer'
 
@@ -49,7 +50,8 @@ export async function FormBlockRenderer({
   if (!isPublished(doc)) return null
 
   const resolved = resolveForForm(doc, await getFormSettings(engine))
-  const config = toPublicConfig(doc, resolved)
+  const base = toPublicConfig(doc, resolved)
+  const config = { ...base, mapsKey: await readPlacesBrowserKey(engine, base.fields) }
 
   const title = heading || (showTitle !== false ? doc.title : '')
 

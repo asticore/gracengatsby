@@ -1,0 +1,227 @@
+/* Find and replace admin view. Classes are prefixed fr-. Dark styles only
+   apply under [data-theme='dark']; light is the default. */
+
+.fr-page {
+  padding: 16px;
+  max-width: 880px;
+  box-sizing: border-box;
+}
+
+.fr-header {
+  margin-bottom: 20px;
+}
+
+.fr-title {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--theme-elevation-900, #1a1a1a);
+}
+
+.fr-intro {
+  margin: 0;
+  font-size: 14px;
+  color: var(--theme-elevation-600, #555);
+}
+
+.fr-card {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--theme-elevation-150, #e2e2e2);
+  border-radius: 6px;
+  background: var(--theme-elevation-0, #fff);
+}
+
+.fr-heading {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--theme-elevation-900, #1a1a1a);
+}
+
+.fr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.fr-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-elevation-800, #333);
+}
+
+.fr-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid var(--theme-elevation-200, #ccc);
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.fr-fieldset {
+  margin: 0 0 12px 0;
+  padding: 0;
+  border: 0;
+}
+
+.fr-fieldset legend {
+  margin-bottom: 6px;
+}
+
+.fr-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 14px;
+  color: var(--theme-elevation-800, #333);
+}
+
+.fr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fr-button {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--theme-elevation-300, #999);
+  border-radius: 4px;
+  background: var(--theme-elevation-50, #f5f5f5);
+  color: var(--theme-elevation-900, #1a1a1a);
+  cursor: pointer;
+}
+
+.fr-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fr-button-danger {
+  border-color: #b42318;
+  background: #b42318;
+  color: #fff;
+}
+
+.fr-button-quiet {
+  background: transparent;
+}
+
+.fr-error {
+  margin: 0 0 16px 0;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #fdecea;
+  color: #8a1c12;
+  font-size: 14px;
+}
+
+.fr-summary {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--theme-elevation-900, #1a1a1a);
+}
+
+.fr-counts {
+  margin: 0 0 8px 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: var(--theme-elevation-700, #444);
+}
+
+.fr-note {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--theme-elevation-600, #555);
+}
+
+.fr-samples {
+  margin: 8px 0 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fr-sample {
+  padding: 8px 0;
+  border-top: 1px solid var(--theme-elevation-150, #e2e2e2);
+  font-size: 13px;
+}
+
+.fr-sample-place {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  color: var(--theme-elevation-600, #555);
+}
+
+.fr-sample-text {
+  word-break: break-word;
+  color: var(--theme-elevation-800, #333);
+}
+
+.fr-mark {
+  padding: 0 2px;
+  border-radius: 2px;
+  background: #fde68a;
+  color: #1a1a1a;
+}
+
+[data-theme='dark'] .fr-title,
+[data-theme='dark'] .fr-heading,
+[data-theme='dark'] .fr-summary {
+  color: #f0f0f0;
+}
+
+[data-theme='dark'] .fr-intro,
+[data-theme='dark'] .fr-counts,
+[data-theme='dark'] .fr-note,
+[data-theme='dark'] .fr-sample-place,
+[data-theme='dark'] .fr-sample-text,
+[data-theme='dark'] .fr-label,
+[data-theme='dark'] .fr-check {
+  color: #c8c8c8;
+}
+
+[data-theme='dark'] .fr-card {
+  border-color: #3a3a3a;
+  background: #1c1c1c;
+}
+
+[data-theme='dark'] .fr-input {
+  border-color: #4a4a4a;
+  background: #111;
+  color: #f0f0f0;
+}
+
+[data-theme='dark'] .fr-button {
+  border-color: #555;
+  background: #2a2a2a;
+  color: #f0f0f0;
+}
+
+[data-theme='dark'] .fr-button-quiet {
+  background: transparent;
+}
+
+[data-theme='dark'] .fr-error {
+  background: #3b1513;
+  color: #ffb4a8;
+}
+
+[data-theme='dark'] .fr-sample {
+  border-top-color: #3a3a3a;
+}
+
+[data-theme='dark'] .fr-mark {
+  background: #7a5d00;
+  color: #fff;
+}

@@ -4,6 +4,7 @@ import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
 import { EditForm } from './EditForm'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
+import { WorstPagesCard } from '@/features/pagespeed/ui/WorstPagesCard'
 import { resolveActiveTab, type SettingsPage, type LinkSection } from '@/admin/settingsPages'
 import '@/app/(engage)/settings-tabs.css'
 
@@ -100,6 +101,8 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
           </div>
         )}
       </div>
+
+      {page.topCard === 'pagespeed-worst' && <WorstPagesCard />}
 
       {/* Global sections: one box, tabs on top (when 2+), the active panel below */}
       {globalSections.length > 0 && (

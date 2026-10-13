@@ -17,6 +17,9 @@ import {
 } from '@/admin/views/results/rows'
 import type { FormDoc } from '@/features/forms/types'
 
+// Excel needs a byte order mark to open UTF-8 CSV correctly.
+const BOM = String.fromCharCode(0xfeff)
+
 /** The across-every-form CSV stops here. */
 const CSV_MAX_ROWS = 5000
 
@@ -66,7 +69,7 @@ export async function GET(request: Request): Promise<Response> {
           { collection: 'form-submissions', where, sort: '-createdAt', depth: 1, user: context.user },
           CSV_MAX_ROWS,
         )
-        return new Response(`﻿${buildAllSubmissionsCsv(docs.map(mapAllSubmissionRow))}`, {
+        return new Response(`${BOM}${buildAllSubmissionsCsv(docs.map(mapAllSubmissionRow))}`, {
           status: 200,
           headers: {
             'Content-Type': 'text/csv; charset=utf-8',

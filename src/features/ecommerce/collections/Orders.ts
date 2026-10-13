@@ -38,8 +38,15 @@ export const Orders: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      ({ data, originalDoc, operation }) => {
-        if (!data || typeof data.status !== 'string') return data
+      async ({ data, originalDoc, operation }) => {
+        if (!data) return data
+        // A new order gets its number here, once. An existing number is never replaced.
+        if (operation === 'create' && !data.orderNumber) {
+          const { rawD1 } = await import('../server/db')
+          const { nextOrderNumber } = await import('../numbering')
+          data.orderNumber = await nextOrderNumber(await rawD1())
+        }
+        if (typeof data.status !== 'string') return data
         if (operation === 'update') {
           const from = (originalDoc as { status?: string } | undefined)?.status
           const problem = transitionError(from, data.status)

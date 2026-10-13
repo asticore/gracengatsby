@@ -127,6 +127,12 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           {spotsRemaining !== null && (
             <p className="mt-4 text-[0.85rem] text-[rgba(20,17,15,0.6)]">{spotsRemaining} spot(s) remaining</p>
           )}
+
+          <p className="mt-4 text-[0.85rem]">
+            <a className="underline" href={`/api/events/${encodeURIComponent(slug)}/ics`}>
+              Add to calendar
+            </a>
+          </p>
         </aside>
       </div>
     </div>

@@ -15,6 +15,8 @@ export type RsvpRow = {
   name: string
   email: string
   guestCount: number
+  /** The ticket type chosen on the event page; empty when the event has none. */
+  ticketTier?: string
   notes: string
   createdAt: string
 }
@@ -74,6 +76,7 @@ export function mapRsvpRow(doc: Record<string, unknown>): RsvpRow {
     name: text(doc.name),
     email: text(doc.email),
     guestCount: Number.isFinite(guests) ? guests : 1,
+    ticketTier: text(doc.ticketTier),
     notes: text(doc.notes),
     createdAt: text(doc.createdAt),
   }
@@ -124,10 +127,10 @@ export function csvCell(value: unknown): string {
 }
 
 export function buildRsvpCsv(rows: RsvpRow[]): string {
-  const header = ['Entry ID', 'Name', 'Email', 'Guests', 'Notes', 'Registered']
+  const header = ['Entry ID', 'Name', 'Email', 'Guests', 'Ticket', 'Notes', 'Registered']
   const lines = [header.map(csvCell).join(',')]
   for (const row of rows) {
-    lines.push([row.id, row.name, row.email, row.guestCount, row.notes, row.createdAt].map(csvCell).join(','))
+    lines.push([row.id, row.name, row.email, row.guestCount, row.ticketTier, row.notes, row.createdAt].map(csvCell).join(','))
   }
   // A trailing newline: some tools treat a file without one as truncated.
   return `${lines.join('\r\n')}\r\n`
@@ -280,10 +283,10 @@ export function mapAllRsvpRow(doc: Record<string, unknown>): AllRsvpRow {
 }
 
 export function buildAllRsvpsCsv(rows: AllRsvpRow[]): string {
-  const header = ['Entry ID', 'Event', 'Name', 'Email', 'Guests', 'Notes', 'Registered']
+  const header = ['Entry ID', 'Event', 'Name', 'Email', 'Guests', 'Ticket', 'Notes', 'Registered']
   const lines = [header.map(csvCell).join(',')]
   for (const row of rows) {
-    lines.push([row.id, row.eventTitle, row.name, row.email, row.guestCount, row.notes, row.createdAt].map(csvCell).join(','))
+    lines.push([row.id, row.eventTitle, row.name, row.email, row.guestCount, row.ticketTier, row.notes, row.createdAt].map(csvCell).join(','))
   }
   return `${lines.join('\r\n')}\r\n`
 }

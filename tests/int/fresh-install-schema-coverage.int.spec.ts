@@ -16,6 +16,7 @@ import * as catalogueSchema from '@/cms/db/schema/shopCatalogue'
 import * as dataViewsSchema from '@/cms/db/schema/dataViews'
 import * as storedValueSchema from '@/cms/db/schema/shopStoredValue'
 import * as shippingSchema from '@/cms/db/schema/shopShipping'
+import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -199,6 +200,12 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Gift card, store credit and ledger tables
       for (const [exportName, exportValue] of Object.entries(storedValueSchema)) {
+        if (exportName.endsWith('Generated')) continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Back-in-stock sign-up table lives in its own schema file
+      for (const [exportName, exportValue] of Object.entries(stockSubscriptionsSchema)) {
         if (exportName.endsWith('Generated')) continue
         drizzleTables.push({ name: exportName, table: exportValue })
       }

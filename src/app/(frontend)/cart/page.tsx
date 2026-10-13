@@ -7,6 +7,8 @@ import React from 'react'
 import { PayLaterMessage } from '@/components/PayLaterMessage'
 import { resolveCartLine, type CatalogueProduct } from '@/features/ecommerce/catalogue'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { CartCrossSells } from '@/components/CartCrossSells'
+import { useShopCurrency } from '@/components/ShopCurrencyContext'
 import type { Product } from '@/engage-types'
 
 /**
@@ -20,6 +22,7 @@ import type { Product } from '@/engage-types'
  */
 export default function CartPage() {
   const { cart, decrementItem, incrementItem, removeItem, isLoading } = useCart()
+  const currency = useShopCurrency()
 
   const items = cart?.items || []
 
@@ -47,7 +50,7 @@ export default function CartPage() {
                   <div>
                     <h3>{typeof product === 'object' ? product.title : 'Item'}</h3>
                     {line && line.ok && line.variationLabel ? <p className="opacity-70">{line.variationLabel}</p> : null}
-                    <p>{formatPriceInAUD(unitPrice)}</p>
+                    <p>{formatPriceInAUD(unitPrice, currency)}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -81,10 +84,11 @@ export default function CartPage() {
             })}
           </ul>
 
+          <CartCrossSells />
           <PayLaterMessage amountDollars={typeof cart?.subtotal === 'number' ? cart.subtotal : null} />
           <div className="flex items-center justify-between">
             <p>
-              Subtotal: <strong>{formatPriceInAUD(cart?.subtotal)}</strong>
+              Subtotal: <strong>{formatPriceInAUD(cart?.subtotal, currency)}</strong>
             </p>
             <Link href="/checkout" className="btn btn--primary">
               Checkout

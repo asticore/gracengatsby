@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { ProductCard } from '@/components/ProductCard'
+import { WishlistHeart } from '@/components/WishlistHeart'
+import { wishlistEnabled } from '@/features/ecommerce/lib/wishlist'
 import { availableFilterOptions, filterHref, matchesAttributeFilters, parseAttributeFilters } from '@/features/ecommerce/filters'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
@@ -124,7 +126,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       ) : (
         <div className={`product-grid product-grid--${layout}`}>
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} showShortDescription={settings?.showShortDescriptionOnCard || false} aspect={settings?.productImageAspect || 'portrait'} />
+            <div key={product.id} className="relative">
+              <ProductCard product={product} showShortDescription={settings?.showShortDescriptionOnCard || false} aspect={settings?.productImageAspect || 'portrait'} />
+              {wishlistEnabled(settings) && <div className="absolute right-3 top-3 z-10"><WishlistHeart productId={product.id} /></div>}
+            </div>
           ))}
         </div>
       )}

@@ -2,6 +2,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
+import { useShopCurrency } from '@/components/ShopCurrencyContext'
+import { formatMoney } from '@/features/ecommerce/lib/money'
+
 export type QuoteField = { key: string; label: string; type: 'text' | 'textarea' | 'tel'; required: boolean; placeholder: string }
 export type Quote = {
   subtotalCents: number
@@ -36,7 +39,6 @@ export type CheckoutInput = {
   useStoreCredit: boolean
 }
 
-const money = (c: number) => `$${(c / 100).toFixed(2)}`
 const ADDRESS_FIELDS: [string, string][] = [
   ['firstName', 'First name'],
   ['lastName', 'Last name'],
@@ -53,6 +55,8 @@ const ADDRESS_FIELDS: [string, string][] = [
  * again when payment starts, so nothing here is trusted.
  */
 export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: number; secret: string } | null; email: string; onChange: (v: CheckoutInput, ready: boolean) => void }) {
+  const currency = useShopCurrency()
+  const money = (c: number) => formatMoney(c, currency)
   const [address, setAddress] = useState<Record<string, string>>({ country: 'AU' })
   const [coupon, setCoupon] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState('')

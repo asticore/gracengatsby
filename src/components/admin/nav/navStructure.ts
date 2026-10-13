@@ -60,6 +60,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'product-attributes', type: 'collections' },
       { slug: 'shipping-classes', type: 'collections' },
       { slug: 'product-reviews', type: 'collections' },
+      { slug: 'stock-subscriptions', type: 'collections' },
       { slug: 'gift-cards', type: 'collections' },
       { slug: 'store-credits', type: 'collections' },
       { slug: 'store-credit', type: 'view', href: '/store-credit', label: 'Add or deduct credit' },

@@ -11,6 +11,8 @@ import type { Field } from '@/engine'
  */
 
 const PRICE_ADMIN = { Field: '@/features/ecommerce/admin/PriceInput#PriceInput' }
+const WEIGHT_ADMIN = { Field: '@/features/ecommerce/admin/UnitInput#WeightInput' }
+const DIMENSION_ADMIN = { Field: '@/features/ecommerce/admin/UnitInput#DimensionInput' }
 
 /** The product type picker. Everything below shows or hides from this value. */
 export const productTypeField: Field = {
@@ -108,10 +110,10 @@ export const shippingFields: Field[] = [
         type: 'row',
         admin: { condition: (data) => !data?.isVirtual },
         fields: [
-          { name: 'weight', type: 'number', min: 0, admin: { width: '25%', description: 'kg' } },
-          { name: 'length', type: 'number', min: 0, admin: { width: '25%', description: 'cm' } },
-          { name: 'width', type: 'number', min: 0, admin: { width: '25%', description: 'cm' } },
-          { name: 'height', type: 'number', min: 0, admin: { width: '25%', description: 'cm' } },
+          { name: 'weight', type: 'number', min: 0, admin: { width: '25%', components: WEIGHT_ADMIN } },
+          { name: 'length', type: 'number', min: 0, admin: { width: '25%', components: DIMENSION_ADMIN } },
+          { name: 'width', type: 'number', min: 0, admin: { width: '25%', components: DIMENSION_ADMIN } },
+          { name: 'height', type: 'number', min: 0, admin: { width: '25%', components: DIMENSION_ADMIN } },
         ],
       },
       { name: 'shippingClass', type: 'relationship', relationTo: 'shipping-classes', admin: { condition: (data) => !data?.isVirtual, description: 'Used by shipping zones to choose a rate.' } },
@@ -217,11 +219,11 @@ export const variationFields: Field[] = [
           { name: 'stockQty', type: 'number', defaultValue: 0 },
           { name: 'backorders', type: 'select', defaultValue: 'no', options: backorderOptions },
           { name: 'stockStatus', type: 'select', defaultValue: 'instock', options: stockStatusOptions },
-          { name: 'image', type: 'upload', relationTo: 'media', admin: { description: 'Media ID of the image to show for this option.' } },
-          { name: 'weight', type: 'number', min: 0 },
-          { name: 'length', type: 'number', min: 0 },
-          { name: 'width', type: 'number', min: 0 },
-          { name: 'height', type: 'number', min: 0 },
+          { name: 'image', type: 'upload', relationTo: 'media', admin: { description: 'One of this product\'s gallery images. Shown on the product page when this option is chosen.', components: { Field: '@/features/ecommerce/admin/VariationImagePicker#VariationImagePicker' } } },
+          { name: 'weight', type: 'number', min: 0, admin: { components: WEIGHT_ADMIN } },
+          { name: 'length', type: 'number', min: 0, admin: { components: DIMENSION_ADMIN } },
+          { name: 'width', type: 'number', min: 0, admin: { components: DIMENSION_ADMIN } },
+          { name: 'height', type: 'number', min: 0, admin: { components: DIMENSION_ADMIN } },
           { name: 'enabled', type: 'checkbox', defaultValue: true },
         ],
       },
@@ -272,12 +274,27 @@ export const ratingFields: Field[] = [
   { name: 'ratingCount', type: 'number', defaultValue: 0, admin: { readOnly: true, position: 'sidebar' } },
 ]
 
+/** Pre-order: sell before the product ships. Live only while the shop setting is on and the date is ahead (see lib/preorder.ts). */
+export const preorderFields: Field[] = [
+  {
+    type: 'collapsible',
+    label: 'Pre-order',
+    admin: { condition: (data) => data?.productType !== 'giftcard' && data?.productType !== 'external' },
+    fields: [
+      { name: 'preorder', type: 'checkbox', defaultValue: false, admin: { description: 'Let customers buy before the product ships. The button says Pre-order and buying continues while stock is out.' } },
+      { name: 'preorderReleaseDate', type: 'date', admin: { date: { pickerAppearance: 'dayOnly' }, condition: (data) => Boolean(data?.preorder), description: 'When the product ships. Pre-orders stop on this date. Blank means no end date.' } },
+      { name: 'preorderNote', type: 'textarea', admin: { condition: (data) => Boolean(data?.preorder), description: 'Shown under the button, for example "Ships in the first batch in November."' } },
+    ],
+  },
+]
+
 export const catalogueFields: Field[] = [
   ...pricingFields,
   ...inventoryFields,
   ...limitFields,
   ...shippingFields,
   ...typeSpecificFields,
+  ...preorderFields,
   ...variationFields,
   ...linkedProductFields,
   ...ratingFields,

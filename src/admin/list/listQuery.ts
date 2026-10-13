@@ -429,6 +429,12 @@ export const LIST_DEFAULTS: Record<string, CollectionListDefaults> = {
     sort: '-createdAt',
     limit: 25,
   },
+  orders: {
+    columns: ['orderNumber', 'status', 'customerEmail', 'amount', 'invoiceNumber', 'createdAt'],
+    searchFields: ['orderNumber', 'customerEmail'],
+    sort: '-createdAt',
+    limit: 25,
+  },
 }
 
 /**
@@ -510,6 +516,8 @@ export function buildFindArgs(opts: {
   collection: string
   urlParams: ListState
   allColumns: ColumnDef[]
+  /** Extra OR-branches for the search box, for matches the columns cannot express (for example a customer's name on an order). */
+  extraSearch?: Record<string, unknown>[]
 }): FindArgs {
   const defaults = getListDefaults(opts.collection)
   const where: Record<string, unknown> = {}
@@ -519,9 +527,12 @@ export function buildFindArgs(opts: {
   if (opts.urlParams.q) {
     const searchableFields = defaults.searchFields
     const searchCols = opts.allColumns.filter((c) => searchableFields.includes(c.name))
-    const orConds = searchCols.map((col) => ({
-      [col.name]: { contains: opts.urlParams.q },
-    }))
+    const orConds = [
+      ...searchCols.map((col) => ({
+        [col.name]: { contains: opts.urlParams.q },
+      })),
+      ...(opts.extraSearch ?? []),
+    ]
     if (orConds.length > 0) {
       conditions.push({ or: orConds })
     }

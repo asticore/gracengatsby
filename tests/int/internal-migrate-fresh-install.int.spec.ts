@@ -309,6 +309,16 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_locked_documents_rels')).toContain('eg_form_drafts_id')
   })
 
+  it('adds the pre-order product columns and their version copies', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_products')).toEqual(expect.arrayContaining(['preorder', 'preorder_release_date', 'preorder_note']))
+    expect(await columnsOf('_eg_products_v')).toEqual(expect.arrayContaining(['version_preorder', 'version_preorder_release_date', 'version_preorder_note']))
+    expect(await columnsOf('eg_products_variations')).toContain('image_id')
+  })
+
   it('creates the PageSpeed tables, list columns, API key and settings columns', async () => {
     for (const table of ['eg_pagespeed_results', 'eg_pagespeed_queue']) {
       expect(tables, table).toContain(table)
@@ -386,6 +396,12 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_payment_settings')).toEqual(expect.arrayContaining(['afterpay_enabled', 'klarna_max_order', 'wallets_apple_pay']))
     expect(await columnsOf('eg_orders')).toEqual(expect.arrayContaining(['shipments', 'tracking_number', 'shipped_at']))
     expect(await columnsOf('eg_shipping_manifests')).toEqual(expect.arrayContaining(['number', 'order_ids', 'parcel_count']))
+  })
+
+  it('adds the PayPal order and capture id columns to orders', async () => {
+    const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_orders`)').all()
+    const names = (result.results as { name: string }[]).map((r) => r.name)
+    expect(names).toEqual(expect.arrayContaining(['paypal_order_id', 'paypal_capture_id']))
   })
 
   it('creates custom keys child table for integrations', () => {

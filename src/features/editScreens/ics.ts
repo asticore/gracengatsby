@@ -1,4 +1,5 @@
 import { forEachText } from './textFields'
+import { rruleFromRecurrence } from './recurrence'
 
 /**
  * iCalendar (RFC 5545) for one public event. Pure: no I/O, no framework imports.
@@ -20,6 +21,8 @@ export type IcsEvent = {
   location?: string
   description?: string
   url?: string
+  /** Repeat rule without the RRULE: prefix, e.g. FREQ=WEEKLY;INTERVAL=1. */
+  rrule?: string | null
 }
 
 /** Escapes a TEXT value: backslash, semicolon, comma and newlines. */
@@ -82,6 +85,7 @@ export function buildEventIcs(event: IcsEvent): string {
     `LAST-MODIFIED:${icsDateTime(event.stamp)}`,
     `DTSTART:${icsDateTime(event.start)}`,
     `DTEND:${icsDateTime(event.end)}`,
+    event.rrule ? `RRULE:${event.rrule}` : null,
     `SUMMARY:${icsEscape(event.summary)}`,
     event.location ? `LOCATION:${icsEscape(event.location)}` : null,
     event.description ? `DESCRIPTION:${icsEscape(event.description)}` : null,
@@ -106,6 +110,8 @@ export type IcsEventSource = {
   endDate?: string | null
   updatedAt?: string | null
   location?: { venueName?: string | null; address?: string | null; isOnline?: boolean | null } | null
+  /** The stored repeat group; a repeating event's feed entry carries an RRULE. */
+  recurrence?: unknown
 }
 
 function parseDate(value: unknown): Date | null {
@@ -150,5 +156,6 @@ export function icsFromEvent(doc: IcsEventSource, origin: string): string | null
     location,
     description,
     url: `${base}/events/${slug}`,
+    rrule: rruleFromRecurrence(doc.recurrence, start),
   })
 }

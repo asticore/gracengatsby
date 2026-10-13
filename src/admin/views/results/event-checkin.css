@@ -1,0 +1,264 @@
+/* Full-screen check-in list opened from an event's RSVPs tab.
+   Classes are prefixed eci-. Light is the default; dark applies only under
+   [data-theme='dark']. Built for a phone held at the door: big targets, a
+   16px gutter, nothing wider than the screen. */
+
+.eci-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  background: #fff;
+  color: #1a1a1a;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.eci-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.eci-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.eci-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.eci-event {
+  margin: 2px 0 0 0;
+  color: #555;
+  font-size: 14px;
+}
+
+.eci-close {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #c8c8c8;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.eci-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0 0 14px 0;
+}
+
+.eci-count {
+  margin: 0;
+  font-size: 16px;
+}
+
+.eci-count__value {
+  font-size: 28px;
+  font-weight: 700;
+  margin-right: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eci-tiers {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.eci-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.eci-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 1px solid #b5b5b5;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 18px;
+  box-sizing: border-box;
+}
+
+.eci-input:focus-visible,
+.eci-action:focus-visible,
+.eci-close:focus-visible {
+  outline: 2px solid #3b6fd4;
+  outline-offset: 2px;
+}
+
+.eci-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  min-height: 36px;
+}
+
+.eci-toggle input {
+  width: 20px;
+  height: 20px;
+}
+
+.eci-error {
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  border-left: 4px solid #c0392b;
+  color: #8e2419;
+  font-size: 15px;
+}
+
+.eci-warning {
+  margin: 0 0 12px 0;
+  color: #8a5a00;
+  font-size: 15px;
+}
+
+.eci-muted {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.eci-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.eci-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.eci-row--in .eci-name::after {
+  content: '  checked in';
+  color: #2e7d32;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.eci-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.eci-name {
+  font-size: 19px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.eci-meta {
+  color: #555;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.eci-clip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eci-action {
+  flex: 0 0 auto;
+  min-width: 128px;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #1f5fbf;
+  color: #fff;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.eci-action--undo {
+  background: #fff;
+  color: #8e2419;
+  border: 2px solid #c0392b;
+}
+
+.eci-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (min-width: 720px) {
+  .eci-screen {
+    padding: 24px max(24px, calc((100vw - 720px) / 2));
+  }
+}
+
+[data-theme='dark'] .eci-screen {
+  background: #161616;
+  color: #ececec;
+}
+
+[data-theme='dark'] .eci-event,
+[data-theme='dark'] .eci-meta,
+[data-theme='dark'] .eci-muted {
+  color: #a6a6a6;
+}
+
+[data-theme='dark'] .eci-close,
+[data-theme='dark'] .eci-input {
+  background: #232323;
+  border-color: #4a4a4a;
+  color: #ececec;
+}
+
+[data-theme='dark'] .eci-row {
+  border-bottom-color: #333;
+}
+
+[data-theme='dark'] .eci-row--in .eci-name::after {
+  color: #7bd17f;
+}
+
+[data-theme='dark'] .eci-action--undo {
+  background: #232323;
+  color: #ff9d92;
+  border-color: #c0392b;
+}
+
+[data-theme='dark'] .eci-error {
+  color: #ff9d92;
+}
+
+[data-theme='dark'] .eci-warning {
+  color: #e8b44a;
+}

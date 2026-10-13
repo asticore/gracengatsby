@@ -2,7 +2,15 @@
 
 import React, { useState } from 'react'
 
-export const RsvpForm: React.FC<{ eventID: string | number }> = ({ eventID }) => {
+/** One ticket type as the form shows it. Built on the server from the event's tiers and their sales. */
+export type RsvpTierOption = {
+  name: string
+  /** Shown in the list, e.g. "VIP - $25.00 - 4 left". */
+  label: string
+  soldOut: boolean
+}
+
+export const RsvpForm: React.FC<{ eventID: string | number; tiers?: RsvpTierOption[] }> = ({ eventID, tiers = [] }) => {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -22,6 +30,7 @@ export const RsvpForm: React.FC<{ eventID: string | number }> = ({ eventID }) =>
           guestCount: Number(formData.get('guestCount')) || 1,
           name: formData.get('name'),
           notes: formData.get('notes') || undefined,
+          ticketTier: tiers.length > 0 ? formData.get('ticketTier') : undefined,
         }),
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
@@ -58,6 +67,21 @@ export const RsvpForm: React.FC<{ eventID: string | number }> = ({ eventID }) =>
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <h3>RSVP</h3>
+      {tiers.length > 0 && (
+        <label className={labelClassName}>
+          Ticket type
+          <select name="ticketTier" required defaultValue="" className={inputClassName}>
+            <option value="" disabled>
+              Choose a ticket type
+            </option>
+            {tiers.map((tier) => (
+              <option key={tier.name} value={tier.name} disabled={tier.soldOut}>
+                {tier.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className={labelClassName}>
         Name
         <input name="name" type="text" required className={inputClassName} />
@@ -76,7 +100,7 @@ export const RsvpForm: React.FC<{ eventID: string | number }> = ({ eventID }) =>
       </label>
       {error && <p className="form-error">{error}</p>}
       <button type="submit" className="btn btn--primary" disabled={status === 'submitting'}>
-        {status === 'submitting' ? 'Sending…' : 'Reserve my spot'}
+        {status === 'submitting' ? 'Sending...' : 'Reserve my spot'}
       </button>
     </form>
   )

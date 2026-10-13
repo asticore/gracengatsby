@@ -49,6 +49,8 @@ import * as migration_20261014_500000_forms_builder from './20261014_500000_form
 import * as migration_20261015_200000_shop_numbering from './20261015_200000_shop_numbering';
 import * as migration_20261016_200000_stock_subscriptions from './20261016_200000_stock_subscriptions';
 import * as migration_20261017_200000_form_drafts from './20261017_200000_form_drafts';
+import * as migration_20261018_100000_paypal_payments from './20261018_100000_paypal_payments';
+import * as migration_20261018_200000_preorders_variation_images from './20261018_200000_preorders_variation_images';
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
 
 export const migrations = [
@@ -311,5 +313,15 @@ export const migrations = [
     up: migration_20261017_200000_form_drafts.up,
     down: migration_20261017_200000_form_drafts.down,
     name: '20261017_200000_form_drafts',
+  },
+  {
+    up: migration_20261018_100000_paypal_payments.up,
+    down: migration_20261018_100000_paypal_payments.down,
+    name: '20261018_100000_paypal_payments',
+  },
+  {
+    up: migration_20261018_200000_preorders_variation_images.up,
+    down: migration_20261018_200000_preorders_variation_images.down,
+    name: '20261018_200000_preorders_variation_images',
   },
 ];

@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import React from 'react'
 import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
@@ -12,6 +11,8 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
 import { WishlistHeart } from '@/components/WishlistHeart'
+import { ProductGallery } from '@/components/ProductGallery'
+import { VariationImageProvider } from '@/components/VariationImageProvider'
 import { wishlistEnabled } from '@/features/ecommerce/lib/wishlist'
 import type { CatalogueProduct } from '@/features/ecommerce/catalogue'
 import { normaliseGiftCardSettings } from '@/features/ecommerce/lib/storedValue'
@@ -111,28 +112,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
+    <VariationImageProvider>
     <div className="page-shell grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">
       <AdsPageScope collection="products" noAds={(product as { noAds?: boolean }).noAds} />
       <PageJsonLd collection="products" doc={product} path={`/shop/${slug}`} extra={jsonLdExtra} />
-      <div className="grid gap-4">
-        {images.length > 0 ? (
-          images.map((img) => (
-            <Image
-              key={img.id}
-              src={img.url || ''}
-              alt={img.alt || product.title}
-              width={800}
-              height={1000}
-              style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
-            />
-          ))
-        ) : (
-          <div
-            className="aspect-[4/5] bg-[image:linear-gradient(135deg,var(--color-cream-dim),var(--color-gold-light))]"
-            aria-hidden
-          />
-        )}
-      </div>
+      <ProductGallery images={images} title={product.title} />
 
       <div>
         {product.category && (
@@ -152,7 +136,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         )}
 
         <ProductPurchase productId={product.id} view={view} grouped={grouped} giftConfig={giftConfig} />
-        {showBackInStockForm(settings, catalogue) ? <BackInStockForm productId={product.id} /> : null}
+        {showBackInStockForm(settings, catalogue) && !view.preorder.active ? <BackInStockForm productId={product.id} /> : null}
         {wishlistEnabled(settings) && <div className="mt-4"><WishlistHeart productId={product.id} showLink /></div>}
 
         {view.details.length > 0 && (
@@ -234,5 +218,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       )}
     </div>
+    </VariationImageProvider>
   )
 }

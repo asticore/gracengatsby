@@ -39,7 +39,7 @@ describe('foldLine', () => {
   })
 
   it('never splits a multi-byte character', () => {
-    const line = 'SUMMARY:' + 'é中'.repeat(60)
+    const line = 'SUMMARY:' + String.fromCodePoint(0xe9, 0x4e2d).repeat(60)
     const folded = foldLine(line)
     for (const part of folded.split('\r\n')) {
       expect(octets(part)).toBeLessThanOrEqual(75)

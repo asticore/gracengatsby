@@ -37,3 +37,26 @@ export function computePrefill(
   }
   return result
 }
+
+/**
+ * The same rules, for the browser: reads the page address the visitor is on
+ * (window.location.search) and runs it through computePrefill. The whitelist
+ * still comes from the server, so a crafted link can only fill fields the form
+ * author opened up. The query object has no prototype, so a key such as
+ * "constructor" cannot reach inherited properties.
+ */
+export function prefillFromSearch(
+  fields: FormFieldDef[],
+  whitelist: string[] | undefined,
+  search: string,
+): Record<string, string> {
+  const query: Record<string, string> = Object.create(null)
+  try {
+    new URLSearchParams(search).forEach((value, key) => {
+      if (!(key in query)) query[key] = value
+    })
+  } catch {
+    return {}
+  }
+  return computePrefill(fields, whitelist, query)
+}

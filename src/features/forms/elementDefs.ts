@@ -84,7 +84,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'textarea',
     label: 'Text area',
-    icon: '¶',
+    icon: String.fromCodePoint(0xb6),
     description: 'Several lines of text, for messages.',
     fields: base([placeholder, ...textRules]),
     defaults: { label: 'Message' },
@@ -100,7 +100,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'phone',
     label: 'Phone',
-    icon: '☎',
+    icon: String.fromCodePoint(0x260e),
     description: 'A phone number.',
     fields: base([placeholder, ...textRules]),
     defaults: { label: 'Phone' },
@@ -121,7 +121,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'select',
     label: 'Dropdown',
-    icon: '▾',
+    icon: String.fromCodePoint(0x25be),
     description: 'Choose one from a list.',
     fields: base([placeholder, { name: 'options', label: 'Choices', type: 'formOptions' }, ...pricing]),
     defaults: { label: 'Choose one', options: [{ label: 'Option 1', value: 'option_1' }, { label: 'Option 2', value: 'option_2' }] },
@@ -129,7 +129,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'radio',
     label: 'Radio buttons',
-    icon: '◉',
+    icon: String.fromCodePoint(0x25c9),
     description: 'Choose one, all choices visible.',
     fields: base([{ name: 'options', label: 'Choices', type: 'formOptions' }, ...pricing]),
     defaults: { label: 'Choose one', options: [{ label: 'Option 1', value: 'option_1' }, { label: 'Option 2', value: 'option_2' }] },
@@ -137,7 +137,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'checkbox',
     label: 'Checkboxes',
-    icon: '☑',
+    icon: String.fromCodePoint(0x2611),
     description: 'Tick several. With no choices it is a single yes/no box.',
     fields: base([{ name: 'options', label: 'Choices (leave empty for one yes/no box)', type: 'formOptions' }, ...pricing]),
     defaults: { label: 'Choose any', options: [{ label: 'Option 1', value: 'option_1' }, { label: 'Option 2', value: 'option_2' }] },
@@ -188,7 +188,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'rating',
     label: 'Rating',
-    icon: '★',
+    icon: String.fromCodePoint(0x2605),
     description: 'Star rating from 1 up to the number you choose.',
     fields: base([{ name: 'scaleMax', label: 'Number of stars (3-10)', type: 'number' }]),
     defaults: { label: 'Rating', scaleMax: 5 },
@@ -204,7 +204,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'signature',
     label: 'Signature',
-    icon: '✍',
+    icon: String.fromCodePoint(0x270d),
     description: 'Draw a signature with a finger or mouse.',
     fields: base(),
     defaults: { label: 'Signature' },
@@ -212,7 +212,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'matrix',
     label: 'Matrix',
-    icon: '▦',
+    icon: String.fromCodePoint(0x25a6),
     description: 'A grid: each row is a question answered from the same set of columns.',
     fields: base([
       { name: 'rows', label: 'Rows (the questions)', type: 'formOptions' },
@@ -233,8 +233,14 @@ const SPECS: FieldSpec[] = [
       { name: 'slotsText', label: 'Time slots', type: 'text', helpText: 'Start times, comma-separated, 24-hour. e.g. 09:00, 09:30, 10:00' },
       { name: 'weekdaysText', label: 'Open days', type: 'text', helpText: 'Numbers, 0 = Sunday ... 6 = Saturday. e.g. 1,2,3,4,5' },
       { name: 'daysAhead', label: 'How many days ahead can be booked', type: 'number' },
+      {
+        name: 'capacity',
+        label: 'Bookings allowed per time',
+        type: 'number',
+        helpText: 'How many people can book the same start time before it shows as taken. Leave it at 1 for one booking per time.',
+      },
     ]),
-    defaults: { label: 'Appointment', slotsText: '09:00, 10:00, 11:00, 13:00, 14:00, 15:00', weekdaysText: '1,2,3,4,5', daysAhead: 60 },
+    defaults: { label: 'Appointment', slotsText: '09:00, 10:00, 11:00, 13:00, 14:00, 15:00', weekdaysText: '1,2,3,4,5', daysAhead: 60, capacity: 1 },
   },
   {
     type: 'address',
@@ -258,7 +264,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'consent',
     label: 'Consent (GDPR)',
-    icon: '⚖',
+    icon: String.fromCodePoint(0x2696),
     description: 'A required tick-box for privacy consent. The answer and the time are stored with the entry.',
     fields: [
       { name: 'label', label: 'Consent wording', type: 'textarea' },
@@ -272,7 +278,7 @@ const SPECS: FieldSpec[] = [
   {
     type: 'calculation',
     label: 'Calculation / total',
-    icon: '∑',
+    icon: String.fromCodePoint(0x2211),
     description: 'A number worked out from other fields, such as a quote or total.',
     fields: [
       label,
@@ -310,7 +316,7 @@ export const FORM_ELEMENTS: ElementDef[] = [
   {
     type: 'ff-step',
     label: 'Step break',
-    icon: '⇥',
+    icon: String.fromCodePoint(0x21e5),
     category: 'formFields',
     description: 'Splits the form into steps with a progress bar. Place it at the top level, between sections.',
     fields: [{ name: 'title', label: 'Title of the step that starts here', type: 'text' }],
@@ -328,7 +334,7 @@ export const FORM_ELEMENTS: ElementDef[] = [
   {
     type: 'button',
     label: 'Button',
-    icon: '▭',
+    icon: String.fromCodePoint(0x25ad),
     description: 'A link styled as a button.',
     category: 'text',
     fields: [

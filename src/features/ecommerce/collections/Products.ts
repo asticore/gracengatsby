@@ -15,6 +15,7 @@ import { customFieldsField } from '@/fields/customFields'
 import { reviewFields } from '@/features/approval/fields'
 import { catalogueFields, productTypeField } from './productFields'
 import { catalogueBeforeChange } from '../productHooks'
+import { backInStockAfterChange } from '../backInStockNotify'
 import { stockAlertAfterChange } from '../stockAlerts'
 
 /**
@@ -165,6 +166,6 @@ export const Products: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
-    afterChange: [stockAlertAfterChange, pageSpeedAfterChange('products')],
+    afterChange: [stockAlertAfterChange, backInStockAfterChange, pageSpeedAfterChange('products')],
   },
 }

@@ -19,7 +19,8 @@ export const CARRIERS: CarrierDef[] = [
       { key: 'apiKey', label: 'ShipPing API key', secret: true, help: 'Needed to buy labels.' },
       { key: 'apiPassword', label: 'ShipPing API password', secret: true, help: 'Needed to buy labels.' },
     ],
-    live: { rates: true, labels: false },
+    labelKeys: ['accountNumber', 'apiKey', 'apiPassword'],
+    live: { rates: true, labels: true },
   },
   {
     id: 'sendle',
@@ -136,4 +137,11 @@ export const carrierDef = (id: string): CarrierDef | undefined => CARRIERS.find(
 export function missingCredentialKeys(def: CarrierDef, values: Record<string, string>, required?: string[]): string[] {
   const need = required ?? def.fields.map((f) => f.key)
   return need.filter((k) => !(values[k] ?? '').trim())
+}
+
+/** True when the carrier can buy labels built in AND every label key is filled. Drives the Buy label panel. */
+export function carrierLabelsReady(id: string, values: Record<string, string>): boolean {
+  const def = carrierDef(id)
+  if (!def || !def.live.labels) return false
+  return missingCredentialKeys(def, values, def.labelKeys).length === 0
 }

@@ -24,6 +24,7 @@ type CartItem = {
   product?: number | { id: number } | null
   variation?: string | null
   quantity?: number | null
+  priceCents?: number | null
   customAmount?: number | null
   giftName?: string | null
   giftEmail?: string | null
@@ -79,7 +80,7 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
       const key = `${productId}|${item.variation ?? ''}`
       const already = seen.get(key) ?? 0
       seen.set(key, already + item.quantity)
-      const line = resolveCartLine(product, item.variation ?? null, item.quantity, new Date(), already)
+      const line = resolveCartLine(product, item.variation ?? null, item.quantity, new Date(), already, item.priceCents ?? null)
       if (line.ok) {
         subtotal += line.unitPrice * item.quantity
         continue

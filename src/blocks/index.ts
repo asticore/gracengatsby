@@ -9,6 +9,7 @@ import { LoopBlock } from './Loop'
 import { ProductGridBlock } from './ProductGrid'
 import { RichTextBlock } from './RichTextBlock'
 import { SectionBlock } from './Section'
+import { TableOfContentsBlock } from './TableOfContents'
 import { FormBlock } from '../features/forms/block'
 
 /**
@@ -28,6 +29,7 @@ export const contentBlocks = [
   LoopBlock,
   FormBlock,
   ElementBlock,
+  TableOfContentsBlock,
 ]
 
 /**

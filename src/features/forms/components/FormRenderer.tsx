@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import type { FormFieldDef, PublicFormConfig, SubmissionValues } from '../types'
 
@@ -19,10 +19,13 @@ import {
   upgradeFieldsToLayout,
   type LayoutNode,
 } from '../layout'
+import { prefillFromSearch } from '../prefill'
 import { priceSubmission } from '../pricing'
 import { HONEYPOT_FIELD, RECAPTCHA_FIELD, RENDERED_AT_FIELD, TURNSTILE_FIELD } from '../spam'
 import { validateSubmission } from '../validate'
 import { FieldView } from './FieldView'
+import { SaveForLater } from './SaveForLater'
+import { RESUME_FIELD, readResumeToken } from '../drafts'
 import './forms.css'
 
 /**
@@ -111,6 +114,10 @@ function fieldsIn(nodes: LayoutNode[], pairs: Map<unknown, FormFieldDef>): FormF
   return out
 }
 
+const subscribeToNothing = (): (() => void) => () => {}
+const readPageSearch = (): string => (typeof window === 'undefined' ? '' : window.location.search)
+const serverSearch = (): string => ''
+
 const safeRedirect = (url: string): string | null => {
   try {
     const parsed = new URL(url, window.location.href)
@@ -169,6 +176,24 @@ export const FormRenderer: React.FC<{
     renderedAt.current = Date.now()
   }, [])
 
+  /**
+   * Pre-fill from the page address (?plan=pro). It runs in the browser, so a
+   * normal page stays static; only keys on the server's whitelist can fill. The
+   * page address is read through useSyncExternalStore and applied while rendering
+   * once it changes, so the server HTML and the first browser render match.
+   */
+  const pageSearch = useSyncExternalStore(subscribeToNothing, readPageSearch, serverSearch)
+  const [appliedSearch, setAppliedSearch] = useState('')
+  if (pageSearch !== appliedSearch) {
+    setAppliedSearch(pageSearch)
+    const found = prefillFromSearch(fields, config.prefillKeys, pageSearch)
+    const keys = Object.keys(found)
+    if (keys.length > 0) {
+      const filled = initialValues(fields, found)
+      setValues((previous) => ({ ...previous, ...Object.fromEntries(keys.map((key) => [key, filled[key]])) }))
+    }
+  }
+
   const computed = useMemo(() => applyCalculations(fields, values), [fields, values])
   const visible = useMemo(() => resolveVisibility(fields, computed), [fields, computed])
 
@@ -178,6 +203,15 @@ export const FormRenderer: React.FC<{
         ? priceSubmission({ id: config.id, title: config.title, fields, payment: { purchasable: true, currency: config.currency } }, computed, visible)
         : null,
     [config, fields, computed, visible],
+  )
+
+  /** Save and continue: the saved answers and the step the visitor had reached. */
+  const restoreDraft = useCallback(
+    (restored: SubmissionValues, index: number) => {
+      setValues((previous) => ({ ...previous, ...restored }))
+      setStepIndex(Math.min(Math.max(index, 0), Math.max(steps.length - 1, 0)))
+    },
+    [steps.length],
   )
 
   const setValue = useCallback((name: string, value: unknown) => {
@@ -262,6 +296,9 @@ export const FormRenderer: React.FC<{
 
     const system: Record<string, unknown> = { [HONEYPOT_FIELD]: '', [RENDERED_AT_FIELD]: renderedAt.current, eg_source: typeof document !== 'undefined' ? document.referrer || window.location.href : '' }
     if (turnstileToken) system[TURNSTILE_FIELD] = turnstileToken
+    // Opened from a save-and-continue link: the server removes that draft once this send succeeds.
+    const resumeToken = typeof window !== 'undefined' ? readResumeToken(window.location.search) : null
+    if (resumeToken) system[RESUME_FIELD] = resumeToken
     if (captcha?.provider === 'recaptcha') {
       const api = (window as unknown as CaptchaApi).grecaptcha
       if (api) {
@@ -335,6 +372,9 @@ export const FormRenderer: React.FC<{
             onChange={setValue}
             idPrefix={`f${config.id}`}
             currency={config.currency}
+            mapsKey={config.mapsKey}
+            formKey={config.key || String(config.id)}
+            apiBase={apiBase}
           />
         )
       }
@@ -350,7 +390,7 @@ export const FormRenderer: React.FC<{
       }
       return null
     },
-    [pairs, computed, errors, visible, setValue, config.id, config.currency],
+    [pairs, computed, errors, visible, setValue, config.id, config.currency, config.key, config.mapsKey, apiBase],
   )
 
   const drawNodes = (nodes: LayoutNode[]) =>
@@ -462,11 +502,12 @@ export const FormRenderer: React.FC<{
             </button>
           ) : (
             <button type="submit" className="btn btn--primary" disabled={status === 'submitting'}>
-              {status === 'submitting' ? 'Sending…' : config.submitButtonLabel}
+              {status === 'submitting' ? 'Sending...' : config.submitButtonLabel}
             </button>
           )}
         </div>
       </form>
+      <SaveForLater config={config} values={computed} page={stepIndex} onRestore={restoreDraft} />
     </div>
   )
 }

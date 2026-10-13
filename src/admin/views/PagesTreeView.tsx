@@ -39,7 +39,8 @@ export async function PagesTreeView(props: PagesTreeViewProps) {
       })
 
       if (result.docs && Array.isArray(result.docs)) {
-        pages = result.docs.map((doc: any) => ({
+        // Trashed pages are hidden from the tree (they live in the trash).
+        pages = result.docs.filter((doc: any) => !doc.trashedAt).map((doc: any) => ({
           id: Number(doc.id),
           title: String(doc.title || ''),
           slug: String(doc.slug || ''),

@@ -19,6 +19,8 @@ const cartItemFields: Field[] = [
   // Id of the chosen variation of a variable product; the server re-checks it against the product.
   { name: 'variation', type: 'text' },
   { name: 'quantity', type: 'number', required: true },
+  // Name-your-price lines: the amount the buyer typed in cents. The server checks it against the product's minimum.
+  { name: 'priceCents', type: 'number' },
   // Gift card lines: the amount the buyer chose (cents) and who it goes to. The server validates all of it.
   { name: 'customAmount', type: 'number' },
   { name: 'giftName', type: 'text' },

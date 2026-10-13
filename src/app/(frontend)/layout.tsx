@@ -30,6 +30,8 @@ import { headers } from 'next/headers'
 import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
 import { Providers } from '@/components/Providers'
+import { ShopCurrencyProvider } from '@/components/ShopCurrencyContext'
+import { shopCurrency } from '@/features/ecommerce/server/pricing'
 import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
 import type { Footer as FooterGlobal, Header as HeaderGlobal, Media, SiteSetting } from '@/engage-types'
@@ -91,6 +93,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   // Cloudflare's two-letter country for the visitor; drives the cookie banner's opt-in rule.
   const country = (await headers()).get('cf-ipcountry')
   const engine = await getEngine()
+  const shopSettings = await engine.findGlobal({ slug: 'shop-settings', depth: 0 }).catch((): null => null)
+  const storeCurrency = shopCurrency({ settings: (shopSettings ?? {}) as Record<string, unknown> })
 
   const [settings, header, footer, resolvedPages] = (await Promise.all([
     engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null),
@@ -194,6 +198,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <AdsRoot />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${FONT_FACE_VARS} }` }} />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${themeVars} }` }} />
+        <ShopCurrencyProvider currency={storeCurrency}>
         <Providers>
           <Header
             siteName={settings?.siteName || undefined}
@@ -224,6 +229,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             copyrightText={footer?.copyrightText}
           />
         </Providers>
+        </ShopCurrencyProvider>
         <SeoBodyScripts />
       </body>
     </html>

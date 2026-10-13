@@ -5,7 +5,11 @@ import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
 
 import { AddToCartButton } from '@/components/AddToCartButton'
-import { RsvpForm } from '@/components/RsvpForm'
+import { EventSeries } from '@/components/EventSeries'
+import { EventTiers } from '@/components/EventTiers'
+import { RsvpForm, type RsvpTierOption } from '@/components/RsvpForm'
+import { loadTierViews } from '@/features/editScreens/tierLoad'
+import { tierOptionLabel } from '@/features/editScreens/tierSales'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
@@ -60,6 +64,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (!event) {
     notFound()
   }
+  const engine = await getEngine()
 
   const cover = event.coverImage && typeof event.coverImage === 'object' ? (event.coverImage as Media) : null
   const ticket =
@@ -73,6 +78,12 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
 
   const spotsRemaining =
     typeof event.capacity === 'number' ? Math.max(event.capacity - guestsSoFar, 0) : null
+
+  const tierViews = await loadTierViews(engine, event)
+  const isPaid = event.eventType === 'paid'
+  const tierOptions: RsvpTierOption[] = isPaid
+    ? []
+    : tierViews.map((view) => ({ name: view.name, label: tierOptionLabel(view), soldOut: view.soldOut }))
 
   return (
     <div className="page-shell">
@@ -97,9 +108,11 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               <RichText data={event.description} />
             </div>
           )}
+          <EventSeries event={event} />
         </div>
 
         <aside className="self-start border border-[var(--color-line)] bg-white p-8">
+          {tierViews.length > 0 && <EventTiers tiers={tierViews} paid={isPaid} />}
           {event.externalRegistrationUrl ? (
             <a
               className="btn btn--primary"
@@ -121,7 +134,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               <p className="empty-state">Ticket sales open soon.</p>
             )
           ) : (
-            <RsvpForm eventID={event.id} />
+            <RsvpForm eventID={event.id} tiers={tierOptions} />
           )}
 
           {spotsRemaining !== null && (

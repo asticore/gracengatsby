@@ -5,13 +5,17 @@ import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
 
 import { ProductPurchase, type GroupedChild } from '@/components/ProductPurchase'
+import { BackInStockForm } from '@/components/BackInStockForm'
 import { ProductReviewForm } from '@/components/ProductReviewForm'
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
+import { WishlistHeart } from '@/components/WishlistHeart'
+import { wishlistEnabled } from '@/features/ecommerce/lib/wishlist'
 import type { CatalogueProduct } from '@/features/ecommerce/catalogue'
 import { normaliseGiftCardSettings } from '@/features/ecommerce/lib/storedValue'
+import { showBackInStockForm } from '@/features/ecommerce/lib/backInStock'
 import { aggregateRatingJsonLd, summariseRatings } from '@/features/ecommerce/reviews'
 import { buildProductView, offersJsonLd } from '@/features/ecommerce/storefront'
 import { getEngine } from '@/lib/engine'
@@ -19,6 +23,9 @@ import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import type { Faq, Media, Product, ShopSetting } from '@/engage-types'
+
+const STAR_ON = String.fromCharCode(0x2605)
+const STAR_OFF = String.fromCharCode(0x2606)
 
 export const dynamic = 'force-dynamic'
 
@@ -136,8 +143,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <h1 className="text-[2.75rem]">{product.title}</h1>
         {ratings.average ? (
           <p className="mb-2 text-[0.9rem]" aria-label={`Rated ${ratings.average} out of 5`}>
-            {'★'.repeat(Math.round(ratings.average))}
-            {'☆'.repeat(5 - Math.round(ratings.average))} {ratings.average} ({ratings.count})
+            {STAR_ON.repeat(Math.round(ratings.average))}
+            {STAR_OFF.repeat(5 - Math.round(ratings.average))} {ratings.average} ({ratings.count})
           </p>
         ) : null}
         {product.shortDescription && (
@@ -145,6 +152,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         )}
 
         <ProductPurchase productId={product.id} view={view} grouped={grouped} giftConfig={giftConfig} />
+        {showBackInStockForm(settings, catalogue) ? <BackInStockForm productId={product.id} /> : null}
+        {wishlistEnabled(settings) && <div className="mt-4"><WishlistHeart productId={product.id} showLink /></div>}
 
         {view.details.length > 0 && (
           <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[0.9rem]">
@@ -183,8 +192,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             {reviewDocs.map((review) => (
               <li key={review.id} className="border-b border-[var(--color-line)] py-4">
                 <p className="m-0" aria-label={`${review.rating} out of 5`}>
-                  {'★'.repeat(review.rating)}
-                  {'☆'.repeat(5 - review.rating)}
+                  {STAR_ON.repeat(review.rating)}
+                  {STAR_OFF.repeat(5 - review.rating)}
                 </p>
                 <p className="my-1 whitespace-pre-wrap">{review.text}</p>
                 <p className="m-0 text-[0.8rem] opacity-70">

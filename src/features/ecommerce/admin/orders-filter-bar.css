@@ -1,0 +1,27 @@
+.orders-filter-bar {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+
+.orders-filter-bar label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85em;
+  min-width: 0;
+}
+
+.orders-filter-bar select,
+.orders-filter-bar input {
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .orders-filter-bar label {
+    flex: 1 1 140px;
+  }
+}

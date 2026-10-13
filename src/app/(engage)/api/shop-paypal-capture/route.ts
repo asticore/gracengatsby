@@ -1,0 +1,39 @@
+import { NextResponse } from 'next/server'
+
+import { getEngine } from '@/engine'
+import { clientKey, hit } from '@/features/security/rateLimit'
+import { capturePayPalCheckout } from '@/features/ecommerce/payments/paypalCheckout'
+
+export const dynamic = 'force-dynamic'
+
+/**
+ * POST { cartID, secret, paypalOrderId }
+ * Captures the PayPal order the buyer approved and marks the shop order paid. Idempotent: a repeat answers with the
+ * same order without charging again. Amount and currency are checked against the stored order, never the browser.
+ */
+export async function POST(request: Request): Promise<Response> {
+  const decision = hit(`shop-paypal-capture:${clientKey(request)}`, 30)
+  if (decision.limited) {
+    return NextResponse.json({ error: 'Too many requests. Try again in a moment.' }, { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } })
+  }
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+  const engine = await getEngine()
+  const cartId = Number(body.cartID)
+  const paypalOrderId = typeof body.paypalOrderId === 'string' ? body.paypalOrderId : ''
+  if (!Number.isInteger(cartId) || typeof body.secret !== 'string' || !body.secret || !/^[A-Za-z0-9]{8,40}$/.test(paypalOrderId)) {
+    return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
+  }
+  const cart = (await engine.findByID({ collection: 'carts', id: cartId, depth: 0, overrideAccess: true })) as { secret?: string | null } | null
+  if (!cart || !cart.secret || cart.secret !== body.secret) return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
+
+  try {
+    const result = await capturePayPalCheckout(engine, { cartId, paypalOrderId })
+    if (result.ok === false) return NextResponse.json({ error: result.message }, { status: result.status, headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json(
+      { message: result.alreadyPaid ? 'Payment already received' : 'Payment received', orderID: result.orderId, transactionID: result.transactionId },
+      { headers: { 'Cache-Control': 'no-store' } },
+    )
+  } catch {
+    return NextResponse.json({ error: 'Error confirming the PayPal payment. Check your PayPal account before trying again.' }, { status: 500 })
+  }
+}

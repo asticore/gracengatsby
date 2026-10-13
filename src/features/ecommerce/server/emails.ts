@@ -2,6 +2,7 @@ import { sendEmail } from '@/features/email'
 import { escapeHtml } from '../lib/invoice'
 import { formatCents } from '../lib/money'
 import { ORDER_STATUS_LABELS, isOrderStatus } from '../lib/orderStatus'
+import { preorderSummary } from '../lib/preorder'
 
 type Engine = { findGlobal: (a: unknown) => Promise<Record<string, unknown>> }
 export type EmailKind = 'processing' | 'completed' | 'onHold' | 'cancelled' | 'refunded' | 'failed' | 'customerNote' | 'shipped'
@@ -68,8 +69,10 @@ export function renderOrderEmail(kind: EmailKind, order: Record<string, unknown>
   const subject = mergeFields(opts.template?.subject ?? tpl.subject, values, false).replace(/[\r\n]+/g, ' ')
   // A per-status template wins over the shared body, which wins over the built-in text.
   const bodyTpl = opts.template?.body ?? (opts.bodyOverride && kind !== 'customerNote' ? opts.bodyOverride : tpl.body)
-  const text = mergeFields(bodyTpl, values, false)
-  const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5">${mergeFields(bodyTpl, values, true).replace(/\n/g, '<br>')}</div>`
+  // Pre-order lines get one extra paragraph, whatever the wording of the template.
+  const preorderNote = preorderSummary(order.lineItems)
+  const text = mergeFields(bodyTpl, values, false) + (preorderNote ? `\n\n${preorderNote}` : '')
+  const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5">${mergeFields(bodyTpl, values, true).replace(/\n/g, '<br>')}${preorderNote ? `<p>${escapeHtml(preorderNote)}</p>` : ''}</div>`
   return { subject, text, html }
 }
 

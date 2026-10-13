@@ -8,6 +8,7 @@ import { variationLabel, variationPriceFields, type CatalogueProduct } from './c
 import { priceInfo } from './pricing'
 import { canPurchase, computeStockStatus, stockMessage, type StockFields, type StockStatus } from './stock'
 import { decodeAttributeValues, resolveAttributes, splitValues, type ProductAttributeRow, type VariationRow } from './variations'
+import { PREORDER_STOCK_MESSAGE, preorderInfo, type PreorderInfo } from './lib/preorder'
 
 export type VariationView = {
   id: string
@@ -21,6 +22,7 @@ export type VariationView = {
   purchasable: boolean
   sku: string | null
   imageUrl: string | null
+  preorder: PreorderInfo
 }
 
 export type ProductView = {
@@ -46,6 +48,13 @@ export type ProductView = {
   qtyLimits: { min: number; max: number | null }
   /** Name your price (simple products): suggested and minimum amounts in whole dollars. */
   buyerPrice: { enabled: boolean; suggested: number | null; minimum: number | null }
+  /** Pre-order state now: the button label, the ships-from date and the note. */
+  preorder: PreorderInfo
+}
+
+export type BuildOptions = {
+  /** The shop-wide pre-order switch. On unless false. */
+  preorders?: boolean
 }
 
 type ProductInput = CatalogueProduct & {
@@ -66,9 +75,10 @@ const percentOff = (regular: number | null, price: number | null): number | null
 /** Only http(s) links are ever offered as a Buy button. */
 const safeUrl = (url: string | null | undefined): string | null => (url && /^https?:\/\/\S+$/i.test(url.trim()) ? url.trim() : null)
 
-export function buildProductView(product: ProductInput, now: Date = new Date(), media: Map<number, string> = new Map()): ProductView {
+export function buildProductView(product: ProductInput, now: Date = new Date(), media: Map<number, string> = new Map(), buildOptions: BuildOptions = {}): ProductView {
   const type = product.productType ?? 'simple'
   const own = priceInfo(product, now)
+  const preorder = preorderInfo(product, now, buildOptions.preorders !== false)
   const variations: VariationView[] =
     type === 'variable'
       ? (product.variations ?? [])
@@ -84,10 +94,11 @@ export function buildProductView(product: ProductInput, now: Date = new Date(), 
               regular: info.regular,
               onSale: info.onSale,
               stockStatus: computeStockStatus(stock),
-              stockMessage: stockMessage(stock),
-              purchasable: info.price !== null && canPurchase(stock, 1),
+              stockMessage: preorder.active ? PREORDER_STOCK_MESSAGE : stockMessage(stock),
+              purchasable: info.price !== null && (canPurchase(stock, 1) || preorder.active),
               sku: variation.sku || product.sku || null,
               imageUrl: imageUrlOf(variation.image, media),
+              preorder,
             }
           })
       : []
@@ -116,9 +127,10 @@ export function buildProductView(product: ProductInput, now: Date = new Date(), 
     priceMin: prices.length > 0 ? Math.min(...prices) : own.price,
     priceMax: prices.length > 0 ? Math.max(...prices) : own.price,
     stockStatus: computeStockStatus(product),
-    stockMessage: type === 'variable' ? '' : stockMessage(product),
+    stockMessage: type === 'variable' ? '' : preorder.active ? PREORDER_STOCK_MESSAGE : stockMessage(product),
     // A name-your-price product has no fixed price to show, so it is purchasable whenever it is in stock.
-    purchasable: type === 'simple' && (own.price !== null || product.nameYourPrice === true) && canPurchase(product, 1),
+    // A pre-order is purchasable while out of stock.
+    purchasable: type === 'simple' && (own.price !== null || product.nameYourPrice === true) && (canPurchase(product, 1) || preorder.active),
     sku: product.sku || null,
     options: options.filter((option) => option.values.length > 0),
     details,
@@ -130,6 +142,7 @@ export function buildProductView(product: ProductInput, now: Date = new Date(), 
       suggested: typeof product.suggestedPrice === 'number' ? product.suggestedPrice : null,
       minimum: typeof product.minPrice === 'number' && product.minPrice > 0 ? product.minPrice : null,
     },
+    preorder,
   }
 }
 
@@ -140,5 +153,6 @@ export function offersJsonLd(view: ProductView, currency = 'AUD', url?: string):
   if (view.type === 'variable' && view.priceMin !== null && view.priceMax !== null && view.priceMin !== view.priceMax) {
     return { '@type': 'AggregateOffer', priceCurrency: currency, lowPrice: view.priceMin, highPrice: view.priceMax, offerCount: view.variations.length, ...(url ? { url } : {}) }
   }
-  return { '@type': 'Offer', priceCurrency: currency, price: view.price, availability: availability(view.stockStatus), ...(url ? { url } : {}) }
+  const status = view.preorder?.active ? 'https://schema.org/PreOrder' : availability(view.stockStatus)
+  return { '@type': 'Offer', priceCurrency: currency, price: view.price, availability: status, ...(url ? { url } : {}) }
 }

@@ -42,6 +42,10 @@ export type ProductView = {
   details: Array<{ name: string; values: string[] }>
   variations: VariationView[]
   external: { url: string; label: string } | null
+  /** Fewest and most the buyer can order at once (max null means no limit). */
+  qtyLimits: { min: number; max: number | null }
+  /** Name your price (simple products): suggested and minimum amounts in whole dollars. */
+  buyerPrice: { enabled: boolean; suggested: number | null; minimum: number | null }
 }
 
 type ProductInput = CatalogueProduct & {
@@ -113,12 +117,19 @@ export function buildProductView(product: ProductInput, now: Date = new Date(), 
     priceMax: prices.length > 0 ? Math.max(...prices) : own.price,
     stockStatus: computeStockStatus(product),
     stockMessage: type === 'variable' ? '' : stockMessage(product),
-    purchasable: type === 'simple' && own.price !== null && canPurchase(product, 1),
+    // A name-your-price product has no fixed price to show, so it is purchasable whenever it is in stock.
+    purchasable: type === 'simple' && (own.price !== null || product.nameYourPrice === true) && canPurchase(product, 1),
     sku: product.sku || null,
     options: options.filter((option) => option.values.length > 0),
     details,
     variations,
     external: type === 'external' && safeUrl(product.externalUrl) ? { url: safeUrl(product.externalUrl) as string, label: (product.buttonText || 'Buy').slice(0, 40) } : null,
+    qtyLimits: { min: typeof product.minQty === 'number' && product.minQty >= 1 ? Math.floor(product.minQty) : 1, max: typeof product.maxQty === 'number' && product.maxQty >= 1 ? Math.floor(product.maxQty) : null },
+    buyerPrice: {
+      enabled: type === 'simple' && product.nameYourPrice === true,
+      suggested: typeof product.suggestedPrice === 'number' ? product.suggestedPrice : null,
+      minimum: typeof product.minPrice === 'number' && product.minPrice > 0 ? product.minPrice : null,
+    },
   }
 }
 

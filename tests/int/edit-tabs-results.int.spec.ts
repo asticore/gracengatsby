@@ -119,11 +119,11 @@ describe('csvCell', () => {
 describe('buildRsvpCsv', () => {
   it('writes a header and one row per RSVP with CRLF endings', () => {
     const csv = buildRsvpCsv([
-      { id: 7, name: 'Ada', email: 'ada@example.com', guestCount: 2, notes: 'vegan, please', createdAt: '2026-10-01T10:00:00.000Z' },
+      { id: 7, name: 'Ada', email: 'ada@example.com', guestCount: 2, ticketTier: 'VIP', notes: 'vegan, please', createdAt: '2026-10-01T10:00:00.000Z' },
     ])
     const lines = csv.split('\r\n')
-    expect(lines[0]).toBe('Entry ID,Name,Email,Guests,Notes,Registered')
-    expect(lines[1]).toBe('7,Ada,ada@example.com,2,"vegan, please",2026-10-01T10:00:00.000Z')
+    expect(lines[0]).toBe('Entry ID,Name,Email,Guests,Ticket,Notes,Registered')
+    expect(lines[1]).toBe('7,Ada,ada@example.com,2,VIP,"vegan, please",2026-10-01T10:00:00.000Z')
     expect(csv.endsWith('\r\n')).toBe(true)
   })
 
@@ -155,6 +155,7 @@ describe('row mapping', () => {
       name: 'Ada',
       email: 'a@example.com',
       guestCount: 4,
+      ticketTier: '',
       notes: 'hi',
       createdAt: 'x',
     })

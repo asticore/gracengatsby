@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
+import { annotatePage } from '@/features/editScreens/toc'
 import { findPageByPath } from '@/utilities/pagePaths'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
@@ -93,7 +94,7 @@ export default async function BuiltPage({
           <span className="text-[var(--color-ink)]">{page.title}</span>
         </nav>
       )}
-      {(content.blocks || []).map((block, index) => (
+      {annotatePage({ blocks: content.blocks || [] }).blocks.map((block, index) => (
         <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
     </div>

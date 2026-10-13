@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import React, { useCallback, useMemo, useState } from 'react'
 
 import { CheckoutExtras, type CheckoutInput } from '@/components/CheckoutExtras'
+import { PayPalButton } from '@/components/PayPalButton'
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
 
@@ -144,9 +145,10 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
           />
         </label>
         <CheckoutExtras cartRef={cartRef} email={email} onChange={onExtras} />
+        <PayPalButton cartRef={cartRef} email={email} extras={extrasReady ? extras : null} />
         {error && <p className="form-error">{error}</p>}
         <button type="submit" className="btn btn--primary" disabled={isLoading || !extrasReady}>
-          {isLoading ? 'Preparing checkout…' : 'Continue to payment'}
+          {isLoading ? 'Preparing checkout...' : 'Continue to payment'}
         </button>
       </form>
     )
@@ -179,7 +181,7 @@ const PaymentStep: React.FC<{
       <PaymentElement />
       {error && <p className="form-error">{error}</p>}
       <button type="submit" className="btn btn--primary" disabled={!stripe || submitting}>
-        {submitting ? 'Processing…' : 'Pay now'}
+        {submitting ? 'Processing...' : 'Pay now'}
       </button>
     </form>
   )

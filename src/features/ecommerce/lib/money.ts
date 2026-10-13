@@ -39,11 +39,16 @@ export function allocate(total: number, weights: number[]): number[] {
   return floors
 }
 
-export function formatCents(cents: number | null | undefined, currency = 'AUD'): string {
+/** The one shared formatter for integer-cent amounts in any shop currency (AUD unless told otherwise). */
+export function formatMoney(cents: number | null | undefined, currency = 'AUD'): string {
   if (typeof cents !== 'number' || !Number.isFinite(cents)) return '-'
   try {
     return new Intl.NumberFormat('en-AU', { style: 'currency', currency }).format(cents / 100)
   } catch {
     return `${(cents / 100).toFixed(2)} ${currency}`
   }
+}
+
+export function formatCents(cents: number | null | undefined, currency = 'AUD'): string {
+  return formatMoney(cents, currency)
 }

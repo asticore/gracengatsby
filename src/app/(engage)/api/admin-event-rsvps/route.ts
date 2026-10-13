@@ -18,6 +18,9 @@ import {
   sumGuests,
 } from '@/admin/views/results/rows'
 
+// Excel needs a byte order mark to open UTF-8 CSV correctly.
+const BOM = String.fromCharCode(0xfeff)
+
 export const dynamic = 'force-dynamic'
 
 /** The CSV stops here. A larger export wants a streamed response, not a longer loop. */
@@ -73,7 +76,7 @@ export async function GET(request: Request): Promise<Response> {
           { collection: 'event-rsvps', where, sort: '-createdAt', depth: 1, user: context.user },
           CSV_MAX_ROWS,
         )
-        const csv = `﻿${buildAllRsvpsCsv(docs.map(mapAllRsvpRow))}`
+        const csv = `${BOM}${buildAllRsvpsCsv(docs.map(mapAllRsvpRow))}`
         return new Response(csv, {
           status: 200,
           headers: {
@@ -118,7 +121,7 @@ export async function GET(request: Request): Promise<Response> {
         { collection: 'event-rsvps', where, sort: 'createdAt', depth: 0, user: context.user },
         CSV_MAX_ROWS,
       )
-      const csv = `﻿${buildRsvpCsv(docs.map(mapRsvpRow))}`
+      const csv = `${BOM}${buildRsvpCsv(docs.map(mapRsvpRow))}`
       return new Response(csv, {
         status: 200,
         headers: {

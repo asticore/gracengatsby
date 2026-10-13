@@ -134,3 +134,7 @@ export function resolveSectionTab(tabs: ResolvedSectionTab[], requested?: string
 export function sectionTabParam(tab: Pick<ResolvedSectionTab, 'key' | 'primary'>): string | null {
   return tab.primary ? null : tab.key
 }
+
+/** Element ids shared by the tab bar (client) and the list page (server). Kept here: a server component cannot call functions exported from a 'use client' file. */
+export const sectionTabId = (key: string): string => `lst-tab-${key}`
+export const SECTION_PANEL_ID = 'lst-panel'

@@ -137,15 +137,32 @@ export async function latestFetchedAt(db: Drizzle, collection: PageSpeedCollecti
   return rows[0]?.fetched_at ?? null
 }
 
-/** The worst-scoring pages for the overview, lowest mobile score first. */
-export async function listWorst(db: Drizzle, limit = 10): Promise<{ collection: PageSpeedCollection; docId: number; url: string; performance: number; fetchedAt: string }[]> {
+export type WorstRow = {
+  collection: PageSpeedCollection
+  docId: number
+  url: string
+  performance: number
+  fetchedAt: string
+  /** The stored suggestions JSON for that run (null when none was kept). */
+  suggestions: string | null
+}
+
+/** The worst-scoring pages for the overview: the latest run per page for one strategy, lowest score first. */
+export async function listWorst(db: Drizzle, limit = 10, strategy: Strategy = 'mobile'): Promise<WorstRow[]> {
   const rows = (await db.all(
-    sql`SELECT r.collection, r.doc_id, r.url, r.performance, r.fetched_at FROM \`eg_pagespeed_results\` r
-      WHERE r.strategy = 'mobile' AND r.performance IS NOT NULL
-        AND r.id = (SELECT MAX(r2.id) FROM \`eg_pagespeed_results\` r2 WHERE r2.collection = r.collection AND r2.doc_id = r.doc_id AND r2.strategy = 'mobile')
-      ORDER BY r.performance ASC LIMIT ${Math.max(1, Math.min(limit, 50))}`,
-  )) as { collection: string; doc_id: number; url: string; performance: number; fetched_at: string }[]
-  return rows.map((r) => ({ collection: r.collection as PageSpeedCollection, docId: Number(r.doc_id), url: r.url, performance: Number(r.performance), fetchedAt: r.fetched_at }))
+    sql`SELECT r.collection, r.doc_id, r.url, r.performance, r.fetched_at, r.suggestions FROM \`eg_pagespeed_results\` r
+      WHERE r.strategy = ${strategy} AND r.performance IS NOT NULL
+        AND r.id = (SELECT MAX(r2.id) FROM \`eg_pagespeed_results\` r2 WHERE r2.collection = r.collection AND r2.doc_id = r.doc_id AND r2.strategy = ${strategy})
+      ORDER BY r.performance ASC, r.fetched_at ASC LIMIT ${Math.max(1, Math.min(limit, 50))}`,
+  )) as { collection: string; doc_id: number; url: string; performance: number; fetched_at: string; suggestions: string | null }[]
+  return rows.map((r) => ({
+    collection: r.collection as PageSpeedCollection,
+    docId: Number(r.doc_id),
+    url: r.url,
+    performance: Number(r.performance),
+    fetchedAt: r.fetched_at,
+    suggestions: r.suggestions ?? null,
+  }))
 }
 
 export const RESULTS_TABLE = PAGESPEED_RESULTS_TABLE

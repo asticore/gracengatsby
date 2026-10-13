@@ -5,6 +5,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormFieldDef } from '../types'
 
 import { roundTo } from '../expression'
+import { SLOT_TAKEN_MESSAGE } from '../slots'
+import { PlacesAutocomplete } from './PlacesAutocomplete'
+import { useTakenSlots } from './useTakenSlots'
 
 /**
  * One form field, drawn the same way on the live site, in the embed page and on
@@ -35,9 +38,15 @@ export type FieldViewProps = {
   currency?: string
   /** The editor canvas passes true: no network lookups, no drawing capture. */
   inert?: boolean
+  /** Browser key for Google Places address suggestions. Absent means plain typing. */
+  mapsKey?: string
+  /** The form's id or embed key: lets an appointment field ask which slots are full. */
+  formKey?: string
+  /** Where the site's API lives, as the form's own submit uses it. */
+  apiBase?: string
 }
 
-export const FieldView: React.FC<FieldViewProps> = ({ field, value, error, hidden, onChange, idPrefix = 'f', currency, inert }) => {
+export const FieldView: React.FC<FieldViewProps> = ({ field, value, error, hidden, onChange, idPrefix = 'f', currency, inert, mapsKey, formKey, apiBase }) => {
   if (hidden) return null
 
   const width = WIDTH_CLASS[field.width || 'full'] || WIDTH_CLASS.full
@@ -294,7 +303,7 @@ export const FieldView: React.FC<FieldViewProps> = ({ field, value, error, hidde
     }
 
     case 'appointment':
-      return wrap(<AppointmentInput field={field} id={id} value={String(value ?? '')} onChange={set} label={label} />)
+      return wrap(<AppointmentInput field={field} id={id} value={String(value ?? '')} onChange={set} label={label} formKey={inert ? undefined : formKey} apiBase={apiBase} />)
 
     case 'signature':
       return wrap(
@@ -308,7 +317,7 @@ export const FieldView: React.FC<FieldViewProps> = ({ field, value, error, hidde
       return wrap(
         <fieldset className="form-field__group">
           {legend}
-          <AddressInput field={field} id={id} value={value} onChange={set} inert={inert} />
+          <AddressInput field={field} id={id} value={value} onChange={set} inert={inert} mapsKey={mapsKey} />
         </fieldset>,
       )
 
@@ -359,8 +368,11 @@ const AppointmentInput: React.FC<{
   value: string
   onChange: (value: string) => void
   label: React.ReactNode
-}> = ({ field, id, value, onChange, label }) => {
+  formKey?: string
+  apiBase?: string
+}> = ({ field, id, value, onChange, label, formKey, apiBase }) => {
   const [date, time] = value.split(' ')
+  const taken = useTakenSlots(apiBase, formKey, field.name, date || '')
   const slots = (field.appointment?.slots || []).map((slot) => {
     const match = /^(\d{1,2}):(\d{2})$/.exec(slot.trim())
     return match ? `${pad(Number(match[1]))}:${match[2]}` : ''
@@ -393,13 +405,24 @@ const AppointmentInput: React.FC<{
         }}
       />
       {date && !dayOpen(date) && <small className="form-field__error">That day is not available.</small>}
+      {date && time && taken.includes(time) && <small className="form-field__error">{SLOT_TAKEN_MESSAGE}</small>}
       {slots.length > 0 ? (
         <div className="form-slots" role="group" aria-label="Times">
-          {slots.map((slot) => (
-            <button key={slot} type="button" aria-pressed={time === slot} onClick={() => date && onChange(`${date} ${slot}`)} disabled={!date}>
-              {slot}
-            </button>
-          ))}
+          {slots.map((slot) => {
+            const full = taken.includes(slot)
+            return (
+              <button
+                key={slot}
+                type="button"
+                aria-pressed={time === slot}
+                onClick={() => date && onChange(`${date} ${slot}`)}
+                disabled={!date || full}
+                title={full ? 'Already booked' : undefined}
+              >
+                {slot}
+              </button>
+            )
+          })}
         </div>
       ) : (
         <input type="time" aria-label="Time" value={time || ''} onChange={(event) => date && onChange(`${date} ${event.target.value}`)} />
@@ -478,11 +501,12 @@ const SignaturePad: React.FC<{ value: string; onChange: (value: string) => void;
 
 type Suggestion = { label: string; address: Record<string, string | number> }
 
-const AddressInput: React.FC<{ field: FormFieldDef; id: string; value: unknown; onChange: (value: unknown) => void; inert?: boolean }> = ({ field, id, value, onChange, inert }) => {
+const AddressInput: React.FC<{ field: FormFieldDef; id: string; value: unknown; onChange: (value: unknown) => void; inert?: boolean; mapsKey?: string }> = ({ field, id, value, onChange, inert, mapsKey }) => {
   const current = (value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, string | number>) : {}) as Record<string, string | number>
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Only the OpenStreetMap lookup is built in. A "google" choice needs a Places key the site does not store, so it behaves like plain fields.
+  // "google" uses Places when a browser key is on the page; without one it is plain typing. OpenStreetMap is the other lookup.
+  const places = field.addressLookup === 'google' && !inert && Boolean(mapsKey)
   const lookup = field.addressLookup === 'nominatim' && !inert
 
   const update = useCallback((key: string, text: string) => onChange({ ...current, [key]: text }), [current, onChange])
@@ -528,7 +552,11 @@ const AddressInput: React.FC<{ field: FormFieldDef; id: string; value: unknown; 
 
   return (
     <div className="form-address">
-      <input id={id} type="text" placeholder="Street address" autoComplete="address-line1" value={String(current.line1 ?? '')} onChange={(event) => search(event.target.value)} />
+      {places && mapsKey ? (
+        <PlacesAutocomplete id={id} apiKey={mapsKey} value={String(current.line1 ?? '')} onText={(text) => update('line1', text)} onPlace={(address) => onChange(address)} />
+      ) : (
+        <input id={id} type="text" placeholder="Street address" autoComplete="address-line1" value={String(current.line1 ?? '')} onChange={(event) => search(event.target.value)} />
+      )}
       {suggestions.length > 0 && (
         <ul className="form-address__suggestions">
           {suggestions.map((suggestion) => (

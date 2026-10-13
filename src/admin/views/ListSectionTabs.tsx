@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import React, { useEffect, useRef, type KeyboardEvent } from 'react'
+import { SECTION_PANEL_ID, sectionTabId } from '@/admin/list/viewTabs'
 import './list-section-tabs.css'
 
 export type ListSectionTabInfo = {
@@ -14,8 +15,6 @@ export type ListSectionTabInfo = {
   deniedReason: string
 }
 
-export const sectionTabId = (key: string): string => `lst-tab-${key}`
-export const SECTION_PANEL_ID = 'lst-panel'
 
 /** The URL a tab points at: the plain list URL for the first tab, `?tab=<key>` for the others. */
 export function sectionTabHref(pathname: string, tab: Pick<ListSectionTabInfo, 'key' | 'primary'>): string {

@@ -79,7 +79,7 @@ export const Integrations: GlobalConfig = {
         {
           name: 'mapsApiKey',
           type: 'text',
-          label: 'Google Maps API key',
+          label: 'Google Maps key (address suggestions on forms)',
           access: {
             read: adminOnlyFieldAccess,
             update: adminOnlyFieldAccess,
@@ -89,7 +89,8 @@ export const Integrations: GlobalConfig = {
             afterRead: [decryptSecretHook],
           },
           admin: {
-            description: 'Found in Google Cloud Console > APIs & Services > Credentials. Stored encrypted at rest, visible only to admins.',
+            description:
+              'Use a browser key, restricted to your own website domain (Google Cloud Console > APIs & Services > Credentials > Application restrictions > Websites), with the Places API enabled. Forms with Google Places address lookup send it to visitors, which is why it must be a browser key limited to your domain. Stored encrypted at rest.',
           },
         },
         {

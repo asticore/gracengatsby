@@ -51,6 +51,8 @@ import * as migration_20261016_200000_stock_subscriptions from './20261016_20000
 import * as migration_20261017_200000_form_drafts from './20261017_200000_form_drafts';
 import * as migration_20261018_100000_paypal_payments from './20261018_100000_paypal_payments';
 import * as migration_20261018_200000_preorders_variation_images from './20261018_200000_preorders_variation_images';
+import * as migration_20261019_100000_recurrence_tiers_series from './20261019_100000_recurrence_tiers_series';
+import * as migration_20261019_300000_toc_block from './20261019_300000_toc_block';
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
 
 export const migrations = [
@@ -323,5 +325,15 @@ export const migrations = [
     up: migration_20261018_200000_preorders_variation_images.up,
     down: migration_20261018_200000_preorders_variation_images.down,
     name: '20261018_200000_preorders_variation_images',
+  },
+  {
+    up: migration_20261019_100000_recurrence_tiers_series.up,
+    down: migration_20261019_100000_recurrence_tiers_series.down,
+    name: '20261019_100000_recurrence_tiers_series',
+  },
+  {
+    up: migration_20261019_300000_toc_block.up,
+    down: migration_20261019_300000_toc_block.down,
+    name: '20261019_300000_toc_block',
   },
 ];

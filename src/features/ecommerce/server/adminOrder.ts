@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/admin/auth'
 import { resolveAccess } from '@/features/roles/permissions'
 import type { InvoiceOrder, InvoiceStore } from '../lib/invoice'
+import type { InvoiceSettings } from '../lib/invoiceSettings'
 
 type Doc = Record<string, unknown>
 export type AdminEngine = {
@@ -26,14 +27,15 @@ export function parseOrderId(raw: string): number | null {
   return Number.isInteger(n) && n > 0 ? n : null
 }
 
-export async function loadInvoiceData(engine: AdminEngine, id: number): Promise<{ order: InvoiceOrder; store: InvoiceStore } | null> {
+export async function loadInvoiceData(engine: AdminEngine, id: number): Promise<{ order: InvoiceOrder; store: InvoiceStore; settings: Partial<InvoiceSettings> } | null> {
   const order = await engine.findByID({ collection: 'orders', id, depth: 0, overrideAccess: true })
   if (!order) return null
-  const shop = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { tax?: Doc }
+  const shop = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { tax?: Doc; invoice?: Partial<InvoiceSettings> }
   const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { siteName?: string }
   const tax = shop.tax ?? {}
   return {
     order: order as unknown as InvoiceOrder,
+    settings: shop.invoice ?? {},
     store: {
       name: String(tax.businessName || site.siteName || 'Shop'),
       abn: typeof tax.abn === 'string' ? tax.abn : null,

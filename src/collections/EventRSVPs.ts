@@ -3,7 +3,8 @@ import type { CollectionConfig } from '@/engine'
 import { isAdmin } from '../access/ecommerceAccess'
 import { isAdminOrRsvpOwner } from '../features/accounts/access'
 import { checkEventCapacity } from '../hooks/checkEventCapacity'
-import { rsvpCheckInFields } from '../features/editScreens/fields'
+import { checkRsvpTier } from '../features/editScreens/rsvpTier'
+import { rsvpCheckInFields, rsvpTicketTierField } from '../features/editScreens/fields'
 
 export const EventRSVPs: CollectionConfig = {
   slug: 'event-rsvps',
@@ -57,10 +58,11 @@ export const EventRSVPs: CollectionConfig = {
       name: 'notes',
       type: 'textarea',
     },
+    rsvpTicketTierField,
     ...rsvpCheckInFields,
   ],
   hooks: {
-    beforeChange: [checkEventCapacity],
+    beforeChange: [checkEventCapacity, checkRsvpTier],
   },
   timestamps: true,
 }

@@ -59,6 +59,8 @@ export type AddressDoc = { id: number; [key: string]: unknown }
 export type AddItemInput = {
   product: number
   variation?: string | null
+  /** Name-your-price products: the amount the buyer typed, in cents. The server checks it. */
+  priceCents?: number
   customAmount?: number
   giftName?: string
   giftEmail?: string

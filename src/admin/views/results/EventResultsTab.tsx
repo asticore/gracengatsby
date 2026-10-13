@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import React, { useState } from 'react'
+import { EventCheckInButton } from './EventCheckIn'
 import { ResultsMessage, ResultsPager, ResultsStat } from './ResultsChrome'
 import { formatWhen, type PageInfo, type RsvpRow } from './rows'
 import { useResultsPage } from './useResultsPage'
@@ -29,6 +30,7 @@ export function EventResultsTab({ eventId, capacity }: { eventId: number; capaci
           />
           {capacity !== null && <ResultsStat label="Capacity" value={capacity.toLocaleString()} />}
         </div>
+        <EventCheckInButton eventId={eventId} />
         <a className="et-button" download href={`/api/admin-event-rsvps?event=${eventId}&format=csv`}>
           Export CSV
         </a>
@@ -49,6 +51,7 @@ export function EventResultsTab({ eventId, capacity }: { eventId: number; capaci
                   <th scope="col">Name</th>
                   <th scope="col">Email</th>
                   <th scope="col" className="et-num">Guests</th>
+                  <th scope="col">Ticket</th>
                   <th scope="col">Registered</th>
                   <th scope="col"><span className="et-sr">Open</span></th>
                 </tr>
@@ -59,6 +62,7 @@ export function EventResultsTab({ eventId, capacity }: { eventId: number; capaci
                     <td className="et-clip">{row.name}</td>
                     <td className="et-clip">{row.email}</td>
                     <td className="et-num">{row.guestCount}</td>
+                    <td className="et-clip">{row.ticketTier || '-'}</td>
                     <td className="et-nowrap">{formatWhen(row.createdAt)}</td>
                     <td className="et-nowrap">
                       <Link href={`/admin/collections/event-rsvps/${row.id}`}>Open</Link>

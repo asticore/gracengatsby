@@ -1,6 +1,8 @@
 import { kindForStatus, sendOrderEmail } from './emails'
 import { restockOrder } from './orders'
 
+const PAID = ['processing', 'completed', 'on-hold', 'refunded']
+
 type Args = { doc: Record<string, unknown>; previousDoc?: Record<string, unknown>; operation: 'create' | 'update'; req: { engine: never; user?: { id?: number; email?: string } | null }; context?: Record<string, unknown> }
 
 /**
@@ -16,6 +18,12 @@ export async function runOrderAfterChange({ doc, previousDoc, operation, req, co
   if (!to || from === to) return doc
   const engine = req.engine as unknown as Parameters<typeof sendOrderEmail>[0] & Parameters<typeof restockOrder>[0]
   try {
+    // An order an admin moves to a paid status gets its invoice number, as checkout payments do.
+    if (PAID.includes(to) && !PAID.includes(from ?? '')) {
+      const { rawD1 } = await import('./db')
+      const { ensureInvoiceNumber } = await import('../numbering')
+      await ensureInvoiceNumber(await rawD1(), Number(doc.id))
+    }
     if (to === 'cancelled' && from !== 'pending' && from !== 'failed') await restockOrder(engine, doc, 'Order cancelled')
     const kind = kindForStatus(to)
     if (kind) await sendOrderEmail(engine, doc, kind)

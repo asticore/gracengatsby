@@ -7,6 +7,7 @@ import { cookies } from 'next/headers'
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { AdRichText } from '@/features/ads/components/AdRichText'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
+import { annotatePage } from '@/features/editScreens/toc'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -100,6 +101,7 @@ export default async function BlogPostPage({
 
   // Merge tags ({{field:...}}, {{title}}, ...) are resolved here; unknown braces stay as typed.
   const content = await resolveDocumentContent('posts', post)
+  const annotated = annotatePage({ body: content.content, blocks: content.layout || [] })
 
   return (
     <article className="page-shell">
@@ -125,10 +127,10 @@ export default async function BlogPostPage({
       )}
 
       <div className="mx-auto max-w-[720px]">
-        <AdRichText content={content.content} />
+        <AdRichText content={annotated.body as typeof content.content} />
       </div>
 
-      {(content.layout || []).map((block, index) => (
+      {annotated.blocks.map((block, index) => (
         <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
     </article>

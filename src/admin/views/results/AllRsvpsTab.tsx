@@ -54,6 +54,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                   <th scope="col">Name</th>
                   <th scope="col">Email</th>
                   <th scope="col" className="et-num">Guests</th>
+                  <th scope="col">Ticket</th>
                   <th scope="col">Registered</th>
                   <th scope="col"><span className="et-sr">Open</span></th>
                 </tr>
@@ -67,6 +68,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                     <td className="et-clip">{row.name}</td>
                     <td className="et-clip">{row.email}</td>
                     <td className="et-num">{row.guestCount}</td>
+                    <td className="et-clip">{row.ticketTier || '-'}</td>
                     <td className="et-nowrap">{formatWhen(row.createdAt)}</td>
                     <td className="et-nowrap">
                       <Link href={`/admin/collections/event-rsvps/${row.id}`}>Open</Link>

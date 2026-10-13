@@ -172,7 +172,7 @@ describe('GET /api/admin-event-rsvps', () => {
     expect(body).toContain('"\t=HYPERLINK(""x"")"')
     expect(body).toContain('"bring a, friend"')
     expect(body).toContain('Plain')
-    expect(body.split('\r\n')[0]).toBe('﻿Entry ID,Name,Email,Guests,Notes,Registered')
+    expect(body.split('\r\n')[0]).toBe(String.fromCharCode(0xfeff) + 'Entry ID,Name,Email,Guests,Ticket,Notes,Registered')
   })
 })
 

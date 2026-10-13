@@ -29,6 +29,7 @@ import { breadcrumbTitle } from '@/features/pagesTree/breadcrumb'
 import { ListRowActions } from './ListRowActions'
 import { shouldShowRowActions } from '@/admin/list/quickEdit'
 import { PageSpeedBadge } from '@/features/pagespeed/ui/PageSpeedBadge'
+import { orderNameSearchBranches } from '@/features/ecommerce/server/orderSearch'
 import { BulkActionsBar } from '@/features/editScreens/admin/BulkActionsBar'
 import { actionRefusal } from '@/features/editScreens/bulk'
 import { bulkPermissions, isBulkCollection } from '@/features/editScreens/authors'
@@ -161,11 +162,13 @@ export async function ListView({
     defaults.columns,
   )
 
-  // Build find args for engine query
+  // Build find args for engine query (orders also match a customer's name in the search box)
+  const extraSearch = collectionSlug === 'orders' && effectiveState.q ? await orderNameSearchBranches(effectiveState.q) : []
   const findArgs = buildFindArgs({
     collection: collectionSlug,
     urlParams: effectiveState,
     allColumns,
+    extraSearch,
   })
 
   // Trash (pages, posts, events): the list hides trashed items; ?trash=1 shows only them.

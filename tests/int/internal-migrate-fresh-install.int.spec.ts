@@ -298,6 +298,17 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect((locked.results as { name: string }[]).map((r) => r.name)).toContain('eg_stock_subscriptions_id')
   })
 
+  it('creates the save-and-continue drafts table, its lock link and the Forms switch', async () => {
+    expect(tables).toContain('eg_form_drafts')
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_form_drafts')).toEqual(expect.arrayContaining(['form_id', 'token_hash', 'email', 'data_json', 'page', 'expires_at']))
+    expect(await columnsOf('eg_forms')).toContain('allow_save_for_later')
+    expect(await columnsOf('eg_locked_documents_rels')).toContain('eg_form_drafts_id')
+  })
+
   it('creates the PageSpeed tables, list columns, API key and settings columns', async () => {
     for (const table of ['eg_pagespeed_results', 'eg_pagespeed_queue']) {
       expect(tables, table).toContain(table)

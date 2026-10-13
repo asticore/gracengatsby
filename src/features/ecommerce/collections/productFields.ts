@@ -240,6 +240,33 @@ export const linkedProductFields: Field[] = [
   },
 ]
 
+/** Min and max per order, and the "name your price" option. Prices here are whole dollars, like the other price fields. */
+export const limitFields: Field[] = [
+  {
+    type: 'collapsible',
+    label: 'Quantity limits and name your price',
+    admin: { condition: (data) => data?.productType === 'simple' || data?.productType === 'variable' },
+    fields: [
+      {
+        type: 'row',
+        fields: [
+          { name: 'minQty', type: 'number', min: 1, admin: { width: '50%', description: 'Fewest the buyer can order at once. Leave blank for no limit.' } },
+          { name: 'maxQty', type: 'number', min: 1, admin: { width: '50%', description: 'Most the buyer can order at once. Leave blank for no limit.' } },
+        ],
+      },
+      { name: 'nameYourPrice', type: 'checkbox', defaultValue: false, admin: { condition: (data) => data?.productType === 'simple', description: 'The buyer types the price they want to pay. Simple products only.' } },
+      {
+        type: 'row',
+        admin: { condition: (data) => data?.productType === 'simple' && Boolean(data?.nameYourPrice) },
+        fields: [
+          { name: 'suggestedPrice', type: 'number', min: 0, admin: { width: '50%', components: PRICE_ADMIN, description: 'Shown in the price box as a suggestion. The buyer can change it.' } },
+          { name: 'minPrice', type: 'number', min: 0, admin: { width: '50%', components: PRICE_ADMIN, description: 'The lowest amount a buyer can pay. Blank means $0.01.' } },
+        ],
+      },
+    ],
+  },
+]
+
 export const ratingFields: Field[] = [
   { name: 'ratingAverage', type: 'number', admin: { readOnly: true, position: 'sidebar', description: 'Average of approved reviews.' } },
   { name: 'ratingCount', type: 'number', defaultValue: 0, admin: { readOnly: true, position: 'sidebar' } },
@@ -248,6 +275,7 @@ export const ratingFields: Field[] = [
 export const catalogueFields: Field[] = [
   ...pricingFields,
   ...inventoryFields,
+  ...limitFields,
   ...shippingFields,
   ...typeSpecificFields,
   ...variationFields,

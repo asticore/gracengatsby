@@ -8,6 +8,7 @@
 import { effectivePrice, type PriceFields } from './pricing'
 import { canPurchase, computeStockStatus, type StockFields, type StockStatus } from './stock'
 import { decodeAttributeValues, findVariation, type VariationRow } from './variations'
+import { quantityError, validateNamedPrice } from './lib/qtyLimits'
 
 export type ProductType = 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard'
 
@@ -19,6 +20,13 @@ export type CatalogueProduct = PriceFields &
     sku?: string | null
     _status?: string | null
     variations?: VariationRow[] | null
+    /** Quantity limits per order; null or blank means no limit. */
+    minQty?: number | null
+    maxQty?: number | null
+    /** Buyer types their own price (simple products only). minPrice is whole dollars, like priceInAUD. */
+    nameYourPrice?: boolean | null
+    minPrice?: number | null
+    suggestedPrice?: number | null
   }
 
 export type CartLine =
@@ -42,7 +50,8 @@ export function variationLabel(variation: VariationRow): string {
 
 /**
  * Validates and prices one cart line. `alreadyInCart` is the quantity of the same product (or
- * variation) already in the cart, so the stock check covers the new total.
+ * variation) already in the cart, so the stock and maximum checks cover the new total.
+ * `priceCents` is the buyer's own amount, used only for name-your-price simple products.
  */
 export function resolveCartLine(
   product: CatalogueProduct | null | undefined,
@@ -50,6 +59,7 @@ export function resolveCartLine(
   quantity: number,
   now: Date = new Date(),
   alreadyInCart = 0,
+  priceCents: number | null = null,
 ): CartLine {
   if (!product || !isPublished(product)) return { ok: false, error: 'This product is not available.' }
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return { ok: false, error: 'Invalid quantity.' }
@@ -57,6 +67,8 @@ export function resolveCartLine(
   if (type === 'external') return { ok: false, error: 'This product is sold on another site.' }
   if (type === 'grouped') return { ok: false, error: 'Choose one of the products in this group.' }
   const total = quantity + Math.max(0, alreadyInCart)
+  const limitError = quantityError(quantity, product, total)
+  if (limitError) return { ok: false, error: limitError }
   const title = product.title || 'Item'
 
   if (type === 'variable') {
@@ -79,6 +91,12 @@ export function resolveCartLine(
   }
 
   if (!canPurchase(product, total)) return { ok: false, error: 'This product is out of stock.' }
+  if (product.nameYourPrice && type === 'simple') {
+    // The buyer's amount is checked here against the shop's minimum; the browser's value is never trusted as is.
+    const named = validateNamedPrice(priceCents, { minPrice: product.minPrice != null ? Math.floor(product.minPrice * 100 + 1e-9) : null })
+    if (!named.ok || named.cents == null) return { ok: false, error: named.error ?? 'Please enter a valid amount.' }
+    return { ok: true, unitPrice: named.cents / 100, title, sku: product.sku || null, variationId: null, variationLabel: null, stockStatus: computeStockStatus(product) }
+  }
   const price = effectivePrice(product, now)
   if (price === null) return { ok: false, error: 'This product has no price.' }
   return { ok: true, unitPrice: price, title, sku: product.sku || null, variationId: null, variationLabel: null, stockStatus: computeStockStatus(product) }

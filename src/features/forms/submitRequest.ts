@@ -1,4 +1,5 @@
 import { HONEYPOT_FIELD, RECAPTCHA_FIELD, RENDERED_AT_FIELD, TURNSTILE_FIELD } from './spam'
+import { RESUME_FIELD, isDraftToken } from './drafts'
 import { normaliseFormConfig } from './config'
 import { isPublished } from './layout'
 import { checkOrigin, corsHeaders } from './origin'
@@ -160,6 +161,7 @@ export async function handleSubmitRequest(request: Request, engine: Engine, idOr
     [RENDERED_AT_FIELD]: renderedAt,
     [TURNSTILE_FIELD]: turnstileToken,
     [RECAPTCHA_FIELD]: recaptchaToken,
+    [RESUME_FIELD]: resumeToken,
     eg_source: source,
     ...values
   } = parsed.body
@@ -179,6 +181,12 @@ export async function handleSubmitRequest(request: Request, engine: Engine, idOr
     userAgent: request.headers.get('user-agent') || undefined,
     sourceUrl: decision.origin || request.headers.get('referer') || (typeof source === 'string' ? source : undefined) || undefined,
   })
+
+  // A send that finishes a resumed draft removes it, so its emailed link stops working.
+  if (outcome.ok && isDraftToken(resumeToken)) {
+    const { discardDraftByToken } = await import('./draftStore')
+    await discardDraftByToken(engine as unknown as Parameters<typeof discardDraftByToken>[0], form.id as string | number, resumeToken).catch((): void => undefined)
+  }
 
   return json(
     {

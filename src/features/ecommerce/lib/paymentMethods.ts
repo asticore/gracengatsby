@@ -95,7 +95,7 @@ export function bnplMessage(provider: BnplProvider, settings: BnplSettings, ctx:
   return `or ${settings.instalments} ${provider === 'klarna' ? '' : 'interest-free '}payments of ${even ? '' : 'about '}${each} with ${label}`.replace(/\s+/g, ' ')
 }
 
-export type PaymentSettingsLike = { afterpay?: unknown; klarna?: unknown; wallets?: unknown; general?: { currency?: string } | null }
+export type PaymentSettingsLike = { afterpay?: unknown; klarna?: unknown; wallets?: unknown; paypal?: unknown; general?: { currency?: string } | null }
 
 /**
  * The Stripe `payment_method_types` to put on a PaymentIntent, or null to let Stripe choose with
@@ -125,6 +125,8 @@ export function publicPaymentConfig(settings: PaymentSettingsLike | null | undef
   afterpay: { enabled: boolean; label: string; minCents: number; maxCents: number; countries: string[]; currencies: string[]; instalments: number; messaging: boolean }
   klarna: { enabled: boolean; label: string; minCents: number; maxCents: number; countries: string[]; currencies: string[]; instalments: number; messaging: boolean }
   wallets: WalletSettings
+  /** PayPal shows only when it is switched on AND has both keys saved. The client ID is public by design; the secret never leaves the server. */
+  paypal: { enabled: boolean; clientId: string; environment: 'sandbox' | 'live' }
   currency: string
 } {
   const shape = (p: BnplProvider, raw: unknown) => {
@@ -141,7 +143,12 @@ export function publicPaymentConfig(settings: PaymentSettingsLike | null | undef
       messaging: s.showMessaging,
     }
   }
-  return { afterpay: shape('afterpay', settings?.afterpay), klarna: shape('klarna', settings?.klarna), wallets: normaliseWallets(settings?.wallets), currency }
+  const pp = (settings?.paypal && typeof settings.paypal === 'object' ? settings.paypal : {}) as Record<string, unknown>
+  const clientId = typeof pp.clientId === 'string' ? pp.clientId.trim() : ''
+  const hasSecret = typeof pp.clientSecret === 'string' && pp.clientSecret.trim().length > 0
+  const enabled = pp.enabled === true && clientId.length > 0 && hasSecret
+  const paypal = { enabled, clientId: enabled ? clientId : '', environment: pp.environment === 'live' ? ('live' as const) : ('sandbox' as const) }
+  return { afterpay: shape('afterpay', settings?.afterpay), klarna: shape('klarna', settings?.klarna), wallets: normaliseWallets(settings?.wallets), paypal, currency }
 }
 
 /** Messaging for the browser, from the public config above. Same rules as bnplMessage. */

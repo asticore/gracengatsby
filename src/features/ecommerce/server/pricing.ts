@@ -167,7 +167,7 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
       shippingClass: idOf(p.shippingClass),
       requiresShipping: !virtual,
       // carried for the order snapshot
-      ...({ variationId } as object),
+      ...({ variationId, preorder: resolved.ok && resolved.preorder ? { releaseDate: p.preorderReleaseDate ?? null, note: p.preorderNote ?? null } : null } as object),
     } as PricedLine)
   }
   return lines

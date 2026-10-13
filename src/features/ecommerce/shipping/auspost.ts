@@ -1,4 +1,5 @@
 import { fetchJson } from './http'
+import { checkAusPostAccount, createAusPostLabel, hasAnyLabelKey, labelCredsFrom, LABEL_KEY_NAMES, missingLabelKeys } from './auspost-labels'
 import type { CarrierAdapter, CarrierCredentials, ConnectionResult, LabelRequest, LabelResult, RateQuote, RateRequest } from './types'
 
 const PAC = 'https://digitalapi.auspost.com.au/postage/parcel/domestic/service.json'
@@ -8,13 +9,12 @@ type PacResponse = { services?: { service?: { code?: string; name?: string; pric
 const asList = <T>(v: T[] | T | undefined): T[] => (Array.isArray(v) ? v : v ? [v] : [])
 
 /**
- * Australia Post, domestic parcel rates through the Postage Assessment Calculator (PAC). PAC is free
- * and needs only an API key (header AUTH-KEY). It prices one parcel per call, so a multi-parcel cart
- * is priced per parcel and summed, keeping only services every parcel can use.
+ * Australia Post. Rates use the Postage Assessment Calculator (PAC): free, one API key (header AUTH-KEY),
+ * one parcel per call, so a multi-parcel cart is priced per parcel and summed, keeping only services
+ * every parcel can use.
  *
- * Labels use a different product (the Shipping and Mailing API with an account number and
- * password). That part is not built: the catalogue marks `labels: false`, and staff record the
- * tracking number by hand.
+ * Labels use the Shipping and Mailing API (see auspost-labels.ts): account number, ShipPing API key and
+ * password. Test mode refuses to buy a label, so a trial never creates a real shipment.
  */
 export class AusPostAdapter implements CarrierAdapter {
   readonly id = 'auspost' as const
@@ -34,15 +34,34 @@ export class AusPostAdapter implements CarrierAdapter {
     return asList(res.body?.services?.service)
   }
 
-  async testConnection(creds: CarrierCredentials): Promise<ConnectionResult> {
-    const key = creds.values.pacKey?.trim()
-    if (!key) return { ok: false, message: 'Enter the PAC API key first.' }
+  private async testPac(key: string): Promise<ConnectionResult> {
     try {
       const services = await this.price(key, '3000', '2000', { lengthCm: 22, widthCm: 16, heightCm: 8, weightKg: 1 })
       return services.length > 0 ? { ok: true, message: `Connected. Australia Post returned ${services.length} service(s) for a test parcel.` } : { ok: false, message: 'Connected, but Australia Post returned no services for the test parcel.' }
     } catch (error) {
       return { ok: false, message: error instanceof Error ? error.message : 'Could not reach Australia Post.' }
     }
+  }
+
+  private async testLabelAccount(values: Record<string, string>): Promise<ConnectionResult> {
+    const missing = missingLabelKeys(values)
+    if (missing.length > 0) return { ok: false, message: `Labels need ${missing.map((k) => LABEL_KEY_NAMES[k]).join(', ')}. Fill them in and save first.` }
+    try {
+      return await checkAusPostAccount(labelCredsFrom(values))
+    } catch (error) {
+      return { ok: false, message: error instanceof Error ? error.message : 'Could not reach Australia Post.' }
+    }
+  }
+
+  /** Checks the PAC key when it is saved, and the Shipping and Mailing account when any label key is saved. */
+  async testConnection(creds: CarrierCredentials): Promise<ConnectionResult> {
+    const key = creds.values.pacKey?.trim() ?? ''
+    const labels = hasAnyLabelKey(creds.values)
+    if (!key && !labels) return { ok: false, message: 'Enter the PAC API key first.' }
+    const parts: ConnectionResult[] = []
+    if (key) parts.push(await this.testPac(key))
+    if (labels) parts.push(await this.testLabelAccount(creds.values))
+    return { ok: parts.every((p) => p.ok), message: parts.map((p) => p.message).join(' ') }
   }
 
   async getRates(creds: CarrierCredentials, request: RateRequest): Promise<RateQuote[]> {
@@ -69,7 +88,11 @@ export class AusPostAdapter implements CarrierAdapter {
       .map(([code, v]) => ({ carrier: 'auspost' as const, serviceCode: code, serviceName: v.name, costCents: v.cents, etaDays: null as number | null }))
   }
 
-  async createLabel(_creds: CarrierCredentials, _request: LabelRequest): Promise<LabelResult> {
-    throw new Error('Buying Australia Post labels from here is not connected yet. Buy the label in your Australia Post account and record the tracking number on the order.')
+  /** Buys one label through the Shipping and Mailing API. Refuses in test mode, so a trial never ships for real. */
+  async createLabel(creds: CarrierCredentials, request: LabelRequest): Promise<LabelResult> {
+    const missing = missingLabelKeys(creds.values)
+    if (missing.length > 0) throw new Error(`Enter the ${missing.map((k) => LABEL_KEY_NAMES[k]).join(', ')} first.`)
+    if (creds.testMode) throw new Error('Test mode is on for Australia Post, so no real label was bought. Switch test mode off in Shop settings > Shipping to buy labels.')
+    return createAusPostLabel({ creds: labelCredsFrom(creds.values), request })
   }
 }

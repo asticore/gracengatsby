@@ -24,6 +24,7 @@ import { ABResultsView } from '@/features/abTesting/components/ABResultsView'
 import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
+import { FindReplaceView } from '@/admin/views/FindReplaceView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
 import { ShopSettingsView } from '@/admin/views/ShopSettingsView'
 import { StoreCreditView } from '@/admin/views/StoreCreditView'
@@ -138,6 +139,15 @@ export const CUSTOM_ADMIN_VIEWS = [
     meta: {
       title: 'Export and import',
       description: 'Export settings, content and users, or import them from another site.',
+    },
+  },
+  {
+    key: 'findReplace',
+    Component: FindReplaceView,
+    path: '/find-replace',
+    meta: {
+      title: 'Find and replace',
+      description: 'Change a word or phrase across pages, posts, products and events.',
     },
   },
 ] as const

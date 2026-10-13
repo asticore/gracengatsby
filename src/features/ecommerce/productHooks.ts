@@ -1,6 +1,7 @@
 import type { CollectionBeforeChangeHook } from '@/engine'
 
 import { collectSkus, normaliseCatalogue } from './normalize'
+import { galleryIds, keepGalleryVariationImages } from './lib/variationImage'
 import type { VariationRow } from './variations'
 
 type EngineLike = { find: (args: Record<string, unknown>) => Promise<{ docs: Array<Record<string, unknown>> }> }
@@ -37,6 +38,8 @@ export const catalogueBeforeChange: CollectionBeforeChangeHook = async ({ data, 
   const errors = normaliseCatalogue(merged, selfId)
   if (errors.length > 0) await throwValidation(errors)
   for (const key of ['sku', 'gtin', 'stockQty', 'variations']) if (key in incoming) incoming[key] = merged[key]
+  // A variation image must be one of this product's gallery images.
+  if ('variations' in incoming && Array.isArray(merged.variations)) incoming.variations = keepGalleryVariationImages(merged.variations as VariationRow[], galleryIds(merged.images as never))
   if (merged.manageStock) incoming.stockStatus = merged.stockStatus
 
   const skus = collectSkus(merged)

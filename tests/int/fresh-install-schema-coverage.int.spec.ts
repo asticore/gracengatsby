@@ -17,6 +17,7 @@ import * as dataViewsSchema from '@/cms/db/schema/dataViews'
 import * as storedValueSchema from '@/cms/db/schema/shopStoredValue'
 import * as shippingSchema from '@/cms/db/schema/shopShipping'
 import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
+import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -206,6 +207,12 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Back-in-stock sign-up table lives in its own schema file
       for (const [exportName, exportValue] of Object.entries(stockSubscriptionsSchema)) {
+        if (exportName.endsWith('Generated')) continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Save-and-continue drafts live in their own schema file
+      for (const [exportName, exportValue] of Object.entries(formDraftsSchema)) {
         if (exportName.endsWith('Generated')) continue
         drizzleTables.push({ name: exportName, table: exportValue })
       }

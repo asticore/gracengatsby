@@ -46,6 +46,7 @@ import * as migration_20261014_230000_remove_apparel_category from './20261014_2
 import * as migration_20261014_300000_pagespeed from './20261014_300000_pagespeed';
 import * as migration_20261014_400000_data_views from './20261014_400000_data_views';
 import * as migration_20261014_500000_forms_builder from './20261014_500000_forms_builder';
+import * as migration_20261015_200000_shop_numbering from './20261015_200000_shop_numbering';
 
 export const migrations = [
   {
@@ -287,5 +288,10 @@ export const migrations = [
     up: migration_20261014_500000_forms_builder.up,
     down: migration_20261014_500000_forms_builder.down,
     name: '20261014_500000_forms_builder',
+  },
+  {
+    up: migration_20261015_200000_shop_numbering.up,
+    down: migration_20261015_200000_shop_numbering.down,
+    name: '20261015_200000_shop_numbering',
   },
 ];

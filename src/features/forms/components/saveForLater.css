@@ -1,0 +1,42 @@
+/* Save and continue: the link under a form. Uses the form's own tokens so it follows the chosen style. */
+.engage-save-later {
+  margin-top: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.engage-save-later__toggle {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--eg-accent, inherit);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
+.engage-save-later__panel {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--eg-line, currentColor);
+  border-radius: var(--eg-radius, 6px);
+}
+
+.engage-save-later__panel input {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--eg-line, currentColor);
+  border-radius: var(--eg-radius, 6px);
+  background: var(--eg-field-bg, transparent);
+  color: inherit;
+  font: inherit;
+}
+
+.engage-save-later__note {
+  margin: 0;
+  opacity: 0.85;
+}
+
+[data-theme='dark'] .engage-save-later__panel {
+  border-color: rgba(255, 255, 255, 0.2);
+}

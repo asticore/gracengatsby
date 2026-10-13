@@ -34,7 +34,7 @@ export async function POST(request: Request): Promise<Response> {
         body: 'grant_type=client_credentials',
       })
       if (!res.ok) return NextResponse.json({ ok: false, message: `PayPal refused the keys (${res.status}). Check the environment matches the keys.` })
-      return NextResponse.json({ ok: true, message: `PayPal connected (${p.environment === 'live' ? 'live' : 'sandbox'}). Checkout with PayPal is not built in yet.` })
+      return NextResponse.json({ ok: true, message: `PayPal connected (${p.environment === 'live' ? 'live' : 'sandbox'}). PayPal checkout is on when it is switched on in Payments.` })
     } catch {
       return NextResponse.json({ ok: false, message: 'Could not reach PayPal.' })
     }

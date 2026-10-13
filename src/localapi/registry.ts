@@ -72,6 +72,7 @@ import { LessonProgress } from '@/features/courses/collections/LessonProgress'
 import { Lessons } from '@/features/courses/collections/Lessons'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 import { Memberships } from '@/features/members/collections/Memberships'
+import { FormDrafts } from '@/features/forms/collections/FormDrafts'
 import { FormSubmissions } from '@/features/forms/collections/FormSubmissions'
 import { Forms } from '@/features/forms/collections/Forms'
 import { AuditLog } from '@/features/security/auditLogCollection'
@@ -232,6 +233,7 @@ import {
   countEvents,
   countFaqs,
   countFieldGroups,
+  countFormDrafts,
   countFormSubmissions,
   countForms,
   countLessonProgress,
@@ -265,6 +267,7 @@ import {
   createFaq,
   createFieldGroup,
   createForm,
+  createFormDraft,
   createFormSubmission,
   createLesson,
   createLessonProgress,
@@ -297,6 +300,7 @@ import {
   deleteFaq,
   deleteFieldGroup,
   deleteForm,
+  deleteFormDraft,
   deleteFormSubmission,
   deleteLesson,
   deleteLessonProgress,
@@ -346,6 +350,8 @@ import {
   findFormByID,
   findFormsPaginated,
   findFormSettings,
+  findFormDraftByID,
+  findFormDraftsPaginated,
   findFormSubmissionByID,
   findFormSubmissionsPaginated,
   findFooter,
@@ -418,6 +424,7 @@ import {
   updateFooter,
   updateForm,
   updateFormSettings,
+  updateFormDraft,
   updateFormSubmission,
   updateHeader,
   updateIntegrations,
@@ -499,6 +506,7 @@ export const writeRegistry: {
     translations: collectionOps(createTranslation, updateTranslation, deleteTranslation, findTranslationByID),
     'field-groups': collectionOps(createFieldGroup, updateFieldGroup, deleteFieldGroup, findFieldGroupByID),
     'form-submissions': collectionOps(createFormSubmission, updateFormSubmission, deleteFormSubmission, findFormSubmissionByID),
+    'form-drafts': collectionOps(createFormDraft, updateFormDraft, deleteFormDraft, findFormDraftByID),
     'ab-tests': collectionOps(createABTest, updateABTest, deleteABTest, findABTestByID),
     media: collectionOps(createMedia, updateMedia, deleteMedia, findMediaByID),
     memberships: collectionOps(createMembership, updateMembership, deleteMembership, findMembershipByID),
@@ -581,6 +589,7 @@ export const readRegistry: ReadRegistry = {
     translations: readEntry(Translations, findTranslationsPaginated, findTranslationByID, countTranslations),
     'field-groups': readEntry(FieldGroups, findFieldGroupsPaginated, findFieldGroupByID, countFieldGroups),
     'form-submissions': readEntry(FormSubmissions, findFormSubmissionsPaginated, findFormSubmissionByID, countFormSubmissions),
+    'form-drafts': readEntry(FormDrafts, findFormDraftsPaginated, findFormDraftByID, countFormDrafts),
     'ab-tests': readEntry(ABTests, findABTestsPaginated, findABTestByID, countABTests),
     media: readEntry(Media, findMediaPaginated, findMediaByID, countMedia),
     memberships: readEntry(Memberships, findMembershipsPaginated, findMembershipByID, countMemberships),
@@ -674,6 +683,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews]
+export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

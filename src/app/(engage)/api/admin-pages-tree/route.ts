@@ -30,7 +30,8 @@ async function loadAllPages(engine: any): Promise<TreePage[]> {
     overrideAccess: true,
   })
 
-  return (docs as any[]).map((doc) => ({
+  // Trashed pages are left out of the tree and the parent picker.
+  return (docs as any[]).filter((doc) => !doc.trashedAt).map((doc) => ({
     id: doc.id,
     title: doc.title,
     slug: doc.slug,

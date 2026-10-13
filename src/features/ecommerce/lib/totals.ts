@@ -20,6 +20,8 @@ export type PricedLine = {
   heightCm?: number | null
   /** Gift card lines are never discounted by a coupon. */
   isGiftCard?: boolean
+  /** Set when the line is a pre-order: the release date (ISO) and the shop's note. */
+  preorder?: { releaseDate: string | null; note: string | null } | null
 }
 
 export type OrderTotals = {

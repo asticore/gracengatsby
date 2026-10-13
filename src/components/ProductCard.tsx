@@ -5,7 +5,7 @@ import React from 'react'
 import { priceRange, type CatalogueProduct } from '@/features/ecommerce/catalogue'
 import { priceInfo } from '@/features/ecommerce/pricing'
 import { computeStockStatus } from '@/features/ecommerce/stock'
-import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { ProductCardPrice } from '@/components/ProductCardPrice'
 import type { Media, Product } from '@/engage-types'
 
 const getImageURL = (product: Product): string | null => {
@@ -55,17 +55,7 @@ export const ProductCard: React.FC<{
         </span>
         <h3>{product.title}</h3>
         <p className="mt-1 font-[family-name:var(--font-display)] text-[1.25rem]">
-          {info.onSale && info.regular !== null && info.price !== null ? (
-            <>
-              <s className="mr-2 opacity-50">{formatPriceInAUD(info.regular)}</s>
-              {formatPriceInAUD(info.price)}
-              <span className="sale-badge ml-2 text-[0.65rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">Sale</span>
-            </>
-          ) : variable ? (
-            <>From {formatPriceInAUD(range.min)}</>
-          ) : (
-            formatPriceInAUD(range.min ?? product.priceInAUD)
-          )}
+          <ProductCardPrice info={info} range={range} variable={variable} fallback={product.priceInAUD} />
           {soldOut ? <span className="ml-2 text-[0.65rem] uppercase tracking-[0.1em] opacity-60">Sold out</span> : null}
         </p>
         {showShortDescription && product.shortDescription && (

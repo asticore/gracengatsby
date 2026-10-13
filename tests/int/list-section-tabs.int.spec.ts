@@ -272,7 +272,7 @@ describe('across-every-form and every-event filters', () => {
     const rsvps = buildAllRsvpsCsv([
       { id: 1, eventId: 3, eventTitle: 'Gala, night', name: 'Ada', email: 'a@x.com', guestCount: 2, notes: '', createdAt: 'd' },
     ])
-    expect(rsvps.split('\r\n')[0]).toBe('Entry ID,Event,Name,Email,Guests,Notes,Registered')
+    expect(rsvps.split('\r\n')[0]).toBe('Entry ID,Event,Name,Email,Guests,Ticket,Notes,Registered')
     expect(rsvps).toContain('"Gala, night"')
     expect(allCsvFilename('rsvps', new Date('2026-10-11T00:00:00Z'))).toBe('all-rsvps-2026-10-11.csv')
   })

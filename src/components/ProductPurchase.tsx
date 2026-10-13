@@ -8,6 +8,10 @@ import { GiftCardForm, type GiftCardConfig } from '@/components/GiftCardForm'
 import { PayLaterMessage } from '@/components/PayLaterMessage'
 import { QtyPriceFields } from '@/components/QtyPriceFields'
 import { clampQuantity, validateNamedPrice } from '@/features/ecommerce/lib/qtyLimits'
+import { PREORDER_LABEL } from '@/features/ecommerce/lib/preorder'
+import { imageForSelection } from '@/features/ecommerce/lib/variationImage'
+import { PreorderNotice } from './PreorderNotice'
+import { useVariationImage } from './VariationImageProvider'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { useShopCurrency } from '@/components/ShopCurrencyContext'
 import type { ProductView, VariationView } from '@/features/ecommerce/storefront'
@@ -90,6 +94,7 @@ function AddControl({ productId, variationId, disabled, label = 'Add to cart', l
 
 export function ProductPurchase({ productId, view, grouped = [], giftConfig }: { productId: number; view: ProductView; grouped?: GroupedChild[]; giftConfig?: GiftCardConfig }) {
   const [selection, setSelection] = useState<Record<string, string>>({})
+  const { setImageUrl } = useVariationImage()
 
   const chosen: VariationView | null = useMemo(() => {
     if (view.type !== 'variable' || view.options.length === 0) return null
@@ -150,7 +155,11 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
             <select
               className="w-full border border-[var(--color-line)] p-2"
               value={selection[option.name] ?? ''}
-              onChange={(event) => setSelection((current) => ({ ...current, [option.name]: event.target.value }))}
+              onChange={(event) => {
+                const next = { ...selection, [option.name]: event.target.value }
+                setSelection(next)
+                setImageUrl(imageForSelection(view.variations, view.options, next))
+              }}
             >
               <option value="">Choose an option</option>
               {option.values.map((value) => (
@@ -161,7 +170,6 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
             </select>
           </label>
         ))}
-        {shown?.imageUrl ? <img src={shown.imageUrl} alt={shown.label} width={160} height={160} className="my-3 h-40 w-40 object-cover" /> : null}
         {shown ? (
           <>
             <p className="text-[0.9rem]" data-stock={shown.stockStatus}>
@@ -174,7 +182,8 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
         ) : (
           <p>This product is not available right now.</p>
         )}
-        <AddControl productId={productId} variationId={shown?.id ?? null} disabled={!shown || !shown.purchasable} limits={view.qtyLimits} />
+        {shown ? <PreorderNotice info={shown.preorder} /> : null}
+        <AddControl productId={productId} variationId={shown?.id ?? null} disabled={!shown || !shown.purchasable} limits={view.qtyLimits} label={shown?.preorder.active ? PREORDER_LABEL : undefined} />
       </div>
     )
   }
@@ -187,7 +196,8 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
         {view.stockMessage}
       </p>
       {view.sku ? <p className="text-[0.85rem] opacity-70">SKU: {view.sku}</p> : null}
-      <AddControl productId={productId} disabled={!view.purchasable} limits={view.qtyLimits} buyerPrice={view.buyerPrice} />
+      <PreorderNotice info={view.preorder} />
+      <AddControl productId={productId} disabled={!view.purchasable} limits={view.qtyLimits} buyerPrice={view.buyerPrice} label={view.preorder.active ? PREORDER_LABEL : undefined} />
     </div>
   )
 }

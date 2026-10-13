@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { authorizeOrders, parseOrderId } from '@/features/ecommerce/server/adminOrder'
 import { buyLabel, chosenService, type ShipEngine } from '@/features/ecommerce/server/shipments'
-import { carrierDef } from '@/features/ecommerce/shipping/catalogue'
+import { carrierDef, carrierLabelsReady } from '@/features/ecommerce/shipping/catalogue'
 import { normaliseShippingConfig } from '@/features/ecommerce/shipping/registry'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const order = await auth.engine.findByID({ collection: 'orders', id, depth: 0, overrideAccess: true })
   if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const cfg = normaliseShippingConfig(await auth.engine.findGlobal({ slug: 'shipping-settings', depth: 0, overrideAccess: true }).catch(() => ({})))
-  const carriers = cfg.carriers.filter((c) => c.enabled).map((c) => ({ id: c.id, label: carrierDef(c.id)?.label ?? c.id, labels: carrierDef(c.id)?.live.labels === true }))
+  const carriers = cfg.carriers.filter((c) => c.enabled).map((c) => ({ id: c.id, label: carrierDef(c.id)?.label ?? c.id, labels: carrierLabelsReady(c.id, c.creds.values) }))
   return NextResponse.json({ carriers, chosen: chosenService(order), shipments: order.shipments ?? [], trackingNumber: order.trackingNumber ?? '' }, { headers: { 'Cache-Control': 'no-store' } })
 }
 

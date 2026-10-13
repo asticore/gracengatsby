@@ -6,57 +6,70 @@ import React, { useMemo, useState } from 'react'
 
 import { GiftCardForm, type GiftCardConfig } from '@/components/GiftCardForm'
 import { PayLaterMessage } from '@/components/PayLaterMessage'
+import { QtyPriceFields } from '@/components/QtyPriceFields'
+import { clampQuantity, validateNamedPrice } from '@/features/ecommerce/lib/qtyLimits'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { useShopCurrency } from '@/components/ShopCurrencyContext'
 import type { ProductView, VariationView } from '@/features/ecommerce/storefront'
 
 export type GroupedChild = { id: number; title: string; slug: string | null; view: ProductView }
 
 function PriceLine({ price, regular, onSale, from }: { price: number | null; regular: number | null; onSale: boolean; from?: boolean }) {
+  const currency = useShopCurrency()
   if (price === null) return null
   return (
     <p className="mb-2 font-[family-name:var(--font-display)] text-[1.5rem]">
       {onSale && regular !== null && regular > price ? (
         <>
-          <s className="mr-2 opacity-50">{formatPriceInAUD(regular)}</s>
-          <span>{formatPriceInAUD(price)}</span>
+          <s className="mr-2 opacity-50">{formatPriceInAUD(regular, currency)}</s>
+          <span>{formatPriceInAUD(price, currency)}</span>
           <span className="sale-badge ml-3 align-middle text-[0.7rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">Sale</span>
         </>
       ) : (
         <span>
           {from ? 'From ' : ''}
-          {formatPriceInAUD(price)}
+          {formatPriceInAUD(price, currency)}
         </span>
       )}
     </p>
   )
 }
 
-/** Quantity box plus Add to cart. The server re-checks price, stock and the option; it can still say no. */
-function AddControl({ productId, variationId, disabled, label = 'Add to cart' }: { productId: number; variationId?: string | null; disabled?: boolean; label?: string }) {
+type Limits = { min: number; max: number | null }
+type BuyerPrice = { enabled: boolean; suggested: number | null; minimum: number | null }
+
+/** Quantity box plus Add to cart. The server re-checks price, stock, limits and the option; it can still say no. */
+function AddControl({ productId, variationId, disabled, label = 'Add to cart', limits, buyerPrice }: { productId: number; variationId?: string | null; disabled?: boolean; label?: string; limits?: Limits; buyerPrice?: BuyerPrice }) {
   const { addItem, isLoading } = useCart()
-  const [qty, setQty] = useState(1)
+  const min = limits?.min ?? 1
+  const cap = limits?.max ?? 99
+  const named = buyerPrice?.enabled ? buyerPrice : null
+  const [qty, setQty] = useState(() => clampQuantity(1, { minQty: min, maxQty: cap }))
+  const [priceText, setPriceText] = useState(() => (named?.suggested != null ? named.suggested.toFixed(2) : ''))
   const [message, setMessage] = useState('')
   const [added, setAdded] = useState(false)
 
   const add = async () => {
     setMessage('')
-    const failure = await addItem({ product: productId, variation: variationId ?? null }, Math.max(1, Math.min(99, qty || 1)))
+    let priceCents: number | undefined
+    if (named) {
+      const minimumCents = named.minimum != null ? Math.floor(named.minimum * 100 + 1e-9) : null
+      const check = validateNamedPrice(Math.round(Number(priceText) * 100), { minPrice: minimumCents })
+      if (!check.ok || check.cents == null) {
+        setMessage(check.error ?? 'Please enter a valid amount.')
+        return
+      }
+      priceCents = check.cents
+    }
+    const failure = await addItem({ product: productId, variation: variationId ?? null, ...(priceCents !== undefined ? { priceCents } : {}) }, clampQuantity(qty, { minQty: min, maxQty: cap }))
     if (failure) setMessage(failure)
     else setAdded(true)
   }
 
   return (
     <div className="mt-3">
-      <div className="flex items-center gap-3">
-        <input
-          type="number"
-          min={1}
-          max={99}
-          value={qty}
-          aria-label="Quantity"
-          onChange={(event) => setQty(Number(event.target.value))}
-          className="w-20 border border-[var(--color-line)] p-2"
-        />
+      <div className="flex flex-wrap items-end gap-3">
+        <QtyPriceFields qty={qty} onQty={setQty} min={min} max={limits?.max ?? null} buyerPrice={named} priceText={priceText} onPriceText={setPriceText} />
         <button type="button" className="btn btn--primary" onClick={add} disabled={disabled || isLoading}>
           {isLoading ? 'Adding...' : label}
         </button>
@@ -161,7 +174,7 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
         ) : (
           <p>This product is not available right now.</p>
         )}
-        <AddControl productId={productId} variationId={shown?.id ?? null} disabled={!shown || !shown.purchasable} />
+        <AddControl productId={productId} variationId={shown?.id ?? null} disabled={!shown || !shown.purchasable} limits={view.qtyLimits} />
       </div>
     )
   }
@@ -174,7 +187,7 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
         {view.stockMessage}
       </p>
       {view.sku ? <p className="text-[0.85rem] opacity-70">SKU: {view.sku}</p> : null}
-      <AddControl productId={productId} disabled={!view.purchasable} />
+      <AddControl productId={productId} disabled={!view.purchasable} limits={view.qtyLimits} buyerPrice={view.buyerPrice} />
     </div>
   )
 }

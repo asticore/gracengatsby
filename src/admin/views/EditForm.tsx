@@ -46,6 +46,7 @@ import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
 import { SectionOutline } from '@/admin/components/SectionOutline'
 import { useDocumentSave, type SaveTarget } from './useDocumentSave'
+import { LocalDraftRecovery } from '@/admin/edit/useLocalDraft'
 
 export type EditFormProps = {
   collectionSlug?: string
@@ -174,11 +175,11 @@ const SaveButton: React.FC<SaveTarget> = (target) => {
     <div style={{ alignItems: 'center', display: 'flex', gap: 12, marginTop: 24 }}>
       {draftsEnabled && (
         <button className="btn" disabled={busy !== null} onClick={() => save('draft')} type="button">
-          {busy === 'draft' ? 'Saving…' : 'Save Draft'}
+          {busy === 'draft' ? 'Saving...' : 'Save Draft'}
         </button>
       )}
       <button className="btn btn--primary" disabled={busy !== null} onClick={() => save('published')} type="button">
-        {busy === 'published' ? 'Saving…' : draftsEnabled ? 'Publish' : 'Save'}
+        {busy === 'published' ? 'Saving...' : draftsEnabled ? 'Publish' : 'Save'}
       </button>
       {error && <span style={{ color: 'var(--theme-error-500, #b3261e)' }}>{error}</span>}
     </div>
@@ -251,6 +252,7 @@ export const EditForm: React.FC<EditFormProps> = ({
   return (
     <DocumentInfoProvider value={{ collectionSlug, globalSlug, id }}>
       <FormProvider initialFields={initialFields}>
+        <LocalDraftRecovery collectionSlug={collectionSlug} globalSlug={globalSlug} id={id} serverUpdatedAt={typeof doc?.updatedAt === 'string' ? doc.updatedAt : null} />
         {panel ? (
           <div className="document-edit">
             <div className="document-edit__main">

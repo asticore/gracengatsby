@@ -34,6 +34,7 @@ import { ParentPicker } from '@/fields/parentPicker/ParentPicker'
 import { OrderNotesPanel, OrderRefundsPanel, OrderInvoicePanel, OrderShippingPanel } from '@/features/ecommerce/admin/OrderPanels'
 import { StoreCreditPanel } from '@/features/ecommerce/admin/StoreCreditPanel'
 import { PriceInput } from '@/features/ecommerce/admin/PriceInput'
+import { WeightInput, DimensionInput } from '@/features/ecommerce/admin/UnitInput'
 import { GenerateVariationsField } from '@/features/ecommerce/admin/GenerateVariationsField'
 import { CloudflarePurgeOnPublishField } from '@/admin/components/CloudflarePurgeOnPublishField'
 import { ColorPickerField } from '@/admin/components/ColorPickerField'
@@ -58,6 +59,8 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/backups/admin/BackupPanel#BackupPanel': BackupPanel,
   '@/features/email/admin/SendTestEmailButton#SendTestEmailButton': SendTestEmailButton,
   '@/features/ecommerce/admin/PriceInput#PriceInput': PriceInput,
+  '@/features/ecommerce/admin/UnitInput#WeightInput': WeightInput,
+  '@/features/ecommerce/admin/UnitInput#DimensionInput': DimensionInput,
   '@/features/ecommerce/admin/GenerateVariationsField#GenerateVariationsField': GenerateVariationsField,
   '@/features/ecommerce/admin/StoreCreditPanel#StoreCreditPanel': StoreCreditPanel,
   '@/features/ecommerce/admin/OrderPanels#OrderNotesPanel': OrderNotesPanel,

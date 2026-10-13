@@ -354,6 +354,20 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_event_rsvps')).toEqual(expect.arrayContaining(['checked_in', 'checked_in_at']))
   })
 
+  it('adds the wave 10 event columns (repeat weekdays, monthly style, number of dates, series link) and the RSVP ticket type', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_events')).toEqual(
+      expect.arrayContaining(['recurrence_weekdays', 'recurrence_monthly_by', 'recurrence_count', 'series_of_id']),
+    )
+    expect(await columnsOf('_eg_events_v')).toEqual(
+      expect.arrayContaining(['version_recurrence_weekdays', 'version_recurrence_monthly_by', 'version_recurrence_count', 'version_series_of_id']),
+    )
+    expect(await columnsOf('eg_event_rsvps')).toEqual(expect.arrayContaining(['ticket_tier']))
+  })
+
   it('adds the shop settings extras columns', async () => {
     const columnsOf = async (table: string): Promise<string[]> => {
       const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
@@ -406,6 +420,28 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('creates custom keys child table for integrations', () => {
     expect(tables, 'eg_integrations_custom_keys table should be created').toContain('eg_integrations_custom_keys')
+  })
+
+  it('creates the table of contents block tables with their settings columns', async () => {
+    const tocTables = [
+      'eg_pages_blocks_toc',
+      '_eg_pages_v_blocks_toc',
+      'eg_posts_blocks_toc',
+      '_eg_posts_v_blocks_toc',
+      'eg_products_blocks_toc',
+      '_eg_products_v_blocks_toc',
+      'eg_page_templates_blocks_toc',
+      'eg_lessons_blocks_toc',
+      'eg_blog_settings_blocks_toc',
+      'eg_faq_settings_blocks_toc',
+      'eg_shop_settings_blocks_toc',
+    ]
+    for (const table of tocTables) {
+      expect(tables, `${table} should be created`).toContain(table)
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const names = (result.results as { name: string }[]).map((r) => r.name)
+      expect(names, `${table} columns`).toEqual(expect.arrayContaining(['_order', '_parent_id', '_path', 'id', 'title', 'levels', 'collapsible', 'block_name', 'design']))
+    }
   })
 
   it('is safe to run a second time', async () => {

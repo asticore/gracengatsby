@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
+import { annotatePage } from '@/features/editScreens/toc'
 import { EventCard } from '@/components/EventCard'
 import { ProductCard } from '@/components/ProductCard'
 import { getEngine } from '@/lib/engine'
@@ -67,7 +68,7 @@ export default async function HomePage({
     return (
       <div className="built-page">
         <PageJsonLd collection="pages" doc={homepage} path="/" />
-        {(homepage.blocks || []).map((block, index) => (
+        {annotatePage({ blocks: homepage.blocks || [] }).blocks.map((block, index) => (
           <BlockRenderer key={block.id || index} block={block} index={index} />
         ))}
       </div>

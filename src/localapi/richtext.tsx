@@ -200,7 +200,8 @@ function convertParagraph({ node, convertChildren }: ConverterArgs): ReactNode {
 function convertHeading({ node, convertChildren }: ConverterArgs): ReactNode {
   const children = convertChildren(node.children, node)
   const Tag = node.tag as keyof React.JSX.IntrinsicElements
-  return <Tag>{children}</Tag>
+  // htmlId is set by src/features/editScreens/toc.ts so table of contents links can jump here.
+  return <Tag id={typeof node.htmlId === 'string' ? node.htmlId : undefined}>{children}</Tag>
 }
 
 /** Port of BlockquoteJSXConverter (node.type === 'quote'). */

@@ -9,6 +9,8 @@ import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
+import { orderBlogPosts } from '@/features/editScreens/blogOrder'
+import { readingTimeLabel } from '@/features/editScreens/readingTime'
 import { getSeoContext } from '@/features/seo/settings'
 import type { BlogSetting, Media, Post } from '@/engage-types'
 
@@ -27,13 +29,15 @@ export default async function BlogArchivePage() {
   const engine = await getEngine()
   const settings = (await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)) as BlogSetting | null
 
-  const { docs: posts } = (await engine.find({
+  // All published posts, so sticky posts can sit above newer ones; then cut to the page size.
+  const { docs } = (await engine.find({
     collection: 'posts',
     where: { _status: { equals: 'published' } },
     sort: '-publishedDate',
-    limit: settings?.postsPerPage || 9,
+    limit: 0,
     depth: 1,
-  })) as unknown as { docs: Post[] }
+  })) as unknown as { docs: (Post & { sticky?: boolean | null; readingTime?: number | null })[] }
+  const posts = orderBlogPosts(docs).slice(0, settings?.postsPerPage || 9)
 
   const layout = settings?.archiveLayout || 'grid'
 
@@ -76,6 +80,7 @@ export default async function BlogArchivePage() {
         <div className={`blog-archive__${layout}`}>
           {posts.map((post) => {
             const image = post.featuredImage && typeof post.featuredImage === 'object' ? (post.featuredImage as Media) : null
+            const readTime = readingTimeLabel(post.readingTime)
             return (
               <Link key={post.id} href={`/blog/${post.slug}`} className="blog-card block">
                 {image?.url && (
@@ -96,6 +101,7 @@ export default async function BlogArchivePage() {
                       {new Date(post.publishedDate).toLocaleDateString()}
                     </time>
                   )}
+                  {readTime && <span className="mt-1 block text-[0.75rem] opacity-60">{readTime}</span>}
                 </div>
               </Link>
             )

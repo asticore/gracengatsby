@@ -11,6 +11,8 @@ import { buildCheckoutHandoff, priceSubmission, type CheckoutHandoff } from './p
 import { formsEnabled, getFormSettings, resolveForForm } from './settings'
 import { loadForm } from './server'
 import { FORMS_SLUG, SUBMISSIONS_SLUG, type CreateArgs, type UpdateArgs } from './slugs'
+import { SLOT_TAKEN_MESSAGE } from './slots'
+import { firstLostSlot, firstTakenSlot, slotClaimsFor } from './slotGuard'
 import { checkCaptcha, checkFillTime, checkHoneypot } from './spam'
 import { inspectFiles, storeFiles, getUploadBucket, type PendingFile, type StoredFile } from './upload'
 import { validateSubmission } from './validate'
@@ -46,6 +48,8 @@ export type SubmitEngine = {
   find: (args: Record<string, unknown>) => Promise<{ docs: unknown[] }>
   create: (args: CreateArgs) => Promise<{ id?: number | string }>
   update: (args: UpdateArgs) => Promise<unknown>
+  /** Used only to take back an appointment entry that lost a race for its slot. */
+  delete?: (args: Record<string, unknown>) => Promise<unknown>
   findGlobal: (args: { slug: string; depth?: number }) => Promise<Record<string, unknown>>
   logger: { info: (...args: unknown[]) => void; warn: (...args: unknown[]) => void; error: (...args: unknown[]) => void }
 }
@@ -169,6 +173,13 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
     return { ok: false, status: 400, message: 'Please check the highlighted fields.', errors }
   }
 
+  // Double-booking: a full appointment slot is refused before anything is stored.
+  const slotClaims = settings.storeSubmissions ? slotClaimsFor(form.fields || [], values, visible) : []
+  const takenField = slotClaims.length > 0 ? await firstTakenSlot(engine, Number(form.id), slotClaims) : null
+  if (takenField) {
+    return { ok: false, status: 400, message: 'Please check the highlighted fields.', errors: { [takenField]: SLOT_TAKEN_MESSAGE } }
+  }
+
   const pricing = priceSubmission(form, values, visible)
 
   // Files are only kept when the entry that owns them is kept; otherwise they
@@ -221,6 +232,20 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
         await deleteEntryFiles(values, input.bucket as unknown as Parameters<typeof deleteEntryFiles>[1]).catch((): number => 0)
       }
       return { ok: false, status: 500, message: settings.errorMessage || GENERIC_REJECTION }
+    }
+
+    // Second check, after the insert: a racing request may have taken the last place.
+    const lostField =
+      slotClaims.length > 0 && submissionID !== undefined ? await firstLostSlot(engine, Number(form.id), slotClaims, Number(submissionID)) : null
+    if (lostField) {
+      await engine.delete?.({ collection: SUBMISSIONS_SLUG, id: Number(submissionID), overrideAccess: true }).catch((error: unknown) => {
+        engine.logger.error({ err: error, form: form.id }, 'A form entry that lost its appointment slot could not be removed')
+      })
+      if (toStore.length > 0) {
+        const { deleteEntryFiles } = await import('./maintenance')
+        await deleteEntryFiles(values, input.bucket as unknown as Parameters<typeof deleteEntryFiles>[1]).catch((): number => 0)
+      }
+      return { ok: false, status: 400, message: 'Please check the highlighted fields.', errors: { [lostField]: SLOT_TAKEN_MESSAGE } }
     }
   }
 

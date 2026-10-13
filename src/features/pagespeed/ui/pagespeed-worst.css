@@ -1,0 +1,37 @@
+/*
+ * "Slowest pages" card on the PageSpeed settings screen. Classes are prefixed `ps-worst`.
+ * Colours come from the --ps-* tokens in pagespeed.css; dark theme is keyed on [data-theme='dark'] only.
+ */
+
+.ps-worst__body {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ps-worst__strategy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.ps-worst__table td {
+  vertical-align: top;
+}
+
+.ps-worst__url {
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.ps-worst__audits {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .ps-worst__table thead {
+    display: none;
+  }
+}

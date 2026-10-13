@@ -115,6 +115,8 @@ export type FormFieldDef = {
     daysAhead?: number
     /** Longest booking horizon, in days. */
     maxDaysAhead?: number
+    /** How many bookings may share one start time (default 1). See slots.ts. */
+    capacity?: number
   }
   /** `address`: which lookup helps the visitor type, if any. */
   addressLookup?: 'none' | 'nominatim' | 'google'
@@ -307,6 +309,10 @@ export type PublicFormConfig = {
   customCss?: string
   steps?: { showProgress: boolean; progressStyle: 'bar' | 'steps' | 'text'; nextLabel: string; backLabel: string; titles: string[] }
   prefill?: Record<string, string>
+  /** Query-string keys allowed to pre-fill fields (the same whitelist the server uses). The browser reads the page address with these. */
+  prefillKeys?: string[]
+  /** Browser key for Google Places address lookup. Sent only when a field on this form uses it. */
+  mapsKey?: string
   captcha?: { provider: 'turnstile' | 'recaptcha'; siteKey: string }
   saveForLater?: boolean
   /** Set when rendered on a page of another website: posts go to this absolute origin. */

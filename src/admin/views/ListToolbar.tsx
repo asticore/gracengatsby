@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { ListState, ColumnDef, ListFilter } from '@/admin/list/listQuery'
 import { serializeListState } from '@/admin/list/listQuery'
 import { OrdersManifestAction } from '@/features/ecommerce/admin/OrdersManifestAction'
+import { OrdersFilterBar } from '@/features/ecommerce/admin/OrdersFilterBar'
 import { ProductsCsvActions } from '@/features/ecommerce/admin/ProductsCsvActions'
 
 interface ListToolbarProps {
@@ -159,6 +160,11 @@ export function ListToolbar({
     setShowFilterBuilder(false)
   }
 
+  const handleOrderFilters = (filters: ListFilter[]) => {
+    const newState = { ...state, filters, page: 1 }
+    router.push(`${pathname}?${withTrash(serializeListState(newState))}`)
+  }
+
   const handleRemoveActiveFilter = (index: number) => {
     const newFilters = state.filters.filter((_, i) => i !== index)
     const newState = { ...state, filters: newFilters, page: 1 }
@@ -172,7 +178,8 @@ export function ListToolbar({
         <input
           type="text"
           name="q"
-          placeholder="Search..."
+          placeholder={collectionSlug === 'orders' ? 'Order number, email or name' : 'Search...'}
+          title={collectionSlug === 'orders' ? 'Find orders by order number, customer email or customer name.' : undefined}
           defaultValue={state.q || ''}
           className="list-search-input"
         />
@@ -343,6 +350,7 @@ export function ListToolbar({
         <RedirectsToolbarActions />
       )}
       {collectionSlug === 'products' && <ProductsCsvActions />}
+      {collectionSlug === 'orders' && <OrdersFilterBar state={state} onChange={handleOrderFilters} />}
       {collectionSlug === 'orders' && <OrdersManifestAction />}
     </div>
   )

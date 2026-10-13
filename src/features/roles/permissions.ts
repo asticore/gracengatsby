@@ -11,6 +11,7 @@ export const RESOURCES = [
   'product-attributes',
   'shipping-classes',
   'product-reviews',
+  'stock-subscriptions',
   'gift-cards',
   'store-credits',
   'credit-ledger',
@@ -237,7 +238,7 @@ export function resolveAccess(
   // Check deny override first - deny beats everything
   if (overrides.deny?.[resource as Resource]?.[action]) return false
 
-  // Compute effective matrix: union of all role matrices + custom
+  // Compute effective matrix: union of all role matrices + custom + overrides
   const matrices: Partial<PermissionMatrix>[] = []
 
   if (user.roles) {
@@ -533,6 +534,7 @@ export const PERMISSION_CATEGORIES: Array<{
       { resource: 'product-attributes', label: 'Product attributes', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'shipping-classes', label: 'Shipping classes', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'product-reviews', label: 'Product reviews', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'stock-subscriptions', label: 'Back-in-stock sign-ups', description: 'Read: see who is waiting. Delete: remove a sign-up.', actions: ['read', 'delete'] },
       { resource: 'gift-cards', label: 'Gift cards', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'store-credits', label: 'Store credit balances', description: 'Update: add or deduct store credit.', actions: ['read', 'update'] },
       { resource: 'credit-ledger', label: 'Credit ledger', actions: ['read'] },

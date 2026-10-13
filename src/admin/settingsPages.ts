@@ -33,6 +33,8 @@ export interface SettingsPage {
   description: string
   /** Sections to render (globals and/or links) */
   sections: (GlobalSection | LinkSection)[]
+  /** Extra card shown above the sections (a named card rendered by the settings client). */
+  topCard?: 'pagespeed-worst'
 }
 
 /**
@@ -116,6 +118,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     path: '/settings/speed',
     title: 'Speed',
     description: 'Caching and performance optimization settings.',
+    topCard: 'pagespeed-worst',
     sections: [
       { kind: 'global', slug: 'speed-settings' },
     ],

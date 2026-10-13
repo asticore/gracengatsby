@@ -12,7 +12,7 @@ import { formatSlugHook } from '../utilities/formatSlug'
 import { customFieldsField } from '../fields/customFields'
 import { publishGuard } from '@/features/roles/contentEditGuard'
 import { reviewFields } from '@/features/approval/fields'
-import { recurrenceField, ticketTiersField, trashedAtField } from '@/features/editScreens/fields'
+import { generateOccurrencesField, recurrenceField, seriesOfField, ticketTiersField, trashedAtField } from '@/features/editScreens/fields'
 import { seoEditGuard, trashGuard } from '@/features/editScreens/guards'
 
 export const Events: CollectionConfig = {
@@ -127,6 +127,8 @@ export const Events: CollectionConfig = {
       ],
     },
     recurrenceField,
+    generateOccurrencesField,
+    seriesOfField,
     ticketTiersField,
     {
       name: 'eventType',

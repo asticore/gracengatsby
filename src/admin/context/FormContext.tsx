@@ -85,6 +85,12 @@ export function useFormModified(): boolean {
   return ctx.modified
 }
 
+/** Replaces many values at once (used to restore a recovered local draft). */
+export function useFormSetValues(): (values: Record<string, unknown>) => void {
+  const ctx = useFormContext('useFormSetValues')
+  return ctx.setValues
+}
+
 /** Called by EditView/GlobalEditView after a successful save. */
 export function useResetFormModified(): () => void {
   const ctx = useFormContext('useResetFormModified')

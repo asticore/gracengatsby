@@ -18,6 +18,7 @@
  */
 
 import { sanitiseHtml, sanitiseLayoutHtml } from './htmlSanitize'
+import { slotCapacity } from './slots'
 import type { FieldWidth, FormDoc, FormFieldDef, FormFieldOption, FormFieldType } from './types'
 
 /** A node as the visual editor stores it. Loose on purpose: it is user-editable JSON. */
@@ -219,6 +220,7 @@ export function nodeToField(node: LayoutNode, used: Set<string>, index: number):
       slots,
       weekdays,
       daysAhead: asNumber(props.daysAhead) ?? 60,
+      capacity: slotCapacity(props.capacity),
     }
   }
   const lookup = asString(props.addressLookup)

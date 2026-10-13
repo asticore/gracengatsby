@@ -289,6 +289,15 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_locked_documents_rels')).toEqual(expect.arrayContaining(['eg_product_attributes_id', 'eg_shipping_classes_id', 'eg_product_reviews_id']))
   })
 
+  it('creates the back-in-stock sign-up table and its lock link column', async () => {
+    expect(tables).toContain('eg_stock_subscriptions')
+    const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_stock_subscriptions`)').all()
+    const columns = (result.results as { name: string }[]).map((r) => r.name)
+    expect(columns).toEqual(expect.arrayContaining(['product_id', 'variation', 'email', 'status', 'notified_at']))
+    const locked = await proxy.env.D1.prepare('PRAGMA table_info(`eg_locked_documents_rels`)').all()
+    expect((locked.results as { name: string }[]).map((r) => r.name)).toContain('eg_stock_subscriptions_id')
+  })
+
   it('creates the PageSpeed tables, list columns, API key and settings columns', async () => {
     for (const table of ['eg_pagespeed_results', 'eg_pagespeed_queue']) {
       expect(tables, table).toContain(table)
@@ -344,6 +353,16 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_credit_ledger')).toEqual(expect.arrayContaining(['kind', 'balance_after', 'gift_card_id', 'user_id']))
     expect(await columnsOf('eg_orders')).toEqual(expect.arrayContaining(['gift_card_total', 'store_credit_total', 'stored_value', 'order_number']))
     expect(await columnsOf('eg_carts_items')).toEqual(expect.arrayContaining(['custom_amount', 'gift_email']))
+  })
+
+  it('adds the product quantity limit, name-your-price and cart price columns', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_products')).toEqual(expect.arrayContaining(['min_qty', 'max_qty', 'name_your_price', 'suggested_price', 'min_price']))
+    expect(await columnsOf('_eg_products_v')).toEqual(expect.arrayContaining(['version_min_qty', 'version_name_your_price', 'version_min_price']))
+    expect(await columnsOf('eg_carts_items')).toEqual(expect.arrayContaining(['price_cents']))
   })
 
   it('creates the shipping settings, manifests and pay-later columns', async () => {

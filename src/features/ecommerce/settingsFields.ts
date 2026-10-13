@@ -56,7 +56,7 @@ export const orderNumbersGroup: Field = {
   admin: { description: 'The number customers see on their order, receipt and emails.' },
   fields: [
     { name: 'prefix', type: 'text', admin: { description: 'Optional text before the number, for example "GG-". Letters, numbers and dashes only.' } },
-    { name: 'nextNumber', type: 'number', defaultValue: 1001, min: 1, admin: { description: 'The number the next new order gets. It counts up by one for every order. Only raise it: lowering it can create duplicate numbers.' } },
+    { name: 'nextNumber', type: 'number', defaultValue: 1001, min: 1, admin: { description: 'The first number the shop uses for orders. Once orders have been numbered the shop keeps counting up from the highest number used, so lowering this has no effect and raising it skips numbers.' } },
   ],
 }
 
@@ -101,7 +101,7 @@ export const invoiceGroup: Field = {
     { name: 'invoiceTitle', type: 'text', defaultValue: 'Invoice', admin: { description: 'Title used for an invoice without tax.' } },
     { name: 'receiptTitle', type: 'text', defaultValue: 'Receipt', admin: { description: 'Title used for a receipt.' } },
     { name: 'numberPrefix', type: 'text', defaultValue: 'INV-', admin: { description: 'Text before the invoice number, for example "INV-".' } },
-    { name: 'nextNumber', type: 'number', defaultValue: 1, min: 1, admin: { description: 'The invoice number the next paid order gets. Counts up by one. Only raise it, so numbers are never repeated.' } },
+    { name: 'nextNumber', type: 'number', defaultValue: 1, min: 1, admin: { description: 'The first invoice number the shop uses. Once invoices have been numbered the shop keeps counting up from the highest number used, so lowering this has no effect and raising it skips numbers.' } },
     { name: 'numberPadding', type: 'number', defaultValue: 5, min: 0, max: 10, admin: { description: 'Minimum digits in the number: 5 turns 42 into 00042.' } },
     { name: 'paperSize', type: 'select', defaultValue: 'A4', options: [{ label: 'A4 (210 x 297 mm)', value: 'A4' }, { label: 'US Letter (8.5 x 11 in)', value: 'Letter' }], admin: { description: 'The page size used when printing.' } },
     toggle('packingSlipEnabled', 'Packing slips', 'Show the packing slip button on orders.'),

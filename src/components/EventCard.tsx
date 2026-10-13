@@ -47,6 +47,9 @@ export const EventCard: React.FC<{ event: Event }> = ({ event }) => {
         </span>
         <h3>{event.title}</h3>
         {event.location?.venueName && <p>{event.location.venueName}</p>}
+        {(event as Event & { seriesOf?: unknown }).seriesOf ? (
+          <p className="text-[0.8rem] text-[rgba(20,17,15,0.6)]">Part of a series</p>
+        ) : null}
       </div>
     </Link>
   )

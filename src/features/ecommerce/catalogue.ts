@@ -9,11 +9,13 @@ import { effectivePrice, type PriceFields } from './pricing'
 import { canPurchase, computeStockStatus, type StockFields, type StockStatus } from './stock'
 import { decodeAttributeValues, findVariation, type VariationRow } from './variations'
 import { quantityError, validateNamedPrice } from './lib/qtyLimits'
+import { isPreorderActive, type PreorderFields } from './lib/preorder'
 
 export type ProductType = 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard'
 
 export type CatalogueProduct = PriceFields &
-  StockFields & {
+  StockFields &
+  PreorderFields & {
     id?: number
     title?: string
     productType?: ProductType | null
@@ -38,6 +40,8 @@ export type CartLine =
       variationId: string | null
       variationLabel: string | null
       stockStatus: StockStatus
+      /** Bought as a pre-order: may be bought while out of stock, ships later. */
+      preorder: boolean
     }
   | { ok: false; error: string }
 
@@ -52,6 +56,7 @@ export function variationLabel(variation: VariationRow): string {
  * Validates and prices one cart line. `alreadyInCart` is the quantity of the same product (or
  * variation) already in the cart, so the stock and maximum checks cover the new total.
  * `priceCents` is the buyer's own amount, used only for name-your-price simple products.
+ * `preordersOn` is the shop-wide pre-order switch (on by default).
  */
 export function resolveCartLine(
   product: CatalogueProduct | null | undefined,
@@ -60,6 +65,7 @@ export function resolveCartLine(
   now: Date = new Date(),
   alreadyInCart = 0,
   priceCents: number | null = null,
+  preordersOn = true,
 ): CartLine {
   if (!product || !isPublished(product)) return { ok: false, error: 'This product is not available.' }
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return { ok: false, error: 'Invalid quantity.' }
@@ -70,13 +76,14 @@ export function resolveCartLine(
   const limitError = quantityError(quantity, product, total)
   if (limitError) return { ok: false, error: limitError }
   const title = product.title || 'Item'
+  const preorder = isPreorderActive(product, now, preordersOn)
 
   if (type === 'variable') {
     const variation = findVariation(product.variations, variationId)
     if (!variation || variation.enabled === false) return { ok: false, error: 'Choose an available option.' }
     // A variation that does not manage its own stock draws on the product's.
     const stock: StockFields = variation.manageStock ? variation : product.manageStock ? product : variation
-    if (!canPurchase(stock, total)) return { ok: false, error: 'That option is out of stock.' }
+    if (!canPurchase(stock, total) && !preorder) return { ok: false, error: 'That option is out of stock.' }
     const resolved = effectivePrice(variationPriceFields(product, variation), now)
     if (resolved === null) return { ok: false, error: 'This option has no price.' }
     return {
@@ -87,19 +94,20 @@ export function resolveCartLine(
       variationId: variation.id ?? null,
       variationLabel: variationLabel(variation),
       stockStatus: computeStockStatus(stock),
+      preorder,
     }
   }
 
-  if (!canPurchase(product, total)) return { ok: false, error: 'This product is out of stock.' }
+  if (!canPurchase(product, total) && !preorder) return { ok: false, error: 'This product is out of stock.' }
   if (product.nameYourPrice && type === 'simple') {
     // The buyer's amount is checked here against the shop's minimum; the browser's value is never trusted as is.
     const named = validateNamedPrice(priceCents, { minPrice: product.minPrice != null ? Math.floor(product.minPrice * 100 + 1e-9) : null })
     if (!named.ok || named.cents == null) return { ok: false, error: named.error ?? 'Please enter a valid amount.' }
-    return { ok: true, unitPrice: named.cents / 100, title, sku: product.sku || null, variationId: null, variationLabel: null, stockStatus: computeStockStatus(product) }
+    return { ok: true, unitPrice: named.cents / 100, title, sku: product.sku || null, variationId: null, variationLabel: null, stockStatus: computeStockStatus(product), preorder }
   }
   const price = effectivePrice(product, now)
   if (price === null) return { ok: false, error: 'This product has no price.' }
-  return { ok: true, unitPrice: price, title, sku: product.sku || null, variationId: null, variationLabel: null, stockStatus: computeStockStatus(product) }
+  return { ok: true, unitPrice: price, title, sku: product.sku || null, variationId: null, variationLabel: null, stockStatus: computeStockStatus(product), preorder }
 }
 
 /** The price fields that apply to a variation: its own when it sets any, otherwise the product's. */

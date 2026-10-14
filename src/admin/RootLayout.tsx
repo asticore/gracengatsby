@@ -32,13 +32,18 @@ import { NavToggler } from '@/admin/ui/NavToggler'
 import { ThemeToggler } from '@/admin/ui/ThemeToggler'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { SessionWatch } from '@/admin/SessionWatch'
+import { THEME_SCRIPT } from '@/admin/context/themeScript'
 
 export async function RootLayout({ children }: { children: ReactNode; config?: unknown; importMap?: unknown; serverFunction?: unknown }) {
   const context = await getAdminContext()
   const hasAdminAccess = hasAdminPanelAccess(context.user)
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Sets data-theme before first paint; see themeScript.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
         <DocumentEventsProvider>
           <NavProvider>

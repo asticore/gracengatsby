@@ -4,7 +4,7 @@ type Doc = Record<string, unknown>
 type Engine = { findGlobal: (a: unknown) => Promise<Doc> }
 
 export type LoadedPaymentSettings = PaymentSettingsLike & {
-  stripe?: { enabled?: boolean; secretKey?: string; publishableKey?: string } | null
+  stripe?: { enabled?: boolean; secretKey?: string; publishableKey?: string; webhookSigningSecret?: string } | null
   paypal?: { enabled?: boolean; environment?: string; clientId?: string; clientSecret?: string; webhookId?: string } | null
 }
 
@@ -23,6 +23,14 @@ export function resolveStripeSecret(settings: LoadedPaymentSettings): string {
   if (env) return env
   const key = settings.stripe?.secretKey
   return typeof key === 'string' ? key.trim() : ''
+}
+
+/** STRIPE_WEBHOOK_SECRET wins when set; otherwise the signing secret saved in Shop settings > Payments. */
+export function resolveStripeWebhookSecret(settings: LoadedPaymentSettings): string {
+  const env = process.env.STRIPE_WEBHOOK_SECRET
+  if (env) return env
+  const secret = settings.stripe?.webhookSigningSecret
+  return typeof secret === 'string' ? secret.trim() : ''
 }
 
 /** Payment method types for a new PaymentIntent, or null for Stripe's automatic choice. */

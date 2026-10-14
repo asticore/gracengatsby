@@ -147,9 +147,11 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
         <CheckoutExtras cartRef={cartRef} email={email} onChange={onExtras} />
         <PayPalButton cartRef={cartRef} email={email} extras={extrasReady ? extras : null} />
         {error && <p className="form-error">{error}</p>}
-        <button type="submit" className="btn btn--primary" disabled={isLoading || !extrasReady}>
-          {isLoading ? 'Preparing checkout...' : 'Continue to payment'}
-        </button>
+        {publishableKey && (
+          <button type="submit" className="btn btn--primary" disabled={isLoading || !extrasReady}>
+            {isLoading ? 'Preparing checkout...' : 'Continue to payment'}
+          </button>
+        )}
       </form>
     )
   }
@@ -193,13 +195,6 @@ export const CheckoutForm: React.FC = () => {
     [],
   )
 
-  if (!publishableKey) {
-    return (
-      <p className="form-error">
-        Online payments aren&apos;t connected yet - add a Stripe publishable key to enable checkout.
-      </p>
-    )
-  }
-
+  // No Stripe key is a PayPal-only site: the form still renders so the PayPal button can show (see CheckoutInner).
   return <CheckoutInner stripePromise={stripePromise} />
 }

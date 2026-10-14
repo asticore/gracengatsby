@@ -11,6 +11,10 @@ import { DEFAULT_TAX_SETTINGS, type TaxClass, type TaxRate, type TaxSettings } f
 import { fetchLiveRates, normaliseShippingConfig } from '../shipping/registry'
 import { computeOrderTotals, type OrderTotals, type PricedLine } from '../lib/totals'
 import { loadPreordersEnabled } from './shopExtra'
+import { addOnSummary, parseAddOnInputs, priceAddOns, normaliseAddOnDefs, type AddOnChoice } from '../lib/addOns'
+import { applyPricingRules } from '../lib/pricingRules'
+import { loadShopRulesConfig } from './pricingRules'
+import { resolveBundle } from './bundles'
 
 type Doc = Record<string, unknown>
 export type PricingEngine = {
@@ -61,6 +65,8 @@ export type CartItemInput = {
   variation?: string | null
   /** Name-your-price lines: the buyer's amount in cents. Checked against the minimum here; ignored for normal products. */
   priceCents?: number | null
+  /** Product add-on answers: [{id, value}] (or the JSON text they are stored as). Checked against the product here. */
+  addOns?: unknown
   /** Gift card lines: amount in cents chosen by the buyer, and who receives it. Validated here, never trusted. */
   customAmount?: number | null
   giftName?: string | null
@@ -108,7 +114,7 @@ export function giftCardLine(product: Doc, item: CartItemInput, key: string, qua
 }
 
 /** Loads each cart line from the database and prices it. Nothing here comes from the browser except ids and quantities. */
-export async function loadPricedLines(engine: PricingEngine, items: CartItemInput[], now = new Date()): Promise<PricedLine[]> {
+export async function loadPricedLines(engine: PricingEngine, items: CartItemInput[], now = new Date(), addOnsOn = true): Promise<PricedLine[]> {
   const lines: PricedLine[] = []
   let giftSettings: ReturnType<typeof normaliseGiftCardSettings> | null = null
   const inCart = new Map<string, number>() // the same product listed twice must be available for the sum
@@ -120,6 +126,32 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
     const quantity = item.quantity ?? 1
     if (product && product.productType === 'giftcard') {
       lines.push(giftCardLine(product as Doc, item, String(i), quantity, giftSettings ?? (giftSettings = await loadGiftSettings(engine))))
+      continue
+    }
+    if (product && product.productType === 'bundle') {
+      // A bundle is priced from its products; their stock is taken through the same `inCart` tally as single products.
+      const bundleKey = `${productId}:`
+      const bundle = await resolveBundle(engine, product as Doc, quantity, now, inCart, inCart.get(bundleKey) ?? 0, preordersOn)
+      if (!bundle.ok) throw new CheckoutError((bundle as { error: string }).error)
+      inCart.set(bundleKey, (inCart.get(bundleKey) ?? 0) + quantity)
+      const b = product as Doc
+      const virtual = b.isVirtual === true || b.category === 'digital'
+      lines.push({
+        key: String(i),
+        productId: String(productId),
+        name: String(b.title ?? 'Bundle'),
+        sku: typeof b.sku === 'string' ? b.sku : null,
+        unitCents: bundle.unitCents,
+        quantity,
+        taxClass: (['standard', 'reduced', 'zero'].includes(String(b.taxClass)) ? b.taxClass : 'standard') as TaxClass,
+        categories: b.category ? [String(b.category)] : [],
+        onSale: false,
+        weightGrams: bundle.weightGrams,
+        shippingClass: idOf(b.shippingClass),
+        requiresShipping: !virtual,
+        // carried for the order snapshot: what one bundle holds, so later edits to the bundle do not change its stock
+        ...({ variationId: null, bundleContents: bundle.contents } as object),
+      } as PricedLine)
       continue
     }
     const stockKey = `${productId}:${item.variation ?? ''}`
@@ -145,6 +177,11 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
     } else {
       throw new CheckoutError((resolved as { error: string }).error)
     }
+    // Product add-ons: the buyer's answers are checked against the product's own questions and priced here.
+    // With the shop switch off, add-on answers are ignored and the product sells as before.
+    const addOnPriced = priceAddOns(addOnsOn ? normaliseAddOnDefs((product as Doc | null)?.addOns) : [], addOnsOn ? parseAddOnInputs(item.addOns) : [])
+    if (!addOnPriced.ok) throw new CheckoutError(addOnPriced.error ?? 'Please check the options you chose.')
+    const addOnChoices: AddOnChoice[] = addOnPriced.choices
     const p = product as Doc
     const categories = [p.category, ...(Array.isArray(p.categories) ? p.categories : [])]
       .map((c) => (c && typeof c === 'object' ? ((c as Doc).slug ?? (c as Doc).id) : c))
@@ -156,9 +193,9 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
     lines.push({
       key: String(i),
       productId: String(productId),
-      name: label ? `${title} - ${label}` : title,
+      name: (label ? `${title} - ${label}` : title) + (addOnChoices.length ? ` (${addOnSummary(addOnChoices)})` : ''),
       sku,
-      unitCents: toCents(unitPrice),
+      unitCents: toCents(unitPrice) + addOnPriced.cents,
       quantity,
       taxClass,
       categories,
@@ -170,7 +207,7 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
       shippingClass: idOf(p.shippingClass),
       requiresShipping: !virtual,
       // carried for the order snapshot
-      ...({ variationId, preorder: resolved.ok && resolved.preorder ? { releaseDate: p.preorderReleaseDate ?? null, note: p.preorderNote ?? null } : null } as object),
+      ...({ variationId, preorder: resolved.ok && resolved.preorder ? { releaseDate: p.preorderReleaseDate ?? null, note: p.preorderNote ?? null } : null, addOns: addOnChoices } as object),
     } as PricedLine)
   }
   return lines
@@ -225,6 +262,8 @@ export type PriceInput = {
   strict?: boolean
   /** The cart being priced; its own pending order does not count as a reservation. */
   cartId?: number
+  /** Roles of the signed-in buyer, for customer-role pricing rules. Guests have none. */
+  customerRoles?: string[] | null
 }
 
 type LiveResult = { options: ShippingOption[]; liveOn: boolean }
@@ -267,7 +306,17 @@ async function liveShippingOptions(engine: PricingEngine, lines: PricedLine[], a
 
 export async function priceCart(engine: PricingEngine, input: PriceInput, cfg?: ShopConfig): Promise<{ totals: OrderTotals; config: ShopConfig; lines: PricedLine[] }> {
   const config = cfg ?? (await loadShopConfig(engine))
-  const lines = await loadPricedLines(engine, input.items)
+  const shopRules = await loadShopRulesConfig(engine) // one read per checkout: add-on switch and pricing rules
+  const lines = await loadPricedLines(engine, input.items, undefined, shopRules.addOnsOn)
+  // Dynamic pricing rules run before coupons (see lib/totals.ts). Gift cards are never discounted.
+  const ruleResult =
+    shopRules.rulesOn && shopRules.rules.length > 0
+      ? applyPricingRules(shopRules.rules, {
+          lines: lines.map((l) => ({ key: l.key, categories: l.categories, quantity: l.quantity, unitCents: l.unitCents, isGiftCard: l.isGiftCard })),
+          subtotalCents: lines.reduce((s, l) => s + l.unitCents * l.quantity, 0),
+          customerRoles: Array.isArray(input.customerRoles) ? input.customerRoles : [],
+        })
+      : null
   const code = normalizeCode(input.couponCode)
   let coupon = code ? await findCoupon(engine, code) : null
   const uses = coupon && input.email ? await couponUsesBy(engine, code, input.email, { excludeCartId: input.cartId }) : 0
@@ -291,6 +340,8 @@ export async function priceCart(engine: PricingEngine, input: PriceInput, cfg?: 
     usesByThisCustomer: uses,
     shippingOptionId: input.shippingOptionId,
     requireShipping: input.strict,
+    pricingRuleDiscounts: ruleResult?.lineDiscounts,
+    pricingRules: ruleResult?.applied,
   })
   if (!result.ok) throw new CheckoutError((result as { error: string }).error)
   if (input.strict && result.couponError) throw new CheckoutError(result.couponError)

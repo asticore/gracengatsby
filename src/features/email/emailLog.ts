@@ -25,7 +25,7 @@ const TEMPLATE_CAP = 60
 export const NOT_STORED = '[not stored]'
 
 /** Templates whose bodies are never kept, because the body holds a reset or welcome link that works until used. */
-export const UNSTORED_TEMPLATES: ReadonlySet<string> = new Set(['account.reset', 'account.welcome'])
+export const UNSTORED_TEMPLATES: ReadonlySet<string> = new Set(['account.reset', 'account.welcome', 'account.set-password'])
 
 /** One resend of the same entry per this many milliseconds. */
 export const RESEND_INTERVAL_MS = 60_000

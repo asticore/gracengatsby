@@ -33,6 +33,8 @@ export type CouponLine = {
   quantity: number
   unitCents: number
   onSale?: boolean
+  /** The line total after dynamic pricing rules, when those ran first. Defaults to unitCents x quantity. */
+  totalCents?: number
 }
 
 export type CouponContext = {
@@ -57,7 +59,7 @@ const list = (csv: string | null | undefined): string[] =>
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
 
-const lineTotal = (l: CouponLine) => l.unitCents * l.quantity
+const lineTotal = (l: CouponLine) => l.totalCents ?? l.unitCents * l.quantity
 
 /**
  * Validates a coupon against a cart and works out the discount, in cents.

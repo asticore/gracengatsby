@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache'
 
+import { bumpCacheEpoch } from './epoch'
 import { getSpeedSettings } from './settings'
 
 const SITE_URL = (process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/$/, '')
@@ -25,10 +26,10 @@ export type PurgeResult = {
  *    `caches.default.delete(url)` only clears the cache of the *colo that is
  *    executing this request*. Cloudflare's edge is hundreds of independent
  *    colos - a purge run in Sydney does not touch the copy sitting in Frankfurt.
- *    Those copies expire on their own TTL instead. Buying an editor a
- *    guaranteed global purge means calling Cloudflare's zone purge REST API
- *    with an API token, which this install has no credentials for; if that is
- *    ever wanted, this is the single function to add it to.
+ *    Those copies expire on their own TTL instead. A guaranteed global purge
+ *    goes through Cloudflare's zone purge REST API: purgeCloudflareByUrls and
+ *    purgeCloudflareCache below do that when a zone ID and API token (Cache
+ *    Purge permission) are saved on the Integrations page.
  *
  * 2. The framework's route cache, cleared with revalidatePath(). This is
  *    per-isolate/per-deployment rather than global for the same reason. It is
@@ -53,6 +54,8 @@ export async function purgeCache(paths: string[] | string): Promise<PurgeResult>
   if (!list.length) return result
 
   const speed = await getSpeedSettings()
+  // With page caching on, every publish starts a new cache version (see epoch.ts).
+  if (speed.enabled && speed.caching.pageCache) await bumpCacheEpoch()
   if (!speed.enabled || !speed.caching.purgeOnPublish) return result
   result.ran = true
 

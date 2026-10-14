@@ -6,6 +6,7 @@ import { RichText } from '@/engine/editor/react'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { ProductPurchase, type GroupedChild } from '@/components/ProductPurchase'
 import { BackInStockForm } from '@/components/BackInStockForm'
+import { SubscriptionOffer } from '@/features/ecommerce/subscriptions/components/SubscriptionOffer'
 import { ProductReviewForm } from '@/components/ProductReviewForm'
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
@@ -13,6 +14,9 @@ import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
 import { WishlistHeart } from '@/components/WishlistHeart'
 import { ProductGallery } from '@/components/ProductGallery'
+import { BundleContentsList } from '@/components/BundleContentsList'
+import { ProductRecommendations } from '@/components/ProductRecommendations'
+import { bundleStorefrontFields } from '@/features/ecommerce/server/bundles'
 import { VariationImageProvider } from '@/components/VariationImageProvider'
 import { wishlistEnabled } from '@/features/ecommerce/lib/wishlist'
 import type { CatalogueProduct } from '@/features/ecommerce/catalogue'
@@ -21,6 +25,8 @@ import { showBackInStockForm } from '@/features/ecommerce/lib/backInStock'
 import { aggregateRatingJsonLd, summariseRatings } from '@/features/ecommerce/reviews'
 import { buildProductView, offersJsonLd } from '@/features/ecommerce/storefront'
 import { loadPreordersEnabled } from '@/features/ecommerce/server/shopExtra'
+import { loadShopRulesConfig } from '@/features/ecommerce/server/pricingRules'
+import { productPageNotes } from '@/features/ecommerce/lib/pricingRules'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -94,7 +100,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const catalogue = product as unknown as CatalogueProduct & Record<string, unknown>
   const mediaUrls = new Map<number, string>(images.filter((img) => img.url).map((img) => [img.id, img.url as string]))
   const preordersOn = await loadPreordersEnabled(engine)
-  const view = buildProductView(catalogue, new Date(), mediaUrls, { preorders: preordersOn })
+  // A bundle's price and stock come from the products inside it (server/bundles.ts), so they replace the bundle's own fields here.
+  const bundle = catalogue.productType === 'bundle' ? await bundleStorefrontFields(engine as never, product as never, new Date(), preordersOn) : null
+  const shopRules = await loadShopRulesConfig(engine)
+  const view = buildProductView(bundle ? { ...catalogue, ...bundle } : catalogue, new Date(), mediaUrls, {
+    preorders: preordersOn,
+    addOnsOn: shopRules.addOnsOn,
+    pricingNotes: shopRules.rulesOn ? productPageNotes(shopRules.rules) : [],
+  })
 
   const asDocs = (value: unknown): Array<Record<string, unknown> & { id: number }> =>
     (Array.isArray(value) ? value : []).filter((entry): entry is Record<string, unknown> & { id: number } => typeof entry === 'object' && entry !== null)
@@ -148,7 +161,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <p className="mb-6 text-[rgba(20,17,15,0.7)]">{product.shortDescription}</p>
         )}
 
+        {bundle ? <BundleContentsList items={bundle.contents} /> : null}
         <ProductPurchase productId={product.id} view={view} grouped={grouped} giftConfig={giftConfig} />
+        <SubscriptionOffer product={product} />
         {showBackInStockForm(settings, catalogue) && !view.preorder.active ? <BackInStockForm productId={product.id} /> : null}
         {wishlistEnabled(settings) && <div className="mt-4"><WishlistHeart productId={product.id} showLink /></div>}
 
@@ -217,6 +232,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
       )}
+
+      <ProductRecommendations productId={product.id} category={product.category ? String(product.category) : null} />
 
       {related.length > 0 && (
         <div className="page-shell col-span-full mt-16">

@@ -19,6 +19,12 @@ import { catalogueBeforeChange } from '../productHooks'
 import { backInStockAfterChange } from '../backInStockNotify'
 import { stockAlertAfterChange } from '../stockAlerts'
 
+/** Loaded lazily: the subscription code imports the Stripe SDK, which the config should not load on every render. */
+const subscriptionAfterChange = async (args: { doc: Record<string, unknown>; req: { engine: unknown } }) => {
+  const { runSubscriptionAfterChange } = await import('../subscriptions/productHook')
+  return runSubscriptionAfterChange(args)
+}
+
 /**
  * SHADOW config for the ecommerce plugin's real `products` collection - see
  * ./Addresses.ts's header comment. Reproduced from `createProductsCollection.js`
@@ -167,7 +173,7 @@ export const Products: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
-    afterChange: [stockAlertAfterChange, backInStockAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products')],
+    afterChange: [stockAlertAfterChange, backInStockAfterChange, subscriptionAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products')],
     afterDelete: [indexNowAfterDelete('products')],
   },
 }

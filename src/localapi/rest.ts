@@ -164,6 +164,8 @@ import { createEngine } from './engine'
 import { clientKey, hit } from '@/features/security/rateLimit'
 import { confirmStripeOrder, finalizePaidIntent, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
 import { CheckoutError } from '@/features/ecommerce/server/pricing'
+import { loadPaymentSettings, resolveStripeSecret, resolveStripeWebhookSecret } from '@/features/ecommerce/payments/config'
+import { loadShopCurrency } from '@/features/ecommerce/lib/shopCurrency'
 import { markOrderFailed } from '@/features/ecommerce/server/orders'
 import { membershipWebhooks } from '@/features/members/webhooks'
 import type Stripe from 'stripe'
@@ -1199,7 +1201,7 @@ async function handlePaymentsStripeInitiate(engine: Engine, request: Request, us
     const result = await initiateStripePayment({
       engine,
       cart,
-      currency: 'AUD', // the shop sells in AUD only; never trust the cart's or the client's currency
+      currency: await loadShopCurrency(engine as never), // the shop's currency from Shop settings; never the cart's or the client's
       customerEmail,
       billingAddress: data.billingAddress as Record<string, unknown> | undefined,
       shippingAddress: data.shippingAddress as Record<string, unknown> | undefined,
@@ -1239,10 +1241,10 @@ async function handlePaymentsStripeConfirmOrder(engine: Engine, request: Request
  * from `node_modules` to confirm): no auth/user resolution at all (unlike
  * `initiate`/`confirm-order` above) - the only trust boundary is the Stripe
  * signature. `returnStatus` starts at 200 and is only ever set to 400 by a
- * signature-verification failure; when `STRIPE_WEBHOOK_SECRET`/
- * `STRIPE_SECRET_KEY` aren't both configured (e.g. this sandbox, where both
- * are blank) the whole body is skipped and this always answers `{received:
- * true}` at 200, matching the real handler's own early-exit shape. Dispatch
+ * signature-verification failure. The keys come from the env vars when set,
+ * otherwise from Shop settings > Payments (payments/config.ts). When either
+ * one is missing nothing is verified: the error is logged and this answers
+ * 400 (not a silent 200), so Stripe retries once the keys are saved. Dispatch
  * to `membershipWebhooks[event.type]` uses the same `{req: {engine:
  * engine}}` minimal-shape cast this codebase already uses to call a
  * reference-engine-typed function from the engine layer (see
@@ -1251,43 +1253,48 @@ async function handlePaymentsStripeConfirmOrder(engine: Engine, request: Request
  * never touched except via `.engine`.
  */
 async function handlePaymentsStripeWebhooks(engine: Engine, request: Request): Promise<Response> {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  const secretKey = process.env.STRIPE_SECRET_KEY
+  // Keys come from the environment when set, otherwise from Shop settings > Payments (see payments/config.ts).
+  const settings = await loadPaymentSettings(engine as never)
+  const webhookSecret = resolveStripeWebhookSecret(settings)
+  const secretKey = resolveStripeSecret(settings)
+  if (!webhookSecret || !secretKey) {
+    const missing = [!webhookSecret && 'the webhook signing secret', !secretKey && 'the secret key'].filter(Boolean).join(' and ')
+    console.error(`Stripe webhook refused: ${missing} is not set. Add it in Shop settings > Payments, or as an environment variable.`)
+    return Response.json({ message: 'Stripe webhooks are not configured.' }, { status: 400 })
+  }
   let returnStatus = 200
 
-  if (webhookSecret && secretKey) {
-    const stripe = getStripeClient(secretKey)
-    const body = await request.text()
-    const signature = request.headers.get('stripe-signature')
+  const stripe = getStripeClient(secretKey)
+  const body = await request.text()
+  const signature = request.headers.get('stripe-signature')
 
-    if (signature) {
-      let event: Stripe.Event | undefined
-      try {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-      } catch (err) {
-        console.error(`Error constructing Stripe event: ${err instanceof Error ? err.message : String(err)}`)
-        returnStatus = 400
+  if (signature) {
+    let event: Stripe.Event | undefined
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    } catch (err) {
+      console.error(`Error constructing Stripe event: ${err instanceof Error ? err.message : String(err)}`)
+      returnStatus = 400
+    }
+
+    if (event && (event.type === 'payment_intent.succeeded' || event.type === 'payment_intent.payment_failed')) {
+      // Shop orders: idempotent, so a replay or a race with the browser confirm is harmless.
+      const intent = event.data.object as Stripe.PaymentIntent
+      if (intent.metadata?.orderID) {
+        try {
+          if (event.type === 'payment_intent.succeeded') await finalizePaidIntent(engine, intent)
+          else await markOrderFailed(engine as never, Number(intent.metadata.orderID))
+        } catch (err) {
+          console.error(`Shop webhook ${event.type} failed: ${err instanceof Error ? err.message : String(err)}`)
+          returnStatus = 500
+        }
       }
-
-      if (event && (event.type === 'payment_intent.succeeded' || event.type === 'payment_intent.payment_failed')) {
-        // Shop orders: idempotent, so a replay or a race with the browser confirm is harmless.
-        const intent = event.data.object as Stripe.PaymentIntent
-        if (intent.metadata?.orderID) {
-          try {
-            if (event.type === 'payment_intent.succeeded') await finalizePaidIntent(engine, intent)
-            else await markOrderFailed(engine as never, Number(intent.metadata.orderID))
-          } catch (err) {
-            console.error(`Shop webhook ${event.type} failed: ${err instanceof Error ? err.message : String(err)}`)
-            returnStatus = 500
-          }
-        }
-      } else if (event) {
-        const handler = membershipWebhooks[event.type as keyof typeof membershipWebhooks] as unknown as
-          | ((args: { event: Stripe.Event; req: { engine: Engine }; stripe: Stripe }) => Promise<void>)
-          | undefined
-        if (typeof handler === 'function') {
-          await handler({ event, req: { engine }, stripe })
-        }
+    } else if (event) {
+      const handler = membershipWebhooks[event.type as keyof typeof membershipWebhooks] as unknown as
+        | ((args: { event: Stripe.Event; req: { engine: Engine }; stripe: Stripe }) => Promise<void>)
+        | undefined
+      if (typeof handler === 'function') {
+        await handler({ event, req: { engine }, stripe })
       }
     }
   }

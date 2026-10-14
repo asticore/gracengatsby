@@ -474,6 +474,28 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_reusable_sections_blocks_loop')).toContain('template_id')
   })
 
+  it('adds the SEO focus keyphrase column to the SEO collections and their version tables', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    for (const table of ['eg_pages', 'eg_posts', 'eg_products', 'eg_events', 'eg_courses']) {
+      if (tables.includes(table)) expect(await columnsOf(table), table).toContain('seo_focus_keyphrase')
+    }
+    for (const table of ['_eg_pages_v', '_eg_posts_v', '_eg_products_v', '_eg_events_v', '_eg_courses_v']) {
+      if (tables.includes(table)) expect(await columnsOf(table), table).toContain('version_seo_focus_keyphrase')
+    }
+  })
+
+  it('adds the Templates by content type columns to the SEO settings table', async () => {
+    const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`eg_seo_settings\`)`).all()
+    const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+    for (const type of ['page', 'post', 'product', 'event', 'course']) {
+      expect(columnNames, `${type} title template`).toContain(`templates_${type}_title_template`)
+      expect(columnNames, `${type} description template`).toContain(`templates_${type}_description_template`)
+    }
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

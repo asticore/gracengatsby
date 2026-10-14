@@ -30,9 +30,11 @@ import { Memberships } from '@/features/members/collections/Memberships'
 import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 import { Translations } from '@/features/multilingual/translationsCollection'
 import { AuditLog } from '@/features/security/auditLogCollection'
+import { EmailLog } from '@/collections/EmailLog'
 import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
 import { EmailSettings } from '@/globals/EmailSettings'
+import { EmailTemplates } from '@/globals/EmailTemplates'
 import { FaqSettings } from '@/globals/FaqSettings'
 import { Footer } from '@/globals/Footer'
 import { FormSettings } from '@/globals/FormSettings'
@@ -44,9 +46,11 @@ import { MemberSettings } from '@/globals/MemberSettings'
 import { PaymentSettings } from '@/globals/PaymentSettings'
 import { ShippingSettings } from '@/globals/ShippingSettings'
 import { SecuritySettings } from '@/globals/SecuritySettings'
+import { SitePages } from '@/globals/SitePages'
 import { SeoSettings } from '@/globals/SeoSettings'
 import { ShopSettings } from '@/globals/ShopSettings'
 import { ShopExtraSettings } from '@/globals/ShopExtraSettings'
+import { SiteDetails } from '@/globals/SiteDetails'
 import { SiteSettings } from '@/globals/SiteSettings'
 import { SpeedSettings } from '@/globals/SpeedSettings'
 
@@ -351,7 +355,7 @@ export const lessons = lessonsGenerated.table
 
 function resolveCoursesJoinTargetTable(slug: string): AnySQLiteTable {
   if (slug === Lessons.slug) return lessons
-  throw new Error(`cms/db/schema: no known table for join target collection "${slug}" - add it to resolveCoursesJoinTargetTable in schema/index.ts.`)
+  throw new Error(`cms/db/schema: no known join target collection "${slug}" - add it to resolveCoursesJoinTargetTable in schema/index.ts.`)
 }
 
 /**
@@ -500,6 +504,10 @@ export const usersSessions = generateAuthSessionsTable(usersGenerated.tableName)
  */
 export const auditLogGenerated = generateTable(AuditLog)
 export const auditLog = auditLogGenerated.table
+
+/** The `email-log` collection (src/collections/EmailLog.ts): one row per email the site tried to send. */
+export const emailLogGenerated = generateTable(EmailLog)
+export const emailLog = emailLogGenerated.table
 
 export const backupsGenerated = generateTable(Backups)
 export const backups = backupsGenerated.table
@@ -683,6 +691,19 @@ export const shopSettings = shopSettingsGenerated.table
 /** Shop-wide switches (src/globals/ShopExtraSettings.ts): flat scalar fields only. */
 export const shopExtraSettingsGenerated = generateTable(ShopExtraSettings)
 export const shopExtraSettings = shopExtraSettingsGenerated.table
+
+/** Special pages and maintenance mode (src/globals/SitePages.ts): flat scalar fields plus the maintenance group. */
+export const sitePagesGenerated = generateTable(SitePages)
+export const sitePages = sitePagesGenerated.table
+
+/** Editable email wording (src/globals/EmailTemplates.ts): grouped fields, flattened to <group>_<field> columns. */
+export const emailTemplatesGenerated = generateTable(EmailTemplates)
+export const emailTemplates = emailTemplatesGenerated.table
+
+/** Site details (src/globals/SiteDetails.ts): scalars plus one `business` group, rebuilt by groupFields. */
+export const siteDetailsGenerated = generateTable(SiteDetails)
+export const siteDetails = siteDetailsGenerated.table
+export const siteDetailsGroupFields = siteDetailsGenerated.groupFields
 
 const [shopSettingsIntroBlocksField] = shopSettingsGenerated.blocksFields
 const shopSettingsBlockDefs = generateBlockTables(ShopSettings.slug, shopSettingsGenerated.tableName, shopSettingsIntroBlocksField)

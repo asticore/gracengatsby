@@ -26,6 +26,10 @@ import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
 import { FindReplaceView } from '@/admin/views/FindReplaceView'
 import { SeoAuditView } from '@/admin/views/SeoAuditView'
+import { ImportContentView } from '@/admin/views/ImportContentView'
+import { SiteHealthView } from '@/admin/views/SiteHealthView'
+import { ScheduledTasksView } from '@/admin/views/ScheduledTasksView'
+import { CacheToolsView } from '@/admin/views/CacheToolsView'
 import { EmailTestingView } from '@/admin/views/EmailTestingView'
 import { EmailDesignerView } from '@/admin/views/EmailDesignerView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
@@ -154,10 +158,22 @@ export const CUSTOM_ADMIN_VIEWS = [
     },
   },
   {
+    key: 'cacheTools',
+    Component: CacheToolsView,
+    path: '/cache-tools',
+    meta: { title: 'Cache tools', description: 'Clear the saved copies of your pages now, and switch Cloudflare development mode on or off.' },
+  },
+  {
     key: 'seoAudit',
     Component: SeoAuditView,
     path: '/seo-audit',
     meta: { title: 'SEO audit', description: 'Check every published page, post, product and event for SEO and readability problems.' },
+  },
+  {
+    key: 'importContent',
+    Component: ImportContentView,
+    path: '/import-content',
+    meta: { title: 'Import pages and posts', description: 'Bring pages and posts in from a WordPress export or a CSV file. Saved as drafts.' },
   },
   {
     key: 'emailTesting',
@@ -170,5 +186,17 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: EmailDesignerView,
     path: '/email-designer',
     meta: { title: 'Email designer', description: 'Design the look of automatic emails: logo, colours, buttons and content blocks.' },
+  },
+  {
+    key: 'siteHealth',
+    Component: SiteHealthView,
+    path: '/site-health',
+    meta: { title: 'Site health', description: 'Storage, scheduled job health, versions and the main site settings, with warnings.' },
+  },
+  {
+    key: 'scheduledTasks',
+    Component: ScheduledTasksView,
+    path: '/scheduled-tasks',
+    meta: { title: 'Scheduled tasks', description: 'Every timed job, its last result and the changes waiting to go live.' },
   },
 ] as const

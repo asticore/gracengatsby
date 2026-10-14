@@ -46,6 +46,7 @@ import { ShippingSettings } from '@/globals/ShippingSettings'
 import { SecuritySettings } from '@/globals/SecuritySettings'
 import { SeoSettings } from '@/globals/SeoSettings'
 import { ShopSettings } from '@/globals/ShopSettings'
+import { ShopExtraSettings } from '@/globals/ShopExtraSettings'
 import { SiteSettings } from '@/globals/SiteSettings'
 import { SpeedSettings } from '@/globals/SpeedSettings'
 
@@ -80,7 +81,7 @@ import {
  *    (pageTemplatesRels) rather than becoming columns of their own. See
  *    ./generate.ts's generateBlockTables/generateRelsTable doc comments for
  *    the real D1 shapes this mirrors, confirmed by creating a real document
- *    through the original engine's own engine and inspecting the resulling tables.
+ *    through the original engine's own engine and inspecting the resulting tables.
  */
 const faqsGenerated = generateTable(Faqs)
 export const faqs = faqsGenerated.table
@@ -678,6 +679,10 @@ export const blogSettingsRelsTargetColumns = blogSettingsRelsGenerated.targetCol
 
 export const shopSettingsGenerated = generateTable(ShopSettings)
 export const shopSettings = shopSettingsGenerated.table
+
+/** Shop-wide switches (src/globals/ShopExtraSettings.ts): flat scalar fields only. */
+export const shopExtraSettingsGenerated = generateTable(ShopExtraSettings)
+export const shopExtraSettings = shopExtraSettingsGenerated.table
 
 const [shopSettingsIntroBlocksField] = shopSettingsGenerated.blocksFields
 const shopSettingsBlockDefs = generateBlockTables(ShopSettings.slug, shopSettingsGenerated.tableName, shopSettingsIntroBlocksField)

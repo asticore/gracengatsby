@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 
 import { BOX_SHADOW_OPTIONS, DIVIDER_OPTIONS, type BlockStyle, type DividerShape } from '@/lib/blockStyle'
+import { BUILT_IN_FONTS } from '@/features/fonts/installed'
 
 import { MediaPicker } from './MediaPicker'
 
@@ -157,6 +158,15 @@ export const DesignPanel: React.FC<{
           ]}
           onChange={(v) => set('textAlign', (v || undefined) as BlockStyle['textAlign'])}
         />
+        <SelectRow
+          label="Font"
+          value={value.fontFamily || ''}
+          options={[
+            { label: 'Site default', value: '' },
+            ...BUILT_IN_FONTS.map((font) => ({ label: font.label, value: font.value })),
+          ]}
+          onChange={(v) => set('fontFamily', v || undefined)}
+        />
         <ColorRow label="Text colour" value={value.textColor} onChange={(v) => set('textColor', v)} />
       </Accordion>
 
@@ -227,7 +237,7 @@ const Accordion: React.FC<{ title: string; defaultOpen?: boolean; children: Reac
     <div className={`ve-acc ${open ? 've-acc--open' : ''}`}>
       <button type="button" className="ve-acc__head" onClick={() => setOpen(!open)}>
         <span>{title}</span>
-        <span className="ve-acc__chev">{open ? '▾' : '▸'}</span>
+        <span className="ve-acc__chev">{open ? String.fromCodePoint(0x25be) : String.fromCodePoint(0x25b8)}</span>
       </button>
       {open && <div className="ve-acc__body">{children}</div>}
     </div>
@@ -321,7 +331,7 @@ const ColorRow: React.FC<{ label: string; value?: string; onChange: (v: string |
       />
       {value && (
         <button type="button" className="ve-color__clear" onClick={() => onChange(undefined)} aria-label="Clear colour">
-          ✕
+          &#10005;
         </button>
       )}
     </div>

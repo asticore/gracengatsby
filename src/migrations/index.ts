@@ -69,9 +69,13 @@ import * as migration_20261027_100000_google_connection from './20261027_100000_
 import * as migration_20261026_300000_cron_runs from './20261026_300000_cron_runs';
 import * as migration_20261026_200000_speed_cache_rules from './20261026_200000_speed_cache_rules';
 import * as migration_20261027_300000_refund_lines from './20261027_300000_refund_lines';
+import * as migration_20261028_300000_product_subscriptions from './20261028_300000_product_subscriptions';
+import * as migration_20261028_200000_product_bundles_recommendations from './20261028_200000_product_bundles_recommendations';
 import * as migration_20261024_100000_site_details from './20261024_100000_site_details';
 import * as migration_20261024_300000_email_log from './20261024_300000_email_log';
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
+import * as migration_20261028_100000_add_ons_pricing_rules from './20261028_100000_add_ons_pricing_rules';
+import * as migration_20261028_400000_display_currencies from './20261028_400000_display_currencies';
 
 export const migrations = [
   {
@@ -443,5 +447,25 @@ export const migrations = [
     up: migration_20261027_300000_refund_lines.up,
     down: migration_20261027_300000_refund_lines.down,
     name: '20261027_300000_refund_lines',
+  },
+  {
+    up: migration_20261028_300000_product_subscriptions.up,
+    down: migration_20261028_300000_product_subscriptions.down,
+    name: '20261028_300000_product_subscriptions',
+  },
+  {
+    up: migration_20261028_200000_product_bundles_recommendations.up,
+    down: migration_20261028_200000_product_bundles_recommendations.down,
+    name: '20261028_200000_product_bundles_recommendations',
+  },
+  {
+    up: migration_20261028_400000_display_currencies.up,
+    down: migration_20261028_400000_display_currencies.down,
+    name: '20261028_400000_display_currencies',
+  },
+  {
+    up: migration_20261028_100000_add_ons_pricing_rules.up,
+    down: migration_20261028_100000_add_ons_pricing_rules.down,
+    name: '20261028_100000_add_ons_pricing_rules',
   },
 ];

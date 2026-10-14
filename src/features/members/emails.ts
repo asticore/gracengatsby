@@ -90,7 +90,7 @@ export const sendWelcomeEmail = async (
     .catch((): undefined => undefined)
 
   const sendEmail = await loadSendEmail()
-  const result = await sendEmail({ to, subject, text: body, html: asHtml(body) })
+  const result = await sendEmail({ to, template: 'member.welcome', subject, text: body, html: asHtml(body) })
 
   return result.ok ? { sent: true } : { sent: false, reason: result.error ?? result.reason }
 }
@@ -178,7 +178,7 @@ export const sendExpiryReminders = async (
       .catch((): undefined => undefined)
 
     const mail = await renderEmailTemplate('membershipRenewal', values)
-    const result = await sendEmail({ to, subject: mail.subject, text: mail.text, html: mail.html })
+    const result = await sendEmail({ to, template: 'member.renewal', subject: mail.subject, text: mail.text, html: mail.html })
 
     if (result.ok) sweep.sent += 1
     else sweep.skipped += 1

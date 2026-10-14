@@ -31,6 +31,9 @@ import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
 import { Providers } from '@/components/Providers'
 import { ShopCurrencyProvider } from '@/components/ShopCurrencyContext'
+import { DisplayCurrencyProvider } from '@/components/DisplayCurrencyContext'
+import { DISPLAY_CURRENCY_COOKIE } from '@/features/ecommerce/lib/displayCurrency'
+import { loadDisplayState } from '@/features/ecommerce/server/displayState'
 import { shopCurrency } from '@/features/ecommerce/server/pricing'
 import { getEngine } from '@/lib/engine'
 import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
@@ -98,6 +101,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const engine = await getEngine()
   const shopSettings = await engine.findGlobal({ slug: 'shop-settings', depth: 0 }).catch((): null => null)
   const storeCurrency = shopCurrency({ settings: (shopSettings ?? {}) as Record<string, unknown> })
+  // Extra display currencies (display only). Empty unless some are set up, so the shop looks the same as before.
+  const displayState = await loadDisplayState(storeCurrency, (await cookies()).get(DISPLAY_CURRENCY_COOKIE)?.value)
 
   const [settings, header, footer, resolvedPages] = (await Promise.all([
     engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null),
@@ -219,6 +224,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <style dangerouslySetInnerHTML={{ __html: `:root { ${FONT_FACE_VARS} }` }} />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${themeVars} }` }} />
         <ShopCurrencyProvider currency={storeCurrency}>
+        <DisplayCurrencyProvider state={displayState}>
         <Providers>
           <Header
             siteName={settings?.siteName || undefined}
@@ -255,6 +261,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             copyrightText={footer?.copyrightText}
           />
         </Providers>
+        </DisplayCurrencyProvider>
         </ShopCurrencyProvider>
         <SeoBodyScripts />
       </body>

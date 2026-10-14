@@ -79,6 +79,87 @@ export const SeoSettings: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'templates',
+      label: 'Templates by content type',
+      admin: {
+        description:
+          'Titles and descriptions used for a page, post, product, event or course that has no SEO title or description of its own. Tokens you can use: %title% (the item name), %site% (your site name), %sep% (a separator, |), %excerpt% (short summary), %category% (first category), %price% (price), %date% (date). Unknown tokens are removed. Leave a box blank to keep the normal defaults.',
+      },
+      fields: [
+        {
+          name: 'pageTitleTemplate',
+          type: 'text',
+          admin: {
+            description: 'Title for pages without their own SEO title. Example: %title% %sep% %site%',
+          },
+        },
+        {
+          name: 'pageDescriptionTemplate',
+          type: 'textarea',
+          admin: {
+            description: 'Description for pages without their own SEO description. Trimmed to 160 characters.',
+          },
+        },
+        {
+          name: 'postTitleTemplate',
+          type: 'text',
+          admin: {
+            description: 'Title for posts without their own SEO title. Example: %title% %sep% %category% %sep% %site%',
+          },
+        },
+        {
+          name: 'postDescriptionTemplate',
+          type: 'textarea',
+          admin: {
+            description: 'Description for posts without their own SEO description. Example: %excerpt%',
+          },
+        },
+        {
+          name: 'productTitleTemplate',
+          type: 'text',
+          admin: {
+            description: 'Title for products without their own SEO title. Example: %title% %sep% %price% %sep% %site%',
+          },
+        },
+        {
+          name: 'productDescriptionTemplate',
+          type: 'textarea',
+          admin: {
+            description: 'Description for products without their own SEO description. Example: %excerpt%',
+          },
+        },
+        {
+          name: 'eventTitleTemplate',
+          type: 'text',
+          admin: {
+            description: 'Title for events without their own SEO title. Example: %title% %sep% %date% %sep% %site%',
+          },
+        },
+        {
+          name: 'eventDescriptionTemplate',
+          type: 'textarea',
+          admin: {
+            description: 'Description for events without their own SEO description. Example: %excerpt%',
+          },
+        },
+        {
+          name: 'courseTitleTemplate',
+          type: 'text',
+          admin: {
+            description: 'Title for courses without their own SEO title. Example: %title% %sep% %site%',
+          },
+        },
+        {
+          name: 'courseDescriptionTemplate',
+          type: 'textarea',
+          admin: {
+            description: 'Description for courses without their own SEO description. Example: %excerpt%',
+          },
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'indexing',
       label: 'Indexing',
       admin: {

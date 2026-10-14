@@ -57,7 +57,7 @@ export const rsvpConfirmationAfterChange: CollectionAfterChangeHook = async ({ d
     })
 
     const { sendEmail } = await import('@/features/email')
-    await sendEmail({ to, subject: mail.subject, text: mail.text, html: mail.html })
+    await sendEmail({ to, template: 'rsvp.confirmation', subject: mail.subject, text: mail.text, html: mail.html })
   } catch {
     // The booking is saved already; a failed confirmation must not reach the guest.
   }

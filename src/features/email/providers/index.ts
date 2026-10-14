@@ -1,7 +1,9 @@
 import type { EmailProviderKey, EmailSettingsDoc, OutgoingEmail, ProviderResponse } from '../types'
 
+import { sendViaBrevo } from './brevo'
 import { sendViaCloudflare } from './cloudflare'
 import { sendViaMailgun } from './mailgun'
+import { sendViaMandrill } from './mandrill'
 import { sendViaPostmark } from './postmark'
 import { sendViaResend } from './resend'
 import { sendViaSendGrid } from './sendgrid'
@@ -78,6 +80,18 @@ export const resolveProvider = (provider: EmailProviderKey, settings: EmailSetti
       if (missing.length > 0) return { send: null, missing: missing.map((item) => `Cloudflare ${item}`) }
       return { send: (message) => sendViaCloudflare(message, { apiToken, accountId }), missing: [] }
     }
+
+    case 'brevo': {
+      const apiKey = text(settings.brevo?.apiKey)
+      if (!apiKey) return { send: null, missing: ['Brevo API key'] }
+      return { send: (message) => sendViaBrevo(message, { apiKey }), missing: [] }
+    }
+
+    case 'mandrill': {
+      const apiKey = text(settings.mandrill?.apiKey)
+      if (!apiKey) return { send: null, missing: ['Mandrill API key'] }
+      return { send: (message) => sendViaMandrill(message, { apiKey }), missing: [] }
+    }
   }
 }
 
@@ -89,6 +103,8 @@ export const SUPPORTED_PROVIDERS: EmailProviderKey[] = [
   'postmark',
   'sendgrid',
   'cloudflare',
+  'brevo',
+  'mandrill',
 ]
 
 export const isSupportedProvider = (value: unknown): value is EmailProviderKey =>

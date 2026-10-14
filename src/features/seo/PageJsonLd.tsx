@@ -2,6 +2,8 @@ import React from 'react'
 
 import { buildPageJsonLd } from './pageSchema'
 import { getSeoContext, mediaUrl, absoluteUrl, type DocumentSeo } from './settings'
+import { articleFacts, authorNameOf, eventExtraFor, loadFaqItems } from './pageSchemaData'
+import { breadcrumbTrail, type TrailItem } from './schemaNodes'
 import type { Media } from '@/engage-types'
 
 /**
@@ -9,7 +11,11 @@ import type { Media } from '@/engage-types'
  *
  * Renders nothing when the SEO feature is disabled or the page has noIndex set.
  * Otherwise emits a <script type="application/ld+json"> block with page-specific
- * schema.org data (BlogPosting for articles, Event for events, etc).
+ * schema.org data (BlogPosting for articles, Event for events, etc), including
+ * FAQ questions from FAQ blocks and a breadcrumb trail.
+ *
+ * `trail` is the page's ancestors (pages only), root first. Other collections
+ * get their trail from their section (Blog, Shop, Events).
  *
  * Like SeoJsonLd, the output escapes </ to prevent early script tag closure.
  */
@@ -18,6 +24,7 @@ export const PageJsonLd = async ({
   doc,
   path,
   extra,
+  trail,
 }: {
   collection: string
   doc?: {
@@ -31,11 +38,21 @@ export const PageJsonLd = async ({
     updatedAt?: string
     startDate?: string
     endDate?: string
-    location?: { venueName?: string; address?: string } | null
+    sku?: string | null
+    location?: { venueName?: string | null; address?: string | null; isOnline?: boolean | null } | null
+    eventType?: string | null
+    ticketTiers?: unknown
+    ticketProduct?: unknown
+    categories?: Array<{ name?: string }> | null
+    content?: unknown
+    layout?: unknown
+    blocks?: unknown
   } | null
   path: string
   /** Extra schema.org properties merged into the node (a product's offers and aggregateRating). */
   extra?: Record<string, unknown>
+  /** Ancestor pages for the breadcrumb trail, root first (pages collection only). */
+  trail?: TrailItem[]
 }): Promise<React.ReactElement | null> => {
   const context = await getSeoContext()
 
@@ -64,19 +81,13 @@ export const PageJsonLd = async ({
     imageUrl = absoluteUrl(mediaUrl(featuredImage as number | string | Media), context.baseUrl)
   }
 
-  // Derive author name if author is populated
-  let authorName: string | undefined
-  if (doc.author && typeof doc.author === 'object' && doc.author !== null) {
-    const author = doc.author as Record<string, unknown>
-    authorName = (author.email as string) || (author.name as string)
-  }
+  const organizerName = context.settings?.schema?.organisationName?.trim() || context.siteName
+  const record = doc as Record<string, unknown>
+  const article = articleFacts(record)
+  const faqs = await loadFaqItems(record)
+  const eventFields = collection === 'events' ? eventExtraFor(record, url, organizerName) : {}
 
-  // Dates - check multiple field names depending on collection
-  const docRecord = doc as Record<string, unknown>
-  const datePublished = doc.publishedDate || doc.datePublished || (docRecord.startDate as string | undefined)
-  const dateModified = doc.updatedAt || (docRecord.endDate as string | undefined)
-
-  // Build the JSON-LD object
+  // Build the JSON-LD object. Dates are kept apart: an end date is never a modified date.
   const jsonLd = buildPageJsonLd({
     collection,
     schemaType: doc.schemaType,
@@ -86,10 +97,25 @@ export const PageJsonLd = async ({
     baseUrl: context.baseUrl,
     siteName: context.siteName,
     imageUrl,
-    datePublished,
-    dateModified,
-    authorName,
-    extra,
+    datePublished: doc.publishedDate || doc.datePublished,
+    dateModified: doc.updatedAt,
+    startDate: doc.startDate,
+    endDate: doc.endDate,
+    authorName: authorNameOf(doc.author),
+    wordCount: article.wordCount,
+    articleSection: article.articleSection,
+    keywords: article.keywords,
+    inLanguage: article.inLanguage,
+    sku: doc.sku || undefined,
+    faqs,
+    breadcrumbs: breadcrumbTrail({
+      collection,
+      baseUrl: context.baseUrl,
+      path,
+      title: doc.title || title,
+      pageTrail: trail,
+    }),
+    extra: { ...eventFields, ...extra },
   })
 
   if (!jsonLd) return null

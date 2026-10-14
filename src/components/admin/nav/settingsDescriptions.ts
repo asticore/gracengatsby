@@ -37,5 +37,6 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'database': 'View database structure and clean up unused data.',
   'audit-log': 'View a record of all sign-ins and changes made in the admin.',
   'email-log': 'Every email the site has sent, with a resend button.',
+  'error-log': 'Errors the site ran into, with repeats counted once.',
   'users': 'Manage admin user accounts and permissions.',
 }

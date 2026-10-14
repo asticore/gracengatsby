@@ -1,4 +1,6 @@
 import type { Field } from '@/engine'
+import { addOnFields } from './productAddOns'
+import { subscriptionFields } from '../subscriptions/fields'
 
 /**
  * Catalogue fields of the products collection, kept apart from Products.ts so that file stays a
@@ -19,13 +21,14 @@ export const productTypeField: Field = {
   name: 'productType',
   type: 'select',
   defaultValue: 'simple',
-  admin: { description: 'Simple: one price. Variable: options such as size or colour, each with its own price and stock. Grouped: a set of related products. External: sold on another site. Gift card: the buyer chooses an amount and the card is emailed to the recipient (set amounts in Shop settings > Gift cards).' },
+  admin: { description: 'Simple: one price. Variable: options such as size or colour, each with its own price and stock. Grouped: a set of related products. External: sold on another site. Gift card: the buyer chooses an amount and the card is emailed to the recipient (set amounts in Shop settings > Gift cards). Bundle: several products sold together (see Bundle contents).' },
   options: [
     { label: 'Simple product', value: 'simple' },
     { label: 'Variable product', value: 'variable' },
     { label: 'Grouped product', value: 'grouped' },
     { label: 'External / affiliate product', value: 'external' },
     { label: 'Gift card', value: 'giftcard' },
+    { label: 'Bundle', value: 'bundle' },
   ],
 }
 
@@ -71,7 +74,7 @@ export const inventoryFields: Field[] = [
   {
     type: 'collapsible',
     label: 'Stock',
-    admin: { condition: (data) => data?.productType !== 'grouped' && data?.productType !== 'external' },
+    admin: { condition: (data) => data?.productType !== 'grouped' && data?.productType !== 'external' && data?.productType !== 'bundle' },
     fields: [
       { name: 'manageStock', type: 'checkbox', defaultValue: false, admin: { description: 'Track a quantity for this product. For a variable product, tick it on each variation instead (or here to share one stock pool).' } },
       {
@@ -231,6 +234,38 @@ export const variationFields: Field[] = [
   },
 ]
 
+/** Bundle: a set of simple products sold together. Only read when productType is "bundle" (see lib/bundles.ts). */
+export const bundleFields: Field[] = [
+  {
+    type: 'collapsible',
+    label: 'Bundle contents',
+    admin: { condition: (data) => data?.productType === 'bundle' },
+    fields: [
+      {
+        name: 'bundlePricing',
+        type: 'select',
+        defaultValue: 'fixed',
+        options: [
+          { label: 'Fixed bundle price', value: 'fixed' },
+          { label: 'Products total less a percentage', value: 'percent' },
+        ],
+        admin: { description: 'Fixed price: the Regular price above is what the bundle costs. Percentage: the products inside add up, then the discount below comes off.' },
+      },
+      { name: 'bundleDiscountPercent', type: 'number', min: 0, admin: { condition: (data) => data?.bundlePricing === 'percent', description: 'Percent taken off the total of the products inside, for example 10.' } },
+      {
+        name: 'bundleItems',
+        type: 'array',
+        labels: { singular: 'Product', plural: 'Products' },
+        admin: { description: 'Products in the bundle. Each one is taken from its own stock when the bundle sells. Bundles can hold simple products only.', initCollapsed: true },
+        fields: [
+          { name: 'product', type: 'relationship', relationTo: 'products', admin: { width: '70%', description: 'A simple product.' } },
+          { name: 'quantity', type: 'number', defaultValue: 1, min: 1, admin: { width: '30%', description: 'How many of this product come in one bundle.' } },
+        ],
+      },
+    ],
+  },
+]
+
 export const linkedProductFields: Field[] = [
   {
     type: 'collapsible',
@@ -296,6 +331,9 @@ export const catalogueFields: Field[] = [
   ...typeSpecificFields,
   ...preorderFields,
   ...variationFields,
+  ...bundleFields,
+  ...addOnFields,
+  ...subscriptionFields,
   ...linkedProductFields,
   ...ratingFields,
 ]

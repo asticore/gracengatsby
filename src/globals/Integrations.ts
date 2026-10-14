@@ -434,6 +434,400 @@ export const Integrations: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'communications',
+      label: 'Email and text messages',
+      admin: {
+        description:
+          'The keys for every email and text message provider. Pick a default email provider, and optionally a fallback that is tried only when the default fails because of a network or provider fault. Keys are encrypted at rest and visible only to admins. Sender details and test sending live under Settings > Communication.',
+      },
+      fields: [
+        {
+          name: 'connectionStatus',
+          type: 'ui',
+          admin: {
+            components: {
+              Field: '@/features/email/admin/ConnectionStatus#ConnectionStatus',
+            },
+          },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'defaultProvider',
+              type: 'select',
+              label: 'Default email provider',
+              admin: {
+                width: '50%',
+                description: 'The service that sends every email. Set up its key below first.',
+              },
+              options: [
+                { label: 'Resend', value: 'resend' },
+                { label: 'Amazon SES (API)', value: 'ses-api' },
+                { label: 'Mailgun', value: 'mailgun' },
+                { label: 'Postmark', value: 'postmark' },
+                { label: 'SendGrid', value: 'sendgrid' },
+                { label: 'Cloudflare Email', value: 'cloudflare' },
+                { label: 'Brevo', value: 'brevo' },
+                { label: 'Mandrill (Mailchimp Transactional)', value: 'mandrill' },
+              ],
+            },
+            {
+              name: 'fallbackProvider',
+              type: 'select',
+              label: 'Fallback email provider',
+              defaultValue: 'none',
+              admin: {
+                width: '50%',
+                description: 'Used only when the default provider fails because it is unreachable or busy. Leave as None to skip.',
+              },
+              options: [
+                { label: 'None', value: 'none' },
+                { label: 'Resend', value: 'resend' },
+                { label: 'Amazon SES (API)', value: 'ses-api' },
+                { label: 'Mailgun', value: 'mailgun' },
+                { label: 'Postmark', value: 'postmark' },
+                { label: 'SendGrid', value: 'sendgrid' },
+                { label: 'Cloudflare Email', value: 'cloudflare' },
+                { label: 'Brevo', value: 'brevo' },
+                { label: 'Mandrill (Mailchimp Transactional)', value: 'mandrill' },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'resend',
+          type: 'group',
+          label: 'Resend',
+          fields: [
+            {
+              name: 'apiKey',
+              type: 'text',
+              label: 'Resend API key',
+              access: {
+                read: adminOnlyFieldAccess,
+                update: adminOnlyFieldAccess,
+              },
+              hooks: {
+                beforeChange: [encryptSecretHook],
+                afterRead: [decryptSecretHook],
+              },
+              admin: {
+                description: 'Your Resend API key, starting re_. Stored encrypted at rest, visible only to admins.',
+              },
+            },
+          ],
+        },
+        {
+          name: 'sesApi',
+          type: 'group',
+          label: 'Amazon SES',
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'accessKeyId',
+                  type: 'text',
+                  label: 'Access key ID',
+                  access: {
+                    read: adminOnlyFieldAccess,
+                    update: adminOnlyFieldAccess,
+                  },
+                  hooks: {
+                    beforeChange: [encryptSecretHook],
+                    afterRead: [decryptSecretHook],
+                  },
+                  admin: { width: '33%', description: 'The IAM access key ID. Stored encrypted at rest.' },
+                },
+                {
+                  name: 'secretAccessKey',
+                  type: 'text',
+                  label: 'Secret access key',
+                  access: {
+                    read: adminOnlyFieldAccess,
+                    update: adminOnlyFieldAccess,
+                  },
+                  hooks: {
+                    beforeChange: [encryptSecretHook],
+                    afterRead: [decryptSecretHook],
+                  },
+                  admin: {
+                    width: '33%',
+                    description: 'The IAM secret key. Use a key that can only send email. Stored encrypted at rest.',
+                  },
+                },
+                {
+                  name: 'region',
+                  type: 'text',
+                  label: 'Region',
+                  admin: { width: '33%', description: 'The AWS region your SES account is in, such as ap-southeast-2.' },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'mailgun',
+          type: 'group',
+          label: 'Mailgun',
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'apiKey',
+                  type: 'text',
+                  label: 'Sending API key',
+                  access: {
+                    read: adminOnlyFieldAccess,
+                    update: adminOnlyFieldAccess,
+                  },
+                  hooks: {
+                    beforeChange: [encryptSecretHook],
+                    afterRead: [decryptSecretHook],
+                  },
+                  admin: { width: '33%', description: 'Your Mailgun sending API key. Stored encrypted at rest.' },
+                },
+                {
+                  name: 'domain',
+                  type: 'text',
+                  label: 'Sending domain',
+                  admin: { width: '33%', description: 'The sending domain you verified with Mailgun.' },
+                },
+                {
+                  name: 'region',
+                  type: 'select',
+                  label: 'Region',
+                  defaultValue: 'us',
+                  admin: { width: '33%', description: 'Which Mailgun region hosts your account. Getting this wrong causes silent failures.' },
+                  options: [
+                    { label: 'US', value: 'us' },
+                    { label: 'EU', value: 'eu' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'postmark',
+          type: 'group',
+          label: 'Postmark',
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'serverToken',
+                  type: 'text',
+                  label: 'Server token',
+                  access: {
+                    read: adminOnlyFieldAccess,
+                    update: adminOnlyFieldAccess,
+                  },
+                  hooks: {
+                    beforeChange: [encryptSecretHook],
+                    afterRead: [decryptSecretHook],
+                  },
+                  admin: { width: '50%', description: 'The server token from your Postmark server. Stored encrypted at rest.' },
+                },
+                {
+                  name: 'messageStream',
+                  type: 'text',
+                  label: 'Message stream',
+                  defaultValue: 'outbound',
+                  admin: { width: '50%', description: 'Which Postmark stream to send on. Leave as outbound unless you set up your own.' },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'sendgrid',
+          type: 'group',
+          label: 'SendGrid',
+          fields: [
+            {
+              name: 'apiKey',
+              type: 'text',
+              label: 'SendGrid API key',
+              access: {
+                read: adminOnlyFieldAccess,
+                update: adminOnlyFieldAccess,
+              },
+              hooks: {
+                beforeChange: [encryptSecretHook],
+                afterRead: [decryptSecretHook],
+              },
+              admin: { description: 'Your SendGrid API key, starting SG. Give it send-only permission. Stored encrypted at rest.' },
+            },
+          ],
+        },
+        {
+          name: 'cloudflare',
+          type: 'group',
+          label: 'Cloudflare Email',
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'apiToken',
+                  type: 'text',
+                  label: 'API token',
+                  access: {
+                    read: adminOnlyFieldAccess,
+                    update: adminOnlyFieldAccess,
+                  },
+                  hooks: {
+                    beforeChange: [encryptSecretHook],
+                    afterRead: [decryptSecretHook],
+                  },
+                  admin: { width: '50%', description: 'A Cloudflare API token with email sending permission. Stored encrypted at rest.' },
+                },
+                {
+                  name: 'accountId',
+                  type: 'text',
+                  label: 'Account ID',
+                  admin: { width: '50%', description: 'The account ID shown in your Cloudflare dashboard.' },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'brevo',
+          type: 'group',
+          label: 'Brevo',
+          fields: [
+            {
+              name: 'apiKey',
+              type: 'text',
+              label: 'Brevo API key',
+              access: {
+                read: adminOnlyFieldAccess,
+                update: adminOnlyFieldAccess,
+              },
+              hooks: {
+                beforeChange: [encryptSecretHook],
+                afterRead: [decryptSecretHook],
+              },
+              admin: { description: 'Found in Brevo under SMTP & API > API keys. Stored encrypted at rest.' },
+            },
+          ],
+        },
+        {
+          name: 'mandrill',
+          type: 'group',
+          label: 'Mandrill (Mailchimp Transactional)',
+          fields: [
+            {
+              name: 'apiKey',
+              type: 'text',
+              label: 'Mandrill API key',
+              access: {
+                read: adminOnlyFieldAccess,
+                update: adminOnlyFieldAccess,
+              },
+              hooks: {
+                beforeChange: [encryptSecretHook],
+                afterRead: [decryptSecretHook],
+              },
+              admin: { description: 'Found in Mailchimp under Transactional > Settings > SMTP & API keys. Stored encrypted at rest.' },
+            },
+          ],
+        },
+        {
+          name: 'sms',
+          type: 'group',
+          label: 'Text messages (SMS)',
+          admin: {
+            description: 'Used to send text message alerts. Twilio is the only provider for now.',
+          },
+          fields: [
+            {
+              name: 'provider',
+              type: 'select',
+              label: 'Text message provider',
+              defaultValue: 'twilio',
+              options: [{ label: 'Twilio', value: 'twilio' }],
+            },
+            {
+              name: 'twilio',
+              type: 'group',
+              label: 'Twilio',
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'accountSid',
+                      type: 'text',
+                      label: 'Account SID',
+                      admin: { width: '50%', description: 'Starts with AC. Found on the Twilio console home page.' },
+                    },
+                    {
+                      name: 'authToken',
+                      type: 'text',
+                      label: 'Auth token',
+                      access: {
+                        read: adminOnlyFieldAccess,
+                        update: adminOnlyFieldAccess,
+                      },
+                      hooks: {
+                        beforeChange: [encryptSecretHook],
+                        afterRead: [decryptSecretHook],
+                      },
+                      admin: { width: '50%', description: 'Stored encrypted at rest, visible only to admins.' },
+                    },
+                  ],
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'fromNumber',
+                      type: 'text',
+                      label: 'From number',
+                      admin: { width: '50%', description: 'Your Twilio number in international format, such as +61400000000.' },
+                    },
+                    {
+                      name: 'messagingServiceSid',
+                      type: 'text',
+                      label: 'Messaging service SID',
+                      admin: {
+                        width: '50%',
+                        description: 'Optional. If set, texts are sent through this service instead of the From number. Starts with MG.',
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'testPhone',
+              type: 'text',
+              label: 'Test phone number',
+              admin: {
+                description: 'Where a test text is sent, in international format, such as +61400000000.',
+              },
+            },
+            {
+              name: 'sendTestText',
+              type: 'ui',
+              admin: {
+                components: {
+                  Field: '@/features/sms/admin/SendTestTextButton#SendTestTextButton',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'custom',
       label: 'Custom keys',
       admin: { description: 'Your own API keys and credentials, for custom code and integrations.' },

@@ -355,7 +355,7 @@ export const lessons = lessonsGenerated.table
 
 function resolveCoursesJoinTargetTable(slug: string): AnySQLiteTable {
   if (slug === Lessons.slug) return lessons
-  throw new Error(`cms/db/schema: no known join target collection "${slug}" - add it to resolveCoursesJoinTargetTable in schema/index.ts.`)
+  throw new Error(`cms/db/schema: no known table for join target collection "${slug}" - add it to resolveCoursesJoinTargetTable in schema/index.ts.`)
 }
 
 /**

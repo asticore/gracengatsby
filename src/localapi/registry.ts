@@ -166,7 +166,16 @@ import {
 import { ProductAttributes } from '@/features/ecommerce/collections/ProductAttributes'
 import { ProductReviews } from '@/features/ecommerce/collections/ProductReviews'
 import { StockSubscriptions } from '@/features/ecommerce/collections/StockSubscriptions'
+import { ProductSubscriptions } from '@/features/ecommerce/collections/ProductSubscriptions'
 import { ShippingClasses } from '@/features/ecommerce/collections/ShippingClasses'
+import {
+  countProductSubscriptions,
+  createProductSubscription,
+  deleteProductSubscription,
+  findProductSubscriptionByID,
+  findProductSubscriptionsPaginated,
+  updateProductSubscription,
+} from '@/cms/db'
 import {
   countStockSubscriptions,
   createStockSubscription,
@@ -579,6 +588,7 @@ export const writeRegistry: {
     'shipping-classes': collectionOps(createShippingClass, updateShippingClass, deleteShippingClass, findShippingClassByID),
     'product-reviews': collectionOps(createProductReview, updateProductReview, deleteProductReview, findProductReviewByID),
     'stock-subscriptions': collectionOps(createStockSubscription, updateStockSubscription, deleteStockSubscription, findStockSubscriptionByID),
+    'product-subscriptions': collectionOps(createProductSubscription, updateProductSubscription, deleteProductSubscription, findProductSubscriptionByID),
     'shipping-manifests': collectionOps(createShippingManifest, updateShippingManifest, deleteShippingManifest, findShippingManifestByID),
     'gift-cards': collectionOps(createGiftCard, updateGiftCard, deleteGiftCard, findGiftCardByID),
     'store-credits': collectionOps(createStoreCredit, updateStoreCredit, deleteStoreCredit, findStoreCreditByID),
@@ -672,6 +682,7 @@ export const readRegistry: ReadRegistry = {
     'shipping-classes': readEntry(ShippingClasses, findShippingClassesPaginated, findShippingClassByID, countShippingClasses),
     'product-reviews': readEntry(ProductReviews, findProductReviewsPaginated, findProductReviewByID, countProductReviews),
     'stock-subscriptions': readEntry(StockSubscriptions, findStockSubscriptionsPaginated, findStockSubscriptionByID, countStockSubscriptions),
+    'product-subscriptions': readEntry(ProductSubscriptions, findProductSubscriptionsPaginated, findProductSubscriptionByID, countProductSubscriptions),
     'shipping-manifests': readEntry(ShippingManifests, findShippingManifestsPaginated, findShippingManifestByID, countShippingManifests),
     'gift-cards': readEntry(GiftCards, findGiftCardsPaginated, findGiftCardByID, countGiftCards),
     'store-credits': readEntry(StoreCredits, findStoreCreditsPaginated, findStoreCreditByID, countStoreCredits),
@@ -744,6 +755,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
+export const collectionConfigs = [ProductSubscriptions, Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

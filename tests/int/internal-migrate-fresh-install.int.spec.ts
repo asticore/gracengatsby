@@ -259,6 +259,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_orders')).toEqual(expect.arrayContaining(['refunded_total', 'tax_lines', 'line_items', 'notes', 'payment_intent_id', 'coupon_usage_applied']))
     expect(await columnsOf('eg_carts')).toEqual(expect.arrayContaining(['email', 'reminders_sent', 'recovered_at', 'unsubscribed']))
     expect(await columnsOf('eg_shop_settings')).toEqual(expect.arrayContaining(['tax_abn', 'emails_processing', 'abandoned_cart_enabled']))
+    expect(await columnsOf('eg_order_refunds')).toEqual(expect.arrayContaining(['lines', 'shipping_amount', 'items', 'restock']))
   })
 
   it('creates the shop catalogue tables and product columns', async () => {
@@ -567,6 +568,17 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     )
     expect(await columnsOf('eg_event_rsvps')).toEqual(expect.arrayContaining(['reminder_sent_at']))
     expect(await columnsOf('eg_email_templates')).toEqual(expect.arrayContaining(['event_reminder_subject', 'event_reminder_body']))
+  })
+
+  it('creates the Google connection table', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_google_connection')
+    expect(await columnsOf('eg_google_connection')).toEqual(
+      expect.arrayContaining(['client_id', 'client_secret_enc', 'refresh_token_enc', 'ga4_measurement_id', 'gtm_container_id', 'last_error']),
+    )
   })
 
   it('creates the email design columns and the email design brand table', async () => {

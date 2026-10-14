@@ -42,6 +42,23 @@ export type SeoSettingsDoc = {
     defaultOgImage?: number | null
     twitterHandle?: string | null
   } | null
+  /**
+   * Title and description templates per content type (the `templates` group in
+   * src/globals/SeoSettings.ts). Columns are `templates_*`. Read with
+   * contentTemplatesFor in src/features/seo/templates.ts.
+   */
+  templates?: {
+    pageTitleTemplate?: string | null
+    pageDescriptionTemplate?: string | null
+    postTitleTemplate?: string | null
+    postDescriptionTemplate?: string | null
+    productTitleTemplate?: string | null
+    productDescriptionTemplate?: string | null
+    eventTitleTemplate?: string | null
+    eventDescriptionTemplate?: string | null
+    courseTitleTemplate?: string | null
+    courseDescriptionTemplate?: string | null
+  } | null
   indexing?: {
     allowIndexing?: boolean | null
     noindexPaths?: string | null

@@ -61,6 +61,7 @@ export type PaymentSettingsDoc = {
     environment?: string | null
     clientId?: string | null
     clientSecret?: string | null
+    webhookId?: string | null
     allowPayPalLater?: boolean | null
   } | null
   general?: {

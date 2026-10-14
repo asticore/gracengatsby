@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getEngine } from '@/engine'
 import { clientKey, hit } from '@/features/security/rateLimit'
 import { capturePayPalCheckout } from '@/features/ecommerce/payments/paypalCheckout'
+import { withErrorLog } from '@/features/errors/withErrorLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic'
  * Captures the PayPal order the buyer approved and marks the shop order paid. Idempotent: a repeat answers with the
  * same order without charging again. Amount and currency are checked against the stored order, never the browser.
  */
-export async function POST(request: Request): Promise<Response> {
+async function handleCapture(request: Request): Promise<Response> {
   const decision = hit(`shop-paypal-capture:${clientKey(request)}`, 30)
   if (decision.limited) {
     return NextResponse.json({ error: 'Too many requests. Try again in a moment.' }, { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } })
@@ -37,3 +38,6 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Error confirming the PayPal payment. Check your PayPal account before trying again.' }, { status: 500 })
   }
 }
+
+/** Failures are written to the error log (see src/features/errors/withErrorLog.ts). */
+export const POST = withErrorLog(handleCapture, 'paypal-capture')

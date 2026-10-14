@@ -699,6 +699,10 @@ export const shopSettings = shopSettingsGenerated.table
 /** Shop-wide switches (src/globals/ShopExtraSettings.ts): flat scalar fields only. */
 export const shopExtraSettingsGenerated = generateTable(ShopExtraSettings)
 export const shopExtraSettings = shopExtraSettingsGenerated.table
+/** Dynamic pricing rules: the rows of the rules array on the shop-extra-settings global (lib/pricingRules.ts). */
+const shopExtraPricingRulesField = shopExtraSettingsGenerated.arrayFields.find((f) => f.name === 'pricingRules')
+if (!shopExtraPricingRulesField) throw new Error('shop-extra-settings: the pricingRules array is missing.')
+export const shopExtraSettingsPricingRules = generateArrayTable(ShopExtraSettings.slug, shopExtraSettingsGenerated.tableName, shopExtraPricingRulesField).table
 
 /** Special pages and maintenance mode (src/globals/SitePages.ts): flat scalar fields plus the maintenance group. */
 export const sitePagesGenerated = generateTable(SitePages)
@@ -1041,9 +1045,15 @@ export const productsGenerated = generateTable(productsSchemaConfig)
 export const products = productsGenerated.table
 
 // Catalogue arrays: attributes then variations (field order in ecommerce/collections/productFields.ts).
-const [productsAttributesField, productsVariationsField] = productsGenerated.arrayFields
+const [productsAttributesField, productsVariationsField, productsBundleItemsField] = productsGenerated.arrayFields
 export const productsAttributes = generateArrayTable(Products.slug, productsGenerated.tableName, productsAttributesField).table
 export const productsVariations = generateArrayTable(Products.slug, productsGenerated.tableName, productsVariationsField).table
+/** Bundle components (productType "bundle"): one row per component product, see lib/bundles.ts. */
+export const productsBundleItems = generateArrayTable(Products.slug, productsGenerated.tableName, productsBundleItemsField).table
+// Product add-ons (questions for the buyer): one row per add-on, see collections/productAddOns.ts.
+const productsAddOnsField = productsGenerated.arrayFields.find((f) => f.name === 'addOns')
+if (!productsAddOnsField) throw new Error('products: the addOns array is missing from the catalogue fields.')
+export const productsAddOns = generateArrayTable(Products.slug, productsGenerated.tableName, productsAddOnsField).table
 
 const [productsBlocksField] = productsGenerated.blocksFields
 const productsBlockDefs = generateBlockTables(Products.slug, productsGenerated.tableName, productsBlocksField)
@@ -1064,9 +1074,13 @@ export const productsRelsTargetColumns = productsRelsGenerated.targetColumns
 export const productsVersionsGenerated = generateVersionsTable(productsSchemaConfig, productsGenerated.tableName)
 export const productsVersions = productsVersionsGenerated.table
 
-const [productsVersionsAttributesField, productsVersionsVariationsField] = productsVersionsGenerated.arrayFields
+const [productsVersionsAttributesField, productsVersionsVariationsField, productsVersionsBundleItemsField] = productsVersionsGenerated.arrayFields
 export const productsVersionsAttributes = generateArrayTable(Products.slug, productsVersionsGenerated.tableName, productsVersionsAttributesField, true, true).table
 export const productsVersionsVariations = generateArrayTable(Products.slug, productsVersionsGenerated.tableName, productsVersionsVariationsField, true, true).table
+export const productsVersionsBundleItems = generateArrayTable(Products.slug, productsVersionsGenerated.tableName, productsVersionsBundleItemsField, true, true).table
+const productsVersionsAddOnsField = productsVersionsGenerated.arrayFields.find((f) => f.name === 'addOns')
+if (!productsVersionsAddOnsField) throw new Error('products versions: the addOns array is missing.')
+export const productsVersionsAddOns = generateArrayTable(Products.slug, productsVersionsGenerated.tableName, productsVersionsAddOnsField, true, true).table
 
 const [productsVersionsBlocksField] = productsVersionsGenerated.blocksFields
 const productsVersionsBlockDefs = generateBlockTables(Products.slug, productsVersionsGenerated.tableName, productsVersionsBlocksField, true, true)

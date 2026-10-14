@@ -25,6 +25,7 @@ import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
 import { FindReplaceView } from '@/admin/views/FindReplaceView'
+import { SeoAuditView } from '@/admin/views/SeoAuditView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
 import { ShopSettingsView } from '@/admin/views/ShopSettingsView'
 import { StoreCreditView } from '@/admin/views/StoreCreditView'
@@ -149,5 +150,11 @@ export const CUSTOM_ADMIN_VIEWS = [
       title: 'Find and replace',
       description: 'Change a word or phrase across pages, posts, products and events.',
     },
+  },
+  {
+    key: 'seoAudit',
+    Component: SeoAuditView,
+    path: '/seo-audit',
+    meta: { title: 'SEO audit', description: 'Check every published page, post, product and event for SEO and readability problems.' },
   },
 ] as const

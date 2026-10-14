@@ -168,6 +168,7 @@ import { loadPaymentSettings, resolveStripeSecret, resolveStripeWebhookSecret } 
 import { loadShopCurrency } from '@/features/ecommerce/lib/shopCurrency'
 import { markOrderFailed } from '@/features/ecommerce/server/orders'
 import { membershipWebhooks } from '@/features/members/webhooks'
+import { handleShopSubscriptionEvent } from '@/features/ecommerce/subscriptions/webhooks'
 import type Stripe from 'stripe'
 
 import type { FieldConfigLike } from './operations'
@@ -178,6 +179,7 @@ import type { VersionsRegistryEntry } from './registry'
 import { readRegistry, versionsRegistry } from './registry'
 import { getMediaObjectResponse } from './storage'
 import type { UploadFile } from './uploads'
+import { parseAddOnInputs } from '@/features/ecommerce/lib/addOns'
 
 /** This app's one real `auth: true` collection - see this file's header for why this is a hardcoded constant rather than a config lookup. */
 const AUTH_COLLECTION_SLUG = 'users'
@@ -944,7 +946,7 @@ async function handleGlobalAccess(engine: Engine, globalSlug: string, request: R
 /* verified by hand in the `where` clause/prior lookup.                     */
 /* -------------------------------------------------------------------------- */
 
-type CartItemRow = { id?: string; product?: number | { id: number } | null; variation?: string | null; quantity?: number; priceCents?: number | null; customAmount?: number | null; giftName?: string; giftEmail?: string; giftSenderName?: string; giftMessage?: string; giftSendAt?: string }
+type CartItemRow = { id?: string; product?: number | { id: number } | null; variation?: string | null; quantity?: number; priceCents?: number | null; customAmount?: number | null; giftName?: string; giftEmail?: string; giftSenderName?: string; giftMessage?: string; giftSendAt?: string; addOns?: string | null }
 
 function cartItemProductId(item: CartItemRow): number | null {
   if (item.product && typeof item.product === 'object') return item.product.id
@@ -987,7 +989,10 @@ async function handleCartAddItem(engine: Engine, cartId: number, request: Reques
   const isGift = giftFields.customAmount !== undefined
   // A name-your-price amount is stored as sent; the server checks it against the product when the line is priced.
   const priceCents = typeof item.priceCents === 'number' && Number.isSafeInteger(item.priceCents) && item.priceCents > 0 ? item.priceCents : null
-  const existingIndex = isGift ? -1 : items.findIndex((existing) => cartItemProductId(existing) === productId && (existing.variation || null) === variation && existing.customAmount == null && (existing.priceCents ?? null) === priceCents)
+  // Product add-on answers: kept as sent here; the cart hook checks them against the product and stores the accepted ones.
+  const addOnsInput = parseAddOnInputs(item.addOns)
+  const addOnsJson = addOnsInput.length > 0 ? JSON.stringify(addOnsInput) : null
+  const existingIndex = isGift ? -1 : items.findIndex((existing) => cartItemProductId(existing) === productId && (existing.variation || null) === variation && existing.customAmount == null && (existing.priceCents ?? null) === priceCents && (existing.addOns || null) === addOnsJson)
   let updatedItems: CartItemRow[]
   let message: string
   if (existingIndex !== -1) {
@@ -995,7 +1000,7 @@ async function handleCartAddItem(engine: Engine, cartId: number, request: Reques
     updatedItems[existingIndex] = { ...updatedItems[existingIndex], quantity: (updatedItems[existingIndex].quantity ?? 0) + quantity }
     message = 'Item quantity updated'
   } else {
-    updatedItems = [...items, { product: productId, ...(variation ? { variation } : {}), ...(priceCents !== null ? { priceCents } : {}), ...giftFields, quantity }]
+    updatedItems = [...items, { product: productId, ...(variation ? { variation } : {}), ...(priceCents !== null ? { priceCents } : {}), ...(addOnsJson ? { addOns: addOnsJson } : {}), ...giftFields, quantity }]
     message = 'Item added to cart'
   }
   const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: updatedItems }, user, req })
@@ -1290,6 +1295,13 @@ async function handlePaymentsStripeWebhooks(engine: Engine, request: Request): P
         }
       }
     } else if (event) {
+      // Shop subscriptions first: a failure answers 500 so Stripe redelivers the event. Membership events are not affected.
+      try {
+        await handleShopSubscriptionEvent({ engine: engine as never, stripe: stripe as never }, event as never)
+      } catch (err) {
+        console.error(`Shop subscription webhook ${event.type} failed: ${err instanceof Error ? err.message : String(err)}`)
+        returnStatus = 500
+      }
       const handler = membershipWebhooks[event.type as keyof typeof membershipWebhooks] as unknown as
         | ((args: { event: Stripe.Event; req: { engine: Engine }; stripe: Stripe }) => Promise<void>)
         | undefined

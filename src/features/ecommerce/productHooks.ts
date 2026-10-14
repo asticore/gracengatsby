@@ -1,6 +1,8 @@
 import type { CollectionBeforeChangeHook } from '@/engine'
 
 import { collectSkus, normaliseCatalogue } from './normalize'
+import { bundleErrors } from './lib/bundles'
+import { bundleComponentErrors } from './server/bundles'
 import { galleryIds, keepGalleryVariationImages } from './lib/variationImage'
 import type { VariationRow } from './variations'
 
@@ -35,7 +37,8 @@ export const catalogueBeforeChange: CollectionBeforeChangeHook = async ({ data, 
   const selfId = (originalDoc as { id?: number } | undefined)?.id
   // A partial update (say, only the stock quantity) is checked against the whole document.
   const merged: Record<string, unknown> = { ...((originalDoc as Record<string, unknown> | undefined) ?? {}), ...incoming }
-  const errors = normaliseCatalogue(merged, selfId)
+  const engine = (req as unknown as { engine: EngineLike }).engine
+  const errors = [...normaliseCatalogue(merged, selfId), ...bundleErrors(merged, selfId), ...(await bundleComponentErrors(engine as never, merged).catch((): never[] => []))]
   if (errors.length > 0) await throwValidation(errors)
   for (const key of ['sku', 'gtin', 'stockQty', 'variations']) if (key in incoming) incoming[key] = merged[key]
   // A variation image must be one of this product's gallery images.
@@ -44,7 +47,7 @@ export const catalogueBeforeChange: CollectionBeforeChangeHook = async ({ data, 
 
   const skus = collectSkus(merged)
   if (skus.length > 0) {
-    const conflict = await findSkuConflict((req as unknown as { engine: EngineLike }).engine, skus, selfId).catch((): null => null)
+    const conflict = await findSkuConflict(engine, skus, selfId).catch((): null => null)
     if (conflict) await throwValidation([{ path: 'sku', message: `SKU "${conflict.sku}" is already used by "${conflict.title}".` }])
   }
   return data

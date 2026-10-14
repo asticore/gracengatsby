@@ -218,6 +218,7 @@ import { ShippingSettings } from '@/globals/ShippingSettings'
 import { SecuritySettings } from '@/globals/SecuritySettings'
 import { SeoSettings } from '@/globals/SeoSettings'
 import { ShopSettings } from '@/globals/ShopSettings'
+import { ShopExtraSettings } from '@/globals/ShopExtraSettings'
 import { SiteSettings } from '@/globals/SiteSettings'
 import { SpeedSettings } from '@/globals/SpeedSettings'
 
@@ -397,6 +398,7 @@ import {
   findRolesPaginated,
   findSecuritySettings,
   findSeoSettings,
+  findShopExtraSettings,
   findShopSettings,
   findSiteSettings,
   findSpeedSettings,
@@ -450,6 +452,7 @@ import {
   updateRole,
   updateSecuritySettings,
   updateSeoSettings,
+  updateShopExtraSettings,
   updateShopSettings,
   updateSiteSettings,
   updateSpeedSettings,
@@ -558,6 +561,7 @@ export const writeRegistry: {
     'member-settings': globalOps(findMemberSettings, updateMemberSettings),
     'email-settings': globalOps(findEmailSettings, updateEmailSettings),
     'shop-settings': globalOps(findShopSettings, updateShopSettings),
+    'shop-extra-settings': globalOps(findShopExtraSettings, updateShopExtraSettings),
     'security-settings': globalOps(findSecuritySettings, updateSecuritySettings),
     header: globalOps(findHeader, updateHeader),
     footer: globalOps(findFooter, updateFooter),
@@ -641,6 +645,7 @@ export const readRegistry: ReadRegistry = {
     'member-settings': globalReadEntry(MemberSettings, findMemberSettings),
     'email-settings': globalReadEntry(EmailSettings, findEmailSettings),
     'shop-settings': globalReadEntry(ShopSettings, findShopSettings),
+    'shop-extra-settings': globalReadEntry(ShopExtraSettings, findShopExtraSettings),
     'security-settings': globalReadEntry(SecuritySettings, findSecuritySettings),
     header: globalReadEntry(Header, findHeader),
     footer: globalReadEntry(Footer, findFooter),
@@ -685,4 +690,4 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
 
 export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
-export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]
+export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, ShopSettings, ShopExtraSettings, SecuritySettings, Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

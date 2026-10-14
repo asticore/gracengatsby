@@ -42,6 +42,8 @@ export type CartItemDoc = {
   product: number | Record<string, unknown>
   variation?: string | null
   quantity: number
+  /** Product add-on answers, stored as JSON text (see lib/addOns.ts). */
+  addOns?: string | null
 }
 
 export type CartDoc = {
@@ -67,6 +69,8 @@ export type AddItemInput = {
   giftSenderName?: string
   giftMessage?: string
   giftSendAt?: string
+  /** Product add-on answers, one per question the product asks. The server checks them against the product. */
+  addOns?: Array<{ id: string; value: string | boolean }>
 }
 
 type PaymentArgs = { additionalData?: Record<string, unknown> }

@@ -15,6 +15,7 @@ export type EmailTemplateKey =
   | 'approvalSubmitted'
   | 'approvalDecision'
   | 'rsvpConfirmation'
+  | 'eventReminder'
 
 export type EmailTemplate = { subject: string; body: string }
 
@@ -60,6 +61,14 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplate> = 
     body: [
       'Hi {{name}}, your booking for {{eventTitle}} is confirmed.',
       'When: {{eventDate}}\nGuests: {{guestCount}}',
+      'See you there.',
+    ].join('\n\n'),
+  },
+  eventReminder: {
+    subject: 'Reminder: {{eventTitle}} is {{when}}',
+    body: [
+      'Hi {{name}}, a reminder that {{eventTitle}} is on {{when}}.',
+      'Guests: {{guestCount}}',
       'See you there.',
     ].join('\n\n'),
   },

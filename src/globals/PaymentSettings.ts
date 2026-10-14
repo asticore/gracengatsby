@@ -166,6 +166,14 @@ export const PaymentSettings: GlobalConfig = {
           ],
         },
         {
+          name: 'webhookId',
+          type: 'text',
+          admin: {
+            description:
+              'The Webhook ID PayPal shows after you add the shop webhook in your PayPal app (Webhooks). It lets the shop confirm that payment updates really came from PayPal. Not secret. The webhook address to paste into PayPal is shown under the PayPal settings.',
+          },
+        },
+        {
           name: 'allowPayPalLater',
           type: 'checkbox',
           defaultValue: false,

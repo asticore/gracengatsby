@@ -1,4 +1,5 @@
 import type { CollectionConfig } from '@/engine'
+import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 
 import { richTextEditor } from '@/engine/editor'
 
@@ -192,6 +193,7 @@ export const Events: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, publishGuard, pageSpeedBeforeChange],
-    afterChange: [pageSpeedAfterChange('events')],
+    afterChange: [pageSpeedAfterChange('events'), indexNowAfterChange('events')],
+    afterDelete: [indexNowAfterDelete('events')],
   },
 }

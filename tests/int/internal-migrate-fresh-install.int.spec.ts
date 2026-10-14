@@ -319,6 +319,24 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_products_variations')).toContain('image_id')
   })
 
+  it('adds the hover-prefetch switch and the Data clean-up columns to the Speed settings', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_speed_settings')).toEqual(
+      expect.arrayContaining([
+        'advanced_preload_on_hover',
+        'cleanup_enabled',
+        'cleanup_keep_versions_per_doc',
+        'cleanup_delete_trashed_after_days',
+        'cleanup_delete_form_submissions_after_days',
+        'cleanup_delete_audit_log_after_days',
+        'cleanup_delete_email_log_after_days',
+      ]),
+    )
+  })
+
   it('creates the PageSpeed tables, list columns, API key and settings columns', async () => {
     for (const table of ['eg_pagespeed_results', 'eg_pagespeed_queue']) {
       expect(tables, table).toContain(table)
@@ -562,6 +580,50 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await designColumnsOf('eg_email_brand')).toEqual(
       expect.arrayContaining(['enabled', 'logo_id', 'logo_width', 'accent', 'text_color', 'background', 'content_background', 'font_stack', 'button_radius', 'footer_text', 'address']),
     )
+  })
+
+  it('creates the error log table with its indexes', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_error_log')
+    expect(await columnsOf('eg_error_log')).toEqual(
+      expect.arrayContaining(['source', 'message', 'stack', 'path', 'user_agent', 'count', 'first_seen', 'last_seen', 'fingerprint', 'status', 'updated_at', 'created_at']),
+    )
+  })
+
+  it('adds the edge page cache columns: cache version 1, page caching off, never-cache rules', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_speed_settings')).toEqual(
+      expect.arrayContaining([
+        'cache_epoch',
+        'caching_page_cache',
+        'caching_never_cache_paths',
+        'caching_never_cache_cookies',
+        'caching_never_cache_query_strings',
+        'caching_cache_mobile_separately',
+      ]),
+    )
+    const row = (await proxy.env.D1.prepare('SELECT caching_page_cache, cache_epoch FROM eg_speed_settings LIMIT 1').first()) as
+      | { caching_page_cache: number | null; cache_epoch: number | null }
+      | null
+    if (row) {
+      expect(Number(row.caching_page_cache ?? 0)).toBe(0)
+      expect(Number(row.cache_epoch)).toBe(1)
+    }
+  })
+
+  it('creates the cron run history table with its columns (wave 17)', async () => {
+    expect(tables).toContain('eg_cron_runs')
+    const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_cron_runs`)').all()
+    const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+    for (const col of ['id', 'job', 'started_at', 'finished_at', 'ok', 'error', 'duration_ms']) {
+      expect(columnNames, `eg_cron_runs should have column ${col}`).toContain(col)
+    }
   })
 
   it('is safe to run a second time', async () => {

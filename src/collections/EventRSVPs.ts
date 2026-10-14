@@ -61,6 +61,8 @@ export const EventRSVPs: CollectionConfig = {
     },
     rsvpTicketTierField,
     ...rsvpCheckInFields,
+    // When the event reminder went out for this booking (src/features/email/eventReminders.ts). Set by the cron only.
+    { name: 'reminderSentAt', type: 'date', admin: { hidden: true, readOnly: true, description: 'When the event reminder was sent.' } },
   ],
   hooks: {
     beforeChange: [checkEventCapacity, checkRsvpTier],

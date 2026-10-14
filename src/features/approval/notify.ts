@@ -15,7 +15,7 @@ type EngineLike = {
   findByID: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null>
 }
 
-type Sender = (args: { to: string; subject: string; text: string }) => Promise<unknown>
+type Sender = (args: { to: string; template?: string; subject: string; text: string }) => Promise<unknown>
 
 /** Loaded once per notification, never per recipient: concurrent dynamic imports are not safe to rely on. */
 const loadSender = async (): Promise<Sender> => {
@@ -128,7 +128,7 @@ export async function notifySubmitted({
     link: `${origin}/admin/collections/${collection}/${id}`,
   }, engine as never)
   const sendEmail = await loadSender()
-  await Promise.all([...addresses].map((to) => sendEmail({ to, subject: mail.subject, text: mail.text })))
+  await Promise.all([...addresses].map((to) => sendEmail({ to, template: 'approval.submitted', subject: mail.subject, text: mail.text })))
   return [...addresses]
 }
 
@@ -169,7 +169,7 @@ export async function notifyRequester({
     link: `${origin}/admin/collections/${collection}/${id}`,
   }, engine as never)
   const sendEmail = await loadSender()
-  await sendEmail({ to: email, subject: mail.subject, text: mail.text })
+  await sendEmail({ to: email, template: 'approval.decision', subject: mail.subject, text: mail.text })
 }
 
 /** A workflow step was approved and the document moved on: tell the approvers of the step now waiting. */
@@ -203,6 +203,6 @@ export async function notifyStepReady({
   const subject = `Your approval is needed: ${title}`
   const text = `${approverName} approved the previous step of this ${APPROVAL_SINGULAR[collection]}: ${title}\n\n${describeAwaiting(workflow, step)}\n\nOpen it to approve or ask for changes:\n${origin}/admin/collections/${collection}/${id}`
   const sendEmail = await loadSender()
-  await Promise.all(addresses.map((to) => sendEmail({ to, subject, text })))
+  await Promise.all(addresses.map((to) => sendEmail({ to, template: 'approval.step-ready', subject, text })))
   return addresses
 }

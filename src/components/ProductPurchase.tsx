@@ -10,29 +10,31 @@ import { QtyPriceFields } from '@/components/QtyPriceFields'
 import { clampQuantity, validateNamedPrice } from '@/features/ecommerce/lib/qtyLimits'
 import { PREORDER_LABEL } from '@/features/ecommerce/lib/preorder'
 import { imageForSelection } from '@/features/ecommerce/lib/variationImage'
+import type { AddOnView } from '@/features/ecommerce/lib/addOns'
+import { ProductAddOns, type AddOnValues } from './ProductAddOns'
+import { PricingRuleNotes } from './PricingRuleNotes'
 import { PreorderNotice } from './PreorderNotice'
 import { useVariationImage } from './VariationImageProvider'
-import { formatPriceInAUD } from '@/lib/formatCurrency'
-import { useShopCurrency } from '@/components/ShopCurrencyContext'
+import { useDisplayMoney } from '@/components/DisplayCurrencyContext'
 import type { ProductView, VariationView } from '@/features/ecommerce/storefront'
 
 export type GroupedChild = { id: number; title: string; slug: string | null; view: ProductView }
 
 function PriceLine({ price, regular, onSale, from }: { price: number | null; regular: number | null; onSale: boolean; from?: boolean }) {
-  const currency = useShopCurrency()
+  const money = useDisplayMoney()
   if (price === null) return null
   return (
     <p className="mb-2 font-[family-name:var(--font-display)] text-[1.5rem]">
       {onSale && regular !== null && regular > price ? (
         <>
-          <s className="mr-2 opacity-50">{formatPriceInAUD(regular, currency)}</s>
-          <span>{formatPriceInAUD(price, currency)}</span>
+          <s className="mr-2 opacity-50">{money(regular)}</s>
+          <span>{money(price)}</span>
           <span className="sale-badge ml-3 align-middle text-[0.7rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">Sale</span>
         </>
       ) : (
         <span>
           {from ? 'From ' : ''}
-          {formatPriceInAUD(price, currency)}
+          {money(price)}
         </span>
       )}
     </p>
@@ -43,12 +45,13 @@ type Limits = { min: number; max: number | null }
 type BuyerPrice = { enabled: boolean; suggested: number | null; minimum: number | null }
 
 /** Quantity box plus Add to cart. The server re-checks price, stock, limits and the option; it can still say no. */
-function AddControl({ productId, variationId, disabled, label = 'Add to cart', limits, buyerPrice }: { productId: number; variationId?: string | null; disabled?: boolean; label?: string; limits?: Limits; buyerPrice?: BuyerPrice }) {
+function AddControl({ productId, variationId, disabled, label = 'Add to cart', limits, buyerPrice, addOns = [] }: { productId: number; variationId?: string | null; disabled?: boolean; label?: string; limits?: Limits; buyerPrice?: BuyerPrice; addOns?: AddOnView[] }) {
   const { addItem, isLoading } = useCart()
   const min = limits?.min ?? 1
   const cap = limits?.max ?? 99
   const named = buyerPrice?.enabled ? buyerPrice : null
   const [qty, setQty] = useState(() => clampQuantity(1, { minQty: min, maxQty: cap }))
+  const [answers, setAnswers] = useState<AddOnValues>({})
   const [priceText, setPriceText] = useState(() => (named?.suggested != null ? named.suggested.toFixed(2) : ''))
   const [message, setMessage] = useState('')
   const [added, setAdded] = useState(false)
@@ -65,7 +68,13 @@ function AddControl({ productId, variationId, disabled, label = 'Add to cart', l
       }
       priceCents = check.cents
     }
-    const failure = await addItem({ product: productId, variation: variationId ?? null, ...(priceCents !== undefined ? { priceCents } : {}) }, clampQuantity(qty, { minQty: min, maxQty: cap }))
+    // Only the answers the buyer gave go to the server; it checks them against the product and prices them.
+    const addOnAnswers = addOns.flatMap((def) => {
+      const value = answers[def.id]
+      if (value === undefined || value === '' || value === false) return []
+      return [{ id: def.id, value }]
+    })
+    const failure = await addItem({ product: productId, variation: variationId ?? null, ...(priceCents !== undefined ? { priceCents } : {}), ...(addOnAnswers.length > 0 ? { addOns: addOnAnswers } : {}) }, clampQuantity(qty, { minQty: min, maxQty: cap }))
     if (failure) setMessage(failure)
     else setAdded(true)
   }
@@ -73,6 +82,7 @@ function AddControl({ productId, variationId, disabled, label = 'Add to cart', l
   return (
     <div className="mt-3">
       <div className="flex flex-wrap items-end gap-3">
+        <ProductAddOns defs={addOns} values={answers} onChange={(id, value) => setAnswers((current) => ({ ...current, [id]: value }))} />
         <QtyPriceFields qty={qty} onQty={setQty} min={min} max={limits?.max ?? null} buyerPrice={named} priceText={priceText} onPriceText={setPriceText} />
         <button type="button" className="btn btn--primary" onClick={add} disabled={disabled || isLoading}>
           {isLoading ? 'Adding...' : label}
@@ -183,7 +193,8 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
           <p>This product is not available right now.</p>
         )}
         {shown ? <PreorderNotice info={shown.preorder} /> : null}
-        <AddControl productId={productId} variationId={shown?.id ?? null} disabled={!shown || !shown.purchasable} limits={view.qtyLimits} label={shown?.preorder.active ? PREORDER_LABEL : undefined} />
+        <PricingRuleNotes notes={view.pricingNotes} />
+        <AddControl productId={productId} variationId={shown?.id ?? null} disabled={!shown || !shown.purchasable} limits={view.qtyLimits} label={shown?.preorder.active ? PREORDER_LABEL : undefined} addOns={view.addOns} />
       </div>
     )
   }
@@ -197,7 +208,8 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
       </p>
       {view.sku ? <p className="text-[0.85rem] opacity-70">SKU: {view.sku}</p> : null}
       <PreorderNotice info={view.preorder} />
-      <AddControl productId={productId} disabled={!view.purchasable} limits={view.qtyLimits} buyerPrice={view.buyerPrice} label={view.preorder.active ? PREORDER_LABEL : undefined} />
+      <PricingRuleNotes notes={view.pricingNotes} />
+      <AddControl productId={productId} disabled={!view.purchasable} limits={view.qtyLimits} buyerPrice={view.buyerPrice} label={view.preorder.active ? PREORDER_LABEL : undefined} addOns={view.addOns} />
     </div>
   )
 }

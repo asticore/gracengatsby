@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const course = await courseBySlug(await getEngine(), slug)
   if (!course) return {}
-  return buildMetadata({ title: course.title, seo: course.seo as never, path: `/courses/${course.slug}` })
+  return buildMetadata({ title: course.title, seo: course.seo as never, path: `/courses/${course.slug}`, contentType: 'course' })
 }
 
 export default async function CourseRoute({ params }: { params: Promise<{ slug: string }> }) {

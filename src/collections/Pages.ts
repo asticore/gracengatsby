@@ -1,6 +1,7 @@
 import { noAdsField } from '@/features/ads/fields'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
+import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 import type { CollectionConfig, EngineRequest } from '@/engine'
 
 import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
@@ -168,7 +169,8 @@ export const Pages: CollectionConfig = {
         return data
       },
     ],
-    afterChange: [pageSpeedAfterChange('pages')],
+    afterChange: [pageSpeedAfterChange('pages'), indexNowAfterChange('pages')],
+    afterDelete: [indexNowAfterDelete('pages')],
     beforeChange: [
       authorshipBeforeChange,
       trashGuard,

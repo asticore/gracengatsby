@@ -3,6 +3,7 @@ import { rawD1, runChanges, SQL } from './db'
 import { stockAlerts, sendStockAlerts, type StockAlert } from '../stockAlerts'
 import { consumeStoredValue, issueGiftCards } from './storedValue'
 import { sendAdminAttentionEmail, sendAdminNewOrderEmail, sendOrderEmail } from './emails'
+import { bundleStockLines, bundleComponentRows, type BundleContent } from '../lib/bundles'
 
 type Doc = Record<string, unknown>
 type Engine = {
@@ -14,7 +15,7 @@ type Engine = {
 }
 
 export type OrderNote = { id: string; type: 'internal' | 'customer'; text: string; author: string; createdAt: string }
-type LineItem = { productId?: number | string; variationId?: string | null; quantity?: number; preorder?: unknown }
+type LineItem = { productId?: number | string; variationId?: string | null; quantity?: number; preorder?: unknown; bundleContents?: BundleContent[] | null }
 
 /** Appends a note. Not atomic across concurrent writers (notes are low volume); never throws. */
 export async function addOrderNote(engine: Engine, orderId: number, note: { type: 'internal' | 'customer'; text: string; author: string }): Promise<OrderNote | null> {
@@ -56,6 +57,15 @@ async function applyStock(engine: Engine, lines: LineItem[], sign: 1 | -1, only?
     try {
       const product = await engine.findByID({ collection: 'products', id: productId, depth: 0, overrideAccess: true, draft: false })
       if (!product) continue
+      if (product.productType === 'bundle') {
+        // A bundle takes stock from each product inside it: the snapshot taken at checkout, else the bundle's current contents.
+        const contents = Array.isArray(line.bundleContents) ? line.bundleContents : bundleComponentRows(product.bundleItems).map((row): BundleContent => ({ productId: row.productId, quantity: row.quantity, title: `Item ${row.productId}` }))
+        const sub = await applyStock(engine, bundleStockLines(contents, qty), sign)
+        out.oversold.push(...sub.oversold)
+        out.failed.push(...sub.failed)
+        out.applied.push({ line, qty })
+        continue
+      }
       const variations = Array.isArray(product.variations) ? (product.variations as (StockFields & { id?: string })[]) : []
       const variation = line.variationId ? variations.find((v) => v.id === line.variationId) : undefined
       let table: 'eg_products_variations' | 'eg_products' | null = null

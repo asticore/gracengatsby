@@ -2,6 +2,7 @@ import React from 'react'
 
 import { getEngine } from '@/lib/engine'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { loadShopCurrency } from '@/features/ecommerce/lib/shopCurrency'
 import { buildMergeContext, resolveTagsDeep } from '@/lib/mergeTags'
 import { buildItemTagContexts } from '@/features/customFields/server'
 import type { SectionNode } from '@/lib/sectionTree'
@@ -45,6 +46,7 @@ export async function LoopBlock({
 }) {
   const collection: LoopSource = (source as LoopSource) || 'products'
   const engine = await getEngine()
+  const currency = await loadShopCurrency(engine as never)
 
   // The template may arrive as an id or an already-populated doc depending on
   // the depth the parent page was fetched at.
@@ -103,7 +105,7 @@ export async function LoopBlock({
         )}
         <div className="be-loop-grid" style={{ ['--loop-columns' as string]: String(columnCount) }}>
           {items.map((item, index) => {
-            const context = buildMergeContext(item, collection, (amount) => formatPriceInAUD(amount, 'AUD'), tagContexts[index])
+            const context = buildMergeContext(item, collection, (amount) => formatPriceInAUD(amount, currency), tagContexts[index])
             const resolved = resolveTagsDeep(templateBlocks, context)
 
             return (

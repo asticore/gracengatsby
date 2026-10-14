@@ -1,9 +1,13 @@
 import { toCents } from '../lib/money'
 import type { ShippingOption } from '../lib/shipping'
 import { AusPostAdapter } from './auspost'
+import { DhlAdapter } from './dhl'
+import { FedExAdapter } from './fedex'
 import { CARRIERS, carrierDef, missingCredentialKeys } from './catalogue'
 import { normalisePresets, packItems, type PackItem, type PackagePreset } from './packing'
 import { SendleAdapter } from './sendle'
+import { UpsAdapter } from './ups'
+import { ShipStationAdapter } from './shipstation'
 import type { Address, CarrierAdapter, CarrierCredentials, CarrierId, ConnectionResult, LabelRequest, LabelResult, RateQuote, RateRequest } from './types'
 
 /** Carriers with no built-in API calls yet: settings and key checks only. */
@@ -36,6 +40,10 @@ export function getAdapter(id: CarrierId): CarrierAdapter {
   if (o) return o
   if (id === 'auspost') return new AusPostAdapter()
   if (id === 'sendle') return new SendleAdapter()
+  if (id === 'dhl') return new DhlAdapter()
+  if (id === 'ups') return new UpsAdapter()
+  if (id === 'fedex') return new FedExAdapter()
+  if (id === 'shipstation') return new ShipStationAdapter()
   return new KeysOnlyAdapter(id)
 }
 

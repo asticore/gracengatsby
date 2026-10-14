@@ -208,6 +208,8 @@ import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
 import { EmailSettings } from '@/globals/EmailSettings'
 import { EmailTemplates } from '@/globals/EmailTemplates'
+import { EmailBrand } from '@/globals/EmailBrand'
+import { EmailSchedule } from '@/globals/EmailSchedule'
 import { FaqSettings } from '@/globals/FaqSettings'
 import { Footer } from '@/globals/Footer'
 import { FormSettings } from '@/globals/FormSettings'
@@ -351,6 +353,8 @@ import {
   findCoursesPaginated,
   findEmailSettings,
   findEmailTemplates,
+  findEmailBrand,
+  findEmailSchedule,
   findEnrolmentByID,
   findEnrolmentsPaginated,
   findEventByID,
@@ -437,6 +441,8 @@ import {
   updateCourse,
   updateEmailSettings,
   updateEmailTemplates,
+  updateEmailBrand,
+  updateEmailSchedule,
   updateEnrolment,
   updateEvent,
   updateEventRSVP,
@@ -587,6 +593,8 @@ export const writeRegistry: {
     'member-settings': globalOps(findMemberSettings, updateMemberSettings),
     'email-settings': globalOps(findEmailSettings, updateEmailSettings),
     'email-templates': globalOps(findEmailTemplates, updateEmailTemplates),
+    'email-brand': globalOps(findEmailBrand, updateEmailBrand),
+    'email-schedule': globalOps(findEmailSchedule, updateEmailSchedule),
     'shop-settings': globalOps(findShopSettings, updateShopSettings),
     'shop-extra-settings': globalOps(findShopExtraSettings, updateShopExtraSettings),
     'security-settings': globalOps(findSecuritySettings, updateSecuritySettings),
@@ -676,6 +684,8 @@ export const readRegistry: ReadRegistry = {
     'member-settings': globalReadEntry(MemberSettings, findMemberSettings),
     'email-settings': globalReadEntry(EmailSettings, findEmailSettings),
     'email-templates': globalReadEntry(EmailTemplates, findEmailTemplates),
+    'email-brand': globalReadEntry(EmailBrand, findEmailBrand),
+    'email-schedule': globalReadEntry(EmailSchedule, findEmailSchedule),
     'shop-settings': globalReadEntry(ShopSettings, findShopSettings),
     'shop-extra-settings': globalReadEntry(ShopExtraSettings, findShopExtraSettings),
     'security-settings': globalReadEntry(SecuritySettings, findSecuritySettings),
@@ -722,4 +732,4 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
 
 export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
-export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]
+export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule,ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

@@ -203,10 +203,10 @@ export const VisualEditorView: React.FC = () => {
   const selectedNode = selectedPath ? getNode(blocks, selectedPath) : undefined
 
   // Latest tree/locks/user for the mutation callbacks below (they are memoised without them).
-  const lockCtx = useRef({ blocks, locks, lockUser })
+  const lockCtx = useRef({ blocks, locks, lockUser, formConfig })
   useEffect(() => {
-    lockCtx.current = { blocks, locks, lockUser }
-  }, [blocks, locks, lockUser])
+    lockCtx.current = { blocks, locks, lockUser, formConfig }
+  }, [blocks, locks, lockUser, formConfig])
   /** True (and tells the person why) when a locked section stops this edit. */
   const lockedOut = useCallback((path: NodePath): boolean => {
     const { blocks: b, locks: l, lockUser: u } = lockCtx.current
@@ -463,6 +463,8 @@ export const VisualEditorView: React.FC = () => {
   const save = async (publish: boolean, options: { unpublish?: boolean } = {}) => {
     if (!apiUrl || !surface) return
     setSaving(publish ? 'publishing' : 'saving')
+    // What this request carries. Edits made while it is in flight keep the dirty flag set.
+    const sent = { blocks, locks, formConfig }
     try {
       const body: Record<string, unknown> = { [surface.blocksField]: stripEditorIds(blocks, lockedKeySet(locks)) }
       if (locksDirty && lockable) body.locks = serializeLocks(locks)
@@ -498,8 +500,11 @@ export const VisualEditorView: React.FC = () => {
           setStatus('draft')
         }
       } else if (publish) setStatus('published')
-      setDirty(false)
-      setLocksDirty(false)
+      const current = lockCtx.current
+      if (current.blocks === sent.blocks && current.locks === sent.locks && current.formConfig === sent.formConfig) {
+        setDirty(false)
+        setLocksDirty(false)
+      }
       setTimeout(() => setSaving('idle'), 2000)
     } catch (err) {
       setSaving('error')
@@ -585,7 +590,7 @@ export const VisualEditorView: React.FC = () => {
             aria-label={dockCollapsed ? 'Show panel' : 'Collapse panel'}
             title={dockCollapsed ? 'Show panel' : 'Collapse panel'}
           >
-            {dockCollapsed ? '»' : '«'}
+            {dockCollapsed ? String.fromCodePoint(0xbb) : String.fromCodePoint(0xab)}
           </button>
           <span className="ve-topbar__title">
             Visual editor - {docTitle} {status && <span className="ve-topbar__status">({status})</span>}
@@ -679,7 +684,7 @@ export const VisualEditorView: React.FC = () => {
         <div className="ve-canvas-wrap" role="presentation">
           {lockNotice && (
             <p className="ve-error" role="status" style={{ padding: 12 }}>
-              🔒 {lockNotice}
+              &#128274; {lockNotice}
             </p>
           )}
           {error && (

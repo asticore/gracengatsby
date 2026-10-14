@@ -36,6 +36,8 @@ import { EmailDesignerView } from '@/admin/views/EmailDesignerView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
 import { ShopSettingsView } from '@/admin/views/ShopSettingsView'
 import { StoreCreditView } from '@/admin/views/StoreCreditView'
+import { ShopReportsView } from '@/admin/views/ShopReportsView'
+import { DisplayCurrenciesView } from '@/admin/views/DisplayCurrenciesView'
 import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
@@ -133,6 +135,8 @@ export const CUSTOM_ADMIN_VIEWS = [
     path: '/store-credit',
     meta: { title: 'Store credit', description: 'Add or deduct store credit with a reason.' },
   },
+  { key: 'shopReports', Component: ShopReportsView, path: '/shop-reports', meta: { title: 'Shop reports', description: 'Sales, refunds, customers, products, coupons, payments, locations, low stock and abandoned carts.' } },
+  { key: 'displayCurrencies', Component: DisplayCurrenciesView, path: '/display-currencies', meta: { title: 'Display currencies', description: 'Show prices in other currencies. Shoppers always pay in the shop currency.' } },
   {
     key: 'shopSettings',
     Component: ShopSettingsView,

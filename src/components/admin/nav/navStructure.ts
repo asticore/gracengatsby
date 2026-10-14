@@ -158,6 +158,7 @@ export const HIDDEN_FROM_NAV = new Set<string>([
   'member-settings',
   'email-settings',
   'email-templates',
+  'email-schedule',
   'speed-settings',
   'security-settings',
   'backup-settings',

@@ -35,6 +35,8 @@ import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
 import { EmailSettings } from '@/globals/EmailSettings'
 import { EmailTemplates } from '@/globals/EmailTemplates'
+import { EmailSchedule } from '@/globals/EmailSchedule'
+import { EmailBrand } from '@/globals/EmailBrand'
 import { FaqSettings } from '@/globals/FaqSettings'
 import { Footer } from '@/globals/Footer'
 import { FormSettings } from '@/globals/FormSettings'
@@ -700,6 +702,14 @@ export const sitePages = sitePagesGenerated.table
 export const emailTemplatesGenerated = generateTable(EmailTemplates)
 export const emailTemplates = emailTemplatesGenerated.table
 
+/** Email design brand (src/globals/EmailBrand.ts): logo, colours, font and footer for designed emails. */
+export const emailBrandGenerated = generateTable(EmailBrand)
+export const emailBrand = emailBrandGenerated.table
+
+/** When emails are sent (src/globals/EmailSchedule.ts): one switch per automatic email, reminder timing and quiet hours. */
+export const emailScheduleGenerated = generateTable(EmailSchedule)
+export const emailSchedule = emailScheduleGenerated.table
+
 /** Site details (src/globals/SiteDetails.ts): scalars plus one `business` group, rebuilt by groupFields. */
 export const siteDetailsGenerated = generateTable(SiteDetails)
 export const siteDetails = siteDetailsGenerated.table
@@ -762,7 +772,10 @@ export const securitySettings = securitySettingsGenerated.table
  * ../globals/integrations.ts's KNOWN GAP doc comment for what that means for
  * a write through this layer's own raw-column ops.
  */
-export const integrationsGenerated = generateTable(Integrations)
+// `ui` fields (the connection status and test text buttons in the
+// communications group) carry no column, so they are stripped before generating.
+const integrationsSchemaConfig: GlobalConfig = { ...Integrations, fields: stripUiFields(Integrations.fields) }
+export const integrationsGenerated = generateTable(integrationsSchemaConfig)
 export const integrations = integrationsGenerated.table
 
 /**

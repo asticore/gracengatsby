@@ -9,6 +9,7 @@ import { renderInvoiceHtml, type InvoiceOrder, type InvoiceStore } from '@/featu
 import { SHOP_TABS } from '@/features/ecommerce/settingsFields'
 import { EditForm } from './EditForm'
 import { CarrierTestPanel, PaymentTestButtons } from './ShopTestButtons'
+import { PayPalWebhookHelp } from './PayPalWebhookHelp'
 import '@/app/(engage)/settings-tabs.css'
 import './shop-settings.css'
 
@@ -94,6 +95,9 @@ type Props = {
   paymentFields: Field[] | null
   shippingDoc?: Record<string, unknown> | null
   shippingFields?: Field[] | null
+  /** The shop-extra-settings global (shop-wide switches such as pre-orders), shown in the Storefront tab. */
+  extraDoc?: Record<string, unknown> | null
+  extraFields?: Field[] | null
 }
 
 const SCOPED = new Set<string>([...SHOP_TABS.general, ...SHOP_TABS.giftCards, ...SHOP_TABS.checkout, ...SHOP_TABS.emails, 'invoice'])
@@ -103,7 +107,7 @@ const SCOPED = new Set<string>([...SHOP_TABS.general, ...SHOP_TABS.giftCards, ..
  * onlyFields), keyed on updatedAt so a save in one tab never leaves another tab holding stale values
  * that would be written back on its own save. Payments is the payment-settings global.
  */
-export const ShopSettingsClient: React.FC<Props> = ({ shopDoc, shopFields, paymentDoc, paymentFields, shippingDoc, shippingFields }) => {
+export const ShopSettingsClient: React.FC<Props> = ({ shopDoc, shopFields, paymentDoc, paymentFields, shippingDoc, shippingFields, extraDoc, extraFields }) => {
   const hash = useSyncExternalStore(subscribeToHash, readHash, readServerHash)
   const active = resolveActiveTab(hash, TAB_SLUGS)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -184,7 +188,7 @@ export const ShopSettingsClient: React.FC<Props> = ({ shopDoc, shopFields, payme
           {panel(
             'payments',
             paymentDoc && paymentFields ? (
-              <EditForm key={`payments:${String(paymentDoc.updatedAt ?? 'new')}`} doc={paymentDoc} fields={paymentFields} globalSlug="payment-settings" afterFields={<PaymentTestButtons />} />
+              <EditForm key={`payments:${String(paymentDoc.updatedAt ?? 'new')}`} doc={paymentDoc} fields={paymentFields} globalSlug="payment-settings" afterFields={<><PaymentTestButtons /><PayPalWebhookHelp /></>} />
             ) : (
               <p>You do not have access to the payment settings.</p>
             ),
@@ -208,7 +212,15 @@ export const ShopSettingsClient: React.FC<Props> = ({ shopDoc, shopFields, payme
           {panel('gift-cards', shopForm(SHOP_TABS.giftCards))}
           {panel('checkout', shopForm(SHOP_TABS.checkout))}
           {panel('emails', shopForm(SHOP_TABS.emails))}
-          {panel('storefront', shopForm(layoutNames))}
+          {panel(
+            'storefront',
+            <>
+              {shopForm(layoutNames)}
+              {extraDoc && extraFields ? (
+                <EditForm key={`shop-extra:${String(extraDoc.updatedAt ?? 'new')}`} doc={extraDoc} fields={extraFields} globalSlug="shop-extra-settings" />
+              ) : null}
+            </>,
+          )}
         </div>
       </div>
     </div>

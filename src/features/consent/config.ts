@@ -179,7 +179,11 @@ const cookieList = (value: unknown): CookieListItem[] => {
  * whether tags wait for a choice. Off means notice only; on or unset means
  * opt-in everywhere.
  */
-export function normaliseConsentConfig(integrations: unknown, legacyAnalytics: unknown): ConsentConfig {
+export function normaliseConsentConfig(
+  integrations: unknown,
+  legacyAnalytics: unknown,
+  fallbackPrivacyPolicyUrl: string | null = null,
+): ConsentConfig {
   const doc = integrations && typeof integrations === 'object' ? (integrations as Record<string, unknown>) : {}
   const raw = doc.consent && typeof doc.consent === 'object' ? (doc.consent as Record<string, unknown>) : {}
   const legacy = legacyAnalytics && typeof legacyAnalytics === 'object' ? (legacyAnalytics as Record<string, unknown>) : {}
@@ -204,7 +208,8 @@ export function normaliseConsentConfig(integrations: unknown, legacyAnalytics: u
     bannerBackground: cleanColour(raw.bannerBackground),
     bannerTextColor: cleanColour(raw.bannerTextColor),
     buttonColor: cleanColour(raw.buttonColor),
-    privacyPolicyUrl: cleanUrl(raw.privacyPolicyUrl),
+    // A blank URL falls back to the page picked as the privacy policy (Site pages), when there is one.
+    privacyPolicyUrl: cleanUrl(raw.privacyPolicyUrl) ?? cleanUrl(fallbackPrivacyPolicyUrl),
     cookieSettingsLabel: text(raw.cookieSettingsLabel, DEFAULT_CONSENT_TEXT.cookieSettingsLabel, 60),
     showRejectButton: raw.showRejectButton !== false,
     privacyPolicyLabel: text(raw.privacyPolicyLabel, DEFAULT_CONSENT_TEXT.privacyPolicyLabel, 60),

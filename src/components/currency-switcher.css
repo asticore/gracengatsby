@@ -1,0 +1,37 @@
+/* Currency switcher in the storefront header and cart. Dark theme only via [data-theme='dark']. */
+:root {
+  --currency-switcher-muted: #6b6558;
+  --currency-switcher-line: #d8d2c4;
+}
+
+[data-theme='dark'] {
+  --currency-switcher-muted: #a9a293;
+  --currency-switcher-line: #3a3630;
+}
+
+.currency-switcher {
+  display: grid;
+  gap: 2px;
+}
+
+.currency-switcher__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.currency-switcher__label select {
+  border: 1px solid var(--currency-switcher-line);
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+}
+
+.currency-switcher__note {
+  margin: 0;
+  color: var(--currency-switcher-muted);
+  font-size: 0.75rem;
+}

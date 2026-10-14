@@ -15,17 +15,11 @@ import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
+import { loadSiteDetails } from '@/features/site/details'
+import { formatDate, formatDateTime } from '@/features/site/format'
 import type { Event, EventRsvp, Media, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
-
-const dateFormatter = new Intl.DateTimeFormat('en-AU', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-})
 
 async function getEvent(slug: string) {
   const engine = await getEngine()
@@ -42,6 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const event = await getEvent(slug)
   if (!event) return {}
+  const details = await loadSiteDetails()
   return buildMetadata({
     title: event.title,
     // Event's generated type predates the seo group; the field exists at runtime.
@@ -54,7 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     contentType: 'event',
     tokens: {
       excerpt: event.summary,
-      date: new Date(event.startDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }),
+      date: formatDate(event.startDate, details),
     },
   })
 }
@@ -65,6 +60,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
 
   const { slug } = await params
   const event = await getEvent(slug)
+  const details = await loadSiteDetails()
 
   if (!event) {
     notFound()
@@ -102,7 +98,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
       <div className="grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">
         <div>
           <span className="text-[0.75rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">
-            {dateFormatter.format(new Date(event.startDate))}
+            {formatDateTime(event.startDate, details)}
           </span>
           <h1 className="text-[2.75rem]">{event.title}</h1>
           {event.location?.venueName && <p className="font-medium">{event.location.venueName}</p>}

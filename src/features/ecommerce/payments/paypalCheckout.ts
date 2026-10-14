@@ -148,6 +148,30 @@ export async function createPayPalCheckout(
   return { paypalOrderId: created.id, orderID: orderId, message: 'PayPal order created' }
 }
 
+/**
+ * Settles one order against a capture: finds the transaction, then saves the capture id, marks the order paid or
+ * holds it (settlePayPalCapture). Shared by the buyer's capture and the PayPal webhook, so both follow the same rules.
+ */
+export async function settleOrderCapture(engine: Engine, order: PayPalOrderRow & { id: number }, capture: () => Promise<PayPalCapture>): Promise<PayPalCaptureOutcome> {
+  const db = engine as unknown as Db
+  const txn = await db.find({ collection: 'transactions', where: { order: { equals: order.id }, paymentMethod: { equals: 'paypal' } }, limit: 1, depth: 0, overrideAccess: true })
+  const transactionId = txn.docs[0]?.id as number | undefined
+
+  const result = await settlePayPalCapture(order, {
+    capture,
+    saveCaptureId: async (captureId) => {
+      await db.update({ collection: 'orders', id: order.id, data: { paypalCaptureId: captureId }, overrideAccess: true })
+    },
+    markPaid: async (captureId) => {
+      await markOrderPaid(engine as never, order.id, { paymentIntentId: captureId, transactionId })
+    },
+    flagMismatch: (text) => flagMismatch(engine as never, order.id, text),
+  })
+  // `=== false` narrows here; a bare `!result.ok` does not, because this project runs with strictNullChecks off.
+  if (result.ok === false) return { ok: false, status: result.status, message: result.message }
+  return { ok: true, alreadyPaid: result.alreadyPaid, orderId: order.id, transactionId }
+}
+
 /** Captures the approved PayPal order for this cart and settles the shop order. Ids come from the browser; amounts never do. */
 export type PayPalCaptureOutcome = { ok: true; alreadyPaid: boolean; orderId: number; transactionId?: number } | { ok: false; status: number; message: string }
 
@@ -161,20 +185,5 @@ export async function capturePayPalCheckout(engine: Engine, args: { cartId: numb
   const paypal = settings.paypal
   if (!paypal?.clientId || !paypal.clientSecret) return { ok: false, status: 503, message: 'PayPal is not available right now.' }
   const adapter = createPayPalAdapter({ clientId: paypal.clientId, clientSecret: paypal.clientSecret, environment: paypal.environment }, options)
-  const txn = await db.find({ collection: 'transactions', where: { order: { equals: order.id }, paymentMethod: { equals: 'paypal' } }, limit: 1, depth: 0, overrideAccess: true })
-  const transactionId = txn.docs[0]?.id as number | undefined
-
-  const result = await settlePayPalCapture(order, {
-    capture: () => adapter.captureOrder(args.paypalOrderId),
-    saveCaptureId: async (captureId) => {
-      await db.update({ collection: 'orders', id: order.id, data: { paypalCaptureId: captureId }, overrideAccess: true })
-    },
-    markPaid: async (captureId) => {
-      await markOrderPaid(engine as never, order.id, { paymentIntentId: captureId, transactionId })
-    },
-    flagMismatch: (text) => flagMismatch(engine as never, order.id, text),
-  })
-  // `=== false` narrows here; a bare `!result.ok` does not, because this project runs with strictNullChecks off.
-  if (result.ok === false) return { ok: false, status: result.status, message: result.message }
-  return { ok: true, alreadyPaid: result.alreadyPaid, orderId: order.id, transactionId }
+  return settleOrderCapture(engine, order, () => adapter.captureOrder(args.paypalOrderId))
 }

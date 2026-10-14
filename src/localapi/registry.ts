@@ -211,6 +211,7 @@ import { EmailSettings } from '@/globals/EmailSettings'
 import { EmailTemplates } from '@/globals/EmailTemplates'
 import { EmailBrand } from '@/globals/EmailBrand'
 import { EmailSchedule } from '@/globals/EmailSchedule'
+import { GoogleConnection } from '@/globals/GoogleConnection'
 import { FaqSettings } from '@/globals/FaqSettings'
 import { Footer } from '@/globals/Footer'
 import { FormSettings } from '@/globals/FormSettings'
@@ -361,6 +362,7 @@ import {
   findEmailTemplates,
   findEmailBrand,
   findEmailSchedule,
+  findGoogleConnection,
   findEnrolmentByID,
   findEnrolmentsPaginated,
   findEventByID,
@@ -450,6 +452,7 @@ import {
   updateEmailTemplates,
   updateEmailBrand,
   updateEmailSchedule,
+  updateGoogleConnection,
   updateEnrolment,
   updateEvent,
   updateEventRSVP,
@@ -603,6 +606,7 @@ export const writeRegistry: {
     'email-templates': globalOps(findEmailTemplates, updateEmailTemplates),
     'email-brand': globalOps(findEmailBrand, updateEmailBrand),
     'email-schedule': globalOps(findEmailSchedule, updateEmailSchedule),
+    'google-connection': globalOps(findGoogleConnection, updateGoogleConnection),
     'shop-settings': globalOps(findShopSettings, updateShopSettings),
     'shop-extra-settings': globalOps(findShopExtraSettings, updateShopExtraSettings),
     'security-settings': globalOps(findSecuritySettings, updateSecuritySettings),
@@ -695,6 +699,7 @@ export const readRegistry: ReadRegistry = {
     'email-templates': globalReadEntry(EmailTemplates, findEmailTemplates),
     'email-brand': globalReadEntry(EmailBrand, findEmailBrand),
     'email-schedule': globalReadEntry(EmailSchedule, findEmailSchedule),
+    'google-connection': globalReadEntry(GoogleConnection, findGoogleConnection),
     'shop-settings': globalReadEntry(ShopSettings, findShopSettings),
     'shop-extra-settings': globalReadEntry(ShopExtraSettings, findShopExtraSettings),
     'security-settings': globalReadEntry(SecuritySettings, findSecuritySettings),
@@ -741,4 +746,4 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
 
 export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
-export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule,ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]
+export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

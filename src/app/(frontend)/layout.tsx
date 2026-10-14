@@ -25,7 +25,7 @@ import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
 import '@fontsource/inter/600.css'
 import React from 'react'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
@@ -40,6 +40,9 @@ import { SeoBodyScripts, SeoJsonLd, SeoScripts } from '@/features/seo'
 import { AdsRoot } from '@/features/ads/components/AdsRoot'
 import { AdPlacements } from '@/features/ads/components/AdPlacements'
 import { SpeedHead } from '@/features/speed'
+import { getSitePages, isSignedInAdmin } from '@/features/site/pages'
+import { BYPASS_COOKIE, shouldShowMaintenance } from '@/features/site/maintenance'
+import { MaintenanceScreen } from '@/features/site/MaintenanceScreen'
 import { buildFontCss, preloadLinks, remoteStylesheetUrls, resolveThemeFont } from '@/features/fonts/css'
 import { sanitizeInstalledFonts } from '@/features/fonts/installed'
 import type { InstalledFont } from '@/features/fonts/types'
@@ -173,6 +176,22 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     `--radius: ${RADIUS_VALUES[theme?.cornerStyle || 'soft']};`,
   ].join(' ')
 
+  // Maintenance mode: while it is on, visitors get the maintenance screen in place of the page. Read only
+  // when it is on, so the normal path costs nothing extra. Admin API routes, webhooks and feeds never reach
+  // this layout (they are route handlers or live outside the (frontend) group).
+  const sitePages = await getSitePages()
+  const maintenance = sitePages.maintenance
+  const showMaintenance = maintenance.enabled
+    ? shouldShowMaintenance({
+        enabled: true,
+        path: (await headers()).get('next-url') ?? '/',
+        cookie: (await cookies()).get(BYPASS_COOKIE)?.value ?? null,
+        token: maintenance.bypassToken,
+        isAdmin: maintenance.allowAdmins ? await isSignedInAdmin() : false,
+        allowAdmins: maintenance.allowAdmins,
+      })
+    : false
+
   return (
     <html
       lang="en"
@@ -181,6 +200,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     >
       <head>
         <SpeedHead />
+        {showMaintenance && <meta name="robots" content="noindex" />}
         {googleStylesheets.length > 0 && <link rel="preconnect" href="https://fonts.googleapis.com" />}
         {googleStylesheets.length > 0 && <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />}
         {usesFontsource && <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />}
@@ -213,7 +233,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             socials={header?.socials}
           />
           <AdPlacements position="header" />
-          <main>{children}</main>
+          <main>
+            {showMaintenance ? <MaintenanceScreen headline={maintenance.headline} message={maintenance.message} /> : children}
+          </main>
           <AdPlacements position="footer" />
           <Footer
             siteName={settings?.siteName || undefined}

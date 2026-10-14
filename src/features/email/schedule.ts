@@ -24,6 +24,10 @@ export const SCHEDULE_KEYS = [
   'approvalDecision',
   'backInStock',
   'lowStockAlert',
+  'subscriptionNew',
+  'subscriptionRenewal',
+  'subscriptionFailed',
+  'subscriptionCancelled',
 ] as const
 
 export type ScheduleKey = (typeof SCHEDULE_KEYS)[number]
@@ -42,6 +46,10 @@ export type EmailScheduleDoc = {
   approvalDecision?: Switch
   backInStock?: Switch
   lowStockAlert?: Switch
+  subscriptionNew?: Switch
+  subscriptionRenewal?: Switch
+  subscriptionFailed?: Switch
+  subscriptionCancelled?: Switch
   quietHours?: { enabled?: boolean | null; start?: string | null; end?: string | null } | null
 }
 
@@ -58,6 +66,10 @@ export const SCHEDULE_TEMPLATES: Readonly<Record<string, ScheduleKey>> = {
   'approval.decision': 'approvalDecision',
   'stock.back-in-stock': 'backInStock',
   'stock.alert': 'lowStockAlert',
+  'subscription.new': 'subscriptionNew',
+  'subscription.renewal': 'subscriptionRenewal',
+  'subscription.failed': 'subscriptionFailed',
+  'subscription.cancelled': 'subscriptionCancelled',
 }
 
 const DEFAULT_DAYS_BEFORE = 7

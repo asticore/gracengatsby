@@ -66,6 +66,7 @@ export const RESOURCES = [
   'settings:email-templates',
   'settings:email-brand',
   'settings:email-schedule',
+  'settings:google-connection',
   'settings:media-settings',
   'settings:member-settings',
   'settings:payment-settings',
@@ -125,6 +126,7 @@ export type PermissionOverrides = {
  */
 export const SECRET_RESOURCES: Resource[] = [
   'settings:integrations',
+  'settings:google-connection',
   'forms.integrations',
   'settings:security-settings',
   'settings:payment-settings',
@@ -639,6 +641,7 @@ export const PERMISSION_CATEGORIES: Array<{
       { resource: 'settings:email-templates', label: 'Email templates', actions: ['read', 'update'] },
       { resource: 'settings:email-brand', label: 'Email design', actions: ['read', 'update'] },
       { resource: 'settings:email-schedule', label: 'When emails are sent', actions: ['read', 'update'] },
+      { resource: 'settings:google-connection', label: 'Google connection', description: 'Always administrators only.', actions: ['read', 'update'] },
       { resource: 'settings:media-settings', label: 'Media settings', actions: ['read', 'update'] },
       { resource: 'settings:member-settings', label: 'Member settings', actions: ['read', 'update'] },
       { resource: 'settings:payment-settings', label: 'Payment settings', actions: ['read', 'update'] },

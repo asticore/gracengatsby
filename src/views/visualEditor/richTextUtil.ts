@@ -26,29 +26,44 @@ type LexicalRoot = {
   }
 }
 
-/**
- * True when a Lexical value carries formatting the plain-text bridge above
- * cannot round-trip - bold/italic/underline/etc. (a non-zero `format` bitmask
- * on a text node), or any node type besides a plain paragraph of text (a
- * heading, list, link, quote, code block, and so on).
- *
- * Used to stop `plainTextToLexical` from silently flattening a value that
- * already has real formatting: a field that fails this check is safe to
- * edit as plain text and write back losslessly, one that passes it is not.
- */
-export function hasRichFormatting(value: unknown): boolean {
-  const root = (value as LexicalRoot | null | undefined)?.root
-  if (!root?.children?.length) return false
-  return root.children.some(nodeHasFormatting)
+/** Shown on a rich-text field the canvas can not represent without losing data. */
+export const RICH_TEXT_NOTICE = 'This text uses formatting the visual editor can not edit. Edit it in the normal page editor.'
+
+const isDefault = (value: unknown, fallback: unknown): boolean => value === undefined || value === fallback
+
+function isPlainText(node: LexicalNode): boolean {
+  return (
+    node?.type === 'text' &&
+    typeof node.text === 'string' &&
+    isDefault(node.format, 0) &&
+    isDefault(node.style, '') &&
+    isDefault(node.mode, 'normal')
+  )
 }
 
-function nodeHasFormatting(node: LexicalNode): boolean {
-  if (node.type === 'text') {
-    return typeof node.format === 'number' && node.format !== 0
-  }
-  if (node.type !== 'paragraph') return true
-  const children = (node.children as LexicalNode[] | undefined) || []
-  return children.some(nodeHasFormatting)
+function isPlainParagraph(node: LexicalNode): boolean {
+  if (node?.type !== 'paragraph' || !isDefault(node.format, '') || !isDefault(node.indent, 0)) return false
+  return Array.isArray(node.children) && (node.children as LexicalNode[]).every(isPlainText)
+}
+
+/**
+ * True only when plainTextToLexical(lexicalToPlainText(value)) gives back the
+ * same text and the same structure. That means every node is a plain paragraph
+ * of unformatted text (no headings, lists, links, bold, alignment, line breaks),
+ * no paragraph is empty, and no text has edge spaces or a forced blank line that
+ * the blank-line split would change. A value that fails this check must be shown
+ * read-only: writing it back from the canvas would silently change it.
+ */
+export function canEditAsPlainText(value: unknown): boolean {
+  if (value === null || value === undefined) return true
+  const root = (value as LexicalRoot).root
+  if (!root || root.type !== 'root' || !Array.isArray(root.children)) return false
+  const paragraphs = root.children
+  if (!paragraphs.every(isPlainParagraph)) return false
+  const texts = paragraphs.map(flattenTextNode)
+  // The editor's own empty value is one empty paragraph (or none at all).
+  if (texts.every((text) => text === '')) return paragraphs.length <= 1
+  return texts.every((text) => text.length > 0 && text === text.trim() && !/\n\s*\n/.test(text))
 }
 
 export function lexicalToPlainText(value: unknown): string {

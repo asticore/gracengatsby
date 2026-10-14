@@ -19,6 +19,9 @@ import { resolveCartLine, type CatalogueProduct } from '../catalogue'
 
 import { giftCardLine, type CartItemInput } from '../server/pricing'
 import { loadPreordersEnabled } from '../server/shopExtra'
+import { loadShopRulesConfig } from '../server/pricingRules'
+import { normaliseAddOnDefs, parseAddOnInputs, priceAddOns, storeAddOnChoices } from '../lib/addOns'
+import { resolveBundle } from '../server/bundles'
 import { normaliseGiftCardSettings } from '../lib/storedValue'
 
 type CartItem = {
@@ -32,6 +35,8 @@ type CartItem = {
   giftSenderName?: string | null
   giftMessage?: string | null
   giftSendAt?: string | null
+  /** Product add-on answers, stored as JSON text once the hook has checked them. */
+  addOns?: unknown
 }
 
 const productIdOf = (item: CartItem): number | null | undefined =>
@@ -62,8 +67,10 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
     const engine = (req as { engine: { findByID: (args: { collection: string; id: number; depth?: number; overrideAccess?: boolean }) => Promise<unknown>; findGlobal: (args: { slug: string; depth?: number; overrideAccess?: boolean }) => Promise<unknown> } }).engine
     const before = ((originalDoc as { items?: CartItem[] } | undefined)?.items ?? []).map((item) => `${productIdOf(item)}|${item.variation ?? ''}|${item.quantity}`)
     const seen = new Map<string, number>()
+    const reservedParts = new Map<string, number>() // component stock promised to bundle lines in this cart
     const errors: Array<{ path: string; message: string }> = []
     const preordersOn = await loadPreordersEnabled(engine)
+    const addOnsOn = (await loadShopRulesConfig(engine as never)).addOnsOn
     for (const [index, item] of items.entries()) {
       const productId = productIdOf(item)
       if (!productId || !item.quantity) continue
@@ -79,12 +86,30 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
         }
         continue
       }
+      if (product && (product as { productType?: string }).productType === 'bundle') {
+        const bundle = await resolveBundle(engine as never, product as never, item.quantity, new Date(), reservedParts, seen.get(`${productId}|`) ?? 0, preordersOn)
+        seen.set(`${productId}|`, (seen.get(`${productId}|`) ?? 0) + item.quantity)
+        if (bundle.ok) {
+          subtotal += (bundle.unitCents * item.quantity) / 100
+          continue
+        }
+        const unchangedBundle = before.includes(`${productId}|${item.variation ?? ''}|${item.quantity}`)
+        if (!unchangedBundle) errors.push({ path: `items.${index}`, message: (bundle as { error: string }).error })
+        continue
+      }
       const key = `${productId}|${item.variation ?? ''}`
       const already = seen.get(key) ?? 0
       seen.set(key, already + item.quantity)
       const line = resolveCartLine(product, item.variation ?? null, item.quantity, new Date(), already, item.priceCents ?? null, preordersOn)
       if (line.ok) {
-        subtotal += line.unitPrice * item.quantity
+        // Add-on answers are checked against the product and priced; only the accepted answers are kept on the line.
+        const addOnPriced = priceAddOns(addOnsOn ? normaliseAddOnDefs((product as { addOns?: unknown } | null)?.addOns) : [], addOnsOn ? parseAddOnInputs(item.addOns) : [])
+        if (!addOnPriced.ok) {
+          errors.push({ path: `items.${index}`, message: addOnPriced.error ?? 'Please check the options you chose.' })
+          continue
+        }
+        item.addOns = storeAddOnChoices(addOnPriced.choices)
+        subtotal += line.unitPrice * item.quantity + (addOnPriced.cents * item.quantity) / 100
         continue
       }
       const unchanged = before.includes(`${productId}|${item.variation ?? ''}|${item.quantity}`)

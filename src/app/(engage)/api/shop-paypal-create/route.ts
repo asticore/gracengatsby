@@ -5,6 +5,7 @@ import { clientKey, hit } from '@/features/security/rateLimit'
 import { CheckoutError } from '@/features/ecommerce/server/pricing'
 import { createPayPalCheckout } from '@/features/ecommerce/payments/paypalCheckout'
 import { PayPalError } from '@/features/ecommerce/payments/paypalAdapter'
+import { loadShopCurrency } from '@/features/ecommerce/lib/shopCurrency'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,7 +46,7 @@ export async function POST(request: Request): Promise<Response> {
       {
         engine,
         cart: cart as never,
-        currency: 'AUD', // the shop sells in AUD only; never the client's currency
+        currency: await loadShopCurrency(engine as never), // the shop's currency from Shop settings; never the client's
         customerEmail,
         billingAddress: obj(body.billingAddress),
         shippingAddress: obj(body.shippingAddress),

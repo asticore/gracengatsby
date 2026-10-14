@@ -578,12 +578,27 @@ describe('localapi/rest - payments: Stripe cart checkout', () => {
     // closing the last real blocker to removing the real `shopPlugin()`
     // call. See stripeAdapter.ts's header for the full history.
 
-    it('200 {received: true}, no crash, when STRIPE_WEBHOOK_SECRET/STRIPE_SECRET_KEY are not configured (this sandbox\'s default) - matches the real handler\'s own early-exit shape, never falls through', async () => {
-      const engine = makeMockEngine()
-      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}), ['payments', 'stripe', 'webhooks'], engine)
-      expect(res).not.toBeNull()
+    it('400 with a logged error (not a silent 200) when neither the env vars nor Shop settings > Payments hold the Stripe keys', async () => {
+      vi.stubEnv('STRIPE_WEBHOOK_SECRET', '')
+      vi.stubEnv('STRIPE_SECRET_KEY', '')
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const engine = makeMockEngine({ findGlobal: vi.fn().mockResolvedValue({}) })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}, { 'stripe-signature': 'sig_1' }), ['payments', 'stripe', 'webhooks'], engine)
+      expect(res!.status).toBe(400)
+      expect(await res!.json()).toEqual({ message: 'Stripe webhooks are not configured.' })
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('the webhook signing secret and the secret key is not set'))
+      errorSpy.mockRestore()
+    })
+
+    it('uses the webhook signing secret and secret key saved in Shop settings > Payments when the env vars are unset', async () => {
+      vi.stubEnv('STRIPE_WEBHOOK_SECRET', '')
+      vi.stubEnv('STRIPE_SECRET_KEY', '')
+      const fakeStripe = makeFakeStripe({ webhooks: { constructEvent: vi.fn().mockReturnValue({ type: 'payment_intent.created', data: { object: {} } }) } })
+      vi.mocked(Stripe).mockImplementation(function () { return fakeStripe } as unknown as typeof Stripe)
+      const engine = makeMockEngine({ findGlobal: vi.fn().mockResolvedValue({ stripe: { secretKey: 'sk_db', webhookSigningSecret: 'whsec_db' } }) })
+      const res = await handleRestRequest(req('POST', 'http://x/api/payments/stripe/webhooks', {}, { 'stripe-signature': 'sig_db' }), ['payments', 'stripe', 'webhooks'], engine)
       expect(res!.status).toBe(200)
-      expect(await res!.json()).toEqual({ received: true })
+      expect(fakeStripe.webhooks.constructEvent).toHaveBeenCalledWith(expect.any(String), 'sig_db', 'whsec_db')
     })
 
     it('200 and calls the matching membershipWebhooks handler for a validly-signed event', async () => {

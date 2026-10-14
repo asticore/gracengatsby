@@ -349,6 +349,11 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
     // Wave 15 (20261024_400000_email_templates): the editable email wording table.
     expect(await columnsOf('eg_email_templates')).toEqual(expect.arrayContaining(['account_reset_subject', 'account_reset_body', 'rsvp_confirmation_subject', 'rsvp_confirmation_body', 'updated_at', 'created_at']))
+
+    // Wave 16 (20261025_100000_communication_connections): provider keys and SMS settings on Integrations.
+    expect(await columnsOf('eg_integrations')).toEqual(
+      expect.arrayContaining(['communications_default_provider', 'communications_fallback_provider', 'communications_resend_api_key', 'communications_brevo_api_key', 'communications_mandrill_api_key', 'communications_sms_twilio_auth_token', 'communications_sms_test_phone']),
+    )
   })
 
   it('adds the edit screens columns (trash, excerpt, sticky, reading time, recurrence, tiers, check-in)', async () => {
@@ -521,6 +526,41 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(tables).toContain('eg_email_log')
     expect(await columnsOf('eg_email_log')).toEqual(
       expect.arrayContaining(['to', 'subject', 'template', 'provider', 'status', 'error', 'html', 'text', 'resent_from', 'updated_at', 'created_at']),
+    )
+  })
+
+  it('creates the when-emails-are-sent table and the event reminder columns', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_email_schedule')
+    expect(await columnsOf('eg_email_schedule')).toEqual(
+      expect.arrayContaining([
+        'account_welcome_enabled',
+        'account_reset_enabled',
+        'membership_renewal_days_before',
+        'event_reminder_enabled',
+        'event_reminder_hours_before',
+        'quiet_hours_enabled',
+        'quiet_hours_start',
+        'quiet_hours_end',
+      ]),
+    )
+    expect(await columnsOf('eg_event_rsvps')).toEqual(expect.arrayContaining(['reminder_sent_at']))
+    expect(await columnsOf('eg_email_templates')).toEqual(expect.arrayContaining(['event_reminder_subject', 'event_reminder_body']))
+  })
+
+  it('creates the email design columns and the email design brand table', async () => {
+    const designColumnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await designColumnsOf('eg_email_templates')).toEqual(
+      expect.arrayContaining(['account_reset_design', 'account_welcome_design', 'rsvp_confirmation_design', 'event_reminder_design']),
+    )
+    expect(await designColumnsOf('eg_email_brand')).toEqual(
+      expect.arrayContaining(['enabled', 'logo_id', 'logo_width', 'accent', 'text_color', 'background', 'content_background', 'font_stack', 'button_radius', 'footer_text', 'address']),
     )
   })
 

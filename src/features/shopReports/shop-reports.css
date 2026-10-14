@@ -1,0 +1,146 @@
+/* Shop reports screen. Dark theme only via [data-theme='dark']. */
+:root {
+  --shop-reports-bar: #8a6d3b;
+  --shop-reports-line: #d8d2c4;
+  --shop-reports-muted: #6b6558;
+  --shop-reports-card: #ffffff;
+  --shop-reports-error: #a33a2b;
+}
+
+[data-theme='dark'] {
+  --shop-reports-bar: #c8a96a;
+  --shop-reports-line: #3a3630;
+  --shop-reports-muted: #a9a293;
+  --shop-reports-card: #1d1b18;
+  --shop-reports-error: #f08a7a;
+}
+
+.shop-reports {
+  display: grid;
+  gap: 16px;
+}
+
+.shop-reports__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.shop-reports__field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.shop-reports__range,
+.shop-reports__empty {
+  color: var(--shop-reports-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.shop-reports__error {
+  color: var(--shop-reports-error);
+  margin: 0;
+}
+
+.shop-reports__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.shop-reports__kpi {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--shop-reports-line);
+  background: var(--shop-reports-card);
+}
+
+.shop-reports__kpi-label,
+.shop-reports__kpi-extra {
+  color: var(--shop-reports-muted);
+  font-size: 0.8rem;
+}
+
+.shop-reports__kpi-value {
+  font-size: 1.25rem;
+}
+
+.shop-reports__chart-card {
+  border: 1px solid var(--shop-reports-line);
+  padding: 12px;
+  background: var(--shop-reports-card);
+}
+
+.shop-reports__chart-card h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.shop-reports__svg {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
+
+.shop-reports__bar {
+  fill: var(--shop-reports-bar);
+}
+
+.shop-reports__axis {
+  fill: var(--shop-reports-muted);
+  font-size: 10px;
+}
+
+.shop-reports__table-wrap {
+  overflow-x: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.shop-reports__table-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.shop-reports__csv {
+  font-size: 0.85rem;
+}
+
+.shop-reports__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.shop-reports__table th,
+.shop-reports__table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--shop-reports-line);
+}
+
+.shop-reports__pager {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.shop-reports__pairs {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.shop-reports__pairs dt {
+  color: var(--shop-reports-muted);
+}
+
+.shop-reports__pairs dd {
+  margin: 0;
+}

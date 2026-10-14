@@ -39,6 +39,7 @@ import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { flattenDoc, fieldLabel, humanizeName } from '@/admin/fields/shared'
 import { DocumentPanel, type DocumentPanelInfo } from './DocumentPanel'
 import { PageSpeedCard } from '@/features/pagespeed/ui/PageSpeedCard'
+import { PageGoogleStatsCard } from '@/features/google/dashboard/PageGoogleStatsCard'
 import { isPageSpeedCollection } from '@/features/pagespeed/types'
 import { SeoCard } from './SeoCard'
 import { TrashBanner } from '@/features/editScreens/admin/TrashBanner'
@@ -287,6 +288,7 @@ export const EditForm: React.FC<EditFormProps> = ({
                   </>
                 )}
                 {isPageSpeedCollection(collectionSlug) && <PageSpeedCard collectionSlug={collectionSlug} id={id} />}
+                {isPageSpeedCollection(collectionSlug) && <PageGoogleStatsCard collectionSlug={collectionSlug} id={id} />}
                 {visualBlocksField && <PageContentCard blocksField={visualBlocksField} count={visualBlocksCount} isNew={id === undefined} />}
               </div>
             </div>

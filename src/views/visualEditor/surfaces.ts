@@ -1,5 +1,5 @@
 /** Which collections/globals the visual editor can open, and which field holds their blocks. */
-export type SurfaceConfig = {
+type SurfaceConfig = {
   kind: 'collection' | 'global'
   slug: string
   label: string

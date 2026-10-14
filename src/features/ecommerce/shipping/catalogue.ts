@@ -74,7 +74,8 @@ export const CARRIERS: CarrierDef[] = [
       { key: 'apiSecret', label: 'API secret', secret: true, help: 'From the same app.' },
       { key: 'accountNumber', label: 'DHL account number', help: 'Your DHL Express account number.' },
     ],
-    live: { rates: false, labels: false },
+    labelKeys: ['apiKey', 'apiSecret', 'accountNumber'],
+    live: { rates: true, labels: true },
   },
   {
     id: 'ups',
@@ -88,7 +89,7 @@ export const CARRIERS: CarrierDef[] = [
       { key: 'clientSecret', label: 'Client secret', secret: true, help: 'From the same app.' },
       { key: 'accountNumber', label: 'UPS account number', help: 'Your six-character UPS account number.' },
     ],
-    live: { rates: false, labels: false },
+    live: { rates: true, labels: true },
   },
   {
     id: 'fedex',
@@ -102,7 +103,7 @@ export const CARRIERS: CarrierDef[] = [
       { key: 'secretKey', label: 'Secret key', secret: true, help: 'From the same project.' },
       { key: 'accountNumber', label: 'FedEx account number', help: 'Your nine-digit FedEx account number.' },
     ],
-    live: { rates: false, labels: false },
+    live: { rates: true, labels: true },
   },
   {
     id: 'shipstation',
@@ -110,12 +111,12 @@ export const CARRIERS: CarrierDef[] = [
     summary: 'A shipping hub: one account that buys labels from many carriers.',
     signupUrl: 'https://www.shipstation.com/',
     docsUrl: 'https://www.shipstation.com/docs/api/',
-    keysHelp: 'In ShipStation open Account Settings > API Settings and generate an API key and secret.',
+    keysHelp: 'In ShipStation open Account Settings > API Settings and generate an API key and secret. Connect your carriers under Settings > Carriers in ShipStation first: those carriers are the ones offered at checkout and for labels.',
     fields: [
       { key: 'apiKey', label: 'API key', secret: true, help: 'From ShipStation Account Settings > API Settings.' },
       { key: 'apiSecret', label: 'API secret', secret: true, help: 'Shown once when the key is generated.' },
     ],
-    live: { rates: false, labels: false },
+    live: { rates: true, labels: true },
   },
   {
     id: 'shippit',

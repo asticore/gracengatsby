@@ -3,8 +3,11 @@ import { getFeatureFlags } from '@/utilities/features'
 
 import type { EmailSettingsDoc, OutgoingEmail, SendEmailArgs, SendEmailResult } from './types'
 
-import { isSupportedProvider, resolveProvider } from './providers'
+import { loadEmailSettings } from './connectionLoad'
+import { planAttempts, sendWithFailover } from './failover'
+import { isSupportedProvider } from './providers'
 import { recordEmailSend } from './emailLogStore'
+import { SCHEDULE_GLOBAL_SLUG, isTemplateEnabled, scheduleKeyFor, type EmailScheduleDoc } from './schedule'
 
 export type { SendEmailArgs, SendEmailResult, EmailProviderKey } from './types'
 
@@ -98,7 +101,9 @@ const deliverEmail = async (args: SendEmailArgs): Promise<SendEmailResult> => {
       }
     }
 
-    const settings = (await engine.findGlobal({ slug: 'email-settings', depth: 0 })) as EmailSettingsDoc
+    // Keys come from the Integrations page (communications group), with the old
+    // Email settings fields behind them for sites that have not re-saved yet.
+    const settings: EmailSettingsDoc = await loadEmailSettings(engine as unknown as Parameters<typeof loadEmailSettings>[0])
 
     const provider = text(settings.provider)
     if (!isSupportedProvider(provider)) {
@@ -116,28 +121,29 @@ const deliverEmail = async (args: SendEmailArgs): Promise<SendEmailResult> => {
       return { ok: false, reason: prepared.reason, error: prepared.error, provider }
     }
 
-    const resolved = resolveProvider(provider, settings)
-    if (!resolved.send) {
+    // Default first; the fallback is tried only after a transient failure.
+    const plan = planAttempts(settings)
+    if (plan.attempts.length === 0) {
       return {
         ok: false,
         reason: 'not-configured',
         provider,
-        error: `Still missing: ${resolved.missing.join(', ')}.`,
+        error: `Still missing: ${plan.missing.join(', ')}.`,
       }
     }
 
-    const response = await resolved.send(prepared.message)
+    const result = await sendWithFailover(prepared.message, plan.attempts)
 
-    if (!response.ok) {
+    if (!result.ok) {
       logger.error(
-        { provider, status: response.status, reason: response.error, to: prepared.message.to.length },
+        { provider: result.provider, status: result.status, reason: result.error, to: prepared.message.to.length },
         'Email provider refused the message',
       )
-      return { ok: false, reason: 'provider-rejected', provider, error: response.error, status: response.status }
+      return result
     }
 
-    logger.info({ provider, id: response.id, to: prepared.message.to.length }, 'Email sent')
-    return { ok: true, provider, id: response.id }
+    logger.info({ provider: result.provider, id: result.id, to: prepared.message.to.length }, 'Email sent')
+    return result
   } catch (error) {
     // The adapters already convert their own failures, so reaching here means
     // something upstream broke - reading settings or the flags. Still a result,
@@ -154,9 +160,30 @@ const deliverEmail = async (args: SendEmailArgs): Promise<SendEmailResult> => {
  * a send the feature has switched off is not logged at all.
  */
 export const sendEmail = async (args: SendEmailArgs): Promise<SendEmailResult> => {
-  const result = await deliverEmail(args)
+  const result: SendEmailResult = (await scheduleHolds(args))
+    ? { ok: false, reason: 'turned-off', error: 'Turned off under Settings > Communication > When emails are sent.' }
+    : await deliverEmail(args)
   await recordEmailSend(args, result)
   return result
+}
+
+/**
+ * True when the `email-schedule` switch for this kind of email is off. Only the
+ * emails the schedule governs are read at all. A schedule that cannot be read
+ * falls back to the defaults, so an unreadable row never sends an email that is
+ * switched off, and never blocks a password reset.
+ */
+const scheduleHolds = async (args: SendEmailArgs): Promise<boolean> => {
+  const key = scheduleKeyFor(args.template, args.resentFrom)
+  if (!key) return false
+  let schedule: EmailScheduleDoc | null = null
+  try {
+    const engine = await getEngine()
+    schedule = (await engine.findGlobal({ slug: SCHEDULE_GLOBAL_SLUG, depth: 0 })) as EmailScheduleDoc
+  } catch {
+    schedule = null
+  }
+  return !isTemplateEnabled(schedule, key)
 }
 
 /**

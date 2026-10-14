@@ -8,6 +8,8 @@ type SocialLink = { platform?: string | null; url?: string | null }
 export const Footer: React.FC<{
   siteName?: string
   logoUrl?: string | null
+  logoWidth?: number | null
+  logoHeight?: number | null
   showLogo?: boolean
   bottomText?: string
   columns?: FooterColumn[]
@@ -20,6 +22,8 @@ export const Footer: React.FC<{
 }> = ({
   siteName = 'Grace & Gatsby',
   logoUrl,
+  logoWidth,
+  logoHeight,
   showLogo = true,
   bottomText = 'A curated boutique for the modern romantic - considered pieces, small-batch goods, and evenings worth dressing up for.',
   columns = [],
@@ -54,8 +58,9 @@ export const Footer: React.FC<{
       >
         <div>
           {showLogo && logoUrl ? (
+            // Explicit size keeps the footer from jumping when the logo arrives. Falls back to a typical logo shape for old media.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={siteName} className="max-h-10 w-auto" />
+            <img src={logoUrl} alt={siteName} width={logoWidth || 160} height={logoHeight || 40} className="max-h-10 w-auto" />
           ) : (
             <h2 className="text-[1.75rem]">{siteName}</h2>
           )}

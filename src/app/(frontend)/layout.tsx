@@ -223,6 +223,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           <Header
             siteName={settings?.siteName || undefined}
             logoUrl={logo?.url || undefined}
+            logoWidth={logo?.width || undefined}
+            logoHeight={logo?.height || undefined}
             showLogo={header?.showLogo !== false}
             navLinks={navLinks}
             sticky={header?.sticky !== false}
@@ -240,6 +242,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           <Footer
             siteName={settings?.siteName || undefined}
             logoUrl={logo?.url || undefined}
+            logoWidth={logo?.width || undefined}
+            logoHeight={logo?.height || undefined}
             showLogo={footer?.showLogo !== false}
             bottomText={footer?.bottomText || undefined}
             columns={footerColumns}

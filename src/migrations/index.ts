@@ -65,8 +65,10 @@ import * as migration_20261025_200000_email_schedule from './20261025_200000_ema
 import * as migration_20261025_300000_email_designs from './20261025_300000_email_designs';
 import * as migration_20261026_100000_speed_extras from './20261026_100000_speed_extras';
 import * as migration_20261026_400000_error_log from './20261026_400000_error_log';
+import * as migration_20261027_100000_google_connection from './20261027_100000_google_connection';
 import * as migration_20261026_300000_cron_runs from './20261026_300000_cron_runs';
 import * as migration_20261026_200000_speed_cache_rules from './20261026_200000_speed_cache_rules';
+import * as migration_20261027_300000_refund_lines from './20261027_300000_refund_lines';
 import * as migration_20261024_100000_site_details from './20261024_100000_site_details';
 import * as migration_20261024_300000_email_log from './20261024_300000_email_log';
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
@@ -431,5 +433,15 @@ export const migrations = [
     up: migration_20261026_200000_speed_cache_rules.up,
     down: migration_20261026_200000_speed_cache_rules.down,
     name: '20261026_200000_speed_cache_rules',
+  },
+  {
+    up: migration_20261027_100000_google_connection.up,
+    down: migration_20261027_100000_google_connection.down,
+    name: '20261027_100000_google_connection',
+  },
+  {
+    up: migration_20261027_300000_refund_lines.up,
+    down: migration_20261027_300000_refund_lines.down,
+    name: '20261027_300000_refund_lines',
   },
 ];

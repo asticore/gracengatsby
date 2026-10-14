@@ -419,6 +419,7 @@ async function sendSetPasswordEmail(engine: Engine, email: string, origin: strin
   const { sendEmail } = await import('@/features/email')
   const result = await sendEmail({
     to: email,
+    template: 'account.set-password',
     subject: 'Set your password',
     text: body,
     html: `${body
@@ -508,4 +509,5 @@ async function importMediaDetails(ctx: RunContext, report: SectionReport): Promi
     }
   }
 }
+
 

@@ -116,6 +116,9 @@ describe('Settings Pages Configuration', () => {
       'form-settings',
       'backup-settings',
       'integrations',
+      'site-details',
+      'site-pages',
+      'email-templates',
     ]
 
     it('covers all old setting slugs exactly once (excluding header/footer)', () => {

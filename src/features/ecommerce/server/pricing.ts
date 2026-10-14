@@ -9,6 +9,7 @@ import type { ShippingAddress, ShippingOption, ShippingZone } from '../lib/shipp
 import { DEFAULT_TAX_SETTINGS, type TaxClass, type TaxRate, type TaxSettings } from '../lib/tax'
 import { fetchLiveRates, normaliseShippingConfig } from '../shipping/registry'
 import { computeOrderTotals, type OrderTotals, type PricedLine } from '../lib/totals'
+import { loadPreordersEnabled } from './shopExtra'
 
 type Doc = Record<string, unknown>
 export type PricingEngine = {
@@ -110,6 +111,7 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
   const lines: PricedLine[] = []
   let giftSettings: ReturnType<typeof normaliseGiftCardSettings> | null = null
   const inCart = new Map<string, number>() // the same product listed twice must be available for the sum
+  const preordersOn = await loadPreordersEnabled(engine) // one read per cart, shop-wide switch
   for (const [i, item] of items.entries()) {
     const productId = idOf(item.product)
     if (!productId) continue
@@ -120,7 +122,7 @@ export async function loadPricedLines(engine: PricingEngine, items: CartItemInpu
       continue
     }
     const stockKey = `${productId}:${item.variation ?? ''}`
-    const resolved = resolveCartLine(product, item.variation ?? null, quantity, now, inCart.get(stockKey) ?? 0, item.priceCents ?? null)
+    const resolved = resolveCartLine(product, item.variation ?? null, quantity, now, inCart.get(stockKey) ?? 0, item.priceCents ?? null, preordersOn)
     inCart.set(stockKey, (inCart.get(stockKey) ?? 0) + (Number.isInteger(quantity) ? quantity : 0))
     let unitPrice: number
     let title: string

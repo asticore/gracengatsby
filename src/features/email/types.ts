@@ -16,6 +16,10 @@ export type SendEmailArgs = {
   text?: string
   /** Overrides the reply-to address configured in settings, when set. */
   replyTo?: string
+  /** Which kind of email this is, as it appears in the email log (such as 'order.completed'). Defaults to 'other'. */
+  template?: string
+  /** Set when this message is a resend of an earlier log entry. */
+  resentFrom?: number
 }
 
 /**

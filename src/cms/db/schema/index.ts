@@ -195,7 +195,7 @@ export const eventsVersions = generateVersionsTable(Events, eventsGenerated.tabl
  */
 function resolveJoinTargetTable(slug: string): AnySQLiteTable {
   if (slug === EventRSVPs.slug) return eventRSVPs
-  throw new Error(`cms/db/schema: no known join target table for collection "${slug}" - add it to resolveJoinTargetTable in schema/index.ts.`)
+  throw new Error(`cms/db/schema: no known table for join target collection "${slug}" - add it to resolveJoinTargetTable in schema/index.ts.`)
 }
 
 export const eventsJoinFields = Object.fromEntries(

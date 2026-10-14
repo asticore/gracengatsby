@@ -118,12 +118,17 @@ export async function notifySubmitted({
   if (settings.notifyReviewers) {
     for (const address of await reviewerAddresses(engine, collection, requesterId, workflow ? workflow.steps[0].approverRoles : null)) addresses.add(address)
   }
-  const noun = APPROVAL_SINGULAR[collection]
-  const subject = `Review requested: ${title}`
   const waiting = workflow ? `\n\n${describeAwaiting(workflow, 0)}` : ''
-  const text = `${requesterName} sent this ${noun} for review: ${title}${waiting}\n\nOpen it to approve or ask for changes:\n${origin}/admin/collections/${collection}/${id}`
+  const { renderEmailTemplate } = await import('@/features/email/templateLoad')
+  const mail = await renderEmailTemplate('approvalSubmitted', {
+    requesterName,
+    noun: APPROVAL_SINGULAR[collection],
+    title,
+    waiting,
+    link: `${origin}/admin/collections/${collection}/${id}`,
+  }, engine as never)
   const sendEmail = await loadSender()
-  await Promise.all([...addresses].map((to) => sendEmail({ to, subject, text })))
+  await Promise.all([...addresses].map((to) => sendEmail({ to, subject: mail.subject, text: mail.text })))
   return [...addresses]
 }
 
@@ -154,12 +159,17 @@ export async function notifyRequester({
   if (!email) return
 
   const verb = outcome === 'approved' ? 'approved' : outcome === 'published' ? 'approved and published' : 'sent back with changes requested'
-  const subject = `${title} was ${verb}`
-  const lines = [`${reviewerName} ${verb} this ${APPROVAL_SINGULAR[collection]}: ${title}.`]
-  if (note) lines.push(`Their note:\n${note}`)
-  lines.push(`Open it here:\n${origin}/admin/collections/${collection}/${id}`)
+  const { renderEmailTemplate } = await import('@/features/email/templateLoad')
+  const mail = await renderEmailTemplate('approvalDecision', {
+    reviewerName,
+    verb,
+    noun: APPROVAL_SINGULAR[collection],
+    title,
+    note: note ? `\n\nTheir note:\n${note}` : '',
+    link: `${origin}/admin/collections/${collection}/${id}`,
+  }, engine as never)
   const sendEmail = await loadSender()
-  await sendEmail({ to: email, subject, text: lines.join('\n\n') })
+  await sendEmail({ to: email, subject: mail.subject, text: mail.text })
 }
 
 /** A workflow step was approved and the document moved on: tell the approvers of the step now waiting. */

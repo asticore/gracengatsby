@@ -32,7 +32,8 @@ export const HeroBlock: React.FC<Props> = ({
     <section className="hero built-block built-block--hero">
       {image?.url && (
         <div className="built-block--hero__image">
-          <Image src={image.url} alt={image.alt || heading} fill style={{ objectFit: 'cover' }} />
+          {/* Heroes sit above the fold, so they load eagerly and get a full-width size hint. */}
+          <Image src={image.url} alt={image.alt || heading} fill priority sizes="100vw" style={{ objectFit: 'cover' }} />
         </div>
       )}
       <div className="hero__inner">

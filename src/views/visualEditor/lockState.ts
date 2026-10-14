@@ -71,7 +71,7 @@ export function effectiveLock(blocks: SectionNode[], path: NodePath, locks: Lock
   return combine(found)
 }
 
-export type CanvasLockInfo = { mode: LockMode; blocked: boolean }
+type CanvasLockInfo = { mode: LockMode; blocked: boolean }
 
 /** Lock state of every locked node (and everything inside it), keyed by pathKey, for the canvas. */
 export function lockMapForCanvas(blocks: SectionNode[], locks: Locks, user: LockUser): Record<string, CanvasLockInfo> {

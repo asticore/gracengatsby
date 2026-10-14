@@ -11,6 +11,7 @@ describe('navStructure', () => {
       'Members',
       'Courses',
       'Ads',
+      'SEO',
       'Settings',
     ]
 
@@ -24,13 +25,12 @@ describe('navStructure', () => {
     }
   })
 
-  it('Settings group should have the 8 settings views and then the Roles view, in order', () => {
+  it('Settings group should have the 7 settings views and then the Roles view, in order', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
     expect(settingsGroup).toBeDefined()
 
     const expectedSlugs = [
       'settings-site',
-      'settings-marketing-seo',
       'settings-content',
       'settings-commerce',
       'settings-communication',
@@ -61,7 +61,6 @@ describe('navStructure', () => {
 
     const expectedMapping: Record<string, { href: string; label: string }> = {
       'settings-site': { href: '/settings/site', label: 'Site' },
-      'settings-marketing-seo': { href: '/settings/marketing-seo', label: 'Marketing and SEO' },
       'settings-content': { href: '/settings/content', label: 'Content' },
       'settings-commerce': { href: '/settings/commerce', label: 'Commerce' },
       'settings-communication': { href: '/settings/communication', label: 'Communication' },
@@ -79,13 +78,13 @@ describe('navStructure', () => {
     }
   })
 
-  it('Content group should include header-footer and redirects', () => {
+  it('Content group should include header-footer, and redirects now live in the SEO group', () => {
     const contentGroup = NAV_STRUCTURE.find((g) => g.label === 'Content')
     expect(contentGroup).toBeDefined()
 
     const slugs = contentGroup?.entities.map((e) => e.slug) || []
     expect(slugs).toContain('header-footer')
-    expect(slugs).toContain('redirects')
+    expect(slugs).not.toContain('redirects')
   })
 
   it('header-footer should be a view type with correct href and label', () => {

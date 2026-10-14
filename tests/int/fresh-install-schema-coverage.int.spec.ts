@@ -156,7 +156,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         'posts', 'postsCategories', 'postsRels', 'postsVersions', 'postsVersionsCategories', 'postsVersionsRels',
         'courses', 'coursesVersions', 'lessons', 'lessonsResources', 'lessonsRels',
         'enrolments', 'lessonProgress', 'users', 'usersRoles', 'usersSessions',
-        'auditLog', 'backups', 'translations', 'memberships', 'formSubmissions', 'abTests', 'abTestsVariants', 'abTestsGoals',
+        'auditLog', 'emailLog', 'backups', 'translations', 'memberships', 'formSubmissions', 'abTests', 'abTestsVariants', 'abTestsGoals',
         'fieldGroups', 'fieldGroupsFields', 'fieldGroupsFieldsOptions', 'fieldGroupsTargetCollections',
         'forms', 'formsFields', 'formsFieldsOptions', 'formsFieldsConditionalRules',
         'faqSettings', 'faqSettingsRels', 'blogSettings', 'blogSettingsRels', 'shopSettings', 'shopSettingsRels',
@@ -165,7 +165,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         'footer', 'footerColumns', 'footerColumnsLinks', 'footerSocialsLinks',
         'languageSettings', 'languageSettingsMultilingualActiveLocales',
         'seoSettings', 'seoSettingsSchemaSameAs', 'speedSettings', 'speedSettingsAdvancedPreconnectOrigins', 'speedSettingsAdvancedPrefetchDns',
-        'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings', 'shopExtraSettings',
+        'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings', 'shopExtraSettings', 'siteDetails', 'sitePages', 'emailTemplates',
         'addresses', 'carts', 'cartsItems', 'orders', 'ordersItems', 'ordersRels', 'transactions', 'transactionsItems', 'products', 'productsRels', 'productsVersions', 'productsVersionsRels', 'productsAttributes', 'productsVariations', 'productsVersionsAttributes', 'productsVersionsVariations', 'cartsItems',
         'preferences', 'preferencesRels', 'lockedDocuments', 'lockedDocumentsRels',
       ]

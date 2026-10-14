@@ -133,6 +133,7 @@ export async function handleDraftRequest(request: Request, engine: DraftRouteEng
     const { sendEmail } = await import('@/features/email')
     const sent = await sendEmail({
       to: email,
+      template: 'form.resume',
       subject: `Finish ${title}`,
       text: `Here is your link to finish "${title}":\n\n${link}\n\nThe link works for 30 days. Your answers are not in this email.\n\nIf you did not ask for this, you can ignore this email.`,
     })

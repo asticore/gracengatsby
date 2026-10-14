@@ -37,7 +37,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     })
   }
 
-  return buildMetadata({ title: resolved.page.title, seo: resolved.page.seo, path: `/${slug.join('/')}` })
+  return buildMetadata({
+    title: resolved.page.title,
+    seo: resolved.page.seo,
+    path: `/${slug.join('/')}`,
+    contentType: 'page',
+    tokens: { excerpt: (resolved.page as { excerpt?: string | null }).excerpt },
+  })
 }
 
 export default async function BuiltPage({
@@ -77,7 +83,15 @@ export default async function BuiltPage({
   return (
     <div className="built-page">
       <AdsPageScope collection="pages" noAds={(page as { noAds?: boolean }).noAds} />
-      <PageJsonLd collection="pages" doc={page} path={currentPath} />
+      <PageJsonLd
+        collection="pages"
+        doc={page}
+        path={currentPath}
+        trail={ancestors.map((ancestor, index) => ({
+          name: ancestor.title,
+          path: `/${ancestors.slice(0, index + 1).map((item) => item.slug).join('/')}`,
+        }))}
+      />
       {ancestors.length > 0 && (
         <nav
           className="mx-auto flex max-w-[var(--max-width)] flex-wrap gap-2 px-6 pt-4 text-[0.8rem] tracking-[0.04em] text-[rgba(20,17,15,0.6)]"

@@ -54,6 +54,7 @@ import * as migration_20261018_200000_preorders_variation_images from './2026101
 import * as migration_20261019_100000_recurrence_tiers_series from './20261019_100000_recurrence_tiers_series';
 import * as migration_20261019_300000_toc_block from './20261019_300000_toc_block';
 import * as migration_20261020_100000_shop_extra_settings from './20261020_100000_shop_extra_settings';
+import * as migration_20261021_100000_reusable_sections from './20261021_100000_reusable_sections';
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
 
 export const migrations = [
@@ -341,5 +342,10 @@ export const migrations = [
     up: migration_20261020_100000_shop_extra_settings.up,
     down: migration_20261020_100000_shop_extra_settings.down,
     name: '20261020_100000_shop_extra_settings',
+  },
+  {
+    up: migration_20261021_100000_reusable_sections.up,
+    down: migration_20261021_100000_reusable_sections.down,
+    name: '20261021_100000_reusable_sections',
   },
 ];

@@ -175,6 +175,7 @@ export async function sendSubmissionEmails(
 
       const sent = await sendEmail({
         to,
+        template: 'form.notification',
         subject,
         html: message
           ? renderTemplate(message, values, rows, true, extras)
@@ -203,6 +204,7 @@ export async function sendSubmissionEmails(
     }
     const sent = await sendEmail({
       to,
+      template: 'form.notification',
       subject: rule.subject ? renderTemplate(rule.subject, values, rows, false, extras) : `${rule.name}: ${form.title || 'form'}`,
       html: rule.message
         ? renderTemplate(rule.message, values, rows, true, extras)
@@ -230,6 +232,7 @@ export async function sendSubmissionEmails(
 
       const sent = await sendEmail({
         to,
+        template: 'form.confirmation',
         subject,
         html: message
           ? renderTemplate(message, values, rows, true, extras)

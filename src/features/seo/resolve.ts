@@ -10,6 +10,7 @@ import {
   type DocumentSeo,
   type SeoContext,
 } from './settings'
+import { clampDescription, contentTemplatesFor, renderTemplate, type ContentType, type TemplateTokens } from './templates'
 
 export type SeoInput = {
   /** The document's own name - the value `%page%` is replaced with. */
@@ -26,6 +27,14 @@ export type SeoInput = {
   updatedAt?: string | null
   /** The document's featured image for fallback in image chain. */
   featuredImage?: (number | string | Media) | null
+  /**
+   * Which kind of document this is. Its content-type title and description
+   * templates (SEO settings > Templates) fill in when the document has no SEO
+   * title or description of its own.
+   */
+  contentType?: ContentType
+  /** Values the template tokens read: excerpt, category, price, date. */
+  tokens?: Pick<TemplateTokens, 'excerpt' | 'category' | 'price' | 'date'>
 }
 
 export type ResolvedSeo = {
@@ -155,10 +164,18 @@ export const resolveSeo = (context: SeoContext, input: SeoInput = {}): ResolvedS
 
   const path = normalisePath(input.path)
   const rawTitle = (input.seo?.metaTitle || input.title || siteName || '').trim()
-  const title = applyTitleTemplate(defaults?.titleTemplate, rawTitle, siteName)
 
+  // Content-type templates only fill in when the document has no SEO text of its own.
+  const templates = input.contentType ? contentTemplatesFor(settings, input.contentType) : null
+  const templateTokens: TemplateTokens = { title: rawTitle, site: siteName, ...input.tokens }
+  // A content-type title template already says what it wants, so it replaces the site title template.
+  const templatedTitle = !input.seo?.metaTitle && templates ? renderTemplate(templates.title, templateTokens) : ''
+  const title = templatedTitle || applyTitleTemplate(defaults?.titleTemplate, rawTitle, siteName)
+
+  const templatedDescription =
+    !input.seo?.metaDescription && templates ? clampDescription(renderTemplate(templates.description, templateTokens)) : ''
   const description =
-    input.seo?.metaDescription || input.description || defaults?.metaDescription || undefined
+    input.seo?.metaDescription || templatedDescription || input.description || defaults?.metaDescription || undefined
 
   // Open Graph / Social title and description
   // Only an explicit social title overrides; otherwise callers keep using the normal templated title.

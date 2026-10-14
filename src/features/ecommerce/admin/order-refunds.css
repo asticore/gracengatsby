@@ -1,0 +1,51 @@
+.order-refunds {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.order-refunds__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.order-refunds__table th,
+.order-refunds__table td {
+  text-align: left;
+  padding: 6px 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--theme-elevation-150, #ddd);
+}
+
+.order-refunds__table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.order-refunds__table input[type='number'] {
+  width: 90px;
+}
+
+.order-refunds__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.order-refunds__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.order-refunds__total {
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .order-refunds__table input[type='number'] {
+    width: 70px;
+  }
+}

@@ -176,6 +176,19 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('adds the product subscription table, plan column and switches (wave 19)', async () => {
+    const checkColumns = async (table: string, expectedColumns: string[]): Promise<void> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+      for (const col of expectedColumns) expect(columnNames, `${table} should have column ${col}`).toContain(col)
+    }
+    await checkColumns('eg_product_subscriptions', ['customer_id', 'product_id', 'status', 'billing_interval', 'payments_made', 'stripe_subscription_id', 'history'])
+    await checkColumns('eg_products', ['subscription'])
+    await checkColumns('_eg_products_v', ['version_subscription'])
+    await checkColumns('eg_shop_extra_settings', ['subscriptions_enabled'])
+    await checkColumns('eg_email_schedule', ['subscription_new_enabled', 'subscription_renewal_enabled', 'subscription_failed_enabled', 'subscription_cancelled_enabled'])
+  })
+
   it('adds theme_custom_fonts to site settings', async () => {
     const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`eg_site_settings\`)`).all()
     const columnNames = (result.results as { name: string }[]).map((r) => r.name)
@@ -288,6 +301,23 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_carts_items')).toContain('variation')
     expect(await columnsOf('eg_shop_settings')).toEqual(expect.arrayContaining(['reviews_enabled', 'low_stock_emails', 'stock_email_to']))
     expect(await columnsOf('eg_locked_documents_rels')).toEqual(expect.arrayContaining(['eg_product_attributes_id', 'eg_shipping_classes_id', 'eg_product_reviews_id']))
+  })
+
+  it('creates the product add-on tables, the cart add-on column, the add-on switch and the pricing rule table', async () => {
+    for (const table of ['eg_products_add_ons', '_eg_products_v_version_add_ons', 'eg_shop_extra_settings_pricing_rules']) {
+      expect(tables, table).toContain(table)
+    }
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_products_add_ons')).toEqual(expect.arrayContaining(['_order', '_parent_id', 'label', 'input_type', 'choices', 'required', 'price', 'price_mode', 'max_length']))
+    expect(await columnsOf('_eg_products_v_version_add_ons')).toEqual(expect.arrayContaining(['_order', '_parent_id', '_uuid', 'label', 'price_mode']))
+    expect(await columnsOf('eg_carts_items')).toContain('add_ons')
+    expect(await columnsOf('eg_shop_extra_settings')).toEqual(expect.arrayContaining(['add_ons_enabled', 'pricing_rules_enabled']))
+    expect(await columnsOf('eg_shop_extra_settings_pricing_rules')).toEqual(
+      expect.arrayContaining(['_parent_id', 'name', 'enabled', 'discount_type', 'amount', 'applies_when', 'min_quantity', 'customer_role', 'min_subtotal', 'category', 'starts_at', 'ends_at', 'priority', 'exclusive', 'show_on_product']),
+    )
   })
 
   it('creates the back-in-stock sign-up table and its lock link column', async () => {
@@ -605,6 +635,17 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     )
   })
 
+  it('creates the display currency table with its sort index', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_shop_display_currencies')
+    expect(await columnsOf('eg_shop_display_currencies')).toEqual(
+      expect.arrayContaining(['code', 'enabled', 'sort_order', 'rate_mode', 'manual_rate', 'auto_rate', 'auto_rate_base', 'auto_rate_at', 'updated_at', 'created_at']),
+    )
+  })
+
   it('adds the edge page cache columns: cache version 1, page caching off, never-cache rules', async () => {
     const columnsOf = async (table: string): Promise<string[]> => {
       const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
@@ -627,6 +668,19 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
       expect(Number(row.caching_page_cache ?? 0)).toBe(0)
       expect(Number(row.cache_epoch)).toBe(1)
     }
+  })
+
+  it('creates the product bundle tables and columns and the recommendation switches (wave 19)', async () => {
+    for (const table of ['eg_products_bundle_items', '_eg_products_v_version_bundle_items']) expect(tables, table).toContain(table)
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_products')).toEqual(expect.arrayContaining(['bundle_pricing', 'bundle_discount_percent']))
+    expect(await columnsOf('_eg_products_v')).toEqual(expect.arrayContaining(['version_bundle_pricing', 'version_bundle_discount_percent']))
+    expect(await columnsOf('eg_products_bundle_items')).toEqual(expect.arrayContaining(['_order', '_parent_id', 'product_id', 'quantity']))
+    expect(await columnsOf('_eg_products_v_version_bundle_items')).toEqual(expect.arrayContaining(['_parent_id', 'product_id', 'quantity', '_uuid']))
+    expect(await columnsOf('eg_shop_extra_settings')).toEqual(expect.arrayContaining(['recommendations_enabled', 'recommendations_max']))
   })
 
   it('creates the cron run history table with its columns (wave 17)', async () => {

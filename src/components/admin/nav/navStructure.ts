@@ -143,6 +143,7 @@ export const HIDDEN_FROM_NAV = new Set<string>([
   'form-settings',
   'media-settings',
   'shop-settings',
+  'shop-extra-settings',
   'payment-settings',
   'shipping-settings',
   'member-settings',

@@ -4,6 +4,7 @@ import { sendOrderEmail } from './emails'
 import { addOrderNote, restockedSoFar, restockOrder } from './orders'
 import { cardAmountOf } from '../lib/storedValueOrder'
 import { refundToStoreCredit } from './storedValue'
+import { validateLineRefund } from '../lib/refundLines'
 
 type Doc = Record<string, unknown>
 type Req = { engine: { findByID: (a: unknown) => Promise<Doc | null>; update: (a: unknown) => Promise<Doc>; find: (a: unknown) => Promise<{ docs: Doc[] }>; findGlobal: (a: unknown) => Promise<Doc> }; user?: { id?: number; email?: string } | null }
@@ -39,6 +40,18 @@ export async function runRefundBeforeChange({ data, operation, req }: { data: Do
   const orderId = orderIdOf(data.order)
   const order = await req.engine.findByID({ collection: 'orders', id: orderId, depth: 0, overrideAccess: true })
   if (!order) throw new Error('Order not found.')
+  const { docs: priorRefunds } = await req.engine.find({ collection: 'order-refunds', where: { order: { equals: orderId } }, limit: 500, depth: 0, overrideAccess: true })
+  // Line-item refund: the amount is worked out from the lines and shipping, never trusted from the client.
+  if (data.lines !== undefined || data.shippingAmount !== undefined) {
+    const lineCheck = validateLineRefund({ order: order as never, priorRefunds, lines: data.lines, shippingCents: data.shippingAmount })
+    if (!lineCheck.ok) throw new Error((lineCheck as { error: string }).error)
+    const checked = lineCheck as Extract<typeof lineCheck, { ok: true }>
+    data.lines = checked.lines
+    data.shippingAmount = checked.shippingCents
+    data.amount = checked.amount
+    data.items = checked.restockItems
+    data.restock = checked.restockItems.length > 0
+  }
   const check = validateRefund(order as never, data.amount)
   if (!check.ok) throw new Error((check as { error: string }).error)
   const amount = data.amount as number
@@ -54,8 +67,7 @@ export async function runRefundBeforeChange({ data, operation, req }: { data: Do
     } else if (data.method !== 'manual' && order.paymentIntentId) {
       // Only what the card paid can go back to the card; the rest was gift card or store credit.
       const cardPaid = cardAmountOf(order as never)
-      const { docs: earlier } = await req.engine.find({ collection: 'order-refunds', where: { order: { equals: orderId } }, limit: 500, depth: 0, overrideAccess: true })
-      const cardRefunded = earlier.filter((r) => r.providerRefundId).reduce((n, r) => n + Number(r.amount ?? 0), 0)
+      const cardRefunded = priorRefunds.filter((r) => r.providerRefundId).reduce((n, r) => n + Number(r.amount ?? 0), 0)
       if (amount > cardPaid - cardRefunded) {
         throw new Error(`Only $${(Math.max(0, cardPaid - cardRefunded) / 100).toFixed(2)} can go back to the card. The rest of this order was paid with a gift card or store credit: refund that part to store credit, or record it as a manual refund.`)
       }

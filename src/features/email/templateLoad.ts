@@ -1,27 +1,41 @@
 import { getEngine } from '@/lib/engine'
 
-import { renderTemplate, templateFrom, type RenderedEmail, type StoredTemplates, type TemplateValues } from './renderTemplate'
+import { type EmailBrand, brandFrom } from './design/brand'
+import { brandFromStored, designedBlocks, renderWithDesign } from './designRender'
+import { type RenderedEmail, type StoredTemplates, type TemplateValues, templateFrom } from './renderTemplate'
 import type { EmailTemplateKey } from './templateDefaults'
 
+type Reader = { findGlobal: (args: never) => Promise<unknown> }
+
+/** The brand from the `email-brand` global. A failed read gives the defaults, so the email still goes out. */
+const readBrand = async (reader: Reader): Promise<EmailBrand> => {
+  try {
+    const doc = await reader.findGlobal({ slug: 'email-brand', depth: 1 } as never)
+    return brandFromStored(doc)
+  } catch {
+    return brandFrom(null)
+  }
+}
+
 /**
- * Reads the site's own email wording and renders one template with it.
+ * Reads the site's own email wording and design and renders one template with them.
  *
  * Reaches for the engine, so senders import this at call time, not at module
  * load (the same dodge the Email feature and the account and member emails use).
- * Never throws: if the global cannot be read the built-in wording is used, so
+ * Never throws: if a global cannot be read the built-in wording is used, so
  * the email still goes out.
  */
-export const renderEmailTemplate = async (
-  key: EmailTemplateKey,
-  values: TemplateValues,
-  givenEngine?: { findGlobal: (args: never) => Promise<unknown> },
-): Promise<RenderedEmail> => {
+export const renderEmailTemplate = async (key: EmailTemplateKey, values: TemplateValues, givenEngine?: Reader): Promise<RenderedEmail> => {
   let stored: StoredTemplates = null
+  let brand: EmailBrand = brandFrom(null)
   try {
     const engine = givenEngine ?? (await getEngine())
-    stored = (await (engine as { findGlobal: (a: unknown) => Promise<unknown> }).findGlobal({ slug: 'email-templates', depth: 0 })) as StoredTemplates
+    const reader = engine as unknown as Reader
+    stored = (await reader.findGlobal({ slug: 'email-templates', depth: 0 } as never)) as StoredTemplates
+    brand = await readBrand(reader)
   } catch {
     stored = null
   }
-  return renderTemplate(templateFrom(stored, key), values)
+  const design = designedBlocks((stored as Record<string, unknown> | null | undefined)?.[`${key}Design`])
+  return renderWithDesign(templateFrom(stored, key), values, design, brand)
 }

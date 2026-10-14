@@ -496,6 +496,12 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('adds the IndexNow switch and key columns to the SEO settings table', async () => {
+    const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`eg_seo_settings\`)`).all()
+    const columnNames = (result.results as { name: string }[]).map((r) => r.name)
+    expect(columnNames).toEqual(expect.arrayContaining(['index_now_enabled', 'index_now_key']))
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

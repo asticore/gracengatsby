@@ -11,7 +11,7 @@ export function stripShortcodes(text: string): string {
 export function safeUrl(raw: string | undefined): string | null {
   const url = (raw ?? '').trim()
   if (!url) return null
-  const compact = url.replace(/[\u0000- ]/g, '').toLowerCase()
+  const compact = url.replace(/[\x00-\x20]/g, '').toLowerCase()
   const scheme = /^([a-z][a-z0-9+.-]*):/.exec(compact)
   if (scheme) return SAFE_SCHEMES.has(scheme[1]) ? url : null
   return url

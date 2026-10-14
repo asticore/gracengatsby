@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { seoFields } from '@/fields/seo'
 
 describe('seoFields structure', () => {
-  it('has exactly 10 fields in the correct order', () => {
+  it('has exactly 11 fields in the correct order', () => {
     const fields = (seoFields.fields as Array<Record<string, unknown>> | undefined) || []
     const fieldNames = fields.map((f) => ('name' in f ? f.name : undefined))
     expect(fieldNames).toEqual([
+      'focusKeyphrase',
       'metaTitle',
       'metaDescription',
       'canonicalUrl',

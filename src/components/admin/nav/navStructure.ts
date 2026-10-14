@@ -106,6 +106,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     label: 'SEO',
     entities: [
       { slug: 'seo-audit', type: 'view', href: '/seo-audit', label: 'SEO audit' },
+      { slug: 'google-dashboard', type: 'view', href: '/google-dashboard', label: 'Google dashboard' },
       { slug: 'seo-settings', type: 'globals' },
       { slug: 'redirects', type: 'collections' },
     ],
@@ -159,6 +160,7 @@ export const HIDDEN_FROM_NAV = new Set<string>([
   'email-settings',
   'email-templates',
   'email-schedule',
+  'google-connection',
   'speed-settings',
   'security-settings',
   'backup-settings',

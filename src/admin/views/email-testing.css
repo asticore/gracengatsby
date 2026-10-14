@@ -1,0 +1,180 @@
+/* Email testing admin view. Classes are prefixed et-. Dark styles only apply under [data-theme='dark']; light is the default. */
+
+.et-page {
+  padding: 16px;
+  max-width: 1000px;
+  box-sizing: border-box;
+  color: var(--theme-elevation-900, #1a1a1a);
+}
+
+.et-header {
+  margin-bottom: 16px;
+}
+
+.et-title {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.et-intro {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.et-muted {
+  color: var(--theme-elevation-600, #555);
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.et-headline {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.et-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+.et-table th,
+.et-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 8px;
+  border-bottom: 1px solid var(--theme-elevation-150, #e5e5e5);
+}
+
+.et-table th {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.et-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--theme-elevation-100, #eee);
+  color: var(--theme-elevation-800, #333);
+}
+
+.et-badge--good {
+  background: #e3f5e8;
+  color: #1d6b34;
+}
+
+.et-badge--missing {
+  background: #fbe6e3;
+  color: #a33226;
+}
+
+.et-form {
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+}
+
+.et-field {
+  display: grid;
+  gap: 4px;
+}
+
+.et-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.et-input {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid var(--theme-elevation-200, #ccc);
+  border-radius: 4px;
+  background: var(--theme-input-bg, #fff);
+  color: inherit;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.et-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.et-button {
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #2b5fd9;
+  background: #2b5fd9;
+  color: #fff;
+  cursor: pointer;
+}
+
+.et-button--secondary {
+  background: transparent;
+  color: #2b5fd9;
+}
+
+.et-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.et-notice {
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 14px;
+  border-left: 3px solid #2b5fd9;
+}
+
+.et-sms-row {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--theme-elevation-150, #e5e5e5);
+}
+
+[data-theme='dark'] .et-muted {
+  color: var(--theme-elevation-400, #aaa);
+}
+
+[data-theme='dark'] .et-table th,
+[data-theme='dark'] .et-table td {
+  border-bottom-color: var(--theme-elevation-200, #333);
+}
+
+[data-theme='dark'] .et-badge {
+  background: var(--theme-elevation-150, #2a2a2a);
+  color: var(--theme-elevation-800, #ddd);
+}
+
+[data-theme='dark'] .et-badge--good {
+  background: #173d24;
+  color: #9be3b4;
+}
+
+[data-theme='dark'] .et-badge--missing {
+  background: #4a1f1b;
+  color: #f2a79e;
+}
+
+[data-theme='dark'] .et-input {
+  background: #1b1b1b;
+  border-color: #444;
+}
+
+[data-theme='dark'] .et-button--secondary {
+  color: #8fb0ff;
+  border-color: #8fb0ff;
+}
+
+[data-theme='dark'] .et-notice {
+  border-left-color: #8fb0ff;
+}

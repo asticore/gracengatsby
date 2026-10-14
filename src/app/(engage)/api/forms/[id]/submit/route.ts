@@ -1,5 +1,6 @@
 import { getEngine } from '@/engine'
 import { handleSubmitRequest } from '@/features/forms/submitRequest'
+import { withErrorLog } from '@/features/errors/withErrorLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,9 +21,12 @@ const handle = async (request: Request, context: Context): Promise<Response> => 
   return handleSubmitRequest(request, engine as never, id)
 }
 
-export async function POST(request: Request, context: Context): Promise<Response> {
+async function handlePost(request: Request, context: Context): Promise<Response> {
   return handle(request, context)
 }
+
+/** Failures are written to the error log (see src/features/errors/withErrorLog.ts). */
+export const POST = withErrorLog(handlePost, 'form-submit')
 
 export async function OPTIONS(request: Request, context: Context): Promise<Response> {
   return handle(request, context)

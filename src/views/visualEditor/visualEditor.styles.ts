@@ -99,7 +99,9 @@ html[data-theme='dark'] .ve-root {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  /* Right padding leaves room for the fixed theme toggler (top right of the
+     admin, see custom.css .theme-toggler) now that the editor is full-bleed. */
+  padding: 12px 64px 12px 20px;
   background: var(--ve-chrome-bg);
   color: var(--ve-chrome-text);
   gap: 16px;

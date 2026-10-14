@@ -24,6 +24,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { THEME_STORAGE_KEY as STORAGE_KEY } from './themeScript'
 
 export type ThemePref = 'auto' | 'dark' | 'light'
 
@@ -33,7 +34,6 @@ type ThemeContextValue = {
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
-const STORAGE_KEY = 'ac-theme'
 
 function isThemePref(value: unknown): value is ThemePref {
   return value === 'light' || value === 'dark' || value === 'auto'

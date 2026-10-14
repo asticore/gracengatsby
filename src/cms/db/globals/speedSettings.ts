@@ -54,6 +54,15 @@ export type SpeedSettingsDoc = {
     preconnectOrigins?: { id: string; url?: string | null }[] | null
     prefetchDns?: { id: string; domain?: string | null }[] | null
     delayJsExecution?: boolean | null
+    preloadOnHover?: boolean | null
+  } | null
+  cleanup?: {
+    enabled?: boolean | null
+    keepVersionsPerDoc?: number | null
+    deleteTrashedAfterDays?: number | null
+    deleteFormSubmissionsAfterDays?: number | null
+    deleteAuditLogAfterDays?: number | null
+    deleteEmailLogAfterDays?: number | null
   } | null
   updatedAt: string
   createdAt: string

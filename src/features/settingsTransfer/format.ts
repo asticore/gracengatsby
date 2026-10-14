@@ -41,6 +41,7 @@ export const SETTINGS_GLOBALS = [
   'member-settings',
   'email-settings',
   'shop-settings',
+  'shop-extra-settings',
   'security-settings',
   'language-settings',
   'seo-settings',

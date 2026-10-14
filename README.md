@@ -179,6 +179,27 @@ Turning a feature off **hides**; it never deletes.
 
 ---
 
+## Connect Google
+
+The site connects to Google with **your own** Google Cloud OAuth client, set up once. Nothing is shared with another site, and the sign-in is read-only.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project (or choose one).
+2. Under **APIs and services > Library**, switch on: Google Analytics Data API, Google Analytics Admin API, Google Search Console API, Tag Manager API and AdSense Management API.
+3. Under **APIs and services > OAuth consent screen**, fill in the app name and your e-mail. Either keep the app in testing and add your own Google account as a test user, or publish it.
+4. Under **Credentials**, create an **OAuth client ID** of type **Web application**.
+5. Under **Authorised redirect URIs**, add the address shown on the Google connection screen: `<your site>/api/google/callback`. It must match exactly, including `https://` and no trailing slash.
+6. In the portal, open **Settings > Site > Google connection**. Paste the **Client ID** and **Client secret**, save, then choose **Connect with Google**.
+7. Choose the Analytics property, Search Console site, Tag Manager container and AdSense account. Choosing a property fills the GA4 measurement ID on Integrations, and choosing a container fills the GTM container ID, but only where those fields are blank.
+
+Notes:
+
+- The client secret and the refresh token are encrypted at rest with `ENGAGE_SECRET`, like the other stored keys. Changing `ENGAGE_SECRET` means entering the client secret again and connecting again.
+- Only administrators can connect, change or disconnect Google. Disconnecting asks Google to revoke the sign-in and keeps the client ID and secret.
+- The sign-in state is checked against a short-lived cookie, so a link planted by another site cannot complete a connection.
+- Routes: `/api/google/connect`, `/api/google/callback`, `/api/google/disconnect`. Code: `src/features/google/`, the global in `src/globals/GoogleConnection.ts`, the screen in `src/admin/views/GoogleConnectionView.tsx`.
+
+---
+
 ## Portal theming
 
 `src/app/(engage)/custom.css` carries the whole portal theme. Read its header comment before touching it — the colour system is easy to get wrong.

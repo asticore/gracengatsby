@@ -37,6 +37,7 @@ import { BlogSettings } from '@/globals/BlogSettings'
 import { EmailSettings } from '@/globals/EmailSettings'
 import { EmailTemplates } from '@/globals/EmailTemplates'
 import { EmailSchedule } from '@/globals/EmailSchedule'
+import { GoogleConnection } from '@/globals/GoogleConnection'
 import { EmailBrand } from '@/globals/EmailBrand'
 import { FaqSettings } from '@/globals/FaqSettings'
 import { Footer } from '@/globals/Footer'
@@ -194,7 +195,7 @@ export const eventsVersions = generateVersionsTable(Events, eventsGenerated.tabl
  */
 function resolveJoinTargetTable(slug: string): AnySQLiteTable {
   if (slug === EventRSVPs.slug) return eventRSVPs
-  throw new Error(`cms/db/schema: no known table for join target collection "${slug}" - add it to resolveJoinTargetTable in schema/index.ts.`)
+  throw new Error(`cms/db/schema: no known join target table for collection "${slug}" - add it to resolveJoinTargetTable in schema/index.ts.`)
 }
 
 export const eventsJoinFields = Object.fromEntries(
@@ -714,6 +715,10 @@ export const emailBrand = emailBrandGenerated.table
 /** When emails are sent (src/globals/EmailSchedule.ts): one switch per automatic email, reminder timing and quiet hours. */
 export const emailScheduleGenerated = generateTable(EmailSchedule)
 export const emailSchedule = emailScheduleGenerated.table
+
+/** Google connection (src/globals/GoogleConnection.ts): OAuth client, the signed-in account and the chosen Google properties. */
+export const googleConnectionGenerated = generateTable(GoogleConnection)
+export const googleConnection = googleConnectionGenerated.table
 
 /** Site details (src/globals/SiteDetails.ts): scalars plus one `business` group, rebuilt by groupFields. */
 export const siteDetailsGenerated = generateTable(SiteDetails)

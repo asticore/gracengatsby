@@ -20,6 +20,8 @@ const DEFAULT_LINKS: NavLink[] = [
 export const Header: React.FC<{
   siteName?: string
   logoUrl?: string | null
+  logoWidth?: number | null
+  logoHeight?: number | null
   showLogo?: boolean
   navLinks?: NavLink[]
   sticky?: boolean
@@ -31,6 +33,8 @@ export const Header: React.FC<{
 }> = ({
   siteName = 'Grace & Gatsby',
   logoUrl,
+  logoWidth,
+  logoHeight,
   showLogo = true,
   navLinks,
   sticky = true,
@@ -49,8 +53,9 @@ export const Header: React.FC<{
 
   const logo =
     showLogo && logoUrl ? (
+      // Explicit size keeps the header from jumping when the logo arrives. Falls back to a typical logo shape for old media.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={logoUrl} alt={siteName} className="max-h-10 w-auto" />
+      <img src={logoUrl} alt={siteName} width={logoWidth || 160} height={logoHeight || 40} className="max-h-10 w-auto" />
     ) : (
       siteName
     )

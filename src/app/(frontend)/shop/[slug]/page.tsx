@@ -3,6 +3,7 @@ import React from 'react'
 import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
 
+import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { ProductPurchase, type GroupedChild } from '@/components/ProductPurchase'
 import { BackInStockForm } from '@/components/BackInStockForm'
 import { ProductReviewForm } from '@/components/ProductReviewForm'
@@ -46,7 +47,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const product = await getProduct(slug)
   if (!product) return {}
-  return buildMetadata({ title: product.title, seo: product.seo, path: `/shop/${slug}` })
+  return buildMetadata({
+    title: product.title,
+    seo: product.seo,
+    path: `/shop/${slug}`,
+    contentType: 'product',
+    tokens: { price: formatPriceInAUD(product.priceInAUD), excerpt: product.shortDescription },
+  })
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -107,8 +114,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .catch((): { docs: never[] } => ({ docs: [] }))) as unknown as { docs: Array<{ id: number; name: string; rating: number; text: string; status: string; verifiedOwner?: boolean; createdAt: string }> }
   const ratings = summariseRatings(reviewDocs)
   const reviewsOn = (settings as { reviewsEnabled?: boolean } | null)?.reviewsEnabled !== false
+  // Same brand the Google feed uses: the feed brand, else the business name.
+  const brandSource = settings as { storefront?: { feedBrand?: string | null }; tax?: { businessName?: string | null } } | null
+  const brandName = (brandSource?.storefront?.feedBrand || brandSource?.tax?.businessName || '').trim()
   const jsonLdExtra: Record<string, unknown> = {
     ...(view.sku ? { sku: view.sku } : {}),
+    ...(brandName ? { brand: { '@type': 'Brand', name: brandName } } : {}),
     ...(offersJsonLd(view, 'AUD', `/shop/${slug}`) ? { offers: offersJsonLd(view, 'AUD') } : {}),
     ...(aggregateRatingJsonLd(ratings) ? { aggregateRating: aggregateRatingJsonLd(ratings) } : {}),
   }

@@ -205,7 +205,7 @@ describe('buildPageJsonLd', () => {
       expect((result?.author as any)?.name).toBe('Jane Doe')
     })
 
-    it('includes author as Organization (siteName) when no authorName', () => {
+    it('omits author when there is no authorName', () => {
       const result = buildPageJsonLd({
         collection: 'posts',
         schemaType: 'Article',
@@ -214,8 +214,7 @@ describe('buildPageJsonLd', () => {
         baseUrl: 'https://example.com',
         siteName: 'Example Publishing',
       })
-      expect((result?.author as any)?.['@type']).toBe('Organization')
-      expect((result?.author as any)?.name).toBe('Example Publishing')
+      expect(result?.author).toBeUndefined()
     })
 
     it('includes mainEntityOfPage', () => {
@@ -263,7 +262,7 @@ describe('buildPageJsonLd', () => {
         collection: 'events',
         title: 'Conference',
         datePublished: '2024-06-01T09:00:00Z',
-        dateModified: '2024-06-01T17:00:00Z',
+        endDate: '2024-06-01T17:00:00Z',
         url: 'https://example.com/events/conf',
         baseUrl: 'https://example.com',
         siteName: 'Example',
@@ -518,14 +517,24 @@ describe('PageJsonLd component', () => {
       expect(html).toContain('"datePublished":"2024-01-15T10:00:00Z"')
     })
 
-    it('includes authorName from doc.author.email', async () => {
-      const result = await PageJsonLd({
+    it('never publishes the author email, and uses the author name', async () => {
+      const withEmail = await PageJsonLd({
         collection: 'posts',
         doc: { title: 'Post', author: { email: 'author@example.com' } },
         path: '/blog/post',
       })
-      const html = (result as any)?.props?.dangerouslySetInnerHTML?.__html
-      expect(html).toContain('"name":"author@example.com"')
+      const emailHtml = (withEmail as any)?.props?.dangerouslySetInnerHTML?.__html
+      expect(emailHtml).not.toContain('author@example.com')
+      expect(emailHtml).not.toContain('"author"')
+
+      const withName = await PageJsonLd({
+        collection: 'posts',
+        doc: { title: 'Post', author: { email: 'author@example.com', name: 'Jane Doe' } },
+        path: '/blog/post',
+      })
+      const nameHtml = (withName as any)?.props?.dangerouslySetInnerHTML?.__html
+      expect(nameHtml).toContain('"name":"Jane Doe"')
+      expect(nameHtml).not.toContain('author@example.com')
     })
 
     describe('Collection/List pages (CollectionPage)', () => {

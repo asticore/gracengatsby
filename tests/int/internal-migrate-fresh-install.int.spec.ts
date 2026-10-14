@@ -448,6 +448,32 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     }
   })
 
+  it('creates the reusable sections table, its _rels table and the reusable section block tables', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_reusable_sections')
+    expect(await columnsOf('eg_reusable_sections')).toEqual(expect.arrayContaining(['name', 'description', 'locks', 'updated_at', 'created_at']))
+    expect(tables).toContain('eg_reusable_sections_rels')
+    expect(await columnsOf('eg_reusable_sections_rels')).toEqual(expect.arrayContaining(['eg_media_id', 'eg_faqs_id', 'eg_forms_id']))
+    const reusableTables = [
+      'eg_reusable_sections_blocks_hero',
+      'eg_reusable_sections_blocks_loop',
+      'eg_reusable_sections_blocks_toc',
+      'eg_reusable_sections_blocks_reusable_section',
+      'eg_pages_blocks_reusable_section',
+      '_eg_pages_v_blocks_reusable_section',
+      'eg_page_templates_blocks_reusable_section',
+      'eg_shop_settings_blocks_reusable_section',
+    ]
+    for (const table of reusableTables) {
+      expect(tables, `${table} should be created`).toContain(table)
+    }
+    expect(await columnsOf('eg_pages_blocks_reusable_section')).toEqual(expect.arrayContaining(['_order', '_parent_id', '_path', 'id', 'section_id', 'design', 'block_name']))
+    expect(await columnsOf('eg_reusable_sections_blocks_loop')).toContain('template_id')
+  })
+
   it('is safe to run a second time', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

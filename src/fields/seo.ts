@@ -13,6 +13,7 @@ export const seoFields: Field = {
     description: 'Leave blank to fall back to the site-wide SEO defaults.',
   },
   fields: [
+    { name: 'focusKeyphrase', type: 'text', label: 'Focus keyphrase', admin: { description: 'The main search phrase this page should rank for. The Analysis tab checks the content against it.' } },
     { name: 'metaTitle', type: 'text', label: 'Meta title' },
     { name: 'metaDescription', type: 'textarea', label: 'Meta description' },
     { name: 'canonicalUrl', type: 'text', label: 'Canonical URL', admin: { description: 'Only set this if another page is the original of this content.' } },

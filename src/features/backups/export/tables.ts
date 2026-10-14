@@ -40,6 +40,7 @@ const SETTINGS_BASES = [
   'eg_security_settings',
   'eg_seo_settings',
   'eg_shop_settings',
+  'eg_shop_extra_settings',
   'eg_site_settings',
   'eg_speed_settings',
 ]

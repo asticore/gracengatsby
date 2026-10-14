@@ -3,6 +3,7 @@ import { resolveCheckoutFields, validateCheckoutValues, type CheckoutField } fro
 import { normalizeCode, type CouponDoc } from '../lib/coupons'
 import { normalizeEmail } from '../lib/email'
 import { toCents } from '../lib/money'
+import { currencyFromShopSettings } from '../lib/shopCurrency'
 import { cleanRecipient, giftAmountError, normaliseGiftCardSettings } from '../lib/storedValue'
 import { PAID_STATUSES } from '../lib/orderStatus'
 import type { ShippingAddress, ShippingOption, ShippingZone } from '../lib/shipping'
@@ -21,7 +22,7 @@ export type PricingEngine = {
 export class CheckoutError extends Error {}
 
 /** The shop's currency (single-currency shop; AUD unless shop settings say otherwise). */
-export const shopCurrency = (config: { settings: Record<string, unknown> }): string => (typeof config.settings.currency === 'string' && /^[A-Za-z]{3}$/.test(config.settings.currency) ? config.settings.currency.toUpperCase() : 'AUD')
+export const shopCurrency = (config: { settings: Record<string, unknown> }): string => currencyFromShopSettings(config.settings)
 
 export type ShopConfig = { tax: TaxSettings; zones: ShippingZone[]; rates: TaxRate[]; fields: CheckoutField[]; settings: Doc }
 

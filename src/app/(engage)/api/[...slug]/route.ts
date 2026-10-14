@@ -17,6 +17,7 @@
 import { createEngine } from '@/localapi/engine'
 import { handleCustomCollectionEndpoint } from '@/localapi/endpoints'
 import { handleRestRequest } from '@/localapi/rest'
+import { withErrorLog } from '@/features/errors/withErrorLog'
 
 type RouteArgs = { params: Promise<{ slug: string[] }> }
 
@@ -33,7 +34,8 @@ const dispatch = async (request: Request, args: RouteArgs): Promise<Response> =>
 }
 
 export const GET = dispatch
-export const POST = dispatch
+// Writes to collections (such as RSVPs) and the Stripe routes come through here. Only failures are logged.
+export const POST = withErrorLog(dispatch, 'rest-api')
 export const PATCH = dispatch
 export const DELETE = dispatch
 export const PUT = (request: Request): Response => notFound(request)

@@ -68,7 +68,7 @@ export const FEATURES: FeatureDef[] = [
     description: 'Products, cart, checkout and orders.',
     defaultEnabled: true,
     collections: ['products', 'product-attributes', 'shipping-classes', 'product-reviews', 'stock-subscriptions', 'gift-cards', 'store-credits', 'credit-ledger', 'shipping-manifests', 'orders', 'order-refunds', 'coupons', 'shipping-zones', 'tax-rates', 'transactions', 'carts', 'addresses'],
-    globals: ['shop-settings', 'shipping-settings'],
+    globals: ['shop-settings', 'shop-extra-settings', 'shipping-settings'],
     tables: ['products', 'product_attributes', 'shipping_classes', 'product_reviews', 'stock_subscriptions', 'gift_cards', 'store_credits', 'credit_ledger', 'shipping_manifests', 'orders', 'order_refunds', 'coupons', 'shipping_zones', 'tax_rates', 'transactions', 'carts', 'addresses'],
     implemented: true,
   },

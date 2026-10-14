@@ -192,6 +192,9 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
         // The Roles screen redirects anyone who is not an admin, so its link is admin-only too.
         if (ref.slug === 'roles' && !isAdmin) continue
 
+        // The SEO audit lists every page's SEO, so it follows the SEO-editing permission.
+        if (ref.slug === 'seo-audit' && !isAdmin && can && !can('content.editSeo', 'update')) continue
+
         // For settings pages (slug starts with 'settings-'), check permissions
         // using the can() function for non-admin users
         if (ref.slug.startsWith('settings-') && !isAdmin && can) {

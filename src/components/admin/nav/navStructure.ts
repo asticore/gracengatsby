@@ -165,6 +165,7 @@ export const HIDDEN_FROM_NAV = new Set<string>([
   'database',
   'audit-log',
   'email-log',
+  'error-log',
   'users',
   'integrations',
   'translations',

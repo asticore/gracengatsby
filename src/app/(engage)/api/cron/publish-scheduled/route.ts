@@ -98,6 +98,13 @@ async function handleCronRequest(request: Request): Promise<Response> {
     } catch (error) {
       console.error('cron gift-card delivery error:', error)
     }
+    // Reminder emails (When emails are sent): membership renewal and event reminders, held during quiet hours.
+    try {
+      const { runScheduledEmails } = await import('@/features/email/scheduledEmails')
+      await runScheduledEmails(engine as never, new Date())
+    } catch (error) {
+      console.error('cron scheduled-email error:', error)
+    }
 
     return NextResponse.json(result, {
       status: 200,

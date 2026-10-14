@@ -5,7 +5,7 @@ type Engine = { findGlobal: (a: unknown) => Promise<Doc> }
 
 export type LoadedPaymentSettings = PaymentSettingsLike & {
   stripe?: { enabled?: boolean; secretKey?: string; publishableKey?: string } | null
-  paypal?: { enabled?: boolean; environment?: string; clientId?: string; clientSecret?: string } | null
+  paypal?: { enabled?: boolean; environment?: string; clientId?: string; clientSecret?: string; webhookId?: string } | null
 }
 
 /** The payment-settings global with its secrets decrypted (server only). Empty when it cannot be read. */

@@ -13,6 +13,8 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'settings-data-system': 'Backups, database tools, users and audit log.',
   'header-footer': 'Site header, navigation and footer content.',
   'site-settings': 'Site name, logo, colours, fonts and basic brand settings.',
+  'site-pages': 'Special pages (404, privacy policy, terms) and maintenance mode.',
+  'site-details': 'Business details, time zone and how dates and times are shown.',
   'header': 'Navigation menu and header layout configuration.',
   'footer': 'Footer content and navigation menu.',
   'language-settings': 'Language and locale defaults, multilingual content setup.',
@@ -34,5 +36,6 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'backup-settings': 'Automatic backup scheduling, retention and storage.',
   'database': 'View database structure and clean up unused data.',
   'audit-log': 'View a record of all sign-ins and changes made in the admin.',
+  'email-log': 'Every email the site has sent, with a resend button.',
   'users': 'Manage admin user accounts and permissions.',
 }

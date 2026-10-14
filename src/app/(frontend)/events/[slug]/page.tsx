@@ -51,6 +51,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     kind: 'article',
     publishedAt: event.createdAt,
     updatedAt: event.updatedAt,
+    contentType: 'event',
+    tokens: {
+      excerpt: event.summary,
+      date: new Date(event.startDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }),
+    },
   })
 }
 

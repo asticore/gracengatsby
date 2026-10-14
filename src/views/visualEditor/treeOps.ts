@@ -18,7 +18,7 @@ export type NodePath = number[]
 
 export const pathKey = (path: NodePath): string => path.join('.')
 
-export const isColumnPath = (path: NodePath): boolean => path.length > 0 && path.length % 2 === 0
+const isColumnPath = (path: NodePath): boolean => path.length > 0 && path.length % 2 === 0
 
 /** Reads the node at a block path, or undefined if the path no longer resolves. */
 export function getNode(blocks: SectionNode[], path: NodePath): SectionNode | undefined {
@@ -30,13 +30,6 @@ export function getNode(blocks: SectionNode[], path: NodePath): SectionNode | un
     node = column?.blocks?.[path[i + 1]]
   }
   return node
-}
-
-/** Reads the column at an even-length path. */
-export function getColumn(blocks: SectionNode[], path: NodePath): SectionColumn | undefined {
-  if (!isColumnPath(path)) return undefined
-  const owner = getNode(blocks, path.slice(0, -1))
-  return owner?.columns?.[path[path.length - 1]]
 }
 
 /**
@@ -78,7 +71,7 @@ export function updateNode(
 }
 
 /** Returns a new tree with `column` at an even-length path replaced. */
-export function updateColumn(
+function updateColumn(
   blocks: SectionNode[],
   path: NodePath,
   updater: (column: SectionColumn) => SectionColumn,

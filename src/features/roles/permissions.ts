@@ -51,6 +51,7 @@ export const RESOURCES = [
   'settings:ad-settings',
   'audit-log',
   'email-log',
+  'error-log',
   'backups',
   'translations',
   'form-submissions',
@@ -666,6 +667,7 @@ export const PERMISSION_CATEGORIES: Array<{
     rows: [
       { resource: 'audit-log', label: 'Audit log', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'email-log', label: 'Email log', actions: ['read', 'delete'] },
+      { resource: 'error-log', label: 'Error log', actions: ['read', 'update', 'delete'] },
       { resource: 'backups', label: 'Backups', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'locked-documents', label: 'Locked documents', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'preferences', label: 'Preferences', actions: ['read', 'update'] },

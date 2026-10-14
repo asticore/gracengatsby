@@ -5,7 +5,7 @@ import React, { createContext, useContext } from 'react'
 import type { ConditionOperator, FormFieldOption } from '@/features/forms/types'
 
 /** The other fields in the form being edited, so a logic rule can point at one. Empty outside the form builder. */
-export type FormFieldChoice = { name: string; label: string }
+type FormFieldChoice = { name: string; label: string }
 export const FormEditorContext = createContext<{ fields: FormFieldChoice[] }>({ fields: [] })
 
 const OPERATORS: { value: ConditionOperator; label: string; needsValue: boolean }[] = [
@@ -71,7 +71,7 @@ export const FormLogicInput: React.FC<{ value: unknown; onChange: (next: unknown
                 </select>
                 {operator.needsValue && <input type="text" aria-label="Value" value={rule.value || ''} onChange={(event) => setRule(index, { value: event.target.value })} />}
                 <button type="button" className="ve-icon-btn" aria-label="Remove rule" onClick={() => set({ rules: rules.filter((_, i) => i !== index) })}>
-                  ✕
+                  &#10005;
                 </button>
               </div>
             )
@@ -116,7 +116,7 @@ export const FormOptionsInput: React.FC<{ label: string; value: unknown; onChang
             onChange={(event) => setOption(index, { price: event.target.value === '' ? undefined : Number(event.target.value) })}
           />
           <button type="button" className="ve-icon-btn" aria-label={`Remove choice ${index + 1}`} onClick={() => onChange(options.filter((_, i) => i !== index))}>
-            ✕
+            &#10005;
           </button>
         </div>
       ))}

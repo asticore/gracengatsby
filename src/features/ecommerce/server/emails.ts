@@ -87,7 +87,7 @@ export async function sendOrderEmail(engine: Engine, order: Record<string, unkno
     if ((emails[kind] ?? defaultOn) === false || emails[kind] === 0) return false
     const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch(() => ({}))) as { siteName?: string }
     const msg = renderOrderEmail(kind, order, { note, siteName: site.siteName, template: templateFor(settings.templates, kind), bodyOverride: typeof emails.bodyTemplate === 'string' && emails.bodyTemplate.trim() ? emails.bodyTemplate : undefined })
-    const result = await sendEmail({ to, ...msg })
+    const result = await sendEmail({ to, template: `order.${kind}`, ...msg })
     return result.ok
   } catch {
     return false
@@ -100,7 +100,7 @@ export async function sendAdminNewOrderEmail(engine: Engine, order: Record<strin
     const emails = settings.emails ?? {}
     const to = typeof emails.adminEmail === 'string' ? emails.adminEmail : ''
     if (!to || !emails.newOrderAdmin) return
-    await sendEmail({ to, subject: `New order #${order.id}`, text: `New order #${order.id}, total ${formatCents(order.amount as number)}.` })
+    await sendEmail({ to, template: 'order.admin-new', subject: `New order #${order.id}`, text: `New order #${order.id}, total ${formatCents(order.amount as number)}.` })
   } catch {
     /* notification only */
   }
@@ -112,7 +112,7 @@ export async function sendAdminAttentionEmail(engine: Engine, orderId: number, t
     const settings = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true })) as { emails?: Record<string, unknown> }
     const to = typeof settings.emails?.adminEmail === 'string' ? settings.emails.adminEmail : ''
     if (!to) return
-    await sendEmail({ to, subject: `Order #${orderId} needs attention`, text: `Order #${orderId} needs attention: ${text}` })
+    await sendEmail({ to, template: 'order.admin-attention', subject: `Order #${orderId} needs attention`, text: `Order #${orderId} needs attention: ${text}` })
   } catch {
     /* notification only */
   }

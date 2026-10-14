@@ -320,7 +320,7 @@ export async function deliverGiftCard(engine: StoredValueEngine, card: Doc & { i
     const settings = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true })) as { templates?: unknown }
     const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { siteName?: string }
     const msg = renderGiftCardEmail(card, settings.templates, site.siteName ?? 'our shop')
-    const result = await sendEmail({ to, ...msg })
+    const result = await sendEmail({ to, template: 'gift-card.delivery', ...msg })
     if (!result.ok) return false
     await engine.update({ collection: 'gift-cards', id: card.id, data: { status: 'active', sentAt: new Date().toISOString() }, overrideAccess: true })
     return true

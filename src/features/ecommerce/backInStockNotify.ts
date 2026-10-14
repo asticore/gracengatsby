@@ -43,6 +43,7 @@ export async function notifyBackInStock(engine: EngineLike, product: { id: numbe
     const url = `${baseUrl}/shop/${product.slug ?? ''}`
     const result = await sendEmail({
       to: doc.email,
+      template: 'stock.back-in-stock',
       subject: `Back in stock: ${label}`,
       text: `Good news. ${label} is back in stock.\n\nSee it here: ${url}\n\nYou asked us to let you know, so this is the only email we will send about it.`,
     }).catch((): { ok: false } => ({ ok: false }))

@@ -27,6 +27,7 @@ const SETTINGS_BASES = [
   'eg_backup_settings',
   'eg_blog_settings',
   'eg_email_settings',
+  'eg_email_templates',
   'eg_faq_settings',
   'eg_footer',
   'eg_form_settings',
@@ -42,6 +43,8 @@ const SETTINGS_BASES = [
   'eg_shop_settings',
   'eg_shop_extra_settings',
   'eg_site_settings',
+  'eg_site_details',
+  'eg_site_pages',
   'eg_speed_settings',
 ]
 

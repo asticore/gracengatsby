@@ -20,7 +20,7 @@ export type PreorderInfo = { active: boolean; shipsFrom: string | null; note: st
 
 /**
  * True while the product takes pre-orders: flag on, and no release date yet or one still ahead.
- * `enabled` is the shop-wide switch; it is always on today (no setting exists for it yet).
+ * `enabled` is the shop-wide switch (`shop-extra-settings` global, read by server/shopExtra.ts); callers pass it in.
  */
 export function isPreorderActive(product: PreorderFields | null | undefined, now: Date = new Date(), enabled = true): boolean {
   if (!enabled || !product || product.preorder !== true) return false

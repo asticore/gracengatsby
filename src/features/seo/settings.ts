@@ -2,6 +2,8 @@ import { cache } from 'react'
 
 import type { Media, SeoSetting, SiteSetting } from '@/engage-types'
 import { getEngine } from '@/lib/engine'
+import { loadSiteDetails } from '@/features/site/details'
+import type { SiteDetails } from '@/features/site/detailsModel'
 import { getFeatureFlags } from '@/utilities/features'
 
 /**
@@ -34,6 +36,8 @@ export type SeoContext = {
   settings: SeoSetting | null
   siteName: string
   baseUrl: string
+  /** Site details (business address, phone, email), used only to fill gaps in the organisation data. */
+  details?: SiteDetails | null
 }
 
 /**
@@ -64,9 +68,10 @@ export const getSeoContext = cache(async (): Promise<SeoContext> => {
     }
 
     const engine = await getEngine()
-    const [settings, site] = await Promise.all([
+    const [settings, site, details] = await Promise.all([
       engine.findGlobal({ slug: 'seo-settings', depth: 1 }).catch((): null => null) as Promise<SeoSetting | null>,
       engine.findGlobal({ slug: 'site-settings', depth: 0 }).catch((): null => null) as Promise<SiteSetting | null>,
+      loadSiteDetails(),
     ])
 
     return {
@@ -74,6 +79,7 @@ export const getSeoContext = cache(async (): Promise<SeoContext> => {
       settings,
       siteName: site?.siteName || '',
       baseUrl,
+      details,
     }
   } catch {
     return { enabled: false, settings: null, siteName: '', baseUrl }

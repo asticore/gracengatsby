@@ -63,6 +63,10 @@ import * as migration_20261024_400000_email_templates from './20261024_400000_em
 import * as migration_20261025_100000_communication_connections from './20261025_100000_communication_connections';
 import * as migration_20261025_200000_email_schedule from './20261025_200000_email_schedule';
 import * as migration_20261025_300000_email_designs from './20261025_300000_email_designs';
+import * as migration_20261026_100000_speed_extras from './20261026_100000_speed_extras';
+import * as migration_20261026_400000_error_log from './20261026_400000_error_log';
+import * as migration_20261026_300000_cron_runs from './20261026_300000_cron_runs';
+import * as migration_20261026_200000_speed_cache_rules from './20261026_200000_speed_cache_rules';
 import * as migration_20261024_100000_site_details from './20261024_100000_site_details';
 import * as migration_20261024_300000_email_log from './20261024_300000_email_log';
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
@@ -407,5 +411,25 @@ export const migrations = [
     up: migration_20261025_300000_email_designs.up,
     down: migration_20261025_300000_email_designs.down,
     name: '20261025_300000_email_designs',
+  },
+  {
+    up: migration_20261026_100000_speed_extras.up,
+    down: migration_20261026_100000_speed_extras.down,
+    name: '20261026_100000_speed_extras',
+  },
+  {
+    up: migration_20261026_300000_cron_runs.up,
+    down: migration_20261026_300000_cron_runs.down,
+    name: '20261026_300000_cron_runs',
+  },
+  {
+    up: migration_20261026_400000_error_log.up,
+    down: migration_20261026_400000_error_log.down,
+    name: '20261026_400000_error_log',
+  },
+  {
+    up: migration_20261026_200000_speed_cache_rules.up,
+    down: migration_20261026_200000_speed_cache_rules.down,
+    name: '20261026_200000_speed_cache_rules',
   },
 ];

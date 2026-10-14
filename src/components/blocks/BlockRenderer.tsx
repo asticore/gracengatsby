@@ -138,7 +138,7 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
         const ref = raw && typeof raw === 'object' ? (raw as { id?: unknown }).id : raw
         return <DataViewBlock viewRef={typeof ref === 'number' || typeof ref === 'string' ? ref : null} />
       }
-      return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {})
+      return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {}, get('design'), `el-${key}`)
 
     default:
       return null

@@ -21,6 +21,10 @@ export type EmailScheduleDoc = {
   approvalDecision?: Switch
   backInStock?: Switch
   lowStockAlert?: Switch
+  subscriptionNew?: Switch
+  subscriptionRenewal?: Switch
+  subscriptionFailed?: Switch
+  subscriptionCancelled?: Switch
   quietHours?: ({ enabled?: boolean | null; start?: string | null; end?: string | null }) | null
   updatedAt: string
   createdAt: string

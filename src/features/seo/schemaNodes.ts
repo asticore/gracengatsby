@@ -92,6 +92,14 @@ export function breadcrumbTrail(input: {
   return section ? [home, { name: section.name, url: at(section.path) }, self] : [home, self]
 }
 
+/** Home, then the list page itself, for an index page such as /blog or /shop. */
+export function listBreadcrumbs(input: { baseUrl: string; path: string; name: string }): Crumb[] {
+  return [
+    { name: 'Home', url: `${input.baseUrl}/` },
+    { name: input.name, url: `${input.baseUrl}${input.path}` },
+  ]
+}
+
 export type EventFacts = {
   /** Absolute address of the event page. */
   url: string

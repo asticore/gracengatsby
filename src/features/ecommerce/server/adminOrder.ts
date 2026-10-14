@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { getAdminContext } from '@/admin/auth'
+import { normalizeSiteDetails } from '@/features/site/detailsModel'
+import { invoiceStoreFrom } from '@/features/site/fallback'
 import { resolveAccess } from '@/features/roles/permissions'
 import type { InvoiceOrder, InvoiceStore } from '../lib/invoice'
 import type { InvoiceSettings } from '../lib/invoiceSettings'
@@ -32,15 +34,12 @@ export async function loadInvoiceData(engine: AdminEngine, id: number): Promise<
   if (!order) return null
   const shop = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { tax?: Doc; invoice?: Partial<InvoiceSettings> }
   const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { siteName?: string }
+  const details = normalizeSiteDetails(await engine.findGlobal({ slug: 'site-details', depth: 0, overrideAccess: true }).catch((): Doc => ({})))
   const tax = shop.tax ?? {}
   return {
     order: order as unknown as InvoiceOrder,
     settings: shop.invoice ?? {},
-    store: {
-      name: String(tax.businessName || site.siteName || 'Shop'),
-      abn: typeof tax.abn === 'string' ? tax.abn : null,
-      address: typeof tax.businessAddress === 'string' ? tax.businessAddress : null,
-    },
+    store: invoiceStoreFrom(tax, site.siteName, details),
   }
 }
 

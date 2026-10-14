@@ -26,6 +26,8 @@ import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
 import { FindReplaceView } from '@/admin/views/FindReplaceView'
 import { SeoAuditView } from '@/admin/views/SeoAuditView'
+import { EmailTestingView } from '@/admin/views/EmailTestingView'
+import { EmailDesignerView } from '@/admin/views/EmailDesignerView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
 import { ShopSettingsView } from '@/admin/views/ShopSettingsView'
 import { StoreCreditView } from '@/admin/views/StoreCreditView'
@@ -156,5 +158,17 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: SeoAuditView,
     path: '/seo-audit',
     meta: { title: 'SEO audit', description: 'Check every published page, post, product and event for SEO and readability problems.' },
+  },
+  {
+    key: 'emailTesting',
+    Component: EmailTestingView,
+    path: '/email-testing',
+    meta: { title: 'Email testing', description: 'Check the email connection, send test emails and check the sending domain.' },
+  },
+  {
+    key: 'emailDesigner',
+    Component: EmailDesignerView,
+    path: '/email-designer',
+    meta: { title: 'Email designer', description: 'Design the look of automatic emails: logo, colours, buttons and content blocks.' },
   },
 ] as const

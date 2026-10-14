@@ -56,7 +56,7 @@ export async function sendStockAlerts(engine: EngineLike, alerts: StockAlert[]):
     const lines = alerts.map((alert) => `${alert.kind === 'out' ? 'Out of stock' : 'Low stock'}: ${alert.label}${alert.sku ? ` (SKU ${alert.sku})` : ''} - ${alert.qty} left`)
     const subject = alerts.length === 1 ? `${alerts[0].kind === 'out' ? 'Out of stock' : 'Low stock'}: ${alerts[0].label}`.replace(/[\r\n]+/g, ' ') : `Stock alert: ${alerts.length} items`
     const { sendEmail } = await import('@/features/email')
-    const result = await sendEmail({ to, subject, text: lines.join('\n') })
+    const result = await sendEmail({ to, template: 'stock.alert', subject, text: lines.join('\n') })
     return result.ok
   } catch {
     return false

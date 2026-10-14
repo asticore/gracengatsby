@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
-import { resolveSeo } from '@/features/seo/resolve'
+import { resolveSeo, type SeoInput } from '@/features/seo/resolve'
+import { contentTemplatesFor, type ContentType } from '@/features/seo/templates'
 import { getSeoContext } from '@/features/seo/settings'
 import { getEngine } from '@/lib/engine'
 import type { Media, SiteSetting } from '@/engage-types'
@@ -91,6 +92,9 @@ export const buildMetadata = async (opts: {
   kind?: 'website' | 'article'
   publishedAt?: string | null
   updatedAt?: string | null
+  /** Picks the content-type title and description templates. See resolveSeo. */
+  contentType?: ContentType
+  tokens?: SeoInput['tokens']
 }): Promise<Metadata> => {
   const engine = await getEngine()
   const settings = (await engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null)) as SiteSetting | null
@@ -105,6 +109,8 @@ export const buildMetadata = async (opts: {
         kind: opts.kind,
         publishedAt: opts.publishedAt,
         updatedAt: opts.updatedAt,
+        contentType: opts.contentType,
+        tokens: opts.tokens,
       })
     : null
 
@@ -112,8 +118,10 @@ export const buildMetadata = async (opts: {
   const pageTitle = opts.seo?.metaTitle?.trim() || opts.title
   const featureTemplate = context.settings?.defaults?.titleTemplate?.trim()
   const template = settings?.seo?.titleTemplate || '%s'
+  // Only a content-type title template that is actually set replaces the site template; a blank one keeps the old result.
+  const contentTitleSet = opts.contentType ? contentTemplatesFor(context.settings, opts.contentType).title.trim() !== '' : false
   const title =
-    resolved && featureTemplate
+    resolved && (featureTemplate || contentTitleSet)
       ? resolved.title
       : template.includes('%s')
         ? template.replace('%s', pageTitle)

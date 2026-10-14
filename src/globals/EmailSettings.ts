@@ -40,10 +40,26 @@ export const EmailSettings: GlobalConfig = {
   },
   fields: [
     {
+      // Shows whether each provider is connected, and links to the Integrations
+      // page where the keys now live. A ui field: no column.
+      name: 'connectionNotice',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/features/email/admin/ConnectionNotice#ConnectionNotice',
+        },
+      },
+    },
+    {
+      // Wave 16: the provider choice and every provider key moved to the
+      // communications group of the Integrations global. These fields stay in
+      // the schema so existing columns keep their values (the wave 16 migration
+      // copies them across) but they are hidden and never read for new sends.
       name: 'provider',
       type: 'select',
       defaultValue: 'resend',
       admin: {
+        hidden: true,
         description:
           'This site runs on Cloudflare Workers, which cannot make the kind of direct connection traditional SMTP requires. If you have SMTP details from your old host they will not work here - pick one of the other providers instead and use the API key it gives you.',
       },
@@ -83,7 +99,7 @@ export const EmailSettings: GlobalConfig = {
       type: 'group',
       name: 'resend',
       label: 'Resend',
-      admin: { condition: (_, s) => s?.provider === 'resend' },
+      admin: { hidden: true },
       fields: [
         {
           name: 'apiKey',
@@ -107,7 +123,7 @@ export const EmailSettings: GlobalConfig = {
       type: 'group',
       name: 'sesApi',
       label: 'Amazon SES',
-      admin: { condition: (_, s) => s?.provider === 'ses-api' },
+      admin: { hidden: true },
       fields: [
         {
           type: 'row',
@@ -158,7 +174,7 @@ export const EmailSettings: GlobalConfig = {
       type: 'group',
       name: 'mailgun',
       label: 'Mailgun',
-      admin: { condition: (_, s) => s?.provider === 'mailgun' },
+      admin: { hidden: true },
       fields: [
         {
           type: 'row',
@@ -202,7 +218,7 @@ export const EmailSettings: GlobalConfig = {
       type: 'group',
       name: 'postmark',
       label: 'Postmark',
-      admin: { condition: (_, s) => s?.provider === 'postmark' },
+      admin: { hidden: true },
       fields: [
         {
           type: 'row',
@@ -237,7 +253,7 @@ export const EmailSettings: GlobalConfig = {
       type: 'group',
       name: 'sendgrid',
       label: 'SendGrid',
-      admin: { condition: (_, s) => s?.provider === 'sendgrid' },
+      admin: { hidden: true },
       fields: [
         {
           name: 'apiKey',
@@ -261,7 +277,7 @@ export const EmailSettings: GlobalConfig = {
       type: 'group',
       name: 'cloudflare',
       label: 'Cloudflare Email',
-      admin: { condition: (_, s) => s?.provider === 'cloudflare' },
+      admin: { hidden: true },
       fields: [
         {
           type: 'row',

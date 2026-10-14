@@ -55,6 +55,8 @@ import * as migration_20261019_100000_recurrence_tiers_series from './20261019_1
 import * as migration_20261019_300000_toc_block from './20261019_300000_toc_block';
 import * as migration_20261020_100000_shop_extra_settings from './20261020_100000_shop_extra_settings';
 import * as migration_20261021_100000_reusable_sections from './20261021_100000_reusable_sections';
+import * as migration_20261022_100000_seo_focus_keyphrase from './20261022_100000_seo_focus_keyphrase';
+import * as migration_20261022_200000_seo_templates from './20261022_200000_seo_templates';
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
 
 export const migrations = [
@@ -347,5 +349,15 @@ export const migrations = [
     up: migration_20261021_100000_reusable_sections.up,
     down: migration_20261021_100000_reusable_sections.down,
     name: '20261021_100000_reusable_sections',
+  },
+  {
+    up: migration_20261022_100000_seo_focus_keyphrase.up,
+    down: migration_20261022_100000_seo_focus_keyphrase.down,
+    name: '20261022_100000_seo_focus_keyphrase',
+  },
+  {
+    up: migration_20261022_200000_seo_templates.up,
+    down: migration_20261022_200000_seo_templates.down,
+    name: '20261022_200000_seo_templates',
   },
 ];

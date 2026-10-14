@@ -1,14 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import React from 'react'
 
 import type { Event, Media } from '@/engage-types'
-
-const dateFormatter = new Intl.DateTimeFormat('en-AU', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-})
+import { loadSiteDetails } from '@/features/site/details'
+import { formatDate } from '@/features/site/format'
 
 const getImageURL = (event: Event): string | null => {
   if (event.coverImage && typeof event.coverImage === 'object') {
@@ -17,8 +12,10 @@ const getImageURL = (event: Event): string | null => {
   return null
 }
 
-export const EventCard: React.FC<{ event: Event }> = ({ event }) => {
+/** A server component: the date and time zone come from Site details. Cards use the short-month form of the chosen style. */
+export const EventCard = async ({ event }: { event: Event }) => {
   const imageURL = getImageURL(event)
+  const details = await loadSiteDetails()
 
   return (
     <Link href={`/events/${event.slug}`} className="block border border-[var(--color-line)] bg-white">
@@ -43,7 +40,7 @@ export const EventCard: React.FC<{ event: Event }> = ({ event }) => {
       </div>
       <div className="p-5">
         <span className="text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-gold)]">
-          {dateFormatter.format(new Date(event.startDate))}
+          {formatDate(event.startDate, details, { compact: true })}
         </span>
         <h3>{event.title}</h3>
         {event.location?.venueName && <p>{event.location.venueName}</p>}

@@ -31,6 +31,7 @@ import { MembershipTiers } from '@/features/members/collections/MembershipTiers'
 import { Translations } from '@/features/multilingual/translationsCollection'
 import { AuditLog } from '@/features/security/auditLogCollection'
 import { EmailLog } from '@/collections/EmailLog'
+import { ErrorLog } from '@/collections/ErrorLog'
 import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
 import { EmailSettings } from '@/globals/EmailSettings'
@@ -510,6 +511,10 @@ export const auditLog = auditLogGenerated.table
 /** The `email-log` collection (src/collections/EmailLog.ts): one row per email the site tried to send. */
 export const emailLogGenerated = generateTable(EmailLog)
 export const emailLog = emailLogGenerated.table
+
+/** The `error-log` collection (src/collections/ErrorLog.ts): one row per distinct error, with a repeat count. */
+export const errorLogGenerated = generateTable(ErrorLog)
+export const errorLog = errorLogGenerated.table
 
 export const backupsGenerated = generateTable(Backups)
 export const backups = backupsGenerated.table

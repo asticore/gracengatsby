@@ -28,6 +28,8 @@ const cartItemFields: Field[] = [
   { name: 'giftSenderName', type: 'text' },
   { name: 'giftMessage', type: 'text' },
   { name: 'giftSendAt', type: 'text' },
+  // Product add-on answers for this line, as JSON text. The cart hook validates and re-prices them (lib/addOns.ts).
+  { name: 'addOns', type: 'text' },
 ]
 
 const transactionItemFields: Field[] = [

@@ -75,7 +75,7 @@ export async function runAbandonedCartReminders(engine: Engine, now = new Date()
     const intro = (cfg.bodyTemplate || 'You left some items in your cart at {{site_name}}. They are still waiting for you.').replace(/\{\{\s*site_name\s*\}\}/g, name)
     const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5"><p>${escapeHtml(intro).replace(/\n/g, '<br>')}</p><p><a href="${escapeHtml(recover)}">Return to your cart</a></p><p style="font-size:12px;color:#666"><a href="${escapeHtml(unsub)}">Unsubscribe from cart reminders</a></p></div>`
     const text = `${intro}\n\nReturn to your cart: ${recover}\n\nUnsubscribe: ${unsub}`
-    const result = await sendEmail({ to: row.email, subject: cfg.subject.replace(/[\r\n]+/g, ' '), html, text })
+    const result = await sendEmail({ to: row.email, template: 'cart.abandoned', subject: cfg.subject.replace(/[\r\n]+/g, ' '), html, text })
     if (result.ok) sent += 1
     else await runChanges(d1, SQL.cartReminded, row.id, due - 1, row.last_reminder_at) // release so a later run retries
   }

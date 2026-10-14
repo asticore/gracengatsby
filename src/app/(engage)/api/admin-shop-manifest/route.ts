@@ -1,9 +1,22 @@
 import { NextResponse } from 'next/server'
 
 import { authorizeOrders } from '@/features/ecommerce/server/adminOrder'
+import { labelledOrderOptions, manifestCarrierOptions } from '@/features/ecommerce/server/manifestOptions'
 import { createManifest, type ShipEngine } from '@/features/ecommerce/server/shipments'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * GET - what the Orders list manifest action needs: the carriers switched on with their keys saved, and the
+ * labelled orders to pick from (newest first). Needs orders.read.
+ */
+export async function GET(): Promise<Response> {
+  const auth = await authorizeOrders('read')
+  if (!auth.ok) return auth.response
+  const shipping = await auth.engine.findGlobal({ slug: 'shipping-settings', depth: 0, overrideAccess: true }).catch((): Record<string, unknown> => ({}))
+  const labelled = await auth.engine.find({ collection: 'orders', where: { shippedAt: { exists: true } }, sort: '-shippedAt', limit: 200, depth: 0, overrideAccess: true }).catch((): { docs: Record<string, unknown>[] } => ({ docs: [] }))
+  return NextResponse.json({ carriers: manifestCarrierOptions(shipping), orders: labelledOrderOptions(labelled.docs) }, { headers: { 'Cache-Control': 'no-store' } })
+}
 
 /** POST { orderIds: number[], carrier? } - the bulk "Create manifest" action. Needs orders.update. */
 export async function POST(request: Request): Promise<Response> {

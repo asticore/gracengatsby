@@ -74,6 +74,13 @@ describe('Settings Pages Configuration', () => {
       const communication = SETTINGS_PAGES.find((p) => p.key === 'communication')
       expect(communication).toBeTruthy()
       expect(communication?.sections).toContainEqual({ kind: 'global', slug: 'email-settings' })
+      expect(communication?.sections).toContainEqual({ kind: 'global', slug: 'email-schedule' })
+      expect(communication?.sections).toContainEqual({ kind: 'global', slug: 'email-brand' })
+      const linkHrefs = (communication?.sections ?? []).filter((s) => s.kind === 'link').map((s) => (s as { href: string }).href)
+      expect(linkHrefs).toContain('/settings/site#integrations')
+      expect(linkHrefs).toContain('/email-designer')
+      expect(linkHrefs).toContain('/email-testing')
+      expect(linkHrefs).toContain('/collections/email-log')
     })
 
     it('Speed page has correct sections', () => {
@@ -119,6 +126,8 @@ describe('Settings Pages Configuration', () => {
       'site-details',
       'site-pages',
       'email-templates',
+      'email-schedule',
+      'email-brand',
     ]
 
     it('covers all old setting slugs exactly once (excluding header/footer)', () => {

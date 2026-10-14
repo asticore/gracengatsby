@@ -12,6 +12,7 @@ import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
 import { getSeoContext } from '@/features/seo/settings'
+import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import type { Product, ShopSetting } from '@/engage-types'
 
 export async function generateMetadata() {
@@ -61,6 +62,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         url: context.baseUrl + '/shop',
         baseUrl: context.baseUrl,
         siteName: context.siteName,
+        breadcrumbs: listBreadcrumbs({ baseUrl: context.baseUrl, path: '/shop', name: 'Shop' }),
       })
     : null
 

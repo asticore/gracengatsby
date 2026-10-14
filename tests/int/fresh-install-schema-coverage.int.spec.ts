@@ -17,6 +17,7 @@ import * as dataViewsSchema from '@/cms/db/schema/dataViews'
 import * as storedValueSchema from '@/cms/db/schema/shopStoredValue'
 import * as shippingSchema from '@/cms/db/schema/shopShipping'
 import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
+import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
 
@@ -166,7 +167,8 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         'languageSettings', 'languageSettingsMultilingualActiveLocales',
         'seoSettings', 'seoSettingsSchemaSameAs', 'speedSettings', 'speedSettingsAdvancedPreconnectOrigins', 'speedSettingsAdvancedPrefetchDns',
         'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings', 'shopExtraSettings', 'siteDetails', 'sitePages', 'emailTemplates', 'emailBrand', 'emailSchedule', 'googleConnection',
-        'addresses', 'carts', 'cartsItems', 'orders', 'ordersItems', 'ordersRels', 'transactions', 'transactionsItems', 'products', 'productsRels', 'productsVersions', 'productsVersionsRels', 'productsAttributes', 'productsVariations', 'productsVersionsAttributes', 'productsVersionsVariations', 'cartsItems',
+        'addresses', 'carts', 'cartsItems', 'orders', 'ordersItems', 'ordersRels', 'transactions', 'transactionsItems', 'products', 'productsRels', 'productsVersions', 'productsVersionsRels', 'productsAttributes', 'productsVariations', 'productsVersionsAttributes', 'productsVersionsVariations', 'productsBundleItems', 'productsVersionsBundleItems', 'cartsItems',
+        'productsAddOns', 'productsVersionsAddOns', 'shopExtraSettingsPricingRules',
         'preferences', 'preferencesRels', 'lockedDocuments', 'lockedDocumentsRels',
       ]
 
@@ -213,6 +215,12 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Back-in-stock sign-up table lives in its own schema file
       for (const [exportName, exportValue] of Object.entries(stockSubscriptionsSchema)) {
+        if (exportName.endsWith('Generated')) continue
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Product subscriptions (wave 19) live in their own schema file
+      for (const [exportName, exportValue] of Object.entries(productSubscriptionsSchema)) {
         if (exportName.endsWith('Generated')) continue
         drizzleTables.push({ name: exportName, table: exportValue })
       }

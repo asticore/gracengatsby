@@ -3,6 +3,8 @@ import { drizzle } from 'drizzle-orm/d1'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { getEngine } from '@/engine'
 import { runDueSchedules } from '@/features/schedule/runDue'
+import { isHourlyTick } from '@/features/cron/model'
+import { runJob } from '@/features/cron/runJob'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,60 +55,78 @@ async function handleCronRequest(request: Request): Promise<Response> {
       return NextResponse.json({ error: 'Invalid x-cron-key' }, { status: 401 })
     }
 
-    // Key is valid - run due schedules
+    // Key is valid - run every job. Each one is recorded in eg_cron_runs by runJob,
+    // and a failing job is reported to the error log without stopping the rest.
     const engine = await getEngine()
     const { env } = await getCloudflareContext({ async: true })
     const db = drizzle(env.D1)
     const nowIso = new Date().toISOString()
-    const result = await runDueSchedules(engine, db, nowIso)
+    const hourly = isHourlyTick(new Date())
+
+    const scheduled = await runJob('schedules', () => runDueSchedules(engine, db, nowIso))
+    if (scheduled.status !== 'ok') {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
+    }
 
     // Abandoned-cart reminders (does nothing unless switched on in Shop settings).
-    try {
+    await runJob('abandoned-carts', async () => {
       const { runAbandonedCartReminders } = await import('@/features/ecommerce/server/abandoned')
       await runAbandonedCartReminders(engine as never)
-    } catch (error) {
-      console.error('cron abandoned-cart error:', error)
-    }
+    })
 
     // "Test after publish": runs at most one due PageSpeed test per tick (does nothing unless switched on in Speed settings).
-    try {
+    await runJob('pagespeed', async () => {
       const { runDueTests } = await import('@/features/pagespeed/queue')
       await runDueTests(engine as never, db as never)
-    } catch (error) {
-      console.error('cron pagespeed error:', error)
-    }
-    // Form housekeeping: webhook retries and entries past their retention window.
-    try {
-      const { pruneSubmissions, retryDueWebhooks } = await import('@/features/forms/maintenance')
+    })
+
+    // Form housekeeping: webhook retries every tick, entries past their retention window hourly.
+    await runJob('webhooks-retry', async () => {
+      const { retryDueWebhooks } = await import('@/features/forms/maintenance')
       await retryDueWebhooks(engine as never)
-      // Retention is checked hourly: the 5-minute cron would only repeat an empty query.
-      if (new Date().getUTCMinutes() < 5) await pruneSubmissions(engine as never)
-    } catch (error) {
-      console.error('cron form-maintenance error:', error)
-    }
+    })
+    await runJob(
+      'prune-submissions',
+      async () => {
+        const { pruneSubmissions } = await import('@/features/forms/maintenance')
+        await pruneSubmissions(engine as never)
+      },
+      { due: hourly },
+    )
+
     // Email log: entries older than the 90-day retention are removed (checked hourly, like form entries).
-    try {
-      const { pruneEmailLog } = await import('@/features/email/emailLogStore')
-      if (new Date().getUTCMinutes() < 5) await pruneEmailLog(engine as never)
-    } catch (error) {
-      console.error('cron email-log prune error:', error)
-    }
+    await runJob(
+      'prune-email-log',
+      async () => {
+        const { pruneEmailLog } = await import('@/features/email/emailLogStore')
+        await pruneEmailLog(engine as never)
+      },
+      { due: hourly },
+    )
+
     // Gift cards whose send date has arrived are emailed to their recipients.
-    try {
+    await runJob('gift-cards', async () => {
       const { deliverDueGiftCards } = await import('@/features/ecommerce/server/storedValue')
       await deliverDueGiftCards(engine as never)
-    } catch (error) {
-      console.error('cron gift-card delivery error:', error)
-    }
+    })
+
     // Reminder emails (When emails are sent): membership renewal and event reminders, held during quiet hours.
-    try {
+    await runJob('scheduled-emails', async () => {
       const { runScheduledEmails } = await import('@/features/email/scheduledEmails')
       await runScheduledEmails(engine as never, new Date())
-    } catch (error) {
-      console.error('cron scheduled-email error:', error)
-    }
+    })
 
-    return NextResponse.json(result, {
+    // Data clean-up from Data and system settings (old versions, trash, logs). Hourly.
+    await runJob(
+      'cleanup',
+      async () => {
+        const { runScheduledCleanup } = await import('@/features/cleanup/scheduledCleanup')
+        await runScheduledCleanup(engine as never)
+      },
+      { due: hourly },
+    )
+
+    return NextResponse.json(scheduled.value, {
       status: 200,
       headers: { 'Cache-Control': 'no-store' },
     })

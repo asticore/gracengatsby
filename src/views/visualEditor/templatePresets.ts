@@ -13,7 +13,7 @@ import type { SectionNode } from '@/lib/sectionTree'
  * schemas' own `defaultValue()` produces - ElementLibrary runs each through
  * `cloneNode` before inserting, which assigns real ids, so none are set here.
  */
-export type TemplatePreset = {
+type TemplatePreset = {
   slug: string
   name: string
   description: string

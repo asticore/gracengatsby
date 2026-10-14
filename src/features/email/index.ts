@@ -4,6 +4,7 @@ import { getFeatureFlags } from '@/utilities/features'
 import type { EmailSettingsDoc, OutgoingEmail, SendEmailArgs, SendEmailResult } from './types'
 
 import { isSupportedProvider, resolveProvider } from './providers'
+import { recordEmailSend } from './emailLogStore'
 
 export type { SendEmailArgs, SendEmailResult, EmailProviderKey } from './types'
 
@@ -83,7 +84,7 @@ const prepare = (args: SendEmailArgs, settings: EmailSettingsDoc): Prepared => {
  * backup) and a failure to notify must not fail the thing that was actually
  * being done.
  */
-export const sendEmail = async (args: SendEmailArgs): Promise<SendEmailResult> => {
+const deliverEmail = async (args: SendEmailArgs): Promise<SendEmailResult> => {
   const engine = await getEngine()
   const logger = engine.logger
 
@@ -148,6 +149,17 @@ export const sendEmail = async (args: SendEmailArgs): Promise<SendEmailResult> =
 }
 
 /**
+ * Sends one message and records the attempt in the email log. The log write is
+ * awaited so it is not dropped when the request ends, but it never throws, and
+ * a send the feature has switched off is not logged at all.
+ */
+export const sendEmail = async (args: SendEmailArgs): Promise<SendEmailResult> => {
+  const result = await deliverEmail(args)
+  await recordEmailSend(args, result)
+  return result
+}
+
+/**
  * Sends the fixed message behind the "Send test email" button, to the test
  * recipient stored in settings. Kept here rather than in the API route so the
  * route stays a thin guard and this stays testable without HTTP.
@@ -168,6 +180,7 @@ export const sendTestEmail = async (): Promise<SendEmailResult & { to?: string }
   const sent = new Date().toISOString()
   const result = await sendEmail({
     to: recipient,
+    template: 'test',
     subject: 'Test message from your site',
     text: `This is a test message confirming your email settings work.\n\nSent ${sent}.`,
     html: `<p>This is a test message confirming your email settings work.</p><p>Sent ${sent}.</p>`,

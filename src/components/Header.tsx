@@ -4,6 +4,8 @@ import { useCart } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React, { useState } from 'react'
 
+import { CurrencySwitcher } from '@/components/CurrencySwitcher'
+
 export type NavLink = {
   href: string
   label: string
@@ -116,6 +118,7 @@ export const Header: React.FC<{
                 ))}
               </div>
             )}
+            <CurrencySwitcher />
             {showCart && (
               <Link
                 href="/cart"

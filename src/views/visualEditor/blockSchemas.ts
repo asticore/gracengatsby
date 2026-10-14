@@ -19,7 +19,7 @@ import { FORM_ONLY_ELEMENT_TYPES } from '@/features/forms/elementDefs'
 export type { EditorField, EditorFieldType } from '@/lib/elements/fieldTypes'
 
 /** Groups the element library into browsable sections. */
-export type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic' | 'elements' | 'formFields'
+type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic' | 'elements' | 'formFields'
 
 export const BLOCK_CATEGORIES: { key: BlockCategory; label: string }[] = [
   { key: 'layout', label: 'Layout' },
@@ -57,11 +57,11 @@ const CATEGORY_OPTIONS = [
   { label: 'Gifting', value: 'gifting' },
 ]
 
-export const VISUAL_BLOCKS: BlockDef[] = [
+const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'section',
     label: 'Section',
-    icon: '▦',
+    icon: String.fromCodePoint(0x25a6),
     category: 'layout',
     description: 'A row of columns. Drop blocks inside each column, and nest sections as deep as you like.',
     fields: [],
@@ -70,7 +70,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'hero',
     label: 'Hero',
-    icon: '⭐',
+    icon: String.fromCodePoint(0x2b50),
     category: 'basic',
     // Not offered as a plain draggable element - see hiddenFromLibrary. A fixed banner
     // layout works against "as customisable as Elementor": building the same effect from a
@@ -140,7 +140,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'imageText',
     label: 'Image + Text',
-    icon: '\u{1F5BC}️',
+    icon: String.fromCodePoint(0x1f5bc, 0xfe0f),
     category: 'media',
     description: 'An image beside a block of copy.',
     fields: [
@@ -161,7 +161,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'gallery',
     label: 'Gallery',
-    icon: '\u{1F5BC}️',
+    icon: String.fromCodePoint(0x1f5bc, 0xfe0f),
     category: 'media',
     description: 'A grid of images.',
     fields: [
@@ -216,7 +216,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'productGrid',
     label: 'Product Grid',
-    icon: '\u{1F6CD}️',
+    icon: String.fromCodePoint(0x1f6cd, 0xfe0f),
     category: 'dynamic',
     description: 'A grid of products, filtered by category.',
     fields: [
@@ -242,7 +242,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'faq',
     label: 'FAQ',
-    icon: '❓',
+    icon: String.fromCodePoint(0x2753),
     category: 'dynamic',
     description: 'A list of questions and answers.',
     fields: [
@@ -264,7 +264,7 @@ export const VISUAL_BLOCKS: BlockDef[] = [
   {
     slug: 'element',
     label: 'Element',
-    icon: '🧩',
+    icon: String.fromCodePoint(0x1f9e9),
     category: 'basic',
     description: 'One of the element-library items (heading, icon box, countdown, ...) - see src/lib/elements/registry.ts.',
     // Never offered directly - the library shows one card per registry entry

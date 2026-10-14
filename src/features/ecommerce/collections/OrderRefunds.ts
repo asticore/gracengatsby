@@ -46,6 +46,8 @@ export const OrderRefunds: CollectionConfig = {
     { name: 'reason', type: 'text' },
     { name: 'items', type: 'json', admin: { description: 'Optional: [{"index":0,"quantity":1}] - line items (by position) this refund covers, used for restocking.' } },
     { name: 'restock', type: 'checkbox', defaultValue: false, admin: { description: 'Return the refunded items to stock.' } },
+    { name: 'lines', type: 'json', admin: { readOnly: true, description: 'Line-item refund: which order lines were refunded, how much, and whether they were restocked. lineId is the line position on the order.' } },
+    { name: 'shippingAmount', type: 'number', admin: { readOnly: true, description: 'Shipping refunded with this refund, in cents.' } },
     {
       name: 'method',
       type: 'select',

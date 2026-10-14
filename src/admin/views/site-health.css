@@ -1,0 +1,128 @@
+/* Site health and Scheduled tasks screens. Light colours are the defaults; dark uses [data-theme='dark'] only. */
+.sh,
+.st {
+  --sh-text: #1f2328;
+  --sh-muted: #59636e;
+  --sh-line: #d0d7de;
+  --sh-bad: #b42318;
+  --sh-bad-bg: #fef3f2;
+  --sh-warn: #93370d;
+  --sh-warn-bg: #fff6ed;
+  --sh-ok: #1a7f37;
+  color: var(--sh-text);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 980px;
+}
+
+[data-theme='dark'] .sh,
+[data-theme='dark'] .st {
+  --sh-text: #e6edf3;
+  --sh-muted: #9aa4af;
+  --sh-line: #3d444d;
+  --sh-bad: #ff8e85;
+  --sh-bad-bg: #3a1d1b;
+  --sh-warn: #f5b27a;
+  --sh-warn-bg: #3a2a1b;
+  --sh-ok: #6fdd8b;
+}
+
+.sh-title {
+  font-size: 1.6rem;
+  margin: 0 0 4px;
+}
+
+.sh-muted {
+  color: var(--sh-muted);
+  margin: 4px 0;
+}
+
+.sh-bad {
+  color: var(--sh-bad);
+  font-weight: 600;
+}
+
+.sh-ok {
+  color: var(--sh-ok);
+  font-weight: 600;
+}
+
+.sh-warning-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sh-warning {
+  border-left: 4px solid currentColor;
+  padding: 8px 12px;
+}
+
+.sh-warning--bad {
+  color: var(--sh-bad);
+  background: var(--sh-bad-bg);
+}
+
+.sh-warning--warn {
+  color: var(--sh-warn);
+  background: var(--sh-warn-bg);
+}
+
+.sh-facts {
+  display: grid;
+  grid-template-columns: minmax(140px, max-content) 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.sh-facts dt {
+  font-weight: 600;
+}
+
+.sh-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.sh-subhead {
+  font-size: 1rem;
+  margin: 16px 0 8px;
+}
+
+.sh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.sh-table th,
+.sh-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--sh-line);
+  vertical-align: top;
+}
+
+.sh-table .sh-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sh-off td {
+  color: var(--sh-muted);
+}
+
+.sh-error {
+  color: var(--sh-bad);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .sh-facts {
+    grid-template-columns: 1fr;
+  }
+}

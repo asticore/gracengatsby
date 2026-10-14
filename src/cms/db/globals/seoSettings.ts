@@ -91,6 +91,14 @@ export type SeoSettingsDoc = {
     bodyEndScripts?: string | null
   } | null
   /**
+   * The `indexNow` group. Columns are `index_now_*`. The key is created by the
+   * global's beforeChange hook (src/features/seo/indexNowKey.ts), never by a client.
+   */
+  indexNow?: {
+    enabled?: boolean | null
+    key?: string | null
+  } | null
+  /**
    * The `siteFiles` group (Site files: llms.txt, security.txt, ads.txt,
    * app-ads.txt, humans.txt, the web app manifest and the server rules). Its
    * `llmsIncludeCollections` is a hasMany select, so it arrives as a string[].

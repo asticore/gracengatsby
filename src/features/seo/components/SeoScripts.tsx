@@ -7,6 +7,7 @@ import { normaliseConsentConfig, scriptGate, type ConsentConfig } from '@/featur
 import { GatedScript } from '@/features/consent/GatedScript'
 import { ConsentManager } from '@/features/consent/ConsentManager'
 import { requireOptIn } from '@/features/consent/regions'
+import { getPrivacyPolicyPath } from '@/features/site/pages'
 
 import { getSeoContext } from '../settings'
 import { AnalyticsLoader } from './AnalyticsLoader'
@@ -78,7 +79,8 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
 
   const integrations = await loadIntegrations()
   const analytics = seoOn ? (context.settings?.analytics as Record<string, unknown> | undefined) : undefined
-  const consent = normaliseConsentConfig(integrations, analytics)
+  const privacyFallback = await getPrivacyPolicyPath().catch((): null => null)
+  const consent = normaliseConsentConfig(integrations, analytics, privacyFallback)
 
   // Consent is independent of SEO. With SEO off, the banner still shows when
   // consent is on; custom code and analytics tags come from SEO settings, so

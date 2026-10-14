@@ -13,6 +13,8 @@ import { ImageTextBlock } from './ImageTextBlock'
 import { LoopBlock } from './LoopBlock'
 import { ProductGridBlock } from './ProductGridBlock'
 import { RichTextBlock } from './RichTextBlock'
+import { ReusableSectionBlock } from './ReusableSectionBlock'
+import { reusableChainOf } from '@/lib/reusableSection'
 import { SectionBlock } from './SectionBlock'
 import { StyledBlock } from './StyledBlock'
 import { TableOfContentsBlock } from './TableOfContentsBlock'
@@ -103,6 +105,15 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
           heading={get('heading')}
           showTitle={get('showTitle')}
           intro={get('intro')}
+        />
+      )
+
+    case 'reusableSection':
+      return (
+        <ReusableSectionBlock
+          section={get('section')}
+          chain={reusableChainOf(get('_chain'))}
+          renderNode={renderBlockBody}
         />
       )
 

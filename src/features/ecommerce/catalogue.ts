@@ -11,7 +11,7 @@ import { decodeAttributeValues, findVariation, type VariationRow } from './varia
 import { quantityError, validateNamedPrice } from './lib/qtyLimits'
 import { isPreorderActive, type PreorderFields } from './lib/preorder'
 
-export type ProductType = 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard'
+export type ProductType = 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard' | 'bundle'
 
 export type CatalogueProduct = PriceFields &
   StockFields &
@@ -72,6 +72,8 @@ export function resolveCartLine(
   const type = product.productType ?? 'simple'
   if (type === 'external') return { ok: false, error: 'This product is sold on another site.' }
   if (type === 'grouped') return { ok: false, error: 'Choose one of the products in this group.' }
+  // Bundles are priced from their products (server/bundles.ts), never through this single-product path.
+  if (type === 'bundle') return { ok: false, error: 'Bundles are priced from the products inside them.' }
   const total = quantity + Math.max(0, alreadyInCart)
   const limitError = quantityError(quantity, product, total)
   if (limitError) return { ok: false, error: limitError }

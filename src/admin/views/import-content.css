@@ -1,0 +1,182 @@
+/* Import pages and posts admin view. Classes are prefixed ic-.
+   Light colours are the default; dark colours apply only under [data-theme='dark']. */
+
+.ic-page {
+  --ic-text: #1a1a1a;
+  --ic-muted: #5c5c5c;
+  --ic-border: #d9d9d9;
+  --ic-surface: #ffffff;
+  --ic-accent: #2f5d8c;
+  --ic-warn: #7a4b00;
+  --ic-error: #9b1c1c;
+  padding: 16px;
+  max-width: 920px;
+  box-sizing: border-box;
+  color: var(--ic-text);
+}
+
+[data-theme='dark'] .ic-page {
+  --ic-text: #ececec;
+  --ic-muted: #a8a8a8;
+  --ic-border: #3a3a3a;
+  --ic-surface: #1e1e1e;
+  --ic-accent: #8fb8e6;
+  --ic-warn: #f0c274;
+  --ic-error: #ff8a8a;
+}
+
+.ic-header {
+  margin-bottom: 20px;
+}
+
+.ic-title {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.ic-subheading {
+  margin: 12px 0 6px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ic-muted {
+  color: var(--ic-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 4px 0;
+}
+
+.ic-field {
+  margin-bottom: 16px;
+}
+
+.ic-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.ic-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 13px;
+  padding: 8px;
+  border: 1px solid var(--ic-border);
+  border-radius: 4px;
+  background: var(--ic-surface);
+  color: var(--ic-text);
+}
+
+.ic-help {
+  border-top: 1px solid var(--ic-border);
+  padding-top: 8px;
+}
+
+.ic-list {
+  margin: 0 0 8px 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ic-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.ic-radio,
+.ic-checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.ic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.ic-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--ic-accent);
+  background: var(--ic-surface);
+  color: var(--ic-accent);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ic-button--primary {
+  background: var(--ic-accent);
+  color: var(--ic-surface);
+}
+
+.ic-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ic-error {
+  color: var(--ic-error);
+  font-weight: 600;
+}
+
+.ic-warning {
+  color: var(--ic-warn);
+  font-size: 14px;
+  margin: 6px 0;
+}
+
+.ic-problems {
+  margin-top: 12px;
+}
+
+.ic-table-wrap {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.ic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ic-table th,
+.ic-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ic-border);
+}
+
+.ic-action {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.ic-action--create {
+  color: var(--ic-accent);
+}
+
+.ic-action--update {
+  color: var(--ic-warn);
+}
+
+.ic-action--skip {
+  color: var(--ic-muted);
+}
+
+.ic-action--error {
+  color: var(--ic-error);
+}

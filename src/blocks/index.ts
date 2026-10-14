@@ -7,6 +7,7 @@ import { HeroBlock } from './Hero'
 import { ImageTextBlock } from './ImageText'
 import { LoopBlock } from './Loop'
 import { ProductGridBlock } from './ProductGrid'
+import { ReusableSectionBlock } from './ReusableSection'
 import { RichTextBlock } from './RichTextBlock'
 import { SectionBlock } from './Section'
 import { TableOfContentsBlock } from './TableOfContents'
@@ -30,6 +31,7 @@ export const contentBlocks = [
   FormBlock,
   ElementBlock,
   TableOfContentsBlock,
+  ReusableSectionBlock,
 ]
 
 /**

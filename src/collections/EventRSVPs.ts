@@ -3,6 +3,7 @@ import type { CollectionConfig } from '@/engine'
 import { isAdmin } from '../access/ecommerceAccess'
 import { isAdminOrRsvpOwner } from '../features/accounts/access'
 import { checkEventCapacity } from '../hooks/checkEventCapacity'
+import { rsvpConfirmationAfterChange } from '../features/email/rsvpConfirmation'
 import { checkRsvpTier } from '../features/editScreens/rsvpTier'
 import { rsvpCheckInFields, rsvpTicketTierField } from '../features/editScreens/fields'
 
@@ -63,6 +64,7 @@ export const EventRSVPs: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [checkEventCapacity, checkRsvpTier],
+    afterChange: [rsvpConfirmationAfterChange],
   },
   timestamps: true,
 }

@@ -11,6 +11,7 @@ import { MEMBERSHIPS_SLUG } from './slugs'
  * notifications, and for the same reason.
  */
 const loadSendEmail = async () => (await import('@/features/email')).sendEmail
+const loadTemplates = async () => import('@/features/email/templateLoad')
 
 export type EngineWrite = EngineQuery & {
   update(args: {
@@ -135,6 +136,7 @@ export const sendExpiryReminders = async (
 
   const sweep: ReminderSweep = { considered: docs.length, sent: 0, skipped: 0 }
   const sendEmail = await loadSendEmail()
+  const { renderEmailTemplate } = await loadTemplates()
 
   for (const membership of docs as MembershipDoc[]) {
     // Already reminded for THIS period. Comparing against the renewal date
@@ -166,11 +168,6 @@ export const sendExpiryReminders = async (
       days: String(remaining),
     }
 
-    const body = fill(
-      `Your {{tier}} membership is due to renew on {{renewsAt}} - that is {{days}} day(s) away.`,
-      values,
-    )
-
     await engine
       .update({
         collection: MEMBERSHIPS_SLUG,
@@ -180,12 +177,8 @@ export const sendExpiryReminders = async (
       })
       .catch((): undefined => undefined)
 
-    const result = await sendEmail({
-      to,
-      subject: fill('Your {{tier}} membership renews in {{days}} day(s)', values),
-      text: body,
-      html: asHtml(body),
-    })
+    const mail = await renderEmailTemplate('membershipRenewal', values)
+    const result = await sendEmail({ to, subject: mail.subject, text: mail.text, html: mail.html })
 
     if (result.ok) sweep.sent += 1
     else sweep.skipped += 1

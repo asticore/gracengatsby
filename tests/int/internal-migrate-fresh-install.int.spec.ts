@@ -338,6 +338,17 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     // Wave 11 (20261020_100000_shop_extra_settings): the shop-wide switches table and the PayPal webhook id.
     expect(await columnsOf('eg_shop_extra_settings')).toEqual(expect.arrayContaining(['preorders_enabled', 'updated_at', 'created_at']))
     expect(await columnsOf('eg_payment_settings')).toContain('paypal_webhook_id')
+
+    // Wave 15 (20261024_100000_site_details): the site details table, with its business group columns.
+    expect(await columnsOf('eg_site_details')).toEqual(
+      expect.arrayContaining(['timezone', 'date_format', 'time_format', 'business_business_name', 'business_abn', 'business_opening_hours', 'created_at']),
+    )
+
+    // Wave 15 (20261024_200000_site_pages): special page picks and the maintenance mode group.
+    expect(await columnsOf('eg_site_pages')).toEqual(expect.arrayContaining(['not_found_page_id', 'privacy_policy_page_id', 'terms_page_id', 'maintenance_enabled', 'maintenance_headline', 'maintenance_message', 'maintenance_bypass_token', 'maintenance_allow_admins', 'updated_at', 'created_at']))
+
+    // Wave 15 (20261024_400000_email_templates): the editable email wording table.
+    expect(await columnsOf('eg_email_templates')).toEqual(expect.arrayContaining(['account_reset_subject', 'account_reset_body', 'rsvp_confirmation_subject', 'rsvp_confirmation_body', 'updated_at', 'created_at']))
   })
 
   it('adds the edit screens columns (trash, excerpt, sticky, reading time, recurrence, tiers, check-in)', async () => {
@@ -500,6 +511,17 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`eg_seo_settings\`)`).all()
     const columnNames = (result.results as { name: string }[]).map((r) => r.name)
     expect(columnNames).toEqual(expect.arrayContaining(['index_now_enabled', 'index_now_key']))
+  })
+
+  it('creates the email log table with its indexes', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_email_log')
+    expect(await columnsOf('eg_email_log')).toEqual(
+      expect.arrayContaining(['to', 'subject', 'template', 'provider', 'status', 'error', 'html', 'text', 'resent_from', 'updated_at', 'created_at']),
+    )
   })
 
   it('is safe to run a second time', async () => {

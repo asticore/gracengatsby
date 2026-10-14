@@ -77,6 +77,7 @@ import { FormSubmissions } from '@/features/forms/collections/FormSubmissions'
 import { Forms } from '@/features/forms/collections/Forms'
 import { AuditLog } from '@/features/security/auditLogCollection'
 import { EmailLog } from '@/collections/EmailLog'
+import { ErrorLog } from '@/collections/ErrorLog'
 import { Translations } from '@/features/multilingual/translationsCollection'
 import { Backups } from '@/features/backups/collection'
 
@@ -234,6 +235,7 @@ import {
   countAddresses,
   countAuditLogEntries,
   countEmailLogEntries,
+  countErrorLogEntries,
   countBackups,
   countCarts,
   countCourses,
@@ -269,6 +271,7 @@ import {
   createAddress,
   createAuditLogEntry,
   createEmailLogEntry,
+  createErrorLogEntry,
   createBackup,
   createCart,
   createCourse,
@@ -304,6 +307,7 @@ import {
   deleteAddress,
   deleteAuditLogEntry,
   deleteEmailLogEntry,
+  deleteErrorLogEntry,
   deleteBackup,
   deleteCart,
   deleteCourse,
@@ -343,6 +347,8 @@ import {
   findEmailLogEntriesPaginated,
   findAuditLogEntryByID,
   findEmailLogEntryByID,
+  findErrorLogEntriesPaginated,
+  findErrorLogEntryByID,
   findBackupByID,
   findBackupsPaginated,
   findBackupSettings,
@@ -434,6 +440,7 @@ import {
   updateAddress,
   updateAuditLogEntry,
   updateEmailLogEntry,
+  updateErrorLogEntry,
   updateBackup,
   updateBackupSettings,
   updateBlogSettings,
@@ -534,6 +541,7 @@ export const writeRegistry: {
     'membership-tiers': collectionOps(createMembershipTier, updateMembershipTier, deleteMembershipTier, findMembershipTierByID),
     'audit-log': collectionOps(createAuditLogEntry, updateAuditLogEntry, deleteAuditLogEntry, findAuditLogEntryByID),
     'email-log': collectionOps(createEmailLogEntry, updateEmailLogEntry, deleteEmailLogEntry, findEmailLogEntryByID),
+    'error-log': collectionOps(createErrorLogEntry, updateErrorLogEntry, deleteErrorLogEntry, findErrorLogEntryByID),
     backups: collectionOps(createBackup, updateBackup, deleteBackup, findBackupByID),
     translations: collectionOps(createTranslation, updateTranslation, deleteTranslation, findTranslationByID),
     'field-groups': collectionOps(createFieldGroup, updateFieldGroup, deleteFieldGroup, findFieldGroupByID),
@@ -625,6 +633,7 @@ export const readRegistry: ReadRegistry = {
     'membership-tiers': readEntry(MembershipTiers, findMembershipTiersPaginated, findMembershipTierByID, countMembershipTiers),
     'audit-log': readEntry(AuditLog, findAuditLogEntriesPaginated, findAuditLogEntryByID, countAuditLogEntries),
     'email-log': readEntry(EmailLog, findEmailLogEntriesPaginated, findEmailLogEntryByID, countEmailLogEntries),
+    'error-log': readEntry(ErrorLog, findErrorLogEntriesPaginated, findErrorLogEntryByID, countErrorLogEntries),
     backups: readEntry(Backups, findBackupsPaginated, findBackupByID, countBackups),
     translations: readEntry(Translations, findTranslationsPaginated, findTranslationByID, countTranslations),
     'field-groups': readEntry(FieldGroups, findFieldGroupsPaginated, findFieldGroupByID, countFieldGroups),
@@ -730,6 +739,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
+export const collectionConfigs = [Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule,ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

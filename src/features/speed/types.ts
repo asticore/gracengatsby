@@ -34,6 +34,8 @@ export type ResolvedSpeed = {
     preconnectOrigins: string[]
     prefetchDns: string[]
     delayJsExecution: boolean
+    /** Starts loading a same-site page in the background when a link is hovered. */
+    preloadOnHover: boolean
   }
 }
 
@@ -42,7 +44,7 @@ export const DISABLED_SPEED: ResolvedSpeed = {
   caching: { pageCache: false, ttlSeconds: 0, cacheLoggedInUsers: false, purgeOnPublish: false },
   assets: { deferThirdPartyJs: false },
   media: { lazyLoadImages: false, lazyLoadIframes: false, addImageDimensions: false },
-  advanced: { preconnectOrigins: [], prefetchDns: [], delayJsExecution: false },
+  advanced: { preconnectOrigins: [], prefetchDns: [], delayJsExecution: false, preloadOnHover: false },
 }
 
 /** Anything below this is almost certainly a typo and would defeat caching entirely. */
@@ -108,6 +110,9 @@ export const resolveSpeed = (settings: SpeedSettingsInput, featureEnabled: boole
       preconnectOrigins: cleanOrigins(settings.advanced?.preconnectOrigins),
       prefetchDns: cleanDomains(settings.advanced?.prefetchDns),
       delayJsExecution: Boolean(settings.advanced?.delayJsExecution),
+      // Read through a local cast: the column is new and the generated types catch up later.
+      // Undefined (column not migrated yet) keeps the default, which is on.
+      preloadOnHover: (settings.advanced as { preloadOnHover?: boolean | null } | null | undefined)?.preloadOnHover !== false,
     },
   }
 }

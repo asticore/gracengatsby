@@ -141,7 +141,7 @@ export const contentEditGuard: CollectionBeforeChangeHook = async (args: unknown
   // Get the blocks field name based on collection
   let blocksField: string | null = null
   const slug = collection?.slug
-  if (slug === 'pages' || slug === 'page-templates') {
+  if (slug === 'pages' || slug === 'page-templates' || slug === 'reusable-sections') {
     blocksField = 'blocks'
   } else if (slug === 'posts') {
     blocksField = 'layout'

@@ -64,6 +64,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     kind: 'article',
     publishedAt: post.publishedDate,
     updatedAt: post.updatedAt,
+    contentType: 'post',
+    tokens: {
+      excerpt: post.excerpt,
+      category: post.categories?.[0]?.name,
+      date: post.publishedDate
+        ? new Date(post.publishedDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+        : undefined,
+    },
   })
 }
 

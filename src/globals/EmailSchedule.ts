@@ -50,6 +50,10 @@ export const EmailSchedule: GlobalConfig = {
   },
   fields: [
     sendSwitch('accountWelcome', 'Welcome to a new account', 'Sent when someone creates an account.'),
+    sendSwitch('subscriptionNew', 'Subscription started', 'Sent when a customer starts a product subscription.'),
+    sendSwitch('subscriptionRenewal', 'Subscription payment received', 'Sent after each renewal payment of a product subscription.'),
+    sendSwitch('subscriptionFailed', 'Subscription payment failed', 'Sent when a subscription payment does not go through. Stripe retries it on its own schedule.'),
+    sendSwitch('subscriptionCancelled', 'Subscription ended', 'Sent when a product subscription has ended.'),
     {
       type: 'group',
       name: 'accountReset',

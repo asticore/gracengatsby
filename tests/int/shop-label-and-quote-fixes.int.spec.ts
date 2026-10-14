@@ -26,8 +26,8 @@ describe('live rates never turn into free shipping', () => {
 describe('shop currency', () => {
   it('defaults to AUD and honours a valid setting', () => {
     expect(shopCurrency({ settings: {} })).toBe('AUD')
-    expect(shopCurrency({ settings: { currency: 'nzd' } })).toBe('NZD')
-    expect(shopCurrency({ settings: { currency: 'bad!' } })).toBe('AUD')
+    expect(shopCurrency({ settings: { general: { currency: 'nzd' } } })).toBe('NZD')
+    expect(shopCurrency({ settings: { general: { currency: 'bad!' } } })).toBe('AUD')
   })
 })
 

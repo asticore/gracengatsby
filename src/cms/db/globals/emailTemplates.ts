@@ -18,6 +18,7 @@ export type EmailTemplatesDoc = {
   approvalSubmitted?: TemplateGroup
   approvalDecision?: TemplateGroup
   rsvpConfirmation?: TemplateGroup
+  eventReminder?: TemplateGroup
   updatedAt: string
   createdAt: string
 }

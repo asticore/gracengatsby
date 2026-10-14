@@ -271,11 +271,11 @@ describe('carrier catalogue, packing and live rates', () => {
   it('real adapters without keys say so, keys-only carriers test their fields', async () => {
     expect((await new SendleAdapter().testConnection({ values: {}, testMode: true })).ok).toBe(false)
     expect((await new AusPostAdapter().testConnection({ values: {}, testMode: true })).message).toMatch(/PAC API key/)
-    const ups = await getAdapter('ups').testConnection({ values: { clientId: 'a' }, testMode: true })
-    expect(ups).toEqual({ ok: false, message: expect.stringContaining('clientSecret') })
+    const cp = await getAdapter('couriersplease').testConnection({ values: { accountNumber: 'a' }, testMode: true })
+    expect(cp).toEqual({ ok: false, message: expect.stringContaining('apiKey') })
     const full = await getAdapter('shippit').testConnection({ values: { apiKey: 'k' }, testMode: true })
     expect(full.ok).toBe(true)
-    await expect(getAdapter('dhl').createLabel({} as never, {} as never)).rejects.toThrow(/not built in/)
+    await expect(getAdapter('startrack').createLabel({} as never, {} as never)).rejects.toThrow(/not built in/)
   })
 })
 

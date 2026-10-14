@@ -7,6 +7,37 @@ import type { Field } from '@/engine'
 import { fieldLabel, fieldRequired } from '@/admin/fields/shared'
 import { pagePath } from '@/features/pagesTree/plan'
 import type { TreePage } from '@/features/pagesTree/plan'
+import { fetchAllPages, type JsonFetcher } from './fetchAllPages'
+
+const PAGES_URL = '/api/pages?limit=1000&depth=0'
+const PAGES_LIMIT = 1000
+
+const fetchJson: JsonFetcher = async (url) => {
+  const response = await fetch(url, { credentials: 'include' })
+  if (!response.ok) throw new Error('Failed to fetch pages')
+  return response.json()
+}
+
+/** Every page (all pagination pages), without trashed ones, in the tree's shape. */
+async function loadAllPages(): Promise<TreePage[]> {
+  const list = (await fetchAllPages(fetchJson, PAGES_URL, PAGES_LIMIT)) as any[]
+  return list
+    .filter((page: any) => !page.trashedAt)
+    .map((page: any) => ({
+      id: Number(page.id),
+      title: page.title,
+      slug: page.slug,
+      parent:
+        page.parent && typeof page.parent === 'object'
+          ? Number(page.parent.id)
+          : page.parent
+            ? Number(page.parent)
+            : null,
+      sortOrder: 0,
+      isHomepage: page.isHomepage === true,
+      status: page._status === 'draft' ? ('draft' as const) : ('published' as const),
+    }))
+}
 
 type ParentPickerProps = {
   field: Field
@@ -34,24 +65,7 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
   // Fetch pages on component mount and when modal opens
   const fetchPages = async () => {
     try {
-      const response = await fetch('/api/pages?limit=1000&depth=0', {
-        credentials: 'include',
-      })
-      if (!response.ok) throw new Error('Failed to fetch pages')
-
-      const data: any = await response.json()
-      const pagesList = Array.isArray(data) ? data : (data.docs || [])
-      const pagesArray: TreePage[] = pagesList.filter((page: any) => !page.trashedAt).map((page: any) => ({
-        id: Number(page.id),
-        title: page.title,
-        slug: page.slug,
-        parent: page.parent && typeof page.parent === 'object' ? Number(page.parent.id) : page.parent ? Number(page.parent) : null,
-        sortOrder: 0,
-        isHomepage: page.isHomepage === true,
-        status: page._status === 'draft' ? ('draft' as const) : ('published' as const),
-      }))
-
-      setPages(pagesArray)
+      setPages(await loadAllPages())
     } catch (error) {
       console.error('Error fetching pages:', error)
     }
@@ -59,27 +73,9 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/pages?limit=1000&depth=0', { credentials: 'include' })
-      .then(r => (r.ok ? r.json() : null))
-      .then((data: any) => {
-        if (cancelled || !data) return
-        const list = Array.isArray(data) ? data : data.docs || []
-        setPages(
-          list.filter((page: any) => !page.trashedAt).map((page: any) => ({
-            id: Number(page.id),
-            title: page.title,
-            slug: page.slug,
-            parent:
-              page.parent && typeof page.parent === 'object'
-                ? Number(page.parent.id)
-                : page.parent
-                  ? Number(page.parent)
-                  : null,
-            sortOrder: 0,
-            isHomepage: page.isHomepage === true,
-            status: page._status === 'draft' ? ('draft' as const) : ('published' as const),
-          })),
-        )
+    loadAllPages()
+      .then((list) => {
+        if (!cancelled) setPages(list)
       })
       .catch(() => {})
     return () => {

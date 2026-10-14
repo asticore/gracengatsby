@@ -1,3 +1,4 @@
+import { PREFETCH_EXCLUDED_PATHS, PREFETCH_HOVER_DELAY_MS, PREFETCH_MAX_PER_PAGE, PREFETCH_RULES_SOURCE } from './prefetchRules'
 import type { ResolvedSpeed } from './types'
 
 export type RuntimeConfig = {
@@ -6,6 +7,8 @@ export type RuntimeConfig = {
   dimensions: boolean
   /** 0 = off, 1 = release third-party scripts on window load, 2 = release on first interaction. */
   scriptHold: 0 | 1 | 2
+  /** Fetch same-site pages in the background when a link is hovered. */
+  preloadOnHover: boolean
 }
 
 export const runtimeConfigFor = (speed: ResolvedSpeed): RuntimeConfig | null => {
@@ -16,8 +19,9 @@ export const runtimeConfigFor = (speed: ResolvedSpeed): RuntimeConfig | null => 
     dimensions: speed.media.addImageDimensions,
     // Delay wins over defer: it is the stronger version of the same mechanism.
     scriptHold: speed.advanced.delayJsExecution ? 2 : speed.assets.deferThirdPartyJs ? 1 : 0,
+    preloadOnHover: speed.advanced.preloadOnHover,
   }
-  if (!config.lazyImages && !config.lazyIframes && !config.dimensions && config.scriptHold === 0) return null
+  if (!config.lazyImages && !config.lazyIframes && !config.dimensions && config.scriptHold === 0 && !config.preloadOnHover) return null
   return config
 }
 
@@ -87,6 +91,24 @@ if(C.lazyImages||C.lazyIframes||C.dimensions){
     }
   }).observe(D.documentElement,{childList:true,subtree:true});
   ready(function(){sweep(D.body||D.documentElement)})
+}
+if(C.preloadOnHover){
+  var R=${PREFETCH_RULES_SOURCE},pfSeen={},pfCount=0,pfTimer=null,pfExcluded=${JSON.stringify(PREFETCH_EXCLUDED_PATHS)};
+  function pfConn(){return navigator.connection||navigator.mozConnection||navigator.webkitConnection||null}
+  function pfLink(t){return t&&t.closest?t.closest('a[href]'):null}
+  function pfGo(a){
+    if(pfCount>=${PREFETCH_MAX_PER_PAGE})return;
+    if(!R.eligible(a,location.href,pfExcluded)||!R.connectionOk(pfConn()))return;
+    if(pfSeen[a.href])return;
+    pfSeen[a.href]=true;pfCount++;
+    var l=D.createElement('link');l.rel='prefetch';l.href=a.href;D.head.appendChild(l)
+  }
+  D.addEventListener('pointerover',function(e){
+    var a=pfLink(e.target);if(!a)return;
+    clearTimeout(pfTimer);pfTimer=setTimeout(function(){pfGo(a)},${PREFETCH_HOVER_DELAY_MS})
+  },{passive:true});
+  D.addEventListener('pointerout',function(){clearTimeout(pfTimer)},{passive:true});
+  D.addEventListener('touchstart',function(e){var a=pfLink(e.target);if(a)pfGo(a)},{passive:true});
 }
 if(C.scriptHold){
   var held=[],released=false,origin=location.origin;

@@ -10,6 +10,7 @@
 
 // @ts-ignore - generated at build time by opennextjs-cloudflare
 import openNextWorker from './.open-next/worker.js'
+import { withEdgeCache } from './src/features/speed/edgeCacheWorker'
 
 // Durable Object classes must stay top-level exports of the Worker entry.
 // @ts-ignore - generated at build time by opennextjs-cloudflare
@@ -45,7 +46,8 @@ export async function runScheduled(worker: OpenNextWorker, env: CronEnv, ctx: un
 }
 
 export default {
-  fetch: (request: Request, env: unknown, ctx: unknown) => (openNextWorker as OpenNextWorker).fetch(request, env, ctx),
+  fetch: (request: Request, env: unknown, ctx: unknown) =>
+    withEdgeCache(request, env, ctx, (req, e, c) => (openNextWorker as OpenNextWorker).fetch(req, e, c)),
   async scheduled(_event: unknown, env: CronEnv, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<void> {
     ctx.waitUntil(runScheduled(openNextWorker as OpenNextWorker, env, ctx))
   },

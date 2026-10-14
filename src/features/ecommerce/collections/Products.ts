@@ -1,6 +1,7 @@
 import { noAdsField } from '@/features/ads/fields'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
+import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 import type { CollectionConfig } from '@/engine'
 
 import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
@@ -166,6 +167,7 @@ export const Products: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
-    afterChange: [stockAlertAfterChange, backInStockAfterChange, pageSpeedAfterChange('products')],
+    afterChange: [stockAlertAfterChange, backInStockAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products')],
+    afterDelete: [indexNowAfterDelete('products')],
   },
 }

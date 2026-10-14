@@ -137,6 +137,7 @@ export async function buildOrderDraft(args: InitiateStripePaymentArgs): Promise<
       shippingOptionId: typeof checkout.shippingOptionId === 'string' ? checkout.shippingOptionId : null,
       strict: true,
       cartId: cart.id,
+      customerRoles: (user as unknown as { roles?: string[] } | null | undefined)?.roles ?? [],
     },
   )
   const { totals, config, lines } = priced
@@ -177,6 +178,8 @@ export async function buildOrderDraft(args: InitiateStripePaymentArgs): Promise<
       discountCents: l.discountCents,
       taxCents: l.taxCents,
       ...(l.preorder ? { preorder: { releaseDate: l.preorder.releaseDate ?? null, note: l.preorder.note ?? null } } : {}),
+      ...(l.addOns?.length ? { addOns: l.addOns } : {}),
+      ...((l as unknown as { bundleContents?: unknown[] }).bundleContents ? { bundleContents: (l as unknown as { bundleContents: unknown[] }).bundleContents } : {}),
       ...(l.isGiftCard ? { isGiftCard: true, giftAmountCents: (l as unknown as { giftAmountCents?: number }).giftAmountCents, recipient: (l as unknown as { recipient?: unknown }).recipient } : {}),
     })),
     shippingAddress: address,

@@ -84,6 +84,13 @@ async function handleCronRequest(request: Request): Promise<Response> {
     } catch (error) {
       console.error('cron form-maintenance error:', error)
     }
+    // Email log: entries older than the 90-day retention are removed (checked hourly, like form entries).
+    try {
+      const { pruneEmailLog } = await import('@/features/email/emailLogStore')
+      if (new Date().getUTCMinutes() < 5) await pruneEmailLog(engine as never)
+    } catch (error) {
+      console.error('cron email-log prune error:', error)
+    }
     // Gift cards whose send date has arrived are emailed to their recipients.
     try {
       const { deliverDueGiftCards } = await import('@/features/ecommerce/server/storedValue')

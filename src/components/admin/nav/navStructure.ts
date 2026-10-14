@@ -49,7 +49,6 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'ab-tests', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'data-views', type: 'collections' },
-      { slug: 'redirects', type: 'collections' },
       { slug: 'review-queue', type: 'view', href: '/review-queue', label: 'Review queue' },
       { slug: 'media', type: 'collections' },
     ],
@@ -104,10 +103,17 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     ],
   },
   {
+    label: 'SEO',
+    entities: [
+      { slug: 'seo-audit', type: 'view', href: '/seo-audit', label: 'SEO audit' },
+      { slug: 'seo-settings', type: 'globals' },
+      { slug: 'redirects', type: 'collections' },
+    ],
+  },
+  {
     label: 'Settings',
     entities: [
       { slug: 'settings-site', type: 'view', href: '/settings/site', label: 'Site' },
-      { slug: 'settings-marketing-seo', type: 'view', href: '/settings/marketing-seo', label: 'Marketing and SEO' },
       { slug: 'settings-content', type: 'view', href: '/settings/content', label: 'Content' },
       { slug: 'settings-commerce', type: 'view', href: '/settings/commerce', label: 'Commerce' },
       { slug: 'settings-communication', type: 'view', href: '/settings/communication', label: 'Communication' },

@@ -18,6 +18,10 @@ export async function ShopSettingsView() {
   const canPay = Boolean(paymentConfig && context.permissions.globals?.['payment-settings']?.read)
   const paymentDoc = canPay ? await context.engine.findGlobal({ slug: 'payment-settings', user: context.user }) : null
 
+  const extraConfig = getGlobalConfig(context.engine, 'shop-extra-settings')
+  const canExtra = Boolean(extraConfig && context.permissions.globals?.['shop-extra-settings']?.read)
+  const extraDoc = canExtra ? await context.engine.findGlobal({ slug: 'shop-extra-settings', user: context.user }) : null
+
   const shippingConfig = getGlobalConfig(context.engine, 'shipping-settings')
   const canShip = Boolean(shippingConfig && context.permissions.globals?.['shipping-settings']?.read)
   const shippingDoc = canShip ? await context.engine.findGlobal({ slug: 'shipping-settings', user: context.user }) : null
@@ -30,6 +34,8 @@ export async function ShopSettingsView() {
       shopFields={sanitizeFieldsForClient(shopConfig.fields)}
       paymentDoc={paymentDoc as Record<string, unknown> | null}
       paymentFields={canPay && paymentConfig ? sanitizeFieldsForClient(paymentConfig.fields) : null}
+      extraDoc={extraDoc as Record<string, unknown> | null}
+      extraFields={canExtra && extraConfig ? sanitizeFieldsForClient(extraConfig.fields) : null}
     />
   )
 }

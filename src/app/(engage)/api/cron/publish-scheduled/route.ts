@@ -126,6 +126,19 @@ async function handleCronRequest(request: Request): Promise<Response> {
       { due: hourly },
     )
 
+    // Automatic exchange rates for the extra display currencies. Checked hourly, refreshed about once a day. Does nothing when none are automatic.
+    await runJob(
+      'display-rates',
+      async () => {
+        const { rawD1 } = await import('@/features/ecommerce/server/db')
+        const { loadShopCurrency } = await import('@/features/ecommerce/lib/shopCurrency')
+        const { refreshDisplayRates } = await import('@/features/ecommerce/server/displayRates')
+        const base = await loadShopCurrency(engine as never)
+        await refreshDisplayRates((await rawD1()) as never, base, new Date())
+      },
+      { due: hourly },
+    )
+
     return NextResponse.json(scheduled.value, {
       status: 200,
       headers: { 'Cache-Control': 'no-store' },

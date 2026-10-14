@@ -9,6 +9,7 @@ import { priceInfo } from './pricing'
 import { canPurchase, computeStockStatus, stockMessage, type StockFields, type StockStatus } from './stock'
 import { decodeAttributeValues, resolveAttributes, splitValues, type ProductAttributeRow, type VariationRow } from './variations'
 import { PREORDER_STOCK_MESSAGE, preorderInfo, type PreorderInfo } from './lib/preorder'
+import { normaliseAddOnDefs, type AddOnView } from './lib/addOns'
 
 export type VariationView = {
   id: string
@@ -26,7 +27,7 @@ export type VariationView = {
 }
 
 export type ProductView = {
-  type: 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard'
+  type: 'simple' | 'variable' | 'grouped' | 'external' | 'giftcard' | 'bundle'
   price: number | null
   regular: number | null
   onSale: boolean
@@ -50,15 +51,25 @@ export type ProductView = {
   buyerPrice: { enabled: boolean; suggested: number | null; minimum: number | null }
   /** Pre-order state now: the button label, the ships-from date and the note. */
   preorder: PreorderInfo
+  /** Questions the buyer answers before adding to the cart (empty when the shop switch is off). */
+  addOns: AddOnView[]
+  /** Live pricing rule offers to show under the quantity box (for example "Buy 10 or more and get 10% off."). */
+  pricingNotes: string[]
 }
 
 export type BuildOptions = {
   /** The shop-wide pre-order switch. On unless false. */
   preorders?: boolean
+  /** The shop-wide add-on switch. On unless false. */
+  addOnsOn?: boolean
+  /** Product page notes from the live pricing rules (lib/pricingRules.ts productPageNotes). */
+  pricingNotes?: string[]
 }
 
 type ProductInput = CatalogueProduct & {
   attributes?: ProductAttributeRow[] | null
+  /** Add-on questions (collections/productAddOns.ts). */
+  addOns?: unknown
   externalUrl?: string | null
   buttonText?: string | null
 }
@@ -130,7 +141,7 @@ export function buildProductView(product: ProductInput, now: Date = new Date(), 
     stockMessage: type === 'variable' ? '' : preorder.active ? PREORDER_STOCK_MESSAGE : stockMessage(product),
     // A name-your-price product has no fixed price to show, so it is purchasable whenever it is in stock.
     // A pre-order is purchasable while out of stock.
-    purchasable: type === 'simple' && (own.price !== null || product.nameYourPrice === true) && (canPurchase(product, 1) || preorder.active),
+    purchasable: (type === 'simple' || type === 'bundle') && (own.price !== null || product.nameYourPrice === true) && (canPurchase(product, 1) || preorder.active),
     sku: product.sku || null,
     options: options.filter((option) => option.values.length > 0),
     details,
@@ -143,6 +154,8 @@ export function buildProductView(product: ProductInput, now: Date = new Date(), 
       minimum: typeof product.minPrice === 'number' && product.minPrice > 0 ? product.minPrice : null,
     },
     preorder,
+    addOns: buildOptions.addOnsOn === false ? [] : normaliseAddOnDefs(product.addOns),
+    pricingNotes: buildOptions.pricingNotes ?? [],
   }
 }
 

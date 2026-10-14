@@ -7,6 +7,7 @@ import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
 import { getSeoContext } from '@/features/seo/settings'
+import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import type { Event } from '@/engage-types'
 
 export async function generateMetadata() {
@@ -52,6 +53,7 @@ export default async function EventsPage() {
         url: context.baseUrl + '/events',
         baseUrl: context.baseUrl,
         siteName: context.siteName,
+        breadcrumbs: listBreadcrumbs({ baseUrl: context.baseUrl, path: '/events', name: 'Events' }),
       })
     : null
 

@@ -62,6 +62,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     description: 'Site name, logo, colors, fonts and basic brand settings.',
     sections: [
       { kind: 'global', slug: 'site-settings' },
+      { kind: 'global', slug: 'site-pages' },
+      { kind: 'global', slug: 'site-details' },
       { kind: 'global', slug: 'integrations' },
       { kind: 'link', label: 'Cookie consent', href: '/cookie-consent', description: 'Banner text, colours, preview and consent log', type: 'view' },
       { kind: 'global', slug: 'language-settings' },
@@ -111,6 +113,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     description: 'Email provider and notification settings.',
     sections: [
       { kind: 'global', slug: 'email-settings' },
+      { kind: 'global', slug: 'email-templates' },
+      { kind: 'link', label: 'Email log', href: '/collections/email-log', description: 'Every email the site has sent, with a resend button.', type: 'collection' },
     ],
   },
   {

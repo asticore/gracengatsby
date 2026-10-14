@@ -18,6 +18,7 @@ import crypto from 'crypto'
 import { resolveCartLine, type CatalogueProduct } from '../catalogue'
 
 import { giftCardLine, type CartItemInput } from '../server/pricing'
+import { loadPreordersEnabled } from '../server/shopExtra'
 import { normaliseGiftCardSettings } from '../lib/storedValue'
 
 type CartItem = {
@@ -62,6 +63,7 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
     const before = ((originalDoc as { items?: CartItem[] } | undefined)?.items ?? []).map((item) => `${productIdOf(item)}|${item.variation ?? ''}|${item.quantity}`)
     const seen = new Map<string, number>()
     const errors: Array<{ path: string; message: string }> = []
+    const preordersOn = await loadPreordersEnabled(engine)
     for (const [index, item] of items.entries()) {
       const productId = productIdOf(item)
       if (!productId || !item.quantity) continue
@@ -80,7 +82,7 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
       const key = `${productId}|${item.variation ?? ''}`
       const already = seen.get(key) ?? 0
       seen.set(key, already + item.quantity)
-      const line = resolveCartLine(product, item.variation ?? null, item.quantity, new Date(), already, item.priceCents ?? null)
+      const line = resolveCartLine(product, item.variation ?? null, item.quantity, new Date(), already, item.priceCents ?? null, preordersOn)
       if (line.ok) {
         subtotal += line.unitPrice * item.quantity
         continue

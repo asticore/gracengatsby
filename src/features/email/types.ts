@@ -7,7 +7,15 @@
  * import the types it needs without pulling the whole feature in behind it.
  */
 
-export type EmailProviderKey = 'resend' | 'ses-api' | 'mailgun' | 'postmark' | 'sendgrid' | 'cloudflare'
+export type EmailProviderKey =
+  | 'resend'
+  | 'ses-api'
+  | 'mailgun'
+  | 'postmark'
+  | 'sendgrid'
+  | 'cloudflare'
+  | 'brevo'
+  | 'mandrill'
 
 export type SendEmailArgs = {
   to: string | string[]
@@ -34,6 +42,8 @@ export type SendEmailFailure =
   | 'invalid-message'
   | 'unsupported-provider'
   | 'provider-rejected'
+  /** The email's switch is off in When emails are sent. Logged as skipped; nothing was attempted. */
+  | 'turned-off'
 
 /**
  * Flat rather than a discriminated union on purpose: this project compiles with
@@ -75,11 +85,17 @@ export type EmailAdapter<Config> = (message: OutgoingEmail, config: Config) => P
  * that regeneration happening.
  */
 export type EmailSettingsDoc = {
+  /** The default provider. Wave 16: merged in from Integrations (see connections.ts). */
   provider?: string | null
+  /** Tried only when the default fails with a transient error. 'none' or blank means no fallback. */
+  fallbackProvider?: string | null
   fromName?: string | null
   fromEmail?: string | null
   replyToEmail?: string | null
   resend?: { apiKey?: string | null } | null
+  brevo?: { apiKey?: string | null } | null
+  mandrill?: { apiKey?: string | null } | null
+  sms?: SmsSettingsDoc | null
   sesApi?: {
     accessKeyId?: string | null
     secretAccessKey?: string | null
@@ -94,4 +110,16 @@ export type EmailSettingsDoc = {
   sendgrid?: { apiKey?: string | null } | null
   cloudflare?: { apiToken?: string | null; accountId?: string | null } | null
   testing?: { testRecipient?: string | null } | null
+}
+
+/** Text message settings, as stored in the communications group of Integrations. */
+export type SmsSettingsDoc = {
+  provider?: string | null
+  twilio?: {
+    accountSid?: string | null
+    authToken?: string | null
+    fromNumber?: string | null
+    messagingServiceSid?: string | null
+  } | null
+  testPhone?: string | null
 }

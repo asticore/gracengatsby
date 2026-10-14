@@ -1,6 +1,7 @@
 import type { GlobalConfig } from '@/engine'
 
 import { isAdmin } from '../access/ecommerceAccess'
+import { indexNowKeyBeforeChange } from '@/features/seo/indexNowKey'
 
 /**
  * Site-wide SEO and analytics defaults.
@@ -20,6 +21,9 @@ export const SeoSettings: GlobalConfig = {
   slug: 'seo-settings',
   label: 'SEO & Analytics',
   dbName: 'eg_seo_settings',
+  hooks: {
+    beforeChange: [indexNowKeyBeforeChange],
+  },
   admin: {
     group: 'Settings',
     description:
@@ -33,7 +37,7 @@ export const SeoSettings: GlobalConfig = {
     {
       type: 'group',
       name: 'defaults',
-      label: 'Defaults',
+      label: 'Defaults and templates',
       admin: {
         description:
           'Used whenever a page has not set its own title, description or share image.',
@@ -161,7 +165,7 @@ export const SeoSettings: GlobalConfig = {
     {
       type: 'group',
       name: 'indexing',
-      label: 'Indexing',
+      label: 'Indexing and sitemap',
       admin: {
         description:
           'Controls whether search engines are allowed to list your pages in their results.',
@@ -196,6 +200,42 @@ export const SeoSettings: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'sitemap',
+      label: 'Sitemap',
+      admin: {
+        description: 'The index of your pages that search engines read to find everything.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'enabled', type: 'checkbox', defaultValue: true, admin: { width: '50%' } },
+            {
+              name: 'changeFrequency',
+              type: 'select',
+              defaultValue: 'weekly',
+              admin: { width: '50%', description: 'A hint about how often your pages change. A rough guess is fine.' },
+              options: [
+                { label: 'Always', value: 'always' },
+                { label: 'Hourly', value: 'hourly' },
+                { label: 'Daily', value: 'daily' },
+                { label: 'Weekly', value: 'weekly' },
+                { label: 'Monthly', value: 'monthly' },
+                { label: 'Yearly', value: 'yearly' },
+                { label: 'Never', value: 'never' },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'excludePaths',
+          type: 'textarea',
+          admin: { description: 'Addresses to leave out of the sitemap. One per line.' },
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'verification',
       label: 'Verification',
       admin: {
@@ -223,60 +263,8 @@ export const SeoSettings: GlobalConfig = {
     },
     {
       type: 'group',
-      name: 'analytics',
-      label: 'Analytics',
-      admin: {
-        description:
-          'Visitor tracking. Paste the ID from each service you use and leave the rest blank.',
-      },
-      fields: [
-        {
-          type: 'row',
-          fields: [
-            {
-              name: 'ga4MeasurementId',
-              type: 'text',
-              admin: {
-                width: '33%',
-                hidden: true,
-                description: 'Moved to Site settings > Integrations > Google.',
-              },
-            },
-            {
-              name: 'gtmContainerId',
-              type: 'text',
-              admin: {
-                width: '33%',
-                hidden: true,
-                description: 'Moved to Site settings > Integrations > Google.',
-              },
-            },
-            {
-              name: 'metaPixelId',
-              type: 'text',
-              admin: {
-                width: '33%',
-                hidden: true,
-                description: 'Moved to Site settings > Integrations > Meta Pixel.',
-              },
-            },
-          ],
-        },
-        {
-          name: 'requireCookieConsent',
-          type: 'checkbox',
-          defaultValue: true,
-          admin: {
-            description:
-              'Hold back tracking scripts until a visitor accepts cookies. Leaving this on is the safer choice in the UK, EU and Australia.',
-          },
-        },
-      ],
-    },
-    {
-      type: 'group',
       name: 'schema',
-      label: 'Schema',
+      label: 'Schema (organisation)',
       admin: {
         description:
           'Extra background detail search engines use to build your business panel in results.',
@@ -323,37 +311,26 @@ export const SeoSettings: GlobalConfig = {
     },
     {
       type: 'group',
-      name: 'sitemap',
-      label: 'Sitemap',
+      name: 'indexNow',
+      label: 'IndexNow',
       admin: {
-        description: 'The index of your pages that search engines read to find everything.',
+        description:
+          'Tells Bing, Yandex and other IndexNow search engines right away when a page, post, product or event is published, changed or removed.',
       },
       fields: [
         {
-          type: 'row',
-          fields: [
-            { name: 'enabled', type: 'checkbox', defaultValue: true, admin: { width: '50%' } },
-            {
-              name: 'changeFrequency',
-              type: 'select',
-              defaultValue: 'weekly',
-              admin: { width: '50%', description: 'A hint about how often your pages change. A rough guess is fine.' },
-              options: [
-                { label: 'Always', value: 'always' },
-                { label: 'Hourly', value: 'hourly' },
-                { label: 'Daily', value: 'daily' },
-                { label: 'Weekly', value: 'weekly' },
-                { label: 'Monthly', value: 'monthly' },
-                { label: 'Yearly', value: 'yearly' },
-                { label: 'Never', value: 'never' },
-              ],
-            },
-          ],
+          name: 'enabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: { description: 'Send URL updates to IndexNow. Off by default.' },
         },
         {
-          name: 'excludePaths',
-          type: 'textarea',
-          admin: { description: 'Addresses to leave out of the sitemap. One per line.' },
+          name: 'key',
+          type: 'text',
+          admin: {
+            readOnly: true,
+            description: 'Created for you the first time IndexNow is turned on. Search engines read it to check the site is yours.',
+          },
         },
       ],
     },
@@ -559,6 +536,58 @@ export const SeoSettings: GlobalConfig = {
           type: 'textarea',
           admin: {
             description: 'Added at the very bottom. Use this for anything that should load after the page is drawn.',
+          },
+        },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'analytics',
+      label: 'Analytics',
+      admin: {
+        description:
+          'Visitor tracking. Paste the ID from each service you use and leave the rest blank.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'ga4MeasurementId',
+              type: 'text',
+              admin: {
+                width: '33%',
+                hidden: true,
+                description: 'Moved to Site settings > Integrations > Google.',
+              },
+            },
+            {
+              name: 'gtmContainerId',
+              type: 'text',
+              admin: {
+                width: '33%',
+                hidden: true,
+                description: 'Moved to Site settings > Integrations > Google.',
+              },
+            },
+            {
+              name: 'metaPixelId',
+              type: 'text',
+              admin: {
+                width: '33%',
+                hidden: true,
+                description: 'Moved to Site settings > Integrations > Meta Pixel.',
+              },
+            },
+          ],
+        },
+        {
+          name: 'requireCookieConsent',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            description:
+              'Hold back tracking scripts until a visitor accepts cookies. Leaving this on is the safer choice in the UK, EU and Australia.',
           },
         },
       ],

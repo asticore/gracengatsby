@@ -1,3 +1,5 @@
+import { organisationContact } from '@/features/site/fallback'
+
 import { absoluteUrl, mediaUrl, type SeoContext } from './settings'
 
 type JsonLdNode = Record<string, unknown>
@@ -46,6 +48,8 @@ export const buildJsonLd = (context: SeoContext): JsonLdNode | null => {
     }
   }
   if (sameAs.length > 0) publisher.sameAs = sameAs
+  // Phone, email and address come from Site details, and only where the SEO schema group left them blank.
+  Object.assign(publisher, organisationContact(schema as Record<string, unknown> | undefined, context.details, schema?.type || 'business'))
 
   const website: JsonLdNode = {
     '@type': 'WebSite',

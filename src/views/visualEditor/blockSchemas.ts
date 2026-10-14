@@ -262,6 +262,15 @@ const VISUAL_BLOCKS: BlockDef[] = [
     defaultValue: () => ({ blockType: 'faq', heading: 'Frequently asked questions', source: 'category' }),
   },
   {
+    slug: 'reusableSection',
+    label: 'Reusable section',
+    icon: String.fromCodePoint(0x1f501),
+    category: 'dynamic',
+    description: 'Shows a section built once under Content > Reusable sections. Edits there update every page that uses it.',
+    fields: [{ name: 'section', label: 'Which section', type: 'relationship', relationTo: 'reusable-sections' }],
+    defaultValue: () => ({ blockType: 'reusableSection' }),
+  },
+  {
     slug: 'element',
     label: 'Element',
     icon: String.fromCodePoint(0x1f9e9),

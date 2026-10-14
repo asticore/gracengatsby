@@ -9,6 +9,10 @@
  * actually meant to be set.
  */
 
+import { BUILT_IN_FONTS, fontStack } from '@/features/fonts/installed'
+
+import { isDesignV2Raw } from '@/lib/design/upgrade'
+
 export type BackgroundType = 'none' | 'color' | 'gradient' | 'image'
 export type TextAlign = 'left' | 'center' | 'right'
 export type BlockWidth = 'contained' | 'wide' | 'full'
@@ -47,6 +51,8 @@ export type BlockStyle = {
   boxShadow?: BoxShadowPreset
 
   // Typography / layout
+  /** A built-in site font key (see BUILT_IN_FONTS). Absent means the site default. */
+  fontFamily?: string
   textColor?: string
   textAlign?: TextAlign
   width?: BlockWidth
@@ -76,6 +82,8 @@ export const EMPTY_STYLE: BlockStyle = {}
 /** Narrows an unknown JSON column value to a BlockStyle without throwing. */
 export function asBlockStyle(value: unknown): BlockStyle {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return EMPTY_STYLE
+  // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
+  if (isDesignV2Raw(value)) return EMPTY_STYLE
   return value as BlockStyle
 }
 
@@ -113,6 +121,8 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   if (isNum(style.paddingBottom)) css.paddingBottom = `${style.paddingBottom}px`
   if (isNum(style.marginTop)) css.marginTop = `${style.marginTop}px`
   if (isNum(style.marginBottom)) css.marginBottom = `${style.marginBottom}px`
+  const fontValue = blockFontStack(style.fontFamily)
+  if (fontValue) css.fontFamily = fontValue
   if (isStr(style.textColor)) css.color = style.textColor
   if (style.textAlign) css.textAlign = style.textAlign
   if (isNum(style.minHeight)) css.minHeight = `${style.minHeight}px`
@@ -126,6 +136,16 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   if (style.boxShadow && style.boxShadow !== 'none') css.boxShadow = BOX_SHADOW_PRESETS[style.boxShadow]
 
   return css
+}
+
+/**
+ * CSS font stack for a built-in site font key, or null for the site default.
+ * Only keys in BUILT_IN_FONTS resolve, so a stored value can never inject CSS.
+ * Every built-in face is loaded site-wide (see the layout), so no extra load is needed.
+ */
+export function blockFontStack(key: string | undefined): string | null {
+  const font = BUILT_IN_FONTS.find((candidate) => candidate.value === key)
+  return font ? fontStack(font.family, font.category) : null
 }
 
 /** Shadow presets rather than a free-form CSS box-shadow field - keeps the Design tab a
@@ -163,6 +183,12 @@ export function blockStyleCss(style: BlockStyle, scopeId: string): string {
 
   if (style.hideOnDesktop) {
     rules.push(`@media (min-width:769px){${sel}{display:none}}`)
+  }
+
+  // Headings set their own theme font, so the block font is repeated on them here.
+  const fontValue = blockFontStack(style.fontFamily)
+  if (fontValue) {
+    rules.push(`${sel} :is(h1,h2,h3,h4,h5,h6){font-family:${fontValue}}`)
   }
 
   return rules.join('')

@@ -889,6 +889,20 @@ button {
   }
 }
 
+/* Visual editor (wave 16): full-bleed. When the page holds the editor, the
+   content area drops its gutter and max width so the editor fills everything
+   right of the left nav. Other admin pages keep their gutters. dvh is used
+   where supported so mobile browser toolbars don't cut off the bottom. */
+.admin-shell__content:has(.ve-root) {
+  padding: 0;
+  max-width: none;
+}
+
+.admin-shell__content:has(.ve-root) .ve-root {
+  height: 100vh;
+  height: 100dvh;
+}
+
 /* ---------------------------------------------------------------- *
  * Collapsed-rail group flyout (Stage 13 - WordPress-style submenu)  *
  * ---------------------------------------------------------------- */

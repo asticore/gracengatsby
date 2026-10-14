@@ -6,14 +6,13 @@ import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 
 import { AddToCartButton } from '@/components/AddToCartButton'
-import { useShopCurrency } from '@/components/ShopCurrencyContext'
+import { useDisplayMoney } from '@/components/DisplayCurrencyContext'
 import { cartProductIds, type CrossSellCard } from '@/features/ecommerce/lib/crossSells'
-import { formatPriceInAUD } from '@/lib/formatCurrency'
 
 /** "You may also like" under the cart items, from the cross-sells of the products in the cart. Hidden when empty or switched off. */
 export function CartCrossSells() {
   const { cart } = useCart()
-  const currency = useShopCurrency()
+  const money = useDisplayMoney()
   const ids = cartProductIds(cart?.items as Array<{ product?: unknown }> | undefined)
   const key = ids.join(',')
   const [result, setResult] = useState<{ key: string; cards: CrossSellCard[] } | null>(null)
@@ -57,7 +56,7 @@ export function CartCrossSells() {
               )}
               <span className="mt-2 block">{card.title}</span>
             </Link>
-            <p>{formatPriceInAUD(card.price, currency)}</p>
+            <p>{money(card.price)}</p>
             <AddToCartButton productID={card.id} />
           </li>
         ))}

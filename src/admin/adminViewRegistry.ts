@@ -30,6 +30,7 @@ import { ImportContentView } from '@/admin/views/ImportContentView'
 import { SiteHealthView } from '@/admin/views/SiteHealthView'
 import { ScheduledTasksView } from '@/admin/views/ScheduledTasksView'
 import { CacheToolsView } from '@/admin/views/CacheToolsView'
+import { GoogleConnectionView } from '@/admin/views/GoogleConnectionView'
 import { EmailTestingView } from '@/admin/views/EmailTestingView'
 import { EmailDesignerView } from '@/admin/views/EmailDesignerView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
@@ -37,6 +38,7 @@ import { ShopSettingsView } from '@/admin/views/ShopSettingsView'
 import { StoreCreditView } from '@/admin/views/StoreCreditView'
 import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
+import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
 // still declares (Nav/providers/graphics overrides) even though nothing yet
@@ -139,6 +141,7 @@ export const CUSTOM_ADMIN_VIEWS = [
   },
   { key: 'adsOverview', Component: AdsOverviewView, path: '/ads-overview', meta: { title: 'Ads overview', description: 'Status, placeholders and generated ads.txt lines.' } },
   { key: 'adsReport', Component: AdsReportView, path: '/ads-report', meta: { title: 'Ads report', description: 'Viewable impressions per ad unit.' } },
+  { key: 'googleDashboard', Component: GoogleDashboardView, path: '/google-dashboard', meta: { title: 'Google dashboard', description: 'Search, visitors, PageSpeed and AdSense numbers from Google.' } },
   {
     key: 'settingsTransfer',
     Component: SettingsTransferView,
@@ -156,6 +159,12 @@ export const CUSTOM_ADMIN_VIEWS = [
       title: 'Find and replace',
       description: 'Change a word or phrase across pages, posts, products and events.',
     },
+  },
+  {
+    key: 'googleConnection',
+    Component: GoogleConnectionView,
+    path: '/google-connection',
+    meta: { title: 'Google connection', description: 'Connect Google Analytics, Search Console, Tag Manager and AdSense with your own Google Cloud client.' },
   },
   {
     key: 'cacheTools',

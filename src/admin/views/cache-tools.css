@@ -1,0 +1,39 @@
+/* Cache tools page (/admin/cache-tools). Light values are the defaults; dark overrides use [data-theme='dark'] only. */
+
+.cache-tools__text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cache-tools__status {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cache-tools__button {
+  margin: 0 8px 8px 0;
+}
+
+.cache-tools__notice {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cache-tools__notice--ok {
+  color: #1a7f37;
+}
+
+.cache-tools__notice--error {
+  color: #b3261e;
+}
+
+[data-theme='dark'] .cache-tools__notice--ok {
+  color: #6fcf8a;
+}
+
+[data-theme='dark'] .cache-tools__notice--error {
+  color: #ff8a80;
+}

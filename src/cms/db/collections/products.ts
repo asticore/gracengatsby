@@ -7,6 +7,10 @@ import {
   products,
   productsAttributes,
   productsVariations,
+  productsBundleItems,
+  productsVersionsBundleItems,
+  productsAddOns,
+  productsVersionsAddOns,
   productsVersionsAttributes,
   productsVersionsVariations,
   productsBlockTypes,
@@ -85,7 +89,7 @@ export type ProductVersion = {
 // comment for the versioned-side gap this closed).
 const catalogueRels = { images: 'media', faqs: 'faqs', downloads: 'media', groupedProducts: 'products', upsells: 'products', crossSells: 'products' }
 
-const baseOps = createCollectionOps(products, Products, { attributes: productsAttributes, variations: productsVariations }, {
+const baseOps = createCollectionOps(products, Products, { attributes: productsAttributes, variations: productsVariations, bundleItems: productsBundleItems, addOns: productsAddOns }, {
   relsTable: { table: productsRels, targetColumns: productsRelsTargetColumns },
   topLevelRelsFieldTargets: catalogueRels,
   blocksFields: { layout: { blockTypes: productsBlockTypes } },
@@ -93,7 +97,7 @@ const baseOps = createCollectionOps(products, Products, { attributes: productsAt
 })
 
 const versionsOps = createVersionsOps(productsVersions, productsGenerated.groupFields, {
-  arrayTables: { attributes: productsVersionsAttributes, variations: productsVersionsVariations },
+  arrayTables: { attributes: productsVersionsAttributes, variations: productsVersionsVariations, bundleItems: productsVersionsBundleItems, addOns: productsVersionsAddOns },
   relsTable: { table: productsVersionsRels, targetColumns: productsVersionsRelsTargetColumns },
   topLevelRelsFieldTargets: catalogueRels,
   blocksFields: { layout: { blockTypes: productsVersionsBlockTypes } },

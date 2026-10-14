@@ -31,6 +31,23 @@ const template = (name: string, label: string, description: string, tags: string
   ],
 })
 
+const DESIGN_KEYS = [
+  'accountReset',
+  'accountAlreadyRegistered',
+  'accountWelcome',
+  'membershipRenewal',
+  'approvalSubmitted',
+  'approvalDecision',
+  'rsvpConfirmation',
+  'eventReminder',
+] as const
+
+const DESIGN_FIELDS = DESIGN_KEYS.map((key) => ({
+  name: `${key}Design`,
+  type: 'json' as const,
+  admin: { hidden: true },
+}))
+
 export const EmailTemplates: GlobalConfig = {
   slug: 'email-templates',
   label: 'Email templates',
@@ -81,5 +98,13 @@ export const EmailTemplates: GlobalConfig = {
       'Sent to a guest after they book a place at an event, when they gave an email address.',
       '{{name}} the guest name, {{eventTitle}} the event title, {{eventDate}} the start date and time, {{guestCount}} the number of guests',
     ),
+    template(
+      'eventReminder',
+      'Event reminder',
+      'Sent to a guest before their event. How long before is set under When emails are sent.',
+      '{{name}} the guest name, {{eventTitle}} the event title, {{when}} the start date and time, {{guestCount}} the number of guests',
+    ),
+    // Designed layout for each email (Email design page). Stored as a list of blocks; hidden here, edited on the designer.
+    ...DESIGN_FIELDS,
   ],
 }

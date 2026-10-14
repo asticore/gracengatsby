@@ -20,7 +20,7 @@ const generations = new Map<string, number>()
 let globalGeneration = 0
 
 /** Collections whose documents never feed a view; saving them changes nothing cached here. */
-const IRRELEVANT = new Set(['audit-log', 'email-log', 'preferences', 'locked-documents', 'form-submissions', 'event-rsvps', 'users', 'carts', 'orders', 'transactions', 'addresses', 'media'])
+const IRRELEVANT = new Set(['audit-log', 'email-log', 'error-log', 'preferences', 'locked-documents', 'form-submissions', 'event-rsvps', 'users', 'carts', 'orders', 'transactions', 'addresses', 'media'])
 
 /** Called by the write path after any document is created, changed or deleted. */
 export function noteDocumentChanged(slug: string): void {

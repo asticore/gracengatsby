@@ -6,9 +6,12 @@ import React from 'react'
 
 import { PayLaterMessage } from '@/components/PayLaterMessage'
 import { resolveCartLine, type CatalogueProduct } from '@/features/ecommerce/catalogue'
-import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { addOnSummary, readAddOnChoices } from '@/features/ecommerce/lib/addOns'
 import { CartCrossSells } from '@/components/CartCrossSells'
-import { useShopCurrency } from '@/components/ShopCurrencyContext'
+import { CartRecommendations } from '@/components/CartRecommendations'
+import { BundleContentsList } from '@/components/BundleContentsList'
+import { useBundleInfo } from '@/features/ecommerce/lib/useBundleInfo'
+import { useDisplayCurrencyState, useDisplayMoney } from '@/components/DisplayCurrencyContext'
 import type { Product } from '@/engage-types'
 
 /**
@@ -22,9 +25,11 @@ import type { Product } from '@/engage-types'
  */
 export default function CartPage() {
   const { cart, decrementItem, incrementItem, removeItem, isLoading } = useCart()
-  const currency = useShopCurrency()
+  const money = useDisplayMoney()
+  const displayState = useDisplayCurrencyState()
 
   const items = cart?.items || []
+  const bundles = useBundleInfo(items.map((item) => (typeof item.product === 'object' && item.product ? Number((item.product as { id?: unknown }).id) : 0)).filter((id) => id > 0))
 
   return (
     <div className="page-shell">
@@ -40,8 +45,10 @@ export default function CartPage() {
             {items.map((item) => {
               const product = item.product as unknown as Product
               // Display only: the server prices the cart from the database (see the cart hook).
-              const line = typeof product === 'object' ? resolveCartLine(product as unknown as CatalogueProduct, item.variation ?? null, 1) : null
-              const unitPrice = line && line.ok ? line.unitPrice : typeof product === 'object' ? product.priceInAUD : null
+              const isBundle = typeof product === 'object' && product !== null && (product as unknown as { productType?: string }).productType === 'bundle'
+              const bundle = isBundle ? bundles[String((product as { id: number }).id)] : undefined
+              const line = typeof product === 'object' && !isBundle ? resolveCartLine(product as unknown as CatalogueProduct, item.variation ?? null, 1) : null
+              const unitPrice = isBundle ? (bundle && bundle.priceCents !== null ? bundle.priceCents / 100 : null) : line && line.ok ? line.unitPrice : typeof product === 'object' ? product.priceInAUD : null
               return (
                 <li
                   key={item.id}
@@ -50,7 +57,10 @@ export default function CartPage() {
                   <div>
                     <h3>{typeof product === 'object' ? product.title : 'Item'}</h3>
                     {line && line.ok && line.variationLabel ? <p className="opacity-70">{line.variationLabel}</p> : null}
-                    <p>{formatPriceInAUD(unitPrice, currency)}</p>
+                    {readAddOnChoices(item.addOns).length > 0 ? <p className="text-[0.85rem] opacity-70">{addOnSummary(readAddOnChoices(item.addOns))}</p> : null}
+                    <p>{money(unitPrice)}</p>
+                    {isBundle && bundle ? <BundleContentsList items={bundle.contents} /> : null}
+                    {isBundle && bundle && !bundle.available ? <p role="alert" className="text-[#b3261e]">This bundle is not available right now.</p> : null}
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -85,10 +95,14 @@ export default function CartPage() {
           </ul>
 
           <CartCrossSells />
+          <CartRecommendations />
           <PayLaterMessage amountDollars={typeof cart?.subtotal === 'number' ? cart.subtotal : null} />
+          {displayState.selected ? (
+            <p className="opacity-70">Converted prices are approximate. You pay in {displayState.base} at checkout.</p>
+          ) : null}
           <div className="flex items-center justify-between">
             <p>
-              Subtotal: <strong>{formatPriceInAUD(cart?.subtotal, currency)}</strong>
+              Subtotal: <strong>{money(cart?.subtotal)}</strong>
             </p>
             <Link href="/checkout" className="btn btn--primary">
               Checkout

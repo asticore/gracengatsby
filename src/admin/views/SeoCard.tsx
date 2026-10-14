@@ -6,6 +6,7 @@ import { FieldRenderer } from '@/admin/fields/FieldRenderer'
 import { useFormFields } from '@/admin/context'
 import { SocialImageInfo } from './SocialImageInfo'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
+import { SeoAnalysisDot, SeoAnalysisPanel, useSeoAnalysis } from './SeoAnalysisPanel'
 
 function SchemaDisplay() {
   const { schemaType } = useFormFields(([fields]) => ({
@@ -87,7 +88,8 @@ function SnippetPreview({ liveHref }: { liveHref?: string }) {
 }
 
 export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }) => {
-  const [activeTab, setActiveTab] = useState<'seo' | 'social' | 'schema'>('seo')
+  const [activeTab, setActiveTab] = useState<'seo' | 'social' | 'analysis' | 'schema'>('seo')
+  const analysis = useSeoAnalysis()
 
   const seoFields = ((seoField.fields as Field[] | undefined) || []).filter((f) => {
     const name = 'name' in f ? (f as { name?: string }).name : undefined
@@ -111,6 +113,13 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
     label: false,
     admin: { ...seoField.admin, description: undefined },
     fields: socialFields,
+  }
+
+  const restrictedKeyphraseField: Field = {
+    ...seoField,
+    label: false,
+    admin: { ...seoField.admin, description: undefined },
+    fields: ((seoField.fields as Field[] | undefined) || []).filter((f) => ('name' in f ? (f as { name?: string }).name : undefined) === 'focusKeyphrase'),
   }
 
   return (
@@ -142,6 +151,18 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
         <button
           type="button"
           role="tab"
+          id="seo-tab-analysis"
+          aria-controls="seo-panel-analysis"
+          aria-selected={activeTab === 'analysis'}
+          onClick={() => setActiveTab('analysis')}
+          className="doc-seo-card__tab"
+        >
+          <SeoAnalysisDot status={analysis.seoScore} />
+          Analysis
+        </button>
+        <button
+          type="button"
+          role="tab"
           id="seo-tab-schema"
           aria-controls="seo-panel-schema"
           aria-selected={activeTab === 'schema'}
@@ -160,6 +181,10 @@ export const SeoCard: React.FC<SeoCardProps> = ({ seoField, readOnly, liveHref }
         <div id="seo-panel-social" role="tabpanel" aria-labelledby="seo-tab-social" hidden={activeTab !== 'social'}>
           <FieldRenderer fields={[restrictedSocialField]} readOnly={readOnly} />
           <SocialImageInfo />
+        </div>
+        <div id="seo-panel-analysis" role="tabpanel" aria-labelledby="seo-tab-analysis" hidden={activeTab !== 'analysis'}>
+          <FieldRenderer fields={[restrictedKeyphraseField]} readOnly={readOnly} />
+          <SeoAnalysisPanel result={analysis} />
         </div>
         <div id="seo-panel-schema" role="tabpanel" aria-labelledby="seo-tab-schema" hidden={activeTab !== 'schema'}>
           <SchemaDisplay />

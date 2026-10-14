@@ -334,6 +334,10 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_integrations')).toContain('google_page_speed_api_key')
     expect(await columnsOf('eg_speed_settings')).toEqual(expect.arrayContaining(['pagespeed_test_after_publish', 'pagespeed_daily_cap']))
     expect(await columnsOf('eg_pagespeed_results')).toEqual(expect.arrayContaining(['collection', 'doc_id', 'url', 'strategy', 'performance', 'accessibility', 'best_practices', 'seo', 'metrics', 'field_data', 'suggestions', 'fetched_at']))
+
+    // Wave 11 (20261020_100000_shop_extra_settings): the shop-wide switches table and the PayPal webhook id.
+    expect(await columnsOf('eg_shop_extra_settings')).toEqual(expect.arrayContaining(['preorders_enabled', 'updated_at', 'created_at']))
+    expect(await columnsOf('eg_payment_settings')).toContain('paypal_webhook_id')
   })
 
   it('adds the edit screens columns (trash, excerpt, sticky, reading time, recurrence, tiers, check-in)', async () => {

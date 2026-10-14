@@ -19,6 +19,7 @@ import { normaliseGiftCardSettings } from '@/features/ecommerce/lib/storedValue'
 import { showBackInStockForm } from '@/features/ecommerce/lib/backInStock'
 import { aggregateRatingJsonLd, summariseRatings } from '@/features/ecommerce/reviews'
 import { buildProductView, offersJsonLd } from '@/features/ecommerce/storefront'
+import { loadPreordersEnabled } from '@/features/ecommerce/server/shopExtra'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -85,7 +86,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const catalogue = product as unknown as CatalogueProduct & Record<string, unknown>
   const mediaUrls = new Map<number, string>(images.filter((img) => img.url).map((img) => [img.id, img.url as string]))
-  const view = buildProductView(catalogue, new Date(), mediaUrls)
+  const preordersOn = await loadPreordersEnabled(engine)
+  const view = buildProductView(catalogue, new Date(), mediaUrls, { preorders: preordersOn })
 
   const asDocs = (value: unknown): Array<Record<string, unknown> & { id: number }> =>
     (Array.isArray(value) ? value : []).filter((entry): entry is Record<string, unknown> & { id: number } => typeof entry === 'object' && entry !== null)
@@ -95,7 +97,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ? asDocs(catalogue.groupedProducts)
         .filter((child) => child._status === 'published' && child.id !== product.id)
         .slice(0, 50)
-        .map((child) => ({ id: child.id, title: String(child.title ?? ''), slug: typeof child.slug === 'string' ? child.slug : null, view: buildProductView(child as unknown as CatalogueProduct) }))
+        .map((child) => ({ id: child.id, title: String(child.title ?? ''), slug: typeof child.slug === 'string' ? child.slug : null, view: buildProductView(child as unknown as CatalogueProduct, new Date(), new Map(), { preorders: preordersOn }) }))
     : []
   const upsells = asDocs(catalogue.upsells).filter((item) => item._status === 'published' && item.id !== product.id).slice(0, 4) as unknown as Product[]
 

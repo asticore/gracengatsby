@@ -148,7 +148,7 @@ export const FEATURES: FeatureDef[] = [
     description: 'Choose the provider used to send transactional email.',
     defaultEnabled: false,
     collections: [],
-    globals: ['email-settings'],
+    globals: ['email-settings', 'email-templates'],
     tables: [],
     implemented: true,
   },

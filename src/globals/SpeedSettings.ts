@@ -28,14 +28,30 @@ export const SpeedSettings: GlobalConfig = {
     read: () => true,
     update: isAdmin,
   },
+  hooks: {
+    afterChange: [
+      async () => {
+        // Any Speed save starts a new cache version, so a changed rule never serves an old copy.
+        const { bumpCacheEpoch } = await import('@/features/speed/epoch')
+        await bumpCacheEpoch()
+      },
+    ],
+  },
   fields: [
+    {
+      // Not shown to editors. The Worker builds its cache keys from this number; see src/features/speed/epoch.ts.
+      name: 'cacheEpoch',
+      type: 'number',
+      defaultValue: 1,
+      admin: { hidden: true, description: 'Internal cache version number.' },
+    },
     {
       type: 'group',
       name: 'caching',
       label: 'Caching',
       admin: {
         description:
-          'Saves a finished copy of each page so repeat visitors are served it instantly instead of it being rebuilt.',
+          'Saved copies of your pages, so repeat visitors are served quickly. Page caching is off until you switch it on below. Cache tools (clear now, development mode) are on the Cache tools page.',
       },
       fields: [
         {
@@ -45,7 +61,11 @@ export const SpeedSettings: GlobalConfig = {
               name: 'pageCache',
               type: 'checkbox',
               defaultValue: false,
-              admin: { width: '50%', description: 'The main switch for page caching.' },
+              admin: {
+                width: '50%',
+                description:
+                  'Keeps a saved copy of public pages in Cloudflare\'s network so repeat visits are quicker. Only visitors with no cookies except the cookie-consent one get a saved copy. Admin, cart, checkout, account and login pages are never saved. Every publish starts a new version, so an edit shows within about 10 seconds.',
+              },
             },
             {
               name: 'cacheTtlSeconds',
@@ -53,7 +73,8 @@ export const SpeedSettings: GlobalConfig = {
               defaultValue: 3600,
               admin: {
                 width: '50%',
-                description: 'How long a saved copy stays fresh, in seconds. 3600 is one hour.',
+                description:
+                  'How long a saved copy may be kept, in seconds. 3600 is one hour. Edits do not wait for this: each publish starts a new version. Minimum 30.',
               },
             },
           ],
@@ -68,7 +89,7 @@ export const SpeedSettings: GlobalConfig = {
               admin: {
                 width: '50%',
                 description:
-                  'Leave off unless you know you need it. Caching signed-in visitors risks showing one person another person\'s page.',
+                  'Leave off unless you know you need it. Visitors signed in to the admin or as an editor never get saved copies, and this setting never changes that. When on, visitors with other cookies (for example customer logins) may get saved copies, so check that no page shows personal details.',
               },
             },
             {
@@ -77,10 +98,43 @@ export const SpeedSettings: GlobalConfig = {
               defaultValue: true,
               admin: {
                 width: '50%',
-                description: 'Clear the saved copies when you publish an edit, so changes appear straight away.',
+                description: 'After you publish, the saved copies of that page are cleared where possible so the change shows up quickly. Copies already stored in visitors\' own browsers are not cleared.',
               },
             },
           ],
+        },
+        {
+          name: 'neverCachePaths',
+          type: 'textarea',
+          admin: {
+            description:
+              'Pages that must never get a saved copy, one per line. Use /path for one page or /path/* for everything under it. Lines starting with # are ignored.',
+          },
+        },
+        {
+          name: 'neverCacheCookies',
+          type: 'textarea',
+          admin: {
+            description:
+              'Cookie names that stop a visitor getting saved copies, one per line, for example wordpress_logged_in. Add a * at the end to match a prefix.',
+          },
+        },
+        {
+          name: 'neverCacheQueryStrings',
+          type: 'textarea',
+          admin: {
+            description:
+              'Address parameters that stop a page getting a saved copy, one per line, for example s or q (search). Any parameter other than utm_, fbclid and gclid already stops it.',
+          },
+        },
+        {
+          name: 'cacheMobileSeparately',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Keeps separate saved copies for phones and tablets, for sites whose mobile page differs from the desktop one. Costs a little more storage.',
+          },
         },
       ],
     },
@@ -90,15 +144,18 @@ export const SpeedSettings: GlobalConfig = {
       label: 'Assets',
       admin: {
         description:
-          'Shrinks and reorders the styling and script files a page needs. These are the settings most likely to change how the site looks, so check a few pages after each change.',
+          'How script files load. Check a few pages after changing anything here.',
       },
       fields: [
         {
           type: 'row',
           fields: [
-            { name: 'minifyCss', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Strips spacing from style files.' } },
-            { name: 'minifyJs', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Strips spacing from script files.' } },
-            { name: 'combineCss', type: 'checkbox', defaultValue: false, admin: { width: '33%', description: 'Merges style files into one request.' } },
+            // No effect, kept for stored data.
+            { name: 'minifyCss', type: 'checkbox', defaultValue: false, admin: { width: '33%', hidden: true, description: 'Strips spacing from style files.' } },
+            // No effect, kept for stored data.
+            { name: 'minifyJs', type: 'checkbox', defaultValue: false, admin: { width: '33%', hidden: true, description: 'Strips spacing from script files.' } },
+            // No effect, kept for stored data.
+            { name: 'combineCss', type: 'checkbox', defaultValue: false, admin: { width: '33%', hidden: true, description: 'Merges style files into one request.' } },
           ],
         },
         {
@@ -108,23 +165,30 @@ export const SpeedSettings: GlobalConfig = {
               name: 'deferJs',
               type: 'checkbox',
               defaultValue: false,
-              admin: { width: '33%', description: 'Loads scripts after the page is drawn.' },
+              admin: {
+                width: '50%',
+                description:
+                  'Holds back third-party scripts that other scripts add, such as analytics, chat widgets and embeds, until the page has finished loading.',
+              },
             },
             {
+              // No effect, kept for stored data.
               name: 'removeUnusedCss',
               type: 'checkbox',
               defaultValue: false,
               admin: {
                 width: '33%',
+                hidden: true,
                 description:
                   'Removes styling a page does not appear to use. The biggest speed win here, and the most likely to break a menu or pop-up.',
               },
             },
             {
+              // No effect, kept for stored data.
               name: 'preloadCriticalCss',
               type: 'checkbox',
               defaultValue: false,
-              admin: { width: '33%', description: 'Loads the styling for the top of the page first.' },
+              admin: { width: '33%', hidden: true, description: 'Loads the styling for the top of the page first.' },
             },
           ],
         },
@@ -143,13 +207,13 @@ export const SpeedSettings: GlobalConfig = {
               name: 'lazyLoadImages',
               type: 'checkbox',
               defaultValue: true,
-              admin: { width: '50%', description: 'Only load pictures as they come into view.' },
+              admin: { width: '50%', description: 'Pictures further down the page wait until you scroll near them. Pictures at the top of the page load straight away.' },
             },
             {
               name: 'lazyLoadIframes',
               type: 'checkbox',
               defaultValue: true,
-              admin: { width: '50%', description: 'Same for embedded videos and maps, which are heavy.' },
+              admin: { width: '50%', description: 'Embedded videos and maps further down the page wait until you scroll near them, as they are heavy.' },
             },
           ],
         },
@@ -162,14 +226,15 @@ export const SpeedSettings: GlobalConfig = {
               defaultValue: true,
               admin: {
                 width: '50%',
-                description: 'Reserves the right space for each picture so the page stops jumping about as it loads.',
+                description: 'Once each picture has loaded, records its size so the space is kept when the page redraws. This cannot stop the page jumping on a first visit.',
               },
             },
             {
+              // No effect, kept for stored data.
               name: 'disableEmojiScript',
               type: 'checkbox',
               defaultValue: false,
-              admin: { width: '50%', description: 'Skips the extra emoji helper script. Safe on modern browsers.' },
+              admin: { width: '50%', hidden: true, description: 'Skips the extra emoji helper script. Safe on modern browsers.' },
             },
           ],
         },
@@ -179,23 +244,27 @@ export const SpeedSettings: GlobalConfig = {
       type: 'group',
       name: 'fonts',
       label: 'Fonts',
-      admin: { description: 'How custom typefaces load. Poor font loading is a common cause of flickering text.' },
+      // No effect, kept for stored data. The framework already handles both settings.
+      admin: { hidden: true, description: 'How custom typefaces load.' },
       fields: [
         {
           type: 'row',
           fields: [
             {
+              // No effect, kept for stored data.
               name: 'preloadFonts',
               type: 'checkbox',
               defaultValue: false,
-              admin: { width: '50%', description: 'Start fetching your typefaces sooner.' },
+              admin: { width: '50%', hidden: true, description: 'Start fetching your typefaces sooner.' },
             },
             {
+              // No effect, kept for stored data.
               name: 'fontDisplaySwap',
               type: 'checkbox',
               defaultValue: true,
               admin: {
                 width: '50%',
+                hidden: true,
                 description: 'Show text in a stand-in typeface immediately rather than leaving a blank space.',
               },
             },
@@ -274,7 +343,96 @@ export const SpeedSettings: GlobalConfig = {
           defaultValue: false,
           admin: {
             description:
-              'Holds all scripts back until the visitor moves, taps or scrolls. It scores very well on speed tests but frequently breaks sliders, chat widgets, pop-ups and video players. Test every interactive part of the site before leaving this on.',
+              'Holds back third-party scripts (chat widgets, analytics, video players) until the visitor moves, taps or scrolls. It scores well on speed tests but can break sliders, chat widgets, pop-ups and video players. Test every interactive part of the site before leaving this on.',
+          },
+        },
+        {
+          name: 'preloadOnHover',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            description:
+              'When a visitor rests the mouse on a link to another page of this site, starts loading that page in the background so it opens faster. Skipped when the visitor has data-saver turned on.',
+          },
+        },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'cleanup',
+      label: 'Data clean-up',
+      admin: {
+        description:
+          'An hourly job that removes old data you no longer need. Off by default. Live pages, posts, products and events are never removed.',
+      },
+      fields: [
+        {
+          name: 'enabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: { description: 'Turn on the hourly clean-up. Nothing is removed while this is off.' },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'keepVersionsPerDoc',
+              type: 'number',
+              defaultValue: 20,
+              min: 1,
+              max: 1000,
+              admin: {
+                width: '50%',
+                description:
+                  'How many saved versions to keep for each page, post, product and event. The newest are kept and older ones are removed.',
+              },
+            },
+            {
+              name: 'deleteTrashedAfterDays',
+              type: 'number',
+              defaultValue: 30,
+              min: 0,
+              admin: {
+                width: '50%',
+                description: 'Items in the trash are deleted for good after this many days. 0 means never.',
+              },
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'deleteFormSubmissionsAfterDays',
+              type: 'number',
+              defaultValue: 0,
+              min: 0,
+              admin: {
+                width: '50%',
+                description:
+                  'Form entries older than this many days are deleted, along with any uploaded files. 0 means never. A form\'s own retention setting also applies.',
+              },
+            },
+            {
+              name: 'deleteAuditLogAfterDays',
+              type: 'number',
+              defaultValue: 180,
+              min: 0,
+              admin: {
+                width: '50%',
+                description: 'Activity log entries older than this are deleted. 0 means never.',
+              },
+            },
+          ],
+        },
+        {
+          name: 'deleteEmailLogAfterDays',
+          type: 'number',
+          defaultValue: 90,
+          min: 1,
+          admin: {
+            description:
+              'Email log entries older than this are deleted. When clean-up is on, this replaces the built-in 90 day rule.',
           },
         },
       ],

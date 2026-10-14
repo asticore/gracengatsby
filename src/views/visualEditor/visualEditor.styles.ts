@@ -983,12 +983,6 @@ html[data-theme='dark'] .ve-root {
   font-size: 13px;
 }
 
-.ve-library__card-desc {
-  font-size: 11px;
-  color: var(--ve-text-muted);
-  line-height: 1.35;
-}
-
 .ve-library__empty {
   color: var(--ve-text-muted);
   font-size: 13px;

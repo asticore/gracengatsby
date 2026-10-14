@@ -28,6 +28,8 @@ export async function POST(request: Request): Promise<Response> {
   const a = (body.address ?? {}) as Record<string, unknown>
   const str = (v: unknown) => (typeof v === 'string' ? v.slice(0, 100) : undefined)
   try {
+    // Signed-in buyers get their role-based pricing rules here too, so the quote matches what checkout charges.
+    const auth = await (engine as unknown as { auth: (a: unknown) => Promise<{ user?: { id?: number; roles?: string[] } | null }> }).auth({ headers: request.headers }).catch((): { user: null } => ({ user: null }))
     const config = await loadShopConfig(engine)
     const { totals } = await priceCart(
       engine,
@@ -38,12 +40,12 @@ export async function POST(request: Request): Promise<Response> {
         couponCode: str(body.couponCode),
         shippingOptionId: str(body.shippingOptionId),
         cartId,
+        customerRoles: Array.isArray(auth.user?.roles) ? auth.user.roles : [],
       },
       config,
     )
     // Gift cards and store credit: only typed codes and a yes/no for credit come from the browser.
     const codes = Array.isArray(body.giftCardCodes) ? (body.giftCardCodes as unknown[]).slice(0, 5) : []
-    const auth = await (engine as unknown as { auth: (a: unknown) => Promise<{ user?: { id?: number } | null }> }).auth({ headers: request.headers }).catch((): { user: { id?: number } | null } => ({ user: null }))
     const userId = auth.user?.id ? Number(auth.user.id) : null
     const giftSettings = await loadGiftCardSettings(engine as unknown as StoredValueEngine)
     const stored = await quoteStoredValue(engine as unknown as StoredValueEngine, {

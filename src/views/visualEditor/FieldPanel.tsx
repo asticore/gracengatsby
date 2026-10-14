@@ -14,7 +14,7 @@ import {
 
 import type { BlockDef, EditorField } from './blockSchemas'
 import { DesignPanel } from './DesignPanel'
-import { hasRichFormatting, lexicalToPlainText, plainTextToLexical } from './richTextUtil'
+import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical, RICH_TEXT_NOTICE } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
 import { LockControls, type LockUi } from './LockControls'
@@ -57,7 +57,7 @@ export const FieldPanel: React.FC<{
           <strong>{blockDef.label}</strong>
         </div>
         <button type="button" className="ve-icon-btn" onClick={onClose} aria-label="Close panel">
-          ✕
+          &#10005;
         </button>
       </div>
 
@@ -275,7 +275,7 @@ const SectionLayoutFields: React.FC<{
                   {option.label}
                 </option>
               ))}
-              <option value="custom">Custom size…</option>
+              <option value="custom">Custom size&#8230;</option>
             </select>
             {isCustom && width && (
               <span className="ve-col-row__custom">
@@ -304,7 +304,7 @@ const SectionLayoutFields: React.FC<{
               aria-label={`Remove column ${index + 1}`}
               title={canEditLayout ? "Remove column" : "You cannot modify layout"}
             >
-              ✕
+              &#10005;
             </button>
           </div>
         )
@@ -442,7 +442,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
         <label className={`ve-field ${widthClass}`}>
           <span>{field.label}</span>
           <select value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value || undefined)}>
-            <option value="">—</option>
+            <option value="">&#8212;</option>
             {(field.options || []).map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
@@ -452,20 +452,13 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
         </label>
       )
     case 'richText':
-      if (hasRichFormatting(value)) {
+      // Refuse to show an editable box for content the plain-text bridge would rewrite.
+      if (!canEditAsPlainText(value)) {
         return (
           <label className="ve-field ve-field--full">
             <span>{field.label}</span>
-            <textarea
-              rows={6}
-              readOnly
-              value={lexicalToPlainText(value)}
-              className="ve-field--readonly"
-            />
-            <small>
-              This field has formatting that can&apos;t be edited here yet - edit it from the normal admin page
-              instead.
-            </small>
+            <textarea rows={6} readOnly value={lexicalToPlainText(value)} className="ve-field--readonly" />
+            <small>{RICH_TEXT_NOTICE}</small>
           </label>
         )
       }
@@ -476,7 +469,10 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
             rows={6}
             placeholder="Separate paragraphs with a blank line."
             defaultValue={lexicalToPlainText(value)}
-            onBlur={(e) => onChange(plainTextToLexical(e.target.value))}
+            onBlur={(e) => {
+              // Only a real change is written, so focusing and leaving the box does not mark the page dirty.
+              if (e.target.value !== lexicalToPlainText(value)) onChange(plainTextToLexical(e.target.value))
+            }}
           />
         </label>
       )
@@ -562,7 +558,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
               value={current ? String(current) : ''}
               onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
             >
-              <option value="">—</option>
+              <option value="">&#8212;</option>
               {relOptions.map((opt) => (
                 <option key={opt.id} value={opt.id}>
                   {opt.label}
@@ -613,10 +609,10 @@ const MultiThumb: React.FC<{ id: number; onRemove: () => void }> = ({ id, onRemo
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="" />
       ) : (
-        <span>…</span>
+        <span>&#8230;</span>
       )}
       <button type="button" onClick={onRemove} aria-label="Remove image">
-        ✕
+        &#10005;
       </button>
     </div>
   )

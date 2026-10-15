@@ -25,7 +25,7 @@ describe('navStructure', () => {
     }
   })
 
-  it('Settings group should have the 7 settings views and then the Roles view, in order', () => {
+  it('Settings group should have the 7 settings views, Theme styles and then the Roles view, in order', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
     expect(settingsGroup).toBeDefined()
 
@@ -37,6 +37,7 @@ describe('navStructure', () => {
       'settings-speed',
       'settings-security',
       'settings-data-system',
+      'theme-styles',
       'roles',
     ]
 
@@ -67,6 +68,7 @@ describe('navStructure', () => {
       'settings-speed': { href: '/settings/speed', label: 'Speed' },
       'settings-security': { href: '/settings/security', label: 'Security' },
       'settings-data-system': { href: '/settings/data-system', label: 'Data and System' },
+      'theme-styles': { href: '/theme-styles', label: 'Theme styles' },
       roles: { href: '/roles', label: 'Roles' },
     }
 

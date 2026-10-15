@@ -1,12 +1,17 @@
 // @vitest-environment node
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
 import { buildThemeStylesCss } from '@/features/themeStyles/css'
-import { sanitizeColourValue, sanitizeNumber, sanitizeSlug, sanitizeThemeStyles } from '@/features/themeStyles/sanitize'
+import { applyPreset, STARTER_PRESETS } from '@/features/themeStyles/presets'
+import { sanitizeColourValue, sanitizeGlobals, sanitizeNumber, sanitizePresetData, sanitizeSlug, sanitizeThemeStyles } from '@/features/themeStyles/sanitize'
 import { loadThemeStyles, saveThemeStyles, type ThemeStylesD1 } from '@/features/themeStyles/store'
 import { DEFAULT_THEME_STYLES, LIMITS, SYSTEM_COLOUR_IDS, SYSTEM_TYPE_IDS } from '@/features/themeStyles/types'
+import { RichText } from '@/localapi/richtext'
+import type { InstalledFont } from '@/features/fonts/types'
 import { buttonClassName } from '@/components/blocks/elements/ButtonElement'
 
 const defaults = () => sanitizeThemeStyles(null)
@@ -273,5 +278,168 @@ describe('ButtonElement classes', () => {
     expect(buttonClassName('primary', '', 'sm')).toBe('btn btn--primary btn--sm')
     expect(buttonClassName('primary', undefined, 'lg')).toBe('btn btn--primary btn--lg')
     expect(buttonClassName('primary', undefined, 'md')).toBe('btn btn--primary')
+  })
+})
+
+describe('theme styles part 2: globals and presets', () => {
+  it('an old row without globals or presets loads with defaults', () => {
+    const old: Record<string, unknown> = { version: 1, colours: [], typography: [], buttons: [], tables: [], defaultTableId: 'default' }
+    const s = sanitizeThemeStyles(old)
+    expect(s.globals).toEqual(DEFAULT_THEME_STYLES.globals)
+    expect(s.presets).toEqual([])
+    expect(sanitizeThemeStyles(s)).toEqual(s)
+  })
+
+  it('strips hostile custom css', () => {
+    const evil = 'a{b:c}</style><script>x</script> @IMPORT url(x); b{background:url(JavaScript:1)} c{width:ExPression(1)} d{behavior:url(x);-MOZ-binding:x} @@importimport'
+    const out = sanitizeGlobals({ customCss: evil }).customCss
+    expect(out).not.toContain('<')
+    for (const bad of ['</', '@import', 'expression(', 'javascript:', 'behavior:', '-moz-binding']) expect(out.toLowerCase()).not.toContain(bad)
+    expect(sanitizeGlobals({ customCss: 'x'.repeat(LIMITS.customCss + 500) }).customCss.length).toBe(LIMITS.customCss)
+    expect(sanitizeGlobals({ customCss: 5 }).customCss).toBe('')
+  })
+
+  it('keeps breakpoint invariants', () => {
+    const bp = (v: unknown) => sanitizeGlobals({ breakpoints: v }).breakpoints
+    expect(bp({ tablet: 900, mobile: 500 })).toEqual({ tablet: 900, mobile: 500 })
+    expect(bp({ tablet: 100, mobile: 5000 })).toEqual({ tablet: 600, mobile: 599 })
+    expect(bp({ tablet: 700, mobile: 700 })).toEqual({ tablet: 700, mobile: 699 })
+    expect(bp({ tablet: 9999, mobile: 100 })).toEqual({ tablet: 1280, mobile: 320 })
+    expect(bp('junk')).toEqual({ tablet: 1024, mobile: 640 })
+    const b = bp({ tablet: 610, mobile: 890 })
+    expect(b.mobile).toBeLessThan(b.tablet)
+  })
+
+  it('clamps globals and falls back on bad enums and colours', () => {
+    const g = sanitizeGlobals({
+      forms: { fieldRadius: 999, fieldBg: 'red;}', focusBorder: '@nope', labelWeight: 450 },
+      links: { underline: 'sometimes' },
+      images: { shadow: 'huge', radius: -4 },
+      containers: { maxWidth: 10 },
+      scales: { spaceBase: 99 },
+    })
+    expect(g.forms.fieldRadius).toBe(40)
+    expect(g.forms.fieldBg).toBe('')
+    expect(g.forms.focusBorder).toBe('')
+    expect(g.forms.labelWeight).toBe(500)
+    expect(g.links.underline).toBe('hover')
+    expect(g.images.shadow).toBe('none')
+    expect(g.images.radius).toBe(0)
+    expect(g.containers.maxWidth).toBe(640)
+    expect(g.scales.spaceBase).toBe(16)
+  })
+
+  it('limits presets, uniques ids, trims names and ignores nested presets', () => {
+    const many = Array.from({ length: LIMITS.presets + 5 }, (_, i) => ({ id: `p${i}`, name: `  P ${i}  `, data: {} }))
+    const s = sanitizeThemeStyles({ presets: many })
+    expect(s.presets).toHaveLength(LIMITS.presets)
+    expect(s.presets[0].name).toBe('P 0')
+    const dup = sanitizeThemeStyles({ presets: [{ id: 'A b', name: 'x', data: {} }, { id: 'a-b', name: 'y', data: {} }, { id: '', name: 'z' }] })
+    expect(dup.presets.map((p) => p.id)).toEqual(['a-b'])
+    const nested = sanitizeThemeStyles({ presets: [{ id: 'n', name: 'n', data: { presets: [{ id: 'q' }], colours: [] } }] })
+    expect('presets' in nested.presets[0].data).toBe(false)
+    expect(sanitizePresetData({ presets: [1] })).not.toHaveProperty('presets')
+  })
+
+  it('emits scale variables always, other globals only when saved', () => {
+    const s = sanitizeThemeStyles(null)
+    const off = buildThemeStylesCss(s, { saved: false })
+    const on = buildThemeStylesCss(s, { saved: true })
+    expect(off).toContain('--eg-space-3:12px')
+    expect(off).toContain('--eg-space-8:64px')
+    expect(off).toContain('--eg-radius-md:10px')
+    expect(off).toContain('--eg-shadow-sm:0 2px 8px')
+    expect(off).not.toContain('--max-width')
+    expect(off).not.toContain('color-mix')
+    expect(off).not.toContain('--eg-gap')
+    expect(on).toContain('--max-width:1180px')
+    expect(on).toContain('--eg-gap:24px')
+    expect(on).toContain('--eg-section-pad:80px')
+    expect(on).toContain('color-mix(in srgb, var(--eg-c-accent) 25%, transparent)')
+    expect(on).toContain('::placeholder')
+    expect(on).toContain(':where(a:not(.btn):hover)')
+    expect(on).toContain('.built-block img')
+    expect(on).toContain('header img')
+  })
+
+  it('uses the custom breakpoints in every media query', () => {
+    const s = sanitizeThemeStyles({ globals: { breakpoints: { tablet: 900, mobile: 500 } }, tables: [{ id: 'default', responsive: 'stack' }] })
+    const css = buildThemeStylesCss(s, { saved: true })
+    expect(css).toContain('@media (max-width: 900px)')
+    expect(css).toContain('@media (max-width: 500px)')
+    expect(css).not.toContain('1024px')
+    expect(css).not.toContain('640px')
+  })
+
+  it('appends sanitised custom css last and stays free of <', () => {
+    const css = buildThemeStylesCss({ globals: { customCss: '.x{color:red}</style><script>@import "a";' } }, { saved: true })
+    expect(css.indexOf('.x{color:red}')).toBeGreaterThan(css.indexOf('--eg-space-1'))
+    expect(css.toLowerCase()).not.toContain('@import')
+    expect(css.trim().endsWith('"a";')).toBe(true)
+    expect(css).not.toContain('<')
+    expect(buildThemeStylesCss({ globals: { customCss: '.x{color:red}' } }, { saved: false })).not.toContain('.x{color:red}')
+  })
+
+  it('has no < with hostile values everywhere', () => {
+    const h = '</style><script>alert(1)</script>'
+    const hostile = {
+      colours: [{ id: 'primary', value: h }],
+      typography: [{ id: 'h1', fontFamily: h, colour: h }],
+      globals: {
+        forms: Object.fromEntries(['fieldBg', 'fieldText', 'fieldBorder', 'focusBorder', 'labelColour', 'placeholderColour', 'errorColour'].map((k) => [k, h])),
+        links: { hoverColour: h, underline: h },
+        images: { borderColour: h, shadow: h },
+        containers: { maxWidth: h },
+        breakpoints: { tablet: h, mobile: h },
+        customCss: h,
+      },
+      presets: [{ id: 'x', name: h, data: { globals: { customCss: h } } }],
+    }
+    const fonts = [{ id: 'f', family: 'Evil', source: 'upload', weights: [400], italic: false, local: false, files: {} }] as InstalledFont[]
+    for (const saved of [false, true]) expect(buildThemeStylesCss(hostile, { saved }, { fonts })).not.toContain('<')
+  })
+
+  it('resolves an installed font id in typography, else the body font', () => {
+    const fonts: InstalledFont[] = [{ id: 'my-font', family: 'My Font', source: 'upload', category: 'serif', weights: [400], italic: false, local: false, files: {} }]
+    const input = { typography: [{ id: 'h1', fontFamily: 'my-font' }, { id: 'h2', fontFamily: 'gone-font' }] }
+    const withFonts = buildThemeStylesCss(input, { saved: true }, { fonts })
+    expect(withFonts).toContain(':where(h1){font-family:"My Font", Georgia, serif;')
+    expect(withFonts).toContain(':where(h2){font-family:var(--font-body);')
+    expect(buildThemeStylesCss(input, { saved: true })).toContain(':where(h1){font-family:var(--font-body);')
+  })
+
+  it('starter presets are stable under sanitize and classic equals the defaults', () => {
+    expect(STARTER_PRESETS.map((p) => p.id)).toEqual(['classic', 'modern', 'warm', 'dark'])
+    for (const p of STARTER_PRESETS) {
+      const doc = applyPreset(DEFAULT_THEME_STYLES, p.data)
+      expect(sanitizeThemeStyles(doc), p.id).toEqual(doc)
+      expect(sanitizePresetData(p.data), p.id).toEqual(p.data)
+    }
+    expect(STARTER_PRESETS[0].data).toEqual({ ...sanitizePresetData(null) })
+    const modern = STARTER_PRESETS[1].data
+    expect(modern.colours.find((c) => c.id === 'accent')!.value).toBe('#2563eb')
+    expect(modern.typography.find((t) => t.id === 'h1')!.fontFamily).toBe('body')
+    expect(STARTER_PRESETS[2].data.buttons[0].radius).toBe(999)
+    expect(STARTER_PRESETS[3].data.colours.find((c) => c.id === 'background')!.value).toBe('#14151c')
+  })
+
+  it('applyPreset replaces the design and keeps the presets list', () => {
+    const current = sanitizeThemeStyles({ presets: [{ id: 'mine', name: 'Mine', data: {} }], globals: { customCss: '.a{}' } })
+    const next = applyPreset(current, STARTER_PRESETS[1].data)
+    expect(next.presets).toEqual(current.presets)
+    expect(next.globals.customCss).toBe('')
+    expect(next.colours.find((c) => c.id === 'primary')!.value).toBe('#111827')
+    expect(next.buttons[0]).not.toBe(STARTER_PRESETS[1].data.buttons[0])
+  })
+
+  it('rich-text tables carry eg-table and no inline border or padding', () => {
+    const cell = (header: number) => ({ type: 'tablecell', headerState: header, version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', text: 'x', version: 1 }] }] })
+    const data = { root: { type: 'root', version: 1, children: [{ type: 'table', version: 1, children: [{ type: 'tablerow', version: 1, children: [cell(1), cell(0)] }] }] } }
+    const html = renderToStaticMarkup(createElement(RichText, { data } as never))
+    expect(html).toContain('eg-table')
+    expect(html).toContain('<th')
+    expect(html).toContain('<td')
+    expect(html).not.toMatch(/border/)
+    expect(html).not.toMatch(/padding/)
   })
 })

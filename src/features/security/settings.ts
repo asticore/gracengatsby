@@ -56,7 +56,7 @@ export type SecuritySettings = {
 
 /** Mirrors the `defaultValue` of every field on the Security screen. */
 export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
-  featureEnabled: true,
+  featureEnabled: false,
   loginProtection: {
     maxLoginAttempts: 5,
     lockoutMinutes: 15,

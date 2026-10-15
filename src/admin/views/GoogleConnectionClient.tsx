@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Suspense, useState } from 'react'
 
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
@@ -169,6 +170,7 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
           </p>
         )}
         {hasClient ? (
+          // eslint-disable-next-line @next/next/no-html-link-for-pages -- OAuth redirect to an API route, needs a full page load
           <a className="btn btn--style-primary google-connection__button" href="/api/google/connect">
             {connected ? 'Connect with Google again' : 'Connect with Google'}
           </a>
@@ -221,7 +223,7 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
           disabled={!connected}
         />
         <p className="google-connection__help">
-          <a href="/admin/settings/site#integrations">Open Integrations</a> to see the measurement ID and container ID that were filled in.
+          <Link href="/admin/settings/site#integrations">Open Integrations</Link> to see the measurement ID and container ID that were filled in.
         </p>
       </CollapsibleCard>
     </div>

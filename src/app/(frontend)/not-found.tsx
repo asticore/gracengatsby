@@ -6,6 +6,7 @@ import { annotatePage } from '@/features/editScreens/toc'
 import { resolveDocumentContent } from '@/features/customFields/server'
 import { getNotFoundPage } from '@/features/site/pages'
 import { getFeatureFlags } from '@/utilities/features'
+import { renderWithTemplate } from '@/features/siteTemplates/render'
 
 /**
  * Shown for any address that does not exist under the public site. Next answers with HTTP 404 for it
@@ -28,7 +29,7 @@ export default async function NotFound() {
 
   const flags = await getFeatureFlags()
 
-  return (
+  const message = (
     <section className="mx-auto max-w-[var(--max-width)] px-6 py-24 text-center" aria-labelledby="not-found-heading">
       <h1 id="not-found-heading" className="text-4xl text-[var(--color-ink)]" style={{ fontFamily: 'var(--font-display)' }}>
         Page not found
@@ -43,4 +44,6 @@ export default async function NotFound() {
       </nav>
     </section>
   )
+  // A matching 404 template replaces the built-in message; the 404 page picked in Site pages still wins above.
+  return renderWithTemplate({ kind: 'not-found', ctx: {}, content: message })
 }

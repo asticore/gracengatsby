@@ -25,7 +25,7 @@ describe('navStructure', () => {
     }
   })
 
-  it('Settings group should have the 7 settings views, Theme styles and then the Roles view, in order', () => {
+  it('Settings group should have the 7 settings views, Theming and then the Roles view, in order', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
     expect(settingsGroup).toBeDefined()
 
@@ -61,14 +61,14 @@ describe('navStructure', () => {
     const entries = (settingsGroup?.entities || []).filter((e) => e.type === 'view')
 
     const expectedMapping: Record<string, { href: string; label: string }> = {
-      'settings-site': { href: '/settings/site', label: 'Site' },
+      'settings-site': { href: '/settings/site', label: 'General' },
       'settings-content': { href: '/settings/content', label: 'Content' },
       'settings-commerce': { href: '/settings/commerce', label: 'Commerce' },
       'settings-communication': { href: '/settings/communication', label: 'Communication' },
       'settings-speed': { href: '/settings/speed', label: 'Speed' },
       'settings-security': { href: '/settings/security', label: 'Security' },
       'settings-data-system': { href: '/settings/data-system', label: 'Data and System' },
-      'theme-styles': { href: '/theme-styles', label: 'Theme styles' },
+      'theme-styles': { href: '/theme-styles', label: 'Theming' },
       roles: { href: '/roles', label: 'Roles' },
     }
 

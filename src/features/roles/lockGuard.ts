@@ -17,7 +17,7 @@ import { checkLockChanges, checkLockedTree, hasAnyLock, isAdminSession, parseLoc
 const BLOCKS_FIELD = 'blocks'
 
 const nounFor = (slug: string | undefined): string =>
-  slug === 'page-templates' ? 'template' : slug === 'reusable-sections' ? 'reusable section' : 'page'
+  slug === 'page-templates' ? 'template' : slug === 'reusable-sections' ? 'reusable section' : slug === 'site-templates' ? 'site template' : 'page'
 
 /** Throws the engine's Forbidden so REST answers 403 with the message. */
 async function throwForbidden(message: string): Promise<never> {

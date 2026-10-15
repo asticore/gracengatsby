@@ -76,6 +76,7 @@ import * as migration_20261024_300000_email_log from './20261024_300000_email_lo
 import * as migration_20261016_100000_product_qty_price_limits from './20261016_100000_product_qty_price_limits';
 import * as migration_20261028_100000_add_ons_pricing_rules from './20261028_100000_add_ons_pricing_rules';
 import * as migration_20261101_100000_theme_styles from './20261101_100000_theme_styles';
+import * as migration_20261102_100000_site_templates from './20261102_100000_site_templates';
 import * as migration_20261028_400000_display_currencies from './20261028_400000_display_currencies';
 
 export const migrations = [
@@ -473,5 +474,10 @@ export const migrations = [
     up: migration_20261101_100000_theme_styles.up,
     down: migration_20261101_100000_theme_styles.down,
     name: '20261101_100000_theme_styles',
+  },
+  {
+    up: migration_20261102_100000_site_templates.up,
+    down: migration_20261102_100000_site_templates.down,
+    name: '20261102_100000_site_templates',
   },
 ];

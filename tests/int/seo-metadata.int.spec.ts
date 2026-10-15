@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { buildMetadata } from '@/utilities/seo'
+import { getFeatureFlags } from '@/utilities/features'
+import { DEFAULT_FLAGS } from '@/features/registry'
+
+// SEO is off on a fresh install, so the canonical test has to switch it on explicitly.
+vi.mock('@/utilities/features', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utilities/features')>()
+  return { ...actual, getFeatureFlags: vi.fn(actual.getFeatureFlags) }
+})
 import { resolveSeo, applyTitleTemplate } from '@/features/seo/resolve'
 import type { SeoInput } from '@/features/seo/resolve'
 import type { SeoContext } from '@/features/seo/settings'
@@ -512,6 +520,7 @@ describe('buildMetadata with kind and publishedAt/updatedAt', () => {
   })
 
   it('includes canonical URL when path is provided', async () => {
+    vi.mocked(getFeatureFlags).mockResolvedValueOnce({ ...DEFAULT_FLAGS, seo: true })
     const metadata = await buildMetadata({
       title: 'Test Page',
       path: '/blog/post',

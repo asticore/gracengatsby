@@ -51,6 +51,7 @@ import { sanitizeInstalledFonts } from '@/features/fonts/installed'
 import type { InstalledFont } from '@/features/fonts/types'
 import { buildThemeStylesCss } from '@/features/themeStyles/css'
 import { loadThemeStyles } from '@/features/themeStyles/store'
+import { renderChromeTemplates, requestPathOf } from '@/features/siteTemplates/chrome'
 
 import './styles.css'
 
@@ -215,6 +216,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       })
     : false
 
+  // Header / footer templates (Site templates). Null for each when none matches, and the built-in ones draw.
+  const chrome = await renderChromeTemplates(requestPathOf(await headers()))
+
   return (
     <html
       lang="en"
@@ -245,6 +249,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <ShopCurrencyProvider currency={storeCurrency}>
         <DisplayCurrencyProvider state={displayState}>
         <Providers>
+          {chrome.header ? (
+            <header>{chrome.header}</header>
+          ) : (
           <Header
             siteName={settings?.siteName || undefined}
             logoUrl={logo?.url || undefined}
@@ -259,11 +266,15 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             announcementBar={header?.announcementBar}
             socials={header?.socials}
           />
+          )}
           <AdPlacements position="header" />
           <main>
             {showMaintenance ? <MaintenanceScreen headline={maintenance.headline} message={maintenance.message} /> : children}
           </main>
           <AdPlacements position="footer" />
+          {chrome.footer ? (
+            <footer>{chrome.footer}</footer>
+          ) : (
           <Footer
             siteName={settings?.siteName || undefined}
             logoUrl={logo?.url || undefined}
@@ -279,6 +290,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             layout={(footer?.layout as 'columns-3' | 'columns-4' | 'stacked') || 'columns-3'}
             copyrightText={footer?.copyrightText}
           />
+          )}
         </Providers>
         </DisplayCurrencyProvider>
         </ShopCurrencyProvider>

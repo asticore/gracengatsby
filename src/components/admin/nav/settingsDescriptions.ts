@@ -22,7 +22,7 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'seo-settings': 'Meta tags, schema, verification codes and SEO defaults.',
   'redirects': 'Create and manage URL redirects (301, 302, 307, 308).',
   'integrations': 'API keys and integrations with third-party services.',
-  'theme-styles': 'Site colours, text styles, buttons and tables, set once and used everywhere.',
+  'theme-styles': 'Site colours, text styles, buttons, tables, forms, layout and presets, set once and used everywhere.',
   'google-connection': 'Connect Google Analytics, Search Console, Tag Manager and AdSense.',
   'blog-settings': 'Blog layout, archive pages and post display options.',
   'faq-settings': 'FAQ layout and display configuration.',

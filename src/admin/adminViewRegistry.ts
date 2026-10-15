@@ -31,6 +31,7 @@ import { SiteHealthView } from '@/admin/views/SiteHealthView'
 import { ScheduledTasksView } from '@/admin/views/ScheduledTasksView'
 import { CacheToolsView } from '@/admin/views/CacheToolsView'
 import { GoogleConnectionView } from '@/admin/views/GoogleConnectionView'
+import { ThemeStylesView } from '@/admin/views/ThemeStylesView'
 import { EmailTestingView } from '@/admin/views/EmailTestingView'
 import { EmailDesignerView } from '@/admin/views/EmailDesignerView'
 import { CookieConsentView } from '@/admin/views/CookieConsentView'
@@ -169,6 +170,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: GoogleConnectionView,
     path: '/google-connection',
     meta: { title: 'Google connection', description: 'Connect Google Analytics, Search Console, Tag Manager and AdSense with your own Google Cloud client.' },
+  },
+  {
+    key: 'themeStyles',
+    Component: ThemeStylesView,
+    path: '/theme-styles',
+    meta: { title: 'Theme styles', description: 'Set the site colours, text styles, buttons and tables once and use them everywhere.' },
   },
   {
     key: 'cacheTools',

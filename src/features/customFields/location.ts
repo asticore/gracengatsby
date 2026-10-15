@@ -17,7 +17,16 @@ export type LocationContext = {
   postTags?: string[] | null
   userRoles?: string[] | null
   status?: string | null
+  /** Site template resolution (src/features/siteTemplates). Only these may hold several values: a rule matches when ANY equals it. */
+  templateKind?: string | null
+  path?: string | null
+  productCategory?: string | string[] | null
+  productType?: string | string[] | null
+  eventType?: string | string[] | null
 }
+
+/** Like `includes`, but the context value may be a single string or a list; a rule matches when any equals it. */
+const anyEquals = (raw: string | string[] | null, value: string): boolean => (Array.isArray(raw) ? raw.includes(value) : raw === value)
 
 const asId = (value: string | number | null | undefined): string => (value === null || value === undefined ? '' : String(value))
 
@@ -56,6 +65,22 @@ function ruleMatches(rule: LocationRule, ctx: LocationContext): boolean {
       if (ctx.status === undefined) return false
       hit = ctx.status === rule.value
       break
+    case 'templateKind':
+      if (ctx.templateKind === undefined) return false
+      hit = ctx.templateKind === rule.value
+      break
+    case 'path':
+      if (ctx.path === undefined) return false
+      hit = ctx.path === rule.value
+      break
+    case 'productCategory':
+    case 'productType':
+    case 'eventType': {
+      const raw = ctx[rule.param]
+      if (raw === undefined) return false
+      hit = anyEquals(raw, rule.value)
+      break
+    }
     default:
       return false
   }

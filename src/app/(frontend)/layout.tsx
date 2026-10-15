@@ -194,7 +194,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         accentColor: theme?.accentColor || undefined,
         backgroundColor: theme?.backgroundColor || undefined,
       },
-    })
+    }, { fonts: customFonts })
   } catch {
     themeStylesCss = ''
   }

@@ -34,7 +34,7 @@ export const MySubscriptionsScreen: React.FC<{ started: boolean }> = async ({ st
       {rows.length === 0 ? (
         <p className="account-empty">You have no subscriptions yet.</p>
       ) : (
-        <table className="account-table">
+        <table className="account-table eg-table">
           <thead>
             <tr>
               <th>Product</th>

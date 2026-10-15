@@ -347,7 +347,25 @@ export const FORM_ELEMENTS: ElementDef[] = [
         width: 'half',
         options: [
           { label: 'Primary', value: 'primary' },
+          { label: 'Secondary', value: 'secondary' },
           { label: 'Plain', value: 'plain' },
+        ],
+      },
+      {
+        name: 'styleName',
+        label: 'Button style name',
+        type: 'text',
+        helpText: 'Use a custom style from Theme styles > Buttons, e.g. outline',
+      },
+      {
+        name: 'size',
+        label: 'Size',
+        type: 'select',
+        width: 'half',
+        options: [
+          { label: 'Small', value: 'sm' },
+          { label: 'Medium', value: 'md' },
+          { label: 'Large', value: 'lg' },
         ],
       },
       {
@@ -362,7 +380,7 @@ export const FORM_ELEMENTS: ElementDef[] = [
         ],
       },
     ],
-    defaultProps: () => ({ text: 'Learn more', url: '/', variant: 'primary', align: 'left' }),
+    defaultProps: () => ({ text: 'Learn more', url: '/', variant: 'primary', align: 'left', size: 'md' }),
   },
 ]
 

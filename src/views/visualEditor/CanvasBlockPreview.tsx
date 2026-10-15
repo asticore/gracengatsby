@@ -99,6 +99,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
       }
       if (isFieldElementType(elementType)) return <FormFieldPreview node={data as LayoutNode} />
       if (elementType === 'ad') return <AdPlaceholder label={`Ad: ${String(props.placement || props.unit || 'choose a placement')}`} />
+      if (elementType === 'content-slot') return <DynamicPlaceholder icon="📄" label="Page content appears here" data={data} detail="Template content" />
       return renderElement(elementType, props) ?? (
         <DynamicPlaceholder icon="🧩" label={elementType || 'Element'} data={data} detail="Unknown element type." />
       )

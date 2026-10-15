@@ -64,7 +64,7 @@ export const SiteSettings: GlobalConfig = {
     {
       type: 'group',
       name: 'theme',
-      label: 'Theme',
+      label: 'Customise portal',
       fields: [
         {
           type: 'row',

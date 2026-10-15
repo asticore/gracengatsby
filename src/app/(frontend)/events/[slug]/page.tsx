@@ -17,6 +17,7 @@ import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { loadSiteDetails } from '@/features/site/details'
 import { formatDate, formatDateTime } from '@/features/site/format'
+import { renderWithTemplate } from '@/features/siteTemplates/render'
 import type { Event, EventRsvp, Media, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -86,7 +87,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     ? []
     : tierViews.map((view) => ({ name: view.name, label: tierOptionLabel(view), soldOut: view.soldOut }))
 
-  return (
+  const body = (
     <div className="page-shell">
       <PageJsonLd collection="events" doc={event} path={`/events/${slug}`} />
       {cover?.url && (
@@ -151,4 +152,5 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
       </div>
     </div>
   )
+  return renderWithTemplate({ kind: 'single-event', ctx: { path: `/events/${slug}`, eventType: event.eventType }, content: body })
 }

@@ -88,6 +88,7 @@ import { FieldGroups } from '@/collections/FieldGroups'
 import { Media } from '@/collections/Media'
 import { PageTemplates } from '@/collections/PageTemplates'
 import { ReusableSections } from '@/collections/ReusableSections'
+import { SiteTemplates } from '@/collections/SiteTemplates'
 import { Pages } from '@/collections/Pages'
 import { LockedDocuments } from '@/collections/LockedDocuments'
 import { Preferences } from '@/collections/Preferences'
@@ -266,6 +267,7 @@ import {
   countOrders,
   countPageTemplates,
   countReusableSections,
+  countSiteTemplates,
   countPages,
   countPosts,
   countPreferences,
@@ -303,6 +305,7 @@ import {
   createPage,
   createPageTemplate,
   createReusableSection,
+  createSiteTemplate,
   createPost,
   createPreference,
   createProduct,
@@ -339,6 +342,7 @@ import {
   deletePage,
   deletePageTemplate,
   deleteReusableSection,
+  deleteSiteTemplate,
   deletePost,
   deletePreference,
   deleteProduct,
@@ -416,6 +420,8 @@ import {
   findPageTemplatesPaginated,
   findReusableSectionByID,
   findReusableSectionsPaginated,
+  findSiteTemplateByID,
+  findSiteTemplatesPaginated,
   findPaymentSettings,
   findShippingSettings,
   updateShippingSettings,
@@ -488,6 +494,7 @@ import {
   updatePage,
   updatePageTemplate,
   updateReusableSection,
+  updateSiteTemplate,
   updatePaymentSettings,
   updatePost,
   updatePreference,
@@ -564,6 +571,7 @@ export const writeRegistry: {
     memberships: collectionOps(createMembership, updateMembership, deleteMembership, findMembershipByID),
     'page-templates': collectionOps(createPageTemplate, updatePageTemplate, deletePageTemplate, findPageTemplateByID),
     'reusable-sections': collectionOps(createReusableSection, updateReusableSection, deleteReusableSection, findReusableSectionByID),
+    'site-templates': collectionOps(createSiteTemplate, updateSiteTemplate, deleteSiteTemplate, findSiteTemplateByID),
     forms: collectionOps(createForm, updateForm, deleteForm, findFormByID),
     enrolments: collectionOps(createEnrolment, updateEnrolment, deleteEnrolment, findEnrolmentByID),
     lessons: collectionOps(createLesson, updateLesson, deleteLesson, findLessonByID),
@@ -658,6 +666,7 @@ export const readRegistry: ReadRegistry = {
     memberships: readEntry(Memberships, findMembershipsPaginated, findMembershipByID, countMemberships),
     'page-templates': readEntry(PageTemplates, findPageTemplatesPaginated, findPageTemplateByID, countPageTemplates),
     'reusable-sections': readEntry(ReusableSections, findReusableSectionsPaginated, findReusableSectionByID, countReusableSections),
+    'site-templates': readEntry(SiteTemplates, findSiteTemplatesPaginated, findSiteTemplateByID, countSiteTemplates),
     forms: readEntry(Forms, findFormsPaginated, findFormByID, countForms),
     enrolments: readEntry(Enrolments, findEnrolmentsPaginated, findEnrolmentByID, countEnrolments),
     lessons: readEntry(Lessons, findLessonsPaginated, findLessonByID, countLessons),
@@ -755,6 +764,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [ProductSubscriptions, Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
+export const collectionConfigs = [ProductSubscriptions, Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, SiteTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
 export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

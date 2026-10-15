@@ -49,6 +49,8 @@ import { MaintenanceScreen } from '@/features/site/MaintenanceScreen'
 import { buildFontCss, preloadLinks, remoteStylesheetUrls, resolveThemeFont } from '@/features/fonts/css'
 import { sanitizeInstalledFonts } from '@/features/fonts/installed'
 import type { InstalledFont } from '@/features/fonts/types'
+import { buildThemeStylesCss } from '@/features/themeStyles/css'
+import { loadThemeStyles } from '@/features/themeStyles/store'
 
 import './styles.css'
 
@@ -181,6 +183,22 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     `--radius: ${RADIUS_VALUES[theme?.cornerStyle || 'soft']};`,
   ].join(' ')
 
+  // Global theme styles (colours, text, buttons, tables). A failure here must never break the page.
+  let themeStylesCss = ''
+  try {
+    const { styles, saved } = await loadThemeStyles()
+    themeStylesCss = buildThemeStylesCss(styles, {
+      saved,
+      legacy: {
+        primaryColor: theme?.primaryColor || undefined,
+        accentColor: theme?.accentColor || undefined,
+        backgroundColor: theme?.backgroundColor || undefined,
+      },
+    })
+  } catch {
+    themeStylesCss = ''
+  }
+
   // Maintenance mode: while it is on, visitors get the maintenance screen in place of the page. Read only
   // when it is on, so the normal path costs nothing extra. Admin API routes, webhooks and feeds never reach
   // this layout (they are route handlers or live outside the (frontend) group).
@@ -223,6 +241,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <AdsRoot />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${FONT_FACE_VARS} }` }} />
         <style dangerouslySetInnerHTML={{ __html: `:root { ${themeVars} }` }} />
+        {themeStylesCss && <style id="eg-theme-styles" dangerouslySetInnerHTML={{ __html: themeStylesCss }} />}
         <ShopCurrencyProvider currency={storeCurrency}>
         <DisplayCurrencyProvider state={displayState}>
         <Providers>

@@ -6,6 +6,7 @@
 import {
   DEFAULT_BUTTONS,
   DEFAULT_COLOURS,
+  DEFAULT_GLOBALS,
   DEFAULT_TABLES,
   DEFAULT_TYPOGRAPHY,
   LIMITS,
@@ -13,6 +14,9 @@ import {
   SYSTEM_COLOUR_IDS,
   SYSTEM_TYPE_IDS,
   type ButtonStyle,
+  type ThemeGlobals,
+  type ThemePreset,
+  type ThemePresetData,
   type ShadowLevel,
   type TableAlign,
   type TableBorders,
@@ -279,22 +283,119 @@ function sanitizeTables(input: unknown, colourIds: ReadonlySet<string>): TableSt
   return out
 }
 
+const UNDERLINES = ['always', 'hover', 'never'] as const
+
+/** Removes everything that could break out of a style block or load or run something. Case-insensitive, repeated until stable. */
+export function sanitizeCustomCss(v: unknown): string {
+  if (typeof v !== 'string') return ''
+  let s = v.slice(0, LIMITS.customCss)
+  const bad = /<|@import|expression\(|javascript:|behavior:|-moz-binding/gi
+  for (let i = 0; i < 10; i += 1) {
+    const next = s.replace(bad, '')
+    if (next === s) break
+    s = next
+  }
+  return s
+}
+
+/** Sanitises the globals block field by field. Missing or junk input gives the defaults. */
+export function sanitizeGlobals(input: unknown, colourIds?: ReadonlySet<string>): ThemeGlobals {
+  const ids = colourIds ?? new Set(DEFAULT_COLOURS.map((c) => c.id))
+  const d = DEFAULT_GLOBALS
+  const root = asRecord(input)
+  const f = asRecord(root.forms)
+  const l = asRecord(root.links)
+  const im = asRecord(root.images)
+  const c = asRecord(root.containers)
+  const sc = asRecord(root.scales)
+  const bp = asRecord(root.breakpoints)
+  const tablet = sanitizeNumber(bp.tablet, 600, 1280, d.breakpoints.tablet)
+  let mobile = sanitizeNumber(bp.mobile, 320, 900, d.breakpoints.mobile)
+  if (mobile >= tablet) mobile = Math.max(320, tablet - 1)
+  return {
+    forms: {
+      fieldBg: ref(f.fieldBg, ids, d.forms.fieldBg),
+      fieldText: ref(f.fieldText, ids, d.forms.fieldText),
+      fieldBorder: ref(f.fieldBorder, ids, d.forms.fieldBorder),
+      fieldBorderWidth: sanitizeNumber(f.fieldBorderWidth, 0, 6, d.forms.fieldBorderWidth),
+      fieldRadius: sanitizeNumber(f.fieldRadius, 0, 40, d.forms.fieldRadius),
+      fieldPaddingY: sanitizeNumber(f.fieldPaddingY, 4, 30, d.forms.fieldPaddingY),
+      fieldPaddingX: sanitizeNumber(f.fieldPaddingX, 4, 30, d.forms.fieldPaddingX),
+      fieldFontSize: sanitizeNumber(f.fieldFontSize, 12, 24, d.forms.fieldFontSize),
+      focusBorder: ref(f.focusBorder, ids, d.forms.focusBorder),
+      labelColour: ref(f.labelColour, ids, d.forms.labelColour),
+      labelSize: sanitizeNumber(f.labelSize, 11, 20, d.forms.labelSize),
+      labelWeight: Math.round(sanitizeNumber(f.labelWeight, 100, 900, d.forms.labelWeight) / 100) * 100,
+      placeholderColour: ref(f.placeholderColour, ids, d.forms.placeholderColour),
+      errorColour: ref(f.errorColour, ids, d.forms.errorColour),
+    },
+    links: {
+      hoverColour: ref(l.hoverColour, ids, d.links.hoverColour),
+      underline: pick(l.underline, UNDERLINES, d.links.underline),
+    },
+    images: {
+      radius: sanitizeNumber(im.radius, 0, 999, d.images.radius),
+      shadow: pick(im.shadow, SHADOWS, d.images.shadow),
+      borderWidth: sanitizeNumber(im.borderWidth, 0, 8, d.images.borderWidth),
+      borderColour: ref(im.borderColour, ids, d.images.borderColour),
+    },
+    containers: {
+      maxWidth: sanitizeNumber(c.maxWidth, 640, 1920, d.containers.maxWidth),
+      gapDesktop: sanitizeNumber(c.gapDesktop, 0, 120, d.containers.gapDesktop),
+      gapTablet: sanitizeNumber(c.gapTablet, 0, 120, d.containers.gapTablet),
+      gapMobile: sanitizeNumber(c.gapMobile, 0, 120, d.containers.gapMobile),
+      sectionPaddingDesktop: sanitizeNumber(c.sectionPaddingDesktop, 0, 240, d.containers.sectionPaddingDesktop),
+      sectionPaddingTablet: sanitizeNumber(c.sectionPaddingTablet, 0, 240, d.containers.sectionPaddingTablet),
+      sectionPaddingMobile: sanitizeNumber(c.sectionPaddingMobile, 0, 240, d.containers.sectionPaddingMobile),
+    },
+    scales: {
+      radiusSm: sanitizeNumber(sc.radiusSm, 0, 999, d.scales.radiusSm),
+      radiusMd: sanitizeNumber(sc.radiusMd, 0, 999, d.scales.radiusMd),
+      radiusLg: sanitizeNumber(sc.radiusLg, 0, 999, d.scales.radiusLg),
+      spaceBase: sanitizeNumber(sc.spaceBase, 2, 16, d.scales.spaceBase),
+    },
+    breakpoints: { tablet, mobile },
+    customCss: sanitizeCustomCss(root.customCss),
+  }
+}
+
+/** Sanitises the design part shared by the live document and a preset. Any `presets` key is ignored. */
+export function sanitizePresetData(input: unknown): ThemePresetData {
+  const root = asRecord(input)
+  const colours = sanitizeColours(root.colours)
+  const colourIds = new Set(colours.map((c) => c.id))
+  const tables = sanitizeTables(root.tables, colourIds)
+  const wanted = typeof root.defaultTableId === 'string' ? root.defaultTableId : ''
+  return {
+    colours,
+    typography: sanitizeTypography(root.typography, colourIds),
+    buttons: sanitizeButtons(root.buttons, colourIds),
+    tables,
+    defaultTableId: tables.some((t) => t.id === wanted) ? wanted : 'default',
+    globals: sanitizeGlobals(root.globals, colourIds),
+  }
+}
+
+function sanitizePresets(input: unknown): ThemePreset[] {
+  if (!Array.isArray(input)) return []
+  const out: ThemePreset[] = []
+  const seen = new Set<string>()
+  for (const raw of input) {
+    if (out.length >= LIMITS.presets) break
+    const rec = asRecord(raw)
+    const id = sanitizeSlug(rec.id)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push({ id, name: cleanName(rec.name, id), data: sanitizePresetData(rec.data) })
+  }
+  return out
+}
+
 /** Rebuilds the whole document field by field. Never throws. */
 export function sanitizeThemeStyles(input: unknown): ThemeStyles {
   try {
     const root = asRecord(input)
-    const colours = sanitizeColours(root.colours)
-    const colourIds = new Set(colours.map((c) => c.id))
-    const tables = sanitizeTables(root.tables, colourIds)
-    const wanted = typeof root.defaultTableId === 'string' ? root.defaultTableId : ''
-    return {
-      version: 1,
-      colours,
-      typography: sanitizeTypography(root.typography, colourIds),
-      buttons: sanitizeButtons(root.buttons, colourIds),
-      tables,
-      defaultTableId: tables.some((t) => t.id === wanted) ? wanted : 'default',
-    }
+    return { version: 1, ...sanitizePresetData(root), presets: sanitizePresets(root.presets) }
   } catch {
     return structuredClone({
       version: 1,
@@ -303,6 +404,8 @@ export function sanitizeThemeStyles(input: unknown): ThemeStyles {
       buttons: DEFAULT_BUTTONS,
       tables: DEFAULT_TABLES,
       defaultTableId: 'default',
+      globals: DEFAULT_GLOBALS,
+      presets: [],
     }) as ThemeStyles
   }
 }

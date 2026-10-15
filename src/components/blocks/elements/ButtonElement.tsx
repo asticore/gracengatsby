@@ -7,7 +7,7 @@ export type ButtonElementProps = {
   text?: string
   url?: string
   variant?: 'primary' | 'secondary' | 'plain'
-  /** A custom button style id from Theme styles > Buttons. Added on top of `variant` when set. */
+  /** A custom button style id from Theming > Buttons. Added on top of `variant` when set. */
   styleName?: string
   size?: 'sm' | 'md' | 'lg'
   align?: 'left' | 'center' | 'right'

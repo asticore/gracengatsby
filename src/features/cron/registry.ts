@@ -32,6 +32,7 @@ export const CRON_JOBS: CronJob[] = [
   { name: 'prune-email-log', label: 'Email log clean-up', description: 'Removes email log entries older than 90 days.', schedule: 'hourly', feature: 'email', source: 'cron' },
   { name: 'gift-cards', label: 'Gift card delivery', description: 'Emails gift cards whose send date has arrived.', schedule: 'every 5 minutes', feature: 'ecommerce', source: 'cron' },
   { name: 'scheduled-emails', label: 'Reminder emails', description: 'Sends membership renewal and event reminder emails, held during quiet hours.', schedule: 'every 5 minutes', feature: 'email', source: 'cron' },
+  { name: 'display-rates', label: 'Display currency rates', description: 'Refreshes the exchange rates used to show prices in other currencies.', schedule: 'hourly', feature: 'ecommerce', source: 'cron' },
   { name: 'cleanup', label: 'Data clean-up', description: 'Removes old versions, trashed items and logs as set on the Data and system settings.', schedule: 'hourly', feature: null, source: 'cron' },
   { name: 'backups', label: 'Backups', description: 'Takes the scheduled site backup at the time set on the Backups screen.', schedule: 'hourly (checks the backup time)', feature: 'backups', source: 'backups' },
 ]

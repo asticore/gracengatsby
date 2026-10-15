@@ -15,6 +15,7 @@ import { PageJsonLd } from '@/features/seo'
 import { PasswordGate } from '@/components/PasswordGate'
 import { getPasswordGateState } from '@/features/visibility/gate'
 import { resolveDocumentContent } from '@/features/customFields/server'
+import { renderWithTemplate } from '@/features/siteTemplates/render'
 import type { Media, Post, User } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -111,7 +112,7 @@ export default async function BlogPostPage({
   const content = await resolveDocumentContent('posts', post)
   const annotated = annotatePage({ body: content.content, blocks: content.layout || [] })
 
-  return (
+  const body = (
     <article className="page-shell">
       <AdsPageScope collection="posts" noAds={(post as { noAds?: boolean }).noAds} />
       <PageJsonLd collection="posts" doc={post} path={currentPath} />
@@ -143,4 +144,9 @@ export default async function BlogPostPage({
       ))}
     </article>
   )
+  return renderWithTemplate({
+    kind: 'single-post',
+    ctx: { path: currentPath, postCategories: (post.categories || []).map((c) => c.name) },
+    content: body,
+  })
 }

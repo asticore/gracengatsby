@@ -117,14 +117,14 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
   {
     label: 'Settings',
     entities: [
-      { slug: 'settings-site', type: 'view', href: '/settings/site', label: 'Site' },
+      { slug: 'settings-site', type: 'view', href: '/settings/site', label: 'General' },
       { slug: 'settings-content', type: 'view', href: '/settings/content', label: 'Content' },
       { slug: 'settings-commerce', type: 'view', href: '/settings/commerce', label: 'Commerce' },
       { slug: 'settings-communication', type: 'view', href: '/settings/communication', label: 'Communication' },
       { slug: 'settings-speed', type: 'view', href: '/settings/speed', label: 'Speed' },
       { slug: 'settings-security', type: 'view', href: '/settings/security', label: 'Security' },
       { slug: 'settings-data-system', type: 'view', href: '/settings/data-system', label: 'Data and System' },
-      { slug: 'theme-styles', type: 'view', href: '/theme-styles', label: 'Theme styles' },
+      { slug: 'theme-styles', type: 'view', href: '/theme-styles', label: 'Theming' },
       { slug: 'roles', type: 'view', href: '/roles', label: 'Roles' },
     ],
   },

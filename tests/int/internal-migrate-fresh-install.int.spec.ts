@@ -646,6 +646,12 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     )
   })
 
+  it('creates the theme styles table', async () => {
+    expect(tables).toContain('eg_theme_styles')
+    const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()
+    expect((result.results as { name: string }[]).map((r) => r.name)).toEqual(expect.arrayContaining(['id', 'data', 'updated_at']))
+  })
+
   it('adds the edge page cache columns: cache version 1, page caching off, never-cache rules', async () => {
     const columnsOf = async (table: string): Promise<string[]> => {
       const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()

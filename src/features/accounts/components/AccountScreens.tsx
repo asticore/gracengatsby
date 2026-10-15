@@ -45,7 +45,7 @@ export const AccountHomeScreen: React.FC = async () => {
         {orders.length === 0 ? (
           <p className="account-empty">You have not placed an order yet.</p>
         ) : (
-          <table className="account-table">
+          <table className="account-table eg-table">
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id}>
@@ -87,7 +87,7 @@ export const OrdersScreen: React.FC = async () => {
       {orders.length === 0 ? (
         <p className="account-empty">You have not placed an order yet.</p>
       ) : (
-        <table className="account-table">
+        <table className="account-table eg-table">
           <thead>
             <tr>
               <th>Order</th>
@@ -158,7 +158,7 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
         {lines.length === 0 ? (
           <p className="account-empty">No items were recorded on this order.</p>
         ) : (
-          <table className="account-table">
+          <table className="account-table eg-table">
             <tbody>
               {lines.map((line, index) => {
                 const product = line.product

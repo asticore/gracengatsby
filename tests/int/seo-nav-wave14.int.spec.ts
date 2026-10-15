@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { NAV_STRUCTURE } from '@/components/admin/nav/navStructure'
 import { resolveEntityGroups } from '@/components/admin/shared/resolveEntities'
 
-const SEO_SLUGS = ['seo-audit', 'seo-settings', 'redirects']
+const SEO_SLUGS = ['seo-audit', 'google-dashboard', 'seo-settings', 'redirects']
 
 const engine = {
   config: {

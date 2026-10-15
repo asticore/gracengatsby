@@ -13,6 +13,7 @@ import { orderBlogPosts } from '@/features/editScreens/blogOrder'
 import { readingTimeLabel } from '@/features/editScreens/readingTime'
 import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
+import { renderWithTemplate } from '@/features/siteTemplates/render'
 import type { BlogSetting, Media, Post } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -57,12 +58,12 @@ export default async function BlogArchivePage() {
       })
     : null
 
-  return (
+  const body = (
     <div className="page-shell">
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '</\\/') }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '<\\/') }}
         />
       )}
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
@@ -112,4 +113,5 @@ export default async function BlogArchivePage() {
       )}
     </div>
   )
+  return renderWithTemplate({ kind: 'archive-blog', ctx: { path: '/blog' }, content: body })
 }

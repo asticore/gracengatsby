@@ -13,6 +13,7 @@ import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
 import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
+import { renderWithTemplate } from '@/features/siteTemplates/render'
 import type { Product, ShopSetting } from '@/engage-types'
 
 export async function generateMetadata() {
@@ -71,12 +72,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       active ? 'border-[var(--color-gold)] opacity-100' : 'border-transparent opacity-60'
     }`
 
-  return (
+  const body = (
     <div className="page-shell">
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '</\\/') }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '<\\/') }}
         />
       )}
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (
@@ -137,4 +138,5 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       )}
     </div>
   )
+  return renderWithTemplate({ kind: 'archive-shop', ctx: { path: '/shop', productCategory: category ?? null }, content: body })
 }

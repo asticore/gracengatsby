@@ -355,7 +355,7 @@ export const FORM_ELEMENTS: ElementDef[] = [
         name: 'styleName',
         label: 'Button style name',
         type: 'text',
-        helpText: 'Use a custom style from Theme styles > Buttons, e.g. outline',
+        helpText: 'Use a custom style from Theming > Buttons, e.g. outline',
       },
       {
         name: 'size',

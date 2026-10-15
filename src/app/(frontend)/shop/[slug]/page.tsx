@@ -31,6 +31,7 @@ import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
+import { renderWithTemplate } from '@/features/siteTemplates/render'
 import type { Faq, Media, Product, ShopSetting } from '@/engage-types'
 
 const STAR_ON = String.fromCharCode(0x2605)
@@ -137,7 +138,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ...(aggregateRatingJsonLd(ratings) ? { aggregateRating: aggregateRatingJsonLd(ratings) } : {}),
   }
 
-  return (
+  const body = (
     <VariationImageProvider>
     <div className="page-shell grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">
       <AdsPageScope collection="products" noAds={(product as { noAds?: boolean }).noAds} />
@@ -250,4 +251,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     </div>
     </VariationImageProvider>
   )
+  return renderWithTemplate({
+    kind: 'single-product',
+    ctx: { path: `/shop/${slug}`, productCategory: product.category ? String(product.category) : null, productType: typeof catalogue.productType === 'string' ? catalogue.productType : null },
+    content: body,
+  })
 }

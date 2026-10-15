@@ -5,17 +5,21 @@
 import {
   DEFAULT_BUTTONS,
   DEFAULT_COLOURS,
+  DEFAULT_GLOBALS,
   DEFAULT_TABLES,
   DEFAULT_TYPOGRAPHY,
   LIMITS,
   type ButtonStyle,
   type TableStyle,
   type ThemeColour,
+  type ThemeGlobals,
+  type ThemePreset,
+  type ThemePresetData,
   type ThemeStyles,
   type TypeStyle,
 } from '@/features/themeStyles/types'
 
-export type TabKey = 'colours' | 'typography' | 'buttons' | 'tables'
+export type TabKey = 'colours' | 'typography' | 'buttons' | 'tables' | 'layout' | 'presets'
 
 const SLUG_MAX = 32
 
@@ -140,7 +144,118 @@ export function resetTab(styles: ThemeStyles, tab: TabKey): ThemeStyles {
       return { ...styles, buttons: clone(DEFAULT_BUTTONS) }
     case 'tables':
       return { ...styles, tables: clone(DEFAULT_TABLES), defaultTableId: 'default' }
+    case 'layout':
+      return { ...styles, globals: clone(DEFAULT_GLOBALS) }
+    case 'presets':
+      return styles
   }
+}
+
+// ---------- Globals (forms, links, images, containers, scales, breakpoints, custom CSS) ----------
+
+/**
+ * Returns a copy of `styles` with `globals` at `path` (for example `forms.fieldRadius` or
+ * `customCss`) set to `value`. Only the objects along the path are copied. An unknown path
+ * returns `styles` unchanged.
+ */
+export function setGlobal(styles: ThemeStyles, path: string, value: unknown): ThemeStyles {
+  const keys = path.split('.').filter(Boolean)
+  if (keys.length === 0) return styles
+  const update = (node: unknown, index: number): unknown => {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return undefined
+    const record = node as Record<string, unknown>
+    const key = keys[index]
+    if (!Object.prototype.hasOwnProperty.call(record, key)) return undefined
+    if (index === keys.length - 1) return { ...record, [key]: value }
+    const child = update(record[key], index + 1)
+    return child === undefined ? undefined : { ...record, [key]: child }
+  }
+  const globals = update(styles.globals, 0)
+  return globals === undefined ? styles : { ...styles, globals: globals as ThemeGlobals }
+}
+
+/** Mobile must be below tablet. Returns an error message, or null when valid. */
+export function validateBreakpoints(breakpoints: { tablet: number; mobile: number }): string | null {
+  const { tablet, mobile } = breakpoints
+  if (!Number.isFinite(tablet) || !Number.isFinite(mobile)) return 'Enter both breakpoints as numbers.'
+  if (tablet < 600 || tablet > 1280) return 'Tablet must be between 600 and 1280 pixels.'
+  if (mobile < 320 || mobile > 900) return 'Mobile must be between 320 and 900 pixels.'
+  if (mobile >= tablet) return 'Mobile must be smaller than tablet.'
+  return null
+}
+
+const SPACE_STEPS = [1, 2, 3, 4, 6, 8, 12, 16] as const
+
+/** The resulting --eg-space-1..8 values (pixels) for a base unit. */
+export function spaceScalePreview(base: number): Array<{ name: string; px: number }> {
+  const unit = Number.isFinite(base) ? Math.min(16, Math.max(2, base)) : DEFAULT_GLOBALS.scales.spaceBase
+  return SPACE_STEPS.map((multiple, index) => ({ name: `--eg-space-${index + 1}`, px: unit * multiple }))
+}
+
+// ---------- Presets ----------
+
+const cloneDeep = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+
+/** A snapshot of the current design (everything except the presets list). */
+export function snapshotData(styles: ThemeStyles): ThemePresetData {
+  return cloneDeep({
+    colours: styles.colours,
+    typography: styles.typography,
+    buttons: styles.buttons,
+    tables: styles.tables,
+    defaultTableId: styles.defaultTableId,
+    globals: styles.globals,
+  })
+}
+
+/** Saves the current design as a preset with a unique slug. No change for an empty name or at the limit. */
+export function addPreset(styles: ThemeStyles, name: string): ThemeStyles {
+  const presets = styles.presets ?? []
+  const cleanName = clampName(name.trim())
+  if (!cleanName || presets.length >= LIMITS.presets) return styles
+  const id = uniqueSlug(cleanName, presets.map((p) => p.id))
+  const preset: ThemePreset = { id, name: cleanName, data: snapshotData(styles) }
+  return { ...styles, presets: [...presets, preset] }
+}
+
+export function renamePreset(styles: ThemeStyles, id: string, name: string): ThemeStyles {
+  const cleanName = clampName(name.trim())
+  if (!cleanName) return styles
+  return { ...styles, presets: (styles.presets ?? []).map((p) => (p.id === id ? { ...p, name: cleanName } : p)) }
+}
+
+export function deletePreset(styles: ThemeStyles, id: string): ThemeStyles {
+  return { ...styles, presets: (styles.presets ?? []).filter((p) => p.id !== id) }
+}
+
+/** Replaces the current design with a preset's data. The saved presets list is kept. */
+export function applyPresetData(styles: ThemeStyles, data: ThemePresetData): ThemeStyles {
+  const copy = cloneDeep(data)
+  return {
+    ...styles,
+    colours: copy.colours,
+    typography: copy.typography,
+    buttons: copy.buttons,
+    tables: copy.tables,
+    defaultTableId: copy.defaultTableId,
+    globals: copy.globals ?? cloneDeep(DEFAULT_GLOBALS),
+  }
+}
+
+/** Fills missing groups and fields of an older document from DEFAULT_GLOBALS. */
+export function fillGlobals(input: unknown): ThemeGlobals {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? (input as Record<string, unknown>) : {}
+  const out = cloneDeep(DEFAULT_GLOBALS) as unknown as Record<string, unknown>
+  for (const key of Object.keys(out)) {
+    const base = out[key]
+    const given = source[key]
+    if (base && typeof base === 'object') {
+      if (given && typeof given === 'object' && !Array.isArray(given)) out[key] = { ...(base as object), ...(given as object) }
+    } else if (typeof given === typeof base) {
+      out[key] = given
+    }
+  }
+  return out as unknown as ThemeGlobals
 }
 
 // ---------- Colour maths ----------
@@ -203,5 +318,6 @@ export function parseImport(text: string): ImportResult {
     if (!Array.isArray(obj[key])) return { ok: false, error: `The file is missing the "${key}" list.` }
   }
   if (typeof obj.defaultTableId !== 'string') return { ok: false, error: 'The file is missing "defaultTableId".' }
-  return { ok: true, styles: obj as unknown as ThemeStyles }
+  const presets = Array.isArray(obj.presets) ? obj.presets : []
+  return { ok: true, styles: { ...(obj as unknown as ThemeStyles), globals: fillGlobals(obj.globals), presets } }
 }

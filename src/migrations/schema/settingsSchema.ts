@@ -41,8 +41,8 @@ export const SETTINGS_COLUMNS: SchemaColumn[] = [
   { table: "site_settings", column: "features_media", sql: "ALTER TABLE `site_settings` ADD `features_media` INTEGER DEFAULT false" },
   { table: "site_settings", column: "features_members", sql: "ALTER TABLE `site_settings` ADD `features_members` INTEGER DEFAULT false" },
   { table: "site_settings", column: "features_multilingual", sql: "ALTER TABLE `site_settings` ADD `features_multilingual` INTEGER DEFAULT false" },
-  { table: "site_settings", column: "features_security", sql: "ALTER TABLE `site_settings` ADD `features_security` INTEGER DEFAULT true" },
-  { table: "site_settings", column: "features_seo", sql: "ALTER TABLE `site_settings` ADD `features_seo` INTEGER DEFAULT true" },
+  { table: "site_settings", column: "features_security", sql: "ALTER TABLE `site_settings` ADD `features_security` INTEGER DEFAULT false" },
+  { table: "site_settings", column: "features_seo", sql: "ALTER TABLE `site_settings` ADD `features_seo` INTEGER DEFAULT false" },
   { table: "site_settings", column: "features_speed", sql: "ALTER TABLE `site_settings` ADD `features_speed` INTEGER DEFAULT false" },
 ]
 

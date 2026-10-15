@@ -20,6 +20,7 @@ import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
+import * as siteTemplatesSchema from '@/cms/db/schema/siteTemplates'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -119,6 +120,11 @@ const KNOWN_UNMIGRATED: Array<{ tableName: string; column?: string; reason: stri
   },
   {
     tableName: 'eg_reusable_sections_blocks_form',
+    column: 'form_id',
+    reason: 'Known gap: Form block form_id documented in schema/generate.ts as deliberately not modeled (the form is stored in the _rels table)',
+  },
+  {
+    tableName: 'eg_site_templates_blocks_form',
     column: 'form_id',
     reason: 'Known gap: Form block form_id documented in schema/generate.ts as deliberately not modeled (the form is stored in the _rels table)',
   },
@@ -236,6 +242,13 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       drizzleTables.push({ name: 'reusableSectionsRels', table: reusableSectionsSchema.reusableSectionsRels })
       for (const [blockKey, blockTable] of Object.entries(reusableSectionsSchema.reusableSectionsBlocks)) {
         drizzleTables.push({ name: `reusableSectionsBlocks[${blockKey}]`, table: blockTable })
+      }
+
+      // Site templates: same shape as reusable sections
+      drizzleTables.push({ name: 'siteTemplates', table: siteTemplatesSchema.siteTemplates })
+      drizzleTables.push({ name: 'siteTemplatesRels', table: siteTemplatesSchema.siteTemplatesRels })
+      for (const [blockKey, blockTable] of Object.entries(siteTemplatesSchema.siteTemplatesBlocks)) {
+        drizzleTables.push({ name: `siteTemplatesBlocks[${blockKey}]`, table: blockTable })
       }
 
       // Direct table exports

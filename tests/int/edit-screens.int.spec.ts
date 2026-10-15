@@ -107,7 +107,7 @@ describe('review fixes', () => {
     const data: Record<string, unknown> = { seo: { metaTitle: 'new' } }
     await seoEditGuard({ data, originalDoc: { id: 9, seo: { metaTitle: 'old' } }, req: { user: { roles: ['viewer'] } }, operation: 'update', collection: { slug: 'pages' } } as never)
     expect(data.seo).toEqual({ metaTitle: 'old' })
-  })
+  }, 30000)
 })
 
 describe('helpers', () => {

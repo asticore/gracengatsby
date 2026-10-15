@@ -329,7 +329,7 @@ function convertTable({ node, convertChildren }: ConverterArgs): ReactNode {
   const children = convertChildren(node.children, node)
   return (
     <div className="lexical-table-container">
-      <table className="lexical-table" style={{ borderCollapse: 'collapse' }}>
+      <table className="lexical-table eg-table" style={{ borderCollapse: 'collapse' }}>
         <tbody>{children}</tbody>
       </table>
     </div>

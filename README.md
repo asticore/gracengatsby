@@ -179,6 +179,16 @@ Turning a feature off **hides**; it never deletes.
 
 ---
 
+## Site templates
+
+Site templates (`site-templates` collection, code in `src/features/siteTemplates`) let a header, footer or whole page layout be built from the same sections as pages. A template has a **kind** (`header`, `footer`, `single-post`, `single-product`, `single-event`, `archive-blog`, `archive-shop`, `not-found`), an **enabled** flag, a **priority** and optional **conditions**. For each request the resolver takes the enabled templates of the right kind whose conditions match and picks the highest priority (ties go to the lowest id). Conditions are JSON: an outer list of groups (OR), each an inner list of rules (AND), e.g. `[[{"param":"postCategory","operator":"equals","value":"News"}]]`. Params: `postCategory`, `postTag`, `productCategory`, `productType`, `eventType`, `path` (exact request path, e.g. `/shop`) and `templateKind`; operators are `equals` / `notEquals`; a post or product with several categories matches if any one equals the value. Empty conditions match everything of that kind. Conditions fail closed: a template whose conditions contain any invalid rule, unknown param or operator, or more than 10 groups / 10 rules / 200-character values never matches (it is skipped, not widened). Templates with no sections are ignored when picking a winner.
+
+Inside a template, the **Template content** element (Layout group) marks where the page's own content appears. A template without one shows its sections first and the content straight after them. With no matching template, or on any error while resolving one, the page renders exactly as it did before templates existed. A matching header or footer template replaces the built-in header or footer (wrapped in a `<header>` / `<footer>` landmark). For the 404 page, the page picked in Site pages still wins, then a `not-found` template, then the built-in message.
+
+Limits for now: there is no search results route yet, so there is no `search` kind (it returns with a search page). Header and footer conditions can only use `path` (they are drawn before the page is known); the path is read from the `next-url` request header (the `x-pathname` header set by middleware is a response header and is not visible to the layout), so test path-scoped header/footer templates on the live site. A Template content element is ignored in headers and footers. Per request the layout costs one lightweight index query plus at most two template loads (the winning header and footer); the edge cache of public pages applies as usual, and saving a template revalidates the layout.
+
+---
+
 ## Connect Google
 
 The site connects to Google with **your own** Google Cloud OAuth client, set up once. Nothing is shared with another site, and the sign-in is read-only.

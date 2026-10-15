@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -18,7 +19,7 @@ export async function GoogleDashboardView() {
       <h1>Google dashboard</h1>
       <p>
         Search, visitors and earnings from the Google account you connected. Numbers are read from Google each time you open this page and kept for five minutes. To connect or change the account, open{' '}
-        <a href="/admin/google-connection">Google connection</a>.
+        <Link href="/admin/google-connection">Google connection</Link>.
       </p>
       <GoogleDashboardClient />
     </div>

@@ -48,7 +48,9 @@ const renderElementBody = (elementType: string, props: Record<string, unknown>):
         <ButtonElement
           text={props.text as string}
           url={props.url as string}
-          variant={props.variant as 'primary' | 'plain'}
+          variant={props.variant as 'primary' | 'secondary' | 'plain'}
+          styleName={props.styleName as string}
+          size={props.size as 'sm' | 'md' | 'lg'}
           align={props.align as 'left' | 'center' | 'right'}
         />
       )

@@ -26,7 +26,7 @@ export const StoreCreditScreen: React.FC = async () => {
       {ledger.length === 0 ? (
         <p className="account-empty">No store credit activity yet.</p>
       ) : (
-        <table className="account-table">
+        <table className="account-table eg-table">
           <thead>
             <tr>
               <th>Date</th>

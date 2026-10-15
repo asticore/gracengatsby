@@ -45,33 +45,33 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
   // New FAQ block table (the other pages_blocks_* tables already exist).
   await db.run(sql`CREATE TABLE \`pages_blocks_faq\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`heading\` text DEFAULT 'Frequently asked questions',
-  \`source\` text DEFAULT 'category',
-  \`category\` text,
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`heading\` text DEFAULT 'Frequently asked questions',
+  	\`source\` text DEFAULT 'category',
+  	\`category\` text,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`pages_blocks_faq_order_idx\` ON \`pages_blocks_faq\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`pages_blocks_faq_parent_id_idx\` ON \`pages_blocks_faq\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`pages_blocks_faq_path_idx\` ON \`pages_blocks_faq\` (\`_path\`);`)
 
   await db.run(sql`CREATE TABLE \`_pages_v_blocks_faq\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`heading\` text DEFAULT 'Frequently asked questions',
-  \`source\` text DEFAULT 'category',
-  \`category\` text,
-  \`_uuid\` text,
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`_pages_v\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`heading\` text DEFAULT 'Frequently asked questions',
+  	\`source\` text DEFAULT 'category',
+  	\`category\` text,
+  	\`_uuid\` text,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`_pages_v\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`_pages_v_blocks_faq_order_idx\` ON \`_pages_v_blocks_faq\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`_pages_v_blocks_faq_parent_id_idx\` ON \`_pages_v_blocks_faq\` (\`_parent_id\`);`)
@@ -79,21 +79,21 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
   // ---- Page Templates (new collection) ----
   await db.run(sql`CREATE TABLE \`page_templates_blocks_hero\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`heading\` text NOT NULL,
-  \`subheading\` text,
-  \`background_image_id\` integer,
-  \`primary_cta_label\` text,
-  \`primary_cta_url\` text,
-  \`secondary_cta_label\` text,
-  \`secondary_cta_url\` text,
-  \`block_name\` text,
-  FOREIGN KEY (\`background_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`heading\` text NOT NULL,
+  	\`subheading\` text,
+  	\`background_image_id\` integer,
+  	\`primary_cta_label\` text,
+  	\`primary_cta_url\` text,
+  	\`secondary_cta_label\` text,
+  	\`secondary_cta_url\` text,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`background_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_hero_order_idx\` ON \`page_templates_blocks_hero\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_hero_parent_id_idx\` ON \`page_templates_blocks_hero\` (\`_parent_id\`);`)
@@ -101,31 +101,31 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`page_templates_blocks_hero_background_image_idx\` ON \`page_templates_blocks_hero\` (\`background_image_id\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_blocks_rich_text\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`content\` text NOT NULL,
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`content\` text NOT NULL,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_rich_text_order_idx\` ON \`page_templates_blocks_rich_text\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_rich_text_parent_id_idx\` ON \`page_templates_blocks_rich_text\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_rich_text_path_idx\` ON \`page_templates_blocks_rich_text\` (\`_path\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_blocks_image_text\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`image_id\` integer NOT NULL,
-  \`content\` text NOT NULL,
-  \`image_side\` text DEFAULT 'left',
-  \`block_name\` text,
-  FOREIGN KEY (\`image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`image_id\` integer NOT NULL,
+  	\`content\` text NOT NULL,
+  	\`image_side\` text DEFAULT 'left',
+  	\`block_name\` text,
+  	FOREIGN KEY (\`image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_image_text_order_idx\` ON \`page_templates_blocks_image_text\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_image_text_parent_id_idx\` ON \`page_templates_blocks_image_text\` (\`_parent_id\`);`)
@@ -133,107 +133,107 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`page_templates_blocks_image_text_image_idx\` ON \`page_templates_blocks_image_text\` (\`image_id\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_blocks_product_grid\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`heading\` text,
-  \`category\` text,
-  \`limit\` numeric DEFAULT 4,
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`heading\` text,
+  	\`category\` text,
+  	\`limit\` numeric DEFAULT 4,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_product_grid_order_idx\` ON \`page_templates_blocks_product_grid\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_product_grid_parent_id_idx\` ON \`page_templates_blocks_product_grid\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_product_grid_path_idx\` ON \`page_templates_blocks_product_grid\` (\`_path\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_blocks_event_grid\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`heading\` text,
-  \`show_past\` integer DEFAULT false,
-  \`limit\` numeric DEFAULT 3,
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`heading\` text,
+  	\`show_past\` integer DEFAULT false,
+  	\`limit\` numeric DEFAULT 3,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_event_grid_order_idx\` ON \`page_templates_blocks_event_grid\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_event_grid_parent_id_idx\` ON \`page_templates_blocks_event_grid\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_event_grid_path_idx\` ON \`page_templates_blocks_event_grid\` (\`_path\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_blocks_gallery\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`heading\` text,
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`heading\` text,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_gallery_order_idx\` ON \`page_templates_blocks_gallery\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_gallery_parent_id_idx\` ON \`page_templates_blocks_gallery\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_gallery_path_idx\` ON \`page_templates_blocks_gallery\` (\`_path\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_blocks_faq\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`heading\` text DEFAULT 'Frequently asked questions',
-  \`source\` text DEFAULT 'category',
-  \`category\` text,
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`heading\` text DEFAULT 'Frequently asked questions',
+  	\`source\` text DEFAULT 'category',
+  	\`category\` text,
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_faq_order_idx\` ON \`page_templates_blocks_faq\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_faq_parent_id_idx\` ON \`page_templates_blocks_faq\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_faq_path_idx\` ON \`page_templates_blocks_faq\` (\`_path\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_blocks_cta_banner\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`_path\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`heading\` text NOT NULL,
-  \`text\` text,
-  \`button_label\` text,
-  \`button_url\` text,
-  \`style\` text DEFAULT 'dark',
-  \`block_name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`_path\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`heading\` text NOT NULL,
+  	\`text\` text,
+  	\`button_label\` text,
+  	\`button_url\` text,
+  	\`style\` text DEFAULT 'dark',
+  	\`block_name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_cta_banner_order_idx\` ON \`page_templates_blocks_cta_banner\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_cta_banner_parent_id_idx\` ON \`page_templates_blocks_cta_banner\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_blocks_cta_banner_path_idx\` ON \`page_templates_blocks_cta_banner\` (\`_path\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`name\` text NOT NULL,
-  \`description\` text,
-  \`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  \`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`name\` text NOT NULL,
+  	\`description\` text,
+  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_updated_at_idx\` ON \`page_templates\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_created_at_idx\` ON \`page_templates\` (\`created_at\`);`)
 
   await db.run(sql`CREATE TABLE \`page_templates_rels\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`order\` integer,
-  \`parent_id\` integer NOT NULL,
-  \`path\` text NOT NULL,
-  \`media_id\` integer,
-  \`faqs_id\` integer,
-  FOREIGN KEY (\`parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade,
-  FOREIGN KEY (\`media_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE cascade,
-  FOREIGN KEY (\`faqs_id\`) REFERENCES \`faqs\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`order\` integer,
+  	\`parent_id\` integer NOT NULL,
+  	\`path\` text NOT NULL,
+  	\`media_id\` integer,
+  	\`faqs_id\` integer,
+  	FOREIGN KEY (\`parent_id\`) REFERENCES \`page_templates\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+  	FOREIGN KEY (\`media_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+  	FOREIGN KEY (\`faqs_id\`) REFERENCES \`faqs\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`page_templates_rels_order_idx\` ON \`page_templates_rels\` (\`order\`);`)
   await db.run(sql`CREATE INDEX \`page_templates_rels_parent_idx\` ON \`page_templates_rels\` (\`parent_id\`);`)
@@ -243,14 +243,14 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
   // ---- FAQs (new collection) ----
   await db.run(sql`CREATE TABLE \`faqs\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`question\` text NOT NULL,
-  \`answer\` text NOT NULL,
-  \`category\` text,
-  \`order\` numeric DEFAULT 0,
-  \`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  \`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`question\` text NOT NULL,
+  	\`answer\` text NOT NULL,
+  	\`category\` text,
+  	\`order\` numeric DEFAULT 0,
+  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
+  );
   `)
   await db.run(sql`CREATE INDEX \`faqs_updated_at_idx\` ON \`faqs\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`faqs_created_at_idx\` ON \`faqs\` (\`created_at\`);`)
@@ -276,36 +276,36 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
   // ---- Posts (new collection - blog) ----
   await db.run(sql`CREATE TABLE \`posts_categories\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`name\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`posts\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`name\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`posts\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`posts_categories_order_idx\` ON \`posts_categories\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`posts_categories_parent_id_idx\` ON \`posts_categories\` (\`_parent_id\`);`)
 
   await db.run(sql`CREATE TABLE \`posts\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`title\` text,
-  \`slug\` text,
-  \`published_date\` text,
-  \`author_id\` integer,
-  \`featured_image_id\` integer,
-  \`excerpt\` text,
-  \`content\` text,
-  \`seo_meta_title\` text,
-  \`seo_meta_description\` text,
-  \`seo_og_image_id\` integer,
-  \`seo_no_index\` integer DEFAULT false,
-  \`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  \`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  \`_status\` text DEFAULT 'draft',
-  FOREIGN KEY (\`author_id\`) REFERENCES \`users\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`featured_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`seo_og_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`title\` text,
+  	\`slug\` text,
+  	\`published_date\` text,
+  	\`author_id\` integer,
+  	\`featured_image_id\` integer,
+  	\`excerpt\` text,
+  	\`content\` text,
+  	\`seo_meta_title\` text,
+  	\`seo_meta_description\` text,
+  	\`seo_og_image_id\` integer,
+  	\`seo_no_index\` integer DEFAULT false,
+  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`_status\` text DEFAULT 'draft',
+  	FOREIGN KEY (\`author_id\`) REFERENCES \`users\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`featured_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`seo_og_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null
+  );
   `)
   await db.run(sql`CREATE UNIQUE INDEX \`posts_slug_idx\` ON \`posts\` (\`slug\`);`)
   await db.run(sql`CREATE INDEX \`posts_author_idx\` ON \`posts\` (\`author_id\`);`)
@@ -316,42 +316,42 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`posts__status_idx\` ON \`posts\` (\`_status\`);`)
 
   await db.run(sql`CREATE TABLE \`_posts_v_version_categories\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`name\` text,
-  \`_uuid\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`_posts_v\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`name\` text,
+  	\`_uuid\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`_posts_v\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`_posts_v_version_categories_order_idx\` ON \`_posts_v_version_categories\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`_posts_v_version_categories_parent_id_idx\` ON \`_posts_v_version_categories\` (\`_parent_id\`);`)
 
   await db.run(sql`CREATE TABLE \`_posts_v\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`parent_id\` integer,
-  \`version_title\` text,
-  \`version_slug\` text,
-  \`version_published_date\` text,
-  \`version_author_id\` integer,
-  \`version_featured_image_id\` integer,
-  \`version_excerpt\` text,
-  \`version_content\` text,
-  \`version_seo_meta_title\` text,
-  \`version_seo_meta_description\` text,
-  \`version_seo_og_image_id\` integer,
-  \`version_seo_no_index\` integer DEFAULT false,
-  \`version_updated_at\` text,
-  \`version_created_at\` text,
-  \`version__status\` text DEFAULT 'draft',
-  \`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  \`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  \`latest\` integer,
-  FOREIGN KEY (\`parent_id\`) REFERENCES \`posts\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`version_author_id\`) REFERENCES \`users\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`version_featured_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`version_seo_og_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`parent_id\` integer,
+  	\`version_title\` text,
+  	\`version_slug\` text,
+  	\`version_published_date\` text,
+  	\`version_author_id\` integer,
+  	\`version_featured_image_id\` integer,
+  	\`version_excerpt\` text,
+  	\`version_content\` text,
+  	\`version_seo_meta_title\` text,
+  	\`version_seo_meta_description\` text,
+  	\`version_seo_og_image_id\` integer,
+  	\`version_seo_no_index\` integer DEFAULT false,
+  	\`version_updated_at\` text,
+  	\`version_created_at\` text,
+  	\`version__status\` text DEFAULT 'draft',
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`latest\` integer,
+  	FOREIGN KEY (\`parent_id\`) REFERENCES \`posts\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`version_author_id\`) REFERENCES \`users\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`version_featured_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`version_seo_og_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null
+  );
   `)
   await db.run(sql`CREATE INDEX \`_posts_v_parent_idx\` ON \`_posts_v\` (\`parent_id\`);`)
   await db.run(sql`CREATE INDEX \`_posts_v_version_version_slug_idx\` ON \`_posts_v\` (\`version_slug\`);`)
@@ -367,120 +367,120 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
   // ---- Header / Footer (new globals, replacing Navigation) ----
   await db.run(sql`CREATE TABLE \`header_menu_children\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`label\` text NOT NULL,
-  \`link_type\` text DEFAULT 'custom',
-  \`page_id\` integer,
-  \`custom_url\` text,
-  \`open_in_new_tab\` integer DEFAULT false,
-  FOREIGN KEY (\`page_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`header_menu\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`label\` text NOT NULL,
+  	\`link_type\` text DEFAULT 'custom',
+  	\`page_id\` integer,
+  	\`custom_url\` text,
+  	\`open_in_new_tab\` integer DEFAULT false,
+  	FOREIGN KEY (\`page_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`header_menu\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`header_menu_children_order_idx\` ON \`header_menu_children\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`header_menu_children_parent_id_idx\` ON \`header_menu_children\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`header_menu_children_page_idx\` ON \`header_menu_children\` (\`page_id\`);`)
 
   await db.run(sql`CREATE TABLE \`header_menu\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`label\` text NOT NULL,
-  \`link_type\` text DEFAULT 'custom',
-  \`page_id\` integer,
-  \`custom_url\` text,
-  \`open_in_new_tab\` integer DEFAULT false,
-  FOREIGN KEY (\`page_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`header\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`label\` text NOT NULL,
+  	\`link_type\` text DEFAULT 'custom',
+  	\`page_id\` integer,
+  	\`custom_url\` text,
+  	\`open_in_new_tab\` integer DEFAULT false,
+  	FOREIGN KEY (\`page_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`header\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`header_menu_order_idx\` ON \`header_menu\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`header_menu_parent_id_idx\` ON \`header_menu\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`header_menu_page_idx\` ON \`header_menu\` (\`page_id\`);`)
 
   await db.run(sql`CREATE TABLE \`header_socials_links\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`platform\` text,
-  \`url\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`header\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`platform\` text,
+  	\`url\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`header\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`header_socials_links_order_idx\` ON \`header_socials_links\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`header_socials_links_parent_id_idx\` ON \`header_socials_links\` (\`_parent_id\`);`)
 
   await db.run(sql`CREATE TABLE \`header\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`show_logo\` integer DEFAULT true,
-  \`sticky\` integer DEFAULT true,
-  \`show_cart\` integer DEFAULT true,
-  \`desktop_layout\` text DEFAULT 'logo-left',
-  \`mobile_layout\` text DEFAULT 'slide-in',
-  \`announcement_bar_enabled\` integer DEFAULT false,
-  \`announcement_bar_text\` text,
-  \`announcement_bar_link_url\` text,
-  \`announcement_bar_dismissible\` integer DEFAULT true,
-  \`socials_show\` integer DEFAULT false,
-  \`updated_at\` text,
-  \`created_at\` text
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`show_logo\` integer DEFAULT true,
+  	\`sticky\` integer DEFAULT true,
+  	\`show_cart\` integer DEFAULT true,
+  	\`desktop_layout\` text DEFAULT 'logo-left',
+  	\`mobile_layout\` text DEFAULT 'slide-in',
+  	\`announcement_bar_enabled\` integer DEFAULT false,
+  	\`announcement_bar_text\` text,
+  	\`announcement_bar_link_url\` text,
+  	\`announcement_bar_dismissible\` integer DEFAULT true,
+  	\`socials_show\` integer DEFAULT false,
+  	\`updated_at\` text,
+  	\`created_at\` text
+  );
   `)
 
   await db.run(sql`CREATE TABLE \`footer_columns_links\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` text NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`label\` text NOT NULL,
-  \`link_type\` text DEFAULT 'custom',
-  \`page_id\` integer,
-  \`custom_url\` text,
-  FOREIGN KEY (\`page_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`footer_columns\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` text NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`label\` text NOT NULL,
+  	\`link_type\` text DEFAULT 'custom',
+  	\`page_id\` integer,
+  	\`custom_url\` text,
+  	FOREIGN KEY (\`page_id\`) REFERENCES \`pages\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`footer_columns\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`footer_columns_links_order_idx\` ON \`footer_columns_links\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`footer_columns_links_parent_id_idx\` ON \`footer_columns_links\` (\`_parent_id\`);`)
   await db.run(sql`CREATE INDEX \`footer_columns_links_page_idx\` ON \`footer_columns_links\` (\`page_id\`);`)
 
   await db.run(sql`CREATE TABLE \`footer_columns\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`title\` text NOT NULL,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`footer\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`title\` text NOT NULL,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`footer\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`footer_columns_order_idx\` ON \`footer_columns\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`footer_columns_parent_id_idx\` ON \`footer_columns\` (\`_parent_id\`);`)
 
   await db.run(sql`CREATE TABLE \`footer_socials_links\` (
-  \`_order\` integer NOT NULL,
-  \`_parent_id\` integer NOT NULL,
-  \`id\` text PRIMARY KEY NOT NULL,
-  \`platform\` text,
-  \`url\` text,
-  FOREIGN KEY (\`_parent_id\`) REFERENCES \`footer\`(\`id\`) ON UPDATE no action ON DELETE cascade
-);
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`platform\` text,
+  	\`url\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`footer\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
   `)
   await db.run(sql`CREATE INDEX \`footer_socials_links_order_idx\` ON \`footer_socials_links\` (\`_order\`);`)
   await db.run(sql`CREATE INDEX \`footer_socials_links_parent_id_idx\` ON \`footer_socials_links\` (\`_parent_id\`);`)
 
   await db.run(sql`CREATE TABLE \`footer\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`show_logo\` integer DEFAULT true,
-  \`layout\` text DEFAULT 'columns-3',
-  \`bottom_text\` text DEFAULT 'A curated boutique for the modern romantic - considered pieces, small-batch goods, and evenings worth dressing up for.',
-  \`contact_email\` text,
-  \`contact_phone\` text,
-  \`contact_address\` text DEFAULT 'Brisbane, Australia',
-  \`socials_show\` integer DEFAULT true,
-  \`copyright_text\` text,
-  \`updated_at\` text,
-  \`created_at\` text
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`show_logo\` integer DEFAULT true,
+  	\`layout\` text DEFAULT 'columns-3',
+  	\`bottom_text\` text DEFAULT 'A curated boutique for the modern romantic - considered pieces, small-batch goods, and evenings worth dressing up for.',
+  	\`contact_email\` text,
+  	\`contact_phone\` text,
+  	\`contact_address\` text DEFAULT 'Brisbane, Australia',
+  	\`socials_show\` integer DEFAULT true,
+  	\`copyright_text\` text,
+  	\`updated_at\` text,
+  	\`created_at\` text
+  );
   `)
 
   // ---- Site Settings: theme extensions, SEO defaults, feature toggles ----
@@ -504,40 +504,40 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
   // ---- Blog / FAQ / Shop settings (new globals) ----
   await db.run(sql`CREATE TABLE \`blog_settings\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`archive_title\` text DEFAULT 'Journal',
-  \`archive_intro\` text,
-  \`archive_layout\` text DEFAULT 'grid',
-  \`posts_per_page\` numeric DEFAULT 9,
-  \`show_author\` integer DEFAULT true,
-  \`show_date\` integer DEFAULT true,
-  \`show_categories\` integer DEFAULT true,
-  \`updated_at\` text,
-  \`created_at\` text
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`archive_title\` text DEFAULT 'Journal',
+  	\`archive_intro\` text,
+  	\`archive_layout\` text DEFAULT 'grid',
+  	\`posts_per_page\` numeric DEFAULT 9,
+  	\`show_author\` integer DEFAULT true,
+  	\`show_date\` integer DEFAULT true,
+  	\`show_categories\` integer DEFAULT true,
+  	\`updated_at\` text,
+  	\`created_at\` text
+  );
   `)
 
   await db.run(sql`CREATE TABLE \`faq_settings\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`page_title\` text DEFAULT 'Frequently Asked Questions',
-  \`intro\` text,
-  \`layout\` text DEFAULT 'accordion',
-  \`group_by_category\` integer DEFAULT true,
-  \`updated_at\` text,
-  \`created_at\` text
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`page_title\` text DEFAULT 'Frequently Asked Questions',
+  	\`intro\` text,
+  	\`layout\` text DEFAULT 'accordion',
+  	\`group_by_category\` integer DEFAULT true,
+  	\`updated_at\` text,
+  	\`created_at\` text
+  );
   `)
 
   await db.run(sql`CREATE TABLE \`shop_settings\` (
-  \`id\` integer PRIMARY KEY NOT NULL,
-  \`archive_layout\` text DEFAULT 'grid-4',
-  \`show_category_filters\` integer DEFAULT true,
-  \`show_related_products\` integer DEFAULT true,
-  \`show_short_description_on_card\` integer DEFAULT false,
-  \`product_image_aspect\` text DEFAULT 'portrait',
-  \`updated_at\` text,
-  \`created_at\` text
-);
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`archive_layout\` text DEFAULT 'grid-4',
+  	\`show_category_filters\` integer DEFAULT true,
+  	\`show_related_products\` integer DEFAULT true,
+  	\`show_short_description_on_card\` integer DEFAULT false,
+  	\`product_image_aspect\` text DEFAULT 'portrait',
+  	\`updated_at\` text,
+  	\`created_at\` text
+  );
   `)
 
   // ---- eg_locked_documents_rels: new collections need a ref column ----

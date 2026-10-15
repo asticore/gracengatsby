@@ -95,8 +95,8 @@ describe('storefront money (pure)', () => {
   })
 
   it('reads the shop currency from settings, AUD when missing or malformed', () => {
-    expect(shopCurrency({ settings: { currency: 'usd' } })).toBe('USD')
-    expect(shopCurrency({ settings: { currency: 'DOLLARS' } })).toBe('AUD')
+    expect(shopCurrency({ settings: { general: { currency: 'usd' } } })).toBe('USD')
+    expect(shopCurrency({ settings: { general: { currency: 'DOLLARS' } } })).toBe('AUD')
     expect(shopCurrency({ settings: {} })).toBe('AUD')
   })
 })

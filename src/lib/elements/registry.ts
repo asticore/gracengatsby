@@ -107,6 +107,15 @@ ELEMENTS.push({
   fields: [{ name: 'view', label: 'Table or chart', type: 'relationship', relationTo: 'data-views', helpText: 'Pick one you built under Content > Tables and charts.' }],
   defaultProps: () => ({ view: undefined }),
 })
+ELEMENTS.push({
+  type: 'content-slot',
+  label: 'Template content',
+  icon: '📄',
+  category: 'layout',
+  description: 'In a site template: the place where the page, post, product or event itself appears. A template without one shows its sections first and the content after them.',
+  fields: [],
+  defaultProps: () => ({}),
+})
 // Form-builder elements (form fields, steps, the Form placement, Button). Kept in the forms feature so
 // this file only gains one registration.
 ELEMENTS.push(...FORM_ELEMENTS)

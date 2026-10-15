@@ -250,6 +250,10 @@ a {
   @apply text-[0.9rem] text-[#a3352a];
 }
 
+/* Neutral rich-text table look; zero specificity so saved theme table styles always win. */
+:where(.eg-table){border-collapse:collapse;width:100%}
+:where(.eg-table) :where(th,td){border:1px solid rgba(0,0,0,.18);padding:8px;text-align:left}
+
 /* Page builder blocks */
 
 .built-page .home-section:first-child {

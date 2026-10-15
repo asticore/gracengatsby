@@ -63,7 +63,7 @@ export default async function BlogArchivePage() {
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '<\\/') }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll('</', '</\\/') }}
         />
       )}
       {settings?.introBlocks && settings.introBlocks.length > 0 ? (

@@ -329,7 +329,7 @@ function convertTable({ node, convertChildren }: ConverterArgs): ReactNode {
   const children = convertChildren(node.children, node)
   return (
     <div className="lexical-table-container">
-      <table className="lexical-table eg-table" style={{ borderCollapse: 'collapse' }}>
+      <table className="lexical-table eg-table">
         <tbody>{children}</tbody>
       </table>
     </div>
@@ -349,7 +349,7 @@ function convertTableCell({ node, convertChildren }: ConverterArgs): ReactNode {
       className={`lexical-table-cell lexical-table-cell-header-${node.headerState}`}
       colSpan={colSpan}
       rowSpan={rowSpan}
-      style={{ backgroundColor: node.backgroundColor || undefined, border: '1px solid #ccc', padding: '8px' }}
+      style={node.backgroundColor ? { backgroundColor: node.backgroundColor } : undefined}
     >
       {children}
     </Tag>

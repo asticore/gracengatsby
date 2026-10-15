@@ -58,7 +58,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   {
     key: 'site',
     path: '/settings/site',
-    title: 'Site',
+    title: 'General',
     description: 'Site name, logo, colors, fonts and basic brand settings.',
     sections: [
       { kind: 'global', slug: 'site-settings' },
@@ -67,7 +67,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
       { kind: 'global', slug: 'integrations' },
       { kind: 'link', label: 'Cookie consent', href: '/cookie-consent', description: 'Banner text, colours, preview and consent log', type: 'view' },
       { kind: 'link', label: 'Google connection', href: '/google-connection', description: 'Connect Google Analytics, Search Console, Tag Manager and AdSense with your own Google Cloud client.', type: 'view' },
-      { kind: 'link', label: 'Theme styles', href: '/theme-styles', description: 'Colours, text, buttons, tables, forms, layout and presets, set once for the whole site.', type: 'view' },
+      { kind: 'link', label: 'Theming', href: '/theme-styles', description: 'Colours, text, buttons, tables, forms, layout and presets, set once for the whole site.', type: 'view' },
       { kind: 'global', slug: 'language-settings' },
       { kind: 'link', label: 'Translations', href: '/translations', description: 'Manage every translation in one table.', type: 'view' },
     ],

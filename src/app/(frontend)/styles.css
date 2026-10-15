@@ -104,12 +104,14 @@ a {
   border-color: var(--color-gold);
 }
 
-.btn--ghost {
+.btn--ghost,
+.btn--secondary {
   background: transparent;
   color: var(--color-ink);
 }
 
-.btn--ghost:hover {
+.btn--ghost:hover,
+.btn--secondary:hover {
   background: var(--color-ink);
   color: var(--color-cream);
 }

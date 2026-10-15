@@ -3,6 +3,8 @@ import React from 'react'
 import { designToCss } from '@/lib/design/css'
 import { isDesignError, isDesignV2Raw, upgradeDesign } from '@/lib/design/upgrade'
 
+import { getTemplateSlot } from '@/features/siteTemplates/slot'
+
 import { ButtonElement } from './ButtonElement'
 import { HeadingElement } from './HeadingElement'
 
@@ -54,6 +56,10 @@ const renderElementBody = (elementType: string, props: Record<string, unknown>):
           align={props.align as 'left' | 'center' | 'right'}
         />
       )
+    case 'content-slot':
+      // The page's own content, set per request by renderWithTemplate. Empty outside a template (the
+      // visual editor draws its own placeholder for it, see CanvasBlockPreview).
+      return getTemplateSlot() ?? null
     default:
       return null
   }

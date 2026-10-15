@@ -383,6 +383,12 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(indexes.find((i) => i.name === 'eg_data_views_slug_idx')?.unique).toBe(1)
   })
 
+  it('creates the theme styles table (raw SQL, not in the drizzle schema)', async () => {
+    expect(createdTables.has('eg_theme_styles')).toBe(true)
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(expect.arrayContaining(['id', 'data', 'updated_at']))
+  })
+
   it('is safe to run migrations a second time (idempotent)', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

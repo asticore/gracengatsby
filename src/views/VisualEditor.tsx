@@ -512,7 +512,7 @@ export const VisualEditorView: React.FC = () => {
     }
   }
 
-  const lockable = surface?.slug === 'pages' || surface?.slug === 'page-templates'
+  const lockable = surface?.slug === 'pages' || surface?.slug === 'page-templates' || surface?.slug === 'site-templates'
   const selectedLock = selectedPath ? effectiveLock(blocks, selectedPath, locks, lockUser) : null
   const selectedKey = selectedPath ? lockKeyOf(selectedNode, selectedPath) : undefined
   const ownEntry = selectedKey ? locks.nodes[selectedKey] : undefined

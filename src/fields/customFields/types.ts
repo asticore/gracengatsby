@@ -102,7 +102,14 @@ export const LOCATION_PARAMS = [
   'userRole',
   'status',
 ] as const
-export type LocationParam = (typeof LOCATION_PARAMS)[number]
+/** Params the Field Group builder offers. */
+export type FieldGroupLocationParam = (typeof LOCATION_PARAMS)[number]
+
+/** Extra params used by Site Templates (src/features/siteTemplates). Not offered by the Field Group builder. */
+export const TEMPLATE_LOCATION_PARAMS = ['templateKind', 'path', 'productCategory', 'productType', 'eventType'] as const
+export type TemplateLocationParam = (typeof TEMPLATE_LOCATION_PARAMS)[number]
+
+export type LocationParam = FieldGroupLocationParam | TemplateLocationParam
 
 export type LocationRule = { param: LocationParam; operator: 'equals' | 'notEquals'; value: string }
 

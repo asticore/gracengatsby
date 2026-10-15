@@ -18,6 +18,13 @@ export const VISUAL_EDITOR_SURFACES: Record<string, SurfaceConfig> = {
     blocksField: 'blocks',
     titleField: 'name',
   },
+  'site-templates': {
+    kind: 'collection',
+    slug: 'site-templates',
+    label: 'Site Template',
+    blocksField: 'blocks',
+    titleField: 'name',
+  },
   products: { kind: 'collection', slug: 'products', label: 'Product', blocksField: 'layout', titleField: 'title' },
   posts: { kind: 'collection', slug: 'posts', label: 'Post', blocksField: 'layout', titleField: 'title' },
   lessons: { kind: 'collection', slug: 'lessons', label: 'Lesson', blocksField: 'content', titleField: 'title' },

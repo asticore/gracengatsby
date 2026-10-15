@@ -3,8 +3,13 @@
  * The input is re-sanitised first and every value is emitted only as a validated colour, a number,
  * an enum word or a slug id, so no user text can break out of the <style> block.
  */
-import { sanitizeColourValue, sanitizeThemeStyles } from './sanitize'
-import type { ButtonStyle, ShadowLevel, TableStyle, TypeStyle } from './types'
+import { fontStack } from '@/features/fonts/installed'
+import type { InstalledFont } from '@/features/fonts/types'
+
+import { sanitizeColourValue, sanitizeCustomCss, sanitizeThemeStyles } from './sanitize'
+import type { BreakpointGlobals, ButtonStyle, ShadowLevel, TableStyle, ThemeGlobals, TypeStyle } from './types'
+
+type FontMap = ReadonlyMap<string, string>
 
 export type ThemeStylesCssOptions = {
   /** True when a row exists in eg_theme_styles. False keeps the site looking exactly as before. */
@@ -33,11 +38,12 @@ function px(n: number): string {
   return `${n}px`
 }
 
-function typeDecls(t: TypeStyle, kind: 'full' | 'link'): string {
-  const family = t.fontFamily === 'heading' ? 'var(--font-display)' : t.fontFamily === '' ? '' : 'var(--font-body)'
+function typeDecls(t: TypeStyle, kind: 'full' | 'link', fonts: FontMap): string {
+  const installed = fonts.get(t.fontFamily)
+  const family = installed ?? (t.fontFamily === 'heading' ? 'var(--font-display)' : t.fontFamily === '' ? '' : 'var(--font-body)')
   if (kind === 'link') {
     return [
-      t.fontFamily === 'heading' ? decl('font-family', family) : '',
+      t.fontFamily === 'heading' || installed ? decl('font-family', family) : '',
       t.weight !== 400 ? decl('font-weight', t.weight) : '',
       t.letterSpacing !== 0 ? decl('letter-spacing', px(t.letterSpacing)) : '',
       t.transform !== 'none' ? decl('text-transform', t.transform) : '',
@@ -55,8 +61,8 @@ function typeDecls(t: TypeStyle, kind: 'full' | 'link'): string {
   ].join('')
 }
 
-function typeRules(selector: string, t: TypeStyle, kind: 'full' | 'link'): { base: string; tablet: string; mobile: string } {
-  const base = `${selector}{${typeDecls(t, kind)}}`
+function typeRules(selector: string, t: TypeStyle, kind: 'full' | 'link', fonts: FontMap): { base: string; tablet: string; mobile: string } {
+  const base = `${selector}{${typeDecls(t, kind, fonts)}}`
   const size = (n: number) => (kind === 'link' || n <= 0 ? '' : `${selector}{font-size:${px(n)}}`)
   return { base, tablet: size(t.sizeTablet), mobile: size(t.sizeMobile) }
 }
@@ -74,7 +80,7 @@ const TYPE_ELEMENTS: Record<string, string> = {
   link: ':where(a:not(.btn))',
 }
 
-function buildTypography(typography: TypeStyle[], saved: boolean): string {
+function buildTypography(typography: TypeStyle[], saved: boolean, fonts: FontMap, bp: BreakpointGlobals): string {
   const base: string[] = []
   const tablet: string[] = []
   const mobile: string[] = []
@@ -86,13 +92,13 @@ function buildTypography(typography: TypeStyle[], saved: boolean): string {
   if (saved) {
     for (const t of typography) {
       const sel = t.system ? TYPE_ELEMENTS[t.id] : undefined
-      if (sel) push(typeRules(sel, t, t.id === 'link' ? 'link' : 'full'))
+      if (sel) push(typeRules(sel, t, t.id === 'link' ? 'link' : 'full', fonts))
     }
   }
-  for (const t of typography) push(typeRules(`.eg-type-${t.id}`, t, 'full'))
+  for (const t of typography) push(typeRules(`.eg-type-${t.id}`, t, 'full', fonts))
   const out = [...base]
-  if (tablet.length) out.push(`@media (max-width: 1024px){${tablet.join('')}}`)
-  if (mobile.length) out.push(`@media (max-width: 640px){${mobile.join('')}}`)
+  if (tablet.length) out.push(`@media (max-width: ${bp.tablet}px){${tablet.join('')}}`)
+  if (mobile.length) out.push(`@media (max-width: ${bp.mobile}px){${mobile.join('')}}`)
   return out.join('\n')
 }
 
@@ -137,7 +143,7 @@ function buildButton(b: ButtonStyle, saved: boolean): string {
     .join('\n')
 }
 
-function tableRules(t: TableStyle, tables: string[]): string {
+function tableRules(t: TableStyle, tables: string[], mobileBp: number): string {
   const T = (suffix = '') => tables.map((s) => `${s}${suffix}`).join(',')
   const w = px(t.borderWidth)
   const line = t.borderWidth > 0 && col(t.borderColour) ? `${w} solid ${col(t.borderColour)}` : ''
@@ -174,7 +180,7 @@ function tableRules(t: TableStyle, tables: string[]): string {
   if (t.responsive === 'stack') {
     const hideHead = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;'
     out.push(
-      `@media (max-width: 640px){${[
+      `@media (max-width: ${mobileBp}px){${[
         `${T()},${T(' tbody')},${T(' tr')},${T(' td')},${T(' th')}{display:block}`,
         `${T(' thead')}{${hideHead}}`,
         `${T(' tr')}{margin-bottom:12px}`,
@@ -186,10 +192,70 @@ function tableRules(t: TableStyle, tables: string[]): string {
   return out.join('\n')
 }
 
+const SPACE_STEPS = [1, 2, 3, 4, 6, 8, 12, 16]
+
+function buildGlobals(g: ThemeGlobals, saved: boolean): string {
+  const out: string[] = []
+  const { tablet, mobile } = g.breakpoints
+  const c = g.containers
+  const rootVars = [
+    `--eg-radius-sm:${px(g.scales.radiusSm)};--eg-radius-md:${px(g.scales.radiusMd)};--eg-radius-lg:${px(g.scales.radiusLg)};`,
+    SPACE_STEPS.map((m, i) => `--eg-space-${i + 1}:${px(g.scales.spaceBase * m)};`).join(''),
+    `--eg-shadow-sm:${SHADOWS.soft};--eg-shadow-md:${SHADOWS.medium};--eg-shadow-lg:${SHADOWS.strong};`,
+  ].join('')
+  out.push(`:root{${rootVars}}`)
+  if (saved) {
+    out.push(`:root{--max-width:${px(c.maxWidth)};--eg-gap:${px(c.gapDesktop)};--eg-section-pad:${px(c.sectionPaddingDesktop)};}`)
+    out.push(`@media (max-width: ${tablet}px){:root{--eg-gap:${px(c.gapTablet)};--eg-section-pad:${px(c.sectionPaddingTablet)};}}`)
+    out.push(`@media (max-width: ${mobile}px){:root{--eg-gap:${px(c.gapMobile)};--eg-section-pad:${px(c.sectionPaddingMobile)};}}`)
+
+    const f = g.forms
+    const border = f.fieldBorderWidth > 0 && col(f.fieldBorder) ? `${px(f.fieldBorderWidth)} solid ${col(f.fieldBorder)}` : f.fieldBorderWidth > 0 ? `${px(f.fieldBorderWidth)} solid transparent` : '0'
+    const fields =
+      ':where(.engage-form, form) :where(input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]), select, textarea)'
+    const focusColour = col(f.focusBorder)
+    out.push(
+      `.engage-form{${[decl('--eg-field-bg', col(f.fieldBg)), decl('--eg-ink', col(f.fieldText)), decl('--eg-radius', px(f.fieldRadius)), decl('--eg-line', col(f.fieldBorder)), decl('--eg-accent', focusColour)].join('')}}`,
+    )
+    out.push(
+      `${fields}{${[
+        decl('background', col(f.fieldBg)),
+        decl('color', col(f.fieldText)),
+        decl('border', border),
+        decl('border-radius', px(f.fieldRadius)),
+        decl('padding', `${px(f.fieldPaddingY)} ${px(f.fieldPaddingX)}`),
+        decl('font-size', px(f.fieldFontSize)),
+      ].join('')}}`,
+    )
+    if (focusColour) {
+      out.push(`${fields}:focus{border-color:${focusColour};outline:none;box-shadow:0 0 0 3px color-mix(in srgb, ${focusColour} 25%, transparent);}`)
+    }
+    if (col(f.placeholderColour)) out.push(`${fields}::placeholder{color:${col(f.placeholderColour)}}`)
+    out.push(`:where(label, .form-label){${[decl('color', col(f.labelColour)), decl('font-size', px(f.labelSize)), decl('font-weight', f.labelWeight)].join('')}}`)
+    if (col(f.errorColour)) out.push(`:where(.form-error){color:${col(f.errorColour)}}`)
+
+    const l = g.links
+    const hoverColour = col(l.hoverColour)
+    if (hoverColour) out.push(`:where(a:not(.btn):hover){color:${hoverColour}}`)
+    const underline = l.underline === 'always' ? 'underline' : 'none'
+    out.push(`:where(a:not(.btn)){text-decoration:${underline}}`)
+    if (l.underline === 'hover') out.push(':where(a:not(.btn):hover){text-decoration:underline}')
+
+    const im = g.images
+    const imgBorder = im.borderWidth > 0 && col(im.borderColour) ? `${px(im.borderWidth)} solid ${col(im.borderColour)}` : ''
+    const imgDecls = [decl('border-radius', px(im.radius)), im.shadow !== 'none' ? decl('box-shadow', SHADOWS[im.shadow]) : '', decl('border', imgBorder)].join('')
+    if (imgDecls) {
+      out.push(`:where(.rich-text img, .built-block img, .block img, article img, .product-gallery img):not(.logo img, header img, footer img){${imgDecls}}`)
+    }
+  }
+  return out.join('\n')
+}
+
 const DEFAULT_TABLE_SELECTORS = ['table.eg-table', '.account-table', '.rich-text table', '.dv-table']
 
-export function buildThemeStylesCss(input: unknown, opts: ThemeStylesCssOptions): string {
+export function buildThemeStylesCss(input: unknown, opts: ThemeStylesCssOptions, extra?: { fonts?: InstalledFont[] }): string {
   const styles = sanitizeThemeStyles(input)
+  const fonts: FontMap = new Map((extra?.fonts ?? []).map((f) => [f.id, fontStack(f.family, f.category)]))
   const saved = opts.saved === true
   const parts: string[] = []
 
@@ -215,7 +281,7 @@ export function buildThemeStylesCss(input: unknown, opts: ThemeStylesCssOptions)
   }
 
   // (b) typography
-  parts.push(buildTypography(styles.typography, saved))
+  parts.push(buildTypography(styles.typography, saved, fonts, styles.globals.breakpoints))
 
   // (c) buttons
   parts.push('.btn--block{display:block;width:100%;text-align:center}')
@@ -226,8 +292,11 @@ export function buildThemeStylesCss(input: unknown, opts: ThemeStylesCssOptions)
   // (d) tables
   parts.push('.eg-table-wrap{overflow-x:auto}')
   const def = styles.tables.find((t) => t.id === styles.defaultTableId) ?? styles.tables[0]
-  if (saved && def) parts.push(tableRules(def, DEFAULT_TABLE_SELECTORS))
-  for (const t of styles.tables) parts.push(tableRules(t, [`table.eg-table--${t.id}`, `.eg-table--${t.id} > table`]))
+  if (saved && def) parts.push(tableRules(def, DEFAULT_TABLE_SELECTORS, styles.globals.breakpoints.mobile))
+  for (const t of styles.tables) parts.push(tableRules(t, [`table.eg-table--${t.id}`, `.eg-table--${t.id} > table`], styles.globals.breakpoints.mobile))
+
+  parts.push(buildGlobals(styles.globals, saved))
+  if (saved) parts.push(sanitizeCustomCss(styles.globals.customCss))
 
   return parts.filter(Boolean).join('\n').replace(/</g, '')
 }

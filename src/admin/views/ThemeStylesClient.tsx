@@ -9,6 +9,8 @@ import './google-connection.css'
 import './themeStyles/themeStyles.css'
 import { ButtonControls } from './themeStyles/ButtonControls'
 import { ColourControls } from './themeStyles/ColourControls'
+import { LayoutControls } from './themeStyles/LayoutControls'
+import { PresetControls } from './themeStyles/PresetControls'
 import { TableControls } from './themeStyles/TableControls'
 import { ThemeStylesPreview } from './themeStyles/ThemeStylesPreview'
 import { TypographyControls, type InstalledFontOption } from './themeStyles/TypographyControls'
@@ -22,6 +24,8 @@ const TABS: ReadonlyArray<{ key: TabKey; label: string }> = [
   { key: 'typography', label: 'Typography' },
   { key: 'buttons', label: 'Buttons' },
   { key: 'tables', label: 'Tables' },
+  { key: 'layout', label: 'Layout and forms' },
+  { key: 'presets', label: 'Presets' },
 ]
 
 /** The Theme styles screen (/admin/theme-styles): editor on the left, live preview on the right. */
@@ -104,7 +108,7 @@ export function ThemeStylesClient({ initialStyles, saved, fonts }: Props) {
     <div className="ts-screen">
       <div className="ts-toolbar">
         <button type="button" className="ts-btn ts-btn--primary" disabled={busy || !dirty} onClick={save}>{busy ? 'Saving...' : 'Save changes'}</button>
-        <button type="button" className="ts-btn" disabled={busy} onClick={reset}>Reset this tab to defaults</button>
+        {tab !== 'presets' && <button type="button" className="ts-btn" disabled={busy} onClick={reset}>Reset this tab to defaults</button>}
         <span className="ts-toolbar__spacer" />
         <button type="button" className="ts-btn" onClick={exportJson}>Export</button>
         <button type="button" className="ts-btn" onClick={() => fileRef.current?.click()}>Import</button>
@@ -126,12 +130,14 @@ export function ThemeStylesClient({ initialStyles, saved, fonts }: Props) {
               {tab === 'typography' && <TypographyControls typography={styles.typography} colours={styles.colours} fonts={fonts} onChange={(typography) => setStyles({ ...styles, typography })} />}
               {tab === 'buttons' && <ButtonControls buttons={styles.buttons} colours={styles.colours} onChange={(buttons) => setStyles({ ...styles, buttons })} />}
               {tab === 'tables' && <TableControls styles={styles} colours={styles.colours} onChange={setStyles} />}
+              {tab === 'layout' && <LayoutControls styles={styles} onChange={setStyles} />}
+              {tab === 'presets' && <PresetControls styles={styles} onChange={setStyles} onNotice={(text) => setNotice({ tone: 'warn', text })} />}
             </CollapsibleCard>
           </div>
         </div>
         <aside className="ts-aside" aria-label="Live preview">
           <h2 className="ts-aside__title">Live preview</h2>
-          <ThemeStylesPreview styles={styles} tab={tab} />
+          <ThemeStylesPreview styles={styles} tab={tab} fonts={fonts} />
           <p className="ts-help">The preview shows your edits before they are saved.</p>
         </aside>
       </div>

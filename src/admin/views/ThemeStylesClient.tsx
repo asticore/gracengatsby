@@ -63,12 +63,12 @@ export function ThemeStylesClient({ initialStyles, saved, fonts }: Props) {
       if (response.ok && body?.ok && body.styles) {
         setStyles(body.styles)
         setBaseline(JSON.stringify(body.styles))
-        setNotice({ tone: 'ok', text: 'Theme styles saved. The public site picks them up shortly.' })
+        setNotice({ tone: 'ok', text: 'Theming saved. The public site picks it up shortly.' })
       } else {
-        setNotice({ tone: 'error', text: body?.error || 'The theme styles could not be saved. Try again.' })
+        setNotice({ tone: 'error', text: body?.error || 'Theming could not be saved. Try again.' })
       }
     } catch {
-      setNotice({ tone: 'error', text: 'The theme styles could not be saved. Check the connection and try again.' })
+      setNotice({ tone: 'error', text: 'Theming could not be saved. Check the connection and try again.' })
     } finally {
       setBusy(false)
     }

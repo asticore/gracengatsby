@@ -12,7 +12,7 @@ import { rawLocationGroups } from '../normalize'
  * `location` JSON. An empty list falls back to the quick "Applies to" list.
  */
 
-const PARAM_LABELS: Record<LocationParam, string> = {
+const PARAM_LABELS: Record<(typeof LOCATION_PARAMS)[number], string> = {
   collection: 'Collection',
   optionsPage: 'Options page',
   pageTemplate: 'Page template ID (or "none")',

@@ -44,6 +44,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'faqs', type: 'collections' },
       { slug: 'events', type: 'collections' },
       { slug: 'page-templates', type: 'collections' },
+      { slug: 'site-templates', type: 'collections' },
       { slug: 'reusable-sections', type: 'collections' },
       { slug: 'forms', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },

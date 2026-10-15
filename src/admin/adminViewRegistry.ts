@@ -175,7 +175,7 @@ export const CUSTOM_ADMIN_VIEWS = [
     key: 'themeStyles',
     Component: ThemeStylesView,
     path: '/theme-styles',
-    meta: { title: 'Theme styles', description: 'Set the site colours, text styles, buttons and tables once and use them everywhere.' },
+    meta: { title: 'Theming', description: 'Set the site colours, text styles, buttons and tables once and use them everywhere.' },
   },
   {
     key: 'cacheTools',

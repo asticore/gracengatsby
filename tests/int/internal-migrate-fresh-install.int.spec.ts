@@ -539,6 +539,28 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_reusable_sections_blocks_loop')).toContain('template_id')
   })
 
+  it('creates the site templates table, its _rels table and all 14 block tables, and a second run changes nothing', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('eg_site_templates')
+    expect(await columnsOf('eg_site_templates')).toEqual(
+      expect.arrayContaining(['name', 'kind', 'enabled', 'priority', 'conditions', 'locks', 'updated_at', 'created_at']),
+    )
+    expect(tables).toContain('eg_site_templates_rels')
+    expect(await columnsOf('eg_site_templates_rels')).toEqual(expect.arrayContaining(['eg_media_id', 'eg_faqs_id', 'eg_forms_id']))
+    const blockTypes = ['cta_banner', 'element', 'event_grid', 'faq', 'form', 'gallery', 'hero', 'image_text', 'loop', 'product_grid', 'reusable_section', 'rich_text', 'section', 'toc']
+    expect(blockTypes).toHaveLength(14)
+    for (const type of blockTypes) expect(tables, `eg_site_templates_blocks_${type}`).toContain(`eg_site_templates_blocks_${type}`)
+
+    const before = await proxy.env.D1.prepare(`SELECT name FROM sqlite_master ORDER BY name`).all()
+    const second = await runInternalMigrate(proxy.env.D1, consoleLogger)
+    expect(second.errorCount).toBe(0)
+    const after = await proxy.env.D1.prepare(`SELECT name FROM sqlite_master ORDER BY name`).all()
+    expect(after.results).toEqual(before.results)
+  }, 120_000)
+
   it('adds the SEO focus keyphrase column to the SEO collections and their version tables', async () => {
     const columnsOf = async (table: string): Promise<string[]> => {
       const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()

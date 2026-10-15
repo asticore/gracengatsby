@@ -27,7 +27,7 @@ describe('AdminNavClient with flat rendering', () => {
     expect(settingsGroup?.entities.length).toBe(9)
   })
 
-  it('Settings group should render 7 page links, Theme styles and the Roles view link', () => {
+  it('Settings group should render 7 page links, Theming and the Roles view link', () => {
     const settingsGroup = NAV_STRUCTURE.find((g) => g.label === 'Settings')
     expect(settingsGroup?.entities.length).toBe(9)
     const viewEntities = settingsGroup?.entities.filter((e) => e.type === 'view') || []
@@ -35,14 +35,14 @@ describe('AdminNavClient with flat rendering', () => {
     expect(settingsGroup?.entities.at(-1)).toEqual({ slug: 'roles', type: 'view', href: '/roles', label: 'Roles' })
 
     const expectedLabels = [
-      'Site',
+      'General',
       'Content',
       'Commerce',
       'Communication',
       'Speed',
       'Security',
       'Data and System',
-      'Theme styles',
+      'Theming',
       'Roles',
     ]
 

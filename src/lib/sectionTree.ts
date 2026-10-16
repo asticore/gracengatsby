@@ -12,6 +12,7 @@
  */
 
 import { asBlockStyle, type BlockStyle } from './blockStyle'
+import { columnLayoutStyle, parseColumnLayout, percentBasisWithGap, type ColumnLayout } from './sectionLayout'
 
 /** Column widths as a 12-based grid span, matching common builder conventions. */
 export type ColumnWidth = 12 | 8 | 6 | 4 | 3 | 9
@@ -30,7 +31,8 @@ export const COLUMN_WIDTH_OPTIONS: { label: string; value: ColumnWidth }[] = [
  * (same numbers as ColumnWidth); `percent`/`px` are Elementor-style custom
  * sizes for when a fraction of 12 isn't the shape you want.
  */
-export type ColumnWidthUnit = 'fraction' | 'percent' | 'px'
+/** 'auto' sizes to content; 'fill' takes the space left in the row. Both ignore `value`. */
+export type ColumnWidthUnit = 'fraction' | 'percent' | 'px' | 'auto' | 'fill'
 
 export type ResponsiveColumnWidth = {
   value: number
@@ -57,13 +59,15 @@ export type SectionColumn = {
   widthTablet?: ResponsiveColumnWidth
   widthMobile?: ResponsiveColumnWidth
   design?: BlockStyle
+  /** Optional Elementor-style per-column flex settings (grow, align-self, order...). */
+  layout?: ColumnLayout
   blocks?: SectionNode[]
 }
 
 function isResponsiveWidth(value: unknown): value is ResponsiveColumnWidth {
   if (!value || typeof value !== 'object') return false
   const v = value as { value?: unknown; unit?: unknown }
-  return typeof v.value === 'number' && (v.unit === 'fraction' || v.unit === 'percent' || v.unit === 'px')
+  return typeof v.value === 'number' && (v.unit === 'fraction' || v.unit === 'percent' || v.unit === 'px' || v.unit === 'auto' || v.unit === 'fill')
 }
 
 function normalizeResponsiveWidth(value: unknown): ResponsiveColumnWidth | undefined {
@@ -72,6 +76,8 @@ function normalizeResponsiveWidth(value: unknown): ResponsiveColumnWidth | undef
 
 /** Converts one breakpoint's width into a CSS length (percentage for fraction/percent, px as-is). */
 export function columnWidthCss(width: ResponsiveColumnWidth): string {
+  if (width.unit === 'auto') return 'auto'
+  if (width.unit === 'fill') return '0px'
   if (width.unit === 'px') return `${Math.max(0, width.value)}px`
   if (width.unit === 'percent') return `${Math.min(100, Math.max(0, width.value))}%`
   return `${(Math.min(12, Math.max(1, width.value)) / 12) * 100}%`
@@ -87,10 +93,23 @@ export function columnWidthCss(width: ResponsiveColumnWidth): string {
  */
 export function columnWidthVars(column: SectionColumn): Record<string, string> {
   const desktop = column.widthDesktop ?? { value: column.width ?? 12, unit: 'fraction' as const }
-  const vars: Record<string, string> = { '--be-col-d': columnWidthCss(desktop) }
-  if (column.widthTablet) vars['--be-col-t'] = columnWidthCss(column.widthTablet)
-  if (column.widthMobile) vars['--be-col-m'] = columnWidthCss(column.widthMobile)
-  return vars
+  const widths: [string, ResponsiveColumnWidth][] = [['d', desktop]]
+  if (column.widthTablet) widths.push(['t', column.widthTablet])
+  if (column.widthMobile) widths.push(['m', column.widthMobile])
+
+  const vars: Record<string, string> = {}
+  const flexible = widths.some(([, w]) => w.unit === 'auto' || w.unit === 'fill')
+  for (const [key, width] of widths) {
+    vars[`--be-col-${key}`] = columnWidthCss(width)
+    // Percent-style widths also get a gap-compensated basis so side-by-side columns fit the row.
+    if (width.unit === 'fraction' || width.unit === 'percent') {
+      const basis = percentBasisWithGap(parseFloat(columnWidthCss(width)))
+      if (basis) vars[`--be-col-${key}-b`] = basis
+    }
+    // Only needed when some device lets the column grow, so the others can switch it back off.
+    if (flexible) vars[`--be-col-${key}-g`] = width.unit === 'fill' ? '1' : '0'
+  }
+  return { ...vars, ...columnLayoutStyle(column.layout) }
 }
 
 /** Reads a section block's `columns` JSON column into a usable tree. */
@@ -107,6 +126,7 @@ function normalizeColumn(column: SectionColumn): SectionColumn {
     widthTablet: normalizeResponsiveWidth(column.widthTablet),
     widthMobile: normalizeResponsiveWidth(column.widthMobile),
     design: asBlockStyle(column.design),
+    layout: parseColumnLayout(column.layout),
     blocks: Array.isArray(column.blocks)
       ? column.blocks
           .filter((b): b is SectionNode => Boolean(b) && typeof b === 'object' && typeof (b as SectionNode).blockType === 'string')

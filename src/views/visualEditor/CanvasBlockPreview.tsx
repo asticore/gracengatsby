@@ -9,6 +9,7 @@ import { ImageTextBlock } from '@/components/blocks/ImageTextBlock'
 import { RichTextBlock } from '@/components/blocks/RichTextBlock'
 import { AdPlaceholder } from '@/features/ads/components/AdPlaceholder'
 import { DataViewCanvasPreview } from '@/features/dataViews/components/DataViewCanvasPreview'
+import { MEDIA_PROP_KEYS, collectMediaIds, substituteMedia } from '@/components/blocks/elements/elementUtil'
 import { renderElement } from '@/components/blocks/elements/renderElement'
 
 import type { Media } from '@/engage-types'
@@ -100,6 +101,14 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
       if (isFieldElementType(elementType)) return <FormFieldPreview node={data as LayoutNode} />
       if (elementType === 'ad') return <AdPlaceholder label={`Ad: ${String(props.placement || props.unit || 'choose a placement')}`} />
       if (elementType === 'content-slot') return <DynamicPlaceholder icon="📄" label="Page content appears here" data={data} detail="Template content" />
+      if (MEDIA_PROP_KEYS[elementType]) return <ElementMediaPreview elementType={elementType} props={props} />
+      if (elementType === 'anchor') {
+        return <div className="el-canvas-hint">{`Anchor: #${String(props.id || '(name it in the panel)')}`}</div>
+      }
+      if (elementType === 'spacer') {
+        return <div className="el-canvas-hint">{`Spacer: ${String(props.height ?? 48)}px`}{renderElement(elementType, props)}</div>
+      }
+      if (elementType === 'html' && !String(props.html || '').trim()) return <div className="el-canvas-hint">Empty HTML element</div>
       return renderElement(elementType, props) ?? (
         <DynamicPlaceholder icon="🧩" label={elementType || 'Element'} data={data} detail="Unknown element type." />
       )
@@ -107,6 +116,16 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
     default:
       return <div className="ve-unknown-block">Unknown block type: {blockType}</div>
   }
+}
+
+/** Element props keep media as ids; the canvas looks them up so the renderers can show the real pictures. */
+const ElementMediaPreview: React.FC<{ elementType: string; props: Record<string, unknown> }> = ({ elementType, props }) => {
+  const keys = MEDIA_PROP_KEYS[elementType] || []
+  const ids = collectMediaIds(props, keys)
+  const docs = useResolvedMediaList(ids)
+  const map = new Map<number, { id: number; url?: string | null; alt?: string | null }>()
+  for (const d of docs) if (d && typeof d.id === 'number' && d.url) map.set(d.id, d)
+  return <>{renderElement(elementType, substituteMedia(props, keys, map))}</>
 }
 
 const gridDetail = (data: Record<string, unknown>, noun: string): string => {

@@ -293,17 +293,101 @@ html[data-theme='dark'] .ve-root {
   opacity: 0.6;
 }
 
-/* Elementor's "+" opens and stays open - a tinted band across the whole slot,
-   not just the hover line, so it reads as "adding here" rather than a
-   passing hover state, and it stays lit until the click-away below closes it
-   (see CanvasFrame.tsx's openInsertKey - cleared on picking a block, picking
-   a different node to edit, or clicking empty canvas). */
+/* Placeholder look shared by the open "+" slot, a slot being dragged over, and empty
+   containers: a dashed green box saying where the block lands. The open slot really takes
+   the space (so the page opens up there, height animated); a drag-over slot is an overlay
+   that does NOT shift layout, so the element under the pointer (elementFromPoint) and
+   dnd-kit's measured rects stay put while dragging - no flicker. */
 .ve-insert--open {
+  box-sizing: border-box;
+  height: 56px;
+  margin: 8px 0;
+  padding: 0;
+  border: 2px dashed var(--ve-select);
+  border-radius: 6px;
   background: color-mix(in srgb, var(--ve-select) 12%, transparent);
+  transition: height 0.12s ease, margin 0.12s ease, padding 0.12s ease;
 }
 
-.ve-insert--open::before {
-  opacity: 0.9;
+.ve-insert--open::before,
+.ve-insert--drag-over::before {
+  display: none;
+}
+
+.ve-insert--open::after,
+.ve-insert--drag-over::after,
+.ve-insert--empty::after {
+  content: 'New block goes here';
+  position: absolute;
+  left: calc(50% + 24px);
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ve-select);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.ve-insert--drag-over:not(.ve-insert--open) {
+  z-index: 5;
+}
+
+/* Overlay variant: a 56px dashed box centred on the slot line, taken out of flow. */
+.ve-insert--drag-over:not(.ve-insert--open)::before {
+  display: block;
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 56px;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  border: 2px dashed var(--ve-select);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ve-select) 14%, transparent);
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* Empty container: a visible, in-flow drop zone instead of a 1px line. */
+.ve-insert--empty {
+  box-sizing: border-box;
+  height: 56px;
+  margin: 8px 0;
+  padding: 0;
+  border: 2px dashed color-mix(in srgb, var(--ve-select) 55%, transparent);
+  border-radius: 6px;
+}
+
+.ve-insert--empty::before {
+  display: none;
+}
+
+.ve-insert--empty::after {
+  content: 'Drop a block here';
+  color: var(--ve-text-muted);
+}
+
+.ve-insert--empty.ve-insert--drag-over,
+.ve-insert--empty.ve-insert--open {
+  border-color: var(--ve-select);
+  background: color-mix(in srgb, var(--ve-select) 14%, transparent);
+}
+
+.ve-insert--empty.ve-insert--drag-over::after,
+.ve-insert--empty.ve-insert--open::after {
+  content: 'New block goes here';
+  color: var(--ve-select);
+}
+
+/* Empty slots overlay-variant must not double up: the in-flow box is already the placeholder. */
+.ve-insert--empty.ve-insert--drag-over:not(.ve-insert--open)::before {
+  display: none;
 }
 
 /* Plus button: white "+" on a solid green circle, always given a shadow so
@@ -330,9 +414,15 @@ html[data-theme='dark'] .ve-root {
   transition: opacity 0.1s, transform 0.1s, background 0.1s;
 }
 
+.ve-insert--open .ve-insert__btn,
+.ve-insert--empty .ve-insert__btn {
+  top: 50%;
+}
+
 .ve-insert:hover .ve-insert__btn,
 .ve-insert--open .ve-insert__btn,
-.ve-insert--always .ve-insert__btn {
+.ve-insert--always .ve-insert__btn,
+.ve-insert--empty .ve-insert__btn {
   opacity: 1;
 }
 
@@ -345,7 +435,6 @@ html[data-theme='dark'] .ve-root {
 .ve-insert--drag-over .ve-insert__btn {
   opacity: 1;
   background: var(--ve-select-hover);
-  transform: translate(-50%, -50%) scale(1.3);
 }
 
 /* Rotates to a "x" while open, the same close affordance Elementor uses - a
@@ -358,6 +447,30 @@ html[data-theme='dark'] .ve-root {
 
 .ve-insert--open .ve-insert__btn:hover {
   transform: translate(-50%, -50%) rotate(45deg) scale(1.15);
+}
+
+/* Handle-drag (dnd-kit) feedback: ghost label follows the pointer; not-allowed cursor over
+   anywhere that has no valid slot. */
+.ve-drag-ghost {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--ve-select);
+  color: var(--ve-select-contrast);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  cursor: grabbing;
+  white-space: nowrap;
+}
+
+.ve-frame-root--dragging,
+.ve-frame-root--dragging * {
+  cursor: grabbing !important;
+}
+
+.ve-frame-root--no-drop,
+.ve-frame-root--no-drop * {
+  cursor: not-allowed !important;
 }
 
 .ve-empty-canvas {
@@ -452,6 +565,11 @@ html[data-theme='dark'] .ve-root {
   flex-wrap: wrap;
   gap: 14px;
   align-content: flex-start;
+}
+
+.ve-panel__body--flush {
+  padding: 0;
+  gap: 0;
 }
 
 .ve-panel__footer {
@@ -717,7 +835,10 @@ html[data-theme='dark'] .ve-root {
 }
 .ve-node--locked { box-shadow: inset 0 0 0 1px rgba(180, 120, 0, 0.55); }
 .ve-node__lock { margin-right: 2px; }
-.ve-lockset { border: 0; padding: 0; margin: 0; min-width: 0; }
+/* display:contents drops the fieldset's own box (it was a shrink-to-fit flex item inside
+   .ve-panel__body, which made accordions as narrow as their content) while a disabled
+   fieldset still disables every control inside it. */
+.ve-lockset { display: contents; border: 0; padding: 0; margin: 0; min-width: 0; }
 .ve-lockset legend { font-size: 12px; font-weight: 600; padding: 0; }
 .ve-lock { padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 12px; }
 .ve-lock__status { margin: 0 0 6px; }
@@ -1071,12 +1192,15 @@ html[data-theme='dark'] .ve-root {
 /* Design tab */
 .ve-design {
   width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
 .ve-acc {
+  width: 100%;
+  min-width: 0;
   border-bottom: 1px solid var(--ve-border);
 }
 
@@ -1088,7 +1212,7 @@ html[data-theme='dark'] .ve-root {
   background: none;
   border: none;
   color: var(--ve-text-muted);
-  padding: 10px 2px;
+  padding: 12px 16px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -1099,7 +1223,7 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-acc__body {
-  padding: 2px 2px 12px;
+  padding: 2px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1395,5 +1519,208 @@ html[data-theme='dark'] .ve-root {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--ve-border);
+}
+
+/* Template browser (TemplateBrowser.tsx) and the Save as template dialog */
+.ve-tpl {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ve-tpl__filters {
+  display: flex;
+  gap: 4px;
+  background: var(--ve-surface-alt);
+  border-radius: 7px;
+  padding: 3px;
+}
+
+.ve-tpl__filter {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--ve-text-muted);
+  padding: 6px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ve-tpl__filter--active {
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  box-shadow: 0 0 0 1px var(--ve-border);
+}
+
+.ve-tpl__select {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--ve-border-strong);
+  border-radius: 6px;
+  font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+}
+
+.ve-tpl__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ve-tpl__card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: stretch;
+  text-align: left;
+  min-width: 0;
+  border: 1px solid var(--ve-border);
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.ve-tpl__card:hover:not(:disabled),
+.ve-tpl__card:focus-visible {
+  border-color: var(--ve-accent);
+  background: var(--ve-surface-hover);
+}
+
+.ve-tpl__card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ve-tpl__thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--ve-surface-alt);
+}
+
+.ve-tpl__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ve-tpl__thumb-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--ve-text-muted);
+}
+
+.ve-tpl__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.7);
+  color: #1b1f24;
+}
+
+.ve-tpl__name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ve-tpl__chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 0 2px 2px;
+}
+
+.ve-tpl__chip {
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--ve-surface-alt);
+  color: var(--ve-text-muted);
+  border: 1px solid var(--ve-border);
+}
+
+.ve-tpl__chip--repo {
+  color: var(--ve-accent);
+  border-color: var(--ve-accent);
+}
+
+.ve-tpl__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 1100;
+  max-width: min(480px, 90vw);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--ve-chrome-bg);
+  color: var(--ve-chrome-text);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.ve-tpl__toast--error {
+  background: var(--ve-danger);
+  color: #fff;
+}
+
+.ve-tpl-dialog {
+  width: min(420px, 92vw);
+}
+
+.ve-tpl-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ve-tpl-dialog__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ve-tpl-dialog__form input,
+.ve-tpl-dialog__form select {
+  font-size: 14px;
+  font-weight: 400;
+  padding: 8px 10px;
+  border: 1px solid var(--ve-border-strong);
+  border-radius: 6px;
+  font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+}
+
+.ve-tpl-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 `

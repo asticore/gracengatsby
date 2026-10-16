@@ -16,6 +16,8 @@ import {
   getNode,
   insertNode,
   insertNodes,
+  moveNode,
+  movedNodePath,
   reorderWithin,
   splitPath,
   stripEditorIds,
@@ -28,12 +30,14 @@ import { hasUnpublishedChanges as formHasUnpublishedChanges, upgradeFieldsToLayo
 import type { FormConfig } from '@/features/forms/types'
 import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
+import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
 
 let idCounter = 0
 const nextId = () => `ve-${Date.now()}-${idCounter++}`
 
 const VE_BLOCK_MIME = 'application/x-ve-block'
+const VE_TEMPLATE_MIME = 'application/x-ve-template'
 
 /**
  * Resolves an insert slot under a page-relative point by reaching into the
@@ -54,18 +58,41 @@ function resolveDropSlot(
   if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null
 
   const el = doc.elementFromPoint(x, y)
-  const slotEl = el?.closest('[data-ve-slot]') as HTMLElement | null
-  if (!slotEl) return null
-
-  let containerPath: NodePath = []
-  try {
-    containerPath = JSON.parse(slotEl.dataset.veContainer || '[]')
-  } catch {
-    return null
+  if (!el) return null
+  const parseJson = (raw: string | undefined): NodePath | null => {
+    try {
+      const value: unknown = JSON.parse(raw || '[]')
+      return Array.isArray(value) && value.every((n) => Number.isInteger(n)) ? (value as NodePath) : null
+    } catch {
+      return null
+    }
   }
-  const at = Number(slotEl.dataset.veAt || '0')
-  if (!Number.isFinite(at)) return null
-  return { containerPath, at, key: `${containerPath.join('.')}|${at}` }
+  const result = (containerPath: NodePath, at: number) => ({ containerPath, at, key: `${containerPath.join('.')}|${at}` })
+
+  // Nearest of: an insert slot itself, a block body (-> the slot just before/after it, by which
+  // half the pointer is in), a column (-> its end), or the bare page area (-> end of page).
+  const hit = el.closest('[data-ve-slot],[data-ve-node],[data-ve-column],[data-ve-root]') as HTMLElement | null
+  if (!hit) return null
+
+  if (hit.dataset.veSlot) {
+    const containerPath = parseJson(hit.dataset.veContainer)
+    const at = Number(hit.dataset.veAt || '0')
+    return containerPath && Number.isFinite(at) ? result(containerPath, at) : null
+  }
+  if (hit.dataset.veNode) {
+    const path = parseJson(hit.dataset.veNode)
+    if (!path || path.length === 0) return null
+    const box = hit.getBoundingClientRect()
+    const after = y > box.top + box.height / 2
+    return result(path.slice(0, -1), path[path.length - 1] + (after ? 1 : 0))
+  }
+  // Column or root: the last slot among its direct children is the end of that list.
+  const slots = hit.querySelectorAll(':scope > [data-ve-slot]')
+  const last = slots[slots.length - 1] as HTMLElement | undefined
+  if (!last) return null
+  const containerPath = parseJson(last.dataset.veContainer)
+  const at = Number(last.dataset.veAt || '0')
+  return containerPath && Number.isFinite(at) ? result(containerPath, at) : null
 }
 
 function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string } | null {
@@ -122,6 +149,8 @@ export const VisualEditorView: React.FC = () => {
   const [lockUser, setLockUser] = useState<(LockUser & { canManageLocks?: boolean }) | null>(null)
   const [roleChoices, setRoleChoices] = useState<string[]>(['editor', 'viewer'])
   const [lockNotice, setLockNotice] = useState<string | null>(null)
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false)
+  const [templateToast, setTemplateToast] = useState<string | null>(null)
   const [frameReady, setFrameReady] = useState(false)
   // Form builder state (only used when the surface is the Forms collection).
   const [formConfig, setFormConfig] = useState<FormConfig>(() => normaliseFormConfig(null))
@@ -297,10 +326,9 @@ export const VisualEditorView: React.FC = () => {
   )
 
   /** Templates (a curated preset or a saved Page Template) insert several blocks at once. */
-  const addTemplateBlocks = useCallback(
-    (templateBlocks: SectionNode[]) => {
+  const insertTemplateAt = useCallback(
+    (templateBlocks: SectionNode[], containerPath: NodePath, at: number) => {
       if (templateBlocks.length === 0) return
-      const { containerPath, at } = insertTarget
       if (insertBlocked(containerPath)) return
       const withFreshIds = templateBlocks.map((node) => cloneNode({ ...node, _id: undefined }, nextId))
 
@@ -309,7 +337,12 @@ export const VisualEditorView: React.FC = () => {
       setDockTab('settings')
       setDirty(true)
     },
-    [insertTarget, insertBlocked],
+    [insertBlocked],
+  )
+
+  const addTemplateBlocks = useCallback(
+    (templateBlocks: SectionNode[]) => insertTemplateAt(templateBlocks, insertTarget.containerPath, insertTarget.at),
+    [insertTarget, insertTemplateAt],
   )
 
   const deleteBlock = useCallback((path: NodePath) => {
@@ -349,13 +382,16 @@ export const VisualEditorView: React.FC = () => {
     [selectedPath],
   )
 
-  const reorderBlock = useCallback((containerPath: NodePath, from: number, to: number) => {
-    if (lockedOut([...containerPath, from]) || lockedOut([...containerPath, to])) return
-    if (containerPath.length === 0 && lockCtx.current.locks.document && effectiveLock(lockCtx.current.blocks, [from], lockCtx.current.locks, lockCtx.current.lockUser)?.blocked) return
-    setBlocks((prev) => reorderWithin(prev, containerPath, from, to))
-    setSelectedPath(null)
+  /** Handle-drag drop: move a block into any list (same column, another column, out of/into sections). */
+  const moveBlockTo = useCallback((from: NodePath, containerPath: NodePath, at: number) => {
+    if (lockedOut(from) || insertBlocked(containerPath)) return
+    const { blocks: current } = lockCtx.current
+    const landed = movedNodePath(current, from, containerPath, at)
+    if (!landed) return
+    setBlocks((prev) => moveNode(prev, from, containerPath, at))
+    setSelectedPath(landed)
     setDirty(true)
-  }, [lockedOut])
+  }, [lockedOut, insertBlocked])
 
   /* ---------------------------------------------------------------------- */
   /* Canvas iframe bridge - see visualEditor/canvasBridge.ts                */
@@ -392,14 +428,14 @@ export const VisualEditorView: React.FC = () => {
         case 'move':
           moveBlock(msg.path, msg.direction)
           break
-        case 'reorder':
-          reorderBlock(msg.containerPath, msg.from, msg.to)
+        case 'moveTo':
+          moveBlockTo(msg.from, msg.containerPath, msg.at)
           break
       }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [deleteBlock, duplicateBlock, moveBlock, reorderBlock, addBlockAt])
+  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo])
 
   // Pushes the current tree + selection down to the frame whenever either
   // changes (including every keystroke made in the field panel), and once
@@ -425,14 +461,19 @@ export const VisualEditorView: React.FC = () => {
    * that started in the parent document. Handling it here instead, on the wrapper that sits
    * over the iframe in the parent document, sidesteps that entirely; elementFromPoint (above)
    * finds which insert slot the pointer is actually over inside the frame. */
+  const isLibraryDrag = (event: React.DragEvent<HTMLDivElement>) =>
+    event.dataTransfer.types.includes(VE_BLOCK_MIME) || event.dataTransfer.types.includes(VE_TEMPLATE_MIME)
+
   const onCanvasDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
-      if (!event.dataTransfer.types.includes(VE_BLOCK_MIME)) return
+      if (!isLibraryDrag(event)) return
       event.preventDefault()
-      event.dataTransfer.dropEffect = 'copy'
       const iframe = iframeRef.current
       const slot = iframe ? resolveDropSlot(iframe, event.clientX, event.clientY) : null
-      sendDragHover(slot?.key ?? null)
+      // No valid slot (outside the page, or a locked container): not-allowed cursor, no highlight.
+      const allowed = Boolean(slot) && canInsertInto(lockCtx.current.blocks, slot!.containerPath, lockCtx.current.locks, lockCtx.current.lockUser)
+      event.dataTransfer.dropEffect = allowed ? 'copy' : 'none'
+      sendDragHover(allowed ? slot!.key : null)
     },
     [sendDragHover],
   )
@@ -450,14 +491,30 @@ export const VisualEditorView: React.FC = () => {
   const onCanvasDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       const blockType = event.dataTransfer.getData(VE_BLOCK_MIME)
+      const templateRaw = event.dataTransfer.getData(VE_TEMPLATE_MIME)
       const iframe = iframeRef.current
       const slot = iframe ? resolveDropSlot(iframe, event.clientX, event.clientY) : null
       sendDragHover(null)
-      if (!blockType || !slot) return
+      if (!blockType && !templateRaw) return
       event.preventDefault()
-      addBlockAt(blockType, slot.containerPath, slot.at)
+      if (!slot) {
+        setLockNotice('Drop it between blocks, on a block, or in an empty column.')
+        setTimeout(() => setLockNotice(null), 4000)
+        return
+      }
+      if (blockType) {
+        addBlockAt(blockType, slot.containerPath, slot.at)
+        return
+      }
+      try {
+        const parsed: unknown = JSON.parse(templateRaw)
+        if (Array.isArray(parsed)) insertTemplateAt(parsed as SectionNode[], slot.containerPath, slot.at)
+      } catch {
+        setLockNotice('That template could not be dropped.')
+        setTimeout(() => setLockNotice(null), 4000)
+      }
     },
-    [addBlockAt, sendDragHover],
+    [addBlockAt, insertTemplateAt, sendDragHover],
   )
 
   const save = async (publish: boolean, options: { unpublish?: boolean } = {}) => {
@@ -626,6 +683,17 @@ export const VisualEditorView: React.FC = () => {
               Mobile
             </button>
           </div>
+          {!formMode && (
+            <button
+              type="button"
+              className="ve-btn"
+              onClick={() => setSaveTemplateOpen(true)}
+              disabled={blocks.length === 0}
+              title={selectedPath && selectedPath.length === 1 ? 'Save the selected section, or the whole page, as a reusable template' : 'Save this page as a reusable template'}
+            >
+              Save as template
+            </button>
+          )}
           <button type="button" className="ve-btn" onClick={() => save(false)} disabled={saving === 'saving'}>
             {saving === 'saving' ? 'Saving' : saving === 'saved' ? 'Saved' : 'Save draft'}
           </button>
@@ -722,6 +790,24 @@ export const VisualEditorView: React.FC = () => {
         </div>
       </div>
       </FormEditorContext.Provider>
+      {saveTemplateOpen && (
+        <SaveAsTemplateDialog
+          pageBlocks={blocks}
+          selectedSection={selectedPath && selectedPath.length === 1 ? getNode(blocks, selectedPath) : undefined}
+          defaultName={docTitle}
+          onClose={() => setSaveTemplateOpen(false)}
+          onSaved={() => {
+            setSaveTemplateOpen(false)
+            setTemplateToast('Saved to My templates')
+            setTimeout(() => setTemplateToast(null), 4000)
+          }}
+        />
+      )}
+      {templateToast && (
+        <div className="ve-tpl__toast" role="status">
+          {templateToast}
+        </div>
+      )}
     </div>
   )
 }

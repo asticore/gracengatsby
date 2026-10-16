@@ -10,7 +10,7 @@
  */
 
 import type { EditorField } from '@/lib/elements/fieldTypes'
-import { ELEMENTS } from '@/lib/elements/registry'
+import { ELEMENTS, ELEMENT_CATEGORIES, type ElementCategory } from '@/lib/elements/registry'
 import { FORM_ONLY_ELEMENT_TYPES } from '@/features/forms/elementDefs'
 
 // Re-exported from src/lib/elements/fieldTypes.ts, which also backs the
@@ -19,18 +19,19 @@ import { FORM_ONLY_ELEMENT_TYPES } from '@/features/forms/elementDefs'
 export type { EditorField, EditorFieldType } from '@/lib/elements/fieldTypes'
 
 /** Groups the element library into browsable sections. */
-type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic' | 'elements' | 'formFields'
+type BlockCategory = 'layout' | 'basic' | 'media' | 'dynamic' | 'formFields' | `el:${Exclude<ElementCategory, 'formFields'>}`
 
 export const BLOCK_CATEGORIES: { key: BlockCategory; label: string }[] = [
   { key: 'layout', label: 'Layout' },
   { key: 'basic', label: 'Basic' },
   { key: 'media', label: 'Media' },
   { key: 'dynamic', label: 'Dynamic' },
-  // One flat group for now, holding every src/lib/elements/registry.ts entry -
-  // there's only Heading in it so far (Phase 2's vertical slice). Once the
-  // rest of the ~40-element library lands (Phase 4) this splits into the
-  // registry's own ELEMENT_CATEGORIES instead of one bucket.
-  { key: 'elements', label: 'Elements' },
+  // One section per registry element category (src/lib/elements/registry.ts ELEMENT_CATEGORIES).
+  // Labels carry "elements" where the plain word is already a block category above.
+  ...ELEMENT_CATEGORIES.filter((c) => c.key !== 'formFields').map((c) => ({
+    key: `el:${c.key}` as BlockCategory,
+    label: c.key === 'media' || c.key === 'layout' ? `${c.label} elements` : c.label,
+  })),
   { key: 'formFields', label: 'Form fields' },
 ]
 
@@ -311,7 +312,7 @@ export function libraryCards(options: { formMode?: boolean } = {}): BlockDef[] {
       slug: `element:${el.type}`,
       label: el.label,
       icon: el.icon,
-      category: FORM_ONLY_ELEMENT_TYPES.has(el.type) ? 'formFields' : 'elements',
+      category: el.category === 'formFields' || FORM_ONLY_ELEMENT_TYPES.has(el.type) ? 'formFields' : (`el:${el.category}` as BlockCategory),
       description: el.description,
       fields: [],
       defaultValue: () => ({ blockType: 'element', elementType: el.type, props: el.defaultProps() }),

@@ -127,25 +127,33 @@ export const ElementLibrary: React.FC<{
                   <h4 className="ve-library__group-title">{cat.label}</h4>
                   <div className="ve-library__grid">
                     {blocks.map((block) => (
-                      <button
+                      <div
                         key={block.slug}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         className="ve-library__card"
                         draggable
                         onDragStart={(e) => {
                           // Native HTML5 DnD, not @dnd-kit - it's the only thing that
                           // can hand a drag off across the canvas iframe boundary, since
                           // dataTransfer belongs to the browser's drag session rather
-                          // than either document. See Canvas.tsx's InsertSlot.
+                          // than either document. Cards are divs, not buttons: Firefox/Safari don't start a drag
+                          // from a <button>. The drop is handled in VisualEditor.tsx.
                           e.dataTransfer.setData('application/x-ve-block', block.slug)
                           e.dataTransfer.effectAllowed = 'copy'
                         }}
                         onClick={() => onPickBlock(block.slug)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            onPickBlock(block.slug)
+                          }
+                        }}
                         title={block.description}
                       >
                         <span className="ve-library__card-icon">{block.icon}</span>
                         <span className="ve-library__card-label">{block.label}</span>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>

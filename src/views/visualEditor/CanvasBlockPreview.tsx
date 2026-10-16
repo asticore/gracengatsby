@@ -73,7 +73,22 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
     case 'faq':
       return <DynamicPlaceholder icon="❓" label="FAQ" data={data} detail="Pulls in your FAQ entries." />
     case 'form':
-      return <DynamicPlaceholder icon="📝" label="Form" data={data} detail={formDetail(data)} />
+      return formDetail(data) ? (
+        <DynamicPlaceholder icon={'\u{1F4DD}'} label="Form" data={data} detail={formDetail(data) as string} />
+      ) : (
+        <div className="ve-dynamic-placeholder">
+          <div className="ve-dynamic-placeholder__icon">{'\u{1F4DD}'}</div>
+          <div>
+            <strong>{(data.heading as string) || 'Form'}</strong>
+            <p className="ve-form-empty">
+              No form yet. Create one in Forms (Settings &gt; Forms) and pick it here.{' '}
+              <a href="/admin/collections/forms" target="_blank" rel="noreferrer">
+                Open Forms
+              </a>
+            </p>
+          </div>
+        </div>
+      )
     case 'loop':
       return <LoopPlaceholder data={data} />
     case 'element': {
@@ -136,13 +151,14 @@ const gridDetail = (data: Record<string, unknown>, noun: string): string => {
     .join(' ')
 }
 
-const formDetail = (data: Record<string, unknown>): string => {
+/** Null when no form is picked yet. */
+const formDetail = (data: Record<string, unknown>): string | null => {
   const form = data.form
   const name =
     form && typeof form === 'object' && 'title' in form ? ((form as { title?: string }).title ?? null) : null
   if (name) return `Form: ${name}`
   if (typeof form === 'number' || typeof form === 'string') return `Form #${form}`
-  return 'Pick a form in the panel to finish setting this up.'
+  return null
 }
 
 const HeroPreview: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {

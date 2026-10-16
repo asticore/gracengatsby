@@ -13,15 +13,11 @@ import {
 } from '@/lib/sectionTree'
 
 import type { BlockDef, EditorField } from './blockSchemas'
-import {
-  parseColumnLayout,
-  parseSectionLayout,
-  type ColumnLayout,
-  type LayoutDevice,
-  type SectionLayout,
-} from '@/lib/sectionLayout'
+import { parseSectionLayout, type DeviceFlow, type SectionLayout } from '@/lib/sectionLayout'
 
-import { Accordion, CheckRow, DesignPanel, NumberRow, SelectRow } from './DesignPanel'
+import { Accordion, CheckRow, DesignPanel, HeightRows, makeResponsive, NumberRow, SelectRow, type EditDevice, type RowResp } from './DesignPanel'
+import { columnsForStructure, STRUCTURES } from './columnOps'
+import { StructureIcon } from './StructurePicker'
 import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical, RICH_TEXT_NOTICE } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
@@ -45,7 +41,11 @@ export const FieldPanel: React.FC<{
   onDuplicate: () => void
   userPermissions?: { canEditStyle: boolean; canEditLayout: boolean } | null
   lockUi?: LockUi
-}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions, lockUi }) => {
+  /** The device being edited (top bar toggle): responsive settings read and write that device's value. */
+  device?: EditDevice
+  /** Opens a column of the selected section in the column panel. */
+  onSelectColumn?: (index: number) => void
+}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions, lockUi, device = 'desktop', onSelectColumn }) => {
   const blocked = Boolean(lockUi?.lock?.blocked)
   const fieldDisabled = (name: string) => blocked && (lockUi?.lock?.mode === 'full' || !lockUi?.lock?.editableProps.includes(name))
   const [tab, setTab] = useState<PanelTab>('content')
@@ -98,6 +98,8 @@ export const FieldPanel: React.FC<{
                 design={asBlockStyle(data.design)}
                 onDesignChange={(next) => setField('design', next)}
                 canEditLayout={userPermissions?.canEditLayout !== false}
+                device={device}
+                onSelectColumn={onSelectColumn}
               />
             </fieldset>
           ) : isElement ? (
@@ -127,7 +129,7 @@ export const FieldPanel: React.FC<{
             </div>
           ) : (
             <fieldset className="ve-lockset" disabled={blocked}>
-              <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} />
+              <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} device={device} />
             </fieldset>
           )
         )}
@@ -145,30 +147,35 @@ export const FieldPanel: React.FC<{
   )
 }
 
-/** One-click column layouts, as 12-grid fractions: 1/1, 1/2, 1/3, 2/3, 1/4 and their common pairings. */
-const COLUMN_PRESETS: { label: string; widths: number[] }[] = [
-  { label: '1/1', widths: [12] },
-  { label: '1/2 + 1/2', widths: [6, 6] },
-  { label: '1/3 x 3', widths: [4, 4, 4] },
-  { label: '2/3 + 1/3', widths: [8, 4] },
-  { label: '1/3 + 2/3', widths: [4, 8] },
-  { label: '1/4 x 4', widths: [3, 3, 3, 3] },
-]
-
-type WidthDevice = 'desktop' | 'tablet' | 'mobile'
+type WidthDevice = EditDevice
 const WIDTH_KEY: Record<WidthDevice, 'widthDesktop' | 'widthTablet' | 'widthMobile'> = {
   desktop: 'widthDesktop',
   tablet: 'widthTablet',
   mobile: 'widthMobile',
 }
+const INHERIT_FROM: Record<EditDevice, string> = { desktop: 'desktop', tablet: 'desktop', mobile: 'tablet' }
+
+/** Drops undefined values and empty objects, at any depth, so stored JSON stays minimal. */
+function cleanDeep<T>(value: T): T | undefined {
+  if (Array.isArray(value)) return value
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      const cleaned = cleanDeep(v)
+      if (cleaned !== undefined) out[key] = cleaned
+    }
+    return Object.keys(out).length > 0 ? (out as T) : undefined
+  }
+  return value === undefined ? undefined : value
+}
+
+const GAP_PRESETS: Record<string, number> = { none: 0, narrow: 10, wide: 40 }
 
 /**
- * Column count and per-column, per-breakpoint width controls for a Section
- * block - Elementor lets you set a column's width independently at each
- * device size (and override the 12-based grid with a custom px/% when a
- * neat fraction isn't the shape you want); this is that, minus the desktop
- * default which always falls back to the legacy `width` field so documents
- * saved before responsive widths existed keep rendering the same.
+ * Structure and flow settings for a Section block. Everything that can differ per device
+ * (column widths, direction, gap, wrap, justify, align, height, padding) follows the top bar's
+ * device toggle, Elementor style: switch to Mobile there and you are editing the mobile values,
+ * which fall back to tablet and then desktop wherever you leave them unset.
  */
 const SectionLayoutFields: React.FC<{
   columns: SectionColumn[]
@@ -176,20 +183,18 @@ const SectionLayoutFields: React.FC<{
   design?: BlockStyle
   onDesignChange?: (design: BlockStyle) => void
   canEditLayout?: boolean
-}> = ({ columns, onChange, design = {}, onDesignChange, canEditLayout = true }) => {
-  const [device, setDevice] = useState<WidthDevice>('desktop')
-  const [openColumn, setOpenColumn] = useState<number | null>(null)
+  device: EditDevice
+  onSelectColumn?: (index: number) => void
+}> = ({ columns, onChange, design = {}, onDesignChange, canEditLayout = true, device, onSelectColumn }) => {
   const widthKey = WIDTH_KEY[device]
   const layout = parseSectionLayout(design.layout) || {}
+  const ctl = makeResponsive(design, (next) => onDesignChange?.(next), device)
+  const from = INHERIT_FROM[device]
 
   const setLayout = (patch: Partial<SectionLayout>) => {
-    const next: Record<string, unknown> = { ...layout, ...patch }
-    for (const key of Object.keys(next)) {
-      const v = next[key]
-      if (v === undefined || (v && typeof v === 'object' && Object.keys(v).length === 0)) delete next[key]
-    }
+    const merged = cleanDeep({ ...layout, ...patch }) as SectionLayout | undefined
     const updated: BlockStyle = { ...design }
-    if (Object.keys(next).length > 0) updated.layout = next as SectionLayout
+    if (merged) updated.layout = merged
     else delete updated.layout
     onDesignChange?.(updated)
   }
@@ -199,19 +204,19 @@ const SectionLayoutFields: React.FC<{
     else current[device] = value
     setLayout({ [key]: current } as Partial<SectionLayout>)
   }
-  const setColumnLayout = (index: number, patch: Partial<ColumnLayout>) => {
-    onChange(
-      columns.map((column, i) => {
-        if (i !== index) return column
-        const next: Record<string, unknown> = { ...(column.layout || {}), ...patch }
-        for (const key of Object.keys(next)) {
-          const v = next[key]
-          if (v === undefined || (v && typeof v === 'object' && Object.keys(v as object).length === 0)) delete next[key]
-        }
-        return { ...column, layout: Object.keys(next).length > 0 ? (next as ColumnLayout) : undefined }
-      }),
-    )
+  /** wrap / justify / align-items: the base layout on desktop, layout.tablet / layout.mobile on the others. */
+  const flowGet = <K extends keyof DeviceFlow>(key: K): DeviceFlow[K] | undefined =>
+    device === 'desktop' ? ((layout as DeviceFlow)[key] as DeviceFlow[K] | undefined) : layout[device]?.[key]
+  const flowSet = <K extends keyof DeviceFlow>(key: K, value: DeviceFlow[K] | undefined) => {
+    if (device === 'desktop') setLayout({ [key]: value } as Partial<SectionLayout>)
+    else setLayout({ [device]: { ...(layout[device] || {}), [key]: value } } as Partial<SectionLayout>)
   }
+  const flowResp = (key: keyof DeviceFlow): RowResp => ({
+    device,
+    overridden: device !== 'desktop' && flowGet(key) !== undefined,
+    onReset: () => flowSet(key, undefined),
+  })
+  const inheritedFirst = (desktopLabel: string) => (device === 'desktop' ? desktopLabel : `Inherited from ${from}`)
 
   const currentWidth = (column: SectionColumn): ResponsiveColumnWidth | undefined =>
     device === 'desktop' ? (column.widthDesktop ?? { value: column.width ?? 12, unit: 'fraction' }) : column[widthKey]
@@ -228,13 +233,15 @@ const SectionLayoutFields: React.FC<{
   const applyPreset = (widths: number[]) => {
     // Content of columns beyond the new count moves into the last one rather than being thrown away.
     const extra = columns.slice(widths.length).flatMap((column) => column.blocks || [])
+    const fresh = columnsForStructure(widths, () => `col-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
     onChange(
-      widths.map((value, index): SectionColumn => {
-        const existing: SectionColumn = columns[index] || { _id: `col-${Date.now()}-${index}`, design: {}, blocks: [] }
+      fresh.map((column, index): SectionColumn => {
+        const existing = columns[index]
+        if (!existing) return column
         return {
           ...existing,
           width: undefined,
-          widthDesktop: { value, unit: 'fraction' },
+          widthDesktop: column.widthDesktop,
           widthTablet: undefined,
           widthMobile: undefined,
           blocks: index === widths.length - 1 ? [...(existing.blocks || []), ...extra] : existing.blocks || [],
@@ -250,94 +257,120 @@ const SectionLayoutFields: React.FC<{
     ])
   }
 
+  const gapNow = layout.gap?.[device]
+  const gapMode = gapNow === undefined ? '' : (Object.entries(GAP_PRESETS).find(([, v]) => v === gapNow)?.[0] ?? 'custom')
+  const wrapNow = flowGet('wrap')
+  const directionNow = layout.direction?.[device] || ''
+  const directionLabels: Record<string, string> = { row: 'Side by side', 'row-reverse': 'Side by side, reversed', column: 'Stacked', 'column-reverse': 'Stacked, reversed' }
+
   return (
     <div className="ve-section-fields">
       <p className="ve-panel__hint">
-        Set how wide each column is - independently per device, or add another right next to it and it floats down
-        to the next row once a row runs out of room. Add blocks to a column with the + button on the canvas - sections
-        can be nested inside columns for more complex layouts.
+        A section holds columns, and each column holds blocks. Click a column on the canvas to change its width, order and padding.
+        {device !== 'desktop' && ` You are editing the ${device} layout: settings you leave unset follow ${from}.`}
       </p>
 
-      <div className="ve-device-toggle ve-device-toggle--panel" role="group" aria-label="Width breakpoint">
-        {(['desktop', 'tablet', 'mobile'] as const).map((d) => (
-          <button
-            key={d}
-            type="button"
-            className={`ve-device-btn ${device === d ? 've-device-btn--active' : ''}`}
-            onClick={() => setDevice(d)}
-          >
-            {d[0].toUpperCase() + d.slice(1)}
-          </button>
-        ))}
-      </div>
+      <Accordion title="Structure" defaultOpen>
+        <div className="ve-structure__mini" role="group" aria-label="Column structure">
+          {STRUCTURES.map((structure) => (
+            <button
+              key={structure.id}
+              type="button"
+              className="ve-structure__mini-btn"
+              disabled={!canEditLayout}
+              onClick={() => applyPreset(structure.widths)}
+              title={`Use ${structure.label}`}
+              aria-label={`Use ${structure.label}`}
+            >
+              <StructureIcon widths={structure.widths} />
+            </button>
+          ))}
+        </div>
 
-      {device !== 'desktop' && (
-        <p className="ve-field__help">
-          Leave a column on &quot;Match {device === 'tablet' ? 'desktop' : 'tablet'}&quot; to inherit its width from{' '}
-          {device === 'tablet' ? 'desktop' : 'tablet (or desktop, if tablet is also unset)'}.  
-        </p>
-      )}
+        {columns.length === 0 && <p className="ve-panel__empty">No columns yet - add one below.</p>}
 
-      <Accordion title="Layout settings" defaultOpen>
-        <SelectRow
-          label={`Direction (${device})`}
-          value={layout.direction?.[device] || ''}
-          options={[
-            { label: device === 'desktop' ? 'Left to right (default)' : `Match ${device === 'tablet' ? 'desktop' : 'tablet'}`, value: '' },
-            { label: 'Left to right', value: 'row' },
-            { label: 'Right to left', value: 'row-reverse' },
-            { label: 'Stacked (top to bottom)', value: 'column' },
-            { label: 'Stacked, bottom to top', value: 'column-reverse' },
-          ]}
-          onChange={(v) => setForDevice('direction', v || undefined)}
-        />
-        <CheckRow
-          label="Stack on mobile"
-          checked={layout.direction?.mobile === 'column'}
-          onChange={(on) => {
-            const direction = { ...(layout.direction || {}) }
-            if (on) direction.mobile = 'column'
-            else delete direction.mobile
-            setLayout({ direction })
-          }}
-        />
-        <NumberRow
-          label={`Gap between columns (${device}, px)`}
-          value={layout.gap?.[device]}
-          min={0}
-          onChange={(v) => setForDevice('gap', v)}
-        />
-        <CheckRow
-          label="Wrap columns onto new rows"
-          checked={layout.wrap !== false}
-          onChange={(on) => setLayout({ wrap: on ? undefined : false })}
-        />
-        <SelectRow
-          label="Justify (along the row)"
-          value={layout.justify || ''}
-          options={[
-            { label: 'Start (default)', value: '' },
-            { label: 'Centre', value: 'center' },
-            { label: 'End', value: 'end' },
-            { label: 'Space between', value: 'between' },
-            { label: 'Space around', value: 'around' },
-            { label: 'Space evenly', value: 'evenly' },
-          ]}
-          onChange={(v) => setLayout({ justify: (v || undefined) as SectionLayout['justify'] })}
-        />
-        <SelectRow
-          label="Align items"
-          value={layout.alignItems || ''}
-          options={[
-            { label: 'Top (default)', value: '' },
-            { label: 'Centre', value: 'center' },
-            { label: 'Bottom', value: 'end' },
-            { label: 'Stretch (equal height)', value: 'stretch' },
-          ]}
-          onChange={(v) => setLayout({ alignItems: (v || undefined) as SectionLayout['alignItems'] })}
-        />
+        {columns.map((column, index) => {
+          const width = currentWidth(column)
+          const isCustom = width && width.unit !== 'fraction' && width.unit !== 'auto' && width.unit !== 'fill'
+          return (
+            <div className="ve-col-row" key={column._id || index}>
+              <span className="ve-col-row__num">{index + 1}</span>
+              <select
+                value={
+                  width
+                    ? width.unit === 'fraction'
+                      ? String(width.value)
+                      : width.unit === 'auto' || width.unit === 'fill'
+                        ? width.unit
+                        : 'custom'
+                    : 'inherit'
+                }
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === 'inherit') return setWidth(index, undefined)
+                  if (v === 'auto' || v === 'fill') return setWidth(index, { value: 0, unit: v })
+                  if (v === 'custom') return setWidth(index, { value: 50, unit: 'percent' })
+                  setWidth(index, { value: Number(v), unit: 'fraction' })
+                }}
+                aria-label={`Column ${index + 1} width (${device})`}
+              >
+                {device !== 'desktop' && <option value="inherit">Inherited from {from}</option>}
+                {COLUMN_WIDTH_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+                <option value="auto">Fit content (auto)</option>
+                <option value="fill">Fill the leftover space</option>
+                <option value="custom">Custom size&#8230;</option>
+              </select>
+              {isCustom && width && (
+                <span className="ve-col-row__custom">
+                  <input
+                    type="number"
+                    min={0}
+                    value={width.value}
+                    onChange={(e) => setWidth(index, { ...width, value: Number(e.target.value) })}
+                    aria-label={`Column ${index + 1} custom width value`}
+                  />
+                  <select
+                    value={width.unit}
+                    onChange={(e) => setWidth(index, { ...width, unit: e.target.value as ColumnWidthUnit })}
+                    aria-label={`Column ${index + 1} custom width unit`}
+                  >
+                    <option value="percent">%</option>
+                    <option value="px">px</option>
+                  </select>
+                </span>
+              )}
+              {onSelectColumn && (
+                <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onSelectColumn(index)} title="Open this column's settings">
+                  Edit
+                </button>
+              )}
+              <button
+                type="button"
+                className="ve-icon-btn"
+                onClick={() => removeColumn(index)}
+                disabled={!canEditLayout}
+                aria-label={`Remove column ${index + 1}`}
+                title={canEditLayout ? 'Remove column' : 'You cannot modify layout'}
+              >
+                &#10005;
+              </button>
+            </div>
+          )
+        })}
+
+        <button type="button" className="ve-btn ve-btn--ghost" onClick={addColumn} disabled={!canEditLayout}>
+          + Add column
+        </button>
+      </Accordion>
+
+      <Accordion title="Section" defaultOpen>
         <SelectRow
           label="Content width"
+          help="Boxed keeps the columns in a centred column of the page; full lets them use the whole width."
           value={layout.contentWidth || 'full'}
           options={[
             { label: 'Full (fill the page area)', value: 'full' },
@@ -348,166 +381,116 @@ const SectionLayoutFields: React.FC<{
         {layout.contentWidth === 'boxed' && (
           <NumberRow label="Boxed width (px)" value={layout.boxedWidth} min={200} onChange={(v) => setLayout({ boxedWidth: v })} />
         )}
+        <CheckRow
+          label="Stretch section"
+          help="Lets the section's background run edge to edge of the page, even when the content above is boxed."
+          checked={design.width === 'full'}
+          onChange={(on) => {
+            const updated: BlockStyle = { ...design }
+            if (on) updated.width = 'full'
+            else delete updated.width
+            onDesignChange?.(updated)
+          }}
+        />
+        <SelectRow
+          label="Columns gap"
+          help="The space between columns (and between rows once they wrap)."
+          resp={{ device, overridden: device !== 'desktop' && gapNow !== undefined, onReset: () => setForDevice('gap', undefined) }}
+          value={gapMode}
+          options={[
+            { label: inheritedFirst('Default (24px)'), value: '' },
+            { label: 'No gap', value: 'none' },
+            { label: 'Narrow (10px)', value: 'narrow' },
+            { label: 'Wide (40px)', value: 'wide' },
+            { label: 'Custom', value: 'custom' },
+          ]}
+          onChange={(v) => {
+            if (v === '') setForDevice('gap', undefined)
+            else if (v === 'custom') setForDevice('gap', gapNow !== undefined && gapMode === 'custom' ? gapNow : 20)
+            else setForDevice('gap', GAP_PRESETS[v])
+          }}
+        />
+        {gapMode === 'custom' && (
+          <NumberRow label="Gap (px)" value={gapNow} min={0} onChange={(v) => setForDevice('gap', v)} />
+        )}
+        <HeightRows ctl={ctl} />
+        <SelectRow
+          label="Vertical align"
+          help="Where the columns sit when the section is taller than they are (set a Height above)."
+          value={layout.verticalAlign || ''}
+          options={[
+            { label: 'Top (default)', value: '' },
+            { label: 'Middle', value: 'middle' },
+            { label: 'Bottom', value: 'bottom' },
+          ]}
+          onChange={(v) => setLayout({ verticalAlign: (v || undefined) as SectionLayout['verticalAlign'] })}
+        />
       </Accordion>
 
-      <div className="ve-col-presets" role="group" aria-label="Column presets">
-        {COLUMN_PRESETS.map((preset) => (
-          <button
-            key={preset.label}
-            type="button"
-            className="ve-btn ve-btn--ghost"
-            disabled={!canEditLayout}
-            onClick={() => applyPreset(preset.widths)}
-            title={`Use ${preset.label} columns`}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-
-      {columns.length === 0 && <p className="ve-panel__empty">No columns yet - add one below.</p>}
-
-      {columns.map((column, index) => {
-        const width = currentWidth(column)
-        const isCustom = width && width.unit !== 'fraction' && width.unit !== 'auto' && width.unit !== 'fill'
-
-        const colLayout = parseColumnLayout(column.layout) || {}
-        const orderValue = colLayout.order?.[device as LayoutDevice]
-        return (
-          <React.Fragment key={column._id || index}>
-          <div className="ve-col-row">
-            <span className="ve-col-row__num">{index + 1}</span>
-            <select
-              value={
-                width
-                  ? width.unit === 'fraction'
-                    ? String(width.value)
-                    : width.unit === 'auto' || width.unit === 'fill'
-                      ? width.unit
-                      : 'custom'
-                  : 'inherit'
-              }
-              onChange={(e) => {
-                const v = e.target.value
-                if (v === 'inherit') return setWidth(index, undefined)
-                if (v === 'auto' || v === 'fill') return setWidth(index, { value: 0, unit: v })
-                if (v === 'custom') return setWidth(index, { value: isCustom && width!.unit !== 'auto' && width!.unit !== 'fill' ? width!.value : 50, unit: 'px' })
-                setWidth(index, { value: Number(v), unit: 'fraction' })
-              }}
-              aria-label={`Column ${index + 1} width (${device})`}
-            >
-              {device !== 'desktop' && (
-                <option value="inherit">Match {device === 'tablet' ? 'desktop' : 'tablet'}</option>
-              )}
-              {COLUMN_WIDTH_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-              <option value="auto">Auto (fit content)</option>
-              <option value="fill">Fill (take remaining space)</option>
-              <option value="custom">Custom size&#8230;</option>
-            </select>
-            {isCustom && width && (
-              <span className="ve-col-row__custom">
-                <input
-                  type="number"
-                  min={0}
-                  value={width.value}
-                  onChange={(e) => setWidth(index, { ...width, value: Number(e.target.value) })}
-                  aria-label={`Column ${index + 1} custom width value`}
-                />
-                <select
-                  value={width.unit}
-                  onChange={(e) => setWidth(index, { ...width, unit: e.target.value as ColumnWidthUnit })}
-                  aria-label={`Column ${index + 1} custom width unit`}
-                >
-                  <option value="px">px</option>
-                  <option value="percent">%</option>
-                </select>
-              </span>
-            )}
-            <button
-              type="button"
-              className="ve-icon-btn"
-              onClick={() => removeColumn(index)}
-              disabled={!canEditLayout}
-              aria-label={`Remove column ${index + 1}`}
-              title={canEditLayout ? "Remove column" : "You cannot modify layout"}
-            >
-              &#10005;
-            </button>
-            <button
-              type="button"
-              className="ve-btn ve-btn--ghost"
-              aria-expanded={openColumn === index}
-              onClick={() => setOpenColumn(openColumn === index ? null : index)}
-            >
-              Column layout
-            </button>
-          </div>
-          {openColumn === index && (
-            <Accordion title={`Column ${index + 1} layout`} defaultOpen>
-              <NumberRow
-                label={`Order (${device})`}
-                value={orderValue}
-                onChange={(v) => {
-                  const order = { ...(colLayout.order || {}) } as Record<string, number>
-                  if (v === undefined) delete order[device]
-                  else order[device] = v
-                  setColumnLayout(index, { order })
-                }}
-              />
-              <NumberRow label="Grow" value={colLayout.grow} min={0} onChange={(v) => setColumnLayout(index, { grow: v })} />
-              <NumberRow label="Shrink" value={colLayout.shrink} min={0} onChange={(v) => setColumnLayout(index, { shrink: v })} />
-              <SelectRow
-                label="Align self"
-                value={colLayout.alignSelf || ''}
-                options={[
-                  { label: 'Default', value: '' },
-                  { label: 'Stretch', value: 'stretch' },
-                  { label: 'Start', value: 'start' },
-                  { label: 'Centre', value: 'center' },
-                  { label: 'End', value: 'end' },
-                ]}
-                onChange={(v) => setColumnLayout(index, { alignSelf: (v || undefined) as ColumnLayout['alignSelf'] })}
-              />
-              <NumberRow label="Minimum width (px)" value={colLayout.minWidth} min={0} onChange={(v) => setColumnLayout(index, { minWidth: v })} />
-              <SelectRow
-                label="Content vertical alignment"
-                value={colLayout.vAlign || ''}
-                options={[
-                  { label: 'Default', value: '' },
-                  { label: 'Top', value: 'top' },
-                  { label: 'Middle', value: 'middle' },
-                  { label: 'Bottom', value: 'bottom' },
-                  { label: 'Space between', value: 'between' },
-                ]}
-                onChange={(v) => setColumnLayout(index, { vAlign: (v || undefined) as ColumnLayout['vAlign'] })}
-              />
-              {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
-                <NumberRow
-                  key={side}
-                  label={`Padding ${side} (px)`}
-                  value={colLayout.padding?.[side]}
-                  min={0}
-                  onChange={(v) => {
-                    const padding = { ...(colLayout.padding || {}) }
-                    if (v === undefined) delete padding[side]
-                    else padding[side] = v
-                    setColumnLayout(index, { padding })
-                  }}
-                />
-              ))}
-            </Accordion>
-          )}
-          </React.Fragment>
-        )
-      })}
-
-      <button type="button" className="ve-btn ve-btn--ghost" onClick={addColumn} disabled={!canEditLayout}>
-        + Add column
-      </button>
+      <Accordion title="Flow" defaultOpen={device !== 'desktop'}>
+        <SelectRow
+          label="Columns flow"
+          help="Stacked puts the columns one under another instead of side by side."
+          resp={{ device, overridden: device !== 'desktop' && directionNow !== '', onReset: () => setForDevice('direction', undefined) }}
+          value={directionNow}
+          options={[
+            { label: device === 'desktop' ? 'Side by side (default)' : `Inherited from ${from} (${directionLabels[device === 'tablet' ? (layout.direction?.desktop || 'row') : (layout.direction?.tablet || layout.direction?.desktop || 'row')]})`, value: '' },
+            { label: 'Side by side', value: 'row' },
+            { label: 'Side by side, reversed', value: 'row-reverse' },
+            { label: 'Stacked (top to bottom)', value: 'column' },
+            { label: 'Stacked, bottom to top', value: 'column-reverse' },
+          ]}
+          onChange={(v) => setForDevice('direction', v || undefined)}
+        />
+        <CheckRow
+          label="Stack on mobile"
+          help="Quick switch: put the columns one under another on phones."
+          checked={layout.direction?.mobile === 'column'}
+          onChange={(on) => {
+            const direction = { ...(layout.direction || {}) }
+            if (on) direction.mobile = 'column'
+            else delete direction.mobile
+            setLayout({ direction })
+          }}
+        />
+        <SelectRow
+          label="Wrap columns onto new rows"
+          resp={flowResp('wrap')}
+          value={wrapNow === undefined ? '' : wrapNow === false ? 'nowrap' : 'wrap'}
+          options={[
+            { label: inheritedFirst('Wrap (default)'), value: '' },
+            { label: 'Wrap', value: 'wrap' },
+            { label: 'Keep on one line', value: 'nowrap' },
+          ]}
+          onChange={(v) => flowSet('wrap', v === '' ? undefined : v === 'wrap')}
+        />
+        <SelectRow
+          label="Justify (along the row)"
+          resp={flowResp('justify')}
+          value={flowGet('justify') || ''}
+          options={[
+            { label: inheritedFirst('Start (default)'), value: '' },
+            { label: 'Centre', value: 'center' },
+            { label: 'End', value: 'end' },
+            { label: 'Space between', value: 'between' },
+            { label: 'Space around', value: 'around' },
+            { label: 'Space evenly', value: 'evenly' },
+          ]}
+          onChange={(v) => flowSet('justify', (v || undefined) as DeviceFlow['justify'])}
+        />
+        <SelectRow
+          label="Align items"
+          resp={flowResp('alignItems')}
+          value={flowGet('alignItems') || ''}
+          options={[
+            { label: inheritedFirst('Top (default)'), value: '' },
+            { label: 'Centre', value: 'center' },
+            { label: 'Bottom', value: 'end' },
+            { label: 'Stretch (equal height)', value: 'stretch' },
+          ]}
+          onChange={(v) => flowSet('alignItems', (v || undefined) as DeviceFlow['alignItems'])}
+        />
+      </Accordion>
     </div>
   )
 }

@@ -1,15 +1,13 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { BLOCK_CATEGORIES, libraryCards, type BlockDef } from './blockSchemas'
-import { TEMPLATE_PRESETS } from './templatePresets'
+import { TemplateBrowser } from './TemplateBrowser'
 
 type Source = 'blocks' | 'templates'
-
-type PageTemplateDoc = { id: number | string; name?: string | null; blocks?: SectionNode[] }
 
 /**
  * The Elements tab of the editor dock (src/views/VisualEditor.tsx renders it
@@ -19,8 +17,7 @@ type PageTemplateDoc = { id: number | string; name?: string | null; blocks?: Sec
  *
  * Two sources, picked with the pill tabs at the top: raw Blocks (search +
  * category, same as before) and Templates - either a curated multi-block
- * starter (templatePresets.ts) or a real saved Page Template, fetched from
- * the Page Templates collection. Both insert at whatever target the caller
+ * starter (templatePresets.ts) or a saved Page Template or a repository template (see TemplateBrowser.tsx). Both insert at whatever target the caller
  * is tracking (see `targetLabel`, set by whichever "+" was clicked).
  */
 export const ElementLibrary: React.FC<{
@@ -156,84 +153,9 @@ export const ElementLibrary: React.FC<{
             })}
           </>
         ) : (
-          <TemplateSource onPickTemplate={onPickTemplate} />
+          <TemplateBrowser onPickTemplate={onPickTemplate} />
         )}
       </div>
     </div>
-  )
-}
-
-const TemplateSource: React.FC<{ onPickTemplate: (blocks: SectionNode[]) => void }> = ({ onPickTemplate }) => {
-  const [docs, setDocs] = useState<PageTemplateDoc[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/page-templates?limit=50&depth=0', { credentials: 'include' })
-      .then((res) => {
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-        return res.json()
-      })
-      .then((json: { docs?: PageTemplateDoc[] }) => {
-        if (!cancelled) setDocs(json?.docs || [])
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String((err as Error)?.message || err))
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return (
-    <>
-      <div className="ve-library__group">
-        <h4 className="ve-library__group-title">Starter layouts</h4>
-        <div className="ve-template-grid">
-          {TEMPLATE_PRESETS.map((preset) => (
-            <button
-              key={preset.slug}
-              type="button"
-              className="ve-template-card"
-              onClick={() => onPickTemplate(preset.blocks())}
-            >
-              <span className="ve-template-card__name">{preset.name}</span>
-              <span className="ve-template-card__desc">{preset.description}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="ve-library__group">
-        <h4 className="ve-library__group-title">Your page templates</h4>
-        {error && <p className="ve-library__empty">Couldn&apos;t load page templates: {error}</p>}
-        {!error && docs === null && <p className="ve-library__empty">Loading…</p>}
-        {!error && docs !== null && docs.length === 0 && (
-          <p className="ve-library__empty">
-            No page templates yet - build one under Content {'>'} Page Templates, then it shows up here.
-          </p>
-        )}
-        {!error && docs && docs.length > 0 && (
-          <div className="ve-template-grid">
-            {docs.map((doc) => (
-              <button
-                key={doc.id}
-                type="button"
-                className="ve-template-card"
-                onClick={() => onPickTemplate(Array.isArray(doc.blocks) ? doc.blocks : [])}
-                disabled={!Array.isArray(doc.blocks) || doc.blocks.length === 0}
-              >
-                <span className="ve-template-card__name">{doc.name || 'Untitled'}</span>
-                <span className="ve-template-card__desc">
-                  {Array.isArray(doc.blocks) && doc.blocks.length > 0
-                    ? `${doc.blocks.length} block${doc.blocks.length === 1 ? '' : 's'}`
-                    : 'Empty template'}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </>
   )
 }

@@ -566,32 +566,45 @@ a {
    breakpoint with no explicit override falls back to the one above it via
    the var()-fallback chain below, so a column only needs to be set at the
    size where it should actually change. */
-.be-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-items: flex-start;
+/* BEGIN generated section layout (src/lib/sectionLayout.ts sectionLayoutCss; a test keeps this in sync).
+   Percent columns subtract their share of the gap so two 50% columns sit side by side instead of
+   wrapping; direction / wrap / gap / order are per device via data-dir-* attributes and custom
+   properties. Breakpoints match the 900/600 widths used elsewhere on the site. */
+.be-section { --be-gap-d:initial;--be-gap-t:initial;--be-gap-m:initial;--be-boxed:initial;--be-gap:var(--be-gap-d,24px);display:flex;flex-wrap:wrap;gap:var(--be-gap);align-items:flex-start; }
+.be-section[data-nowrap] { flex-wrap:nowrap; }
+.be-section--boxed { width:100%;max-width:var(--be-boxed,var(--max-width,1200px));margin-left:auto;margin-right:auto; }
+.be-column { --be-col-d:initial;--be-col-t:initial;--be-col-m:initial;--be-col-d-b:initial;--be-col-t-b:initial;--be-col-m-b:initial;--be-col-d-g:initial;--be-col-t-g:initial;--be-col-m-g:initial;--be-col-grow:initial;--be-col-shrink:initial;--be-col-order-d:initial;--be-col-order-t:initial;--be-col-order-m:initial;min-width:0;flex-grow:var(--be-col-grow,var(--be-col-d-g,0));flex-shrink:var(--be-col-shrink,1);flex-basis:var(--be-col-d-b,var(--be-col-d,100%));order:var(--be-col-order-d,0); }
+.be-section[data-dir-d="row"] { flex-direction:row; }
+.be-section[data-dir-d="row-reverse"] { flex-direction:row-reverse; }
+.be-section[data-dir-d="column"] { flex-direction:column; }
+.be-section[data-dir-d="column"]>.be-column { flex-basis:auto;flex-grow:0;width:100%; }
+.be-section[data-dir-d="column-reverse"] { flex-direction:column-reverse; }
+.be-section[data-dir-d="column-reverse"]>.be-column { flex-basis:auto;flex-grow:0;width:100%; }
+@media (max-width:900px) {
+  .be-section { --be-gap:var(--be-gap-t,var(--be-gap-d,24px)); }
+  .be-column { flex-basis:var(--be-col-t-b,var(--be-col-t,var(--be-col-d-b,var(--be-col-d,100%))));flex-grow:var(--be-col-grow,var(--be-col-t-g,var(--be-col-d-g,0)));order:var(--be-col-order-t,var(--be-col-order-d,0)); }
+  .be-section[data-dir-t="row"] { flex-direction:row; }
+  .be-section[data-dir-t="row"]>.be-column { flex-basis:var(--be-col-t-b,var(--be-col-t,var(--be-col-d-b,var(--be-col-d,100%))));flex-grow:var(--be-col-grow,var(--be-col-t-g,var(--be-col-d-g,0)));width:auto; }
+  .be-section[data-dir-t="row-reverse"] { flex-direction:row-reverse; }
+  .be-section[data-dir-t="row-reverse"]>.be-column { flex-basis:var(--be-col-t-b,var(--be-col-t,var(--be-col-d-b,var(--be-col-d,100%))));flex-grow:var(--be-col-grow,var(--be-col-t-g,var(--be-col-d-g,0)));width:auto; }
+  .be-section[data-dir-t="column"] { flex-direction:column; }
+  .be-section[data-dir-t="column"]>.be-column { flex-basis:auto;flex-grow:0;width:100%; }
+  .be-section[data-dir-t="column-reverse"] { flex-direction:column-reverse; }
+  .be-section[data-dir-t="column-reverse"]>.be-column { flex-basis:auto;flex-grow:0;width:100%; }
 }
-
-.be-column {
-  min-width: 0;
-  flex: 1 1 var(--be-col-d, 100%);
-  max-width: var(--be-col-d, 100%);
+@media (max-width:600px) {
+  .be-section { --be-gap:var(--be-gap-m,var(--be-gap-t,var(--be-gap-d,24px))); }
+  .be-column { flex-basis:var(--be-col-m-b,var(--be-col-m,var(--be-col-t-b,var(--be-col-t,var(--be-col-d-b,var(--be-col-d,100%))))));flex-grow:var(--be-col-grow,var(--be-col-m-g,var(--be-col-t-g,var(--be-col-d-g,0))));order:var(--be-col-order-m,var(--be-col-order-t,var(--be-col-order-d,0))); }
+  .be-section[data-dir-m="row"] { flex-direction:row; }
+  .be-section[data-dir-m="row"]>.be-column { flex-basis:var(--be-col-m-b,var(--be-col-m,var(--be-col-t-b,var(--be-col-t,var(--be-col-d-b,var(--be-col-d,100%))))));flex-grow:var(--be-col-grow,var(--be-col-m-g,var(--be-col-t-g,var(--be-col-d-g,0))));width:auto; }
+  .be-section[data-dir-m="row-reverse"] { flex-direction:row-reverse; }
+  .be-section[data-dir-m="row-reverse"]>.be-column { flex-basis:var(--be-col-m-b,var(--be-col-m,var(--be-col-t-b,var(--be-col-t,var(--be-col-d-b,var(--be-col-d,100%))))));flex-grow:var(--be-col-grow,var(--be-col-m-g,var(--be-col-t-g,var(--be-col-d-g,0))));width:auto; }
+  .be-section[data-dir-m="column"] { flex-direction:column; }
+  .be-section[data-dir-m="column"]>.be-column { flex-basis:auto;flex-grow:0;width:100%; }
+  .be-section[data-dir-m="column-reverse"] { flex-direction:column-reverse; }
+  .be-section[data-dir-m="column-reverse"]>.be-column { flex-basis:auto;flex-grow:0;width:100%; }
 }
-
-@media (max-width: 900px) {
-  .be-column {
-    flex-basis: var(--be-col-t, var(--be-col-d, 100%));
-    max-width: var(--be-col-t, var(--be-col-d, 100%));
-  }
-}
-
-@media (max-width: 600px) {
-  .be-column {
-    flex-basis: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
-    max-width: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
-  }
-}
+/* END generated section layout */
 
 /* Loop grid */
 .be-loop-grid {

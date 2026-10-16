@@ -147,6 +147,81 @@ export function reorderWithin(
   return updateColumn(blocks, containerPath, (column) => ({ ...column, blocks: move(column.blocks || []) }))
 }
 
+/** The block list for a container path ([] = the page, otherwise a column path), or undefined if it no longer resolves. */
+export function getList(blocks: SectionNode[], containerPath: NodePath): SectionNode[] | undefined {
+  if (containerPath.length === 0) return blocks
+  if (!isColumnPath(containerPath)) return undefined
+  const owner = getNode(blocks, containerPath.slice(0, -1))
+  const column = owner?.columns?.[containerPath[containerPath.length - 1]]
+  return column ? column.blocks || [] : undefined
+}
+
+type MovePlan = { container: NodePath; index: number }
+
+/**
+ * Where a move lands once the node has been taken out of its old spot, or null when the move is
+ * refused (bad paths, into itself or a descendant) or changes nothing. `toIndex` is a slot
+ * position in the target list as it is BEFORE the move (the same numbers the canvas insert slots use).
+ */
+function planMove(blocks: SectionNode[], fromPath: NodePath, toContainerPath: NodePath, toIndex: number): MovePlan | null {
+  if (fromPath.length === 0 || fromPath.length % 2 === 0) return null
+  if (toContainerPath.length % 2 !== 0) return null
+  if (!getNode(blocks, fromPath)) return null
+  // A node cannot be dropped inside itself: its own column paths start with its path.
+  if (toContainerPath.length >= fromPath.length && fromPath.every((v, i) => toContainerPath[i] === v)) return null
+
+  const fromContainer = fromPath.slice(0, -1)
+  const k = fromPath[fromPath.length - 1]
+  let container = toContainerPath
+  let index = toIndex
+
+  const same = fromContainer.length === toContainerPath.length && fromContainer.every((v, i) => toContainerPath[i] === v)
+  if (same) {
+    if (index > k) index -= 1
+  } else if (
+    toContainerPath.length > fromContainer.length &&
+    fromContainer.every((v, i) => toContainerPath[i] === v) &&
+    toContainerPath[fromContainer.length] > k
+  ) {
+    // The old list loses an entry in front of the target branch, so its index shifts down by one.
+    container = toContainerPath.map((v, i) => (i === fromContainer.length ? v - 1 : v))
+  }
+
+  const remaining = getList(updateNode(blocks, fromPath, () => null), container)
+  if (!remaining) return null
+  index = Math.max(0, Math.min(index, remaining.length))
+  if (same && index === k) return null
+  return { container, index }
+}
+
+/**
+ * Moves the block at `fromPath` into the list `toContainerPath` at slot `toIndex` (numbered as
+ * before the move). Works within one list, between columns and across nesting levels. Returns
+ * `blocks` unchanged when refused (into itself/a descendant, unresolved path) or a no-op.
+ */
+export function moveNode(
+  blocks: SectionNode[],
+  fromPath: NodePath,
+  toContainerPath: NodePath,
+  toIndex: number,
+): SectionNode[] {
+  const plan = planMove(blocks, fromPath, toContainerPath, toIndex)
+  const node = getNode(blocks, fromPath)
+  if (!plan || !node) return blocks
+  return insertNode(updateNode(blocks, fromPath, () => null), plan.container, plan.index, node)
+}
+
+/** Where the block ends up after moveNode with the same arguments, or null if that move does nothing. */
+export function movedNodePath(
+  blocks: SectionNode[],
+  fromPath: NodePath,
+  toContainerPath: NodePath,
+  toIndex: number,
+): NodePath | null {
+  const plan = planMove(blocks, fromPath, toContainerPath, toIndex)
+  return plan ? [...plan.container, plan.index] : null
+}
+
 /** Path of the list a block lives in, and its index within that list. */
 export function splitPath(path: NodePath): { containerPath: NodePath; index: number } {
   return { containerPath: path.slice(0, -1), index: path[path.length - 1] }

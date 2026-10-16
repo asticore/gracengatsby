@@ -13,7 +13,15 @@ import {
 } from '@/lib/sectionTree'
 
 import type { BlockDef, EditorField } from './blockSchemas'
-import { DesignPanel } from './DesignPanel'
+import {
+  parseColumnLayout,
+  parseSectionLayout,
+  type ColumnLayout,
+  type LayoutDevice,
+  type SectionLayout,
+} from '@/lib/sectionLayout'
+
+import { Accordion, CheckRow, DesignPanel, NumberRow, SelectRow } from './DesignPanel'
 import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical, RICH_TEXT_NOTICE } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
@@ -87,6 +95,8 @@ export const FieldPanel: React.FC<{
               <SectionLayoutFields
                 columns={parseColumns(data.columns)}
                 onChange={(columns) => setField('columns', columns)}
+                design={asBlockStyle(data.design)}
+                onDesignChange={(next) => setField('design', next)}
                 canEditLayout={userPermissions?.canEditLayout !== false}
               />
             </fieldset>
@@ -163,10 +173,45 @@ const WIDTH_KEY: Record<WidthDevice, 'widthDesktop' | 'widthTablet' | 'widthMobi
 const SectionLayoutFields: React.FC<{
   columns: SectionColumn[]
   onChange: (columns: SectionColumn[]) => void
+  design?: BlockStyle
+  onDesignChange?: (design: BlockStyle) => void
   canEditLayout?: boolean
-}> = ({ columns, onChange, canEditLayout = true }) => {
+}> = ({ columns, onChange, design = {}, onDesignChange, canEditLayout = true }) => {
   const [device, setDevice] = useState<WidthDevice>('desktop')
+  const [openColumn, setOpenColumn] = useState<number | null>(null)
   const widthKey = WIDTH_KEY[device]
+  const layout = parseSectionLayout(design.layout) || {}
+
+  const setLayout = (patch: Partial<SectionLayout>) => {
+    const next: Record<string, unknown> = { ...layout, ...patch }
+    for (const key of Object.keys(next)) {
+      const v = next[key]
+      if (v === undefined || (v && typeof v === 'object' && Object.keys(v).length === 0)) delete next[key]
+    }
+    const updated: BlockStyle = { ...design }
+    if (Object.keys(next).length > 0) updated.layout = next as SectionLayout
+    else delete updated.layout
+    onDesignChange?.(updated)
+  }
+  const setForDevice = (key: 'direction' | 'gap', value: unknown) => {
+    const current = { ...((layout[key] as Record<string, unknown> | undefined) || {}) }
+    if (value === undefined) delete current[device]
+    else current[device] = value
+    setLayout({ [key]: current } as Partial<SectionLayout>)
+  }
+  const setColumnLayout = (index: number, patch: Partial<ColumnLayout>) => {
+    onChange(
+      columns.map((column, i) => {
+        if (i !== index) return column
+        const next: Record<string, unknown> = { ...(column.layout || {}), ...patch }
+        for (const key of Object.keys(next)) {
+          const v = next[key]
+          if (v === undefined || (v && typeof v === 'object' && Object.keys(v as object).length === 0)) delete next[key]
+        }
+        return { ...column, layout: Object.keys(next).length > 0 ? (next as ColumnLayout) : undefined }
+      }),
+    )
+  }
 
   const currentWidth = (column: SectionColumn): ResponsiveColumnWidth | undefined =>
     device === 'desktop' ? (column.widthDesktop ?? { value: column.width ?? 12, unit: 'fraction' }) : column[widthKey]
@@ -233,6 +278,78 @@ const SectionLayoutFields: React.FC<{
         </p>
       )}
 
+      <Accordion title="Layout settings" defaultOpen>
+        <SelectRow
+          label={`Direction (${device})`}
+          value={layout.direction?.[device] || ''}
+          options={[
+            { label: device === 'desktop' ? 'Left to right (default)' : `Match ${device === 'tablet' ? 'desktop' : 'tablet'}`, value: '' },
+            { label: 'Left to right', value: 'row' },
+            { label: 'Right to left', value: 'row-reverse' },
+            { label: 'Stacked (top to bottom)', value: 'column' },
+            { label: 'Stacked, bottom to top', value: 'column-reverse' },
+          ]}
+          onChange={(v) => setForDevice('direction', v || undefined)}
+        />
+        <CheckRow
+          label="Stack on mobile"
+          checked={layout.direction?.mobile === 'column'}
+          onChange={(on) => {
+            const direction = { ...(layout.direction || {}) }
+            if (on) direction.mobile = 'column'
+            else delete direction.mobile
+            setLayout({ direction })
+          }}
+        />
+        <NumberRow
+          label={`Gap between columns (${device}, px)`}
+          value={layout.gap?.[device]}
+          min={0}
+          onChange={(v) => setForDevice('gap', v)}
+        />
+        <CheckRow
+          label="Wrap columns onto new rows"
+          checked={layout.wrap !== false}
+          onChange={(on) => setLayout({ wrap: on ? undefined : false })}
+        />
+        <SelectRow
+          label="Justify (along the row)"
+          value={layout.justify || ''}
+          options={[
+            { label: 'Start (default)', value: '' },
+            { label: 'Centre', value: 'center' },
+            { label: 'End', value: 'end' },
+            { label: 'Space between', value: 'between' },
+            { label: 'Space around', value: 'around' },
+            { label: 'Space evenly', value: 'evenly' },
+          ]}
+          onChange={(v) => setLayout({ justify: (v || undefined) as SectionLayout['justify'] })}
+        />
+        <SelectRow
+          label="Align items"
+          value={layout.alignItems || ''}
+          options={[
+            { label: 'Top (default)', value: '' },
+            { label: 'Centre', value: 'center' },
+            { label: 'Bottom', value: 'end' },
+            { label: 'Stretch (equal height)', value: 'stretch' },
+          ]}
+          onChange={(v) => setLayout({ alignItems: (v || undefined) as SectionLayout['alignItems'] })}
+        />
+        <SelectRow
+          label="Content width"
+          value={layout.contentWidth || 'full'}
+          options={[
+            { label: 'Full (fill the page area)', value: 'full' },
+            { label: 'Boxed', value: 'boxed' },
+          ]}
+          onChange={(v) => setLayout({ contentWidth: v === 'boxed' ? 'boxed' : undefined, boxedWidth: v === 'boxed' ? layout.boxedWidth : undefined })}
+        />
+        {layout.contentWidth === 'boxed' && (
+          <NumberRow label="Boxed width (px)" value={layout.boxedWidth} min={200} onChange={(v) => setLayout({ boxedWidth: v })} />
+        )}
+      </Accordion>
+
       <div className="ve-col-presets" role="group" aria-label="Column presets">
         {COLUMN_PRESETS.map((preset) => (
           <button
@@ -252,17 +369,29 @@ const SectionLayoutFields: React.FC<{
 
       {columns.map((column, index) => {
         const width = currentWidth(column)
-        const isCustom = width && width.unit !== 'fraction'
+        const isCustom = width && width.unit !== 'fraction' && width.unit !== 'auto' && width.unit !== 'fill'
 
+        const colLayout = parseColumnLayout(column.layout) || {}
+        const orderValue = colLayout.order?.[device as LayoutDevice]
         return (
-          <div className="ve-col-row" key={column._id || index}>
+          <React.Fragment key={column._id || index}>
+          <div className="ve-col-row">
             <span className="ve-col-row__num">{index + 1}</span>
             <select
-              value={width ? (width.unit === 'fraction' ? String(width.value) : 'custom') : 'inherit'}
+              value={
+                width
+                  ? width.unit === 'fraction'
+                    ? String(width.value)
+                    : width.unit === 'auto' || width.unit === 'fill'
+                      ? width.unit
+                      : 'custom'
+                  : 'inherit'
+              }
               onChange={(e) => {
                 const v = e.target.value
                 if (v === 'inherit') return setWidth(index, undefined)
-                if (v === 'custom') return setWidth(index, { value: isCustom ? width!.value : 50, unit: 'px' })
+                if (v === 'auto' || v === 'fill') return setWidth(index, { value: 0, unit: v })
+                if (v === 'custom') return setWidth(index, { value: isCustom && width!.unit !== 'auto' && width!.unit !== 'fill' ? width!.value : 50, unit: 'px' })
                 setWidth(index, { value: Number(v), unit: 'fraction' })
               }}
               aria-label={`Column ${index + 1} width (${device})`}
@@ -275,6 +404,8 @@ const SectionLayoutFields: React.FC<{
                   {option.label}
                 </option>
               ))}
+              <option value="auto">Auto (fit content)</option>
+              <option value="fill">Fill (take remaining space)</option>
               <option value="custom">Custom size&#8230;</option>
             </select>
             {isCustom && width && (
@@ -306,7 +437,71 @@ const SectionLayoutFields: React.FC<{
             >
               &#10005;
             </button>
+            <button
+              type="button"
+              className="ve-btn ve-btn--ghost"
+              aria-expanded={openColumn === index}
+              onClick={() => setOpenColumn(openColumn === index ? null : index)}
+            >
+              Column layout
+            </button>
           </div>
+          {openColumn === index && (
+            <Accordion title={`Column ${index + 1} layout`} defaultOpen>
+              <NumberRow
+                label={`Order (${device})`}
+                value={orderValue}
+                onChange={(v) => {
+                  const order = { ...(colLayout.order || {}) } as Record<string, number>
+                  if (v === undefined) delete order[device]
+                  else order[device] = v
+                  setColumnLayout(index, { order })
+                }}
+              />
+              <NumberRow label="Grow" value={colLayout.grow} min={0} onChange={(v) => setColumnLayout(index, { grow: v })} />
+              <NumberRow label="Shrink" value={colLayout.shrink} min={0} onChange={(v) => setColumnLayout(index, { shrink: v })} />
+              <SelectRow
+                label="Align self"
+                value={colLayout.alignSelf || ''}
+                options={[
+                  { label: 'Default', value: '' },
+                  { label: 'Stretch', value: 'stretch' },
+                  { label: 'Start', value: 'start' },
+                  { label: 'Centre', value: 'center' },
+                  { label: 'End', value: 'end' },
+                ]}
+                onChange={(v) => setColumnLayout(index, { alignSelf: (v || undefined) as ColumnLayout['alignSelf'] })}
+              />
+              <NumberRow label="Minimum width (px)" value={colLayout.minWidth} min={0} onChange={(v) => setColumnLayout(index, { minWidth: v })} />
+              <SelectRow
+                label="Content vertical alignment"
+                value={colLayout.vAlign || ''}
+                options={[
+                  { label: 'Default', value: '' },
+                  { label: 'Top', value: 'top' },
+                  { label: 'Middle', value: 'middle' },
+                  { label: 'Bottom', value: 'bottom' },
+                  { label: 'Space between', value: 'between' },
+                ]}
+                onChange={(v) => setColumnLayout(index, { vAlign: (v || undefined) as ColumnLayout['vAlign'] })}
+              />
+              {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
+                <NumberRow
+                  key={side}
+                  label={`Padding ${side} (px)`}
+                  value={colLayout.padding?.[side]}
+                  min={0}
+                  onChange={(v) => {
+                    const padding = { ...(colLayout.padding || {}) }
+                    if (v === undefined) delete padding[side]
+                    else padding[side] = v
+                    setColumnLayout(index, { padding })
+                  }}
+                />
+              ))}
+            </Accordion>
+          )}
+          </React.Fragment>
         )
       })}
 
@@ -325,6 +520,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
   const [pickerOpen, setPickerOpen] = useState(false)
   const [fetchedThumb, setFetchedThumb] = useState<MediaThumb | null>(null)
   const [relOptions, setRelOptions] = useState<{ id: number; label: string }[]>([])
+  const [relLoaded, setRelLoaded] = useState(false)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
@@ -349,14 +545,15 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
     if (field.type === 'relationship' && field.relationTo) {
       fetch(`/api/${field.relationTo}?limit=200&depth=0`, { credentials: 'include' })
         .then((r) => r.json())
-        .then((data: { docs?: { id: number; title?: string; name?: string; question?: string }[] }) =>
+        .then((data: { docs?: { id: number; title?: string; name?: string; question?: string }[] }) => {
           setRelOptions(
             (data?.docs || []).map((d) => ({
               id: d.id,
               label: d.title || d.name || d.question || `#${d.id}`,
             })),
-          ),
-        )
+          )
+          setRelLoaded(true)
+        })
         .catch(() => {})
     }
   }, [field.type, field.relationTo])
@@ -547,7 +744,8 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
     case 'relationship': {
       // page-templates is a single-select (a loop has one card design); other
       // relationships on the canvas are multi-select lists.
-      const single = field.relationTo === 'page-templates' || field.relationTo === 'data-views'
+      const single = field.relationTo === 'page-templates' || field.relationTo === 'data-views' || field.relationTo === 'forms'
+      const emptyForms = field.relationTo === 'forms' && relLoaded && relOptions.length === 0
 
       if (single) {
         const current = typeof value === 'number' ? value : (value as { id?: number })?.id
@@ -565,7 +763,16 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
                 </option>
               ))}
             </select>
-            {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
+            {emptyForms ? (
+              <span className="ve-field__help ve-form-empty">
+                No form yet. Create one in Forms (Settings &gt; Forms) and pick it here.{' '}
+                <a href="/admin/collections/forms" target="_blank" rel="noreferrer">
+                  Open Forms
+                </a>
+              </span>
+            ) : (
+              field.helpText && <span className="ve-field__help">{field.helpText}</span>
+            )}
           </label>
         )
       }

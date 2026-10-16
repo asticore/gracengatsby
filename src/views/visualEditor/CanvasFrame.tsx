@@ -15,9 +15,10 @@ import {
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { CanvasNodeList, slotKey, type CanvasHandlers } from './Canvas'
-import type { FrameToParentMessage, ParentToFrameMessage } from './canvasBridge'
+import type { ColumnToParentMessage, FrameToParentMessage, ParentToFrameMessage } from './canvasBridge'
 import { CANVAS_ORIGIN, isBridgeMessage } from './canvasBridge'
 import { pathKey, type NodePath } from './treeOps'
+import { isEditableTarget, resolveShortcut } from './useEditorShortcuts'
 import { VISUAL_EDITOR_CSS } from './visualEditor.styles'
 
 /** Pointer must be within this many px of a valid insert slot for a drop to count. */
@@ -47,7 +48,7 @@ const nearestSlot: CollisionDetection = ({ droppableContainers, droppableRects, 
   return best ? [{ id: best.id, data: { droppableContainer: best.data, value: best.d } }] : []
 }
 
-const post = (message: FrameToParentMessage) => {
+const post = (message: FrameToParentMessage | ColumnToParentMessage) => {
   window.parent.postMessage(message, CANVAS_ORIGIN())
 }
 
@@ -99,6 +100,40 @@ export const CanvasFrame: React.FC = () => {
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
+  // Key presses in the frame never reach the parent document, so forward the ones the editor
+  // handles (not while typing in an editable element) for the parent's single shortcut handler.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return
+      const info = { key: event.key, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, alt: event.altKey }
+      if (!resolveShortcut(info)) return
+      // Keep the browser from acting too (bookmark on Ctrl+D, history on Backspace, page scroll on Alt+Arrow).
+      if (info.key !== 'Escape') event.preventDefault()
+      post({ source: 've-canvas', type: 'key', ...info })
+    }
+    const onContextMenu = (event: MouseEvent) => {
+      if (isEditableTarget(event.target)) return
+      const el = (event.target as HTMLElement | null)?.closest?.('[data-ve-node]')
+      if (!el) return
+      let path: unknown
+      try {
+        path = JSON.parse(el.getAttribute('data-ve-node') || 'null')
+      } catch {
+        return
+      }
+      if (!Array.isArray(path) || path.length === 0 || !path.every((n) => Number.isInteger(n))) return
+      event.preventDefault()
+      setSelectedPath(path as NodePath)
+      post({ source: 've-canvas', type: 'contextmenu', path: path as NodePath, x: event.clientX, y: event.clientY })
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('contextmenu', onContextMenu)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('contextmenu', onContextMenu)
+    }
+  }, [])
+
   const handlers: CanvasHandlers = {
     selectedKey: selectedPath ? pathKey(selectedPath) : null,
     locks,
@@ -120,6 +155,7 @@ export const CanvasFrame: React.FC = () => {
     onDelete: (path) => post({ source: 've-canvas', type: 'delete', path }),
     onDuplicate: (path) => post({ source: 've-canvas', type: 'duplicate', path }),
     onMove: (path, direction) => post({ source: 've-canvas', type: 'move', path, direction }),
+    onColumnOp: (path, op) => post({ source: 've-canvas', type: 'columnOp', path, op }),
   }
 
   const handleDragStart = (event: DragStartEvent) => {

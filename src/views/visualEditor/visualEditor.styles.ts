@@ -17,6 +17,16 @@
  * from whatever surface they sit on, which is themed to contrast that
  * surface already.
  */
+import { sectionLayoutCss } from '@/lib/sectionLayout'
+
+/** Canvas twin of the public site's section rules (same generator, so the editor floats columns the way the page will). */
+export const CANVAS_SECTION_LAYOUT_CSS = sectionLayoutCss({
+  section: '.ve-section',
+  column: '.ve-column',
+  defaultGap: 12,
+  columnExtra: 'max-width:none;',
+})
+
 export const VISUAL_EDITOR_CSS = `
 /* Tokens are declared on :root AS WELL AS .ve-root - this stylesheet gets injected into two
    separate documents (VisualEditor.tsx's own page, and the canvas iframe's document via
@@ -1587,7 +1597,7 @@ html[data-theme='dark'] .ve-root {
   cursor: pointer;
 }
 
-.ve-tpl__card:hover:not(:disabled),
+.ve-tpl__card:hover:not([aria-disabled="true"]),
 .ve-tpl__card:focus-visible {
   border-color: var(--ve-accent);
   background: var(--ve-surface-hover);
@@ -1723,4 +1733,26 @@ html[data-theme='dark'] .ve-root {
   justify-content: flex-end;
   gap: 8px;
 }
-`
+
+/* A library card is being dragged: let the parent wrapper (not the iframe document) get the
+   dragover/drop events, and keep library cards looking draggable. */
+.ve-canvas--lib-drag .ve-canvas__frame {
+  pointer-events: none;
+}
+
+.ve-library__card[draggable='true'] {
+  cursor: grab;
+  user-select: none;
+}
+
+.ve-form-empty {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ve-text-muted, #666);
+}
+
+.ve-form-empty a {
+  color: var(--ve-accent, #2563eb);
+  font-weight: 600;
+}
+` + CANVAS_SECTION_LAYOUT_CSS

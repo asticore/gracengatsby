@@ -301,7 +301,7 @@ export async function findManifestEntry(
   deps: FetchDeps = {},
 ): Promise<Result<ManifestTemplate>> {
   if (!isValidSlug(slug)) return { ok: false, error: 'That template name is not valid.' }
-  const manifest = await loadManifest(repo, slug === undefined ? token : token, deps)
+  const manifest = await loadManifest(repo, token, deps)
   if (!manifest.ok) return failure(manifest.error)
   const entry = manifest.value.templates.find((item) => item.slug === slug)
   return entry ? { ok: true, value: entry } : { ok: false, error: 'That template is not in this repository.' }

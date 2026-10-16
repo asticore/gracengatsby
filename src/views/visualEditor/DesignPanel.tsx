@@ -170,6 +170,42 @@ export const DesignPanel: React.FC<{
         <ColorRow label="Text colour" value={value.textColor} onChange={(v) => set('textColor', v)} />
       </Accordion>
 
+      <Accordion title="Position in column">
+        <SelectRow
+          label="Align self"
+          value={value.selfAlign || ''}
+          options={[
+            { label: 'Default', value: '' },
+            { label: 'Stretch (fill the column)', value: 'stretch' },
+            { label: 'Left / start', value: 'start' },
+            { label: 'Centre', value: 'center' },
+            { label: 'Right / end', value: 'end' },
+          ]}
+          onChange={(v) => set('selfAlign', (v || undefined) as BlockStyle['selfAlign'])}
+        />
+        <SelectRow
+          label="Width"
+          value={value.selfWidth || 'auto'}
+          options={[
+            { label: 'Automatic', value: 'auto' },
+            { label: 'Full width', value: 'full' },
+            { label: 'Custom %', value: 'custom' },
+          ]}
+          onChange={(v) => set('selfWidth', v === 'auto' ? undefined : (v as BlockStyle['selfWidth']))}
+        />
+        {value.selfWidth === 'custom' && (
+          <NumberRow
+            label="Width (%)"
+            value={value.selfWidthPercent}
+            onChange={(v) => set('selfWidthPercent', v)}
+            min={1}
+            max={100}
+          />
+        )}
+        <NumberRow label="Margin left (px)" value={value.marginLeft} onChange={(v) => set('marginLeft', v)} />
+        <NumberRow label="Margin right (px)" value={value.marginRight} onChange={(v) => set('marginRight', v)} />
+      </Accordion>
+
       <Accordion title="Shape dividers">
         <DividerControls
           label="Top"
@@ -227,7 +263,7 @@ export const DesignPanel: React.FC<{
 /* Small control primitives                                                   */
 /* -------------------------------------------------------------------------- */
 
-const Accordion: React.FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({
+export const Accordion: React.FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({
   title,
   defaultOpen = false,
   children,
@@ -269,7 +305,7 @@ const TextRow: React.FC<{
   </Row>
 )
 
-const NumberRow: React.FC<{
+export const NumberRow: React.FC<{
   label: string
   value?: number
   min?: number
@@ -287,7 +323,7 @@ const NumberRow: React.FC<{
   </Row>
 )
 
-const SelectRow: React.FC<{
+export const SelectRow: React.FC<{
   label: string
   value: string
   options: { label: string; value: string }[]
@@ -304,7 +340,7 @@ const SelectRow: React.FC<{
   </Row>
 )
 
-const CheckRow: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({
+export const CheckRow: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({
   label,
   checked,
   onChange,

@@ -189,6 +189,27 @@ Limits for now: there is no search results route yet, so there is no `search` ki
 
 ---
 
+## Template repositories
+
+Template repositories (code in `src/features/templateRepos`) let an agency keep page and section templates for the visual editor in GitHub. An admin turns them on under Settings > General > Integrations > **Template repositories**, adds each repository (name, GitHub user or organisation, repository, branch, optional folder) and, for a private repository, one read-only access token ("Fine-grained read-only token. Leave blank for public repos."). The token is stored encrypted like the other keys and is never sent to a browser.
+
+Repository layout (inside the optional folder):
+
+```
+manifest.json                    { "schemaVersion": 1, "name": "...", "categories": [{ "key", "label" }],
+                                   "templates": [{ "slug", "title", "kind": "page"|"section", "category", "tags"?,
+                                                   "preview": "templates/<slug>/preview.png",
+                                                   "file": "templates/<slug>/template.json" }] }
+templates/<slug>/template.json   { "format": "engage-template", "schemaVersion": 1, "kind", "tree": [...], "assets"?: [], "requires"?: {} }
+templates/<slug>/preview.png     png, jpeg or webp, up to 2 MB
+```
+
+API (administrators and editors only, same session check as the other admin routes): `GET /api/template-repos` lists templates from every enabled repository (`repoIndex`, `repoLabel`, `slug`, `title`, `kind`, `category`, `tags`, `previewUrl`) plus one plain-English error per repository that failed; `GET /api/template-repos/template?repo=<n>&slug=<slug>` returns one validated template; `GET /api/template-repos/preview?repo=<n>&slug=<slug>` streams the preview picture from this site, so the browser never talks to GitHub.
+
+Safety: the browser never supplies a URL. Addresses are built on the server from validated owner / repository / branch / folder, and only for `raw.githubusercontent.com` (public) or `api.github.com` contents (when a token is set, which applies to every repository in the list). Redirects are refused, each request times out after 8 seconds, and results are cached in memory for 5 minutes. Limits: manifest 500 KB, template 1 MB, 500 templates, slugs `^[a-z0-9][a-z0-9-]{0,63}$`, no `..` or absolute paths, only files the manifest lists can be fetched. Templates are treated as data: items of type html, code, script, embed, iframe, style and similar (compared ignoring case, dashes and underscores), any `dangerouslySetInnerHTML` field, and any text containing a script or frame tag or a `javascript:` link are refused. This deny list is a first line of defence for now; it also refuses legitimate "code" items inside rich text.
+
+Limits for now: one token is shared by all repositories; the editor-side picker is built separately and uses these routes.
+
 ## Connect Google
 
 The site connects to Google with **your own** Google Cloud OAuth client, set up once. Nothing is shared with another site, and the sign-in is read-only.

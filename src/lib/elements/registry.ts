@@ -1,6 +1,7 @@
 import { FORM_ELEMENTS } from '@/features/forms/elementDefs'
 
 import type { EditorField } from './fieldTypes'
+import { WAVE26_ELEMENTS } from './wave26Defs'
 
 /**
  * The per-element-type catalogue that lives inside the `element` block
@@ -119,6 +120,7 @@ ELEMENTS.push({
 // Form-builder elements (form fields, steps, the Form placement, Button). Kept in the forms feature so
 // this file only gains one registration.
 ELEMENTS.push(...FORM_ELEMENTS)
+ELEMENTS.push(...WAVE26_ELEMENTS)
 
 export function getElementDef(type: string): ElementDef | undefined {
   return ELEMENTS.find((e) => e.type === type)

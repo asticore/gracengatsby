@@ -40,7 +40,7 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
 
   switch (block.blockType) {
     case 'section':
-      return <SectionBlock columns={block.columns} renderNode={renderBlockBody} />
+      return <SectionBlock columns={block.columns} renderNode={renderBlockBody} design={block.design} />
 
     case 'loop':
       return (

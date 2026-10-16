@@ -12,13 +12,34 @@
 import { BUILT_IN_FONTS, fontStack } from '@/features/fonts/installed'
 
 import { isDesignV2Raw } from '@/lib/design/upgrade'
-import type { SectionLayout } from '@/lib/sectionLayout'
+import { DEFAULT_BREAKPOINTS, type SectionLayout } from '@/lib/sectionLayout'
 
 export type BackgroundType = 'none' | 'color' | 'gradient' | 'image'
 export type TextAlign = 'left' | 'center' | 'right'
 export type BlockWidth = 'contained' | 'wide' | 'full'
 export type DividerShape = 'none' | 'wave' | 'tilt' | 'curve' | 'triangle' | 'arrow'
 export type BoxShadowPreset = 'none' | 'sm' | 'md' | 'lg'
+
+/** The keys a tablet / mobile override may carry (everything else is dropped on read). */
+export const RESPONSIVE_KEYS = [
+  'paddingTop',
+  'paddingBottom',
+  'paddingLeft',
+  'paddingRight',
+  'marginTop',
+  'marginBottom',
+  'textAlign',
+  'minHeight',
+  'minHeightUnit',
+  'selfAlign',
+  'selfWidth',
+  'selfWidthPercent',
+] as const
+export type ResponsiveKey = (typeof RESPONSIVE_KEYS)[number]
+export type ResponsiveDevice = 'tablet' | 'mobile'
+
+/** One device's overrides: the responsive subset of BlockStyle, plus `hide` for that device only. */
+export type DeviceOverride = Partial<Pick<BlockStyle, ResponsiveKey>> & { hide?: boolean }
 
 export type BlockStyle = {
   // Background
@@ -39,6 +60,8 @@ export type BlockStyle = {
   paddingBottom?: number
   paddingTopMobile?: number
   paddingBottomMobile?: number
+  paddingLeft?: number
+  paddingRight?: number
   marginTop?: number
   marginBottom?: number
 
@@ -58,6 +81,8 @@ export type BlockStyle = {
   textAlign?: TextAlign
   width?: BlockWidth
   minHeight?: number
+  /** Unit of minHeight. Unset = px; 'vh' (with minHeight 100) is "fit the screen". */
+  minHeightUnit?: 'px' | 'vh'
 
   // Shape dividers
   dividerTop?: DividerShape
@@ -81,6 +106,15 @@ export type BlockStyle = {
   /** Section-only flow settings (direction per device, gap, wrap...). See lib/sectionLayout.ts. */
   layout?: SectionLayout
 
+  /**
+   * Per-device overrides (Elementor-style responsive editing). Desktop is the base style above;
+   * these only carry the keys in RESPONSIVE_KEYS. Tablet applies up to the tablet breakpoint and
+   * mobile up to the mobile one, mobile inheriting tablet. hideOnMobile / paddingTopMobile /
+   * paddingBottomMobile (older documents) read as part of `mobile` - see resolveDeviceOverride().
+   */
+  tablet?: DeviceOverride
+  mobile?: DeviceOverride
+
   // Visibility
   hideOnMobile?: boolean
   hideOnDesktop?: boolean
@@ -97,7 +131,55 @@ export function asBlockStyle(value: unknown): BlockStyle {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return EMPTY_STYLE
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
-  return value as BlockStyle
+  const style = value as BlockStyle
+  if (style.tablet === undefined && style.mobile === undefined) return style
+  // Overrides come out of JSON: keep only whitelisted, well-typed keys.
+  const { tablet: rawTablet, mobile: rawMobile, ...rest } = style
+  const out: BlockStyle = { ...rest }
+  const tablet = sanitizeDeviceOverride(rawTablet)
+  const mobile = sanitizeDeviceOverride(rawMobile)
+  if (tablet) out.tablet = tablet
+  if (mobile) out.mobile = mobile
+  return out
+}
+
+const TEXT_ALIGNS: readonly string[] = ['left', 'center', 'right']
+const SELF_ALIGNS: readonly string[] = ['stretch', 'start', 'center', 'end']
+const SELF_WIDTHS: readonly string[] = ['auto', 'full', 'custom']
+
+/** Reads one stored override object; junk keys and wrong types are dropped. Undefined when nothing is left. */
+export function sanitizeDeviceOverride(raw: unknown): DeviceOverride | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const r = raw as Record<string, unknown>
+  const out: DeviceOverride = {}
+  for (const key of ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'minHeight'] as const) {
+    const v = r[key]
+    if (isNum(v) && v >= 0) out[key] = v
+  }
+  for (const key of ['marginTop', 'marginBottom'] as const) {
+    if (isNum(r[key])) out[key] = r[key]
+  }
+  if (typeof r.textAlign === 'string' && TEXT_ALIGNS.includes(r.textAlign)) out.textAlign = r.textAlign as TextAlign
+  if (r.minHeightUnit === 'px' || r.minHeightUnit === 'vh') out.minHeightUnit = r.minHeightUnit
+  if (typeof r.selfAlign === 'string' && SELF_ALIGNS.includes(r.selfAlign)) out.selfAlign = r.selfAlign as BlockStyle['selfAlign']
+  if (typeof r.selfWidth === 'string' && SELF_WIDTHS.includes(r.selfWidth)) out.selfWidth = r.selfWidth as BlockStyle['selfWidth']
+  if (isNum(r.selfWidthPercent) && r.selfWidthPercent > 0) out.selfWidthPercent = r.selfWidthPercent
+  if (r.hide === true) out.hide = true
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
+/**
+ * The override a device effectively has: the stored one on top of the older mobile-only keys
+ * (paddingTopMobile, paddingBottomMobile, hideOnMobile), which keep working and read as mobile values.
+ */
+export function resolveDeviceOverride(style: BlockStyle, device: ResponsiveDevice): DeviceOverride {
+  const stored = device === 'tablet' ? style.tablet : style.mobile
+  if (device === 'tablet') return { ...stored }
+  const legacy: DeviceOverride = {}
+  if (isNum(style.paddingTopMobile)) legacy.paddingTop = style.paddingTopMobile
+  if (isNum(style.paddingBottomMobile)) legacy.paddingBottom = style.paddingBottomMobile
+  if (style.hideOnMobile) legacy.hide = true
+  return { ...legacy, ...stored }
 }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
@@ -132,6 +214,8 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
 
   if (isNum(style.paddingTop)) css.paddingTop = `${style.paddingTop}px`
   if (isNum(style.paddingBottom)) css.paddingBottom = `${style.paddingBottom}px`
+  if (isNum(style.paddingLeft)) css.paddingLeft = `${style.paddingLeft}px`
+  if (isNum(style.paddingRight)) css.paddingRight = `${style.paddingRight}px`
   if (isNum(style.marginTop)) css.marginTop = `${style.marginTop}px`
   if (isNum(style.marginBottom)) css.marginBottom = `${style.marginBottom}px`
   Object.assign(css, selfPositionCss(style))
@@ -141,7 +225,7 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   if (fontValue) css.fontFamily = fontValue
   if (isStr(style.textColor)) css.color = style.textColor
   if (style.textAlign) css.textAlign = style.textAlign
-  if (isNum(style.minHeight)) css.minHeight = `${style.minHeight}px`
+  if (isNum(style.minHeight)) css.minHeight = minHeightValue(style.minHeight, style.minHeightUnit)
 
   if (isNum(style.borderWidth) && style.borderWidth > 0) {
     css.borderWidth = `${style.borderWidth}px`
@@ -153,6 +237,8 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
 
   return css
 }
+
+const minHeightValue = (value: number, unit: 'px' | 'vh' | undefined): string => `${value}${unit === 'vh' ? 'vh' : 'px'}`
 
 /**
  * Width and alignment of a block inside its column. Blocks are normal-flow boxes, so
@@ -206,12 +292,59 @@ export const BOX_SHADOW_OPTIONS: { label: string; value: BoxShadowPreset }[] = [
   { label: 'Large', value: 'lg' },
 ]
 
+/** Media queries for one device: where the override starts applying (cascading narrower), and where `hide` applies (that device only). */
+function deviceQueries(device: ResponsiveDevice | 'desktop'): { cascade: string | null; only: string } {
+  const { tablet, mobile } = DEFAULT_BREAKPOINTS
+  if (device === 'tablet') return { cascade: `(max-width:${tablet}px)`, only: `(min-width:${mobile + 1}px) and (max-width:${tablet}px)` }
+  if (device === 'mobile') return { cascade: `(max-width:${mobile}px)`, only: `(max-width:${mobile}px)` }
+  return { cascade: null, only: `(min-width:${tablet + 1}px)` }
+}
+
+/**
+ * The declarations one device's override adds. `!important` because the desktop base values are
+ * inline styles, which a stylesheet rule cannot otherwise beat. Position-in-column keys are
+ * computed from the merged style (base, then tablet, then mobile) so that e.g. "full width on
+ * mobile" also clears the desktop auto margins.
+ */
+export function deviceOverrideDecls(style: BlockStyle, device: ResponsiveDevice): string[] {
+  const own = device === 'tablet' ? style.tablet : style.mobile
+  if (!own) return []
+  const decls: string[] = []
+  const px = (name: string, v: number | undefined) => {
+    if (isNum(v)) decls.push(`${name}:${v}px !important`)
+  }
+  px('padding-top', own.paddingTop)
+  px('padding-bottom', own.paddingBottom)
+  px('padding-left', own.paddingLeft)
+  px('padding-right', own.paddingRight)
+  px('margin-top', own.marginTop)
+  px('margin-bottom', own.marginBottom)
+  if (own.textAlign) decls.push(`text-align:${own.textAlign} !important`)
+  if (isNum(own.minHeight) || own.minHeightUnit) {
+    const merged = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
+    if (isNum(merged.minHeight)) decls.push(`min-height:${minHeightValue(merged.minHeight, merged.minHeightUnit)} !important`)
+  }
+  if (own.selfAlign !== undefined || own.selfWidth !== undefined || own.selfWidthPercent !== undefined) {
+    const merged: BlockStyle = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
+    const pos = selfPositionCss(merged)
+    decls.push(`width:${pos.width ?? 'auto'} !important`)
+    decls.push(`max-width:${pos.maxWidth ?? 'none'} !important`)
+    const left = isNum(merged.marginLeft) ? `${merged.marginLeft}px` : (pos.marginLeft ?? '0')
+    const right = isNum(merged.marginRight) ? `${merged.marginRight}px` : (pos.marginRight ?? '0')
+    decls.push(`margin-left:${left} !important`, `margin-right:${right} !important`)
+  }
+  return decls
+}
+
 /**
  * Emits the media-query-dependent rules that can't live in an inline style.
  * Scoped to a per-block id so blocks never leak styles into each other.
  * Returns an empty string when the block needs no such rules.
+ *
+ * `editor` is for the canvas: a block hidden on the device being previewed is faded instead of
+ * removed, otherwise it could no longer be clicked and un-hidden.
  */
-export function blockStyleCss(style: BlockStyle, scopeId: string): string {
+export function blockStyleCss(style: BlockStyle, scopeId: string, options: { editor?: boolean } = {}): string {
   const rules: string[] = []
   const sel = `#${scopeId}`
 
@@ -226,6 +359,18 @@ export function blockStyleCss(style: BlockStyle, scopeId: string): string {
 
   if (style.hideOnDesktop) {
     rules.push(`@media (min-width:769px){${sel}{display:none}}`)
+  }
+
+  // Per-device overrides: tablet first so mobile (declared later) wins where both apply.
+  const hidden = options.editor ? 'opacity:0.3 !important' : 'display:none !important'
+  for (const device of ['tablet', 'mobile'] as const) {
+    const decls = deviceOverrideDecls(style, device)
+    if (decls.length > 0) rules.push(`@media ${deviceQueries(device).cascade}{${sel}{${decls.join(';')}}}`)
+  }
+  for (const device of ['tablet', 'mobile'] as const) {
+    if ((device === 'tablet' ? style.tablet : style.mobile)?.hide) {
+      rules.push(`@media ${deviceQueries(device).only}{${sel}{${hidden}}}`)
+    }
   }
 
   // Headings set their own theme font, so the block font is repeated on them here.
@@ -243,6 +388,7 @@ export function blockStyleClasses(style: BlockStyle): string {
     'be-block',
     style.width ? `be-block--${style.width}` : 'be-block--contained',
     style.bgType === 'image' ? 'be-block--has-bg-image' : null,
+    isNum(style.minHeight) || isNum(style.tablet?.minHeight) || isNum(style.mobile?.minHeight) ? 'be-block--minh' : null,
     style.customClass || null,
   ]
     .filter(Boolean)

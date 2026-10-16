@@ -828,6 +828,86 @@ export const Integrations: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'templateRepos',
+      label: 'Template repositories',
+      admin: {
+        description:
+          'GitHub repositories that hold ready-made pages and sections for the visual editor. Add a repository and its templates appear in the editor.',
+      },
+      fields: [
+        {
+          name: 'enabled',
+          type: 'checkbox',
+          label: 'Use template repositories',
+          defaultValue: false,
+          admin: { description: 'Turn this on to show templates from the repositories below in the visual editor.' },
+        },
+        {
+          name: 'repos',
+          type: 'array',
+          label: 'Repositories',
+          labels: { singular: 'Repository', plural: 'Repositories' },
+          fields: [
+            {
+              name: 'label',
+              type: 'text',
+              label: 'Name',
+              admin: { description: 'A name to recognise this repository by, such as "Agency templates".' },
+            },
+            {
+              name: 'owner',
+              type: 'text',
+              label: 'GitHub user or organisation',
+              admin: { description: 'The part of the address after github.com/, such as "acme" in github.com/acme/templates.' },
+            },
+            {
+              name: 'repo',
+              type: 'text',
+              label: 'Repository name',
+              admin: { description: 'The repository name, such as "templates" in github.com/acme/templates.' },
+            },
+            {
+              name: 'branch',
+              type: 'text',
+              label: 'Branch',
+              defaultValue: 'main',
+              admin: { description: 'The branch to read templates from. Usually "main".' },
+            },
+            {
+              name: 'path',
+              type: 'text',
+              label: 'Folder',
+              defaultValue: '',
+              admin: { description: 'Leave blank if the templates are at the top of the repository. Otherwise enter the folder they are in.' },
+            },
+            {
+              name: 'enabled',
+              type: 'checkbox',
+              label: 'Use this repository',
+              defaultValue: true,
+            },
+          ],
+        },
+        {
+          name: 'token',
+          type: 'text',
+          label: 'Access token (private repositories only)',
+          access: {
+            read: adminOnlyFieldAccess,
+            update: adminOnlyFieldAccess,
+          },
+          hooks: {
+            beforeChange: [encryptSecretHook],
+            afterRead: [decryptSecretHook],
+          },
+          admin: {
+            description: 'Fine-grained read-only token. Leave blank for public repos. Stored encrypted at rest, visible only to admins.',
+          },
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'custom',
       label: 'Custom keys',
       admin: { description: 'Your own API keys and credentials, for custom code and integrations.' },

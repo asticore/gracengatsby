@@ -24,7 +24,9 @@ export const StyledBlock: React.FC<{
   children: React.ReactNode
 }> = ({ style, index, children }) => {
   const parsed = asBlockStyle(style)
-  const hasStyle = Object.keys(parsed).length > 0
+  // `layout` only drives the section's own flex container (SectionBlock), so on its own it
+  // must not add a Design wrapper - that would change the section's width and padding.
+  const hasStyle = Object.keys(parsed).some((key) => key !== 'layout')
 
   if (!hasStyle) return <>{children}</>
 

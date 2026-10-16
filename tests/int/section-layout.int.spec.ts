@@ -188,8 +188,8 @@ describe('generated CSS', () => {
     }
   })
 
-  it('stacked sections drop the column basis and fill the width; row restores it', () => {
-    expect(css).toContain('[data-dir-m="column"]>.be-column{flex-basis:auto;flex-grow:0;width:100%}')
+  it('stacked sections size columns by width (not flex-basis, which is height there); row restores the basis', () => {
+    expect(css).toContain('[data-dir-m="column"]>.be-column{flex-basis:auto;flex-grow:0;width:var(--be-col-m-w,var(--be-col-m,100%));max-width:100%}')
     expect(css).toMatch(/\[data-dir-m="row"\]>\.be-column\{flex-basis:var\(--be-col-m-b/)
   })
 

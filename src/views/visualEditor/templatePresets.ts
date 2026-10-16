@@ -1,4 +1,26 @@
+import { getElementDef } from '@/lib/elements/registry'
 import type { SectionNode } from '@/lib/sectionTree'
+
+export type TemplateKind = 'page' | 'section'
+
+export const TEMPLATE_CATEGORY_OPTIONS = [
+  { value: 'hero', label: 'Hero' },
+  { value: 'features', label: 'Features' },
+  { value: 'cta', label: 'Call to action' },
+  { value: 'gallery', label: 'Gallery' },
+  { value: 'testimonials', label: 'Testimonials' },
+  { value: 'pricing', label: 'Pricing' },
+  { value: 'team', label: 'Team' },
+  { value: 'faq', label: 'FAQ' },
+  { value: 'contact', label: 'Contact' },
+  { value: 'shop', label: 'Shop' },
+  { value: 'blog', label: 'Blog' },
+  { value: 'header', label: 'Header' },
+  { value: 'footer', label: 'Footer' },
+  { value: 'other', label: 'Other' },
+] as const
+
+export type TemplateCategory = (typeof TEMPLATE_CATEGORY_OPTIONS)[number]['value']
 
 /**
  * Curated multi-block starting points ("Hero + features + CTA", etc.) -
@@ -13,18 +35,48 @@ import type { SectionNode } from '@/lib/sectionTree'
  * schemas' own `defaultValue()` produces - ElementLibrary runs each through
  * `cloneNode` before inserting, which assigns real ids, so none are set here.
  */
-type TemplatePreset = {
+
+export type TemplatePreset = {
   slug: string
   name: string
   description: string
+  kind: TemplateKind
+  category: TemplateCategory
   blocks: () => SectionNode[]
 }
+
+/** An `element` block built from the element's own defaults, with a few props overridden. */
+const el = (elementType: string, props: Record<string, unknown> = {}): SectionNode => ({
+  blockType: 'element',
+  elementType,
+  props: { ...(getElementDef(elementType)?.defaultProps() || {}), ...props },
+})
+
+const col = (width: number, blocks: SectionNode[]) => ({ width: width as 12, blocks })
+const section = (...columns: ReturnType<typeof col>[]): SectionNode => ({ blockType: 'section', columns })
+const heading = (text: string, align = 'center', tag = 'h2') => el('heading', { text, tag, align })
+
+const iconBox = (icon: string, title: string, text: string) => el('icon-box', { icon, title, text })
+const featureRow = (count: 3 | 4, items: Array<[string, string, string]>) =>
+  section(...items.slice(0, count).map(([icon, title, text]) => col(12 / count, [iconBox(icon, title, text)])))
+
+const FEATURE_ITEMS: Array<[string, string, string]> = [
+  ['leaf', 'Made to last', 'Quality materials and honest craft in every piece.'],
+  ['sparkle', 'Thoughtful details', 'Small touches that make it a pleasure to use.'],
+  ['heart', 'Loved by customers', 'Real people who keep coming back.'],
+  ['check', 'Easy returns', 'Not right? Send it back within 30 days.'],
+]
+
+const pricingPlan = (title: string, price: string, features: string, highlight = false) =>
+  el('pricing-table', { title, price, features, highlight, ribbon: highlight ? 'Most popular' : '' })
 
 export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     slug: 'hero-simple',
     name: 'Simple hero',
     description: 'Heading, subheading, one button.',
+    kind: 'section',
+    category: 'hero',
     blocks: () => [
       {
         blockType: 'hero',
@@ -36,9 +88,43 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     ],
   },
   {
+    slug: 'hero-centered',
+    name: 'Centered hero',
+    description: 'A big centred headline, a short paragraph and a call-to-action box.',
+    kind: 'section',
+    category: 'hero',
+    blocks: () => [section(col(12, [heading('A headline that says it all', 'center', 'h1'), el('text-editor', { align: 'center' }), el('call-to-action')]))],
+  },
+  {
+    slug: 'hero-split-image',
+    name: 'Split hero with image',
+    description: 'Headline and call-to-action on the left, a picture on the right.',
+    kind: 'section',
+    category: 'hero',
+    blocks: () => [
+      section(
+        col(6, [heading('Welcome to our shop', 'left', 'h1'), el('text-editor', { align: 'left' }), el('call-to-action', { align: 'left' })]),
+        col(6, [el('image', { ratio: '4:3' })]),
+      ),
+    ],
+  },
+  {
+    slug: 'hero-story',
+    name: 'Hero with story',
+    description: 'A hero banner followed by an image-and-text story section.',
+    kind: 'section',
+    category: 'hero',
+    blocks: () => [
+      { blockType: 'hero', heading: 'Our story', subheading: 'Where we started and what we care about.', primaryCtaLabel: 'Read more', primaryCtaUrl: '/about' },
+      { blockType: 'imageText', imageSide: 'right', content: undefined },
+    ],
+  },
+  {
     slug: 'hero-story-cta',
     name: 'Hero + story + CTA',
     description: 'Hero banner, an image-and-text section, and a call-to-action banner.',
+    kind: 'page',
+    category: 'hero',
     blocks: () => [
       {
         blockType: 'hero',
@@ -65,6 +151,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     slug: 'three-up-features',
     name: 'Three-column features',
     description: 'A section with three equal columns, each with a rich text block to fill in.',
+    kind: 'section',
+    category: 'features',
     blocks: () => [
       {
         blockType: 'section',
@@ -77,22 +165,143 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     ],
   },
   {
+    slug: 'features-3up-icons',
+    name: 'Features, 3 icon boxes',
+    description: 'A heading over three icon boxes.',
+    kind: 'section',
+    category: 'features',
+    blocks: () => [section(col(12, [heading('Why choose us')])), featureRow(3, FEATURE_ITEMS)],
+  },
+  {
+    slug: 'features-4up-icons',
+    name: 'Features, 4 icon boxes',
+    description: 'A heading over four icon boxes.',
+    kind: 'section',
+    category: 'features',
+    blocks: () => [section(col(12, [heading('What you get')])), featureRow(4, FEATURE_ITEMS)],
+  },
+  {
+    slug: 'cta-banner',
+    name: 'Call-to-action banner',
+    description: 'A full-width banner with a heading and a button.',
+    kind: 'section',
+    category: 'cta',
+    blocks: () => [{ blockType: 'ctaBanner', heading: 'Ready when you are', text: 'Tell people what to do next.', style: 'dark', buttonLabel: 'Get started', buttonUrl: '/contact' }],
+  },
+  {
+    slug: 'gallery-grid',
+    name: 'Image gallery',
+    description: 'A heading and a grid of pictures to fill in.',
+    kind: 'section',
+    category: 'gallery',
+    blocks: () => [{ blockType: 'gallery', heading: 'Gallery', images: [] }],
+  },
+  {
     slug: 'gallery-cta',
     name: 'Gallery + CTA',
     description: 'An image gallery followed by a call-to-action banner.',
+    kind: 'section',
+    category: 'gallery',
     blocks: () => [
       { blockType: 'gallery', heading: 'Gallery', images: [] },
       { blockType: 'ctaBanner', heading: 'New call to action', style: 'light' },
     ],
   },
   {
+    slug: 'testimonials-3up',
+    name: 'Testimonials, 3 up',
+    description: 'A heading over three customer quotes.',
+    kind: 'section',
+    category: 'testimonials',
+    blocks: () => [
+      section(col(12, [heading('What people say')])),
+      section(
+        col(4, [el('testimonial')]),
+        col(4, [el('testimonial', { quote: 'Exactly what I hoped for. Will order again.', name: 'Sam T.' })]),
+        col(4, [el('testimonial', { quote: 'Friendly service and lovely packaging.', name: 'Riley K.' })]),
+      ),
+    ],
+  },
+  {
+    slug: 'pricing-3-plans',
+    name: 'Pricing, 3 plans',
+    description: 'Three side-by-side plans with the middle one highlighted.',
+    kind: 'section',
+    category: 'pricing',
+    blocks: () => [
+      section(col(12, [heading('Simple pricing')])),
+      section(
+        col(4, [pricingPlan('Starter', '9', 'One user\nEmail support\n- Priority support')]),
+        col(4, [pricingPlan('Standard', '29', 'Five users\nEmail support\nPriority support', true)]),
+        col(4, [pricingPlan('Pro', '59', 'Unlimited users\nEmail support\nPriority support')]),
+      ),
+    ],
+  },
+  {
+    slug: 'team-3up',
+    name: 'Team, 3 people',
+    description: 'Meet the team: three people cards.',
+    kind: 'section',
+    category: 'team',
+    blocks: () => [
+      section(col(12, [heading('Meet the team')])),
+      section(
+        col(4, [el('team-member')]),
+        col(4, [el('team-member', { name: 'Casey Morgan', role: 'Designer', bio: 'Makes everything look just right.' })]),
+        col(4, [el('team-member', { name: 'Robin Ash', role: 'Customer care', bio: 'The friendly voice on the other end.' })]),
+      ),
+    ],
+  },
+  {
+    slug: 'faq-section',
+    name: 'FAQ',
+    description: 'A heading and a list of questions that open and close.',
+    kind: 'section',
+    category: 'faq',
+    blocks: () => [section(col(12, [heading('Questions? Answers.'), el('accordion')]))],
+  },
+  {
+    slug: 'contact-form',
+    name: 'Contact form',
+    description: 'A short intro above a form. Pick the form in the block settings.',
+    kind: 'section',
+    category: 'contact',
+    blocks: () => [section(col(12, [heading('Get in touch'), el('text-editor', { align: 'center' })])), { blockType: 'form', showTitle: false }],
+  },
+  {
+    slug: 'blog-intro',
+    name: 'Blog intro',
+    description: 'A page title and short welcome above your posts.',
+    kind: 'section',
+    category: 'blog',
+    blocks: () => [section(col(12, [heading('From the journal', 'left', 'h1'), el('text-editor', { align: 'left' }), el('divider')]))],
+  },
+  {
     slug: 'shop-landing',
     name: 'Shop landing',
     description: 'Hero, product grid, and a newsletter CTA - a common landing-page shape.',
+    kind: 'page',
+    category: 'shop',
     blocks: () => [
       { blockType: 'hero', heading: 'Shop the collection', primaryCtaLabel: 'Browse all', primaryCtaUrl: '/shop' },
       { blockType: 'productGrid', heading: 'Shop', limit: 8 },
       { blockType: 'ctaBanner', heading: 'Join the list', style: 'dark', buttonLabel: 'Sign up' },
+    ],
+  },
+  {
+    slug: 'landing-page-full',
+    name: 'Full landing page',
+    description: 'Hero, features, testimonials, pricing, FAQ and a closing call to action.',
+    kind: 'page',
+    category: 'other',
+    blocks: () => [
+      { blockType: 'hero', heading: 'One clear promise', subheading: 'Say what you do and who it is for.', primaryCtaLabel: 'Get started', primaryCtaUrl: '/contact' },
+      section(col(12, [heading('Why choose us')])),
+      featureRow(3, FEATURE_ITEMS),
+      section(col(4, [el('testimonial')]), col(4, [el('testimonial', { name: 'Sam T.' })]), col(4, [el('testimonial', { name: 'Riley K.' })])),
+      section(col(4, [pricingPlan('Starter', '9', 'One user\nEmail support')]), col(4, [pricingPlan('Standard', '29', 'Five users\nPriority support', true)]), col(4, [pricingPlan('Pro', '59', 'Unlimited users\nPriority support')])),
+      section(col(12, [el('accordion')])),
+      { blockType: 'ctaBanner', heading: 'Ready when you are', style: 'dark', buttonLabel: 'Get started', buttonUrl: '/contact' },
     ],
   },
 ]

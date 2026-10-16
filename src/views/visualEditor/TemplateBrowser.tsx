@@ -333,14 +333,23 @@ export const TemplateBrowser: React.FC<{ onPickTemplate: (blocks: SectionNode[])
             const loading = loadingKey === card.key
             const showImage = card.image && !brokenImages[card.key]
             return (
-              <button
+              <div
                 key={card.key}
-                type="button"
+                role="button"
+                tabIndex={card.disabled ? -1 : 0}
                 className="ve-tpl__card"
                 draggable={Boolean(card.blocks) && !card.disabled}
                 onDragStart={(e) => card.blocks && dragTemplate(e, card.blocks())}
-                onClick={() => onPick(card)}
-                disabled={card.disabled || (loadingKey !== null && !loading)}
+                onClick={() => {
+                  if (!(card.disabled || (loadingKey !== null && !loading))) onPick(card)
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !(card.disabled || (loadingKey !== null && !loading))) {
+                    e.preventDefault()
+                    onPick(card)
+                  }
+                }}
+                aria-disabled={card.disabled || (loadingKey !== null && !loading)}
                 aria-busy={loading}
                 aria-label={`Insert template ${card.name}`}
                 title={card.description}
@@ -366,7 +375,7 @@ export const TemplateBrowser: React.FC<{ onPickTemplate: (blocks: SectionNode[])
                   {card.origin === 'repo' && <span className="ve-tpl__chip ve-tpl__chip--repo">Repository</span>}
                   {card.origin === 'mine' && <span className="ve-tpl__chip ve-tpl__chip--mine">{card.kind === 'section' ? 'Section' : 'Page'}</span>}
                 </span>
-              </button>
+              </div>
             )
           })}
         </div>

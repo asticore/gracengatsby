@@ -1,10 +1,10 @@
 import React from 'react'
 
-import { asBlockStyle, blockStyleClasses, blockStyleToCss } from '@/lib/blockStyle'
+import { asBlockStyle, blockStyleClasses, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
 import { sectionLayoutProps } from '@/lib/sectionLayout'
 import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
-import { StyledBlock } from './StyledBlock'
+import { safeScope, StyledBlock } from './StyledBlock'
 
 /**
  * Renders a Section: a row of columns, each holding its own stack of blocks.
@@ -23,7 +23,9 @@ export const SectionBlock: React.FC<{
   /** The section's own design (its optional `layout` drives flow direction, gap, wrap...). */
   design?: unknown
   depth?: number
-}> = ({ columns, renderNode, design, depth = 0 }) => {
+  /** Unique prefix for the responsive-CSS ids of everything inside (the section's own render key). */
+  scope?: string
+}> = ({ columns, renderNode, design, depth = 0, scope = 's' }) => {
   const parsed = parseColumns(columns)
   if (parsed.length === 0) return null
   const layout = sectionLayoutProps(asBlockStyle(design).layout)
@@ -42,6 +44,7 @@ export const SectionBlock: React.FC<{
           index={index}
           renderNode={renderNode}
           depth={depth}
+          scope={scope}
         />
       ))}
     </div>
@@ -53,27 +56,34 @@ const SectionColumnView: React.FC<{
   index: number
   renderNode: (node: SectionNode, key: string) => React.ReactNode
   depth: number
-}> = ({ column, index, renderNode, depth }) => {
+  scope: string
+}> = ({ column, index, renderNode, depth, scope }) => {
   const design = asBlockStyle(column.design)
+  const columnScope = `be-c-${safeScope(`${scope}-${index}`)}`
+  // Tablet / mobile padding and hide settings of the column itself.
+  const columnCss = blockStyleCss(design, columnScope)
 
   return (
     <div
+      id={columnCss ? columnScope : undefined}
       className={`be-column ${blockStyleClasses(design)}`}
       style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
     >
+      {columnCss && <style dangerouslySetInnerHTML={{ __html: columnCss }} />}
       {(column.blocks || []).map((node, nodeIndex) => {
         const key = node._id || `${index}-${nodeIndex}`
+        const nodeScope = `${scope}-${index}-${nodeIndex}`
 
         if (node.blockType === 'section') {
           return (
-            <StyledBlock key={key} style={node.design} index={nodeIndex}>
-              <SectionBlock columns={node.columns} renderNode={renderNode} design={node.design} depth={depth + 1} />
+            <StyledBlock key={key} style={node.design} index={nodeIndex} scope={nodeScope}>
+              <SectionBlock columns={node.columns} renderNode={renderNode} design={node.design} depth={depth + 1} scope={nodeScope} />
             </StyledBlock>
           )
         }
 
         return (
-          <StyledBlock key={key} style={node.design} index={nodeIndex}>
+          <StyledBlock key={key} style={node.design} index={nodeIndex} scope={nodeScope}>
             {renderNode(node, key)}
           </StyledBlock>
         )

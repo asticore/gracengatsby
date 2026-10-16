@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { asBlockStyle, blockStyleClasses, blockStyleToCss } from '@/lib/blockStyle'
+import { sectionLayoutProps } from '@/lib/sectionLayout'
 import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { StyledBlock } from './StyledBlock'
@@ -19,13 +20,21 @@ import { StyledBlock } from './StyledBlock'
 export const SectionBlock: React.FC<{
   columns: unknown
   renderNode: (node: SectionNode, key: string) => React.ReactNode
+  /** The section's own design (its optional `layout` drives flow direction, gap, wrap...). */
+  design?: unknown
   depth?: number
-}> = ({ columns, renderNode, depth = 0 }) => {
+}> = ({ columns, renderNode, design, depth = 0 }) => {
   const parsed = parseColumns(columns)
   if (parsed.length === 0) return null
+  const layout = sectionLayoutProps(asBlockStyle(design).layout)
 
   return (
-    <div className="be-section" data-depth={depth}>
+    <div
+      className={layout.className ? `be-section ${layout.className}` : 'be-section'}
+      data-depth={depth}
+      {...layout.attrs}
+      style={Object.keys(layout.style).length > 0 ? (layout.style as React.CSSProperties) : undefined}
+    >
       {parsed.map((column, index) => (
         <SectionColumnView
           key={column._id || index}
@@ -58,7 +67,7 @@ const SectionColumnView: React.FC<{
         if (node.blockType === 'section') {
           return (
             <StyledBlock key={key} style={node.design} index={nodeIndex}>
-              <SectionBlock columns={node.columns} renderNode={renderNode} depth={depth + 1} />
+              <SectionBlock columns={node.columns} renderNode={renderNode} design={node.design} depth={depth + 1} />
             </StyledBlock>
           )
         }

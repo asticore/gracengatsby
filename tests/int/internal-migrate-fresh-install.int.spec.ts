@@ -491,6 +491,23 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(tables, 'eg_integrations_custom_keys table should be created').toContain('eg_integrations_custom_keys')
   })
 
+  it('adds the template repositories columns and repository list table', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(await columnsOf('eg_integrations')).toEqual(expect.arrayContaining(['template_repos_enabled', 'template_repos_token']))
+    expect(tables, 'eg_integrations_template_repos_repos table should be created').toContain('eg_integrations_template_repos_repos')
+    expect(await columnsOf('eg_integrations_template_repos_repos')).toEqual(
+      expect.arrayContaining(['_order', '_parent_id', 'id', 'label', 'owner', 'repo', 'branch', 'path', 'enabled']),
+    )
+  })
+
+  it('adds the page template kind, category and preview image columns', async () => {
+    const names = (((await proxy.env.D1.prepare('PRAGMA table_info(`eg_page_templates`)').all()).results as { name: string }[])).map((r) => r.name)
+    expect(names).toEqual(expect.arrayContaining(['kind', 'category', 'preview_image_id']))
+  })
+
   it('creates the table of contents block tables with their settings columns', async () => {
     const tocTables = [
       'eg_pages_blocks_toc',

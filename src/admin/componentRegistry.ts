@@ -30,6 +30,7 @@ import { FieldGroupBuilderField } from '@/features/customFields/admin/FieldGroup
 import { FieldGroupLocationField } from '@/features/customFields/admin/FieldGroupLocationField'
 import { BackupPanel } from '@/features/backups/admin/BackupPanel'
 import { SendTestEmailButton } from '@/features/email/admin/SendTestEmailButton'
+import { TemplateReposHelp } from './fields/TemplateReposHelp'
 import { ParentPicker } from '@/fields/parentPicker/ParentPicker'
 import { OrderNotesPanel, OrderRefundsPanel, OrderInvoicePanel, OrderShippingPanel } from '@/features/ecommerce/admin/OrderPanels'
 import { StoreCreditPanel } from '@/features/ecommerce/admin/StoreCreditPanel'
@@ -58,6 +59,7 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/customFields/admin/FieldGroupLocationField#FieldGroupLocationField': FieldGroupLocationField,
   '@/features/backups/admin/BackupPanel#BackupPanel': BackupPanel,
   '@/features/email/admin/SendTestEmailButton#SendTestEmailButton': SendTestEmailButton,
+  '@/admin/fields/TemplateReposHelp#TemplateReposHelp': TemplateReposHelp,
   '@/features/ecommerce/admin/PriceInput#PriceInput': PriceInput,
   '@/features/ecommerce/admin/UnitInput#WeightInput': WeightInput,
   '@/features/ecommerce/admin/UnitInput#DimensionInput': DimensionInput,

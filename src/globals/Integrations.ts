@@ -843,6 +843,11 @@ export const Integrations: GlobalConfig = {
           admin: { description: 'Turn this on to show templates from the repositories below in the visual editor.' },
         },
         {
+          name: 'reposHelp',
+          type: 'ui',
+          admin: { components: { Field: '@/admin/fields/TemplateReposHelp#TemplateReposHelp' } },
+        },
+        {
           name: 'repos',
           type: 'array',
           label: 'Repositories',

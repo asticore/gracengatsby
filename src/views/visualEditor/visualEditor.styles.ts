@@ -1755,4 +1755,242 @@ html[data-theme='dark'] .ve-root {
   color: var(--ve-accent, #2563eb);
   font-weight: 600;
 }
+/* History buttons, shortcuts popover and the block context menu. */
+.ve-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ve-history {
+  display: flex;
+  gap: 2px;
+  margin-right: 8px;
+}
+
+.ve-shortcuts {
+  position: relative;
+}
+
+.ve-shortcuts__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1200;
+  width: min(440px, 92vw);
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  border: 1px solid var(--ve-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-size: 13px;
+}
+
+.ve-shortcuts__title {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.ve-shortcuts__list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 14px;
+  margin: 0;
+}
+
+.ve-shortcuts__list dt {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ve-shortcuts__list dd {
+  margin: 0;
+  color: var(--ve-text-muted);
+}
+
+.ve-shortcuts__note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ve-text-muted);
+}
+
+.ve-ctxmenu {
+  position: fixed;
+  z-index: 1300;
+  min-width: 200px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  border: 1px solid var(--ve-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  outline: none;
+}
+
+.ve-ctxmenu__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ve-ctxmenu__item--active {
+  background: var(--ve-surface-alt);
+}
+
+.ve-ctxmenu__item--danger {
+  color: var(--ve-danger);
+}
+
+.ve-ctxmenu__item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ve-ctxmenu__hint {
+  color: var(--ve-text-muted);
+  font-size: 12px;
+}
+
+/* ---------------------------------------------------------------------------
+   Column selection, structure picker, device badges (responsive editing)
+   --------------------------------------------------------------------------- */
+:root { --ve-column: #0284c7; --ve-column-soft: rgba(2, 132, 199, 0.08); }
+
+/* Columns get a blue DASHED outline - blocks keep their own solid indigo / green one. */
+.ve-column { cursor: pointer; }
+.ve-column:hover:not(:has(.ve-node:hover)) {
+  border: 1px dashed var(--ve-column);
+  background: var(--ve-column-soft);
+}
+.ve-column--selected,
+.ve-column--selected:hover {
+  border: 2px dashed var(--ve-column);
+  background: var(--ve-column-soft);
+}
+.ve-column--selected > .ve-column__tag { color: var(--ve-column); font-weight: 700; }
+.ve-column__toolbar {
+  position: absolute;
+  top: -13px;
+  right: 8px;
+  z-index: 7;
+  display: flex;
+  gap: 2px;
+  background: var(--ve-column);
+  color: #fff;
+  border-radius: 5px;
+  padding: 2px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.ve-column__act {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+.ve-column__act:hover:not(:disabled) { background: rgba(255, 255, 255, 0.22); }
+.ve-column__act:disabled { opacity: 0.35; cursor: default; }
+.ve-column__act--danger:hover:not(:disabled) { background: var(--ve-danger); }
+.ve-column__inner {
+  display: block;
+  margin: 6px auto 2px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--ve-column);
+  background: transparent;
+  border: 1px dashed var(--ve-column);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.ve-column__inner:hover { background: var(--ve-column-soft); }
+
+/* A section with a minimum height lets its columns sit top / middle / bottom inside it. */
+.ve-node--minh:has(> .ve-node__body > .ve-section) { display: flex; flex-direction: column; }
+.ve-node--minh > .ve-node__body { flex: 1 1 auto; display: flex; flex-direction: column; }
+.ve-node--minh > .ve-node__body > .ve-section { flex: 1 1 auto; }
+
+/* Device badge next to a responsive control's label, and its reset button. */
+.ve-row__label { display: flex; align-items: center; gap: 5px; }
+.ve-dev { display: inline-flex; align-items: center; color: var(--ve-text-faint); }
+.ve-dev--on { color: var(--ve-column); }
+.ve-dev__reset {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 10px;
+  color: var(--ve-column);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.ve-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ve-panel__sub { font-size: 11px; color: var(--ve-text-muted); }
+.ve-panel__footer--wrap { flex-wrap: wrap; }
+.ve-col-custom { flex-direction: row; gap: 6px; }
+
+/* "Select your structure" */
+.ve-structure__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 16, 24, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.ve-structure {
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  border-radius: 10px;
+  box-shadow: var(--ve-shadow-pop);
+  width: min(560px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 20px;
+}
+.ve-structure__title { margin: 0 0 4px; font-size: 18px; }
+.ve-structure__help { margin: 0 0 14px; font-size: 12px; color: var(--ve-text-muted); }
+.ve-structure__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
+.ve-structure__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  background: var(--ve-surface-alt);
+  color: var(--ve-text-muted);
+  border: 1px solid var(--ve-border);
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.ve-structure__option:hover,
+.ve-structure__option:focus-visible { color: var(--ve-column); border-color: var(--ve-column); background: var(--ve-column-soft); outline: none; }
+.ve-structure__label { font-size: 11px; color: var(--ve-text); text-align: center; }
+.ve-structure__icon { display: block; }
+.ve-structure__footer { display: flex; justify-content: flex-end; margin-top: 14px; }
+.ve-structure__mini { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.ve-structure__mini-btn {
+  padding: 4px;
+  background: var(--ve-surface-alt);
+  color: var(--ve-text-muted);
+  border: 1px solid var(--ve-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ve-structure__mini-btn .ve-structure__icon { width: 36px; height: 22px; }
+.ve-structure__mini-btn:hover:not(:disabled) { color: var(--ve-column); border-color: var(--ve-column); }
 ` + CANVAS_SECTION_LAYOUT_CSS

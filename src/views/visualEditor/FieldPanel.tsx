@@ -80,7 +80,7 @@ export const FieldPanel: React.FC<{
         </button>
       </div>
 
-      <div className="ve-panel__body">
+      <div className={`ve-panel__body ${tab === 'design' ? 've-panel__body--flush' : ''}`}>
         {tab === 'content' &&
           (isSection ? (
             <fieldset className="ve-lockset" disabled={blocked}>

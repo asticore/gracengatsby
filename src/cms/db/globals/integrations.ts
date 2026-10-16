@@ -60,6 +60,13 @@ export type IntegrationsDoc = {
   consentConsentModeV2?: boolean | null
   consentHeadScriptCategory?: string | null
   consentBodyScriptCategory?: string | null
+  /**
+   * The `templateRepos` group (GitHub repositories of visual editor templates).
+   * The repository list is the child table eg_integrations_template_repos_repos;
+   * the token is stored encrypted. Read through features/templateRepos/settings.
+   */
+  templateReposEnabled?: boolean | null
+  templateReposToken?: string | null
   updatedAt: string
   createdAt: string
 }

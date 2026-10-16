@@ -32,68 +32,10 @@ import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
+import { clientToFrame, isLibraryDragTypes, resolveDropSlotInDoc, VE_BLOCK_MIME, VE_TEMPLATE_MIME } from './visualEditor/dropSlot'
 
 let idCounter = 0
 const nextId = () => `ve-${Date.now()}-${idCounter++}`
-
-const VE_BLOCK_MIME = 'application/x-ve-block'
-const VE_TEMPLATE_MIME = 'application/x-ve-template'
-
-/**
- * Resolves an insert slot under a page-relative point by reaching into the
- * (same-origin) iframe's own document with elementFromPoint - see
- * canvasBridge.ts's 'dragHover' message for why this lives here rather than
- * as dragover/drop listeners inside the frame itself.
- */
-function resolveDropSlot(
-  iframe: HTMLIFrameElement,
-  clientX: number,
-  clientY: number,
-): { containerPath: NodePath; at: number; key: string } | null {
-  const doc = iframe.contentDocument
-  if (!doc) return null
-  const rect = iframe.getBoundingClientRect()
-  const x = clientX - rect.left
-  const y = clientY - rect.top
-  if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null
-
-  const el = doc.elementFromPoint(x, y)
-  if (!el) return null
-  const parseJson = (raw: string | undefined): NodePath | null => {
-    try {
-      const value: unknown = JSON.parse(raw || '[]')
-      return Array.isArray(value) && value.every((n) => Number.isInteger(n)) ? (value as NodePath) : null
-    } catch {
-      return null
-    }
-  }
-  const result = (containerPath: NodePath, at: number) => ({ containerPath, at, key: `${containerPath.join('.')}|${at}` })
-
-  // Nearest of: an insert slot itself, a block body (-> the slot just before/after it, by which
-  // half the pointer is in), a column (-> its end), or the bare page area (-> end of page).
-  const hit = el.closest('[data-ve-slot],[data-ve-node],[data-ve-column],[data-ve-root]') as HTMLElement | null
-  if (!hit) return null
-
-  if (hit.dataset.veSlot) {
-    const containerPath = parseJson(hit.dataset.veContainer)
-    const at = Number(hit.dataset.veAt || '0')
-    return containerPath && Number.isFinite(at) ? result(containerPath, at) : null
-  }
-  if (hit.dataset.veNode) {
-    const path = parseJson(hit.dataset.veNode)
-    if (!path || path.length === 0) return null
-    const box = hit.getBoundingClientRect()
-    const after = y > box.top + box.height / 2
-    return result(path.slice(0, -1), path[path.length - 1] + (after ? 1 : 0))
-  }
-  // Column or root: the last slot among its direct children is the end of that list.
-  const slots = hit.querySelectorAll(':scope > [data-ve-slot]')
-  const last = slots[slots.length - 1] as HTMLElement | undefined
-  if (!last) return null
-  const containerPath = parseJson(last.dataset.veContainer)
-  const at = Number(last.dataset.veAt || '0')
-  return containerPath && Number.isFinite(at) ? result(containerPath, at) : null
-}
 
 function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string } | null {
   if (typeof window === 'undefined') return null
@@ -461,21 +403,57 @@ export const VisualEditorView: React.FC = () => {
    * that started in the parent document. Handling it here instead, on the wrapper that sits
    * over the iframe in the parent document, sidesteps that entirely; elementFromPoint (above)
    * finds which insert slot the pointer is actually over inside the frame. */
-  const isLibraryDrag = (event: React.DragEvent<HTMLDivElement>) =>
-    event.dataTransfer.types.includes(VE_BLOCK_MIME) || event.dataTransfer.types.includes(VE_TEMPLATE_MIME)
+  const isLibraryDrag = (event: React.DragEvent<HTMLDivElement>) => isLibraryDragTypes(event.dataTransfer.types)
+
+  const resolveAt = useCallback((clientX: number, clientY: number) => {
+    const iframe = iframeRef.current
+    const doc = iframe?.contentDocument
+    if (!iframe || !doc) return null
+    const pt = clientToFrame(iframe.getBoundingClientRect(), clientX, clientY)
+    return pt ? resolveDropSlotInDoc(doc, pt.x, pt.y) : null
+  }, [])
+
+  // Root cause of "can't drag from the dock": events over an <iframe> fire in the iframe's own
+  // document and never reach React handlers on the parent wrapper, so while a library card is
+  // dragged the frame is made pointer-transparent (CSS: .ve-canvas--lib-drag) and the wrapper
+  // receives dragover/drop instead. Tracked from document-level drag events.
+  const [libDrag, setLibDrag] = useState(false)
+  useEffect(() => {
+    const onStart = (e: DragEvent) => {
+      if (isLibraryDragTypes(e.dataTransfer?.types)) setLibDrag(true)
+    }
+    const onEnd = () => {
+      setLibDrag(false)
+      sendDragHover(null)
+    }
+    document.addEventListener('dragstart', onStart, true)
+    document.addEventListener('dragend', onEnd, true)
+    document.addEventListener('drop', onEnd, true)
+    return () => {
+      document.removeEventListener('dragstart', onStart, true)
+      document.removeEventListener('dragend', onEnd, true)
+      document.removeEventListener('drop', onEnd, true)
+    }
+  }, [sendDragHover])
 
   const onCanvasDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       if (!isLibraryDrag(event)) return
       event.preventDefault()
-      const iframe = iframeRef.current
-      const slot = iframe ? resolveDropSlot(iframe, event.clientX, event.clientY) : null
+      const slot = resolveAt(event.clientX, event.clientY)
+      // Auto-scroll the frame when hovering near its top/bottom edge.
+      const frame = iframeRef.current
+      if (frame) {
+        const r = frame.getBoundingClientRect()
+        if (event.clientY - r.top < 48) frame.contentWindow?.scrollBy(0, -24)
+        else if (r.bottom - event.clientY < 48) frame.contentWindow?.scrollBy(0, 24)
+      }
       // No valid slot (outside the page, or a locked container): not-allowed cursor, no highlight.
       const allowed = Boolean(slot) && canInsertInto(lockCtx.current.blocks, slot!.containerPath, lockCtx.current.locks, lockCtx.current.lockUser)
       event.dataTransfer.dropEffect = allowed ? 'copy' : 'none'
       sendDragHover(allowed ? slot!.key : null)
     },
-    [sendDragHover],
+    [sendDragHover, resolveAt],
   )
 
   const onCanvasDragLeave = useCallback(
@@ -492,9 +470,9 @@ export const VisualEditorView: React.FC = () => {
     (event: React.DragEvent<HTMLDivElement>) => {
       const blockType = event.dataTransfer.getData(VE_BLOCK_MIME)
       const templateRaw = event.dataTransfer.getData(VE_TEMPLATE_MIME)
-      const iframe = iframeRef.current
-      const slot = iframe ? resolveDropSlot(iframe, event.clientX, event.clientY) : null
+      const slot = resolveAt(event.clientX, event.clientY)
       sendDragHover(null)
+      setLibDrag(false)
       if (!blockType && !templateRaw) return
       event.preventDefault()
       if (!slot) {
@@ -514,7 +492,7 @@ export const VisualEditorView: React.FC = () => {
         setTimeout(() => setLockNotice(null), 4000)
       }
     },
-    [addBlockAt, insertTemplateAt, sendDragHover],
+    [addBlockAt, insertTemplateAt, sendDragHover, resolveAt],
   )
 
   const save = async (publish: boolean, options: { unpublish?: boolean } = {}) => {
@@ -773,7 +751,7 @@ export const VisualEditorView: React.FC = () => {
             sent into the frame at all.
           */}
           <div
-            className={`ve-canvas ve-canvas--${device}`}
+            className={`ve-canvas ve-canvas--${device} ${libDrag ? 've-canvas--lib-drag' : ''}`}
             onDragOver={onCanvasDragOver}
             onDragLeave={onCanvasDragLeave}
             onDrop={onCanvasDrop}

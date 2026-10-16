@@ -12,6 +12,7 @@
 import { BUILT_IN_FONTS, fontStack } from '@/features/fonts/installed'
 
 import { isDesignV2Raw } from '@/lib/design/upgrade'
+import type { SectionLayout } from '@/lib/sectionLayout'
 
 export type BackgroundType = 'none' | 'color' | 'gradient' | 'image'
 export type TextAlign = 'left' | 'center' | 'right'
@@ -68,6 +69,18 @@ export type BlockStyle = {
   dividerBottomHeight?: number
   dividerBottomFlip?: boolean
 
+  // Position inside a column (all optional; unset keeps normal block flow)
+  /** How the block sits across its column. 'stretch' fills it; start/center/end shrink to fit and align. */
+  selfAlign?: 'stretch' | 'start' | 'center' | 'end'
+  /** 'full' = 100% of the column, 'custom' = selfWidthPercent. Unset = automatic. */
+  selfWidth?: 'auto' | 'full' | 'custom'
+  selfWidthPercent?: number
+  marginLeft?: number
+  marginRight?: number
+
+  /** Section-only flow settings (direction per device, gap, wrap...). See lib/sectionLayout.ts. */
+  layout?: SectionLayout
+
   // Visibility
   hideOnMobile?: boolean
   hideOnDesktop?: boolean
@@ -121,6 +134,9 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   if (isNum(style.paddingBottom)) css.paddingBottom = `${style.paddingBottom}px`
   if (isNum(style.marginTop)) css.marginTop = `${style.marginTop}px`
   if (isNum(style.marginBottom)) css.marginBottom = `${style.marginBottom}px`
+  Object.assign(css, selfPositionCss(style))
+  if (isNum(style.marginLeft)) css.marginLeft = `${style.marginLeft}px`
+  if (isNum(style.marginRight)) css.marginRight = `${style.marginRight}px`
   const fontValue = blockFontStack(style.fontFamily)
   if (fontValue) css.fontFamily = fontValue
   if (isStr(style.textColor)) css.color = style.textColor
@@ -135,6 +151,33 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   if (isNum(style.borderRadius)) css.borderRadius = `${style.borderRadius}px`
   if (style.boxShadow && style.boxShadow !== 'none') css.boxShadow = BOX_SHADOW_PRESETS[style.boxShadow]
 
+  return css
+}
+
+/**
+ * Width and alignment of a block inside its column. Blocks are normal-flow boxes, so
+ * start/center/end are done with auto margins on a shrink-wrapped width; an explicit
+ * margin-left/right in the same style wins over the alignment margin.
+ */
+export function selfPositionCss(style: BlockStyle): React.CSSProperties {
+  const css: React.CSSProperties = {}
+  const align = style.selfAlign
+  if (style.selfWidth === 'full') css.width = '100%'
+  else if (style.selfWidth === 'custom' && isNum(style.selfWidthPercent) && style.selfWidthPercent > 0) {
+    css.width = `${Math.min(100, style.selfWidthPercent)}%`
+  }
+  if (align === 'stretch') {
+    if (!css.width) css.width = '100%'
+  } else if (align) {
+    if (!css.width) css.width = 'fit-content'
+    css.maxWidth = '100%'
+    if (align === 'center') {
+      css.marginLeft = 'auto'
+      css.marginRight = 'auto'
+    } else if (align === 'end') {
+      css.marginLeft = 'auto'
+    }
+  }
   return css
 }
 

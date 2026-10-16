@@ -2,22 +2,27 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { SectionNode } from '@/lib/sectionTree'
+import type { SectionColumn, SectionNode } from '@/lib/sectionTree'
 import { defaultColumns } from '@/lib/sectionTree'
 
 import { getElementDef } from '@/lib/elements/registry'
 import { can } from '@/features/roles/permissions'
 
-import { getBlockDef } from './visualEditor/blockSchemas'
-import { CANVAS_ORIGIN, isBridgeMessage, type FrameToParentMessage } from './visualEditor/canvasBridge'
+import { getBlockDef, INNER_SECTION_SLUG } from './visualEditor/blockSchemas'
+import { CANVAS_ORIGIN, isBridgeMessage, isColumnOpMessage, type ColumnOp, type FrameToParentMessage } from './visualEditor/canvasBridge'
+import { applyColumnOp, buildSectionNode, getColumn, getColumnOwner, isColumnPath, updateColumnAt, type Structure } from './visualEditor/columnOps'
+import { ColumnPanel } from './visualEditor/ColumnPanel'
+import { StructurePicker } from './visualEditor/StructurePicker'
 import { EditorDock, type DockTab } from './visualEditor/EditorDock'
 import {
   cloneNode,
+  getList,
   getNode,
   insertNode,
   insertNodes,
   moveNode,
   movedNodePath,
+  pathKey,
   reorderWithin,
   splitPath,
   stripEditorIds,
@@ -32,6 +37,11 @@ import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
+import { canRedo, canUndo, clampPath, createHistory, pushHistory, redoHistory, undoHistory, type History } from './visualEditor/history'
+import { planPaste, readClipboard, serializeSelection, writeClipboard } from './visualEditor/editorClipboard'
+import { useEditorShortcuts } from './visualEditor/useEditorShortcuts'
+import { ContextMenu, type ContextMenuItem } from './visualEditor/ContextMenu'
+import { ShortcutsHelp } from './visualEditor/ShortcutsHelp'
 import { clientToFrame, isLibraryDragTypes, resolveDropSlotInDoc, VE_BLOCK_MIME, VE_TEMPLATE_MIME } from './visualEditor/dropSlot'
 
 let idCounter = 0
@@ -85,6 +95,8 @@ export const VisualEditorView: React.FC = () => {
     at: 0,
   })
   const [dockCollapsed, setDockCollapsed] = useState(false)
+  /** Where a "Select your structure" pick will insert the new section; null while the picker is closed. */
+  const [structureTarget, setStructureTarget] = useState<{ containerPath: NodePath; at: number } | null>(null)
   const [dirty, setDirty] = useState(false)
   const [locks, setLocks] = useState<Locks>({ nodes: {} })
   const [locksDirty, setLocksDirty] = useState(false)
@@ -100,6 +112,20 @@ export const VisualEditorView: React.FC = () => {
   const [embedKey, setEmbedKey] = useState<string | undefined>(undefined)
   const [publishedLayout, setPublishedLayout] = useState<unknown>(null)
   const formMode = surface?.formMode === true
+
+  const [menu, setMenu] = useState<{ x: number; y: number; path: NodePath } | null>(null)
+
+  // Undo/redo. The history lives in a ref (it changes on every edit); `historyTick` re-renders
+  // the toolbar buttons when it does. blocksRef/selectedRef always hold the latest values so
+  // several edits in one event still chain correctly.
+  const historyRef = useRef<History>(createHistory())
+  const [historyFlags, setHistoryFlags] = useState({ undo: false, redo: false })
+  const syncHistory = useCallback(() => {
+    setHistoryFlags({ undo: canUndo(historyRef.current), redo: canRedo(historyRef.current) })
+  }, [])
+  const handleKeyRef = useRef<(k: { key: string; ctrl: boolean; meta: boolean; shift: boolean; alt: boolean }) => boolean>(() => false)
+  const blocksRef = useRef<SectionNode[]>([])
+  const selectedRef = useRef<NodePath | null>(null)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const lastHoverKey = useRef<string | null>(null)
@@ -129,6 +155,9 @@ export const VisualEditorView: React.FC = () => {
             setPublishedLayout(doc.publishedLayout ?? null)
           }
           const withStableIds = withIds(raw)
+          blocksRef.current = withStableIds
+          historyRef.current = createHistory()
+          setHistoryFlags({ undo: false, redo: false })
           setBlocks(withStableIds)
           setInsertTarget({ containerPath: [], at: withStableIds.length })
           setDocTitle(surface.titleField ? String(doc[surface.titleField] || 'Untitled') : surface.label)
@@ -172,6 +201,9 @@ export const VisualEditorView: React.FC = () => {
   }, [dirty])
 
   const selectedNode = selectedPath ? getNode(blocks, selectedPath) : undefined
+  useEffect(() => {
+    selectedRef.current = selectedPath
+  }, [selectedPath])
 
   // Latest tree/locks/user for the mutation callbacks below (they are memoised without them).
   const lockCtx = useRef({ blocks, locks, lockUser, formConfig })
@@ -213,6 +245,48 @@ export const VisualEditorView: React.FC = () => {
   /* ---------------------------------------------------------------------- */
 
   /**
+   * The one way the tree changes: records the old tree for undo, then applies the change.
+   * `key` merges rapid repeat edits (typing in one field) into a single undo step.
+   */
+  const applyBlocks = useCallback((change: (prev: SectionNode[]) => SectionNode[], key?: string) => {
+    const prev = blocksRef.current
+    const next = change(prev)
+    if (next === prev) return false
+    historyRef.current = pushHistory(historyRef.current, { blocks: prev, selectedPath: selectedRef.current }, { key })
+    blocksRef.current = next
+    setBlocks(next)
+    syncHistory()
+    setDirty(true)
+    return true
+  }, [syncHistory])
+
+  const restoreSnapshot = useCallback((snapshot: { blocks: SectionNode[]; selectedPath: NodePath | null }) => {
+    blocksRef.current = snapshot.blocks
+    setBlocks(snapshot.blocks)
+    const nextPath = clampPath(snapshot.blocks, snapshot.selectedPath)
+    selectedRef.current = nextPath
+    setSelectedPath(nextPath)
+    if (!nextPath) setDockTab('elements')
+    setInsertTarget({ containerPath: [], at: snapshot.blocks.length })
+    syncHistory()
+    setDirty(true)
+  }, [syncHistory])
+
+  const undo = useCallback(() => {
+    const result = undoHistory(historyRef.current, { blocks: blocksRef.current, selectedPath: selectedRef.current })
+    if (!result) return
+    historyRef.current = result.history
+    restoreSnapshot(result.snapshot)
+  }, [restoreSnapshot])
+
+  const redo = useCallback(() => {
+    const result = redoHistory(historyRef.current, { blocks: blocksRef.current, selectedPath: selectedRef.current })
+    if (!result) return
+    historyRef.current = result.history
+    restoreSnapshot(result.snapshot)
+  }, [restoreSnapshot])
+
+  /**
    * A fresh node for a block type - a brand-new section starts with two
    * columns so it is immediately useful.
    *
@@ -236,35 +310,74 @@ export const VisualEditorView: React.FC = () => {
     return node
   }, [])
 
+  /** Sections (and inner sections) ask for a structure first. Returns true when it took over the pick. */
+  const requestSection = useCallback(
+    (blockType: string, containerPath: NodePath, at: number): boolean => {
+      if (blockType !== 'section' && blockType !== INNER_SECTION_SLUG) return false
+      if (blockType === INNER_SECTION_SLUG && containerPath.length === 0) {
+        setLockNotice('Select a column first (click an empty part of one on the canvas), then add an inner section.')
+        setTimeout(() => setLockNotice(null), 5000)
+        return true
+      }
+      if (insertBlocked(containerPath)) return true
+      setStructureTarget({ containerPath, at })
+      return true
+    },
+    [insertBlocked],
+  )
+
   const addBlock = useCallback(
     (blockType: string) => {
+      if (blockType === INNER_SECTION_SLUG) {
+        // An inner section goes in the selected column (at its end), else wherever the last "+" pointed.
+        const selected = selectedRef.current
+        const column = isColumnPath(selected) ? getColumn(lockCtx.current.blocks, selected) : undefined
+        if (selected && column) requestSection(blockType, selected, (column.blocks || []).length)
+        else requestSection(blockType, insertTarget.containerPath, insertTarget.at)
+        return
+      }
+      if (requestSection(blockType, insertTarget.containerPath, insertTarget.at)) return
       const node = buildNode(blockType)
       if (!node) return
       const { containerPath, at } = insertTarget
       if (insertBlocked(containerPath)) return
 
-      setBlocks((prev) => insertNode(prev, containerPath, at, node))
+      applyBlocks((prev) => insertNode(prev, containerPath, at, node))
       setSelectedPath([...containerPath, at])
       setDockTab('settings')
-      setDirty(true)
     },
-    [insertTarget, buildNode, insertBlocked],
+    [insertTarget, buildNode, insertBlocked, applyBlocks, requestSection],
   )
 
   /** Same as addBlock, but for a drag-and-drop from the library that already knows its own target. */
   const addBlockAt = useCallback(
     (blockType: string, containerPath: NodePath, at: number) => {
+      if (requestSection(blockType, containerPath, at)) return
       const node = buildNode(blockType)
       if (!node) return
       if (insertBlocked(containerPath)) return
 
-      setBlocks((prev) => insertNode(prev, containerPath, at, node))
+      applyBlocks((prev) => insertNode(prev, containerPath, at, node))
       setSelectedPath([...containerPath, at])
       setInsertTarget({ containerPath, at: at + 1 })
       setDockTab('settings')
-      setDirty(true)
     },
-    [buildNode, insertBlocked],
+    [buildNode, insertBlocked, applyBlocks, requestSection],
+  )
+
+  /** Inserts the section the person configured in the structure picker. */
+  const insertStructure = useCallback(
+    (structure: Structure) => {
+      const target = structureTarget
+      setStructureTarget(null)
+      if (!target || insertBlocked(target.containerPath)) return
+      const node = buildSectionNode(structure.widths, nextId)
+      applyBlocks((prev) => insertNode(prev, target.containerPath, target.at, node))
+      setSelectedPath([...target.containerPath, target.at])
+      setInsertTarget({ containerPath: target.containerPath, at: target.at + 1 })
+      setDockTab('settings')
+    },
+    [structureTarget, insertBlocked, applyBlocks],
   )
 
   /** Templates (a curated preset or a saved Page Template) insert several blocks at once. */
@@ -274,12 +387,11 @@ export const VisualEditorView: React.FC = () => {
       if (insertBlocked(containerPath)) return
       const withFreshIds = templateBlocks.map((node) => cloneNode({ ...node, _id: undefined }, nextId))
 
-      setBlocks((prev) => insertNodes(prev, containerPath, at, withFreshIds))
+      applyBlocks((prev) => insertNodes(prev, containerPath, at, withFreshIds))
       setSelectedPath([...containerPath, at])
       setDockTab('settings')
-      setDirty(true)
     },
-    [insertBlocked],
+    [insertBlocked, applyBlocks],
   )
 
   const addTemplateBlocks = useCallback(
@@ -289,39 +401,38 @@ export const VisualEditorView: React.FC = () => {
 
   const deleteBlock = useCallback((path: NodePath) => {
     if (lockedOut(path)) return
-    setBlocks((prev) => updateNode(prev, path, () => null))
+    applyBlocks((prev) => updateNode(prev, path, () => null))
     setSelectedPath(null)
-    setDirty(true)
-  }, [lockedOut])
+  }, [lockedOut, applyBlocks])
 
   const duplicateBlock = useCallback((path: NodePath) => {
     if (lockedOut(path)) return
     const { containerPath, index } = splitPath(path)
-    setBlocks((prev) => {
+    applyBlocks((prev) => {
       const original = getNode(prev, path)
       if (!original) return prev
       return insertNode(prev, containerPath, index + 1, cloneNode(original, nextId))
     })
-    setDirty(true)
-  }, [lockedOut])
+  }, [lockedOut, applyBlocks])
 
   const moveBlock = useCallback((path: NodePath, direction: -1 | 1) => {
     if (lockedOut(path)) return
+    if (path.length % 2 === 0) return
     const { containerPath, index } = splitPath(path)
-    setBlocks((prev) => reorderWithin(prev, containerPath, index, index + direction))
+    const list = getList(blocksRef.current, containerPath)
+    if (!list || index + direction < 0 || index + direction >= list.length) return
+    applyBlocks((prev) => reorderWithin(prev, containerPath, index, index + direction))
     setSelectedPath([...containerPath, index + direction])
-    setDirty(true)
-  }, [lockedOut])
+  }, [lockedOut, applyBlocks])
 
   const updateSelected = useCallback(
     (next: Record<string, unknown>) => {
       if (!selectedPath) return
       const lock = effectiveLock(lockCtx.current.blocks, selectedPath, lockCtx.current.locks, lockCtx.current.lockUser)
       if (lock?.blocked && lock.mode === 'full') return
-      setBlocks((prev) => updateNode(prev, selectedPath, (node) => ({ ...(next as SectionNode), _id: node._id })))
-      setDirty(true)
+      applyBlocks((prev) => updateNode(prev, selectedPath, (node) => ({ ...(next as SectionNode), _id: node._id })), `edit:${pathKey(selectedPath)}`)
     },
-    [selectedPath],
+    [selectedPath, applyBlocks],
   )
 
   /** Handle-drag drop: move a block into any list (same column, another column, out of/into sections). */
@@ -330,10 +441,63 @@ export const VisualEditorView: React.FC = () => {
     const { blocks: current } = lockCtx.current
     const landed = movedNodePath(current, from, containerPath, at)
     if (!landed) return
-    setBlocks((prev) => moveNode(prev, from, containerPath, at))
+    applyBlocks((prev) => moveNode(prev, from, containerPath, at))
     setSelectedPath(landed)
-    setDirty(true)
-  }, [lockedOut, insertBlocked])
+  }, [lockedOut, insertBlocked, applyBlocks])
+
+  /** Column toolbar actions from the canvas or the column panel. */
+  const columnOp = useCallback((path: NodePath, op: ColumnOp) => {
+    if (!isColumnPath(path) || lockedOut(path.slice(0, -1))) return
+    if (op === 'innerSection') {
+      const column = getColumn(blocksRef.current, path)
+      if (column) requestSection(INNER_SECTION_SLUG, path, (column.blocks || []).length)
+      return
+    }
+    const result = applyColumnOp(blocksRef.current, path, op, nextId)
+    if (!result) return
+    applyBlocks(() => result.blocks)
+    setSelectedPath(result.selectedPath)
+    setDockTab('settings')
+  }, [lockedOut, requestSection, applyBlocks])
+
+  /** Edits from the column panel (one history step per burst of edits to the same column). */
+  const updateSelectedColumn = useCallback((path: NodePath, column: SectionColumn) => {
+    const lock = effectiveLock(lockCtx.current.blocks, path.slice(0, -1), lockCtx.current.locks, lockCtx.current.lockUser)
+    if (lock?.blocked && lock.mode === 'full') return
+    applyBlocks((prev) => updateColumnAt(prev, path, () => column), `column:${pathKey(path)}`)
+  }, [applyBlocks])
+
+  /* ---------------------------------------------------------------------- */
+  /* Clipboard                                                               */
+  /* ---------------------------------------------------------------------- */
+
+  const flashNotice = useCallback((text: string, ms = 4000) => {
+    setTemplateToast(text)
+    setTimeout(() => setTemplateToast(null), ms)
+  }, [])
+
+  const copyNode = useCallback(async (path: NodePath): Promise<boolean> => {
+    const serialized = serializeSelection(blocksRef.current, path)
+    if (!serialized) return false
+    const where = await writeClipboard(serialized.text)
+    flashNotice(where === 'system' ? 'Copied' : 'Copied (kept inside the editor only; the browser blocked the clipboard)', 2500)
+    return true
+  }, [flashNotice])
+
+  const cutNode = useCallback(async (path: NodePath) => {
+    if (lockedOut(path)) return
+    if (await copyNode(path)) deleteBlock(path)
+  }, [lockedOut, copyNode, deleteBlock])
+
+  const pasteAt = useCallback(async (target: NodePath | null) => {
+    const result = await readClipboard()
+    if (result.ok === false) {
+      flashNotice(result.error)
+      return
+    }
+    const { containerPath, at } = planPaste(blocksRef.current, target)
+    insertTemplateAt(result.nodes, containerPath, at)
+  }, [flashNotice, insertTemplateAt])
 
   /* ---------------------------------------------------------------------- */
   /* Canvas iframe bridge - see visualEditor/canvasBridge.ts                */
@@ -347,6 +511,10 @@ export const VisualEditorView: React.FC = () => {
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== iframeRef.current?.contentWindow) return
       const data: unknown = event.data
+      if (isColumnOpMessage(data)) {
+        columnOp(data.path, data.op)
+        return
+      }
       if (!isBridgeMessage(data)) return
       const msg = data as FrameToParentMessage
       switch (msg.type) {
@@ -356,6 +524,11 @@ export const VisualEditorView: React.FC = () => {
         case 'select':
           setSelectedPath(msg.path)
           setDockTab(msg.path ? 'settings' : 'elements')
+          // A selected column is also where the next element lands (click a column, then pick an element).
+          if (isColumnPath(msg.path)) {
+            const column = getColumn(lockCtx.current.blocks, msg.path)
+            if (column) setInsertTarget({ containerPath: msg.path, at: (column.blocks || []).length })
+          }
           break
         case 'add':
           setInsertTarget({ containerPath: msg.containerPath, at: msg.at })
@@ -373,11 +546,47 @@ export const VisualEditorView: React.FC = () => {
         case 'moveTo':
           moveBlockTo(msg.from, msg.containerPath, msg.at)
           break
+        case 'key':
+          handleKeyRef.current({ key: msg.key, ctrl: msg.ctrl, meta: msg.meta, shift: msg.shift, alt: msg.alt })
+          break
+        case 'contextmenu': {
+          const rect = iframeRef.current?.getBoundingClientRect()
+          if (!rect || !Array.isArray(msg.path)) break
+          setSelectedPath(msg.path)
+          setDockTab('settings')
+          setMenu({ x: rect.left + msg.x, y: rect.top + msg.y, path: msg.path })
+          break
+        }
       }
+      if (msg.type === 'select' || msg.type === 'add') setMenu(null)
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo])
+  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp])
+
+  // Keyboard shortcuts: the parent's own key presses and the ones forwarded from the frame share this handler.
+  const { handleKey } = useEditorShortcuts({
+    enabled: !loading && !saveTemplateOpen && !menu,
+    hasSelection: Boolean(selectedPath),
+    handlers: {
+      undo,
+      redo,
+      copy: () => selectedPath && void copyNode(selectedPath),
+      cut: () => selectedPath && void cutNode(selectedPath),
+      paste: () => void pasteAt(selectedPath),
+      duplicate: () => selectedPath && selectedPath.length % 2 === 1 && duplicateBlock(selectedPath),
+      delete: () => selectedPath && selectedPath.length % 2 === 1 && deleteBlock(selectedPath),
+      clear: () => {
+        setSelectedPath(null)
+        setDockTab('elements')
+      },
+      moveUp: () => selectedPath && moveBlock(selectedPath, -1),
+      moveDown: () => selectedPath && moveBlock(selectedPath, 1),
+    },
+  })
+  useEffect(() => {
+    handleKeyRef.current = handleKey
+  }, [handleKey])
 
   // Pushes the current tree + selection down to the frame whenever either
   // changes (including every keystroke made in the field panel), and once
@@ -581,6 +790,7 @@ export const VisualEditorView: React.FC = () => {
     [formMode, blocks],
   )
   const formUnpublished = formMode ? formHasUnpublishedChanges({ layout: stripEditorIds(blocks, lockedKeySet(locks)), publishedLayout } as never) : false
+  const modLabel = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || '') ? 'Cmd' : 'Ctrl'
   const isAdmin = Boolean(lockUser?.roles?.includes('admin'))
 
   const backHref = surface
@@ -588,6 +798,43 @@ export const VisualEditorView: React.FC = () => {
       ? `/admin/globals/${surface.slug}`
       : `/admin/collections/${surface.slug}/${route?.id}`
     : '/admin'
+
+  const menuItems = (path: NodePath): ContextMenuItem[] => {
+    const { containerPath, index } = splitPath(path)
+    const list = getList(blocks, containerPath) ?? []
+    const locked = Boolean(effectiveLock(blocks, path, locks, lockUser)?.blocked)
+    return [
+      { id: 'copy', label: 'Copy', hint: `${modLabel}+C` },
+      { id: 'cut', label: 'Cut', hint: `${modLabel}+X`, disabled: locked },
+      { id: 'paste', label: 'Paste after', hint: `${modLabel}+V` },
+      { id: 'duplicate', label: 'Duplicate', hint: `${modLabel}+D`, disabled: locked },
+      { id: 'up', label: 'Move up', hint: 'Alt+Up', disabled: locked || index <= 0 },
+      { id: 'down', label: 'Move down', hint: 'Alt+Down', disabled: locked || index >= list.length - 1 },
+      ...(formMode ? [] : [{ id: 'template', label: 'Save as template' }]),
+      { id: 'delete', label: 'Delete', hint: 'Del', disabled: locked, danger: true },
+    ]
+  }
+
+  // Settings for a column selected on the canvas (its path has an even length).
+  const selectedColumnOwner = isColumnPath(selectedPath) ? getColumnOwner(blocks, selectedPath) : undefined
+  const selectedColumnIndex = isColumnPath(selectedPath) ? selectedPath[selectedPath.length - 1] : -1
+  const columnPanelNode =
+    isColumnPath(selectedPath) && selectedColumnOwner?.columns?.[selectedColumnIndex] ? (
+      <ColumnPanel
+        section={selectedColumnOwner}
+        index={selectedColumnIndex}
+        device={device}
+        onChange={(column) => updateSelectedColumn(selectedPath, column)}
+        onOp={(op) => columnOp(selectedPath, op)}
+        onSelectSection={() => setSelectedPath(selectedPath.slice(0, -1))}
+        onClose={() => {
+          setSelectedPath(null)
+          setDockTab('elements')
+        }}
+        canEditLayout={userPermissions?.canEditLayout !== false}
+        canEditStyle={userPermissions?.canEditStyle !== false}
+      />
+    ) : undefined
 
   if (loading) return <div className="ve-loading-screen">Loading visual editor</div>
 
@@ -632,6 +879,29 @@ export const VisualEditorView: React.FC = () => {
           </span>
         </div>
         <div className="ve-topbar__actions">
+          <div className="ve-history" role="group" aria-label="History">
+            <button
+              type="button"
+              className="ve-btn ve-btn--ghost"
+              onClick={undo}
+              disabled={!historyFlags.undo}
+              aria-label="Undo"
+              title={`Undo (${modLabel}+Z)`}
+            >
+              Undo
+            </button>
+            <button
+              type="button"
+              className="ve-btn ve-btn--ghost"
+              onClick={redo}
+              disabled={!historyFlags.redo}
+              aria-label="Redo"
+              title={`Redo (${modLabel}+Shift+Z)`}
+            >
+              Redo
+            </button>
+          </div>
+          <ShortcutsHelp modLabel={modLabel} />
           <div className="ve-device-toggle" role="group" aria-label="Preview device">
             <button
               type="button"
@@ -706,6 +976,13 @@ export const VisualEditorView: React.FC = () => {
           onDuplicateSelected={() => selectedPath && duplicateBlock(selectedPath)}
           userPermissions={userPermissions}
           lockUi={lockUi}
+          device={device}
+          onSelectColumn={(index) => {
+            if (!selectedPath || selectedPath.length % 2 === 0) return
+            setSelectedPath([...selectedPath, index])
+            setDockTab('settings')
+          }}
+          columnPanel={columnPanelNode}
           formPanel={
             formMode ? (
               <FormSettingsPanel
@@ -768,6 +1045,32 @@ export const VisualEditorView: React.FC = () => {
         </div>
       </div>
       </FormEditorContext.Provider>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={menuItems(menu.path)}
+          onClose={() => setMenu(null)}
+          onChoose={(id) => {
+            const path = menu.path
+            setMenu(null)
+            if (id === 'copy') void copyNode(path)
+            else if (id === 'cut') void cutNode(path)
+            else if (id === 'paste') void pasteAt(path)
+            else if (id === 'duplicate') duplicateBlock(path)
+            else if (id === 'delete') deleteBlock(path)
+            else if (id === 'up') moveBlock(path, -1)
+            else if (id === 'down') moveBlock(path, 1)
+            else if (id === 'template') {
+              setSelectedPath(path)
+              setSaveTemplateOpen(true)
+            }
+          }}
+        />
+      )}
+      {structureTarget && (
+        <StructurePicker inner={structureTarget.containerPath.length > 0} onPick={insertStructure} onCancel={() => setStructureTarget(null)} />
+      )}
       {saveTemplateOpen && (
         <SaveAsTemplateDialog
           pageBlocks={blocks}

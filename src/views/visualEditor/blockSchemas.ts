@@ -64,7 +64,7 @@ const VISUAL_BLOCKS: BlockDef[] = [
     label: 'Section',
     icon: String.fromCodePoint(0x25a6),
     category: 'layout',
-    description: 'A row of columns. Drop blocks inside each column, and nest sections as deep as you like.',
+    description: 'A row of columns - you pick the structure when you add it. Drop blocks inside each column.',
     fields: [],
     defaultValue: () => ({ blockType: 'section', columns: [] }),
   },
@@ -293,6 +293,9 @@ const VISUAL_BLOCKS: BlockDef[] = [
   },
 ]
 
+/** Library card slug for a section that is inserted inside a column. */
+export const INNER_SECTION_SLUG = 'inner-section'
+
 export function getBlockDef(blockType: string): BlockDef | undefined {
   return VISUAL_BLOCKS.find((b) => b.slug === blockType)
 }
@@ -325,5 +328,16 @@ export function libraryCards(options: { formMode?: boolean } = {}): BlockDef[] {
     }),
   )
   const blocks = VISUAL_BLOCKS.filter((b) => !b.hiddenFromLibrary && (!formMode || b.slug === 'section'))
-  return [...blocks, ...elementCards]
+  // A section that goes inside a column (Elementor's "Inner section"): the same data as a Section,
+  // offered as its own card so it is easy to find. VisualEditor.tsx puts it in the selected column.
+  const innerSection: BlockDef = {
+    slug: INNER_SECTION_SLUG,
+    label: 'Inner section',
+    icon: String.fromCodePoint(0x25a3),
+    category: 'layout',
+    description: 'A section placed inside a column, with its own columns. Select a column first, then add it.',
+    fields: [],
+    defaultValue: () => ({ blockType: 'section', columns: [] }),
+  }
+  return [...blocks, ...(formMode ? [] : [innerSection]), ...elementCards]
 }

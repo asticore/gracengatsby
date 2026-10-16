@@ -43,9 +43,28 @@ export type FrameToParentMessage =
   /** Drag-handle drop: move the block at `from` into `containerPath` at slot `at` (slot numbering
    *  as before the move - see treeOps.moveNode). Works within a list, between columns and across levels. */
   | { source: typeof SOURCE; type: 'moveTo'; from: NodePath; containerPath: NodePath; at: number }
+  /** A key press inside the frame (not in an editable field), forwarded so the parent's one shortcut handler sees it. */
+  | { source: typeof SOURCE; type: 'key'; key: string; ctrl: boolean; meta: boolean; shift: boolean; alt: boolean }
+  /** Right-click on a block; x/y are in the frame's own viewport coordinates. */
+  | { source: typeof SOURCE; type: 'contextmenu'; path: NodePath; x: number; y: number }
 
 /** True for any message this bridge sent, from either side - narrow further on `.type` after this. */
 export const isBridgeMessage = (data: unknown): data is FrameToParentMessage | ParentToFrameMessage =>
   Boolean(data) && typeof data === 'object' && (data as { source?: unknown }).source === SOURCE
 
 export const CANVAS_ORIGIN = () => (typeof window === 'undefined' ? '' : window.location.origin)
+
+/* ------------------------------------------------------------------------- */
+/* Column selection and column operations (section structure)                 */
+/* ------------------------------------------------------------------------- */
+// A column is selected with the ordinary 'select' message: its path has an EVEN length
+// (see treeOps.ts), which is how the parent tells it from a block. The column toolbar and the
+// empty-column button send the message below instead of a per-operation type each.
+
+export type ColumnOp = 'add' | 'duplicate' | 'delete' | 'moveLeft' | 'moveRight' | 'innerSection'
+
+export type ColumnToParentMessage = { source: typeof SOURCE; type: 'columnOp'; path: NodePath; op: ColumnOp }
+
+/** Narrows an incoming message to a column operation (the base union above predates it). */
+export const isColumnOpMessage = (data: unknown): data is ColumnToParentMessage =>
+  isBridgeMessage(data) && (data as { type?: unknown }).type === 'columnOp'

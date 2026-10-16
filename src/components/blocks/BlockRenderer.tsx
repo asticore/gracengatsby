@@ -22,6 +22,8 @@ import { AdSlot } from '@/features/ads/components/AdSlot'
 import { AdRichText } from '@/features/ads/components/AdRichText'
 import { DataViewBlock } from '@/features/dataViews/components/DataViewBlock'
 import { RichTextWithForms } from '@/features/forms/components/RichTextWithForms'
+import { ElementWithMedia } from './elements/ElementWithMedia'
+import { MEDIA_PROP_KEYS } from './elements/elementUtil'
 import { renderElement } from './elements/renderElement'
 
 /**
@@ -148,6 +150,9 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
         const raw = props.view
         const ref = raw && typeof raw === 'object' ? (raw as { id?: unknown }).id : raw
         return <DataViewBlock viewRef={typeof ref === 'number' || typeof ref === 'string' ? ref : null} />
+      }
+      if (MEDIA_PROP_KEYS[get<string>('elementType')]) {
+        return <ElementWithMedia elementType={get<string>('elementType')} props={get<Record<string, unknown>>('props') || {}} design={get('design')} scopeId={`el-${key}`} />
       }
       return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {}, get('design'), `el-${key}`)
 

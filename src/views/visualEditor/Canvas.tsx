@@ -3,13 +3,14 @@
 import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
-import { asBlockStyle, blockStyleToCss } from '@/lib/blockStyle'
+import { asBlockStyle, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
 import { sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { ShapeDivider } from '@/components/blocks/StyledBlock'
 import { getBlockDef } from './blockSchemas'
 import { CanvasBlockPreview } from './CanvasBlockPreview'
+import type { ColumnOp } from './canvasBridge'
 import { pathKey, type NodePath } from './treeOps'
 
 export type CanvasHandlers = {
@@ -21,6 +22,8 @@ export type CanvasHandlers = {
   onDelete: (path: NodePath) => void
   onDuplicate: (path: NodePath) => void
   onMove: (path: NodePath, direction: -1 | 1) => void
+  /** Column toolbar / empty-column actions (add, duplicate, delete, move, inner section). */
+  onColumnOp?: (path: NodePath, op: ColumnOp) => void
   /** Key (see slotKey below) of the insert slot a library-card drag is currently over, or null.
    *  Driven by the parent's 'dragHover' bridge message - the parent resolves drop targets
    *  itself via elementFromPoint, so this is purely for visual feedback. */
@@ -110,12 +113,18 @@ const CanvasNode: React.FC<{
     ...blockStyleToCss(design),
     opacity: isDragging ? 0.4 : undefined,
   }
+  // Tablet / mobile overrides: the canvas iframe is as wide as the previewed device, so the same
+  // media rules the live page uses apply here (hidden-on-this-device blocks are faded, not removed).
+  const scopeId = `ve-n-${path.join('_')}`
+  const deviceCss = blockStyleCss(design, scopeId, { editor: true })
+  const hasMinHeight = [design.minHeight, design.tablet?.minHeight, design.mobile?.minHeight].some((v) => typeof v === 'number')
 
   return (
     <div
       ref={setNodeRef}
+      id={scopeId}
       data-ve-node={JSON.stringify(path)}
-      className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ve-node--depth-${Math.min(depth, 3)}`}
+      className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ${hasMinHeight ? 've-node--minh' : ''} ve-node--depth-${Math.min(depth, 3)}`}
       style={wrapperStyle}
       onClick={(event) => {
         // Stop the click bubbling to an ancestor section, so clicking a nested
@@ -124,6 +133,7 @@ const CanvasNode: React.FC<{
         handlers.onSelect(path)
       }}
     >
+      {deviceCss && <style dangerouslySetInnerHTML={{ __html: deviceCss }} />}
       <div className="ve-node__toolbar">
         <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to move">
           ⠿
@@ -243,6 +253,8 @@ const SectionColumns: React.FC<{
     )
   }
 
+  const ownerLocked = Boolean(handlers.locks?.[pathKey(path)]?.blocked)
+
   return (
     <div
       className={flow.className ? `ve-section ${flow.className}` : 've-section'}
@@ -250,21 +262,84 @@ const SectionColumns: React.FC<{
       style={Object.keys(flow.style).length > 0 ? (flow.style as React.CSSProperties) : undefined}
     >
       {columns.map((column, columnIndex) => (
-        <div
-          className="ve-column"
-          data-ve-column={JSON.stringify([...path, columnIndex])}
+        <CanvasColumn
           key={column._id || columnIndex}
-          style={{ ...columnWidthVars(column), ...blockStyleToCss(asBlockStyle(column.design)) }}
-        >
-          <div className="ve-column__tag">Column {columnIndex + 1}</div>
-          <CanvasNodeList
-            nodes={column.blocks || []}
-            containerPath={[...path, columnIndex]}
-            handlers={handlers}
-            depth={depth + 1}
-          />
-        </div>
+          column={column}
+          columnPath={[...path, columnIndex]}
+          index={columnIndex}
+          count={columns.length}
+          handlers={handlers}
+          depth={depth}
+          ownerLocked={ownerLocked}
+        />
       ))}
+    </div>
+  )
+}
+
+/**
+ * One column on the canvas. Selectable like a block (its path is an even-length one): hovering
+ * outlines it in green, clicking selects it and opens its settings, and the selected column
+ * carries a small toolbar (move left / right, add, duplicate, delete).
+ */
+const CanvasColumn: React.FC<{
+  column: SectionColumn
+  columnPath: NodePath
+  index: number
+  count: number
+  handlers: CanvasHandlers
+  depth: number
+  ownerLocked: boolean
+}> = ({ column, columnPath, index, count, handlers, depth, ownerLocked }) => {
+  const selected = handlers.selectedKey === pathKey(columnPath)
+  const design = asBlockStyle(column.design)
+  const scopeId = `ve-c-${columnPath.join('_')}`
+  const deviceCss = blockStyleCss(design, scopeId, { editor: true })
+  const op = (event: React.MouseEvent, name: ColumnOp) => {
+    event.stopPropagation()
+    handlers.onColumnOp?.(columnPath, name)
+  }
+  const empty = (column.blocks || []).length === 0
+
+  return (
+    <div
+      id={scopeId}
+      className={`ve-column ${selected ? 've-column--selected' : ''}`}
+      data-ve-column={JSON.stringify(columnPath)}
+      style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
+      onClick={(event) => {
+        // A block inside stops its own click, so this only fires for the column itself.
+        event.stopPropagation()
+        handlers.onSelect(columnPath)
+      }}
+    >
+      {deviceCss && <style dangerouslySetInnerHTML={{ __html: deviceCss }} />}
+      <div className="ve-column__tag">Column {index + 1}</div>
+      {selected && (
+        <div className="ve-column__toolbar" role="toolbar" aria-label={`Column ${index + 1} actions`}>
+          <button type="button" className="ve-column__act" disabled={ownerLocked || index === 0} onClick={(e) => op(e, 'moveLeft')} aria-label="Move column left" title="Move column left">
+            {'←'}
+          </button>
+          <button type="button" className="ve-column__act" disabled={ownerLocked || index === count - 1} onClick={(e) => op(e, 'moveRight')} aria-label="Move column right" title="Move column right">
+            {'→'}
+          </button>
+          <button type="button" className="ve-column__act" disabled={ownerLocked} onClick={(e) => op(e, 'add')} aria-label="Add column" title="Add column after this one">
+            +
+          </button>
+          <button type="button" className="ve-column__act" disabled={ownerLocked} onClick={(e) => op(e, 'duplicate')} aria-label="Duplicate column" title="Duplicate column">
+            {'⧉'}
+          </button>
+          <button type="button" className="ve-column__act ve-column__act--danger" disabled={ownerLocked || count <= 1} onClick={(e) => op(e, 'delete')} aria-label="Delete column" title={count <= 1 ? 'A section needs at least one column' : 'Delete column'}>
+            {'✕'}
+          </button>
+        </div>
+      )}
+      <CanvasNodeList nodes={column.blocks || []} containerPath={columnPath} handlers={handlers} depth={depth + 1} />
+      {empty && !ownerLocked && (
+        <button type="button" className="ve-column__inner" onClick={(e) => op(e, 'innerSection')}>
+          Add inner section
+        </button>
+      )}
     </div>
   )
 }

@@ -131,7 +131,13 @@ const VISUAL_BLOCKS: BlockDef[] = [
     category: 'basic',
     description: 'Embeds a form built under Content > Forms.',
     fields: [
-      { name: 'form', label: 'Form', type: 'relationship', relationTo: 'forms' },
+      {
+        name: 'form',
+        label: 'Form',
+        type: 'relationship',
+        relationTo: 'forms',
+        helpText: 'No form yet? Create one in Forms (Settings > Forms) and pick it here.',
+      },
       { name: 'heading', label: 'Heading (overrides form name)', type: 'text', supportsMergeTags: true },
       { name: 'showTitle', label: "Show the form's name above it", type: 'checkbox' },
       { name: 'intro', label: 'Intro text', type: 'textarea', supportsMergeTags: true },

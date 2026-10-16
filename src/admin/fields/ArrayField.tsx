@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { FieldLabel, useField } from '@/engine/ui'
 import type { Field } from '@/engine'
 import { fieldLabel, fieldRequired } from './shared'
+import './array-field.css'
 
 type ScalarFieldRendererProps = {
   field: Field
@@ -230,7 +231,7 @@ export function RowSubfieldInput({
             onChange={(e) => onChange(e.target.value)}
             style={{ width: '100%', padding: '4px 8px' }}
           >
-            <option value="">— Select —</option>
+            <option value="">-- Select --</option>
             {options.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
@@ -345,6 +346,7 @@ function RawJsonSubfieldInput({
 export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, path, readOnly }) => {
   const { value, setValue } = useField<Record<string, unknown>[]>({ path })
   const arrayValue = Array.isArray(value) ? value : []
+  const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set())
 
   const fields = flattenRowFields((field as { fields?: Field[] }).fields ?? [])
   const minRows = (field as { minRows?: number }).minRows
@@ -398,116 +400,107 @@ export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
     setValue([...arrayValue, newRow])
   }
 
+  const lowerSingular = singularLabel.toLowerCase()
+  const lowerPlural = pluralLabel.toLowerCase()
+  const toggleRow = (index: number) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+
   return (
-    <div className="field-type array">
+    <div className="field-type array array-field">
       <FieldLabel label={fieldLabel(field)} required={fieldRequired(field)} />
 
       {arrayValue.length === 0 ? (
-        <div style={{ padding: '8px 0', color: '#666', fontSize: '0.95em' }}>No {pluralLabel.toLowerCase()} yet.</div>
+        <p className="array-field__empty">
+          No {lowerPlural} yet.{readOnly ? '' : ' Add one below.'}
+        </p>
       ) : (
-        <div style={{ marginBottom: 16 }}>
-          {arrayValue.map((row, rowIndex) => (
-            <div
-              key={rowIndex}
-              style={{
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                padding: '12px',
-                marginBottom: '12px',
-                backgroundColor: '#fafafa',
-              }}
-            >
-              {/* Row header with controls */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ fontWeight: 600, fontSize: '0.95em' }}>
-                  {singularLabel} {rowIndex + 1}
-                </div>
-                {!readOnly && (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => moveUp(rowIndex)}
-                      disabled={rowIndex === 0}
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '0.85em',
-                        cursor: rowIndex === 0 ? 'not-allowed' : 'pointer',
-                        opacity: rowIndex === 0 ? 0.5 : 1,
-                      }}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveDown(rowIndex)}
-                      disabled={rowIndex === arrayValue.length - 1}
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '0.85em',
-                        cursor: rowIndex === arrayValue.length - 1 ? 'not-allowed' : 'pointer',
-                        opacity: rowIndex === arrayValue.length - 1 ? 0.5 : 1,
-                      }}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeRow(rowIndex)}
-                      style={{ padding: '4px 8px', fontSize: '0.85em', cursor: 'pointer', color: '#d32f2f' }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Row subfields */}
-              <div>
-                {fields.map((subfield) => {
-                  const subfieldName = 'name' in subfield ? subfield.name : undefined
-                  if (!subfieldName) return null
-
-                  // row/collapsible are already flattened away above; group/tabs/ui add a nesting
-                  // level this opaque-row model doesn't support (rare here) - skip those only.
-                  if (['ui', 'group', 'tabs'].includes(subfield.type)) {
-                    return null
-                  }
-
-                  const subfieldValue = row[subfieldName]
-
-                  return (
-                    <div key={subfieldName}>
-                      <RowSubfieldInput
-                        subfield={subfield}
-                        value={subfieldValue}
-                        onChange={(newValue) => updateRowSubfield(rowIndex, subfieldName, newValue)}
-                        readOnly={readOnly}
-                      />
+        <div className="array-field__rows">
+          {arrayValue.map((row, rowIndex) => {
+            const isCollapsed = collapsed.has(rowIndex)
+            const rowTitle = `${singularLabel} ${rowIndex + 1}`
+            const bodyId = `${path}-row-${rowIndex}`
+            return (
+              <div key={rowIndex} className="array-field__row">
+                <div className="array-field__row-head">
+                  <button
+                    type="button"
+                    className="array-field__toggle"
+                    aria-expanded={!isCollapsed}
+                    aria-controls={bodyId}
+                    aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${rowTitle}`}
+                    onClick={() => toggleRow(rowIndex)}
+                  >
+                    <span aria-hidden="true">{isCollapsed ? '+' : '-'}</span> {rowTitle}
+                  </button>
+                  {!readOnly && (
+                    <div className="array-field__row-actions">
+                      <button
+                        type="button"
+                        className="array-field__btn"
+                        aria-label={`Move ${lowerSingular} ${rowIndex + 1} up`}
+                        onClick={() => moveUp(rowIndex)}
+                        disabled={rowIndex === 0}
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        className="array-field__btn"
+                        aria-label={`Move ${lowerSingular} ${rowIndex + 1} down`}
+                        onClick={() => moveDown(rowIndex)}
+                        disabled={rowIndex === arrayValue.length - 1}
+                      >
+                        Down
+                      </button>
+                      <button
+                        type="button"
+                        className="array-field__btn array-field__btn--danger"
+                        aria-label={`Remove ${lowerSingular} ${rowIndex + 1}`}
+                        onClick={() => removeRow(rowIndex)}
+                      >
+                        Remove
+                      </button>
                     </div>
-                  )
-                })}
+                  )}
+                </div>
+
+                <div id={bodyId} className="array-field__row-body" hidden={isCollapsed}>
+                  {fields.map((subfield) => {
+                    const subfieldName = 'name' in subfield ? subfield.name : undefined
+                    if (!subfieldName) return null
+                    // row/collapsible are already flattened away above; group/tabs/ui add a nesting
+                    // level this opaque-row model doesn't support (rare here) - skip those only.
+                    if (['ui', 'group', 'tabs'].includes(subfield.type)) return null
+                    return (
+                      <div key={subfieldName}>
+                        <RowSubfieldInput
+                          subfield={subfield}
+                          value={row[subfieldName]}
+                          onChange={(newValue) => updateRowSubfield(rowIndex, subfieldName, newValue)}
+                          readOnly={readOnly}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      {/* Add button */}
       {!readOnly && (
-        <div>
-          <button
-            type="button"
-            onClick={addRow}
-            disabled={!canAddMore}
-            style={{
-              padding: '8px 12px',
-              cursor: canAddMore ? 'pointer' : 'not-allowed',
-              opacity: canAddMore ? 1 : 0.5,
-            }}
-          >
-            Add {singularLabel}
+        <div className="array-field__footer">
+          <button type="button" className="array-field__add" onClick={addRow} disabled={!canAddMore}>
+            + Add {lowerSingular}
           </button>
-          {atMinimum && <div style={{ fontSize: '0.85em', color: '#f57c00', marginTop: 4 }}>Minimum {minRows} required</div>}
+          {!canAddMore && <span className="array-field__note">Maximum {maxRows} reached.</span>}
+          {atMinimum && <span className="array-field__note">Minimum {minRows} required.</span>}
         </div>
       )}
     </div>

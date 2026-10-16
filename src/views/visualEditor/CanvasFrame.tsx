@@ -1,8 +1,16 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { closestCenter, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 
 import type { SectionNode } from '@/lib/sectionTree'
 
@@ -11,6 +19,33 @@ import type { FrameToParentMessage, ParentToFrameMessage } from './canvasBridge'
 import { CANVAS_ORIGIN, isBridgeMessage } from './canvasBridge'
 import { pathKey, type NodePath } from './treeOps'
 import { VISUAL_EDITOR_CSS } from './visualEditor.styles'
+
+/** Pointer must be within this many px of a valid insert slot for a drop to count. */
+const SLOT_REACH = 160
+
+/**
+ * Picks the insert slot nearest the pointer (2D distance to each slot's rect, ties broken by
+ * vertical distance to its centre). Slots are the only droppables, so a drop anywhere over a
+ * block body or an empty column still resolves to the closest valid slot; far from every
+ * slot (or outside the page) there is no target and the drop is refused.
+ */
+const nearestSlot: CollisionDetection = ({ droppableContainers, droppableRects, pointerCoordinates, collisionRect }) => {
+  const px = pointerCoordinates?.x ?? (collisionRect ? collisionRect.left + collisionRect.width / 2 : 0)
+  const py = pointerCoordinates?.y ?? (collisionRect ? collisionRect.top + collisionRect.height / 2 : 0)
+  let best: { id: string | number; score: number; d: number; data: unknown } | null = null
+  for (const container of droppableContainers) {
+    if (container.disabled) continue
+    const rect = droppableRects.get(container.id)
+    if (!rect) continue
+    const dx = Math.max(rect.left - px, 0, px - (rect.left + rect.width))
+    const dy = Math.max(rect.top - py, 0, py - (rect.top + rect.height))
+    const d = Math.hypot(dx, dy)
+    if (d > SLOT_REACH) continue
+    const score = d * 10000 + Math.abs(py - (rect.top + rect.height / 2))
+    if (!best || score < best.score) best = { id: container.id, score, d, data: container }
+  }
+  return best ? [{ id: best.id, data: { droppableContainer: best.data, value: best.d } }] : []
+}
 
 const post = (message: FrameToParentMessage) => {
   window.parent.postMessage(message, CANVAS_ORIGIN())
@@ -35,6 +70,10 @@ export const CanvasFrame: React.FC = () => {
   // (a block just got added, or something else claimed the selection) or the user clicks a
   // different node or empty canvas.
   const [openInsertKey, setOpenInsertKey] = useState<string | null>(null)
+
+  // Block being dragged by its handle (dnd-kit): its path, and the label shown on the ghost.
+  const [drag, setDrag] = useState<{ path: NodePath; label: string } | null>(null)
+  const [dragOver, setDragOver] = useState(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -65,6 +104,7 @@ export const CanvasFrame: React.FC = () => {
     locks,
     dragHoverKey,
     openInsertKey,
+    dragPath: drag?.path ?? null,
     onSelect: (path) => {
       setSelectedPath(path)
       setOpenInsertKey(null)
@@ -82,19 +122,27 @@ export const CanvasFrame: React.FC = () => {
     onMove: (path, direction) => post({ source: 've-canvas', type: 'move', path, direction }),
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const from = String(active.id).split('.').map(Number)
-    const to = String(over.id).split('.').map(Number)
-    if (from.slice(0, -1).join('.') !== to.slice(0, -1).join('.')) return
-
-    const containerPath = from.slice(0, -1)
-    post({ source: 've-canvas', type: 'reorder', containerPath, from: from[from.length - 1], to: to[to.length - 1] })
+  const handleDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current as { path?: NodePath; label?: string } | undefined
+    if (!data?.path) return
+    setDrag({ path: data.path, label: data.label || 'Block' })
+    setDragOver(false)
+    setOpenInsertKey(null)
   }
 
-  const topLevelIds = blocks.map((_, index) => pathKey([index]))
+  const handleDragEnd = (event: DragEndEvent) => {
+    const from = drag?.path
+    setDrag(null)
+    setDragOver(false)
+    const target = event.over?.data.current as { containerPath?: NodePath; at?: number } | undefined
+    if (!from || !target || !target.containerPath || typeof target.at !== 'number') return
+    post({ source: 've-canvas', type: 'moveTo', from, containerPath: target.containerPath, at: target.at })
+  }
+
+  const handleDragCancel = () => {
+    setDrag(null)
+    setDragOver(false)
+  }
 
   const deselect = () => {
     setSelectedPath(null)
@@ -103,7 +151,12 @@ export const CanvasFrame: React.FC = () => {
   }
 
   return (
-    <div className="ve-frame-root" onClick={deselect} role="presentation">
+    <div
+      className={`ve-frame-root ${drag ? (dragOver ? 've-frame-root--dragging' : 've-frame-root--no-drop') : ''}`}
+      data-ve-root="1"
+      onClick={deselect}
+      role="presentation"
+    >
       {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
 
@@ -125,10 +178,18 @@ export const CanvasFrame: React.FC = () => {
         </div>
       )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={topLevelIds} strategy={verticalListSortingStrategy}>
-          <CanvasNodeList nodes={blocks} containerPath={[]} handlers={handlers} depth={0} />
-        </SortableContext>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={nearestSlot}
+        onDragStart={handleDragStart}
+        onDragOver={(event) => setDragOver(Boolean(event.over))}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <CanvasNodeList nodes={blocks} containerPath={[]} handlers={handlers} depth={0} />
+        <DragOverlay dropAnimation={null}>
+          {drag ? <div className="ve-drag-ghost">{drag.label}</div> : null}
+        </DragOverlay>
       </DndContext>
     </div>
   )

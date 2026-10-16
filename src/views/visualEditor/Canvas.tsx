@@ -4,6 +4,7 @@ import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
 import { asBlockStyle, blockStyleToCss } from '@/lib/blockStyle'
+import { sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { ShapeDivider } from '@/components/blocks/StyledBlock'
@@ -205,7 +206,7 @@ const CanvasNode: React.FC<{
       )}
       <div className="ve-node__body">
         {node.blockType === 'section' ? (
-          <SectionColumns columns={node.columns || []} path={path} handlers={handlers} depth={depth} />
+          <SectionColumns columns={node.columns || []} layout={design.layout} path={path} handlers={handlers} depth={depth} />
         ) : (
           <div className="ve-node__preview">
             <CanvasBlockPreview data={node as Record<string, unknown>} />
@@ -227,10 +228,13 @@ const CanvasNode: React.FC<{
 
 const SectionColumns: React.FC<{
   columns: SectionColumn[]
+  /** The section's optional flow settings (design.layout), same data the live page renders. */
+  layout?: SectionLayout
   path: NodePath
   handlers: CanvasHandlers
   depth: number
-}> = ({ columns, path, handlers, depth }) => {
+}> = ({ columns, layout, path, handlers, depth }) => {
+  const flow = sectionLayoutProps(layout, 've-section')
   if (columns.length === 0) {
     return (
       <div className="ve-section-empty">
@@ -240,7 +244,11 @@ const SectionColumns: React.FC<{
   }
 
   return (
-    <div className="ve-section">
+    <div
+      className={flow.className ? `ve-section ${flow.className}` : 've-section'}
+      {...flow.attrs}
+      style={Object.keys(flow.style).length > 0 ? (flow.style as React.CSSProperties) : undefined}
+    >
       {columns.map((column, columnIndex) => (
         <div
           className="ve-column"

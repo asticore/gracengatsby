@@ -7,6 +7,7 @@ import type { SectionNode } from '@/lib/sectionTree'
 import type { BlockDef } from './blockSchemas'
 import { ElementLibrary } from './ElementLibrary'
 import { FieldPanel } from './FieldPanel'
+import type { EditDevice } from './DesignPanel'
 import type { LockUi } from './LockControls'
 
 export type DockTab = 'elements' | 'settings' | 'form'
@@ -37,6 +38,12 @@ export const EditorDock: React.FC<{
   lockUi?: LockUi
   /** Form builder: the Form settings tab body. Its presence also puts the dock in form mode. */
   formPanel?: React.ReactNode
+  /** The device being edited (top bar toggle); responsive settings in the panels follow it. */
+  device?: EditDevice
+  /** Settings for the column selected on the canvas; shown in place of a block's settings. */
+  columnPanel?: React.ReactNode
+  /** Opens a column of the selected section in the column panel. */
+  onSelectColumn?: (index: number) => void
 }> = ({
   collapsed,
   tab,
@@ -53,6 +60,9 @@ export const EditorDock: React.FC<{
   userPermissions,
   lockUi,
   formPanel,
+  device,
+  columnPanel,
+  onSelectColumn,
 }) => {
   // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
   // use the full width, same as Elementor's panel-collapse - nothing renders
@@ -99,6 +109,8 @@ export const EditorDock: React.FC<{
           formPanel
         ) : tab === 'elements' ? (
           <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} formMode={Boolean(formPanel)} />
+        ) : columnPanel ? (
+          columnPanel
         ) : selectedNode && selectedDef ? (
           <FieldPanel
             blockDef={selectedDef}
@@ -109,6 +121,8 @@ export const EditorDock: React.FC<{
             onDuplicate={onDuplicateSelected}
             userPermissions={userPermissions}
             lockUi={lockUi}
+            device={device}
+            onSelectColumn={onSelectColumn}
           />
         ) : (
           <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>

@@ -1,0 +1,120 @@
+/* Repeatable-row (array) fields. Light by default; dark values only under [data-theme='dark']. */
+.array-field {
+  --af-border: #c4c4c4;
+  --af-row-bg: #fafafa;
+  --af-text: #1a1a1a;
+  --af-muted: #555555;
+  --af-accent: #1d4ed8;
+  --af-accent-text: #ffffff;
+  --af-danger: #b42318;
+  --af-focus: #1d4ed8;
+}
+
+[data-theme='dark'] .array-field {
+  --af-border: #5a5a5a;
+  --af-row-bg: #1e1e1e;
+  --af-text: #f2f2f2;
+  --af-muted: #c0c0c0;
+  --af-accent: #6ea8ff;
+  --af-accent-text: #0b1b33;
+  --af-danger: #ff8a80;
+  --af-focus: #9cc4ff;
+}
+
+.array-field__empty {
+  margin: 4px 0 12px;
+  color: var(--af-muted);
+  font-size: 0.95em;
+}
+
+.array-field__rows {
+  margin-bottom: 12px;
+}
+
+.array-field__row {
+  border: 1px solid var(--af-border);
+  border-radius: 6px;
+  background: var(--af-row-bg);
+  color: var(--af-text);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.array-field__row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.array-field__row-body {
+  margin-top: 12px;
+}
+
+.array-field__row-body[hidden] {
+  display: none;
+}
+
+.array-field__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.array-field__toggle,
+.array-field__btn {
+  font: inherit;
+  font-size: 0.9em;
+  color: var(--af-text);
+  background: transparent;
+  border: 1px solid var(--af-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.array-field__toggle {
+  font-weight: 600;
+  border-color: transparent;
+  padding-left: 0;
+}
+
+.array-field__btn--danger {
+  color: var(--af-danger);
+  border-color: var(--af-danger);
+}
+
+.array-field__btn:disabled,
+.array-field__add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.array-field__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.array-field__add {
+  font: inherit;
+  font-weight: 600;
+  color: var(--af-accent-text);
+  background: var(--af-accent);
+  border: 1px solid var(--af-accent);
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.array-field__note {
+  color: var(--af-muted);
+  font-size: 0.85em;
+}
+
+.array-field button:focus-visible {
+  outline: 2px solid var(--af-focus);
+  outline-offset: 2px;
+}

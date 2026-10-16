@@ -40,7 +40,9 @@ export type FrameToParentMessage =
   | { source: typeof SOURCE; type: 'delete'; path: NodePath }
   | { source: typeof SOURCE; type: 'duplicate'; path: NodePath }
   | { source: typeof SOURCE; type: 'move'; path: NodePath; direction: -1 | 1 }
-  | { source: typeof SOURCE; type: 'reorder'; containerPath: NodePath; from: number; to: number }
+  /** Drag-handle drop: move the block at `from` into `containerPath` at slot `at` (slot numbering
+   *  as before the move - see treeOps.moveNode). Works within a list, between columns and across levels. */
+  | { source: typeof SOURCE; type: 'moveTo'; from: NodePath; containerPath: NodePath; at: number }
 
 /** True for any message this bridge sent, from either side - narrow further on `.type` after this. */
 export const isBridgeMessage = (data: unknown): data is FrameToParentMessage | ParentToFrameMessage =>

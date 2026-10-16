@@ -18,11 +18,20 @@ import {
  * Deliberately renders nothing extra when a block has no style set, so blocks
  * that predate the Design tab keep their original markup and spacing.
  */
+/** A DOM-id-safe form of a caller supplied scope string. */
+export const safeScope = (scope: string): string => scope.replace(/[^a-zA-Z0-9_-]/g, '_')
+
 export const StyledBlock: React.FC<{
   style?: unknown
   index: number
+  /**
+   * Makes the responsive-CSS id unique when `index` alone is not (blocks inside columns all
+   * start counting at 0, so two columns would otherwise share #be-block-0 and each other's
+   * tablet / mobile overrides).
+   */
+  scope?: string
   children: React.ReactNode
-}> = ({ style, index, children }) => {
+}> = ({ style, index, scope, children }) => {
   const parsed = asBlockStyle(style)
   // `layout` only drives the section's own flex container (SectionBlock), so on its own it
   // must not add a Design wrapper - that would change the section's width and padding.
@@ -30,7 +39,7 @@ export const StyledBlock: React.FC<{
 
   if (!hasStyle) return <>{children}</>
 
-  const scopeId = parsed.anchorId || blockScopeId(index)
+  const scopeId = parsed.anchorId || (scope ? `be-s-${safeScope(scope)}` : blockScopeId(index))
   const mediaCss = blockStyleCss(parsed, scopeId)
 
   return (

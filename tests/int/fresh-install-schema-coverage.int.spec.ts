@@ -402,6 +402,21 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(cols).toEqual(expect.arrayContaining(['id', 'data', 'updated_at']))
   })
 
+  it('creates the template repositories columns and repository list table', async () => {
+    const cols = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await cols('eg_integrations')).toEqual(expect.arrayContaining(['template_repos_enabled', 'template_repos_token']))
+    expect(createdTables.has('eg_integrations_template_repos_repos')).toBe(true)
+    expect(await cols('eg_integrations_template_repos_repos')).toEqual(
+      expect.arrayContaining(['_order', '_parent_id', 'id', 'label', 'owner', 'repo', 'branch', 'path', 'enabled']),
+    )
+  })
+
+  it('adds the page template kind, category and preview image columns', async () => {
+    const names = (((await proxy.env.D1.prepare('PRAGMA table_info(`eg_page_templates`)').all()).results as { name: string }[])).map((r) => r.name)
+    expect(names).toEqual(expect.arrayContaining(['kind', 'category', 'preview_image_id']))
+  })
+
   it('is safe to run migrations a second time (idempotent)', async () => {
     const again = await runInternalMigrate(proxy.env.D1, consoleLogger)
     expect(again.errorCount).toBe(0)

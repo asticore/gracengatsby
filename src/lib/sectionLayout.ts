@@ -35,6 +35,21 @@ export type SectionLayout = {
   contentWidth?: 'boxed' | 'full'
   /** Boxed max width in px; unset uses the site container width. */
   boxedWidth?: number
+  /**
+   * Where the columns sit inside a section that is taller than its content (a min height or
+   * "fit screen"). Unset = top. Single value: it describes the section, not a device.
+   */
+  verticalAlign?: 'top' | 'middle' | 'bottom'
+  /** Tablet / mobile overrides of the flow settings that are not per-device on their own. */
+  tablet?: DeviceFlow
+  mobile?: DeviceFlow
+}
+
+/** wrap / justify / align-items for one narrower device; unset inherits (mobile inherits tablet). */
+export type DeviceFlow = {
+  wrap?: boolean
+  justify?: JustifyContent
+  alignItems?: AlignItemsValue
 }
 
 export type ColumnLayout = {
@@ -44,6 +59,8 @@ export type ColumnLayout = {
   order?: PerDevice<number>
   minWidth?: number
   vAlign?: VerticalAlign
+  /** Space between the blocks stacked inside the column (px). */
+  gap?: number
   padding?: { top?: number; right?: number; bottom?: number; left?: number }
 }
 
@@ -83,6 +100,23 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (alignItems) out.alignItems = alignItems
   if (raw.contentWidth === 'boxed') out.contentWidth = 'boxed'
   if (isNum(raw.boxedWidth) && raw.boxedWidth > 0) out.boxedWidth = raw.boxedWidth
+  const verticalAlign = pick(raw.verticalAlign, ['top', 'middle', 'bottom'] as const)
+  if (verticalAlign) out.verticalAlign = verticalAlign
+  for (const device of ['tablet', 'mobile'] as const) {
+    const flow = parseDeviceFlow(raw[device])
+    if (flow) out[device] = flow
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
+function parseDeviceFlow(raw: unknown): DeviceFlow | undefined {
+  if (!isObj(raw)) return undefined
+  const out: DeviceFlow = {}
+  if (typeof raw.wrap === 'boolean') out.wrap = raw.wrap
+  const justify = pick(raw.justify, ['start', 'center', 'end', 'between', 'around', 'evenly'] as const)
+  if (justify) out.justify = justify
+  const alignItems = pick(raw.alignItems, ['start', 'center', 'end', 'stretch'] as const)
+  if (alignItems) out.alignItems = alignItems
   return Object.keys(out).length > 0 ? out : undefined
 }
 
@@ -96,6 +130,7 @@ export function parseColumnLayout(raw: unknown): ColumnLayout | undefined {
   const order = perDevice(raw.order, (v) => (isNum(v) ? Math.round(v) : undefined))
   if (order) out.order = order
   if (isNum(raw.minWidth) && raw.minWidth >= 0) out.minWidth = raw.minWidth
+  if (isNum(raw.gap) && raw.gap >= 0) out.gap = raw.gap
   const vAlign = pick(raw.vAlign, ['top', 'middle', 'bottom', 'between'] as const)
   if (vAlign) out.vAlign = vAlign
   if (isObj(raw.padding)) {
@@ -168,6 +203,15 @@ export function sectionLayoutProps(rawLayout: unknown, baseClass = 'be-section')
     out.className = `${baseClass}--boxed`
     if (layout.boxedWidth) out.style['--be-boxed'] = `${layout.boxedWidth}px`
   }
+  if (layout.verticalAlign) out.style.alignContent = VALIGN_CSS[layout.verticalAlign]
+  for (const d of ['tablet', 'mobile'] as const) {
+    const flow = layout[d]
+    if (!flow) continue
+    const k = DEVICE_KEY[d]
+    if (flow.wrap !== undefined) out.attrs[`data-wrap-${k}`] = flow.wrap ? '1' : '0'
+    if (flow.justify) out.attrs[`data-jc-${k}`] = flow.justify
+    if (flow.alignItems) out.attrs[`data-ai-${k}`] = flow.alignItems
+  }
   return out
 }
 
@@ -184,6 +228,11 @@ export function columnLayoutStyle(rawLayout: unknown): Record<string, string> {
   }
   if (layout.alignSelf) style.alignSelf = ALIGN_CSS[layout.alignSelf]
   if (layout.minWidth !== undefined) style.minWidth = `${layout.minWidth}px`
+  if (layout.gap !== undefined) {
+    style.display = 'flex'
+    style.flexDirection = 'column'
+    style.gap = `${layout.gap}px`
+  }
   if (layout.vAlign) {
     style.display = 'flex'
     style.flexDirection = 'column'
@@ -239,6 +288,7 @@ const COL_RESET =
   '--be-col-d:initial;--be-col-t:initial;--be-col-m:initial;' +
   '--be-col-d-b:initial;--be-col-t-b:initial;--be-col-m-b:initial;' +
   '--be-col-d-g:initial;--be-col-t-g:initial;--be-col-m-g:initial;' +
+  '--be-col-d-w:initial;--be-col-t-w:initial;--be-col-m-w:initial;' +
   '--be-col-grow:initial;--be-col-shrink:initial;' +
   '--be-col-order-d:initial;--be-col-order-t:initial;--be-col-order-m:initial'
 
@@ -252,6 +302,11 @@ function chain(device: 'd' | 't' | 'm', names: (k: string) => string[], last: st
 const basisChain = (k: 'd' | 't' | 'm') => chain(k, (x) => [`--be-col-${x}-b`, `--be-col-${x}`], '100%')
 const growChain = (k: 'd' | 't' | 'm') => `var(--be-col-grow,${chain(k, (x) => [`--be-col-${x}-g`], '0')})`
 const orderChain = (k: 'd' | 't' | 'm') => chain(k, (x) => [`--be-col-order-${x}`], '0')
+
+/** Width of a stacked column: the first explicit value among `run` (this device, then wider ones), else full width. */
+const widthChain = (run: readonly ('d' | 't' | 'm')[]): string =>
+  [...run].reduceRight<string>((acc, x) => `var(--be-col-${x}-w,var(--be-col-${x},${acc}))`, '100%')
+const stackDecls = (run: readonly ('d' | 't' | 'm')[]): string => `flex-basis:auto;flex-grow:0;width:${widthChain(run)};max-width:100%`
 
 /**
  * Emits the rules that turn the data from sectionLayoutProps() / columnWidthVars() into
@@ -277,15 +332,37 @@ export function sectionLayoutCss(opts: SectionLayoutCssOptions): string {
       `flex-basis:${basisChain('d')};order:${orderChain('d')};${opts.columnExtra ?? ''}}`,
   )
 
+  const ORDER = ['d', 't', 'm'] as const
+  /**
+   * Selector for a column of a section whose direction attributes match `match` (a value
+   * matcher such as `="column"` or `^="column"`; omitted devices only need the attribute to
+   * exist). Every one of these has the same specificity, so within a media block the LAST rule
+   * that matches wins - which is what lets a narrower device restore or change what a wider one
+   * set, whatever combination of directions the three devices have.
+   */
+  const colSel = (match: Partial<Record<'d' | 't' | 'm', string>>): string =>
+    `${S}${ORDER.map((x) => `[data-dir-${x}${match[x] ?? ''}]`).join('')}>${C}`
+
   const dirRules = (k: 'd' | 't' | 'm', restoreRow: boolean): string[] => {
     const rules: string[] = []
-    for (const dir of FLOW_DIRECTIONS) {
-      const sel = `${S}[data-dir-${k}="${dir}"]`
-      rules.push(`${sel}{flex-direction:${dir}}`)
-      if (dir.startsWith('column')) {
-        rules.push(`${sel}>${C}{flex-basis:auto;flex-grow:0;width:100%}`)
-      } else if (restoreRow) {
-        rules.push(`${sel}>${C}{flex-basis:${basisChain(k)};flex-grow:${growChain(k)};width:auto}`)
+    for (const dir of FLOW_DIRECTIONS) rules.push(`${S}[data-dir-${k}="${dir}"]{flex-direction:${dir}}`)
+
+    // Stacked: height is the main axis, so flex-basis would size HEIGHT (the "50% looks wrong" bug).
+    // Width comes from `width` instead, from this device's own value, or - while the section is
+    // also stacked on the wider device(s) just above - theirs.
+    const idx = ORDER.indexOf(k)
+    for (const dir of ['column', 'column-reverse']) {
+      rules.push(`${colSel({ [k]: `="${dir}"` })}{${stackDecls([k])}}`)
+    }
+    for (let j = 1; j <= idx; j++) {
+      const run = ORDER.slice(idx - j, idx + 1).reverse()
+      const match: Partial<Record<'d' | 't' | 'm', string>> = {}
+      for (const x of run) match[x] = '^="column"'
+      rules.push(`${colSel(match)}{${stackDecls(run)}}`)
+    }
+    if (restoreRow) {
+      for (const dir of ['row', 'row-reverse']) {
+        rules.push(`${colSel({ [k]: `="${dir}"` })}{flex-basis:${basisChain(k)};flex-grow:${growChain(k)};width:auto;max-width:none}`)
       }
     }
     return rules
@@ -294,11 +371,15 @@ export function sectionLayoutCss(opts: SectionLayoutCssOptions): string {
   out.push(...dirRules('d', false))
 
   const media = (k: 't' | 'm', max: number) => {
+    const flow: string[] = [`${S}[data-wrap-${k}="0"]{flex-wrap:nowrap}`, `${S}[data-wrap-${k}="1"]{flex-wrap:wrap}`]
+    // !important: the desktop justify / align-items are inline styles, which a stylesheet rule can't beat otherwise.
+    for (const [name, css] of Object.entries(JUSTIFY_CSS)) flow.push(`${S}[data-jc-${k}="${name}"]{justify-content:${css} !important}`)
+    for (const [name, css] of Object.entries(ALIGN_CSS)) flow.push(`${S}[data-ai-${k}="${name}"]{align-items:${css} !important}`)
     out.push(
       `@media (max-width:${max}px){` +
         `${S}{--be-gap:var(--be-gap-${k},${k === 'm' ? 'var(--be-gap-t,' : ''}var(--be-gap-d,${opts.defaultGap}px)${k === 'm' ? ')' : ''})}` +
         `${C}{flex-basis:${basisChain(k)};flex-grow:${growChain(k)};order:${orderChain(k)}}` +
-        `${dirRules(k, true).join('')}}`,
+        `${flow.join('')}${dirRules(k, true).join('')}}`,
     )
   }
   media('t', bp.tablet)

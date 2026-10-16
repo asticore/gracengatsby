@@ -1,8 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 
 import { asBlockStyle, blockStyleToCss } from '@/lib/blockStyle'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
@@ -30,6 +29,9 @@ export type CanvasHandlers = {
    *  different node is selected, or the canvas is clicked elsewhere. Purely local UI state,
    *  tracked in CanvasFrame.tsx - see openInsertKey there. */
   openInsertKey: string | null
+  /** Path of the block currently being dragged by its handle (dnd-kit), or null. Slots that
+   *  would be invalid or no-op targets for it are disabled. */
+  dragPath?: NodePath | null
 }
 
 /** Stable identity for an insert slot, matched against data-ve-container/data-ve-at by the
@@ -54,7 +56,10 @@ export const CanvasNodeList: React.FC<{
       onAdd={handlers.onAdd}
       dragHoverKey={handlers.dragHoverKey}
       openInsertKey={handlers.openInsertKey}
+      dragPath={handlers.dragPath}
+      locks={handlers.locks}
       subtle={nodes.length > 0}
+      empty={nodes.length === 0 && containerPath.length > 0}
     />
     {nodes.map((node, index) => {
       const path = [...containerPath, index]
@@ -67,6 +72,8 @@ export const CanvasNodeList: React.FC<{
             onAdd={handlers.onAdd}
             dragHoverKey={handlers.dragHoverKey}
             openInsertKey={handlers.openInsertKey}
+            dragPath={handlers.dragPath}
+            locks={handlers.locks}
             subtle
           />
         </React.Fragment>
@@ -90,18 +97,23 @@ const CanvasNode: React.FC<{
   const lock = handlers.locks?.[key]
   const blocked = Boolean(lock?.blocked)
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: key })
+  // The block itself is not moved while dragging (a DragOverlay ghost follows the pointer, see
+  // CanvasFrame.tsx), so cross-container moves never fight a sortable list's transforms.
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `node:${key}`,
+    data: { path, label: `${def?.icon ?? ''} ${def?.label || node.blockType}`.trim() },
+    disabled: blocked,
+  })
 
   const wrapperStyle: React.CSSProperties = {
     ...blockStyleToCss(design),
-    transform: CSS.Transform.toString(transform),
-    transition,
     opacity: isDragging ? 0.4 : undefined,
   }
 
   return (
     <div
       ref={setNodeRef}
+      data-ve-node={JSON.stringify(path)}
       className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ve-node--depth-${Math.min(depth, 3)}`}
       style={wrapperStyle}
       onClick={(event) => {
@@ -112,7 +124,7 @@ const CanvasNode: React.FC<{
       }}
     >
       <div className="ve-node__toolbar">
-        <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to reorder">
+        <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to move">
           ⠿
         </button>
         <span className="ve-node__label">
@@ -232,6 +244,7 @@ const SectionColumns: React.FC<{
       {columns.map((column, columnIndex) => (
         <div
           className="ve-column"
+          data-ve-column={JSON.stringify([...path, columnIndex])}
           key={column._id || columnIndex}
           style={{ ...columnWidthVars(column), ...blockStyleToCss(asBlockStyle(column.design)) }}
         >
@@ -264,15 +277,39 @@ const InsertSlot: React.FC<{
   onAdd: (containerPath: NodePath, at: number) => void
   dragHoverKey: string | null
   openInsertKey: string | null
+  dragPath?: NodePath | null
+  locks?: CanvasHandlers['locks']
   subtle?: boolean
-}> = ({ containerPath, at, onAdd, dragHoverKey, openInsertKey, subtle }) => {
+  /** The container has no blocks: render as a visible "Drop a block here" zone. */
+  empty?: boolean
+}> = ({ containerPath, at, onAdd, dragHoverKey, openInsertKey, dragPath, locks, subtle, empty }) => {
   const key = slotKey(containerPath, at)
-  const isOver = dragHoverKey === key
+
+  // A handle-drag can't land inside the dragged block, next to itself (a no-op), or in a
+  // container whose owner is locked for this person.
+  let disabled = !dragPath
+  if (dragPath) {
+    const inside = containerPath.length >= dragPath.length && dragPath.every((v, i) => containerPath[i] === v)
+    const parent = dragPath.slice(0, -1)
+    const idx = dragPath[dragPath.length - 1]
+    const sameList = parent.length === containerPath.length && parent.every((v, i) => containerPath[i] === v)
+    const noop = sameList && (at === idx || at === idx + 1)
+    const lockedTarget = containerPath.length > 0 && Boolean(locks?.[pathKey(containerPath.slice(0, -1))]?.blocked)
+    disabled = inside || noop || lockedTarget
+  }
+  const { setNodeRef, isOver } = useDroppable({
+    id: `slot:${pathKey(containerPath)}:${at}`,
+    data: { containerPath, at },
+    disabled,
+  })
+
+  const active = dragHoverKey === key || (isOver && !disabled)
   const isOpen = openInsertKey === key
 
   return (
     <div
-      className={`ve-insert ${subtle ? '' : 've-insert--always'} ${isOver ? 've-insert--drag-over' : ''} ${isOpen ? 've-insert--open' : ''}`}
+      ref={setNodeRef}
+      className={`ve-insert ${subtle ? '' : 've-insert--always'} ${empty ? 've-insert--empty' : ''} ${active ? 've-insert--drag-over' : ''} ${isOpen ? 've-insert--open' : ''}`}
       data-ve-slot="1"
       data-ve-container={JSON.stringify(containerPath)}
       data-ve-at={at}

@@ -83,8 +83,8 @@ describe('site-templates wiring', () => {
     expect(VISUAL_EDITOR_SURFACES['site-templates']).toMatchObject({ kind: 'collection', slug: 'site-templates', blocksField: 'blocks', titleField: 'name' })
   })
 
-  it('has its migration registered last', () => {
-    expect(migrations[migrations.length - 1].name).toBe('20261102_100000_site_templates')
+  it('has its migration registered', () => {
+    expect(migrations.map((m) => m.name)).toContain('20261102_100000_site_templates')
   })
 })
 

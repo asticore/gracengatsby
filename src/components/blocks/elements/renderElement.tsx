@@ -6,6 +6,7 @@ import { isDesignError, isDesignV2Raw, upgradeDesign } from '@/lib/design/upgrad
 import { getTemplateSlot } from '@/features/siteTemplates/slot'
 
 import { ButtonElement } from './ButtonElement'
+import { ELEMENT_COMPONENTS } from './elementComponents'
 import { HeadingElement } from './HeadingElement'
 
 /**
@@ -60,8 +61,10 @@ const renderElementBody = (elementType: string, props: Record<string, unknown>):
       // The page's own content, set per request by renderWithTemplate. Empty outside a template (the
       // visual editor draws its own placeholder for it, see CanvasBlockPreview).
       return getTemplateSlot() ?? null
-    default:
-      return null
+    default: {
+      const Component = ELEMENT_COMPONENTS[elementType]
+      return Component ? <Component {...props} /> : null
+    }
   }
 }
 

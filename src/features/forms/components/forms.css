@@ -30,6 +30,7 @@
 
 /* The layout tree: sections of columns, the same markup the pages use. */
 .engage-form .be-section {
+  --be-gap: 1rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0 1rem;
@@ -37,23 +38,22 @@
   align-items: flex-start;
 }
 
+/* Percent widths come with a gap-compensated basis (--be-col-*-b, see sectionLayout.ts) so two
+   50% columns plus the 1rem gap fit one row instead of wrapping under each other. */
 .engage-form .be-column {
   min-width: 0;
-  flex: 1 1 var(--be-col-d, 100%);
-  max-width: var(--be-col-d, 100%);
+  flex: 0 1 var(--be-col-d-b, var(--be-col-d, 100%));
 }
 
 @media (max-width: 900px) {
   .engage-form .be-column {
-    flex-basis: var(--be-col-t, var(--be-col-d, 100%));
-    max-width: var(--be-col-t, var(--be-col-d, 100%));
+    flex-basis: var(--be-col-t-b, var(--be-col-t, var(--be-col-d-b, var(--be-col-d, 100%))));
   }
 }
 
 @media (max-width: 600px) {
   .engage-form .be-column {
-    flex-basis: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
-    max-width: var(--be-col-m, var(--be-col-t, var(--be-col-d, 100%)));
+    flex-basis: var(--be-col-m-b, var(--be-col-m, var(--be-col-t-b, var(--be-col-t, var(--be-col-d-b, var(--be-col-d, 100%))))));
   }
 }
 

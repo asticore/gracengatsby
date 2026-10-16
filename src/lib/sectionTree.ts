@@ -84,6 +84,17 @@ export function columnWidthCss(width: ResponsiveColumnWidth): string {
 }
 
 /**
+ * The column's width when its section is stacked (flex-direction: column). There flex-basis is
+ * a HEIGHT, so the width has to be a real `width`: percentages and px apply as they are, 'auto'
+ * fits the content, and 'fill' (take the rest of the row) means the full width.
+ */
+export function columnStackedWidthCss(width: ResponsiveColumnWidth): string {
+  if (width.unit === 'auto') return 'auto'
+  if (width.unit === 'fill') return '100%'
+  return columnWidthCss(width)
+}
+
+/**
  * CSS custom properties driving a column's flex-basis at each breakpoint
  * (see the `.be-column`/`.ve-column` rules, which read these with a CSS
  * fallback chain - a breakpoint with no explicit override just inherits the
@@ -101,6 +112,8 @@ export function columnWidthVars(column: SectionColumn): Record<string, string> {
   const flexible = widths.some(([, w]) => w.unit === 'auto' || w.unit === 'fill')
   for (const [key, width] of widths) {
     vars[`--be-col-${key}`] = columnWidthCss(width)
+    // Only auto / fill differ when stacked; every other unit reuses --be-col-<key> as its width.
+    if (width.unit === 'auto' || width.unit === 'fill') vars[`--be-col-${key}-w`] = columnStackedWidthCss(width)
     // Percent-style widths also get a gap-compensated basis so side-by-side columns fit the row.
     if (width.unit === 'fraction' || width.unit === 'percent') {
       const basis = percentBasisWithGap(parseFloat(columnWidthCss(width)))

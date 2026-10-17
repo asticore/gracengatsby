@@ -104,6 +104,53 @@ export const DesignPanel: React.FC<{
           <p className="ve-row__help">Parallax needs the background type set to Image.</p>
         )}
 
+        <p className="ve-row__label">Overlay</p>
+        <SelectRow
+          label="Type"
+          value={value.overlayType || 'none'}
+          options={[
+            { label: 'None', value: 'none' },
+            { label: 'Colour', value: 'color' },
+            { label: 'Gradient', value: 'gradient' },
+          ]}
+          onChange={(v) => set('overlayType', v === 'none' ? undefined : (v as BlockStyle['overlayType']))}
+        />
+        {value.overlayType === 'color' && (
+          <ColorRow label="Colour" value={value.overlayColor} onChange={(v) => set('overlayColor', v)} />
+        )}
+        {value.overlayType === 'gradient' && (
+          <>
+            <ColorRow label="From" value={value.overlayColor} onChange={(v) => set('overlayColor', v)} />
+            <ColorRow label="To" value={value.overlayColor2} onChange={(v) => set('overlayColor2', v)} />
+            <NumberRow
+              label="Angle (deg)"
+              value={value.overlayAngle}
+              onChange={(v) => set('overlayAngle', v)}
+              min={0}
+              max={360}
+            />
+          </>
+        )}
+        {value.overlayType && value.overlayType !== 'none' && (
+          <>
+            <FxRange k="overlayOpacity" label="Opacity" unit="%" value={value} onChange={onChange} def={50} min={0} max={100} />
+            <SelectRow
+              label="Blend mode"
+              value={value.overlayBlend || 'normal'}
+              options={[
+                { label: 'Normal', value: 'normal' },
+                { label: 'Multiply', value: 'multiply' },
+                { label: 'Screen', value: 'screen' },
+                { label: 'Overlay', value: 'overlay' },
+                { label: 'Soft light', value: 'soft-light' },
+                { label: 'Colour', value: 'color' },
+                { label: 'Luminosity', value: 'luminosity' },
+              ]}
+              onChange={(v) => set('overlayBlend', v === 'normal' ? undefined : (v as BlockStyle['overlayBlend']))}
+            />
+          </>
+        )}
+
         {variant === 'block' && (
           <>
             <p className="ve-row__label">Animated background</p>

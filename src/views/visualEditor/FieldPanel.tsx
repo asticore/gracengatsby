@@ -1003,7 +1003,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
     case 'link':
       return <LinkField value={value} onChange={onChange} label={field.label} helpText={field.helpText} />
     case 'icon':
-      return <IconPickerField value={value} onChange={onChange} label={field.label} helpText={field.helpText} />
+      return <IconPickerField value={value} onChange={onChange} label={field.label} helpText={field.helpText} source={field.iconSet} />
     case 'typography':
       return (
         <label className="ve-field ve-field--full">

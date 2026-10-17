@@ -152,7 +152,7 @@ export const BreadcrumbsElement: React.FC<P> = (p) => {
     }),
   }
   // "<" is escaped so a label such as "</script>" cannot end the script element early.
-  const json = JSON.stringify(ld).replace(/</g, '\\u005cu003c')
+  const json = JSON.stringify(ld).replace(/</g, '\\u003c')
   return (
     <>
       <nav className="be-el-crumbs" aria-label="Breadcrumb">

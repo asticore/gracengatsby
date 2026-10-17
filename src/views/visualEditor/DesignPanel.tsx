@@ -214,10 +214,7 @@ export const DesignPanel: React.FC<{
       </Accordion>
 
       <Accordion title="Spacing" defaultOpen={device !== 'desktop'}>
-        <RespNumber ctl={resp} k="paddingTop" label="Padding top (px)" min={0} />
-        <RespNumber ctl={resp} k="paddingBottom" label="Padding bottom (px)" min={0} />
-        <RespNumber ctl={resp} k="paddingLeft" label="Padding left (px)" min={0} />
-        <RespNumber ctl={resp} k="paddingRight" label="Padding right (px)" min={0} />
+        <PaddingSides ctl={resp} />
         <HeightRows ctl={resp} />
         <RespNumber ctl={resp} k="marginTop" label="Margin top (px)" />
         <RespNumber ctl={resp} k="marginBottom" label="Margin bottom (px)" />
@@ -656,6 +653,37 @@ export const RespNumber: React.FC<{ ctl: ResponsiveCtl; k: RespKey; label: strin
   )
 }
 
+const PADDING_KEYS = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'] as const
+
+/** Padding with an optional "link sides" mode: one value writes all four sides in a single update. */
+const PaddingSides: React.FC<{ ctl: ResponsiveCtl }> = ({ ctl }) => {
+  const [linked, setLinked] = useState(false)
+  const vals = PADDING_KEYS.map((k) => ctl.own(k))
+  const same = vals.every((v) => v === vals[0])
+  return (
+    <>
+      <CheckRow label="Link all sides" checked={linked} onChange={setLinked} />
+      {linked ? (
+        <NumberRow
+          label="Padding, all sides (px)"
+          value={same && typeof vals[0] === 'number' ? vals[0] : undefined}
+          placeholder={same ? undefined : 'mixed'}
+          min={0}
+          resp={ctl.resp('paddingTop')}
+          onChange={(v) => ctl.setMany(Object.fromEntries(PADDING_KEYS.map((k) => [k, v])))}
+        />
+      ) : (
+        <>
+          <RespNumber ctl={ctl} k="paddingTop" label="Padding top (px)" min={0} />
+          <RespNumber ctl={ctl} k="paddingBottom" label="Padding bottom (px)" min={0} />
+          <RespNumber ctl={ctl} k="paddingLeft" label="Padding left (px)" min={0} />
+          <RespNumber ctl={ctl} k="paddingRight" label="Padding right (px)" min={0} />
+        </>
+      )}
+    </>
+  )
+}
+
 /** A choice setting that follows the device toggle; tablet / mobile get an "inherited" first option. */
 export const RespSelect: React.FC<{
   ctl: ResponsiveCtl
@@ -872,7 +900,7 @@ const ToggleRow: React.FC<{
       })}
       {current !== undefined && (
         <button type="button" className="ve-btn ve-btn--ghost" title="Reset" aria-label={`Reset ${label}`} onClick={(e) => { e.preventDefault(); onPick(undefined) }}>
-          {'\u21BA'}
+          {'↺'}
         </button>
       )}
     </div>
@@ -923,7 +951,7 @@ const TypoRange: React.FC<{
               ctl.setMany(clear)
             }}
           >
-            {'\u21BA'}
+            {'↺'}
           </button>
         )}
       </div>
@@ -1148,7 +1176,7 @@ const FxRange: React.FC<{
         />
         {typeof raw === 'number' && (
           <button type="button" className="ve-btn ve-btn--ghost" title="Reset to default" aria-label={`Reset ${label}`} onClick={() => write(undefined)}>
-            {'\u21BA'}
+            {'↺'}
           </button>
         )}
       </div>

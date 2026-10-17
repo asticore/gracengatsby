@@ -22,6 +22,8 @@ export type AlignItemsValue = 'start' | 'center' | 'end' | 'stretch'
 export type AlignSelfValue = 'stretch' | 'start' | 'center' | 'end'
 export type VerticalAlign = 'top' | 'middle' | 'bottom' | 'between'
 
+export type SectionDisplay = 'columns' | 'tabs' | 'accordion'
+
 export type SectionLayout = {
   /** Flow per device. Tablet falls back to desktop and mobile to tablet when unset. */
   direction?: PerDevice<FlowDirection>
@@ -40,6 +42,15 @@ export type SectionLayout = {
    * "fit screen"). Unset = top. Single value: it describes the section, not a device.
    */
   verticalAlign?: 'top' | 'middle' | 'bottom'
+  /**
+   * Display mode. Unset / 'columns' = columns side by side (default). 'tabs' / 'accordion' turn every
+   * column into one panel titled by column.label (fallback "Tab N" / "Panel N").
+   */
+  display?: SectionDisplay
+  /** Tab bar alignment (tabs only). Unset = start. */
+  tabsAlign?: 'start' | 'center' | 'end' | 'stretch'
+  /** Active tab / accordion accent colour (a safe CSS colour). Unset = site accent. */
+  tabsColor?: string
   /** Tablet / mobile overrides of the flow settings that are not per-device on their own. */
   tablet?: DeviceFlow
   mobile?: DeviceFlow
@@ -102,6 +113,11 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.boxedWidth) && raw.boxedWidth > 0) out.boxedWidth = raw.boxedWidth
   const verticalAlign = pick(raw.verticalAlign, ['top', 'middle', 'bottom'] as const)
   if (verticalAlign) out.verticalAlign = verticalAlign
+  const display = pick(raw.display, ['tabs', 'accordion'] as const)
+  if (display) out.display = display
+  const tabsAlign = pick(raw.tabsAlign, ['start', 'center', 'end', 'stretch'] as const)
+  if (tabsAlign) out.tabsAlign = tabsAlign
+  if (typeof raw.tabsColor === 'string' && /^[#a-zA-Z0-9(),.%\s/-]{1,64}$/.test(raw.tabsColor)) out.tabsColor = raw.tabsColor
   for (const device of ['tablet', 'mobile'] as const) {
     const flow = parseDeviceFlow(raw[device])
     if (flow) out[device] = flow

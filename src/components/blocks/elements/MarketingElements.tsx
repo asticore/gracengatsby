@@ -51,7 +51,14 @@ export const TestimonialElement: React.FC<P> = (p) => {
 
 /** `pricing-table`: one plan card. Feature lines starting with "-" are shown struck through (not included). */
 export const PricingTableElement: React.FC<P> = (p) => {
-  const features = lines(p.features)
+  const features = Array.isArray(p.features)
+    ? (p.features as Record<string, unknown>[])
+        .map((f) => {
+          const t = str(f?.text).trim()
+          return t ? (f?.included === false ? `-${t}` : t) : ''
+        })
+        .filter(Boolean)
+    : lines(p.features)
   return (
     <section className={`el-pricing ${flag(p.highlight) ? 'el-pricing--highlight' : ''}`}>
       {str(p.ribbon) && <span className="el-pricing__ribbon">{str(p.ribbon)}</span>}

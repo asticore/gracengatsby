@@ -1,10 +1,11 @@
 import React from 'react'
 
 import { asBlockStyle, blockStyleClasses, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
-import { sectionLayoutProps } from '@/lib/sectionLayout'
+import { parseSectionLayout, sectionLayoutProps } from '@/lib/sectionLayout'
 import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { safeScope, StyledBlock } from './StyledBlock'
+import './tabs.css'
 
 /**
  * Renders a Section: a row of columns, each holding its own stack of blocks.
@@ -28,7 +29,70 @@ export const SectionBlock: React.FC<{
 }> = ({ columns, renderNode, design, depth = 0, scope = 's' }) => {
   const parsed = parseColumns(columns)
   if (parsed.length === 0) return null
-  const layout = sectionLayoutProps(asBlockStyle(design).layout)
+  const rawLayout = asBlockStyle(design).layout
+  const layout = sectionLayoutProps(rawLayout)
+  const parsedLayout = parseSectionLayout(rawLayout)
+  const display = parsedLayout?.display
+
+  if (display === 'tabs' || display === 'accordion') {
+    // Every panel is rendered into the HTML; only CSS (tabs) or <details> (accordion) hides it.
+    const uid = `be-${safeScope(scope)}`
+    const colorVar = parsedLayout?.tabsColor ? ({ '--be-tab-color': parsedLayout.tabsColor } as React.CSSProperties) : undefined
+    if (display === 'accordion') {
+      return (
+        <div className="be-acc" data-depth={depth} style={colorVar}>
+          {parsed.map((column, index) => (
+            <details key={column._id || index} name={uid} className="be-acc__item" open={index === 0}>
+              <summary className="be-acc__summary">{column.label || `Panel ${index + 1}`}</summary>
+              <SectionColumnView
+                column={column}
+                index={index}
+                renderNode={renderNode}
+                depth={depth}
+                scope={scope}
+                panel={{ id: `${uid}-p${index}`, role: 'region' }}
+              />
+            </details>
+          ))}
+        </div>
+      )
+    }
+    return (
+      <div className="be-tabs" data-depth={depth} data-align={parsedLayout?.tabsAlign || 'start'} style={colorVar}>
+        {parsed.map((column, index) => (
+          <input
+            key={`r-${column._id || index}`}
+            type="radio"
+            className="be-tabs__radio"
+            name={uid}
+            id={`${uid}-r${index}`}
+            defaultChecked={index === 0}
+            aria-label={column.label || `Tab ${index + 1}`}
+          />
+        ))}
+        <div className="be-tabs__list" role="tablist">
+          {parsed.map((column, index) => (
+            <label key={column._id || index} htmlFor={`${uid}-r${index}`} id={`${uid}-t${index}`} className="be-tabs__tab" role="tab" aria-controls={`${uid}-p${index}`}>
+              {column.label || `Tab ${index + 1}`}
+            </label>
+          ))}
+        </div>
+        <div className="be-tabs__panels">
+          {parsed.map((column, index) => (
+            <SectionColumnView
+              key={column._id || index}
+              column={column}
+              index={index}
+              renderNode={renderNode}
+              depth={depth}
+              scope={scope}
+              panel={{ id: `${uid}-p${index}`, role: 'tabpanel', labelledBy: `${uid}-t${index}` }}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -57,7 +121,9 @@ const SectionColumnView: React.FC<{
   renderNode: (node: SectionNode, key: string) => React.ReactNode
   depth: number
   scope: string
-}> = ({ column, index, renderNode, depth, scope }) => {
+  /** Set when the column is a tab / accordion panel (id + ARIA role). */
+  panel?: { id: string; role: 'tabpanel' | 'region'; labelledBy?: string }
+}> = ({ column, index, renderNode, depth, scope, panel }) => {
   const design = asBlockStyle(column.design)
   const columnScope = `be-c-${safeScope(`${scope}-${index}`)}`
   // Tablet / mobile padding and hide settings of the column itself.
@@ -65,7 +131,9 @@ const SectionColumnView: React.FC<{
 
   return (
     <div
-      id={design.anchorId || (columnCss ? columnScope : undefined)}
+      id={design.anchorId || (columnCss ? columnScope : panel?.id)}
+      role={panel?.role}
+      aria-labelledby={panel?.labelledBy}
       className={`be-column ${blockStyleClasses(design)}`}
       style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
     >

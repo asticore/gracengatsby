@@ -9,7 +9,29 @@ const ParticlesBackground: React.FC<{
   count?: number
   interact?: 'none' | 'repel' | 'attract' | 'connect'
   color?: string
-}> = ({ count = 50, interact = 'repel', color = '#6366f1' }) => {
+  sizeMin?: number
+  sizeMax?: number
+  /** Percent of normal speed. */
+  speed?: number
+  /** 0-1. */
+  opacity?: number
+  links?: boolean
+  linkDistance?: number
+  interactRadius?: number
+  shape?: 'circle' | 'square'
+}> = ({
+  count = 50,
+  interact = 'repel',
+  color = '#6366f1',
+  sizeMin = 1,
+  sizeMax = 2.8,
+  speed = 100,
+  opacity = 1,
+  links = false,
+  linkDistance = 110,
+  interactRadius = 120,
+  shape = 'circle',
+}) => {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -27,16 +49,21 @@ const ParticlesBackground: React.FC<{
     let raf = 0
     let visible = true
     const mouse = { x: -9999, y: -9999 }
-    const LINK = 110
+    const LINK = linkDistance
+    const RAD = interactRadius
+    const spd = speed / 100
+    const lo = Math.min(sizeMin, sizeMax)
+    const hi = Math.max(sizeMin, sizeMax)
+    const connect = links || interact === 'connect'
 
     const seed = () => {
       const n = Math.max(1, Math.min(count, Math.round((w * h) / 14000)))
       parts = Array.from({ length: n }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        r: 1 + Math.random() * 1.8,
+        vx: (Math.random() - 0.5) * 0.4 * spd,
+        vy: (Math.random() - 0.5) * 0.4 * spd,
+        r: lo + Math.random() * (hi - lo),
       }))
     }
 
@@ -44,12 +71,16 @@ const ParticlesBackground: React.FC<{
       ctx.clearRect(0, 0, w, h)
       ctx.fillStyle = color
       ctx.strokeStyle = color
+      ctx.globalAlpha = opacity
       for (const p of parts) {
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.r, 0, 6.2832)
-        ctx.fill()
+        if (shape === 'square') ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2)
+        else {
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.r, 0, 6.2832)
+          ctx.fill()
+        }
       }
-      if (interact === 'connect') {
+      if (connect) {
         for (let i = 0; i < parts.length; i++) {
           const a = parts[i]
           // The pointer acts as one extra node so lines follow it.
@@ -57,7 +88,7 @@ const ParticlesBackground: React.FC<{
           for (const b of near) {
             const d = Math.hypot(a.x - b.x, a.y - b.y)
             if (d < LINK) {
-              ctx.globalAlpha = (1 - d / LINK) * 0.6
+              ctx.globalAlpha = (1 - d / LINK) * 0.6 * opacity
               ctx.beginPath()
               ctx.moveTo(a.x, a.y)
               ctx.lineTo(b.x, b.y)
@@ -75,16 +106,16 @@ const ParticlesBackground: React.FC<{
           const dx = p.x - mouse.x
           const dy = p.y - mouse.y
           const d = Math.hypot(dx, dy)
-          if (d < 120 && d > 0.1) {
-            const f = ((120 - d) / 120) * 0.08 * (interact === 'repel' ? 1 : -1)
+          if (d < RAD && d > 0.1) {
+            const f = ((RAD - d) / RAD) * 0.08 * (interact === 'repel' ? 1 : -1)
             p.vx += (dx / d) * f
             p.vy += (dy / d) * f
           }
         }
         p.vx *= 0.99
         p.vy *= 0.99
-        if (Math.abs(p.vx) < 0.05) p.vx += (Math.random() - 0.5) * 0.02
-        if (Math.abs(p.vy) < 0.05) p.vy += (Math.random() - 0.5) * 0.02
+        if (Math.abs(p.vx) < 0.05 * spd) p.vx += (Math.random() - 0.5) * 0.02 * spd
+        if (Math.abs(p.vy) < 0.05 * spd) p.vy += (Math.random() - 0.5) * 0.02 * spd
         p.x = (p.x + p.vx + w) % w
         p.y = (p.y + p.vy + h) % h
       }
@@ -145,7 +176,7 @@ const ParticlesBackground: React.FC<{
       host?.removeEventListener('pointermove', onMove)
       host?.removeEventListener('pointerleave', onLeave)
     }
-  }, [count, interact, color])
+  }, [count, interact, color, sizeMin, sizeMax, speed, opacity, links, linkDistance, interactRadius, shape])
 
   return <canvas ref={ref} aria-hidden="true" />
 }

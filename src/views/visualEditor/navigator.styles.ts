@@ -24,6 +24,5 @@ export const NAVIGATOR_CSS = `
 .ve-nav__input{flex:1;min-width:0;padding:2px 6px;border:1px solid #3b82f6;border-radius:4px;font:inherit;background:transparent;color:inherit}
 .ve-nav__anchor-edit{display:flex;align-items:center;gap:4px;margin:2px 0 4px 40px;font-size:12px}
 .ve-nav__hint{opacity:.6;font-size:11px;margin:0 0 4px 40px}
-.ve-nav__swatch{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(128,128,128,.5);vertical-align:middle}
 .ve-nav__empty{opacity:.65;padding:8px}
 `

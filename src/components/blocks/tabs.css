@@ -183,3 +183,45 @@
 .be-modal__close:hover{background:rgba(17,24,39,.16)}
 .be-modal__body{display:block}
 .be-modal__body>.be-column{width:auto;max-width:none;min-width:0;margin-bottom:16px}
+
+/* Stack display: every column is a full-width card that sticks to the top of the viewport at
+   top + index * offset (--be-stack-i is set inline per card). Later cards paint above earlier ones, so
+   the cards pile up as the page scrolls. Sticky works on mobile too. */
+.be-stack{display:block;position:relative;min-width:0}
+.be-stack>.be-column{position:sticky;top:calc(var(--be-stack-top,24px) + var(--be-stack-i,0) * var(--be-stack-offset,16px));box-sizing:border-box;width:auto;max-width:none;min-width:0;min-height:var(--be-stack-min,70vh);padding:clamp(16px,3vw,32px);border-radius:12px;background:Canvas;color:CanvasText;box-shadow:0 -8px 24px rgba(0,0,0,.12)}
+
+/* Horizontal scroll display. Fallback (no scroll-driven animations, or reduced motion): the track is a
+   plain horizontal scroll-snap strip. Where scroll-driven animations exist, the wrapper is --be-hs-n vh tall,
+   the viewport sticks for that run of page scroll, and the track slides sideways across it. */
+.be-hscroll{position:relative;min-width:0}
+.be-hscroll__sticky{overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:thin}
+.be-hscroll__sticky:focus-visible{outline:2px solid var(--be-tab-color,#2563eb);outline-offset:2px}
+.be-hscroll__track{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:24px;width:max-content;min-width:0}
+.be-hscroll__track>.be-column{flex:0 0 var(--be-hs-col,80vw);width:var(--be-hs-col,80vw);box-sizing:border-box;max-width:none;min-width:0;scroll-snap-align:start}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .be-hscroll{view-timeline:--be-hs block;height:calc(var(--be-hs-n,300) * 1vh)}
+    .be-hscroll__sticky{position:sticky;top:0;height:100vh;height:100svh;display:flex;align-items:center;overflow:hidden;scroll-snap-type:none}
+    /* Only the part of the wrapper's scroll while the viewport is pinned drives the slide (cover range). */
+    .be-hscroll__track{animation:be-hs-slide linear both;animation-timeline:--be-hs;animation-range:cover calc(10000% / (var(--be-hs-n,300) + 100)) cover calc(100% * var(--be-hs-n,300) / (var(--be-hs-n,300) + 100))}
+  }
+}
+@keyframes be-hs-slide{from{transform:translateX(0)}to{transform:translateX(calc(100vw - 100%))}}
+
+/* Sticky steps display: the first column sticks beside the steps (the rest of the columns, stacked).
+   Mobile (<= 768px) is a plain stacked flow. */
+.be-sticky-steps{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:var(--be-ss-gap,48px);min-width:0}
+.be-sticky-steps--right{flex-direction:row-reverse}
+.be-sticky-steps__lead{position:sticky;top:var(--be-ss-top,96px);align-self:flex-start;flex:1 1 0;min-width:0}
+.be-sticky-steps__steps{display:flex;flex-direction:column;gap:var(--be-ss-gap,48px);flex:1.2 1 0;min-width:0}
+.be-sticky-steps__lead>.be-column,.be-sticky-steps__steps>.be-column{box-sizing:border-box;width:auto;max-width:none;min-width:0}
+.be-sticky-steps__steps>.be-column{min-height:70vh}
+@media (max-width:768px){
+  .be-sticky-steps,.be-sticky-steps--right{flex-direction:column;align-items:stretch}
+  .be-sticky-steps__lead{position:static;flex:0 0 auto;align-self:auto}
+  .be-sticky-steps__steps{flex:0 0 auto}
+  .be-sticky-steps__steps>.be-column{min-height:0}
+}
+
+/* editor canvas: scroll-story modes show their columns plainly, with a badge */
+.ve-scroll-story__badge{display:inline-block;margin:0 0 8px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(37,99,235,.12);color:var(--accent,#2563eb)}

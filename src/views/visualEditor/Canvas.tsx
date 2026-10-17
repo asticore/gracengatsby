@@ -4,10 +4,11 @@ import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
 import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer } from '@/lib/blockStyle'
-import { sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
+import { parseSectionLayout, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { ShapeDivider } from '@/components/blocks/StyledBlock'
+import '@/components/blocks/tabs.css'
 
 import ParticlesBackground from '@/components/blocks/ParticlesLazy'
 import { getBlockDef } from './blockSchemas'
@@ -152,7 +153,7 @@ const CanvasNode: React.FC<{
       ref={setNodeRef}
       id={scopeId}
       data-ve-node={JSON.stringify(path)}
-      className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ${hasMinHeight ? 've-node--minh' : ''} ${blockFxClasses(design)} ve-node--depth-${Math.min(depth, 3)}`}
+      className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ${hasMinHeight ? 've-node--minh' : ''} ${blockFxClasses(design)} ve-node--depth-${Math.min(depth, 3)} ${depth === 0 && index === 0 ? 've-node--first' : ''}`}
       style={wrapperStyle}
       onClick={(event) => {
         // Stop the click bubbling to an ancestor section, so clicking a nested
@@ -168,7 +169,19 @@ const CanvasNode: React.FC<{
       {hasFxLayer(design) && (
         <div className={`be-fx be-fx--${design.bgEffect}`} aria-hidden="true">
           {design.bgEffect === 'particles' && (
-            <ParticlesBackground count={design.particlesCount ?? 50} interact={design.particlesInteract ?? 'repel'} color={design.bgEffectColor || '#6366f1'} />
+            <ParticlesBackground
+              count={design.particlesCount ?? 50}
+              interact={design.particlesInteract ?? 'repel'}
+              color={design.bgEffectColor || '#6366f1'}
+              sizeMin={design.particlesSizeMin}
+              sizeMax={design.particlesSizeMax}
+              speed={design.particlesSpeed}
+              opacity={design.particlesOpacity === undefined ? undefined : design.particlesOpacity / 100}
+              links={design.particlesLinks}
+              linkDistance={design.particlesLinkDistance}
+              interactRadius={design.particlesInteractRadius}
+              shape={design.particlesShape}
+            />
           )}
         </div>
       )}
@@ -313,6 +326,20 @@ const SectionColumns: React.FC<{
   depth: number
 }> = ({ columns, layout, path, handlers, depth }) => {
   const flow = sectionLayoutProps(layout, 've-section')
+  const parsedLayout = parseSectionLayout(layout)
+  const display = parsedLayout?.display
+  const panelMode = display === 'tabs' || display === 'accordion'
+  // Which panel shows in tabs / accordion mode. Selecting a column (or anything inside it)
+  // from elsewhere - navigator, canvas click - switches to it.
+  const [activeIdx, setActiveIdx] = React.useState(0)
+  const prefix = `${pathKey(path)}.`
+  const selKey = handlers.selectedKey
+  const selIdx = panelMode && selKey && selKey.startsWith(prefix) ? Number(selKey.slice(prefix.length).split('.')[0]) : null
+  const [seenSel, setSeenSel] = React.useState<number | null>(null)
+  if (seenSel !== selIdx) {
+    setSeenSel(selIdx)
+    if (selIdx !== null && Number.isInteger(selIdx)) setActiveIdx(selIdx)
+  }
   if (columns.length === 0) {
     return (
       <div className="ve-section-empty">
@@ -322,6 +349,73 @@ const SectionColumns: React.FC<{
   }
 
   const ownerLocked = Boolean(handlers.locks?.[pathKey(path)]?.blocked)
+
+  if (panelMode) {
+    const active = Math.min(Math.max(activeIdx, 0), columns.length - 1)
+    const titleOf = (c: SectionColumn, i: number) => c.label || (display === 'tabs' ? `Tab ${i + 1}` : `Panel ${i + 1}`)
+    const pick = (event: React.MouseEvent, i: number) => {
+      event.stopPropagation()
+      setActiveIdx(i)
+      handlers.onSelect([...path, i])
+    }
+    const colorVar = parsedLayout?.tabsColor ? ({ '--be-tab-color': parsedLayout.tabsColor } as React.CSSProperties) : undefined
+    const addBtn = (
+      <button
+        type="button"
+        className="ve-tabs-bar__add"
+        disabled={ownerLocked}
+        onClick={(e) => {
+          e.stopPropagation()
+          handlers.onColumnOp?.([...path, columns.length - 1], 'add')
+        }}
+        aria-label={display === 'tabs' ? 'Add tab' : 'Add panel'}
+        title={display === 'tabs' ? 'Add tab' : 'Add panel'}
+      >
+        +
+      </button>
+    )
+    const renderPanel = (column: SectionColumn, i: number) => (
+      <CanvasColumn
+        key={column._id || i}
+        column={column}
+        columnPath={[...path, i]}
+        index={i}
+        count={columns.length}
+        handlers={handlers}
+        depth={depth}
+        ownerLocked={ownerLocked}
+      />
+    )
+    if (display === 'tabs') {
+      return (
+        <div className="ve-section ve-tabs" style={colorVar}>
+          <div className="ve-tabs-bar" role="tablist" data-align={parsedLayout?.tabsAlign || 'start'}>
+            {columns.map((column, i) => (
+              <button key={column._id || i} type="button" role="tab" aria-selected={i === active} className={`ve-tabs-bar__tab ${i === active ? 've-tabs-bar__tab--active' : ''}`} onClick={(e) => pick(e, i)}>
+                {titleOf(column, i)}
+              </button>
+            ))}
+            {addBtn}
+          </div>
+          {renderPanel(columns[active], active)}
+        </div>
+      )
+    }
+    return (
+      <div className="ve-section ve-tabs" style={colorVar}>
+        {columns.map((column, i) => (
+          <React.Fragment key={column._id || i}>
+            <button type="button" className={`ve-acc-head ${i === active ? 've-acc-head--active' : ''}`} aria-expanded={i === active} onClick={(e) => pick(e, i)}>
+              <span>{titleOf(column, i)}</span>
+              <span aria-hidden="true">{i === active ? '−' : '+'}</span>
+            </button>
+            {i === active && renderPanel(column, i)}
+          </React.Fragment>
+        ))}
+        {addBtn}
+      </div>
+    )
+  }
 
   return (
     <div

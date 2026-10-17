@@ -27,6 +27,10 @@ export type Parallax = 'none' | 'background' | 'float-up' | 'float-down'
 export type Reveal = 'none' | 'fade' | 'fade-up' | 'fade-down' | 'slide-left' | 'slide-right' | 'zoom' | 'blur'
 export type HoverFx = 'none' | 'lift' | 'glow' | 'zoom'
 export type BoxShadowPreset = 'none' | 'sm' | 'md' | 'lg'
+export type FontSizeUnit = 'px' | 'em' | 'rem' | 'vw'
+export type LetterSpacingUnit = 'px' | 'em'
+export type TextTransform = 'none' | 'uppercase' | 'lowercase' | 'capitalize'
+export type TextShadowPreset = 'none' | 'sm' | 'md' | 'lg'
 
 /** The keys a tablet / mobile override may carry (everything else is dropped on read). */
 export const RESPONSIVE_KEYS = [
@@ -42,6 +46,10 @@ export const RESPONSIVE_KEYS = [
   'selfAlign',
   'selfWidth',
   'selfWidthPercent',
+  'fontSize',
+  'fontSizeUnit',
+  'lineHeight',
+  'letterSpacing',
 ] as const
 export type ResponsiveKey = (typeof RESPONSIVE_KEYS)[number]
 export type ResponsiveDevice = 'tablet' | 'mobile'
@@ -87,6 +95,23 @@ export type BlockStyle = {
   fontFamily?: string
   textColor?: string
   textAlign?: TextAlign
+  /** Typography (Elementor-style). Emitted on the wrapper; headings/paragraphs inside inherit it. */
+  /** 1-400 in fontSizeUnit (default px). Responsive. */
+  fontSize?: number
+  fontSizeUnit?: FontSizeUnit
+  /** 100-900 in steps of 100. */
+  fontWeight?: number
+  /** Unitless multiplier, 0.5-5. Responsive. */
+  lineHeight?: number
+  /** -20..50 in letterSpacingUnit (default px). Responsive. */
+  letterSpacing?: number
+  letterSpacingUnit?: LetterSpacingUnit
+  textTransform?: TextTransform
+  fontStyle?: 'normal' | 'italic'
+  textDecoration?: 'none' | 'underline' | 'line-through'
+  /** px, -20..100. */
+  wordSpacing?: number
+  textShadow?: TextShadowPreset
   width?: BlockWidth
   minHeight?: number
   /** Unit of minHeight. Unset = px; 'vh' (with minHeight 100) is "fit the screen". */
@@ -124,6 +149,61 @@ export type BlockStyle = {
   glass?: boolean
   /** px, 0-40 (default 12). */
   glassBlur?: number
+
+  // Granular effect settings. All optional; unset keeps the built-in look.
+  /** Parallax travel in px, 0-400 (default: strength * 1.6). */
+  parallaxDistance?: number
+  /** Background parallax direction; 'up' (default) is the classic slower-than-page drift. */
+  parallaxDirection?: 'up' | 'down'
+  particlesSizeMin?: number
+  particlesSizeMax?: number
+  /** Percent of normal speed, 0-300 (default 100). */
+  particlesSpeed?: number
+  /** 5-100 (default 100). */
+  particlesOpacity?: number
+  particlesLinks?: boolean
+  /** px, 40-300 (default 110). */
+  particlesLinkDistance?: number
+  /** px, 40-400 (default 120). */
+  particlesInteractRadius?: number
+  particlesShape?: 'circle' | 'square'
+  /** px, 0.5-12 (default 1.5). */
+  dotSize?: number
+  /** px, 8-120 (default 22). */
+  dotSpacing?: number
+  /** px, 12-200 (default 36). */
+  gridSize?: number
+  /** px, 0.5-6 (default 1). */
+  gridLineWidth?: number
+  /** px, 0-120 (default 40). */
+  auroraBlur?: number
+  /** Blob spread as percent, 0-100 (default 30). */
+  auroraSize?: number
+  /** Seconds per loop, 4-80 (default 18). */
+  auroraSpeed?: number
+  /** deg, 0-360 (default 90). */
+  gradientAngle?: number
+  /** Seconds per loop, 3-60 (default 16). */
+  gradientSpeed?: number
+  /** 0-100 (default derived from intensity). */
+  grainOpacity?: number
+  /** px tile, 40-400 (default 160). */
+  grainSize?: number
+  /** px, 0-200 (default 32). */
+  revealDistance?: number
+  /** Percent of the scroll-in range the animation spans, 5-100 (default 40). */
+  revealDuration?: number
+  /** Percent of scroll-in before it starts, 0-60 (default 0). */
+  revealDelay?: number
+  revealEasing?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  /** px, 0-40 (default 4). */
+  hoverLift?: number
+  /** Percent, 100-120 (default 102 for zoom). */
+  hoverScale?: number
+  /** Glass tint opacity percent, 0-100 (default 18). */
+  glassOpacity?: number
+  /** Glass border opacity percent, 0-100 (default 30). */
+  glassBorder?: number
 
   // Position inside a column (all optional; unset keeps normal block flow)
   /** How the block sits across its column. 'stretch' fills it; start/center/end shrink to fit and align. */
@@ -163,7 +243,7 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  const fx = sanitizeFx(style)
+  const fx = sanitizeTypography(sanitizeFx(style))
   if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
   const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
@@ -217,13 +297,123 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   numKey('particlesCount', 10, 120)
   numKey('parallaxStrength', 0, 100)
   numKey('glassBlur', 0, 40)
+  for (const [k, min, max] of NUM_FX) numKey(k, min, max)
+  enumKey('parallaxDirection', [{ value: 'up' }, { value: 'down' }])
+  enumKey('particlesShape', [{ value: 'circle' }, { value: 'square' }])
+  enumKey('revealEasing', REVEAL_EASING_OPTIONS)
+  if (raw.particlesLinks !== undefined && typeof raw.particlesLinks !== 'boolean') drop('particlesLinks')
   colorKey('bgEffectColor')
   colorKey('bgEffectColor2')
   if (raw.glass !== undefined && typeof raw.glass !== 'boolean') drop('glass')
   return out as BlockStyle
 }
 
+const TYPO_KEYS = [
+  'fontSize', 'fontSizeUnit', 'fontWeight', 'lineHeight', 'letterSpacing', 'letterSpacingUnit',
+  'textTransform', 'fontStyle', 'textDecoration', 'wordSpacing', 'textShadow',
+] as const
+
+const FONT_SIZE_UNITS: readonly string[] = ['px', 'em', 'rem', 'vw']
+const LETTER_SPACING_UNITS: readonly string[] = ['px', 'em']
+const TEXT_TRANSFORMS: readonly string[] = ['none', 'uppercase', 'lowercase', 'capitalize']
+const FONT_STYLES: readonly string[] = ['normal', 'italic']
+const TEXT_DECORATIONS: readonly string[] = ['none', 'underline', 'line-through']
+const TEXT_SHADOWS: readonly string[] = ['none', 'sm', 'md', 'lg']
+
+/** Validates the typography keys read from JSON (enum membership, numeric clamps). Same object back when none are set. */
+function sanitizeTypography(style: BlockStyle): BlockStyle {
+  const raw = style as Record<string, unknown>
+  if (!TYPO_KEYS.some((k) => raw[k] !== undefined)) return style
+  const out: Record<string, unknown> = { ...raw }
+  const num = (k: string, min: number, max: number, round?: (n: number) => number) => {
+    if (raw[k] === undefined) return
+    const n = clampNum(raw[k], min, max)
+    if (n === undefined) delete out[k]
+    else out[k] = round ? round(n) : n
+  }
+  const en = (k: string, opts: readonly string[]) => {
+    if (raw[k] !== undefined && !(typeof raw[k] === 'string' && opts.includes(raw[k] as string))) delete out[k]
+  }
+  num('fontSize', 0.1, 400)
+  en('fontSizeUnit', FONT_SIZE_UNITS)
+  num('fontWeight', 100, 900, (n) => Math.round(n / 100) * 100)
+  num('lineHeight', 0.5, 5)
+  num('letterSpacing', -20, 50)
+  en('letterSpacingUnit', LETTER_SPACING_UNITS)
+  en('textTransform', TEXT_TRANSFORMS)
+  en('fontStyle', FONT_STYLES)
+  en('textDecoration', TEXT_DECORATIONS)
+  num('wordSpacing', -20, 100)
+  en('textShadow', TEXT_SHADOWS)
+  return out as BlockStyle
+}
+
+const TEXT_SHADOW_PRESETS: Record<Exclude<TextShadowPreset, 'none'>, string> = {
+  sm: '0 1px 2px rgba(0, 0, 0, 0.3)',
+  md: '0 2px 8px rgba(0, 0, 0, 0.35)',
+  lg: '0 4px 16px rgba(0, 0, 0, 0.45)',
+}
+
+/** The font-size value for a style (base, or merged with device overrides by the caller). */
+const fontSizeValue = (s: BlockStyle): string | undefined =>
+  isNum(s.fontSize) && s.fontSize > 0 ? `${s.fontSize}${FONT_SIZE_UNITS.includes(s.fontSizeUnit ?? '') ? s.fontSizeUnit : 'px'}` : undefined
+const letterSpacingValue = (s: BlockStyle): string | undefined =>
+  isNum(s.letterSpacing) ? `${s.letterSpacing}${s.letterSpacingUnit === 'em' ? 'em' : 'px'}` : undefined
+
+/** Desktop typography as inline CSS on the wrapper; children inherit it (see blockStyleCss for headings). */
+export function typographyCss(style: BlockStyle): React.CSSProperties {
+  const css: React.CSSProperties = {}
+  const size = fontSizeValue(style)
+  if (size) css.fontSize = size
+  if (isNum(style.fontWeight)) css.fontWeight = style.fontWeight
+  if (isNum(style.lineHeight)) css.lineHeight = style.lineHeight
+  const ls = letterSpacingValue(style)
+  if (ls) css.letterSpacing = ls
+  if (style.textTransform && TEXT_TRANSFORMS.includes(style.textTransform)) css.textTransform = style.textTransform
+  if (style.fontStyle && FONT_STYLES.includes(style.fontStyle)) css.fontStyle = style.fontStyle
+  if (style.textDecoration && TEXT_DECORATIONS.includes(style.textDecoration)) css.textDecoration = style.textDecoration
+  if (isNum(style.wordSpacing)) css.wordSpacing = `${style.wordSpacing}px`
+  if (style.textShadow && style.textShadow !== 'none' && TEXT_SHADOWS.includes(style.textShadow)) {
+    css.textShadow = TEXT_SHADOW_PRESETS[style.textShadow]
+  }
+  return css
+}
+
+/** Typography properties (kebab-case) that are set on this style or any device override, so headings must inherit them. */
+function typographyInheritProps(style: BlockStyle): string[] {
+  const any = (f: (s: BlockStyle) => unknown) => [style, style.tablet, style.mobile].some((s) => s && f(s as BlockStyle) !== undefined)
+  const props: string[] = []
+  if (any(fontSizeValue)) props.push('font-size')
+  if (any((s) => (isNum(s.fontWeight) ? 1 : undefined))) props.push('font-weight')
+  if (any((s) => (isNum(s.lineHeight) ? 1 : undefined))) props.push('line-height')
+  if (any(letterSpacingValue)) props.push('letter-spacing')
+  if (style.textTransform) props.push('text-transform')
+  if (style.fontStyle) props.push('font-style')
+  if (isNum(style.wordSpacing)) props.push('word-spacing')
+  if (style.textShadow && style.textShadow !== 'none') props.push('text-shadow')
+  return props
+}
+
+const NUM_FX: readonly (readonly [string, number, number])[] = [
+  ['parallaxDistance', 0, 400], ['particlesSizeMin', 0.5, 10], ['particlesSizeMax', 0.5, 12],
+  ['particlesSpeed', 0, 300], ['particlesOpacity', 5, 100], ['particlesLinkDistance', 40, 300],
+  ['particlesInteractRadius', 40, 400], ['dotSize', 0.5, 12], ['dotSpacing', 8, 120],
+  ['gridSize', 12, 200], ['gridLineWidth', 0.5, 6], ['auroraBlur', 0, 120], ['auroraSize', 0, 100],
+  ['auroraSpeed', 4, 80], ['gradientAngle', 0, 360], ['gradientSpeed', 3, 60], ['grainOpacity', 0, 100],
+  ['grainSize', 40, 400], ['revealDistance', 0, 200], ['revealDuration', 5, 100], ['revealDelay', 0, 60],
+  ['hoverLift', 0, 40], ['hoverScale', 100, 120], ['glassOpacity', 0, 100], ['glassBorder', 0, 100],
+]
+
+export const REVEAL_EASING_OPTIONS: { label: string; value: NonNullable<BlockStyle['revealEasing']> }[] = [
+  { label: 'Linear', value: 'linear' },
+  { label: 'Ease', value: 'ease' },
+  { label: 'Ease in', value: 'ease-in' },
+  { label: 'Ease out', value: 'ease-out' },
+  { label: 'Ease in-out', value: 'ease-in-out' },
+]
+
 const FX_KEYS = [
+  ...NUM_FX.map((n) => n[0]), 'parallaxDirection', 'particlesShape', 'revealEasing', 'particlesLinks',
   'dividerTop', 'dividerBottom', 'dividerTopAnim', 'dividerBottomAnim', 'dividerTopSpeed', 'dividerBottomSpeed',
   'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
   'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
@@ -246,6 +436,10 @@ export function sanitizeDeviceOverride(raw: unknown): DeviceOverride | undefined
     if (isNum(r[key])) out[key] = r[key]
   }
   if (typeof r.textAlign === 'string' && TEXT_ALIGNS.includes(r.textAlign)) out.textAlign = r.textAlign as TextAlign
+  if (isNum(r.fontSize) && r.fontSize > 0) out.fontSize = Math.min(400, Math.max(0.1, r.fontSize))
+  if (typeof r.fontSizeUnit === 'string' && FONT_SIZE_UNITS.includes(r.fontSizeUnit)) out.fontSizeUnit = r.fontSizeUnit as FontSizeUnit
+  if (isNum(r.lineHeight)) out.lineHeight = Math.min(5, Math.max(0.5, r.lineHeight))
+  if (isNum(r.letterSpacing)) out.letterSpacing = Math.min(50, Math.max(-20, r.letterSpacing))
   if (r.minHeightUnit === 'px' || r.minHeightUnit === 'vh') out.minHeightUnit = r.minHeightUnit
   if (typeof r.selfAlign === 'string' && SELF_ALIGNS.includes(r.selfAlign)) out.selfAlign = r.selfAlign as BlockStyle['selfAlign']
   if (typeof r.selfWidth === 'string' && SELF_WIDTHS.includes(r.selfWidth)) out.selfWidth = r.selfWidth as BlockStyle['selfWidth']
@@ -311,6 +505,7 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   if (fontValue) css.fontFamily = fontValue
   if (isStr(style.textColor)) css.color = style.textColor
   if (style.textAlign) css.textAlign = style.textAlign
+  Object.assign(css, typographyCss(style))
   if (isNum(style.minHeight)) css.minHeight = minHeightValue(style.minHeight, style.minHeightUnit)
 
   if (isNum(style.borderWidth) && style.borderWidth > 0) {
@@ -406,6 +601,17 @@ export function deviceOverrideDecls(style: BlockStyle, device: ResponsiveDevice)
   px('margin-top', own.marginTop)
   px('margin-bottom', own.marginBottom)
   if (own.textAlign) decls.push(`text-align:${own.textAlign} !important`)
+  if (own.fontSize !== undefined || own.fontSizeUnit !== undefined) {
+    const merged: BlockStyle = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
+    const size = fontSizeValue(merged)
+    if (size) decls.push(`font-size:${size} !important`)
+  }
+  if (isNum(own.lineHeight)) decls.push(`line-height:${own.lineHeight} !important`)
+  if (own.letterSpacing !== undefined) {
+    const merged: BlockStyle = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
+    const ls = letterSpacingValue(merged)
+    if (ls) decls.push(`letter-spacing:${ls} !important`)
+  }
   if (isNum(own.minHeight) || own.minHeightUnit) {
     const merged = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
     if (isNum(merged.minHeight)) decls.push(`min-height:${minHeightValue(merged.minHeight, merged.minHeightUnit)} !important`)
@@ -463,6 +669,13 @@ export function blockStyleCss(style: BlockStyle, scopeId: string, options: { edi
   const fontValue = blockFontStack(style.fontFamily)
   if (fontValue) {
     rules.push(`${sel} :is(h1,h2,h3,h4,h5,h6){font-family:${fontValue}}`)
+  }
+  // Global heading rules (and browser defaults) fix size/weight/spacing on h1-h6, so any typography
+  // set here is inherited from the wrapper. A nested block with its own value still wins: `inherit`
+  // reads the nearest parent, which is that block's wrapper.
+  const inheritProps = typographyInheritProps(style)
+  if (inheritProps.length > 0) {
+    rules.push(`${sel} :is(h1,h2,h3,h4,h5,h6,button){${inheritProps.map((p) => `${p}:inherit`).join(';')}}`)
   }
 
   return rules.join('')
@@ -628,8 +841,53 @@ export function blockFxVars(style: BlockStyle): Record<string, string> {
   if (isStr(style.bgEffectColor)) v['--be-fx-c'] = style.bgEffectColor
   if (isStr(style.bgEffectColor2)) v['--be-fx-c2'] = style.bgEffectColor2
   if (isNum(style.bgEffectIntensity)) v['--be-fx-i'] = String(style.bgEffectIntensity / 100)
-  if (style.parallax && style.parallax !== 'none') v['--be-par'] = `${Math.round((isNum(style.parallaxStrength) ? style.parallaxStrength : 40) * 1.6)}px`
-  if (style.glass) v['--be-glass'] = `${isNum(style.glassBlur) ? style.glassBlur : 12}px`
+  if (style.parallax && style.parallax !== 'none') {
+    v['--be-par'] = `${isNum(style.parallaxDistance) ? style.parallaxDistance : Math.round((isNum(style.parallaxStrength) ? style.parallaxStrength : 40) * 1.6)}px`
+    if (style.parallax === 'background' && style.parallaxDirection === 'down') v['--be-pdir'] = '-1'
+  }
+  if (style.glass) {
+    v['--be-glass'] = `${isNum(style.glassBlur) ? style.glassBlur : 12}px`
+    if (isNum(style.glassOpacity)) v['--be-glass-a'] = String(style.glassOpacity / 100)
+    if (isNum(style.glassBorder)) v['--be-glass-b'] = String(style.glassBorder / 100)
+  }
+  const px = (name: string, n: number | undefined, unit = 'px') => {
+    if (isNum(n)) v[name] = `${n}${unit}`
+  }
+  const fx = style.bgEffect
+  if (fx === 'dots') {
+    px('--be-dot', style.dotSize)
+    px('--be-dsp', style.dotSpacing)
+  } else if (fx === 'grid') {
+    px('--be-gsz', style.gridSize)
+    px('--be-gw', style.gridLineWidth)
+  } else if (fx === 'aurora') {
+    px('--be-aur-b', style.auroraBlur)
+    px('--be-aur-s', style.auroraSize, '%')
+    px('--be-aur-t', style.auroraSpeed, 's')
+  } else if (fx === 'gradient-shift') {
+    px('--be-gs-a', style.gradientAngle, 'deg')
+    px('--be-gs-t', style.gradientSpeed, 's')
+  } else if (fx === 'grain') {
+    if (isNum(style.grainOpacity)) v['--be-gr-o'] = String(style.grainOpacity / 100)
+    px('--be-gr-s', style.grainSize)
+  }
+  if (style.reveal && style.reveal !== 'none') {
+    if (isNum(style.revealDistance)) {
+      v['--be-rv-d'] = `${style.revealDistance}px`
+      v['--be-rv-z'] = String(Math.max(0.2, 1 - style.revealDistance / 400))
+      v['--be-rv-b'] = `${Math.round(style.revealDistance / 3.2)}px`
+    }
+    const start = isNum(style.revealDelay) ? style.revealDelay : 0
+    if (isNum(style.revealDelay)) v['--be-rv-s'] = `${start}%`
+    if (isNum(style.revealDuration) || isNum(style.revealDelay)) {
+      v['--be-rv-e'] = `${Math.min(100, start + (isNum(style.revealDuration) ? style.revealDuration : 40))}%`
+    }
+    if (style.revealEasing) v['--be-rv-ease'] = style.revealEasing
+  }
+  if (style.hover === 'lift' || style.hover === 'zoom') {
+    px('--be-hl', style.hoverLift)
+    if (isNum(style.hoverScale)) v['--be-hs'] = String(style.hoverScale / 100)
+  }
   return v
 }
 

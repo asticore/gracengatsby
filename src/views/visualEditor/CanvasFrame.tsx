@@ -15,7 +15,7 @@ import {
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { CanvasNodeList, slotKey, type CanvasHandlers } from './Canvas'
-import type { ColumnToParentMessage, FrameToParentMessage, ParentToFrameMessage, RenameColumnToParentMessage } from './canvasBridge'
+import type { CanvasDevice, ColumnToParentMessage, ColumnWidthsToParentMessage, FrameToParentMessage, ParentToFrameMessage, RenameColumnToParentMessage } from './canvasBridge'
 import { CANVAS_ORIGIN, isBridgeMessage } from './canvasBridge'
 import { pathKey, type NodePath } from './treeOps'
 import { isEditableTarget, resolveShortcut } from './useEditorShortcuts'
@@ -49,7 +49,7 @@ const nearestSlot: CollisionDetection = ({ droppableContainers, droppableRects, 
   return best ? [{ id: best.id, data: { droppableContainer: best.data, value: best.d } }] : []
 }
 
-const post = (message: FrameToParentMessage | ColumnToParentMessage | RenameColumnToParentMessage) => {
+const post = (message: FrameToParentMessage | ColumnToParentMessage | RenameColumnToParentMessage | ColumnWidthsToParentMessage) => {
   window.parent.postMessage(message, CANVAS_ORIGIN())
 }
 
@@ -65,6 +65,8 @@ export const CanvasFrame: React.FC = () => {
   const [blocks, setBlocks] = useState<SectionNode[]>([])
   const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
   const [locks, setLocks] = useState<NonNullable<CanvasHandlers['locks']>>({})
+  // The device preview the parent is showing; column widths are read and written for it.
+  const [device, setDevice] = useState<CanvasDevice>('desktop')
   const [dragHoverKey, setDragHoverKey] = useState<string | null>(null)
   // Which "+" is currently open (Elementor-style: it stays lit, not just a hover flash, until
   // dismissed) - purely local, since it's canvas UI state rather than document content the
@@ -92,6 +94,7 @@ export const CanvasFrame: React.FC = () => {
         setBlocks(msg.blocks)
         setLocks(msg.locks ?? {})
         setSelectedPath(msg.selectedPath)
+        if (msg.device) setDevice(msg.device)
         setOpenInsertKey(null)
       } else if (msg.type === 'selected') {
         setSelectedPath(msg.selectedPath)
@@ -185,6 +188,8 @@ export const CanvasFrame: React.FC = () => {
     onMove: (path, direction) => post({ source: 've-canvas', type: 'move', path, direction }),
     onColumnOp: (path, op) => post({ source: 've-canvas', type: 'columnOp', path, op }),
     onRenameColumn: (path, label) => post({ source: 've-canvas', type: 'renameColumn', path, label }),
+    device,
+    onColumnWidths: (path, widths) => post({ source: 've-canvas', type: 'columnWidths', path, widths, device }),
   }
 
   const handleDragStart = (event: DragStartEvent) => {

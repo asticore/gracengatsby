@@ -73,6 +73,20 @@ const carouselSection = (slides: { title: string; body: string }[]): SectionNode
   columns: slides.map((s) => ({ width: 12 as const, blocks: panelBlocks(s.title, s.body) })),
 })
 
+/** A section shown as a grid: every column is one equal cell holding a heading and some text. */
+const gridSection = (cells: { title: string; body: string }[], columns: number): SectionNode => ({
+  blockType: 'section',
+  design: { layout: { display: 'grid', gridColumns: columns } },
+  columns: cells.map((c) => ({ width: 12 as const, blocks: panelBlocks(c.title, c.body) })),
+})
+
+/** A section shown as a popup: one column of content behind a button. */
+const modalSection = (label: string, title: string, body: string): SectionNode => ({
+  blockType: 'section',
+  design: { layout: { display: 'modal', modalLabel: label, modalWidth: 640 } },
+  columns: [{ width: 12 as const, blocks: panelBlocks(title, body) }],
+})
+
 
 /** A full-width band with its own background (colour here; switch it to an image under the section's Design). */
 const band = (design: Record<string, unknown>, ...columns: ReturnType<typeof col>[]): SectionNode => ({
@@ -386,6 +400,31 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
         { title: 'Third slide', body: 'Swap in your own text, images or buttons.' },
       ]),
     ],
+  },
+  {
+    slug: 'grid-section',
+    name: 'Grid',
+    description: 'Three equal cells side by side; each holds a heading and some text. Cards in a row share a height.',
+    kind: 'section',
+    category: 'other',
+    blocks: () => [
+      gridSection(
+        [
+          { title: 'First cell', body: 'Add a short message here.' },
+          { title: 'Second cell', body: 'Each column of the section is one cell.' },
+          { title: 'Third cell', body: 'Swap in your own text, images or buttons.' },
+        ],
+        3,
+      ),
+    ],
+  },
+  {
+    slug: 'modal-section',
+    name: 'Popup',
+    description: 'A button that opens a dialog holding a heading and some text.',
+    kind: 'section',
+    category: 'other',
+    blocks: () => [modalSection('Learn more', 'More about this', 'Put the details you want to show in the popup here.')],
   },
   {
     slug: 'accordion-section',

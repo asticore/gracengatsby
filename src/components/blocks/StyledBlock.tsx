@@ -1,15 +1,25 @@
 import React from 'react'
 
+import './effects.css'
+
 import {
   asBlockStyle,
   blockScopeId,
+  blockFxClasses,
+  blockFxVars,
   blockStyleClasses,
   blockStyleCss,
   blockStyleToCss,
+  dividerBackPath,
   dividerPath,
+  hasFxLayer,
+  isPeriodicDivider,
   type BlockStyle,
+  type DividerAnim,
   type DividerShape,
 } from '@/lib/blockStyle'
+
+import ParticlesBackground from './ParticlesLazy'
 
 /**
  * Wraps every page-builder block so the per-block "Design" settings (background,
@@ -43,8 +53,26 @@ export const StyledBlock: React.FC<{
   const mediaCss = blockStyleCss(parsed, scopeId)
 
   return (
-    <div id={scopeId} className={blockStyleClasses(parsed)} style={blockStyleToCss(parsed)}>
+    <div
+      id={scopeId}
+      className={[blockStyleClasses(parsed), blockFxClasses(parsed)].filter(Boolean).join(' ')}
+      style={{ ...blockStyleToCss(parsed), ...blockFxVars(parsed) }}
+    >
       {mediaCss && <style dangerouslySetInnerHTML={{ __html: mediaCss }} />}
+      {parsed.parallax === 'background' && parsed.bgType === 'image' && parsed.bgImageUrl && (
+        <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${parsed.bgImageUrl})` }} />
+      )}
+      {hasFxLayer(parsed) && (
+        <div className={`be-fx be-fx--${parsed.bgEffect}`} aria-hidden="true">
+          {parsed.bgEffect === 'particles' && (
+            <ParticlesBackground
+              count={parsed.particlesCount ?? 50}
+              interact={parsed.particlesInteract ?? 'repel'}
+              color={parsed.bgEffectColor || '#6366f1'}
+            />
+          )}
+        </div>
+      )}
       {parsed.bgType === 'image' && typeof parsed.bgOverlay === 'number' && parsed.bgOverlay > 0 && (
         <div className="be-block__overlay" style={{ background: `rgba(0,0,0,${parsed.bgOverlay / 100})` }} />
       )}
@@ -53,6 +81,8 @@ export const StyledBlock: React.FC<{
         color={parsed.dividerTopColor}
         height={parsed.dividerTopHeight}
         flip={parsed.dividerTopFlip}
+        anim={parsed.dividerTopAnim}
+        speed={parsed.dividerTopSpeed}
         position="top"
       />
       <div className="be-block__content">{children}</div>
@@ -61,6 +91,8 @@ export const StyledBlock: React.FC<{
         color={parsed.dividerBottomColor}
         height={parsed.dividerBottomHeight}
         flip={parsed.dividerBottomFlip}
+        anim={parsed.dividerBottomAnim}
+        speed={parsed.dividerBottomSpeed}
         position="bottom"
       />
     </div>
@@ -73,26 +105,65 @@ export const ShapeDivider: React.FC<{
   height?: number
   flip?: boolean
   position: 'top' | 'bottom'
-}> = ({ shape, color, height, flip, position }) => {
+  anim?: DividerAnim
+  /** Seconds per loop, 4-60. */
+  speed?: number
+}> = ({ shape, color, height, flip, position, anim, speed }) => {
   const path = dividerPath(shape || 'none')
   if (!path) return null
+
+  const fill = color || '#ffffff'
+  const back = dividerBackPath(shape)
+  const periodic = isPeriodicDivider(shape)
+  const secs = Math.min(60, Math.max(4, typeof speed === 'number' && Number.isFinite(speed) ? speed : 14))
+  // Non-periodic shapes can't slide seamlessly, so they bob instead.
+  const mode: DividerAnim = !anim || anim === 'none' ? 'none' : anim === 'float' || !periodic ? 'float' : anim
 
   // The base paths are drawn to sit against the bottom edge, so a top divider
   // is the same shape rotated 180deg. `flip` mirrors horizontally on top of that.
   const transforms = [position === 'top' ? 'rotate(180deg)' : null, flip ? 'scaleX(-1)' : null].filter(Boolean)
 
+  const paths = (offset: number) => (
+    <>
+      {back && <path d={back} fill={fill} opacity={0.5} transform={offset ? `translate(${offset})` : undefined} />}
+      <path d={path} fill={fill} transform={offset ? `translate(${offset})` : undefined} />
+    </>
+  )
+  const plain = (key: string, svgStyle?: React.CSSProperties, cls?: string) => (
+    <svg key={key} viewBox="0 0 1200 120" preserveAspectRatio="none" focusable="false" className={cls} style={svgStyle}>
+      {paths(0)}
+    </svg>
+  )
+  const wide = (key: string, svgStyle: React.CSSProperties) => (
+    <svg key={key} viewBox="0 0 2400 120" preserveAspectRatio="none" focusable="false" className="be-divider__drift" style={svgStyle}>
+      {paths(0)}
+      {paths(1200)}
+    </svg>
+  )
+
+  let svgs: React.ReactNode
+  if (mode === 'drift') svgs = wide('d', { animationDuration: `${secs}s` })
+  else if (mode === 'layers' && periodic) {
+    // Three stacked copies, back to front, each sliding at its own speed and direction.
+    svgs = [
+      wide('l3', { opacity: 0.3, top: '-16%', animationDuration: `${secs * 1.7}s`, animationDirection: 'reverse' }),
+      wide('l2', { opacity: 0.5, top: '-8%', animationDuration: `${secs * 1.3}s` }),
+      wide('l1', { animationDuration: `${secs}s`, animationDirection: 'reverse' }),
+    ]
+  } else if (mode === 'float') {
+    svgs = plain('f', { animationDuration: `${Math.max(2, secs / 3)}s` }, 'be-divider__float')
+  } else svgs = plain('s')
+
   return (
     <div
-      className={`be-divider be-divider--${position}`}
+      className={`be-divider be-divider--${position}${mode !== 'none' ? ' be-divider--anim' : ''}`}
       style={{
         height: `${typeof height === 'number' && height > 0 ? height : 60}px`,
         transform: transforms.length > 0 ? transforms.join(' ') : undefined,
       }}
       aria-hidden="true"
     >
-      <svg viewBox="0 0 1200 120" preserveAspectRatio="none" focusable="false">
-        <path d={path} fill={color || '#ffffff'} />
-      </svg>
+      {svgs}
     </div>
   )
 }

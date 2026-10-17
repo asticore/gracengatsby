@@ -357,6 +357,8 @@ export const FORM_ELEMENTS: ElementDef[] = [
         type: 'text',
         helpText: 'Use a custom style from Theming > Buttons, e.g. outline',
       },
+      { name: 'newTab', label: 'Open in new tab', type: 'checkbox' },
+      { name: 'nofollow', label: 'Add rel=nofollow', type: 'checkbox' },
       {
         name: 'size',
         label: 'Size',

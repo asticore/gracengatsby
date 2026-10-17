@@ -16,6 +16,27 @@ export const flag = (v: unknown, fallback = false): boolean => (typeof v === 'bo
 
 export const pick = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback)
 
+/** A link prop: a plain URL string (legacy) or the {url, newTab, nofollow} object the link field stores. */
+export type LinkProp = { url?: string; newTab?: boolean; nofollow?: boolean }
+
+/** The safe href for a link prop, or '' when there is none or its scheme is refused (javascript:, data:, ...). */
+export function linkHref(v: unknown): string {
+  const raw = typeof v === 'string' ? v : v && typeof v === 'object' ? (v as LinkProp).url : undefined
+  return safeUrl(raw) ?? ''
+}
+
+/** target and rel for a link prop. New tab adds noopener noreferrer, nofollow adds nofollow. Plain strings carry neither. */
+export function linkAttrs(v: unknown): { target?: '_blank'; rel?: string } {
+  if (!v || typeof v !== 'object') return {}
+  const l = v as LinkProp
+  const newTab = flag(l.newTab)
+  const rel = [newTab ? 'noopener noreferrer' : '', flag(l.nofollow) ? 'nofollow' : ''].filter(Boolean).join(' ')
+  const out: { target?: '_blank'; rel?: string } = {}
+  if (newTab) out.target = '_blank'
+  if (rel) out.rel = rel
+  return out
+}
+
 /** Repeater rows are stored as objects; the first string/number value of a row is its "main" text. */
 function rowText(row: unknown): string {
   if (typeof row === 'string' || typeof row === 'number') return String(row)

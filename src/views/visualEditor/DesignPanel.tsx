@@ -767,7 +767,7 @@ const ToggleRow: React.FC<{
       })}
       {current !== undefined && (
         <button type="button" className="ve-btn ve-btn--ghost" title="Reset" aria-label={`Reset ${label}`} onClick={(e) => { e.preventDefault(); onPick(undefined) }}>
-          {'↺'}
+          {'\\u21BA'}
         </button>
       )}
     </div>
@@ -818,7 +818,7 @@ const TypoRange: React.FC<{
               ctl.setMany(clear)
             }}
           >
-            {'↺'}
+            {'\\u21BA'}
           </button>
         )}
       </div>
@@ -1043,7 +1043,7 @@ const FxRange: React.FC<{
         />
         {typeof raw === 'number' && (
           <button type="button" className="ve-btn ve-btn--ghost" title="Reset to default" aria-label={`Reset ${label}`} onClick={() => write(undefined)}>
-            {'↺'}
+            {'\\u21BA'}
           </button>
         )}
       </div>

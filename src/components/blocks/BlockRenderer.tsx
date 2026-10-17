@@ -25,6 +25,8 @@ import { RichTextWithForms } from '@/features/forms/components/RichTextWithForms
 import { ElementWithMedia } from './elements/ElementWithMedia'
 import { MEDIA_PROP_KEYS } from './elements/elementUtil'
 import { renderElement } from './elements/renderElement'
+import { SiteElement } from './elements/Wave38Elements'
+import { SITE_ELEMENT_TYPES } from '@/lib/elements/wave38Defs'
 
 /**
  * Renders one block's own markup, without the Design wrapper.
@@ -150,6 +152,10 @@ export const renderBlockBody = (block: SectionNode, key: string): React.ReactNod
         const raw = props.view
         const ref = raw && typeof raw === 'object' ? (raw as { id?: unknown }).id : raw
         return <DataViewBlock viewRef={typeof ref === 'number' || typeof ref === 'string' ? ref : null} />
+      }
+      // Site elements read live site data on the server (Wave38Elements.tsx). The canvas never reaches this branch.
+      if (SITE_ELEMENT_TYPES.has(get<string>('elementType'))) {
+        return <SiteElement elementType={get<string>('elementType')} props={get<Record<string, unknown>>('props') || {}} design={get('design')} scopeId={`el-${key}`} />
       }
       if (MEDIA_PROP_KEYS[get<string>('elementType')]) {
         return <ElementWithMedia elementType={get<string>('elementType')} props={get<Record<string, unknown>>('props') || {}} design={get('design')} scopeId={`el-${key}`} />

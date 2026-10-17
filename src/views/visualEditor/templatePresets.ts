@@ -66,6 +66,13 @@ const panelSection = (display: 'tabs' | 'accordion', panels: { label: string; bl
 })
 const panelBlocks = (title: string, body: string): SectionNode[] => [heading(title, 'left', 'h3'), el('text-editor', { align: 'left', content: paragraph(body) })]
 
+/** A section shown as a carousel: every column is one slide holding a heading and some text. */
+const carouselSection = (slides: { title: string; body: string }[]): SectionNode => ({
+  blockType: 'section',
+  design: { layout: { display: 'carousel' } },
+  columns: slides.map((s) => ({ width: 12 as const, blocks: panelBlocks(s.title, s.body) })),
+})
+
 
 /** A full-width band with its own background (colour here; switch it to an image under the section's Design). */
 const band = (design: Record<string, unknown>, ...columns: ReturnType<typeof col>[]): SectionNode => ({
@@ -363,6 +370,20 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
         { label: 'Overview', blocks: panelBlocks('Overview', 'A short introduction.') },
         { label: 'Details', blocks: panelBlocks('Details', 'The finer points.') },
         { label: 'Shipping', blocks: panelBlocks('Shipping', 'How it gets to you.') },
+      ]),
+    ],
+  },
+  {
+    slug: 'carousel-section',
+    name: 'Carousel',
+    description: 'Three slides you can scroll through; each slide holds a heading and some text.',
+    kind: 'section',
+    category: 'other',
+    blocks: () => [
+      carouselSection([
+        { title: 'First slide', body: 'Add a short message here.' },
+        { title: 'Second slide', body: 'Each column of the section is one slide.' },
+        { title: 'Third slide', body: 'Swap in your own text, images or buttons.' },
       ]),
     ],
   },

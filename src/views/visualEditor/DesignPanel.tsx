@@ -6,6 +6,9 @@ import {
   BLEND_MODE_OPTIONS,
   BOX_SHADOW_OPTIONS,
   BG_EFFECT_OPTIONS,
+  BORDER_FX_OPTIONS,
+  KEN_BURNS_OPTIONS,
+  POINTER_FX_OPTIONS,
   DIVIDER_ANIM_OPTIONS,
   DIVIDER_OPTIONS,
   HOVER_OPTIONS,
@@ -900,7 +903,7 @@ const ToggleRow: React.FC<{
       })}
       {current !== undefined && (
         <button type="button" className="ve-btn ve-btn--ghost" title="Reset" aria-label={`Reset ${label}`} onClick={(e) => { e.preventDefault(); onPick(undefined) }}>
-          {'\u21BA'}
+          {String.fromCharCode(0x21BA)}
         </button>
       )}
     </div>
@@ -951,7 +954,7 @@ const TypoRange: React.FC<{
               ctl.setMany(clear)
             }}
           >
-            {'\u21BA'}
+            {String.fromCharCode(0x21BA)}
           </button>
         )}
       </div>
@@ -1176,7 +1179,7 @@ const FxRange: React.FC<{
         />
         {typeof raw === 'number' && (
           <button type="button" className="ve-btn ve-btn--ghost" title="Reset to default" aria-label={`Reset ${label}`} onClick={() => write(undefined)}>
-            {'\u21BA'}
+            {String.fromCharCode(0x21BA)}
           </button>
         )}
       </div>
@@ -1560,6 +1563,58 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           </>
         )}
         {resetBtn(['glass', 'glassBlur', 'glassOpacity', 'glassBorder'])}
+      </div>
+
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Pointer effect"
+          value={value.pointerFx || 'none'}
+          options={POINTER_FX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help="Reacts to the mouse over the block. Desktop only: touch and reduced-motion visitors see no effect. Spotlight is a glow, tilt a 3D lean, magnetic a pull toward the pointer."
+          onChange={(v) => set('pointerFx', v === 'none' ? undefined : (v as BlockStyle['pointerFx']))}
+        />
+        {value.pointerFx && value.pointerFx !== 'none' && (
+          <FxRange k="pointerFxStrength" label="Strength" unit="%" value={value} onChange={onChange} def={50} min={0} max={100} help="Tilt angle, magnetic pull and spotlight size." />
+        )}
+        {value.pointerFx === 'spotlight' && (
+          <ColorRow label="Spotlight colour" value={value.spotlightColor} onChange={(v) => set('spotlightColor', v)} />
+        )}
+        {resetBtn(['pointerFx', 'pointerFxStrength', 'spotlightColor'])}
+      </div>
+
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Ken Burns"
+          value={value.kenBurns || 'none'}
+          options={KEN_BURNS_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help={value.bgType === 'image' ? 'Slowly zooms or pans the background image. Pure CSS; off for reduced motion.' : 'Needs an image background (Background: Image).'}
+          onChange={(v) => set('kenBurns', v === 'none' ? undefined : (v as BlockStyle['kenBurns']))}
+        />
+        {value.kenBurns && value.kenBurns !== 'none' && (
+          <FxRange k="kenBurnsDuration" label="Cycle" unit="s" value={value} onChange={onChange} def={20} min={5} max={60} help="Seconds for one full cycle. Higher is slower." />
+        )}
+        {resetBtn(['kenBurns', 'kenBurnsDuration'])}
+      </div>
+
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Animated border"
+          value={value.borderFx || 'none'}
+          options={BORDER_FX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help="A ring around the block. It is drawn over the edge, so the block keeps its size."
+          onChange={(v) => set('borderFx', v === 'none' ? undefined : (v as BlockStyle['borderFx']))}
+        />
+        {value.borderFx && value.borderFx !== 'none' && (
+          <>
+            <ColorRow label={value.borderFx === 'conic-spin' ? 'Colour 1' : 'Colour'} value={value.borderFxColor} onChange={(v) => set('borderFxColor', v)} />
+            {value.borderFx === 'conic-spin' && (
+              <ColorRow label="Colour 2" value={value.borderFxColor2} onChange={(v) => set('borderFxColor2', v)} />
+            )}
+            <FxRange k="borderFxWidth" label="Width" unit="px" value={value} onChange={onChange} def={2} min={1} max={8} />
+            <FxRange k="borderFxSpeed" label="Speed" unit="s" value={value} onChange={onChange} def={8} min={2} max={20} help="Seconds per turn or pulse. Lower is faster." />
+          </>
+        )}
+        {resetBtn(['borderFx', 'borderFxColor', 'borderFxColor2', 'borderFxWidth', 'borderFxSpeed'])}
       </div>
     </>
   )

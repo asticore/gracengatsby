@@ -12,6 +12,31 @@ import { getBlockDef } from './blockSchemas'
 import { CanvasBlockPreview } from './CanvasBlockPreview'
 import type { ColumnOp } from './canvasBridge'
 import { pathKey, type NodePath } from './treeOps'
+import { lexicalToPlainText } from './richTextUtil'
+
+/**
+ * Get text fields that can be edited inline on the canvas for a block.
+ * Includes simple text and textarea fields like Heading.text, Text.content, Button.text.
+ */
+function getEditableTextFields(node: SectionNode & Record<string, unknown>) {
+  const blockDef = getBlockDef(node.blockType)
+  if (!blockDef) return []
+  // Filter to simple text/textarea fields that canEditAsPlainText can handle
+  return blockDef.fields.filter((f) => (f.type === 'text' || f.type === 'textarea') && !f.supportsMergeTags)
+}
+
+/**
+ * Get current value of a field from the block node.
+ */
+function getFieldValue(node: SectionNode & Record<string, unknown>, fieldName: string): string {
+  const value = node[fieldName]
+  if (typeof value === 'string') return value
+  if (value && typeof value === 'object' && 'root' in value) {
+    // Rich text (Lexical JSON) - convert to plain text
+    return lexicalToPlainText(value)
+  }
+  return ''
+}
 
 export type CanvasHandlers = {
   selectedKey: string | null
@@ -218,7 +243,34 @@ const CanvasNode: React.FC<{
         {node.blockType === 'section' ? (
           <SectionColumns columns={node.columns || []} layout={design.layout} path={path} handlers={handlers} depth={depth} />
         ) : (
-          <div className="ve-node__preview">
+          <div
+            className="ve-node__preview"
+            onDoubleClick={(e) => {
+              e.stopPropagation()
+              // Double-click on text blocks triggers inline edit mode
+              // Send message to parent with block info; parent opens editor
+              const blockId = node._id || pathKey(path)
+              const editableFields = getEditableTextFields(node)
+              if (editableFields.length > 0) {
+                const field = editableFields[0]
+                const value = getFieldValue(node, field.name)
+                window.parent.postMessage(
+                  {
+                    source: 've-canvas',
+                    type: 'requestEdit',
+                    blockId,
+                    blockType: node.blockType,
+                    elementType: node.elementType,
+                    field: field.name,
+                    value,
+                    path,
+                    device: 'desktop', // Placeholder - parent supplies actual device
+                  },
+                  window.location.origin
+                )
+              }
+            }}
+          >
             <CanvasBlockPreview data={node as Record<string, unknown>} />
           </div>
         )}

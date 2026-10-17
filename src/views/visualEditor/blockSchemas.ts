@@ -314,6 +314,7 @@ export function libraryCards(options: { formMode?: boolean } = {}): BlockDef[] {
   // In the form builder only layout (sections/columns), headings, buttons and the form fields make sense;
   // everywhere else the form-only fields are hidden.
   const elementCards: BlockDef[] = ELEMENTS.filter((el) => {
+    if (el.hidden) return false
     const formOnly = FORM_ONLY_ELEMENT_TYPES.has(el.type)
     return formMode ? formOnly || el.type === 'heading' || el.type === 'button' : !formOnly
   }).map(

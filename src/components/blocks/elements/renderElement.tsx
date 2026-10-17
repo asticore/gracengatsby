@@ -20,8 +20,11 @@ import { HeadingElement } from './HeadingElement'
  * data-eid and a scoped <style> (src/lib/design/css.ts). v1 designs and calls
  * without a design return the element unchanged; v1 keeps its own wrapper.
  */
-export const renderElement = (elementType: string, props: Record<string, unknown>, design?: unknown, scopeId?: string): React.ReactNode => {
-  const content = renderElementBody(elementType, props)
+export const renderElement = (elementType: string, props: Record<string, unknown>, design?: unknown, scopeId?: string): React.ReactNode =>
+  withElementDesign(renderElementBody(elementType, props), design, scopeId)
+
+/** Wraps rendered element content in its v2 design. Also used by the server-only site elements (Wave38Elements.tsx). */
+export const withElementDesign = (content: React.ReactNode, design?: unknown, scopeId?: string): React.ReactNode => {
   if (design === undefined || scopeId === undefined || !isDesignV2Raw(design)) return content
   const upgraded = upgradeDesign(design)
   if (isDesignError(upgraded)) return content

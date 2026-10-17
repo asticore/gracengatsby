@@ -161,6 +161,7 @@ export const MEDIA_PROP_KEYS: Record<string, readonly string[]> = {
   'team-member': ['photo'],
   'flip-box': ['image'],
   'image-comparison': ['before', 'after'],
+  hotspots: ['image'],
 }
 
 /* ---------- video ---------- */

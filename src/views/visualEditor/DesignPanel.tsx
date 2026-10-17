@@ -195,6 +195,24 @@ export const DesignPanel: React.FC<{
         )}
       </Accordion>
 
+      <Accordion title="Hover state">
+        <p className="ve-row__help">Applies on hover with a mouse or trackpad. Unset values stay the same as normal.</p>
+        <ColorRow label="Background" value={value.hoverBgColor} onChange={(v) => set('hoverBgColor', v)} />
+        <ColorRow label="Text colour" value={value.hoverTextColor} onChange={(v) => set('hoverTextColor', v)} />
+        <ColorRow label="Border colour" value={value.hoverBorderColor} onChange={(v) => set('hoverBorderColor', v)} />
+        <SelectRow
+          label="Shadow"
+          value={value.hoverBoxShadow || ''}
+          options={[{ label: 'Same as normal', value: '' }, ...BOX_SHADOW_OPTIONS]}
+          onChange={(v) => set('hoverBoxShadow', (v || undefined) as BlockStyle['hoverBoxShadow'])}
+        />
+        <FxRange k="hoverBorderRadius" label="Corner radius" unit="px" value={value} onChange={onChange} def={0} min={0} max={200} />
+        <FxRange k="hoverTransitionMs" label="Transition" unit="ms" value={value} onChange={onChange} def={250} min={0} max={2000} step={10} />
+        {makeFxEditing(value, onChange).resetBtn([
+          'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
+        ])}
+      </Accordion>
+
       <Accordion title="Spacing" defaultOpen={device !== 'desktop'}>
         <RespNumber ctl={resp} k="paddingTop" label="Padding top (px)" min={0} />
         <RespNumber ctl={resp} k="paddingBottom" label="Padding bottom (px)" min={0} />

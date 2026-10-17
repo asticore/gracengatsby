@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-export type ContextMenuItem = { id: string; label: string; hint?: string; disabled?: boolean; danger?: boolean }
+export type ContextMenuItem = { id: string; label: string; hint?: string; disabled?: boolean; danger?: boolean; divider?: boolean }
 
 /**
  * Right-click menu drawn in the parent document (the canvas is an iframe, so the frame only
@@ -80,20 +80,22 @@ export const ContextMenu: React.FC<{
       onContextMenu={(event) => event.preventDefault()}
     >
       {items.map((item, i) => (
-        <button
-          key={item.id}
-          id={`ve-ctx-${item.id}`}
-          type="button"
-          role="menuitem"
-          tabIndex={-1}
-          disabled={item.disabled}
-          className={`ve-ctxmenu__item ${i === active ? 've-ctxmenu__item--active' : ''} ${item.danger ? 've-ctxmenu__item--danger' : ''}`}
-          onMouseEnter={() => !item.disabled && setActive(i)}
-          onClick={() => onChoose(item.id)}
-        >
-          <span>{item.label}</span>
-          {item.hint && <span className="ve-ctxmenu__hint">{item.hint}</span>}
-        </button>
+        <div key={item.id}>
+          {item.divider && <div className="ve-ctxmenu__divider" />}
+          <button
+            id={`ve-ctx-${item.id}`}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            disabled={item.disabled}
+            className={`ve-ctxmenu__item ${i === active ? 've-ctxmenu__item--active' : ''} ${item.danger ? 've-ctxmenu__item--danger' : ''}`}
+            onMouseEnter={() => !item.disabled && setActive(i)}
+            onClick={() => onChoose(item.id)}
+          >
+            <span>{item.label}</span>
+            {item.hint && <span className="ve-ctxmenu__hint">{item.hint}</span>}
+          </button>
+        </div>
       ))}
     </div>
   )

@@ -4,7 +4,7 @@ import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
 import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, overlayStyle } from '@/lib/blockStyle'
-import { parseSectionLayout, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
+import { carouselStyle, parseSectionLayout, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { ShapeDivider } from '@/components/blocks/StyledBlock'
@@ -397,7 +397,6 @@ const SectionColumns: React.FC<{
       </div>
     )
   }
-
   const ownerLocked = Boolean(handlers.locks?.[pathKey(path)]?.blocked)
 
   if (panelMode) {
@@ -491,24 +490,36 @@ const SectionColumns: React.FC<{
     )
   }
 
+  const slides = columns.map((column, columnIndex) => (
+    <CanvasColumn
+      key={column._id || columnIndex}
+      column={column}
+      columnPath={[...path, columnIndex]}
+      index={columnIndex}
+      count={columns.length}
+      handlers={handlers}
+      depth={depth}
+      ownerLocked={ownerLocked}
+    />
+  ))
+  if (display === 'carousel') {
+    // Same columns, laid out as the live carousel's horizontal scroll-snap track.
+    return (
+      <div className="ve-carousel">
+        <p className="ve-carousel__hint">Carousel: each column is a slide</p>
+        <div className="ve-section ve-carousel__track" style={carouselStyle(layout) as React.CSSProperties}>
+          {slides}
+        </div>
+      </div>
+    )
+  }
   return (
     <div
       className={flow.className ? `ve-section ${flow.className}` : 've-section'}
       {...flow.attrs}
       style={Object.keys(flow.style).length > 0 ? (flow.style as React.CSSProperties) : undefined}
     >
-      {columns.map((column, columnIndex) => (
-        <CanvasColumn
-          key={column._id || columnIndex}
-          column={column}
-          columnPath={[...path, columnIndex]}
-          index={columnIndex}
-          count={columns.length}
-          handlers={handlers}
-          depth={depth}
-          ownerLocked={ownerLocked}
-        />
-      ))}
+      {slides}
     </div>
   )
 }
@@ -540,7 +551,7 @@ const CanvasColumn: React.FC<{
   return (
     <div
       id={scopeId}
-      className={`ve-column ${selected ? 've-column--selected' : ''}`}
+      className={`ve-column ${selected ? 've-column--selected' : ''} ${blockFxClasses(design)}`}
       data-ve-column={JSON.stringify(columnPath)}
       style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
       onClick={(event) => {

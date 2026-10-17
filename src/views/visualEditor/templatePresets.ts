@@ -1,5 +1,6 @@
 import { getElementDef } from '@/lib/elements/registry'
 import { paragraph } from '@/lib/elements/wave26Defs'
+import type { BlockStyle } from '@/lib/blockStyle'
 import type { SectionNode } from '@/lib/sectionTree'
 
 export type TemplateKind = 'page' | 'section'
@@ -53,7 +54,7 @@ const el = (elementType: string, props: Record<string, unknown> = {}): SectionNo
   props: { ...(getElementDef(elementType)?.defaultProps() || {}), ...props },
 })
 
-const col = (width: number, blocks: SectionNode[]) => ({ width: width as 12, blocks })
+const col = (width: number, blocks: SectionNode[], design?: BlockStyle) => ({ width: width as 12, blocks, ...(design ? { design } : {}) })
 const section = (...columns: ReturnType<typeof col>[]): SectionNode => ({ blockType: 'section', columns })
 const heading = (text: string, align = 'center', tag = 'h2') => el('heading', { text, tag, align })
 
@@ -104,6 +105,58 @@ const FEATURE_ITEMS: Array<[string, string, string]> = [
 
 const pricingPlan = (title: string, price: string, features: string, highlight = false) =>
   el('pricing-table', { title, price, features, highlight, ribbon: highlight ? 'Most popular' : '' })
+
+/** White card styling for a column used as a card (padding, 1px border, rounded, medium shadow). */
+const CARD_DESIGN: BlockStyle = {
+  bgType: 'color',
+  bgColor: '#ffffff',
+  textColor: '#111827',
+  paddingTop: 28,
+  paddingBottom: 28,
+  paddingLeft: 28,
+  paddingRight: 28,
+  borderWidth: 1,
+  borderStyle: 'solid',
+  borderColor: '#e5e7eb',
+  borderRadius: 12,
+  boxShadow: 'md',
+}
+/** The highlighted card: same styling, accent-coloured 2px border. */
+const HIGHLIGHT_CARD_DESIGN: BlockStyle = { ...CARD_DESIGN, borderWidth: 2, borderColor: '#6366f1' }
+
+const pricingCard = (name: string, price: string, features: string[], highlight = false) => {
+  const items = features.map((text) => ({ text, link: '' }))
+  return col(
+    4,
+    [
+      heading(name, 'center', 'h3'),
+      heading(`$${price}`, 'center', 'h2'),
+      el('text-editor', { align: 'center', content: paragraph('per month') }),
+      el('icon-list', { items, icon: 'check', layout: 'stacked', align: 'left' }),
+      button(`Choose ${name}`, '/contact', highlight ? 'primary' : 'secondary'),
+    ],
+    highlight ? HIGHLIGHT_CARD_DESIGN : CARD_DESIGN,
+  )
+}
+
+const teamCard = (name: string, role: string, bio: string) =>
+  col(
+    4,
+    [
+      el('image', { ratio: '1:1', alt: `Photo of ${name}` }),
+      heading(name, 'center', 'h3'),
+      el('text-editor', { align: 'center', content: paragraph(role) }),
+      el('text-editor', { align: 'center', content: paragraph(bio) }),
+    ],
+    CARD_DESIGN,
+  )
+
+const featureCard = (icon: string, title: string, text: string) =>
+  col(
+    4,
+    [el('icon', { icon }), heading(title, 'left', 'h3'), el('text-editor', { align: 'left', content: paragraph(text) })],
+    CARD_DESIGN,
+  )
 
 export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
@@ -377,6 +430,47 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
       section(col(4, [pricingPlan('Starter', '9', 'One user\nEmail support')]), col(4, [pricingPlan('Standard', '29', 'Five users\nPriority support', true)]), col(4, [pricingPlan('Pro', '59', 'Unlimited users\nPriority support')])),
       section(col(12, [el('accordion')])),
       ctaBand('Ready when you are', 'Tell people what to do next.', 'Get started', '/contact'),
+    ],
+  },
+  {
+    slug: 'pricing-cards',
+    name: 'Pricing cards',
+    description: 'Three plan cards side by side, each with a price, a feature list and a button. The middle plan is highlighted.',
+    kind: 'section',
+    category: 'pricing',
+    blocks: () => [
+      section(col(12, [heading('Simple pricing')])),
+      section(
+        pricingCard('Starter', '9', ['One user', 'Email support', 'Basic reports']),
+        pricingCard('Standard', '29', ['Five users', 'Priority support', 'Advanced reports'], true),
+        pricingCard('Pro', '59', ['Unlimited users', 'Priority support', 'Custom reports']),
+      ),
+    ],
+  },
+  {
+    slug: 'team-cards',
+    name: 'Team cards',
+    description: 'Three team member cards, each with a photo, name, role and short bio.',
+    kind: 'section',
+    category: 'team',
+    blocks: () => [
+      section(col(12, [heading('Meet the team')])),
+      section(
+        teamCard('Casey Morgan', 'Designer', 'Makes everything look just right.'),
+        teamCard('Robin Ash', 'Customer care', 'The friendly voice on the other end.'),
+        teamCard('Jordan Lee', 'Founder', 'Started the studio in a spare room.'),
+      ),
+    ],
+  },
+  {
+    slug: 'feature-cards',
+    name: 'Feature cards',
+    description: 'Three feature cards, each with an icon, a title and a short text.',
+    kind: 'section',
+    category: 'features',
+    blocks: () => [
+      section(col(12, [heading('Why choose us')])),
+      section(...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => featureCard(icon, title, text))),
     ],
   },
 ]

@@ -12,6 +12,7 @@ export type EditorFieldType =
   | 'number'
   | 'checkbox'
   | 'select'
+  | 'color'
   | 'media'
   | 'mediaMulti'
   | 'relationship'
@@ -19,6 +20,22 @@ export type EditorFieldType =
   | 'formOptions'
   /** Form builder: the conditional-logic rule builder. Reads the other fields from FormEditorContext. */
   | 'formLogic'
+  /** Repeater: array of objects, each with fields defined in the repeater config. */
+  | 'repeater'
+  /** Link field: URL input with new tab and nofollow toggles. Output: {url, newTab?, nofollow?}. */
+  | 'link'
+  /** Icon picker: search and select FontAwesome Free icons. Output: {icon: "fa-solid fa-..."} */
+  | 'icon'
+  /** Range slider: number input with draggable slider. */
+  | 'range'
+  /** Dimensions field: four linked/unlinked inputs for top/right/bottom/left values. */
+  | 'dimensions'
+  /** Typography popover: family, size, weight, line height, letter spacing. */
+  | 'typography'
+  /** Shadow popover: offsetX, offsetY, blur, spread, color, opacity. */
+  | 'shadow'
+  /** Gradient editor: type, angle, color stops. */
+  | 'gradient'
 
 export type EditorField = {
   name: string
@@ -30,4 +47,12 @@ export type EditorField = {
   helpText?: string
   /** Text fields that accept {{merge tags}} show the tag picker. */
   supportsMergeTags?: boolean
+  /** For repeater fields: the shape of each item in the array. */
+  repeater?: { fields: EditorField[] }
+  /** For range fields: minimum value. */
+  min?: number
+  /** For range fields: maximum value. */
+  max?: number
+  /** For range fields: step value. */
+  step?: number
 }

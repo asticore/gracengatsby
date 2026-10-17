@@ -2,9 +2,14 @@
 
 import React, { useMemo, useState } from 'react'
 
+import { Icon, ICON_NAMES } from '@/components/blocks/elements/icons'
+
 type IconValue = {
   icon?: string
 }
+
+/** 'builtin': the inline SVG set used by the element renderers, stored as a plain name. 'fontawesome': the original picker. */
+export type IconPickerSource = 'builtin' | 'fontawesome'
 
 // Lazy-loaded FontAwesome Free icon list (subset for demo; in production this would be more comprehensive)
 const FONTAWESOME_ICONS = [
@@ -114,7 +119,7 @@ const FONTAWESOME_ICONS = [
   'fa-bold',
 ]
 
-export const IconPickerField: React.FC<{
+const FontAwesomePicker: React.FC<{
   value: unknown
   onChange: (v: IconValue | undefined) => void
   label: string
@@ -308,4 +313,139 @@ export const IconPickerField: React.FC<{
       {helpText && <span className="ve-field__help">{helpText}</span>}
     </div>
   )
+}
+
+const BuiltinIconPicker: React.FC<{
+  value: unknown
+  onChange: (v: string | undefined) => void
+  label: string
+  helpText?: string
+}> = ({ value, onChange, label, helpText }) => {
+  const raw = typeof value === 'string' ? value : value && typeof value === 'object' ? (value as IconValue).icon : undefined
+  const selected = typeof raw === 'string' && ICON_NAMES.includes(raw) ? raw : ''
+  const [search, setSearch] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+
+  const shown = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    return term ? ICON_NAMES.filter((name) => name.includes(term)) : ICON_NAMES
+  }, [search])
+
+  const handleSelect = (name: string) => {
+    onChange(name)
+    setIsOpen(false)
+    setSearch('')
+  }
+
+  return (
+    <div className="ve-field ve-field--full">
+      <span>{label}</span>
+      <div style={{ marginBottom: '0.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            backgroundColor: '#fff',
+            minHeight: '2.5rem',
+          }}
+        >
+          {selected ? (
+            <>
+              <Icon name={selected} size={24} />
+              <span style={{ fontSize: '0.9rem', color: '#666', flex: 1 }}>{selected}</span>
+              <button
+                type="button"
+                onClick={() => onChange(undefined)}
+                style={{ padding: '0.3rem 0.6rem', background: '#f0f0f0', border: '1px solid #ccc', borderRadius: '3px', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                Clear
+              </button>
+            </>
+          ) : (
+            <span style={{ fontSize: '0.9rem', color: '#666', flex: 1 }}>No icon</span>
+          )}
+          <button
+            type="button"
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen((open) => !open)}
+            style={{ padding: '0.3rem 0.6rem', background: '#007bff', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '0.85rem' }}
+          >
+            {isOpen ? 'Close' : selected ? 'Change' : 'Pick an icon'}
+          </button>
+        </div>
+
+        {isOpen && (
+          <div style={{ marginTop: '0.5rem', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', padding: '0.5rem' }}>
+            <input
+              type="search"
+              aria-label="Search icons"
+              placeholder="Search icons (e.g., arrow, heart)..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '0.5rem', marginBottom: '0.5rem', fontSize: 'inherit', fontFamily: 'inherit' }}
+              autoFocus
+            />
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))',
+                gap: '0.5rem',
+                maxHeight: '260px',
+                overflowY: 'auto',
+              }}
+            >
+              {shown.map((name) => {
+                const isSelected = name === selected
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    title={name}
+                    aria-label={name}
+                    aria-pressed={isSelected}
+                    onClick={() => handleSelect(name)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minHeight: '48px',
+                      padding: '0.5rem',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      border: isSelected ? '2px solid #007bff' : '1px solid #ddd',
+                      background: isSelected ? '#e7f1ff' : '#fff',
+                      color: '#222',
+                    }}
+                  >
+                    <Icon name={name} size={24} />
+                  </button>
+                )
+              })}
+            </div>
+            {shown.length === 0 && <div style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>No icons found</div>}
+          </div>
+        )}
+      </div>
+      {helpText && <span className="ve-field__help">{helpText}</span>}
+    </div>
+  )
+}
+
+/**
+ * Icon picker. Default is the FontAwesome picker (stores {icon: "fa-solid fa-..."}), unchanged.
+ * source="builtin" picks from the built-in SVG set and stores the plain name, e.g. "star".
+ */
+export const IconPickerField: React.FC<{
+  value: unknown
+  onChange: (v: IconValue | string | undefined) => void
+  label: string
+  helpText?: string
+  source?: IconPickerSource
+}> = ({ value, onChange, label, helpText, source = 'fontawesome' }) => {
+  if (source === 'builtin') return <BuiltinIconPicker value={value} onChange={onChange} label={label} helpText={helpText} />
+  return <FontAwesomePicker value={value} onChange={onChange} label={label} helpText={helpText} />
 }

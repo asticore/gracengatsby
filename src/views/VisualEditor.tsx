@@ -14,7 +14,7 @@ import { applyColumnOp, buildSectionNode, getColumn, getColumnOwner, isColumnPat
 import { ColumnPanel } from './visualEditor/ColumnPanel'
 import { StructurePicker } from './visualEditor/StructurePicker'
 import { EditorDock, type DockTab } from './visualEditor/EditorDock'
-import { NavigatorPanel, type NavigatorCollection } from './visualEditor/NavigatorPanel'
+import { NavigatorPanel } from './visualEditor/NavigatorPanel'
 import {
   cloneNode,
   getList,
@@ -38,6 +38,7 @@ import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
+import { NAVIGATOR_CSS } from './visualEditor/navigator.styles'
 import { canRedo, canUndo, clampPath, createHistory, pushHistory, redoHistory, undoHistory, type History } from './visualEditor/history'
 import { planPaste, readClipboard, readStyleClipboard, serializeSelection, serializeStyle, writeClipboard, writeStyleClipboard } from './visualEditor/editorClipboard'
 import { useEditorShortcuts } from './visualEditor/useEditorShortcuts'
@@ -262,6 +263,45 @@ export const VisualEditorView: React.FC = () => {
     setDirty(true)
     return true
   }, [syncHistory])
+
+  /** Navigator: select a node exactly like a canvas click does. */
+  const selectFromNavigator = useCallback((path: NodePath) => {
+    setSelectedPath(path)
+    setDockTab('settings')
+    if (isColumnPath(path)) {
+      const column = getColumn(blocksRef.current, path)
+      if (column) setInsertTarget({ containerPath: path, at: (column.blocks || []).length })
+    }
+  }, [])
+
+  /** Navigator: editor-only name for a block (odd path) or column (even path). */
+  const renameNode = useCallback((path: NodePath, name: string) => {
+    const label = name.trim()
+    applyBlocks((prev) =>
+      path.length % 2 === 0
+        ? updateColumnAt(prev, path, (c) => {
+            const { label: _old, ...rest } = c
+            return label ? { ...rest, label } : rest
+          })
+        : updateNode(prev, path, (n) => {
+            const { label: _old, ...rest } = n
+            return (label ? { ...rest, label } : rest) as SectionNode
+          }),
+    )
+  }, [applyBlocks])
+
+  /** Navigator: set the block's anchor id (element id, used by #jump links). */
+  const setNodeAnchor = useCallback((path: NodePath, anchor: string) => {
+    const set = (design: Record<string, unknown> | undefined) => {
+      const { anchorId: _old, ...rest } = design || {}
+      return (anchor ? { ...rest, anchorId: anchor } : rest) as typeof design
+    }
+    applyBlocks((prev) =>
+      path.length % 2 === 0
+        ? updateColumnAt(prev, path, (c) => ({ ...c, design: set(c.design as Record<string, unknown> | undefined) as typeof c.design }))
+        : updateNode(prev, path, (n) => ({ ...n, design: set(n.design as Record<string, unknown> | undefined) as typeof n.design })),
+    )
+  }, [applyBlocks])
 
   const restoreSnapshot = useCallback((snapshot: { blocks: SectionNode[]; selectedPath: NodePath | null }) => {
     blocksRef.current = snapshot.blocks
@@ -913,6 +953,7 @@ export const VisualEditorView: React.FC = () => {
     <div className="ve-root">
       { }
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: NAVIGATOR_CSS }} />
       <div className="ve-topbar">
         <div className="ve-topbar__left">
           <a
@@ -1048,7 +1089,11 @@ export const VisualEditorView: React.FC = () => {
           columnPanel={columnPanelNode}
           navigatorPanel={
             <NavigatorPanel
-              collections={[]}
+              nodes={blocks}
+              selectedPath={selectedPath}
+              onSelect={selectFromNavigator}
+              onRename={renameNode}
+              onSetAnchor={setNodeAnchor}
               expandedState={navigatorExpandedState}
               onExpandedStateChange={setNavigatorExpandedState}
             />

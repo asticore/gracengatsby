@@ -1094,6 +1094,10 @@ export const VisualEditorView: React.FC = () => {
               onSelect={selectFromNavigator}
               onRename={renameNode}
               onSetAnchor={setNodeAnchor}
+              onSelectDesign={(path) => {
+                setSelectedPath(path)
+                setDockTab('settings') // Design controls live in the settings tab
+              }}
               expandedState={navigatorExpandedState}
               onExpandedStateChange={setNavigatorExpandedState}
             />

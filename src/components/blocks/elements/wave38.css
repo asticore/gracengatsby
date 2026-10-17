@@ -1,0 +1,249 @@
+/* Wave 38 site elements. Every selector is scoped with .be-el- so nothing leaks into the rest of the site. */
+
+/* ---- site logo ---- */
+
+.be-el-logo {
+  display: inline-block;
+  line-height: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.be-el-logo__img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.be-el-logo__text {
+  font-family: var(--font-display, inherit);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+/* ---- site title ---- */
+
+.be-el-site-title__name {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.be-el-site-title__tagline {
+  margin: 0.35rem 0 0;
+  opacity: 0.75;
+}
+
+/* ---- menu ---- */
+
+.be-el-nav__list,
+.be-el-nav__sub {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.be-el-nav--horizontal .be-el-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.5rem;
+}
+
+.be-el-nav--vertical .be-el-nav__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.be-el-nav__item {
+  position: relative;
+}
+
+.be-el-nav__link,
+.be-el-nav__sub-link {
+  display: inline-block;
+  padding: 0.25rem 0;
+  color: inherit;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+.be-el-nav__link:hover,
+.be-el-nav__sub-link:hover,
+.be-el-nav__link:focus-visible,
+.be-el-nav__sub-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.be-el-nav__link:focus-visible,
+.be-el-nav__sub-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+/* Dropdown: hidden until the item is hovered, or until focus is anywhere inside it (a focused parent link reveals the
+   sub-links, so they can be reached with Tab). */
+.be-el-nav__sub {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  min-width: 12rem;
+  padding: 0.5rem 0;
+  background: var(--color-cream, #fbf8f3);
+  border: 1px solid var(--color-line, #e5dfd6);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.be-el-nav__item--has-children:hover > .be-el-nav__sub,
+.be-el-nav__item--has-children:focus-within > .be-el-nav__sub {
+  display: block;
+}
+
+.be-el-nav__sub-link {
+  display: block;
+  padding: 0.45rem 1rem;
+  white-space: nowrap;
+}
+
+/* Vertical menus open their dropdown to the side instead of below. */
+.be-el-nav--vertical .be-el-nav__sub {
+  top: 0;
+  left: 100%;
+}
+
+/* ---- search ---- */
+
+.be-el-search {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+.be-el-search__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+}
+
+.be-el-search__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-line, #e5dfd6);
+  border-radius: 0;
+}
+
+.be-el-search__input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.be-el-search__btn {
+  padding: 0.6rem 1.1rem;
+  font: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-cream, #fbf8f3);
+  background: var(--color-ink, #1f2230);
+  border: 1px solid var(--color-ink, #1f2230);
+  cursor: pointer;
+}
+
+.be-el-search__btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Visually hidden, still read by screen readers. */
+.be-el-search__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- latest posts ---- */
+
+.be-el-posts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.be-el-posts--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 2rem;
+}
+
+.be-el-posts--list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.be-el-posts__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.be-el-posts__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 420;
+  object-fit: cover;
+}
+
+.be-el-posts__title {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display, inherit);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.be-el-posts__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.be-el-posts__title a:hover,
+.be-el-posts__title a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.be-el-posts__date {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+}
+
+.be-el-posts__excerpt {
+  margin: 0;
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .be-el-nav--horizontal .be-el-nav__list {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

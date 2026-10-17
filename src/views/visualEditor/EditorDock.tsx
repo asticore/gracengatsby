@@ -46,6 +46,8 @@ export const EditorDock: React.FC<{
   onSelectColumn?: (index: number) => void
   /** Navigator panel showing all pages/posts/products/events/FAQs in tree view. */
   navigatorPanel?: React.ReactNode
+  /** Converts the selected legacy block into editable sections (shown in its settings). */
+  onConvertLegacy?: () => void
 }> = ({
   collapsed,
   tab,
@@ -66,6 +68,7 @@ export const EditorDock: React.FC<{
   columnPanel,
   onSelectColumn,
   navigatorPanel,
+  onConvertLegacy,
 }) => {
   // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
   // use the full width, same as Elementor's panel-collapse - nothing renders
@@ -137,6 +140,7 @@ export const EditorDock: React.FC<{
             lockUi={lockUi}
             device={device}
             onSelectColumn={onSelectColumn}
+            onConvertLegacy={onConvertLegacy}
           />
         ) : (
           <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>

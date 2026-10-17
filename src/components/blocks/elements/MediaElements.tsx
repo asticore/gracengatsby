@@ -121,7 +121,12 @@ export const IconElement: React.FC<P> = (p) => {
 
 /** `logo-strip`: a row of brand logos, optionally greyscale until hovered. */
 export const LogoStripElement: React.FC<P> = (p) => {
-  const items = mediaListOf(p.images, p.urls)
+  const rows = Array.isArray(p.items) ? (p.items as Record<string, unknown>[]) : []
+  const fromRows = rows.flatMap((r) => {
+    const m = mediaOf(r?.image) ?? mediaOf(r?.url)
+    return m ? [{ ...m, alt: str(r?.alt) || m.alt }] : []
+  })
+  const items = fromRows.length > 0 ? fromRows : mediaListOf(p.images, p.urls)
   const height = num(p.height, 40, 16, 160)
   if (items.length === 0) return <Placeholder label="Add logos" />
   return (

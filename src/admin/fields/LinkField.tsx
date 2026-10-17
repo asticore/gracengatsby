@@ -14,7 +14,8 @@ export const LinkField: React.FC<{
   label: string
   helpText?: string
 }> = ({ value, onChange, label, helpText }) => {
-  const linkData = (value && typeof value === 'object' ? (value as LinkValue) : {}) as LinkValue
+  // Legacy elements stored a plain URL string; read it as {url} so it shows and survives a toggle.
+  const linkData = (typeof value === 'string' ? { url: value } : value && typeof value === 'object' ? value : {}) as LinkValue
   const url = linkData.url || ''
   const newTab = linkData.newTab || false
   const nofollow = linkData.nofollow || false

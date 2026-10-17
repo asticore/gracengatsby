@@ -3,7 +3,7 @@
 import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
-import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer } from '@/lib/blockStyle'
+import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, overlayStyle } from '@/lib/blockStyle'
 import { parseSectionLayout, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
@@ -185,6 +185,7 @@ const CanvasNode: React.FC<{
           )}
         </div>
       )}
+      {(() => { const o = overlayStyle(design); return o ? <div className="be-fx be-fx--overlay" aria-hidden="true" style={o} /> : null })()}
       <div className="ve-node__toolbar">
         <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to move">
           ⠿

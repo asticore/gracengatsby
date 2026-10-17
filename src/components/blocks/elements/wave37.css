@@ -1,0 +1,506 @@
+/* Wave 37 elements. Every selector is scoped with .be-el- so nothing leaks into the rest of the site. */
+
+.be-el-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- text ticker ---- */
+
+/* Base (also reduced motion): a wrapped static list. The copy is hidden. */
+.be-el-ticker {
+  overflow: hidden;
+  font-family: var(--font-body);
+}
+
+.be-el-ticker__track {
+  display: block;
+}
+
+.be-el-ticker__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.be-el-ticker__item {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+.be-el-ticker__list--copy {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-ticker__track {
+    display: flex;
+    width: max-content;
+    animation: be-el-ticker-left var(--be-el-ticker-dur, 30s) linear infinite;
+  }
+
+  .be-el-ticker--right .be-el-ticker__track {
+    animation-name: be-el-ticker-right;
+  }
+
+  /* Each copy ends with the same padding as the gap, so the two copies join with an even space. */
+  .be-el-ticker__list {
+    flex: none;
+    flex-wrap: nowrap;
+    padding-right: 2.5rem;
+  }
+
+  .be-el-ticker__item {
+    white-space: nowrap;
+  }
+
+  .be-el-ticker__list--copy {
+    display: flex;
+  }
+
+  .be-el-ticker--pause:hover .be-el-ticker__track {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes be-el-ticker-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes be-el-ticker-right {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ---- reading progress ---- */
+
+/* Hidden unless the browser supports scroll-driven animations and the visitor is fine with motion. */
+.be-el-progress {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .be-el-progress {
+      display: block;
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: var(--be-el-h, 4px);
+      background: var(--be-el-c, #2e3192);
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      animation: be-el-progress-grow linear both;
+      animation-timeline: scroll(root);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .be-el-progress--top {
+      top: 0;
+    }
+
+    .be-el-progress--bottom {
+      bottom: 0;
+    }
+  }
+}
+
+@keyframes be-el-progress-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---- content switcher ---- */
+
+.be-el-switch {
+  position: relative;
+  font-family: var(--font-body);
+}
+
+/* The radios stay focusable for the keyboard but are not clickable: the labels do that job. */
+.be-el-switch__radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.be-el-switch__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.be-el-switch__tab {
+  cursor: pointer;
+  padding: 8px 16px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.be-el-switch--pill .be-el-switch__tab {
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+}
+
+.be-el-switch--pill .be-el-switch__radio--a:checked ~ .be-el-switch__bar .be-el-switch__tab--a,
+.be-el-switch--pill .be-el-switch__radio--b:checked ~ .be-el-switch__bar .be-el-switch__tab--b {
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+  color: #fff;
+}
+
+.be-el-switch--underline .be-el-switch__bar {
+  gap: 24px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.be-el-switch--underline .be-el-switch__tab {
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.be-el-switch--underline .be-el-switch__radio--a:checked ~ .be-el-switch__bar .be-el-switch__tab--a,
+.be-el-switch--underline .be-el-switch__radio--b:checked ~ .be-el-switch__bar .be-el-switch__tab--b {
+  border-bottom-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.be-el-switch__radio--a:focus-visible ~ .be-el-switch__bar .be-el-switch__tab--a,
+.be-el-switch__radio--b:focus-visible ~ .be-el-switch__bar .be-el-switch__tab--b {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.be-el-switch__panel {
+  display: none;
+}
+
+.be-el-switch__radio--a:checked ~ .be-el-switch__panels .be-el-switch__panel--a,
+.be-el-switch__radio--b:checked ~ .be-el-switch__panels .be-el-switch__panel--b {
+  display: block;
+}
+
+.be-el-switch__text {
+  margin: 0 0 0.75em;
+}
+
+/* ---- tooltip ---- */
+
+.be-el-tip {
+  position: relative;
+  display: inline-block;
+}
+
+.be-el-tip__text {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  border-radius: 2px;
+}
+
+.be-el-tip__text:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.be-el-tip__bubble {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 16rem;
+  padding: 8px 11px;
+  border-radius: 6px;
+  background: #1f2230;
+  color: #fff;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.be-el-tip--top .be-el-tip__bubble {
+  bottom: calc(100% + 8px);
+}
+
+.be-el-tip--bottom .be-el-tip__bubble {
+  top: calc(100% + 8px);
+}
+
+.be-el-tip:hover .be-el-tip__bubble,
+.be-el-tip__text:focus-visible ~ .be-el-tip__bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ---- image hotspots ---- */
+
+.be-el-spots {
+  margin: 0;
+}
+
+.be-el-spots__frame {
+  position: relative;
+}
+
+.be-el-spots__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.be-el-spot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.be-el-spot__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--color-gold);
+  color: #fff;
+  font: 600 14px/1 var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.be-el-spot__btn:focus-visible {
+  outline: 3px solid #1f2230;
+  outline-offset: 3px;
+}
+
+.be-el-spot__pop {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  transform: translateX(-50%);
+  width: min(240px, 70vw);
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #1f2230;
+  color: #fff;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.be-el-spot--below .be-el-spot__pop {
+  bottom: auto;
+  top: calc(100% + 14px);
+}
+
+.be-el-spot--left .be-el-spot__pop {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.be-el-spot:hover .be-el-spot__pop,
+.be-el-spot:focus-within .be-el-spot__pop {
+  opacity: 1;
+  visibility: visible;
+}
+
+.be-el-spot__title {
+  display: block;
+  font-weight: 700;
+}
+
+.be-el-spot__text {
+  display: block;
+}
+
+.be-el-spots-empty {
+  padding: 24px;
+  border: 1px dashed var(--color-line);
+  text-align: center;
+  font-family: var(--font-body);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-spot__pop {
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+  }
+
+  .be-el-tip__bubble {
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+  }
+}
+
+/* ---- table of contents ---- */
+
+.be-el-toc {
+  font-family: var(--font-body);
+}
+
+.be-el-toc__title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.be-el-toc__list {
+  margin: 0;
+  padding-left: 1.5em;
+}
+
+.be-el-toc--numbered .be-el-toc__list {
+  list-style: decimal;
+}
+
+.be-el-toc--bullets .be-el-toc__list {
+  list-style: disc;
+}
+
+.be-el-toc__item {
+  margin: 0 0 6px;
+}
+
+.be-el-toc__item a {
+  color: var(--color-gold);
+}
+
+.be-el-toc__item a:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* Sticks to the top of the viewport while the parent column scrolls. */
+.be-el-toc--sticky {
+  position: sticky;
+  top: 16px;
+}
+
+/* ---- sticky bar ---- */
+
+.be-el-sticky {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 20px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--be-el-bg);
+  color: var(--be-el-fg);
+  font-family: var(--font-body);
+}
+
+.be-el-sticky__text {
+  margin: 0;
+  font-weight: 600;
+}
+
+.be-el-sticky__btn {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--be-el-btn);
+  color: #1f2230;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.be-el-sticky__btn:focus-visible {
+  outline: 2px solid var(--be-el-fg);
+  outline-offset: 2px;
+}
+
+.be-el-sticky--fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 900;
+}
+
+.be-el-sticky--top {
+  top: 0;
+}
+
+.be-el-sticky--bottom {
+  bottom: 0;
+}
+
+/* ---- coupon code ---- */
+
+.be-el-coupon {
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 20px 24px;
+  border: 2px dashed var(--color-gold);
+  border-radius: 12px;
+  text-align: center;
+  font-family: var(--font-body);
+}
+
+.be-el-coupon__label {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.be-el-coupon__row {
+  margin: 0 0 8px;
+}
+
+.be-el-coupon__code {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--color-cream-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+.be-el-coupon__note {
+  margin: 0;
+  font-size: 0.9rem;
+}

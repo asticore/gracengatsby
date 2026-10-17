@@ -1,13 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 import React from 'react'
 
-import { safeUrl } from '@/lib/mergeTags'
 import { buttonClassName } from './ButtonElement'
+
+import { safeUrl } from '@/lib/mergeTags'
 
 import { Icon, SocialGlyph } from './icons'
 import { StarsRow } from './InteractiveElements'
 import { alignClass } from './TextElements'
-import { cells, flag, lines, mediaOf, num, pick, str } from './elementUtil'
+import { cells, flag, linkAttrs, linkHref, lines, mediaOf, num, pick, str } from './elementUtil'
 
 type P = Record<string, unknown>
 
@@ -17,7 +18,7 @@ const Cta: React.FC<{ text: unknown; url: unknown; variant?: 'primary' | 'second
   const label = str(text)
   if (!label) return null
   return (
-    <a className={buttonClassName(variant)} href={safeUrl(url) || '#'}>
+    <a className={buttonClassName(variant)} href={linkHref(url) || '#'} {...linkAttrs(url)}>
       {label}
     </a>
   )
@@ -165,8 +166,9 @@ export const CallToActionElement: React.FC<P> = (p) => {
   )
 }
 
-const Titled: React.FC<{ tag: unknown; href: string | null; children: React.ReactNode }> = ({ tag, href, children }) => {
-  const inner = href ? <a href={href}>{children}</a> : children
+const Titled: React.FC<{ tag: unknown; link: unknown; children: React.ReactNode }> = ({ tag, link, children }) => {
+  const href = linkHref(link)
+  const inner = href ? <a href={href} {...linkAttrs(link)}>{children}</a> : children
   switch (pick(tag, TITLE_TAGS, 'h3')) {
     case 'h2':
       return <h2 className="el-box__title">{inner}</h2>
@@ -188,7 +190,7 @@ export const IconBoxElement: React.FC<P> = (p) => (
   <div className={`el-box el-box--icon el-box--${pick(p.layout, ['top', 'left'] as const, 'top')} ${alignClass(p.align)}`}>
     <Icon name={str(p.icon, 'star')} size={num(p.size, 40, 16, 120)} className="el-box__icon" />
     <div className="el-box__body">
-      <Titled tag={p.tag} href={safeUrl(p.link)}>
+      <Titled tag={p.tag} link={p.link}>
         {str(p.title, 'Icon box')}
       </Titled>
       {str(p.text) && <p>{str(p.text)}</p>}
@@ -199,12 +201,11 @@ export const IconBoxElement: React.FC<P> = (p) => (
 /** `image-box`: a picture above a title and text. */
 export const ImageBoxElement: React.FC<P> = (p) => {
   const m = mediaOf(p.image) || mediaOf(p.url)
-  const href = safeUrl(p.link)
   return (
     <div className={`el-box el-box--image ${alignClass(p.align)}`}>
       {m?.url ? <img src={m.url} alt={str(p.alt) || str(m.alt)} loading="lazy" className="el-box__img" /> : <div className="el-placeholder">Choose an image</div>}
       <div className="el-box__body">
-        <Titled tag={p.tag} href={href}>
+        <Titled tag={p.tag} link={p.link}>
           {str(p.title, 'Image box')}
         </Titled>
         {str(p.text) && <p>{str(p.text)}</p>}

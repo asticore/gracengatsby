@@ -7,6 +7,7 @@ import { CallToActionElement, FlipBoxElement, IconBoxElement, ImageBoxElement, P
 import { IconElement, ImageCarouselElement, ImageElement, ImageGalleryElement, LogoStripElement, VideoElement } from './MediaElements'
 import { IconListElement, ListElement, QuoteElement, TextEditorElement } from './TextElements'
 import { AnimatedHeadlineElement, BackToTopElement, BarChartElement, BreadcrumbsElement, CircleProgressElement, DualHeadingElement, ImageComparisonElement, PieChartElement, ShareButtonsElement, TableElement, TimelineElement } from './Wave36Elements'
+import { WAVE37_COMPONENTS } from './Wave37Elements'
 
 /**
  * The wave-26 elements, keyed by `elementType`. renderElement.tsx falls through to this table after its explicit
@@ -57,4 +58,5 @@ export const ELEMENT_COMPONENTS: Record<string, React.ComponentType<Record<strin
   'share-buttons': ShareButtonsElement,
   'back-to-top': BackToTopElement,
   'image-comparison': ImageComparisonElement,
+  ...WAVE37_COMPONENTS,
 }

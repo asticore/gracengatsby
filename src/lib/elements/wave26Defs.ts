@@ -16,8 +16,10 @@ const text = (name: string, label: string, extra: Partial<EditorField> = {}): Ed
 const area = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'textarea', helpText })
 const select = (name: string, label: string, options: { label: string; value: string }[], extra: Partial<EditorField> = {}): EditorField => ({ name, label, type: 'select', width: 'half', options, ...extra })
 const number = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'number', width: 'half', helpText })
+/** Range slider for a numeric prop. Stores a plain number, same as `number`. min/max mirror the renderer's clamp. */
+const slider = (name: string, label: string, min: number, max: number, step = 1): EditorField => ({ name, label, type: 'range', width: 'half', min, max, step })
 const icon = (name = 'icon'): EditorField => select(name, 'Icon', ICON_OPTIONS)
-const link = (name = 'link', label = 'Link (optional)'): EditorField => text(name, label)
+const link = (name = 'link', label = 'Link (optional)'): EditorField => ({ name, label, type: 'link' })
 const urlLines: EditorField = area('urls', 'Or image addresses', 'One per line: "https://... | alt text". Added after the pictures chosen above.')
 
 export const paragraph = (value: string) => ({
@@ -42,7 +44,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'quote', label: 'Quote', icon: '“', category: 'text',
     description: 'A highlighted quotation with an optional source.',
-    fields: [area('text', 'Quote'), text('cite', 'Who said it', { width: 'half' }), text('citeUrl', 'Source link', { width: 'half' }), select('style', 'Style', opts('bar', 'large', 'plain')), ALIGN],
+    fields: [area('text', 'Quote'), text('cite', 'Who said it', { width: 'half' }), { name: 'citeUrl', label: 'Source link', type: 'link', width: 'half' }, select('style', 'Style', opts('bar', 'large', 'plain')), ALIGN],
     defaultProps: () => ({ text: 'Good things take time.', cite: 'Someone wise', style: 'bar', align: 'left' }),
   },
   {
@@ -69,7 +71,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     description: 'A single picture with optional link, caption and shape.',
     fields: [
       { name: 'image', label: 'Image', type: 'media' }, text('url', 'Or image address', { helpText: 'Used when no image is chosen above.' }), text('alt', 'Alt text', { helpText: 'Describe the picture for people who cannot see it.' }),
-      text('caption', 'Caption'), link(), select('ratio', 'Shape', RATIO_OPTIONS), select('fit', 'Fit', opts('cover', 'contain')), number('width', 'Width (%)'), ALIGN,
+      text('caption', 'Caption'), link(), select('ratio', 'Shape', RATIO_OPTIONS), select('fit', 'Fit', opts('cover', 'contain')), slider('width', 'Width (%)', 5, 100), ALIGN,
     ],
     defaultProps: () => ({ ratio: 'auto', fit: 'cover', width: 100, align: 'left' }),
   },
@@ -82,7 +84,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'image-gallery', label: 'Image gallery', icon: '▦', category: 'media',
     description: 'A grid of pictures.',
-    fields: [{ name: 'images', label: 'Images', type: 'mediaMulti' }, urlLines, number('columns', 'Columns (1-6)'), select('ratio', 'Shape', RATIO_OPTIONS)],
+    fields: [{ name: 'images', label: 'Images', type: 'mediaMulti' }, urlLines, slider('columns', 'Columns (1-6)', 1, 6), select('ratio', 'Shape', RATIO_OPTIONS)],
     defaultProps: () => ({ images: [], columns: 3, ratio: '1:1' }),
   },
   {
@@ -94,7 +96,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'icon', label: 'Icon', icon: '★', category: 'media',
     description: 'A single icon, optionally a link.',
-    fields: [icon(), number('size', 'Size (px)'), link(), text('label', 'Accessible name (for linked icons)'), ALIGN],
+    fields: [icon(), slider('size', 'Size (px)', 12, 200), link(), text('label', 'Accessible name (for linked icons)'), ALIGN],
     defaultProps: () => ({ icon: 'star', size: 48, align: 'center' }),
   },
   {
@@ -102,7 +104,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     description: 'A row of brand or press logos.',
     fields: [
       { name: 'items', label: 'Logos', type: 'repeater', repeater: { fields: [{ name: 'image', label: 'Image', type: 'media' }, text('url', 'Or image address'), text('alt', 'Alt text')] } },
-      number('height', 'Logo height (px)'), { name: 'grayscale', label: 'Greyscale until hovered', type: 'checkbox' }
+      slider('height', 'Logo height (px)', 16, 160), { name: 'grayscale', label: 'Greyscale until hovered', type: 'checkbox' }
     ],
     defaultProps: () => ({ items: [], height: 40, grayscale: true }),
   },
@@ -139,7 +141,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'progress-bar', label: 'Progress bar', icon: '▬', category: 'interactive',
     description: 'A labelled bar showing a percentage.',
-    fields: [text('title', 'Title'), number('percent', 'Percent (0-100)'), { name: 'showPercent', label: 'Show the number', type: 'checkbox' }],
+    fields: [text('title', 'Title'), slider('percent', 'Percent (0-100)', 0, 100), { name: 'showPercent', label: 'Show the number', type: 'checkbox' }],
     defaultProps: () => ({ title: 'Satisfaction', percent: 90, showPercent: true }),
   },
   {
@@ -159,7 +161,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     description: 'Links to your social profiles.',
     fields: [
       { name: 'items', label: 'Links', type: 'repeater', repeater: { fields: [select('network', 'Network', SOCIAL_NETWORKS.map(n => ({ label: n.charAt(0).toUpperCase() + n.slice(1), value: n }))), text('address', 'Address')] } },
-      select('shape', 'Shape', opts('circle', 'square', 'plain')), number('size', 'Icon size (px)'), ALIGN
+      select('shape', 'Shape', opts('circle', 'square', 'plain')), slider('size', 'Icon size (px)', 12, 48), ALIGN
     ],
     defaultProps: () => ({ items: [{network: 'instagram', address: 'https://instagram.com/'}, {network: 'facebook', address: 'https://facebook.com/'}, {network: 'email', address: '/contact'}], shape: 'circle', size: 20, align: 'left' }),
   },
@@ -173,7 +175,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'testimonial', label: 'Testimonial', icon: '❝', category: 'marketing',
     description: 'A customer quote with name, role, photo and optional stars.',
-    fields: [area('quote', 'Quote'), text('name', 'Name', { width: 'half' }), text('role', 'Role or place', { width: 'half' }), { name: 'photo', label: 'Photo', type: 'media' }, number('stars', 'Stars (0-5)'), ALIGN],
+    fields: [area('quote', 'Quote'), text('name', 'Name', { width: 'half' }), text('role', 'Role or place', { width: 'half' }), { name: 'photo', label: 'Photo', type: 'media' }, slider('stars', 'Stars (0-5)', 0, 5, 0.5), ALIGN],
     defaultProps: () => ({ quote: 'Beautiful quality and it arrived the next day.', name: 'Alex P.', role: 'Customer', stars: 5, align: 'center' }),
   },
   {
@@ -182,7 +184,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     fields: [
       text('title', 'Plan name'), text('currency', 'Currency', { width: 'half' }), text('price', 'Price', { width: 'half' }), text('period', 'Period (e.g. / month)'),
       { name: 'features', label: 'Features', type: 'repeater', repeater: { fields: [text('text', 'Feature'), { name: 'included', label: 'Included', type: 'checkbox' }] } },
-      text('buttonText', 'Button text', { width: 'half' }), text('buttonUrl', 'Button link', { width: 'half' }),
+      text('buttonText', 'Button text', { width: 'half' }), { name: 'buttonUrl', label: 'Button link', type: 'link', width: 'half' },
       text('ribbon', 'Ribbon text'), { name: 'highlight', label: 'Highlight this plan', type: 'checkbox' },
     ],
     defaultProps: () => ({ title: 'Standard', currency: '$', price: '29', period: '/ month', features: [{text: 'One user', included: true}, {text: 'Email support', included: true}, {text: 'Priority support', included: false}], buttonText: 'Choose plan', buttonUrl: '/contact', highlight: false }),
@@ -204,19 +206,19 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'flip-box', label: 'Flip box', icon: '↻', category: 'marketing',
     description: 'A card that turns over on hover or focus to reveal more.',
-    fields: [icon(), text('frontTitle', 'Front title'), area('frontText', 'Front text'), text('backTitle', 'Back title'), area('backText', 'Back text'), text('buttonText', 'Button text', { width: 'half' }), text('buttonUrl', 'Button link', { width: 'half' }), number('height', 'Height (px)')],
+    fields: [icon(), text('frontTitle', 'Front title'), area('frontText', 'Front text'), text('backTitle', 'Back title'), area('backText', 'Back text'), text('buttonText', 'Button text', { width: 'half' }), { name: 'buttonUrl', label: 'Button link', type: 'link', width: 'half' }, slider('height', 'Height (px)', 120, 600)],
     defaultProps: () => ({ icon: 'sparkle', frontTitle: 'Hover me', frontText: 'There is more on the other side.', backTitle: 'Surprise', backText: 'Extra detail goes here.', height: 260 }),
   },
   {
     type: 'call-to-action', label: 'Call to action', icon: '📣', category: 'marketing', hidden: true,
     description: 'A boxed message with one or two buttons.',
-    fields: [text('title', 'Title'), area('text', 'Text'), text('buttonText', 'Button text', { width: 'half' }), text('buttonUrl', 'Button link', { width: 'half' }), text('secondText', 'Second button text', { width: 'half' }), text('secondUrl', 'Second button link', { width: 'half' }), select('tone', 'Colours', opts('dark', 'light', 'accent')), ALIGN],
+    fields: [text('title', 'Title'), area('text', 'Text'), text('buttonText', 'Button text', { width: 'half' }), { name: 'buttonUrl', label: 'Button link', type: 'link', width: 'half' }, text('secondText', 'Second button text', { width: 'half' }), { name: 'secondUrl', label: 'Second button link', type: 'link', width: 'half' }, select('tone', 'Colours', opts('dark', 'light', 'accent')), ALIGN],
     defaultProps: () => ({ title: 'Ready to get started?', text: 'Join us today.', buttonText: 'Get started', buttonUrl: '/contact', tone: 'dark', align: 'center' }),
   },
   {
     type: 'icon-box', label: 'Icon box', icon: '◉', category: 'marketing',
     description: 'An icon with a title and short text.',
-    fields: [icon(), number('size', 'Icon size (px)'), text('title', 'Title'), area('text', 'Text'), link(), select('tag', 'Title tag', opts('h2', 'h3', 'h4', 'h5', 'h6', 'p')), select('layout', 'Layout', opts('top', 'left')), ALIGN],
+    fields: [icon(), slider('size', 'Icon size (px)', 16, 120), text('title', 'Title'), area('text', 'Text'), link(), select('tag', 'Title tag', opts('h2', 'h3', 'h4', 'h5', 'h6', 'p')), select('layout', 'Layout', opts('top', 'left')), ALIGN],
     defaultProps: () => ({ icon: 'leaf', size: 40, title: 'Made to last', text: 'A short line about why it matters.', tag: 'h3', layout: 'top', align: 'center' }),
   },
   {
@@ -229,13 +231,13 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'divider', label: 'Divider', icon: '—', category: 'layout',
     description: 'A horizontal line, optionally with a word in the middle.',
-    fields: [select('style', 'Style', opts('solid', 'dashed', 'dotted', 'double')), number('weight', 'Thickness (px)'), number('width', 'Width (%)'), text('label', 'Word in the middle'), ALIGN],
+    fields: [select('style', 'Style', opts('solid', 'dashed', 'dotted', 'double')), slider('weight', 'Thickness (px)', 1, 12), slider('width', 'Width (%)', 5, 100), text('label', 'Word in the middle'), ALIGN],
     defaultProps: () => ({ style: 'solid', weight: 1, width: 100, align: 'center' }),
   },
   {
     type: 'spacer', label: 'Spacer', icon: '↕', category: 'layout',
     description: 'Empty vertical space.',
-    fields: [number('height', 'Height (px)')],
+    fields: [slider('height', 'Height (px)', 0, 600)],
     defaultProps: () => ({ height: 48 }),
   },
   {

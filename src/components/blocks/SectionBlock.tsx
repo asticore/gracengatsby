@@ -41,6 +41,11 @@ export const SectionBlock: React.FC<{
     const count = parsed.length
     const slideId = (index: number) => `${uid}-s${index}`
     const arrows = parsedLayout?.carouselArrows === true && count > 1
+    // An arrow jumps one page (carouselPerView slides): with 2+ visible, the neighbour is already on screen and
+    // a plain anchor to it would not scroll the track.
+    const step = Math.max(1, parsedLayout?.carouselPerView ?? 1)
+    const prevIndex = (index: number) => Math.max(0, index - step)
+    const nextIndex = (index: number) => Math.min(count - 1, index + step)
     return (
       <div className="be-carousel" data-depth={depth} style={carouselStyle(rawLayout) as React.CSSProperties} role="region" aria-roledescription="carousel" aria-label="Carousel">
         <div className="be-carousel__track" tabIndex={0}>
@@ -55,12 +60,12 @@ export const SectionBlock: React.FC<{
             >
               <SectionColumnView column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
               {arrows && index > 0 && (
-                <a className="be-carousel__arrow be-carousel__arrow--prev" href={`#${slideId(index - 1)}`} aria-label={`Previous slide, ${index} of ${count}`}>
+                <a className="be-carousel__arrow be-carousel__arrow--prev" href={`#${slideId(prevIndex(index))}`} aria-label={`Previous slide, ${prevIndex(index) + 1} of ${count}`}>
                   <span aria-hidden="true">{'\u2039'}</span>
                 </a>
               )}
               {arrows && index < count - 1 && (
-                <a className="be-carousel__arrow be-carousel__arrow--next" href={`#${slideId(index + 1)}`} aria-label={`Next slide, ${index + 2} of ${count}`}>
+                <a className="be-carousel__arrow be-carousel__arrow--next" href={`#${slideId(nextIndex(index))}`} aria-label={`Next slide, ${nextIndex(index) + 1} of ${count}`}>
                   <span aria-hidden="true">{'\u203a'}</span>
                 </a>
               )}

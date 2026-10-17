@@ -3,7 +3,7 @@ import React from 'react'
 
 import { Icon } from './icons'
 import { ALIGNS, alignClass } from './TextElements'
-import { flag, linkAttrs, linkHref, mediaListOf, mediaOf, num, parseVideoUrl, pick, ratioCss, str } from './elementUtil'
+import { flag, iconName, linkAttrs, linkHref, mediaListOf, mediaOf, num, parseVideoUrl, pick, ratioCss, str } from './elementUtil'
 
 type P = Record<string, unknown>
 
@@ -103,7 +103,7 @@ export const IconElement: React.FC<P> = (p) => {
   const size = num(p.size, 48, 12, 200)
   const href = linkHref(p.link)
   const label = str(p.label)
-  const icon = <Icon name={str(p.icon, 'star')} size={size} />
+  const icon = <Icon name={iconName(p.icon) || 'star'} size={size} />
   return (
     <div className={`el-icon ${alignClass(p.align)}`}>
       {href ? (

@@ -425,3 +425,31 @@ export const DIVIDER_OPTIONS: { label: string; value: DividerShape }[] = [
 export function blockScopeId(index: number, prefix = 'be'): string {
   return `${prefix}-block-${index}`
 }
+
+/**
+ * Parse old "one per line" format (string with optional "|" cells) into repeater array format.
+ * Used for backwards compatibility when upgrading element props from old format to repeater format.
+ *
+ * Examples:
+ * - "Line 1\nLine 2" => [{text: "Line 1"}, {text: "Line 2"}]
+ * - "Text | link\nMore | /url" => [{text: "Text", link: "link"}, {text: "More", link: "/url"}]
+ * - "Q | A\nQ2 | A2" (with fieldNames) => [{heading: "Q", content: "A"}, {heading: "Q2", content: "A2"}]
+ */
+export function parseOldFormat(
+  value: unknown,
+  fieldNames: string[]
+): Record<string, unknown>[] {
+  if (typeof value !== 'string') return []
+
+  return value
+    .split('\n')
+    .filter((line) => line.trim())
+    .map((line) => {
+      const cells = line.split('|').map((cell) => cell.trim())
+      const row: Record<string, unknown> = {}
+      for (let i = 0; i < fieldNames.length; i++) {
+        row[fieldNames[i]] = cells[i] || ''
+      }
+      return row
+    })
+}

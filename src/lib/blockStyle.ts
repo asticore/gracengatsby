@@ -17,7 +17,15 @@ import { DEFAULT_BREAKPOINTS, type SectionLayout } from '@/lib/sectionLayout'
 export type BackgroundType = 'none' | 'color' | 'gradient' | 'image'
 export type TextAlign = 'left' | 'center' | 'right'
 export type BlockWidth = 'contained' | 'wide' | 'full'
-export type DividerShape = 'none' | 'wave' | 'tilt' | 'curve' | 'triangle' | 'arrow'
+export type DividerShape =
+  | 'none' | 'wave' | 'tilt' | 'curve' | 'triangle' | 'arrow'
+  | 'waves' | 'zigzag' | 'clouds' | 'drips' | 'mountains' | 'curve-asym' | 'slant-double' | 'pill' | 'steps' | 'spikes'
+export type DividerAnim = 'none' | 'drift' | 'layers' | 'float'
+export type BgEffect = 'none' | 'aurora' | 'mesh' | 'gradient-shift' | 'grain' | 'dots' | 'grid' | 'particles'
+export type ParticlesInteract = 'none' | 'repel' | 'attract' | 'connect'
+export type Parallax = 'none' | 'background' | 'float-up' | 'float-down'
+export type Reveal = 'none' | 'fade' | 'fade-up' | 'fade-down' | 'slide-left' | 'slide-right' | 'zoom' | 'blur'
+export type HoverFx = 'none' | 'lift' | 'glow' | 'zoom'
 export type BoxShadowPreset = 'none' | 'sm' | 'md' | 'lg'
 
 /** The keys a tablet / mobile override may carry (everything else is dropped on read). */
@@ -93,6 +101,29 @@ export type BlockStyle = {
   dividerBottomColor?: string
   dividerBottomHeight?: number
   dividerBottomFlip?: boolean
+  dividerTopAnim?: DividerAnim
+  dividerBottomAnim?: DividerAnim
+  /** Seconds per loop, 4-60 (default 14). */
+  dividerTopSpeed?: number
+  dividerBottomSpeed?: number
+
+  // Effects
+  bgEffect?: BgEffect
+  bgEffectColor?: string
+  bgEffectColor2?: string
+  /** 0-100 (default 50). */
+  bgEffectIntensity?: number
+  /** 10-120 (default 50). */
+  particlesCount?: number
+  particlesInteract?: ParticlesInteract
+  parallax?: Parallax
+  /** 0-100 (default 40). */
+  parallaxStrength?: number
+  reveal?: Reveal
+  hover?: HoverFx
+  glass?: boolean
+  /** px, 0-40 (default 12). */
+  glassBlur?: number
 
   // Position inside a column (all optional; unset keeps normal block flow)
   /** How the block sits across its column. 'stretch' fills it; start/center/end shrink to fit and align. */
@@ -132,9 +163,10 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  if (style.tablet === undefined && style.mobile === undefined) return style
+  const fx = sanitizeFx(style)
+  if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
-  const { tablet: rawTablet, mobile: rawMobile, ...rest } = style
+  const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
   const out: BlockStyle = { ...rest }
   const tablet = sanitizeDeviceOverride(rawTablet)
   const mobile = sanitizeDeviceOverride(rawMobile)
@@ -142,6 +174,60 @@ export function asBlockStyle(value: unknown): BlockStyle {
   if (mobile) out.mobile = mobile
   return out
 }
+
+const clampNum = (v: unknown, min: number, max: number): number | undefined =>
+  isNum(v) ? Math.min(max, Math.max(min, v)) : undefined
+const SAFE_COLOR = /^[#a-zA-Z0-9(),.%\s/-]{1,64}$/
+const oneOf = <T extends string>(v: unknown, opts: readonly { value: T }[]): v is T =>
+  typeof v === 'string' && opts.some((o) => o.value === v)
+
+/**
+ * Validates the effect keys read from JSON (enum membership, numeric clamps, safe colours).
+ * Returns the same object untouched when no effect key is present.
+ */
+function sanitizeFx(style: BlockStyle): BlockStyle {
+  const raw = style as Record<string, unknown>
+  if (!FX_KEYS.some((k) => raw[k] !== undefined)) return style
+  const out: Record<string, unknown> = { ...raw }
+  const drop = (k: string) => delete out[k]
+  const enumKey = (k: string, opts: readonly { value: string }[]) => {
+    if (raw[k] !== undefined && !oneOf(raw[k], opts)) drop(k)
+  }
+  const numKey = (k: string, min: number, max: number) => {
+    if (raw[k] === undefined) return
+    const n = clampNum(raw[k], min, max)
+    if (n === undefined) drop(k)
+    else out[k] = n
+  }
+  const colorKey = (k: string) => {
+    if (raw[k] !== undefined && !(typeof raw[k] === 'string' && SAFE_COLOR.test(raw[k] as string))) drop(k)
+  }
+  enumKey('dividerTop', DIVIDER_OPTIONS)
+  enumKey('dividerBottom', DIVIDER_OPTIONS)
+  enumKey('dividerTopAnim', DIVIDER_ANIM_OPTIONS)
+  enumKey('dividerBottomAnim', DIVIDER_ANIM_OPTIONS)
+  enumKey('bgEffect', BG_EFFECT_OPTIONS)
+  enumKey('particlesInteract', PARTICLE_INTERACT_OPTIONS)
+  enumKey('parallax', PARALLAX_OPTIONS)
+  enumKey('reveal', REVEAL_OPTIONS)
+  enumKey('hover', HOVER_OPTIONS)
+  numKey('dividerTopSpeed', 4, 60)
+  numKey('dividerBottomSpeed', 4, 60)
+  numKey('bgEffectIntensity', 0, 100)
+  numKey('particlesCount', 10, 120)
+  numKey('parallaxStrength', 0, 100)
+  numKey('glassBlur', 0, 40)
+  colorKey('bgEffectColor')
+  colorKey('bgEffectColor2')
+  if (raw.glass !== undefined && typeof raw.glass !== 'boolean') drop('glass')
+  return out as BlockStyle
+}
+
+const FX_KEYS = [
+  'dividerTop', 'dividerBottom', 'dividerTopAnim', 'dividerBottomAnim', 'dividerTopSpeed', 'dividerBottomSpeed',
+  'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
+  'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
+] as const
 
 const TEXT_ALIGNS: readonly string[] = ['left', 'center', 'right']
 const SELF_ALIGNS: readonly string[] = ['stretch', 'start', 'center', 'end']
@@ -206,7 +292,7 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
     css.backgroundImage = `linear-gradient(${angle}deg, ${from}, ${to})`
   }
 
-  if (style.bgType === 'image' && isStr(style.bgImageUrl)) {
+  if (style.bgType === 'image' && isStr(style.bgImageUrl) && !(style.parallax === 'background')) {
     css.backgroundImage = `url(${style.bgImageUrl})`
     css.backgroundSize = 'cover'
     css.backgroundPosition = 'center'
@@ -395,31 +481,157 @@ export function blockStyleClasses(style: BlockStyle): string {
     .join(' ')
 }
 
-/**
- * SVG path data for each shape divider, drawn in a 0 0 1200 120 viewBox so
- * every shape scales the same way regardless of the height chosen.
- */
+/** Zigzag / spike style teeth: `n` teeth across 1200 units, valley y `lo`, peak y `hi`. */
+const teeth = (n: number, lo: number, hi: number): string => {
+  const w = 1200 / n
+  let d = `M0,${lo}`
+  for (let i = 0; i < n; i++) d += `L${i * w + w / 2},${hi}L${(i + 1) * w},${lo}`
+  return `${d}L1200,120L0,120Z`
+}
+const clouds = (): string => {
+  let d = 'M0,95'
+  for (let i = 0; i < 6; i++) d += 'a100,55 0 0 1 200,0'
+  return `${d}L1200,120L0,120Z`
+}
+const drips = (): string => {
+  let d = 'M0,85'
+  for (let o = 0; o < 1200; o += 300) {
+    d += `L${o + 30},85L${o + 30},40A20,20 0 0 1 ${o + 70},40L${o + 70},85L${o + 130},85L${o + 130},62A15,15 0 0 1 ${o + 160},62L${o + 160},85`
+    d += `L${o + 225},85L${o + 225},52A22.5,22.5 0 0 1 ${o + 270},52L${o + 270},85L${o + 300},85`
+  }
+  return `${d}L1200,120L0,120Z`
+}
+
 const DIVIDER_PATHS: Record<Exclude<DividerShape, 'none'>, string> = {
-  wave: 'M0,64L48,69.3C96,75,192,85,288,80C384,75,480,53,576,53.3C672,53,768,75,864,80C960,85,1056,75,1152,64L1200,58.7L1200,120L0,120Z',
+  wave: 'M0,64L48,69.3C96,75,192,85,288,80C384,75,480,53,576,53.3C672,53,768,75,864,80C960,85,1056,75,1152,64L1200,64L1200,120L0,120Z',
   tilt: 'M0,120L1200,0L1200,120L0,120Z',
   curve: 'M0,120L0,40C300,120,900,120,1200,40L1200,120Z',
   triangle: 'M0,120L600,0L1200,120L0,120Z',
   arrow: 'M0,0L600,80L1200,0L1200,120L0,120Z',
+  waves: 'M0,80C200,40,400,40,600,80S1000,120,1200,80L1200,120L0,120Z',
+  zigzag: teeth(12, 80, 40),
+  clouds: clouds(),
+  drips: drips(),
+  mountains: 'M0,120L0,90L180,40L300,75L480,15L650,70L800,30L1000,80L1100,55L1200,85L1200,120Z',
+  'curve-asym': 'M0,120L0,30C500,30,800,110,1200,95L1200,120Z',
+  'slant-double': 'M0,120L0,50L400,0L800,100L1200,50L1200,120Z',
+  pill: 'M0,120L0,110L400,110A40,40 0 0 1 440,70L760,70A40,40 0 0 1 800,110L1200,110L1200,120Z',
+  steps: 'M0,120L0,100L300,100L300,70L600,70L600,40L900,40L900,10L1200,10L1200,120Z',
+  spikes: teeth(20, 110, 15),
 }
+
+/** Back layer drawn behind the main path (lower opacity) for two-layer shapes. */
+const DIVIDER_BACK_PATHS: Partial<Record<DividerShape, string>> = {
+  waves: 'M0,60C200,100,400,100,600,60S1000,20,1200,60L1200,120L0,120Z',
+}
+
+/** Shapes that repeat horizontally with a 1200 unit period, so they can slide seamlessly. */
+const PERIODIC: readonly DividerShape[] = ['wave', 'waves', 'zigzag', 'clouds', 'drips', 'spikes']
+export const isPeriodicDivider = (shape: DividerShape | undefined): boolean => !!shape && PERIODIC.includes(shape)
 
 export function dividerPath(shape: DividerShape): string | null {
   if (!shape || shape === 'none') return null
   return DIVIDER_PATHS[shape] ?? null
 }
 
+/** Optional translucent back path (currently only `waves`). */
+export function dividerBackPath(shape: DividerShape | undefined): string | null {
+  return (shape && DIVIDER_BACK_PATHS[shape]) || null
+}
+
 export const DIVIDER_OPTIONS: { label: string; value: DividerShape }[] = [
   { label: 'None', value: 'none' },
   { label: 'Wave', value: 'wave' },
+  { label: 'Layered waves', value: 'waves' },
   { label: 'Tilt', value: 'tilt' },
   { label: 'Curve', value: 'curve' },
+  { label: 'Asymmetric curve', value: 'curve-asym' },
   { label: 'Triangle', value: 'triangle' },
   { label: 'Arrow', value: 'arrow' },
+  { label: 'Zigzag', value: 'zigzag' },
+  { label: 'Clouds', value: 'clouds' },
+  { label: 'Drips', value: 'drips' },
+  { label: 'Mountains', value: 'mountains' },
+  { label: 'Double slant', value: 'slant-double' },
+  { label: 'Pill', value: 'pill' },
+  { label: 'Steps', value: 'steps' },
+  { label: 'Spikes', value: 'spikes' },
 ]
+
+export const DIVIDER_ANIM_OPTIONS: { label: string; value: DividerAnim }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Drift', value: 'drift' },
+  { label: 'Layers', value: 'layers' },
+  { label: 'Float', value: 'float' },
+]
+
+export const BG_EFFECT_OPTIONS: { label: string; value: BgEffect }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Aurora', value: 'aurora' },
+  { label: 'Mesh gradient', value: 'mesh' },
+  { label: 'Gradient shift', value: 'gradient-shift' },
+  { label: 'Film grain', value: 'grain' },
+  { label: 'Dots', value: 'dots' },
+  { label: 'Grid', value: 'grid' },
+  { label: 'Particles', value: 'particles' },
+]
+
+export const PARALLAX_OPTIONS: { label: string; value: Parallax }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Background', value: 'background' },
+  { label: 'Float up', value: 'float-up' },
+  { label: 'Float down', value: 'float-down' },
+]
+
+export const REVEAL_OPTIONS: { label: string; value: Reveal }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Fade', value: 'fade' },
+  { label: 'Fade up', value: 'fade-up' },
+  { label: 'Fade down', value: 'fade-down' },
+  { label: 'Slide from right', value: 'slide-left' },
+  { label: 'Slide from left', value: 'slide-right' },
+  { label: 'Zoom', value: 'zoom' },
+  { label: 'Blur in', value: 'blur' },
+]
+
+export const HOVER_OPTIONS: { label: string; value: HoverFx }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Lift', value: 'lift' },
+  { label: 'Glow', value: 'glow' },
+  { label: 'Zoom', value: 'zoom' },
+]
+
+export const PARTICLE_INTERACT_OPTIONS: { label: string; value: ParticlesInteract }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Repel', value: 'repel' },
+  { label: 'Attract', value: 'attract' },
+  { label: 'Connect', value: 'connect' },
+]
+
+/** Extra wrapper classes for the effect keys; empty when none are set. */
+export function blockFxClasses(style: BlockStyle): string {
+  const c: string[] = []
+  if (style.reveal && style.reveal !== 'none') c.push(`be-fx-reveal-${style.reveal}`)
+  if (style.hover && style.hover !== 'none') c.push(`be-fx-hover-${style.hover}`)
+  if (style.glass) c.push('be-fx-glass')
+  if (style.parallax === 'background' && style.bgType === 'image' && isStr(style.bgImageUrl)) c.push('be-fx-parallax-bg')
+  else if (style.parallax === 'float-up' || style.parallax === 'float-down') c.push(`be-fx-parallax-${style.parallax}`)
+  if (hasFxLayer(style) || c.includes('be-fx-parallax-bg')) c.push('be-fx-clip')
+  return c.join(' ')
+}
+
+export const hasFxLayer = (style: BlockStyle): boolean => !!style.bgEffect && style.bgEffect !== 'none'
+
+/** CSS custom properties the effect classes read; only the ones that were set. */
+export function blockFxVars(style: BlockStyle): Record<string, string> {
+  const v: Record<string, string> = {}
+  if (isStr(style.bgEffectColor)) v['--be-fx-c'] = style.bgEffectColor
+  if (isStr(style.bgEffectColor2)) v['--be-fx-c2'] = style.bgEffectColor2
+  if (isNum(style.bgEffectIntensity)) v['--be-fx-i'] = String(style.bgEffectIntensity / 100)
+  if (style.parallax && style.parallax !== 'none') v['--be-par'] = `${Math.round((isNum(style.parallaxStrength) ? style.parallaxStrength : 40) * 0.8)}px`
+  if (style.glass) v['--be-glass'] = `${isNum(style.glassBlur) ? style.glassBlur : 12}px`
+  return v
+}
 
 /** Stable per-block DOM id used to scope the block's media-query CSS. */
 export function blockScopeId(index: number, prefix = 'be'): string {

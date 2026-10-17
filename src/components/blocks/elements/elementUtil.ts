@@ -16,8 +16,20 @@ export const flag = (v: unknown, fallback = false): boolean => (typeof v === 'bo
 
 export const pick = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback)
 
-/** One item per non-empty line. */
+/** Repeater rows are stored as objects; the first string/number value of a row is its "main" text. */
+function rowText(row: unknown): string {
+  if (typeof row === 'string' || typeof row === 'number') return String(row)
+  if (row && typeof row === 'object') {
+    const r = row as Record<string, unknown>
+    if (typeof r.text === 'string') return r.text
+    for (const v of Object.values(r)) if (typeof v === 'string' || typeof v === 'number') return String(v)
+  }
+  return ''
+}
+
+/** One item per non-empty line. Also accepts a repeater array (one item per row). */
 export function lines(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((r) => rowText(r).trim()).filter(Boolean)
   return str(v)
     .split(/\r?\n/)
     .map((l) => l.trim())
@@ -26,6 +38,18 @@ export function lines(v: unknown): string[] {
 
 /** "a | b | c" per line, split into trimmed cells. The first `maxCells - 1` separators split; the rest stays in the last cell. */
 export function cells(v: unknown, maxCells = 3): string[][] {
+  if (Array.isArray(v)) {
+    // Repeater rows: one object per row, cells are its values in field order.
+    return v
+      .map((row) => {
+        if (row && typeof row === 'object') {
+          const vals = Object.values(row as Record<string, unknown>).map((x) => (typeof x === 'string' || typeof x === 'number' ? String(x).trim() : ''))
+          return vals.slice(0, maxCells)
+        }
+        return [String(row ?? '').trim()]
+      })
+      .filter((r) => r.some(Boolean))
+  }
   return lines(v).map((line) => {
     const parts: string[] = []
     let rest = line

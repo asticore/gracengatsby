@@ -179,6 +179,79 @@ const featureCard = (icon: string, title: string, text: string) =>
     CARD_DESIGN,
   )
 
+/** A section with its own design (background, effects) and columns. */
+const sectionWith = (design: BlockStyle, ...columns: ReturnType<typeof col>[]): SectionNode => ({ blockType: 'section', design, columns })
+/** Adds design keys to a block without dropping any it already has. */
+const withDesign = (node: SectionNode, design: BlockStyle): SectionNode => ({ ...node, design: { ...(node.design ?? {}), ...design } })
+
+/** Effect pack: every value below is a real BlockStyle key (see sanitizeFx in src/lib/blockStyle.ts). */
+const FADE_UP: BlockStyle = { reveal: 'fade-up', revealDistance: 24, revealDuration: 50 }
+const AURORA_BG: BlockStyle = {
+  bgType: 'color',
+  bgColor: '#0f172a',
+  textColor: '#ffffff',
+  paddingTop: 96,
+  paddingBottom: 96,
+  minHeight: 520,
+  bgEffect: 'aurora',
+  bgEffectColor: '#6366f1',
+  bgEffectColor2: '#22d3ee',
+  bgEffectIntensity: 60,
+  auroraBlur: 80,
+  auroraSize: 35,
+  auroraSpeed: 18,
+  overlayType: 'none',
+  dividerBottom: 'wave',
+  dividerBottomColor: '#ffffff',
+  dividerBottomHeight: 80,
+  dividerBottomAnim: 'drift',
+  dividerBottomSpeed: 14,
+}
+const GRAIN_BG: BlockStyle = { bgType: 'color', bgColor: '#f5f0e6', textColor: '#1c1917', paddingTop: 96, paddingBottom: 96, bgEffect: 'grain', grainOpacity: 18, grainSize: 160 }
+const SHIFT_BG: BlockStyle = {
+  bgType: 'color',
+  bgColor: '#0f172a',
+  textColor: '#f8fafc',
+  paddingTop: 88,
+  paddingBottom: 88,
+  bgEffect: 'gradient-shift',
+  bgEffectColor: '#6366f1',
+  bgEffectColor2: '#14b8a6',
+  gradientAngle: 120,
+  gradientSpeed: 16,
+}
+const GLASS_CARD: BlockStyle = {
+  glass: true,
+  glassBlur: 14,
+  glassOpacity: 14,
+  glassBorder: 40,
+  borderRadius: 16,
+  paddingTop: 32,
+  paddingBottom: 32,
+  paddingLeft: 28,
+  paddingRight: 28,
+  hover: 'lift',
+  hoverLift: 10,
+  reveal: 'fade-up',
+  revealDistance: 32,
+  revealDuration: 50,
+}
+const NEON_BG: BlockStyle = { bgType: 'color', bgColor: '#05060f', textColor: '#e0e7ff', paddingTop: 88, paddingBottom: 88, bgEffect: 'grid', bgEffectColor: '#22d3ee', gridSize: 48, gridLineWidth: 1 }
+const SPOTLIGHT_BG: BlockStyle = {
+  bgType: 'color',
+  bgColor: '#0b1020',
+  textColor: '#f8fafc',
+  paddingTop: 88,
+  paddingBottom: 88,
+  pointerFx: 'spotlight',
+  pointerFxStrength: 60,
+  spotlightColor: 'rgba(99,102,241,0.35)',
+}
+const TILT_BLOCK: BlockStyle = { pointerFx: 'tilt', pointerFxStrength: 40 }
+
+const countUp = (start: number, end: number, prefix: string, suffix: string, label: string) =>
+  el('count-up', { start, end, prefix, suffix, label, duration: 1600, decimals: '0' })
+
 export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     slug: 'hero-simple',
@@ -531,6 +604,91 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     blocks: () => [
       section(col(12, [heading('Why choose us')])),
       section(...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => featureCard(icon, title, text))),
+    ],
+  },
+  {
+    slug: 'fx-aurora-hero',
+    name: 'Aurora hero',
+    description: 'A dark hero with a slowly moving aurora behind a centred headline, text and two buttons. Wave divider at the bottom.',
+    kind: 'section',
+    category: 'hero',
+    blocks: () => [
+      sectionWith(
+        AURORA_BG,
+        col(12, [
+          withDesign(heading('A brighter way to begin', 'center', 'h1'), FADE_UP),
+          withDesign(el('text-editor', { align: 'center', content: paragraph('Add a line of supporting copy here.') }), FADE_UP),
+          withDesign(button('Get started', '/contact'), FADE_UP),
+          withDesign(button('Learn more', '/about', 'secondary'), FADE_UP),
+        ]),
+      ),
+    ],
+  },
+  {
+    slug: 'fx-grain-editorial',
+    name: 'Editorial grain',
+    description: 'A paper-toned band with film grain, a large outlined word that fills in on hover, and a short text block.',
+    kind: 'section',
+    category: 'other',
+    blocks: () => [
+      sectionWith(
+        GRAIN_BG,
+        col(12, [
+          withDesign(el('outline-text', { text: 'BIG IDEAS', tag: 'h2', size: 180, stroke: 2, color: '#1c1917', fillOnHover: true, fillColor: '#c2410c', clip: false }), FADE_UP),
+          withDesign(el('text-editor', { align: 'left', content: paragraph('A few words about what drives the work, in the open and in your own voice.') }), FADE_UP),
+        ]),
+      ),
+    ],
+  },
+  {
+    slug: 'fx-glass-cards',
+    name: 'Glass cards',
+    description: 'Three frosted glass cards, each with a heading and text, that lift on hover and fade in. Sits on a slowly shifting gradient.',
+    kind: 'section',
+    category: 'features',
+    blocks: () => [
+      sectionWith(
+        SHIFT_BG,
+        ...FEATURE_ITEMS.slice(0, 3).map(([, title, text]) =>
+          col(4, [heading(title, 'left', 'h3'), el('text-editor', { align: 'left', content: paragraph(text) })], GLASS_CARD),
+        ),
+      ),
+    ],
+  },
+  {
+    slug: 'fx-neon-grid',
+    name: 'Neon grid stats',
+    description: 'A dark grid background with a gradient-coloured heading over a row of three counting numbers.',
+    kind: 'section',
+    category: 'other',
+    blocks: () => [
+      sectionWith(NEON_BG, {
+        width: 12,
+        blocks: [
+          el('gradient-text', { text: 'Numbers that move', tag: 'h2', color1: '#22d3ee', color2: '#a78bfa', color3: '#f472b6', angle: 90, animated: true }),
+          {
+            blockType: 'section',
+            columns: [
+              col(4, [countUp(0, 1250, '', '+', 'Happy customers')]),
+              col(4, [countUp(0, 98, '', '%', 'Five-star reviews')]),
+              col(4, [countUp(0, 24, '', '/7', 'Support hours')]),
+            ],
+          },
+        ],
+      }),
+    ],
+  },
+  {
+    slug: 'fx-spotlight-features',
+    name: 'Spotlight features',
+    description: 'A dark section with a spotlight that follows the pointer, and three icon boxes that tilt as you move over them.',
+    kind: 'section',
+    category: 'features',
+    blocks: () => [
+      sectionWith(
+        SPOTLIGHT_BG,
+        ...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => col(4, [withDesign(iconBox(icon, title, text), TILT_BLOCK)])),
+      ),
     ],
   },
 ]

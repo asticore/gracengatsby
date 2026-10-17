@@ -3,6 +3,7 @@ import { FORM_ELEMENTS } from '@/features/forms/elementDefs'
 import type { EditorField } from './fieldTypes'
 import { WAVE26_ELEMENTS } from './wave26Defs'
 import { WAVE36_ELEMENTS } from './wave36Defs'
+import { WAVE37_ELEMENTS } from './wave37Defs'
 
 /**
  * The per-element-type catalogue that lives inside the `element` block
@@ -125,6 +126,7 @@ ELEMENTS.push({
 ELEMENTS.push(...FORM_ELEMENTS)
 ELEMENTS.push(...WAVE26_ELEMENTS)
 ELEMENTS.push(...WAVE36_ELEMENTS)
+ELEMENTS.push(...WAVE37_ELEMENTS)
 
 export function getElementDef(type: string): ElementDef | undefined {
   return ELEMENTS.find((e) => e.type === type)

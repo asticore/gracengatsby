@@ -4,10 +4,17 @@ import React, { useState } from 'react'
 
 import {
   BOX_SHADOW_OPTIONS,
+  BG_EFFECT_OPTIONS,
+  DIVIDER_ANIM_OPTIONS,
   DIVIDER_OPTIONS,
+  HOVER_OPTIONS,
+  PARALLAX_OPTIONS,
+  PARTICLE_INTERACT_OPTIONS,
+  REVEAL_OPTIONS,
   resolveDeviceOverride,
   type BlockStyle,
   type DeviceOverride,
+  type DividerAnim,
   type DividerShape,
   type ResponsiveKey,
 } from '@/lib/blockStyle'
@@ -208,6 +215,10 @@ export const DesignPanel: React.FC<{
           color={value.dividerTopColor}
           height={value.dividerTopHeight}
           flip={value.dividerTopFlip}
+          anim={value.dividerTopAnim}
+          speed={value.dividerTopSpeed}
+          onAnim={(v) => set('dividerTopAnim', v)}
+          onSpeed={(v) => set('dividerTopSpeed', v)}
           onShape={(v) => set('dividerTop', v)}
           onColor={(v) => set('dividerTopColor', v)}
           onHeight={(v) => set('dividerTopHeight', v)}
@@ -219,12 +230,22 @@ export const DesignPanel: React.FC<{
           color={value.dividerBottomColor}
           height={value.dividerBottomHeight}
           flip={value.dividerBottomFlip}
+          anim={value.dividerBottomAnim}
+          speed={value.dividerBottomSpeed}
+          onAnim={(v) => set('dividerBottomAnim', v)}
+          onSpeed={(v) => set('dividerBottomSpeed', v)}
           onShape={(v) => set('dividerBottom', v)}
           onColor={(v) => set('dividerBottomColor', v)}
           onHeight={(v) => set('dividerBottomHeight', v)}
           onFlip={(v) => set('dividerBottomFlip', v)}
         />
       </Accordion>
+      )}
+
+      {variant === 'block' && (
+        <Accordion title="Effects">
+          <EffectsControls value={value} onChange={onChange} />
+        </Accordion>
       )}
 
       <Accordion title="Visibility & advanced">
@@ -417,6 +438,7 @@ export const CheckRow: React.FC<{
 
 export type EditDevice = 'desktop' | 'tablet' | 'mobile'
 type RespKey = ResponsiveKey | 'hide'
+
 const LEGACY_MOBILE_KEY: Partial<Record<RespKey, keyof BlockStyle>> = {
   paddingTop: 'paddingTopMobile',
   paddingBottom: 'paddingBottomMobile',
@@ -667,11 +689,15 @@ const DividerControls: React.FC<{
   color?: string
   height?: number
   flip?: boolean
+  anim?: DividerAnim
+  speed?: number
+  onAnim: (v: DividerAnim | undefined) => void
+  onSpeed: (v: number | undefined) => void
   onShape: (v: DividerShape | undefined) => void
   onColor: (v: string | undefined) => void
   onHeight: (v: number | undefined) => void
   onFlip: (v: boolean | undefined) => void
-}> = ({ label, shape, color, height, flip, onShape, onColor, onHeight, onFlip }) => (
+}> = ({ label, shape, color, height, flip, anim, speed, onAnim, onSpeed, onShape, onColor, onHeight, onFlip }) => (
   <div className="ve-divider-group">
     <SelectRow
       label={`${label} shape`}
@@ -684,7 +710,154 @@ const DividerControls: React.FC<{
         <ColorRow label={`${label} colour`} value={color} onChange={onColor} />
         <NumberRow label={`${label} height (px)`} value={height} onChange={onHeight} min={10} max={400} />
         <CheckRow label={`Flip ${label.toLowerCase()}`} checked={Boolean(flip)} onChange={(v) => onFlip(v || undefined)} />
+        <SelectRow
+          label={`${label} animation`}
+          value={anim || 'none'}
+          options={DIVIDER_ANIM_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help="Gently moves the divider. Pure CSS."
+          onChange={(v) => onAnim(v === 'none' ? undefined : (v as DividerAnim))}
+        />
+        {anim && anim !== 'none' && (
+          <RangeRow label="Speed (seconds)" value={speed ?? 20} min={4} max={60} help="Time for one full cycle. Higher is slower." onChange={(v) => onSpeed(v)} />
+        )}
       </>
     )}
   </div>
 )
+
+const RangeRow: React.FC<{
+  label: string
+  value: number
+  min: number
+  max: number
+  help?: string
+  onChange: (v: number | undefined) => void
+}> = ({ label, value, min, max, help, onChange }) => (
+  <Row label={label} help={help}>
+    <div className="ve-color">
+      <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+      />
+    </div>
+  </Row>
+)
+
+const EFFECT_KEYS: (keyof BlockStyle)[] = [
+  'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
+  'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
+]
+
+/** Effects are not responsive: they always write the base (desktop) value, whatever device is being edited. */
+const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const set = <K extends keyof BlockStyle>(key: K, next: BlockStyle[K]) => {
+    const updated = { ...value }
+    if (next === undefined || (next as unknown) === '' || next === null) delete updated[key]
+    else updated[key] = next
+    onChange(updated)
+  }
+  const reset = (keys: (keyof BlockStyle)[]) => {
+    const updated = { ...value }
+    for (const k of keys) delete updated[k]
+    onChange(updated)
+  }
+  const resetBtn = (keys: (keyof BlockStyle)[]) =>
+    keys.some((k) => value[k] !== undefined) ? (
+      <button type="button" className="ve-btn ve-btn--ghost" onClick={() => reset(keys)}>
+        Reset
+      </button>
+    ) : null
+  const fx = value.bgEffect || 'none'
+  const withColors = ['aurora', 'mesh', 'gradient-shift', 'dots', 'grid', 'particles'].includes(fx)
+  const twoColors = ['aurora', 'mesh', 'gradient-shift'].includes(fx)
+  const bgKeys: (keyof BlockStyle)[] = ['bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract']
+  const parallax = value.parallax || 'none'
+
+  return (
+    <>
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Background effect"
+          value={fx}
+          options={BG_EFFECT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help="Animated or textured layer behind the content."
+          onChange={(v) => set('bgEffect', v === 'none' ? undefined : (v as BlockStyle['bgEffect']))}
+        />
+        {fx !== 'none' && (
+          <RangeRow label="Intensity" value={value.bgEffectIntensity ?? 50} min={0} max={100} help="How strong the effect looks." onChange={(v) => set('bgEffectIntensity', v)} />
+        )}
+        {withColors && (
+          <ColorRow label={twoColors ? 'Effect colour 1' : 'Effect colour'} value={value.bgEffectColor} onChange={(v) => set('bgEffectColor', v)} />
+        )}
+        {twoColors && <ColorRow label="Effect colour 2" value={value.bgEffectColor2} onChange={(v) => set('bgEffectColor2', v)} />}
+        {fx === 'particles' && (
+          <>
+            <RangeRow label="Particle count" value={value.particlesCount ?? 50} min={10} max={120} onChange={(v) => set('particlesCount', v)} />
+            <SelectRow
+              label="Mouse interaction"
+              value={value.particlesInteract || 'none'}
+              options={PARTICLE_INTERACT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+              help="How particles react to the pointer."
+              onChange={(v) => set('particlesInteract', v === 'none' ? undefined : (v as BlockStyle['particlesInteract']))}
+            />
+          </>
+        )}
+        {resetBtn(bgKeys)}
+      </div>
+
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Parallax"
+          value={parallax}
+          options={PARALLAX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help="Background parallax needs a background image"
+          onChange={(v) => set('parallax', v === 'none' ? undefined : (v as BlockStyle['parallax']))}
+        />
+        {parallax !== 'none' && (
+          <RangeRow label="Strength" value={value.parallaxStrength ?? 50} min={0} max={100} help="How far it moves as you scroll." onChange={(v) => set('parallaxStrength', v)} />
+        )}
+        {resetBtn(['parallax', 'parallaxStrength'])}
+      </div>
+
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Entrance animation"
+          value={value.reveal || 'none'}
+          options={REVEAL_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help="Plays as the section scrolls into view. Pure CSS, no scripts."
+          onChange={(v) => set('reveal', v === 'none' ? undefined : (v as BlockStyle['reveal']))}
+        />
+        {resetBtn(['reveal'])}
+      </div>
+
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Hover effect"
+          value={value.hover || 'none'}
+          options={HOVER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+          help="How the section reacts when the pointer is over it."
+          onChange={(v) => set('hover', v === 'none' ? undefined : (v as BlockStyle['hover']))}
+        />
+        {resetBtn(['hover'])}
+      </div>
+
+      <div className="ve-divider-group">
+        <CheckRow
+          label="Glass"
+          checked={Boolean(value.glass)}
+          help="Frosted-glass look. Works best over an image or gradient."
+          onChange={(v) => set('glass', v || undefined)}
+        />
+        {value.glass && (
+          <RangeRow label="Blur (px)" value={value.glassBlur ?? 12} min={0} max={40} onChange={(v) => set('glassBlur', v)} />
+        )}
+        {resetBtn(['glass', 'glassBlur'])}
+      </div>
+      {EFFECT_KEYS.some((k) => value[k] !== undefined) && resetBtn(EFFECT_KEYS)}
+    </>
+  )
+}

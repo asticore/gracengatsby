@@ -6,6 +6,7 @@ import { AnchorElement, DividerElement, HtmlElement, MapElement, SpacerElement }
 import { CallToActionElement, FlipBoxElement, IconBoxElement, ImageBoxElement, PriceListElement, PricingTableElement, TeamMemberElement, TestimonialElement } from './MarketingElements'
 import { IconElement, ImageCarouselElement, ImageElement, ImageGalleryElement, LogoStripElement, VideoElement } from './MediaElements'
 import { IconListElement, ListElement, QuoteElement, TextEditorElement } from './TextElements'
+import { AnimatedHeadlineElement, BackToTopElement, BarChartElement, BreadcrumbsElement, CircleProgressElement, DualHeadingElement, ImageComparisonElement, PieChartElement, ShareButtonsElement, TableElement, TimelineElement } from './Wave36Elements'
 
 /**
  * The wave-26 elements, keyed by `elementType`. renderElement.tsx falls through to this table after its explicit
@@ -44,4 +45,16 @@ export const ELEMENT_COMPONENTS: Record<string, React.ComponentType<Record<strin
   anchor: AnchorElement,
   html: HtmlElement,
   map: MapElement,
+  // wave 36
+  table: TableElement,
+  timeline: TimelineElement,
+  breadcrumbs: BreadcrumbsElement,
+  'dual-heading': DualHeadingElement,
+  'animated-headline': AnimatedHeadlineElement,
+  'circle-progress': CircleProgressElement,
+  'bar-chart': BarChartElement,
+  'pie-chart': PieChartElement,
+  'share-buttons': ShareButtonsElement,
+  'back-to-top': BackToTopElement,
+  'image-comparison': ImageComparisonElement,
 }

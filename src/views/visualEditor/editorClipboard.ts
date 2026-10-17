@@ -11,6 +11,7 @@ import { getList, getNode, stripEditorIds, type NodePath } from './treeOps'
  * helpers at the bottom is pure.
  */
 export const CLIPBOARD_FORMAT = 'engage-template'
+export const CLIPBOARD_FORMAT_STYLE = 'engage-style'
 export const CLIPBOARD_SCHEMA_VERSION = 1
 
 export type ClipboardKind = 'section' | 'block'
@@ -18,8 +19,15 @@ export type ClipboardKind = 'section' | 'block'
 export const CLIPBOARD_LIMITS = { maxChars: 1_000_000, maxDepth: 8, maxNodes: 300, maxRootNodes: 50, maxStringLength: 200_000 }
 
 export type ClipboardPayload = { format: typeof CLIPBOARD_FORMAT; schemaVersion: 1; kind: ClipboardKind; tree: SectionNode[] }
+export type StyleClipboardPayload = {
+  format: typeof CLIPBOARD_FORMAT_STYLE
+  schemaVersion: 1
+  design: unknown
+  device: 'desktop' | 'tablet' | 'mobile'
+}
 
 export type Serialized = { kind: ClipboardKind; text: string; count: number }
+export type StyleSerialized = { text: string }
 
 /** What a path points at: a block (odd length) or a column (even length). */
 export function serializeSelection(blocks: SectionNode[], path: NodePath | null): Serialized | null {
@@ -133,6 +141,33 @@ export function parseClipboardText(text: unknown): ParseResult {
   return { ok: true, kind: data.kind, nodes: tree as SectionNode[] }
 }
 
+export type StyleParseResult =
+  | { ok: true; design: unknown; device: 'desktop' | 'tablet' | 'mobile' }
+  | { ok: false; error: string }
+
+export function parseStyleClipboardText(text: unknown): StyleParseResult {
+  const notOurs: StyleParseResult = { ok: false, error: 'The clipboard does not hold anything copied from this editor.' }
+  if (typeof text !== 'string' || !text.trim()) return notOurs
+  if (text.length > CLIPBOARD_LIMITS.maxChars) return { ok: false, error: 'The copied content is too large to paste.' }
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch {
+    return notOurs
+  }
+  if (!isPlain(data) || data.format !== CLIPBOARD_FORMAT_STYLE) return notOurs
+  if (data.schemaVersion !== CLIPBOARD_SCHEMA_VERSION) return { ok: false, error: 'The copied content comes from a different editor version.' }
+  const device = data.device
+  if (device !== 'desktop' && device !== 'tablet' && device !== 'mobile') {
+    return { ok: false, error: 'The copied content has an invalid device.' }
+  }
+  const design = data.design
+  if (design === undefined || design === null) return { ok: false, error: 'The copied content has no design.' }
+  const designProblem = checkValue(design, 0)
+  if (designProblem) return { ok: false, error: designProblem }
+  return { ok: true, design, device }
+}
+
 /**
  * Where a paste lands. A selected column receives it at the end; a selected block gets it
  * right after it (same list); with nothing selected (or a stale path) it goes at the page end.
@@ -155,6 +190,8 @@ export function planPaste(blocks: SectionNode[], selectedPath: NodePath | null):
 let memoryCopy: string | null = null
 /** True when the last write to the system clipboard failed, so memory is the only reliable copy. */
 let memoryOnly = false
+let styleMemoryCopy: string | null = null
+let styleMemoryOnly = false
 
 export async function writeClipboard(text: string): Promise<'system' | 'memory'> {
   memoryCopy = text
@@ -184,8 +221,48 @@ export async function readClipboard(): Promise<ParseResult> {
   return memoryCopy !== null ? parseClipboardText(memoryCopy) : { ok: false, error: 'Nothing has been copied yet.' }
 }
 
+export function serializeStyle(design: unknown, device: 'desktop' | 'tablet' | 'mobile'): StyleSerialized | null {
+  const payload: StyleClipboardPayload = {
+    format: CLIPBOARD_FORMAT_STYLE,
+    schemaVersion: CLIPBOARD_SCHEMA_VERSION,
+    design,
+    device,
+  }
+  return { text: JSON.stringify(payload) }
+}
+
+export async function writeStyleClipboard(text: string): Promise<'system' | 'memory'> {
+  styleMemoryCopy = text
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      styleMemoryOnly = false
+      return 'system'
+    }
+  } catch {
+    // permission denied or no focus: keep the in-memory copy
+  }
+  styleMemoryOnly = true
+  return 'memory'
+}
+
+export async function readStyleClipboard(): Promise<StyleParseResult> {
+  let systemText: string | null = null
+  if (!styleMemoryOnly) {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) systemText = await navigator.clipboard.readText()
+    } catch {
+      systemText = null
+    }
+  }
+  if (systemText !== null) return parseStyleClipboardText(systemText)
+  return styleMemoryCopy !== null ? parseStyleClipboardText(styleMemoryCopy) : { ok: false, error: 'Nothing has been copied yet.' }
+}
+
 /** Test hook. */
 export function resetClipboardMemory(): void {
   memoryCopy = null
   memoryOnly = false
+  styleMemoryCopy = null
+  styleMemoryOnly = false
 }

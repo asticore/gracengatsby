@@ -20,7 +20,7 @@ const icon = (name = 'icon'): EditorField => select(name, 'Icon', ICON_OPTIONS)
 const link = (name = 'link', label = 'Link (optional)'): EditorField => text(name, label)
 const urlLines: EditorField = area('urls', 'Or image addresses', 'One per line: "https://... | alt text". Added after the pictures chosen above.')
 
-const paragraph = (value: string) => ({
+export const paragraph = (value: string) => ({
   root: {
     type: 'root',
     version: 1,

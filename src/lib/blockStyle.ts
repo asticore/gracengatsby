@@ -628,7 +628,7 @@ export function blockFxVars(style: BlockStyle): Record<string, string> {
   if (isStr(style.bgEffectColor)) v['--be-fx-c'] = style.bgEffectColor
   if (isStr(style.bgEffectColor2)) v['--be-fx-c2'] = style.bgEffectColor2
   if (isNum(style.bgEffectIntensity)) v['--be-fx-i'] = String(style.bgEffectIntensity / 100)
-  if (style.parallax && style.parallax !== 'none') v['--be-par'] = `${Math.round((isNum(style.parallaxStrength) ? style.parallaxStrength : 40) * 0.8)}px`
+  if (style.parallax && style.parallax !== 'none') v['--be-par'] = `${Math.round((isNum(style.parallaxStrength) ? style.parallaxStrength : 40) * 1.6)}px`
   if (style.glass) v['--be-glass'] = `${isNum(style.glassBlur) ? style.glassBlur : 12}px`
   return v
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import type { NodePath } from './treeOps'
 
 export type InlineEditorProps = {
   blockId: string

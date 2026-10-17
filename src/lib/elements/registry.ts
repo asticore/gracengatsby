@@ -82,7 +82,7 @@ export const ELEMENTS: ElementDef[] = [
           { label: 'Right', value: 'right' },
         ],
       },
-      { name: 'link', label: 'Link (optional)', type: 'text', helpText: 'Makes the whole heading clickable.' },
+      { name: 'link', label: 'Link (optional)', type: 'link', helpText: 'Makes the whole heading clickable.' },
     ],
     defaultProps: () => ({ text: 'New heading', tag: 'h2', align: 'left' }),
   },

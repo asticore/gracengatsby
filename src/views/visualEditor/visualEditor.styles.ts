@@ -2231,4 +2231,85 @@ html[data-theme='dark'] .ve-root {
   border-color: var(--ve-accent);
 }
 
+.ve-repeater__label { display: block; margin-bottom: 6px; }
+.ve-repeater__empty { margin: 0 0 6px; color: var(--ve-text-muted); font-size: 12px; }
+.ve-repeater__card {
+  border: 1px solid var(--ve-border);
+  border-radius: 6px;
+  background: var(--ve-surface);
+  margin-bottom: 8px;
+}
+.ve-repeater__head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ve-text);
+  background: var(--ve-surface-alt);
+  border-radius: 6px;
+  user-select: none;
+}
+.ve-repeater__head::-webkit-details-marker { display: none; }
+.ve-repeater__card[open] > .ve-repeater__head {
+  border-bottom: 1px solid var(--ve-border);
+  border-radius: 6px 6px 0 0;
+}
+.ve-repeater__num {
+  flex: none;
+  min-width: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ve-text-muted);
+}
+.ve-repeater__preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.ve-repeater__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+.ve-repeater__btn {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ve-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ve-repeater__btn:hover:not(:disabled) {
+  background: var(--ve-surface-hover);
+  border-color: var(--ve-border-strong);
+  color: var(--ve-text);
+}
+.ve-repeater__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.ve-repeater__btn--danger:hover:not(:disabled) { color: var(--ve-danger); }
+.ve-repeater__add {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px dashed var(--ve-border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ve-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.ve-repeater__add:hover { background: var(--ve-surface-hover); border-color: var(--ve-accent); }
+
 ` + CANVAS_SECTION_LAYOUT_CSS

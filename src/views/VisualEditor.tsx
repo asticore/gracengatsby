@@ -9,7 +9,7 @@ import { getElementDef } from '@/lib/elements/registry'
 import { can } from '@/features/roles/permissions'
 
 import { getBlockDef, INNER_SECTION_SLUG } from './visualEditor/blockSchemas'
-import { CANVAS_ORIGIN, isBridgeMessage, isColumnOpMessage, type ColumnOp, type FrameToParentMessage } from './visualEditor/canvasBridge'
+import { CANVAS_ORIGIN, isBridgeMessage, isColumnOpMessage, isRenameColumnMessage, type ColumnOp, type FrameToParentMessage } from './visualEditor/canvasBridge'
 import { applyColumnOp, buildSectionNode, getColumn, getColumnOwner, isColumnPath, updateColumnAt, type Structure } from './visualEditor/columnOps'
 import { ColumnPanel } from './visualEditor/ColumnPanel'
 import { StructurePicker } from './visualEditor/StructurePicker'
@@ -616,6 +616,10 @@ export const VisualEditorView: React.FC = () => {
         columnOp(data.path, data.op)
         return
       }
+      if (isRenameColumnMessage(data)) {
+        renameNode(data.path, data.label)
+        return
+      }
       if (!isBridgeMessage(data)) return
       const msg = data as FrameToParentMessage
       switch (msg.type) {
@@ -663,7 +667,7 @@ export const VisualEditorView: React.FC = () => {
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp])
+  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp, renameNode])
 
   // Keyboard shortcuts: the parent's own key presses and the ones forwarded from the frame share this handler.
   const { handleKey } = useEditorShortcuts({

@@ -22,6 +22,7 @@ import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical, RICH_TEXT_N
 import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
 import { LockControls, type LockUi } from './LockControls'
+import { canConvertLegacy } from './convertLegacy'
 import { FormLogicInput, FormOptionsInput } from './formInputs'
 import { RangeSliderField } from '@/admin/fields/RangeSliderField'
 import { DimensionsField } from '@/admin/fields/DimensionsField'
@@ -53,7 +54,9 @@ export const FieldPanel: React.FC<{
   device?: EditDevice
   /** Opens a column of the selected section in the column panel. */
   onSelectColumn?: (index: number) => void
-}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions, lockUi, device = 'desktop', onSelectColumn }) => {
+  /** Replaces a legacy block (hero, CTA banner, image + text, gallery) with editable sections. */
+  onConvertLegacy?: () => void
+}> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions, lockUi, device = 'desktop', onSelectColumn, onConvertLegacy }) => {
   const blocked = Boolean(lockUi?.lock?.blocked)
   const fieldDisabled = (name: string) => blocked && (lockUi?.lock?.mode === 'full' || !lockUi?.lock?.editableProps.includes(name))
   const [tab, setTab] = useState<PanelTab>('content')
@@ -76,6 +79,15 @@ export const FieldPanel: React.FC<{
           &#10005;
         </button>
       </div>
+
+      {onConvertLegacy && canConvertLegacy(blockDef.slug) && (
+        <div className="ve-panel__hint" style={{ padding: '0.75rem 1rem', display: 'grid', gap: '0.5rem' }}>
+          <span>This is a legacy block. Convert it to editable sections for full control.</span>
+          <button type="button" className="ve-btn ve-btn--primary" onClick={onConvertLegacy} disabled={blocked}>
+            Convert to sections
+          </button>
+        </div>
+      )}
 
       {lockUi && <LockControls ui={lockUi} />}
 

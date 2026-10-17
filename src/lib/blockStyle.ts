@@ -242,9 +242,87 @@ export type BlockStyle = {
   // Advanced
   customClass?: string
   anchorId?: string
+
+  // Advanced (Elementor-style). All optional; unset emits no CSS.
+  /** Transform, normal state: deg, percent, px. Emitted inline. */
+  tfRotate?: number
+  tfScale?: number
+  tfTranslateX?: number
+  tfTranslateY?: number
+  tfSkewX?: number
+  tfSkewY?: number
+  /** Transform on hover, same units. Emitted as a scoped, hover-gated rule in blockStyleCss(). */
+  tfhRotate?: number
+  tfhScale?: number
+  tfhTranslateX?: number
+  tfhTranslateY?: number
+  tfhSkewX?: number
+  tfhSkewY?: number
+  /** Transition length for transform, ms 0-2000 (default 250). */
+  tfDuration?: number
+  position?: BlockPosition
+  posTop?: number
+  posRight?: number
+  posBottom?: number
+  posLeft?: number
+  zIndex?: number
+  /** 0-100 percent. */
+  opacity?: number
+  blendMode?: BlendMode
+  /** CSS filter parts, each unset unless set here. */
+  filterBlur?: number
+  filterBrightness?: number
+  filterContrast?: number
+  filterSaturate?: number
+  filterGrayscale?: number
+  filterHue?: number
+  /** Space-separated extra wrapper classes; validated by cleanClassList(). */
+  cssClasses?: string
+  /** Scoped CSS; `selector` means this block. Validated by sanitizeCustomCss(). */
+  customCss?: string
 }
 
+export type BlockPosition = 'relative' | 'absolute' | 'fixed' | 'sticky'
+export type BlendMode =
+  | 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn'
+  | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity'
+
+export const POSITION_OPTIONS: { label: string; value: BlockPosition }[] = [
+  { label: 'Relative', value: 'relative' },
+  { label: 'Absolute', value: 'absolute' },
+  { label: 'Fixed', value: 'fixed' },
+  { label: 'Sticky', value: 'sticky' },
+]
+
+export const BLEND_MODE_OPTIONS: { label: string; value: BlendMode }[] = [
+  { label: 'Normal', value: 'normal' },
+  { label: 'Multiply', value: 'multiply' },
+  { label: 'Screen', value: 'screen' },
+  { label: 'Overlay', value: 'overlay' },
+  { label: 'Darken', value: 'darken' },
+  { label: 'Lighten', value: 'lighten' },
+  { label: 'Color dodge', value: 'color-dodge' },
+  { label: 'Color burn', value: 'color-burn' },
+  { label: 'Hard light', value: 'hard-light' },
+  { label: 'Soft light', value: 'soft-light' },
+  { label: 'Difference', value: 'difference' },
+  { label: 'Exclusion', value: 'exclusion' },
+  { label: 'Hue', value: 'hue' },
+  { label: 'Saturation', value: 'saturation' },
+  { label: 'Color', value: 'color' },
+  { label: 'Luminosity', value: 'luminosity' },
+]
+
 export const EMPTY_STYLE: BlockStyle = {}
+
+/** anchorId becomes an element id and a CSS id selector, so only plain id characters pass. */
+function withSafeAnchor(style: BlockStyle): BlockStyle {
+  if (style.anchorId === undefined) return style
+  if (typeof style.anchorId === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(style.anchorId)) return style
+  const { anchorId: _drop, ...rest } = style
+  void _drop
+  return rest
+}
 
 /** Narrows an unknown JSON column value to a BlockStyle without throwing. */
 export function asBlockStyle(value: unknown): BlockStyle {
@@ -252,7 +330,7 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  const fx = sanitizeTypography(sanitizeFx(style))
+  const fx = withSafeAnchor(sanitizeTypography(sanitizeFx(style)))
   if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
   const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
@@ -323,6 +401,18 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
     { value: 'soft-light' }, { value: 'color' }, { value: 'luminosity' },
   ])
   if (raw.glass !== undefined && typeof raw.glass !== 'boolean') drop('glass')
+  enumKey('position', POSITION_OPTIONS)
+  enumKey('blendMode', BLEND_MODE_OPTIONS)
+  if (raw.cssClasses !== undefined) {
+    const classes = cleanClassList(raw.cssClasses)
+    if (classes) out.cssClasses = classes
+    else drop('cssClasses')
+  }
+  if (raw.customCss !== undefined) {
+    const css = sanitizeCustomCss(raw.customCss)
+    if (css) out.customCss = css
+    else drop('customCss')
+  }
   return out as BlockStyle
 }
 
@@ -420,6 +510,14 @@ const NUM_FX: readonly (readonly [string, number, number])[] = [
   ['auroraSpeed', 4, 80], ['gradientAngle', 0, 360], ['gradientSpeed', 3, 60], ['grainOpacity', 0, 100],
   ['grainSize', 40, 400], ['revealDistance', 0, 200], ['revealDuration', 5, 100], ['revealDelay', 0, 60],
   ['hoverLift', 0, 40], ['hoverScale', 100, 120], ['glassOpacity', 0, 100], ['glassBorder', 0, 100],
+  // Advanced tab
+  ['tfRotate', -360, 360], ['tfScale', 10, 300], ['tfTranslateX', -600, 600], ['tfTranslateY', -600, 600],
+  ['tfSkewX', -60, 60], ['tfSkewY', -60, 60], ['tfhRotate', -360, 360], ['tfhScale', 10, 300],
+  ['tfhTranslateX', -600, 600], ['tfhTranslateY', -600, 600], ['tfhSkewX', -60, 60], ['tfhSkewY', -60, 60],
+  ['tfDuration', 0, 2000], ['posTop', -2000, 2000], ['posRight', -2000, 2000], ['posBottom', -2000, 2000],
+  ['posLeft', -2000, 2000], ['zIndex', -10, 9999], ['opacity', 0, 100], ['filterBlur', 0, 40],
+  ['filterBrightness', 0, 200], ['filterContrast', 0, 200], ['filterSaturate', 0, 300],
+  ['filterGrayscale', 0, 100], ['filterHue', 0, 360],
 ]
 
 export const REVEAL_EASING_OPTIONS: { label: string; value: NonNullable<BlockStyle['revealEasing']> }[] = [
@@ -436,7 +534,68 @@ const FX_KEYS = [
   'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
   'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
   'overlayType', 'overlayColor', 'overlayColor2', 'overlayAngle', 'overlayOpacity', 'overlayBlend',
+  'position', 'blendMode', 'cssClasses', 'customCss',
 ] as const
+
+const CSS_CLASS_TOKEN = /^[A-Za-z_][A-Za-z0-9_-]{0,60}$/
+const CUSTOM_CSS_MAX = 4000
+/** Anything that could leave a rule, load a resource, or close the <style> element. Tested before and after `</` is stripped. */
+const CUSTOM_CSS_BLOCKED =
+  /<\/?style|<\/?script|@import|@charset|expression\s*\(|javascript:|behavior\s*:|-moz-binding|url\s*\(\s*['"]?\s*(javascript|data:text\/html)/i
+
+/** Keeps at most 8 well-formed class names from a whitespace-separated string, rejoined with single spaces. */
+export function cleanClassList(v: unknown): string {
+  if (typeof v !== 'string') return ''
+  return v
+    .split(/\s+/)
+    .filter((t) => CSS_CLASS_TOKEN.test(t))
+    .slice(0, 8)
+    .join(' ')
+}
+
+/**
+ * Makes user-written custom CSS safe to place inside a <style> element. Returns undefined when the
+ * text matches a blocked pattern (the whole value is dropped, not partly stripped). Otherwise it is
+ * capped at 4000 chars with every "</" removed, so it cannot close the style element.
+ */
+export function sanitizeCustomCss(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined
+  if (CUSTOM_CSS_BLOCKED.test(v)) return undefined
+  const text = v.slice(0, CUSTOM_CSS_MAX).replace(/<\//g, '')
+  if (CUSTOM_CSS_BLOCKED.test(text)) return undefined
+  if (!text.trim()) return undefined
+  if (!customCssStaysInScope(text)) return undefined
+  return text
+}
+
+/**
+ * Custom CSS must not close the block's own rule or style other parts of the page: braces must
+ * balance, and when the text has top-level rules every selector must contain the word `selector`.
+ * Plain declarations (no braces) are allowed and wrapped in the block's scope at emit time.
+ */
+function customCssStaysInScope(text: string): boolean {
+  let depth = 0
+  let prelude = ''
+  const preludes: string[] = []
+  for (const ch of text) {
+    if (ch === '{') {
+      if (depth === 0) preludes.push(prelude.trim())
+      depth += 1
+      if (depth === 1) prelude = ''
+    } else if (ch === '}') {
+      depth -= 1
+      if (depth < 0) return false
+      if (depth === 0) prelude = ''
+    } else if (depth === 0) {
+      prelude += ch
+    }
+  }
+  if (depth !== 0) return false
+  if (preludes.length === 0) return true
+  // Trailing text after the last rule would be a loose declaration outside the scope.
+  if (prelude.trim()) return false
+  return preludes.every((p) => /\bselector\b/.test(p))
+}
 
 /** Background overlay layer. Null when off (legacy bgOverlay is rendered separately). */
 export function overlayStyle(style: BlockStyle): React.CSSProperties | null {
@@ -549,7 +708,70 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   }
   if (isNum(style.borderRadius)) css.borderRadius = `${style.borderRadius}px`
   if (style.boxShadow && style.boxShadow !== 'none') css.boxShadow = BOX_SHADOW_PRESETS[style.boxShadow]
+  Object.assign(css, advancedCss(style))
 
+  return css
+}
+
+/** The transform list for the normal ('tf') or hover ('tfh') keys, or '' when none is set. */
+function transformValue(style: BlockStyle, prefix: 'tf' | 'tfh'): string {
+  const raw = style as Record<string, unknown>
+  const num = (suffix: string): number | undefined => {
+    const v = raw[prefix + suffix]
+    return isNum(v) ? v : undefined
+  }
+  const parts: string[] = []
+  const tx = num('TranslateX')
+  const ty = num('TranslateY')
+  if (tx !== undefined || ty !== undefined) parts.push(`translate(${tx ?? 0}px,${ty ?? 0}px)`)
+  const rotate = num('Rotate')
+  if (rotate !== undefined) parts.push(`rotate(${rotate}deg)`)
+  const skewX = num('SkewX')
+  if (skewX !== undefined) parts.push(`skewX(${skewX}deg)`)
+  const skewY = num('SkewY')
+  if (skewY !== undefined) parts.push(`skewY(${skewY}deg)`)
+  const scale = num('Scale')
+  if (scale !== undefined) parts.push(`scale(${scale / 100})`)
+  return parts.join(' ')
+}
+
+/** CSS filter list from the set filter keys, or '' when none is set. */
+function filterValue(style: BlockStyle): string {
+  const parts: string[] = []
+  if (isNum(style.filterBlur)) parts.push(`blur(${style.filterBlur}px)`)
+  if (isNum(style.filterBrightness)) parts.push(`brightness(${style.filterBrightness}%)`)
+  if (isNum(style.filterContrast)) parts.push(`contrast(${style.filterContrast}%)`)
+  if (isNum(style.filterSaturate)) parts.push(`saturate(${style.filterSaturate}%)`)
+  if (isNum(style.filterGrayscale)) parts.push(`grayscale(${style.filterGrayscale}%)`)
+  if (isNum(style.filterHue)) parts.push(`hue-rotate(${style.filterHue}deg)`)
+  return parts.join(' ')
+}
+
+/**
+ * Elementor "Advanced" inline CSS: normal transform + transition, position and offsets, z-index,
+ * opacity, blend mode and filters. The hover transform and custom CSS are scoped rules (blockStyleCss).
+ */
+function advancedCss(style: BlockStyle): React.CSSProperties {
+  const css: React.CSSProperties = {}
+  const tf = transformValue(style, 'tf')
+  if (tf) css.transform = tf
+  if (tf || transformValue(style, 'tfh')) {
+    css.transition = `transform ${isNum(style.tfDuration) ? style.tfDuration : 250}ms ease`
+  }
+  if (style.position && POSITION_OPTIONS.some((o) => o.value === style.position)) {
+    css.position = style.position
+    if (isNum(style.posTop)) css.top = `${style.posTop}px`
+    if (isNum(style.posRight)) css.right = `${style.posRight}px`
+    if (isNum(style.posBottom)) css.bottom = `${style.posBottom}px`
+    if (isNum(style.posLeft)) css.left = `${style.posLeft}px`
+  }
+  if (isNum(style.zIndex)) css.zIndex = style.zIndex
+  if (isNum(style.opacity)) css.opacity = style.opacity / 100
+  if (style.blendMode && style.blendMode !== 'normal' && BLEND_MODE_OPTIONS.some((o) => o.value === style.blendMode)) {
+    css.mixBlendMode = style.blendMode
+  }
+  const filter = filterValue(style)
+  if (filter) css.filter = filter
   return css
 }
 
@@ -697,6 +919,17 @@ export function blockStyleCss(style: BlockStyle, scopeId: string, options: { edi
     if ((device === 'tablet' ? style.tablet : style.mobile)?.hide) {
       rules.push(`@media ${deviceQueries(device).only}{${sel}{${hidden}}}`)
     }
+  }
+
+  // Hover transform. !important because the normal transform is an inline style, which beats a stylesheet rule.
+  const tfh = transformValue(style, 'tfh')
+  if (tfh) rules.push(`@media (hover:hover){${sel}:hover{transform:${tfh} !important}}`)
+
+  // Custom CSS: `selector` is this block; without it the text is taken as the block's declarations.
+  // Sanitized again here, since this is where the text lands inside a <style> element.
+  const custom = sanitizeCustomCss(style.customCss)
+  if (custom) {
+    rules.push(/\bselector\b/.test(custom) ? custom.replace(/\bselector\b/g, () => sel) : `${sel}{${custom}}`)
   }
 
   // Headings set their own theme font, so the block font is repeated on them here.
@@ -864,6 +1097,8 @@ export function blockFxClasses(style: BlockStyle): string {
   if (style.parallax === 'background' && style.bgType === 'image' && isStr(style.bgImageUrl)) c.push('be-fx-parallax-bg')
   else if (style.parallax === 'float-up' || style.parallax === 'float-down') c.push(`be-fx-parallax-${style.parallax}`)
   if (hasFxLayer(style) || c.includes('be-fx-parallax-bg')) c.push('be-fx-clip')
+  const custom = cleanClassList(style.cssClasses)
+  if (custom) c.push(custom)
   return c.join(' ')
 }
 

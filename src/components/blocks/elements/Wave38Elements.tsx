@@ -206,17 +206,17 @@ export const NavMenuElement: React.FC<P> = async (p) => {
 /* ---------- search box ---------- */
 
 /**
- * `search-box`: a plain GET form. The site has no search results page, so it submits to the home page as ?s=. It does
- * not read any data, so it is the same on every page.
+ * `search-box`: a plain GET form that submits to the search results page at /search?q=. It does not read any data, so
+ * it is the same on every page.
  */
 export const SearchBoxElement: React.FC<P> = (p) => {
   const placeholder = str(p.placeholder).trim() || 'Search'
   const button = str(p.buttonLabel).trim() || 'Search'
   return (
-    <form className="be-el-search" role="search" action="/" method="get">
+    <form className="be-el-search" role="search" action="/search" method="get">
       <label className="be-el-search__field">
         <span className="be-el-search__sr">Search the site</span>
-        <input className="be-el-search__input" type="search" name="s" placeholder={placeholder} autoComplete="off" enterKeyHint="search" />
+        <input className="be-el-search__input" type="search" name="q" placeholder={placeholder} autoComplete="off" enterKeyHint="search" />
       </label>
       <button className="be-el-search__btn" type="submit">
         {button}

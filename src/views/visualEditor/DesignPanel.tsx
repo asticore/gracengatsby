@@ -438,7 +438,6 @@ export const CheckRow: React.FC<{
 
 export type EditDevice = 'desktop' | 'tablet' | 'mobile'
 type RespKey = ResponsiveKey | 'hide'
-
 const LEGACY_MOBILE_KEY: Partial<Record<RespKey, keyof BlockStyle>> = {
   paddingTop: 'paddingTopMobile',
   paddingBottom: 'paddingBottomMobile',

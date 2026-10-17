@@ -377,6 +377,36 @@ const SectionLayoutFields: React.FC<{
 
       <Accordion title="Section" defaultOpen>
         <SelectRow
+          label="Display as"
+          help="Tabs / Accordion turn each column into a panel. Name a panel in its column settings."
+          value={layout.display || 'columns'}
+          options={[
+            { label: 'Columns', value: 'columns' },
+            { label: 'Tabs', value: 'tabs' },
+            { label: 'Accordion', value: 'accordion' },
+          ]}
+          onChange={(v) => setLayout({ display: v === 'columns' ? undefined : (v as SectionLayout['display']) })}
+        />
+        {layout.display === 'tabs' && (
+          <SelectRow
+            label="Tab alignment"
+            value={layout.tabsAlign || 'start'}
+            options={[
+              { label: 'Left', value: 'start' },
+              { label: 'Centre', value: 'center' },
+              { label: 'Right', value: 'end' },
+              { label: 'Stretch', value: 'stretch' },
+            ]}
+            onChange={(v) => setLayout({ tabsAlign: v === 'start' ? undefined : (v as SectionLayout['tabsAlign']) })}
+          />
+        )}
+        {layout.display && (
+          <div className="ve-row">
+            <label className="ve-row__label">Active colour</label>
+            <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(layout.tabsColor || '') ? (layout.tabsColor as string) : '#2563eb'} onChange={(e) => setLayout({ tabsColor: e.target.value })} aria-label="Active colour" />
+          </div>
+        )}
+        <SelectRow
           label="Content width"
           help="Boxed keeps the columns in a centred column of the page; full lets them use the whole width."
           value={layout.contentWidth || 'full'}

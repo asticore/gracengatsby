@@ -9,8 +9,8 @@ import { getElementDef } from '@/lib/elements/registry'
 import { can } from '@/features/roles/permissions'
 
 import { getBlockDef, INNER_SECTION_SLUG } from './visualEditor/blockSchemas'
-import { CANVAS_ORIGIN, isBridgeMessage, isColumnOpMessage, isRenameColumnMessage, type ColumnOp, type FrameToParentMessage } from './visualEditor/canvasBridge'
-import { applyColumnOp, buildSectionNode, getColumn, getColumnOwner, isColumnPath, updateColumnAt, type Structure } from './visualEditor/columnOps'
+import { CANVAS_ORIGIN, isBridgeMessage, isColumnOpMessage, isColumnWidthsMessage, isRenameColumnMessage, type ColumnOp, type FrameToParentMessage } from './visualEditor/canvasBridge'
+import { applyColumnOp, applyColumnWidths, buildSectionNode, getColumn, getColumnOwner, isColumnPath, updateColumnAt, type ColumnDevice, type Structure } from './visualEditor/columnOps'
 import { ColumnPanel } from './visualEditor/ColumnPanel'
 import { StructurePicker } from './visualEditor/StructurePicker'
 import { EditorDock, type DockTab } from './visualEditor/EditorDock'
@@ -513,6 +513,13 @@ export const VisualEditorView: React.FC = () => {
     applyBlocks((prev) => updateColumnAt(prev, path, () => column), `column:${pathKey(path)}`)
   }, [applyBlocks])
 
+  /** Canvas drag-resize of two neighbouring columns: one edit (one undo step) for the device shown. Same lock rule as the panel. */
+  const setColumnWidths = useCallback((sectionPath: NodePath, widths: number[], target: ColumnDevice) => {
+    const lock = effectiveLock(lockCtx.current.blocks, sectionPath, lockCtx.current.locks, lockCtx.current.lockUser)
+    if (lock?.blocked && lock.mode === 'full') return
+    applyBlocks((prev) => applyColumnWidths(prev, sectionPath, widths, target))
+  }, [applyBlocks])
+
   /* ---------------------------------------------------------------------- */
   /* Clipboard                                                               */
   /* ---------------------------------------------------------------------- */
@@ -652,6 +659,10 @@ export const VisualEditorView: React.FC = () => {
         renameNode(data.path, data.label)
         return
       }
+      if (isColumnWidthsMessage(data)) {
+        setColumnWidths(data.path, data.widths, data.device)
+        return
+      }
       if (!isBridgeMessage(data)) return
       const msg = data as FrameToParentMessage
       switch (msg.type) {
@@ -699,7 +710,7 @@ export const VisualEditorView: React.FC = () => {
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp, renameNode])
+  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp, renameNode, setColumnWidths])
 
   // Keyboard shortcuts: the parent's own key presses and the ones forwarded from the frame share this handler.
   const { handleKey } = useEditorShortcuts({
@@ -731,10 +742,10 @@ export const VisualEditorView: React.FC = () => {
   useEffect(() => {
     if (!frameReady) return
     iframeRef.current?.contentWindow?.postMessage(
-      { source: 've-canvas', type: 'init', blocks, selectedPath, locks: lockMapForCanvas(blocks, locks, lockUser) },
+      { source: 've-canvas', type: 'init', blocks, selectedPath, locks: lockMapForCanvas(blocks, locks, lockUser), device },
       CANVAS_ORIGIN(),
     )
-  }, [frameReady, blocks, selectedPath, locks, lockUser])
+  }, [frameReady, blocks, selectedPath, locks, lockUser, device])
 
   const sendDragHover = useCallback((key: string | null) => {
     if (lastHoverKey.current === key) return

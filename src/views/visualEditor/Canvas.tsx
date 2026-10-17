@@ -52,6 +52,8 @@ export type CanvasHandlers = {
   onMove: (path: NodePath, direction: -1 | 1) => void
   /** Column toolbar / empty-column actions (add, duplicate, delete, move, inner section). */
   onColumnOp?: (path: NodePath, op: ColumnOp) => void
+  /** Double-click rename of a section tab / accordion panel (writes column.label, same as the Navigator). '' clears it. */
+  onRenameColumn?: (path: NodePath, label: string) => void
   /** Key (see slotKey below) of the insert slot a library-card drag is currently over, or null.
    *  Driven by the parent's 'dragHover' bridge message - the parent resolves drop targets
    *  itself via elementFromPoint, so this is purely for visual feedback. */
@@ -318,6 +320,50 @@ const CanvasNode: React.FC<{
   )
 }
 
+/**
+ * Inline title editor for a tab / accordion panel. Enter or blur calls onDone with the draft,
+ * Escape calls onDone(null) to cancel. Local state only; `done` guards against the blur that
+ * follows Enter/Escape unmounting the input.
+ */
+const TabLabelInput: React.FC<{ initial: string; placeholder: string; onDone: (value: string | null) => void }> = ({ initial, placeholder, onDone }) => {
+  const [draft, setDraft] = React.useState(initial)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const doneRef = React.useRef(false)
+  React.useEffect(() => {
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [])
+  const finish = (value: string | null) => {
+    if (doneRef.current) return
+    doneRef.current = true
+    onDone(value)
+  }
+  return (
+    <input
+      ref={inputRef}
+      className="ve-tabs-bar__label-input"
+      value={draft}
+      placeholder={placeholder}
+      aria-label="Tab title"
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => finish(draft)}
+      onKeyDown={(e) => {
+        e.stopPropagation()
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          finish(draft)
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          finish(null)
+        }
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    />
+  )
+}
+
 const SectionColumns: React.FC<{
   columns: SectionColumn[]
   /** The section's optional flow settings (design.layout), same data the live page renders. */
@@ -333,6 +379,8 @@ const SectionColumns: React.FC<{
   // Which panel shows in tabs / accordion mode. Selecting a column (or anything inside it)
   // from elsewhere - navigator, canvas click - switches to it.
   const [activeIdx, setActiveIdx] = React.useState(0)
+  // Tab / panel whose title is being renamed by double-click (null = none). Local UI state only.
+  const [editingIdx, setEditingIdx] = React.useState<number | null>(null)
   const prefix = `${pathKey(path)}.`
   const selKey = handlers.selectedKey
   const selIdx = panelMode && selKey && selKey.startsWith(prefix) ? Number(selKey.slice(prefix.length).split('.')[0]) : null
@@ -353,11 +401,22 @@ const SectionColumns: React.FC<{
 
   if (panelMode) {
     const active = Math.min(Math.max(activeIdx, 0), columns.length - 1)
-    const titleOf = (c: SectionColumn, i: number) => c.label || (display === 'tabs' ? `Tab ${i + 1}` : `Panel ${i + 1}`)
+    const fallbackOf = (i: number) => (display === 'tabs' ? `Tab ${i + 1}` : `Panel ${i + 1}`)
+    const titleOf = (c: SectionColumn, i: number) => c.label || fallbackOf(i)
     const pick = (event: React.MouseEvent, i: number) => {
       event.stopPropagation()
       setActiveIdx(i)
       handlers.onSelect([...path, i])
+    }
+    const startRename = (event: React.MouseEvent, i: number) => {
+      event.stopPropagation()
+      if (!ownerLocked) setEditingIdx(i)
+    }
+    const finishRename = (column: SectionColumn, i: number, value: string | null) => {
+      setEditingIdx(null)
+      if (value === null) return
+      const next = value.trim()
+      if (next !== (column.label || '')) handlers.onRenameColumn?.([...path, i], next)
     }
     const colorVar = parsedLayout?.tabsColor ? ({ '--be-tab-color': parsedLayout.tabsColor } as React.CSSProperties) : undefined
     const addBtn = (
@@ -391,11 +450,17 @@ const SectionColumns: React.FC<{
       return (
         <div className="ve-section ve-tabs" style={colorVar}>
           <div className="ve-tabs-bar" role="tablist" data-align={parsedLayout?.tabsAlign || 'start'}>
-            {columns.map((column, i) => (
-              <button key={column._id || i} type="button" role="tab" aria-selected={i === active} className={`ve-tabs-bar__tab ${i === active ? 've-tabs-bar__tab--active' : ''}`} onClick={(e) => pick(e, i)}>
-                {titleOf(column, i)}
-              </button>
-            ))}
+            {columns.map((column, i) =>
+              editingIdx === i && !ownerLocked ? (
+                <span key={column._id || i} className={`ve-tabs-bar__tab ve-tabs-bar__tab--editing ${i === active ? 've-tabs-bar__tab--active' : ''}`}>
+                  <TabLabelInput initial={column.label || ''} placeholder={fallbackOf(i)} onDone={(value) => finishRename(column, i, value)} />
+                </span>
+              ) : (
+                <button key={column._id || i} type="button" role="tab" aria-selected={i === active} className={`ve-tabs-bar__tab ${i === active ? 've-tabs-bar__tab--active' : ''}`} onClick={(e) => pick(e, i)} onDoubleClick={(e) => startRename(e, i)}>
+                  {titleOf(column, i)}
+                </button>
+              ),
+            )}
             {addBtn}
           </div>
           {renderPanel(columns[active], active)}
@@ -406,10 +471,17 @@ const SectionColumns: React.FC<{
       <div className="ve-section ve-tabs" style={colorVar}>
         {columns.map((column, i) => (
           <React.Fragment key={column._id || i}>
-            <button type="button" className={`ve-acc-head ${i === active ? 've-acc-head--active' : ''}`} aria-expanded={i === active} onClick={(e) => pick(e, i)}>
-              <span>{titleOf(column, i)}</span>
-              <span aria-hidden="true">{i === active ? '−' : '+'}</span>
-            </button>
+            {editingIdx === i && !ownerLocked ? (
+              <div className={`ve-acc-head ve-acc-head--editing ${i === active ? 've-acc-head--active' : ''}`}>
+                <TabLabelInput initial={column.label || ''} placeholder={fallbackOf(i)} onDone={(value) => finishRename(column, i, value)} />
+                <span aria-hidden="true">{i === active ? '\u2212' : '+'}</span>
+              </div>
+            ) : (
+              <button type="button" className={`ve-acc-head ${i === active ? 've-acc-head--active' : ''}`} aria-expanded={i === active} onClick={(e) => pick(e, i)} onDoubleClick={(e) => startRename(e, i)}>
+                <span>{titleOf(column, i)}</span>
+                <span aria-hidden="true">{i === active ? '\u2212' : '+'}</span>
+              </button>
+            )}
             {i === active && renderPanel(column, i)}
           </React.Fragment>
         ))}

@@ -22,7 +22,7 @@ export type AlignItemsValue = 'start' | 'center' | 'end' | 'stretch'
 export type AlignSelfValue = 'stretch' | 'start' | 'center' | 'end'
 export type VerticalAlign = 'top' | 'middle' | 'bottom' | 'between'
 
-export type SectionDisplay = 'columns' | 'tabs' | 'accordion'
+export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel'
 
 export type SectionLayout = {
   /** Flow per device. Tablet falls back to desktop and mobile to tablet when unset. */
@@ -51,6 +51,12 @@ export type SectionLayout = {
   tabsAlign?: 'start' | 'center' | 'end' | 'stretch'
   /** Active tab / accordion accent colour (a safe CSS colour). Unset = site accent. */
   tabsColor?: string
+  /** Carousel: slides visible at once (1..4). Unset = 1. */
+  carouselPerView?: 1 | 2 | 3 | 4
+  /** Carousel: space between slides in px (0..64). Unset = 16. */
+  carouselGap?: number
+  /** Carousel: show previous / next arrows. Unset = true. */
+  carouselArrows?: boolean
   /** Tablet / mobile overrides of the flow settings that are not per-device on their own. */
   tablet?: DeviceFlow
   mobile?: DeviceFlow
@@ -113,11 +119,16 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.boxedWidth) && raw.boxedWidth > 0) out.boxedWidth = raw.boxedWidth
   const verticalAlign = pick(raw.verticalAlign, ['top', 'middle', 'bottom'] as const)
   if (verticalAlign) out.verticalAlign = verticalAlign
-  const display = pick(raw.display, ['tabs', 'accordion'] as const)
+  const display = pick(raw.display, ['tabs', 'accordion', 'carousel'] as const)
   if (display) out.display = display
   const tabsAlign = pick(raw.tabsAlign, ['start', 'center', 'end', 'stretch'] as const)
   if (tabsAlign) out.tabsAlign = tabsAlign
   if (typeof raw.tabsColor === 'string' && /^[#a-zA-Z0-9(),.%\s/-]{1,64}$/.test(raw.tabsColor)) out.tabsColor = raw.tabsColor
+  if (isNum(raw.carouselPerView) && Number.isInteger(raw.carouselPerView) && raw.carouselPerView >= 1 && raw.carouselPerView <= 4) {
+    out.carouselPerView = raw.carouselPerView as 1 | 2 | 3 | 4
+  }
+  if (isNum(raw.carouselGap) && raw.carouselGap >= 0 && raw.carouselGap <= 64) out.carouselGap = raw.carouselGap
+  if (typeof raw.carouselArrows === 'boolean') out.carouselArrows = raw.carouselArrows
   for (const device of ['tablet', 'mobile'] as const) {
     const flow = parseDeviceFlow(raw[device])
     if (flow) out[device] = flow
@@ -229,6 +240,19 @@ export function sectionLayoutProps(rawLayout: unknown, baseClass = 'be-section')
     if (flow.alignItems) out.attrs[`data-ai-${k}`] = flow.alignItems
   }
   return out
+}
+
+/**
+ * Custom properties for a carousel track / slides (per-view count and gap), with the defaults
+ * applied. Empty for any other display mode.
+ */
+export function carouselStyle(rawLayout: unknown): Record<string, string> {
+  const layout = parseSectionLayout(rawLayout)
+  if (layout?.display !== 'carousel') return {}
+  return {
+    '--be-carousel-per': String(layout.carouselPerView ?? 1),
+    '--be-carousel-gap': `${layout.carouselGap ?? 16}px`,
+  }
 }
 
 /** Inline style for a column's own layout settings (kept separate from its width vars). */

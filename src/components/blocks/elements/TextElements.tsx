@@ -1,10 +1,9 @@
 import React from 'react'
 
 import { RichText } from '@/engine/editor/react'
-import { safeUrl } from '@/lib/mergeTags'
 
 import { Icon } from './icons'
-import { cells, lines, pick, str } from './elementUtil'
+import { cells, linkAttrs, linkHref, lines, pick, str } from './elementUtil'
 
 export const ALIGNS = ['left', 'center', 'right'] as const
 export type Align = (typeof ALIGNS)[number]
@@ -26,13 +25,13 @@ export const TextEditorElement: React.FC<P> = (p) => {
 export const QuoteElement: React.FC<P> = (p) => {
   const style = pick(p.style, ['bar', 'large', 'plain'] as const, 'bar')
   const cite = str(p.cite)
-  const href = safeUrl(p.citeUrl)
+  const href = linkHref(p.citeUrl)
   return (
     <figure className={`el-quote el-quote--${style} ${alignClass(p.align)}`}>
       <blockquote>
         <p>{str(p.text, 'A memorable quotation.')}</p>
       </blockquote>
-      {cite && <figcaption>{href ? <a href={href}>{cite}</a> : cite}</figcaption>}
+      {cite && <figcaption>{href ? <a href={href} {...linkAttrs(p.citeUrl)}>{cite}</a> : cite}</figcaption>}
     </figure>
   )
 }
@@ -44,7 +43,7 @@ export const IconListElement: React.FC<P> = (p) => {
   return (
     <ul className={`el-icon-list el-icon-list--${pick(p.layout, ['stacked', 'inline'] as const, 'stacked')} ${alignClass(p.align)}`}>
       {rows.map(([text, link], i) => {
-        const href = safeUrl(link)
+        const href = linkHref(link)
         return (
           <li key={i}>
             <Icon name={icon} size={18} className="el-icon-list__icon" />

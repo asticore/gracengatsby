@@ -3,15 +3,19 @@
 import React, { useState } from 'react'
 
 import {
+  BLEND_MODE_OPTIONS,
   BOX_SHADOW_OPTIONS,
   BG_EFFECT_OPTIONS,
   DIVIDER_ANIM_OPTIONS,
   DIVIDER_OPTIONS,
   HOVER_OPTIONS,
   PARTICLE_INTERACT_OPTIONS,
+  POSITION_OPTIONS,
   REVEAL_EASING_OPTIONS,
   REVEAL_OPTIONS,
   resolveDeviceOverride,
+  type BlendMode,
+  type BlockPosition,
   type BlockStyle,
   type DeviceOverride,
   type DividerAnim,
@@ -302,6 +306,10 @@ export const DesignPanel: React.FC<{
         </Accordion>
       )}
 
+      <Accordion title="Advanced">
+        <AdvancedControls value={value} onChange={onChange} />
+      </Accordion>
+
       <Accordion title="Visibility & advanced">
         <CheckRow
           label={`Hide on ${device}`}
@@ -314,7 +322,7 @@ export const DesignPanel: React.FC<{
           value={value.anchorId}
           placeholder="e.g. pricing"
           help="Link straight to this section with #your-id"
-          onChange={(v) => set('anchorId', v)}
+          onChange={(v) => set('anchorId', v.replace(/[^A-Za-z0-9_-]/g, '-').replace(/^[^A-Za-z]+/, '').slice(0, 64) || undefined)}
         />
         <TextRow
           label="Extra CSS class"
@@ -1258,6 +1266,126 @@ const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: B
       )}
       {resetBtn(bgKeys)}
     </div>
+  )
+}
+
+/* Advanced (Elementor-style). Like Effects, these are base (desktop) values only, not responsive. */
+
+const tfKey = (prefix: 'tf' | 'tfh', suffix: string) => `${prefix}${suffix}` as keyof BlockStyle
+
+/** Transform rows shared by the Normal and Hover groups; `suffix` follows the 'tf' or 'tfh' prefix. */
+const TRANSFORM_ROWS: { suffix: string; label: string; unit: string; min: number; max: number; def: number }[] = [
+  { suffix: 'Rotate', label: 'Rotate', unit: 'deg', min: -360, max: 360, def: 0 },
+  { suffix: 'Scale', label: 'Scale', unit: '%', min: 10, max: 300, def: 100 },
+  { suffix: 'TranslateX', label: 'Move X', unit: 'px', min: -600, max: 600, def: 0 },
+  { suffix: 'TranslateY', label: 'Move Y', unit: 'px', min: -600, max: 600, def: 0 },
+  { suffix: 'SkewX', label: 'Skew X', unit: 'deg', min: -60, max: 60, def: 0 },
+  { suffix: 'SkewY', label: 'Skew Y', unit: 'deg', min: -60, max: 60, def: 0 },
+]
+
+const FILTER_ROWS: { k: keyof BlockStyle; label: string; unit: string; min: number; max: number; def: number }[] = [
+  { k: 'filterBlur', label: 'Blur', unit: 'px', min: 0, max: 40, def: 0 },
+  { k: 'filterBrightness', label: 'Brightness', unit: '%', min: 0, max: 200, def: 100 },
+  { k: 'filterContrast', label: 'Contrast', unit: '%', min: 0, max: 200, def: 100 },
+  { k: 'filterSaturate', label: 'Saturate', unit: '%', min: 0, max: 300, def: 100 },
+  { k: 'filterGrayscale', label: 'Grayscale', unit: '%', min: 0, max: 100, def: 0 },
+  { k: 'filterHue', label: 'Hue rotate', unit: 'deg', min: 0, max: 360, def: 0 },
+]
+
+const ADVANCED_KEYS: (keyof BlockStyle)[] = [
+  ...TRANSFORM_ROWS.map((r) => tfKey('tf', r.suffix)),
+  ...TRANSFORM_ROWS.map((r) => tfKey('tfh', r.suffix)),
+  'tfDuration', 'position', 'posTop', 'posRight', 'posBottom', 'posLeft', 'zIndex',
+  'opacity', 'blendMode', ...FILTER_ROWS.map((r) => r.k), 'cssClasses', 'customCss',
+]
+
+const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const { set } = makeFxEditing(value, onChange)
+  const positioned = value.position !== undefined
+
+  return (
+    <>
+      <p className="ve-row__label">Transform</p>
+      <div className="ve-divider-group">
+        <p className="ve-row__label">Normal</p>
+        {TRANSFORM_ROWS.map((r) => (
+          <FxRange key={r.suffix} k={tfKey('tf', r.suffix)} label={r.label} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
+        ))}
+      </div>
+      <div className="ve-divider-group">
+        <p className="ve-row__label">Hover</p>
+        {TRANSFORM_ROWS.map((r) => (
+          <FxRange key={r.suffix} k={tfKey('tfh', r.suffix)} label={r.label} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
+        ))}
+      </div>
+      <FxRange k="tfDuration" label="Transition" unit="ms" value={value} onChange={onChange} def={250} min={0} max={2000} step={10} help="How long transform changes take." />
+
+      <p className="ve-row__label">Position</p>
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Position"
+          value={value.position ?? 'default'}
+          options={[{ label: 'Default', value: 'default' }, ...POSITION_OPTIONS]}
+          onChange={(v) => set('position', v === 'default' ? undefined : (v as BlockPosition))}
+        />
+        {positioned && (
+          <>
+            <FxRange k="posTop" label="Top" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
+            <FxRange k="posRight" label="Right" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
+            <FxRange k="posBottom" label="Bottom" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
+            <FxRange k="posLeft" label="Left" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
+          </>
+        )}
+        <NumberRow label="Z-index" value={value.zIndex} min={-10} max={9999} onChange={(v) => set('zIndex', v)} />
+      </div>
+
+      <p className="ve-row__label">Appearance</p>
+      <div className="ve-divider-group">
+        <FxRange k="opacity" label="Opacity" unit="%" value={value} onChange={onChange} def={100} min={0} max={100} />
+        <SelectRow
+          label="Blend mode"
+          value={value.blendMode ?? 'normal'}
+          options={BLEND_MODE_OPTIONS}
+          onChange={(v) => set('blendMode', v === 'normal' ? undefined : (v as BlendMode))}
+        />
+        {FILTER_ROWS.map((r) => (
+          <FxRange key={String(r.k)} k={r.k} label={r.label} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
+        ))}
+      </div>
+
+      <p className="ve-row__label">Custom</p>
+      <div className="ve-divider-group">
+        <TextRow
+          label="CSS classes"
+          value={value.cssClasses}
+          placeholder="e.g. hero-card shadowed"
+          help="Up to 8 class names separated by spaces. Letters, digits, - and _ only."
+          onChange={(v) => set('cssClasses', v)}
+        />
+        <Row label="Custom CSS" help="Use selector to target this element, e.g. selector:hover { opacity: .8 }">
+          <textarea
+            rows={6}
+            maxLength={4000}
+            value={value.customCss ?? ''}
+            onChange={(e) => set('customCss', e.target.value || undefined)}
+          />
+        </Row>
+      </div>
+
+      {ADVANCED_KEYS.some((k) => value[k] !== undefined) && (
+        <button
+          type="button"
+          className="ve-btn ve-btn--ghost"
+          onClick={() => {
+            const updated = { ...value }
+            for (const k of ADVANCED_KEYS) delete updated[k]
+            onChange(updated)
+          }}
+        >
+          Reset advanced
+        </button>
+      )}
+    </>
   )
 }
 

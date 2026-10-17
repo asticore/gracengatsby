@@ -3,11 +3,13 @@
 import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
-import { asBlockStyle, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
+import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer } from '@/lib/blockStyle'
 import { sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { ShapeDivider } from '@/components/blocks/StyledBlock'
+
+import ParticlesBackground from '@/components/blocks/ParticlesLazy'
 import { getBlockDef } from './blockSchemas'
 import { CanvasBlockPreview } from './CanvasBlockPreview'
 import type { ColumnOp } from './canvasBridge'
@@ -136,6 +138,7 @@ const CanvasNode: React.FC<{
 
   const wrapperStyle: React.CSSProperties = {
     ...blockStyleToCss(design),
+    ...blockFxVars(design),
     opacity: isDragging ? 0.4 : undefined,
   }
   // Tablet / mobile overrides: the canvas iframe is as wide as the previewed device, so the same
@@ -149,7 +152,7 @@ const CanvasNode: React.FC<{
       ref={setNodeRef}
       id={scopeId}
       data-ve-node={JSON.stringify(path)}
-      className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ${hasMinHeight ? 've-node--minh' : ''} ve-node--depth-${Math.min(depth, 3)}`}
+      className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ${hasMinHeight ? 've-node--minh' : ''} ${blockFxClasses(design)} ve-node--depth-${Math.min(depth, 3)}`}
       style={wrapperStyle}
       onClick={(event) => {
         // Stop the click bubbling to an ancestor section, so clicking a nested
@@ -159,9 +162,19 @@ const CanvasNode: React.FC<{
       }}
     >
       {deviceCss && <style dangerouslySetInnerHTML={{ __html: deviceCss }} />}
+      {design.parallax === 'background' && design.bgType === 'image' && design.bgImageUrl && (
+        <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${design.bgImageUrl})` }} />
+      )}
+      {hasFxLayer(design) && (
+        <div className={`be-fx be-fx--${design.bgEffect}`} aria-hidden="true">
+          {design.bgEffect === 'particles' && (
+            <ParticlesBackground count={design.particlesCount ?? 50} interact={design.particlesInteract ?? 'repel'} color={design.bgEffectColor || '#6366f1'} />
+          )}
+        </div>
+      )}
       <div className="ve-node__toolbar">
         <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to move">
-          ⠿
+          ⠠
         </button>
         <span className="ve-node__label">
           {lock && (
@@ -225,7 +238,6 @@ const CanvasNode: React.FC<{
           ✕
         </button>
       </div>
-
       {/* Shape dividers are real rendered SVGs on the live site (StyledBlock),
           not a CSS style - so the wrapperStyle above (blockStyleToCss) alone
           never showed them here. Rendering the same <ShapeDivider> around the
@@ -236,6 +248,8 @@ const CanvasNode: React.FC<{
           color={design.dividerTopColor}
           height={design.dividerTopHeight}
           flip={design.dividerTopFlip}
+          anim={design.dividerTopAnim}
+          speed={design.dividerTopSpeed}
           position="top"
         />
       )}
@@ -281,6 +295,8 @@ const CanvasNode: React.FC<{
           color={design.dividerBottomColor}
           height={design.dividerBottomHeight}
           flip={design.dividerBottomFlip}
+          anim={design.dividerBottomAnim}
+          speed={design.dividerBottomSpeed}
           position="bottom"
         />
       )}

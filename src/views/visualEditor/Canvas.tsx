@@ -4,7 +4,7 @@ import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
 import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, overlayStyle } from '@/lib/blockStyle'
-import { carouselStyle, gridStyle, parseSectionLayout, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
+import { carouselStyle, gridStyle, parseSectionLayout, resolveDirections, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { ShapeDivider } from '@/components/blocks/StyledBlock'
@@ -14,7 +14,8 @@ import ParticlesBackground from '@/components/blocks/ParticlesLazy'
 import { BgVideo } from '@/components/blocks/BgVideo'
 import { getBlockDef } from './blockSchemas'
 import { CanvasBlockPreview } from './CanvasBlockPreview'
-import type { ColumnOp } from './canvasBridge'
+import type { CanvasDevice, ColumnOp } from './canvasBridge'
+import { columnPercentFor, resizeAdjacent } from './columnOps'
 import { pathKey, type NodePath } from './treeOps'
 import { lexicalToPlainText } from './richTextUtil'
 
@@ -55,6 +56,10 @@ export type CanvasHandlers = {
   onColumnOp?: (path: NodePath, op: ColumnOp) => void
   /** Double-click rename of a section tab / accordion panel (writes column.label, same as the Navigator). '' clears it. */
   onRenameColumn?: (path: NodePath, label: string) => void
+  /** The device preview being edited (the top bar's toggle). Column widths are per device. */
+  device?: CanvasDevice
+  /** Drag-resize of a column boundary: `widths` is the percent width of every column of the section at `sectionPath`, for `device`. */
+  onColumnWidths?: (sectionPath: NodePath, widths: number[]) => void
   /** Key (see slotKey below) of the insert slot a library-card drag is currently over, or null.
    *  Driven by the parent's 'dragHover' bridge message - the parent resolves drop targets
    *  itself via elementFromPoint, so this is purely for visual feedback. */
@@ -367,6 +372,126 @@ const TabLabelInput: React.FC<{ initial: string; placeholder: string; onDone: (v
   )
 }
 
+/** The custom property columnWidthVars() writes for each device (see sectionTree.ts). */
+const WIDTH_VAR: Record<CanvasDevice, string> = { desktop: '--be-col-d', tablet: '--be-col-t', mobile: '--be-col-m' }
+
+/**
+ * Where the drag-resize handles go: one at each boundary whose two columns sit side by side.
+ * `left` is the boundary's position, as a percent of the section, from the start of its row. A
+ * column that would wrap onto a new row has no handle on its left.
+ */
+function resizeBoundaries(widths: number[]): { index: number; left: number }[] {
+  const out: { index: number; left: number }[] = []
+  let used = 0
+  for (let i = 0; i < widths.length - 1; i++) {
+    if (used > 0 && used + widths[i] > 100 + 1e-6) used = 0
+    used += widths[i]
+    if (used + widths[i + 1] <= 100 + 1e-6) out.push({ index: i, left: used })
+  }
+  return out
+}
+
+type ResizeDrag = {
+  startX: number
+  inner: number
+  start: number[]
+  cols: HTMLElement[]
+  prop: string
+  saved: string[]
+  last: number[]
+  moved: boolean
+}
+
+/**
+ * The thin bar between two neighbouring columns (Elementor-style). Dragging moves the boundary:
+ * the two columns are previewed by setting their width custom property directly, and one
+ * `onCommit` on release turns the whole drag into a single tree update (one undo step). Defined
+ * at module level so it keeps its identity across renders.
+ */
+const ColumnResizeHandle: React.FC<{
+  index: number
+  left: number
+  widths: number[]
+  device: CanvasDevice
+  disabled: boolean
+  onCommit: (widths: number[]) => void
+}> = ({ index, left, widths, device, disabled, onCommit }) => {
+  const [tip, setTip] = React.useState<[number, number] | null>(null)
+  const drag = React.useRef<ResizeDrag | null>(null)
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.stopPropagation()
+    if (disabled || event.button !== 0) return
+    const section = event.currentTarget.parentElement
+    if (!section) return
+    const cols = Array.from(section.children).filter((el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains('ve-column'))
+    const pair = [cols[index], cols[index + 1]]
+    if (!pair[0] || !pair[1]) return
+    const style = getComputedStyle(section)
+    const inner = section.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0)
+    if (inner <= 0) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    const prop = WIDTH_VAR[device]
+    drag.current = {
+      startX: event.clientX,
+      inner,
+      start: widths,
+      cols: pair,
+      prop,
+      saved: pair.map((col) => col.style.getPropertyValue(prop)),
+      last: widths,
+      moved: false,
+    }
+  }
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current
+    if (!d) return
+    const next = resizeAdjacent(d.start, index, ((event.clientX - d.startX) / d.inner) * 100)
+    d.last = next
+    d.moved = next.some((w, i) => w !== d.start[i])
+    d.cols.forEach((col, k) => col.style.setProperty(d.prop, `${next[index + k]}%`))
+    setTip([next[index], next[index + 1]])
+  }
+
+  const finish = (event: React.PointerEvent<HTMLDivElement>, commit: boolean) => {
+    const d = drag.current
+    drag.current = null
+    setTip(null)
+    if (!d) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    if (commit && d.moved) {
+      // Keep the preview on the columns: the tree update arrives with the same widths.
+      onCommit(d.last)
+      return
+    }
+    d.cols.forEach((col, k) => {
+      if (d.saved[k]) col.style.setProperty(d.prop, d.saved[k])
+      else col.style.removeProperty(d.prop)
+    })
+  }
+
+  return (
+    <div
+      className={`ve-col-resize${tip ? ' ve-col-resize--active' : ''}`}
+      style={{ left: `${left}%` }}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={`Resize columns ${index + 1} and ${index + 2}`}
+      aria-disabled={disabled || undefined}
+      title="Drag to resize these two columns"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={(event) => finish(event, true)}
+      onPointerCancel={(event) => finish(event, false)}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {tip && <span className="ve-col-resize__tip" role="status">{`${tip[0]}% / ${tip[1]}%`}</span>}
+    </div>
+  )
+}
+
 const SectionColumns: React.FC<{
   columns: SectionColumn[]
   /** The section's optional flow settings (design.layout), same data the live page renders. */
@@ -541,6 +666,13 @@ const SectionColumns: React.FC<{
       </div>
     )
   }
+  // Drag-resize handles between side-by-side columns. Not drawn where the section stacks on this
+  // device (the widths then are only a share of the full width) or when a width is px / auto / fill.
+  const device: CanvasDevice = handlers.device ?? 'desktop'
+  const stacked = resolveDirections(parseSectionLayout(layout))[device].startsWith('column')
+  const percents = columns.map((column) => columnPercentFor(column, device))
+  const boundaries =
+    handlers.onColumnWidths && !stacked && percents.every((p): p is number => p !== null) ? resizeBoundaries(percents as number[]) : []
   return (
     <div
       className={flow.className ? `ve-section ${flow.className}` : 've-section'}
@@ -548,6 +680,17 @@ const SectionColumns: React.FC<{
       style={Object.keys(flow.style).length > 0 ? (flow.style as React.CSSProperties) : undefined}
     >
       {slides}
+      {boundaries.map(({ index, left }) => (
+        <ColumnResizeHandle
+          key={index}
+          index={index}
+          left={left}
+          widths={percents as number[]}
+          device={device}
+          disabled={ownerLocked}
+          onCommit={(next) => handlers.onColumnWidths?.(path, next)}
+        />
+      ))}
     </div>
   )
 }

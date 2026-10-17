@@ -108,7 +108,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   },
   // ---- interactive ----
   {
-    type: 'accordion', label: 'Accordion', icon: '≡', category: 'interactive',
+    type: 'accordion', label: 'Accordion', icon: '≡', category: 'interactive', hidden: true,
     description: 'Headings that open to show text. Opening one closes the others.',
     fields: [
       { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('heading', 'Heading'), area('content', 'Content')] } },
@@ -117,13 +117,13 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ items: [{heading: 'How long is delivery?', content: 'Usually 3 to 5 working days.'}, {heading: 'Can I return something?', content: 'Yes, within 30 days.'}], openFirst: true }),
   },
   {
-    type: 'toggle', label: 'Toggle', icon: '⊞', category: 'interactive',
+    type: 'toggle', label: 'Toggle', icon: '⊞', category: 'interactive', hidden: true,
     description: 'Headings that open to show text. Each opens on its own.',
     fields: [area('items', 'Items', 'One per line: "Heading | Text".'), { name: 'openFirst', label: 'First item open', type: 'checkbox' }],
     defaultProps: () => ({ items: 'Materials | Recycled and sustainably sourced.\nCare | Wipe clean with a damp cloth.', openFirst: false }),
   },
   {
-    type: 'tabs', label: 'Tabs', icon: '▭', category: 'interactive',
+    type: 'tabs', label: 'Tabs', icon: '▭', category: 'interactive', hidden: true,
     description: 'Content split into tabs (up to 8). Works without JavaScript.',
     fields: [
       { name: 'items', label: 'Tabs', type: 'repeater', repeater: { fields: [text('title', 'Title'), area('content', 'Content')] } }
@@ -208,7 +208,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ icon: 'sparkle', frontTitle: 'Hover me', frontText: 'There is more on the other side.', backTitle: 'Surprise', backText: 'Extra detail goes here.', height: 260 }),
   },
   {
-    type: 'call-to-action', label: 'Call to action', icon: '📣', category: 'marketing',
+    type: 'call-to-action', label: 'Call to action', icon: '📣', category: 'marketing', hidden: true,
     description: 'A boxed message with one or two buttons.',
     fields: [text('title', 'Title'), area('text', 'Text'), text('buttonText', 'Button text', { width: 'half' }), text('buttonUrl', 'Button link', { width: 'half' }), text('secondText', 'Second button text', { width: 'half' }), text('secondUrl', 'Second button link', { width: 'half' }), select('tone', 'Colours', opts('dark', 'light', 'accent')), ALIGN],
     defaultProps: () => ({ title: 'Ready to get started?', text: 'Join us today.', buttonText: 'Get started', buttonUrl: '/contact', tone: 'dark', align: 'center' }),

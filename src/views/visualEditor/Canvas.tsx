@@ -4,13 +4,14 @@ import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
 import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, overlayStyle } from '@/lib/blockStyle'
-import { carouselStyle, parseSectionLayout, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
+import { carouselStyle, gridStyle, parseSectionLayout, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { ShapeDivider } from '@/components/blocks/StyledBlock'
 import '@/components/blocks/tabs.css'
 
 import ParticlesBackground from '@/components/blocks/ParticlesLazy'
+import { BgVideo } from '@/components/blocks/BgVideo'
 import { getBlockDef } from './blockSchemas'
 import { CanvasBlockPreview } from './CanvasBlockPreview'
 import type { ColumnOp } from './canvasBridge'
@@ -169,6 +170,7 @@ const CanvasNode: React.FC<{
       {design.parallax === 'background' && design.bgType === 'image' && design.bgImageUrl && (
         <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${design.bgImageUrl})` }} />
       )}
+      {design.bgType === 'video' && <BgVideo src={design.bgVideoUrl} poster={design.bgVideoPoster} loop={design.bgVideoLoop} />}
       {hasFxLayer(design) && (
         <div className={`be-fx be-fx--${design.bgEffect}`} aria-hidden="true">
           {design.bgEffect === 'particles' && (
@@ -503,6 +505,31 @@ const SectionColumns: React.FC<{
       ownerLocked={ownerLocked}
     />
   ))
+  if (display === 'grid') {
+    // Same columns, laid out as the live grid (same .be-grid rules, so the breakpoints match the site).
+    const boxedWidth = flow.style['--be-boxed']
+    const vars = { ...gridStyle(layout), ...(boxedWidth ? { '--be-boxed': boxedWidth } : {}) }
+    return (
+      <div className="ve-grid">
+        <p className="ve-grid__hint">Grid: each column is a cell</p>
+        <div className={flow.className ? `be-grid ${flow.className}` : 'be-grid'} style={vars as React.CSSProperties}>
+          {slides}
+        </div>
+      </div>
+    )
+  }
+  if (display === 'modal') {
+    // Shown inline so the content can be edited; the live site hides it behind a button.
+    const label = parseSectionLayout(layout)?.modalLabel || 'Open'
+    return (
+      <div className="ve-modal">
+        <p className="ve-modal__hint">Popup: opens from a button on the live site (button text: {label}). Edit the content here.</p>
+        <div className={flow.className ? `ve-section ${flow.className}` : 've-section'} {...flow.attrs} style={Object.keys(flow.style).length > 0 ? (flow.style as React.CSSProperties) : undefined}>
+          {slides}
+        </div>
+      </div>
+    )
+  }
   if (display === 'carousel') {
     // Same columns, laid out as the live carousel's horizontal scroll-snap track.
     return (

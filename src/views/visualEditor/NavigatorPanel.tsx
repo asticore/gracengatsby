@@ -14,6 +14,8 @@ interface NavigatorPanelProps {
   onSelect: (path: NodePath) => void
   onRename: (path: NodePath, name: string) => void
   onSetAnchor: (path: NodePath, anchor: string) => void
+  /** Select a section and show its Design controls (Background row). */
+  onSelectDesign?: (path: NodePath) => void
   /** Expanded state keyed by pathKey; a node is expanded unless its entry is false. */
   expandedState?: Record<string, boolean>
   onExpandedStateChange?: (state: Record<string, boolean>) => void
@@ -32,7 +34,11 @@ type Row = {
   key: string
   path: NodePath
   depth: number
-  kind: 'section' | 'column' | 'block'
+  kind: 'section' | 'column' | 'block' | 'background' | 'virtual'
+  /** Swatch CSS for background rows. */
+  swatch?: React.CSSProperties
+  /** Tooltip for virtual (legacy part) rows. */
+  hint?: string
   icon: string
   typeLabel: string
   name: string
@@ -51,10 +57,26 @@ function describe(node: SectionNode, index: number): Pick<Row, 'icon' | 'typeLab
   let icon = '▫'
   if (node.blockType === 'element') {
     const def = getElementDef(String((node as { elementType?: string }).elementType || ''))
+    const elType = String((node as { elementType?: string }).elementType || '')
     if (def) {
       typeLabel = def.label
       icon = def.icon
-    } else typeLabel = 'Element'
+    } else typeLabel = elType ? elType.charAt(0).toUpperCase() + elType.slice(1) : 'Element'
+    if (!label) {
+      const props = ((node as { props?: Record<string, unknown> }).props || {}) as Record<string, unknown>
+      let main = ''
+      for (const k of ['text', 'title', 'heading', 'frontTitle', 'quote', 'name']) {
+        const v = props[k]
+        if (typeof v === 'string' && v.trim()) {
+          main = v.trim()
+          break
+        }
+      }
+      if (main) {
+        if (main.length > 28) main = `${main.slice(0, 27)}…`
+        return { kind: 'block', icon, typeLabel, name: `${typeLabel}: ${main}`, custom: false }
+      }
+    }
   } else {
     const def = getBlockDef(node.blockType)
     if (def) {
@@ -65,29 +87,84 @@ function describe(node: SectionNode, index: number): Pick<Row, 'icon' | 'typeLab
   return { kind: 'block', icon, typeLabel, name: label || typeLabel, custom: Boolean(label) }
 }
 
+const LEGACY_HINT = 'Old-style block: convert to sections to edit each part on the canvas'
+
+function str(v: unknown): string {
+  if (typeof v !== 'string') return ''
+  const t = v.trim()
+  return t.length > 28 ? `${t.slice(0, 27)}…` : t
+}
+
+function virtualParts(node: SectionNode): Array<[string, string, string]> {
+  const n = node as Record<string, unknown>
+  const part = (label: string, v: unknown): [string, string, string] => [label, label, str(v)]
+  switch (node.blockType) {
+    case 'hero':
+      return [part('Heading', n.heading), part('Subheading', n.subheading), part('Primary button', n.primaryCtaLabel), ['Background image', 'Background image', '']]
+    case 'ctaBanner':
+      return [part('Heading', n.heading), part('Text', n.text), part('Button', n.buttonLabel)]
+    case 'imageText':
+      return [['Image', 'Image', ''], part('Text', n.text)]
+    default:
+      return []
+  }
+}
+
+function sectionBackground(design: SectionNode['design']): React.CSSProperties | null {
+  if (!design) return null
+  if (design.bgType === 'image' && design.bgImageUrl) {
+    return { backgroundImage: `url(${JSON.stringify(design.bgImageUrl)})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+  }
+  if (design.bgType === 'color' && design.bgColor) return { backgroundColor: design.bgColor }
+  if (design.bgType === 'gradient' && (design.bgGradientFrom || design.bgGradientTo)) {
+    return { backgroundImage: `linear-gradient(135deg, ${design.bgGradientFrom || 'transparent'}, ${design.bgGradientTo || 'transparent'})` }
+  }
+  if (design.bgType === 'image') return { backgroundColor: 'rgba(128,128,128,.4)' }
+  return null
+}
+
 function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
   return nodes.map((node, i) => {
     const path = [...base, i]
     const info = describe(node, i)
     const columns: SectionColumn[] = node.blockType === 'section' && Array.isArray(node.columns) ? node.columns : []
-    const children: Row[] = columns.map((column, ci) => {
-      const cPath = [...path, ci]
-      const label = typeof column.label === 'string' ? column.label.trim() : ''
-      const kids = buildRows(column.blocks || [], cPath, depth + 2)
-      return {
-        key: pathKey(cPath),
-        path: cPath,
-        depth: depth + 1,
-        kind: 'column' as const,
-        icon: '▯',
-        typeLabel: 'Column',
-        name: label || `Column ${ci + 1}`,
-        custom: Boolean(label),
-        anchor: column.design?.anchorId || '',
-        hasChildren: kids.length > 0,
-        children: kids,
-      }
+    const mk = (extra: Pick<Row, 'kind' | 'icon' | 'typeLabel' | 'name'> & Partial<Row>, d: number, key: string): Row => ({
+      key, path, depth: d, custom: false, anchor: '', hasChildren: false, children: [], ...extra,
     })
+    let children: Row[]
+    if (columns.length === 1) {
+      // Single column: show its blocks directly under the section (real paths kept).
+      children = buildRows(columns[0].blocks || [], [...path, 0], depth + 1)
+    } else {
+      children = columns.map((column, ci) => {
+        const cPath = [...path, ci]
+        const label = typeof column.label === 'string' ? column.label.trim() : ''
+        const kids = buildRows(column.blocks || [], cPath, depth + 2)
+        return {
+          key: pathKey(cPath),
+          path: cPath,
+          depth: depth + 1,
+          kind: 'column' as const,
+          icon: '▯',
+          typeLabel: 'Column',
+          name: label || `Column ${ci + 1}`,
+          custom: Boolean(label),
+          anchor: column.design?.anchorId || '',
+          hasChildren: kids.length > 0,
+          children: kids,
+        }
+      })
+    }
+    if (node.blockType === 'section') {
+      const swatch = sectionBackground(node.design)
+      if (swatch) {
+        children.unshift(mk({ kind: 'background', icon: '', typeLabel: 'Background', name: 'Background', swatch }, depth + 1, `${pathKey(path)}:background`))
+      }
+    } else {
+      for (const [label, typeLabel, value] of virtualParts(node)) {
+        children.push(mk({ kind: 'virtual', icon: '▫', typeLabel, name: value ? `${label}: ${value}` : label, hint: LEGACY_HINT }, depth + 1, `${pathKey(path)}:${label}`))
+      }
+    }
     return {
       key: pathKey(path),
       path,
@@ -98,6 +175,17 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
       children,
     }
   })
+}
+
+/** A selected column of a single-column section is shown as the section row. */
+function resolveSelectedKey(nodes: SectionNode[], sel: NodePath | null): string | null {
+  if (!sel || !sel.length) return null
+  if (sel.length % 2 === 0) {
+    let node: SectionNode | undefined = nodes[sel[0]]
+    for (let k = 1; node && k < sel.length - 1; k += 2) node = node.columns?.[sel[k]]?.blocks?.[sel[k + 1]]
+    if (node && node.blockType === 'section' && node.columns?.length === 1) return pathKey(sel.slice(0, -1))
+  }
+  return pathKey(sel)
 }
 
 function matches(row: Row, q: string): boolean {
@@ -131,13 +219,16 @@ const NavRow: React.FC<{
   onSelect: (path: NodePath) => void
   onRename: (path: NodePath, name: string) => void
   onSetAnchor: (path: NodePath, anchor: string) => void
-}> = ({ row, expanded, forceOpen, selectedKey, onToggle, onSelect, onRename, onSetAnchor }) => {
+  onSelectDesign?: (path: NodePath) => void
+}> = ({ row, expanded, forceOpen, selectedKey, onToggle, onSelect, onRename, onSetAnchor, onSelectDesign }) => {
   const [renaming, setRenaming] = useState(false)
   const [anchoring, setAnchoring] = useState(false)
   const [draft, setDraft] = useState('')
   const [copied, setCopied] = useState(false)
   const rowRef = useRef<HTMLDivElement>(null)
   const selected = selectedKey === row.key
+  const readOnly = row.kind === 'virtual' || row.kind === 'background'
+  const activate = () => (row.kind === 'background' && onSelectDesign ? onSelectDesign(row.path) : onSelect(row.path))
   const open = forceOpen || expanded[row.key] !== false
 
   useEffect(() => {
@@ -145,6 +236,7 @@ const NavRow: React.FC<{
   }, [selected])
 
   const startRename = () => {
+    if (readOnly) return
     setDraft(row.custom ? row.name : '')
     setAnchoring(false)
     setRenaming(true)
@@ -155,6 +247,7 @@ const NavRow: React.FC<{
     if (draft.trim() !== (row.custom ? row.name : '')) onRename(row.path, draft)
   }
   const startAnchor = () => {
+    if (readOnly) return
     setDraft(row.anchor)
     setRenaming(false)
     setAnchoring(true)
@@ -170,7 +263,7 @@ const NavRow: React.FC<{
     if (renaming || anchoring || e.target !== e.currentTarget) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      onSelect(row.path)
+      activate()
     } else if (e.key === 'F2') {
       e.preventDefault()
       startRename()
@@ -199,7 +292,8 @@ const NavRow: React.FC<{
         ref={rowRef}
         className={`ve-nav__row${selected ? ' ve-nav__row--selected' : ''}`}
         tabIndex={0}
-        onClick={() => onSelect(row.path)}
+        title={row.hint}
+        onClick={activate}
         onDoubleClick={startRename}
         onKeyDown={onRowKey}
       >
@@ -215,7 +309,9 @@ const NavRow: React.FC<{
         >
           {open ? '▼' : '▶'}
         </button>
-        <span className="ve-nav__icon" aria-hidden="true">{row.icon}</span>
+        <span className="ve-nav__icon" aria-hidden="true">
+          {row.kind === 'background' ? <span className="ve-nav__swatch" style={row.swatch} /> : row.icon}
+        </span>
         {renaming ? (
           <input
             className="ve-nav__input"
@@ -240,8 +336,9 @@ const NavRow: React.FC<{
             {row.custom && row.kind !== 'column' && <span className="ve-nav__type">{row.typeLabel}</span>}
           </>
         )}
+        {row.kind === 'virtual' && <span className="ve-nav__type" title={row.hint}>legacy</span>}
         {row.anchor && !renaming && <span className="ve-nav__anchor" title={`Jump link: #${row.anchor}`}>#{row.anchor}</span>}
-        {!renaming && (
+        {!renaming && !readOnly && (
           <span className="ve-nav__actions" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="ve-nav__icon-btn" title="Rename (F2)" aria-label={`Rename ${row.name}`} onClick={startRename}>✎</button>
             <button type="button" className="ve-nav__icon-btn" title="Set anchor for jump links" aria-label={`Set anchor for ${row.name}`} onClick={startAnchor}>🔗</button>
@@ -288,6 +385,7 @@ const NavRow: React.FC<{
               onSelect={onSelect}
               onRename={onRename}
               onSetAnchor={onSetAnchor}
+              onSelectDesign={onSelectDesign}
             />
           ))}
         </ul>
@@ -302,6 +400,7 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
   onSelect,
   onRename,
   onSetAnchor,
+  onSelectDesign,
   expandedState = {},
   onExpandedStateChange,
 }) => {
@@ -309,7 +408,7 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
   const q = query.trim().toLowerCase()
   const allRows = useMemo(() => buildRows(nodes, [], 0), [nodes])
   const rows = useMemo(() => (q ? filterRows(allRows, q) : allRows), [allRows, q])
-  const selectedKey = selectedPath && selectedPath.length ? pathKey(selectedPath) : null
+  const selectedKey = useMemo(() => resolveSelectedKey(nodes, selectedPath), [nodes, selectedPath])
 
   // Selecting on the canvas opens every ancestor so the row is visible.
   const selectedRef = useRef<string | null>(null)
@@ -361,6 +460,7 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
               onSelect={onSelect}
               onRename={onRename}
               onSetAnchor={onSetAnchor}
+              onSelectDesign={onSelectDesign}
             />
           ))}
         </ul>

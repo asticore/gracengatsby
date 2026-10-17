@@ -11,6 +11,7 @@ import { AdPlaceholder } from '@/features/ads/components/AdPlaceholder'
 import { DataViewCanvasPreview } from '@/features/dataViews/components/DataViewCanvasPreview'
 import { MEDIA_PROP_KEYS, collectMediaIds, substituteMedia } from '@/components/blocks/elements/elementUtil'
 import { renderElement } from '@/components/blocks/elements/renderElement'
+import { enabledPageEffects } from '@/components/blocks/elements/Wave44Elements'
 import { SITE_ELEMENT_TYPES, WAVE38_ELEMENTS } from '@/lib/elements/wave38Defs'
 
 import type { Media } from '@/engage-types'
@@ -115,6 +116,27 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
         return <div className="engage-form" dangerouslySetInnerHTML={{ __html: String(props.html || '') }} />
       }
       if (isFieldElementType(elementType)) return <FormFieldPreview node={data as LayoutNode} />
+      // Page effects change the live page only (CSS and an overlay), so the canvas shows what is switched on.
+      if (elementType === 'page-effects') {
+        const effects = enabledPageEffects(props)
+        return (
+          <div className="ve-dynamic-placeholder">
+            <div className="ve-dynamic-placeholder__icon">{String.fromCharCode(0x2728)}</div>
+            <div>
+              <strong>Page effects (live page only)</strong>
+              {effects.length > 0 ? (
+                <ul>
+                  {effects.map((label) => (
+                    <li key={label}>{label}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No effects turned on. Switch one on in the panel.</p>
+              )}
+            </div>
+          </div>
+        )
+      }
       // Site elements read live data on the server; the canvas shows a static placeholder and never queries.
       if (SITE_ELEMENT_TYPES.has(elementType)) {
         const site = WAVE38_ELEMENTS.find((e) => e.type === elementType)

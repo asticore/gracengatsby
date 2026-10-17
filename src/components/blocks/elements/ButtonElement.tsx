@@ -1,7 +1,8 @@
 import React from 'react'
 
-import { safeUrl } from '@/lib/mergeTags'
 import { sanitizeSlug } from '@/features/themeStyles/sanitize'
+
+import { flag, linkAttrs, linkHref } from './elementUtil'
 
 export type ButtonElementProps = {
   text?: string
@@ -11,6 +12,10 @@ export type ButtonElementProps = {
   styleName?: string
   size?: 'sm' | 'md' | 'lg'
   align?: 'left' | 'center' | 'right'
+  /** Open in a new tab (rel noopener noreferrer). */
+  newTab?: boolean
+  /** Adds rel="nofollow". */
+  nofollow?: boolean
 }
 
 /** The class list for a button element. Exported so the output can be tested without rendering. */
@@ -23,11 +28,12 @@ export function buttonClassName(variant: ButtonElementProps['variant'], styleNam
 }
 
 /** The `button` element: a link styled with the site's own .btn classes. */
-export const ButtonElement: React.FC<ButtonElementProps> = ({ text, url, variant = 'primary', styleName, size, align = 'left' }) => {
-  const href = safeUrl(url) || '#'
+export const ButtonElement: React.FC<ButtonElementProps> = ({ text, url, variant = 'primary', styleName, size, align = 'left', newTab, nofollow }) => {
+  const href = linkHref(url) || '#'
+  const attrs = linkAttrs({ newTab: flag(newTab), nofollow: flag(nofollow) })
   return (
     <div style={{ textAlign: align }}>
-      <a className={buttonClassName(variant, styleName, size)} href={href}>
+      <a className={buttonClassName(variant, styleName, size)} href={href} {...attrs}>
         {text || 'Button'}
       </a>
     </div>

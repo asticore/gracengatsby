@@ -386,6 +386,8 @@ export function asBlockStyle(value: unknown): BlockStyle {
 const clampNum = (v: unknown, min: number, max: number): number | undefined =>
   isNum(v) ? Math.min(max, Math.max(min, v)) : undefined
 const SAFE_COLOR = /^[#a-zA-Z0-9(),.%\s/-]{1,64}$/
+/** A colour string that is safe to put in a style value (no ; { } quotes or colons). Shared with the page-effects element. */
+export const isSafeColor = (v: unknown): v is string => typeof v === 'string' && SAFE_COLOR.test(v)
 const oneOf = <T extends string>(v: unknown, opts: readonly { value: T }[]): v is T =>
   typeof v === 'string' && opts.some((o) => o.value === v)
 

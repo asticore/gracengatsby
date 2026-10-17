@@ -75,6 +75,7 @@ function withIds(nodes: SectionNode[]): SectionNode[] {
 
 import { parseLocks, serializeLocks, type LockEntry, type Locks, type LockUser } from '@/features/roles/locks'
 import { canInsertInto, effectiveLock, lockedKeySet, lockKeyOf, lockMapForCanvas, withNodeLock } from './visualEditor/lockState'
+import { canConvertLegacy, convertLegacyBlock } from './visualEditor/convertLegacy'
 import type { LockUi } from './visualEditor/LockControls'
 
 export const VisualEditorView: React.FC = () => {
@@ -519,6 +520,22 @@ export const VisualEditorView: React.FC = () => {
     if (lock?.blocked && lock.mode === 'full') return
     applyBlocks((prev) => applyColumnWidths(prev, sectionPath, widths, target))
   }, [applyBlocks])
+
+  /** Legacy block (hero, CTA banner, image + text, gallery) -> editable section tree, in place: one undo step, then the section is selected. */
+  const convertSelectedLegacy = useCallback(() => {
+    if (!selectedPath || selectedPath.length % 2 === 0) return
+    if (lockedOut(selectedPath)) return
+    const current = getNode(blocksRef.current, selectedPath)
+    if (!current || !canConvertLegacy(current.blockType)) return
+    const converted = convertLegacyBlock(current as Record<string, unknown>)
+    if (!converted) return
+    const [fresh] = withFreshIds([converted as SectionNode], nextId)
+    // Keep the replaced block's id so a lock on it stays attached to the new section.
+    const section: SectionNode = current._id ? { ...fresh, _id: current._id } : fresh
+    applyBlocks((prev) => updateNode(prev, selectedPath, () => section))
+    setSelectedPath(selectedPath)
+    setDockTab('settings')
+  }, [selectedPath, lockedOut, applyBlocks])
 
   /* ---------------------------------------------------------------------- */
   /* Clipboard                                                               */
@@ -1138,6 +1155,7 @@ export const VisualEditorView: React.FC = () => {
             setDockTab('settings')
           }}
           columnPanel={columnPanelNode}
+          onConvertLegacy={convertSelectedLegacy}
           navigatorPanel={
             <NavigatorPanel
               nodes={blocks}

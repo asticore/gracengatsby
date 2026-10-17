@@ -61,11 +61,11 @@ const SectionColumnView: React.FC<{
   const design = asBlockStyle(column.design)
   const columnScope = `be-c-${safeScope(`${scope}-${index}`)}`
   // Tablet / mobile padding and hide settings of the column itself.
-  const columnCss = blockStyleCss(design, columnScope)
+  const columnCss = blockStyleCss(design, design.anchorId || columnScope)
 
   return (
     <div
-      id={columnCss ? columnScope : undefined}
+      id={design.anchorId || (columnCss ? columnScope : undefined)}
       className={`be-column ${blockStyleClasses(design)}`}
       style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
     >

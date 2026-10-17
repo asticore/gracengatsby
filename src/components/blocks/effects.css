@@ -7,7 +7,7 @@
 .be-fx--mesh::before{inset:0;background:radial-gradient(at 20% 20%,var(--be-fx-c,#6366f1),transparent 55%),radial-gradient(at 80% 15%,var(--be-fx-c2,#ec4899),transparent 55%),radial-gradient(at 15% 85%,var(--be-fx-c2,#ec4899),transparent 55%),radial-gradient(at 85% 85%,var(--be-fx-c,#6366f1),transparent 55%)}
 .be-fx--gradient-shift::before{inset:0 auto 0 0;width:200%;background:linear-gradient(var(--be-gs-a,90deg),var(--be-fx-c,#6366f1),var(--be-fx-c2,#ec4899),var(--be-fx-c,#6366f1),var(--be-fx-c2,#ec4899),var(--be-fx-c,#6366f1))}
 .be-fx--grain{mix-blend-mode:soft-light;opacity:var(--be-gr-o,calc(var(--be-fx-i,.5)*.6));background-size:var(--be-gr-s,160px);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.be-fx--grain::before,.be-fx--dots::before,.be-fx--grid::before,.be-fx--particles::before,.be-fx--parbg::before{display:none}
+.be-fx--grain::before,.be-fx--dots::before,.be-fx--grid::before,.be-fx--particles::before,.be-fx--parbg::before,.be-fx--kb::before{display:none}
 .be-fx--dots{background-image:radial-gradient(var(--be-fx-c,#6366f1) var(--be-dot,1.5px),transparent var(--be-dot,1.5px));background-size:var(--be-dsp,22px) var(--be-dsp,22px)}
 .be-fx--grid{background-image:linear-gradient(var(--be-fx-c,#6366f1) var(--be-gw,1px),transparent var(--be-gw,1px)),linear-gradient(90deg,var(--be-fx-c,#6366f1) var(--be-gw,1px),transparent var(--be-gw,1px));background-size:var(--be-gsz,36px) var(--be-gsz,36px)}
 .be-fx--particles canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -68,4 +68,40 @@
     .be-fx-parallax-float-up>.be-block__content{animation:be-par-up linear both;animation-timeline:view();animation-range:cover}
     .be-fx-parallax-float-down>.be-block__content{animation:be-par-down linear both;animation-timeline:view();animation-range:cover}
   }
+}
+
+/* Ken Burns: the background image on its own layer, slowly zooming or panning. Full opacity, unlike .be-fx. */
+.be-fx--kb{opacity:1;inset:0;background-size:cover;background-position:center}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes be-kb-in{from{transform:scale(1)}to{transform:scale(1.15)}}
+  @keyframes be-kb-out{from{transform:scale(1.15)}to{transform:scale(1)}}
+  @keyframes be-kb-pan{from{transform:scale(1.12) translateX(-4%)}to{transform:scale(1.12) translateX(4%)}}
+  .be-fx--kb{animation-duration:calc(var(--be-kb-t,20s)/2);animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
+  .be-fx--kb-zoom-in{animation-name:be-kb-in}
+  .be-fx--kb-zoom-out{animation-name:be-kb-out}
+  .be-fx--kb-pan{animation-name:be-kb-pan}
+}
+
+/* Animated border: a masked ring on ::after, so the block keeps its size. z-index:2 puts it above .be-block__content (z-index:1). */
+@property --be-angle{syntax:'<angle>';inherits:false;initial-value:0deg}
+.be-fx-border-glow::after,.be-fx-border-conic::after{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;pointer-events:none}
+.be-fx-border-glow::after{box-shadow:inset 0 0 0 var(--be-bw,2px) var(--be-bc,#6366f1),0 0 calc(var(--be-bw,2px)*6) var(--be-bc,#6366f1)}
+.be-fx-border-conic::after{padding:var(--be-bw,2px);background:conic-gradient(from var(--be-angle),var(--be-bc,#6366f1),var(--be-bc2,#ec4899),var(--be-bc,#6366f1));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+@supports not (mask-composite:exclude){
+  .be-fx-border-glow::after,.be-fx-border-conic::after{display:none}
+  .be-fx-border-glow,.be-fx-border-conic{outline:var(--be-bw,2px) solid var(--be-bc,#6366f1);outline-offset:calc(var(--be-bw,2px)*-1)}
+}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes be-spin{to{--be-angle:360deg}}
+  @keyframes be-glow{from{opacity:.4}}
+  .be-fx-border-conic::after{animation:be-spin var(--be-bs,8s) linear infinite}
+  .be-fx-border-glow::after{animation:be-glow var(--be-bs,8s) ease-in-out infinite alternate}
+}
+
+/* Pointer effects. PointerFx.tsx sets --mx/--my (spotlight), --rx/--ry (tilt) and --mgx/--mgy (magnetic).
+   Fine pointers with motion allowed only; touch and reduced-motion visitors get nothing. */
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  .be-fx-pointer-spotlight::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle var(--be-spot-r,220px) at var(--mx,50%) var(--my,50%),var(--be-spot,rgba(255,255,255,.35)),transparent)}
+  .be-fx-pointer-tilt>.be-block__content{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .25s ease-out}
+  .be-fx-pointer-magnetic{translate:var(--mgx,0px) var(--mgy,0px)}
 }

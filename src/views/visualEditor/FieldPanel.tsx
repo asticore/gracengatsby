@@ -191,6 +191,23 @@ function cleanDeep<T>(value: T): T | undefined {
 
 const GAP_PRESETS: Record<string, number> = { none: 0, narrow: 10, wide: 40 }
 
+/** One-line help under "Display as", per mode. */
+const DISPLAY_HELP: Record<string, string> = {
+  columns: 'Columns sit side by side and wrap onto a new line when space runs out.',
+  tabs: 'Each column becomes a tab. Name a tab in its column settings.',
+  accordion: 'Each column becomes a collapsible panel. Name it in its column settings.',
+  carousel: 'Each column is a slide the reader swipes or scrolls through.',
+  grid: 'Columns become equal cells in rows.',
+  modal: 'A button opens the columns in a popup dialog.',
+  stack: 'Each column is a full-width card that piles up as the page scrolls.',
+  hscroll: 'The columns slide sideways as the reader scrolls down the page.',
+  'sticky-steps': 'The first column stays in place while the others scroll past it as steps.',
+}
+
+/** Clamps a typed number into [min, max] for a layout field; an empty box clears the field. */
+const clampField = (v: number | undefined, min: number, max: number): number | undefined =>
+  v === undefined ? undefined : Math.min(max, Math.max(min, Math.round(v)))
+
 /**
  * Structure and flow settings for a Section block. Everything that can differ per device
  * (column widths, direction, gap, wrap, justify, align, height, padding) follows the top bar's
@@ -390,7 +407,7 @@ const SectionLayoutFields: React.FC<{
       <Accordion title="Section" defaultOpen>
         <SelectRow
           label="Display as"
-          help="Tabs / Accordion turn each column into a panel. Carousel shows each column as a slide. Grid lays the columns out as equal cells. Popup opens them in a dialog from a button. Name a panel in its column settings."
+          help={DISPLAY_HELP[layout.display || 'columns']}
           value={layout.display || 'columns'}
           options={[
             { label: 'Columns', value: 'columns' },
@@ -399,6 +416,9 @@ const SectionLayoutFields: React.FC<{
             { label: 'Carousel', value: 'carousel' },
             { label: 'Grid', value: 'grid' },
             { label: 'Popup', value: 'modal' },
+            { label: 'Stacked cards (scroll)', value: 'stack' },
+            { label: 'Horizontal scroll', value: 'hscroll' },
+            { label: 'Sticky steps (scroll)', value: 'sticky-steps' },
           ]}
           onChange={(v) => setLayout({ display: v === 'columns' ? undefined : (v as SectionLayout['display']) })}
         />
@@ -517,6 +537,86 @@ const SectionLayoutFields: React.FC<{
                 { label: 'Text link', value: 'link' },
               ]}
               onChange={(v) => setLayout({ modalStyle: v === 'link' ? 'link' : undefined })}
+            />
+          </>
+        )}
+        {layout.display === 'stack' && (
+          <>
+            <NumberRow
+              label="Top offset (px)"
+              help="Distance of the first card from the top of the screen while it sticks."
+              value={layout.stackTop}
+              min={0}
+              max={200}
+              placeholder="24"
+              onChange={(v) => setLayout({ stackTop: clampField(v, 0, 200) })}
+            />
+            <NumberRow
+              label="Step offset (px)"
+              help="Extra space between each card and the one before, so the cards peek out as they pile up."
+              value={layout.stackOffset}
+              min={0}
+              max={60}
+              placeholder="16"
+              onChange={(v) => setLayout({ stackOffset: clampField(v, 0, 60) })}
+            />
+            <NumberRow
+              label="Card min height (vh)"
+              value={layout.stackMinHeight}
+              min={30}
+              max={100}
+              placeholder="70"
+              onChange={(v) => setLayout({ stackMinHeight: clampField(v, 30, 100) })}
+            />
+          </>
+        )}
+        {layout.display === 'hscroll' && (
+          <>
+            <NumberRow
+              label="Scroll length (vh)"
+              help="How far the page scrolls while the columns slide across. Longer is slower."
+              value={layout.hscrollLength}
+              min={200}
+              max={600}
+              placeholder="300"
+              onChange={(v) => setLayout({ hscrollLength: clampField(v, 200, 600) })}
+            />
+            <NumberRow
+              label="Column width (vw)"
+              value={layout.hscrollColumnWidth}
+              min={40}
+              max={100}
+              placeholder="80"
+              onChange={(v) => setLayout({ hscrollColumnWidth: clampField(v, 40, 100) })}
+            />
+          </>
+        )}
+        {layout.display === 'sticky-steps' && (
+          <>
+            <SelectRow
+              label="Sticky side"
+              value={layout.stickyStepsSide || 'left'}
+              options={[
+                { label: 'Left', value: 'left' },
+                { label: 'Right', value: 'right' },
+              ]}
+              onChange={(v) => setLayout({ stickyStepsSide: v === 'right' ? 'right' : undefined })}
+            />
+            <NumberRow
+              label="Sticky top offset (px)"
+              value={layout.stickyStepsTop}
+              min={0}
+              max={200}
+              placeholder="96"
+              onChange={(v) => setLayout({ stickyStepsTop: clampField(v, 0, 200) })}
+            />
+            <NumberRow
+              label="Step gap (px)"
+              value={layout.stickyStepsGap}
+              min={0}
+              max={160}
+              placeholder="48"
+              onChange={(v) => setLayout({ stickyStepsGap: clampField(v, 0, 160) })}
             />
           </>
         )}

@@ -8,7 +8,6 @@ import {
   DIVIDER_ANIM_OPTIONS,
   DIVIDER_OPTIONS,
   HOVER_OPTIONS,
-  PARALLAX_OPTIONS,
   PARTICLE_INTERACT_OPTIONS,
   REVEAL_OPTIONS,
   resolveDeviceOverride,
@@ -96,6 +95,18 @@ export const DesignPanel: React.FC<{
               min={0}
               max={100}
             />
+            <ParallaxBgControls value={value} onChange={onChange} />
+          </>
+        )}
+
+        {value.bgType !== 'image' && value.parallax === 'background' && (
+          <p className="ve-row__help">Parallax needs the background type set to Image.</p>
+        )}
+
+        {variant === 'block' && (
+          <>
+            <p className="ve-row__label">Animated background</p>
+            <BackgroundEffectControls value={value} onChange={onChange} />
           </>
         )}
       </Accordion>
@@ -746,78 +757,116 @@ const RangeRow: React.FC<{
   </Row>
 )
 
-const EFFECT_KEYS: (keyof BlockStyle)[] = [
-  'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
-  'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
-]
-
 /** Effects are not responsive: they always write the base (desktop) value, whatever device is being edited. */
-const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+function makeFxEditing(value: BlockStyle, onChange: (next: BlockStyle) => void) {
   const set = <K extends keyof BlockStyle>(key: K, next: BlockStyle[K]) => {
     const updated = { ...value }
     if (next === undefined || (next as unknown) === '' || next === null) delete updated[key]
     else updated[key] = next
     onChange(updated)
   }
-  const reset = (keys: (keyof BlockStyle)[]) => {
-    const updated = { ...value }
-    for (const k of keys) delete updated[k]
-    onChange(updated)
-  }
   const resetBtn = (keys: (keyof BlockStyle)[]) =>
     keys.some((k) => value[k] !== undefined) ? (
-      <button type="button" className="ve-btn ve-btn--ghost" onClick={() => reset(keys)}>
+      <button
+        type="button"
+        className="ve-btn ve-btn--ghost"
+        onClick={() => {
+          const updated = { ...value }
+          for (const k of keys) delete updated[k]
+          onChange(updated)
+        }}
+      >
         Reset
       </button>
     ) : null
+  return { set, resetBtn }
+}
+
+/** Background parallax: lives with the Image controls because it only works on a background image. */
+const ParallaxBgControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const { set } = makeFxEditing(value, onChange)
+  const on = value.parallax === 'background'
+  return (
+    <>
+      <CheckRow
+        label="Parallax (image moves slower than the page)"
+        checked={on}
+        help={value.bgImageUrl ? undefined : 'Pick an image first: parallax moves the background image.'}
+        onChange={(v) => set('parallax', v ? 'background' : undefined)}
+      />
+      {on && (
+        <RangeRow
+          label="Parallax strength"
+          value={value.parallaxStrength ?? 40}
+          min={0}
+          max={100}
+          help="How far the image drifts as you scroll"
+          onChange={(v) => set('parallaxStrength', v)}
+        />
+      )}
+    </>
+  )
+}
+
+const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const { set, resetBtn } = makeFxEditing(value, onChange)
   const fx = value.bgEffect || 'none'
   const withColors = ['aurora', 'mesh', 'gradient-shift', 'dots', 'grid', 'particles'].includes(fx)
   const twoColors = ['aurora', 'mesh', 'gradient-shift'].includes(fx)
   const bgKeys: (keyof BlockStyle)[] = ['bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract']
-  const parallax = value.parallax || 'none'
+  return (
+    <div className="ve-divider-group">
+      <SelectRow
+        label="Background effect"
+        value={fx}
+        options={BG_EFFECT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+        help="Animated or textured layer behind the content."
+        onChange={(v) => set('bgEffect', v === 'none' ? undefined : (v as BlockStyle['bgEffect']))}
+      />
+      {fx !== 'none' && (
+        <RangeRow label="Intensity" value={value.bgEffectIntensity ?? 50} min={0} max={100} help="How strong the effect looks." onChange={(v) => set('bgEffectIntensity', v)} />
+      )}
+      {withColors && (
+        <ColorRow label={twoColors ? 'Effect colour 1' : 'Effect colour'} value={value.bgEffectColor} onChange={(v) => set('bgEffectColor', v)} />
+      )}
+      {twoColors && <ColorRow label="Effect colour 2" value={value.bgEffectColor2} onChange={(v) => set('bgEffectColor2', v)} />}
+      {fx === 'particles' && (
+        <>
+          <RangeRow label="Particle count" value={value.particlesCount ?? 50} min={10} max={120} onChange={(v) => set('particlesCount', v)} />
+          <SelectRow
+            label="Mouse interaction"
+            value={value.particlesInteract || 'repel'}
+            options={PARTICLE_INTERACT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+            help="How particles react to the pointer."
+            onChange={(v) => set('particlesInteract', v as BlockStyle['particlesInteract'])}
+          />
+        </>
+      )}
+      {resetBtn(bgKeys)}
+    </div>
+  )
+}
+
+const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const { set, resetBtn } = makeFxEditing(value, onChange)
+  const scroll = value.parallax === 'float-up' || value.parallax === 'float-down' ? value.parallax : 'none'
 
   return (
     <>
       <div className="ve-divider-group">
         <SelectRow
-          label="Background effect"
-          value={fx}
-          options={BG_EFFECT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-          help="Animated or textured layer behind the content."
-          onChange={(v) => set('bgEffect', v === 'none' ? undefined : (v as BlockStyle['bgEffect']))}
-        />
-        {fx !== 'none' && (
-          <RangeRow label="Intensity" value={value.bgEffectIntensity ?? 50} min={0} max={100} help="How strong the effect looks." onChange={(v) => set('bgEffectIntensity', v)} />
-        )}
-        {withColors && (
-          <ColorRow label={twoColors ? 'Effect colour 1' : 'Effect colour'} value={value.bgEffectColor} onChange={(v) => set('bgEffectColor', v)} />
-        )}
-        {twoColors && <ColorRow label="Effect colour 2" value={value.bgEffectColor2} onChange={(v) => set('bgEffectColor2', v)} />}
-        {fx === 'particles' && (
-          <>
-            <RangeRow label="Particle count" value={value.particlesCount ?? 50} min={10} max={120} onChange={(v) => set('particlesCount', v)} />
-            <SelectRow
-              label="Mouse interaction"
-              value={value.particlesInteract || 'none'}
-              options={PARTICLE_INTERACT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-              help="How particles react to the pointer."
-              onChange={(v) => set('particlesInteract', v === 'none' ? undefined : (v as BlockStyle['particlesInteract']))}
-            />
-          </>
-        )}
-        {resetBtn(bgKeys)}
-      </div>
-
-      <div className="ve-divider-group">
-        <SelectRow
-          label="Parallax"
-          value={parallax}
-          options={PARALLAX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-          help="Background parallax needs a background image"
+          label="Scroll motion"
+          value={scroll}
+          options={[
+            { label: 'None', value: 'none' },
+            { label: 'Float up', value: 'float-up' },
+            { label: 'Float down', value: 'float-down' },
+          ]}
+          help="Moves the section content slightly as it scrolls through the screen. Background parallax is under Background. The two share one setting, so only one applies."
           onChange={(v) => set('parallax', v === 'none' ? undefined : (v as BlockStyle['parallax']))}
         />
-        {parallax !== 'none' && (
-          <RangeRow label="Strength" value={value.parallaxStrength ?? 50} min={0} max={100} help="How far it moves as you scroll." onChange={(v) => set('parallaxStrength', v)} />
+        {scroll !== 'none' && (
+          <RangeRow label="Strength" value={value.parallaxStrength ?? 40} min={0} max={100} help="How far it moves as you scroll." onChange={(v) => set('parallaxStrength', v)} />
         )}
         {resetBtn(['parallax', 'parallaxStrength'])}
       </div>
@@ -856,7 +905,6 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
         )}
         {resetBtn(['glass', 'glassBlur'])}
       </div>
-      {EFFECT_KEYS.some((k) => value[k] !== undefined) && resetBtn(EFFECT_KEYS)}
     </>
   )
 }

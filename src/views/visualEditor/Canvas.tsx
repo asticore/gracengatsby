@@ -3,7 +3,7 @@
 import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
-import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, overlayStyle } from '@/lib/blockStyle'
+import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, kenBurnsLayer, overlayStyle } from '@/lib/blockStyle'
 import { carouselStyle, gridStyle, parseSectionLayout, resolveDirections, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
@@ -175,7 +175,8 @@ const CanvasNode: React.FC<{
       {design.parallax === 'background' && design.bgType === 'image' && design.bgImageUrl && (
         <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${design.bgImageUrl})` }} />
       )}
-      {design.bgType === 'video' && <BgVideo src={design.bgVideoUrl} poster={design.bgVideoPoster} loop={design.bgVideoLoop} />}
+      {(() => { const kb = kenBurnsLayer(design); return kb ? <div className={kb.className} aria-hidden="true" style={kb.style} /> : null })()}
+      {design.bgType === 'video' &&<BgVideo src={design.bgVideoUrl} poster={design.bgVideoPoster} loop={design.bgVideoLoop} />}
       {hasFxLayer(design) && (
         <div className={`be-fx be-fx--${design.bgEffect}`} aria-hidden="true">
           {design.bgEffect === 'particles' && (
@@ -602,12 +603,12 @@ const SectionColumns: React.FC<{
             {editingIdx === i && !ownerLocked ? (
               <div className={`ve-acc-head ve-acc-head--editing ${i === active ? 've-acc-head--active' : ''}`}>
                 <TabLabelInput initial={column.label || ''} placeholder={fallbackOf(i)} onDone={(value) => finishRename(column, i, value)} />
-                <span aria-hidden="true">{i === active ? '\u2212' : '+'}</span>
+                <span aria-hidden="true">{i === active ? '−' : '+'}</span>
               </div>
             ) : (
               <button type="button" className={`ve-acc-head ${i === active ? 've-acc-head--active' : ''}`} aria-expanded={i === active} onClick={(e) => pick(e, i)} onDoubleClick={(e) => startRename(e, i)}>
                 <span>{titleOf(column, i)}</span>
-                <span aria-hidden="true">{i === active ? '\u2212' : '+'}</span>
+                <span aria-hidden="true">{i === active ? '−' : '+'}</span>
               </button>
             )}
             {i === active && renderPanel(column, i)}
@@ -667,13 +668,15 @@ const SectionColumns: React.FC<{
     )
   }
   // Drag-resize handles between side-by-side columns. Not drawn where the section stacks on this
-  // device (the widths then are only a share of the full width) or when a width is px / auto / fill.
+  // device (the widths then are only a share of the full width), when a width is px / auto / fill,
+  // or for the scroll-story modes (their columns are cards / steps / a track, not a row to resize).
   const device: CanvasDevice = handlers.device ?? 'desktop'
+  const scrollStory = display === 'stack' || display === 'hscroll' || display === 'sticky-steps'
   const stacked = resolveDirections(parseSectionLayout(layout))[device].startsWith('column')
   const percents = columns.map((column) => columnPercentFor(column, device))
   const boundaries =
-    handlers.onColumnWidths && !stacked && percents.every((p): p is number => p !== null) ? resizeBoundaries(percents as number[]) : []
-  return (
+    handlers.onColumnWidths && !stacked && !scrollStory && percents.every((p): p is number => p !== null) ? resizeBoundaries(percents as number[]) : []
+  const row = (
     <div
       className={flow.className ? `ve-section ${flow.className}` : 've-section'}
       {...flow.attrs}
@@ -693,6 +696,15 @@ const SectionColumns: React.FC<{
       ))}
     </div>
   )
+  if (scrollStory) {
+    return (
+      <div className="ve-scroll-story">
+        <span className="ve-scroll-story__badge">Scroll story preview on live page</span>
+        {row}
+      </div>
+    )
+  }
+  return row
 }
 
 /**

@@ -47,7 +47,7 @@ export const WAVE38_ELEMENTS: ElementDef[] = [
   },
   {
     type: 'search-box', label: 'Search box', icon: String.fromCodePoint(0x2315), category: 'siteMeta',
-    description: 'A search field that sends the visitor to the site search with ?s=. The site has no search results page yet, so the search itself does nothing until one is added.',
+    description: 'A search field that sends the visitor to the search results page at /search?q=.',
     fields: [
       text('placeholder', 'Placeholder'),
       text('buttonLabel', 'Button label'),

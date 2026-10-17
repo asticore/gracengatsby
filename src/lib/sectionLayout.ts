@@ -22,7 +22,7 @@ export type AlignItemsValue = 'start' | 'center' | 'end' | 'stretch'
 export type AlignSelfValue = 'stretch' | 'start' | 'center' | 'end'
 export type VerticalAlign = 'top' | 'middle' | 'bottom' | 'between'
 
-export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel' | 'grid' | 'modal'
+export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel' | 'grid' | 'modal' | 'stack' | 'hscroll' | 'sticky-steps'
 
 export type SectionLayout = {
   /** Flow per device. Tablet falls back to desktop and mobile to tablet when unset. */
@@ -44,7 +44,8 @@ export type SectionLayout = {
   verticalAlign?: 'top' | 'middle' | 'bottom'
   /**
    * Display mode. Unset / 'columns' = columns side by side (default). 'tabs' / 'accordion' turn every
-   * column into one panel titled by column.label (fallback "Tab N" / "Panel N").
+   * column into one panel titled by column.label (fallback "Tab N" / "Panel N"). 'stack', 'hscroll' and
+   * 'sticky-steps' are scroll stories (cards that pile up, a track that slides sideways, a sticky side column).
    */
   display?: SectionDisplay
   /** Tab bar alignment (tabs only). Unset = start. */
@@ -73,6 +74,22 @@ export type SectionLayout = {
   modalWidth?: number
   /** Modal: trigger looks like a button or a text link. Unset = button. */
   modalStyle?: 'button' | 'link'
+  /** Stack: distance of the first card from the top of the viewport, px (0..200). Unset = 24. */
+  stackTop?: number
+  /** Stack: extra distance per card, px (0..60), so each card peeks out above the next. Unset = 16. */
+  stackOffset?: number
+  /** Stack: minimum card height, vh (30..100). Unset = 70. */
+  stackMinHeight?: number
+  /** Horizontal scroll: length of the scroll story, vh (200..600). Unset = 300. */
+  hscrollLength?: number
+  /** Horizontal scroll: width of each column, vw (40..100). Unset = 80. */
+  hscrollColumnWidth?: number
+  /** Sticky steps: which side the sticky (first) column sits on. Unset = left. */
+  stickyStepsSide?: 'left' | 'right'
+  /** Sticky steps: distance of the sticky column from the top of the viewport, px (0..200). Unset = 96. */
+  stickyStepsTop?: number
+  /** Sticky steps: space between the steps, px (0..160). Unset = 48. */
+  stickyStepsGap?: number
   /** Tablet / mobile overrides of the flow settings that are not per-device on their own. */
   tablet?: DeviceFlow
   mobile?: DeviceFlow
@@ -104,6 +121,9 @@ export const FLOW_DIRECTIONS: FlowDirection[] = ['row', 'row-reverse', 'column',
 const DEVICE_KEY: Record<LayoutDevice, 'd' | 't' | 'm'> = { desktop: 'd', tablet: 't', mobile: 'm' }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+/** Rounds a number and clamps it into [min, max]; anything that is not a finite number is dropped. */
+const clampInt = (v: unknown, min: number, max: number): number | undefined =>
+  isNum(v) ? Math.min(max, Math.max(min, Math.round(v))) : undefined
 const isObj = (v: unknown): v is Record<string, unknown> => Boolean(v) && typeof v === 'object' && !Array.isArray(v)
 const pick = <T extends string>(v: unknown, allowed: readonly T[]): T | undefined =>
   typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : undefined
@@ -135,7 +155,7 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.boxedWidth) && raw.boxedWidth > 0) out.boxedWidth = raw.boxedWidth
   const verticalAlign = pick(raw.verticalAlign, ['top', 'middle', 'bottom'] as const)
   if (verticalAlign) out.verticalAlign = verticalAlign
-  const display = pick(raw.display, ['tabs', 'accordion', 'carousel', 'grid', 'modal'] as const)
+  const display = pick(raw.display, ['tabs', 'accordion', 'carousel', 'grid', 'modal', 'stack', 'hscroll', 'sticky-steps'] as const)
   if (display) out.display = display
   const tabsAlign = pick(raw.tabsAlign, ['start', 'center', 'end', 'stretch'] as const)
   if (tabsAlign) out.tabsAlign = tabsAlign
@@ -156,6 +176,22 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.modalWidth) && raw.modalWidth >= 320 && raw.modalWidth <= 1200) out.modalWidth = raw.modalWidth
   const modalStyle = pick(raw.modalStyle, ['button', 'link'] as const)
   if (modalStyle) out.modalStyle = modalStyle
+  const stackTop = clampInt(raw.stackTop, 0, 200)
+  if (stackTop !== undefined) out.stackTop = stackTop
+  const stackOffset = clampInt(raw.stackOffset, 0, 60)
+  if (stackOffset !== undefined) out.stackOffset = stackOffset
+  const stackMinHeight = clampInt(raw.stackMinHeight, 30, 100)
+  if (stackMinHeight !== undefined) out.stackMinHeight = stackMinHeight
+  const hscrollLength = clampInt(raw.hscrollLength, 200, 600)
+  if (hscrollLength !== undefined) out.hscrollLength = hscrollLength
+  const hscrollColumnWidth = clampInt(raw.hscrollColumnWidth, 40, 100)
+  if (hscrollColumnWidth !== undefined) out.hscrollColumnWidth = hscrollColumnWidth
+  const stickyStepsSide = pick(raw.stickyStepsSide, ['left', 'right'] as const)
+  if (stickyStepsSide) out.stickyStepsSide = stickyStepsSide
+  const stickyStepsTop = clampInt(raw.stickyStepsTop, 0, 200)
+  if (stickyStepsTop !== undefined) out.stickyStepsTop = stickyStepsTop
+  const stickyStepsGap = clampInt(raw.stickyStepsGap, 0, 160)
+  if (stickyStepsGap !== undefined) out.stickyStepsGap = stickyStepsGap
   for (const device of ['tablet', 'mobile'] as const) {
     const flow = parseDeviceFlow(raw[device])
     if (flow) out[device] = flow
@@ -298,6 +334,53 @@ export function gridStyle(rawLayout: unknown): Record<string, string> {
   }
   if (layout.gridColumnsTablet !== undefined) style['--be-grid-cols-t'] = String(layout.gridColumnsTablet)
   return style
+}
+
+/**
+ * Custom properties for a stack container: the first card's top offset, the per-card offset and the
+ * card min height (defaults applied). Empty for any other display mode.
+ */
+export function stackStyle(rawLayout: unknown): Record<string, string> {
+  const layout = parseSectionLayout(rawLayout)
+  if (layout?.display !== 'stack') return {}
+  return {
+    '--be-stack-top': `${layout.stackTop ?? 24}px`,
+    '--be-stack-offset': `${layout.stackOffset ?? 16}px`,
+    '--be-stack-min': `${layout.stackMinHeight ?? 70}vh`,
+  }
+}
+
+/**
+ * Custom properties for a horizontal scroll story: the scroll length in vh (the wrapper is that tall
+ * when scroll-driven animation is supported) and the column width in vw. Empty for any other mode.
+ */
+export function hscrollStyle(rawLayout: unknown): Record<string, string> {
+  const layout = parseSectionLayout(rawLayout)
+  if (layout?.display !== 'hscroll') return {}
+  return {
+    '--be-hs-n': String(layout.hscrollLength ?? 300),
+    '--be-hs-col': `${layout.hscrollColumnWidth ?? 80}vw`,
+  }
+}
+
+/**
+ * Custom properties and the side class for a sticky-steps story: the sticky column's top offset and the
+ * gap between steps (defaults applied). Empty for any other display mode.
+ */
+export function stickyStepsStyle(rawLayout: unknown): Record<string, string> {
+  const layout = parseSectionLayout(rawLayout)
+  if (layout?.display !== 'sticky-steps') return {}
+  return {
+    '--be-ss-top': `${layout.stickyStepsTop ?? 96}px`,
+    '--be-ss-gap': `${layout.stickyStepsGap ?? 48}px`,
+  }
+}
+
+/** Class for the sticky-steps wrapper: the sticky column on the right gets a modifier, left is the base. */
+export function stickyStepsClass(rawLayout: unknown): string {
+  const layout = parseSectionLayout(rawLayout)
+  if (layout?.display !== 'sticky-steps') return ''
+  return layout.stickyStepsSide === 'right' ? 'be-sticky-steps be-sticky-steps--right' : 'be-sticky-steps'
 }
 
 /** Custom property for the popup dialog width (default 640px). Empty for any other display mode. */

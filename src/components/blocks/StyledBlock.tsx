@@ -14,6 +14,7 @@ import {
   dividerPath,
   hasFxLayer,
   isPeriodicDivider,
+  overlayStyle,
   type BlockStyle,
   type DividerAnim,
   type DividerShape,
@@ -84,6 +85,7 @@ export const StyledBlock: React.FC<{
       {parsed.bgType === 'image' && typeof parsed.bgOverlay === 'number' && parsed.bgOverlay > 0 && (
         <div className="be-block__overlay" style={{ background: `rgba(0,0,0,${parsed.bgOverlay / 100})` }} />
       )}
+      {(() => { const o = overlayStyle(parsed); return o ? <div className="be-fx be-fx--overlay" aria-hidden="true" style={o} /> : null })()}
       <ShapeDivider
         shape={parsed.dividerTop}
         color={parsed.dividerTopColor}

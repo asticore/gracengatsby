@@ -9,6 +9,8 @@ import { SectionBlock } from '@/components/blocks/SectionBlock'
 import { blockStyleToCss } from '@/lib/blockStyle'
 import {
   columnLayoutStyle,
+  gridStyle,
+  modalStyleVars,
   parseSectionLayout,
   percentBasisWithGap,
   PUBLIC_SECTION_CSS_OPTIONS,
@@ -104,6 +106,53 @@ describe('section layout markup data', () => {
     )
     expect(plain).not.toContain('data-dir')
     expect(plain).toContain('class="be-section"')
+  })
+})
+
+describe('grid and popup display modes', () => {
+  it('parses grid keys, clamps junk and writes the custom properties with defaults', () => {
+    expect(parseSectionLayout({ display: 'grid', gridColumns: 4, gridColumnsMobile: 2, gridGap: 8, gridAlign: 'center' })).toEqual({
+      display: 'grid',
+      gridColumns: 4,
+      gridColumnsMobile: 2,
+      gridGap: 8,
+      gridAlign: 'center',
+    })
+    expect(parseSectionLayout({ display: 'grid', gridColumns: 9, gridGap: -1 })).toEqual({ display: 'grid' })
+    expect(gridStyle({ display: 'grid' })).toEqual({ '--be-grid-cols': '3', '--be-grid-cols-m': '1', '--be-grid-gap': '16px', alignItems: 'stretch' })
+    expect(gridStyle({ display: 'grid', gridColumnsTablet: 2 })['--be-grid-cols-t']).toBe('2')
+    expect(gridStyle({ display: 'tabs', gridColumns: 4 })).toEqual({})
+  })
+
+  it('parses popup keys and clamps the width and label', () => {
+    expect(parseSectionLayout({ display: 'modal', modalLabel: '  Read more  ', modalWidth: 100, modalStyle: 'link' })).toEqual({
+      display: 'modal',
+      modalLabel: 'Read more',
+      modalStyle: 'link',
+    })
+    expect(modalStyleVars({ display: 'modal' })).toEqual({ '--be-modal-width': '640px' })
+    expect(modalStyleVars({ display: 'modal', modalWidth: 800 })).toEqual({ '--be-modal-width': '800px' })
+  })
+
+  it('renders a grid wrapper with columns inside, and a checkbox-driven popup with the columns in its body', () => {
+    const columns: { blocks: unknown[] }[] = [{ blocks: [] }, { blocks: [] }]
+    const grid =renderToString(React.createElement(SectionBlock, { columns, renderNode: (): null => null, design: { layout: { display: 'grid' } } }))
+    expect(grid).toContain('class="be-grid"')
+    expect(grid).toContain('--be-grid-cols:3')
+    expect(grid.match(/class="be-column/g)?.length).toBe(2)
+
+    const modal = renderToString(
+      React.createElement(SectionBlock, {
+        columns,
+        renderNode: (): null => null,
+        design: { layout: { display: 'modal', modalLabel: 'Open terms' } },
+        scope: 'x',
+      }),
+    )
+    expect(modal).toContain('class="be-modal__toggle"')
+    expect(modal).toContain('<label for="be-x-m" class="be-modal__trigger be-modal__trigger--button">Open terms</label>')
+    expect(modal).toContain('role="dialog"')
+    expect(modal.match(/class="be-column/g)?.length).toBe(2)
   })
 })
 

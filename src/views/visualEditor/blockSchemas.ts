@@ -107,6 +107,9 @@ const VISUAL_BLOCKS: BlockDef[] = [
     icon: '\u{1F4E3}',
     category: 'basic',
     description: 'A full-width call to action with a heading and button.',
+    // Legacy monolith: templatePresets.ts offers 'cta-banner' and 'cta-two-buttons' built from
+    // granular elements. Hidden from the library only; renderer, schema and existing pages stay.
+    hiddenFromLibrary: true,
     fields: [
       { name: 'heading', label: 'Heading', type: 'text', supportsMergeTags: true },
       { name: 'text', label: 'Text', type: 'textarea', supportsMergeTags: true },
@@ -171,6 +174,8 @@ const VISUAL_BLOCKS: BlockDef[] = [
     icon: String.fromCodePoint(0x1f5bc, 0xfe0f),
     category: 'media',
     description: 'A grid of images.',
+    // Legacy monolith: templatePresets.ts offers 'gallery-grid' and 'gallery-cta'. Library-hidden only.
+    hiddenFromLibrary: true,
     fields: [
       { name: 'heading', label: 'Heading', type: 'text', supportsMergeTags: true },
       { name: 'images', label: 'Images', type: 'mediaMulti' },

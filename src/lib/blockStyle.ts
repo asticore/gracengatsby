@@ -27,6 +27,9 @@ export type ParticlesInteract = 'none' | 'repel' | 'attract' | 'connect'
 export type Parallax = 'none' | 'background' | 'float-up' | 'float-down'
 export type Reveal = 'none' | 'fade' | 'fade-up' | 'fade-down' | 'slide-left' | 'slide-right' | 'zoom' | 'blur'
 export type HoverFx = 'none' | 'lift' | 'glow' | 'zoom'
+export type PointerFx = 'none' | 'spotlight' | 'tilt' | 'magnetic'
+export type KenBurns = 'none' | 'zoom-in' | 'zoom-out' | 'pan'
+export type BorderFx = 'none' | 'glow' | 'conic-spin'
 export type BoxShadowPreset = 'none' | 'sm' | 'md' | 'lg'
 export type FontSizeUnit = 'px' | 'em' | 'rem' | 'vw'
 export type LetterSpacingUnit = 'px' | 'em'
@@ -162,6 +165,12 @@ export type BlockStyle = {
   parallaxStrength?: number
   reveal?: Reveal
   hover?: HoverFx
+  /** Pointer-following effect. Spotlight, tilt and magnetic need a fine pointer and motion allowed. */
+  pointerFx?: PointerFx
+  /** Background image slowly zooms or pans. Uses bgImageUrl (bgType 'image'). */
+  kenBurns?: KenBurns
+  /** Animated ring drawn around the block. Adds no layout space. */
+  borderFx?: BorderFx
   glass?: boolean
   /** px, 0-40 (default 12). */
   glassBlur?: number
@@ -222,6 +231,19 @@ export type BlockStyle = {
   glassOpacity?: number
   /** Glass border opacity percent, 0-100 (default 30). */
   glassBorder?: number
+  /** 0-100 (default 50). Tilt angle and magnetic pull; also sets the spotlight radius. */
+  pointerFxStrength?: number
+  /** Spotlight glow colour (safe colour). */
+  spotlightColor?: string
+  /** Seconds per full Ken Burns cycle, 5-60 (default 20). */
+  kenBurnsDuration?: number
+  /** Animated border colours (safe colours). Glow uses the first one. */
+  borderFxColor?: string
+  borderFxColor2?: string
+  /** px, 1-8 (default 2). */
+  borderFxWidth?: number
+  /** Seconds per turn (conic) or pulse (glow), 2-20 (default 8). */
+  borderFxSpeed?: number
 
   // Position inside a column (all optional; unset keeps normal block flow)
   /** How the block sits across its column. 'stretch' fills it; start/center/end shrink to fit and align. */
@@ -397,6 +419,12 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   enumKey('parallax', PARALLAX_OPTIONS)
   enumKey('reveal', REVEAL_OPTIONS)
   enumKey('hover', HOVER_OPTIONS)
+  enumKey('pointerFx', POINTER_FX_OPTIONS)
+  enumKey('kenBurns', KEN_BURNS_OPTIONS)
+  enumKey('borderFx', BORDER_FX_OPTIONS)
+  colorKey('spotlightColor')
+  colorKey('borderFxColor')
+  colorKey('borderFxColor2')
   numKey('dividerTopSpeed', 4, 60)
   numKey('dividerBottomSpeed', 4, 60)
   numKey('bgEffectIntensity', 0, 100)
@@ -536,6 +564,7 @@ const NUM_FX: readonly (readonly [string, number, number])[] = [
   ['auroraSpeed', 4, 80], ['gradientAngle', 0, 360], ['gradientSpeed', 3, 60], ['grainOpacity', 0, 100],
   ['grainSize', 40, 400], ['revealDistance', 0, 200], ['revealDuration', 5, 100], ['revealDelay', 0, 60],
   ['hoverLift', 0, 40], ['hoverScale', 100, 120], ['glassOpacity', 0, 100], ['glassBorder', 0, 100],
+  ['pointerFxStrength', 0, 100], ['kenBurnsDuration', 5, 60], ['borderFxWidth', 1, 8], ['borderFxSpeed', 2, 20],
   // Advanced tab
   ['tfRotate', -360, 360], ['tfScale', 10, 300], ['tfTranslateX', -600, 600], ['tfTranslateY', -600, 600],
   ['tfSkewX', -60, 60], ['tfSkewY', -60, 60], ['tfhRotate', -360, 360], ['tfhScale', 10, 300],
@@ -559,6 +588,8 @@ const FX_KEYS = [
   'dividerTop', 'dividerBottom', 'dividerTopAnim', 'dividerBottomAnim', 'dividerTopSpeed', 'dividerBottomSpeed',
   'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
   'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
+  'pointerFx', 'pointerFxStrength', 'spotlightColor', 'kenBurns', 'kenBurnsDuration',
+  'borderFx', 'borderFxColor', 'borderFxColor2', 'borderFxWidth', 'borderFxSpeed',
   'overlayType', 'overlayColor', 'overlayColor2', 'overlayAngle', 'overlayOpacity', 'overlayBlend',
   'position', 'blendMode', 'cssClasses', 'customCss', 'maskShape',
   'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
@@ -775,7 +806,8 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
     css.backgroundImage = `linear-gradient(${angle}deg, ${from}, ${to})`
   }
 
-  if (style.bgType === 'image' && isStr(style.bgImageUrl) && !(style.parallax === 'background')) {
+  // The image moves to its own layer (kenburnsLayer) when Ken Burns is on, so the wrapper must not paint it too.
+  if (style.bgType === 'image' && isStr(style.bgImageUrl) && !(style.parallax === 'background') && !hasKenBurnsLayer(style)) {
     css.backgroundImage = `url(${style.bgImageUrl})`
     css.backgroundSize = 'cover'
     css.backgroundPosition = 'center'
@@ -821,6 +853,10 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
     const parts = css.transition ? [String(css.transition)] : []
     for (const prop of HOVER_TRANSITION_PROPS) parts.push(`${prop} ${ms}ms ease`)
     css.transition = parts.join(', ')
+  }
+  // The inline transition above would hide the class-based spring, so magnetic's translate is listed here.
+  if (style.pointerFx === 'magnetic') {
+    css.transition = [...(css.transition ? [String(css.transition)] : []), 'translate 450ms cubic-bezier(.2,.8,.2,1)'].join(', ')
   }
 
   return css
@@ -1227,6 +1263,43 @@ export const PARTICLE_INTERACT_OPTIONS: { label: string; value: ParticlesInterac
   { label: 'Connect', value: 'connect' },
 ]
 
+export const POINTER_FX_OPTIONS: { label: string; value: PointerFx }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Spotlight', value: 'spotlight' },
+  { label: 'Tilt', value: 'tilt' },
+  { label: 'Magnetic', value: 'magnetic' },
+]
+
+export const KEN_BURNS_OPTIONS: { label: string; value: KenBurns }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Zoom in', value: 'zoom-in' },
+  { label: 'Zoom out', value: 'zoom-out' },
+  { label: 'Pan', value: 'pan' },
+]
+
+export const BORDER_FX_OPTIONS: { label: string; value: BorderFx }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Glow', value: 'glow' },
+  { label: 'Conic spin', value: 'conic-spin' },
+]
+
+/** Ken Burns moves the background image onto its own layer. Background parallax already owns that image, so it wins. */
+export function hasKenBurnsLayer(style: BlockStyle): boolean {
+  return (
+    !!style.kenBurns && style.kenBurns !== 'none' && style.bgType === 'image' &&
+    isStr(style.bgImageUrl) && style.parallax !== 'background'
+  )
+}
+
+/** The Ken Burns image layer, or null. Rendered by StyledBlock and the editor canvas, like the parallax layer. */
+export function kenBurnsLayer(style: BlockStyle): { className: string; style: React.CSSProperties } | null {
+  if (!hasKenBurnsLayer(style)) return null
+  return {
+    className: `be-fx be-fx--kb be-fx--kb-${style.kenBurns}`,
+    style: { backgroundImage: `url(${style.bgImageUrl})` },
+  }
+}
+
 /** Extra wrapper classes for the effect keys; empty when none are set. */
 export function blockFxClasses(style: BlockStyle): string {
   const c: string[] = []
@@ -1235,8 +1308,13 @@ export function blockFxClasses(style: BlockStyle): string {
   if (style.glass) c.push('be-fx-glass')
   if (style.parallax === 'background' && style.bgType === 'image' && isStr(style.bgImageUrl)) c.push('be-fx-parallax-bg')
   else if (style.parallax === 'float-up' || style.parallax === 'float-down') c.push(`be-fx-parallax-${style.parallax}`)
-  // Isolates the z-index:-1 layers (bg effect, video) so they sit behind the content, not behind the wrapper's background.
-  if (hasFxLayer(style) || c.includes('be-fx-parallax-bg') || style.bgType === 'video') c.push('be-fx-clip')
+  if (style.pointerFx && style.pointerFx !== 'none') c.push(`be-fx-pointer-${style.pointerFx}`)
+  if (style.borderFx && style.borderFx !== 'none') c.push(style.borderFx === 'conic-spin' ? 'be-fx-border-conic' : 'be-fx-border-glow')
+  // Isolates the z-index:-1 layers (bg effect, video, Ken Burns, spotlight) so they sit behind the content, not behind the wrapper's background.
+  if (
+    hasFxLayer(style) || c.includes('be-fx-parallax-bg') || style.bgType === 'video' ||
+    hasKenBurnsLayer(style) || style.pointerFx === 'spotlight'
+  ) c.push('be-fx-clip')
   const custom = cleanClassList(style.cssClasses)
   if (custom) c.push(custom)
   return c.join(' ')
@@ -1296,6 +1374,17 @@ export function blockFxVars(style: BlockStyle): Record<string, string> {
   if (style.hover === 'lift' || style.hover === 'zoom') {
     px('--be-hl', style.hoverLift)
     if (isNum(style.hoverScale)) v['--be-hs'] = String(style.hoverScale / 100)
+  }
+  if (style.pointerFx === 'spotlight') {
+    if (isStr(style.spotlightColor)) v['--be-spot'] = style.spotlightColor
+    v['--be-spot-r'] = `${120 + (isNum(style.pointerFxStrength) ? style.pointerFxStrength : 50) * 2}px`
+  }
+  if (hasKenBurnsLayer(style) && isNum(style.kenBurnsDuration)) v['--be-kb-t'] = `${style.kenBurnsDuration}s`
+  if (style.borderFx && style.borderFx !== 'none') {
+    if (isStr(style.borderFxColor)) v['--be-bc'] = style.borderFxColor
+    if (isStr(style.borderFxColor2)) v['--be-bc2'] = style.borderFxColor2
+    px('--be-bw', style.borderFxWidth)
+    px('--be-bs', style.borderFxSpeed, 's')
   }
   return v
 }

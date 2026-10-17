@@ -14,8 +14,6 @@ interface NavigatorPanelProps {
   onSelect: (path: NodePath) => void
   onRename: (path: NodePath, name: string) => void
   onSetAnchor: (path: NodePath, anchor: string) => void
-  /** Select a section and show its Design controls (Background row). */
-  onSelectDesign?: (path: NodePath) => void
   /** Expanded state keyed by pathKey; a node is expanded unless its entry is false. */
   expandedState?: Record<string, boolean>
   onExpandedStateChange?: (state: Record<string, boolean>) => void
@@ -34,9 +32,7 @@ type Row = {
   key: string
   path: NodePath
   depth: number
-  kind: 'section' | 'column' | 'block' | 'background' | 'virtual'
-  /** Swatch CSS for background rows. */
-  swatch?: React.CSSProperties
+  kind: 'section' | 'column' | 'block' | 'virtual'
   /** Tooltip for virtual (legacy part) rows. */
   hint?: string
   icon: string
@@ -100,7 +96,7 @@ function virtualParts(node: SectionNode): Array<[string, string, string]> {
   const part = (label: string, v: unknown): [string, string, string] => [label, label, str(v)]
   switch (node.blockType) {
     case 'hero':
-      return [part('Heading', n.heading), part('Subheading', n.subheading), part('Primary button', n.primaryCtaLabel), ['Background image', 'Background image', '']]
+      return [part('Heading', n.heading), part('Subheading', n.subheading), part('Primary button', n.primaryCtaLabel)]
     case 'ctaBanner':
       return [part('Heading', n.heading), part('Text', n.text), part('Button', n.buttonLabel)]
     case 'imageText':
@@ -108,19 +104,6 @@ function virtualParts(node: SectionNode): Array<[string, string, string]> {
     default:
       return []
   }
-}
-
-function sectionBackground(design: SectionNode['design']): React.CSSProperties | null {
-  if (!design) return null
-  if (design.bgType === 'image' && design.bgImageUrl) {
-    return { backgroundImage: `url(${JSON.stringify(design.bgImageUrl)})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-  }
-  if (design.bgType === 'color' && design.bgColor) return { backgroundColor: design.bgColor }
-  if (design.bgType === 'gradient' && (design.bgGradientFrom || design.bgGradientTo)) {
-    return { backgroundImage: `linear-gradient(135deg, ${design.bgGradientFrom || 'transparent'}, ${design.bgGradientTo || 'transparent'})` }
-  }
-  if (design.bgType === 'image') return { backgroundColor: 'rgba(128,128,128,.4)' }
-  return null
 }
 
 function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
@@ -155,12 +138,7 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
         }
       })
     }
-    if (node.blockType === 'section') {
-      const swatch = sectionBackground(node.design)
-      if (swatch) {
-        children.unshift(mk({ kind: 'background', icon: '', typeLabel: 'Background', name: 'Background', swatch }, depth + 1, `${pathKey(path)}:background`))
-      }
-    } else {
+    if (node.blockType !== 'section') {
       for (const [label, typeLabel, value] of virtualParts(node)) {
         children.push(mk({ kind: 'virtual', icon: '▫', typeLabel, name: value ? `${label}: ${value}` : label, hint: LEGACY_HINT }, depth + 1, `${pathKey(path)}:${label}`))
       }
@@ -219,16 +197,15 @@ const NavRow: React.FC<{
   onSelect: (path: NodePath) => void
   onRename: (path: NodePath, name: string) => void
   onSetAnchor: (path: NodePath, anchor: string) => void
-  onSelectDesign?: (path: NodePath) => void
-}> = ({ row, expanded, forceOpen, selectedKey, onToggle, onSelect, onRename, onSetAnchor, onSelectDesign }) => {
+}> = ({ row, expanded, forceOpen, selectedKey, onToggle, onSelect, onRename, onSetAnchor }) => {
   const [renaming, setRenaming] = useState(false)
   const [anchoring, setAnchoring] = useState(false)
   const [draft, setDraft] = useState('')
   const [copied, setCopied] = useState(false)
   const rowRef = useRef<HTMLDivElement>(null)
   const selected = selectedKey === row.key
-  const readOnly = row.kind === 'virtual' || row.kind === 'background'
-  const activate = () => (row.kind === 'background' && onSelectDesign ? onSelectDesign(row.path) : onSelect(row.path))
+  const readOnly = row.kind === 'virtual'
+  const activate = () => onSelect(row.path)
   const open = forceOpen || expanded[row.key] !== false
 
   useEffect(() => {
@@ -310,7 +287,7 @@ const NavRow: React.FC<{
           {open ? '▼' : '▶'}
         </button>
         <span className="ve-nav__icon" aria-hidden="true">
-          {row.kind === 'background' ? <span className="ve-nav__swatch" style={row.swatch} /> : row.icon}
+          {row.icon}
         </span>
         {renaming ? (
           <input
@@ -385,7 +362,6 @@ const NavRow: React.FC<{
               onSelect={onSelect}
               onRename={onRename}
               onSetAnchor={onSetAnchor}
-              onSelectDesign={onSelectDesign}
             />
           ))}
         </ul>
@@ -400,7 +376,6 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
   onSelect,
   onRename,
   onSetAnchor,
-  onSelectDesign,
   expandedState = {},
   onExpandedStateChange,
 }) => {
@@ -460,7 +435,6 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
               onSelect={onSelect}
               onRename={onRename}
               onSetAnchor={onSetAnchor}
-              onSelectDesign={onSelectDesign}
             />
           ))}
         </ul>

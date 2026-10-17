@@ -23,6 +23,14 @@ import { MediaPicker } from './MediaPicker'
 import { MergeTagPicker } from './MergeTagPicker'
 import { LockControls, type LockUi } from './LockControls'
 import { FormLogicInput, FormOptionsInput } from './formInputs'
+import { RangeSliderField } from '@/admin/fields/RangeSliderField'
+import { DimensionsField } from '@/admin/fields/DimensionsField'
+import { LinkField } from '@/admin/fields/LinkField'
+import { IconPickerField } from '@/admin/fields/IconPickerField'
+import { ColorPickerField } from '@/admin/fields/ColorPickerField'
+import { TypographyPopoverField } from '@/admin/fields/TypographyPopoverField'
+import { ShadowPopoverField } from '@/admin/fields/ShadowPopoverField'
+import { GradientEditorField } from '@/admin/fields/GradientEditorField'
 
 type MediaThumb = { id: number; url?: string | null; alt?: string | null }
 type PanelTab = 'content' | 'design'
@@ -631,6 +639,8 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
           </select>
         </label>
       )
+    case 'color':
+      return <ColorPickerField field={field} value={value} onChange={onChange} />
     case 'richText':
       // Refuse to show an editable box for content the plain-text bridge would rewrite.
       if (!canEditAsPlainText(value)) {
@@ -780,6 +790,246 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
         </label>
       )
     }
+    case 'range':
+      return (
+        <label className={`ve-field ${widthClass}`}>
+          <RangeSliderField
+            label={field.label}
+            value={typeof value === 'number' ? value : undefined}
+            onChange={onChange}
+            min={field.min ?? 0}
+            max={field.max ?? 100}
+            step={field.step ?? 1}
+          />
+          {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
+        </label>
+      )
+    case 'dimensions':
+      return (
+        <div className={`ve-field ${widthClass}`}>
+          <DimensionsField
+            label={field.label}
+            value={value as any}
+            onChange={onChange}
+          />
+          {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
+        </div>
+      )
+    case 'repeater': {
+      const rows = Array.isArray(value) ? value : []
+      const repeaterDef = (field.repeater as any) || { fields: [] }
+
+      const addRow = (insertIndex: number) => {
+        const newRow: Record<string, unknown> = {}
+        for (const f of repeaterDef.fields) {
+          newRow[f.name] = ''
+        }
+        const updated = [...rows]
+        updated.splice(insertIndex + 1, 0, newRow)
+        onChange(updated)
+      }
+
+      const deleteRow = (index: number) => {
+        onChange(rows.filter((_, i) => i !== index))
+      }
+
+      const moveRow = (index: number, direction: 'up' | 'down') => {
+        const updated = [...rows]
+        const swapIndex = direction === 'up' ? index - 1 : index + 1
+        if (swapIndex < 0 || swapIndex >= updated.length) return
+        ;[updated[index], updated[swapIndex]] = [updated[swapIndex], updated[index]]
+        onChange(updated)
+      }
+
+      const updateCell = (rowIndex: number, fieldName: string, val: unknown) => {
+        const updated = [...rows]
+        updated[rowIndex] = { ...updated[rowIndex], [fieldName]: val }
+        onChange(updated)
+      }
+
+      return (
+        <div className="ve-field ve-field--full">
+          <span style={{ display: 'block', marginBottom: '0.5rem' }}>{field.label}</span>
+
+          {rows.length === 0 ? (
+            <p style={{ color: '#999', marginBottom: '0.5rem' }}>No rows yet</p>
+          ) : (
+            <div style={{ overflowX: 'auto', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f5f5f5', borderBottom: '1px solid #ddd' }}>
+                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '40px', fontWeight: 600 }}>#</th>
+                    {repeaterDef.fields.map((f: any) => (
+                      <th key={f.name} style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600 }}>
+                        {f.label}
+                      </th>
+                    ))}
+                    <th style={{ padding: '0.5rem', textAlign: 'center', width: '130px', fontWeight: 600 }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={rowIndex} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '0.5rem', backgroundColor: '#fafafa', textAlign: 'center', fontWeight: 500 }}>
+                        {rowIndex + 1}
+                      </td>
+                      {repeaterDef.fields.map((f: any) => (
+                        <td key={f.name} style={{ padding: '0.5rem' }}>
+                          {f.type === 'text' || f.type === 'number' ? (
+                            <input
+                              type={f.type === 'number' ? 'number' : 'text'}
+                              value={String((row as any)?.[f.name] ?? '')}
+                              onChange={(e) => updateCell(rowIndex, f.name, f.type === 'number' ? Number(e.target.value) : e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '0.4rem',
+                                border: '1px solid #ccc',
+                                borderRadius: '3px',
+                                fontFamily: 'inherit',
+                                fontSize: 'inherit',
+                              }}
+                            />
+                          ) : f.type === 'checkbox' ? (
+                            <input
+                              type="checkbox"
+                              checked={Boolean((row as any)?.[f.name])}
+                              onChange={(e) => updateCell(rowIndex, f.name, e.target.checked)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          ) : (
+                            <span style={{ color: '#999' }}>–</span>
+                          )}
+                        </td>
+                      ))}
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => addRow(rowIndex)}
+                            title="Add row after this"
+                            style={{
+                              padding: '0.3rem 0.5rem',
+                              fontSize: '0.8rem',
+                              backgroundColor: '#007bff',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveRow(rowIndex, 'up')}
+                            disabled={rowIndex === 0}
+                            title="Move up"
+                            style={{
+                              padding: '0.3rem 0.5rem',
+                              fontSize: '0.8rem',
+                              backgroundColor: rowIndex === 0 ? '#ccc' : '#6c757d',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: rowIndex === 0 ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveRow(rowIndex, 'down')}
+                            disabled={rowIndex === rows.length - 1}
+                            title="Move down"
+                            style={{
+                              padding: '0.3rem 0.5rem',
+                              fontSize: '0.8rem',
+                              backgroundColor: rowIndex === rows.length - 1 ? '#ccc' : '#6c757d',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: rowIndex === rows.length - 1 ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteRow(rowIndex)}
+                            title="Delete row"
+                            style={{
+                              padding: '0.3rem 0.5rem',
+                              fontSize: '0.8rem',
+                              backgroundColor: '#dc3545',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              if (rows.length === 0) {
+                addRow(-1)
+              } else {
+                addRow(rows.length - 1)
+              }
+            }}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+          >
+            Add row
+          </button>
+        </div>
+      )
+    }
+    case 'link':
+      return <LinkField value={value} onChange={onChange} label={field.label} helpText={field.helpText} />
+    case 'icon':
+      return <IconPickerField value={value} onChange={onChange} label={field.label} helpText={field.helpText} />
+    case 'typography':
+      return (
+        <label className="ve-field ve-field--full">
+          <span>{field.label}</span>
+          <TypographyPopoverField value={value} onChange={onChange} />
+          {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
+        </label>
+      )
+    case 'shadow':
+      return (
+        <label className="ve-field ve-field--full">
+          <span>{field.label}</span>
+          <ShadowPopoverField value={value} onChange={onChange} />
+          {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
+        </label>
+      )
+    case 'gradient':
+      return (
+        <div className="ve-field ve-field--full">
+          <span>{field.label}</span>
+          <GradientEditorField value={value} onChange={onChange} />
+          {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
+        </div>
+      )
     default:
       return null
   }

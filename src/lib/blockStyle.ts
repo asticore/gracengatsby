@@ -70,6 +70,15 @@ export type BlockStyle = {
   bgImageUrl?: string | null
   /** 0-100. Darkens an image background so text stays readable. */
   bgOverlay?: number
+  /** General background overlay layer (any section or block). Legacy bgOverlay is separate. */
+  overlayType?: 'none' | 'color' | 'gradient'
+  overlayColor?: string
+  overlayColor2?: string
+  /** 0-360 (default 180). */
+  overlayAngle?: number
+  /** 0-100 (default 50). */
+  overlayOpacity?: number
+  overlayBlend?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'soft-light' | 'color' | 'luminosity'
 
   // Spacing (px)
   paddingTop?: number
@@ -304,6 +313,15 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   if (raw.particlesLinks !== undefined && typeof raw.particlesLinks !== 'boolean') drop('particlesLinks')
   colorKey('bgEffectColor')
   colorKey('bgEffectColor2')
+  enumKey('overlayType', [{ value: 'none' }, { value: 'color' }, { value: 'gradient' }])
+  colorKey('overlayColor')
+  colorKey('overlayColor2')
+  numKey('overlayAngle', 0, 360)
+  numKey('overlayOpacity', 0, 100)
+  enumKey('overlayBlend', [
+    { value: 'normal' }, { value: 'multiply' }, { value: 'screen' }, { value: 'overlay' },
+    { value: 'soft-light' }, { value: 'color' }, { value: 'luminosity' },
+  ])
   if (raw.glass !== undefined && typeof raw.glass !== 'boolean') drop('glass')
   return out as BlockStyle
 }
@@ -417,7 +435,23 @@ const FX_KEYS = [
   'dividerTop', 'dividerBottom', 'dividerTopAnim', 'dividerBottomAnim', 'dividerTopSpeed', 'dividerBottomSpeed',
   'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
   'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
+  'overlayType', 'overlayColor', 'overlayColor2', 'overlayAngle', 'overlayOpacity', 'overlayBlend',
 ] as const
+
+/** Background overlay layer. Null when off (legacy bgOverlay is rendered separately). */
+export function overlayStyle(style: BlockStyle): React.CSSProperties | null {
+  if (style.overlayType === undefined || style.overlayType === 'none') return null
+  const opacity = (style.overlayOpacity ?? 50) / 100
+  const out: React.CSSProperties = { opacity }
+  if (style.overlayType === 'color') {
+    out.background = style.overlayColor || '#000000'
+  } else {
+    const angle = style.overlayAngle ?? 180
+    out.background = `linear-gradient(${angle}deg, ${style.overlayColor || '#000000'}, ${style.overlayColor2 || 'transparent'})`
+  }
+  if (style.overlayBlend && style.overlayBlend !== 'normal') out.mixBlendMode = style.overlayBlend
+  return out
+}
 
 const TEXT_ALIGNS: readonly string[] = ['left', 'center', 'right']
 const SELF_ALIGNS: readonly string[] = ['stretch', 'start', 'center', 'end']

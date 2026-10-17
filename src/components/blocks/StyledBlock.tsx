@@ -20,6 +20,7 @@ import {
   type DividerShape,
 } from '@/lib/blockStyle'
 
+import { BgVideo } from './BgVideo'
 import ParticlesBackground from './ParticlesLazy'
 
 /**
@@ -63,6 +64,7 @@ export const StyledBlock: React.FC<{
       {parsed.parallax === 'background' && parsed.bgType === 'image' && parsed.bgImageUrl && (
         <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${parsed.bgImageUrl})` }} />
       )}
+      {parsed.bgType === 'video' && <BgVideo src={parsed.bgVideoUrl} poster={parsed.bgVideoPoster} loop={parsed.bgVideoLoop} />}
       {hasFxLayer(parsed) && (
         <div className={`be-fx be-fx--${parsed.bgEffect}`} aria-hidden="true">
           {parsed.bgEffect === 'particles' && (

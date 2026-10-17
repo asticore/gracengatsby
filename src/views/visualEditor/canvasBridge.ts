@@ -78,3 +78,13 @@ export type ColumnToParentMessage = { source: typeof SOURCE; type: 'columnOp'; p
 /** Narrows an incoming message to a column operation (the base union above predates it). */
 export const isColumnOpMessage = (data: unknown): data is ColumnToParentMessage =>
   isBridgeMessage(data) && (data as { type?: unknown }).type === 'columnOp'
+
+/** Double-click rename of a section tab / accordion panel on the canvas. `label` is '' to clear it. */
+export type RenameColumnToParentMessage = { source: typeof SOURCE; type: 'renameColumn'; path: NodePath; label: string }
+
+/** Narrows an incoming message to a column rename (even-length path, i.e. a column - see above). */
+export const isRenameColumnMessage = (data: unknown): data is RenameColumnToParentMessage => {
+  if (!isBridgeMessage(data)) return false
+  const msg = data as { type?: unknown; path?: unknown; label?: unknown }
+  return msg.type === 'renameColumn' && Array.isArray(msg.path) && msg.path.length > 0 && msg.path.length % 2 === 0 && typeof msg.label === 'string'
+}

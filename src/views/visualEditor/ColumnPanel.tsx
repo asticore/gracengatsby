@@ -141,6 +141,17 @@ export const ColumnPanel: React.FC<{
         {tab === 'layout' && (
           <fieldset className="ve-lockset" disabled={!canEditLayout}>
             <div className="ve-section-fields">
+              {(flow?.display === 'tabs' || flow?.display === 'accordion') && (
+                <div className="ve-row">
+                  <label className="ve-row__label">{flow.display === 'tabs' ? 'Tab title' : 'Panel title'}</label>
+                  <input
+                    type="text"
+                    value={column.label || ''}
+                    placeholder={`${flow.display === 'tabs' ? 'Tab' : 'Panel'} ${index + 1}`}
+                    onChange={(e) => onChange({ ...column, label: e.target.value || undefined })}
+                  />
+                </div>
+              )}
               <p className="ve-panel__hint">
                 A column is one stack of blocks inside a section. Select a column by clicking an empty part of it on the canvas.
                 {device !== 'desktop' && ` You are editing the ${ORDER_NAME[device]} layout; anything left unset follows ${INHERIT_FROM[device]}.`}

@@ -398,7 +398,6 @@ const orderChain = (k: 'd' | 't' | 'm') => chain(k, (x) => [`--be-col-order-${x}
 /** Width of a stacked column: the first explicit value among `run` (this device, then wider ones), else full width. */
 const widthChain = (run: readonly ('d' | 't' | 'm')[]): string =>
   [...run].reduceRight<string>((acc, x) => `var(--be-col-${x}-w,var(--be-col-${x},${acc}))`, '100%')
-
 const stackDecls = (run: readonly ('d' | 't' | 'm')[]): string => `flex-basis:auto;flex-grow:0;width:${widthChain(run)};max-width:100%`
 
 /**

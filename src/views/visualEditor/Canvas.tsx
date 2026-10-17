@@ -142,7 +142,8 @@ const CanvasNode: React.FC<{
   const wrapperStyle: React.CSSProperties = {
     ...blockStyleToCss(design),
     ...blockFxVars(design),
-    opacity: isDragging ? 0.4 : undefined,
+    // Only override opacity while dragging; an unconditional `opacity: undefined` would drop the design's opacity.
+    ...(isDragging ? { opacity: 0.4 } : {}),
   }
   // Tablet / mobile overrides: the canvas iframe is as wide as the previewed device, so the same
   // media rules the live page uses apply here (hidden-on-this-device blocks are faded, not removed).
@@ -396,7 +397,6 @@ const SectionColumns: React.FC<{
       </div>
     )
   }
-
   const ownerLocked = Boolean(handlers.locks?.[pathKey(path)]?.blocked)
 
   if (panelMode) {

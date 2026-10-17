@@ -83,3 +83,22 @@
 .be-tabs>.be-tabs__radio:nth-of-type(16):focus-visible~.be-tabs__list>.be-tabs__tab:nth-child(16){outline:2px solid var(--be-tab-color);outline-offset:2px}
 .ve-section.ve-tabs{display:block}
 .ve-section.ve-tabs>.ve-column{width:100%;max-width:100%}
+
+/* Carousel display: columns become slides in a horizontal scroll-snap track (no JavaScript).
+   Every slide stays in the DOM; the arrows are anchors to the neighbouring slide. */
+.be-carousel{position:relative;display:block;min-width:0}
+.be-carousel__track{display:flex;flex-wrap:nowrap;gap:var(--be-carousel-gap,16px);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:2px}
+.be-carousel__track:focus-visible{outline:2px solid var(--be-tab-color,#2563eb);outline-offset:2px}
+.be-carousel__track::-webkit-scrollbar{height:6px}
+.be-carousel__track::-webkit-scrollbar-thumb{background:rgba(128,128,128,.45);border-radius:3px}
+.be-carousel__slide{position:relative;box-sizing:border-box;min-width:0;flex:0 0 calc((100% - var(--be-carousel-gap,16px) * (var(--be-carousel-per,1) - 1)) / var(--be-carousel-per,1));scroll-snap-align:start;width:auto;max-width:none}
+.be-carousel__arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(17,24,39,.6);color:#fff;text-decoration:none;font-size:26px;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.be-carousel__arrow:hover{background:rgba(17,24,39,.85)}
+.be-carousel__arrow:focus-visible{outline:2px solid var(--be-tab-color,#2563eb);outline-offset:2px}
+.be-carousel__arrow--prev{left:8px}
+.be-carousel__arrow--next{right:8px}
+@media (prefers-reduced-motion: reduce){.be-carousel__track{scroll-behavior:auto}}
+/* editor canvas: the same row, shown as a horizontal strip of slides */
+.ve-carousel__hint{margin:0 0 8px;font-size:12px;opacity:.7}
+.ve-section.ve-carousel__track{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;gap:var(--be-carousel-gap,16px);padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.ve-section.ve-carousel__track>.ve-column{flex:0 0 calc((100% - var(--be-carousel-gap,16px) * (var(--be-carousel-per,1) - 1)) / var(--be-carousel-per,1));width:auto;max-width:none;scroll-snap-align:start;min-width:0}

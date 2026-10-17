@@ -40,7 +40,9 @@ import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
 import { NAVIGATOR_CSS } from './visualEditor/navigator.styles'
 import { canRedo, canUndo, clampPath, createHistory, pushHistory, redoHistory, undoHistory, type History } from './visualEditor/history'
-import { planPaste, readClipboard, readStyleClipboard, serializeSelection, serializeStyle, writeClipboard, writeStyleClipboard } from './visualEditor/editorClipboard'
+import { planPaste, readClipboard, readStyleClipboard, serializeSelection, serializeStyle, withFreshIds, writeClipboard, writeStyleClipboard } from './visualEditor/editorClipboard'
+import { ImportExportModal } from './visualEditor/ImportExportModal'
+import { IMPORT_EXPORT_CSS } from './visualEditor/importExport.styles'
 import { useEditorShortcuts } from './visualEditor/useEditorShortcuts'
 import { ContextMenu, type ContextMenuItem } from './visualEditor/ContextMenu'
 import { ShortcutsHelp } from './visualEditor/ShortcutsHelp'
@@ -106,6 +108,7 @@ export const VisualEditorView: React.FC = () => {
   const [roleChoices, setRoleChoices] = useState<string[]>(['editor', 'viewer'])
   const [lockNotice, setLockNotice] = useState<string | null>(null)
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [templateToast, setTemplateToast] = useState<string | null>(null)
   const [frameReady, setFrameReady] = useState(false)
   // Form builder state (only used when the surface is the Forms collection).
@@ -519,6 +522,35 @@ export const VisualEditorView: React.FC = () => {
     setTimeout(() => setTemplateToast(null), ms)
   }, [])
 
+  /* Import / Export: same insert and lock rules as paste; replace goes through applyBlocks so undo restores it. */
+  const closeImport = useCallback(() => setImportOpen(false), [])
+  const importAppend = useCallback(
+    (nodes: SectionNode[]): boolean => {
+      if (insertBlocked([])) return false
+      insertTemplateAt(nodes, [], blocksRef.current.length)
+      flashNotice(`Imported ${nodes.length} top-level ${nodes.length === 1 ? 'block' : 'blocks'}`, 2500)
+      return true
+    },
+    [insertBlocked, insertTemplateAt, flashNotice],
+  )
+  const importReplace = useCallback(
+    (nodes: SectionNode[]): boolean => {
+      if (insertBlocked([])) return false
+      if (Object.keys(lockCtx.current.locks.nodes).length > 0) {
+        setLockNotice('This page has section locks, so it cannot be replaced. Append instead, or remove the locks first.')
+        setTimeout(() => setLockNotice(null), 5000)
+        return false
+      }
+      const fresh = withFreshIds(nodes, nextId)
+      applyBlocks(() => fresh)
+      setSelectedPath(null)
+      setInsertTarget({ containerPath: [], at: fresh.length })
+      flashNotice(`Replaced the page with ${fresh.length} top-level ${fresh.length === 1 ? 'block' : 'blocks'}`, 2500)
+      return true
+    },
+    [insertBlocked, applyBlocks, flashNotice],
+  )
+
   const copyNode = useCallback(async (path: NodePath): Promise<boolean> => {
     const serialized = serializeSelection(blocksRef.current, path)
     if (!serialized) return false
@@ -671,7 +703,7 @@ export const VisualEditorView: React.FC = () => {
 
   // Keyboard shortcuts: the parent's own key presses and the ones forwarded from the frame share this handler.
   const { handleKey } = useEditorShortcuts({
-    enabled: !loading && !saveTemplateOpen && !menu,
+    enabled: !loading && !saveTemplateOpen && !importOpen && !menu,
     hasSelection: Boolean(selectedPath),
     handlers: {
       undo,
@@ -958,6 +990,7 @@ export const VisualEditorView: React.FC = () => {
       { }
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: NAVIGATOR_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: IMPORT_EXPORT_CSS }} />
       <div className="ve-topbar">
         <div className="ve-topbar__left">
           <a
@@ -1009,6 +1042,9 @@ export const VisualEditorView: React.FC = () => {
               Redo
             </button>
           </div>
+          <button type="button" className="ve-btn ve-btn--ghost" onClick={() => setImportOpen(true)} title="Import or export this page as JSON">
+            Import / Export
+          </button>
           <ShortcutsHelp modLabel={modLabel} />
           <div className="ve-device-toggle" role="group" aria-label="Preview device">
             <button
@@ -1204,6 +1240,9 @@ export const VisualEditorView: React.FC = () => {
             setTimeout(() => setTemplateToast(null), 4000)
           }}
         />
+      )}
+      {importOpen && (
+        <ImportExportModal blocks={blocks} title={docTitle} onClose={closeImport} onAppend={importAppend} onReplace={importReplace} />
       )}
       {templateToast && (
         <div className="ve-tpl__toast" role="status">

@@ -8,7 +8,7 @@ import { safeUrl } from '@/lib/mergeTags'
 import { Icon, SocialGlyph } from './icons'
 import { StarsRow } from './InteractiveElements'
 import { alignClass } from './TextElements'
-import { cells, flag, linkAttrs, linkHref, lines, mediaOf, num, pick, str } from './elementUtil'
+import { cells, flag, iconName, linkAttrs, linkHref, lines, mediaOf, num, pick, str } from './elementUtil'
 
 type P = Record<string, unknown>
 
@@ -137,7 +137,7 @@ export const FlipBoxElement: React.FC<P> = (p) => {
     <div className="el-flip" tabIndex={0} style={{ height }}>
       <div className="el-flip__inner">
         <div className="el-flip__face el-flip__front">
-          <Icon name={str(p.icon, 'sparkle')} size={36} />
+          <Icon name={iconName(p.icon) || 'sparkle'} size={36} />
           <h3>{str(p.frontTitle, 'Front')}</h3>
           <p>{str(p.frontText)}</p>
         </div>
@@ -188,7 +188,7 @@ const Titled: React.FC<{ tag: unknown; link: unknown; children: React.ReactNode 
 /** `icon-box`: an icon above (or beside) a title and text. */
 export const IconBoxElement: React.FC<P> = (p) => (
   <div className={`el-box el-box--icon el-box--${pick(p.layout, ['top', 'left'] as const, 'top')} ${alignClass(p.align)}`}>
-    <Icon name={str(p.icon, 'star')} size={num(p.size, 40, 16, 120)} className="el-box__icon" />
+    <Icon name={iconName(p.icon) || 'star'} size={num(p.size, 40, 16, 120)} className="el-box__icon" />
     <div className="el-box__body">
       <Titled tag={p.tag} link={p.link}>
         {str(p.title, 'Icon box')}

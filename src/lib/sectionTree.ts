@@ -52,6 +52,8 @@ export type SectionNode = {
 
 export type SectionColumn = {
   _id?: string
+  /** Editor-only name shown in the Navigator tree. */
+  label?: string
   /** Legacy desktop-only width - still read as the desktop fallback when widthDesktop is unset. */
   width?: ColumnWidth
   /** Per-breakpoint overrides. Tablet/mobile cascade from the breakpoint above when unset - see columnWidthVars(). */
@@ -134,6 +136,7 @@ export function parseColumns(value: unknown): SectionColumn[] {
 function normalizeColumn(column: SectionColumn): SectionColumn {
   return {
     _id: typeof column._id === 'string' ? column._id : undefined,
+    ...(typeof column.label === 'string' && column.label ? { label: column.label } : {}),
     width: isColumnWidth(column.width) ? column.width : 12,
     widthDesktop: normalizeResponsiveWidth(column.widthDesktop),
     widthTablet: normalizeResponsiveWidth(column.widthTablet),

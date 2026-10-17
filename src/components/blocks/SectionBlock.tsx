@@ -1,7 +1,7 @@
 import React from 'react'
 
-import { asBlockStyle, blockStyleClasses, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
-import { parseSectionLayout, sectionLayoutProps } from '@/lib/sectionLayout'
+import { asBlockStyle, blockFxClasses, blockStyleClasses, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
+import { carouselStyle, parseSectionLayout, sectionLayoutProps } from '@/lib/sectionLayout'
 import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { safeScope, StyledBlock } from './StyledBlock'
@@ -33,6 +33,43 @@ export const SectionBlock: React.FC<{
   const layout = sectionLayoutProps(rawLayout)
   const parsedLayout = parseSectionLayout(rawLayout)
   const display = parsedLayout?.display
+
+  if (display === 'carousel') {
+    // Every column is a slide in a horizontal scroll-snap track. All slides stay in the HTML (SEO);
+    // the arrows are plain anchors to the neighbouring slide, so no JavaScript is needed.
+    const uid = `be-${safeScope(scope)}`
+    const count = parsed.length
+    const slideId = (index: number) => `${uid}-s${index}`
+    const arrows = parsedLayout?.carouselArrows === true && count > 1
+    return (
+      <div className="be-carousel" data-depth={depth} style={carouselStyle(rawLayout) as React.CSSProperties} role="region" aria-roledescription="carousel" aria-label="Carousel">
+        <div className="be-carousel__track" tabIndex={0}>
+          {parsed.map((column, index) => (
+            <div
+              key={column._id || index}
+              id={slideId(index)}
+              className="be-carousel__slide"
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${index + 1} of ${count}`}
+            >
+              <SectionColumnView column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
+              {arrows && index > 0 && (
+                <a className="be-carousel__arrow be-carousel__arrow--prev" href={`#${slideId(index - 1)}`} aria-label={`Previous slide, ${index} of ${count}`}>
+                  <span aria-hidden="true">{'\u2039'}</span>
+                </a>
+              )}
+              {arrows && index < count - 1 && (
+                <a className="be-carousel__arrow be-carousel__arrow--next" href={`#${slideId(index + 1)}`} aria-label={`Next slide, ${index + 2} of ${count}`}>
+                  <span aria-hidden="true">{'\u203a'}</span>
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   if (display === 'tabs' || display === 'accordion') {
     // Every panel is rendered into the HTML; only CSS (tabs) or <details> (accordion) hides it.
@@ -134,7 +171,7 @@ const SectionColumnView: React.FC<{
       id={design.anchorId || (columnCss ? columnScope : panel?.id)}
       role={panel?.role}
       aria-labelledby={panel?.labelledBy}
-      className={`be-column ${blockStyleClasses(design)}`}
+      className={`be-column ${blockStyleClasses(design)} ${blockFxClasses(design)}`}
       style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
     >
       {columnCss && <style dangerouslySetInnerHTML={{ __html: columnCss }} />}

@@ -378,13 +378,15 @@ const SectionLayoutFields: React.FC<{
       <Accordion title="Section" defaultOpen>
         <SelectRow
           label="Display as"
-          help="Tabs / Accordion turn each column into a panel. Carousel shows each column as a slide. Name a panel in its column settings."
+          help="Tabs / Accordion turn each column into a panel. Carousel shows each column as a slide. Grid lays the columns out as equal cells. Popup opens them in a dialog from a button. Name a panel in its column settings."
           value={layout.display || 'columns'}
           options={[
             { label: 'Columns', value: 'columns' },
             { label: 'Tabs', value: 'tabs' },
             { label: 'Accordion', value: 'accordion' },
             { label: 'Carousel', value: 'carousel' },
+            { label: 'Grid', value: 'grid' },
+            { label: 'Popup', value: 'modal' },
           ]}
           onChange={(v) => setLayout({ display: v === 'columns' ? undefined : (v as SectionLayout['display']) })}
         />
@@ -422,6 +424,87 @@ const SectionLayoutFields: React.FC<{
               help="Previous and next arrows on each slide. Swiping or scrolling works either way."
               checked={layout.carouselArrows === true}
               onChange={(on) => setLayout({ carouselArrows: on ? true : undefined })}
+            />
+          </>
+        )}
+        {layout.display === 'grid' && (
+          <>
+            <NumberRow
+              label="Columns per row"
+              value={layout.gridColumns}
+              min={1}
+              max={6}
+              placeholder="3"
+              onChange={(v) => setLayout({ gridColumns: v === undefined ? undefined : Math.min(6, Math.max(1, Math.round(v))) })}
+            />
+            <NumberRow
+              label="Columns per row on tablet"
+              help="Leave empty to keep the desktop count."
+              value={layout.gridColumnsTablet}
+              min={1}
+              max={6}
+              placeholder="same"
+              onChange={(v) => setLayout({ gridColumnsTablet: v === undefined ? undefined : Math.min(6, Math.max(1, Math.round(v))) })}
+            />
+            <NumberRow
+              label="Columns per row on mobile"
+              value={layout.gridColumnsMobile}
+              min={1}
+              max={6}
+              placeholder="1"
+              onChange={(v) => setLayout({ gridColumnsMobile: v === undefined ? undefined : Math.min(6, Math.max(1, Math.round(v))) })}
+            />
+            <NumberRow
+              label="Cell gap (px)"
+              value={layout.gridGap}
+              min={0}
+              max={64}
+              placeholder="16"
+              onChange={(v) => setLayout({ gridGap: v === undefined ? undefined : Math.min(64, Math.max(0, v)) })}
+            />
+            <SelectRow
+              label="Cell alignment"
+              help="Stretch makes cards in a row the same height."
+              value={layout.gridAlign || 'stretch'}
+              options={[
+                { label: 'Stretch (equal height)', value: 'stretch' },
+                { label: 'Top', value: 'start' },
+                { label: 'Centre', value: 'center' },
+                { label: 'Bottom', value: 'end' },
+              ]}
+              onChange={(v) => setLayout({ gridAlign: v === 'stretch' ? undefined : (v as SectionLayout['gridAlign']) })}
+            />
+          </>
+        )}
+        {layout.display === 'modal' && (
+          <>
+            <div className="ve-row">
+              <label className="ve-row__label">Button text</label>
+              <input
+                type="text"
+                maxLength={60}
+                placeholder="Open"
+                value={layout.modalLabel || ''}
+                onChange={(e) => setLayout({ modalLabel: e.target.value === '' ? undefined : e.target.value })}
+                aria-label="Button text"
+              />
+            </div>
+            <NumberRow
+              label="Dialog width (px)"
+              value={layout.modalWidth}
+              min={320}
+              max={1200}
+              placeholder="640"
+              onChange={(v) => setLayout({ modalWidth: v === undefined ? undefined : Math.min(1200, Math.max(320, v)) })}
+            />
+            <SelectRow
+              label="Trigger style"
+              value={layout.modalStyle || 'button'}
+              options={[
+                { label: 'Button', value: 'button' },
+                { label: 'Text link', value: 'link' },
+              ]}
+              onChange={(v) => setLayout({ modalStyle: v === 'link' ? 'link' : undefined })}
             />
           </>
         )}

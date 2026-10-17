@@ -1,5 +1,19 @@
 import { safeUrl } from '@/lib/mergeTags'
 
+import { ICON_NAMES } from './icons'
+
+const ICON_SET = new Set(ICON_NAMES)
+
+/**
+ * A stored built-in icon name. Accepts the plain string the picker saves ("star") or an {icon} object holding one.
+ * Returns '' for anything that is not in the built-in set, so callers can fall back to their own default glyph.
+ */
+export function iconName(v: unknown): string {
+  const raw = typeof v === 'string' ? v : v && typeof v === 'object' ? (v as { icon?: unknown }).icon : undefined
+  const name = typeof raw === 'string' ? raw.trim() : ''
+  return ICON_SET.has(name) ? name : ''
+}
+
 /** A media item as renderers need it. The canvas and the live site both resolve stored ids to this shape. */
 export type MediaRef = { id?: number; url?: string | null; alt?: string | null }
 

@@ -248,13 +248,15 @@
     padding-block: 0.1em;
   }
 
-  /* Two classes so this beats the ".be-el-rotor__word:first-child" base rule. */
+  /* Distance from the moving position to this word, wrapped to the nearest copy of the cycle so the last word
+     crossfades into the first (without the wrap the headline went blank, then popped back to word 1).
+     Two classes so this beats the ".be-el-rotor__word:first-child" base rule. */
   .be-el-rotor__track > .be-el-rotor__word {
-    opacity: clamp(0, calc(1 - abs(var(--be-el-p) - var(--be-el-i))), 1);
+    opacity: clamp(0, calc(1 - abs(mod(var(--be-el-p) - var(--be-el-i) + var(--be-el-n) / 2, var(--be-el-n)) - var(--be-el-n) / 2)), 1);
   }
 
   .be-el-rotor--slide .be-el-rotor__word {
-    transform: translateY(calc((var(--be-el-p) - var(--be-el-i)) * 100%));
+    transform: translateY(calc((mod(var(--be-el-p) - var(--be-el-i) + var(--be-el-n) / 2, var(--be-el-n)) - var(--be-el-n) / 2) * 100%));
   }
 }
 

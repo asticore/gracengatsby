@@ -1,4 +1,4 @@
-import { ICON_OPTIONS, SOCIAL_NETWORKS } from '@/components/blocks/elements/icons'
+import { SOCIAL_NETWORKS } from '@/components/blocks/elements/icons'
 import { RATIO_OPTIONS } from '@/components/blocks/elements/elementUtil'
 
 import type { EditorField } from './fieldTypes'
@@ -18,7 +18,8 @@ const select = (name: string, label: string, options: { label: string; value: st
 const number = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'number', width: 'half', helpText })
 /** Range slider for a numeric prop. Stores a plain number, same as `number`. min/max mirror the renderer's clamp. */
 const slider = (name: string, label: string, min: number, max: number, step = 1): EditorField => ({ name, label, type: 'range', width: 'half', min, max, step })
-const icon = (name = 'icon'): EditorField => select(name, 'Icon', ICON_OPTIONS)
+/** Icon from the built-in set (src/components/blocks/elements/icons.tsx). Stored as the plain name, e.g. "star". */
+const icon = (name = 'icon'): EditorField => ({ name, label: 'Icon', type: 'icon', iconSet: 'builtin' })
 const link = (name = 'link', label = 'Link (optional)'): EditorField => ({ name, label, type: 'link' })
 const urlLines: EditorField = area('urls', 'Or image addresses', 'One per line: "https://... | alt text". Added after the pictures chosen above.')
 

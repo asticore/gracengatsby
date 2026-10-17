@@ -20,6 +20,7 @@ import { CANVAS_ORIGIN, isBridgeMessage } from './canvasBridge'
 import { pathKey, type NodePath } from './treeOps'
 import { isEditableTarget, resolveShortcut } from './useEditorShortcuts'
 import { VISUAL_EDITOR_CSS } from './visualEditor.styles'
+import { CanvasInlineEditor, type InlineEditorProps } from './CanvasInlineEditor'
 
 /** Pointer must be within this many px of a valid insert slot for a drop to count. */
 const SLOT_REACH = 160
@@ -76,6 +77,9 @@ export const CanvasFrame: React.FC = () => {
   const [drag, setDrag] = useState<{ path: NodePath; label: string } | null>(null)
   const [dragOver, setDragOver] = useState(false)
 
+  // Inline text editor state: when active, renders CanvasInlineEditor overlay
+  const [inlineEdit, setInlineEdit] = useState<InlineEditorProps | null>(null)
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   useEffect(() => {
@@ -93,6 +97,30 @@ export const CanvasFrame: React.FC = () => {
         setSelectedPath(msg.selectedPath)
       } else if (msg.type === 'dragHover') {
         setDragHoverKey(msg.key)
+      } else if (msg.type === 'startEdit') {
+        setInlineEdit({
+          blockId: msg.blockId,
+          elementType: msg.elementType,
+          field: msg.field,
+          value: msg.value,
+          device: msg.device,
+          onSave: (newValue) => {
+            post({
+              source: 've-canvas',
+              type: 'editDone',
+              blockId: msg.blockId,
+              field: msg.field,
+              value: newValue,
+              device: msg.device,
+            })
+            setInlineEdit(null)
+          },
+          onCancel: () => {
+            setInlineEdit(null)
+          },
+        })
+      } else if (msg.type === 'endEdit') {
+        setInlineEdit(null)
       }
     }
     window.addEventListener('message', onMessage)
@@ -227,6 +255,8 @@ export const CanvasFrame: React.FC = () => {
           {drag ? <div className="ve-drag-ghost">{drag.label}</div> : null}
         </DragOverlay>
       </DndContext>
+
+      {inlineEdit && <CanvasInlineEditor {...inlineEdit} />}
     </div>
   )
 }

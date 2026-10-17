@@ -14,6 +14,7 @@ import { applyColumnOp, buildSectionNode, getColumn, getColumnOwner, isColumnPat
 import { ColumnPanel } from './visualEditor/ColumnPanel'
 import { StructurePicker } from './visualEditor/StructurePicker'
 import { EditorDock, type DockTab } from './visualEditor/EditorDock'
+import { NavigatorPanel, type NavigatorCollection } from './visualEditor/NavigatorPanel'
 import {
   cloneNode,
   getList,
@@ -38,7 +39,7 @@ import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
 import { canRedo, canUndo, clampPath, createHistory, pushHistory, redoHistory, undoHistory, type History } from './visualEditor/history'
-import { planPaste, readClipboard, serializeSelection, writeClipboard } from './visualEditor/editorClipboard'
+import { planPaste, readClipboard, readStyleClipboard, serializeSelection, serializeStyle, writeClipboard, writeStyleClipboard } from './visualEditor/editorClipboard'
 import { useEditorShortcuts } from './visualEditor/useEditorShortcuts'
 import { ContextMenu, type ContextMenuItem } from './visualEditor/ContextMenu'
 import { ShortcutsHelp } from './visualEditor/ShortcutsHelp'
@@ -112,8 +113,10 @@ export const VisualEditorView: React.FC = () => {
   const [embedKey, setEmbedKey] = useState<string | undefined>(undefined)
   const [publishedLayout, setPublishedLayout] = useState<unknown>(null)
   const formMode = surface?.formMode === true
+  const [navigatorExpandedState, setNavigatorExpandedState] = useState<Record<string, boolean>>({})
 
   const [menu, setMenu] = useState<{ x: number; y: number; path: NodePath } | null>(null)
+  const [hasStyleClipboard, setHasStyleClipboard] = useState(false)
 
   // Undo/redo. The history lives in a ref (it changes on every edit); `historyTick` re-renders
   // the toolbar buttons when it does. blocksRef/selectedRef always hold the latest values so
@@ -499,6 +502,64 @@ export const VisualEditorView: React.FC = () => {
     insertTemplateAt(result.nodes, containerPath, at)
   }, [flashNotice, insertTemplateAt])
 
+  const copyStyle = useCallback(async (path: NodePath) => {
+    const node = getNode(blocksRef.current, path)
+    if (!node) return false
+    const design = node.design || {}
+    const serialized = serializeStyle(design, device)
+    if (!serialized) return false
+    const where = await writeStyleClipboard(serialized.text)
+    setHasStyleClipboard(true)
+    flashNotice(where === 'system' ? 'Style copied' : 'Style copied (kept inside the editor only)', 2500)
+    return true
+  }, [device, flashNotice])
+
+  const pasteStyle = useCallback(async (path: NodePath | null) => {
+    if (!path || path.length === 0) return
+    const result = await readStyleClipboard()
+    if (result.ok === false) {
+      flashNotice(result.error)
+      return
+    }
+    const { design: sourceDesign, device: sourceDevice } = result
+    const targetNode = getNode(blocksRef.current, path)
+    if (!targetNode) return
+
+    let updatedNode: SectionNode
+    if (sourceDevice === device) {
+      // Same device: replace the design object
+      updatedNode = { ...targetNode, design: sourceDesign }
+    } else {
+      // Different device: set device override in the existing design object
+      const existingDesign = (targetNode.design || {}) as Record<string, unknown>
+      updatedNode = {
+        ...targetNode,
+        design: {
+          ...existingDesign,
+          [sourceDevice]: sourceDesign,
+        },
+      }
+    }
+
+    const editedBlocks = updateNode(blocksRef.current, path, () => updatedNode)
+    const before = { blocks: blocksRef.current, selectedPath: selectedRef.current }
+    blocksRef.current = editedBlocks
+    setBlocks(editedBlocks)
+    historyRef.current = pushHistory(historyRef.current, before, { key: 'pasteStyle' })
+    syncHistory()
+    setDirty(true)
+    flashNotice('Style pasted')
+  }, [device, flashNotice, syncHistory])
+
+  // Check style clipboard when context menu opens
+  useEffect(() => {
+    if (!menu) return
+    void (async () => {
+      const result = await readStyleClipboard()
+      setHasStyleClipboard(result.ok === true)
+    })()
+  }, [menu])
+
   /* ---------------------------------------------------------------------- */
   /* Canvas iframe bridge - see visualEditor/canvasBridge.ts                */
   /* ---------------------------------------------------------------------- */
@@ -808,6 +869,8 @@ export const VisualEditorView: React.FC = () => {
       { id: 'cut', label: 'Cut', hint: `${modLabel}+X`, disabled: locked },
       { id: 'paste', label: 'Paste after', hint: `${modLabel}+V` },
       { id: 'duplicate', label: 'Duplicate', hint: `${modLabel}+D`, disabled: locked },
+      { id: 'copy-style', label: 'Copy style', divider: true },
+      { id: 'paste-style', label: 'Paste style', disabled: !hasStyleClipboard },
       { id: 'up', label: 'Move up', hint: 'Alt+Up', disabled: locked || index <= 0 },
       { id: 'down', label: 'Move down', hint: 'Alt+Down', disabled: locked || index >= list.length - 1 },
       ...(formMode ? [] : [{ id: 'template', label: 'Save as template' }]),
@@ -983,6 +1046,13 @@ export const VisualEditorView: React.FC = () => {
             setDockTab('settings')
           }}
           columnPanel={columnPanelNode}
+          navigatorPanel={
+            <NavigatorPanel
+              collections={[]}
+              expandedState={navigatorExpandedState}
+              onExpandedStateChange={setNavigatorExpandedState}
+            />
+          }
           formPanel={
             formMode ? (
               <FormSettingsPanel
@@ -1057,6 +1127,8 @@ export const VisualEditorView: React.FC = () => {
             if (id === 'copy') void copyNode(path)
             else if (id === 'cut') void cutNode(path)
             else if (id === 'paste') void pasteAt(path)
+            else if (id === 'copy-style') void copyStyle(path)
+            else if (id === 'paste-style') void pasteStyle(path)
             else if (id === 'duplicate') duplicateBlock(path)
             else if (id === 'delete') deleteBlock(path)
             else if (id === 'up') moveBlock(path, -1)

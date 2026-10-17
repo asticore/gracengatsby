@@ -9,8 +9,9 @@ import { ElementLibrary } from './ElementLibrary'
 import { FieldPanel } from './FieldPanel'
 import type { EditDevice } from './DesignPanel'
 import type { LockUi } from './LockControls'
+import { NavigatorPanel, type NavigatorCollection } from './NavigatorPanel'
 
-export type DockTab = 'elements' | 'settings' | 'form'
+export type DockTab = 'elements' | 'settings' | 'form' | 'navigator'
 
 /**
  * The persistent left dock - Elementor's left sidebar, not a popup: Elements
@@ -44,6 +45,8 @@ export const EditorDock: React.FC<{
   columnPanel?: React.ReactNode
   /** Opens a column of the selected section in the column panel. */
   onSelectColumn?: (index: number) => void
+  /** Navigator panel showing all pages/posts/products/events/FAQs in tree view. */
+  navigatorPanel?: React.ReactNode
 }> = ({
   collapsed,
   tab,
@@ -63,6 +66,7 @@ export const EditorDock: React.FC<{
   device,
   columnPanel,
   onSelectColumn,
+  navigatorPanel,
 }) => {
   // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
   // use the full width, same as Elementor's panel-collapse - nothing renders
@@ -91,6 +95,15 @@ export const EditorDock: React.FC<{
         >
           ⚙ Settings
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'navigator'}
+          className={`ve-dock__tab ${tab === 'navigator' ? 've-dock__tab--active' : ''}`}
+          onClick={() => onTabChange('navigator')}
+        >
+          📄 Navigator
+        </button>
         {formPanel && (
           <button
             type="button"
@@ -107,6 +120,8 @@ export const EditorDock: React.FC<{
       <div className="ve-dock__body">
         {tab === 'form' && formPanel ? (
           formPanel
+        ) : tab === 'navigator' ? (
+          navigatorPanel || <p className="ve-dock__empty">Navigator not available.</p>
         ) : tab === 'elements' ? (
           <ElementLibrary targetLabel={targetLabel} onPickBlock={onPickBlock} onPickTemplate={onPickTemplate} formMode={Boolean(formPanel)} />
         ) : columnPanel ? (

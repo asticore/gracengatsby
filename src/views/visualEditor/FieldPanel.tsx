@@ -378,12 +378,13 @@ const SectionLayoutFields: React.FC<{
       <Accordion title="Section" defaultOpen>
         <SelectRow
           label="Display as"
-          help="Tabs / Accordion turn each column into a panel. Name a panel in its column settings."
+          help="Tabs / Accordion turn each column into a panel. Carousel shows each column as a slide. Name a panel in its column settings."
           value={layout.display || 'columns'}
           options={[
             { label: 'Columns', value: 'columns' },
             { label: 'Tabs', value: 'tabs' },
             { label: 'Accordion', value: 'accordion' },
+            { label: 'Carousel', value: 'carousel' },
           ]}
           onChange={(v) => setLayout({ display: v === 'columns' ? undefined : (v as SectionLayout['display']) })}
         />
@@ -399,6 +400,30 @@ const SectionLayoutFields: React.FC<{
             ]}
             onChange={(v) => setLayout({ tabsAlign: v === 'start' ? undefined : (v as SectionLayout['tabsAlign']) })}
           />
+        )}
+        {layout.display === 'carousel' && (
+          <>
+            <SelectRow
+              label="Slides per view"
+              value={String(layout.carouselPerView ?? 1)}
+              options={[1, 2, 3, 4].map((n) => ({ label: String(n), value: String(n) }))}
+              onChange={(v) => setLayout({ carouselPerView: Number(v) === 1 ? undefined : (Number(v) as 2 | 3 | 4) })}
+            />
+            <NumberRow
+              label="Slide gap (px)"
+              value={layout.carouselGap}
+              min={0}
+              max={64}
+              placeholder="16"
+              onChange={(v) => setLayout({ carouselGap: v === undefined ? undefined : Math.min(64, Math.max(0, v)) })}
+            />
+            <CheckRow
+              label="Show arrows"
+              help="Previous and next arrows on each slide. Swiping or scrolling works either way."
+              checked={layout.carouselArrows === true}
+              onChange={(on) => setLayout({ carouselArrows: on ? true : undefined })}
+            />
+          </>
         )}
         {layout.display && (
           <div className="ve-row">

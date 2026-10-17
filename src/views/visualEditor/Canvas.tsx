@@ -174,7 +174,7 @@ const CanvasNode: React.FC<{
       )}
       <div className="ve-node__toolbar">
         <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to move">
-          ⠠
+          ⠿
         </button>
         <span className="ve-node__label">
           {lock && (

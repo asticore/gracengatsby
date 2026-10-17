@@ -57,6 +57,14 @@ const col = (width: number, blocks: SectionNode[]) => ({ width: width as 12, blo
 const section = (...columns: ReturnType<typeof col>[]): SectionNode => ({ blockType: 'section', columns })
 const heading = (text: string, align = 'center', tag = 'h2') => el('heading', { text, tag, align })
 
+/** A section shown as tabs / accordion: every panel is one full-width column titled by `label`. */
+const panelSection = (display: 'tabs' | 'accordion', panels: { label: string; blocks: SectionNode[] }[]): SectionNode => ({
+  blockType: 'section',
+  design: { layout: { display } },
+  columns: panels.map((p) => ({ width: 12 as const, label: p.label, blocks: p.blocks })),
+})
+const panelBlocks = (title: string, body: string): SectionNode[] => [heading(title, 'left', 'h3'), el('text-editor', { align: 'left', content: paragraph(body) })]
+
 
 /** A full-width band with its own background (colour here; switch it to an image under the section's Design). */
 const band = (design: Record<string, unknown>, ...columns: ReturnType<typeof col>[]): SectionNode => ({
@@ -111,20 +119,20 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     slug: 'hero-centered',
     name: 'Centered hero',
-    description: 'A big centred headline, a short paragraph and a call-to-action box.',
+    description: 'A big centred headline, a short paragraph and two buttons.',
     kind: 'section',
     category: 'hero',
-    blocks: () => [section(col(12, [heading('A headline that says it all', 'center', 'h1'), el('text-editor', { align: 'center' }), el('call-to-action')]))],
+    blocks: () => [section(col(12, [heading('A headline that says it all', 'center', 'h1'), el('text-editor', { align: 'center' }), button('Get started', '/contact'), button('Learn more', '/about', 'secondary')]))],
   },
   {
     slug: 'hero-split-image',
     name: 'Split hero with image',
-    description: 'Headline and call-to-action on the left, a picture on the right.',
+    description: 'Headline, text and buttons on the left, a picture on the right.',
     kind: 'section',
     category: 'hero',
     blocks: () => [
       section(
-        col(6, [heading('Welcome to our shop', 'left', 'h1'), el('text-editor', { align: 'left' }), el('call-to-action', { align: 'left' })]),
+        col(6, [heading('Welcome to our shop', 'left', 'h1'), el('text-editor', { align: 'left' }), button('Get started', '/contact', 'primary', 'left')]),
         col(6, [el('image', { ratio: '4:3' })]),
       ),
     ],
@@ -187,11 +195,45 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   },
   {
     slug: 'cta-banner',
-    name: 'Call-to-action banner',
-    description: 'A full-width banner with a heading and a button.',
+    name: 'Call to action',
+    description: 'A centred band with a heading, a line of text and a button, on a coloured background.',
     kind: 'section',
     category: 'cta',
     blocks: () => [ctaBand('Ready when you are', 'Tell people what to do next.', 'Get started', '/contact')],
+  },
+  {
+    slug: 'cta-two-buttons',
+    name: 'Call to action, two buttons',
+    description: 'A centred band with a heading, text and two buttons.',
+    kind: 'section',
+    category: 'cta',
+    blocks: () => [
+      band({ paddingTop: 56, paddingBottom: 56 }, col(12, [heading('Ready to get started?', 'center', 'h2'), el('text-editor', { align: 'center', content: paragraph('Join us today.') }), button('Get started', '/contact'), button('Talk to us', '/contact', 'secondary')])),
+    ],
+  },
+  {
+    slug: 'icon-box-set',
+    name: 'Icon, heading and text',
+    description: 'An icon, a heading and a paragraph in one column.',
+    kind: 'section',
+    category: 'features',
+    blocks: () => [section(col(12, [el('icon', { icon: 'leaf' }), heading('Made to last', 'center', 'h3'), el('text-editor', { align: 'center', content: paragraph('A short line about why it matters.') })]))],
+  },
+  {
+    slug: 'image-box-set',
+    name: 'Image, heading and text',
+    description: 'A picture with a heading and a paragraph beneath.',
+    kind: 'section',
+    category: 'features',
+    blocks: () => [section(col(12, [el('image', { ratio: '4:3' }), heading('A title for the picture', 'left', 'h3'), el('text-editor', { align: 'left', content: paragraph('A short description under the picture.') })]))],
+  },
+  {
+    slug: 'testimonial-quote',
+    name: 'Testimonial (quote + name)',
+    description: 'A quotation with the customer name beneath.',
+    kind: 'section',
+    category: 'testimonials',
+    blocks: () => [section(col(12, [el('quote', { text: 'Exactly what I hoped for. Will order again.', cite: '', style: 'large', align: 'center' }), heading('Sam T.', 'center', 'h3')]))],
   },
   {
     slug: 'gallery-grid',
@@ -255,6 +297,34 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
         col(4, [el('team-member', { name: 'Casey Morgan', role: 'Designer', bio: 'Makes everything look just right.' })]),
         col(4, [el('team-member', { name: 'Robin Ash', role: 'Customer care', bio: 'The friendly voice on the other end.' })]),
       ),
+    ],
+  },
+  {
+    slug: 'tabs-section',
+    name: 'Tabs',
+    description: 'Three tabs; put any blocks (text, images, buttons, inner sections) inside each tab.',
+    kind: 'section',
+    category: 'other',
+    blocks: () => [
+      panelSection('tabs', [
+        { label: 'Overview', blocks: panelBlocks('Overview', 'A short introduction.') },
+        { label: 'Details', blocks: panelBlocks('Details', 'The finer points.') },
+        { label: 'Shipping', blocks: panelBlocks('Shipping', 'How it gets to you.') },
+      ]),
+    ],
+  },
+  {
+    slug: 'accordion-section',
+    name: 'Accordion',
+    description: 'Three panels that open and close; each can hold any blocks.',
+    kind: 'section',
+    category: 'faq',
+    blocks: () => [
+      panelSection('accordion', [
+        { label: 'How long is delivery?', blocks: panelBlocks('Delivery', 'Usually 3 to 5 working days.') },
+        { label: 'Can I return something?', blocks: panelBlocks('Returns', 'Yes, within 30 days.') },
+        { label: 'Do you ship abroad?', blocks: panelBlocks('Shipping abroad', 'Yes, to most countries.') },
+      ]),
     ],
   },
   {

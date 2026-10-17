@@ -2,14 +2,14 @@
    Only transform/opacity animate; motion is gated by prefers-reduced-motion. */
 .be-fx-clip{overflow:clip;isolation:isolate}
 .be-fx{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;opacity:var(--be-fx-i,.5)}
-.be-fx::before{content:"";position:absolute;inset:-30%;will-change:transform}
-.be-fx--aurora::before{filter:blur(40px);background:radial-gradient(40% 40% at 25% 30%,var(--be-fx-c,#6366f1),transparent 70%),radial-gradient(35% 45% at 75% 35%,var(--be-fx-c2,#ec4899),transparent 70%),radial-gradient(45% 40% at 50% 80%,var(--be-fx-c,#6366f1),transparent 70%)}
+.be-fx::before{content:"";position:absolute;inset:calc(var(--be-aur-s,30%)*-1);will-change:transform}
+.be-fx--aurora::before{filter:blur(var(--be-aur-b,40px));background:radial-gradient(40% 40% at 25% 30%,var(--be-fx-c,#6366f1),transparent 70%),radial-gradient(35% 45% at 75% 35%,var(--be-fx-c2,#ec4899),transparent 70%),radial-gradient(45% 40% at 50% 80%,var(--be-fx-c,#6366f1),transparent 70%)}
 .be-fx--mesh::before{inset:0;background:radial-gradient(at 20% 20%,var(--be-fx-c,#6366f1),transparent 55%),radial-gradient(at 80% 15%,var(--be-fx-c2,#ec4899),transparent 55%),radial-gradient(at 15% 85%,var(--be-fx-c2,#ec4899),transparent 55%),radial-gradient(at 85% 85%,var(--be-fx-c,#6366f1),transparent 55%)}
-.be-fx--gradient-shift::before{inset:0 auto 0 0;width:200%;background:linear-gradient(90deg,var(--be-fx-c,#6366f1),var(--be-fx-c2,#ec4899),var(--be-fx-c,#6366f1),var(--be-fx-c2,#ec4899),var(--be-fx-c,#6366f1))}
-.be-fx--grain{mix-blend-mode:soft-light;opacity:calc(var(--be-fx-i,.5)*.6);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.be-fx--gradient-shift::before{inset:0 auto 0 0;width:200%;background:linear-gradient(var(--be-gs-a,90deg),var(--be-fx-c,#6366f1),var(--be-fx-c2,#ec4899),var(--be-fx-c,#6366f1),var(--be-fx-c2,#ec4899),var(--be-fx-c,#6366f1))}
+.be-fx--grain{mix-blend-mode:soft-light;opacity:var(--be-gr-o,calc(var(--be-fx-i,.5)*.6));background-size:var(--be-gr-s,160px);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .be-fx--grain::before,.be-fx--dots::before,.be-fx--grid::before,.be-fx--particles::before,.be-fx--parbg::before{display:none}
-.be-fx--dots{background-image:radial-gradient(var(--be-fx-c,#6366f1) 1.5px,transparent 1.5px);background-size:22px 22px}
-.be-fx--grid{background-image:linear-gradient(var(--be-fx-c,#6366f1) 1px,transparent 1px),linear-gradient(90deg,var(--be-fx-c,#6366f1) 1px,transparent 1px);background-size:36px 36px}
+.be-fx--dots{background-image:radial-gradient(var(--be-fx-c,#6366f1) var(--be-dot,1.5px),transparent var(--be-dot,1.5px));background-size:var(--be-dsp,22px) var(--be-dsp,22px)}
+.be-fx--grid{background-image:linear-gradient(var(--be-fx-c,#6366f1) var(--be-gw,1px),transparent var(--be-gw,1px)),linear-gradient(90deg,var(--be-fx-c,#6366f1) var(--be-gw,1px),transparent var(--be-gw,1px));background-size:var(--be-gsz,36px) var(--be-gsz,36px)}
 .be-fx--particles canvas{position:absolute;inset:0;width:100%;height:100%}
 .be-fx--parbg{opacity:1;inset:calc(var(--be-par,32px)*-1) 0;background-size:cover;background-position:center}
 
@@ -24,24 +24,24 @@
   .be-divider__float{animation:be-float 5s ease-in-out infinite}
   @keyframes be-aur{to{transform:translate(8%,-6%) rotate(12deg) scale(1.1)}}
   @keyframes be-shift{to{transform:translateX(-50%)}}
-  .be-fx--aurora::before,.be-fx--mesh::before{animation:be-aur 18s ease-in-out infinite alternate}
-  .be-fx--gradient-shift::before{animation:be-shift 16s linear infinite}
+  .be-fx--aurora::before,.be-fx--mesh::before{animation:be-aur var(--be-aur-t,18s) ease-in-out infinite alternate}
+  .be-fx--gradient-shift::before{animation:be-shift var(--be-gs-t,16s) linear infinite}
 }
 
 /* Hover (pointer devices only) */
 @media (hover:hover){
   [class*="be-fx-hover-"]{transition:transform .25s ease,box-shadow .25s ease}
-  .be-fx-hover-lift:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(0,0,0,.18)}
+  .be-fx-hover-lift:hover{transform:translateY(calc(var(--be-hl,4px)*-1)) scale(var(--be-hs,1));box-shadow:0 14px 32px rgba(0,0,0,.18)}
   .be-fx-hover-glow:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--be-fx-c,#6366f1) 50%,transparent),0 8px 40px color-mix(in srgb,var(--be-fx-c,#6366f1) 45%,transparent)}
-  .be-fx-hover-zoom:hover{transform:scale(1.02)}
+  .be-fx-hover-zoom:hover{transform:scale(var(--be-hs,1.02))}
 }
 
-.be-fx-glass{-webkit-backdrop-filter:blur(var(--be-glass,12px)) saturate(1.4);backdrop-filter:blur(var(--be-glass,12px)) saturate(1.4);background-color:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.be-fx-glass{-webkit-backdrop-filter:blur(var(--be-glass,12px)) saturate(1.4);backdrop-filter:blur(var(--be-glass,12px)) saturate(1.4);background-color:rgba(255,255,255,var(--be-glass-a,.18));box-shadow:inset 0 0 0 1px rgba(255,255,255,var(--be-glass-b,.3))}
 
 /* Scroll-driven: reveal + parallax. Unsupported browsers just show the block. */
 @supports (animation-timeline:view()){
   @media (prefers-reduced-motion:no-preference){
-    [class*="be-fx-reveal-"]{animation:linear backwards;animation-timeline:view();animation-range:entry 0% entry 40%}
+    [class*="be-fx-reveal-"]{animation:linear backwards;animation-timing-function:var(--be-rv-ease,linear);animation-timeline:view();animation-range:entry var(--be-rv-s,0%) entry var(--be-rv-e,40%)}
     .be-fx-reveal-fade{animation-name:be-rv-fade}
     .be-fx-reveal-fade-up{animation-name:be-rv-up}
     .be-fx-reveal-fade-down{animation-name:be-rv-down}
@@ -51,13 +51,13 @@
     .be-fx-reveal-blur{animation-name:be-rv-blur}
     .ve-node [class*="be-fx-reveal-"]{animation:none}
     @keyframes be-rv-fade{from{opacity:0}}
-    @keyframes be-rv-up{from{opacity:0;transform:translateY(32px)}}
-    @keyframes be-rv-down{from{opacity:0;transform:translateY(-32px)}}
-    @keyframes be-rv-left{from{opacity:0;transform:translateX(24px)}}
-    @keyframes be-rv-right{from{opacity:0;transform:translateX(-24px)}}
-    @keyframes be-rv-zoom{from{opacity:0;transform:scale(.92)}}
-    @keyframes be-rv-blur{from{opacity:0;filter:blur(10px)}}
-    @keyframes be-par-bg{from{transform:translateY(calc(var(--be-par,32px)*-1))}to{transform:translateY(var(--be-par,32px))}}
+    @keyframes be-rv-up{from{opacity:0;transform:translateY(var(--be-rv-d,32px))}}
+    @keyframes be-rv-down{from{opacity:0;transform:translateY(calc(var(--be-rv-d,32px)*-1))}}
+    @keyframes be-rv-left{from{opacity:0;transform:translateX(var(--be-rv-d,24px))}}
+    @keyframes be-rv-right{from{opacity:0;transform:translateX(calc(var(--be-rv-d,24px)*-1))}}
+    @keyframes be-rv-zoom{from{opacity:0;transform:scale(var(--be-rv-z,.92))}}
+    @keyframes be-rv-blur{from{opacity:0;filter:blur(var(--be-rv-b,10px))}}
+    @keyframes be-par-bg{from{transform:translateY(calc(var(--be-par,32px)*-1*var(--be-pdir,1)))}to{transform:translateY(calc(var(--be-par,32px)*var(--be-pdir,1)))}}
     @keyframes be-par-up{from{transform:translateY(var(--be-par,32px))}to{transform:translateY(calc(var(--be-par,32px)*-1))}}
     @keyframes be-par-down{from{transform:translateY(calc(var(--be-par,32px)*-1))}to{transform:translateY(var(--be-par,32px))}}
     .be-fx--parbg{will-change:transform;animation:be-par-bg linear both;animation-timeline:view();animation-range:cover}

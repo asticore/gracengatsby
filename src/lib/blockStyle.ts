@@ -14,7 +14,8 @@ import { BUILT_IN_FONTS, fontStack } from '@/features/fonts/installed'
 import { isDesignV2Raw } from '@/lib/design/upgrade'
 import { DEFAULT_BREAKPOINTS, type SectionLayout } from '@/lib/sectionLayout'
 
-export type BackgroundType = 'none' | 'color' | 'gradient' | 'image'
+export type BackgroundType = 'none' | 'color' | 'gradient' | 'image' | 'video'
+export type MaskShape = 'none' | 'circle' | 'rounded' | 'blob' | 'hexagon' | 'diamond' | 'arch' | 'triangle' | 'wave'
 export type TextAlign = 'left' | 'center' | 'right'
 export type BlockWidth = 'contained' | 'wide' | 'full'
 export type DividerShape =
@@ -68,6 +69,12 @@ export type BlockStyle = {
   bgImage?: number | null
   /** Media URL, resolved at render time; cached here so previews avoid a refetch. */
   bgImageUrl?: string | null
+  /** Background video (bgType 'video'): https or site-relative .mp4/.webm. See isSafeMediaUrl(). */
+  bgVideoUrl?: string | null
+  /** Poster image: shown until the video plays, and in its place under reduced motion. */
+  bgVideoPoster?: string | null
+  /** Default true. false plays the video once. */
+  bgVideoLoop?: boolean
   /** 0-100. Darkens an image background so text stays readable. */
   bgOverlay?: number
   /** General background overlay layer (any section or block). Legacy bgOverlay is separate. */
@@ -158,6 +165,8 @@ export type BlockStyle = {
   glass?: boolean
   /** px, 0-40 (default 12). */
   glassBlur?: number
+  /** Clips the whole block (background and content) to a shape via clip-path. */
+  maskShape?: MaskShape
 
   // Granular effect settings. All optional; unset keeps the built-in look.
   /** Parallax travel in px, 0-400 (default: strength * 1.6). */
@@ -330,7 +339,7 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  const fx = withSafeAnchor(sanitizeTypography(sanitizeFx(style)))
+  const fx = withSafeAnchor(sanitizeTypography(sanitizeFx(sanitizeBgVideo(style))))
   if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
   const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
@@ -403,6 +412,7 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   if (raw.glass !== undefined && typeof raw.glass !== 'boolean') drop('glass')
   enumKey('position', POSITION_OPTIONS)
   enumKey('blendMode', BLEND_MODE_OPTIONS)
+  enumKey('maskShape', MASK_SHAPE_OPTIONS)
   if (raw.cssClasses !== undefined) {
     const classes = cleanClassList(raw.cssClasses)
     if (classes) out.cssClasses = classes
@@ -534,7 +544,7 @@ const FX_KEYS = [
   'bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
   'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
   'overlayType', 'overlayColor', 'overlayColor2', 'overlayAngle', 'overlayOpacity', 'overlayBlend',
-  'position', 'blendMode', 'cssClasses', 'customCss',
+  'position', 'blendMode', 'cssClasses', 'customCss', 'maskShape',
 ] as const
 
 const CSS_CLASS_TOKEN = /^[A-Za-z_][A-Za-z0-9_-]{0,60}$/
@@ -595,6 +605,64 @@ function customCssStaysInScope(text: string): boolean {
   // Trailing text after the last rule would be a loose declaration outside the scope.
   if (prelude.trim()) return false
   return preludes.every((p) => /\bselector\b/.test(p))
+}
+
+const VIDEO_URL = /^(https:\/\/|\/(?!\/))[^\s"'<>()\\]+\.(mp4|webm)(\?[^\s"'<>()\\]*)?$/i
+const IMAGE_URL = /^(https:\/\/|\/(?!\/))[^\s"'<>()\\]+\.(jpe?g|png|webp|avif|svg)(\?[^\s"'<>()\\]*)?$/i
+const ASCII_VISIBLE = /^[\x21-\x7e]+$/
+
+/**
+ * True for a media URL that is safe to put in a src or url() : an https URL or a site-relative
+ * path (never protocol-relative, javascript:, or data:), ASCII only, with the right extension.
+ * No quotes, parentheses, backslashes or whitespace, so the value cannot break out of url().
+ */
+export function isSafeMediaUrl(v: unknown, kind: 'video' | 'image'): v is string {
+  if (typeof v !== 'string' || v.length > 2048 || !ASCII_VISIBLE.test(v)) return false
+  return (kind === 'video' ? VIDEO_URL : IMAGE_URL).test(v)
+}
+
+/** Drops background video keys whose values fail validation. Same object back when none are set. */
+function sanitizeBgVideo(style: BlockStyle): BlockStyle {
+  const raw = style as Record<string, unknown>
+  if (raw.bgVideoUrl === undefined && raw.bgVideoPoster === undefined && raw.bgVideoLoop === undefined) return style
+  const out: Record<string, unknown> = { ...raw }
+  if (raw.bgVideoUrl !== undefined && !isSafeMediaUrl(raw.bgVideoUrl, 'video')) delete out.bgVideoUrl
+  if (raw.bgVideoPoster !== undefined && !isSafeMediaUrl(raw.bgVideoPoster, 'image')) delete out.bgVideoPoster
+  if (raw.bgVideoLoop !== undefined && typeof raw.bgVideoLoop !== 'boolean') delete out.bgVideoLoop
+  return out as BlockStyle
+}
+
+export const MASK_SHAPE_OPTIONS: { label: string; value: MaskShape }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Circle', value: 'circle' },
+  { label: 'Rounded corners', value: 'rounded' },
+  { label: 'Blob', value: 'blob' },
+  { label: 'Hexagon', value: 'hexagon' },
+  { label: 'Diamond', value: 'diamond' },
+  { label: 'Arch', value: 'arch' },
+  { label: 'Triangle', value: 'triangle' },
+  { label: 'Wave', value: 'wave' },
+]
+
+/**
+ * Literal clip-path values. Only basic shapes and inset(), never url(#...) references, so a mask
+ * renders the same on the canvas and on the live site.
+ */
+const MASK_CLIP: Record<Exclude<MaskShape, 'none'>, string> = {
+  circle: 'circle(50% at 50% 50%)',
+  rounded: 'inset(0 round 24px)',
+  blob: 'polygon(28% 4%, 62% 0%, 92% 14%, 100% 46%, 90% 80%, 66% 100%, 32% 96%, 6% 82%, 0% 50%, 8% 18%)',
+  hexagon: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
+  diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+  arch: 'polygon(0% 100%, 0% 50%, 4% 30%, 15% 13%, 30% 4%, 50% 0%, 70% 4%, 85% 13%, 96% 30%, 100% 50%, 100% 100%)',
+  triangle: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+  wave: 'polygon(0% 0%, 100% 0%, 100% 85%, 87.5% 92%, 75% 85%, 62.5% 92%, 50% 85%, 37.5% 92%, 25% 85%, 12.5% 92%, 0% 85%)',
+}
+
+/** The clip-path for a mask shape, or undefined for none / an unknown value. */
+export function maskClipPath(shape: unknown): string | undefined {
+  if (typeof shape !== 'string' || shape === 'none') return undefined
+  return Object.prototype.hasOwnProperty.call(MASK_CLIP, shape) ? MASK_CLIP[shape as Exclude<MaskShape, 'none'>] : undefined
 }
 
 /** Background overlay layer. Null when off (legacy bgOverlay is rendered separately). */
@@ -685,6 +753,14 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
     css.backgroundPosition = 'center'
   }
 
+  // Video background: the poster is the wrapper's own background, so it shows until the video
+  // plays and stays visible when the video layer is hidden for reduced motion.
+  if (style.bgType === 'video' && isSafeMediaUrl(style.bgVideoPoster, 'image')) {
+    css.backgroundImage = `url(${style.bgVideoPoster})`
+    css.backgroundSize = 'cover'
+    css.backgroundPosition = 'center'
+  }
+
   if (isNum(style.paddingTop)) css.paddingTop = `${style.paddingTop}px`
   if (isNum(style.paddingBottom)) css.paddingBottom = `${style.paddingBottom}px`
   if (isNum(style.paddingLeft)) css.paddingLeft = `${style.paddingLeft}px`
@@ -708,6 +784,8 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   }
   if (isNum(style.borderRadius)) css.borderRadius = `${style.borderRadius}px`
   if (style.boxShadow && style.boxShadow !== 'none') css.boxShadow = BOX_SHADOW_PRESETS[style.boxShadow]
+  const clip = maskClipPath(style.maskShape)
+  if (clip) css.clipPath = clip
   Object.assign(css, advancedCss(style))
 
   return css
@@ -1096,7 +1174,8 @@ export function blockFxClasses(style: BlockStyle): string {
   if (style.glass) c.push('be-fx-glass')
   if (style.parallax === 'background' && style.bgType === 'image' && isStr(style.bgImageUrl)) c.push('be-fx-parallax-bg')
   else if (style.parallax === 'float-up' || style.parallax === 'float-down') c.push(`be-fx-parallax-${style.parallax}`)
-  if (hasFxLayer(style) || c.includes('be-fx-parallax-bg')) c.push('be-fx-clip')
+  // Isolates the z-index:-1 layers (bg effect, video) so they sit behind the content, not behind the wrapper's background.
+  if (hasFxLayer(style) || c.includes('be-fx-parallax-bg') || style.bgType === 'video') c.push('be-fx-clip')
   const custom = cleanClassList(style.cssClasses)
   if (custom) c.push(custom)
   return c.join(' ')

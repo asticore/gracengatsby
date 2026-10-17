@@ -24,8 +24,11 @@ import type { NodePath } from './treeOps'
  */
 const SOURCE = 've-canvas' as const
 
+/** The device preview the editor is showing (the top bar's toggle); column widths are edited for it. */
+export type CanvasDevice = 'desktop' | 'tablet' | 'mobile'
+
 export type ParentToFrameMessage =
-  | { source: typeof SOURCE; type: 'init'; blocks: SectionNode[]; selectedPath: NodePath | null; locks?: Record<string, { mode: 'structure' | 'full'; blocked: boolean }> }
+  | { source: typeof SOURCE; type: 'init'; blocks: SectionNode[]; selectedPath: NodePath | null; locks?: Record<string, { mode: 'structure' | 'full'; blocked: boolean }>; device?: CanvasDevice }
   | { source: typeof SOURCE; type: 'selected'; selectedPath: NodePath | null }
   /** Highlights the insert slot a library-card drag is currently over (or clears it with null).
    *  The parent resolves the target itself via elementFromPoint - see VisualEditor.tsx - since
@@ -82,9 +85,33 @@ export const isColumnOpMessage = (data: unknown): data is ColumnToParentMessage 
 /** Double-click rename of a section tab / accordion panel on the canvas. `label` is '' to clear it. */
 export type RenameColumnToParentMessage = { source: typeof SOURCE; type: 'renameColumn'; path: NodePath; label: string }
 
+/**
+ * Drag-resize of the boundary between two columns of a section (see Canvas.tsx's ColumnResizeHandle).
+ * `widths` holds the percent width of every column of the section for `device`; the parent writes
+ * only the ones that changed, in one undo step.
+ */
+export type ColumnWidthsToParentMessage = { source: typeof SOURCE; type: 'columnWidths'; path: NodePath; widths: number[]; device: CanvasDevice }
+
 /** Narrows an incoming message to a column rename (even-length path, i.e. a column - see above). */
 export const isRenameColumnMessage = (data: unknown): data is RenameColumnToParentMessage => {
   if (!isBridgeMessage(data)) return false
   const msg = data as { type?: unknown; path?: unknown; label?: unknown }
   return msg.type === 'renameColumn' && Array.isArray(msg.path) && msg.path.length > 0 && msg.path.length % 2 === 0 && typeof msg.label === 'string'
+}
+
+/** Narrows an incoming message to a column-width change: an odd-length path (a section), one finite percent per column. */
+export const isColumnWidthsMessage = (data: unknown): data is ColumnWidthsToParentMessage => {
+  if (!isBridgeMessage(data)) return false
+  const msg = data as { type?: unknown; path?: unknown; widths?: unknown; device?: unknown }
+  const devices: unknown[] = ['desktop', 'tablet', 'mobile']
+  return (
+    msg.type === 'columnWidths' &&
+    Array.isArray(msg.path) &&
+    msg.path.length % 2 === 1 &&
+    msg.path.every((n) => Number.isInteger(n)) &&
+    Array.isArray(msg.widths) &&
+    msg.widths.length >= 2 &&
+    msg.widths.every((w) => typeof w === 'number' && Number.isFinite(w) && w >= 0 && w <= 100) &&
+    devices.includes(msg.device)
+  )
 }

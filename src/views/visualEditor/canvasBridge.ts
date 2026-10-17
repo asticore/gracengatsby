@@ -32,6 +32,10 @@ export type ParentToFrameMessage =
    *  native dragover/drop listeners placed inside the iframe's own document don't reliably fire
    *  for a drag that started in the parent document (a known cross-iframe HTML5 DnD limitation). */
   | { source: typeof SOURCE; type: 'dragHover'; key: string | null }
+  /** Start inline edit mode for a text field in the canvas. */
+  | { source: typeof SOURCE; type: 'startEdit'; blockId: string; elementType: string; field: string; value: string; device: 'desktop' | 'tablet' | 'mobile' }
+  /** End inline edit mode and save/cancel. */
+  | { source: typeof SOURCE; type: 'endEdit' }
 
 export type FrameToParentMessage =
   | { source: typeof SOURCE; type: 'ready' }
@@ -47,6 +51,12 @@ export type FrameToParentMessage =
   | { source: typeof SOURCE; type: 'key'; key: string; ctrl: boolean; meta: boolean; shift: boolean; alt: boolean }
   /** Right-click on a block; x/y are in the frame's own viewport coordinates. */
   | { source: typeof SOURCE; type: 'contextmenu'; path: NodePath; x: number; y: number }
+  /** Inline edit completed with new value. */
+  | { source: typeof SOURCE; type: 'editDone'; blockId: string; field: string; value: string; device: 'desktop' | 'tablet' | 'mobile' }
+  /** Navigate to next/prev editable element during inline editing. */
+  | { source: typeof SOURCE; type: 'inlineNavigate'; blockId: string; direction: 'next' | 'prev'; device: 'desktop' | 'tablet' | 'mobile' }
+  /** Double-click on a text element in the canvas requests edit mode. */
+  | { source: typeof SOURCE; type: 'requestEdit'; blockId: string; blockType: string; elementType?: string; field: string; value: string; path: NodePath; device: 'desktop' | 'tablet' | 'mobile' }
 
 /** True for any message this bridge sent, from either side - narrow further on `.type` after this. */
 export const isBridgeMessage = (data: unknown): data is FrameToParentMessage | ParentToFrameMessage =>

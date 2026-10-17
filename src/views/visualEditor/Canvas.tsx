@@ -603,12 +603,12 @@ const SectionColumns: React.FC<{
             {editingIdx === i && !ownerLocked ? (
               <div className={`ve-acc-head ve-acc-head--editing ${i === active ? 've-acc-head--active' : ''}`}>
                 <TabLabelInput initial={column.label || ''} placeholder={fallbackOf(i)} onDone={(value) => finishRename(column, i, value)} />
-                <span aria-hidden="true">{i === active ? '\\−' : '+'}</span>
+                <span aria-hidden="true">{i === active ? '−' : '+'}</span>
               </div>
             ) : (
               <button type="button" className={`ve-acc-head ${i === active ? 've-acc-head--active' : ''}`} aria-expanded={i === active} onClick={(e) => pick(e, i)} onDoubleClick={(e) => startRename(e, i)}>
                 <span>{titleOf(column, i)}</span>
-                <span aria-hidden="true">{i === active ? '\\−' : '+'}</span>
+                <span aria-hidden="true">{i === active ? '−' : '+'}</span>
               </button>
             )}
             {i === active && renderPanel(column, i)}

@@ -14,6 +14,7 @@ import {
   dividerPath,
   hasFxLayer,
   isPeriodicDivider,
+  kenBurnsLayer,
   overlayStyle,
   type BlockStyle,
   type DividerAnim,
@@ -22,6 +23,7 @@ import {
 
 import { BgVideo } from './BgVideo'
 import ParticlesBackground from './ParticlesLazy'
+import PointerFxLazy from './PointerFxLazy'
 
 /**
  * Wraps every page-builder block so the per-block "Design" settings (background,
@@ -53,6 +55,7 @@ export const StyledBlock: React.FC<{
 
   const scopeId = parsed.anchorId || (scope ? `be-s-${safeScope(scope)}` : blockScopeId(index))
   const mediaCss = blockStyleCss(parsed, scopeId)
+  const kb = kenBurnsLayer(parsed)
 
   return (
     <div
@@ -64,7 +67,11 @@ export const StyledBlock: React.FC<{
       {parsed.parallax === 'background' && parsed.bgType === 'image' && parsed.bgImageUrl && (
         <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${parsed.bgImageUrl})` }} />
       )}
-      {parsed.bgType === 'video' && <BgVideo src={parsed.bgVideoUrl} poster={parsed.bgVideoPoster} loop={parsed.bgVideoLoop} />}
+      {kb && <div className={kb.className} aria-hidden="true" style={kb.style} />}
+      {parsed.pointerFx && parsed.pointerFx !== 'none' && (
+        <PointerFxLazy mode={parsed.pointerFx} strength={parsed.pointerFxStrength ?? 50} />
+      )}
+      {parsed.bgType === 'video' &&<BgVideo src={parsed.bgVideoUrl} poster={parsed.bgVideoPoster} loop={parsed.bgVideoLoop} />}
       {hasFxLayer(parsed) && (
         <div className={`be-fx be-fx--${parsed.bgEffect}`} aria-hidden="true">
           {parsed.bgEffect === 'particles' && (

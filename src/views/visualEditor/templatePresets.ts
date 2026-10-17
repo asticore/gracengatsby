@@ -1,4 +1,5 @@
 import { getElementDef } from '@/lib/elements/registry'
+import { paragraph } from '@/lib/elements/wave26Defs'
 import type { SectionNode } from '@/lib/sectionTree'
 
 export type TemplateKind = 'page' | 'section'
@@ -56,6 +57,32 @@ const col = (width: number, blocks: SectionNode[]) => ({ width: width as 12, blo
 const section = (...columns: ReturnType<typeof col>[]): SectionNode => ({ blockType: 'section', columns })
 const heading = (text: string, align = 'center', tag = 'h2') => el('heading', { text, tag, align })
 
+
+/** A full-width band with its own background (colour here; switch it to an image under the section's Design). */
+const band = (design: Record<string, unknown>, ...columns: ReturnType<typeof col>[]): SectionNode => ({
+  blockType: 'section',
+  design: { bgType: 'color', bgColor: '#111827', textColor: '#ffffff', paddingTop: 80, paddingBottom: 80, ...design },
+  columns,
+})
+const button = (text: string, url: string, variant = 'primary', align = 'center') => el('button', { text, url, variant, align })
+
+/** Hero built from element blocks: a background band holding a heading, a paragraph and a button. */
+const heroBand = (title: string, text: string, buttonText: string, buttonUrl: string): SectionNode =>
+  band({ minHeight: 480, bgOverlay: 45 }, col(12, [heading(title, 'center', 'h1'), el('text-editor', { align: 'center', content: paragraph(text) }), button(buttonText, buttonUrl)]))
+
+/** Closing call to action built from element blocks. */
+const ctaBand = (title: string, text: string, buttonText: string, buttonUrl: string, light = false): SectionNode =>
+  band(light ? { bgColor: '#f3f4f6', textColor: '#111827', paddingTop: 56, paddingBottom: 56 } : { paddingTop: 56, paddingBottom: 56 }, col(12, [heading(title, 'center', 'h2'), el('text-editor', { align: 'center', content: paragraph(text) }), button(buttonText, buttonUrl)]))
+
+/** Picture beside heading + text, both editable straight on the canvas. */
+const imageTextRow = (side: 'left' | 'right', title: string): SectionNode => {
+  const picture = col(6, [el('image', { ratio: '4:3' })])
+  const words = col(6, [heading(title, 'left', 'h2'), el('text-editor', { align: 'left' }), button('Learn more', '/about', 'secondary', 'left')])
+  return section(...(side === 'left' ? [picture, words] : [words, picture]))
+}
+
+const galleryBlock = (title: string): SectionNode => section(col(12, [heading(title), el('image-gallery')]))
+
 const iconBox = (icon: string, title: string, text: string) => el('icon-box', { icon, title, text })
 const featureRow = (count: 3 | 4, items: Array<[string, string, string]>) =>
   section(...items.slice(0, count).map(([icon, title, text]) => col(12 / count, [iconBox(icon, title, text)])))
@@ -78,13 +105,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     kind: 'section',
     category: 'hero',
     blocks: () => [
-      {
-        blockType: 'hero',
-        heading: 'New heading',
-        subheading: 'Add a line of supporting copy here.',
-        primaryCtaLabel: 'Learn more',
-        primaryCtaUrl: '/',
-      },
+      heroBand('New heading', 'Add a line of supporting copy here.', 'Learn more', '/'),
     ],
   },
   {
@@ -115,8 +136,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     kind: 'section',
     category: 'hero',
     blocks: () => [
-      { blockType: 'hero', heading: 'Our story', subheading: 'Where we started and what we care about.', primaryCtaLabel: 'Read more', primaryCtaUrl: '/about' },
-      { blockType: 'imageText', imageSide: 'right', content: undefined },
+      heroBand('Our story', 'Where we started and what we care about.', 'Read more', '/about'),
+      imageTextRow('right', 'Our story'),
     ],
   },
   {
@@ -126,25 +147,9 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     kind: 'page',
     category: 'hero',
     blocks: () => [
-      {
-        blockType: 'hero',
-        heading: 'New heading',
-        subheading: 'Add a line of supporting copy here.',
-        primaryCtaLabel: 'Shop now',
-        primaryCtaUrl: '/shop',
-      },
-      {
-        blockType: 'imageText',
-        imageSide: 'left',
-        content: undefined,
-      },
-      {
-        blockType: 'ctaBanner',
-        heading: 'New call to action',
-        style: 'dark',
-        buttonLabel: 'Get started',
-        buttonUrl: '/',
-      },
+      heroBand('New heading', 'Add a line of supporting copy here.', 'Shop now', '/shop'),
+      imageTextRow('left', 'What we do'),
+      ctaBand('New call to action', 'Tell people what to do next.', 'Get started', '/'),
     ],
   },
   {
@@ -157,9 +162,9 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
       {
         blockType: 'section',
         columns: [
-          { width: 4, blocks: [{ blockType: 'richText' }] },
-          { width: 4, blocks: [{ blockType: 'richText' }] },
-          { width: 4, blocks: [{ blockType: 'richText' }] },
+          { width: 4, blocks: [el('text-editor')] },
+          { width: 4, blocks: [el('text-editor')] },
+          { width: 4, blocks: [el('text-editor')] },
         ],
       },
     ],
@@ -186,7 +191,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     description: 'A full-width banner with a heading and a button.',
     kind: 'section',
     category: 'cta',
-    blocks: () => [{ blockType: 'ctaBanner', heading: 'Ready when you are', text: 'Tell people what to do next.', style: 'dark', buttonLabel: 'Get started', buttonUrl: '/contact' }],
+    blocks: () => [ctaBand('Ready when you are', 'Tell people what to do next.', 'Get started', '/contact')],
   },
   {
     slug: 'gallery-grid',
@@ -194,7 +199,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     description: 'A heading and a grid of pictures to fill in.',
     kind: 'section',
     category: 'gallery',
-    blocks: () => [{ blockType: 'gallery', heading: 'Gallery', images: [] }],
+    blocks: () => [galleryBlock('Gallery')],
   },
   {
     slug: 'gallery-cta',
@@ -203,8 +208,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     kind: 'section',
     category: 'gallery',
     blocks: () => [
-      { blockType: 'gallery', heading: 'Gallery', images: [] },
-      { blockType: 'ctaBanner', heading: 'New call to action', style: 'light' },
+      galleryBlock('Gallery'),
+      ctaBand('New call to action', 'Tell people what to do next.', 'Get started', '/', true),
     ],
   },
   {
@@ -283,9 +288,9 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     kind: 'page',
     category: 'shop',
     blocks: () => [
-      { blockType: 'hero', heading: 'Shop the collection', primaryCtaLabel: 'Browse all', primaryCtaUrl: '/shop' },
+      heroBand('Shop the collection', 'Handmade pieces, made to last.', 'Browse all', '/shop'),
       { blockType: 'productGrid', heading: 'Shop', limit: 8 },
-      { blockType: 'ctaBanner', heading: 'Join the list', style: 'dark', buttonLabel: 'Sign up' },
+      ctaBand('Join the list', 'News and offers, now and then.', 'Sign up', '/contact'),
     ],
   },
   {
@@ -295,13 +300,13 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     kind: 'page',
     category: 'other',
     blocks: () => [
-      { blockType: 'hero', heading: 'One clear promise', subheading: 'Say what you do and who it is for.', primaryCtaLabel: 'Get started', primaryCtaUrl: '/contact' },
+      heroBand('One clear promise', 'Say what you do and who it is for.', 'Get started', '/contact'),
       section(col(12, [heading('Why choose us')])),
       featureRow(3, FEATURE_ITEMS),
       section(col(4, [el('testimonial')]), col(4, [el('testimonial', { name: 'Sam T.' })]), col(4, [el('testimonial', { name: 'Riley K.' })])),
       section(col(4, [pricingPlan('Starter', '9', 'One user\nEmail support')]), col(4, [pricingPlan('Standard', '29', 'Five users\nPriority support', true)]), col(4, [pricingPlan('Pro', '59', 'Unlimited users\nPriority support')])),
       section(col(12, [el('accordion')])),
-      { blockType: 'ctaBanner', heading: 'Ready when you are', style: 'dark', buttonLabel: 'Get started', buttonUrl: '/contact' },
+      ctaBand('Ready when you are', 'Tell people what to do next.', 'Get started', '/contact'),
     ],
   },
 ]

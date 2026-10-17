@@ -9,7 +9,6 @@ import { ElementLibrary } from './ElementLibrary'
 import { FieldPanel } from './FieldPanel'
 import type { EditDevice } from './DesignPanel'
 import type { LockUi } from './LockControls'
-import { NavigatorPanel, type NavigatorCollection } from './NavigatorPanel'
 
 export type DockTab = 'elements' | 'settings' | 'form' | 'navigator'
 

@@ -157,3 +157,75 @@ export function structureRects(widths: number[], w = 60, h = 36, gap = 2): { x: 
   })
   return out
 }
+
+/* ------------------------------------------------------------------------- */
+/* Drag-resize of adjacent columns (the canvas handle between two columns)    */
+/* ------------------------------------------------------------------------- */
+
+/** The breakpoint whose width is being edited: the top bar's device toggle. */
+export type ColumnDevice = 'desktop' | 'tablet' | 'mobile'
+
+const WIDTH_FIELD = { desktop: 'widthDesktop', tablet: 'widthTablet', mobile: 'widthMobile' } as const
+
+const roundTo2 = (n: number): number => Math.round(n * 100) / 100
+
+/**
+ * Moves the boundary between column `index` and `index + 1` by `deltaPct` (percent of the row).
+ * Only that pair changes, and their sum is kept. The first column snaps to whole percents and
+ * both stay within [min, max]; the other columns come back as they went in. Returns a copy.
+ */
+export function resizeAdjacent(widths: number[], index: number, deltaPct: number, min = 10, max = 90): number[] {
+  const out = [...widths]
+  if (!Number.isInteger(index) || index < 0 || index + 1 >= widths.length || !Number.isFinite(deltaPct)) return out
+  const pair = widths[index] + widths[index + 1]
+  const lo = Math.max(min, pair - max)
+  const hi = Math.min(max, pair - min)
+  if (!(lo <= hi)) return out
+  const first = Math.min(hi, Math.max(lo, Math.round(widths[index] + deltaPct)))
+  out[index] = roundTo2(first)
+  out[index + 1] = roundTo2(pair - first)
+  return out
+}
+
+/**
+ * The width of a column on one device, as a percent of its section, following the same cascade
+ * the generated CSS uses (tablet falls back to desktop, mobile to tablet). Null when the width is
+ * px / auto / fill, which the drag handle does not resize.
+ */
+export function columnPercentFor(column: SectionColumn, device: ColumnDevice): number | null {
+  const order: ColumnDevice[] = ['desktop', 'tablet', 'mobile']
+  const desktop = column.widthDesktop ?? { value: column.width ?? 12, unit: 'fraction' as const }
+  const upTo = order.slice(0, order.indexOf(device) + 1).reverse()
+  let width: { value: number; unit: string } | undefined
+  for (const d of upTo) {
+    width = d === 'desktop' ? desktop : column[WIDTH_FIELD[d]]
+    if (width) break
+  }
+  if (!width) return null
+  if (width.unit === 'fraction') return (width.value / 12) * 100
+  if (width.unit === 'percent') return width.value
+  return null
+}
+
+/**
+ * A new tree where the section at `sectionPath` takes `widths` (percent, one per column, for
+ * `device`). Only columns whose width actually changes are written, as a percent width on that
+ * device - the same write ColumnPanel makes for a custom width. One call is one undo step.
+ */
+export function applyColumnWidths(blocks: SectionNode[], sectionPath: NodePath, widths: number[], device: ColumnDevice): SectionNode[] {
+  const section = getNode(blocks, sectionPath)
+  const columns = section?.columns || []
+  if (!section || widths.length !== columns.length) return blocks
+  let changed = false
+  const next = columns.map((column, j): SectionColumn => {
+    const target = widths[j]
+    if (!Number.isFinite(target) || target < 0 || target > 100) return column
+    const current = columnPercentFor(column, device)
+    if (current !== null && Math.abs(current - target) < 1e-9) return column
+    changed = true
+    return { ...column, [WIDTH_FIELD[device]]: { value: target, unit: 'percent' } }
+  })
+  // Same tree back when nothing moved, so the caller can skip the undo step.
+  if (!changed) return blocks
+  return updateNode(blocks, sectionPath, (node) => ({ ...node, columns: next }))
+}

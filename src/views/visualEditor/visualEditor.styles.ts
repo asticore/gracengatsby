@@ -829,6 +829,7 @@ html[data-theme='dark'] .ve-root {
 
 .ve-node {
   position: relative;
+  overflow: visible;
   cursor: pointer;
   outline: 1px solid transparent;
   outline-offset: -1px;
@@ -857,23 +858,36 @@ html[data-theme='dark'] .ve-root {
 
 .ve-node__toolbar {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  right: 4px;
-  z-index: 5;
+  top: 0;
+  left: 0;
+  right: auto;
+  width: auto;
+  max-width: 100%;
+  transform: translateY(-100%);
+  z-index: 10;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   background: var(--ve-chrome-bg);
   color: var(--ve-chrome-text);
-  border-radius: 5px;
-  padding: 2px 6px;
-  font-size: 11px;
+  border-radius: 5px 5px 0 0;
+  padding: 1px 4px;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
   opacity: 0;
   transition: opacity 0.1s;
   pointer-events: none;
 }
 
+/* First top-level node: no room above, so the pill sits just inside the top edge. */
+.ve-node--first > .ve-node__toolbar {
+  transform: none;
+  border-radius: 0 0 5px 0;
+}
+.ve-node--depth-1 > .ve-node__toolbar { z-index: 11; left: 12px; }
+.ve-node--depth-2 > .ve-node__toolbar { z-index: 12; left: 24px; }
+.ve-node--depth-3 > .ve-node__toolbar { z-index: 13; left: 36px; }
 .ve-node:hover > .ve-node__toolbar,
 .ve-node--selected > .ve-node__toolbar {
   opacity: 1;
@@ -886,7 +900,7 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-node__spacer {
-  flex: 1;
+  flex: 0 0 4px;
 }
 
 .ve-node__act {
@@ -894,9 +908,9 @@ html[data-theme='dark'] .ve-root {
   border: none;
   color: inherit;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
-  padding: 3px 5px;
+  padding: 2px 4px;
   border-radius: 4px;
   opacity: 0.75;
 }

@@ -1,6 +1,53 @@
-import type { Block } from '@/engine'
+import type { Block, FieldHook } from '@/engine'
 
 import { blockStyleField } from './styleField'
+import { parseOldFormat } from '@/lib/blockStyle'
+
+/**
+ * Upgrade old string format for repeater fields to new array format.
+ * For backwards compatibility when editing old pages with new repeater fields.
+ */
+const upgradeRepeaterFormats: FieldHook = async ({ data, originalDoc, value }) => {
+  if (!data?.elementType || !data?.props || typeof data.props !== 'object') {
+    return value
+  }
+
+  const elementType = String(data.elementType)
+  const props = data.props as Record<string, unknown>
+
+  // Define which fields in which elements are repeaters and how to parse their old format
+  const repeaterUpgrades: Record<string, Record<string, string[]>> = {
+    'icon-list': { items: ['text', 'link'] },
+    'list': { items: ['text'] },
+    'accordion': { items: ['heading', 'content'] },
+    'tabs': { items: ['title', 'content'] },
+    'pricing-table': { features: ['text', 'included'] },
+    'price-list': { items: ['name', 'description', 'price'] },
+    'social-icons': { items: ['network', 'address'] },
+    'logo-strip': { items: ['url', 'alt'] },
+  }
+
+  const fieldMap = repeaterUpgrades[elementType]
+  if (!fieldMap) return value
+
+  let upgraded = false
+  const updatedProps = { ...props }
+
+  for (const [fieldName, fieldNames] of Object.entries(fieldMap)) {
+    const fieldValue = props[fieldName]
+    // Only upgrade if it's a string (old format) and not already an array (new format)
+    if (typeof fieldValue === 'string') {
+      updatedProps[fieldName] = parseOldFormat(fieldValue, fieldNames)
+      upgraded = true
+    }
+  }
+
+  if (upgraded) {
+    return { ...value, props: updatedProps }
+  }
+
+  return value
+}
 
 /**
  * One generic block that carries an unlimited catalogue of Elementor-style
@@ -44,6 +91,9 @@ export const ElementBlock: Block = {
       label: 'Content',
       admin: {
         description: "This element's own content fields. Edit on the drag-and-drop canvas via \"Edit visually\" - this raw view is an escape hatch.",
+      },
+      hooks: {
+        beforeChange: [upgradeRepeaterFormats],
       },
     },
     blockStyleField,

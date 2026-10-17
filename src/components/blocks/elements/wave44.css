@@ -1,0 +1,53 @@
+/* Wave 44 elements (page-effects). Every selector is scoped with .be-el-44- so nothing leaks into the rest of the site.
+   The per-element <style> written by Wave44Elements.tsx sets only the values (clamped numbers and checked colours).
+   Motion sits inside a prefers-reduced-motion: no-preference guard. The scroll bar is scroll-linked and is shown only
+   where animation-timeline is supported. */
+
+/* ---- grain overlay ---- */
+
+/* Fixed over the whole viewport, click-through, below modals (modal overlay is z-index 10000). */
+.be-el-44-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* ---- scroll progress bar ---- */
+
+/* Hidden unless the browser can drive it from scroll position. */
+.be-el-44-progress {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9000;
+  pointer-events: none;
+  height: 4px;
+  background: #2e3192;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .be-el-44-progress {
+      display: block;
+      animation: be-el-44-progress linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@keyframes be-el-44-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

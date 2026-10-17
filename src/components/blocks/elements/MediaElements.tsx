@@ -1,11 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import React from 'react'
 
-import { safeUrl } from '@/lib/mergeTags'
-
 import { Icon } from './icons'
 import { ALIGNS, alignClass } from './TextElements'
-import { flag, mediaListOf, mediaOf, num, parseVideoUrl, pick, ratioCss, str } from './elementUtil'
+import { flag, linkAttrs, linkHref, mediaListOf, mediaOf, num, parseVideoUrl, pick, ratioCss, str } from './elementUtil'
 
 type P = Record<string, unknown>
 
@@ -16,7 +14,7 @@ export const ImageElement: React.FC<P> = (p) => {
   const media = mediaOf(p.image) || mediaOf(p.url)
   const ratio = ratioCss(p.ratio)
   const width = num(p.width, 100, 5, 100)
-  const href = safeUrl(p.link)
+  const href = linkHref(p.link)
   const caption = str(p.caption)
   const alt = str(p.alt) || str(media?.alt)
   const img = media?.url ? (
@@ -32,7 +30,7 @@ export const ImageElement: React.FC<P> = (p) => {
   )
   return (
     <figure className={`el-image ${alignClass(p.align)}`} style={{ maxWidth: `${width}%` }}>
-      {href && media?.url ? <a href={href}>{img}</a> : img}
+      {href && media?.url ? <a href={href} {...linkAttrs(p.link)}>{img}</a> : img}
       {caption && <figcaption>{caption}</figcaption>}
     </figure>
   )
@@ -103,13 +101,13 @@ export const ImageCarouselElement: React.FC<P> = (p) => {
 /** `icon`: one decorative or linked icon from the built-in set. */
 export const IconElement: React.FC<P> = (p) => {
   const size = num(p.size, 48, 12, 200)
-  const href = safeUrl(p.link)
+  const href = linkHref(p.link)
   const label = str(p.label)
   const icon = <Icon name={str(p.icon, 'star')} size={size} />
   return (
     <div className={`el-icon ${alignClass(p.align)}`}>
       {href ? (
-        <a href={href} aria-label={label || undefined}>
+        <a href={href} {...linkAttrs(p.link)} aria-label={label || undefined}>
           {icon}
         </a>
       ) : (

@@ -48,14 +48,20 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'icon-list', label: 'Icon list', icon: '✔', category: 'text',
     description: 'A list where every line starts with the same icon.',
-    fields: [area('items', 'Items', 'One per line. Optional link after a bar: "Free delivery | /delivery".'), icon(), select('layout', 'Layout', opts('stacked', 'inline')), ALIGN],
-    defaultProps: () => ({ items: 'Handmade in small batches\nFree delivery over 50\nEasy returns', icon: 'check', layout: 'stacked', align: 'left' }),
+    fields: [
+      { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('text', 'Text'), text('link', 'Link (optional)')] } },
+      icon(), select('layout', 'Layout', opts('stacked', 'inline')), ALIGN
+    ],
+    defaultProps: () => ({ items: [{text: 'Handmade in small batches', link: ''}, {text: 'Free delivery over 50', link: ''}, {text: 'Easy returns', link: ''}], icon: 'check', layout: 'stacked', align: 'left' }),
   },
   {
     type: 'list', label: 'List', icon: '☰', category: 'text',
     description: 'A bulleted or numbered list.',
-    fields: [area('items', 'Items', 'One per line.'), select('kind', 'Marker', opts('bullets', 'numbers', 'none')), ALIGN],
-    defaultProps: () => ({ items: 'First point\nSecond point\nThird point', kind: 'bullets', align: 'left' }),
+    fields: [
+      { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('text', 'Text')] } },
+      select('kind', 'Marker', opts('bullets', 'numbers', 'none')), ALIGN
+    ],
+    defaultProps: () => ({ items: [{text: 'First point'}, {text: 'Second point'}, {text: 'Third point'}], kind: 'bullets', align: 'left' }),
   },
   // ---- media ----
   {
@@ -94,15 +100,21 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'logo-strip', label: 'Logo strip', icon: '▤', category: 'media',
     description: 'A row of brand or press logos.',
-    fields: [{ name: 'images', label: 'Logos', type: 'mediaMulti' }, urlLines, number('height', 'Logo height (px)'), { name: 'grayscale', label: 'Greyscale until hovered', type: 'checkbox' }],
-    defaultProps: () => ({ images: [], height: 40, grayscale: true }),
+    fields: [
+      { name: 'items', label: 'Logos', type: 'repeater', repeater: { fields: [{ name: 'image', label: 'Image', type: 'media' }, text('url', 'Or image address'), text('alt', 'Alt text')] } },
+      number('height', 'Logo height (px)'), { name: 'grayscale', label: 'Greyscale until hovered', type: 'checkbox' }
+    ],
+    defaultProps: () => ({ items: [], height: 40, grayscale: true }),
   },
   // ---- interactive ----
   {
     type: 'accordion', label: 'Accordion', icon: '≡', category: 'interactive',
     description: 'Headings that open to show text. Opening one closes the others.',
-    fields: [area('items', 'Items', 'One per line: "Question | Answer".'), { name: 'openFirst', label: 'First item open', type: 'checkbox' }],
-    defaultProps: () => ({ items: 'How long is delivery? | Usually 3 to 5 working days.\nCan I return something? | Yes, within 30 days.', openFirst: true }),
+    fields: [
+      { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('heading', 'Heading'), area('content', 'Content')] } },
+      { name: 'openFirst', label: 'First item open', type: 'checkbox' }
+    ],
+    defaultProps: () => ({ items: [{heading: 'How long is delivery?', content: 'Usually 3 to 5 working days.'}, {heading: 'Can I return something?', content: 'Yes, within 30 days.'}], openFirst: true }),
   },
   {
     type: 'toggle', label: 'Toggle', icon: '⊞', category: 'interactive',
@@ -113,8 +125,10 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'tabs', label: 'Tabs', icon: '▭', category: 'interactive',
     description: 'Content split into tabs (up to 8). Works without JavaScript.',
-    fields: [area('items', 'Tabs', 'One per line: "Tab title | Text".')],
-    defaultProps: () => ({ items: 'Overview | A short introduction.\nDetails | The finer points.\nShipping | How it gets to you.' }),
+    fields: [
+      { name: 'items', label: 'Tabs', type: 'repeater', repeater: { fields: [text('title', 'Title'), area('content', 'Content')] } }
+    ],
+    defaultProps: () => ({ items: [{title: 'Overview', content: 'A short introduction.'}, {title: 'Details', content: 'The finer points.'}, {title: 'Shipping', content: 'How it gets to you.'}] }),
   },
   {
     type: 'counter', label: 'Counter', icon: '#', category: 'interactive',
@@ -143,8 +157,11 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'social-icons', label: 'Social icons', icon: '✉', category: 'interactive',
     description: 'Links to your social profiles.',
-    fields: [area('items', 'Links', `One per line: "network | address". Networks: ${SOCIAL_NETWORKS.join(', ')}.`), select('shape', 'Shape', opts('circle', 'square', 'plain')), number('size', 'Icon size (px)'), ALIGN],
-    defaultProps: () => ({ items: 'instagram | https://instagram.com/\nfacebook | https://facebook.com/\nemail | /contact', shape: 'circle', size: 20, align: 'left' }),
+    fields: [
+      { name: 'items', label: 'Links', type: 'repeater', repeater: { fields: [select('network', 'Network', SOCIAL_NETWORKS.map(n => ({ label: n.charAt(0).toUpperCase() + n.slice(1), value: n }))), text('address', 'Address')] } },
+      select('shape', 'Shape', opts('circle', 'square', 'plain')), number('size', 'Icon size (px)'), ALIGN
+    ],
+    defaultProps: () => ({ items: [{network: 'instagram', address: 'https://instagram.com/'}, {network: 'facebook', address: 'https://facebook.com/'}, {network: 'email', address: '/contact'}], shape: 'circle', size: 20, align: 'left' }),
   },
   {
     type: 'countdown', label: 'Countdown', icon: '⏱', category: 'interactive',
@@ -164,16 +181,19 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     description: 'One plan card with price, feature list and button. Place several side by side in columns.',
     fields: [
       text('title', 'Plan name'), text('currency', 'Currency', { width: 'half' }), text('price', 'Price', { width: 'half' }), text('period', 'Period (e.g. / month)'),
-      area('features', 'Features', 'One per line. Start a line with "-" for a feature that is not included.'), text('buttonText', 'Button text', { width: 'half' }), text('buttonUrl', 'Button link', { width: 'half' }),
+      { name: 'features', label: 'Features', type: 'repeater', repeater: { fields: [text('text', 'Feature'), { name: 'included', label: 'Included', type: 'checkbox' }] } },
+      text('buttonText', 'Button text', { width: 'half' }), text('buttonUrl', 'Button link', { width: 'half' }),
       text('ribbon', 'Ribbon text'), { name: 'highlight', label: 'Highlight this plan', type: 'checkbox' },
     ],
-    defaultProps: () => ({ title: 'Standard', currency: '$', price: '29', period: '/ month', features: 'One user\nEmail support\n- Priority support', buttonText: 'Choose plan', buttonUrl: '/contact', highlight: false }),
+    defaultProps: () => ({ title: 'Standard', currency: '$', price: '29', period: '/ month', features: [{text: 'One user', included: true}, {text: 'Email support', included: true}, {text: 'Priority support', included: false}], buttonText: 'Choose plan', buttonUrl: '/contact', highlight: false }),
   },
   {
     type: 'price-list', label: 'Price list', icon: '💲', category: 'marketing',
     description: 'A menu-style list of items with prices.',
-    fields: [area('items', 'Items', 'One per line: "Name | Description | Price".')],
-    defaultProps: () => ({ items: 'Flat white | Double shot, steamed milk | 3.50\nCroissant | Baked this morning | 2.80' }),
+    fields: [
+      { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('name', 'Name'), text('description', 'Description'), text('price', 'Price')] } }
+    ],
+    defaultProps: () => ({ items: [{name: 'Flat white', description: 'Double shot, steamed milk', price: '3.50'}, {name: 'Croissant', description: 'Baked this morning', price: '2.80'}] }),
   },
   {
     type: 'team-member', label: 'Team member', icon: '👤', category: 'marketing',

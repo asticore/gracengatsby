@@ -11,6 +11,7 @@ import { AdPlaceholder } from '@/features/ads/components/AdPlaceholder'
 import { DataViewCanvasPreview } from '@/features/dataViews/components/DataViewCanvasPreview'
 import { MEDIA_PROP_KEYS, collectMediaIds, substituteMedia } from '@/components/blocks/elements/elementUtil'
 import { renderElement } from '@/components/blocks/elements/renderElement'
+import { SITE_ELEMENT_TYPES, WAVE38_ELEMENTS } from '@/lib/elements/wave38Defs'
 
 import type { Media } from '@/engage-types'
 
@@ -114,6 +115,11 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
         return <div className="engage-form" dangerouslySetInnerHTML={{ __html: String(props.html || '') }} />
       }
       if (isFieldElementType(elementType)) return <FormFieldPreview node={data as LayoutNode} />
+      // Site elements read live data on the server; the canvas shows a static placeholder and never queries.
+      if (SITE_ELEMENT_TYPES.has(elementType)) {
+        const site = WAVE38_ELEMENTS.find((e) => e.type === elementType)
+        return <DynamicPlaceholder icon={site?.icon ?? '\u{1F310}'} label={site?.label ?? elementType} data={data} detail="Reads live site data on the published page." />
+      }
       if (elementType === 'ad') return <AdPlaceholder label={`Ad: ${String(props.placement || props.unit || 'choose a placement')}`} />
       if (elementType === 'content-slot') return <DynamicPlaceholder icon="📄" label="Page content appears here" data={data} detail="Template content" />
       if (MEDIA_PROP_KEYS[elementType]) return <ElementMediaPreview elementType={elementType} props={props} />

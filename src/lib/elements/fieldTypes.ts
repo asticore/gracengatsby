@@ -24,7 +24,7 @@ export type EditorFieldType =
   | 'repeater'
   /** Link field: URL input with new tab and nofollow toggles. Output: {url, newTab?, nofollow?}. */
   | 'link'
-  /** Icon picker: search and select FontAwesome Free icons. Output: {icon: "fa-solid fa-..."} */
+  /** Icon picker: FontAwesome Free icons (Output: {icon: "fa-solid fa-..."}), or the built-in set when iconSet is 'builtin' (Output: "star"). */
   | 'icon'
   /** Range slider: number input with draggable slider. */
   | 'range'
@@ -55,4 +55,6 @@ export type EditorField = {
   max?: number
   /** For range fields: step value. */
   step?: number
+  /** For icon fields: 'builtin' picks from the inline SVG set in src/components/blocks/elements/icons.tsx and stores the plain name. */
+  iconSet?: 'builtin'
 }

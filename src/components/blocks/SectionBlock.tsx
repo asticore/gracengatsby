@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { asBlockStyle, blockFxClasses, blockStyleClasses, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
-import { carouselStyle, parseSectionLayout, sectionLayoutProps } from '@/lib/sectionLayout'
+import { carouselStyle, gridStyle, modalStyleVars, parseSectionLayout, sectionLayoutProps } from '@/lib/sectionLayout'
 import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { safeScope, StyledBlock } from './StyledBlock'
@@ -66,6 +66,50 @@ export const SectionBlock: React.FC<{
               )}
             </div>
           ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (display === 'grid') {
+    // Each column is a grid cell. Columns per row step down on tablet / mobile in tabs.css (no JavaScript).
+    const boxedWidth = layout.style['--be-boxed']
+    const vars = { ...gridStyle(rawLayout), ...(boxedWidth ? { '--be-boxed': boxedWidth } : {}) }
+    return (
+      <div className={layout.className ? `be-grid ${layout.className}` : 'be-grid'} data-depth={depth} style={vars as React.CSSProperties}>
+        {parsed.map((column, index) => (
+          <SectionColumnView key={column._id || index} column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
+        ))}
+      </div>
+    )
+  }
+
+  if (display === 'modal') {
+    // A checkbox holds the open state and labels toggle it, so no JavaScript is needed. The checkbox is
+    // focusable (Space toggles it); the dialog and all columns stay in the HTML, hidden until opened.
+    const uid = `be-${safeScope(scope)}`
+    const toggleId = `${uid}-m`
+    const label = parsedLayout?.modalLabel || 'Open'
+    const triggerClass = parsedLayout?.modalStyle === 'link' ? 'be-modal__trigger be-modal__trigger--link' : 'be-modal__trigger be-modal__trigger--button'
+    const colorVars = parsedLayout?.tabsColor ? { '--be-tab-color': parsedLayout.tabsColor } : {}
+    return (
+      <div className="be-modal" data-depth={depth} style={{ ...modalStyleVars(rawLayout), ...colorVars } as React.CSSProperties}>
+        <input type="checkbox" id={toggleId} className="be-modal__toggle" aria-label={label} />
+        <label htmlFor={toggleId} className={triggerClass}>
+          {label}
+        </label>
+        <div className="be-modal__overlay">
+          <label htmlFor={toggleId} className="be-modal__backdrop" aria-hidden="true" />
+          <div className="be-modal__panel" role="dialog" aria-modal="true" aria-label={label}>
+            <label htmlFor={toggleId} className="be-modal__close" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </label>
+            <div className="be-modal__body">
+              {parsed.map((column, index) => (
+                <SectionColumnView key={column._id || index} column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )

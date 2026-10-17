@@ -1,7 +1,17 @@
 import React from 'react'
 
 import { asBlockStyle, blockFxClasses, blockStyleClasses, blockStyleCss, blockStyleToCss } from '@/lib/blockStyle'
-import { carouselStyle, gridStyle, modalStyleVars, parseSectionLayout, sectionLayoutProps } from '@/lib/sectionLayout'
+import {
+  carouselStyle,
+  gridStyle,
+  hscrollStyle,
+  modalStyleVars,
+  parseSectionLayout,
+  sectionLayoutProps,
+  stackStyle,
+  stickyStepsClass,
+  stickyStepsStyle,
+} from '@/lib/sectionLayout'
 import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
 import { safeScope, StyledBlock } from './StyledBlock'
@@ -61,15 +71,69 @@ export const SectionBlock: React.FC<{
               <SectionColumnView column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
               {arrows && index > 0 && (
                 <a className="be-carousel__arrow be-carousel__arrow--prev" href={`#${slideId(prevIndex(index))}`} aria-label={`Previous slide, ${prevIndex(index) + 1} of ${count}`}>
-                  <span aria-hidden="true">{'\u2039'}</span>
+                  <span aria-hidden="true">{'‹'}</span>
                 </a>
               )}
               {arrows && index < count - 1 && (
                 <a className="be-carousel__arrow be-carousel__arrow--next" href={`#${slideId(nextIndex(index))}`} aria-label={`Next slide, ${nextIndex(index) + 1} of ${count}`}>
-                  <span aria-hidden="true">{'\u203a'}</span>
+                  <span aria-hidden="true">{'›'}</span>
                 </a>
               )}
             </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (display === 'stack') {
+    // Every column is a full-width card that sticks to the top of the viewport at its own offset
+    // (top + index * offset), so the cards pile up as the page scrolls. Later cards paint above earlier ones.
+    return (
+      <div className="be-stack" data-depth={depth} style={stackStyle(rawLayout) as React.CSSProperties}>
+        {parsed.map((column, index) => (
+          <SectionColumnView
+            key={column._id || index}
+            column={column}
+            index={index}
+            renderNode={renderNode}
+            depth={depth}
+            scope={scope}
+            extraStyle={{ '--be-stack-i': String(index), zIndex: String(index + 1) } as React.CSSProperties}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  if (display === 'hscroll') {
+    // Columns sit in one track. With scroll-driven animations (tabs.css, @supports) the section is a tall
+    // wrapper and the track slides sideways while the page scrolls past it. Everywhere else the track is a
+    // plain horizontal scroll-snap strip, so no column is ever hidden.
+    return (
+      <div className="be-hscroll" data-depth={depth} style={hscrollStyle(rawLayout) as React.CSSProperties}>
+        <div className="be-hscroll__sticky" tabIndex={0} role="region" aria-label="Horizontal scroll">
+          <div className="be-hscroll__track">
+            {parsed.map((column, index) => (
+              <SectionColumnView key={column._id || index} column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (display === 'sticky-steps') {
+    // The first column is the sticky side; the rest stack beside it as scrolling steps. Mobile is plain flow (tabs.css).
+    const [lead, ...steps] = parsed
+    return (
+      <div className={stickyStepsClass(rawLayout)} data-depth={depth} style={stickyStepsStyle(rawLayout) as React.CSSProperties}>
+        <div className="be-sticky-steps__lead">
+          <SectionColumnView column={lead} index={0} renderNode={renderNode} depth={depth} scope={scope} />
+        </div>
+        <div className="be-sticky-steps__steps">
+          {steps.map((column, index) => (
+            <SectionColumnView key={column._id || index + 1} column={column} index={index + 1} renderNode={renderNode} depth={depth} scope={scope} />
           ))}
         </div>
       </div>
@@ -209,7 +273,9 @@ const SectionColumnView: React.FC<{
   scope: string
   /** Set when the column is a tab / accordion panel (id + ARIA role). */
   panel?: { id: string; role: 'tabpanel' | 'region'; labelledBy?: string }
-}> = ({ column, index, renderNode, depth, scope, panel }) => {
+  /** Extra inline custom properties for this column (e.g. the stack card's index). */
+  extraStyle?: React.CSSProperties
+}> = ({ column, index, renderNode, depth, scope, panel, extraStyle }) => {
   const design = asBlockStyle(column.design)
   const columnScope = `be-c-${safeScope(`${scope}-${index}`)}`
   // Tablet / mobile padding and hide settings of the column itself.
@@ -221,7 +287,7 @@ const SectionColumnView: React.FC<{
       role={panel?.role}
       aria-labelledby={panel?.labelledBy}
       className={`be-column ${blockStyleClasses(design)} ${blockFxClasses(design)}`}
-      style={{ ...columnWidthVars(column), ...blockStyleToCss(design) }}
+      style={{ ...columnWidthVars(column), ...blockStyleToCss(design), ...extraStyle }}
     >
       {columnCss && <style dangerouslySetInnerHTML={{ __html: columnCss }} />}
       {(column.blocks || []).map((node, nodeIndex) => {

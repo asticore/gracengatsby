@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 
-import { asBlockStyle, type BlockStyle } from '@/lib/blockStyle'
+import { asBlockStyle, parseOldFormat, type BlockStyle } from '@/lib/blockStyle'
 import { getElementDef } from '@/lib/elements/registry'
 import {
   COLUMN_WIDTH_OPTIONS,
@@ -503,6 +503,159 @@ const SectionLayoutFields: React.FC<{
   )
 }
 
+type RepeaterField = { name: string; label?: string; type: string; [k: string]: unknown }
+
+const repeaterEmpty = (type: string): unknown => (type === 'checkbox' ? false : type === 'number' ? 0 : '')
+
+const RepeaterCards: React.FC<{ field: EditorField; value: unknown; onChange: (v: unknown) => void }> = ({
+  field,
+  value,
+  onChange,
+}) => {
+  const defFields: RepeaterField[] = ((field.repeater as any)?.fields as RepeaterField[]) || []
+  const rows: Record<string, unknown>[] = Array.isArray(value)
+    ? (value as Record<string, unknown>[])
+    : typeof value === 'string'
+      ? parseOldFormat(
+          value,
+          defFields.map((f) => f.name),
+        )
+      : []
+  const [open, setOpen] = useState<Set<number>>(() => new Set(rows.length > 0 && rows.length <= 3 ? [0] : []))
+
+  const toggle = (i: number) =>
+    setOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+
+  const blankRow = () => {
+    const r: Record<string, unknown> = {}
+    for (const f of defFields) r[f.name] = repeaterEmpty(f.type)
+    return r
+  }
+
+  const addRow = () => {
+    onChange([...rows, blankRow()])
+    setOpen((prev) => new Set(prev).add(rows.length))
+  }
+
+  const duplicateRow = (i: number) => {
+    const updated = [...rows]
+    updated.splice(i + 1, 0, { ...rows[i] })
+    onChange(updated)
+    setOpen((prev) => {
+      const next = new Set<number>()
+      prev.forEach((n) => next.add(n > i ? n + 1 : n))
+      next.add(i + 1)
+      return next
+    })
+  }
+
+  const deleteRow = (i: number) => {
+    onChange(rows.filter((_, idx) => idx !== i))
+    setOpen((prev) => {
+      const next = new Set<number>()
+      prev.forEach((n) => {
+        if (n < i) next.add(n)
+        else if (n > i) next.add(n - 1)
+      })
+      return next
+    })
+  }
+
+  const moveRow = (i: number, dir: -1 | 1) => {
+    const j = i + dir
+    if (j < 0 || j >= rows.length) return
+    const updated = [...rows]
+    ;[updated[i], updated[j]] = [updated[j], updated[i]]
+    onChange(updated)
+    setOpen((prev) => {
+      const next = new Set(prev)
+      const a = prev.has(i)
+      const b = prev.has(j)
+      if (a) next.add(j)
+      else next.delete(j)
+      if (b) next.add(i)
+      else next.delete(i)
+      return next
+    })
+  }
+
+  const updateCell = (i: number, name: string, v: unknown) => {
+    const updated = [...rows]
+    updated[i] = { ...updated[i], [name]: v }
+    onChange(updated)
+  }
+
+  const preview = (row: Record<string, unknown>, i: number) => {
+    for (const f of defFields) {
+      const v = row?.[f.name]
+      if (typeof v === 'string' && v.trim()) {
+        const t = v.trim().replace(/\s+/g, ' ')
+        return t.length > 40 ? t.slice(0, 40) + '…' : t
+      }
+    }
+    return `Item ${i + 1}`
+  }
+
+  const stop = (e: React.MouseEvent, fn: () => void) => {
+    e.preventDefault()
+    e.stopPropagation()
+    fn()
+  }
+
+  return (
+    <div className="ve-field ve-field--full ve-repeater">
+      <span className="ve-repeater__label">{field.label}</span>
+      {rows.length === 0 && <p className="ve-repeater__empty">No items yet</p>}
+      {rows.map((row, i) => (
+        <details
+          key={i}
+          className="ve-repeater__card"
+          open={open.has(i)}
+          onToggle={(e) => {
+            const isOpen = (e.currentTarget as HTMLDetailsElement).open
+            if (isOpen !== open.has(i)) toggle(i)
+          }}
+        >
+          <summary className="ve-repeater__head">
+            <span className="ve-repeater__num">{i + 1}</span>
+            <span className="ve-repeater__preview">{preview(row, i)}</span>
+            <button type="button" className="ve-repeater__btn" title="Move up" aria-label="Move up" disabled={i === 0} onClick={(e) => stop(e, () => moveRow(i, -1))}>
+              &#8593;
+            </button>
+            <button type="button" className="ve-repeater__btn" title="Move down" aria-label="Move down" disabled={i === rows.length - 1} onClick={(e) => stop(e, () => moveRow(i, 1))}>
+              &#8595;
+            </button>
+            <button type="button" className="ve-repeater__btn" title="Duplicate" aria-label="Duplicate" onClick={(e) => stop(e, () => duplicateRow(i))}>
+              &#10064;
+            </button>
+            <button type="button" className="ve-repeater__btn ve-repeater__btn--danger" title="Delete" aria-label="Delete" onClick={(e) => stop(e, () => deleteRow(i))}>
+              &times;
+            </button>
+          </summary>
+          <div className="ve-repeater__body">
+            {defFields.map((f) => (
+              <FieldInput
+                key={f.name}
+                field={f as unknown as EditorField}
+                value={row?.[f.name]}
+                onChange={(v) => updateCell(i, f.name, v)}
+              />
+            ))}
+          </div>
+        </details>
+      ))}
+      <button type="button" className="ve-repeater__add" onClick={addRow}>
+        + Add item
+      </button>
+    </div>
+  )
+}
+
 const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: unknown) => void }> = ({
   field,
   value,
@@ -815,193 +968,8 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
           {field.helpText && <span className="ve-field__help">{field.helpText}</span>}
         </div>
       )
-    case 'repeater': {
-      const rows = Array.isArray(value) ? value : []
-      const repeaterDef = (field.repeater as any) || { fields: [] }
-
-      const addRow = (insertIndex: number) => {
-        const newRow: Record<string, unknown> = {}
-        for (const f of repeaterDef.fields) {
-          newRow[f.name] = ''
-        }
-        const updated = [...rows]
-        updated.splice(insertIndex + 1, 0, newRow)
-        onChange(updated)
-      }
-
-      const deleteRow = (index: number) => {
-        onChange(rows.filter((_, i) => i !== index))
-      }
-
-      const moveRow = (index: number, direction: 'up' | 'down') => {
-        const updated = [...rows]
-        const swapIndex = direction === 'up' ? index - 1 : index + 1
-        if (swapIndex < 0 || swapIndex >= updated.length) return
-        ;[updated[index], updated[swapIndex]] = [updated[swapIndex], updated[index]]
-        onChange(updated)
-      }
-
-      const updateCell = (rowIndex: number, fieldName: string, val: unknown) => {
-        const updated = [...rows]
-        updated[rowIndex] = { ...updated[rowIndex], [fieldName]: val }
-        onChange(updated)
-      }
-
-      return (
-        <div className="ve-field ve-field--full">
-          <span style={{ display: 'block', marginBottom: '0.5rem' }}>{field.label}</span>
-
-          {rows.length === 0 ? (
-            <p style={{ color: '#999', marginBottom: '0.5rem' }}>No rows yet</p>
-          ) : (
-            <div style={{ overflowX: 'auto', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f5f5f5', borderBottom: '1px solid #ddd' }}>
-                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '40px', fontWeight: 600 }}>#</th>
-                    {repeaterDef.fields.map((f: any) => (
-                      <th key={f.name} style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600 }}>
-                        {f.label}
-                      </th>
-                    ))}
-                    <th style={{ padding: '0.5rem', textAlign: 'center', width: '130px', fontWeight: 600 }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, rowIndex) => (
-                    <tr key={rowIndex} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '0.5rem', backgroundColor: '#fafafa', textAlign: 'center', fontWeight: 500 }}>
-                        {rowIndex + 1}
-                      </td>
-                      {repeaterDef.fields.map((f: any) => (
-                        <td key={f.name} style={{ padding: '0.5rem' }}>
-                          {f.type === 'text' || f.type === 'number' ? (
-                            <input
-                              type={f.type === 'number' ? 'number' : 'text'}
-                              value={String((row as any)?.[f.name] ?? '')}
-                              onChange={(e) => updateCell(rowIndex, f.name, f.type === 'number' ? Number(e.target.value) : e.target.value)}
-                              style={{
-                                width: '100%',
-                                padding: '0.4rem',
-                                border: '1px solid #ccc',
-                                borderRadius: '3px',
-                                fontFamily: 'inherit',
-                                fontSize: 'inherit',
-                              }}
-                            />
-                          ) : f.type === 'checkbox' ? (
-                            <input
-                              type="checkbox"
-                              checked={Boolean((row as any)?.[f.name])}
-                              onChange={(e) => updateCell(rowIndex, f.name, e.target.checked)}
-                              style={{ cursor: 'pointer' }}
-                            />
-                          ) : (
-                            <span style={{ color: '#999' }}>–</span>
-                          )}
-                        </td>
-                      ))}
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                          <button
-                            type="button"
-                            onClick={() => addRow(rowIndex)}
-                            title="Add row after this"
-                            style={{
-                              padding: '0.3rem 0.5rem',
-                              fontSize: '0.8rem',
-                              backgroundColor: '#007bff',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '3px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            +
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveRow(rowIndex, 'up')}
-                            disabled={rowIndex === 0}
-                            title="Move up"
-                            style={{
-                              padding: '0.3rem 0.5rem',
-                              fontSize: '0.8rem',
-                              backgroundColor: rowIndex === 0 ? '#ccc' : '#6c757d',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '3px',
-                              cursor: rowIndex === 0 ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveRow(rowIndex, 'down')}
-                            disabled={rowIndex === rows.length - 1}
-                            title="Move down"
-                            style={{
-                              padding: '0.3rem 0.5rem',
-                              fontSize: '0.8rem',
-                              backgroundColor: rowIndex === rows.length - 1 ? '#ccc' : '#6c757d',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '3px',
-                              cursor: rowIndex === rows.length - 1 ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteRow(rowIndex)}
-                            title="Delete row"
-                            style={{
-                              padding: '0.3rem 0.5rem',
-                              fontSize: '0.8rem',
-                              backgroundColor: '#dc3545',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '3px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => {
-              if (rows.length === 0) {
-                addRow(-1)
-              } else {
-                addRow(rows.length - 1)
-              }
-            }}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 500,
-            }}
-          >
-            Add row
-          </button>
-        </div>
-      )
-    }
+    case 'repeater':
+      return <RepeaterCards field={field} value={value} onChange={onChange} />
     case 'link':
       return <LinkField value={value} onChange={onChange} label={field.label} helpText={field.helpText} />
     case 'icon':

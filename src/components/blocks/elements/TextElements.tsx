@@ -3,7 +3,7 @@ import React from 'react'
 import { RichText } from '@/engine/editor/react'
 
 import { Icon } from './icons'
-import { cells, linkAttrs, linkHref, lines, pick, str } from './elementUtil'
+import { cells, iconName, linkAttrs, linkHref, lines, pick, str } from './elementUtil'
 
 export const ALIGNS = ['left', 'center', 'right'] as const
 export type Align = (typeof ALIGNS)[number]
@@ -38,7 +38,7 @@ export const QuoteElement: React.FC<P> = (p) => {
 
 /** `icon-list`: one line per item as "Text | optional link", each with the same icon. */
 export const IconListElement: React.FC<P> = (p) => {
-  const icon = str(p.icon, 'check')
+  const icon = iconName(p.icon) || 'check'
   const rows = cells(p.items, 2)
   return (
     <ul className={`el-icon-list el-icon-list--${pick(p.layout, ['stacked', 'inline'] as const, 'stacked')} ${alignClass(p.align)}`}>

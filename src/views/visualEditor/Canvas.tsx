@@ -397,6 +397,7 @@ const SectionColumns: React.FC<{
       </div>
     )
   }
+
   const ownerLocked = Boolean(handlers.locks?.[pathKey(path)]?.blocked)
 
   if (panelMode) {

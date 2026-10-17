@@ -43,6 +43,8 @@ export type ElementDef = {
   description: string
   fields: EditorField[]
   defaultProps: () => Record<string, unknown>
+  /** Hide from the element library/picker. The renderer stays so existing pages keep working. */
+  hidden?: boolean
 }
 
 export const ELEMENTS: ElementDef[] = [

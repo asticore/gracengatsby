@@ -9,6 +9,7 @@ import {
   DIVIDER_OPTIONS,
   HOVER_OPTIONS,
   PARTICLE_INTERACT_OPTIONS,
+  REVEAL_EASING_OPTIONS,
   REVEAL_OPTIONS,
   resolveDeviceOverride,
   type BlockStyle,
@@ -176,16 +177,11 @@ export const DesignPanel: React.FC<{
           ]}
           defaultLabel="Default"
         />
-        <SelectRow
-          label="Font"
-          value={value.fontFamily || ''}
-          options={[
-            { label: 'Site default', value: '' },
-            ...BUILT_IN_FONTS.map((font) => ({ label: font.label, value: font.value })),
-          ]}
-          onChange={(v) => set('fontFamily', v || undefined)}
-        />
         <ColorRow label="Text colour" value={value.textColor} onChange={(v) => set('textColor', v)} />
+      </Accordion>
+
+      <Accordion title="Typography">
+        <TypographyControls value={value} onChange={onChange} ctl={resp} />
       </Accordion>
 
       {variant === 'block' && (
@@ -735,6 +731,261 @@ const DividerControls: React.FC<{
   </div>
 )
 
+/* -------------------------------------------------------------------------- */
+/* Typography (Elementor-style)                                               */
+/* -------------------------------------------------------------------------- */
+
+type ToggleOption = { label: string; value: string; title?: string }
+
+/** A row of toggle buttons for one BlockStyle key; clicking the active one clears it. */
+const ToggleRow: React.FC<{
+  label: string
+  options: ToggleOption[]
+  current: string | undefined
+  onPick: (v: string | undefined) => void
+}> = ({ label, options, current, onPick }) => (
+  <Row label={label}>
+    <div className="ve-color">
+      {options.map((o) => {
+        const on = current === o.value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            className="ve-btn ve-btn--ghost"
+            aria-pressed={on}
+            title={o.title ?? o.label}
+            style={on ? { outline: '2px solid currentColor', fontWeight: 700 } : undefined}
+            onClick={(e) => {
+              e.preventDefault()
+              onPick(on ? undefined : o.value)
+            }}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+      {current !== undefined && (
+        <button type="button" className="ve-btn ve-btn--ghost" title="Reset" aria-label={`Reset ${label}`} onClick={(e) => { e.preventDefault(); onPick(undefined) }}>
+          {'↺'}
+        </button>
+      )}
+    </div>
+  </Row>
+)
+
+/** Slider + number + reset for a responsive numeric key (follows the device toggle). */
+const TypoRange: React.FC<{
+  ctl: ResponsiveCtl
+  k: RespKey
+  label: string
+  def: number
+  min: number
+  max: number
+  step: number
+  unit?: React.ReactNode
+  /** Extra keys cleared by this control's reset. */
+  alsoReset?: RespKey[]
+}> = ({ ctl, k, label, def, min, max, step, unit, alsoReset }) => {
+  const own = ctl.own(k)
+  const inherited = ctl.inherited(k)
+  const current = typeof own === 'number' ? own : typeof inherited === 'number' ? inherited : def
+  const write = (n: number | undefined) => ctl.set(k, n === undefined || !Number.isFinite(n) ? undefined : n)
+  return (
+    <Row label={label} resp={{ device: ctl.device, overridden: ctl.overridden(k), onReset: () => ctl.reset(k) }}>
+      <div className="ve-color">
+        <input type="range" min={min} max={max} step={step} value={current} onChange={(e) => write(Number(e.target.value))} />
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={typeof own === 'number' ? own : ''}
+          placeholder={String(current)}
+          onChange={(e) => write(e.target.value === '' ? undefined : Number(e.target.value))}
+        />
+        {unit}
+        {typeof own === 'number' && ctl.device === 'desktop' && (
+          <button
+            type="button"
+            className="ve-btn ve-btn--ghost"
+            title="Reset to default"
+            aria-label={`Reset ${label}`}
+            onClick={(e) => {
+              e.preventDefault()
+              const clear: Partial<Record<RespKey, unknown>> = { [k]: undefined }
+              for (const r of alsoReset ?? []) clear[r] = undefined
+              ctl.setMany(clear)
+            }}
+          >
+            {'↺'}
+          </button>
+        )}
+      </div>
+    </Row>
+  )
+}
+
+const FONT_SIZE_RANGE: Record<string, { min: number; max: number; step: number; def: number }> = {
+  px: { min: 8, max: 160, step: 1, def: 16 },
+  em: { min: 0.5, max: 10, step: 0.1, def: 1 },
+  rem: { min: 0.5, max: 10, step: 0.1, def: 1 },
+  vw: { min: 0.5, max: 20, step: 0.1, def: 4 },
+}
+const LETTER_SPACING_RANGE: Record<string, { min: number; max: number; step: number }> = {
+  px: { min: -5, max: 30, step: 0.5 },
+  em: { min: -0.2, max: 1, step: 0.01 },
+}
+
+const WEIGHT_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900].map((w) => ({
+  value: String(w),
+  label: `${w}${w === 400 ? ' (Normal)' : w === 700 ? ' (Bold)' : ''}`,
+}))
+
+const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void; ctl: ResponsiveCtl }> = ({
+  value,
+  onChange,
+  ctl,
+}) => {
+  const patch = (changes: Partial<Record<keyof BlockStyle, unknown>>) => {
+    const updated: Record<string, unknown> = { ...value }
+    for (const [name, next] of Object.entries(changes)) {
+      if (next === undefined || next === '') delete updated[name]
+      else updated[name] = next
+    }
+    onChange(updated as BlockStyle)
+  }
+  const sizeUnit = (ctl.effective('fontSizeUnit') as string | undefined) ?? 'px'
+  const sizeRange = FONT_SIZE_RANGE[sizeUnit] ?? FONT_SIZE_RANGE.px
+  const lsUnit = value.letterSpacingUnit === 'em' ? 'em' : 'px'
+  const lsRange = LETTER_SPACING_RANGE[lsUnit]
+  const touched = (['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontStyle', 'textDecoration', 'wordSpacing', 'textShadow'] as const).some(
+    (k) => value[k] !== undefined,
+  )
+  return (
+    <>
+      <SelectRow
+        label="Family"
+        value={value.fontFamily || ''}
+        options={[{ label: 'Site default', value: '' }, ...BUILT_IN_FONTS.map((font) => ({ label: font.label, value: font.value }))]}
+        onChange={(v) => patch({ fontFamily: v || undefined })}
+      />
+      <TypoRange
+        ctl={ctl}
+        k="fontSize"
+        label="Size"
+        def={sizeRange.def}
+        min={sizeRange.min}
+        max={sizeRange.max}
+        step={sizeRange.step}
+        alsoReset={['fontSizeUnit']}
+        unit={
+          <select
+            aria-label="Size unit"
+            value={sizeUnit}
+            onChange={(e) => ctl.set('fontSizeUnit', e.target.value === 'px' && ctl.device === 'desktop' ? undefined : e.target.value)}
+          >
+            {['px', 'em', 'rem', 'vw'].map((u) => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
+        }
+      />
+      <SelectRow
+        label="Weight"
+        value={value.fontWeight !== undefined ? String(value.fontWeight) : ''}
+        options={[{ label: 'Default', value: '' }, ...WEIGHT_OPTIONS]}
+        onChange={(v) => patch({ fontWeight: v ? Number(v) : undefined })}
+      />
+      <ToggleRow
+        label="Transform"
+        current={value.textTransform}
+        options={[
+          { label: 'None', value: 'none' },
+          { label: 'AA', value: 'uppercase', title: 'Uppercase' },
+          { label: 'aa', value: 'lowercase', title: 'Lowercase' },
+          { label: 'Aa', value: 'capitalize', title: 'Capitalize' },
+        ]}
+        onPick={(v) => patch({ textTransform: v })}
+      />
+      <ToggleRow
+        label="Style"
+        current={value.fontStyle}
+        options={[
+          { label: 'Normal', value: 'normal' },
+          { label: 'Italic', value: 'italic' },
+        ]}
+        onPick={(v) => patch({ fontStyle: v })}
+      />
+      <ToggleRow
+        label="Decoration"
+        current={value.textDecoration}
+        options={[
+          { label: 'None', value: 'none' },
+          { label: 'Underline', value: 'underline' },
+          { label: 'Strike', value: 'line-through', title: 'Line through' },
+        ]}
+        onPick={(v) => patch({ textDecoration: v })}
+      />
+      <TypoRange ctl={ctl} k="lineHeight" label="Line height" def={1.5} min={0.8} max={3} step={0.05} />
+      <TypoRange
+        ctl={ctl}
+        k="letterSpacing"
+        label="Letter spacing"
+        def={0}
+        min={lsRange.min}
+        max={lsRange.max}
+        step={lsRange.step}
+        unit={
+          <select
+            aria-label="Letter spacing unit"
+            value={lsUnit}
+            onChange={(e) => patch({ letterSpacingUnit: e.target.value === 'em' ? 'em' : undefined })}
+          >
+            <option value="px">px</option>
+            <option value="em">em</option>
+          </select>
+        }
+      />
+      <FxRange k="wordSpacing" label="Word spacing" unit="px" value={value} onChange={onChange} def={0} min={-10} max={50} />
+      <SelectRow
+        label="Text shadow"
+        value={value.textShadow || 'none'}
+        options={[
+          { label: 'None', value: 'none' },
+          { label: 'Small', value: 'sm' },
+          { label: 'Medium', value: 'md' },
+          { label: 'Large', value: 'lg' },
+        ]}
+        onChange={(v) => patch({ textShadow: v === 'none' ? undefined : v })}
+      />
+      {touched && (
+        <button
+          type="button"
+          className="ve-btn ve-btn--ghost"
+          onClick={() =>
+            patch({
+              fontFamily: undefined, fontSize: undefined, fontSizeUnit: undefined, fontWeight: undefined, lineHeight: undefined,
+              letterSpacing: undefined, letterSpacingUnit: undefined, textTransform: undefined, fontStyle: undefined,
+              textDecoration: undefined, wordSpacing: undefined, textShadow: undefined,
+              tablet: stripTypo(value.tablet), mobile: stripTypo(value.mobile),
+            })
+          }
+        >
+          Reset all typography
+        </button>
+      )}
+    </>
+  )
+}
+
+/** A device override without its typography keys (undefined when nothing else is left). */
+function stripTypo(o: DeviceOverride | undefined): DeviceOverride | undefined {
+  if (!o) return undefined
+  const { fontSize: _a, fontSizeUnit: _b, lineHeight: _c, letterSpacing: _d, ...rest } = o
+  return Object.keys(rest).length > 0 ? rest : undefined
+}
+
 const RangeRow: React.FC<{
   label: string
   value: number
@@ -756,6 +1007,49 @@ const RangeRow: React.FC<{
     </div>
   </Row>
 )
+
+/** Elementor-style numeric control: label, slider, number box, unit, and a per-control reset. */
+const FxRange: React.FC<{
+  k: keyof BlockStyle
+  label: string
+  value: BlockStyle
+  onChange: (next: BlockStyle) => void
+  def: number
+  min: number
+  max: number
+  step?: number
+  unit?: string
+  help?: string
+}> = ({ k, label, value, onChange, def, min, max, step = 1, unit, help }) => {
+  const raw = value[k]
+  const current = typeof raw === 'number' ? raw : def
+  const write = (n: number | undefined) => {
+    const updated = { ...value } as Record<string, unknown>
+    if (n === undefined || !Number.isFinite(n)) delete updated[k]
+    else updated[k] = n
+    onChange(updated as BlockStyle)
+  }
+  return (
+    <Row label={unit ? `${label} (${unit})` : label} help={help}>
+      <div className="ve-color">
+        <input type="range" min={min} max={max} step={step} value={current} onChange={(e) => write(Number(e.target.value))} />
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={current}
+          onChange={(e) => write(e.target.value === '' ? undefined : Number(e.target.value))}
+        />
+        {typeof raw === 'number' && (
+          <button type="button" className="ve-btn ve-btn--ghost" title="Reset to default" aria-label={`Reset ${label}`} onClick={() => write(undefined)}>
+            {'↺'}
+          </button>
+        )}
+      </div>
+    </Row>
+  )
+}
 
 /** Effects are not responsive: they always write the base (desktop) value, whatever device is being edited. */
 function makeFxEditing(value: BlockStyle, onChange: (next: BlockStyle) => void) {
@@ -784,7 +1078,7 @@ function makeFxEditing(value: BlockStyle, onChange: (next: BlockStyle) => void) 
 
 /** Background parallax: lives with the Image controls because it only works on a background image. */
 const ParallaxBgControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
-  const { set } = makeFxEditing(value, onChange)
+  const { set, resetBtn } = makeFxEditing(value, onChange)
   const on = value.parallax === 'background'
   return (
     <>
@@ -804,6 +1098,21 @@ const ParallaxBgControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
           onChange={(v) => set('parallaxStrength', v)}
         />
       )}
+      {on && (
+        <>
+          <FxRange k="parallaxDistance" label="Travel" unit="px" value={value} onChange={onChange} def={Math.round((value.parallaxStrength ?? 40) * 1.6)} min={0} max={400} help="Overrides strength with an exact distance." />
+          <SelectRow
+            label="Direction"
+            value={value.parallaxDirection || 'up'}
+            options={[
+              { label: 'Up (slower than page)', value: 'up' },
+              { label: 'Down (reversed)', value: 'down' },
+            ]}
+            onChange={(v) => set('parallaxDirection', v === 'down' ? 'down' : undefined)}
+          />
+          {resetBtn(['parallax', 'parallaxStrength', 'parallaxDistance', 'parallaxDirection'])}
+        </>
+      )}
     </>
   )
 }
@@ -813,7 +1122,10 @@ const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: B
   const fx = value.bgEffect || 'none'
   const withColors = ['aurora', 'mesh', 'gradient-shift', 'dots', 'grid', 'particles'].includes(fx)
   const twoColors = ['aurora', 'mesh', 'gradient-shift'].includes(fx)
-  const bgKeys: (keyof BlockStyle)[] = ['bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract']
+  const bgKeys: (keyof BlockStyle)[] = ['bgEffect', 'bgEffectColor', 'bgEffectColor2', 'bgEffectIntensity', 'particlesCount', 'particlesInteract',
+    'particlesSizeMin', 'particlesSizeMax', 'particlesSpeed', 'particlesOpacity', 'particlesLinks', 'particlesLinkDistance', 'particlesInteractRadius', 'particlesShape',
+    'dotSize', 'dotSpacing', 'gridSize', 'gridLineWidth', 'auroraBlur', 'auroraSize', 'auroraSpeed', 'gradientAngle', 'gradientSpeed', 'grainOpacity', 'grainSize']
+  const r = { value, onChange }
   return (
     <div className="ve-divider-group">
       <SelectRow
@@ -840,6 +1152,61 @@ const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: B
             help="How particles react to the pointer."
             onChange={(v) => set('particlesInteract', v as BlockStyle['particlesInteract'])}
           />
+          {(value.particlesInteract || 'repel') !== 'none' && (
+            <FxRange k="particlesInteractRadius" label="Interaction radius" unit="px" def={120} min={40} max={400} {...r} />
+          )}
+          <FxRange k="particlesSizeMin" label="Size min" unit="px" def={1} min={0.5} max={10} step={0.5} {...r} />
+          <FxRange k="particlesSizeMax" label="Size max" unit="px" def={2.8} min={0.5} max={12} step={0.5} {...r} />
+          <FxRange k="particlesSpeed" label="Speed" unit="%" def={100} min={0} max={300} {...r} />
+          <FxRange k="particlesOpacity" label="Opacity" unit="%" def={100} min={5} max={100} {...r} />
+          <SelectRow
+            label="Shape"
+            value={value.particlesShape || 'circle'}
+            options={[
+              { label: 'Circle', value: 'circle' },
+              { label: 'Square', value: 'square' },
+            ]}
+            onChange={(v) => set('particlesShape', v === 'square' ? 'square' : undefined)}
+          />
+          <CheckRow label="Link nearby particles" checked={Boolean(value.particlesLinks) || value.particlesInteract === 'connect'} onChange={(v) => set('particlesLinks', v || undefined)} />
+          {(value.particlesLinks || value.particlesInteract === 'connect') && (
+            <FxRange k="particlesLinkDistance" label="Link distance" unit="px" def={110} min={40} max={300} {...r} />
+          )}
+        </>
+      )}
+      {fx === 'dots' && (
+        <>
+          <FxRange k="dotSize" label="Dot size" unit="px" def={1.5} min={0.5} max={12} step={0.5} {...r} />
+          <FxRange k="dotSpacing" label="Spacing" unit="px" def={22} min={8} max={120} {...r} />
+        </>
+      )}
+      {fx === 'grid' && (
+        <>
+          <FxRange k="gridSize" label="Cell size" unit="px" def={36} min={12} max={200} {...r} />
+          <FxRange k="gridLineWidth" label="Line width" unit="px" def={1} min={0.5} max={6} step={0.5} {...r} />
+        </>
+      )}
+      {fx === 'aurora' && (
+        <>
+          <FxRange k="auroraBlur" label="Blur" unit="px" def={40} min={0} max={120} {...r} />
+          <FxRange k="auroraSize" label="Spread" unit="%" def={30} min={0} max={100} {...r} />
+          <FxRange k="auroraSpeed" label="Loop time" unit="s" def={18} min={4} max={80} help="Higher is slower." {...r} />
+        </>
+      )}
+      {fx === 'gradient-shift' && (
+        <>
+          <FxRange k="gradientAngle" label="Angle" unit="deg" def={90} min={0} max={360} {...r} />
+          <FxRange k="gradientSpeed" label="Loop time" unit="s" def={16} min={3} max={60} help="Higher is slower." {...r} />
+        </>
+      )}
+      {fx === 'grain' && (
+        <>
+          <FxRange k="grainOpacity" label="Grain strength" unit="%" def={Math.round((value.bgEffectIntensity ?? 50) * 0.6)} min={0} max={100} {...r} />
+          <FxRange k="grainSize" label="Grain size" unit="px" def={160} min={40} max={400} {...r} />
+        </>
+      )}
+      {fx === 'particles' && (
+        <>
         </>
       )}
       {resetBtn(bgKeys)}
@@ -866,9 +1233,12 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           onChange={(v) => set('parallax', v === 'none' ? undefined : (v as BlockStyle['parallax']))}
         />
         {scroll !== 'none' && (
-          <RangeRow label="Strength" value={value.parallaxStrength ?? 40} min={0} max={100} help="How far it moves as you scroll." onChange={(v) => set('parallaxStrength', v)} />
+          <>
+            <RangeRow label="Strength" value={value.parallaxStrength ?? 40} min={0} max={100} help="How far it moves as you scroll." onChange={(v) => set('parallaxStrength', v)} />
+            <FxRange k="parallaxDistance" label="Travel" unit="px" value={value} onChange={onChange} def={Math.round((value.parallaxStrength ?? 40) * 1.6)} min={0} max={400} help="Overrides strength with an exact distance." />
+          </>
         )}
-        {resetBtn(['parallax', 'parallaxStrength'])}
+        {resetBtn(['parallax', 'parallaxStrength', 'parallaxDistance'])}
       </div>
 
       <div className="ve-divider-group">
@@ -879,7 +1249,20 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           help="Plays as the section scrolls into view. Pure CSS, no scripts."
           onChange={(v) => set('reveal', v === 'none' ? undefined : (v as BlockStyle['reveal']))}
         />
-        {resetBtn(['reveal'])}
+        {value.reveal && value.reveal !== 'none' && (
+          <>
+            {value.reveal !== 'fade' && <FxRange k="revealDistance" label="Distance" unit="px" value={value} onChange={onChange} def={32} min={0} max={200} />}
+            <FxRange k="revealDuration" label="Duration" unit="% of scroll-in" value={value} onChange={onChange} def={40} min={5} max={100} help="Scroll-linked, so this is how much of the scroll-in the animation spans." />
+            <FxRange k="revealDelay" label="Delay" unit="%" value={value} onChange={onChange} def={0} min={0} max={60} />
+            <SelectRow
+              label="Easing"
+              value={value.revealEasing || 'linear'}
+              options={REVEAL_EASING_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+              onChange={(v) => set('revealEasing', v === 'linear' ? undefined : (v as BlockStyle['revealEasing']))}
+            />
+          </>
+        )}
+        {resetBtn(['reveal', 'revealDistance', 'revealDuration', 'revealDelay', 'revealEasing'])}
       </div>
 
       <div className="ve-divider-group">
@@ -890,7 +1273,11 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           help="How the section reacts when the pointer is over it."
           onChange={(v) => set('hover', v === 'none' ? undefined : (v as BlockStyle['hover']))}
         />
-        {resetBtn(['hover'])}
+        {value.hover === 'lift' && <FxRange k="hoverLift" label="Lift" unit="px" value={value} onChange={onChange} def={4} min={0} max={40} />}
+        {(value.hover === 'lift' || value.hover === 'zoom') && (
+          <FxRange k="hoverScale" label="Scale" unit="%" value={value} onChange={onChange} def={value.hover === 'zoom' ? 102 : 100} min={100} max={120} />
+        )}
+        {resetBtn(['hover', 'hoverLift', 'hoverScale'])}
       </div>
 
       <div className="ve-divider-group">
@@ -901,9 +1288,13 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           onChange={(v) => set('glass', v || undefined)}
         />
         {value.glass && (
-          <RangeRow label="Blur (px)" value={value.glassBlur ?? 12} min={0} max={40} onChange={(v) => set('glassBlur', v)} />
+          <>
+            <RangeRow label="Blur (px)" value={value.glassBlur ?? 12} min={0} max={40} onChange={(v) => set('glassBlur', v)} />
+            <FxRange k="glassOpacity" label="Tint" unit="%" value={value} onChange={onChange} def={18} min={0} max={100} />
+            <FxRange k="glassBorder" label="Border" unit="%" value={value} onChange={onChange} def={30} min={0} max={100} />
+          </>
         )}
-        {resetBtn(['glass', 'glassBlur'])}
+        {resetBtn(['glass', 'glassBlur', 'glassOpacity', 'glassBorder'])}
       </div>
     </>
   )

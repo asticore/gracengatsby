@@ -269,6 +269,16 @@ export type BlockStyle = {
   tfhSkewY?: number
   /** Transition length for transform, ms 0-2000 (default 250). */
   tfDuration?: number
+  /** Normal | Hover state: colours, shadow and radius applied on hover (hover-capable devices only). Unset = same as normal. */
+  hoverBgColor?: string
+  hoverTextColor?: string
+  hoverBorderColor?: string
+  /** Same presets as boxShadow; 'none' removes the shadow on hover. */
+  hoverBoxShadow?: BoxShadowPreset
+  /** px, 0-200. */
+  hoverBorderRadius?: number
+  /** Transition length for the hover colour/shadow/radius changes, ms 0-2000 (default 250). */
+  hoverTransitionMs?: number
   position?: BlockPosition
   posTop?: number
   posRight?: number
@@ -403,6 +413,12 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   enumKey('overlayType', [{ value: 'none' }, { value: 'color' }, { value: 'gradient' }])
   colorKey('overlayColor')
   colorKey('overlayColor2')
+  colorKey('hoverBgColor')
+  colorKey('hoverTextColor')
+  colorKey('hoverBorderColor')
+  enumKey('hoverBoxShadow', BOX_SHADOW_OPTIONS)
+  numKey('hoverBorderRadius', 0, 200)
+  numKey('hoverTransitionMs', 0, 2000)
   numKey('overlayAngle', 0, 360)
   numKey('overlayOpacity', 0, 100)
   enumKey('overlayBlend', [
@@ -545,7 +561,19 @@ const FX_KEYS = [
   'parallax', 'parallaxStrength', 'reveal', 'hover', 'glass', 'glassBlur',
   'overlayType', 'overlayColor', 'overlayColor2', 'overlayAngle', 'overlayOpacity', 'overlayBlend',
   'position', 'blendMode', 'cssClasses', 'customCss', 'maskShape',
+  'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
 ] as const
+
+/** Normal | Hover state keys (Elementor-style). Any of them set turns on the hover transition. */
+const HOVER_STATE_KEYS = [
+  'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
+] as const
+/** Properties that animate between the normal and hover values. */
+const HOVER_TRANSITION_PROPS = ['background-color', 'color', 'border-color', 'box-shadow', 'border-radius'] as const
+
+function hasHoverState(style: BlockStyle): boolean {
+  return HOVER_STATE_KEYS.some((k) => style[k] !== undefined)
+}
 
 const CSS_CLASS_TOKEN = /^[A-Za-z_][A-Za-z0-9_-]{0,60}$/
 const CUSTOM_CSS_MAX = 4000
@@ -787,6 +815,13 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   const clip = maskClipPath(style.maskShape)
   if (clip) css.clipPath = clip
   Object.assign(css, advancedCss(style))
+  // One comma-separated list: the transform transition from advancedCss (if any) plus the hover colour/shadow/radius ones.
+  if (hasHoverState(style)) {
+    const ms = isNum(style.hoverTransitionMs) ? style.hoverTransitionMs : 250
+    const parts = css.transition ? [String(css.transition)] : []
+    for (const prop of HOVER_TRANSITION_PROPS) parts.push(`${prop} ${ms}ms ease`)
+    css.transition = parts.join(', ')
+  }
 
   return css
 }
@@ -1003,6 +1038,10 @@ export function blockStyleCss(style: BlockStyle, scopeId: string, options: { edi
   const tfh = transformValue(style, 'tfh')
   if (tfh) rules.push(`@media (hover:hover){${sel}:hover{transform:${tfh} !important}}`)
 
+  // Hover colours, shadow and radius. !important for the same reason: the normal values are inline.
+  const hoverDecls = hoverStateDecls(style)
+  if (hoverDecls.length > 0) rules.push(`@media (hover:hover){${sel}:hover{${hoverDecls.join(';')}}}`)
+
   // Custom CSS: `selector` is this block; without it the text is taken as the block's declarations.
   // Sanitized again here, since this is where the text lands inside a <style> element.
   const custom = sanitizeCustomCss(style.customCss)
@@ -1024,6 +1063,28 @@ export function blockStyleCss(style: BlockStyle, scopeId: string, options: { edi
   }
 
   return rules.join('')
+}
+
+/**
+ * Declarations for the scoped hover rule. Colours are re-checked against SAFE_COLOR because this text
+ * lands inside a <style> element, even though asBlockStyle() has already validated them.
+ */
+function hoverStateDecls(style: BlockStyle): string[] {
+  const decls: string[] = []
+  const color = (name: string, v: unknown) => {
+    if (typeof v === 'string' && SAFE_COLOR.test(v)) decls.push(`${name}:${v} !important`)
+  }
+  color('background-color', style.hoverBgColor)
+  color('color', style.hoverTextColor)
+  color('border-color', style.hoverBorderColor)
+  const shadow = style.hoverBoxShadow
+  if (shadow === 'none') decls.push('box-shadow:none !important')
+  else if (shadow) {
+    const preset = BOX_SHADOW_PRESETS[shadow as Exclude<BoxShadowPreset, 'none'>]
+    if (preset) decls.push(`box-shadow:${preset} !important`)
+  }
+  if (isNum(style.hoverBorderRadius)) decls.push(`border-radius:${style.hoverBorderRadius}px !important`)
+  return decls
 }
 
 /** Class names the wrapper should carry, derived from the style. */

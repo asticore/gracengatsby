@@ -1897,6 +1897,51 @@ html[data-theme='dark'] .ve-root {
   background: var(--ve-column-soft);
 }
 .ve-column--selected > .ve-column__tag { color: var(--ve-column); font-weight: 700; }
+
+/* Drag-resize handle between two side-by-side columns (Canvas.tsx ColumnResizeHandle). Shown while
+   the section or its selection is hovered; not drawn at all where the section stacks on this device. */
+.ve-section:has(> .ve-col-resize) { position: relative; }
+.ve-col-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  transform: translateX(-50%);
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.ve-col-resize::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--ve-accent);
+}
+.ve-section:hover > .ve-col-resize,
+.ve-node--selected > .ve-node__body > .ve-section > .ve-col-resize,
+.ve-col-resize:hover,
+.ve-col-resize--active { opacity: 1; }
+.ve-col-resize[aria-disabled='true'] { display: none; }
+.ve-col-resize__tip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ve-accent);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
 .ve-column__toolbar {
   position: absolute;
   top: -13px;

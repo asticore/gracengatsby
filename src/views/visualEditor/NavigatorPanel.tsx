@@ -5,6 +5,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SectionColumn, SectionNode } from '@/lib/sectionTree'
 import { getElementDef } from '@/lib/elements/registry'
 
+import { asBlockStyle } from '@/lib/blockStyle'
+import { parseSectionLayout } from '@/lib/sectionLayout'
+
 import { getBlockDef } from './blockSchemas'
 import { pathKey, type NodePath } from './treeOps'
 
@@ -114,8 +117,10 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
     const mk = (extra: Pick<Row, 'kind' | 'icon' | 'typeLabel' | 'name'> & Partial<Row>, d: number, key: string): Row => ({
       key, path, depth: d, custom: false, anchor: '', hasChildren: false, children: [], ...extra,
     })
+    const dispMode = node.blockType === 'section' ? parseSectionLayout(asBlockStyle(node.design).layout)?.display : undefined
+    const panelKind = dispMode === 'tabs' ? 'Tab' : dispMode === 'accordion' ? 'Panel' : ''
     let children: Row[]
-    if (columns.length === 1) {
+    if (columns.length === 1 && !panelKind) {
       // Single column: show its blocks directly under the section (real paths kept).
       children = buildRows(columns[0].blocks || [], [...path, 0], depth + 1)
     } else {
@@ -130,7 +135,7 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
           kind: 'column' as const,
           icon: '▯',
           typeLabel: 'Column',
-          name: label || `Column ${ci + 1}`,
+          name: label || (panelKind ? `${panelKind} ${ci + 1}` : `Column ${ci + 1}`),
           custom: Boolean(label),
           anchor: column.design?.anchorId || '',
           hasChildren: kids.length > 0,

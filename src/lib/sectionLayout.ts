@@ -22,7 +22,7 @@ export type AlignItemsValue = 'start' | 'center' | 'end' | 'stretch'
 export type AlignSelfValue = 'stretch' | 'start' | 'center' | 'end'
 export type VerticalAlign = 'top' | 'middle' | 'bottom' | 'between'
 
-export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel'
+export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel' | 'grid' | 'modal'
 
 export type SectionLayout = {
   /** Flow per device. Tablet falls back to desktop and mobile to tablet when unset. */
@@ -57,6 +57,22 @@ export type SectionLayout = {
   carouselGap?: number
   /** Carousel: show previous / next arrows. Unset = true. */
   carouselArrows?: boolean
+  /** Grid: columns per row on desktop (1..6). Unset = 3. */
+  gridColumns?: number
+  /** Grid: columns per row on tablet (1..6). Unset = same as desktop. */
+  gridColumnsTablet?: number
+  /** Grid: columns per row on mobile (1..6). Unset = 1. */
+  gridColumnsMobile?: number
+  /** Grid: space between cells in px (0..64). Unset = 16. */
+  gridGap?: number
+  /** Grid: vertical alignment of cells in a row. Unset = stretch (equal-height cards). */
+  gridAlign?: AlignItemsValue
+  /** Modal: text of the trigger button or link (1..60 chars). Unset = "Open". */
+  modalLabel?: string
+  /** Modal: dialog width in px (320..1200). Unset = 640. */
+  modalWidth?: number
+  /** Modal: trigger looks like a button or a text link. Unset = button. */
+  modalStyle?: 'button' | 'link'
   /** Tablet / mobile overrides of the flow settings that are not per-device on their own. */
   tablet?: DeviceFlow
   mobile?: DeviceFlow
@@ -119,7 +135,7 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.boxedWidth) && raw.boxedWidth > 0) out.boxedWidth = raw.boxedWidth
   const verticalAlign = pick(raw.verticalAlign, ['top', 'middle', 'bottom'] as const)
   if (verticalAlign) out.verticalAlign = verticalAlign
-  const display = pick(raw.display, ['tabs', 'accordion', 'carousel'] as const)
+  const display = pick(raw.display, ['tabs', 'accordion', 'carousel', 'grid', 'modal'] as const)
   if (display) out.display = display
   const tabsAlign = pick(raw.tabsAlign, ['start', 'center', 'end', 'stretch'] as const)
   if (tabsAlign) out.tabsAlign = tabsAlign
@@ -129,6 +145,17 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   }
   if (isNum(raw.carouselGap) && raw.carouselGap >= 0 && raw.carouselGap <= 64) out.carouselGap = raw.carouselGap
   if (typeof raw.carouselArrows === 'boolean') out.carouselArrows = raw.carouselArrows
+  const isColumnCount = (v: unknown): v is number => isNum(v) && Number.isInteger(v) && v >= 1 && v <= 6
+  if (isColumnCount(raw.gridColumns)) out.gridColumns = raw.gridColumns
+  if (isColumnCount(raw.gridColumnsTablet)) out.gridColumnsTablet = raw.gridColumnsTablet
+  if (isColumnCount(raw.gridColumnsMobile)) out.gridColumnsMobile = raw.gridColumnsMobile
+  if (isNum(raw.gridGap) && raw.gridGap >= 0 && raw.gridGap <= 64) out.gridGap = raw.gridGap
+  const gridAlign = pick(raw.gridAlign, ['start', 'center', 'end', 'stretch'] as const)
+  if (gridAlign) out.gridAlign = gridAlign
+  if (typeof raw.modalLabel === 'string' && raw.modalLabel.trim() !== '') out.modalLabel = raw.modalLabel.trim().slice(0, 60)
+  if (isNum(raw.modalWidth) && raw.modalWidth >= 320 && raw.modalWidth <= 1200) out.modalWidth = raw.modalWidth
+  const modalStyle = pick(raw.modalStyle, ['button', 'link'] as const)
+  if (modalStyle) out.modalStyle = modalStyle
   for (const device of ['tablet', 'mobile'] as const) {
     const flow = parseDeviceFlow(raw[device])
     if (flow) out[device] = flow
@@ -255,6 +282,31 @@ export function carouselStyle(rawLayout: unknown): Record<string, string> {
   }
 }
 
+/**
+ * Custom properties for a grid container: columns per row per device, the gap and the cell
+ * alignment (defaults applied). Tablet is only written when set, so it falls back to desktop in CSS.
+ * Empty for any other display mode.
+ */
+export function gridStyle(rawLayout: unknown): Record<string, string> {
+  const layout = parseSectionLayout(rawLayout)
+  if (layout?.display !== 'grid') return {}
+  const style: Record<string, string> = {
+    '--be-grid-cols': String(layout.gridColumns ?? 3),
+    '--be-grid-cols-m': String(layout.gridColumnsMobile ?? 1),
+    '--be-grid-gap': `${layout.gridGap ?? 16}px`,
+    alignItems: ALIGN_CSS[layout.gridAlign ?? 'stretch'],
+  }
+  if (layout.gridColumnsTablet !== undefined) style['--be-grid-cols-t'] = String(layout.gridColumnsTablet)
+  return style
+}
+
+/** Custom property for the popup dialog width (default 640px). Empty for any other display mode. */
+export function modalStyleVars(rawLayout: unknown): Record<string, string> {
+  const layout = parseSectionLayout(rawLayout)
+  if (layout?.display !== 'modal') return {}
+  return { '--be-modal-width': `${layout.modalWidth ?? 640}px` }
+}
+
 /** Inline style for a column's own layout settings (kept separate from its width vars). */
 export function columnLayoutStyle(rawLayout: unknown): Record<string, string> {
   const layout = parseColumnLayout(rawLayout)
@@ -346,6 +398,7 @@ const orderChain = (k: 'd' | 't' | 'm') => chain(k, (x) => [`--be-col-order-${x}
 /** Width of a stacked column: the first explicit value among `run` (this device, then wider ones), else full width. */
 const widthChain = (run: readonly ('d' | 't' | 'm')[]): string =>
   [...run].reduceRight<string>((acc, x) => `var(--be-col-${x}-w,var(--be-col-${x},${acc}))`, '100%')
+
 const stackDecls = (run: readonly ('d' | 't' | 'm')[]): string => `flex-basis:auto;flex-grow:0;width:${widthChain(run)};max-width:100%`
 
 /**

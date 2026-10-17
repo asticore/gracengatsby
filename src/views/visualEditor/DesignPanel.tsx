@@ -9,6 +9,7 @@ import {
   DIVIDER_ANIM_OPTIONS,
   DIVIDER_OPTIONS,
   HOVER_OPTIONS,
+  MASK_SHAPE_OPTIONS,
   PARTICLE_INTERACT_OPTIONS,
   POSITION_OPTIONS,
   REVEAL_EASING_OPTIONS,
@@ -20,7 +21,9 @@ import {
   type DeviceOverride,
   type DividerAnim,
   type DividerShape,
+  type MaskShape,
   type ResponsiveKey,
+  isSafeMediaUrl,
 } from '@/lib/blockStyle'
 import { BUILT_IN_FONTS } from '@/features/fonts/installed'
 
@@ -63,6 +66,7 @@ export const DesignPanel: React.FC<{
             { label: 'Solid colour', value: 'color' },
             { label: 'Gradient', value: 'gradient' },
             { label: 'Image', value: 'image' },
+            { label: 'Video', value: 'video' },
           ]}
           onChange={(v) => set('bgType', v === 'none' ? undefined : (v as BlockStyle['bgType']))}
         />
@@ -101,6 +105,34 @@ export const DesignPanel: React.FC<{
               max={100}
             />
             <ParallaxBgControls value={value} onChange={onChange} />
+          </>
+        )}
+
+        {value.bgType === 'video' && (
+          <>
+            <TextRow
+              label="Video URL"
+              value={value.bgVideoUrl || undefined}
+              placeholder="https://... or /media/clip.mp4"
+              help={
+                value.bgVideoUrl && !isSafeMediaUrl(value.bgVideoUrl, 'video')
+                  ? 'Not a usable link. Use an https or site path ending in .mp4 or .webm.'
+                  : 'MP4 or WebM. Keep it short and compressed; it autoplays muted and loops.'
+              }
+              onChange={(v) => set('bgVideoUrl', v)}
+            />
+            <ImageRow
+              label="Poster image"
+              url={value.bgVideoPoster}
+              onPick={(_id, url) => set('bgVideoPoster', url)}
+              onClear={() => set('bgVideoPoster', undefined)}
+            />
+            <CheckRow
+              label="Loop"
+              checked={value.bgVideoLoop !== false}
+              help="Turn off to play once and hold the last frame."
+              onChange={(v) => set('bgVideoLoop', v ? undefined : false)}
+            />
           </>
         )}
 
@@ -1296,11 +1328,11 @@ const ADVANCED_KEYS: (keyof BlockStyle)[] = [
   ...TRANSFORM_ROWS.map((r) => tfKey('tf', r.suffix)),
   ...TRANSFORM_ROWS.map((r) => tfKey('tfh', r.suffix)),
   'tfDuration', 'position', 'posTop', 'posRight', 'posBottom', 'posLeft', 'zIndex',
-  'opacity', 'blendMode', ...FILTER_ROWS.map((r) => r.k), 'cssClasses', 'customCss',
+  'opacity', 'blendMode', ...FILTER_ROWS.map((r) => r.k), 'maskShape', 'cssClasses', 'customCss',
 ]
 
 const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
-  const { set } = makeFxEditing(value, onChange)
+  const { set, resetBtn } = makeFxEditing(value, onChange)
   const positioned = value.position !== undefined
 
   return (
@@ -1351,6 +1383,18 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
         {FILTER_ROWS.map((r) => (
           <FxRange key={String(r.k)} k={r.k} label={r.label} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
         ))}
+      </div>
+
+      <p className="ve-row__label">Mask</p>
+      <div className="ve-divider-group">
+        <SelectRow
+          label="Shape"
+          value={value.maskShape ?? 'none'}
+          options={MASK_SHAPE_OPTIONS}
+          help="Clips the whole block, background and content, to this shape."
+          onChange={(v) => set('maskShape', v === 'none' ? undefined : (v as MaskShape))}
+        />
+        {resetBtn(['maskShape'])}
       </div>
 
       <p className="ve-row__label">Custom</p>

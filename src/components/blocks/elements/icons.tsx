@@ -22,7 +22,8 @@ const PATHS: Record<string, string> = {
 }
 
 export const ICON_OPTIONS = Object.keys(PATHS).map((k) => ({ label: k.charAt(0).toUpperCase() + k.slice(1), value: k }))
-export const ICON_NAMES = Object.keys(PATHS)
+/** Every built-in icon name (the keys of PATHS). Stored element props hold one of these as a plain string. */
+export const ICON_NAMES: string[] = Object.keys(PATHS)
 
 export const Icon: React.FC<{ name?: string; size?: number; className?: string; filled?: boolean }> = ({ name = 'star', size = 24, className, filled }) => (
   <svg

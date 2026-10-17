@@ -1,0 +1,471 @@
+/* Wave 43 elements. Every selector is scoped with .be-el-43- so nothing leaks into the rest of the site.
+   Every animation and transition sits inside a prefers-reduced-motion: no-preference guard, so the static
+   layout is the reduced-motion layout. Scroll-driven parts sit inside @supports (animation-timeline: view()). */
+
+/* Registered integer for the count-up counter. Not inherited, so each count-up keeps its own value. */
+@property --be-el-43-s {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* ---- shared: visually hidden text ---- */
+
+.be-el-43-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- gradient text ---- */
+
+.be-el-43-grad {
+  margin: 0;
+  font-family: var(--font-display, serif);
+  font-weight: 700;
+  line-height: 1.1;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Double-width background; the animation below slides it by half, which is one full loop of the doubled stops. */
+.be-el-43-grad--anim {
+  background-size: 200% 100%;
+  background-repeat: repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-43-grad--anim {
+    animation: be-el-43-grad-shift 6s linear infinite;
+  }
+}
+
+@keyframes be-el-43-grad-shift {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+/* ---- split text ---- */
+
+.be-el-43-split__item {
+  display: inline-block;
+}
+
+.be-el-43-split__word {
+  white-space: nowrap;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .be-el-43-split--fade-up .be-el-43-split__item {
+      animation: be-el-43-split-fade-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 35%;
+      animation-delay: calc(var(--i) * var(--be-el-43-stagger));
+    }
+
+    .be-el-43-split--blur .be-el-43-split__item {
+      animation: be-el-43-split-blur linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 35%;
+      animation-delay: calc(var(--i) * var(--be-el-43-stagger));
+    }
+
+    .be-el-43-split--slide .be-el-43-split__item {
+      animation: be-el-43-split-slide linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 35%;
+      animation-delay: calc(var(--i) * var(--be-el-43-stagger));
+    }
+  }
+}
+
+@keyframes be-el-43-split-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.6em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes be-el-43-split-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-0.6em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes be-el-43-split-blur {
+  from {
+    opacity: 0;
+    filter: blur(0.4em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* ---- highlight text ---- */
+
+.be-el-43-hl-text {
+  margin: 0;
+}
+
+.be-el-43-hl {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Underline: a 0.35em band along the bottom. Its background-size is what the draw animation changes. */
+.be-el-43-hl--underline {
+  background-image: linear-gradient(to top, var(--be-el-43-c, #f5a623) 0.35em, transparent 0.35em);
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 100% 100%;
+}
+
+.be-el-43-hl--box {
+  background-image: linear-gradient(color-mix(in srgb, var(--be-el-43-c, #f5a623) 40%, transparent), color-mix(in srgb, var(--be-el-43-c, #f5a623) 40%, transparent));
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 100% 100%;
+}
+
+/* Wavy: a wave shape used as a mask on a coloured pseudo-element under the text. */
+.be-el-43-hl--underline-wavy {
+  position: relative;
+}
+
+.be-el-43-hl--underline-wavy::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.2em;
+  height: 0.5em;
+  background: var(--be-el-43-c, #f5a623);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 12'%3E%3Cpath d='M0 6 Q12.5 0 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 T225 6 T250 6 T275 6 T300 6 T325 6 T350 6 T375 6 T400 6' fill='none' stroke='%23000' stroke-width='4'/%3E%3C/svg%3E") no-repeat 0 0 / 100% 100%;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 12'%3E%3Cpath d='M0 6 Q12.5 0 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 T225 6 T250 6 T275 6 T300 6 T325 6 T350 6 T375 6 T400 6' fill='none' stroke='%23000' stroke-width='4'/%3E%3C/svg%3E") no-repeat 0 0 / 100% 100%;
+  pointer-events: none;
+}
+
+/* Circle: a hand-drawn ring around the phrase. */
+.be-el-43-hl--circle {
+  position: relative;
+  display: inline-block;
+}
+
+.be-el-43-hl--circle::before {
+  content: '';
+  position: absolute;
+  top: -0.2em;
+  bottom: -0.2em;
+  left: -0.4em;
+  right: -0.4em;
+  border: 0.12em solid var(--be-el-43-c, #f5a623);
+  border-radius: 50%;
+  transform: rotate(-2deg);
+  pointer-events: none;
+}
+
+@keyframes be-el-43-hl-bg {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+@keyframes be-el-43-hl-mask {
+  from {
+    -webkit-mask-size: 0% 100%;
+    mask-size: 0% 100%;
+  }
+  to {
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+}
+
+@keyframes be-el-43-hl-ring {
+  from {
+    opacity: 0;
+    transform: rotate(-6deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-2deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-43-hl--load.be-el-43-hl--underline,
+  .be-el-43-hl--load.be-el-43-hl--box {
+    animation: be-el-43-hl-bg 0.9s ease-out both;
+  }
+
+  .be-el-43-hl--load.be-el-43-hl--underline-wavy::after {
+    animation: be-el-43-hl-mask 0.9s ease-out both;
+  }
+
+  .be-el-43-hl--load.be-el-43-hl--circle::before {
+    animation: be-el-43-hl-ring 0.6s ease-out both;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .be-el-43-hl--view.be-el-43-hl--underline,
+    .be-el-43-hl--view.be-el-43-hl--box {
+      animation: be-el-43-hl-bg linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .be-el-43-hl--view.be-el-43-hl--underline-wavy::after {
+      animation: be-el-43-hl-mask linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .be-el-43-hl--view.be-el-43-hl--circle::before {
+      animation: be-el-43-hl-ring linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+  }
+}
+
+/* ---- outline text ---- */
+
+.be-el-43-outline {
+  margin: 0;
+  font-family: var(--font-display, serif);
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: var(--be-el-43-sw, 2px) var(--be-el-43-c, #2e3192);
+  overflow-wrap: anywhere;
+}
+
+.be-el-43-outline--clip {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.be-el-43-outline--hover:hover {
+  color: var(--be-el-43-fill, #00a9ff);
+  -webkit-text-fill-color: var(--be-el-43-fill, #00a9ff);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-43-outline {
+    transition: color 0.35s ease, -webkit-text-fill-color 0.35s ease;
+  }
+}
+
+/* ---- count up ----
+   Base (and every browser without counter math): the static final number is shown.
+   Where round() and mod() work in CSS, the number is printed by counter() from the integer counter instead. */
+
+.be-el-43-count-wrap {
+  display: block;
+  text-align: center;
+}
+
+.be-el-43-count {
+  font-family: var(--font-display, serif);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.be-el-43-count__label {
+  display: block;
+  margin-top: 0.4em;
+  font-family: var(--font-body, sans-serif);
+}
+
+@supports (width: round(down, 1.5px, 1px)) {
+  .be-el-43-count__static {
+    display: none;
+  }
+
+  .be-el-43-count__num {
+    counter-reset: be-el-43-int calc(round(down, var(--be-el-43-s) / var(--be-el-43-k), 1)) be-el-43-frac calc(round(down, mod(var(--be-el-43-s), var(--be-el-43-k)), 1));
+  }
+
+  .be-el-43-count__num::before {
+    content: counter(be-el-43-int);
+  }
+
+  .be-el-43-count__num--d1::before {
+    content: counter(be-el-43-int) '.' counter(be-el-43-frac);
+  }
+
+  .be-el-43-count__num--d2::before {
+    content: counter(be-el-43-int) '.' counter(be-el-43-frac, decimal-leading-zero);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (width: round(down, 1.5px, 1px)) {
+    .be-el-43-count__num {
+      animation: be-el-43-count var(--be-el-43-d, 1600ms) ease-out both;
+    }
+  }
+}
+
+@keyframes be-el-43-count {
+  from {
+    --be-el-43-s: var(--be-el-43-from);
+  }
+  to {
+    --be-el-43-s: var(--be-el-43-to);
+  }
+}
+
+/* ---- draw line ---- */
+
+.be-el-43-draw {
+  margin: 0.5em auto;
+  max-width: 100%;
+}
+
+.be-el-43-draw__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .be-el-43-draw__path {
+      stroke-dasharray: 1 1;
+      animation: be-el-43-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+  }
+}
+
+@keyframes be-el-43-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---- bento grid ---- */
+
+.be-el-43-bento {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(150px, auto);
+  gap: 16px;
+}
+
+.be-el-43-bento__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  padding: 20px;
+  border-radius: 16px;
+  grid-column: span var(--be-el-43-cs, 1);
+  grid-row: span var(--be-el-43-rs, 1);
+  overflow-wrap: anywhere;
+  box-shadow: 0 1px 2px rgba(31, 34, 48, 0.08);
+}
+
+.be-el-43-bento__title {
+  margin: 0 0 6px;
+  font-family: var(--font-display, serif);
+  font-size: 1.5rem;
+  line-height: 1.15;
+}
+
+.be-el-43-bento__text {
+  margin: 0;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.95rem;
+}
+
+.be-el-43-bento__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The link covers the whole tile. */
+.be-el-43-bento__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+}
+
+.be-el-43-bento__link:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-43-bento__tile {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .be-el-43-bento__tile:hover,
+  .be-el-43-bento__tile:focus-within {
+    transform: scale(1.03);
+    z-index: 1;
+    box-shadow: 0 12px 28px rgba(31, 34, 48, 0.18);
+  }
+}
+
+@media (max-width: 900px) {
+  .be-el-43-bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .be-el-43-bento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .be-el-43-bento__tile {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}

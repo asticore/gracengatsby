@@ -69,6 +69,14 @@ export const StyledBlock: React.FC<{
               count={parsed.particlesCount ?? 50}
               interact={parsed.particlesInteract ?? 'repel'}
               color={parsed.bgEffectColor || '#6366f1'}
+              sizeMin={parsed.particlesSizeMin}
+              sizeMax={parsed.particlesSizeMax}
+              speed={parsed.particlesSpeed}
+              opacity={parsed.particlesOpacity === undefined ? undefined : parsed.particlesOpacity / 100}
+              links={parsed.particlesLinks}
+              linkDistance={parsed.particlesLinkDistance}
+              interactRadius={parsed.particlesInteractRadius}
+              shape={parsed.particlesShape}
             />
           )}
         </div>

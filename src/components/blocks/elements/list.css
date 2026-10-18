@@ -1,0 +1,43 @@
+/* List element markers (wave 26 "list"). Only ul/ol with .el-list--marked, and the .el-list--check/arrow/dash
+   pseudo-element markers, are new. Legacy bullets/numbers/none lists keep the rules in styles.css. */
+
+ul.el-list > li,
+ol.el-list > li { margin-bottom: var(--el-list-gap, 6px); }
+
+.el-list.el-list--marked { list-style: none; padding-left: 0; }
+.el-list.el-list--marked > li { display: flex; align-items: flex-start; gap: 10px; }
+.el-list.el-list--marked.el-align--center > li { justify-content: center; }
+.el-list.el-list--marked.el-align--right > li { justify-content: flex-end; }
+
+.el-list__marker { flex: none; color: var(--el-list-colour, var(--color-gold)); }
+
+.el-list--check > li::before,
+.el-list--arrow > li::before,
+.el-list--dash > li::before {
+  content: "";
+  flex: none;
+  width: var(--el-list-size, 18px);
+  height: var(--el-list-size, 18px);
+  background: var(--el-list-colour, var(--color-gold));
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.el-list--check > li::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 12.5l5 5L20 6.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 12.5l5 5L20 6.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.el-list--arrow > li::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 12h16M14 6l6 6-6 6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 12h16M14 6l6 6-6 6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.el-list--dash > li::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}

@@ -1,4 +1,4 @@
-import type { EditorField } from './fieldTypes'
+import type { EditorField, ShowIf } from './fieldTypes'
 import type { ElementDef } from './registry'
 
 /**
@@ -20,6 +20,9 @@ const slider = (name: string, label: string, min: number, max: number, step = 1,
 const color = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'color', width: 'half', helpText })
 
 const FLIP_ONLY = 'Used only when Hover effect is Flip.'
+const WHEN_ICON: ShowIf = { field: 'media', equals: 'icon' }
+const WHEN_IMAGE: ShowIf = { field: 'media', equals: 'image' }
+const WHEN_FLIP: ShowIf = { field: 'hoverEffect', equals: 'flip' }
 
 export const WAVE47_ELEMENTS: ElementDef[] = [
   {
@@ -27,10 +30,10 @@ export const WAVE47_ELEMENTS: ElementDef[] = [
     description: 'A card with an optional icon or picture, a title, text and a link. It can lift, zoom its picture or flip over on hover or focus.',
     fields: [
       select('media', 'Media', labelled([['none', 'None'], ['icon', 'Icon'], ['image', 'Image']]), { helpText: 'Show an icon or a picture at the top (or beside the text).' }),
-      { name: 'icon', label: 'Icon (when Media is Icon)', type: 'icon', iconSet: 'builtin' },
-      { name: 'image', label: 'Image (when Media is Image)', type: 'media' },
-      select('imageRatio', 'Image shape', labelled([['auto', 'Original'], ['1:1', '1:1'], ['4:3', '4:3'], ['16:9', '16:9']])),
-      select('imageFit', 'Image fit', opts('cover', 'contain')),
+      { name: 'icon', label: 'Icon (when Media is Icon)', type: 'icon', iconSet: 'builtin', showIf: WHEN_ICON },
+      { name: 'image', label: 'Image (when Media is Image)', type: 'media', showIf: WHEN_IMAGE },
+      { ...select('imageRatio', 'Image shape', labelled([['auto', 'Original'], ['1:1', '1:1'], ['4:3', '4:3'], ['16:9', '16:9']])), showIf: WHEN_IMAGE },
+      { ...select('imageFit', 'Image fit', opts('cover', 'contain')), showIf: WHEN_IMAGE },
       text('title', 'Title'),
       select('titleTag', 'Title tag', labelled([['h2', 'H2'], ['h3', 'H3'], ['h4', 'H4'], ['h5', 'H5'], ['h6', 'H6'], ['p', 'Paragraph']])),
       area('text', 'Text'),
@@ -38,15 +41,15 @@ export const WAVE47_ELEMENTS: ElementDef[] = [
       text('linkLabel', 'Link label', { helpText: 'Shown at the foot of the card when a link is set. Leave empty for none.' }),
       select('layout', 'Layout', opts('top', 'left', 'right'), { helpText: 'Left and right put the media beside the text. Under 640px they stack.' }),
       select('align', 'Alignment', labelled([['left', 'Left'], ['centre', 'Centre']])),
-      slider('iconSize', 'Icon size (px)', 16, 120, 1, 'Used only when Media is Icon.'),
-      color('iconColour', 'Icon colour'),
+      { ...slider('iconSize', 'Icon size (px)', 16, 120, 1, 'Used only when Media is Icon.'), showIf: WHEN_ICON },
+      { ...color('iconColour', 'Icon colour'), showIf: WHEN_ICON },
       color('bgColour', 'Background colour'),
       slider('borderRadius', 'Corner radius (px)', 0, 40),
       select('shadow', 'Shadow', opts('none', 'sm', 'md', 'lg')),
       select('hoverEffect', 'Hover effect', labelled([['none', 'None'], ['lift', 'Lift'], ['zoom-image', 'Zoom image'], ['flip', 'Flip']]), { helpText: 'Hover or keyboard focus. Motion is off for visitors who ask for reduced motion.' }),
-      text('backTitle', 'Back: title', { helpText: FLIP_ONLY }),
-      area('backText', 'Back: text', FLIP_ONLY),
-      color('backColour', 'Back: background colour', FLIP_ONLY),
+      text('backTitle', 'Back: title', { helpText: FLIP_ONLY, showIf: WHEN_FLIP }),
+      { ...area('backText', 'Back: text', FLIP_ONLY), showIf: WHEN_FLIP },
+      { ...color('backColour', 'Back: background colour', FLIP_ONLY), showIf: WHEN_FLIP },
     ],
     defaultProps: () => ({
       media: 'none', icon: 'star', imageRatio: '16:9', imageFit: 'cover',

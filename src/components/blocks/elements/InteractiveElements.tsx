@@ -4,7 +4,11 @@ import { safeUrl } from '@/lib/mergeTags'
 
 import { SocialGlyph } from './icons'
 import { alignClass } from './TextElements'
-import { cells, flag, num, pick, str } from './elementUtil'
+import { cells, flag, linkAttrs, linkHref, num, pick, str } from './elementUtil'
+import { CountUpElement } from './Wave43Elements'
+import { CircleProgressElement, ShareButtonsElement } from './Wave36Elements'
+import { StickyBarElement } from './Wave37Elements'
+import './interactive.css'
 
 type P = Record<string, unknown>
 
@@ -58,8 +62,9 @@ export const TabsElement: React.FC<P> = (p) => {
   )
 }
 
-/** `counter`: a large static figure with prefix, suffix and a title. Not animated. */
+/** `counter`: a large figure with prefix, suffix and a title. Static unless `animate` is on (then it counts up). */
 export const CounterElement: React.FC<P> = (p) => {
+  if (flag(p.animate, false)) return <AnimatedCounter {...p} />
   const value = num(p.number, 0)
   const decimals = Math.round(num(p.decimals, 0, 0, 4))
   const shown = value.toLocaleString('en-GB', { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: flag(p.separator, true) })
@@ -75,8 +80,30 @@ export const CounterElement: React.FC<P> = (p) => {
   )
 }
 
-/** `progress-bar`: a labelled bar with an accessible progressbar role. */
+/**
+ * `counter` with "animate" on: the count-up element does the work (CSS @property, see wave43.css). Its formatting is
+ * simpler: up to 2 decimals and no thousands separator.
+ */
+const AnimatedCounter: React.FC<P> = (p) => {
+  const decimals = Math.round(num(p.decimals, 0, 0, 2))
+  return (
+    <div className={`el-counter ${alignClass(p.align ?? 'center')}`}>
+      <CountUpElement
+        start={num(p.start, 0)}
+        end={num(p.number, 0)}
+        decimals={String(decimals)}
+        prefix={str(p.prefix)}
+        suffix={str(p.suffix)}
+        label={str(p.title).trim()}
+        duration={num(p.duration, 1600)}
+      />
+    </div>
+  )
+}
+
+/** `progress-bar`: a labelled bar with an accessible progressbar role. Shape "ring" draws the circle progress instead. */
 export const ProgressBarElement: React.FC<P> = (p) => {
+  if (pick(p.shape, ['bar', 'ring'] as const, 'bar') === 'ring') return <CircleProgressElement percent={p.percent} label={str(p.title)} />
   const pct = num(p.percent, 70, 0, 100)
   const title = str(p.title, 'Progress')
   return (
@@ -131,19 +158,76 @@ export const StarRatingElement: React.FC<P> = (p) => {
   )
 }
 
-/** `alert`: a coloured notice box. */
+const ALERT_KINDS = ['info', 'success', 'warning', 'danger'] as const
+
+/** `alert`: a coloured notice box. Placement "fixed-top" or "fixed-bottom" gives the full-width sticky bar instead. */
 export const AlertElement: React.FC<P> = (p) => {
-  const kind = pick(p.kind, ['info', 'success', 'warning', 'danger'] as const, 'info')
+  const kind = pick(p.kind, ALERT_KINDS, 'info')
+  const placement = pick(p.placement, ['inline', 'fixed-top', 'fixed-bottom'] as const, 'inline')
+  if (placement !== 'inline') return <AlertFixed p={p} kind={kind} edge={placement === 'fixed-bottom' ? 'bottom' : 'top'} />
+  const button = str(p.buttonText).trim()
+  const href = linkHref(p.buttonUrl)
   return (
     <div className={`el-alert el-alert--${kind}`} role={kind === 'danger' ? 'alert' : 'note'}>
       {str(p.title) && <strong className="el-alert__title">{str(p.title)}</strong>}
       {str(p.text) && <p>{str(p.text)}</p>}
+      {button && href && (
+        <p className="el-alert__actions">
+          <a className="el-alert__btn" href={href} {...linkAttrs(p.buttonUrl)}>
+            {button}
+          </a>
+        </p>
+      )}
     </div>
   )
 }
 
-/** `social-icons`: one line per link as "network | url". */
+/** Colours for the fixed bar, per alert type. Text colour is picked so the contrast holds on each background. */
+const FIXED_COLOURS: Record<(typeof ALERT_KINDS)[number], { bg: string; fg: string }> = {
+  info: { bg: '#2e3192', fg: '#ffffff' },
+  success: { bg: '#1e7e4a', fg: '#ffffff' },
+  warning: { bg: '#f5a623', fg: '#1f2230' },
+  danger: { bg: '#b03a2e', fg: '#ffffff' },
+}
+
+/** A fixed alert is the sticky-bar look (Wave37Elements): full width, pinned to an edge, no close button. */
+const AlertFixed: React.FC<{ p: P; kind: (typeof ALERT_KINDS)[number]; edge: 'top' | 'bottom' }> = ({ p, kind, edge }) => {
+  const title = str(p.title).trim()
+  const text = str(p.text).trim()
+  const message = title && text ? `${title}: ${text}` : title || text
+  const c = FIXED_COLOURS[kind]
+  // The bar's button is only drawn when the link is safe, so a refused address leaves no dead button.
+  const hasLink = Boolean(linkHref(p.buttonUrl))
+  return (
+    <StickyBarElement
+      text={message}
+      mode="fixed"
+      position={edge}
+      background={c.bg}
+      textColor={c.fg}
+      buttonLabel={hasLink ? str(p.buttonText).trim() : ''}
+      link={p.buttonUrl}
+    />
+  )
+}
+
+/** Share-mode network keys (Wave36 ShareButtons) for the social-icons network names. Other networks have no share link. */
+const SHARE_KEY: Record<string, string> = { facebook: 'facebook', x: 'x', twitter: 'x', linkedin: 'linkedin', email: 'email' }
+
+/** `social-icons` in share mode: the ShareButtons look for the networks listed, sharing the page address in "pageUrl". */
+const SocialShare: React.FC<{ p: P }> = ({ p }) => {
+  const flags: P = {}
+  for (const [network = ''] of cells(p.items, 2)) {
+    const key = SHARE_KEY[network.toLowerCase()]
+    if (key) flags[key] = true
+  }
+  const shareProps: P = { ...flags, title: str(p.title), shareUrl: str(p.pageUrl), style: 'icons', align: pick(p.align, ['left', 'center', 'right'] as const, 'left') }
+  return <ShareButtonsElement {...shareProps} />
+}
+
+/** `social-icons`: one line per link as "network | url". Mode "share" turns it into share links for the page. */
 export const SocialIconsElement: React.FC<P> = (p) => {
+  if (pick(p.mode, ['follow', 'share'] as const, 'follow') === 'share') return <SocialShare p={p} />
   const rows = cells(p.items, 2)
   const shape = pick(p.shape, ['circle', 'square', 'plain'] as const, 'circle')
   const size = num(p.size, 20, 12, 48)

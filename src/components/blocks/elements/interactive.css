@@ -1,0 +1,21 @@
+/* Interactive elements (InteractiveElements.tsx). Only what the alert button needs; the rest of the counter, progress,
+   alert and social styles are in src/app/(frontend)/styles.css. */
+
+.el-alert__actions {
+  margin: 10px 0 0;
+}
+
+.el-alert__btn {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--color-gold);
+  color: var(--color-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.el-alert__btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

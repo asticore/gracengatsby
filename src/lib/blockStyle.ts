@@ -35,6 +35,7 @@ export type FontSizeUnit = 'px' | 'em' | 'rem' | 'vw'
 export type LetterSpacingUnit = 'px' | 'em'
 export type TextTransform = 'none' | 'uppercase' | 'lowercase' | 'capitalize'
 export type TextShadowPreset = 'none' | 'sm' | 'md' | 'lg'
+export type TextFx = 'none' | 'gradient' | 'outline' | 'shadow-glow'
 
 /** The keys a tablet / mobile override may carry (everything else is dropped on read). */
 export const RESPONSIVE_KEYS = [
@@ -244,6 +245,18 @@ export type BlockStyle = {
   borderFxWidth?: number
   /** Seconds per turn (conic) or pulse (glow), 2-20 (default 8). */
   borderFxSpeed?: number
+  /** Text effect for every heading and paragraph inside the block (not the block itself). */
+  textFx?: TextFx
+  /** Text effect colour (safe colour). Gradient start, outline colour or glow colour. */
+  textFxColor?: string
+  /** Gradient end colour (safe colour). */
+  textFxColor2?: string
+  /** Gradient angle in degrees, 0-360 (default 90). */
+  textFxAngle?: number
+  /** Outline width in px, 1-6 (default 2). */
+  textFxStroke?: number
+  /** Gradient colours drift slowly. CSS only; off under reduced motion. */
+  textFxAnimated?: boolean
 
   // Position inside a column (all optional; unset keeps normal block flow)
   /** How the block sits across its column. 'stretch' fills it; start/center/end shrink to fit and align. */
@@ -424,6 +437,12 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   enumKey('pointerFx', POINTER_FX_OPTIONS)
   enumKey('kenBurns', KEN_BURNS_OPTIONS)
   enumKey('borderFx', BORDER_FX_OPTIONS)
+  enumKey('textFx', TEXT_FX_OPTIONS)
+  colorKey('textFxColor')
+  colorKey('textFxColor2')
+  numKey('textFxAngle', 0, 360)
+  numKey('textFxStroke', 1, 6)
+  if (raw.textFxAnimated !== undefined && typeof raw.textFxAnimated !== 'boolean') drop('textFxAnimated')
   colorKey('spotlightColor')
   colorKey('borderFxColor')
   colorKey('borderFxColor2')
@@ -595,6 +614,7 @@ const FX_KEYS = [
   'overlayType', 'overlayColor', 'overlayColor2', 'overlayAngle', 'overlayOpacity', 'overlayBlend',
   'position', 'blendMode', 'cssClasses', 'customCss', 'maskShape',
   'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
+  'textFx', 'textFxColor', 'textFxColor2', 'textFxAngle', 'textFxStroke', 'textFxAnimated',
 ] as const
 
 /** Normal | Hover state keys (Elementor-style). Any of them set turns on the hover transition. */
@@ -1285,6 +1305,19 @@ export const BORDER_FX_OPTIONS: { label: string; value: BorderFx }[] = [
   { label: 'Conic spin', value: 'conic-spin' },
 ]
 
+export const TEXT_FX_OPTIONS: { label: string; value: TextFx }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Gradient', value: 'gradient' },
+  { label: 'Outline', value: 'outline' },
+  { label: 'Glow', value: 'shadow-glow' },
+]
+
+/** The text effect this style asks for, or undefined when it is none or not a known value. */
+function textFxName(style: BlockStyle): Exclude<TextFx, 'none'> | undefined {
+  const v = style.textFx
+  return v === 'gradient' || v === 'outline' || v === 'shadow-glow' ? v : undefined
+}
+
 /** Ken Burns moves the background image onto its own layer. Background parallax already owns that image, so it wins. */
 export function hasKenBurnsLayer(style: BlockStyle): boolean {
   return (
@@ -1312,6 +1345,11 @@ export function blockFxClasses(style: BlockStyle): string {
   else if (style.parallax === 'float-up' || style.parallax === 'float-down') c.push(`be-fx-parallax-${style.parallax}`)
   if (style.pointerFx && style.pointerFx !== 'none') c.push(`be-fx-pointer-${style.pointerFx}`)
   if (style.borderFx && style.borderFx !== 'none') c.push(style.borderFx === 'conic-spin' ? 'be-fx-border-conic' : 'be-fx-border-glow')
+  const tfx = textFxName(style)
+  if (tfx) {
+    c.push(`be-fx--textfx-${tfx}`)
+    if (tfx === 'gradient' && style.textFxAnimated === true) c.push('be-fx--textfx-anim')
+  }
   // Isolates the z-index:-1 layers (bg effect, video, Ken Burns, spotlight) so they sit behind the content, not behind the wrapper's background.
   if (
     hasFxLayer(style) || c.includes('be-fx-parallax-bg') || style.bgType === 'video' ||
@@ -1382,6 +1420,12 @@ export function blockFxVars(style: BlockStyle): Record<string, string> {
     v['--be-spot-r'] = `${120 + (isNum(style.pointerFxStrength) ? style.pointerFxStrength : 50) * 2}px`
   }
   if (hasKenBurnsLayer(style) && isNum(style.kenBurnsDuration)) v['--be-kb-t'] = `${style.kenBurnsDuration}s`
+  if (textFxName(style)) {
+    if (isSafeColor(style.textFxColor)) v['--be-tfx-c'] = style.textFxColor
+    if (isSafeColor(style.textFxColor2)) v['--be-tfx-c2'] = style.textFxColor2
+    if (isNum(style.textFxAngle)) v['--be-tfx-a'] = `${style.textFxAngle}deg`
+    if (isNum(style.textFxStroke)) v['--be-tfx-sw'] = `${style.textFxStroke}px`
+  }
   if (style.borderFx && style.borderFx !== 'none') {
     if (isStr(style.borderFxColor)) v['--be-bc'] = style.borderFxColor
     if (isStr(style.borderFxColor2)) v['--be-bc2'] = style.borderFxColor2

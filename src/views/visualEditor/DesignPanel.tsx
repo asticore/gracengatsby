@@ -18,6 +18,7 @@ import {
   REVEAL_EASING_OPTIONS,
   REVEAL_OPTIONS,
   resolveDeviceOverride,
+  TEXT_FX_OPTIONS,
   type BlendMode,
   type BlockPosition,
   type BlockStyle,
@@ -995,7 +996,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
   const sizeRange = FONT_SIZE_RANGE[sizeUnit] ?? FONT_SIZE_RANGE.px
   const lsUnit = value.letterSpacingUnit === 'em' ? 'em' : 'px'
   const lsRange = LETTER_SPACING_RANGE[lsUnit]
-  const touched = (['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontStyle', 'textDecoration', 'wordSpacing', 'textShadow'] as const).some(
+  const touched = (['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontStyle', 'textDecoration', 'wordSpacing', 'textShadow', 'textFx'] as const).some(
     (k) => value[k] !== undefined,
   )
   return (
@@ -1095,6 +1096,30 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         ]}
         onChange={(v) => patch({ textShadow: v === 'none' ? undefined : v })}
       />
+      <SelectRow
+        label="Text effect"
+        help="Applies to the text inside this block"
+        value={value.textFx || 'none'}
+        options={TEXT_FX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+        onChange={(v) => patch({ textFx: v === 'none' ? undefined : v })}
+      />
+      {value.textFx === 'gradient' && (
+        <>
+          <ColorRow label="Colour 1" value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
+          <ColorRow label="Colour 2" value={value.textFxColor2} onChange={(v) => patch({ textFxColor2: v })} />
+          <FxRange k="textFxAngle" label="Gradient angle" unit="deg" value={value} onChange={onChange} def={90} min={0} max={360} />
+          <CheckRow label="Animate gradient" checked={value.textFxAnimated === true} onChange={(v) => patch({ textFxAnimated: v ? true : undefined })} />
+        </>
+      )}
+      {value.textFx === 'outline' && (
+        <>
+          <ColorRow label="Outline colour" value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
+          <FxRange k="textFxStroke" label="Outline width" unit="px" value={value} onChange={onChange} def={2} min={1} max={6} step={0.5} />
+        </>
+      )}
+      {value.textFx === 'shadow-glow' && (
+        <ColorRow label="Glow colour" value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
+      )}
       {touched && (
         <button
           type="button"
@@ -1104,6 +1129,8 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
               fontFamily: undefined, fontSize: undefined, fontSizeUnit: undefined, fontWeight: undefined, lineHeight: undefined,
               letterSpacing: undefined, letterSpacingUnit: undefined, textTransform: undefined, fontStyle: undefined,
               textDecoration: undefined, wordSpacing: undefined, textShadow: undefined,
+              textFx: undefined, textFxColor: undefined, textFxColor2: undefined, textFxAngle: undefined,
+              textFxStroke: undefined, textFxAnimated: undefined,
               tablet: stripTypo(value.tablet), mobile: stripTypo(value.mobile),
             })
           }

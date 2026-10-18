@@ -35,7 +35,7 @@ import {
 } from './aiBuilderState'
 
 /**
- * "Build with AI" dock tab. Walks a person through brief -> questions or outline -> review and insert.
+ * "Build with AI" panel, shown in the dialog opened from the Elements tab. Walks a person through brief -> questions or outline -> review and insert.
  * The server does the work with the admin's own API key; this panel only collects input, shows progress,
  * and hands the finished sections back to the editor, which inserts them with fresh ids as one undo step.
  * The brief and examples live in component state only and are never stored in the browser.
@@ -49,6 +49,8 @@ export type AiBuilderPanelProps = {
   onInsertAtEnd: (sections: SectionNode[]) => boolean
   /** Replaces the section with this _id (one undo step). Returns false when the selection moved or it is locked. */
   onReplaceSelected: (sections: SectionNode[], sectionId: string | undefined) => boolean
+  /** The dialog has its own title, so the panel's heading is hidden there. Defaults to true. */
+  showTitle?: boolean
 }
 
 type Step = 'brief' | 'questions' | 'outline' | 'result'
@@ -71,7 +73,7 @@ function messageOf(err: unknown): string {
   return 'Could not reach the AI builder. Check your connection and try again.'
 }
 
-export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selectedSection, onInsertAtEnd, onReplaceSelected }) => {
+export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selectedSection, onInsertAtEnd, onReplaceSelected, showTitle = true }) => {
   const ids = useId()
   const [load, setLoad] = useState<ProviderLoad>({ status: 'loading' })
   const [loadKey, setLoadKey] = useState(0)
@@ -511,10 +513,12 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
   )
 
   return (
-    <section className="ve-ai" aria-labelledby={`${ids}-title`}>
-      <h2 id={`${ids}-title`} className="ve-ai__title">
-        Build with AI
-      </h2>
+    <section className="ve-ai" aria-labelledby={showTitle ? `${ids}-title` : undefined}>
+      {showTitle && (
+        <h2 id={`${ids}-title`} className="ve-ai__title">
+          Build with AI
+        </h2>
+      )}
       <p className="ve-ai__hint">
         Describe what you want. The AI uses your own API key and knows this site&apos;s elements, effects and layout options.
       </p>

@@ -11,12 +11,24 @@ import { AI_MODELS, AI_TIMEOUT_MS, ANTHROPIC_URL, ANTHROPIC_VERSION, OPENAI_URL,
 
 export type AiImage = { data: Uint8Array; mimeType: string }
 
+export type AiChatMessage = { role: 'user' | 'assistant'; content: string }
+
 export type CallAiArgs = {
   provider: AiProvider
-  prompt: string
+  /** A single user message. Ignored when `messages` is given. */
+  prompt?: string
   image?: AiImage
   maxTokens?: number
+  /** System instructions. Anthropic gets it as the top-level `system`; OpenAI as a first system message. */
+  system?: string
+  /** Overrides the provider's default model for this call. */
+  model?: string
+  /** Multi-turn conversation, used instead of `prompt` when given. */
+  messages?: AiChatMessage[]
+  temperature?: number
 }
+
+type ChatRequestBody = { model: string; max_tokens: number; messages: unknown[]; system?: string; temperature?: number }
 
 export type CallAiOptions = {
   /** The provider's API key, already decrypted. */
@@ -45,36 +57,54 @@ const base64 = (bytes: Uint8Array): string => {
 }
 
 /** The request body for Anthropic's Messages API. Pure, so the shape can be asserted directly. */
-export function buildAnthropicRequest(args: CallAiArgs): { model: string; max_tokens: number; messages: unknown[] } {
-  const content: unknown[] = []
-  if (args.image) {
-    content.push({
-      type: 'image',
-      source: { type: 'base64', media_type: args.image.mimeType, data: base64(args.image.data) },
-    })
+export function buildAnthropicRequest(args: CallAiArgs): ChatRequestBody {
+  let messages: unknown[]
+  if (args.messages) {
+    messages = args.messages.map((message) => ({ role: message.role, content: message.content }))
+  } else {
+    const content: unknown[] = []
+    if (args.image) {
+      content.push({
+        type: 'image',
+        source: { type: 'base64', media_type: args.image.mimeType, data: base64(args.image.data) },
+      })
+    }
+    content.push({ type: 'text', text: args.prompt ?? '' })
+    messages = [{ role: 'user', content }]
   }
-  content.push({ type: 'text', text: args.prompt })
-  return {
-    model: AI_MODELS.claude,
+  const body: ChatRequestBody = {
+    model: args.model ?? AI_MODELS.claude,
     max_tokens: args.maxTokens ?? 200,
-    messages: [{ role: 'user', content }],
+    messages,
   }
+  if (args.system) body.system = args.system
+  if (args.temperature !== undefined) body.temperature = args.temperature
+  return body
 }
 
 /** The request body for OpenAI's Chat Completions API. Pure. */
-export function buildOpenAiRequest(args: CallAiArgs): { model: string; max_tokens: number; messages: unknown[] } {
-  const content: unknown[] = [{ type: 'text', text: args.prompt }]
-  if (args.image) {
-    content.push({
-      type: 'image_url',
-      image_url: { url: `data:${args.image.mimeType};base64,${base64(args.image.data)}` },
-    })
+export function buildOpenAiRequest(args: CallAiArgs): ChatRequestBody {
+  let messages: unknown[]
+  if (args.messages) {
+    messages = args.messages.map((message) => ({ role: message.role, content: message.content }))
+  } else {
+    const content: unknown[] = [{ type: 'text', text: args.prompt ?? '' }]
+    if (args.image) {
+      content.push({
+        type: 'image_url',
+        image_url: { url: `data:${args.image.mimeType};base64,${base64(args.image.data)}` },
+      })
+    }
+    messages = [{ role: 'user', content }]
   }
-  return {
-    model: AI_MODELS.openai,
+  if (args.system) messages = [{ role: 'system', content: args.system }, ...messages]
+  const body: ChatRequestBody = {
+    model: args.model ?? AI_MODELS.openai,
     max_tokens: args.maxTokens ?? 200,
-    messages: [{ role: 'user', content }],
+    messages,
   }
+  if (args.temperature !== undefined) body.temperature = args.temperature
+  return body
 }
 
 /** Pulls the text out of either provider's response. Returns '' when there is none. */

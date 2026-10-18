@@ -903,6 +903,16 @@ button {
   height: 100dvh;
 }
 
+/* Visual editor: hide the admin sidebar and its toggle while the editor is open,
+   so the canvas gets the full width. Both are direct children of .admin-shell and
+   come back on their own when the editor unmounts. */
+.admin-shell:has(.ve-root) > .nav,
+.admin-shell:has(.ve-root) > .nav-toggler,
+.admin-shell:has(.ve-loading-screen) > .nav,
+.admin-shell:has(.ve-loading-screen) > .nav-toggler {
+  display: none;
+}
+
 /* ---------------------------------------------------------------- *
  * Collapsed-rail group flyout (Stage 13 - WordPress-style submenu)  *
  * ---------------------------------------------------------------- */

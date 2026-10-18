@@ -1,0 +1,295 @@
+/* Wave 48: chart, embed, reviews and pagination. Every selector is scoped with .be-el-48- so nothing leaks into the rest
+   of the site. The only motion is the bar grow on charts, and it sits inside a prefers-reduced-motion: no-preference
+   guard. Without motion the bars are drawn at full height from the start. */
+
+/* ---- visually hidden (screen reader only) ---- */
+
+.be-el-48-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- chart ---- */
+
+.be-el-48-chart {
+  position: relative;
+  margin: 0 auto;
+  max-width: 480px;
+  font-family: var(--font-body, inherit);
+}
+
+.be-el-48-chart__title {
+  margin-bottom: 8px;
+  font-family: var(--font-display, inherit);
+  font-size: 1.25rem;
+}
+
+.be-el-48-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.be-el-48-chart__svg--pie {
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.be-el-48-chart__label,
+.be-el-48-chart__value {
+  fill: var(--color-ink, #1a1a1a);
+  font-size: 12px;
+}
+
+.be-el-48-chart__value {
+  font-weight: 600;
+}
+
+.be-el-48-chart__axis,
+.be-el-48-chart__spoke,
+.be-el-48-chart__grid {
+  fill: none;
+  stroke: var(--color-line, #cfcfcf);
+  stroke-width: 1;
+}
+
+.be-el-48-chart__area {
+  fill-opacity: 0.25;
+  stroke-width: 2;
+}
+
+.be-el-48-chart__line {
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.be-el-48-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.be-el-48-chart__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-48-chart--bar .be-el-48-chart__bar {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    animation: be-el-48-grow 600ms ease-out both;
+  }
+
+  @keyframes be-el-48-grow {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+}
+
+/* ---- embed ---- */
+
+.be-el-48-embed {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.be-el-48-embed__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.be-el-48-embed__message {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px dashed currentColor;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.be-el-48-embed__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.be-el-48-embed__card:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+.be-el-48-embed__provider {
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.be-el-48-embed__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.be-el-48-embed__cta {
+  text-decoration: underline;
+}
+
+/* ---- reviews ---- */
+
+.be-el-48-reviews__summary {
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+
+.be-el-48-reviews__list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.be-el-48-reviews--grid .be-el-48-reviews__list {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.be-el-48-reviews--list .be-el-48-reviews__list {
+  grid-template-columns: 1fr;
+}
+
+.be-el-48-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.be-el-48-review__text {
+  margin: 0;
+}
+
+.be-el-48-review__by {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.be-el-48-review__avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.be-el-48-review__source {
+  opacity: 0.7;
+}
+
+.be-el-48-stars {
+  display: block;
+  width: 120px;
+  height: 24px;
+}
+
+.be-el-48-stars__on {
+  fill: #f5a623;
+}
+
+.be-el-48-stars__off {
+  fill: none;
+  stroke: #b5b5b5;
+  stroke-width: 1.5;
+}
+
+/* ---- pagination ---- */
+
+.be-el-48-pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.be-el-48-pagination--centre .be-el-48-pagination__list {
+  justify-content: center;
+}
+
+.be-el-48-pagination--right .be-el-48-pagination__list {
+  justify-content: flex-end;
+}
+
+.be-el-48-pagination__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+a.be-el-48-pagination__item:hover {
+  border-color: currentColor;
+}
+
+a.be-el-48-pagination__item:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+.be-el-48-pagination__item--current {
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.06);
+  border-color: currentColor;
+}
+
+.be-el-48-pagination__item--disabled {
+  opacity: 0.45;
+}
+
+.be-el-48-pagination__gap {
+  min-width: 24px;
+  padding: 0 4px;
+  text-align: center;
+}

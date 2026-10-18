@@ -43,7 +43,6 @@ import { canRedo, canUndo, clampPath, createHistory, pushHistory, redoHistory, u
 import { planPaste, readClipboard, readStyleClipboard, serializeSelection, serializeStyle, withFreshIds, writeClipboard, writeStyleClipboard } from './visualEditor/editorClipboard'
 import { ImportExportModal } from './visualEditor/ImportExportModal'
 import { IMPORT_EXPORT_CSS } from './visualEditor/importExport.styles'
-import { AiBuilderPanel } from './visualEditor/AiBuilderPanel'
 import { AI_BUILDER_CSS } from './visualEditor/aiBuilder.styles'
 import { collectSubtree } from './visualEditor/aiBuilderState'
 import { useEditorShortcuts } from './visualEditor/useEditorShortcuts'
@@ -1213,15 +1212,15 @@ export const VisualEditorView: React.FC = () => {
               onExpandedStateChange={setNavigatorExpandedState}
             />
           }
-          aiPanel={
-            formMode ? undefined : (
-              <AiBuilderPanel
-                pageTitle={docTitle}
-                selectedSection={aiSelectedSection}
-                onInsertAtEnd={aiInsertAtEnd}
-                onReplaceSelected={aiReplaceSelected}
-              />
-            )
+          aiBuilder={
+            formMode
+              ? undefined
+              : {
+                  pageTitle: docTitle,
+                  selectedSection: aiSelectedSection,
+                  onInsertAtEnd: aiInsertAtEnd,
+                  onReplaceSelected: aiReplaceSelected,
+                }
           }
           formPanel={
             formMode ? (

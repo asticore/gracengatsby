@@ -49,8 +49,8 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ text: 'Good things take time.', cite: 'Someone wise', style: 'bar', align: 'left' }),
   },
   {
-    type: 'icon-list', label: 'Icon list', icon: '✔', category: 'text',
-    description: 'A list where every line starts with the same icon.',
+    type: 'icon-list', label: 'Icon list', icon: '✔', category: 'text', hidden: true,
+    description: 'A list where every line starts with the same icon. Kept for saved pages; use List with the Icon marker.',
     fields: [
       { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('text', 'Text'), text('link', 'Link (optional)')] } },
       icon(), select('layout', 'Layout', opts('stacked', 'inline')), ALIGN
@@ -59,12 +59,17 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   },
   {
     type: 'list', label: 'List', icon: '☰', category: 'text',
-    description: 'A bulleted or numbered list.',
+    description: 'A bulleted, numbered or icon list (checks, arrows, dashes), with optional links per item.',
     fields: [
-      { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('text', 'Text')] } },
-      select('kind', 'Marker', opts('bullets', 'numbers', 'none')), ALIGN
+      { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('text', 'Text'), text('href', 'Link (optional)')] } },
+      select('marker', 'Marker', opts('bullets', 'numbers', 'none', 'icon', 'check', 'arrow', 'dash')),
+      { name: 'icon', label: 'Icon (when Marker is Icon)', type: 'icon', iconSet: 'builtin' },
+      { name: 'iconColour', label: 'Marker colour', type: 'color', width: 'half' },
+      slider('size', 'Marker size (px)', 14, 28),
+      slider('gap', 'Space between items (px)', 0, 32),
+      ALIGN
     ],
-    defaultProps: () => ({ items: [{text: 'First point'}, {text: 'Second point'}, {text: 'Third point'}], kind: 'bullets', align: 'left' }),
+    defaultProps: () => ({ items: [{text: 'First point'}, {text: 'Second point'}, {text: 'Third point'}], marker: 'bullets', align: 'left' }),
   },
   // ---- media ----
   {
@@ -136,13 +141,21 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'counter', label: 'Counter', icon: '#', category: 'interactive',
     description: 'A big number with a label, such as "1,200 happy customers".',
-    fields: [number('number', 'Number'), number('decimals', 'Decimal places'), text('prefix', 'Prefix', { width: 'half' }), text('suffix', 'Suffix', { width: 'half' }), text('title', 'Title'), { name: 'separator', label: 'Thousands separator', type: 'checkbox' }, ALIGN],
+    fields: [
+      number('number', 'Number'), number('decimals', 'Decimal places'), text('prefix', 'Prefix', { width: 'half' }), text('suffix', 'Suffix', { width: 'half' }), text('title', 'Title'), { name: 'separator', label: 'Thousands separator', type: 'checkbox' },
+      { name: 'animate', label: 'Animate: count up to the number', type: 'checkbox', helpText: 'Animated counters show up to 2 decimal places and no thousands separator.' },
+      number('start', 'Start number (animated only)'), number('duration', 'Animation time in ms (animated only)', 'Between 200 and 5000. Default 1600.'),
+      ALIGN,
+    ],
     defaultProps: () => ({ number: 1200, decimals: 0, suffix: '+', title: 'Happy customers', separator: true, align: 'center' }),
   },
   {
     type: 'progress-bar', label: 'Progress bar', icon: '▬', category: 'interactive',
     description: 'A labelled bar showing a percentage.',
-    fields: [text('title', 'Title'), slider('percent', 'Percent (0-100)', 0, 100), { name: 'showPercent', label: 'Show the number', type: 'checkbox' }],
+    fields: [
+      text('title', 'Title'), slider('percent', 'Percent (0-100)', 0, 100), { name: 'showPercent', label: 'Show the number', type: 'checkbox' },
+      select('shape', 'Shape', [{ label: 'Bar', value: 'bar' }, { label: 'Ring', value: 'ring' }], { helpText: 'The ring always shows the number in its middle.' }),
+    ],
     defaultProps: () => ({ title: 'Satisfaction', percent: 90, showPercent: true }),
   },
   {
@@ -154,7 +167,11 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'alert', label: 'Alert', icon: '⚠', category: 'interactive',
     description: 'A coloured notice: information, success, warning or problem.',
-    fields: [select('kind', 'Type', opts('info', 'success', 'warning', 'danger')), text('title', 'Title'), area('text', 'Message')],
+    fields: [
+      select('kind', 'Type', opts('info', 'success', 'warning', 'danger')), text('title', 'Title'), area('text', 'Message'),
+      select('placement', 'Placement', [{ label: 'Inline', value: 'inline' }, { label: 'Fixed to top of window', value: 'fixed-top' }, { label: 'Fixed to bottom of window', value: 'fixed-bottom' }], { helpText: 'Fixed bars span the full width and have no close button.' }),
+      text('buttonText', 'Button text', { width: 'half' }), { name: 'buttonUrl', label: 'Button link', type: 'link', width: 'half' },
+    ],
     defaultProps: () => ({ kind: 'info', title: 'Good to know', text: 'Orders placed before 2pm ship the same day.' }),
   },
   {
@@ -162,7 +179,9 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     description: 'Links to your social profiles.',
     fields: [
       { name: 'items', label: 'Links', type: 'repeater', repeater: { fields: [select('network', 'Network', SOCIAL_NETWORKS.map(n => ({ label: n.charAt(0).toUpperCase() + n.slice(1), value: n }))), text('address', 'Address')] } },
-      select('shape', 'Shape', opts('circle', 'square', 'plain')), slider('size', 'Icon size (px)', 12, 48), ALIGN
+      select('shape', 'Shape', opts('circle', 'square', 'plain')), slider('size', 'Icon size (px)', 12, 48), ALIGN,
+      select('mode', 'Mode', [{ label: 'Follow: links to your profiles', value: 'follow' }, { label: 'Share: links to share this page', value: 'share' }], { helpText: 'Share mode uses only the Network column (Facebook, X, LinkedIn, Email).' }),
+      text('title', 'Title to share (share mode)'),
     ],
     defaultProps: () => ({ items: [{network: 'instagram', address: 'https://instagram.com/'}, {network: 'facebook', address: 'https://facebook.com/'}, {network: 'email', address: '/contact'}], shape: 'circle', size: 20, align: 'left' }),
   },
@@ -205,7 +224,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ name: 'Jordan Lee', role: 'Founder', bio: 'Started the studio in a spare room.', social: '', align: 'center' }),
   },
   {
-    type: 'flip-box', label: 'Flip box', icon: '↻', category: 'marketing',
+    type: 'flip-box', label: 'Flip box', icon: '↻', category: 'marketing', hidden: true,
     description: 'A card that turns over on hover or focus to reveal more.',
     fields: [icon(), text('frontTitle', 'Front title'), area('frontText', 'Front text'), text('backTitle', 'Back title'), area('backText', 'Back text'), text('buttonText', 'Button text', { width: 'half' }), { name: 'buttonUrl', label: 'Button link', type: 'link', width: 'half' }, slider('height', 'Height (px)', 120, 600)],
     defaultProps: () => ({ icon: 'sparkle', frontTitle: 'Hover me', frontText: 'There is more on the other side.', backTitle: 'Surprise', backText: 'Extra detail goes here.', height: 260 }),
@@ -217,13 +236,13 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ title: 'Ready to get started?', text: 'Join us today.', buttonText: 'Get started', buttonUrl: '/contact', tone: 'dark', align: 'center' }),
   },
   {
-    type: 'icon-box', label: 'Icon box', icon: '◉', category: 'marketing',
+    type: 'icon-box', label: 'Icon box', icon: '◉', category: 'marketing', hidden: true,
     description: 'An icon with a title and short text.',
     fields: [icon(), slider('size', 'Icon size (px)', 16, 120), text('title', 'Title'), area('text', 'Text'), link(), select('tag', 'Title tag', opts('h2', 'h3', 'h4', 'h5', 'h6', 'p')), select('layout', 'Layout', opts('top', 'left')), ALIGN],
     defaultProps: () => ({ icon: 'leaf', size: 40, title: 'Made to last', text: 'A short line about why it matters.', tag: 'h3', layout: 'top', align: 'center' }),
   },
   {
-    type: 'image-box', label: 'Image box', icon: '▣', category: 'marketing',
+    type: 'image-box', label: 'Image box', icon: '▣', category: 'marketing', hidden: true,
     description: 'A picture with a title and short text beneath.',
     fields: [{ name: 'image', label: 'Image', type: 'media' }, text('url', 'Or image address'), text('alt', 'Alt text'), text('title', 'Title'), area('text', 'Text'), link(), select('tag', 'Title tag', opts('h2', 'h3', 'h4', 'h5', 'h6', 'p')), ALIGN],
     defaultProps: () => ({ title: 'Image box', text: 'A short description under the picture.', tag: 'h3', align: 'left' }),

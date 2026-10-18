@@ -25,7 +25,7 @@ const TEXT_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span']
 export const WAVE43_ELEMENTS: ElementDef[] = [
   // ---- text ----
   {
-    type: 'gradient-text', label: 'Gradient text', icon: String.fromCodePoint(0x1f308), category: 'text',
+    type: 'gradient-text', label: 'Gradient text', icon: String.fromCodePoint(0x1f308), category: 'text', hidden: true,
     description: 'Text filled with a colour gradient of two or three colours. Can drift slowly with motion turned on.',
     fields: [
       text('text', 'Text'), tagField(TEXT_TAGS, 'h2'),
@@ -40,7 +40,7 @@ export const WAVE43_ELEMENTS: ElementDef[] = [
     }),
   },
   {
-    type: 'split-text', label: 'Split text reveal', icon: String.fromCodePoint(0x2592), category: 'text',
+    type: 'split-text', label: 'Split text reveal', icon: String.fromCodePoint(0x2592), category: 'text', hidden: true,
     description: 'Text that reveals word by word or letter by letter as it scrolls into view. Up to 200 letters animate; the rest shows at once.',
     fields: [
       text('text', 'Text'),
@@ -52,7 +52,7 @@ export const WAVE43_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ text: 'Words that rise into place', by: 'word', effect: 'fade-up', stagger: 80, tag: 'h2' }),
   },
   {
-    type: 'highlight-text', label: 'Highlighted text', icon: String.fromCodePoint(0x1f58d), category: 'text',
+    type: 'highlight-text', label: 'Highlighted text', icon: String.fromCodePoint(0x1f58d), category: 'text', hidden: true,
     description: 'A sentence with one phrase marked by an underline, wave, box or circle that draws itself in.',
     fields: [
       text('before', 'Text before'), text('phrase', 'Highlighted phrase'), text('after', 'Text after'),
@@ -67,7 +67,7 @@ export const WAVE43_ELEMENTS: ElementDef[] = [
     }),
   },
   {
-    type: 'outline-text', label: 'Outline text', icon: String.fromCodePoint(0x25cb), category: 'text',
+    type: 'outline-text', label: 'Outline text', icon: String.fromCodePoint(0x25cb), category: 'text', hidden: true,
     description: 'Big outlined text with no fill. Optionally fills in when the visitor hovers over it.',
     fields: [
       text('text', 'Text'), tagField(TEXT_TAGS, 'h2'),
@@ -83,7 +83,7 @@ export const WAVE43_ELEMENTS: ElementDef[] = [
   },
   // ---- marketing ----
   {
-    type: 'count-up', label: 'Count up', icon: String.fromCodePoint(0x1f522), category: 'marketing',
+    type: 'count-up', label: 'Count up', icon: String.fromCodePoint(0x1f522), category: 'marketing', hidden: true,
     description: 'A number that counts up from a start value to an end value when the page loads. Screen readers hear the final number.',
     fields: [
       { name: 'start', label: 'Start number', type: 'number', width: 'half' },

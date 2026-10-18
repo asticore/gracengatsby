@@ -8,6 +8,7 @@ import { WAVE38_ELEMENTS } from './wave38Defs'
 import { WAVE43_ELEMENTS } from './wave43Defs'
 import { WAVE44_ELEMENTS } from './wave44Defs'
 import { WAVE47_ELEMENTS } from './wave47Defs'
+import { WAVE48_ELEMENTS } from './wave48Defs'
 
 /**
  * The per-element-type catalogue that lives inside the `element` block
@@ -103,14 +104,15 @@ export const ELEMENTS: ElementDef[] = [
         ],
         helpText: 'A styling variant of this heading. Each effect has its own fields below, labelled with its name.',
       },
-      { name: 'secondText', label: 'Two-tone: second part', type: 'text', helpText: 'Shown after the text above, in the second colour.' },
-      { name: 'secondColour', label: 'Two-tone: second part colour', type: 'color', width: 'half' },
-      { name: 'words', label: 'Rotate: words', type: 'textarea', helpText: 'One word or phrase per line. The text above is shown before them.' },
+      { name: 'secondText', label: 'Two-tone: second part', type: 'text', helpText: 'Shown after the text above, in the second colour.', showIf: { field: 'effect', equals: 'two-tone' } },
+      { name: 'secondColour', label: 'Two-tone: second part colour', type: 'color', width: 'half', showIf: { field: 'effect', equals: 'two-tone' } },
+      { name: 'words', label: 'Rotate: words', type: 'textarea', helpText: 'One word or phrase per line. The text above is shown before them.', showIf: { field: 'effect', equals: 'rotate' } },
       {
         name: 'speed',
         label: 'Rotate: speed',
         type: 'select',
         width: 'half',
+        showIf: { field: 'effect', equals: 'rotate' },
         options: [
           { label: 'Slow', value: 'slow' },
           { label: 'Normal', value: 'normal' },
@@ -122,6 +124,7 @@ export const ELEMENTS: ElementDef[] = [
         label: 'Split: split by',
         type: 'select',
         width: 'half',
+        showIf: { field: 'effect', equals: 'split' },
         options: [
           { label: 'Word', value: 'word' },
           { label: 'Letter', value: 'letter' },
@@ -132,18 +135,20 @@ export const ELEMENTS: ElementDef[] = [
         label: 'Split: animation',
         type: 'select',
         width: 'half',
+        showIf: { field: 'effect', equals: 'split' },
         options: [
           { label: 'Fade up', value: 'fade-up' },
           { label: 'Blur', value: 'blur' },
           { label: 'Slide', value: 'slide' },
         ],
       },
-      { name: 'markerPhrase', label: 'Highlight: phrase to mark', type: 'text', helpText: 'Must appear in the text above.' },
+      { name: 'markerPhrase', label: 'Highlight: phrase to mark', type: 'text', helpText: 'Must appear in the text above.', showIf: { field: 'effect', equals: 'highlight' } },
       {
         name: 'markerStyle',
         label: 'Highlight: marker style',
         type: 'select',
         width: 'half',
+        showIf: { field: 'effect', equals: 'highlight' },
         options: [
           { label: 'Underline', value: 'underline' },
           { label: 'Wavy underline', value: 'underline-wavy' },
@@ -151,7 +156,7 @@ export const ELEMENTS: ElementDef[] = [
           { label: 'Circle', value: 'circle' },
         ],
       },
-      { name: 'markerColour', label: 'Highlight: marker colour', type: 'color', width: 'half' },
+      { name: 'markerColour', label: 'Highlight: marker colour', type: 'color', width: 'half', showIf: { field: 'effect', equals: 'highlight' } },
     ],
     defaultProps: () => ({ text: 'New heading', tag: 'h2', align: 'left', effect: 'none' }),
   },
@@ -198,6 +203,7 @@ ELEMENTS.push(...WAVE38_ELEMENTS)
 ELEMENTS.push(...WAVE43_ELEMENTS)
 ELEMENTS.push(...WAVE44_ELEMENTS)
 ELEMENTS.push(...WAVE47_ELEMENTS)
+ELEMENTS.push(...WAVE48_ELEMENTS)
 
 export function getElementDef(type: string): ElementDef | undefined {
   return ELEMENTS.find((e) => e.type === type)

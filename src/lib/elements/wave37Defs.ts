@@ -36,7 +36,7 @@ export const WAVE37_ELEMENTS: ElementDef[] = [
     }),
   },
   {
-    type: 'sticky-bar', label: 'Announcement bar', icon: String.fromCodePoint(0x25a4), category: 'marketing',
+    type: 'sticky-bar', label: 'Announcement bar', icon: String.fromCodePoint(0x25a4), category: 'marketing', hidden: true,
     description: 'A full-width bar with a message and a button. Inline in the page, or fixed to the top or bottom of the window.',
     fields: [
       text('text', 'Message'),
@@ -59,7 +59,7 @@ export const WAVE37_ELEMENTS: ElementDef[] = [
   },
   // ---- layout ----
   {
-    type: 'reading-progress', label: 'Reading progress', icon: String.fromCodePoint(0x25ac), category: 'layout',
+    type: 'reading-progress', label: 'Reading progress', icon: String.fromCodePoint(0x25ac), category: 'layout', hidden: true,
     description: 'A thin bar fixed to the top or bottom of the window that fills as the visitor scrolls the page. Hidden in browsers without scroll-linked animation, and for visitors who ask for less motion.',
     fields: [slider('height', 'Height (px)', 1, 24), color('color', 'Colour'), select('position', 'Position', opts('top', 'bottom'))],
     defaultProps: () => ({ height: 4, color: '#2e3192', position: 'top' }),

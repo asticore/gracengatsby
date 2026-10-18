@@ -43,6 +43,7 @@ const renderElementBody = (elementType: string, props: Record<string, unknown>):
     case 'heading':
       return (
         <HeadingElement
+          {...(props as Partial<HeadingElementProps>)}
           text={props.text as string}
           tag={props.tag as HeadingElementProps['tag']}
           align={props.align as HeadingElementProps['align']}

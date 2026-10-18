@@ -3,6 +3,7 @@ import React, { useId } from 'react'
 import { safeUrl } from '@/lib/mergeTags'
 
 import { SocialGlyph } from './icons'
+import { ShareWithPageUrl } from './ShareWithPageUrl'
 import { alignClass } from './TextElements'
 import { cells, flag, linkAttrs, linkHref, num, pick, str } from './elementUtil'
 import { CountUpElement } from './Wave43Elements'
@@ -222,7 +223,7 @@ const SocialShare: React.FC<{ p: P }> = ({ p }) => {
     if (key) flags[key] = true
   }
   const shareProps: P = { ...flags, title: str(p.title), shareUrl: str(p.pageUrl), style: 'icons', align: pick(p.align, ['left', 'center', 'right'] as const, 'left') }
-  return <ShareButtonsElement {...shareProps} />
+  return str(p.pageUrl) ? <ShareButtonsElement {...shareProps} /> : <ShareWithPageUrl {...shareProps} />
 }
 
 /** `social-icons`: one line per link as "network | url". Mode "share" turns it into share links for the page. */

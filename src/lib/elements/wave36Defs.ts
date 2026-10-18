@@ -38,13 +38,13 @@ export const WAVE36_ELEMENTS: ElementDef[] = [
     }),
   },
   {
-    type: 'dual-heading', label: 'Two-tone heading', icon: String.fromCodePoint(0x1f524), category: 'text',
+    type: 'dual-heading', label: 'Two-tone heading', icon: String.fromCodePoint(0x1f524), category: 'text', hidden: true,
     description: 'One heading where the second part is in another colour.',
     fields: [text('first', 'First part'), text('second', 'Second part (coloured)'), headingTag(), color(), ALIGN],
     defaultProps: () => ({ first: 'Crafted', second: 'by hand', tag: 'h2', color: '#2e3192', align: 'left' }),
   },
   {
-    type: 'animated-headline', label: 'Rotating headline', icon: String.fromCodePoint(0x1f501), category: 'text',
+    type: 'animated-headline', label: 'Rotating headline', icon: String.fromCodePoint(0x1f501), category: 'text', hidden: true,
     description: 'A heading where one word after another rotates in the same place. Still reads as plain text to search engines and screen readers.',
     fields: [
       text('before', 'Text before'), area('words', 'Words', 'One word or phrase per line.'), text('after', 'Text after'),
@@ -91,7 +91,7 @@ export const WAVE36_ELEMENTS: ElementDef[] = [
   },
   // ---- interactive ----
   {
-    type: 'circle-progress', label: 'Circle progress', icon: String.fromCodePoint(0x25d4), category: 'interactive',
+    type: 'circle-progress', label: 'Circle progress', icon: String.fromCodePoint(0x25d4), category: 'interactive', hidden: true,
     description: 'A ring that fills to a percentage, with the number in the middle.',
     fields: [
       slider('percent', 'Percent (0-100)', 0, 100), text('label', 'Label'), slider('size', 'Size (px)', 60, 300, 4),
@@ -128,7 +128,7 @@ export const WAVE36_ELEMENTS: ElementDef[] = [
     }),
   },
   {
-    type: 'share-buttons', label: 'Share buttons', icon: String.fromCodePoint(0x2197), category: 'interactive',
+    type: 'share-buttons', label: 'Share buttons', icon: String.fromCodePoint(0x2197), category: 'interactive', hidden: true,
     description: 'Links that open the share dialog of each network you tick.',
     fields: [
       text('title', 'Title to share', { helpText: 'Used as the message text.' }),

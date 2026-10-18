@@ -100,7 +100,7 @@ export const WAVE36_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ percent: 72, label: 'Complete', size: 160, thickness: 12, color: '#2e3192' }),
   },
   {
-    type: 'bar-chart', label: 'Bar chart', icon: String.fromCodePoint(0x2587), category: 'interactive',
+    hidden: true, type: 'bar-chart', label: 'Bar chart', icon: String.fromCodePoint(0x2587), category: 'interactive',
     description: 'A bar chart of up to 12 values. The same data is available to screen readers as a table.',
     fields: [
       text('title', 'Title'), area('data', 'Data', 'One row per line: "label | value".'),
@@ -115,7 +115,7 @@ export const WAVE36_ELEMENTS: ElementDef[] = [
     }),
   },
   {
-    type: 'pie-chart', label: 'Pie chart', icon: String.fromCodePoint(0x25d5), category: 'interactive',
+    hidden: true, type: 'pie-chart', label: 'Pie chart', icon: String.fromCodePoint(0x25d5), category: 'interactive',
     description: 'A pie chart of up to 12 values, with a legend. The same data is available to screen readers as a table.',
     fields: [
       text('title', 'Title'), area('data', 'Data', 'One row per line: "label | value".'),

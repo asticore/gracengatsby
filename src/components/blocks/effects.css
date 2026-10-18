@@ -105,3 +105,34 @@
   .be-fx-pointer-tilt>.be-block__content{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .25s ease-out}
   .be-fx-pointer-magnetic{translate:var(--mgx,0px) var(--mgy,0px)}
 }
+
+/* Heading effects (HeadingElement). The markup and motion of each effect come from wave36.css / wave43.css;
+   this only zeroes the widget margins and sets the rotate speed (a multiplier on the widget's cycle length). */
+.be-heading-fx>*{margin:0}
+@media (prefers-reduced-motion:no-preference){
+  .be-heading-fx--rotate .be-el-rotor__track{animation-duration:calc(var(--be-el-n,1)*2.5s/var(--be-heading-speed,1))}
+}
+
+/* Block text effects (blockStyle textFx): set on the block wrapper, applied to the headings and paragraphs inside it.
+   Colours and angle come from --be-tfx-* vars (blockFxVars). Gradient drift is motion, so it sits under no-preference. */
+.be-fx--textfx-gradient :is(h1,h2,h3,h4,h5,h6,p,li){
+  background-image:linear-gradient(var(--be-tfx-a,90deg),var(--be-tfx-c,#2e3192),var(--be-tfx-c2,#00a9ff));
+  background-size:100% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;-webkit-text-fill-color:transparent;
+}
+@media (prefers-reduced-motion:no-preference){
+  .be-fx--textfx-anim :is(h1,h2,h3,h4,h5,h6,p,li){
+    background-image:linear-gradient(var(--be-tfx-a,90deg),var(--be-tfx-c,#2e3192),var(--be-tfx-c2,#00a9ff),var(--be-tfx-c,#2e3192),var(--be-tfx-c2,#00a9ff),var(--be-tfx-c,#2e3192));
+    background-size:200% 100%;
+    animation:be-tfx-shift 6s linear infinite;
+  }
+  @keyframes be-tfx-shift{from{background-position:0% 50%}to{background-position:100% 50%}}
+}
+.be-fx--textfx-outline :is(h1,h2,h3,h4,h5,h6,p,li){
+  color:transparent;-webkit-text-fill-color:transparent;
+  -webkit-text-stroke:var(--be-tfx-sw,2px) var(--be-tfx-c,#2e3192);
+}
+.be-fx--textfx-shadow-glow :is(h1,h2,h3,h4,h5,h6,p,li){
+  text-shadow:0 0 .12em var(--be-tfx-c,#00a9ff),0 0 .35em var(--be-tfx-c,#00a9ff);
+}

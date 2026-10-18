@@ -1,0 +1,208 @@
+/* Wave 47: the Card element. Every selector is scoped with .be-el-47-card so nothing leaks into the rest of the site.
+   Every transform and transition sits inside a prefers-reduced-motion: no-preference guard. Without motion the flip
+   shows its back face below the front, and hover lift and zoom do nothing. */
+
+/* ---- card shell ---- */
+
+.be-el-47-card {
+  position: relative;
+  margin: 0;
+  box-sizing: border-box;
+  color: inherit;
+  text-align: left;
+}
+
+.be-el-47-card--centre {
+  text-align: center;
+}
+
+.be-el-47-card--shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.be-el-47-card--shadow-md {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.be-el-47-card--shadow-lg {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+.be-el-47-card__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--be-el-47-r, 8px);
+}
+
+.be-el-47-card__link:focus-visible,
+.be-el-47-card[tabindex]:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+/* ---- faces: the front, and the back for flip ---- */
+
+.be-el-47-card__face {
+  position: relative;
+  box-sizing: border-box;
+  padding: 24px;
+  border-radius: var(--be-el-47-r, 8px);
+  overflow: hidden;
+}
+
+.be-el-47-card__front--top {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.be-el-47-card__front--left,
+.be-el-47-card__front--right {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.be-el-47-card__front--right {
+  flex-direction: row-reverse;
+}
+
+.be-el-47-card__body {
+  min-width: 0;
+}
+
+.be-el-47-card__title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.be-el-47-card__back-title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.be-el-47-card__text {
+  margin: 0;
+}
+
+.be-el-47-card__more {
+  display: inline-block;
+  margin-top: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- media ---- */
+
+.be-el-47-card__media {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.be-el-47-card__media--image {
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--be-el-47-r, 8px);
+}
+
+.be-el-47-card__front--left .be-el-47-card__media--image,
+.be-el-47-card__front--right .be-el-47-card__media--image {
+  width: 40%;
+}
+
+.be-el-47-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+}
+
+.be-el-47-card__img--cover {
+  object-fit: cover;
+}
+
+.be-el-47-card__img--contain {
+  object-fit: contain;
+}
+
+/* Narrow screens: left and right layouts stack, media on top. */
+@media (max-width: 639.98px) {
+  .be-el-47-card__front--left,
+  .be-el-47-card__front--right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .be-el-47-card__front--left .be-el-47-card__media--image,
+  .be-el-47-card__front--right .be-el-47-card__media--image {
+    width: 100%;
+  }
+}
+
+/* ---- motion: everything below only runs when the visitor has not asked for reduced motion ---- */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Lift: the card rises and gets a deeper shadow. */
+  .be-el-47-card--lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .be-el-47-card--lift:hover,
+  .be-el-47-card--lift:focus-within {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+  }
+
+  /* Zoom: the picture grows inside its frame, which clips it. */
+  .be-el-47-card--zoom .be-el-47-card__img {
+    transition: transform 0.5s ease;
+  }
+
+  .be-el-47-card--zoom:hover .be-el-47-card__img,
+  .be-el-47-card--zoom:focus-within .be-el-47-card__img {
+    transform: scale(1.06);
+  }
+
+  /* Flip: the faces stack in one grid cell and turn around the Y axis. */
+  .be-el-47-card--flip {
+    perspective: 1200px;
+  }
+
+  .be-el-47-card--flip .be-el-47-card__faces {
+    display: grid;
+    transform-style: preserve-3d;
+  }
+
+  .be-el-47-card--flip .be-el-47-card__faces > .be-el-47-card__face {
+    grid-area: 1 / 1;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .be-el-47-card--flip .be-el-47-card__face--back {
+    transform: rotateY(180deg);
+  }
+
+  .be-el-47-card--flip:hover .be-el-47-card__face--front,
+  .be-el-47-card--flip:focus-within .be-el-47-card__face--front {
+    transform: rotateY(-180deg);
+  }
+
+  .be-el-47-card--flip:hover .be-el-47-card__face--back,
+  .be-el-47-card--flip:focus-within .be-el-47-card__face--back {
+    transform: rotateY(0deg);
+  }
+}
+
+/* Without motion, flip is a plain stack: the back face sits below the front and is always visible. */
+.be-el-47-card__faces {
+  display: flex;
+  flex-direction: column;
+}

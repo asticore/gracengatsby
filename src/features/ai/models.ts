@@ -9,6 +9,15 @@ export const AI_MODELS = {
   openai: 'gpt-4o-mini',
 } as const
 
+/**
+ * The models the Build with AI feature asks for. This is the one place to change
+ * them: the builder writes whole sections, so it uses a stronger model than alt text.
+ */
+export const AI_BUILDER_MODELS = {
+  claude: 'claude-sonnet-4-5',
+  openai: 'gpt-4o',
+} as const
+
 export type AiProvider = keyof typeof AI_MODELS
 
 export const AI_PROVIDERS: readonly AiProvider[] = ['claude', 'openai']

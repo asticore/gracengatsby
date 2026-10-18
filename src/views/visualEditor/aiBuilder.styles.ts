@@ -1,4 +1,4 @@
-/** Build with AI dock tab styles. Inlined as a <style> tag from VisualEditor.tsx, next to VISUAL_EDITOR_CSS. Colors are --ve-* tokens. */
+/** Build with AI styles: the Elements-tab button, the dialog around the panel, and the panel itself. Inlined as a <style> tag from VisualEditor.tsx, next to VISUAL_EDITOR_CSS. Colors are --ve-* tokens. */
 export const AI_BUILDER_CSS = `
 .ve-ai {
   display: flex;
@@ -341,5 +341,80 @@ export const AI_BUILDER_CSS = `
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.ve-dock__ai {
+  padding: 12px 12px 0;
+  box-sizing: border-box;
+}
+.ve-dock__ai-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid var(--ve-border-strong);
+  border-radius: 6px;
+  background: var(--ve-surface-alt);
+  color: var(--ve-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ve-dock__ai-btn:hover {
+  border-color: var(--ve-accent);
+}
+.ve-dock__ai-btn:focus-visible {
+  outline: 2px solid var(--ve-accent);
+  outline-offset: 2px;
+}
+.ve-dock__ai-glyph {
+  color: var(--ve-accent);
+  line-height: 1;
+}
+.ve-ai-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.5);
+}
+.ve-ai-modal[hidden] {
+  display: none;
+}
+.ve-ai-modal__dialog {
+  width: min(640px, 90vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+  border-radius: 8px;
+  overflow: hidden;
+  outline: none;
+}
+.ve-ai-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ve-border);
+}
+.ve-ai-modal__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ve-ai-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 `

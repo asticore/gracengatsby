@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import { asBlockStyle, parseOldFormat, type BlockStyle } from '@/lib/blockStyle'
 import { getElementDef } from '@/lib/elements/registry'
+import { isFieldVisible } from '@/lib/elements/fieldTypes'
 import {
   COLUMN_WIDTH_OPTIONS,
   parseColumns,
@@ -67,6 +68,8 @@ export const FieldPanel: React.FC<{
   const elementDef = isElement ? getElementDef((data.elementType as string) || '') : undefined
   const elementProps = (data.props as Record<string, unknown>) || {}
   const setElementProp = (name: string, value: unknown) => onChange({ ...data, props: { ...elementProps, [name]: value } })
+  /** Visibility checks read defaults under the stored props, so an unset controlling prop matches what the renderer shows. */
+  const elementValues = { ...(elementDef?.defaultProps() ?? {}), ...elementProps }
 
   return (
     <div className="ve-panel">
@@ -124,7 +127,7 @@ export const FieldPanel: React.FC<{
             </fieldset>
           ) : isElement ? (
             elementDef ? (
-              elementDef.fields.map((field) => (
+              elementDef.fields.filter((field) => isFieldVisible(field, elementValues)).map((field) => (
                 <fieldset key={field.name} className="ve-lockset" disabled={fieldDisabled(field.name)}>
                   <FieldInput field={field} value={elementProps[field.name]} onChange={(v) => setElementProp(field.name, v)} />
                 </fieldset>

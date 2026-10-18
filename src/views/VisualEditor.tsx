@@ -43,6 +43,9 @@ import { canRedo, canUndo, clampPath, createHistory, pushHistory, redoHistory, u
 import { planPaste, readClipboard, readStyleClipboard, serializeSelection, serializeStyle, withFreshIds, writeClipboard, writeStyleClipboard } from './visualEditor/editorClipboard'
 import { ImportExportModal } from './visualEditor/ImportExportModal'
 import { IMPORT_EXPORT_CSS } from './visualEditor/importExport.styles'
+import { AiBuilderPanel } from './visualEditor/AiBuilderPanel'
+import { AI_BUILDER_CSS } from './visualEditor/aiBuilder.styles'
+import { collectSubtree } from './visualEditor/aiBuilderState'
 import { useEditorShortcuts } from './visualEditor/useEditorShortcuts'
 import { ContextMenu, type ContextMenuItem } from './visualEditor/ContextMenu'
 import { ShortcutsHelp } from './visualEditor/ShortcutsHelp'
@@ -73,7 +76,7 @@ function withIds(nodes: SectionNode[]): SectionNode[] {
   })
 }
 
-import { parseLocks, serializeLocks, type LockEntry, type Locks, type LockUser } from '@/features/roles/locks'
+import { nodeKey, parseLocks, serializeLocks, type LockEntry, type Locks, type LockUser } from '@/features/roles/locks'
 import { canInsertInto, effectiveLock, lockedKeySet, lockKeyOf, lockMapForCanvas, withNodeLock } from './visualEditor/lockState'
 import { canConvertLegacy, convertLegacyBlock } from './visualEditor/convertLegacy'
 import type { LockUi } from './visualEditor/LockControls'
@@ -575,6 +578,48 @@ export const VisualEditorView: React.FC = () => {
     [insertBlocked, applyBlocks, flashNotice],
   )
 
+  /* Build with AI: new sections go to the end of the page, same rules and one undo step as an import. */
+  const aiInsertAtEnd = useCallback(
+    (sections: SectionNode[]): boolean => {
+      if (sections.length === 0 || insertBlocked([])) return false
+      insertTemplateAt(sections, [], blocksRef.current.length)
+      flashNotice(`Added ${sections.length} ${sections.length === 1 ? 'section' : 'sections'} with AI`, 2500)
+      return true
+    },
+    [insertBlocked, insertTemplateAt, flashNotice],
+  )
+
+  /* Build with AI, edit mode: swaps the selected top-level section for the generated ones (one undo step). */
+  const aiReplaceSelected = useCallback(
+    (sections: SectionNode[], sectionId: string | undefined): boolean => {
+      const path = selectedRef.current
+      if (!path || path.length !== 1 || sections.length === 0) return false
+      const index = path[0]
+      const current = blocksRef.current[index]
+      if (!current || current._id !== sectionId) return false
+      if (lockedOut(path)) return false
+      const lockedKeys = lockedKeySet(lockCtx.current.locks)
+      if (collectSubtree(current).some((node) => {
+        const key = nodeKey(node)
+        return key !== undefined && lockedKeys.has(key)
+      })) {
+        setLockNotice('This section has locked parts, so it cannot be replaced. Unlock them first.')
+        setTimeout(() => setLockNotice(null), 5000)
+        return false
+      }
+      const fresh = sections.map((node) => cloneNode({ ...node, _id: undefined }, nextId))
+      applyBlocks((prev) => [...prev.slice(0, index), ...fresh, ...prev.slice(index + 1)])
+      setSelectedPath([index])
+      setInsertTarget({ containerPath: [], at: index + 1 })
+      flashNotice(`Replaced the section with ${fresh.length} ${fresh.length === 1 ? 'section' : 'sections'} from AI`, 2500)
+      return true
+    },
+    [lockedOut, applyBlocks, flashNotice],
+  )
+
+  const aiSelectedSection =
+    selectedPath && selectedPath.length === 1 && blocks[selectedPath[0]]?.blockType === 'section' ? blocks[selectedPath[0]] : null
+
   const copyNode = useCallback(async (path: NodePath): Promise<boolean> => {
     const serialized = serializeSelection(blocksRef.current, path)
     if (!serialized) return false
@@ -1019,6 +1064,7 @@ export const VisualEditorView: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: NAVIGATOR_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: IMPORT_EXPORT_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: AI_BUILDER_CSS }} />
       <div className="ve-topbar">
         <div className="ve-topbar__left">
           <a
@@ -1166,6 +1212,16 @@ export const VisualEditorView: React.FC = () => {
               expandedState={navigatorExpandedState}
               onExpandedStateChange={setNavigatorExpandedState}
             />
+          }
+          aiPanel={
+            formMode ? undefined : (
+              <AiBuilderPanel
+                pageTitle={docTitle}
+                selectedSection={aiSelectedSection}
+                onInsertAtEnd={aiInsertAtEnd}
+                onReplaceSelected={aiReplaceSelected}
+              />
+            )
           }
           formPanel={
             formMode ? (

@@ -160,6 +160,7 @@ export const MEDIA_PROP_KEYS: Record<string, readonly string[]> = {
   testimonial: ['photo'],
   'team-member': ['photo'],
   'flip-box': ['image'],
+  card: ['image'],
   'image-comparison': ['before', 'after'],
   hotspots: ['image'],
 }

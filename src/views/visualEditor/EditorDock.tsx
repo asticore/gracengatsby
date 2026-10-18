@@ -10,7 +10,7 @@ import { FieldPanel } from './FieldPanel'
 import type { EditDevice } from './DesignPanel'
 import type { LockUi } from './LockControls'
 
-export type DockTab = 'elements' | 'settings' | 'form' | 'navigator'
+export type DockTab = 'elements' | 'settings' | 'form' | 'navigator' | 'ai'
 
 /**
  * The persistent left dock - Elementor's left sidebar, not a popup: Elements
@@ -48,6 +48,8 @@ export const EditorDock: React.FC<{
   navigatorPanel?: React.ReactNode
   /** Converts the selected legacy block into editable sections (shown in its settings). */
   onConvertLegacy?: () => void
+  /** Build with AI panel. Kept mounted while other tabs show, so a half-written brief survives tab switches. */
+  aiPanel?: React.ReactNode
 }> = ({
   collapsed,
   tab,
@@ -69,6 +71,7 @@ export const EditorDock: React.FC<{
   onSelectColumn,
   navigatorPanel,
   onConvertLegacy,
+  aiPanel,
 }) => {
   // Collapsed = the topbar's «/» toggle hid the whole dock so the canvas can
   // use the full width, same as Elementor's panel-collapse - nothing renders
@@ -106,6 +109,17 @@ export const EditorDock: React.FC<{
         >
           📄 Navigator
         </button>
+        {aiPanel && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'ai'}
+            className={`ve-dock__tab ${tab === 'ai' ? 've-dock__tab--active' : ''}`}
+            onClick={() => onTabChange('ai')}
+          >
+            AI
+          </button>
+        )}
         {formPanel && (
           <button
             type="button"
@@ -120,7 +134,8 @@ export const EditorDock: React.FC<{
       </div>
 
       <div className="ve-dock__body">
-        {tab === 'form' && formPanel ? (
+        {aiPanel && <div hidden={tab !== 'ai'}>{aiPanel}</div>}
+        {tab === 'ai' ? null : tab === 'form' && formPanel ? (
           formPanel
         ) : tab === 'navigator' ? (
           navigatorPanel || <p className="ve-dock__empty">Navigator not available.</p>

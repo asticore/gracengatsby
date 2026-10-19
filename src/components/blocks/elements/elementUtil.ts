@@ -157,6 +157,7 @@ export const MEDIA_PROP_KEYS: Record<string, readonly string[]> = {
   'image-gallery': ['images'],
   'image-carousel': ['images'],
   'logo-strip': ['images'],
+  gallery: ['images'],
   testimonial: ['photo'],
   'team-member': ['photo'],
   'flip-box': ['image'],

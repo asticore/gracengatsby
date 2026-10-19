@@ -1,0 +1,68 @@
+/* Wave 50: Loop element. Cards reuse the wave-47 card classes. No motion. */
+.be-el-50-loop__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+.be-el-50-loop--grid .be-el-50-loop__items {
+  grid-template-columns: repeat(var(--be-el-50-cols, 3), minmax(0, 1fr));
+}
+.be-el-50-loop--list .be-el-50-loop__items {
+  grid-template-columns: 1fr;
+}
+.be-el-50-loop--carousel .be-el-50-loop__items {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.5rem;
+}
+.be-el-50-loop--carousel .be-el-50-loop__item {
+  flex: 0 0 calc(100% / var(--be-el-50-cols, 3) - 1rem);
+  min-width: 14rem;
+  scroll-snap-align: start;
+}
+.be-el-50-loop__card {
+  height: 100%;
+}
+.be-el-50-loop--list .be-el-47-card__media {
+  max-width: 12rem;
+}
+.be-el-50-loop__date,
+.be-el-50-loop__price {
+  display: block;
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  opacity: 0.75;
+}
+.be-el-50-loop__price {
+  font-weight: 600;
+  opacity: 1;
+}
+.be-el-50-loop--empty {
+  text-align: center;
+  opacity: 0.7;
+}
+.be-el-50-loop__pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+.be-el-50-loop__pager a,
+.be-el-50-loop__current {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  text-decoration: none;
+}
+.be-el-50-loop__current {
+  font-weight: 700;
+}
+@media (max-width: 640px) {
+  .be-el-50-loop--grid .be-el-50-loop__items {
+    grid-template-columns: 1fr;
+  }
+}

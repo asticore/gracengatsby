@@ -11,6 +11,7 @@ import { ShapeDivider } from '@/components/blocks/StyledBlock'
 import '@/components/blocks/tabs.css'
 
 import ParticlesBackground from '@/components/blocks/ParticlesLazy'
+import { BgNoise, BgSlideshow } from '@/components/blocks/BgSlideshow'
 import { BgVideo } from '@/components/blocks/BgVideo'
 import { getBlockDef } from './blockSchemas'
 import { CanvasBlockPreview } from './CanvasBlockPreview'
@@ -176,6 +177,7 @@ const CanvasNode: React.FC<{
         <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${design.bgImageUrl})` }} />
       )}
       {(() => { const kb = kenBurnsLayer(design); return kb ? <div className={kb.className} aria-hidden="true" style={kb.style} /> : null })()}
+      <BgSlideshow design={design} />
       {design.bgType === 'video' &&<BgVideo src={design.bgVideoUrl} poster={design.bgVideoPoster} loop={design.bgVideoLoop} />}
       {hasFxLayer(design) && (
         <div className={`be-fx be-fx--${design.bgEffect}`} aria-hidden="true">
@@ -196,6 +198,7 @@ const CanvasNode: React.FC<{
           )}
         </div>
       )}
+      <BgNoise design={design} />
       {(() => { const o = overlayStyle(design); return o ? <div className="be-fx be-fx--overlay" aria-hidden="true" style={o} /> : null })()}
       <div className="ve-node__toolbar">
         <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to move">

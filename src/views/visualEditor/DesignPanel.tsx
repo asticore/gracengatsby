@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { createContext, useContext, useState } from 'react'
 
 import {
   BLEND_MODE_OPTIONS,
@@ -32,6 +32,20 @@ import {
 import { BUILT_IN_FONTS } from '@/features/fonts/installed'
 
 import { MediaPicker } from './MediaPicker'
+import {
+  GROUP_KEYS,
+  GROUP_SEARCH,
+  groupModified,
+  linkedPatch,
+  linkedValue,
+  matchesQuery,
+  MARGIN_SIDE_KEYS,
+  PADDING_SIDE_KEYS,
+  readColourTokens,
+  resetGroup,
+  type ColourToken,
+} from './designHelpers'
+import './designPanel51.css'
 
 /**
  * The "Design" tab of the visual editor's right-hand panel.
@@ -49,6 +63,8 @@ export const DesignPanel: React.FC<{
   variant?: 'block' | 'column'
 }> = ({ value, onChange, device = 'desktop', variant = 'block' }) => {
   const resp = makeResponsive(value, onChange, device)
+  const [query, setQuery] = useState('')
+  const [only, setOnly] = useState(false)
   const set = <K extends keyof BlockStyle>(key: K, next: BlockStyle[K]) => {
     const updated = { ...value }
     if (next === undefined || next === '' || next === null) {
@@ -60,8 +76,23 @@ export const DesignPanel: React.FC<{
   }
 
   return (
+    <DesignCtx.Provider value={{ value, onChange, query, only }}>
     <div className="ve-design">
-      <Accordion title="Background" defaultOpen>
+      <div className="ve-d51-top">
+        <input
+          type="search"
+          className="ve-d51-search"
+          placeholder="Search settings"
+          aria-label="Search settings"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label className="ve-d51-only">
+          <input type="checkbox" checked={only} onChange={(e) => setOnly(e.target.checked)} />
+          <span>Only changed</span>
+        </label>
+      </div>
+      <Acc g="background" title="Background" defaultOpen>
         <SelectRow
           label="Type"
           value={value.bgType || 'none'}
@@ -197,9 +228,9 @@ export const DesignPanel: React.FC<{
             <BackgroundEffectControls value={value} onChange={onChange} />
           </>
         )}
-      </Accordion>
+      </Acc>
 
-      <Accordion title="Hover state">
+      <Acc g="hover" title="Hover state">
         <p className="ve-row__help">Applies on hover with a mouse or trackpad. Unset values stay the same as normal.</p>
         <ColorRow label="Background" value={value.hoverBgColor} onChange={(v) => set('hoverBgColor', v)} />
         <ColorRow label="Text colour" value={value.hoverTextColor} onChange={(v) => set('hoverTextColor', v)} />
@@ -215,16 +246,17 @@ export const DesignPanel: React.FC<{
         {makeFxEditing(value, onChange).resetBtn([
           'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
         ])}
-      </Accordion>
+      </Acc>
 
-      <Accordion title="Spacing" defaultOpen={device !== 'desktop'}>
-        <PaddingSides ctl={resp} />
+      <Acc g="spacing" title="Spacing" defaultOpen={device !== 'desktop'}>
+        <UnitRow ctl={resp} k="paddingUnit" label="Padding unit" />
+        <LinkedSides ctl={resp} keys={PADDING_SIDE_KEYS} noun="Padding" min={0} />
         <HeightRows ctl={resp} />
-        <RespNumber ctl={resp} k="marginTop" label="Margin top (px)" />
-        <RespNumber ctl={resp} k="marginBottom" label="Margin bottom (px)" />
-      </Accordion>
+        <UnitRow ctl={resp} k="marginUnit" label="Margin unit" />
+        <LinkedSides ctl={resp} keys={MARGIN_SIDE_KEYS} noun="Margin" />
+      </Acc>
 
-      <Accordion title="Border & shadow">
+      <Acc g="border" title="Border & shadow">
         <NumberRow
           label="Border width (px)"
           value={value.borderWidth}
@@ -253,9 +285,9 @@ export const DesignPanel: React.FC<{
           options={BOX_SHADOW_OPTIONS}
           onChange={(v) => set('boxShadow', v === 'none' ? undefined : (v as BlockStyle['boxShadow']))}
         />
-      </Accordion>
+      </Acc>
 
-      <Accordion title="Layout & text">
+      <Acc g="layout" title="Layout & text">
         {variant === 'block' && (
           <SelectRow
             label="Width"
@@ -280,14 +312,14 @@ export const DesignPanel: React.FC<{
           defaultLabel="Default"
         />
         <ColorRow label="Text colour" value={value.textColor} onChange={(v) => set('textColor', v)} />
-      </Accordion>
+      </Acc>
 
-      <Accordion title="Typography">
+      <Acc g="typography" title="Typography">
         <TypographyControls value={value} onChange={onChange} ctl={resp} />
-      </Accordion>
+      </Acc>
 
       {variant === 'block' && (
-        <Accordion title="Position in column">
+        <Acc g="position" title="Position in column">
           <RespSelect
             ctl={resp}
             k="selfAlign"
@@ -310,14 +342,17 @@ export const DesignPanel: React.FC<{
             ]}
             defaultLabel="Automatic"
           />
-          {resp.effective('selfWidth') === 'custom' && <RespNumber ctl={resp} k="selfWidthPercent" label="Width (%)" min={1} max={100} />}
-          <NumberRow label="Margin left (px)" value={value.marginLeft} onChange={(v) => set('marginLeft', v)} />
-          <NumberRow label="Margin right (px)" value={value.marginRight} onChange={(v) => set('marginRight', v)} />
-        </Accordion>
+          {resp.effective('selfWidth') === 'custom' && (
+            <>
+              <RespNumber ctl={resp} k="selfWidthPercent" label="Custom width" min={1} />
+              <UnitRow ctl={resp} k="selfWidthPercentUnit" label="Width unit" def="%" />
+            </>
+          )}
+        </Acc>
       )}
 
       {variant === 'block' && (
-      <Accordion title="Shape dividers">
+      <Acc g="dividers" title="Shape dividers">
         <DividerControls
           label="Top"
           shape={value.dividerTop}
@@ -348,20 +383,20 @@ export const DesignPanel: React.FC<{
           onHeight={(v) => set('dividerBottomHeight', v)}
           onFlip={(v) => set('dividerBottomFlip', v)}
         />
-      </Accordion>
+      </Acc>
       )}
 
       {variant === 'block' && (
-        <Accordion title="Effects">
+        <Acc g="effects" title="Effects">
           <EffectsControls value={value} onChange={onChange} />
-        </Accordion>
+        </Acc>
       )}
 
-      <Accordion title="Advanced">
+      <Acc g="advanced" title="Advanced">
         <AdvancedControls value={value} onChange={onChange} />
-      </Accordion>
+      </Acc>
 
-      <Accordion title="Visibility & advanced">
+      <Acc g="visibility" title="Visibility & advanced">
         <CheckRow
           label={`Hide on ${device}`}
           checked={Boolean(resp.own('hide'))}
@@ -380,8 +415,9 @@ export const DesignPanel: React.FC<{
           value={value.customClass}
           onChange={(v) => set('customClass', v)}
         />
-      </Accordion>
+      </Acc>
     </div>
+    </DesignCtx.Provider>
   )
 }
 
@@ -389,18 +425,59 @@ export const DesignPanel: React.FC<{
 /* Small control primitives                                                   */
 /* -------------------------------------------------------------------------- */
 
-export const Accordion: React.FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({
+type DesignCtxValue = { value: BlockStyle; onChange: (next: BlockStyle) => void; query: string; only: boolean }
+const DesignCtx = createContext<DesignCtxValue | null>(null)
+
+/** A top-level Design accordion: modified dot, group Reset, and search / "Only changed" filtering. */
+const Acc: React.FC<{ g: string; title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({ g, title, defaultOpen, children }) => {
+  const ctx = useContext(DesignCtx)
+  const keys = GROUP_KEYS[g] ?? []
+  const modified = ctx ? groupModified(ctx.value, keys) : false
+  if (ctx) {
+    if (!matchesQuery(ctx.query, title, GROUP_SEARCH[g] ?? '')) return null
+    if (ctx.only && !modified) return null
+  }
+  const searching = Boolean(ctx && ctx.query.trim())
+  return (
+    <Accordion
+      title={title}
+      defaultOpen={defaultOpen || searching}
+      modified={modified}
+      onReset={ctx ? () => ctx.onChange(resetGroup(ctx.value, keys)) : undefined}
+    >
+      {children}
+    </Accordion>
+  )
+}
+
+export const Accordion: React.FC<{
+  title: string
+  defaultOpen?: boolean
+  modified?: boolean
+  onReset?: () => void
+  children: React.ReactNode
+}> = ({
   title,
   defaultOpen = false,
+  modified = false,
+  onReset,
   children,
 }) => {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className={`ve-acc ${open ? 've-acc--open' : ''}`}>
       <button type="button" className="ve-acc__head" onClick={() => setOpen(!open)}>
-        <span>{title}</span>
+        <span>
+          {title}
+          {modified && <span className="ve-d51-dot" title="Changed" aria-label="Changed" />}
+        </span>
         <span className="ve-acc__chev">{open ? String.fromCodePoint(0x25be) : String.fromCodePoint(0x25b8)}</span>
       </button>
+      {modified && onReset && (
+        <button type="button" className="ve-d51-reset" onClick={onReset} aria-label={`Reset ${title}`}>
+          Reset
+        </button>
+      )}
       {open && <div className="ve-acc__body">{children}</div>}
     </div>
   )
@@ -657,32 +734,51 @@ export const RespNumber: React.FC<{ ctl: ResponsiveCtl; k: RespKey; label: strin
   )
 }
 
-const PADDING_KEYS = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'] as const
+const UNIT_OPTIONS = ['px', '%', 'em', 'rem', 'vw', 'vh'].map((u) => ({ label: u, value: u }))
 
-/** Padding with an optional "link sides" mode: one value writes all four sides in a single update. */
-const PaddingSides: React.FC<{ ctl: ResponsiveCtl }> = ({ ctl }) => {
+/** Unit picker for a spacing / size value. Unset means the default unit (px, or % for custom width). */
+const UnitRow: React.FC<{ ctl: ResponsiveCtl; k: RespKey; label: string; def?: string }> = ({ ctl, k, label, def = 'px' }) => {
+  const own = ctl.own(k)
+  const inherited = ctl.inherited(k)
+  const shown = typeof own === 'string' ? own : typeof inherited === 'string' ? inherited : def
+  return (
+    <SelectRow
+      label={label}
+      value={shown}
+      options={UNIT_OPTIONS}
+      resp={ctl.resp(k)}
+      onChange={(v) => {
+        const base = typeof inherited === 'string' ? inherited : def
+        ctl.set(k, v === base ? undefined : v)
+      }}
+    />
+  )
+}
+
+/** Four sides with an optional "link all sides" mode: one value writes every side in a single update (one undo step). */
+const LinkedSides: React.FC<{
+  ctl: ResponsiveCtl
+  keys: readonly ('paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight')[]
+  noun: string
+  min?: number
+}> = ({ ctl, keys, noun, min }) => {
   const [linked, setLinked] = useState(false)
-  const vals = PADDING_KEYS.map((k) => ctl.own(k))
-  const same = vals.every((v) => v === vals[0])
+  const { same, value } = linkedValue(keys.map((k) => ctl.own(k)))
+  const sides = ['top', 'bottom', 'left', 'right']
   return (
     <>
-      <CheckRow label="Link all sides" checked={linked} onChange={setLinked} />
+      <CheckRow label={`Link all sides (${noun.toLowerCase()})`} checked={linked} onChange={setLinked} />
       {linked ? (
         <NumberRow
-          label="Padding, all sides (px)"
-          value={same && typeof vals[0] === 'number' ? vals[0] : undefined}
+          label={`${noun}, all sides`}
+          value={value}
           placeholder={same ? undefined : 'mixed'}
-          min={0}
-          resp={ctl.resp('paddingTop')}
-          onChange={(v) => ctl.setMany(Object.fromEntries(PADDING_KEYS.map((k) => [k, v])))}
+          min={min}
+          resp={ctl.resp(keys[0])}
+          onChange={(v) => ctl.setMany(linkedPatch(keys, v))}
         />
       ) : (
-        <>
-          <RespNumber ctl={ctl} k="paddingTop" label="Padding top (px)" min={0} />
-          <RespNumber ctl={ctl} k="paddingBottom" label="Padding bottom (px)" min={0} />
-          <RespNumber ctl={ctl} k="paddingLeft" label="Padding left (px)" min={0} />
-          <RespNumber ctl={ctl} k="paddingRight" label="Padding right (px)" min={0} />
-        </>
+        keys.map((k, i) => <RespNumber key={k} ctl={ctl} k={k} label={`${noun} ${sides[i]}`} min={min} />)
       )}
     </>
   )
@@ -757,7 +853,10 @@ export const HeightRows: React.FC<{ ctl: ResponsiveCtl }> = ({ ctl }) => {
         }}
       />
       {current === 'min' && (
-        <RespNumber ctl={ctl} k="minHeight" label="Minimum height (px)" min={0} />
+        <>
+          <RespNumber ctl={ctl} k="minHeight" label="Minimum height" min={0} />
+          <UnitRow ctl={ctl} k="minHeightUnit" label="Height unit" />
+        </>
       )}
     </>
   )
@@ -767,24 +866,60 @@ const ColorRow: React.FC<{ label: string; value?: string; onChange: (v: string |
   label,
   value,
   onChange,
-}) => (
-  <Row label={label}>
-    <div className="ve-color">
-      <input type="color" value={value || '#000000'} onChange={(e) => onChange(e.target.value)} />
-      <input
-        type="text"
-        placeholder="#000000 / transparent"
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || undefined)}
-      />
-      {value && (
-        <button type="button" className="ve-color__clear" onClick={() => onChange(undefined)} aria-label="Clear colour">
-          &#10005;
+}) => {
+  // Tokens are read when the button is clicked, never during render.
+  const [tokens, setTokens] = useState<ColourToken[] | null>(null)
+  const hex = value && /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'
+  return (
+    <Row label={label}>
+      <div className="ve-color">
+        <input type="color" value={hex} onChange={(e) => onChange(e.target.value)} />
+        <input
+          type="text"
+          placeholder="#000000 / transparent"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value || undefined)}
+        />
+        <button
+          type="button"
+          className="ve-d51-tokbtn"
+          title="Pick a theme colour"
+          aria-label="Theme colours"
+          onClick={(e) => {
+            e.preventDefault()
+            setTokens((cur) => (cur ? null : readColourTokens(document)))
+          }}
+        >
+          Theme
         </button>
+        {value && (
+          <button type="button" className="ve-color__clear" onClick={() => onChange(undefined)} aria-label="Clear colour">
+            &#10005;
+          </button>
+        )}
+      </div>
+      {tokens && (
+        <div className="ve-d51-tokens">
+          {tokens.length === 0 && <span className="ve-row__help">No theme colours found.</span>}
+          {tokens.map((t) => (
+            <button
+              key={t.name}
+              type="button"
+              className={`ve-d51-swatch ${value === t.css ? 've-d51-swatch--on' : ''}`}
+              style={{ background: t.value || undefined }}
+              title={t.name}
+              aria-label={t.name}
+              onClick={(e) => {
+                e.preventDefault()
+                onChange(t.css)
+              }}
+            />
+          ))}
+        </div>
       )}
-    </div>
-  </Row>
-)
+    </Row>
+  )
+}
 
 const ImageRow: React.FC<{
   label: string

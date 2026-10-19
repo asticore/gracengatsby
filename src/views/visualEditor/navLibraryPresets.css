@@ -1,0 +1,20 @@
+.ve-presets { margin-bottom: 8px; font-size: 12px; }
+.ve-presets__toggle, .ve-presets__btn { font-size: 11px; padding: 2px 8px; border: 1px solid currentColor; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; opacity: 0.85; }
+.ve-presets__btn:disabled { opacity: 0.4; cursor: default; }
+.ve-presets__body { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.ve-presets__save { display: flex; gap: 4px; }
+.ve-presets__input { flex: 1; min-width: 0; padding: 3px 6px; font: inherit; border: 1px solid rgba(128, 128, 128, 0.5); border-radius: 4px; background: transparent; color: inherit; }
+.ve-presets__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ve-presets__item { display: flex; align-items: center; gap: 4px; }
+.ve-presets__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ve-presets__empty { margin: 0; opacity: 0.7; }
+.ve-lib-recent { margin-bottom: 10px; }
+.ve-lib-star { position: absolute; top: 2px; right: 2px; border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; opacity: 0.45; padding: 2px; }
+.ve-lib-star:hover, .ve-lib-star--on { opacity: 1; }
+.ve-library__card { position: relative; }
+.ve-nav__row--drop-before { box-shadow: 0 -2px 0 0 #2563eb; }
+.ve-nav__row--drop-after { box-shadow: 0 2px 0 0 #2563eb; }
+.ve-nav__row--drop-inside { outline: 2px dashed #2563eb; outline-offset: -2px; }
+.ve-nav__row--dragging { opacity: 0.4; }
+.ve-nav__row--hidden .ve-nav__label { opacity: 0.5; text-decoration: line-through; }
+.ve-nav__flag { font-size: 11px; opacity: 0.8; }

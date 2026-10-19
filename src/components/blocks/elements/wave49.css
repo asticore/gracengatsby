@@ -1,0 +1,229 @@
+/* Wave 49: the Gallery element. Every selector is scoped with .be-el-49- so nothing leaks into the rest of the site.
+   Every transition sits inside a prefers-reduced-motion: no-preference guard. The carousel's autoplay is script
+   (Wave49Client.tsx) and is off under reduced motion. Without script the carousel still scrolls by touch or keyboard. */
+
+/* ---- grid ---- */
+
+.be-el-49-gallery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.be-el-49-gallery--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--be-el-49-cols, 3), minmax(0, 1fr));
+  gap: var(--be-el-49-gap, 12px);
+}
+
+/* ---- masonry: columns of pictures at their own shape ---- */
+
+.be-el-49-gallery--masonry {
+  column-count: var(--be-el-49-cols, 3);
+  column-gap: var(--be-el-49-gap, 12px);
+}
+
+.be-el-49-gallery--masonry > li {
+  break-inside: avoid;
+  margin: 0 0 var(--be-el-49-gap, 12px);
+}
+
+/* ---- logo strip: a centred row, each logo a fixed height ---- */
+
+.be-el-49-gallery--logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--be-el-49-gap, 12px);
+}
+
+.be-el-49-gallery--logos .be-el-49-gallery__item {
+  flex: 0 1 auto;
+}
+
+.be-el-49-gallery--logos .be-el-49-gallery__img {
+  width: auto;
+  height: 48px;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+/* ---- pictures ---- */
+
+.be-el-49-gallery__item {
+  margin: 0;
+  min-width: 0;
+}
+
+.be-el-49-gallery__item figcaption {
+  margin-top: 6px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.be-el-49-gallery__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.be-el-49-gallery__link {
+  display: block;
+  border-radius: 4px;
+  cursor: zoom-in;
+}
+
+.be-el-49-gallery__link:focus-visible,
+.be-el-49-car__track:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+/* Greyscale pictures show their colour on hover or keyboard focus. */
+.be-el-49-gallery--grey .be-el-49-gallery__img {
+  filter: grayscale(1);
+  opacity: 0.75;
+}
+
+.be-el-49-gallery--grey .be-el-49-gallery__item:hover .be-el-49-gallery__img,
+.be-el-49-gallery--grey .be-el-49-gallery__item:focus-within .be-el-49-gallery__img {
+  filter: none;
+  opacity: 1;
+}
+
+/* Narrow screens: at most two columns. */
+@media (max-width: 639.98px) {
+  .be-el-49-gallery--grid {
+    grid-template-columns: repeat(min(var(--be-el-49-cols, 3), 2), minmax(0, 1fr));
+  }
+
+  .be-el-49-gallery--masonry {
+    column-count: min(var(--be-el-49-cols, 3), 2);
+  }
+}
+
+/* ---- carousel: a scroll-snapped track, one viewful of slides at a time ---- */
+
+.be-el-49-car {
+  position: relative;
+}
+
+.be-el-49-car__track {
+  display: flex;
+  gap: var(--be-el-49-gap, 12px);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  border-radius: 4px;
+}
+
+.be-el-49-car__slide {
+  flex: 0 0 calc((100% - (var(--be-el-49-cols, 1) - 1) * var(--be-el-49-gap, 12px)) / var(--be-el-49-cols, 1));
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.be-el-49-car__controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.be-el-49-car__btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.be-el-49-car__btn:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* ---- lightbox: a dark dialog over the page ---- */
+
+.be-el-49-lb {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.92);
+  color: #ffffff;
+}
+
+.be-el-49-lb__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.be-el-49-lb__img {
+  display: block;
+  max-width: 92vw;
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+.be-el-49-lb__caption {
+  margin: 0;
+  text-align: center;
+}
+
+.be-el-49-lb__bar {
+  display: flex;
+  gap: 8px;
+}
+
+.be-el-49-lb__btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  color: #ffffff;
+  background: transparent;
+  border: 1px solid #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.be-el-49-lb__btn:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Text for screen readers only. */
+.be-el-49-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- motion: runs only when the visitor has not asked for reduced motion ---- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .be-el-49-gallery--grey .be-el-49-gallery__img {
+    transition: filter 0.3s ease, opacity 0.3s ease;
+  }
+}

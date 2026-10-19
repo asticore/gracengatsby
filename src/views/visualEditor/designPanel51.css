@@ -1,0 +1,12 @@
+/* Design panel wave 51: search, modified dot, group reset, unit and colour-token controls. */
+.ve-d51-top { display: flex; flex-direction: column; gap: 6px; padding: 0 0 8px; }
+.ve-d51-search { width: 100%; box-sizing: border-box; }
+.ve-d51-only { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+.ve-design .ve-acc { position: relative; }
+.ve-d51-dot { display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #2563eb; vertical-align: middle; }
+.ve-d51-reset { position: absolute; top: 6px; right: 30px; font-size: 11px; padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; background: transparent; color: inherit; opacity: 0.75; cursor: pointer; }
+.ve-d51-reset:hover { opacity: 1; }
+.ve-d51-tokbtn { font-size: 11px; padding: 2px 6px; border: 1px solid currentColor; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+.ve-d51-tokens { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.ve-d51-swatch { width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 1px solid rgba(128, 128, 128, 0.6); cursor: pointer; }
+.ve-d51-swatch--on { outline: 2px solid #2563eb; outline-offset: 1px; }

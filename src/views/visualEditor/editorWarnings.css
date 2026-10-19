@@ -1,0 +1,22 @@
+/* Editor dock: selection breadcrumb and the design Checks list. */
+.ve-crumbs { padding: 6px 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.3); font-size: 12px; }
+.ve-crumbs__list { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; margin: 0; padding: 0; list-style: none; }
+.ve-crumbs__item { display: inline-flex; align-items: center; gap: 4px; }
+.ve-crumbs__sep { opacity: 0.6; }
+.ve-crumbs__btn { padding: 2px 4px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.ve-crumbs__btn:hover { text-decoration: underline; }
+.ve-crumbs__btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+.ve-crumbs__btn[aria-current='page'] { font-weight: 600; }
+
+.ve-checks { margin-top: 12px; border-top: 1px solid rgba(128, 128, 128, 0.3); padding-top: 8px; font-size: 13px; }
+.ve-checks__summary { cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.ve-checks__badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.ve-checks__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ve-checks__none { margin: 8px 0 0; opacity: 0.75; }
+.ve-checks__list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ve-checks__item { width: 100%; display: flex; gap: 6px; align-items: flex-start; text-align: left; padding: 6px 8px; border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.ve-checks__item:hover { background: rgba(128, 128, 128, 0.12); }
+.ve-checks__item:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+.ve-checks__level { flex: none; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.ve-checks__item--warn .ve-checks__level { color: #b45309; }
+.ve-checks__item--info .ve-checks__level { color: #2563eb; }

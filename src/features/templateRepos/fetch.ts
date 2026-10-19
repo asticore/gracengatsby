@@ -29,6 +29,8 @@ export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 export type FetchDeps = {
   fetchImpl?: FetchLike
   now?: () => number
+  /** Skip the five-minute cache for this call (the fresh answer still replaces the cached one). */
+  bypassCache?: boolean
 }
 
 export type BuiltRequest = { url: string; headers: Record<string, string>; authed: boolean }
@@ -168,7 +170,7 @@ async function fetchCachedText(repo: TemplateRepoConfig, relativePath: string, t
   if (!request) return { ok: false, error: 'The repository details are not valid.' }
   const now = (deps.now ?? Date.now)()
   const key = `${request.authed ? 'api' : 'raw'}:${request.url}`
-  const cached = cacheGet(key, now)
+  const cached = deps.bypassCache ? null : cacheGet(key, now)
   if (cached !== null) return { ok: true, value: cached }
   const result = await fetchBytes(request, maxBytes, deps)
   if (!result.ok) return { ok: false, error: result.error }
@@ -241,6 +243,47 @@ export async function loadPreviewImage(
     return { ok: false, error: 'The preview is not a PNG, JPEG or WebP picture.' }
   }
   return { ok: true, value: { bytes: result.bytes, contentType: sniffed } }
+}
+
+/**
+ * One picture a template lists in its "assets". Built through buildFileRequest, so it can only ever come
+ * from the two GitHub hosts for the configured repository. The bytes decide the type, never the header.
+ */
+export async function loadAssetFile(
+  repo: TemplateRepoConfig,
+  relativePath: string,
+  token: string | null,
+  maxBytes: number,
+  deps: FetchDeps = {},
+): Promise<Result<{ bytes: Uint8Array; contentType: 'image/png' | 'image/jpeg' | 'image/webp' }>> {
+  const request = buildFileRequest(repo, relativePath, token)
+  if (!request) return { ok: false, error: 'The repository details are not valid.' }
+  const result = await fetchBytes(request, maxBytes, deps)
+  if (!result.ok) return { ok: false, error: result.error }
+  const sniffed = sniffImageType(result.bytes)
+  if (!sniffed) return { ok: false, error: 'The picture is not a PNG, JPEG or WebP file.' }
+  return { ok: true, value: { bytes: result.bytes, contentType: sniffed } }
+}
+
+/**
+ * Checks the access token without ever returning or logging it: a HEAD request for the manifest
+ * (through the authenticated API when a token is set). Answers with a plain-English message only.
+ */
+export async function testRepoAccess(repo: TemplateRepoConfig, token: string | null, deps: FetchDeps = {}): Promise<Result<string>> {
+  const request = buildFileRequest(repo, 'manifest.json', token)
+  if (!request) return { ok: false, error: 'The repository details are not valid.' }
+  const fetchImpl: FetchLike = deps.fetchImpl ?? ((input, init) => fetch(input, init))
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), LIMITS.fetchTimeoutMs)
+  try {
+    const response = await fetchImpl(request.url, { method: 'HEAD', headers: request.headers, redirect: 'error', signal: controller.signal })
+    if (!response.ok) return { ok: false, error: statusMessage(response.status, request.authed) }
+    return { ok: true, value: request.authed ? 'The token works and can read this repository.' : 'The repository is readable without a token.' }
+  } catch {
+    return { ok: false, error: 'Could not reach GitHub. Try again.' }
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export function previewUrlFor(repoIndex: number, slug: string): string {

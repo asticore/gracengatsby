@@ -48,6 +48,8 @@ import { collectSubtree } from './visualEditor/aiBuilderState'
 import { useEditorShortcuts } from './visualEditor/useEditorShortcuts'
 import { ContextMenu, type ContextMenuItem } from './visualEditor/ContextMenu'
 import { ShortcutsHelp } from './visualEditor/ShortcutsHelp'
+import { SaveStatusChip } from './visualEditor/SaveStatusChip'
+import { CoachMarks, coachMarksSeen } from './visualEditor/CoachMarks'
 import { clientToFrame, isLibraryDragTypes, resolveDropSlotInDoc, VE_BLOCK_MIME, VE_TEMPLATE_MIME } from './visualEditor/dropSlot'
 
 let idCounter = 0
@@ -91,6 +93,10 @@ export const VisualEditorView: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null)
   const [selectedPath, setSelectedPath] = useState<NodePath | null>(null)
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'publishing' | 'published' | 'error'>('idle')
+  /** When the last successful save (draft or publish) finished; feeds the save status chip. */
+  const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [dockTab, setDockTab] = useState<DockTab>('elements')
   const [userPermissions, setUserPermissions] = useState<{ canEditStyle: boolean; canEditLayout: boolean } | null>(null)
@@ -198,6 +204,13 @@ export const VisualEditorView: React.FC = () => {
       })
       .catch(() => {})
   }, [])
+
+  // First-use tips: shown once the editor has loaded, unless this browser already saw them.
+  // Client-only read after mount, so the server render and first client render stay identical.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync with localStorage after mount
+    if (!loading && !coachMarksSeen()) setTourOpen(true)
+  }, [loading])
 
   // Warns before a tab close/refresh discards unsaved edits.
   useEffect(() => {
@@ -786,11 +799,14 @@ export const VisualEditorView: React.FC = () => {
       duplicate: () => selectedPath && selectedPath.length % 2 === 1 && duplicateBlock(selectedPath),
       delete: () => selectedPath && selectedPath.length % 2 === 1 && deleteBlock(selectedPath),
       clear: () => {
+        // While the shortcuts popover is open, Escape only closes it and keeps the selection.
+        if (helpOpen) return
         setSelectedPath(null)
         setDockTab('elements')
       },
       moveUp: () => selectedPath && moveBlock(selectedPath, -1),
       moveDown: () => selectedPath && moveBlock(selectedPath, 1),
+      help: () => setHelpOpen((open) => !open),
     },
   })
   useEffect(() => {
@@ -941,6 +957,7 @@ export const VisualEditorView: React.FC = () => {
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
 
       setSaving(publish ? 'published' : 'saved')
+      setSavedAt(Date.now())
       if (surface.formMode) {
         const saved = (await res.json().catch((): null => null)) as { doc?: { embedKey?: string; publishedLayout?: unknown; formStatus?: string } } | null
         if (saved?.doc?.embedKey) setEmbedKey(saved.doc.embedKey)
@@ -1118,7 +1135,12 @@ export const VisualEditorView: React.FC = () => {
           <button type="button" className="ve-btn ve-btn--ghost" onClick={() => setImportOpen(true)} title="Import or export this page as JSON">
             Import / Export
           </button>
-          <ShortcutsHelp modLabel={modLabel} />
+          <ShortcutsHelp
+            modLabel={modLabel}
+            open={helpOpen}
+            onOpenChange={setHelpOpen}
+            onTour={() => setTourOpen(true)}
+          />
           <div className="ve-device-toggle" role="group" aria-label="Preview device">
             <button
               type="button"
@@ -1159,6 +1181,7 @@ export const VisualEditorView: React.FC = () => {
               Save as template
             </button>
           )}
+          <SaveStatusChip status={saving} dirty={dirty} savedAt={savedAt} onRetry={() => save(false)} />
           <button type="button" className="ve-btn" onClick={() => save(false)} disabled={saving === 'saving'}>
             {saving === 'saving' ? 'Saving' : saving === 'saved' ? 'Saved' : 'Save draft'}
           </button>
@@ -1201,6 +1224,12 @@ export const VisualEditorView: React.FC = () => {
           }}
           columnPanel={columnPanelNode}
           onConvertLegacy={convertSelectedLegacy}
+          tree={blocks}
+          selectedPath={selectedPath}
+          onSelectPath={(p) => {
+            setSelectedPath(p)
+            if (p) setDockTab('settings')
+          }}
           navigatorPanel={
             <NavigatorPanel
               nodes={blocks}
@@ -1210,6 +1239,14 @@ export const VisualEditorView: React.FC = () => {
               onSetAnchor={setNodeAnchor}
               expandedState={navigatorExpandedState}
               onExpandedStateChange={setNavigatorExpandedState}
+              onMove={moveBlockTo}
+              onDesignChange={(path, design) =>
+                applyBlocks((prev) => updateNode(prev, path, (n) => ({ ...n, design: design as typeof n.design })), `design:${pathKey(path)}`)
+              }
+              isLocked={(path) => {
+                const lock = effectiveLock(lockCtx.current.blocks, path, lockCtx.current.locks, lockCtx.current.lockUser)
+                return Boolean(lock?.blocked && lock.mode === 'full')
+              }}
             />
           }
           aiBuilder={
@@ -1328,6 +1365,7 @@ export const VisualEditorView: React.FC = () => {
       {importOpen && (
         <ImportExportModal blocks={blocks} title={docTitle} onClose={closeImport} onAppend={importAppend} onReplace={importReplace} />
       )}
+      <CoachMarks open={tourOpen && !loading} onClose={() => setTourOpen(false)} />
       {templateToast && (
         <div className="ve-tpl__toast" role="status">
           {templateToast}

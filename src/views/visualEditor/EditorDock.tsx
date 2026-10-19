@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
 
@@ -9,7 +9,11 @@ import type { BlockDef } from './blockSchemas'
 import { ElementLibrary } from './ElementLibrary'
 import { FieldPanel } from './FieldPanel'
 import type { EditDevice } from './DesignPanel'
+import { collectWarnings, indexNodePaths, type DesignWarning } from './designWarnings'
 import type { LockUi } from './LockControls'
+import { SelectionPath } from './SelectionPath'
+import type { NodePath } from './treeOps'
+import './editorWarnings.css'
 
 export type DockTab = 'elements' | 'settings' | 'form' | 'navigator'
 
@@ -101,6 +105,43 @@ const AiBuildDialog: React.FC<{
 }
 
 /**
+ * Collapsed "Checks" list under the Navigator: design warnings for the page. Clicking one selects its
+ * node. Closed by default, with a badge that shows how many there are.
+ */
+const ChecksList: React.FC<{ warnings: DesignWarning[]; onSelect: (nodeId: string) => void }> = ({ warnings, onSelect }) => {
+  const count = warnings.length
+  return (
+    <details className="ve-checks">
+      <summary className="ve-checks__summary">
+        Checks
+        <span className="ve-checks__badge">
+          {count}
+          <span className="ve-checks__sr"> {count === 1 ? 'issue' : 'issues'}</span>
+        </span>
+      </summary>
+      {count === 0 ? (
+        <p className="ve-checks__none">No issues found.</p>
+      ) : (
+        <ul className="ve-checks__list">
+          {warnings.map((warning) => (
+            <li key={warning.id}>
+              <button
+                type="button"
+                className={`ve-checks__item ve-checks__item--${warning.level}`}
+                onClick={() => onSelect(warning.nodeId)}
+              >
+                <span className="ve-checks__level">{warning.level === 'warn' ? 'Warning' : 'Info'}</span>
+                <span>{warning.message}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </details>
+  )
+}
+
+/**
  * The persistent left dock - Elementor's left sidebar, not a popup: Elements
  * (browse/search blocks and templates, click to insert) and Settings (the
  * selected block's Content/Design fields) share one panel with a tab
@@ -141,6 +182,12 @@ export const EditorDock: React.FC<{
    * mode. The dialog stays mounted even when the dock is collapsed, so the brief is kept.
    */
   aiBuilder?: AiBuilderPanelProps
+  /** The page's block tree. With onSelectPath it enables the selection breadcrumb and the Checks list. */
+  tree?: SectionNode[]
+  /** The selected node's path (null = nothing selected); drives the breadcrumb. */
+  selectedPath?: NodePath | null
+  /** Selects a path: a block, a column, or null for the page. Used by the breadcrumb and the Checks list. */
+  onSelectPath?: (path: NodePath | null) => void
 }> = ({
   collapsed,
   tab,
@@ -163,11 +210,24 @@ export const EditorDock: React.FC<{
   navigatorPanel,
   onConvertLegacy,
   aiBuilder,
+  tree,
+  selectedPath = null,
+  onSelectPath,
 }) => {
   const [aiOpen, setAiOpen] = useState(false)
   const buildButtonRef = useRef<HTMLButtonElement>(null)
 
   const closeAi = useCallback(() => setAiOpen(false), [])
+
+  const warnings = useMemo(() => (tree ? collectWarnings(tree) : []), [tree])
+  const nodePaths = useMemo(() => (tree ? indexNodePaths(tree) : new Map<string, NodePath>()), [tree])
+  const selectWarningNode = useCallback(
+    (nodeId: string) => {
+      const path = nodePaths.get(nodeId)
+      if (path && onSelectPath) onSelectPath(path)
+    },
+    [nodePaths, onSelectPath],
+  )
 
   // The dialog closes itself after a successful insert; the panel and its state stay mounted either way.
   const aiPanel: AiBuilderPanelProps | null = aiBuilder
@@ -191,6 +251,7 @@ export const EditorDock: React.FC<{
   // Build with AI dialog and its draft survive a collapse.
   const dock = collapsed ? null : (
     <div className="ve-dock">
+      {tree && onSelectPath && <SelectionPath tree={tree} selectedPath={selectedPath} onSelectPath={onSelectPath} />}
       <div className="ve-dock__tabs" role="tablist" aria-label="Editor panel">
         <button
           type="button"
@@ -236,7 +297,10 @@ export const EditorDock: React.FC<{
         {tab === 'form' && formPanel ? (
           formPanel
         ) : tab === 'navigator' ? (
-          navigatorPanel || <p className="ve-dock__empty">Navigator not available.</p>
+          <>
+            {navigatorPanel || <p className="ve-dock__empty">Navigator not available.</p>}
+            {tree && onSelectPath && <ChecksList warnings={warnings} onSelect={selectWarningNode} />}
+          </>
         ) : tab === 'elements' ? (
           <>
             {aiBuilder && (

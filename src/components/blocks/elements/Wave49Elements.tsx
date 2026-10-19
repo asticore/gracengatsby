@@ -8,9 +8,12 @@ import type { GalleryItem } from './Wave49Client'
 import './wave49.css'
 
 /**
- * Wave 49 renderer: the Gallery element (src/lib/elements/wave49Defs.ts). Most of it is server markup: grid, masonry and logo strip need no script at all. Carousel and lightbox wrap that markup in a small client component (Wave49Client.tsx), which only adds behaviour. Motion is CSS only (wave49.css) inside a prefers-reduced-motion guard.
+ * Wave 49 renderer: the Gallery element (src/lib/elements/wave49Defs.ts). Most of it is server markup: grid, masonry
+ * and logo strip need no script at all. Carousel and lightbox wrap that markup in a small client component
+ * (Wave49Client.tsx), which only adds behaviour. Motion is CSS only (wave49.css) inside a prefers-reduced-motion guard.
  *
- * Every picture is a link to its full image when the lightbox is on, so the gallery works without script. Pictures come from media ids or from pasted addresses (mediaListOf drops unsafe schemes). Alt text is React text, so it is escaped.
+ * Every picture is a link to its full image when the lightbox is on, so the gallery works without script. Pictures
+ * come from media ids or from pasted addresses (mediaListOf drops unsafe schemes). Alt text is React text, so it is escaped.
  */
 
 type P = Record<string, unknown>

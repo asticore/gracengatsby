@@ -30,6 +30,16 @@ export const flag = (v: unknown, fallback = false): boolean => (typeof v === 'bo
 
 export const pick = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback)
 
+const LITERAL_COLOUR = /^(#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/+-]+\))$/i
+/** A theme colour token. The id is limited to a-z0-9-_ so nothing else can ride inside the var(). */
+const TOKEN_COLOUR = /^var\(--eg-c-[a-z0-9_-]+\)$/
+
+/** A colour the CSS can take as-is: hex, rgb(a), hsl(a) or a theme token var(--eg-c-<id>). Anything else is ''. */
+export function cssColour(v: unknown): string {
+  const s = str(v).trim()
+  return LITERAL_COLOUR.test(s) || TOKEN_COLOUR.test(s) ? s : ''
+}
+
 /** A link prop: a plain URL string (legacy) or the {url, newTab, nofollow} object the link field stores. */
 export type LinkProp = { url?: string; newTab?: boolean; nofollow?: boolean }
 

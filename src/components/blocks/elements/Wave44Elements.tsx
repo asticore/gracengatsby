@@ -2,7 +2,8 @@ import React from 'react'
 
 import { isSafeColor } from '@/lib/blockStyle'
 
-import { flag, num, str } from './elementUtil'
+import CursorFxLazy from './CursorFxLazy'
+import { flag, num, pick, str } from './elementUtil'
 import './wave44.css'
 
 /**
@@ -19,6 +20,7 @@ type P = Record<string, unknown>
 /** A colour the CSS can take as-is: hex, rgb(...) or hsl(...). Also must pass the shared safe-colour check. */
 const COLOR_RE = /^(#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/+-]+\))$/i
 const DEFAULT_COLOR = '#2e3192'
+const DEFAULT_CURSOR_COLOR = '#2e3192'
 
 export type PageEffects = {
   smoothScroll: boolean
@@ -29,11 +31,16 @@ export type PageEffects = {
   scrollProgress: boolean
   progressColor: string
   progressHeight: number
+  cursor: 'none' | 'ring' | 'dot-ring'
+  cursorSize: number
+  cursorColor: string
+  cursorHideNative: boolean
 }
 
 /** The stored props, read and clamped. Numbers are whole numbers inside their slider range. */
 export function pageEffectsOf(p: P): PageEffects {
   const raw = str(p.progressColor).trim()
+  const rawCursor = str(p.cursorColor).trim()
   return {
     smoothScroll: flag(p.smoothScroll, false),
     pageTransition: flag(p.pageTransition, false),
@@ -43,6 +50,10 @@ export function pageEffectsOf(p: P): PageEffects {
     scrollProgress: flag(p.scrollProgress, false),
     progressColor: isSafeColor(raw) && COLOR_RE.test(raw) ? raw : DEFAULT_COLOR,
     progressHeight: Math.round(num(p.progressHeight, 4, 1, 8)),
+    cursor: pick(p.cursor, ['none', 'ring', 'dot-ring'] as const, 'none'),
+    cursorSize: Math.round(num(p.cursorSize, 32, 16, 80)),
+    cursorColor: isSafeColor(rawCursor) && COLOR_RE.test(rawCursor) ? rawCursor : DEFAULT_CURSOR_COLOR,
+    cursorHideNative: flag(p.cursorHideNative, false),
   }
 }
 
@@ -54,6 +65,7 @@ export function enabledPageEffects(p: P): string[] {
   if (e.pageTransition) out.push(`Fade between pages (${e.transitionMs} ms)`)
   if (e.grain) out.push(`Grain overlay (${e.grainOpacity}%)`)
   if (e.scrollProgress) out.push(`Scroll progress bar (${e.progressHeight} px)`)
+  if (e.cursor !== 'none') out.push(`Custom cursor (${e.cursor === 'ring' ? 'ring' : 'dot and ring'}, ${e.cursorSize} px)`)
   return out
 }
 
@@ -72,6 +84,7 @@ export function pageEffectsCss(p: P): string {
   }
   if (e.grain) rules.push(`.be-el-44 .be-el-44-grain{opacity:${e.grainOpacity / 100}}`)
   if (e.scrollProgress) rules.push(`.be-el-44 .be-el-44-progress{background:${e.progressColor};height:${e.progressHeight}px}`)
+  if (e.cursor !== 'none') rules.push(`.be-el-44{--be-cur-c:${e.cursorColor};--be-cur-s:${e.cursorSize}px}`)
   return rules.join('')
 }
 
@@ -88,6 +101,7 @@ export const PageEffectsElement: React.FC<P> = (p) => {
       <style>{css}</style>
       {e.grain && <div className="be-el-44-grain" />}
       {e.scrollProgress && <div className="be-el-44-progress" />}
+      {e.cursor !== 'none' && <CursorFxLazy mode={e.cursor} hideNative={e.cursorHideNative} />}
     </div>
   )
 }

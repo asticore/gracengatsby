@@ -2,10 +2,20 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import type { EditorField } from '@/lib/elements/fieldTypes'
+import { readColourTokens, type ColourToken } from '@/views/visualEditor/designHelpers'
 
 type ColorValue = {
   value: string
   globalColorId?: string
+}
+
+const TOKEN_CSS = /^var\((--eg-c-[a-z0-9_-]+)\)$/
+
+/** The theme colour token name (--eg-c-<id>) a stored value links to, or null for a plain colour. */
+export function linkedTokenName(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const m = TOKEN_CSS.exec(value.trim())
+  return m ? m[1] : null
 }
 
 /**
@@ -24,6 +34,8 @@ export const ColorPickerField: React.FC<{
   const [globalColors, setGlobalColors] = useState<{ id: string; label: string; value: string }[]>([])
   const [showColorGrid, setShowColorGrid] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [tokens, setTokens] = useState<ColourToken[]>([])
+  const [showTokens, setShowTokens] = useState(false)
   const popoverRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -35,7 +47,10 @@ export const ColorPickerField: React.FC<{
     return { value: '#000000' }
   })()
 
-  const currentHex = colorObj.value || '#000000'
+  // A linked theme token has no hex of its own: the native picker shows black, the swatch uses the token colour.
+  const linked = linkedTokenName(colorObj.value)
+  const linkedTokenValue = linked ? tokens.find((t) => t.name === linked)?.value : undefined
+  const currentHex = linked ? '#000000' : colorObj.value || '#000000'
 
   // Fetch global colors from Theming global
   useEffect(() => {
@@ -84,6 +99,23 @@ export const ColorPickerField: React.FC<{
     setShowColorGrid(false)
   }
 
+  // Tokens are read from the document only when the list opens, never during render.
+  const toggleTokens = () => {
+    if (!showTokens) setTokens(readColourTokens(document))
+    setShowTokens(!showTokens)
+  }
+
+  const pickToken = (token: ColourToken) => {
+    onChange(token.css)
+    setInputValue('')
+    setShowTokens(false)
+  }
+
+  const clearToken = () => {
+    onChange(undefined)
+    setInputValue('')
+  }
+
   const widthClass = field.width === 'half' ? 've-field--half' : 've-field--full'
 
   return (
@@ -96,7 +128,7 @@ export const ColorPickerField: React.FC<{
           style={{
             width: '50px',
             height: '40px',
-            backgroundColor: currentHex,
+            backgroundColor: linked ? linkedTokenValue || `var(${linked})` : currentHex,
             border: '1px solid #ccc',
             borderRadius: '4px',
             cursor: 'pointer',
@@ -135,6 +167,42 @@ export const ColorPickerField: React.FC<{
           }}
         />
       </div>
+
+      {/* Theme colour tokens: link the value to a --eg-c-<id> variable instead of a fixed hex */}
+      <div className="ve-colour-linkrow">
+        <button type="button" className="ve-colour-tokbtn" aria-expanded={showTokens} onClick={toggleTokens}>
+          Theme colours
+        </button>
+        {linked && (
+          <span className="ve-colour-chip" title={linked}>
+            <span className="ve-colour-chip__dot" style={{ background: linkedTokenValue || `var(${linked})` }} />
+            <span>{linked}</span>
+            <button type="button" className="ve-colour-chip__clear" onClick={clearToken} aria-label="Clear theme colour link">
+              clear
+            </button>
+          </span>
+        )}
+      </div>
+      {showTokens && (
+        <div className="ve-colour-tokens">
+          {tokens.length === 0 ? (
+            <span className="ve-colour-tokens__empty">No theme colours on this page.</span>
+          ) : (
+            tokens.map((t) => (
+              <button
+                key={t.name}
+                type="button"
+                className={linked === t.name ? 've-colour-token ve-colour-token--on' : 've-colour-token'}
+                onClick={() => pickToken(t)}
+                title={t.css}
+              >
+                <span className="ve-colour-token__swatch" style={{ background: t.value || 'transparent' }} />
+                <span>{t.name}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Color grid popover */}
       {showColorGrid && (

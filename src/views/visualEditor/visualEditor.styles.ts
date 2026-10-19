@@ -2370,5 +2370,15 @@ html[data-theme='dark'] .ve-root {
   cursor: pointer;
 }
 .ve-repeater__add:hover { background: var(--ve-surface-hover); border-color: var(--ve-accent); }
+.ve-colour-linkrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; }
+.ve-colour-tokbtn { font-size: 11px; padding: 2px 8px; border: 1px solid currentColor; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+.ve-colour-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 6px; border: 1px solid var(--ve-accent); border-radius: 999px; font-family: monospace; font-size: 11px; }
+.ve-colour-chip__dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(128, 128, 128, 0.6); }
+.ve-colour-chip__clear { font-size: 10px; padding: 0 6px; border: 0; background: transparent; color: inherit; text-decoration: underline; cursor: pointer; }
+.ve-colour-tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin: 0 0 8px; font-size: 12px; }
+.ve-colour-tokens__empty { grid-column: 1 / -1; opacity: 0.7; }
+.ve-colour-token { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid rgba(128, 128, 128, 0.5); border-radius: 4px; background: transparent; color: inherit; font-family: monospace; font-size: 11px; cursor: pointer; text-align: left; }
+.ve-colour-token--on { outline: 2px solid var(--ve-accent); outline-offset: 1px; }
+.ve-colour-token__swatch { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(128, 128, 128, 0.6); }
 
 ` + CANVAS_SECTION_LAYOUT_CSS

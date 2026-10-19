@@ -64,9 +64,9 @@ describe('wave 44 registry', () => {
     expect(d.scrollProgress).toBe(false)
   })
 
-  it('has no cursor glow field', () => {
+  it('has no cursor glow field (the wave 53 cursor ring is separate)', () => {
     const names = WAVE44_ELEMENTS[0]!.fields.map((f) => f.name)
-    expect(names.some((n) => /cursor/i.test(n))).toBe(false)
+    expect(names.some((n) => /glow/i.test(n))).toBe(false)
   })
 
   it('default props only use declared fields, with matching value kinds and help text on every field', () => {

@@ -88,13 +88,13 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ url: '', title: 'Video' }),
   },
   {
-    type: 'image-gallery', label: 'Image gallery', icon: '▦', category: 'media',
+    type: 'image-gallery', label: 'Image gallery', icon: '▦', category: 'media', hidden: true,
     description: 'A grid of pictures.',
     fields: [{ name: 'images', label: 'Images', type: 'mediaMulti' }, urlLines, slider('columns', 'Columns (1-6)', 1, 6), select('ratio', 'Shape', RATIO_OPTIONS)],
     defaultProps: () => ({ images: [], columns: 3, ratio: '1:1' }),
   },
   {
-    type: 'image-carousel', label: 'Image carousel', icon: '⇄', category: 'media',
+    type: 'image-carousel', label: 'Image carousel', icon: '⇄', category: 'media', hidden: true,
     description: 'Pictures in a row you swipe or scroll through.',
     fields: [{ name: 'images', label: 'Images', type: 'mediaMulti' }, urlLines, number('visible', 'Pictures visible (1-4)'), select('ratio', 'Shape', RATIO_OPTIONS), text('label', 'Accessible name')],
     defaultProps: () => ({ images: [], visible: 1, ratio: '16:9' }),
@@ -106,7 +106,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ icon: 'star', size: 48, align: 'center' }),
   },
   {
-    type: 'logo-strip', label: 'Logo strip', icon: '▤', category: 'media',
+    type: 'logo-strip', label: 'Logo strip', icon: '▤', category: 'media', hidden: true,
     description: 'A row of brand or press logos.',
     fields: [
       { name: 'items', label: 'Logos', type: 'repeater', repeater: { fields: [{ name: 'image', label: 'Image', type: 'media' }, text('url', 'Or image address'), text('alt', 'Alt text')] } },

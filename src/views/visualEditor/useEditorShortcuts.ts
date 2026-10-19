@@ -15,6 +15,7 @@ export type ShortcutAction =
   | 'clear'
   | 'moveUp'
   | 'moveDown'
+  | 'help'
 
 /** Which actions need a selected node (the rest work with nothing selected). */
 const NEEDS_SELECTION: ReadonlySet<ShortcutAction> = new Set(['copy', 'cut', 'duplicate', 'delete', 'clear', 'moveUp', 'moveDown'])
@@ -33,6 +34,8 @@ export function resolveShortcut(k: KeyInfo): ShortcutAction | null {
     if (key === 'd') return 'duplicate'
     return null
   }
+  // "?" is Shift+/ on most layouts, so this check comes before the shift guard below.
+  if (key === '?' && !k.alt) return 'help'
   if (mod || k.shift) return null
   if (k.alt) {
     if (key === 'ArrowUp') return 'moveUp'
@@ -65,6 +68,7 @@ export const SHORTCUT_LIST: { keys: string; label: string }[] = [
   { keys: 'Escape', label: 'Clear the selection' },
   { keys: 'Alt+Up / Alt+Down', label: 'Move the selected block up or down in its list' },
   { keys: 'Right-click a block', label: 'Open the block menu' },
+  { keys: '?', label: 'Show or hide this list of shortcuts' },
 ]
 
 export type ShortcutHandlers = Partial<Record<ShortcutAction, () => void>>

@@ -36,6 +36,10 @@ export type TemplateCategory = (typeof TEMPLATE_CATEGORY_OPTIONS)[number]['value
  * Every block here is a bare object built from the same shape the block
  * schemas' own `defaultValue()` produces - ElementLibrary runs each through
  * `cloneNode` before inserting, which assigns real ids, so none are set here.
+ *
+ * Presets use only the lean base elements (the ones not marked `hidden` in the
+ * registry) and section display modes. Hidden types stay in the registry so
+ * saved pages still render, but no preset may build one.
  */
 
 export type TemplatePreset = {
@@ -80,13 +84,19 @@ const gridSection = (cells: { title: string; body: string }[], columns: number):
   columns: cells.map((c) => ({ width: 12 as const, blocks: panelBlocks(c.title, c.body) })),
 })
 
+/** A section shown as a grid of pictures: every column is one equal cell holding one image element. */
+const imageGridSection = (count: number, columns: number): SectionNode => ({
+  blockType: 'section',
+  design: { layout: { display: 'grid', gridColumns: columns } },
+  columns: Array.from({ length: count }, (_, i) => col(12, [el('image', { ratio: '4:3', alt: `Gallery picture ${i + 1}` })])),
+})
+
 /** A section shown as a popup: one column of content behind a button. */
 const modalSection = (label: string, title: string, body: string): SectionNode => ({
   blockType: 'section',
   design: { layout: { display: 'modal', modalLabel: label, modalWidth: 640 } },
   columns: [{ width: 12 as const, blocks: panelBlocks(title, body) }],
 })
-
 
 /** A full-width band with its own background (colour here; switch it to an image under the section's Design). */
 const band = (design: Record<string, unknown>, ...columns: ReturnType<typeof col>[]): SectionNode => ({
@@ -111,11 +121,11 @@ const imageTextRow = (side: 'left' | 'right', title: string): SectionNode => {
   return section(...(side === 'left' ? [picture, words] : [words, picture]))
 }
 
-const galleryBlock = (title: string): SectionNode => section(col(12, [heading(title), el('image-gallery')]))
+/** A heading over a grid of pictures. */
+const galleryBlocks = (title: string): SectionNode[] => [section(col(12, [heading(title)])), imageGridSection(6, 3)]
 
-const iconBox = (icon: string, title: string, text: string) => el('icon-box', { icon, title, text })
-const featureRow = (count: 3 | 4, items: Array<[string, string, string]>) =>
-  section(...items.slice(0, count).map(([icon, title, text]) => col(12 / count, [iconBox(icon, title, text)])))
+/** One card element in its own column. Card props: see wave47Defs.ts. */
+const cardCol = (width: number, props: Record<string, unknown>) => col(width, [el('card', props)])
 
 const FEATURE_ITEMS: Array<[string, string, string]> = [
   ['leaf', 'Made to last', 'Quality materials and honest craft in every piece.'],
@@ -124,8 +134,11 @@ const FEATURE_ITEMS: Array<[string, string, string]> = [
   ['check', 'Easy returns', 'Not right? Send it back within 30 days.'],
 ]
 
-const pricingPlan = (title: string, price: string, features: string, highlight = false) =>
-  el('pricing-table', { title, price, features, highlight, ribbon: highlight ? 'Most popular' : '' })
+/** Plan features as the pricing-table repeater expects them. A line starting with "- " is not included. */
+const planFeatures = (lines: string[]) => lines.map((line) => (line.startsWith('- ') ? { text: line.slice(2), included: false } : { text: line, included: true }))
+
+const pricingPlan = (title: string, price: string, features: string, highlight = false, period = '/ month') =>
+  el('pricing-table', { title, price, period, features: planFeatures(features.split('\n')), highlight, ribbon: highlight ? 'Most popular' : '', buttonText: `Choose ${title}`, buttonUrl: '/contact' })
 
 /** White card styling for a column used as a card (padding, 1px border, rounded, medium shadow). */
 const CARD_DESIGN: BlockStyle = {
@@ -146,14 +159,14 @@ const CARD_DESIGN: BlockStyle = {
 const HIGHLIGHT_CARD_DESIGN: BlockStyle = { ...CARD_DESIGN, borderWidth: 2, borderColor: '#6366f1' }
 
 const pricingCard = (name: string, price: string, features: string[], highlight = false) => {
-  const items = features.map((text) => ({ text, link: '' }))
+  const items = features.map((text) => ({ text, href: '' }))
   return col(
     4,
     [
       heading(name, 'center', 'h3'),
       heading(`$${price}`, 'center', 'h2'),
       el('text-editor', { align: 'center', content: paragraph('per month') }),
-      el('icon-list', { items, icon: 'check', layout: 'stacked', align: 'left' }),
+      el('list', { items, marker: 'check', align: 'left' }),
       button(`Choose ${name}`, '/contact', highlight ? 'primary' : 'secondary'),
     ],
     highlight ? HIGHLIGHT_CARD_DESIGN : CARD_DESIGN,
@@ -172,11 +185,20 @@ const teamCard = (name: string, role: string, bio: string) =>
     CARD_DESIGN,
   )
 
-const featureCard = (icon: string, title: string, text: string) =>
-  col(
-    4,
-    [el('icon', { icon }), heading(title, 'left', 'h3'), el('text-editor', { align: 'left', content: paragraph(text) })],
-    CARD_DESIGN,
+/** One timeline step: the year on the left, a card on the right with a heading, text, a list and a button. */
+const timelineStep = (year: string, title: string, body: string, points: string[]): SectionNode =>
+  section(
+    col(3, [heading(year, 'left', 'h3')]),
+    col(
+      9,
+      [
+        heading(title, 'left', 'h3'),
+        el('text-editor', { align: 'left', content: paragraph(body) }),
+        el('list', { items: points.map((text) => ({ text, href: '' })), marker: 'check', align: 'left' }),
+        button('Read more', '/about', 'secondary', 'left'),
+      ],
+      CARD_DESIGN,
+    ),
   )
 
 /** A section with its own design (background, effects) and columns. */
@@ -249,8 +271,15 @@ const SPOTLIGHT_BG: BlockStyle = {
 }
 const TILT_BLOCK: BlockStyle = { pointerFx: 'tilt', pointerFxStrength: 40 }
 
-const countUp = (start: number, end: number, prefix: string, suffix: string, label: string) =>
-  el('count-up', { start, end, prefix, suffix, label, duration: 1600, decimals: '0' })
+const counter = (value: number, prefix: string, suffix: string, title: string) =>
+  el('counter', { number: value, prefix, suffix, title, decimals: 0, separator: true, animate: true, start: 0, duration: 1600, align: 'center' })
+
+/** The FAQ panels, shared by the accordion section and the full landing page. */
+const FAQ_PANELS = [
+  { label: 'How long is delivery?', blocks: panelBlocks('Delivery', 'Usually 3 to 5 working days.') },
+  { label: 'Can I return something?', blocks: panelBlocks('Returns', 'Yes, within 30 days.') },
+  { label: 'Do you ship abroad?', blocks: panelBlocks('Shipping abroad', 'Yes, to most countries.') },
+]
 
 export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
@@ -326,19 +355,25 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   },
   {
     slug: 'features-3up-icons',
-    name: 'Features, 3 icon boxes',
-    description: 'A heading over three icon boxes.',
+    name: 'Features, 3 icon cards',
+    description: 'A heading over three cards, each with an icon, a title and a short text.',
     kind: 'section',
     category: 'features',
-    blocks: () => [section(col(12, [heading('Why choose us')])), featureRow(3, FEATURE_ITEMS)],
+    blocks: () => [
+      section(col(12, [heading('Why choose us')])),
+      section(...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => cardCol(4, { media: 'icon', icon, title, text, hoverEffect: 'lift', align: 'left' }))),
+    ],
   },
   {
     slug: 'features-4up-icons',
-    name: 'Features, 4 icon boxes',
-    description: 'A heading over four icon boxes.',
+    name: 'Features, 4 icon cards',
+    description: 'A heading over four cards, each with an icon, a title and a short text.',
     kind: 'section',
     category: 'features',
-    blocks: () => [section(col(12, [heading('What you get')])), featureRow(4, FEATURE_ITEMS)],
+    blocks: () => [
+      section(col(12, [heading('What you get')])),
+      section(...FEATURE_ITEMS.map(([icon, title, text]) => cardCol(3, { media: 'icon', icon, title, text, hoverEffect: 'lift', align: 'left', iconSize: 36 }))),
+    ],
   },
   {
     slug: 'cta-banner',
@@ -360,19 +395,31 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   },
   {
     slug: 'icon-box-set',
-    name: 'Icon, heading and text',
-    description: 'An icon, a heading and a paragraph in one column.',
+    name: 'Icon cards',
+    description: 'Three cards side by side, each with an icon, a heading and a short text.',
     kind: 'section',
     category: 'features',
-    blocks: () => [section(col(12, [el('icon', { icon: 'leaf' }), heading('Made to last', 'center', 'h3'), el('text-editor', { align: 'center', content: paragraph('A short line about why it matters.') })]))],
+    blocks: () => [
+      section(
+        cardCol(4, { media: 'icon', icon: 'leaf', title: 'Made to last', text: 'A short line about why it matters.', align: 'centre', shadow: 'sm', hoverEffect: 'lift' }),
+        cardCol(4, { media: 'icon', icon: 'sparkle', title: 'Thoughtful details', text: 'A short line about the details.', align: 'centre', shadow: 'sm', hoverEffect: 'lift' }),
+        cardCol(4, { media: 'icon', icon: 'heart', title: 'Loved by customers', text: 'A short line about your customers.', align: 'centre', shadow: 'sm', hoverEffect: 'lift' }),
+      ),
+    ],
   },
   {
     slug: 'image-box-set',
-    name: 'Image, heading and text',
-    description: 'A picture with a heading and a paragraph beneath.',
+    name: 'Image cards',
+    description: 'Three cards side by side, each with a picture, a heading and a short text. The picture zooms on hover.',
     kind: 'section',
     category: 'features',
-    blocks: () => [section(col(12, [el('image', { ratio: '4:3' }), heading('A title for the picture', 'left', 'h3'), el('text-editor', { align: 'left', content: paragraph('A short description under the picture.') })]))],
+    blocks: () => [
+      section(
+        cardCol(4, { media: 'image', imageRatio: '4:3', title: 'A title for the picture', text: 'A short description under the picture.', align: 'left', shadow: 'sm', hoverEffect: 'zoom-image' }),
+        cardCol(4, { media: 'image', imageRatio: '4:3', title: 'Another picture', text: 'Tell people what this one shows.', align: 'left', shadow: 'sm', hoverEffect: 'zoom-image' }),
+        cardCol(4, { media: 'image', imageRatio: '4:3', title: 'One more', text: 'Add a line about this picture.', align: 'left', shadow: 'sm', hoverEffect: 'zoom-image' }),
+      ),
+    ],
   },
   {
     slug: 'testimonial-quote',
@@ -383,12 +430,20 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     blocks: () => [section(col(12, [el('quote', { text: 'Exactly what I hoped for. Will order again.', cite: '', style: 'large', align: 'center' }), heading('Sam T.', 'center', 'h3')]))],
   },
   {
+    slug: 'testimonial-single',
+    name: 'Testimonial',
+    description: 'One customer testimonial with a quote, name, role and stars.',
+    kind: 'section',
+    category: 'testimonials',
+    blocks: () => [section(col(12, [el('testimonial', { quote: 'Beautiful quality and it arrived the next day.', name: 'Alex P.', role: 'Customer', stars: 5, align: 'center' })]))],
+  },
+  {
     slug: 'gallery-grid',
     name: 'Image gallery',
-    description: 'A heading and a grid of pictures to fill in.',
+    description: 'A heading and a grid of six pictures to fill in.',
     kind: 'section',
     category: 'gallery',
-    blocks: () => [galleryBlock('Gallery')],
+    blocks: () => galleryBlocks('Gallery'),
   },
   {
     slug: 'gallery-cta',
@@ -397,7 +452,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     kind: 'section',
     category: 'gallery',
     blocks: () => [
-      galleryBlock('Gallery'),
+      ...galleryBlocks('Gallery'),
       ctaBand('New call to action', 'Tell people what to do next.', 'Get started', '/', true),
     ],
   },
@@ -432,6 +487,36 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     ],
   },
   {
+    slug: 'pricing-table',
+    name: 'Pricing table, 2 plans',
+    description: 'Two pricing tables, monthly and annual, with the annual plan highlighted.',
+    kind: 'section',
+    category: 'pricing',
+    blocks: () => [
+      section(col(12, [heading('Choose your plan')])),
+      section(
+        col(6, [pricingPlan('Monthly', '12', 'Full access\nEmail support\n- Priority support', false, '/ month')]),
+        col(6, [pricingPlan('Annual', '108', 'Full access\nPriority support\nFree onboarding', true, '/ year')]),
+      ),
+    ],
+  },
+  {
+    slug: 'price-list',
+    name: 'Price list',
+    description: 'A menu-style list of items, each with a short description and a price.',
+    kind: 'section',
+    category: 'pricing',
+    blocks: () => [
+      section(col(12, [heading('Menu'), el('price-list', {
+        items: [
+          { name: 'Flat white', description: 'Double shot, steamed milk', price: '3.50' },
+          { name: 'Croissant', description: 'Baked this morning', price: '2.80' },
+          { name: 'Filter coffee', description: 'Ask for today\'s beans', price: '2.20' },
+        ],
+      }), el('divider')])),
+    ],
+  },
+  {
     slug: 'team-3up',
     name: 'Team, 3 people',
     description: 'Meet the team: three people cards.',
@@ -444,6 +529,27 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
         col(4, [el('team-member', { name: 'Casey Morgan', role: 'Designer', bio: 'Makes everything look just right.' })]),
         col(4, [el('team-member', { name: 'Robin Ash', role: 'Customer care', bio: 'The friendly voice on the other end.' })]),
       ),
+    ],
+  },
+  {
+    slug: 'team-member-single',
+    name: 'Team member',
+    description: 'One person: photo, name, role, a short bio and social links.',
+    kind: 'section',
+    category: 'team',
+    blocks: () => [section(col(12, [el('team-member', { name: 'Jordan Lee', role: 'Founder', bio: 'Started the studio in a spare room.', social: 'instagram | https://instagram.com/' })]))],
+  },
+  {
+    slug: 'timeline',
+    name: 'Timeline',
+    description: 'A heading over three dated steps. Each step has a card with a heading, text, a list and a button.',
+    kind: 'section',
+    category: 'other',
+    blocks: () => [
+      section(col(12, [heading('Our story')])),
+      timelineStep('2019', 'Founded', 'Started in a spare room with two people.', ['Two founders', 'First products made by hand']),
+      timelineStep('2021', 'First shop open', 'Moved to a shop on the high street.', ['Walk-in customers', 'Local workshops']),
+      timelineStep('2024', 'Online store launched', 'Orders now ship across the country.', ['Free returns', 'Next-day dispatch']),
     ],
   },
   {
@@ -505,13 +611,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     description: 'Three panels that open and close; each can hold any blocks.',
     kind: 'section',
     category: 'faq',
-    blocks: () => [
-      panelSection('accordion', [
-        { label: 'How long is delivery?', blocks: panelBlocks('Delivery', 'Usually 3 to 5 working days.') },
-        { label: 'Can I return something?', blocks: panelBlocks('Returns', 'Yes, within 30 days.') },
-        { label: 'Do you ship abroad?', blocks: panelBlocks('Shipping abroad', 'Yes, to most countries.') },
-      ]),
-    ],
+    blocks: () => [panelSection('accordion', FAQ_PANELS)],
   },
   {
     slug: 'faq-section',
@@ -519,7 +619,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     description: 'A heading and a list of questions that open and close.',
     kind: 'section',
     category: 'faq',
-    blocks: () => [section(col(12, [heading('Questions? Answers.'), el('accordion')]))],
+    blocks: () => [section(col(12, [heading('Questions? Answers.')])), panelSection('accordion', FAQ_PANELS)],
   },
   {
     slug: 'contact-form',
@@ -558,10 +658,10 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     blocks: () => [
       heroBand('One clear promise', 'Say what you do and who it is for.', 'Get started', '/contact'),
       section(col(12, [heading('Why choose us')])),
-      featureRow(3, FEATURE_ITEMS),
+      section(...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => cardCol(4, { media: 'icon', icon, title, text, hoverEffect: 'lift', align: 'left' }))),
       section(col(4, [el('testimonial')]), col(4, [el('testimonial', { name: 'Sam T.' })]), col(4, [el('testimonial', { name: 'Riley K.' })])),
       section(col(4, [pricingPlan('Starter', '9', 'One user\nEmail support')]), col(4, [pricingPlan('Standard', '29', 'Five users\nPriority support', true)]), col(4, [pricingPlan('Pro', '59', 'Unlimited users\nPriority support')])),
-      section(col(12, [el('accordion')])),
+      panelSection('accordion', FAQ_PANELS),
       ctaBand('Ready when you are', 'Tell people what to do next.', 'Get started', '/contact'),
     ],
   },
@@ -603,7 +703,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     category: 'features',
     blocks: () => [
       section(col(12, [heading('Why choose us')])),
-      section(...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => featureCard(icon, title, text))),
+      section(...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => cardCol(4, { media: 'icon', icon, title, text, align: 'left', shadow: 'md', hoverEffect: 'lift' }))),
     ],
   },
   {
@@ -627,14 +727,14 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     slug: 'fx-grain-editorial',
     name: 'Editorial grain',
-    description: 'A paper-toned band with film grain, a large outlined word that fills in on hover, and a short text block.',
+    description: 'A paper-toned band with film grain, a large word that changes colour on hover, and a short text block.',
     kind: 'section',
     category: 'other',
     blocks: () => [
       sectionWith(
         GRAIN_BG,
         col(12, [
-          withDesign(el('outline-text', { text: 'BIG IDEAS', tag: 'h2', size: 180, stroke: 2, color: '#1c1917', fillOnHover: true, fillColor: '#c2410c', clip: false }), FADE_UP),
+          withDesign(heading('BIG IDEAS', 'left', 'h2'), { ...FADE_UP, fontSize: 180, fontSizeUnit: 'px', textColor: '#1c1917', hoverTextColor: '#c2410c', hoverTransitionMs: 300 }),
           withDesign(el('text-editor', { align: 'left', content: paragraph('A few words about what drives the work, in the open and in your own voice.') }), FADE_UP),
         ]),
       ),
@@ -658,20 +758,20 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     slug: 'fx-neon-grid',
     name: 'Neon grid stats',
-    description: 'A dark grid background with a gradient-coloured heading over a row of three counting numbers.',
+    description: 'A dark grid background with a two-tone heading over a row of three counting numbers.',
     kind: 'section',
     category: 'other',
     blocks: () => [
       sectionWith(NEON_BG, {
         width: 12,
         blocks: [
-          el('gradient-text', { text: 'Numbers that move', tag: 'h2', color1: '#22d3ee', color2: '#a78bfa', color3: '#f472b6', angle: 90, animated: true }),
+          el('heading', { text: 'Numbers that', secondText: 'move', secondColour: '#22d3ee', tag: 'h2', align: 'center', effect: 'two-tone' }),
           {
             blockType: 'section',
             columns: [
-              col(4, [countUp(0, 1250, '', '+', 'Happy customers')]),
-              col(4, [countUp(0, 98, '', '%', 'Five-star reviews')]),
-              col(4, [countUp(0, 24, '', '/7', 'Support hours')]),
+              col(4, [counter(1250, '', '+', 'Happy customers')]),
+              col(4, [counter(98, '', '%', 'Five-star reviews')]),
+              col(4, [counter(24, '', '/7', 'Support hours')]),
             ],
           },
         ],
@@ -681,13 +781,13 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     slug: 'fx-spotlight-features',
     name: 'Spotlight features',
-    description: 'A dark section with a spotlight that follows the pointer, and three icon boxes that tilt as you move over them.',
+    description: 'A dark section with a spotlight that follows the pointer, and three cards that tilt as you move over them.',
     kind: 'section',
     category: 'features',
     blocks: () => [
       sectionWith(
         SPOTLIGHT_BG,
-        ...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => col(4, [withDesign(iconBox(icon, title, text), TILT_BLOCK)])),
+        ...FEATURE_ITEMS.slice(0, 3).map(([icon, title, text]) => col(4, [withDesign(el('card', { media: 'icon', icon, title, text, align: 'left', hoverEffect: 'lift' }), TILT_BLOCK)])),
       ),
     ],
   },

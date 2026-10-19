@@ -248,10 +248,30 @@ export const TemplateBrowser: React.FC<{ onPickTemplate: (blocks: SectionNode[])
         const res = await fetch(`/api/template-repos/template?repo=${encodeURIComponent(String(card.repo.index))}&slug=${encodeURIComponent(card.repo.slug)}`, {
           credentials: 'include',
         })
-        const json = (await res.json().catch((): null => null)) as { ok?: boolean; error?: string; template?: { tree?: unknown }; tree?: unknown } | null
-        const tree = asNodes(json?.template?.tree ?? json?.tree)
+        const json = (await res.json().catch((): null => null)) as {
+          ok?: boolean
+          error?: string
+          template?: { tree?: unknown; assets?: unknown[] }
+          tree?: unknown
+        } | null
+        let tree = asNodes(json?.template?.tree ?? json?.tree)
         if (!res.ok || !json || json.ok === false || tree.length === 0) {
           throw new Error(json?.error || 'That template could not be loaded.')
+        }
+        // A template with pictures: the server saves them to the media library and returns the tree pointed at them.
+        if (Array.isArray(json.template?.assets) && json.template.assets.length > 0 && card.repo) {
+          const added = await fetch('/api/template-repos/assets', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ repo: card.repo.index, slug: card.repo.slug }),
+          })
+          const addedJson = (await added.json().catch((): null => null)) as { ok?: boolean; error?: string; tree?: unknown } | null
+          const addedTree = asNodes(addedJson?.tree)
+          if (!added.ok || !addedJson || addedJson.ok === false || addedTree.length === 0) {
+            throw new Error(addedJson?.error || 'The template pictures could not be added.')
+          }
+          tree = addedTree
         }
         onPickTemplate(tree)
       } catch (err) {

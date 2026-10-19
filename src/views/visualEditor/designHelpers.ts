@@ -33,6 +33,7 @@ export const GROUP_KEYS: Record<string, readonly string[]> = {
     'particlesInteract', 'particlesSizeMin', 'particlesSizeMax', 'particlesSpeed', 'particlesOpacity', 'particlesLinks',
     'particlesLinkDistance', 'particlesInteractRadius', 'particlesShape', 'dotSize', 'dotSpacing', 'gridSize',
     'gridLineWidth', 'auroraBlur', 'auroraSize', 'auroraSpeed', 'gradientAngle', 'gradientSpeed', 'grainOpacity', 'grainSize',
+    'bgSlides', 'bgSlideIds', 'slideInterval', 'slideTransition', 'noise',
   ],
   hover: ['hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs'],
   spacing: [
@@ -60,7 +61,7 @@ export const GROUP_KEYS: Record<string, readonly string[]> = {
   advanced: [
     ...tf.map((s) => `tf${s}`), ...tf.map((s) => `tfh${s}`), 'tfDuration', 'position', 'posTop', 'posRight', 'posBottom',
     'posLeft', 'zIndex', 'opacity', 'blendMode', 'filterBlur', 'filterBrightness', 'filterContrast', 'filterSaturate',
-    'filterGrayscale', 'filterHue', 'maskShape', 'cssClasses', 'customCss',
+    'filterGrayscale', 'filterHue', 'maskShape', 'blobMorphSpeed', 'cssClasses', 'customCss',
   ],
   visibility: ['hide', 'hideOnMobile', 'hideOnDesktop', 'anchorId', 'customClass'],
 }

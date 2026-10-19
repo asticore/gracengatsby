@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { BLOCK_CATEGORIES, libraryCards, type BlockDef } from './blockSchemas'
 import { TemplateBrowser } from './TemplateBrowser'
+import { FAVS_KEY, RECENTS_KEY, loadList, pushRecent, saveList, toggleFavourite } from './libraryRecents'
+import './navLibraryPresets.css'
 
 type Source = 'blocks' | 'templates'
 
@@ -30,6 +32,23 @@ export const ElementLibrary: React.FC<{
   const [source, setSource] = useState<Source>('blocks')
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('all')
+  const [recents, setRecents] = useState<string[]>(() => loadList(RECENTS_KEY))
+  const [favs, setFavs] = useState<string[]>(() => loadList(FAVS_KEY))
+
+  const pick = useCallback(
+    (slug: string) => {
+      const next = pushRecent(recents, slug)
+      setRecents(next)
+      saveList(RECENTS_KEY, next)
+      onPickBlock(slug)
+    },
+    [recents, onPickBlock],
+  )
+  const toggleFav = (slug: string) => {
+    const next = toggleFavourite(favs, slug)
+    setFavs(next)
+    saveList(FAVS_KEY, next)
+  }
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -44,6 +63,10 @@ export const ElementLibrary: React.FC<{
     })
   }, [query, category, formMode])
 
+  const bySlug = useMemo(() => new Map(libraryCards({ formMode }).map((b) => [b.slug, b])), [formMode])
+  const recentBlocks = recents.map((s) => bySlug.get(s)).filter((b): b is BlockDef => Boolean(b))
+  const favBlocks = favs.map((s) => bySlug.get(s)).filter((b): b is BlockDef => Boolean(b))
+
   const grouped = useMemo(() => {
     const map = new Map<string, BlockDef[]>()
     for (const block of results) {
@@ -53,6 +76,50 @@ export const ElementLibrary: React.FC<{
     }
     return map
   }, [results])
+
+  const renderCard = (block: BlockDef) => (
+                                          <div
+                        key={block.slug}
+                        role="button"
+                        tabIndex={0}
+                        className="ve-library__card"
+                        draggable
+                        onDragStart={(e) => {
+                          // Native HTML5 DnD, not @dnd-kit - it's the only thing that
+                          // can hand a drag off across the canvas iframe boundary, since
+                          // dataTransfer belongs to the browser's drag session rather
+                          // than either document. Cards are divs, not buttons: Firefox/Safari don't start a drag
+                          // from a <button>. The drop is handled in VisualEditor.tsx.
+                          e.dataTransfer.setData('application/x-ve-block', block.slug)
+                          e.dataTransfer.effectAllowed = 'copy'
+                        }}
+                        onClick={() => pick(block.slug)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            pick(block.slug)
+                          }
+                        }}
+                        title={block.description}
+                      >
+                        <span className="ve-library__card-icon">{block.icon}</span>
+                        <span className="ve-library__card-label">{block.label}</span>
+                        <button
+                          type="button"
+                          className={`ve-lib-star${favs.includes(block.slug) ? ' ve-lib-star--on' : ''}`}
+                          aria-label={favs.includes(block.slug) ? `Remove ${block.label} from favourites` : `Add ${block.label} to favourites`}
+                          aria-pressed={favs.includes(block.slug)}
+                          draggable={false}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleFav(block.slug)
+                          }}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          {favs.includes(block.slug) ? String.fromCharCode(9733) : String.fromCharCode(9734)}
+                        </button>
+                      </div>
+                      )
 
   return (
     <div className="ve-library">
@@ -119,6 +186,19 @@ export const ElementLibrary: React.FC<{
           <>
             {results.length === 0 && <p className="ve-library__empty">No elements match &quot;{query}&quot;.</p>}
 
+            {!query.trim() && category === 'all' && favBlocks.length > 0 && (
+              <div className="ve-library__group ve-lib-recent" data-testid="ve-lib-favs">
+                <h4 className="ve-library__group-title">Favourites</h4>
+                <div className="ve-library__grid">{favBlocks.map((b) => renderCard(b))}</div>
+              </div>
+            )}
+            {!query.trim() && category === 'all' && recentBlocks.length > 0 && (
+              <div className="ve-library__group ve-lib-recent" data-testid="ve-lib-recent">
+                <h4 className="ve-library__group-title">Recently used</h4>
+                <div className="ve-library__grid">{recentBlocks.map((b) => renderCard(b))}</div>
+              </div>
+            )}
+
             {BLOCK_CATEGORIES.map((cat) => {
               const blocks = grouped.get(cat.key)
               if (!blocks || blocks.length === 0) return null
@@ -126,35 +206,7 @@ export const ElementLibrary: React.FC<{
                 <div className="ve-library__group" key={cat.key}>
                   <h4 className="ve-library__group-title">{cat.label}</h4>
                   <div className="ve-library__grid">
-                    {blocks.map((block) => (
-                      <div
-                        key={block.slug}
-                        role="button"
-                        tabIndex={0}
-                        className="ve-library__card"
-                        draggable
-                        onDragStart={(e) => {
-                          // Native HTML5 DnD, not @dnd-kit - it's the only thing that
-                          // can hand a drag off across the canvas iframe boundary, since
-                          // dataTransfer belongs to the browser's drag session rather
-                          // than either document. Cards are divs, not buttons: Firefox/Safari don't start a drag
-                          // from a <button>. The drop is handled in VisualEditor.tsx.
-                          e.dataTransfer.setData('application/x-ve-block', block.slug)
-                          e.dataTransfer.effectAllowed = 'copy'
-                        }}
-                        onClick={() => onPickBlock(block.slug)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            onPickBlock(block.slug)
-                          }
-                        }}
-                        title={block.description}
-                      >
-                        <span className="ve-library__card-icon">{block.icon}</span>
-                        <span className="ve-library__card-label">{block.label}</span>
-                      </div>
-                    ))}
+                    {blocks.map((block) => renderCard(block))}
                   </div>
                 </div>
               )

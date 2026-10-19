@@ -42,8 +42,31 @@ export const WAVE38_ELEMENTS: ElementDef[] = [
     fields: [
       select('layout', 'Layout', [{ label: 'Horizontal', value: 'horizontal' }, { label: 'Vertical', value: 'vertical' }]),
       text('label', 'Accessible name', { helpText: 'Read out by screen readers, for example "Main menu".' }),
+      select('mobileBreakpoint', 'Collapse to a menu button below', [
+        { label: 'Never (always show the links)', value: 'never' },
+        { label: '768px wide', value: '768' },
+        { label: '1024px wide', value: '1024' },
+      ], { helpText: 'Below this width the links hide behind a Menu button.' }),
+      select('mobileStyle', 'Menu button style', [
+        { label: 'Dropdown under the button', value: 'hamburger-dropdown' },
+        { label: 'Off-canvas panel from the right', value: 'offcanvas' },
+      ]),
+      select('submenuStyle', 'Sub-menu style', [
+        { label: 'Dropdown list', value: 'dropdown' },
+        { label: 'Mega panel (columns, horizontal menus)', value: 'mega' },
+      ]),
+      check('sticky', 'Stick to the top of the page while scrolling'),
+      check('onePage', 'One-page mode (smooth scroll to #anchor links)'),
     ],
-    defaultProps: () => ({ layout: 'horizontal', label: 'Main menu' }),
+    defaultProps: () => ({
+      layout: 'horizontal',
+      label: 'Main menu',
+      mobileBreakpoint: 'never',
+      mobileStyle: 'hamburger-dropdown',
+      submenuStyle: 'dropdown',
+      sticky: false,
+      onePage: false,
+    }),
   },
   {
     type: 'search-box', label: 'Search box', icon: String.fromCodePoint(0x2315), category: 'siteMeta',
@@ -71,4 +94,4 @@ export const WAVE38_ELEMENTS: ElementDef[] = [
 ]
 
 /** Element types that read live site data on the server. The editor canvas shows a placeholder for these. */
-export const SITE_ELEMENT_TYPES: ReadonlySet<string> = new Set(WAVE38_ELEMENTS.map((e) => e.type))
+export const SITE_ELEMENT_TYPES: ReadonlySet<string> = new Set([...WAVE38_ELEMENTS.map((e) => e.type), 'loop'])

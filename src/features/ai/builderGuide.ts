@@ -177,6 +177,7 @@ export function buildGuide(ctx: GuideContext): string {
     'counter: number, prefix, suffix, title, animate. progress-bar: percent 0-100, shape bar|ring.',
     'gallery: layout grid|masonry|carousel|logos; images left empty.',
     'chart: chartType bar|line|pie|radar|polar; data "label | value" per line, up to 12.',
+    'loop: source posts|products|events|faqs|pages; count 1-24; layout grid|list|carousel; orderBy date|title|menu order|random-stable; category text.',
     'embed: provider youtube|vimeo|x|instagram|facebook-video|google-calendar|typeform|custom-iframe; https address. X, Instagram and Facebook show a link card.',
     'reviews: items {name, rating 1-5, text, source}; layout grid|list. pagination: current, total, baseUrl with {page}.',
     'social-icons: mode follow or share. pricing-table: features {text, included}. testimonial, price-list: one row per item.',

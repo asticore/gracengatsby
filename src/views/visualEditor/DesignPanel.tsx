@@ -46,6 +46,7 @@ import {
   type ColourToken,
 } from './designHelpers'
 import './designPanel51.css'
+import { StylePresets } from './StylePresets'
 
 /**
  * The "Design" tab of the visual editor's right-hand panel.
@@ -78,6 +79,7 @@ export const DesignPanel: React.FC<{
   return (
     <DesignCtx.Provider value={{ value, onChange, query, only }}>
     <div className="ve-design">
+      <StylePresets value={value} onChange={onChange} device={device} />
       <div className="ve-d51-top">
         <input
           type="search"

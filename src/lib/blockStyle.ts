@@ -14,8 +14,10 @@ import { BUILT_IN_FONTS, fontStack } from '@/features/fonts/installed'
 import { isDesignV2Raw } from '@/lib/design/upgrade'
 import { DEFAULT_BREAKPOINTS, type SectionLayout } from '@/lib/sectionLayout'
 
-export type BackgroundType = 'none' | 'color' | 'gradient' | 'image' | 'video'
-export type MaskShape = 'none' | 'circle' | 'rounded' | 'blob' | 'hexagon' | 'diamond' | 'arch' | 'triangle' | 'wave'
+export type BackgroundType = 'none' | 'color' | 'gradient' | 'image' | 'video' | 'slideshow'
+export type MaskShape = 'none' | 'circle' | 'rounded' | 'blob' | 'hexagon' | 'diamond' | 'arch' | 'triangle' | 'wave' | 'blob-morph'
+export type SlideTransition = 'fade' | 'slide' | 'zoom'
+export type BlobSpeed = 'slow' | 'medium' | 'fast'
 export type TextAlign = 'left' | 'center' | 'right'
 export type BlockWidth = 'contained' | 'wide' | 'full'
 export type DividerShape =
@@ -90,6 +92,17 @@ export type BlockStyle = {
   bgVideoPoster?: string | null
   /** Default true. false plays the video once. */
   bgVideoLoop?: boolean
+  /** Slideshow background (bgType 'slideshow'): up to 6 image URLs (cached from media picks, like bgImageUrl). */
+  bgSlides?: string[]
+  /** Media doc ids matching bgSlides, for the editor's picker. */
+  bgSlideIds?: number[]
+  /** Seconds each slide is shown, 2-30 (default 5). */
+  slideInterval?: number
+  slideTransition?: SlideTransition
+  /** Animated blob outline speed, used when maskShape is 'blob-morph'. */
+  blobMorphSpeed?: BlobSpeed
+  /** 0-100. Film-grain noise over the background and gradient (SVG feTurbulence). */
+  noise?: number
   /** 0-100. Darkens an image background so text stays readable. */
   bgOverlay?: number
   /** General background overlay layer (any section or block). Legacy bgOverlay is separate. */
@@ -409,7 +422,7 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  const fx = withSafeAnchor(withSafeUnits(sanitizeTypography(sanitizeFx(sanitizeBgVideo(style)))))
+  const fx = withSafeAnchor(withSafeUnits(sanitizeTypography(sanitizeFx(sanitizeSlides(sanitizeBgVideo(style))))))
   if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
   const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
@@ -512,6 +525,10 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   enumKey('position', POSITION_OPTIONS)
   enumKey('blendMode', BLEND_MODE_OPTIONS)
   enumKey('maskShape', MASK_SHAPE_OPTIONS)
+  enumKey('slideTransition', SLIDE_TRANSITION_OPTIONS)
+  enumKey('blobMorphSpeed', BLOB_SPEED_OPTIONS)
+  numKey('slideInterval', 2, 30)
+  numKey('noise', 0, 100)
   if (raw.cssClasses !== undefined) {
     const classes = cleanClassList(raw.cssClasses)
     if (classes) out.cssClasses = classes
@@ -647,6 +664,7 @@ const FX_KEYS = [
   'borderFx', 'borderFxColor', 'borderFxColor2', 'borderFxWidth', 'borderFxSpeed',
   'overlayType', 'overlayColor', 'overlayColor2', 'overlayAngle', 'overlayOpacity', 'overlayBlend',
   'position', 'blendMode', 'cssClasses', 'customCss', 'maskShape',
+  'slideInterval', 'slideTransition', 'blobMorphSpeed', 'noise',
   'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
   'textFx', 'textFxColor', 'textFxColor2', 'textFxAngle', 'textFxStroke', 'textFxAnimated',
 ] as const
@@ -747,6 +765,36 @@ function sanitizeBgVideo(style: BlockStyle): BlockStyle {
   return out as BlockStyle
 }
 
+export const SLIDE_TRANSITION_OPTIONS: { label: string; value: SlideTransition }[] = [
+  { label: 'Fade', value: 'fade' },
+  { label: 'Slide', value: 'slide' },
+  { label: 'Zoom', value: 'zoom' },
+]
+export const BLOB_SPEED_OPTIONS: { label: string; value: BlobSpeed }[] = [
+  { label: 'Slow', value: 'slow' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'Fast', value: 'fast' },
+]
+export const MAX_SLIDES = 6
+
+/** Keeps up to 6 safe image URLs in bgSlides (and finite ids in bgSlideIds); drops the keys when nothing valid is left. */
+function sanitizeSlides(style: BlockStyle): BlockStyle {
+  const raw = style as Record<string, unknown>
+  if (raw.bgSlides === undefined && raw.bgSlideIds === undefined) return style
+  const out: Record<string, unknown> = { ...raw }
+  if (raw.bgSlides !== undefined) {
+    const urls = Array.isArray(raw.bgSlides) ? raw.bgSlides.filter((u): u is string => isSafeMediaUrl(u, 'image')).slice(0, MAX_SLIDES) : []
+    if (urls.length > 0) out.bgSlides = urls
+    else delete out.bgSlides
+  }
+  if (raw.bgSlideIds !== undefined) {
+    const ids = Array.isArray(raw.bgSlideIds) ? raw.bgSlideIds.filter((n): n is number => Number.isInteger(n) && n > 0).slice(0, MAX_SLIDES) : []
+    if (ids.length > 0) out.bgSlideIds = ids
+    else delete out.bgSlideIds
+  }
+  return out as BlockStyle
+}
+
 export const MASK_SHAPE_OPTIONS: { label: string; value: MaskShape }[] = [
   { label: 'None', value: 'none' },
   { label: 'Circle', value: 'circle' },
@@ -757,13 +805,14 @@ export const MASK_SHAPE_OPTIONS: { label: string; value: MaskShape }[] = [
   { label: 'Arch', value: 'arch' },
   { label: 'Triangle', value: 'triangle' },
   { label: 'Wave', value: 'wave' },
+  { label: 'Morphing blob (animated)', value: 'blob-morph' },
 ]
 
 /**
  * Literal clip-path values. Only basic shapes and inset(), never url(#...) references, so a mask
  * renders the same on the canvas and on the live site.
  */
-const MASK_CLIP: Record<Exclude<MaskShape, 'none'>, string> = {
+const MASK_CLIP: Record<Exclude<MaskShape, 'none' | 'blob-morph'>, string> = {
   circle: 'circle(50% at 50% 50%)',
   rounded: 'inset(0 round 24px)',
   blob: 'polygon(28% 4%, 62% 0%, 92% 14%, 100% 46%, 90% 80%, 66% 100%, 32% 96%, 6% 82%, 0% 50%, 8% 18%)',
@@ -777,7 +826,7 @@ const MASK_CLIP: Record<Exclude<MaskShape, 'none'>, string> = {
 /** The clip-path for a mask shape, or undefined for none / an unknown value. */
 export function maskClipPath(shape: unknown): string | undefined {
   if (typeof shape !== 'string' || shape === 'none') return undefined
-  return Object.prototype.hasOwnProperty.call(MASK_CLIP, shape) ? MASK_CLIP[shape as Exclude<MaskShape, 'none'>] : undefined
+  return Object.prototype.hasOwnProperty.call(MASK_CLIP, shape) ? MASK_CLIP[shape as Exclude<MaskShape, 'none' | 'blob-morph'>] : undefined
 }
 
 /** Background overlay layer. Null when off (legacy bgOverlay is rendered separately). */
@@ -876,6 +925,14 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   // plays and stays visible when the video layer is hidden for reduced motion.
   if (style.bgType === 'video' && isSafeMediaUrl(style.bgVideoPoster, 'image')) {
     css.backgroundImage = `url(${style.bgVideoPoster})`
+    css.backgroundSize = 'cover'
+    css.backgroundPosition = 'center'
+  }
+
+  // Slideshow: the first slide is the static fallback (no CSS animation support, reduced motion). The animated layers sit on top.
+  const firstSlide = slideshowUrls(style)[0]
+  if (style.bgType === 'slideshow' && firstSlide) {
+    css.backgroundImage = `url(${firstSlide})`
     css.backgroundSize = 'cover'
     css.backgroundPosition = 'center'
   }
@@ -1366,6 +1423,42 @@ function textFxName(style: BlockStyle): Exclude<TextFx, 'none'> | undefined {
   return v === 'gradient' || v === 'outline' || v === 'shadow-glow' ? v : undefined
 }
 
+/** The slideshow's safe image URLs (max 6) when bgType is 'slideshow', else []. */
+export function slideshowUrls(style: BlockStyle): string[] {
+  if (style.bgType !== 'slideshow' || !Array.isArray(style.bgSlides)) return []
+  return style.bgSlides.filter((u): u is string => isSafeMediaUrl(u, 'image')).slice(0, MAX_SLIDES)
+}
+
+/** CSS-only crossfade layer: one div per slide, staggered by animation-delay. Null under 2 slides (the wrapper image is enough). */
+export function slideshowLayer(style: BlockStyle): { className: string; style: React.CSSProperties; slides: { url: string; style: React.CSSProperties }[] } | null {
+  const urls = slideshowUrls(style)
+  if (urls.length < 2) return null
+  const t = isNum(style.slideInterval) ? Math.min(30, Math.max(2, style.slideInterval)) : 5
+  const mode = style.slideTransition === 'slide' || style.slideTransition === 'zoom' ? style.slideTransition : 'fade'
+  const n = urls.length
+  return {
+    className: `be-fx be-fx--ss be-ss--${mode}`,
+    style: { ['--be-ss-t' as string]: `${t * n}s` } as React.CSSProperties,
+    slides: urls.map((url, i) => ({
+      url,
+      style: { backgroundImage: `url(${url})`, animationName: `be-ss-${mode}-${n}`, animationDelay: `${t * i}s` },
+    })),
+  }
+}
+
+/** Noise (grain) layer over the background and gradient, or null when off. The SVG is a URL-encoded ASCII data URI. */
+const NOISE_SVG =
+  "<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>"
+/** Fully percent-encoded (quotes and parentheses too), so it is safe unquoted inside url(). */
+export const NOISE_DATA_URI = `url(data:image/svg+xml,${encodeURIComponent(NOISE_SVG).replace(/['()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)})`
+export function noiseLayer(style: BlockStyle): { className: string; style: React.CSSProperties } | null {
+  if (!isNum(style.noise) || style.noise <= 0) return null
+  return {
+    className: 'be-fx be-fx--noise',
+    style: { opacity: Math.min(100, style.noise) / 100, backgroundImage: NOISE_DATA_URI },
+  }
+}
+
 /** Ken Burns moves the background image onto its own layer. Background parallax already owns that image, so it wins. */
 export function hasKenBurnsLayer(style: BlockStyle): boolean {
   return (
@@ -1392,6 +1485,7 @@ export function blockFxClasses(style: BlockStyle): string {
   if (style.parallax === 'background' && style.bgType === 'image' && isStr(style.bgImageUrl)) c.push('be-fx-parallax-bg')
   else if (style.parallax === 'float-up' || style.parallax === 'float-down') c.push(`be-fx-parallax-${style.parallax}`)
   if (style.pointerFx && style.pointerFx !== 'none') c.push(`be-fx-pointer-${style.pointerFx}`)
+  if (style.maskShape === 'blob-morph') c.push('be-fx-blobmorph', `be-fx-blobmorph-${style.blobMorphSpeed ?? 'medium'}`)
   if (style.borderFx && style.borderFx !== 'none') c.push(style.borderFx === 'conic-spin' ? 'be-fx-border-conic' : 'be-fx-border-glow')
   const tfx = textFxName(style)
   if (tfx) {
@@ -1401,7 +1495,8 @@ export function blockFxClasses(style: BlockStyle): string {
   // Isolates the z-index:-1 layers (bg effect, video, Ken Burns, spotlight) so they sit behind the content, not behind the wrapper's background.
   if (
     hasFxLayer(style) || c.includes('be-fx-parallax-bg') || style.bgType === 'video' ||
-    hasKenBurnsLayer(style) || style.pointerFx === 'spotlight'
+    hasKenBurnsLayer(style) || style.pointerFx === 'spotlight' ||
+    slideshowUrls(style).length > 1 || noiseLayer(style) !== null || style.maskShape === 'blob-morph'
   ) c.push('be-fx-clip')
   const custom = cleanClassList(style.cssClasses)
   if (custom) c.push(custom)

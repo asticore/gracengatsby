@@ -32,6 +32,12 @@ export type KenBurns = 'none' | 'zoom-in' | 'zoom-out' | 'pan'
 export type BorderFx = 'none' | 'glow' | 'conic-spin'
 export type BoxShadowPreset = 'none' | 'sm' | 'md' | 'lg'
 export type FontSizeUnit = 'px' | 'em' | 'rem' | 'vw'
+/** Units a spacing / size value may use. */
+export type LengthUnit = 'px' | '%' | 'em' | 'rem' | 'vw' | 'vh'
+export const LENGTH_UNITS: readonly string[] = ['px', '%', 'em', 'rem', 'vw', 'vh']
+const lengthUnit = (v: unknown): LengthUnit | undefined =>
+  typeof v === 'string' && LENGTH_UNITS.includes(v) ? (v as LengthUnit) : undefined
+
 export type LetterSpacingUnit = 'px' | 'em'
 export type TextTransform = 'none' | 'uppercase' | 'lowercase' | 'capitalize'
 export type TextShadowPreset = 'none' | 'sm' | 'md' | 'lg'
@@ -45,6 +51,11 @@ export const RESPONSIVE_KEYS = [
   'paddingRight',
   'marginTop',
   'marginBottom',
+  'marginLeft',
+  'marginRight',
+  'paddingUnit',
+  'marginUnit',
+  'selfWidthPercentUnit',
   'textAlign',
   'minHeight',
   'minHeightUnit',
@@ -135,7 +146,11 @@ export type BlockStyle = {
   width?: BlockWidth
   minHeight?: number
   /** Unit of minHeight. Unset = px; 'vh' (with minHeight 100) is "fit the screen". */
-  minHeightUnit?: 'px' | 'vh'
+  minHeightUnit?: LengthUnit
+  paddingUnit?: LengthUnit
+  marginUnit?: LengthUnit
+  /** Unit of selfWidthPercent. Unset = %. */
+  selfWidthPercentUnit?: LengthUnit
 
   // Shape dividers
   dividerTop?: DividerShape
@@ -369,6 +384,16 @@ export const BLEND_MODE_OPTIONS: { label: string; value: BlendMode }[] = [
 
 export const EMPTY_STYLE: BlockStyle = {}
 
+const UNIT_KEYS = ['paddingUnit', 'marginUnit', 'selfWidthPercentUnit', 'minHeightUnit'] as const
+/** Drops unit keys that are not on the whitelist. */
+function withSafeUnits(style: BlockStyle): BlockStyle {
+  const raw = style as Record<string, unknown>
+  if (!UNIT_KEYS.some((k) => raw[k] !== undefined)) return style
+  const out = { ...raw }
+  for (const k of UNIT_KEYS) if (out[k] !== undefined && lengthUnit(out[k]) === undefined) delete out[k]
+  return out as BlockStyle
+}
+
 /** anchorId becomes an element id and a CSS id selector, so only plain id characters pass. */
 function withSafeAnchor(style: BlockStyle): BlockStyle {
   if (style.anchorId === undefined) return style
@@ -384,7 +409,7 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  const fx = withSafeAnchor(sanitizeTypography(sanitizeFx(sanitizeBgVideo(style))))
+  const fx = withSafeAnchor(withSafeUnits(sanitizeTypography(sanitizeFx(sanitizeBgVideo(style)))))
   if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
   const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
@@ -400,7 +425,16 @@ const clampNum = (v: unknown, min: number, max: number): number | undefined =>
   isNum(v) ? Math.min(max, Math.max(min, v)) : undefined
 const SAFE_COLOR = /^[#a-zA-Z0-9(),.%\s/-]{1,64}$/
 /** A colour string that is safe to put in a style value (no ; { } quotes or colons). Shared with the page-effects element. */
-export const isSafeColor = (v: unknown): v is string => typeof v === 'string' && SAFE_COLOR.test(v)
+export const isSafeColor = (v: unknown): v is string => sanitizeColor(v) !== undefined
+const VAR_COLOR = /^var\(--[a-z0-9_-]+\)$/
+/** Returns the colour when it is safe to emit (hex / rgb / hsl / named / transparent / var(--token)), else undefined. */
+export function sanitizeColor(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined
+  const t = v.trim()
+  if (VAR_COLOR.test(t)) return t
+  if (!SAFE_COLOR.test(t) || /var\s*\(|url\s*\(|expression|import|\\/i.test(t)) return undefined
+  return v
+}
 const oneOf = <T extends string>(v: unknown, opts: readonly { value: T }[]): v is T =>
   typeof v === 'string' && opts.some((o) => o.value === v)
 
@@ -423,7 +457,7 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
     else out[k] = n
   }
   const colorKey = (k: string) => {
-    if (raw[k] !== undefined && !(typeof raw[k] === 'string' && SAFE_COLOR.test(raw[k] as string))) drop(k)
+    if (raw[k] !== undefined && sanitizeColor(raw[k]) === undefined) drop(k)
   }
   enumKey('dividerTop', DIVIDER_OPTIONS)
   enumKey('dividerBottom', DIVIDER_OPTIONS)
@@ -774,7 +808,7 @@ export function sanitizeDeviceOverride(raw: unknown): DeviceOverride | undefined
     const v = r[key]
     if (isNum(v) && v >= 0) out[key] = v
   }
-  for (const key of ['marginTop', 'marginBottom'] as const) {
+  for (const key of ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'] as const) {
     if (isNum(r[key])) out[key] = r[key]
   }
   if (typeof r.textAlign === 'string' && TEXT_ALIGNS.includes(r.textAlign)) out.textAlign = r.textAlign as TextAlign
@@ -782,7 +816,10 @@ export function sanitizeDeviceOverride(raw: unknown): DeviceOverride | undefined
   if (typeof r.fontSizeUnit === 'string' && FONT_SIZE_UNITS.includes(r.fontSizeUnit)) out.fontSizeUnit = r.fontSizeUnit as FontSizeUnit
   if (isNum(r.lineHeight)) out.lineHeight = Math.min(5, Math.max(0.5, r.lineHeight))
   if (isNum(r.letterSpacing)) out.letterSpacing = Math.min(50, Math.max(-20, r.letterSpacing))
-  if (r.minHeightUnit === 'px' || r.minHeightUnit === 'vh') out.minHeightUnit = r.minHeightUnit
+  for (const key of ['minHeightUnit', 'paddingUnit', 'marginUnit', 'selfWidthPercentUnit'] as const) {
+    const u = lengthUnit(r[key])
+    if (u) out[key] = u
+  }
   if (typeof r.selfAlign === 'string' && SELF_ALIGNS.includes(r.selfAlign)) out.selfAlign = r.selfAlign as BlockStyle['selfAlign']
   if (typeof r.selfWidth === 'string' && SELF_WIDTHS.includes(r.selfWidth)) out.selfWidth = r.selfWidth as BlockStyle['selfWidth']
   if (isNum(r.selfWidthPercent) && r.selfWidthPercent > 0) out.selfWidthPercent = r.selfWidthPercent
@@ -843,15 +880,17 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
     css.backgroundPosition = 'center'
   }
 
-  if (isNum(style.paddingTop)) css.paddingTop = `${style.paddingTop}px`
-  if (isNum(style.paddingBottom)) css.paddingBottom = `${style.paddingBottom}px`
-  if (isNum(style.paddingLeft)) css.paddingLeft = `${style.paddingLeft}px`
-  if (isNum(style.paddingRight)) css.paddingRight = `${style.paddingRight}px`
-  if (isNum(style.marginTop)) css.marginTop = `${style.marginTop}px`
-  if (isNum(style.marginBottom)) css.marginBottom = `${style.marginBottom}px`
+  const pu = lengthUnit(style.paddingUnit) ?? 'px'
+  const mu = lengthUnit(style.marginUnit) ?? 'px'
+  if (isNum(style.paddingTop)) css.paddingTop = `${style.paddingTop}${pu}`
+  if (isNum(style.paddingBottom)) css.paddingBottom = `${style.paddingBottom}${pu}`
+  if (isNum(style.paddingLeft)) css.paddingLeft = `${style.paddingLeft}${pu}`
+  if (isNum(style.paddingRight)) css.paddingRight = `${style.paddingRight}${pu}`
+  if (isNum(style.marginTop)) css.marginTop = `${style.marginTop}${mu}`
+  if (isNum(style.marginBottom)) css.marginBottom = `${style.marginBottom}${mu}`
   Object.assign(css, selfPositionCss(style))
-  if (isNum(style.marginLeft)) css.marginLeft = `${style.marginLeft}px`
-  if (isNum(style.marginRight)) css.marginRight = `${style.marginRight}px`
+  if (isNum(style.marginLeft)) css.marginLeft = `${style.marginLeft}${mu}`
+  if (isNum(style.marginRight)) css.marginRight = `${style.marginRight}${mu}`
   const fontValue = blockFontStack(style.fontFamily)
   if (fontValue) css.fontFamily = fontValue
   if (isStr(style.textColor)) css.color = style.textColor
@@ -946,7 +985,7 @@ function advancedCss(style: BlockStyle): React.CSSProperties {
   return css
 }
 
-const minHeightValue = (value: number, unit: 'px' | 'vh' | undefined): string => `${value}${unit === 'vh' ? 'vh' : 'px'}`
+const minHeightValue = (value: number, unit: string | undefined): string => `${value}${lengthUnit(unit) ?? 'px'}`
 
 /**
  * Width and alignment of a block inside its column. Blocks are normal-flow boxes, so
@@ -958,7 +997,8 @@ export function selfPositionCss(style: BlockStyle): React.CSSProperties {
   const align = style.selfAlign
   if (style.selfWidth === 'full') css.width = '100%'
   else if (style.selfWidth === 'custom' && isNum(style.selfWidthPercent) && style.selfWidthPercent > 0) {
-    css.width = `${Math.min(100, style.selfWidthPercent)}%`
+    const wu = lengthUnit(style.selfWidthPercentUnit) ?? '%'
+    css.width = `${wu === '%' ? Math.min(100, style.selfWidthPercent) : style.selfWidthPercent}${wu}`
   }
   if (align === 'stretch') {
     if (!css.width) css.width = '100%'
@@ -1018,15 +1058,23 @@ export function deviceOverrideDecls(style: BlockStyle, device: ResponsiveDevice)
   const own = device === 'tablet' ? style.tablet : style.mobile
   if (!own) return []
   const decls: string[] = []
-  const px = (name: string, v: number | undefined) => {
-    if (isNum(v)) decls.push(`${name}:${v}px !important`)
+  const mergedU: BlockStyle = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
+  const pu = lengthUnit(mergedU.paddingUnit) ?? 'px'
+  const mu = lengthUnit(mergedU.marginUnit) ?? 'px'
+  const px = (name: string, v: number | undefined, u: string) => {
+    if (isNum(v)) decls.push(`${name}:${v}${u} !important`)
   }
-  px('padding-top', own.paddingTop)
-  px('padding-bottom', own.paddingBottom)
-  px('padding-left', own.paddingLeft)
-  px('padding-right', own.paddingRight)
-  px('margin-top', own.marginTop)
-  px('margin-bottom', own.marginBottom)
+  px('padding-top', own.paddingTop ?? (own.paddingUnit ? mergedU.paddingTop : undefined), pu)
+  px('padding-bottom', own.paddingBottom ?? (own.paddingUnit ? mergedU.paddingBottom : undefined), pu)
+  px('padding-left', own.paddingLeft ?? (own.paddingUnit ? mergedU.paddingLeft : undefined), pu)
+  px('padding-right', own.paddingRight ?? (own.paddingUnit ? mergedU.paddingRight : undefined), pu)
+  px('margin-top', own.marginTop ?? (own.marginUnit ? mergedU.marginTop : undefined), mu)
+  px('margin-bottom', own.marginBottom ?? (own.marginUnit ? mergedU.marginBottom : undefined), mu)
+  const posTouched = own.selfAlign !== undefined || own.selfWidth !== undefined || own.selfWidthPercent !== undefined || own.selfWidthPercentUnit !== undefined
+  if (!posTouched) {
+    px('margin-left', own.marginLeft ?? (own.marginUnit ? mergedU.marginLeft : undefined), mu)
+    px('margin-right', own.marginRight ?? (own.marginUnit ? mergedU.marginRight : undefined), mu)
+  }
   if (own.textAlign) decls.push(`text-align:${own.textAlign} !important`)
   if (own.fontSize !== undefined || own.fontSizeUnit !== undefined) {
     const merged: BlockStyle = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
@@ -1043,13 +1091,13 @@ export function deviceOverrideDecls(style: BlockStyle, device: ResponsiveDevice)
     const merged = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
     if (isNum(merged.minHeight)) decls.push(`min-height:${minHeightValue(merged.minHeight, merged.minHeightUnit)} !important`)
   }
-  if (own.selfAlign !== undefined || own.selfWidth !== undefined || own.selfWidthPercent !== undefined) {
+  if (posTouched) {
     const merged: BlockStyle = { ...style, ...style.tablet, ...(device === 'mobile' ? style.mobile : {}) }
     const pos = selfPositionCss(merged)
     decls.push(`width:${pos.width ?? 'auto'} !important`)
     decls.push(`max-width:${pos.maxWidth ?? 'none'} !important`)
-    const left = isNum(merged.marginLeft) ? `${merged.marginLeft}px` : (pos.marginLeft ?? '0')
-    const right = isNum(merged.marginRight) ? `${merged.marginRight}px` : (pos.marginRight ?? '0')
+    const left = isNum(merged.marginLeft) ? `${merged.marginLeft}${mu}` : (pos.marginLeft ?? '0')
+    const right = isNum(merged.marginRight) ? `${merged.marginRight}${mu}` : (pos.marginRight ?? '0')
     decls.push(`margin-left:${left} !important`, `margin-right:${right} !important`)
   }
   return decls
@@ -1130,7 +1178,7 @@ export function blockStyleCss(style: BlockStyle, scopeId: string, options: { edi
 function hoverStateDecls(style: BlockStyle): string[] {
   const decls: string[] = []
   const color = (name: string, v: unknown) => {
-    if (typeof v === 'string' && SAFE_COLOR.test(v)) decls.push(`${name}:${v} !important`)
+    if (sanitizeColor(v) !== undefined) decls.push(`${name}:${v} !important`)
   }
   color('background-color', style.hoverBgColor)
   color('color', style.hoverTextColor)

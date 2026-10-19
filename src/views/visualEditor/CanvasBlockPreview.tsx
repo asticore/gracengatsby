@@ -12,7 +12,9 @@ import { DataViewCanvasPreview } from '@/features/dataViews/components/DataViewC
 import { MEDIA_PROP_KEYS, collectMediaIds, substituteMedia } from '@/components/blocks/elements/elementUtil'
 import { renderElement } from '@/components/blocks/elements/renderElement'
 import { enabledPageEffects } from '@/components/blocks/elements/Wave44Elements'
+import { getElementDef } from '@/lib/elements/registry'
 import { SITE_ELEMENT_TYPES, WAVE38_ELEMENTS } from '@/lib/elements/wave38Defs'
+import { UNKNOWN_ELEMENT_DETAIL, unknownElementTitle } from '@/lib/elements/unknownElement'
 
 import type { Media } from '@/engage-types'
 
@@ -152,8 +154,19 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
         return <div className="el-canvas-hint">{`Spacer: ${String(props.height ?? 48)}px`}{renderElement(elementType, props)}</div>
       }
       if (elementType === 'html' && !String(props.html || '').trim()) return <div className="el-canvas-hint">Empty HTML element</div>
+      if (!elementType || !getElementDef(elementType)) {
+        return (
+          <div className="ve-dynamic-placeholder ve-unknown-element" role="note">
+            <div className="ve-dynamic-placeholder__icon">🧩</div>
+            <div>
+              <strong>{unknownElementTitle(elementType)}</strong>
+              <p>{UNKNOWN_ELEMENT_DETAIL}</p>
+            </div>
+          </div>
+        )
+      }
       return renderElement(elementType, props) ?? (
-        <DynamicPlaceholder icon="🧩" label={elementType || 'Element'} data={data} detail="Unknown element type." />
+        <DynamicPlaceholder icon="🧩" label={elementType || 'Element'} data={data} detail="This element shows nothing here." />
       )
     }
     default:

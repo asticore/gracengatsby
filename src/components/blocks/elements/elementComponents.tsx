@@ -12,6 +12,7 @@ import { WAVE43_COMPONENTS } from './Wave43Elements'
 import { WAVE44_COMPONENTS } from './Wave44Elements'
 import { WAVE47_COMPONENTS } from './Wave47Elements'
 import { WAVE48_COMPONENTS } from './Wave48Elements'
+import { WAVE49_COMPONENTS } from './Wave49Elements'
 
 /**
  * The wave-26 elements, keyed by `elementType`. renderElement.tsx falls through to this table after its explicit
@@ -67,4 +68,5 @@ export const ELEMENT_COMPONENTS: Record<string, React.ComponentType<Record<strin
   ...WAVE44_COMPONENTS,
   ...WAVE47_COMPONENTS,
   ...WAVE48_COMPONENTS,
+  ...WAVE49_COMPONENTS,
 }

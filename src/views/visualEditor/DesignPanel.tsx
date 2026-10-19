@@ -12,7 +12,10 @@ import {
   DIVIDER_ANIM_OPTIONS,
   DIVIDER_OPTIONS,
   HOVER_OPTIONS,
+  BLOB_SPEED_OPTIONS,
   MASK_SHAPE_OPTIONS,
+  MAX_SLIDES,
+  SLIDE_TRANSITION_OPTIONS,
   PARTICLE_INTERACT_OPTIONS,
   POSITION_OPTIONS,
   REVEAL_EASING_OPTIONS,
@@ -104,6 +107,7 @@ export const DesignPanel: React.FC<{
             { label: 'Gradient', value: 'gradient' },
             { label: 'Image', value: 'image' },
             { label: 'Video', value: 'video' },
+            { label: 'Slideshow', value: 'slideshow' },
           ]}
           onChange={(v) => set('bgType', v === 'none' ? undefined : (v as BlockStyle['bgType']))}
         />
@@ -144,6 +148,8 @@ export const DesignPanel: React.FC<{
             <ParallaxBgControls value={value} onChange={onChange} />
           </>
         )}
+
+        {value.bgType === 'slideshow' && <SlideshowControls value={value} onChange={onChange} />}
 
         {value.bgType === 'video' && (
           <>
@@ -223,6 +229,8 @@ export const DesignPanel: React.FC<{
             />
           </>
         )}
+
+        <FxRange k="noise" label="Noise" unit="%" value={value} onChange={onChange} def={0} min={0} max={100} help="Film grain over the background and gradient. Pure SVG, no image file." />
 
         {variant === 'block' && (
           <>
@@ -1377,6 +1385,60 @@ function makeFxEditing(value: BlockStyle, onChange: (next: BlockStyle) => void) 
 }
 
 /** Background parallax: lives with the Image controls because it only works on a background image. */
+/** Slideshow background: up to 6 images (picked like the single background image), timing and transition. */
+const SlideshowControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const { set, resetBtn } = makeFxEditing(value, onChange)
+  const urls = value.bgSlides ?? []
+  const ids = value.bgSlideIds ?? []
+  const write = (nextUrls: string[], nextIds: number[]) => {
+    const updated = { ...value } as Record<string, unknown>
+    if (nextUrls.length > 0) updated.bgSlides = nextUrls
+    else delete updated.bgSlides
+    if (nextIds.length > 0) updated.bgSlideIds = nextIds
+    else delete updated.bgSlideIds
+    onChange(updated as BlockStyle)
+  }
+  return (
+    <>
+      {urls.map((u, i) => (
+        <ImageRow
+          key={`${i}-${u}`}
+          label={`Slide ${i + 1}`}
+          url={u}
+          onPick={(id, url) => {
+            if (!url) return
+            const nu = urls.slice()
+            const ni = ids.slice()
+            nu[i] = url
+            ni[i] = id
+            write(nu, ni)
+          }}
+          onClear={() => write(urls.filter((_, j) => j !== i), ids.filter((_, j) => j !== i))}
+        />
+      ))}
+      {urls.length < MAX_SLIDES && (
+        <ImageRow
+          label={urls.length === 0 ? 'First slide' : 'Add a slide'}
+          url={undefined}
+          onPick={(id, url) => {
+            if (url) write([...urls, url], [...ids.slice(0, urls.length), id])
+          }}
+          onClear={() => undefined}
+        />
+      )}
+      <p className="ve-row__help">Up to {MAX_SLIDES} images. The first image is the still picture for visitors who ask for reduced motion. Live page only: the editor shows the first image.</p>
+      <FxRange k="slideInterval" label="Time per slide" unit="s" value={value} onChange={onChange} def={5} min={2} max={30} />
+      <SelectRow
+        label="Transition"
+        value={value.slideTransition || 'fade'}
+        options={SLIDE_TRANSITION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+        onChange={(v) => set('slideTransition', v === 'fade' ? undefined : (v as BlockStyle['slideTransition']))}
+      />
+      {resetBtn(['slideInterval', 'slideTransition'])}
+    </>
+  )
+}
+
 const ParallaxBgControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
   const { set, resetBtn } = makeFxEditing(value, onChange)
   const on = value.parallax === 'background'
@@ -1541,7 +1603,7 @@ const ADVANCED_KEYS: (keyof BlockStyle)[] = [
   ...TRANSFORM_ROWS.map((r) => tfKey('tf', r.suffix)),
   ...TRANSFORM_ROWS.map((r) => tfKey('tfh', r.suffix)),
   'tfDuration', 'position', 'posTop', 'posRight', 'posBottom', 'posLeft', 'zIndex',
-  'opacity', 'blendMode', ...FILTER_ROWS.map((r) => r.k), 'maskShape', 'cssClasses', 'customCss',
+  'opacity', 'blendMode', ...FILTER_ROWS.map((r) => r.k), 'maskShape', 'blobMorphSpeed', 'cssClasses', 'customCss',
 ]
 
 const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
@@ -1607,7 +1669,18 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
           help="Clips the whole block, background and content, to this shape."
           onChange={(v) => set('maskShape', v === 'none' ? undefined : (v as MaskShape))}
         />
-        {resetBtn(['maskShape'])}
+        {value.maskShape === 'blob-morph' && (
+          <>
+            <SelectRow
+              label="Blob speed"
+              value={value.blobMorphSpeed || 'medium'}
+              options={BLOB_SPEED_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+              help="Live page only: the editor shows the resting shape. Static for reduced motion."
+              onChange={(v) => set('blobMorphSpeed', v === 'medium' ? undefined : (v as BlockStyle['blobMorphSpeed']))}
+            />
+          </>
+        )}
+        {resetBtn(['maskShape', 'blobMorphSpeed'])}
       </div>
 
       <p className="ve-row__label">Custom</p>

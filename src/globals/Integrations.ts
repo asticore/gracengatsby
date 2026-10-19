@@ -909,6 +909,11 @@ export const Integrations: GlobalConfig = {
             description: 'Fine-grained read-only token. Leave blank for public repos. Stored encrypted at rest, visible only to admins.',
           },
         },
+        {
+          name: 'reposTools',
+          type: 'ui',
+          admin: { components: { Field: '@/admin/fields/TemplateReposTools#TemplateReposTools' } },
+        },
       ],
     },
     {

@@ -4,9 +4,13 @@ import type { EditorField, ShowIf } from './fieldTypes'
 import type { ElementDef } from './registry'
 
 /**
- * Wave 49: one Gallery element. It replaces the three picture widgets (image gallery, image carousel, logo strip) for new pages: those are now layouts of one gallery. The old three stay in wave26Defs.ts with `hidden: true`, so saved pages keep rendering and the library no longer offers them.
+ * Wave 49: one Gallery element. It replaces the three picture widgets (image gallery, image carousel, logo strip)
+ * for new pages: those are now layouts of one gallery. The old three stay in wave26Defs.ts with `hidden: true`, so
+ * saved pages keep rendering and the library no longer offers them.
  *
- * Renderer lives in src/components/blocks/elements/Wave49Elements.tsx, its interactive parts (carousel autoplay, lightbox) in Wave49Client.tsx, and its styles in wave49.css. Icons are String.fromCodePoint escapes so this file stays ASCII.
+ * Renderer lives in src/components/blocks/elements/Wave49Elements.tsx, its interactive parts (carousel autoplay,
+ * lightbox) in Wave49Client.tsx, and its styles in wave49.css. Icons are String.fromCodePoint escapes so this file
+ * stays ASCII.
  */
 
 const labelled = (pairs: [string, string][]) => pairs.map(([value, label]) => ({ label, value }))

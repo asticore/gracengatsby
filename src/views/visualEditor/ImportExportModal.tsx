@@ -23,8 +23,8 @@ export type ImportExportModalProps = {
   onReplace: (nodes: SectionNode[]) => boolean
 }
 
-function downloadText(text: string, fileName: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+function downloadText(text: string, fileName: string, type = 'application/json'): void {
+  const url = URL.createObjectURL(new Blob([text], { type }))
   const link = document.createElement('a')
   link.href = url
   link.download = fileName
@@ -73,6 +73,25 @@ const ExportPanel: React.FC<{ blocks: SectionNode[]; title: string }> = ({ block
         </button>
         <button type="button" className="ve-btn" onClick={() => downloadText(exported.text, fileName)}>
           Download .json
+        </button>
+        <button
+          type="button"
+          className="ve-btn"
+          onClick={async () => {
+            try {
+              const { treeToStaticHtml } = await import('@/features/templateRepos/exportHtml')
+              const result = treeToStaticHtml(blocks, { title, baseUrl: window.location.origin })
+              downloadText(result.html, `${slugifyFileName(title)}.html`, 'text/html')
+              setNote(
+                `Saved as HTML. ${result.note}` +
+                  (result.skipped.length > 0 ? ` Left out (marked in the file): ${Array.from(new Set(result.skipped)).join('; ')}.` : ''),
+              )
+            } catch {
+              setNote('The HTML file could not be made.')
+            }
+          }}
+        >
+          Download HTML
         </button>
       </div>
       <p className="ve-ie__note" role="status">

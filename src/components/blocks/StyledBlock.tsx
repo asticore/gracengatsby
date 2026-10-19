@@ -1,6 +1,7 @@
 import React from 'react'
 
 import './effects.css'
+import './effects53.css'
 
 import {
   asBlockStyle,
@@ -21,6 +22,7 @@ import {
   type DividerShape,
 } from '@/lib/blockStyle'
 
+import { BgNoise, BgSlideshow } from './BgSlideshow'
 import { BgVideo } from './BgVideo'
 import ParticlesBackground from './ParticlesLazy'
 import PointerFxLazy from './PointerFxLazy'
@@ -71,6 +73,7 @@ export const StyledBlock: React.FC<{
       {parsed.pointerFx && parsed.pointerFx !== 'none' && (
         <PointerFxLazy mode={parsed.pointerFx} strength={parsed.pointerFxStrength ?? 50} />
       )}
+      <BgSlideshow design={parsed} />
       {parsed.bgType === 'video' &&<BgVideo src={parsed.bgVideoUrl} poster={parsed.bgVideoPoster} loop={parsed.bgVideoLoop} />}
       {hasFxLayer(parsed) && (
         <div className={`be-fx be-fx--${parsed.bgEffect}`} aria-hidden="true">
@@ -91,6 +94,7 @@ export const StyledBlock: React.FC<{
           )}
         </div>
       )}
+      <BgNoise design={parsed} />
       {parsed.bgType === 'image' && typeof parsed.bgOverlay === 'number' && parsed.bgOverlay > 0 && (
         <div className="be-block__overlay" style={{ background: `rgba(0,0,0,${parsed.bgOverlay / 100})` }} />
       )}

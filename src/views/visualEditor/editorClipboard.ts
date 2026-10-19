@@ -1,5 +1,6 @@
 import type { SectionNode } from '@/lib/sectionTree'
 import { getElementDef } from '@/lib/elements/registry'
+import { collectAssets } from '@/features/templateRepos/assets'
 import { isDeniedNodeType } from '@/features/templateRepos/manifest'
 
 import { getBlockDef } from './blockSchemas'
@@ -20,7 +21,17 @@ export const CLIPBOARD_LIMITS = { maxChars: 1_000_000, maxDepth: 8, maxNodes: 30
 /** Import/export files may be larger than a clipboard paste. */
 export const IMPORT_LIMITS = { maxChars: 5_000_000, maxNodes: 3_000, maxRootNodes: 500 }
 
-export type ClipboardPayload = { format: typeof CLIPBOARD_FORMAT; schemaVersion: 1; kind: ClipboardKind; tree: SectionNode[] }
+export type ExportAsset = { id: string; path: string; alt: string; sha256: string }
+export type ClipboardPayload = {
+  format: typeof CLIPBOARD_FORMAT
+  schemaVersion: 1
+  kind: ClipboardKind
+  tree: SectionNode[]
+  /** Pictures the tree refers to. `path` and `sha256` are filled in by template-repo tooling; the editor leaves them empty. */
+  assets?: ExportAsset[]
+  settings?: Record<string, unknown>
+  requires?: { elements: string[]; minEngageVersion: string }
+}
 export type StyleClipboardPayload = {
   format: typeof CLIPBOARD_FORMAT_STYLE
   schemaVersion: 1
@@ -224,6 +235,19 @@ export function withFreshIds(nodes: SectionNode[], makeId: () => string): Sectio
   return nodes.map((node) => cloneNode({ ...node, _id: undefined }, makeId))
 }
 
+/** Element types used anywhere in the tree (nested columns included), sorted. */
+export function usedElementTypes(nodes: SectionNode[]): string[] {
+  const types = new Set<string>()
+  const walk = (list: SectionNode[]) => {
+    for (const node of list) {
+      if (node.blockType === 'element' && typeof node.elementType === 'string') types.add(node.elementType)
+      if (Array.isArray(node.columns)) for (const column of node.columns) walk(column.blocks || [])
+    }
+  }
+  walk(nodes)
+  return [...types].sort()
+}
+
 /** The whole page as one engage-template document of kind "page". Editor-only ids are stripped. */
 export function exportPage(blocks: SectionNode[]): { text: string; count: number; sections: number } {
   const payload: ClipboardPayload = {
@@ -231,6 +255,12 @@ export function exportPage(blocks: SectionNode[]): { text: string; count: number
     schemaVersion: CLIPBOARD_SCHEMA_VERSION,
     kind: 'page',
     tree: stripEditorIds(blocks),
+    assets: (() => {
+      const refs = collectAssets(blocks)
+      return [...refs.ids.map(String), ...refs.urls].map((id) => ({ id, path: '', alt: '', sha256: '' }))
+    })(),
+    settings: {},
+    requires: { elements: usedElementTypes(blocks), minEngageVersion: '1' },
   }
   return {
     text: JSON.stringify(payload),
@@ -243,7 +273,7 @@ export function exportPage(blocks: SectionNode[]): { text: string; count: number
 export function slugifyFileName(title: string): string {
   const slug = title
     .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')

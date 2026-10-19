@@ -20,6 +20,8 @@ export {
   findActiveRepo,
   findManifestEntry,
   listTemplates,
+  loadAssetFile,
+  testRepoAccess,
   loadManifest,
   loadPreviewImage,
   loadTemplateFile,

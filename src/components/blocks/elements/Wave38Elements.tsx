@@ -9,7 +9,9 @@ import { getEngine } from '@/lib/engine'
 
 import { flag, linkHref, mediaOf, num, pick, str } from './elementUtil'
 import { withElementDesign } from './renderElement'
+import { LoopElement } from './Wave50Server'
 import './wave38.css'
+import './navMenu.css'
 
 /**
  * Wave 38 renderers: site elements that read live site data on the server. Each renderer is an async server
@@ -175,30 +177,67 @@ const NavAnchor: React.FC<{ item: NavItem; className: string }> = ({ item, class
  * `nav-menu`: the Header menu as <nav><ul><li>. A parent with items gets a nested <ul>. It opens on hover, and also
  * when a key moves focus into its item (the :focus-within rule in wave38.css), so the sub-links are reachable by
  * keyboard.
+ *
+ * Options (all optional; old pages have none of them and render as before):
+ * - mobileBreakpoint: below 768px or 1024px the desktop list hides and a <details> Menu button shows instead. The
+ *   button is a native summary, so its open state is exposed to assistive tech as aria-expanded with no script.
+ *   The mobile list is a second copy of the links; CSS shows exactly one of the two at any width.
+ * - mobileStyle: the mobile panel drops under the button, or slides in as a fixed panel from the right.
+ * - submenuStyle: "mega" opens the sub-links as a column grid across the bar (horizontal menus only).
+ * - sticky: the bar stays at the top while scrolling.
+ * - onePage: enables smooth scrolling for #anchor links on pages that contain this menu (see navMenu.css).
  */
 export const NavMenuElement: React.FC<P> = async (p) => {
   const items = await readMenu()
   if (items.length === 0) return null
   const vertical = pick(p.layout, ['horizontal', 'vertical'] as const, 'horizontal') === 'vertical'
   const label = str(p.label).trim() || 'Main menu'
+  const breakpoint = pick(p.mobileBreakpoint, ['never', '768', '1024'] as const, 'never')
+  const mobileStyle = pick(p.mobileStyle, ['hamburger-dropdown', 'offcanvas'] as const, 'hamburger-dropdown')
+  const submenu = pick(p.submenuStyle, ['dropdown', 'mega'] as const, 'dropdown')
+  const classes = [
+    'be-el-nav',
+    `be-el-nav--${vertical ? 'vertical' : 'horizontal'}`,
+    submenu === 'mega' && !vertical ? 'be-el-nav--mega' : '',
+    breakpoint !== 'never' ? `be-el-nav--bp-${breakpoint}` : '',
+    breakpoint !== 'never' ? `be-el-nav--${mobileStyle}` : '',
+    flag(p.sticky) ? 'be-el-nav--sticky' : '',
+    flag(p.onePage) ? 'be-el-nav--one-page' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const list = (mobile: boolean) => (
+    <ul className={`be-el-nav__list ${mobile ? 'be-el-nav__list--mobile' : 'be-el-nav__list--desktop'}`}>
+      {items.map((item, i) => (
+        <li key={i} className={`be-el-nav__item${item.children.length > 0 ? ' be-el-nav__item--has-children' : ''}`}>
+          <NavAnchor item={item} className="be-el-nav__link" />
+          {item.children.length > 0 && (
+            <ul className="be-el-nav__sub">
+              {item.children.map((child, j) => (
+                <li key={j} className="be-el-nav__sub-item">
+                  <NavAnchor item={child} className="be-el-nav__sub-link" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+
   return (
-    <nav className={`be-el-nav be-el-nav--${vertical ? 'vertical' : 'horizontal'}`} aria-label={label}>
-      <ul className="be-el-nav__list">
-        {items.map((item, i) => (
-          <li key={i} className={`be-el-nav__item${item.children.length > 0 ? ' be-el-nav__item--has-children' : ''}`}>
-            <NavAnchor item={item} className="be-el-nav__link" />
-            {item.children.length > 0 && (
-              <ul className="be-el-nav__sub">
-                {item.children.map((child, j) => (
-                  <li key={j} className="be-el-nav__sub-item">
-                    <NavAnchor item={child} className="be-el-nav__sub-link" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+    <nav className={classes} aria-label={label}>
+      {list(false)}
+      {breakpoint !== 'never' && (
+        <details className="be-el-nav__mobile">
+          <summary className="be-el-nav__burger">
+            <span className="be-el-nav__bars" aria-hidden="true" />
+            <span className="be-el-nav__burger-text">Menu</span>
+          </summary>
+          {list(true)}
+        </details>
+      )}
     </nav>
   )
 }
@@ -335,6 +374,7 @@ const SITE_RENDERERS: Record<string, React.ComponentType<P>> = {
   'nav-menu': NavMenuElement,
   'search-box': SearchBoxElement,
   'post-list': PostListElement,
+  loop: LoopElement,
 }
 
 /**

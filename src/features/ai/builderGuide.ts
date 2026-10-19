@@ -24,7 +24,7 @@ export type BuilderMode = 'section' | 'page' | 'edit'
 export type GuideContext = { siteName?: string; mode: BuilderMode }
 
 /** The guide, before any examples, must stay under this many characters (the aim is about 14k). */
-export const GUIDE_MAX_CHARS = 15_000
+export const GUIDE_MAX_CHARS = 16_000
 
 /** Element types the builder never uses: they need a record, a relation, or a table/form context. */
 const EXCLUDED_ELEMENT_TYPES = new Set(['content-slot', 'data-view', 'ad'])
@@ -169,6 +169,18 @@ export function buildGuide(ctx: GuideContext): string {
     '',
     'LINKS: the site has pages, blog, shop, events, FAQs, forms and courses. Link only to real internal paths (/shop, /blog, /events, /faq, /courses, /cart, /) or to paths and URLs the brief gives. Never invent a domain.',
     'MEDIA: never set picture, video or file ids or record links. Leave picture fields empty; the admin adds them. Give image alt text when the element has an alt field.',
+    '',
+    'USAGE HINTS (props as in the catalogue)',
+    'card: media icon|image; hoverEffect none|lift|zoom-image|flip (flip needs backTitle, backText); layout top|left|right. Three or four cards across a section.',
+    'heading effect: two-tone (secondText), rotate (words, one per line), split (splitBy, animation), highlight (markerPhrase, which must appear in text).',
+    'list marker: bullets|numbers|none|icon|check|arrow|dash; items {"text","href"}.',
+    'counter: number, prefix, suffix, title, animate. progress-bar: percent 0-100, shape bar|ring.',
+    'gallery: layout grid|masonry|carousel|logos; images left empty.',
+    'chart: chartType bar|line|pie|radar|polar; data "label | value" per line, up to 12.',
+    'embed: provider youtube|vimeo|x|instagram|facebook-video|google-calendar|typeform|custom-iframe; https address. X, Instagram and Facebook show a link card.',
+    'reviews: items {name, rating 1-5, text, source}; layout grid|list. pagination: current, total, baseUrl with {page}.',
+    'social-icons: mode follow or share. pricing-table: features {text, included}. testimonial, price-list: one row per item.',
+    'Sections: display accordion (FAQ), tabs, carousel (slides), grid (galleries: one image element per column).',
     '',
     'RULES',
     '1. Use only the element types and block types above.',

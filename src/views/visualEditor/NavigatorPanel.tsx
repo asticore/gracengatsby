@@ -10,6 +10,8 @@ import { parseSectionLayout } from '@/lib/sectionLayout'
 
 import { getBlockDef } from './blockSchemas'
 import { pathKey, type NodePath } from './treeOps'
+import { isHiddenEverywhere, planKeyMove, planNavDrop, toggleHideEverywhere, zoneFromOffset, type DropZone } from './navigatorOps'
+import './navLibraryPresets.css'
 
 interface NavigatorPanelProps {
   nodes: SectionNode[]
@@ -20,6 +22,21 @@ interface NavigatorPanelProps {
   /** Expanded state keyed by pathKey; a node is expanded unless its entry is false. */
   expandedState?: Record<string, boolean>
   onExpandedStateChange?: (state: Record<string, boolean>) => void
+  /** Move a block (drag or Alt+Up/Down): same arguments as the canvas handle-drag move. Enables reordering. */
+  onMove?: (from: NodePath, containerPath: NodePath, at: number) => void
+  /** Replace a node's design (used by the Hide toggle). Enables the Hide button. */
+  onDesignChange?: (path: NodePath, design: Record<string, unknown>) => void
+  /** True when the node at this path is locked for the current person (no drag, no hide). */
+  isLocked?: (path: NodePath) => boolean
+}
+
+type Dnd = {
+  onMove?: NavigatorPanelProps['onMove']
+  onDesignChange?: NavigatorPanelProps['onDesignChange']
+  isLocked?: NavigatorPanelProps['isLocked']
+  dragFrom: NodePath | null
+  setDragFrom: (p: NodePath | null) => void
+  listLength: (path: NodePath) => number
 }
 
 /** Lowercase a-z0-9-_ only; must not start with a digit or hyphen (valid, linkable id). */
@@ -43,6 +60,9 @@ type Row = {
   name: string
   custom: boolean
   anchor: string
+  design?: unknown
+  /** Number of blocks in this column (column rows only). */
+  blockCount?: number
   hasChildren: boolean
   children: Row[]
 }
@@ -138,6 +158,7 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
           name: label || (panelKind ? `${panelKind} ${ci + 1}` : `Column ${ci + 1}`),
           custom: Boolean(label),
           anchor: column.design?.anchorId || '',
+          blockCount: (column.blocks || []).length,
           hasChildren: kids.length > 0,
           children: kids,
         }
@@ -154,6 +175,7 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
       depth,
       ...info,
       anchor: node.design?.anchorId || '',
+      design: node.design,
       hasChildren: children.length > 0,
       children,
     }
@@ -193,6 +215,8 @@ function collectKeys(rows: Row[], into: string[] = []): string[] {
   return into
 }
 
+const readOnlyKind = (row: Row): boolean => row.kind === 'virtual'
+
 const NavRow: React.FC<{
   row: Row
   expanded: Record<string, boolean>
@@ -202,11 +226,17 @@ const NavRow: React.FC<{
   onSelect: (path: NodePath) => void
   onRename: (path: NodePath, name: string) => void
   onSetAnchor: (path: NodePath, anchor: string) => void
-}> = ({ row, expanded, forceOpen, selectedKey, onToggle, onSelect, onRename, onSetAnchor }) => {
+  dnd: Dnd
+}> = ({ row, expanded, forceOpen, selectedKey, onToggle, onSelect, onRename, onSetAnchor, dnd }) => {
   const [renaming, setRenaming] = useState(false)
   const [anchoring, setAnchoring] = useState(false)
   const [draft, setDraft] = useState('')
   const [copied, setCopied] = useState(false)
+  const [dropZone, setDropZone] = useState<DropZone | null>(null)
+  const isColumn = row.kind === 'column'
+  const locked = Boolean(dnd.isLocked?.(row.path))
+  const hidden = !isColumn && !readOnlyKind(row) && isHiddenEverywhere(row.design)
+  const canDrag = Boolean(dnd.onMove) && !readOnlyKind(row) && !isColumn && !locked
   const rowRef = useRef<HTMLDivElement>(null)
   const selected = selectedKey === row.key
   const readOnly = row.kind === 'virtual'
@@ -243,6 +273,13 @@ const NavRow: React.FC<{
 
   const onRowKey = (e: React.KeyboardEvent) => {
     if (renaming || anchoring || e.target !== e.currentTarget) return
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault()
+      if (!canDrag) return
+      const plan = planKeyMove(row.path, e.key === 'ArrowUp' ? -1 : 1, dnd.listLength(row.path))
+      if (plan) dnd.onMove?.(row.path, plan.containerPath, plan.at)
+      return
+    }
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       activate()
@@ -272,9 +309,42 @@ const NavRow: React.FC<{
     <li role="treeitem" aria-expanded={row.hasChildren ? open : undefined} aria-selected={selected}>
       <div
         ref={rowRef}
-        className={`ve-nav__row${selected ? ' ve-nav__row--selected' : ''}`}
+        className={`ve-nav__row${selected ? ' ve-nav__row--selected' : ''}${hidden ? ' ve-nav__row--hidden' : ''}${dropZone ? ` ve-nav__row--drop-${dropZone}` : ''}${dnd.dragFrom && pathKey(dnd.dragFrom) === row.key ? ' ve-nav__row--dragging' : ''}`}
         tabIndex={0}
         title={row.hint}
+        draggable={canDrag}
+        onDragStart={(e) => {
+          if (!canDrag) return
+          e.dataTransfer.setData('application/x-ve-nav', pathKey(row.path))
+          e.dataTransfer.effectAllowed = 'move'
+          dnd.setDragFrom(row.path)
+        }}
+        onDragEnd={() => {
+          dnd.setDragFrom(null)
+          setDropZone(null)
+        }}
+        onDragOver={(e) => {
+          const from = dnd.dragFrom
+          if (!from || !dnd.onMove || row.kind === 'virtual' || locked) return
+          const rect = e.currentTarget.getBoundingClientRect()
+          const zone = zoneFromOffset(e.clientY - rect.top, rect.height, isColumn)
+          if (!planNavDrop(row.path, isColumn, zone, row.blockCount)) return
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'move'
+          if (zone !== dropZone) setDropZone(zone)
+        }}
+        onDragLeave={() => setDropZone(null)}
+        onDrop={(e) => {
+          const from = dnd.dragFrom
+          const zone = dropZone
+          setDropZone(null)
+          dnd.setDragFrom(null)
+          if (!from || !zone || !dnd.onMove) return
+          const plan = planNavDrop(row.path, isColumn, zone, row.blockCount)
+          if (!plan) return
+          e.preventDefault()
+          dnd.onMove(from, plan.containerPath, plan.at)
+        }}
         onClick={activate}
         onDoubleClick={startRename}
         onKeyDown={onRowKey}
@@ -318,10 +388,24 @@ const NavRow: React.FC<{
             {row.custom && row.kind !== 'column' && <span className="ve-nav__type">{row.typeLabel}</span>}
           </>
         )}
+        {hidden && !renaming && <span className="ve-nav__flag" title="Hidden on all devices" aria-label="Hidden on all devices">{String.fromCharCode(0x1f6ab)}</span>}
+        {locked && !renaming && <span className="ve-nav__flag" title="Locked" aria-label="Locked">{String.fromCharCode(0x1f512)}</span>}
         {row.kind === 'virtual' && <span className="ve-nav__type" title={row.hint}>legacy</span>}
         {row.anchor && !renaming && <span className="ve-nav__anchor" title={`Jump link: #${row.anchor}`}>#{row.anchor}</span>}
         {!renaming && !readOnly && (
           <span className="ve-nav__actions" onClick={(e) => e.stopPropagation()}>
+            {dnd.onDesignChange && !isColumn && !locked && (
+              <button
+                type="button"
+                className="ve-nav__icon-btn"
+                title={hidden ? 'Show on all devices' : 'Hide on all devices'}
+                aria-label={`${hidden ? 'Show' : 'Hide'} ${row.name}`}
+                aria-pressed={hidden}
+                onClick={() => dnd.onDesignChange?.(row.path, toggleHideEverywhere(row.design))}
+              >
+                {hidden ? String.fromCharCode(0x1f576) : String.fromCharCode(0x1f441)}
+              </button>
+            )}
             <button type="button" className="ve-nav__icon-btn" title="Rename (F2)" aria-label={`Rename ${row.name}`} onClick={startRename}>✎</button>
             <button type="button" className="ve-nav__icon-btn" title="Set anchor for jump links" aria-label={`Set anchor for ${row.name}`} onClick={startAnchor}>🔗</button>
           </span>
@@ -367,6 +451,7 @@ const NavRow: React.FC<{
               onSelect={onSelect}
               onRename={onRename}
               onSetAnchor={onSetAnchor}
+              dnd={dnd}
             />
           ))}
         </ul>
@@ -383,7 +468,11 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
   onSetAnchor,
   expandedState = {},
   onExpandedStateChange,
+  onMove,
+  onDesignChange,
+  isLocked,
 }) => {
+  const [dragFrom, setDragFrom] = useState<NodePath | null>(null)
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const allRows = useMemo(() => buildRows(nodes, [], 0), [nodes])
@@ -406,6 +495,21 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
   const toggle = useCallback(
     (key: string) => onExpandedStateChange?.({ ...expandedState, [key]: expandedState[key] === false }),
     [expandedState, onExpandedStateChange],
+  )
+  const dnd: Dnd = useMemo(
+    () => ({
+      onMove,
+      onDesignChange,
+      isLocked,
+      dragFrom,
+      setDragFrom,
+      listLength: (path: NodePath) => {
+        let list: SectionNode[] = nodes
+        for (let i = 0; i < path.length - 1; i += 2) list = list[path[i]]?.columns?.[path[i + 1]]?.blocks || []
+        return list.length
+      },
+    }),
+    [onMove, onDesignChange, isLocked, dragFrom, nodes],
   )
   const expandAll = () => onExpandedStateChange?.({})
   const collapseAll = () =>
@@ -440,6 +544,7 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
               onSelect={onSelect}
               onRename={onRename}
               onSetAnchor={onSetAnchor}
+              dnd={dnd}
             />
           ))}
         </ul>

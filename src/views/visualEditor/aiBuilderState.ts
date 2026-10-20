@@ -108,7 +108,12 @@ export type AiRequestInput = {
   outline?: readonly AiOutlineItem[]
   selection?: unknown
   pageTitle?: string
+  history?: readonly AiHistoryEntry[]
+  /** The last built sections, sent when refining. */
+  current?: readonly SectionNode[]
 }
+
+export type AiHistoryEntry = { role: 'user' | 'assistant'; text: string }
 
 export type AiBuilderRequest = {
   action: 'plan' | 'build'
@@ -120,6 +125,23 @@ export type AiBuilderRequest = {
   outline?: AiOutlineItem[]
   selection?: unknown
   pageTitle?: string
+  history?: AiHistoryEntry[]
+  current?: unknown
+}
+
+export const AI_HISTORY_MAX = 6
+export const AI_HISTORY_TEXT_MAX = 1000
+
+/** Keeps the newest AI_HISTORY_MAX valid entries; trims text and drops empty or malformed ones. */
+export function trimHistory(entries: readonly unknown[] | null | undefined, max: number = AI_HISTORY_MAX): AiHistoryEntry[] {
+  const out: AiHistoryEntry[] = []
+  for (const entry of entries ?? []) {
+    const record = asRecord(entry)
+    if (!record || (record.role !== 'user' && record.role !== 'assistant')) continue
+    const text = cleanText(record.text, AI_HISTORY_TEXT_MAX)
+    if (text) out.push({ role: record.role, text })
+  }
+  return max > 0 ? out.slice(-max) : []
 }
 
 /** Builds the JSON body for a plan or build call. Empty optional fields are left out. */
@@ -141,6 +163,9 @@ export function buildAiRequest(action: 'plan' | 'build', input: AiRequestInput):
   if (action === 'build' && input.outline && input.outline.length) {
     body.outline = input.outline.map((item) => ({ title: item.title.trim(), summary: item.summary.trim() }))
   }
+  const history = trimHistory(input.history)
+  if (history.length) body.history = history
+  if (input.current && input.current.length) body.current = stripIdKeys(input.current)
   if (input.mode === 'edit' && input.selection !== undefined) body.selection = stripIdKeys(input.selection)
   const pageTitle = input.pageTitle?.trim()
   if (pageTitle) body.pageTitle = pageTitle
@@ -196,7 +221,24 @@ export function normalisePlan(data: unknown, status?: number): AiPlanResult {
   throw new AiBuilderError('The AI did not return a plan. Try again.')
 }
 
-export type AiBuildResult = { sections: SectionNode[]; warnings: string[] }
+export type AiMediaPlaceholder = { alt: string; query: string }
+export type AiBuildResult = { sections: SectionNode[]; warnings: string[]; mediaPlaceholders: AiMediaPlaceholder[] }
+
+/** Defensive read of the optional mediaPlaceholders list. */
+export function normaliseMediaPlaceholders(raw: unknown): AiMediaPlaceholder[] {
+  if (!Array.isArray(raw)) return []
+  const out: AiMediaPlaceholder[] = []
+  for (const entry of raw) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const alt = cleanText(record.alt, 200)
+    const query = cleanText(record.query, 200)
+    if (!alt && !query) continue
+    out.push({ alt: alt || query, query })
+    if (out.length >= 20) break
+  }
+  return out
+}
 
 /** Throws AiBuilderError for ok:false or when no usable section comes back. */
 export function normaliseBuild(data: unknown, status?: number): AiBuildResult {
@@ -209,7 +251,159 @@ export function normaliseBuild(data: unknown, status?: number): AiBuildResult {
   const warnings = (Array.isArray(record.warnings) ? record.warnings : []).filter(
     (warning): warning is string => typeof warning === 'string' && warning.trim().length > 0,
   )
-  return { sections, warnings }
+  return { sections, warnings, mediaPlaceholders: normaliseMediaPlaceholders(record.mediaPlaceholders) }
+}
+
+export type AiUsage = { calls: number; inputTokens: number; outputTokens: number; estCostUsd: number; capUsd: number }
+
+/** Reads the optional usage object. Returns null when absent or malformed. */
+export function normaliseUsage(data: unknown): AiUsage | null {
+  const record = asRecord(asRecord(data)?.usage)
+  if (!record) return null
+  const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0)
+  return {
+    calls: Math.floor(num(record.calls)),
+    inputTokens: num(record.inputTokens),
+    outputTokens: num(record.outputTokens),
+    estCostUsd: num(record.estCostUsd),
+    capUsd: num(record.capUsd),
+  }
+}
+
+const money = (value: number): string => (value >= 100 ? value.toFixed(0) : value.toFixed(2))
+
+/** "This month: 12 builds, ~$1.20 of $10.00" (cap part left out when there is no cap). */
+export function usageText(usage: AiUsage | null | undefined): string {
+  if (!usage) return ''
+  const builds = `${usage.calls} ${usage.calls === 1 ? 'build' : 'builds'}`
+  const cost = `~$${money(usage.estCostUsd)}`
+  return usage.capUsd > 0 ? `This month: ${builds}, ${cost} of $${money(usage.capUsd)}` : `This month: ${builds}, ${cost}`
+}
+
+/** A warning once spend reaches 80% of the cap; a stronger one at or over the cap. Empty string otherwise. */
+export function usageWarning(usage: AiUsage | null | undefined): string {
+  if (!usage || usage.capUsd <= 0) return ''
+  if (usage.estCostUsd >= usage.capUsd) return 'You have reached the monthly AI budget. Builds may be refused until it resets or the cap is raised.'
+  if (usage.estCostUsd >= usage.capUsd * 0.8) return 'You are close to the monthly AI budget.'
+  return ''
+}
+
+export type AiStage = 'Planning' | 'Building' | 'Checking'
+export const AI_CHECKING_AFTER_SECONDS = 20
+
+/** The server does not stream, so Checking is shown for the tail of a long build. */
+export function stageLabel(action: 'plan' | 'build', elapsedSeconds: number): AiStage {
+  if (action === 'plan') return 'Planning'
+  return elapsedSeconds >= AI_CHECKING_AFTER_SECONDS ? 'Checking' : 'Building'
+}
+
+export function progressText(action: 'plan' | 'build', elapsedSeconds: number): string {
+  return `${stageLabel(action, elapsedSeconds)}... ${Math.max(0, Math.floor(elapsedSeconds))}s`
+}
+
+export type SavedPrompt = { id: string; name: string; brief: string }
+export const SAVED_PROMPTS_KEY = 've-ai-saved-prompts'
+export const SAVED_PROMPTS_MAX = 20
+
+/** Cleans a parsed list: valid entries only, unique ids, newest first, capped. */
+export function sanitiseSavedPrompts(raw: unknown): SavedPrompt[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>()
+  const out: SavedPrompt[] = []
+  for (const entry of raw) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const id = typeof record.id === 'string' ? record.id : ''
+    const name = cleanText(record.name, 60)
+    const brief = cleanText(record.brief, AI_LIMITS.brief)
+    if (!id || !name || !brief || seen.has(id)) continue
+    seen.add(id)
+    out.push({ id, name, brief })
+    if (out.length >= SAVED_PROMPTS_MAX) break
+  }
+  return out
+}
+
+/** Adds (or replaces the same-named) prompt at the front; oldest drop off past the cap. Returns the list unchanged when name or brief is empty. */
+export function addSavedPrompt(list: readonly SavedPrompt[], name: string, brief: string, id: string): SavedPrompt[] {
+  const cleanName = name.trim().slice(0, 60)
+  const cleanBrief = brief.trim().slice(0, AI_LIMITS.brief)
+  if (!cleanName || !cleanBrief) return [...list]
+  const rest = list.filter((item) => item.name.toLowerCase() !== cleanName.toLowerCase())
+  return [{ id, name: cleanName, brief: cleanBrief }, ...rest].slice(0, SAVED_PROMPTS_MAX)
+}
+
+export function deleteSavedPrompt(list: readonly SavedPrompt[], id: string): SavedPrompt[] {
+  return list.filter((item) => item.id !== id)
+}
+
+type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
+const defaultStorage = (): StorageLike | null => {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null
+  } catch {
+    return null
+  }
+}
+
+export function loadSavedPrompts(storage: StorageLike | null = defaultStorage()): SavedPrompt[] {
+  try {
+    const text = storage?.getItem(SAVED_PROMPTS_KEY)
+    return text ? sanitiseSavedPrompts(JSON.parse(text)) : []
+  } catch {
+    return []
+  }
+}
+
+/** Returns false when the browser refused the write. */
+export function storeSavedPrompts(list: readonly SavedPrompt[], storage: StorageLike | null = defaultStorage()): boolean {
+  try {
+    if (!storage) return false
+    storage.setItem(SAVED_PROMPTS_KEY, JSON.stringify(sanitiseSavedPrompts(list)))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Turns a saved template's blocks into example text: id-free JSON cut to the example size cap. */
+export function templateExampleText(name: string, blocks: unknown): string {
+  const nodes = Array.isArray(blocks) ? blocks : []
+  if (!nodes.length) return ''
+  const head = `Template "${name.trim().slice(0, 60)}": `
+  const json = JSON.stringify(stripIdKeys(nodes)) ?? ''
+  return (head + json).slice(0, AI_LIMITS.example)
+}
+
+export type AiTemplateExample = { id: string; name: string; text: string }
+
+/** Reads /api/page-templates docs into example choices; section templates first, empty ones dropped. */
+export function normaliseTemplateExamples(data: unknown): AiTemplateExample[] {
+  const docs = asRecord(data)?.docs
+  if (!Array.isArray(docs)) return []
+  const sections: AiTemplateExample[] = []
+  const others: AiTemplateExample[] = []
+  for (const doc of docs) {
+    const record = asRecord(doc)
+    if (!record) continue
+    const name = cleanText(record.name, 60) || 'Untitled'
+    const text = templateExampleText(name, record.blocks)
+    if (!text) continue
+    const item = { id: String(record.id ?? name), name, text }
+    ;(record.kind === 'section' ? sections : others).push(item)
+  }
+  return [...sections, ...others]
+}
+
+/** GET /api/page-templates for the example picker. Returns [] on any failure. */
+export async function fetchTemplateExamples(signal?: AbortSignal): Promise<AiTemplateExample[]> {
+  try {
+    const res = await fetch('/api/page-templates?limit=50&depth=0&sort=-updatedAt', { credentials: 'include', signal })
+    if (!res.ok) return []
+    return normaliseTemplateExamples(await readJsonBody(res))
+  } catch {
+    return []
+  }
 }
 
 /** Returns an error message, or null when the outline can be built. */
@@ -257,6 +451,16 @@ export async function fetchAiProviders(signal?: AbortSignal): Promise<AiProvider
   const providers = normaliseProviders(data)
   if (!providers) throw new AiBuilderError('Unexpected response from the AI builder.')
   return providers
+}
+
+/** GET providers plus the optional usage block. */
+export async function fetchAiStatus(signal?: AbortSignal): Promise<{ providers: AiProviders; usage: AiUsage | null }> {
+  const res = await fetch(AI_BUILDER_ENDPOINT, { method: 'GET', credentials: 'same-origin', headers: { Accept: 'application/json' }, signal })
+  const data: unknown = await readJsonBody(res)
+  if (!res.ok) throw new AiBuilderError(failureText(data, res.status))
+  const providers = normaliseProviders(data)
+  if (!providers) throw new AiBuilderError('Unexpected response from the AI builder.')
+  return { providers, usage: normaliseUsage(data) }
 }
 
 /** POST a plan or build call. Returns the parsed body; throws AiBuilderError on failure. */

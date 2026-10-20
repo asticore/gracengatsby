@@ -193,13 +193,13 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   },
   // ---- marketing ----
   {
-    type: 'testimonial', label: 'Testimonial', icon: '❝', category: 'marketing',
+    type: 'testimonial', label: 'Testimonial', icon: '❝', category: 'marketing', hidden: true,
     description: 'A customer quote with name, role, photo and optional stars.',
     fields: [area('quote', 'Quote'), text('name', 'Name', { width: 'half' }), text('role', 'Role or place', { width: 'half' }), { name: 'photo', label: 'Photo', type: 'media' }, slider('stars', 'Stars (0-5)', 0, 5, 0.5), ALIGN],
     defaultProps: () => ({ quote: 'Beautiful quality and it arrived the next day.', name: 'Alex P.', role: 'Customer', stars: 5, align: 'center' }),
   },
   {
-    type: 'pricing-table', label: 'Pricing table', icon: '🏷', category: 'marketing',
+    type: 'pricing-table', label: 'Pricing table', icon: '🏷', category: 'marketing', hidden: true,
     description: 'One plan card with price, feature list and button. Place several side by side in columns.',
     fields: [
       text('title', 'Plan name'), text('currency', 'Currency', { width: 'half' }), text('price', 'Price', { width: 'half' }), text('period', 'Period (e.g. / month)'),
@@ -210,7 +210,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ title: 'Standard', currency: '$', price: '29', period: '/ month', features: [{text: 'One user', included: true}, {text: 'Email support', included: true}, {text: 'Priority support', included: false}], buttonText: 'Choose plan', buttonUrl: '/contact', highlight: false }),
   },
   {
-    type: 'price-list', label: 'Price list', icon: '💲', category: 'marketing',
+    type: 'price-list', label: 'Price list', icon: '💲', category: 'marketing', hidden: true,
     description: 'A menu-style list of items with prices.',
     fields: [
       { name: 'items', label: 'Items', type: 'repeater', repeater: { fields: [text('name', 'Name'), text('description', 'Description'), text('price', 'Price')] } }
@@ -218,7 +218,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({ items: [{name: 'Flat white', description: 'Double shot, steamed milk', price: '3.50'}, {name: 'Croissant', description: 'Baked this morning', price: '2.80'}] }),
   },
   {
-    type: 'team-member', label: 'Team member', icon: '👤', category: 'marketing',
+    type: 'team-member', label: 'Team member', icon: '👤', category: 'marketing', hidden: true,
     description: 'A person card: photo, name, role, bio and social links.',
     fields: [{ name: 'photo', label: 'Photo', type: 'media' }, text('alt', 'Photo alt text'), text('name', 'Name', { width: 'half' }), text('role', 'Role', { width: 'half' }), area('bio', 'Short bio'), area('social', 'Social links', 'One per line: "network | address".'), ALIGN],
     defaultProps: () => ({ name: 'Jordan Lee', role: 'Founder', bio: 'Started the studio in a spare room.', social: '', align: 'center' }),
@@ -250,12 +250,20 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   // ---- layout ----
   {
     type: 'divider', label: 'Divider', icon: '—', category: 'layout',
-    description: 'A horizontal line, optionally with a word in the middle.',
-    fields: [select('style', 'Style', opts('solid', 'dashed', 'dotted', 'double')), slider('weight', 'Thickness (px)', 1, 12), slider('width', 'Width (%)', 5, 100), text('label', 'Word in the middle'), ALIGN],
-    defaultProps: () => ({ style: 'solid', weight: 1, width: 100, align: 'center' }),
+    description: 'A horizontal line, optionally with a word in the middle. Turn the line off and use Space to make it a spacer.',
+    fields: [
+      { name: 'showLine', label: 'Show line', type: 'checkbox', width: 'half' },
+      slider('gap', 'Space above and below (px)', 0, 400),
+      { ...select('style', 'Style', opts('solid', 'dashed', 'dotted', 'double')), showIf: { field: 'showLine', equals: true } },
+      { ...slider('weight', 'Thickness (px)', 1, 12), showIf: { field: 'showLine', equals: true } },
+      { ...slider('width', 'Width (%)', 5, 100), showIf: { field: 'showLine', equals: true } },
+      { ...text('label', 'Word in the middle'), showIf: { field: 'showLine', equals: true } },
+      ALIGN,
+    ],
+    defaultProps: () => ({ showLine: true, gap: 0, style: 'solid', weight: 1, width: 100, align: 'center' }),
   },
   {
-    type: 'spacer', label: 'Spacer', icon: '↕', category: 'layout',
+    hidden: true, type: 'spacer', label: 'Spacer', icon: '↕', category: 'layout',
     description: 'Empty vertical space.',
     fields: [slider('height', 'Height (px)', 0, 600)],
     defaultProps: () => ({ height: 48 }),

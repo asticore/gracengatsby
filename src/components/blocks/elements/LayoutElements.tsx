@@ -14,9 +14,13 @@ export const DividerElement: React.FC<P> = (p) => {
   const width = num(p.width, 100, 5, 100)
   const label = str(p.label)
   const css = { borderTopStyle: style, borderTopWidth: style === 'double' ? Math.max(weight, 3) : weight }
-  if (!label) return <hr className={`el-divider ${alignClass(p.align ?? 'center')}`} style={{ ...css, width: `${width}%` }} />
+  // Space above and below (px). With "Show line" off the divider is plain vertical space, so it replaces the spacer.
+  const gap = num(p.gap, 0, 0, 400)
+  const space = gap > 0 ? { marginTop: gap, marginBottom: gap } : {}
+  if (p.showLine === false || p.showLine === 'false') return <div className="el-spacer" aria-hidden="true" style={{ height: gap * 2 || 48 }} />
+  if (!label) return <hr className={`el-divider ${alignClass(p.align ?? 'center')}`} style={{ ...css, ...space, width: `${width}%` }} />
   return (
-    <div className="el-divider el-divider--label" role="separator" style={{ width: `${width}%` }}>
+    <div className="el-divider el-divider--label" role="separator" style={{ ...space, width: `${width}%` }}>
       <span style={css} />
       <em>{label}</em>
       <span style={css} />

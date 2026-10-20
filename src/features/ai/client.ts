@@ -124,6 +124,20 @@ export function extractText(provider: AiProvider, body: unknown): string {
   return typeof message?.content === 'string' ? message.content.trim() : ''
 }
 
+export type AiUsage = { inputTokens: number; outputTokens: number }
+
+/** Token counts the provider reported, or null when the response carries none. */
+export function extractUsage(provider: AiProvider, body: unknown): AiUsage | null {
+  if (!body || typeof body !== 'object') return null
+  const usage = (body as { usage?: unknown }).usage
+  if (!usage || typeof usage !== 'object') return null
+  const u = usage as Record<string, unknown>
+  const input = provider === 'claude' ? u.input_tokens : u.prompt_tokens
+  const output = provider === 'claude' ? u.output_tokens : u.completion_tokens
+  if (typeof input !== 'number' || typeof output !== 'number' || !Number.isFinite(input) || !Number.isFinite(output)) return null
+  return { inputTokens: Math.max(0, Math.round(input)), outputTokens: Math.max(0, Math.round(output)) }
+}
+
 /** Maps an HTTP status to a message the admin can act on. */
 export function messageForStatus(provider: AiProvider, status: number): string {
   const name = provider === 'claude' ? 'Claude' : 'OpenAI'
@@ -139,6 +153,11 @@ export function messageForStatus(provider: AiProvider, status: number): string {
  * failure, including timeouts, so callers have one shape to handle.
  */
 export async function callAi(args: CallAiArgs, options: CallAiOptions): Promise<string> {
+  return (await callAiDetailed(args, options)).text
+}
+
+/** Like callAi, and also returns the provider's token counts (null when it sent none). */
+export async function callAiDetailed(args: CallAiArgs, options: CallAiOptions): Promise<{ text: string; usage: AiUsage | null }> {
   if (!options.apiKey) {
     throw new AiError(`No ${args.provider === 'claude' ? 'Claude' : 'OpenAI'} API key is set in Integrations.`)
   }
@@ -176,9 +195,10 @@ export async function callAi(args: CallAiArgs, options: CallAiOptions): Promise<
     })
     if (!response.ok) throw new AiError(messageForStatus(args.provider, response.status), response.status)
 
-    const text = extractText(args.provider, await response.json().catch((): null => null))
+    const payload = await response.json().catch((): null => null)
+    const text = extractText(args.provider, payload)
     if (!text) throw new AiError('The model returned no text for this picture.')
-    return text
+    return { text, usage: extractUsage(args.provider, payload) }
   } catch (error) {
     if (error instanceof AiError) throw error
     if (error instanceof Error && error.name === 'AbortError') {

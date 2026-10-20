@@ -2,6 +2,7 @@ import React from 'react'
 
 import './effects.css'
 import './effects53.css'
+import './visibility.css'
 
 import {
   asBlockStyle,
@@ -26,6 +27,8 @@ import { BgNoise, BgSlideshow } from './BgSlideshow'
 import { BgVideo } from './BgVideo'
 import ParticlesBackground from './ParticlesLazy'
 import PointerFxLazy from './PointerFxLazy'
+import VisibilityGateLazy from './VisibilityGateLazy'
+import { needsClientGate, rulesFromStyle } from '@/lib/visibilityRules'
 
 /**
  * Wraps every page-builder block so the per-block "Design" settings (background,
@@ -58,13 +61,19 @@ export const StyledBlock: React.FC<{
   const scopeId = parsed.anchorId || (scope ? `be-s-${safeScope(scope)}` : blockScopeId(index))
   const mediaCss = blockStyleCss(parsed, scopeId)
   const kb = kenBurnsLayer(parsed)
+  // Display conditions: the page is edge cached for everyone, so the rules travel with the markup and a
+  // client script decides. Date-only rules stay visible without JS; login / role / URL rules start hidden.
+  const rules = rulesFromStyle(parsed)
 
   return (
     <div
       id={scopeId}
       className={[blockStyleClasses(parsed), blockFxClasses(parsed)].filter(Boolean).join(' ')}
       style={{ ...blockStyleToCss(parsed), ...blockFxVars(parsed) }}
+      data-eg-cond={rules ? JSON.stringify(rules) : undefined}
+      data-eg-hold={rules && needsClientGate(rules) ? '' : undefined}
     >
+      {rules && <VisibilityGateLazy />}
       {mediaCss && <style dangerouslySetInnerHTML={{ __html: mediaCss }} />}
       {parsed.parallax === 'background' && parsed.bgType === 'image' && parsed.bgImageUrl && (
         <div className="be-fx be-fx--parbg" aria-hidden="true" style={{ backgroundImage: `url(${parsed.bgImageUrl})` }} />

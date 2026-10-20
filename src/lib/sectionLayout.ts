@@ -24,6 +24,9 @@ export type VerticalAlign = 'top' | 'middle' | 'bottom' | 'between'
 
 export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel' | 'grid' | 'modal' | 'stack' | 'hscroll' | 'sticky-steps'
 
+export type PopupFrequency = 'always' | 'session' | 'days'
+export const POPUP_FREQUENCIES: readonly PopupFrequency[] = ['always', 'session', 'days']
+
 export type SectionLayout = {
   /** Flow per device. Tablet falls back to desktop and mobile to tablet when unset. */
   direction?: PerDevice<FlowDirection>
@@ -74,6 +77,16 @@ export type SectionLayout = {
   modalWidth?: number
   /** Modal: trigger looks like a button or a text link. Unset = button. */
   modalStyle?: 'button' | 'link'
+  /** Popup: open by itself this many seconds after page load (0..600). Unset = no timer. */
+  popupDelay?: number
+  /** Popup: open by itself once the visitor has scrolled this percent of the page (1..100). Unset = off. */
+  popupScroll?: number
+  /** Popup: open when the pointer leaves through the top of the window (desktop). Unset = off. */
+  popupExit?: boolean
+  /** Popup: how often an automatic open may repeat. Unset = every visit. */
+  popupFrequency?: PopupFrequency
+  /** Popup: days between automatic opens when popupFrequency is 'days' (1..365). */
+  popupDays?: number
   /** Stack: distance of the first card from the top of the viewport, px (0..200). Unset = 24. */
   stackTop?: number
   /** Stack: extra distance per card, px (0..60), so each card peeks out above the next. Unset = 16. */
@@ -176,6 +189,18 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.modalWidth) && raw.modalWidth >= 320 && raw.modalWidth <= 1200) out.modalWidth = raw.modalWidth
   const modalStyle = pick(raw.modalStyle, ['button', 'link'] as const)
   if (modalStyle) out.modalStyle = modalStyle
+  // Popup triggers are strict: an out-of-range or non-integer value is dropped, never clamped into a trigger.
+  const strictInt = (v: unknown, min: number, max: number): number | undefined =>
+    isNum(v) && Number.isInteger(v) && v >= min && v <= max ? v : undefined
+  const popupDelay = strictInt(raw.popupDelay, 0, 600)
+  if (popupDelay !== undefined) out.popupDelay = popupDelay
+  const popupScroll = strictInt(raw.popupScroll, 1, 100)
+  if (popupScroll !== undefined) out.popupScroll = popupScroll
+  if (raw.popupExit === true) out.popupExit = true
+  const popupFrequency = pick(raw.popupFrequency, POPUP_FREQUENCIES)
+  if (popupFrequency && popupFrequency !== 'always') out.popupFrequency = popupFrequency
+  const popupDays = strictInt(raw.popupDays, 1, 365)
+  if (popupDays !== undefined) out.popupDays = popupDays
   const stackTop = clampInt(raw.stackTop, 0, 200)
   if (stackTop !== undefined) out.stackTop = stackTop
   const stackOffset = clampInt(raw.stackOffset, 0, 60)

@@ -1,4 +1,4 @@
-import type { BlockStyle } from '@/lib/blockStyle'
+import { RESPONSIVE_KEYS, resolveDeviceOverride, sanitizeDeviceOverride, type BlockStyle, type ResponsiveDevice } from '@/lib/blockStyle'
 
 /**
  * Pure helpers for the Design panel (wave 51): side linking, per-group modified / reset,
@@ -109,6 +109,50 @@ export function resetGroup(style: BlockStyle, keys: readonly string[]): BlockSty
     else delete out[dev]
   }
   return out as BlockStyle
+}
+
+/* ------------------------- device overrides ------------------------------ */
+
+/** The responsive keys the desktop (base) style has a value for; these are what can be copied to a device. */
+export function desktopOverridableValues(style: BlockStyle): Record<string, unknown> {
+  const s = style as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  for (const k of RESPONSIVE_KEYS) if (isSet(s[k])) out[k] = s[k]
+  return out
+}
+
+/** True when the device has any override of its own (including the older mobile-only padding / hide keys). */
+export function hasDeviceOverrides(style: BlockStyle, device: 'desktop' | ResponsiveDevice): boolean {
+  if (device === 'desktop') return false
+  return Object.keys(resolveDeviceOverride(style, device)).length > 0
+}
+
+/**
+ * The style with the desktop values merged into the device's override (desktop wins over what the
+ * device had), sanitised so only valid override keys and values survive. Returns the same object when
+ * there is nothing to copy. One object = one undo step.
+ */
+export function copyDesktopToDevice(style: BlockStyle, device: ResponsiveDevice): BlockStyle {
+  const picked = desktopOverridableValues(style)
+  if (Object.keys(picked).length === 0) return style
+  const existing = (device === 'tablet' ? style.tablet : style.mobile) ?? {}
+  const merged = sanitizeDeviceOverride({ ...existing, ...picked })
+  const out: BlockStyle = { ...style }
+  if (merged) out[device] = merged
+  else delete out[device]
+  return out
+}
+
+/** The style with this device's overrides removed (also the older mobile-only keys when device is mobile). */
+export function clearDeviceOverrides(style: BlockStyle, device: ResponsiveDevice): BlockStyle {
+  const out: BlockStyle = { ...style }
+  delete out[device]
+  if (device === 'mobile') {
+    delete out.paddingTopMobile
+    delete out.paddingBottomMobile
+    delete out.hideOnMobile
+  }
+  return out
 }
 
 /** Case-insensitive label match; an empty query matches everything. */

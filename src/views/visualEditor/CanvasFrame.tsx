@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -17,10 +17,14 @@ import type { SectionNode } from '@/lib/sectionTree'
 import { CanvasNodeList, slotKey, type CanvasHandlers } from './Canvas'
 import type { CanvasDevice, ColumnToParentMessage, ColumnWidthsToParentMessage, FrameToParentMessage, ParentToFrameMessage, RenameColumnToParentMessage } from './canvasBridge'
 import { CANVAS_ORIGIN, isBridgeMessage } from './canvasBridge'
-import { pathKey, type NodePath } from './treeOps'
+import { getNode, pathKey, type NodePath } from './treeOps'
 import { isEditableTarget, resolveShortcut } from './useEditorShortcuts'
 import { VISUAL_EDITOR_CSS } from './visualEditor.styles'
-import { CanvasInlineEditor, type InlineEditorProps } from './CanvasInlineEditor'
+import { inlineCandidate, listInlineTargets, neighbourTarget } from './inlineEdit'
+import { QuickInsertPalette } from './QuickInsertPalette'
+import { quickInsertTarget } from './quickInsert'
+import { libraryCards } from './blockSchemas'
+import { RECENTS_KEY, loadList, pushRecent, saveList } from './libraryRecents'
 
 /** Pointer must be within this many px of a valid insert slot for a drop to count. */
 const SLOT_REACH = 160
@@ -79,8 +83,14 @@ export const CanvasFrame: React.FC = () => {
   const [drag, setDrag] = useState<{ path: NodePath; label: string } | null>(null)
   const [dragOver, setDragOver] = useState(false)
 
-  // Inline text editor state: when active, renders CanvasInlineEditor overlay
-  const [inlineEdit, setInlineEdit] = useState<InlineEditorProps | null>(null)
+  // In-place text editing: which node (and list item) is open. The editor itself renders inside that node (Canvas.tsx).
+  const [editing, setEditing] = useState<{ path: NodePath; itemIndex?: number } | null>(null)
+  // "/" quick insert palette: viewport position + where the block will land.
+  const [palette, setPalette] = useState<{ top: number; left: number; containerPath: NodePath; at: number; recents: string[] } | null>(null)
+  const live = useRef({ blocks, selectedPath, locks, editing, palette })
+  useEffect(() => {
+    live.current = { blocks, selectedPath, locks, editing, palette }
+  })
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -100,30 +110,6 @@ export const CanvasFrame: React.FC = () => {
         setSelectedPath(msg.selectedPath)
       } else if (msg.type === 'dragHover') {
         setDragHoverKey(msg.key)
-      } else if (msg.type === 'startEdit') {
-        setInlineEdit({
-          blockId: msg.blockId,
-          elementType: msg.elementType,
-          field: msg.field,
-          value: msg.value,
-          device: msg.device,
-          onSave: (newValue) => {
-            post({
-              source: 've-canvas',
-              type: 'editDone',
-              blockId: msg.blockId,
-              field: msg.field,
-              value: newValue,
-              device: msg.device,
-            })
-            setInlineEdit(null)
-          },
-          onCancel: () => {
-            setInlineEdit(null)
-          },
-        })
-      } else if (msg.type === 'endEdit') {
-        setInlineEdit(null)
       }
     }
     window.addEventListener('message', onMessage)
@@ -136,6 +122,17 @@ export const CanvasFrame: React.FC = () => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return
+      if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !live.current.editing && !live.current.palette) {
+        event.preventDefault()
+        const { blocks: b, selectedPath: sel } = live.current
+        const target = quickInsertTarget(b, sel)
+        const anchor = sel && sel.length > 0 ? document.querySelector(`[data-ve-node="${JSON.stringify(sel)}"]`) : null
+        const rect = anchor?.getBoundingClientRect()
+        const top = rect ? Math.min(Math.max(rect.bottom + 4, 8), Math.max(window.innerHeight - 340, 8)) : 80
+        const left = rect ? Math.min(Math.max(rect.left, 8), Math.max(window.innerWidth - 296, 8)) : 24
+        setPalette({ top, left, ...target, recents: loadList(RECENTS_KEY) })
+        return
+      }
       const info = { key: event.key, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, alt: event.altKey }
       if (!resolveShortcut(info)) return
       // Keep the browser from acting too (bookmark on Ctrl+D, history on Backspace, page scroll on Alt+Arrow).
@@ -165,7 +162,50 @@ export const CanvasFrame: React.FC = () => {
     }
   }, [])
 
+  const finishEdit = useCallback(
+    (path: NodePath, itemIndex: number | undefined, field: string, value: string | null) => {
+      if (value !== null) post({ source: 've-canvas', type: 'editDone', path, field, itemIndex, value })
+    },
+    [],
+  )
+
+  const openEditor = (path: NodePath, itemIndex?: number) => {
+    const node = getNode(blocks, path)
+    if (!node || locks[pathKey(path)]?.blocked || !inlineCandidate(node, itemIndex ?? 0)) return
+    setEditing({ path, itemIndex })
+    setSelectedPath(path)
+    post({ source: 've-canvas', type: 'select', path })
+  }
+
+  let inlineEdit: CanvasHandlers['inlineEdit'] = null
+  if (editing) {
+    const node = getNode(blocks, editing.path)
+    const cand = node ? inlineCandidate(node, editing.itemIndex ?? 0) : null
+    if (node && cand) {
+      const { path, itemIndex } = editing
+      inlineEdit = {
+        key: pathKey(path),
+        value: cand.value,
+        multiline: cand.multiline,
+        label: `Edit ${String((node as unknown as { elementType?: string }).elementType || 'text')}`,
+        onCommit: (value) => {
+          finishEdit(path, itemIndex, cand.field, value)
+          setEditing(null)
+        },
+        onCancel: () => setEditing(null),
+        onTab: (direction, value) => {
+          finishEdit(path, itemIndex, cand.field, value)
+          const next = neighbourTarget(listInlineTargets(blocks, locks), { path, itemIndex }, direction)
+          if (next) openEditor(next.path, next.itemIndex)
+          else setEditing(null)
+        },
+      }
+    }
+  }
+
   const handlers: CanvasHandlers = {
+    onEditText: openEditor,
+    inlineEdit,
     selectedKey: selectedPath ? pathKey(selectedPath) : null,
     locks,
     dragHoverKey,
@@ -262,7 +302,20 @@ export const CanvasFrame: React.FC = () => {
         </DragOverlay>
       </DndContext>
 
-      {inlineEdit && <CanvasInlineEditor {...inlineEdit} />}
+      {palette && (
+        <QuickInsertPalette
+          cards={libraryCards()}
+          recents={palette.recents}
+          top={palette.top}
+          left={palette.left}
+          onClose={() => setPalette(null)}
+          onPick={(slug) => {
+            saveList(RECENTS_KEY, pushRecent(loadList(RECENTS_KEY), slug))
+            post({ source: 've-canvas', type: 'quickInsert', blockType: slug, containerPath: palette.containerPath, at: palette.at })
+            setPalette(null)
+          }}
+        />
+      )}
     </div>
   )
 }

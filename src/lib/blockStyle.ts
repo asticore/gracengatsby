@@ -10,6 +10,7 @@
  */
 
 import { BUILT_IN_FONTS, fontStack } from '@/features/fonts/installed'
+import { cleanRoles, cleanUrlText, isIsoDate, rulesFromStyle } from '@/lib/visibilityRules'
 
 import { isDesignV2Raw } from '@/lib/design/upgrade'
 import { DEFAULT_BREAKPOINTS, type SectionLayout } from '@/lib/sectionLayout'
@@ -307,6 +308,15 @@ export type BlockStyle = {
   tablet?: DeviceOverride
   mobile?: DeviceOverride
 
+  // Display conditions (Visibility rules): all that are set must pass; decided in the browser, never on the server.
+  showFrom?: string
+  showUntil?: string
+  showAuth?: 'in' | 'out'
+  /** Comma list of role slugs. */
+  showRoles?: string
+  /** Text the page path or query must contain. */
+  showUrl?: string
+
   // Visibility
   hideOnMobile?: boolean
   hideOnDesktop?: boolean
@@ -422,7 +432,7 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  const fx = withSafeAnchor(withSafeUnits(sanitizeTypography(sanitizeFx(sanitizeSlides(sanitizeBgVideo(style))))))
+  const fx = withSafeAnchor(withSafeUnits(sanitizeTypography(sanitizeVisibility(sanitizeFx(sanitizeSlides(sanitizeBgVideo(style)))))))
   if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
   const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
@@ -433,6 +443,27 @@ export function asBlockStyle(value: unknown): BlockStyle {
   if (mobile) out.mobile = mobile
   return out
 }
+
+const VIS_KEYS = ['showFrom', 'showUntil', 'showAuth', 'showRoles', 'showUrl'] as const
+
+/** Validates the Display conditions keys: ISO dates, in/out, slug-shaped roles, short clean URL text. */
+function sanitizeVisibility(style: BlockStyle): BlockStyle {
+  const raw = style as Record<string, unknown>
+  if (!VIS_KEYS.some((k) => raw[k] !== undefined)) return style
+  const out: Record<string, unknown> = { ...raw }
+  for (const k of VIS_KEYS) delete out[k]
+  if (isIsoDate(raw.showFrom)) out.showFrom = raw.showFrom
+  if (isIsoDate(raw.showUntil)) out.showUntil = raw.showUntil
+  if (raw.showAuth === 'in' || raw.showAuth === 'out') out.showAuth = raw.showAuth
+  const roles = cleanRoles(raw.showRoles)
+  if (roles.length > 0) out.showRoles = roles.join(',')
+  const url = cleanUrlText(raw.showUrl)
+  if (url) out.showUrl = url
+  return out as BlockStyle
+}
+
+/** True when the block has any Display condition set (used for the editor badge). */
+export const hasVisibilityRules = (style: BlockStyle): boolean => rulesFromStyle(style) !== null
 
 const clampNum = (v: unknown, min: number, max: number): number | undefined =>
   isNum(v) ? Math.min(max, Math.max(min, v)) : undefined

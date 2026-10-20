@@ -79,6 +79,7 @@ import * as migration_20261101_100000_theme_styles from './20261101_100000_theme
 import * as migration_20261102_100000_site_templates from './20261102_100000_site_templates';
 import * as migration_20261103_100000_template_repos from './20261103_100000_template_repos';
 import * as migration_20261104_100000_template_kind_category from './20261104_100000_template_kind_category';
+import * as migration_20261105_100000_ai_builder_usage from './20261105_100000_ai_builder_usage';
 import * as migration_20261028_400000_display_currencies from './20261028_400000_display_currencies';
 
 export const migrations = [
@@ -491,5 +492,10 @@ export const migrations = [
     up: migration_20261104_100000_template_kind_category.up,
     down: migration_20261104_100000_template_kind_category.down,
     name: '20261104_100000_template_kind_category',
+  },
+  {
+    up: migration_20261105_100000_ai_builder_usage.up,
+    down: migration_20261105_100000_ai_builder_usage.down,
+    name: '20261105_100000_ai_builder_usage',
   },
 ];

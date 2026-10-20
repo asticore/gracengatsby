@@ -32,6 +32,7 @@ import {
   type ResponsiveKey,
   isSafeMediaUrl,
 } from '@/lib/blockStyle'
+import { isIsoDate } from '@/lib/visibilityRules'
 import { BUILT_IN_FONTS } from '@/features/fonts/installed'
 
 import { MediaPicker } from './MediaPicker'
@@ -406,6 +407,10 @@ export const DesignPanel: React.FC<{
         <AdvancedControls value={value} onChange={onChange} />
       </Acc>
 
+      <Acc g="conditions" title="Visibility rules">
+        <ConditionControls value={value} onChange={onChange} />
+      </Acc>
+
       <Acc g="visibility" title="Visibility & advanced">
         <CheckRow
           label={`Hide on ${device}`}
@@ -551,6 +556,57 @@ const Row: React.FC<{ label: string; help?: string; resp?: RowResp; children: Re
     {help && <span className="ve-row__help">{help}</span>}
   </label>
 )
+
+const ConditionControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const set = (patch: Partial<BlockStyle>) => onChange({ ...value, ...patch })
+  return (
+    <>
+      <p className="ve-row__help">
+        Show this block only when every rule below passes. Rules about who is viewing (logged in or out, roles, URL) are checked in the
+        browser, so the block stays hidden for visitors without JavaScript and for crawlers. A date window alone is shown without
+        JavaScript. To hide by screen size use Hide on device below.
+      </p>
+      <TextRow
+        label="Show from"
+        value={value.showFrom}
+        placeholder="YYYY-MM-DD"
+        help={value.showFrom && !isIsoDate(value.showFrom) ? 'Not a valid date yet: ignored until it is.' : 'Date (2026-12-01) or date and time (2026-12-01T09:00). UTC.'}
+        onChange={(v) => set({ showFrom: v ? v.slice(0, 32) : undefined })}
+      />
+      <TextRow
+        label="Show until"
+        value={value.showUntil}
+        placeholder="YYYY-MM-DD"
+        help={value.showUntil && !isIsoDate(value.showUntil) ? 'Not a valid date yet: ignored until it is.' : 'A date alone includes the whole day.'}
+        onChange={(v) => set({ showUntil: v ? v.slice(0, 32) : undefined })}
+      />
+      <SelectRow
+        label="Visitor"
+        value={value.showAuth || 'any'}
+        options={[
+          { label: 'Anyone', value: 'any' },
+          { label: 'Logged in only', value: 'in' },
+          { label: 'Logged out only', value: 'out' },
+        ]}
+        onChange={(v) => set({ showAuth: v === 'in' || v === 'out' ? v : undefined })}
+      />
+      <TextRow
+        label="Roles"
+        value={value.showRoles}
+        placeholder="customer, editor"
+        help="Comma list of role slugs. Any one match shows the block (visitor must be logged in)."
+        onChange={(v) => set({ showRoles: v ? v.slice(0, 200) : undefined })}
+      />
+      <TextRow
+        label="URL contains"
+        value={value.showUrl}
+        placeholder="/pricing or ?ref=news"
+        help="Text the page path or query string must contain."
+        onChange={(v) => set({ showUrl: v ? v.slice(0, 120) : undefined })}
+      />
+    </>
+  )
+}
 
 const TextRow: React.FC<{
   label: string

@@ -10,3 +10,6 @@
 .ve-d51-tokens { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .ve-d51-swatch { width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 1px solid rgba(128, 128, 128, 0.6); cursor: pointer; }
 .ve-d51-swatch--on { outline: 2px solid #2563eb; outline-offset: 1px; }
+.ve-d51-devbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 0 8px; }
+.ve-d51-badge { font-size: 11px; opacity: .8; }
+.ve-d51-devbar .ve-d51-reset { position: static; }

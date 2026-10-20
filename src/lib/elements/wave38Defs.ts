@@ -74,8 +74,11 @@ export const WAVE38_ELEMENTS: ElementDef[] = [
     fields: [
       text('placeholder', 'Placeholder'),
       text('buttonLabel', 'Button label'),
+      check('liveResults', 'Show live suggestions while typing'),
+      slider('maxResults', 'Suggestions to show (3-6)', 3, 6),
+      check('showType', 'Show the result type (Page, Post...)'),
     ],
-    defaultProps: () => ({ placeholder: 'Search', buttonLabel: 'Search' }),
+    defaultProps: () => ({ placeholder: 'Search', buttonLabel: 'Search', liveResults: true, maxResults: 6, showType: true }),
   },
   {
     type: 'post-list', label: 'Latest posts', icon: String.fromCodePoint(0x25a6), category: 'siteMeta',

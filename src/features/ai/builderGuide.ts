@@ -21,10 +21,27 @@ import {
 
 export type BuilderMode = 'section' | 'page' | 'edit'
 
-export type GuideContext = { siteName?: string; mode: BuilderMode }
+/** A theme colour the model may use, as the Design panel token var(--eg-c-<id>). Value is for the model's judgement only. */
+export type GuideColour = { id: string; value: string }
 
-/** The guide, before any examples, must stay under this many characters (the aim is about 14k). */
-export const GUIDE_MAX_CHARS = 16_000
+export type GuideContext = {
+  siteName?: string
+  tagline?: string
+  /** Theme colours (id + value). No secrets: these are the public design tokens. */
+  colours?: GuideColour[]
+  headingFont?: string
+  bodyFont?: string
+  mode: BuilderMode
+}
+
+const COLOUR_ID = /^[a-z0-9_-]{1,32}$/
+const COLOUR_VALUE = /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([0-9a-z%.,\s/-]{1,40}\))$/i
+const FONT_NAME = /^[A-Za-z0-9 _-]{1,40}$/
+
+const oneLine = (text: string | undefined, max: number): string => (text ?? '').replace(/[^\x20-\x7e]+/g, ' ').replace(/[\r\n\t<>]+/g, ' ').trim().slice(0, max)
+
+/** The guide, before any examples, must stay under this many characters (the aim is about 15k; theme context and media notes added to it). */
+export const GUIDE_MAX_CHARS = 17_000
 
 /** Element types the builder never uses: they need a record, a relation, or a table/form context. */
 const EXCLUDED_ELEMENT_TYPES = new Set(['content-slot', 'data-view', 'ad'])
@@ -129,8 +146,25 @@ function fontKeys(): string {
 }
 
 const CONTEXT_LINE = (ctx: GuideContext): string => {
-  const name = ctx.siteName?.replace(/[\r\n\t]+/g, ' ').trim().slice(0, 100)
-  return name ? `Site: ${name}.` : 'Site: unnamed.'
+  const name = oneLine(ctx.siteName, 100)
+  const tagline = oneLine(ctx.tagline, 140)
+  return (name ? `Site: ${name}.` : 'Site: unnamed.') + (tagline ? ` Tagline: ${tagline}.` : '')
+}
+
+/** Theme tokens and fonts, so generated colours and type match the site. Empty when there is nothing safe to say. */
+export function themeContextLines(ctx: GuideContext): string[] {
+  const colours = (ctx.colours ?? []).filter((c) => COLOUR_ID.test(c.id) && COLOUR_VALUE.test(c.value.trim())).slice(0, 16)
+  const lines: string[] = []
+  if (colours.length > 0) {
+    lines.push('THEME COLOURS: ' + colours.map((c) => `${c.id}=${c.value.trim()}`).join(', '))
+    lines.push('Prefer these over raw hex: write a colour as var(--eg-c-<id>), for example var(--eg-c-primary). Use a raw hex only when no theme colour fits.')
+  }
+  const heading = FONT_NAME.test(ctx.headingFont ?? '') ? ctx.headingFont : undefined
+  const body = FONT_NAME.test(ctx.bodyFont ?? '') ? ctx.bodyFont : undefined
+  if (heading || body) {
+    lines.push(`THEME FONTS: headings ${heading ?? 'default'}, body ${body ?? 'default'}. Leave fontFamily unset so the theme fonts apply.`)
+  }
+  return lines
 }
 
 function modeLine(mode: BuilderMode): string {
@@ -147,6 +181,7 @@ export function buildGuide(ctx: GuideContext): string {
     'You write website content for the engage CMS as engage-template JSON. A person reviews it in a visual editor before anything is saved.',
     CONTEXT_LINE(ctx),
     modeLine(ctx.mode),
+    ...themeContextLines(ctx),
     '',
     'OUTPUT: ONLY one JSON object, no prose, no code fences, no comments, no _id fields.',
     '{"format":"engage-template","schemaVersion":1,"kind":"section"|"page","tree":[SectionNode...]}',
@@ -168,7 +203,7 @@ export function buildGuide(ctx: GuideContext): string {
     elementCatalogue(),
     '',
     'LINKS: the site has pages, blog, shop, events, FAQs, forms and courses. Link only to real internal paths (/shop, /blog, /events, /faq, /courses, /cart, /) or to paths and URLs the brief gives. Never invent a domain.',
-    'MEDIA: never set picture, video or file ids or record links. Leave picture fields empty; the admin adds them. Give image alt text when the element has an alt field.',
+    'MEDIA: never set picture, video or file ids, record links or web addresses for pictures. For a picture field you may write a placeholder object {"mediaQuery":"2 to 5 plain words to find a photo in the media library","alt":"short alt text"}; the server matches it to an existing library picture or leaves it empty for the admin. Give image alt text when the element has an alt field.',
     '',
     'USAGE HINTS (props as in the catalogue)',
     'card: media icon|image; hoverEffect none|lift|zoom-image|flip (flip needs backTitle, backText); layout top|left|right. Three or four cards across a section.',

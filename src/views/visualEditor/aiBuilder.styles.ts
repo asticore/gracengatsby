@@ -374,6 +374,37 @@ export const AI_BUILDER_CSS = `
   color: var(--ve-accent);
   line-height: 1;
 }
+.ve-ai__save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ve-ai__saved {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ve-ai__saved-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.ve-ai__refine,
+.ve-ai__media {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.ve-ai__media ul {
+  margin: 0;
+  padding-left: 18px;
+}
 .ve-ai-modal {
   position: fixed;
   inset: 0;

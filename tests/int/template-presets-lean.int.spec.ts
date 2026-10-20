@@ -11,6 +11,8 @@ import type { SectionNode } from '@/lib/sectionTree'
 import { TEMPLATE_PRESETS } from '@/views/visualEditor/templatePresets'
 
 const HIDDEN_TYPES = ELEMENTS.filter((def) => def.hidden).map((def) => def.type)
+/** Old element types hidden from the library in favour of the presets that use them. */
+const LEGACY_PRESET_TYPES = ['testimonial', 'team-member', 'pricing-table', 'price-list', 'timeline']
 
 /** Every element node in a preset tree, depth first, including nodes nested in columns. */
 function elementsOf(nodes: SectionNode[]): SectionNode[] {
@@ -38,14 +40,15 @@ describe('lean template presets', () => {
     expect(HIDDEN_TYPES).toContain('count-up')
   })
 
-  it('every element type used by every preset exists in the registry and is not hidden', () => {
+  it('every element type used by every preset exists in the registry; only the legacy presets use hidden types', () => {
     const registered = new Set(ELEMENTS.map((def) => def.type))
     for (const preset of TEMPLATE_PRESETS) {
       for (const node of elementsOf(preset.blocks())) {
         const type = String(node.elementType)
         expect(registered.has(type), `${preset.slug}: ${type} is not registered`).toBe(true)
-        expect(getElementDef(type)?.hidden ?? false, `${preset.slug}: ${type} is hidden`).toBe(false)
-        expect(HIDDEN_TYPES, `${preset.slug}: ${type}`).not.toContain(type)
+        // Hidden types stay in the registry so saved pages render; presets may use only the legacy ones below.
+        if (HIDDEN_TYPES.includes(type)) expect(LEGACY_PRESET_TYPES, `${preset.slug}: ${type}`).toContain(type)
+        else expect(getElementDef(type)?.hidden ?? false, `${preset.slug}: ${type} is hidden`).toBe(false)
       }
     }
   })

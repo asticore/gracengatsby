@@ -10,6 +10,7 @@ import { getEngine } from '@/lib/engine'
 import { flag, linkHref, mediaOf, num, pick, str } from './elementUtil'
 import { withElementDesign } from './renderElement'
 import { LoopElement } from './Wave50Server'
+import SearchSuggest from './SearchSuggest'
 import './wave38.css'
 import './navMenu.css'
 
@@ -245,12 +246,15 @@ export const NavMenuElement: React.FC<P> = async (p) => {
 /* ---------- search box ---------- */
 
 /**
- * `search-box`: a plain GET form that submits to the search results page at /search?q=. It does not read any data, so
- * it is the same on every page.
+ * `search-box`: a GET form that submits to /search?q= (works without JS). With liveResults on, a client combobox adds
+ * suggestions from /api/search-suggest.
  */
 export const SearchBoxElement: React.FC<P> = (p) => {
   const placeholder = str(p.placeholder).trim() || 'Search'
   const button = str(p.buttonLabel).trim() || 'Search'
+  if (flag(p.liveResults, true)) {
+    return <SearchSuggest placeholder={placeholder} button={button} maxResults={num(p.maxResults, 6, 3, 6)} showType={flag(p.showType, true)} />
+  }
   return (
     <form className="be-el-search" role="search" action="/search" method="get">
       <label className="be-el-search__field">

@@ -396,6 +396,16 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(indexes.find((i) => i.name === 'eg_data_views_slug_idx')?.unique).toBe(1)
   })
 
+  it('creates the AI builder usage table and the model and cap columns (raw SQL table)', async () => {
+    const cols = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(createdTables.has('ai_builder_usage')).toBe(true)
+    expect(await cols('ai_builder_usage')).toEqual(
+      expect.arrayContaining(['id', 'created_at', 'user_id', 'provider', 'model', 'mode', 'input_tokens', 'output_tokens', 'est_cost_micro', 'ok']),
+    )
+    expect(await cols('eg_integrations')).toEqual(expect.arrayContaining(['ai_claude_model', 'ai_openai_model', 'ai_monthly_cap_usd']))
+  })
+
   it('creates the theme styles table (raw SQL, not in the drizzle schema)', async () => {
     expect(createdTables.has('eg_theme_styles')).toBe(true)
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()).results as { name: string }[]).map((r) => r.name)

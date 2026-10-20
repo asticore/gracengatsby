@@ -247,3 +247,69 @@
     align-items: flex-start;
   }
 }
+
+/* ---- live search suggestions ---- */
+
+.be-el-search__wrap {
+  position: relative;
+}
+
+.be-el-search__wrap label {
+  display: block;
+}
+
+.be-el-search__list {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-cream, #fbf8f3);
+  color: var(--color-ink, #1f2230);
+  border: 1px solid var(--color-line, #e5dfd6);
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.be-el-search__list[hidden] {
+  display: none;
+}
+
+.be-el-search__empty {
+  padding: 0.6rem 0.8rem;
+  opacity: 0.7;
+}
+
+.be-el-search__opt a {
+  display: block;
+  padding: 0.5rem 0.8rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.be-el-search__opt[aria-selected='true'] a,
+.be-el-search__opt a:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.be-el-search__opt-title {
+  display: block;
+  font-weight: 600;
+}
+
+.be-el-search__opt-type {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.be-el-search__opt-excerpt {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}

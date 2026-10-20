@@ -67,6 +67,8 @@ export const SHORTCUT_LIST: { keys: string; label: string }[] = [
   { keys: 'Delete or Backspace', label: 'Delete the selected block (undo brings it back)' },
   { keys: 'Escape', label: 'Clear the selection' },
   { keys: 'Alt+Up / Alt+Down', label: 'Move the selected block up or down in its list' },
+  { keys: '/', label: 'Quick insert: search elements and add one next to the selection (canvas)' },
+  { keys: 'Double-click text', label: 'Edit headings, buttons, quotes and list items in place (Enter saves, Esc cancels, Tab moves on)' },
   { keys: 'Right-click a block', label: 'Open the block menu' },
   { keys: '?', label: 'Show or hide this list of shortcuts' },
 ]

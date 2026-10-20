@@ -1,96 +1,97 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
-import type { NodePath } from './treeOps'
+import React, { useEffect, useReducer, useRef } from 'react'
+
+import { inlineReducer, inlineResult, startInline } from './inlineEdit'
 
 export type InlineEditorProps = {
-  blockId: string
-  elementType: string
-  field: string
+  /** Text when editing began. */
   value: string
-  device: 'desktop' | 'tablet' | 'mobile'
-  onSave: (value: string) => void
+  /** Quote and rich-text-as-plain elements may span lines; Shift+Enter inserts a line break there. */
+  multiline: boolean
+  /** Accessible name, e.g. "Edit heading". */
+  label: string
+  /** Called once with the new text (only when it changed). */
+  onCommit: (value: string) => void
+  /** Called once when nothing is written (Esc, or no change). */
   onCancel: () => void
+  /** Tab / Shift+Tab: commit, then move to the neighbouring editable text. */
+  onTab: (direction: 'next' | 'prev', value: string | null) => void
 }
 
 /**
- * Inline text editor rendered inside the CanvasFrame iframe when double-clicking
- * a text element. Supports simple text editing with blur-to-save and Esc-to-cancel.
- * Tab/Shift+Tab moves to next/prev editable element.
+ * Plain-text editor laid over a canvas element (double-click). Enter or blur commits, Esc cancels,
+ * Tab commits and moves on. The session reducer (inlineEdit.ts) guarantees exactly one outcome:
+ * a blur that follows Enter/Esc/Tab is ignored.
  */
-export const CanvasInlineEditor: React.FC<InlineEditorProps> = ({ blockId, elementType, field, value, device, onSave, onCancel }) => {
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const [text, setText] = useState(value)
-  const savedValue = useRef(value)
+export const CanvasInlineEditor: React.FC<InlineEditorProps> = ({ value, multiline, label, onCommit, onCancel, onTab }) => {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const [session, dispatch] = useReducer(inlineReducer, value, startInline)
+  const finished = useRef(false)
+  const pendingTab = useRef<'next' | 'prev' | null>(null)
 
   useEffect(() => {
-    const input = inputRef.current
-    if (!input) return
+    ref.current?.focus()
+    ref.current?.select()
+  }, [])
 
-    // Focus and select all text
-    input.focus()
-    input.select()
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onCancel()
-      } else if (e.key === 'Tab') {
-        e.preventDefault()
-        const isShift = e.shiftKey
-        // Post message to navigate to next/prev editable element
-        window.parent.postMessage(
-          {
-            source: 've-canvas',
-            type: 'inlineNavigate',
-            blockId,
-            direction: isShift ? 'prev' : 'next',
-            device,
-          },
-          window.location.origin
-        )
-      }
-    }
-
-    const handleBlur = () => {
-      if (text !== savedValue.current) {
-        onSave(text)
-        savedValue.current = text
-      } else {
-        onCancel()
-      }
-    }
-
-    input.addEventListener('keydown', handleKeyDown)
-    input.addEventListener('blur', handleBlur)
-
-    return () => {
-      input.removeEventListener('keydown', handleKeyDown)
-      input.removeEventListener('blur', handleBlur)
-    }
-  }, [blockId, device, text, onSave, onCancel])
+  // Report the outcome exactly once, after the reducer has settled.
+  useEffect(() => {
+    if (!session.done || finished.current) return
+    finished.current = true
+    const result = inlineResult(session)
+    const tab = pendingTab.current
+    if (tab) onTab(tab, result)
+    else if (result !== null) onCommit(result)
+    else onCancel()
+  }, [session, onCommit, onCancel, onTab])
 
   return (
     <textarea
-      ref={inputRef}
-      value={text}
-      onChange={(e) => setText(e.target.value)}
+      ref={ref}
       className="ve-inline-editor"
+      aria-label={label}
+      value={session.draft}
+      rows={1}
+      onChange={(e) => dispatch({ type: 'change', value: multiline ? e.target.value : e.target.value.replace(/\r?\n/g, ' ') })}
+      onKeyDown={(e) => {
+        e.stopPropagation()
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          dispatch({ type: 'cancel' })
+        } else if (e.key === 'Enter' && !(multiline && e.shiftKey)) {
+          e.preventDefault()
+          dispatch({ type: 'commit' })
+        } else if (e.key === 'Tab') {
+          e.preventDefault()
+          pendingTab.current = e.shiftKey ? 'prev' : 'next'
+          dispatch({ type: 'commit' })
+        }
+      }}
+      onBlur={() => dispatch({ type: 'commit' })}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
       style={{
         position: 'absolute',
-        top: 0,
-        left: 0,
+        inset: 0,
         width: '100%',
         height: '100%',
-        padding: '8px',
+        minHeight: 32,
+        boxSizing: 'border-box',
+        padding: '4px 8px',
         border: '2px solid #0066cc',
-        borderRadius: '4px',
-        fontSize: 'inherit',
-        fontFamily: 'inherit',
-        backgroundColor: 'white',
-        zIndex: 10000,
+        borderRadius: 4,
+        font: 'inherit',
+        color: '#111',
+        textAlign: 'inherit',
+        backgroundColor: '#fff',
+        resize: 'none',
+        zIndex: 20,
       }}
-      aria-label={`Edit ${field}`}
     />
   )
 }
+
+export default CanvasInlineEditor

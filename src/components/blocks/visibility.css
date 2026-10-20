@@ -1,0 +1,5 @@
+/* Display conditions. Rules that depend on the visitor start hidden; the script marks the block ok or off. */
+[data-eg-cond][data-eg-hold]:not([data-eg-ok]),
+[data-eg-cond][data-eg-off] {
+  display: none !important;
+}

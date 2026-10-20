@@ -14,6 +14,9 @@ import {
 } from '@/lib/sectionLayout'
 import { columnWidthVars, parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
+import { autoTriggersOf } from '@/lib/popupTriggers'
+
+import PopupController from './PopupController'
 import { safeScope, StyledBlock } from './StyledBlock'
 import './tabs.css'
 
@@ -71,12 +74,12 @@ export const SectionBlock: React.FC<{
               <SectionColumnView column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
               {arrows && index > 0 && (
                 <a className="be-carousel__arrow be-carousel__arrow--prev" href={`#${slideId(prevIndex(index))}`} aria-label={`Previous slide, ${prevIndex(index) + 1} of ${count}`}>
-                  <span aria-hidden="true">{'\u2039'}</span>
+                  <span aria-hidden="true">{'‹'}</span>
                 </a>
               )}
               {arrows && index < count - 1 && (
                 <a className="be-carousel__arrow be-carousel__arrow--next" href={`#${slideId(nextIndex(index))}`} aria-label={`Next slide, ${nextIndex(index) + 1} of ${count}`}>
-                  <span aria-hidden="true">{'\u203a'}</span>
+                  <span aria-hidden="true">{'›'}</span>
                 </a>
               )}
             </div>
@@ -163,6 +166,13 @@ export const SectionBlock: React.FC<{
     const colorVars = parsedLayout?.tabsColor ? { '--be-tab-color': parsedLayout.tabsColor } : {}
     return (
       <div className="be-modal" data-depth={depth} style={{ ...modalStyleVars(rawLayout), ...colorVars } as React.CSSProperties}>
+        <PopupController
+          toggleId={toggleId}
+          anchorId={asBlockStyle(design).anchorId || undefined}
+          triggers={autoTriggersOf(parsedLayout)}
+          frequency={parsedLayout?.popupFrequency}
+          days={parsedLayout?.popupDays}
+        />
         <input type="checkbox" id={toggleId} className="be-modal__toggle" aria-label={label} />
         <label htmlFor={toggleId} className={triggerClass}>
           {label}

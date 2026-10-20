@@ -21,6 +21,7 @@ import { columnsForStructure, STRUCTURES } from './columnOps'
 import { StructureIcon } from './StructurePicker'
 import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical, RICH_TEXT_NOTICE } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
+import { appendMediaIds } from './mediaPickerUpload'
 import { MergeTagPicker } from './MergeTagPicker'
 import { LockControls, type LockUi } from './LockControls'
 import { canConvertLegacy } from './convertLegacy'
@@ -201,6 +202,7 @@ const DISPLAY_HELP: Record<string, string> = {
   accordion: 'Each column becomes a collapsible panel. Name it in its column settings.',
   carousel: 'Each column is a slide the reader swipes or scrolls through.',
   grid: 'Columns become equal cells in rows.',
+  flex: 'Columns flow as a flexible row or stack: set direction, wrap, alignment and gap below.',
   modal: 'A button opens the columns in a popup dialog.',
   stack: 'Each column is a full-width card that piles up as the page scrolls.',
   hscroll: 'The columns slide sideways as the reader scrolls down the page.',
@@ -418,6 +420,7 @@ const SectionLayoutFields: React.FC<{
             { label: 'Accordion', value: 'accordion' },
             { label: 'Carousel', value: 'carousel' },
             { label: 'Grid', value: 'grid' },
+            { label: 'Flex', value: 'flex' },
             { label: 'Popup', value: 'modal' },
             { label: 'Stacked cards (scroll)', value: 'stack' },
             { label: 'Horizontal scroll', value: 'hscroll' },
@@ -490,12 +493,56 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridColumnsMobile: v === undefined ? undefined : Math.min(6, Math.max(1, Math.round(v))) })}
             />
             <NumberRow
-              label="Cell gap (px)"
+              label="Cell gap"
               value={layout.gridGap}
               min={0}
               max={64}
               placeholder="16"
               onChange={(v) => setLayout({ gridGap: v === undefined ? undefined : Math.min(64, Math.max(0, v)) })}
+            />
+            <NumberRow
+              label="Cell gap on tablet"
+              help="Leave empty to keep the desktop gap."
+              value={layout.gridGapTablet}
+              min={0}
+              max={64}
+              placeholder="same"
+              onChange={(v) => setLayout({ gridGapTablet: clampField(v, 0, 64) })}
+            />
+            <NumberRow
+              label="Cell gap on mobile"
+              help="Leave empty to keep the tablet gap."
+              value={layout.gridGapMobile}
+              min={0}
+              max={64}
+              placeholder="same"
+              onChange={(v) => setLayout({ gridGapMobile: clampField(v, 0, 64) })}
+            />
+            <NumberRow
+              label="Auto-fit min width (px)"
+              help="Fits as many columns per row as the width allows, each at least this wide. Replaces the column counts above."
+              value={layout.gridMinWidth}
+              min={80}
+              max={800}
+              placeholder="Off"
+              onChange={(v) => setLayout({ gridMinWidth: clampField(v, 80, 800) })}
+            />
+            <CheckRow
+              label="Dense packing"
+              help="Lets later cells fill earlier gaps in the grid."
+              checked={layout.gridFlow === 'dense'}
+              onChange={(on) => setLayout({ gridFlow: on ? 'dense' : undefined })}
+            />
+            <SelectRow
+              label="Cell horizontal alignment"
+              value={layout.gridJustify || 'stretch'}
+              options={[
+                { label: 'Stretch', value: 'stretch' },
+                { label: 'Left', value: 'start' },
+                { label: 'Centre', value: 'center' },
+                { label: 'Right', value: 'end' },
+              ]}
+              onChange={(v) => setLayout({ gridJustify: v === 'stretch' ? undefined : (v as SectionLayout['gridJustify']) })}
             />
             <SelectRow
               label="Cell alignment"
@@ -510,6 +557,17 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridAlign: v === 'stretch' ? undefined : (v as SectionLayout['gridAlign']) })}
             />
           </>
+        )}
+        {(layout.display === 'flex' || layout.display === 'grid') && (
+          <SelectRow
+            label="Gap unit"
+            value={layout.gapUnit || 'px'}
+            options={[
+              { label: 'px', value: 'px' },
+              { label: 'rem', value: 'rem' },
+            ]}
+            onChange={(v) => setLayout({ gapUnit: v === 'rem' ? 'rem' : undefined })}
+          />
         )}
         {layout.display === 'modal' && (
           <>
@@ -1181,6 +1239,10 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
               onClose={() => setPickerOpen(false)}
               onSelect={(id) => {
                 if (!ids.includes(id)) onChange([...ids, id])
+                setPickerOpen(false)
+              }}
+              onSelectMany={(docs) => {
+                onChange(appendMediaIds(ids, docs.map((d) => d.id)))
                 setPickerOpen(false)
               }}
             />

@@ -685,6 +685,18 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     )
   })
 
+  it('creates the AI builder usage table and the model and cap columns', async () => {
+    const columnsOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((r) => r.name)
+    }
+    expect(tables).toContain('ai_builder_usage')
+    expect(await columnsOf('ai_builder_usage')).toEqual(
+      expect.arrayContaining(['id', 'created_at', 'user_id', 'provider', 'model', 'mode', 'input_tokens', 'output_tokens', 'est_cost_micro', 'ok']),
+    )
+    expect(await columnsOf('eg_integrations')).toEqual(expect.arrayContaining(['ai_claude_model', 'ai_openai_model', 'ai_monthly_cap_usd']))
+  })
+
   it('creates the theme styles table', async () => {
     expect(tables).toContain('eg_theme_styles')
     const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()

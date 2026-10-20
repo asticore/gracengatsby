@@ -159,8 +159,8 @@
    by gridStyle(). Breakpoints match DEFAULT_BREAKPOINTS in sectionLayout.ts (900 / 600). */
 .be-grid{display:grid;grid-template-columns:repeat(var(--be-grid-cols,3),minmax(0,1fr));gap:var(--be-grid-gap,16px);align-items:stretch;min-width:0}
 .be-grid>.be-column{max-width:none;width:auto;min-width:0}
-@media (max-width:900px){.be-grid{grid-template-columns:repeat(var(--be-grid-cols-t,var(--be-grid-cols,3)),minmax(0,1fr))}}
-@media (max-width:600px){.be-grid{grid-template-columns:repeat(var(--be-grid-cols-m,1),minmax(0,1fr))}}
+@media (max-width:900px){.be-grid{grid-template-columns:repeat(var(--be-grid-cols-t,var(--be-grid-cols,3)),minmax(0,1fr));gap:var(--be-grid-gap-t,var(--be-grid-gap,16px))}}
+@media (max-width:600px){.be-grid{grid-template-columns:repeat(var(--be-grid-cols-m,1),minmax(0,1fr));gap:var(--be-grid-gap-m,var(--be-grid-gap-t,var(--be-grid-gap,16px)))}}
 /* editor canvas: the same grid; the canvas column CSS caps max-width by the column's own width */
 .ve-grid__hint,.ve-modal__hint{margin:0 0 8px;font-size:12px;opacity:.7}
 .ve-grid>.be-grid>.ve-column{max-width:none}

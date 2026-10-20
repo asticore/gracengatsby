@@ -215,7 +215,7 @@ export function buildGuide(ctx: GuideContext): string {
     'loop: source posts|products|events|faqs|pages; count 1-24; layout grid|list|carousel; orderBy date|title|menu order|random-stable; category text.',
     'embed: provider youtube|vimeo|x|instagram|facebook-video|google-calendar|typeform|custom-iframe; https address. X, Instagram and Facebook show a link card.',
     'reviews: items {name, rating 1-5, text, source}; layout grid|list. pagination: current, total, baseUrl with {page}.',
-    'social-icons: mode follow or share. pricing-table: features {text, included}. testimonial, price-list: one row per item.',
+    'social-icons: mode follow or share. Pricing, testimonial and price list: build them from card, heading, list and button.',
     'Sections: display accordion (FAQ), tabs, carousel (slides), grid (galleries: one image element per column).',
     '',
     'RULES',

@@ -54,7 +54,7 @@ export const WAVE36_ELEMENTS: ElementDef[] = [
   },
   // ---- layout ----
   {
-    type: 'timeline', label: 'Timeline', icon: String.fromCodePoint(0x1f4c6), category: 'layout',
+    type: 'timeline', label: 'Timeline', icon: String.fromCodePoint(0x1f4c6), category: 'layout', hidden: true,
     description: 'A vertical list of dated events with a line running down the side.',
     fields: [
       { name: 'items', label: 'Events', type: 'repeater', repeater: { fields: [text('date', 'Date (e.g. 2019 or 2019-06-01)'), text('title', 'Title'), area('text', 'Text')] } },
@@ -82,7 +82,7 @@ export const WAVE36_ELEMENTS: ElementDef[] = [
     }),
   },
   {
-    type: 'back-to-top', label: 'Back to top', icon: String.fromCodePoint(0x2191), category: 'layout',
+    hidden: true, type: 'back-to-top', label: 'Back to top', icon: String.fromCodePoint(0x2191), category: 'layout',
     description: 'A button that jumps to the top of the page. Needs an element with the id "top" (for example the page top anchor).',
     fields: [
       text('label', 'Label'), icon(), select('position', 'Position', opts('inline', 'fixed-corner')), ALIGN_LR,

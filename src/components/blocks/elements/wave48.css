@@ -121,6 +121,19 @@
   border: 0;
 }
 
+.be-el-48-embed .engage-consent-gate {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  margin: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+}
+
 .be-el-48-embed__message {
   margin: 0;
   padding: 12px 16px;

@@ -63,6 +63,7 @@ export const GROUP_KEYS: Record<string, readonly string[]> = {
     'posLeft', 'zIndex', 'opacity', 'blendMode', 'filterBlur', 'filterBrightness', 'filterContrast', 'filterSaturate',
     'filterGrayscale', 'filterHue', 'maskShape', 'blobMorphSpeed', 'cssClasses', 'customCss',
   ],
+  conditions: ['showFrom', 'showUntil', 'showAuth', 'showRoles', 'showUrl'],
   visibility: ['hide', 'hideOnMobile', 'hideOnDesktop', 'anchorId', 'customClass'],
 }
 
@@ -78,6 +79,7 @@ export const GROUP_SEARCH: Record<string, string> = {
   dividers: 'shape dividers top bottom flip animation speed height',
   effects: 'effects scroll motion reveal hover lift scale glass pointer spotlight tilt magnetic ken burns border glow',
   advanced: 'advanced transform rotate scale move skew filter blur brightness contrast saturate opacity blend z-index position mask custom css class',
+  conditions: 'visibility rules display conditions show only when date schedule from until logged in logged out member role url query path',
   visibility: 'visibility advanced hide anchor id extra css class',
 }
 

@@ -339,7 +339,7 @@ export const FORM_ELEMENTS: ElementDef[] = [
     category: 'text',
     fields: [
       { name: 'text', label: 'Label', type: 'text', supportsMergeTags: true },
-      { name: 'url', label: 'Link', type: 'text', supportsMergeTags: true },
+      { name: 'url', label: 'Link', type: 'text', supportsMergeTags: true, helpText: 'Use #top for a back-to-top button.' },
       {
         name: 'variant',
         label: 'Style',

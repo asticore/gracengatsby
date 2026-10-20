@@ -104,6 +104,15 @@ function cleanRich(value: unknown, depth: number): unknown {
   return undefined
 }
 
+export const MEDIA_QUERY_MAX_CHARS = 80
+export const MEDIA_ALT_MAX_CHARS = 200
+
+/** A picture the model asked for by description. Resolved or removed by builderMedia before it reaches the editor. */
+export type MediaPlaceholder = { mediaQuery: string; alt: string }
+
+export const isMediaPlaceholder = (value: unknown): value is MediaPlaceholder =>
+  isPlain(value) && typeof value.mediaQuery === 'string' && Object.keys(value).every((key) => key === 'mediaQuery' || key === 'alt')
+
 const DESIGN_FONT_KEY = 'fontFamily'
 const BUILT_IN_FONT_VALUES = new Set(BUILT_IN_FONTS.map((font) => font.value))
 
@@ -225,6 +234,17 @@ function cleanField(field: EditorField, value: unknown, warnings: Set<string>, d
         .map((item) => (isPlain(item) ? cleanProps(field.repeater!.fields, item, warnings, depth + 1) : undefined))
         .filter((item): item is Record<string, unknown> => item !== undefined)
     }
+    case 'media': {
+      // A placeholder the server swaps for a library picture (or removes). Ids and addresses from the model are never kept.
+      if (isPlain(value) && typeof value.mediaQuery === 'string') {
+        const mediaQuery = cleanText(value.mediaQuery, MEDIA_QUERY_MAX_CHARS).replace(/\s+/g, ' ').trim()
+        if (!mediaQuery) return undefined
+        const alt = typeof value.alt === 'string' ? cleanText(value.alt, MEDIA_ALT_MAX_CHARS).replace(/\s+/g, ' ').trim() : ''
+        return { mediaQuery, alt }
+      }
+      warnings.add('Pictures and links to records are left for the admin to choose.')
+      return undefined
+    }
     default:
       // Pictures, file ids and record links are set by the admin, never by the model.
       warnings.add('Pictures and links to records are left for the admin to choose.')
@@ -245,6 +265,11 @@ function cleanProps(fields: EditorField[], raw: Record<string, unknown>, warning
     }
     const cleaned = cleanField(field, value, warnings, depth)
     if (cleaned !== undefined) out[name] = cleaned
+    // A placeholder's alt text also fills the element's own alt field when it has one and the model left it empty.
+    if (field.type === 'media' && isMediaPlaceholder(cleaned) && cleaned.alt) {
+      const altName = [`${name}Alt`, 'alt'].find((candidate) => byName.has(candidate))
+      if (altName && raw[altName] === undefined) out[altName] = cleaned.alt
+    }
   }
   if (unknown.length > 0) warnings.add(`Settings the element does not have were removed (${unknown.slice(0, 5).join(', ')}).`)
   return out

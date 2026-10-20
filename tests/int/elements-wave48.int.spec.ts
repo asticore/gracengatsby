@@ -5,7 +5,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { WAVE48_COMPONENTS } from '@/components/blocks/elements/Wave48Elements'
+import { type EmbedProvider, resolveEmbed, WAVE48_COMPONENTS } from '@/components/blocks/elements/Wave48Elements'
 import { WAVE48_ELEMENTS } from '@/lib/elements/wave48Defs'
 
 // Imported directly rather than through the registry, so this spec does not depend on the lead's registration step.
@@ -180,25 +180,42 @@ describe('chart', () => {
 
 describe('embed', () => {
   const iframeFor = (provider: string, url: string, extra: Record<string, unknown> = {}) => render('embed', { provider, url, title: 'Clip', ...extra })
+  const target = (provider: string, url: string) => resolveEmbed(provider as EmbedProvider, url)
 
-  it('builds a YouTube iframe on the no-cookie host, lazy, sandboxed and with a referrer policy', () => {
-    const html = iframeFor('youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
-    expect(html).toContain('src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"')
-    expect(html).toContain('loading="lazy"')
-    expect(html).toContain('sandbox="')
-    expect(html).toContain('referrerPolicy="strict-origin-when-cross-origin"')
-    expect(html).toContain('title="Clip"')
+  it('resolves a YouTube address to the no-cookie host embed path', () => {
+    expect(target('youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toEqual({ kind: 'iframe', src: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' })
   })
 
   it('accepts youtu.be and shorts addresses', () => {
-    expect(iframeFor('youtube', 'https://youtu.be/dQw4w9WgXcQ')).toContain('/embed/dQw4w9WgXcQ')
-    expect(iframeFor('youtube', 'https://www.youtube.com/shorts/dQw4w9WgXcQ')).toContain('/embed/dQw4w9WgXcQ')
+    expect(target('youtube', 'https://youtu.be/dQw4w9WgXcQ')).toEqual({ kind: 'iframe', src: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' })
+    expect(target('youtube', 'https://www.youtube.com/shorts/dQw4w9WgXcQ')).toEqual({ kind: 'iframe', src: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' })
   })
 
-  it('builds Vimeo, Google Calendar and Typeform iframes from their fixed hosts', () => {
-    expect(iframeFor('vimeo', 'https://vimeo.com/123456789')).toContain('src="https://player.vimeo.com/video/123456789?dnt=1"')
-    expect(iframeFor('google-calendar', 'https://calendar.google.com/calendar/embed?src=a%40b.c')).toContain('src="https://calendar.google.com/calendar/embed?src=a%40b.c"')
-    expect(iframeFor('typeform', 'https://form.typeform.com/to/abc123')).toContain('src="https://form.typeform.com/to/abc123"')
+  it('resolves Vimeo, Google Calendar and Typeform sources from their fixed hosts', () => {
+    expect(target('vimeo', 'https://vimeo.com/123456789')).toEqual({ kind: 'iframe', src: 'https://player.vimeo.com/video/123456789?dnt=1' })
+    expect(target('google-calendar', 'https://calendar.google.com/calendar/embed?src=a%40b.c')).toEqual({ kind: 'iframe', src: 'https://calendar.google.com/calendar/embed?src=a%40b.c' })
+    expect(target('typeform', 'https://form.typeform.com/to/abc123')).toEqual({ kind: 'iframe', src: 'https://form.typeform.com/to/abc123' })
+  })
+
+  it('server HTML holds only the consent placeholder for every iframe provider, never the iframe or its source', () => {
+    const cases: [string, string, string][] = [
+      ['youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'YouTube'],
+      ['vimeo', 'https://vimeo.com/123456789', 'Vimeo'],
+      ['google-calendar', 'https://calendar.google.com/calendar/embed?src=a%40b.c', 'Google Calendar'],
+      ['typeform', 'https://form.typeform.com/to/abc123', 'Typeform'],
+      ['custom-iframe', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', 'Embedded page'],
+    ]
+    for (const [provider, url, name] of cases) {
+      const html = iframeFor(provider, url)
+      expect(html, provider).not.toContain('<iframe')
+      expect(html, provider).not.toContain('youtube-nocookie.com/embed')
+      expect(html, provider).not.toContain('player.vimeo.com')
+      expect(html, provider).not.toContain('form.typeform.com')
+      expect(html, provider).not.toContain('calendar.google.com/calendar/embed')
+      expect(html, provider).toContain('engage-consent-gate')
+      expect(html, provider).toContain('Accept and load')
+      expect(html, provider).toContain(name)
+    }
   })
 
   it('refuses addresses from hosts outside the provider allowlist, with a plain message and no iframe', () => {
@@ -207,6 +224,7 @@ describe('embed', () => {
     expect(html).toContain('This address is not from a host this embed allows')
     expect(iframeFor('vimeo', 'https://youtube.com/watch?v=dQw4w9WgXcQ')).not.toContain('<iframe')
     expect(iframeFor('typeform', 'https://evil.example/to/abc')).not.toContain('<iframe')
+    expect(target('typeform', 'https://evil.example/to/abc').kind).toBe('error')
   })
 
   it('refuses non-https addresses', () => {
@@ -224,8 +242,8 @@ describe('embed', () => {
   })
 
   it('custom iframe accepts any allowlisted iframe host, and rejects other hosts', () => {
-    expect(iframeFor('custom-iframe', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ')).toContain('<iframe')
-    expect(iframeFor('custom-iframe', 'https://evil.example/page')).not.toContain('<iframe')
+    expect(target('custom-iframe', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ').kind).toBe('iframe')
+    expect(target('custom-iframe', 'https://evil.example/page').kind).toBe('error')
   })
 
   it('renders X, Instagram and Facebook as a link card with no iframe', () => {
@@ -239,18 +257,13 @@ describe('embed', () => {
     expect(iframeFor('x', 'https://evil.example/post')).not.toContain('<a ')
   })
 
-  it('uses the provider name as the iframe title when none is given, and the aspect ratio class', () => {
+  it('keeps the aspect ratio on the placeholder box', () => {
     const html = render('embed', { provider: 'vimeo', url: 'https://vimeo.com/123456789', title: '', ratio: '4:3' })
-    expect(html).toContain('title="Vimeo"')
     expect(html).toContain('aspect-ratio:4 / 3')
   })
 
   it('renders nothing for an empty address', () => {
     expect(render('embed', { provider: 'youtube', url: '' })).toBe('')
-  })
-
-  it('escapes the title', () => {
-    expect(iframeFor('youtube', 'https://youtu.be/dQw4w9WgXcQ', { title: '"><script>x</script>' })).not.toContain('<script>x')
   })
 })
 

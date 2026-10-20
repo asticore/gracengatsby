@@ -53,6 +53,41 @@ export const Integrations: GlobalConfig = {
       },
     },
     {
+      name: 'aiClaudeModel',
+      type: 'select',
+      label: 'Build with AI: Claude model',
+      options: [
+        { label: 'Claude Sonnet 4.5', value: 'claude-sonnet-4-5' },
+        { label: 'Claude Haiku 4.5 (cheaper)', value: 'claude-haiku-4-5' },
+        { label: 'Claude Opus 4.1 (strongest)', value: 'claude-opus-4-1' },
+      ],
+      defaultValue: 'claude-sonnet-4-5',
+      admin: { description: 'The Claude model the visual editor Build with AI feature uses.' },
+    },
+    {
+      name: 'aiOpenaiModel',
+      type: 'select',
+      label: 'Build with AI: OpenAI model',
+      options: [
+        { label: 'GPT-4o', value: 'gpt-4o' },
+        { label: 'GPT-4o mini (cheaper)', value: 'gpt-4o-mini' },
+        { label: 'GPT-4.1', value: 'gpt-4.1' },
+      ],
+      defaultValue: 'gpt-4o',
+      admin: { description: 'The OpenAI model the visual editor Build with AI feature uses.' },
+    },
+    {
+      name: 'aiMonthlyCapUsd',
+      type: 'number',
+      label: 'Build with AI: monthly spend cap (USD)',
+      min: 0,
+      defaultValue: 0,
+      admin: {
+        description:
+          'Build with AI stops once this month\'s estimated cost reaches the cap. 0 means no cap. The estimate uses list prices and token counts, so it can differ from your provider bill.',
+      },
+    },
+    {
       type: 'group',
       name: 'google',
       label: 'Google (Analytics, Tag Manager, Maps)',

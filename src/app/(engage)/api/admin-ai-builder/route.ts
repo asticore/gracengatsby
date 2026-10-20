@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
 
 import { getAdminContext, type AdminContext } from '@/admin/auth'
-import { AiError, callAi, type AiChatMessage } from '@/features/ai/client'
-import { AI_BUILDER_MODELS, type AiProvider } from '@/features/ai/models'
-import { aiKeyAvailability, readAiKey } from '@/features/ai/keys'
+import { AiError, callAiDetailed, type AiChatMessage, type CallAiArgs } from '@/features/ai/client'
+import { AI_BUILDER_MODEL_OPTIONS, resolveBuilderModel, type AiProvider } from '@/features/ai/models'
+import { aiKeyAvailability, readAiKey, readBuilderSettings } from '@/features/ai/keys'
+import { readSiteContext } from '@/features/ai/builderContext'
+import { engineMediaFinder, resolveMediaPlaceholders } from '@/features/ai/builderMedia'
+import { estimateTokensFromChars, readUsageSummary, recordUsage } from '@/features/ai/builderUsage'
 import {
   BUILDER_PROVIDER_LABELS,
   buildSystemPrompt,
@@ -36,11 +39,28 @@ async function authorizeBuilder() {
   return { response: json({ ok: false, error: 'You do not have permission to edit pages.' }, 403) }
 }
 
-/** GET - which providers have a key. Presence only; no key is ever sent to the browser. */
+/**
+ * GET - which providers have a key, the configured model per provider and the month-to-date spend.
+ * Presence only for keys; no key is ever sent to the browser.
+ * { providers, labels, models: { claude: { selected, options: [{ value, label }] }, openai: {...} }, usage: UsageSummary }
+ */
 export async function GET(): Promise<Response> {
   const auth = await authorizeBuilder()
   if (!auth.context) return auth.response
-  return json({ providers: await aiKeyAvailability(), labels: BUILDER_PROVIDER_LABELS })
+  const settings = await readBuilderSettings()
+  const models = {} as Record<AiProvider, { selected: string; options: { value: string; label: string }[] }>
+  for (const provider of Object.keys(AI_BUILDER_MODEL_OPTIONS) as AiProvider[]) {
+    models[provider] = {
+      selected: settings.models[provider],
+      options: AI_BUILDER_MODEL_OPTIONS[provider].map(({ value, label }) => ({ value, label })),
+    }
+  }
+  return json({
+    providers: await aiKeyAvailability(),
+    labels: BUILDER_PROVIDER_LABELS,
+    models,
+    usage: await readUsageSummary(settings.capUsd),
+  })
 }
 
 /** Counts only, so the audit trail never holds the brief, the examples or the output. */
@@ -70,10 +90,12 @@ async function recordAudit(
 
 /**
  * POST /api/admin-ai-builder
- * { action: 'plan' | 'build', provider, mode: 'section' | 'page' | 'edit', brief, examples?, answers?, outline?, selection?, pageTitle? }
+ * { action: 'plan' | 'build', provider, mode: 'section' | 'page' | 'edit', brief, examples?, answers?, outline?, selection?, pageTitle?,
+ *   model? (must be on the allowlist), history? ([{ role, text }] max 6), current? (previous sections JSON to refine) }
  *
  * plan  -> { ok, questions } or { ok, outline }
- * build -> { ok, sections, warnings }. An invalid reply is retried once with the error fed back.
+ * build -> { ok, sections, warnings, model, mediaResolved, unresolvedMedia: [{ elementType, field, query, alt }], usage, usageEstimated }.
+ *   An invalid reply is retried once with the error fed back. Over the monthly cap -> 429 { ok:false, code:'cap_reached', error, usage }.
  */
 export async function POST(request: Request): Promise<Response> {
   const auth = await authorizeBuilder()
@@ -89,22 +111,65 @@ export async function POST(request: Request): Promise<Response> {
   const apiKey = await readAiKey(provider).catch((): null => null)
   if (!apiKey) return json({ ok: false, error: `No ${name} API key is set in Integrations.` }, 400)
 
-  const guide = { mode: req.mode }
-  const common = { provider, model: AI_BUILDER_MODELS[provider], maxTokens: BUILDER_MAX_TOKENS }
+  const settings = await readBuilderSettings()
+  const before = await readUsageSummary(settings.capUsd)
+  if (before.capReached) {
+    return json(
+      {
+        ok: false,
+        code: 'cap_reached',
+        error: `The monthly Build with AI spend cap ($${before.capUsd.toFixed(2)}) has been reached (about $${before.estCostUsd.toFixed(2)} used this month). Raise or clear the cap in Integrations to continue.`,
+        usage: before,
+      },
+      429,
+    )
+  }
+
+  const model = resolveBuilderModel(provider, req.model, settings.models[provider])
+  const guide = { ...(await readSiteContext()), mode: req.mode }
+  const common = { provider, model, maxTokens: BUILDER_MAX_TOKENS }
   const options = { apiKey, timeoutMs: BUILDER_TIMEOUT_MS }
+  const user = auth.context.user as { id?: number | string } | null
+  const userId = user?.id !== undefined && user?.id !== null ? String(user.id) : null
+  // True when any call's token counts are a chars/4 estimate because the provider sent none.
+  let estimated = false
+
+  /** One provider call, recorded in the usage table (counts only). */
+  const ask = async (args: CallAiArgs): Promise<string> => {
+    try {
+      const { text, usage } = await callAiDetailed(args, options)
+      const inChars = (args.system?.length ?? 0) + (args.messages ?? []).reduce((sum, m) => sum + m.content.length, 0)
+      if (!usage) estimated = true
+      await recordUsage({
+        userId,
+        provider,
+        model,
+        mode: req.mode,
+        inputTokens: usage?.inputTokens ?? estimateTokensFromChars(inChars),
+        outputTokens: usage?.outputTokens ?? estimateTokensFromChars(text.length),
+        ok: true,
+      })
+      return text
+    } catch (error) {
+      await recordUsage({ userId, provider, model, mode: req.mode, inputTokens: 0, outputTokens: 0, ok: false })
+      throw error
+    }
+  }
+  const usageNow = async () => readUsageSummary(settings.capUsd)
 
   try {
     if (req.action === 'plan') {
-      const reply = await callAi({ ...common, system: planSystemPrompt(guide), messages: firstMessages(req, 'plan') }, options)
+      const reply = await ask({ ...common, system: planSystemPrompt(guide), messages: firstMessages(req, 'plan') })
       const plan = parsePlanReply(reply, req.answers.length > 0)
       if (plan.ok === false) return json({ ok: false, error: plan.error }, 502)
       await recordAudit(auth.context, request, req, 0)
-      return json('questions' in plan ? { ok: true, questions: plan.questions } : { ok: true, outline: plan.outline })
+      const extra = { model, usage: await usageNow(), usageEstimated: estimated }
+      return json('questions' in plan ? { ok: true, questions: plan.questions, ...extra } : { ok: true, outline: plan.outline, ...extra })
     }
 
     const system = buildSystemPrompt(guide)
     const messages: AiChatMessage[] = firstMessages(req, 'build')
-    let reply = await callAi({ ...common, system, messages }, options)
+    let reply = await ask({ ...common, system, messages })
     let result = validateBuilderOutput(reply, { mode: req.mode })
 
     if (result.ok === false) {
@@ -116,13 +181,27 @@ export async function POST(request: Request): Promise<Response> {
           content: `That reply could not be used: ${result.error} Reply again with only the corrected engage-template JSON object, following the same rules.`,
         },
       ]
-      reply = await callAi({ ...common, system, messages: retry }, options)
+      reply = await ask({ ...common, system, messages: retry })
       result = validateBuilderOutput(reply, { mode: req.mode })
     }
 
     if (result.ok === false) return json({ ok: false, error: result.error }, 502)
+    // Picture placeholders become library ids, or are removed and reported so the admin can choose.
+    const media = await resolveMediaPlaceholders(
+      result.sections,
+      engineMediaFinder(auth.context.engine as unknown as Parameters<typeof engineMediaFinder>[0]),
+    )
     await recordAudit(auth.context, request, req, result.sections.length)
-    return json({ ok: true, sections: result.sections, warnings: result.warnings })
+    return json({
+      ok: true,
+      sections: result.sections,
+      warnings: result.warnings,
+      model,
+      mediaResolved: media.resolved,
+      unresolvedMedia: media.unresolved,
+      usage: await usageNow(),
+      usageEstimated: estimated,
+    })
   } catch (error) {
     if (error instanceof AiError) return json({ ok: false, error: error.message }, 502)
     return json({ ok: false, error: 'The builder could not finish. Try again.' }, 500)

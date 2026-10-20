@@ -74,12 +74,12 @@ export const SectionBlock: React.FC<{
               <SectionColumnView column={column} index={index} renderNode={renderNode} depth={depth} scope={scope} />
               {arrows && index > 0 && (
                 <a className="be-carousel__arrow be-carousel__arrow--prev" href={`#${slideId(prevIndex(index))}`} aria-label={`Previous slide, ${prevIndex(index) + 1} of ${count}`}>
-                  <span aria-hidden="true">{'‹'}</span>
+                  <span aria-hidden="true">{'\\u2039'}</span>
                 </a>
               )}
               {arrows && index < count - 1 && (
                 <a className="be-carousel__arrow be-carousel__arrow--next" href={`#${slideId(nextIndex(index))}`} aria-label={`Next slide, ${nextIndex(index) + 1} of ${count}`}>
-                  <span aria-hidden="true">{'›'}</span>
+                  <span aria-hidden="true">{'\\u203a'}</span>
                 </a>
               )}
             </div>

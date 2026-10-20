@@ -22,7 +22,7 @@ export type AlignItemsValue = 'start' | 'center' | 'end' | 'stretch'
 export type AlignSelfValue = 'stretch' | 'start' | 'center' | 'end'
 export type VerticalAlign = 'top' | 'middle' | 'bottom' | 'between'
 
-export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel' | 'grid' | 'modal' | 'stack' | 'hscroll' | 'sticky-steps'
+export type SectionDisplay = 'columns' | 'tabs' | 'accordion' | 'carousel' | 'grid' | 'flex' | 'modal' | 'stack' | 'hscroll' | 'sticky-steps'
 
 export type PopupFrequency = 'always' | 'session' | 'days'
 export const POPUP_FREQUENCIES: readonly PopupFrequency[] = ['always', 'session', 'days']
@@ -71,6 +71,17 @@ export type SectionLayout = {
   gridGap?: number
   /** Grid: vertical alignment of cells in a row. Unset = stretch (equal-height cards). */
   gridAlign?: AlignItemsValue
+  /** Grid: tablet / mobile cell gap in px (0..64). Unset follows the wider device. */
+  gridGapTablet?: number
+  gridGapMobile?: number
+  /** Grid: auto-fit as many columns as fit, each at least this wide in px (80..800). Replaces the column counts. */
+  gridMinWidth?: number
+  /** Grid: pack cells into earlier gaps ('dense'). Unset = row order. */
+  gridFlow?: 'dense'
+  /** Grid: horizontal alignment of cells inside their track. Unset = stretch. */
+  gridJustify?: AlignItemsValue
+  /** Unit of the flex gap and the grid gaps. Unset = px. */
+  gapUnit?: 'px' | 'rem'
   /** Modal: text of the trigger button or link (1..60 chars). Unset = "Open". */
   modalLabel?: string
   /** Modal: dialog width in px (320..1200). Unset = 640. */
@@ -168,7 +179,7 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.boxedWidth) && raw.boxedWidth > 0) out.boxedWidth = raw.boxedWidth
   const verticalAlign = pick(raw.verticalAlign, ['top', 'middle', 'bottom'] as const)
   if (verticalAlign) out.verticalAlign = verticalAlign
-  const display = pick(raw.display, ['tabs', 'accordion', 'carousel', 'grid', 'modal', 'stack', 'hscroll', 'sticky-steps'] as const)
+  const display = pick(raw.display, ['tabs', 'accordion', 'carousel', 'grid', 'flex', 'modal', 'stack', 'hscroll', 'sticky-steps'] as const)
   if (display) out.display = display
   const tabsAlign = pick(raw.tabsAlign, ['start', 'center', 'end', 'stretch'] as const)
   if (tabsAlign) out.tabsAlign = tabsAlign
@@ -185,6 +196,15 @@ export function parseSectionLayout(raw: unknown): SectionLayout | undefined {
   if (isNum(raw.gridGap) && raw.gridGap >= 0 && raw.gridGap <= 64) out.gridGap = raw.gridGap
   const gridAlign = pick(raw.gridAlign, ['start', 'center', 'end', 'stretch'] as const)
   if (gridAlign) out.gridAlign = gridAlign
+  const gridJustify = pick(raw.gridJustify, ['start', 'center', 'end', 'stretch'] as const)
+  if (gridJustify) out.gridJustify = gridJustify
+  for (const key of ['gridGapTablet', 'gridGapMobile'] as const) {
+    const v = raw[key]
+    if (isNum(v) && v >= 0 && v <= 64) out[key] = v
+  }
+  if (isNum(raw.gridMinWidth) && raw.gridMinWidth >= 80 && raw.gridMinWidth <= 800) out.gridMinWidth = Math.round(raw.gridMinWidth)
+  if (raw.gridFlow === 'dense') out.gridFlow = 'dense'
+  if (raw.gapUnit === 'rem') out.gapUnit = 'rem'
   if (typeof raw.modalLabel === 'string' && raw.modalLabel.trim() !== '') out.modalLabel = raw.modalLabel.trim().slice(0, 60)
   if (isNum(raw.modalWidth) && raw.modalWidth >= 320 && raw.modalWidth <= 1200) out.modalWidth = raw.modalWidth
   const modalStyle = pick(raw.modalStyle, ['button', 'link'] as const)
@@ -310,7 +330,7 @@ export function sectionLayoutProps(rawLayout: unknown, baseClass = 'be-section')
   if (layout.wrap === false) out.attrs['data-nowrap'] = '1'
   for (const d of DEVICES) {
     const g = layout.gap?.[d]
-    if (g !== undefined) out.style[`--be-gap-${DEVICE_KEY[d]}`] = `${g}px`
+    if (g !== undefined) out.style[`--be-gap-${DEVICE_KEY[d]}`] = `${g}${layout.gapUnit ?? 'px'}`
   }
   if (layout.justify) out.style.justifyContent = JUSTIFY_CSS[layout.justify]
   if (layout.alignItems) out.style.alignItems = ALIGN_CSS[layout.alignItems]
@@ -351,13 +371,22 @@ export function carouselStyle(rawLayout: unknown): Record<string, string> {
 export function gridStyle(rawLayout: unknown): Record<string, string> {
   const layout = parseSectionLayout(rawLayout)
   if (layout?.display !== 'grid') return {}
+  const unit = layout.gapUnit ?? 'px'
   const style: Record<string, string> = {
     '--be-grid-cols': String(layout.gridColumns ?? 3),
     '--be-grid-cols-m': String(layout.gridColumnsMobile ?? 1),
-    '--be-grid-gap': `${layout.gridGap ?? 16}px`,
+    '--be-grid-gap': `${layout.gridGap ?? 16}${unit}`,
     alignItems: ALIGN_CSS[layout.gridAlign ?? 'stretch'],
   }
   if (layout.gridColumnsTablet !== undefined) style['--be-grid-cols-t'] = String(layout.gridColumnsTablet)
+  if (layout.gridGapTablet !== undefined) style['--be-grid-gap-t'] = `${layout.gridGapTablet}${unit}`
+  if (layout.gridGapMobile !== undefined) style['--be-grid-gap-m'] = `${layout.gridGapMobile}${unit}`
+  if (layout.gridJustify) style.justifyItems = ALIGN_CSS[layout.gridJustify]
+  if (layout.gridFlow === 'dense') style.gridAutoFlow = 'dense'
+  // Auto-fit replaces the per-device column counts: the browser fits as many tracks as the width allows.
+  if (layout.gridMinWidth !== undefined) {
+    style.gridTemplateColumns = `repeat(auto-fit,minmax(min(100%,${layout.gridMinWidth}px),1fr))`
+  }
   return style
 }
 

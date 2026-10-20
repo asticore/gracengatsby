@@ -12,6 +12,7 @@ import { DataViewCanvasPreview } from '@/features/dataViews/components/DataViewC
 import { MEDIA_PROP_KEYS, collectMediaIds, substituteMedia } from '@/components/blocks/elements/elementUtil'
 import { renderElement } from '@/components/blocks/elements/renderElement'
 import { enabledPageEffects } from '@/components/blocks/elements/Wave44Elements'
+import { reusableSectionIdOf } from '@/lib/reusableSection'
 import { getElementDef } from '@/lib/elements/registry'
 import { SITE_ELEMENT_TYPES, WAVE38_ELEMENTS } from '@/lib/elements/wave38Defs'
 import { UNKNOWN_ELEMENT_DETAIL, unknownElementTitle } from '@/lib/elements/unknownElement'
@@ -95,6 +96,25 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
       )
     case 'loop':
       return <LoopPlaceholder data={data} />
+    case 'reusableSection': {
+      const id = reusableSectionIdOf(data.section)
+      return (
+        <div className="ve-dynamic-placeholder ve-global" data-testid="ve-global-block">
+          <div className="ve-dynamic-placeholder__icon">{String.fromCodePoint(0x1f310)}</div>
+          <div>
+            <strong>
+              <span style={{ background: '#2563eb', color: '#fff', borderRadius: 4, padding: '1px 6px', fontSize: 11, marginRight: 6 }}>Global</span> Reusable section{id ? ` #${id}` : ''}
+            </strong>
+            <p>Shown from one shared section. Editing it changes every page that uses it.</p>
+            {id && (
+              <a href={`/admin/collections/reusable-sections/${id}`} target="_blank" rel="noreferrer">
+                Edit global
+              </a>
+            )}
+          </div>
+        </div>
+      )
+    }
     case 'element': {
       const elementType = (data.elementType as string) || ''
       const props = (data.props as Record<string, unknown>) || {}

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { BLOCK_CATEGORIES, libraryCards, type BlockDef } from './blockSchemas'
+import { globalCards, globalNode, type GlobalCard } from './libraryGlobals'
 import { TemplateBrowser } from './TemplateBrowser'
 import { FAVS_KEY, RECENTS_KEY, loadList, pushRecent, saveList, toggleFavourite } from './libraryRecents'
 import './navLibraryPresets.css'
@@ -49,6 +50,25 @@ export const ElementLibrary: React.FC<{
     setFavs(next)
     saveList(FAVS_KEY, next)
   }
+
+  const [globals, setGlobals] = useState<GlobalCard[]>([])
+  useEffect(() => {
+    if (formMode) return
+    let cancelled = false
+    fetch('/api/reusable-sections?limit=100&depth=0&sort=name', { credentials: 'include' })
+      .then((res) => (res.ok ? (res.json() as Promise<{ docs?: unknown }>) : null))
+      .then((json) => {
+        if (!cancelled && json) setGlobals(globalCards(json.docs))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [formMode])
+  const globalMatches = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return globals.filter((g) => !needle || g.name.toLowerCase().includes(needle) || g.description.toLowerCase().includes(needle) || 'global'.includes(needle))
+  }, [globals, query])
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -196,6 +216,33 @@ export const ElementLibrary: React.FC<{
               <div className="ve-library__group ve-lib-recent" data-testid="ve-lib-recent">
                 <h4 className="ve-library__group-title">Recently used</h4>
                 <div className="ve-library__grid">{recentBlocks.map((b) => renderCard(b))}</div>
+              </div>
+            )}
+
+            {category === 'all' && globalMatches.length > 0 && (
+              <div className="ve-library__group" data-testid="ve-lib-globals">
+                <h4 className="ve-library__group-title">Global</h4>
+                <div className="ve-library__grid">
+                  {globalMatches.map((g) => (
+                    <div
+                      key={g.id}
+                      role="button"
+                      tabIndex={0}
+                      className="ve-library__card"
+                      onClick={() => onPickTemplate([globalNode(g.id)])}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onPickTemplate([globalNode(g.id)])
+                        }
+                      }}
+                      title={g.description || 'Edits to this global section update every page that uses it.'}
+                    >
+                      <span className="ve-library__card-icon">{String.fromCodePoint(0x1f310)}</span>
+                      <span className="ve-library__card-label">{g.name}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

@@ -78,6 +78,7 @@ function withIds(nodes: SectionNode[]): SectionNode[] {
 }
 
 import { nodeKey, parseLocks, serializeLocks, type LockEntry, type Locks, type LockUser } from '@/features/roles/locks'
+import { applyInlineEdit } from './visualEditor/inlineEdit'
 import { canInsertInto, effectiveLock, lockedKeySet, lockKeyOf, lockMapForCanvas, withNodeLock } from './visualEditor/lockState'
 import { canConvertLegacy, convertLegacyBlock } from './visualEditor/convertLegacy'
 import type { LockUi } from './visualEditor/LockControls'
@@ -756,6 +757,14 @@ export const VisualEditorView: React.FC = () => {
           setInsertTarget({ containerPath: msg.containerPath, at: msg.at })
           setDockTab('elements')
           break
+        case 'editDone': {
+          const { path, field, itemIndex, value } = msg
+          if (Array.isArray(path) && !lockedOut(path)) applyBlocks((prev) => applyInlineEdit(prev, path, { field, itemIndex }, value))
+          break
+        }
+        case 'quickInsert':
+          addBlockAt(msg.blockType, msg.containerPath, msg.at)
+          break
         case 'delete':
           deleteBlock(msg.path)
           break
@@ -784,7 +793,7 @@ export const VisualEditorView: React.FC = () => {
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp, renameNode, setColumnWidths])
+  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp, renameNode, setColumnWidths, lockedOut, applyBlocks, addBlockAt])
 
   // Keyboard shortcuts: the parent's own key presses and the ones forwarded from the frame share this handler.
   const { handleKey } = useEditorShortcuts({

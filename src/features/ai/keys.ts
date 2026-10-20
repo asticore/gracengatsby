@@ -1,6 +1,6 @@
 import { getEngine } from '@/lib/engine'
 
-import { AI_PROVIDERS, type AiProvider } from './models'
+import { AI_BUILDER_MODELS, AI_PROVIDERS, isAllowedBuilderModel, type AiProvider } from './models'
 
 /**
  * Reads the AI keys from the Integrations global, server side only. The global's
@@ -23,4 +23,22 @@ export async function aiKeyAvailability(): Promise<Record<AiProvider, boolean>> 
     result[provider] = Boolean(await readAiKey(provider).catch((): null => null))
   }
   return result
+}
+
+/** The configured builder models and monthly cap. No keys. Falls back to the defaults and no cap. */
+export async function readBuilderSettings(): Promise<{ models: Record<AiProvider, string>; capUsd: number }> {
+  const engine = await getEngine()
+  const g = (await engine
+    .findGlobal({ slug: 'integrations', depth: 0, overrideAccess: true })
+    .catch((): null => null)) as Record<string, unknown> | null
+  const claude = g?.aiClaudeModel
+  const openai = g?.aiOpenaiModel
+  const cap = Number(g?.aiMonthlyCapUsd)
+  return {
+    models: {
+      claude: isAllowedBuilderModel('claude', claude) ? claude : AI_BUILDER_MODELS.claude,
+      openai: isAllowedBuilderModel('openai', openai) ? openai : AI_BUILDER_MODELS.openai,
+    },
+    capUsd: Number.isFinite(cap) && cap > 0 ? cap : 0,
+  }
 }

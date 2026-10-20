@@ -18,33 +18,14 @@ import { CanvasBlockPreview } from './CanvasBlockPreview'
 import type { CanvasDevice, ColumnOp } from './canvasBridge'
 import { columnPercentFor, resizeAdjacent } from './columnOps'
 import { pathKey, type NodePath } from './treeOps'
-import { lexicalToPlainText } from './richTextUtil'
-
-/**
- * Get text fields that can be edited inline on the canvas for a block.
- * Includes simple text and textarea fields like Heading.text, Text.content, Button.text.
- */
-function getEditableTextFields(node: SectionNode & Record<string, unknown>) {
-  const blockDef = getBlockDef(node.blockType)
-  if (!blockDef) return []
-  // Filter to simple text/textarea fields that canEditAsPlainText can handle
-  return blockDef.fields.filter((f) => (f.type === 'text' || f.type === 'textarea') && !f.supportsMergeTags)
-}
-
-/**
- * Get current value of a field from the block node.
- */
-function getFieldValue(node: SectionNode & Record<string, unknown>, fieldName: string): string {
-  const value = node[fieldName]
-  if (typeof value === 'string') return value
-  if (value && typeof value === 'object' && 'root' in value) {
-    // Rich text (Lexical JSON) - convert to plain text
-    return lexicalToPlainText(value)
-  }
-  return ''
-}
+import { CanvasInlineEditor, type InlineEditorProps } from './CanvasInlineEditor'
+import { inlineCandidate } from './inlineEdit'
 
 export type CanvasHandlers = {
+  /** Double-click on editable text: start editing it in place (itemIndex for list items). */
+  onEditText?: (path: NodePath, itemIndex?: number) => void
+  /** The in-place editor currently open: `key` is the pathKey of its node. */
+  inlineEdit?: (InlineEditorProps & { key: string }) | null
   selectedKey: string | null
   /** Lock state by node path key (see lockState.ts). A blocked node has its move/duplicate/delete disabled. */
   locks?: Record<string, { mode: 'structure' | 'full'; blocked: boolean }>
@@ -296,33 +277,20 @@ const CanvasNode: React.FC<{
         ) : (
           <div
             className="ve-node__preview"
+            style={{ position: 'relative' }}
             onDoubleClick={(e) => {
               e.stopPropagation()
-              // Double-click on text blocks triggers inline edit mode
-              // Send message to parent with block info; parent opens editor
-              const blockId = node._id || pathKey(path)
-              const editableFields = getEditableTextFields(node)
-              if (editableFields.length > 0) {
-                const field = editableFields[0]
-                const value = getFieldValue(node, field.name)
-                window.parent.postMessage(
-                  {
-                    source: 've-canvas',
-                    type: 'requestEdit',
-                    blockId,
-                    blockType: node.blockType,
-                    elementType: node.elementType,
-                    field: field.name,
-                    value,
-                    path,
-                    device: 'desktop', // Placeholder - parent supplies actual device
-                  },
-                  window.location.origin
-                )
-              }
+              if (handlers.locks?.[pathKey(path)]?.blocked) return
+              // List types: the clicked <li> picks the item; everything else edits its one text.
+              const li = (e.target as HTMLElement | null)?.closest?.('li')
+              const itemIndex = li && li.parentElement ? Array.from(li.parentElement.children).filter((c) => c.tagName === 'LI').indexOf(li) : 0
+              if (!inlineCandidate(node, Math.max(itemIndex, 0))) return
+              e.preventDefault()
+              handlers.onEditText?.(path, Math.max(itemIndex, 0))
             }}
           >
             <CanvasBlockPreview data={node as Record<string, unknown>} />
+            {handlers.inlineEdit && handlers.inlineEdit.key === pathKey(path) && <CanvasInlineEditor {...handlers.inlineEdit} />}
           </div>
         )}
       </div>

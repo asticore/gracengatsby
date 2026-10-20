@@ -4,6 +4,7 @@ import React from 'react'
 import { safeUrl } from '@/lib/mergeTags'
 
 import { cells, flag, mediaOf, num, pick, str, type MediaRef } from './elementUtil'
+import { EmbedConsentFrame } from './EmbedConsentFrame'
 import './wave48.css'
 
 /**
@@ -13,7 +14,6 @@ import './wave48.css'
  */
 
 type P = Record<string, unknown>
-type Style = React.CSSProperties
 
 const ELLIPSIS = String.fromCodePoint(0x2026)
 /** Used when a colour list has nothing usable in it. */
@@ -321,7 +321,7 @@ export const ChartElement: React.FC<P> = (p) => {
 /* ---------- embed ---------- */
 
 const EMBED_PROVIDERS = ['youtube', 'vimeo', 'x', 'instagram', 'facebook-video', 'google-calendar', 'typeform', 'custom-iframe'] as const
-type EmbedProvider = (typeof EMBED_PROVIDERS)[number]
+export type EmbedProvider = (typeof EMBED_PROVIDERS)[number]
 const EMBED_NAME: Record<EmbedProvider, string> = {
   youtube: 'YouTube',
   vimeo: 'Vimeo',
@@ -360,7 +360,7 @@ function youtubeId(u: URL): string | null {
 }
 
 /** Works out what to show for an address. Null for an empty address (nothing renders). */
-function resolveEmbed(provider: EmbedProvider, raw: string): EmbedTarget | null {
+export function resolveEmbed(provider: EmbedProvider, raw: string): EmbedTarget | null {
   const text = raw.trim()
   if (!text) return null
   let u: URL
@@ -423,19 +423,16 @@ export const EmbedElement: React.FC<P> = (p) => {
     )
   }
   const ratio = pick(p.ratio, ['16:9', '4:3', '1:1'] as const, '16:9')
+  // The iframe is only created after the visitor accepts marketing cookies (see EmbedConsentFrame).
   return (
-    <div className="be-el-48-embed" style={{ aspectRatio: RATIO_CSS[ratio] } as Style}>
-      <iframe
-        className="be-el-48-embed__frame"
-        src={target.src}
-        title={title}
-        loading="lazy"
-        referrerPolicy="strict-origin-when-cross-origin"
-        sandbox={SANDBOX}
-        allow="encrypted-media; picture-in-picture"
-        allowFullScreen
-      />
-    </div>
+    <EmbedConsentFrame
+      src={target.src}
+      title={title}
+      providerName={name}
+      aspectRatio={RATIO_CSS[ratio]}
+      sandbox={SANDBOX}
+      allow="encrypted-media; picture-in-picture"
+    />
   )
 }
 

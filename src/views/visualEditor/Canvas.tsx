@@ -3,7 +3,7 @@
 import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
-import { asBlockStyle, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, kenBurnsLayer, overlayStyle } from '@/lib/blockStyle'
+import { asBlockStyle, hasVisibilityRules, blockFxClasses, blockFxVars, blockStyleCss, blockStyleToCss, hasFxLayer, kenBurnsLayer, overlayStyle } from '@/lib/blockStyle'
 import { carouselStyle, gridStyle, parseSectionLayout, resolveDirections, sectionLayoutProps, type SectionLayout } from '@/lib/sectionLayout'
 import { columnWidthVars, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
 
@@ -280,6 +280,15 @@ const CanvasNode: React.FC<{
           speed={design.dividerTopSpeed}
           position="top"
         />
+      )}
+      {hasVisibilityRules(design) && (
+        <span
+          className="ve-node__badge"
+          title="This block only shows when its visibility rules pass on the live site. The editor always shows it."
+          style={{ position: 'absolute', top: 4, left: 4, zIndex: 5, padding: '1px 6px', borderRadius: 8, fontSize: 10, background: '#4f46e5', color: '#fff', pointerEvents: 'none' }}
+        >
+          Has visibility rules
+        </span>
       )}
       <div className="ve-node__body">
         {node.blockType === 'section' ? (

@@ -10,10 +10,23 @@ import {
   AI_PROVIDER_LABELS,
   AI_QUICK_STARTS,
   AiBuilderError,
+  addSavedPrompt,
+  deleteSavedPrompt,
+  fetchAiStatus,
+  fetchTemplateExamples,
+  loadSavedPrompts,
+  progressText,
+  storeSavedPrompts,
+  trimHistory,
+  usageText,
+  usageWarning,
+  type AiHistoryEntry,
+  type AiTemplateExample,
+  type AiUsage,
+  type SavedPrompt,
   buildAiRequest,
   connectedProviders,
   effectiveMode,
-  fetchAiProviders,
   INTEGRATIONS_HREF,
   moveOutlineItem,
   normaliseBuild,
@@ -57,6 +70,8 @@ type Step = 'brief' | 'questions' | 'outline' | 'result'
 type ProviderLoad = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; providers: AiProviders }
 type BuiltResult = AiBuildResult & { mode: AiMode; selectionId?: string }
 
+const newId = (): string => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+
 const MODE_OPTIONS: { value: AiMode; label: string }[] = [
   { value: 'section', label: 'New section' },
   { value: 'page', label: 'Whole page content' },
@@ -67,6 +82,10 @@ const TIP_TEXT =
   "Add examples for much better results: describe a section you like, paste its text, or say 'like a pricing table with 3 plans, friendly tone, dark background'. Mention audience, tone, colours and any links or buttons you want."
 
 const plural = (count: number, one: string, many: string) => (count === 1 ? one : many)
+
+function describeResult(result: AiBuildResult): string {
+  return `Built ${result.sections.length} ${plural(result.sections.length, 'section', 'sections')}.`
+}
 
 function messageOf(err: unknown): string {
   if (err instanceof AiBuilderError) return err.message
@@ -92,11 +111,31 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
   const [error, setError] = useState<string | null>(null)
   const [inserted, setInserted] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const [usage, setUsage] = useState<AiUsage | null>(null)
+  const [elapsed, setElapsed] = useState(0)
+  const [history, setHistory] = useState<AiHistoryEntry[]>([])
+  const [prevBuilt, setPrevBuilt] = useState<BuiltResult | null>(null)
+  const [refineText, setRefineText] = useState('')
+  const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>(() => loadSavedPrompts())
+  const [saveName, setSaveName] = useState('')
+  const [saveNote, setSaveNote] = useState<string | null>(null)
+  const [templateExamples, setTemplateExamples] = useState<AiTemplateExample[] | null>(null)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
+
+  useEffect(() => {
+    if (!busy) return
+    const started = Date.now()
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 1000)
+    return () => clearInterval(timer)
+  }, [busy])
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchAiProviders(controller.signal).then(
-      (providers) => setLoad({ status: 'ready', providers }),
+    fetchAiStatus(controller.signal).then(
+      ({ providers, usage: nextUsage }) => {
+        setUsage(nextUsage)
+        setLoad({ status: 'ready', providers })
+      },
       (err: unknown) => {
         if (controller.signal.aborted) return
         setLoad({ status: 'error', message: messageOf(err) })
@@ -134,6 +173,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
+    setElapsed(0)
     setBusy(body.action)
     setError(null)
     try {
@@ -188,9 +228,67 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
     const result = await callApi(makeRequest(provider, 'build', answerLog, items), normaliseBuild)
     if (result) {
       setBuilt({ ...result, mode, selectionId })
+      setPrevBuilt(null)
+      setHistory(trimHistory([{ role: 'user', text: brief }, { role: 'assistant', text: describeResult(result) }]))
       setInserted(false)
       setStep('result')
     }
+  }
+
+  /** Sends the previous result plus the chat history so the AI changes it rather than starting over. */
+  const refine = async () => {
+    const text = refineText.trim()
+    if (!built || !provider || !text || inserted) return
+    const body = buildAiRequest('build', {
+      provider,
+      mode: built.mode,
+      brief: text,
+      selection: selectedSection ?? undefined,
+      pageTitle,
+      history,
+      current: built.sections,
+    })
+    const result = await callApi(body, normaliseBuild)
+    if (result) {
+      setPrevBuilt(built)
+      setBuilt({ ...result, mode: built.mode, selectionId: built.selectionId })
+      setHistory(trimHistory([...history, { role: 'user', text }, { role: 'assistant', text: describeResult(result) }]))
+      setRefineText('')
+    }
+  }
+
+  const goBackOne = () => {
+    if (!prevBuilt) return
+    setBuilt(prevBuilt)
+    setPrevBuilt(null)
+    setHistory(history.slice(0, -2))
+    setError(null)
+  }
+
+  const saveCurrentPrompt = () => {
+    const next = addSavedPrompt(savedPrompts, saveName, brief, newId())
+    setSavedPrompts(next)
+    setSaveNote(storeSavedPrompts(next) ? 'Saved.' : 'Saved for this visit only: your browser blocked storage.')
+    setSaveName('')
+  }
+
+  const removeSavedPrompt = (id: string) => {
+    const next = deleteSavedPrompt(savedPrompts, id)
+    setSavedPrompts(next)
+    storeSavedPrompts(next)
+  }
+
+  const toggleTemplates = () => {
+    const open = !templatesOpen
+    setTemplatesOpen(open)
+    if (open && templateExamples === null) {
+      void fetchTemplateExamples().then(setTemplateExamples)
+    }
+  }
+
+  const addTemplateExample = (text: string) => {
+    if (examples.length >= AI_LIMITS.examples) return
+    setExamples([...examples, text])
   }
 
   const insertBuilt = () => {
@@ -213,6 +311,9 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
     setAnswerLog([])
     setOutline([])
     setBuilt(null)
+    setPrevBuilt(null)
+    setHistory([])
+    setRefineText('')
     setInserted(false)
     setError(null)
   }
@@ -299,6 +400,50 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       </div>
 
       <div className="ve-ai__group">
+        <div className="ve-ai__save">
+          <label htmlFor={`${ids}-save`} className="ve-ai__note">
+            Save this brief as
+          </label>
+          <input
+            id={`${ids}-save`}
+            type="text"
+            className="ve-ai__input"
+            value={saveName}
+            maxLength={60}
+            placeholder="Name, e.g. Bakery hero"
+            onChange={(event) => setSaveName(event.target.value)}
+          />
+          <button type="button" className="ve-ai__btn ve-ai__btn--small" disabled={!saveName.trim() || !brief.trim()} onClick={saveCurrentPrompt}>
+            Save
+          </button>
+        </div>
+        {saveNote && (
+          <p className="ve-ai__note" role="status">
+            {saveNote}
+          </p>
+        )}
+        {savedPrompts.length > 0 && (
+          <ul className="ve-ai__saved" aria-label="Saved prompts">
+            {savedPrompts.map((item) => (
+              <li key={item.id} className="ve-ai__saved-item">
+                <button type="button" className="ve-ai__chip" title={item.brief} onClick={() => setBrief(item.brief)}>
+                  {item.name}
+                </button>
+                <button
+                  type="button"
+                  className="ve-ai__btn ve-ai__btn--small"
+                  aria-label={`Delete saved prompt ${item.name}`}
+                  onClick={() => removeSavedPrompt(item.id)}
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="ve-ai__group">
         <span className="ve-ai__note">Quick starts</span>
         <div className="ve-ai__chips" role="group" aria-label="Quick starts">
           {AI_QUICK_STARTS.map((text) => (
@@ -344,8 +489,22 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           >
             + Add example
           </button>
+          <button type="button" className="ve-ai__btn ve-ai__btn--small" aria-expanded={templatesOpen} onClick={toggleTemplates}>
+            Use a saved template as an example
+          </button>
           {examples.length >= AI_LIMITS.examples && <span className="ve-ai__note">Up to {AI_LIMITS.examples} examples.</span>}
         </div>
+        {templatesOpen && (
+          <div className="ve-ai__chips" role="group" aria-label="Saved templates">
+            {templateExamples === null && <span className="ve-ai__note">Loading templates...</span>}
+            {templateExamples?.length === 0 && <span className="ve-ai__note">No saved templates yet.</span>}
+            {templateExamples?.map((item) => (
+              <button key={item.id} type="button" className="ve-ai__chip" disabled={examples.length >= AI_LIMITS.examples} onClick={() => addTemplateExample(item.text)}>
+                {item.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="ve-ai__actions">
@@ -487,6 +646,48 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           </ul>
         </details>
       )}
+      {inserted && built.mediaPlaceholders.length > 0 && (
+        <div className="ve-ai__media">
+          <p className="ve-ai__label">Add images for:</p>
+          <ul>
+            {built.mediaPlaceholders.map((item, i) => (
+              <li key={i}>{item.alt}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {!inserted && (
+        <div className="ve-ai__refine">
+          <label htmlFor={`${ids}-refine`} className="ve-ai__label">
+            Refine
+          </label>
+          <input
+            id={`${ids}-refine`}
+            type="text"
+            className="ve-ai__input"
+            value={refineText}
+            maxLength={AI_LIMITS.answer}
+            placeholder="e.g. make the heading bigger, darker background"
+            onChange={(event) => setRefineText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                void refine()
+              }
+            }}
+          />
+          <div className="ve-ai__actions">
+            <button type="button" className="ve-ai__btn" disabled={!provider || !refineText.trim()} onClick={refine}>
+              Refine
+            </button>
+            {prevBuilt && (
+              <button type="button" className="ve-ai__btn" onClick={goBackOne}>
+                Back to previous version
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       <div className="ve-ai__actions">
         {!inserted && (
           <button type="button" className="ve-ai__btn ve-ai__btn--primary" onClick={insertBuilt}>
@@ -569,11 +770,21 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           {busy && (
             <div className="ve-ai__status" role="status">
               <span className="ve-ai__spinner" aria-hidden="true" />
-              <span>{busy === 'plan' ? 'Planning...' : 'Building...'}</span>
+              <span>{progressText(busy, elapsed)}</span>
               <button type="button" className="ve-ai__btn ve-ai__btn--small" onClick={cancel}>
                 Cancel
               </button>
             </div>
+          )}
+          {usage && (
+            <p className="ve-ai__note" data-testid="ai-usage">
+              {usageText(usage)}
+            </p>
+          )}
+          {usageWarning(usage) && (
+            <p className="ve-ai__error" role="status">
+              {usageWarning(usage)}
+            </p>
           )}
           {error && (
             <p className="ve-ai__error" role="alert">

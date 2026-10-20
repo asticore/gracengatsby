@@ -541,6 +541,54 @@ const SectionLayoutFields: React.FC<{
               ]}
               onChange={(v) => setLayout({ modalStyle: v === 'link' ? 'link' : undefined })}
             />
+            <p className="ve-row__help">
+              Link trigger: point any link or button at <code>#popup-</code> plus this section&apos;s Anchor ID (Design &gt; Advanced).
+            </p>
+            <NumberRow
+              label="Open after (seconds)"
+              help="Opens by itself on page load after this delay. Leave empty for no timer."
+              value={layout.popupDelay}
+              min={0}
+              max={600}
+              placeholder="Off"
+              onChange={(v) => setLayout({ popupDelay: v === undefined ? undefined : Math.min(600, Math.max(0, Math.round(v))) })}
+            />
+            <NumberRow
+              label="Open on scroll (%)"
+              help="Opens once the visitor has scrolled this far down the page."
+              value={layout.popupScroll}
+              min={1}
+              max={100}
+              placeholder="Off"
+              onChange={(v) => setLayout({ popupScroll: v === undefined ? undefined : Math.min(100, Math.max(1, Math.round(v))) })}
+            />
+            <CheckRow
+              label="Open on exit intent"
+              help="Desktop only: when the pointer leaves through the top of the window."
+              checked={layout.popupExit === true}
+              onChange={(v) => setLayout({ popupExit: v ? true : undefined })}
+            />
+            <SelectRow
+              label="Repeat"
+              help="Applies to automatic opens only. At most one automatic popup opens per page view."
+              value={layout.popupFrequency || 'always'}
+              options={[
+                { label: 'Every visit', value: 'always' },
+                { label: 'Once per session', value: 'session' },
+                { label: 'Once every N days', value: 'days' },
+              ]}
+              onChange={(v) => setLayout({ popupFrequency: v === 'always' ? undefined : (v as SectionLayout['popupFrequency']) })}
+            />
+            {layout.popupFrequency === 'days' && (
+              <NumberRow
+                label="Days between opens"
+                value={layout.popupDays}
+                min={1}
+                max={365}
+                placeholder="1"
+                onChange={(v) => setLayout({ popupDays: v === undefined ? undefined : Math.min(365, Math.max(1, Math.round(v))) })}
+              />
+            )}
           </>
         )}
         {layout.display === 'stack' && (

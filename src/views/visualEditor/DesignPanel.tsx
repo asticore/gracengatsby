@@ -39,7 +39,10 @@ import { MediaPicker } from './MediaPicker'
 import {
   GROUP_KEYS,
   GROUP_SEARCH,
+  clearDeviceOverrides,
+  copyDesktopToDevice,
   groupModified,
+  hasDeviceOverrides,
   linkedPatch,
   linkedValue,
   matchesQuery,
@@ -97,6 +100,30 @@ export const DesignPanel: React.FC<{
           <input type="checkbox" checked={only} onChange={(e) => setOnly(e.target.checked)} />
           <span>Only changed</span>
         </label>
+      </div>
+      <div className="ve-d51-devbar" role="group" aria-label="Device overrides">
+        {(['tablet', 'mobile'] as const).map((d) => (
+          <button
+            key={`copy-${d}`}
+            type="button"
+            className="ve-btn ve-btn--ghost"
+            onClick={() => onChange(copyDesktopToDevice(value, d))}
+            title={`Copy the desktop values of the responsive settings into the ${d} overrides`}
+          >
+            Copy desktop to {d}
+          </button>
+        ))}
+        {(['tablet', 'mobile'] as const).some((d) => hasDeviceOverrides(value, d)) && (
+          <span className="ve-d51-badge" title="Tablet or mobile values differ from desktop">
+            <span className="ve-d51-dot" aria-hidden="true" />
+            Overrides{(['tablet', 'mobile'] as const).filter((d) => hasDeviceOverrides(value, d)).map((d) => ` ${d}`).join(',')}
+          </span>
+        )}
+        {device !== 'desktop' && hasDeviceOverrides(value, device) && (
+          <button type="button" className="ve-d51-reset" onClick={() => onChange(clearDeviceOverrides(value, device))}>
+            Clear overrides for this device
+          </button>
+        )}
       </div>
       <Acc g="background" title="Background" defaultOpen>
         <SelectRow

@@ -167,6 +167,8 @@ export const EditorDock: React.FC<{
   lockUi?: LockUi
   /** Form builder: the Form settings tab body. Its presence also puts the dock in form mode. */
   formPanel?: React.ReactNode
+  /** Page-level settings (title, slug, SEO); shown in the Settings tab when no block is selected. */
+  pagePanel?: React.ReactNode
   /** The device being edited (top bar toggle); responsive settings in the panels follow it. */
   device?: EditDevice
   /** Settings for the column selected on the canvas; shown in place of a block's settings. */
@@ -204,6 +206,7 @@ export const EditorDock: React.FC<{
   userPermissions,
   lockUi,
   formPanel,
+  pagePanel,
   device,
   columnPanel,
   onSelectColumn,
@@ -338,7 +341,10 @@ export const EditorDock: React.FC<{
             onConvertLegacy={onConvertLegacy}
           />
         ) : (
-          <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>
+          <>
+            {pagePanel}
+            <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>
+          </>
         )}
       </div>
     </div>

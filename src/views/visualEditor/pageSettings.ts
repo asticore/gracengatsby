@@ -1,4 +1,3 @@
-
 /**
  * Pure helpers for the editor's "Page" settings: reading the values off a document, writing them back
  * as a PATCH body, and the hints/validation shown next to each field. Field names are the real ones from

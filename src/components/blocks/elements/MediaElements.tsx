@@ -2,6 +2,8 @@
 import React from 'react'
 
 import { Icon } from './icons'
+import { GalleryLightbox } from './Wave49Client'
+import './wave49.css'
 import { ALIGNS, alignClass } from './TextElements'
 import { flag, iconName, linkAttrs, linkHref, mediaListOf, mediaOf, num, parseVideoUrl, pick, ratioCss, str } from './elementUtil'
 
@@ -30,7 +32,15 @@ export const ImageElement: React.FC<P> = (p) => {
   )
   return (
     <figure className={`el-image ${alignClass(p.align)}`} style={{ maxWidth: `${width}%` }}>
-      {href && media?.url ? <a href={href} {...linkAttrs(p.link)}>{img}</a> : img}
+      {href && media?.url ? (
+        <a href={href} {...linkAttrs(p.link)}>{img}</a>
+      ) : flag(p.lightbox, false) && media?.url ? (
+        <GalleryLightbox items={[{ url: media.url, alt }]}>
+          <a href={media.url} data-be-gallery-index={0} aria-label={alt || 'Open larger image'}>{img}</a>
+        </GalleryLightbox>
+      ) : (
+        img
+      )}
       {caption && <figcaption>{caption}</figcaption>}
     </figure>
   )

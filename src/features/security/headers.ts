@@ -1,3 +1,4 @@
+import { EMBED_FRAME_SOURCES } from '@/lib/embedHosts'
 import { DEFAULT_SECURITY_SETTINGS, type SecuritySettings } from './settings'
 
 /**
@@ -47,8 +48,8 @@ export const DEFAULT_CONTENT_SECURITY_POLICY = [
   "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
   "connect-src 'self' https:",
   "media-src 'self' https:",
-  // The GTM noscript fallback is an iframe; nothing else in the policy frames third parties.
-  "frame-src 'self' https://www.googletagmanager.com",
+  // The GTM noscript fallback is an iframe, plus the embed/video/map element hosts (src/lib/embedHosts.ts).
+  ['frame-src', "'self'", 'https://www.googletagmanager.com', ...EMBED_FRAME_SOURCES].join(' '),
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

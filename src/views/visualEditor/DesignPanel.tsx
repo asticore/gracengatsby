@@ -27,6 +27,7 @@ import {
   type BlendMode,
   type BlockPosition,
   type BlockStyle,
+  type HoverTransformPreset,
   type DeviceOverride,
   type DividerAnim,
   type DividerShape,
@@ -38,6 +39,7 @@ import { isIsoDate } from '@/lib/visibilityRules'
 import { BUILT_IN_FONTS } from '@/features/fonts/installed'
 
 import { MediaPicker } from './MediaPicker'
+import { DESIGN_STATES, HOVER_TRANSFORM_OPTIONS, STATE_KEYS, stateModified, type DesignState } from './designStates'
 import {
   GROUP_KEYS,
   GROUP_SEARCH,
@@ -270,22 +272,8 @@ export const DesignPanel: React.FC<{
         )}
       </Acc>
 
-      <Acc g="hover" title="Hover state">
-        <p className="ve-row__help">Applies on hover with a mouse or trackpad. Unset values stay the same as normal.</p>
-        <ColorRow label="Background" value={value.hoverBgColor} onChange={(v) => set('hoverBgColor', v)} />
-        <ColorRow label="Text colour" value={value.hoverTextColor} onChange={(v) => set('hoverTextColor', v)} />
-        <ColorRow label="Border colour" value={value.hoverBorderColor} onChange={(v) => set('hoverBorderColor', v)} />
-        <SelectRow
-          label="Shadow"
-          value={value.hoverBoxShadow || ''}
-          options={[{ label: 'Same as normal', value: '' }, ...BOX_SHADOW_OPTIONS]}
-          onChange={(v) => set('hoverBoxShadow', (v || undefined) as BlockStyle['hoverBoxShadow'])}
-        />
-        <FxRange k="hoverBorderRadius" label="Corner radius" unit="px" value={value} onChange={onChange} def={0} min={0} max={200} />
-        <FxRange k="hoverTransitionMs" label="Transition" unit="ms" value={value} onChange={onChange} def={250} min={0} max={2000} step={10} />
-        {makeFxEditing(value, onChange).resetBtn([
-          'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
-        ])}
+      <Acc g="hover" title="Hover & focus">
+        <StateTabs value={value} onChange={onChange} />
       </Acc>
 
       <Acc g="spacing" title="Spacing" defaultOpen={device !== 'desktop'}>
@@ -1431,6 +1419,68 @@ const RangeRow: React.FC<{
 )
 
 /** Elementor-style numeric control: label, slider, number box, unit, and a per-control reset. */
+/** Normal / Hover / Focus tabs for the "Hover & focus" accordion. */
+const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const [state, setState] = useState<DesignState>('hover')
+  const set = <K extends keyof BlockStyle>(k: K, v: BlockStyle[K] | undefined) => {
+    const next = { ...value } as Record<string, unknown>
+    if (v === undefined || v === '') delete next[k]
+    else next[k] = v
+    onChange(next as BlockStyle)
+  }
+  return (
+    <>
+      <div role="tablist" aria-label="Element state" style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+        {DESIGN_STATES.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="tab"
+            aria-selected={state === t.value}
+            className={`ve-btn${state === t.value ? ' ve-btn--active' : ''}`}
+            onClick={() => setState(t.value)}
+          >
+            {t.label}{stateModified(value, t.value) ? ' •' : ''}
+          </button>
+        ))}
+      </div>
+      {state === 'normal' && (
+        <p className="ve-row__help">Normal values are set in the other sections (Background, Border & shadow, Typography). Switch to Hover or Focus to change how the block reacts.</p>
+      )}
+      {state === 'hover' && (
+        <>
+          <p className="ve-row__help">Applies on hover with a mouse or trackpad. Unset values stay the same as normal.</p>
+          <ColorRow label="Background" value={value.hoverBgColor} onChange={(v) => set('hoverBgColor', v)} />
+          <ColorRow label="Text colour" value={value.hoverTextColor} onChange={(v) => set('hoverTextColor', v)} />
+          <ColorRow label="Border colour" value={value.hoverBorderColor} onChange={(v) => set('hoverBorderColor', v)} />
+          <SelectRow
+            label="Shadow"
+            value={value.hoverBoxShadow || ''}
+            options={[{ label: 'Same as normal', value: '' }, ...BOX_SHADOW_OPTIONS]}
+            onChange={(v) => set('hoverBoxShadow', (v || undefined) as BlockStyle['hoverBoxShadow'])}
+          />
+          <SelectRow
+            label="Transform"
+            value={value.hoverTransform || 'none'}
+            options={HOVER_TRANSFORM_OPTIONS}
+            onChange={(v) => set('hoverTransform', v === 'none' ? undefined : (v as HoverTransformPreset))}
+          />
+          <FxRange k="hoverOpacity" label="Opacity" value={value} onChange={onChange} def={1} min={0} max={1} step={0.05} help="The lift / scale transform is skipped for visitors who prefer reduced motion." />
+          <FxRange k="hoverBorderRadius" label="Corner radius" unit="px" value={value} onChange={onChange} def={0} min={0} max={200} />
+          <FxRange k="hoverTransitionMs" label="Transition" unit="ms" value={value} onChange={onChange} def={150} min={0} max={2000} step={10} />
+        </>
+      )}
+      {state === 'focus' && (
+        <>
+          <p className="ve-row__help">Outline shown when the block or something inside it is focused with the keyboard.</p>
+          <ColorRow label="Focus ring" value={value.focusRing} onChange={(v) => set('focusRing', v)} />
+        </>
+      )}
+      {makeFxEditing(value, onChange).resetBtn([...STATE_KEYS.hover, ...STATE_KEYS.focus])}
+    </>
+  )
+}
+
 const FxRange: React.FC<{
   k: keyof BlockStyle
   label: string

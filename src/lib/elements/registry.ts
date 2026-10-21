@@ -11,6 +11,7 @@ import { WAVE47_ELEMENTS } from './wave47Defs'
 import { WAVE48_ELEMENTS } from './wave48Defs'
 import { WAVE49_ELEMENTS } from './wave49Defs'
 import { WAVE50_ELEMENTS } from './wave50Defs'
+import { WAVE60_ELEMENTS } from './wave60Defs'
 
 /**
  * The per-element-type catalogue that lives inside the `element` block
@@ -208,6 +209,7 @@ ELEMENTS.push(...WAVE47_ELEMENTS)
 ELEMENTS.push(...WAVE48_ELEMENTS)
 ELEMENTS.push(...WAVE49_ELEMENTS)
 ELEMENTS.push(...WAVE50_ELEMENTS)
+ELEMENTS.push(...WAVE60_ELEMENTS)
 
 export function getElementDef(type: string): ElementDef | undefined {
   return ELEMENTS.find((e) => e.type === type)

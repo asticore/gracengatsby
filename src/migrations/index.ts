@@ -81,6 +81,7 @@ import * as migration_20261103_100000_template_repos from './20261103_100000_tem
 import * as migration_20261104_100000_template_kind_category from './20261104_100000_template_kind_category';
 import * as migration_20261105_100000_ai_builder_usage from './20261105_100000_ai_builder_usage';
 import * as migration_20261028_400000_display_currencies from './20261028_400000_display_currencies';
+import * as migration_20261106_100000_site_page_effects from './20261106_100000_site_page_effects';
 
 export const migrations = [
   {
@@ -497,5 +498,10 @@ export const migrations = [
     up: migration_20261105_100000_ai_builder_usage.up,
     down: migration_20261105_100000_ai_builder_usage.down,
     name: '20261105_100000_ai_builder_usage',
+  },
+  {
+    up: migration_20261106_100000_site_page_effects.up,
+    down: migration_20261106_100000_site_page_effects.down,
+    name: '20261106_100000_site_page_effects',
   },
 ];

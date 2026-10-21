@@ -40,7 +40,7 @@ export const GROUP_KEYS: Record<string, readonly string[]> = {
     'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTopMobile', 'paddingBottomMobile', 'paddingUnit',
     'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginUnit', 'minHeight', 'minHeightUnit',
   ],
-  border: ['borderWidth', 'borderStyle', 'borderColor', 'borderRadius', 'boxShadow'],
+  border: ['borderWidth', 'borderStyle', 'borderColor', 'borderRadius', 'radiusTl', 'radiusTr', 'radiusBr', 'radiusBl', 'radiusLinked', 'boxShadow'],
   layout: ['width', 'textAlign', 'textColor'],
   typography: [
     'fontFamily', 'fontSize', 'fontSizeUnit', 'fontWeight', 'lineHeight', 'letterSpacing', 'letterSpacingUnit', 'textTransform',

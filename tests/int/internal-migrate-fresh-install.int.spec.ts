@@ -697,6 +697,12 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await columnsOf('eg_integrations')).toEqual(expect.arrayContaining(['ai_claude_model', 'ai_openai_model', 'ai_monthly_cap_usd']))
   })
 
+  it('adds the site-wide page effects columns to site settings', async () => {
+    const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_site_settings`)').all()
+    const names = (result.results as { name: string }[]).map((r) => r.name)
+    expect(names).toEqual(expect.arrayContaining(['page_effects_enabled', 'page_effects_cursor', 'page_effects_scroll_progress', 'page_effects_reveal_on_scroll']))
+  })
+
   it('creates the theme styles table', async () => {
     expect(tables).toContain('eg_theme_styles')
     const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()

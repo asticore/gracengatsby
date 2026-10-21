@@ -23,6 +23,8 @@ import { FieldView } from '@/features/forms/components/FieldView'
 import '@/features/forms/components/forms.css'
 import { HTML_ELEMENT, STEP_ELEMENT, isFieldElementType, nodeToField, type LayoutNode } from '@/features/forms/layout'
 
+import { previewTextFor } from '@/lib/blockContextFrom'
+import { PreviewContext } from './previewContext'
 import { useResolvedMedia, useResolvedMediaList } from './useResolvedMedia'
 
 /** A form field as it will look on the site. Typing in it does nothing: the canvas is for arranging. */
@@ -51,6 +53,7 @@ const FormFieldPreview: React.FC<{ node: LayoutNode }> = ({ node }) => {
  */
 export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
   const blockType = data.blockType as string
+  const previewCtx = React.useContext(PreviewContext)
 
   switch (blockType) {
     case 'hero':
@@ -161,6 +164,8 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
       }
       // Site elements read live data on the server; the canvas shows a static placeholder and never queries.
       if (SITE_ELEMENT_TYPES.has(elementType)) {
+        const sample = previewTextFor(elementType, props, previewCtx)
+        if (sample) return <div className="ve-sample-text">{sample}</div>
         const site = WAVE38_ELEMENTS.find((e) => e.type === elementType)
         return <DynamicPlaceholder icon={site?.icon ?? '\u{1F310}'} label={site?.label ?? elementType} data={data} detail="Reads live site data on the published page." />
       }

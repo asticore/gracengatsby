@@ -43,13 +43,13 @@ export const WAVE48_ELEMENTS: ElementDef[] = [
   },
   {
     type: 'embed', label: 'Embed', icon: String.fromCodePoint(0x1f3ac), category: 'media',
-    description: 'A video, calendar or form embed. Iframes load only from fixed hosts: YouTube, Vimeo, Google Calendar and Typeform. X, Instagram and Facebook show a link card instead of a third-party script.',
+    description: 'A video, calendar or form embed. Iframes load only from fixed hosts: YouTube, Vimeo, Google Calendar, Typeform and Lottie (lottie.host). X, Instagram and Facebook show a link card instead of a third-party script.',
     fields: [
       select('provider', 'Provider', labelled([
         ['youtube', 'YouTube'], ['vimeo', 'Vimeo'], ['x', 'X (Twitter) post'], ['instagram', 'Instagram post'],
-        ['facebook-video', 'Facebook video'], ['google-calendar', 'Google Calendar'], ['typeform', 'Typeform'], ['custom-iframe', 'Custom iframe'],
+        ['facebook-video', 'Facebook video'], ['google-calendar', 'Google Calendar'], ['typeform', 'Typeform'], ['lottie', 'Lottie animation'], ['custom-iframe', 'Custom iframe'],
       ]), { width: 'full' }),
-      text('url', 'Address', { width: 'full', helpText: 'Full https:// address. Only hosts that suit the provider are accepted. Custom iframe accepts the hosts of the four iframe providers.' }),
+      text('url', 'Address', { width: 'full', helpText: 'Full https:// address. Only hosts that suit the provider are accepted. Custom iframe accepts the hosts of the four iframe providers. Lottie: paste a lottie.host embed link.' }),
       select('ratio', 'Aspect ratio', labelled([['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']])),
       text('title', 'Title', { helpText: 'Read by screen readers. Leave empty to use the provider name.' }),
     ],

@@ -11,6 +11,8 @@ import { flag, linkHref, mediaOf, num, pick, str } from './elementUtil'
 import { withElementDesign } from './renderElement'
 import { LoopElement } from './Wave50Server'
 import { WAVE63_COMPONENTS } from './Wave63Server'
+import { WAVE65_SERVER_COMPONENTS } from './Wave65Server'
+import { WAVE66_COMPONENTS } from './Wave66Server'
 import { DynamicTextElement } from './DynamicText'
 import SearchSuggest from './SearchSuggest'
 import './wave38.css'
@@ -383,6 +385,8 @@ const SITE_RENDERERS: Record<string, React.ComponentType<P>> = {
   loop: LoopElement,
   'dynamic-text': DynamicTextElement,
   ...WAVE63_COMPONENTS,
+  ...WAVE65_SERVER_COMPONENTS,
+  ...WAVE66_COMPONENTS,
 }
 
 /**

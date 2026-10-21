@@ -15,7 +15,10 @@ export const SITE_TEMPLATE_KINDS = [
   'archive-blog',
   'archive-shop',
   'not-found',
-  // 'search' returns when a public search page is built.
+  'search-results',
+  'archive-category',
+  'archive-tag',
+  'archive-author',
 ] as const
 
 export type SiteTemplateKind = (typeof SITE_TEMPLATE_KINDS)[number]
@@ -29,6 +32,10 @@ const KIND_LABELS: Record<SiteTemplateKind, string> = {
   'archive-blog': 'Blog archive',
   'archive-shop': 'Shop archive',
   'not-found': '404 page',
+  'search-results': 'Search results',
+  'archive-category': 'Category archive',
+  'archive-tag': 'Tag archive',
+  'archive-author': 'Author archive',
 }
 
 /**

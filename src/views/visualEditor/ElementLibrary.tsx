@@ -6,6 +6,7 @@ import type { SectionNode } from '@/lib/sectionTree'
 
 import { BLOCK_CATEGORIES, libraryCards, type BlockDef } from './blockSchemas'
 import { globalCards, globalNode, type GlobalCard } from './libraryGlobals'
+import { filterFormPresetCards, formPresetCards, formPresetNode } from './libraryFormPresets'
 import { TemplateBrowser } from './TemplateBrowser'
 import { FAVS_KEY, RECENTS_KEY, loadList, pushRecent, saveList, toggleFavourite } from './libraryRecents'
 import './navLibraryPresets.css'
@@ -69,6 +70,11 @@ export const ElementLibrary: React.FC<{
     const needle = query.trim().toLowerCase()
     return globals.filter((g) => !needle || g.name.toLowerCase().includes(needle) || g.description.toLowerCase().includes(needle) || 'global'.includes(needle))
   }, [globals, query])
+
+  /** Off until inserting a preset also creates a saved form document (the form block renders only saved forms). */
+  const FORM_PRESET_INSERT_READY = false
+
+  const formCards = useMemo(() => filterFormPresetCards(formPresetCards(), query), [query])
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -242,6 +248,39 @@ export const ElementLibrary: React.FC<{
                       <span className="ve-library__card-label">{g.name}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {FORM_PRESET_INSERT_READY && !formMode && category === 'all' && formCards.length > 0 && (
+              <div className="ve-library__group" data-testid="ve-lib-forms">
+                <h4 className="ve-library__group-title">Forms</h4>
+                <div className="ve-library__grid">
+                  {formCards.map((f) => {
+                    const insert = () => {
+                      const node = formPresetNode(f.id)
+                      if (node) onPickTemplate([node])
+                    }
+                    return (
+                      <div
+                        key={f.id}
+                        role="button"
+                        tabIndex={0}
+                        className="ve-library__card"
+                        onClick={insert}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            insert()
+                          }
+                        }}
+                        title={f.description}
+                      >
+                        <span className="ve-library__card-icon">{String.fromCodePoint(0x1f4dd)}</span>
+                        <span className="ve-library__card-label">{f.label}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

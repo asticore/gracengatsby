@@ -10,6 +10,7 @@ import { getEngine } from '@/lib/engine'
 import { flag, linkHref, mediaOf, num, pick, str } from './elementUtil'
 import { withElementDesign } from './renderElement'
 import { LoopElement } from './Wave50Server'
+import { DynamicTextElement } from './DynamicText'
 import SearchSuggest from './SearchSuggest'
 import './wave38.css'
 import './navMenu.css'
@@ -379,6 +380,7 @@ const SITE_RENDERERS: Record<string, React.ComponentType<P>> = {
   'search-box': SearchBoxElement,
   'post-list': PostListElement,
   loop: LoopElement,
+  'dynamic-text': DynamicTextElement,
 }
 
 /**

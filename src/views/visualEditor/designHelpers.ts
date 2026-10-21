@@ -35,7 +35,8 @@ export const GROUP_KEYS: Record<string, readonly string[]> = {
     'gridLineWidth', 'auroraBlur', 'auroraSize', 'auroraSpeed', 'gradientAngle', 'gradientSpeed', 'grainOpacity', 'grainSize',
     'bgSlides', 'bgSlideIds', 'slideInterval', 'slideTransition', 'noise',
   ],
-  hover: ['hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs'],
+  hover: ['hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
+    'hoverOpacity', 'hoverTransform', 'focusRing'],
   spacing: [
     'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTopMobile', 'paddingBottomMobile', 'paddingUnit',
     'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginUnit', 'minHeight', 'minHeightUnit',
@@ -70,7 +71,7 @@ export const GROUP_KEYS: Record<string, readonly string[]> = {
 /** Words searched for each group (its title plus the control labels inside it). */
 export const GROUP_SEARCH: Record<string, string> = {
   background: 'background type colour gradient image video poster loop dark overlay angle opacity blend mode animated effect parallax',
-  hover: 'hover state background text colour border shadow corner radius transition',
+  hover: 'hover focus ring outline opacity lift scale state background text colour border shadow corner radius transition',
   spacing: 'spacing padding margin top bottom left right link all sides unit height minimum fit screen',
   border: 'border shadow width style colour corner radius',
   layout: 'layout text width contained wide full width text alignment text colour',

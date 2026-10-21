@@ -69,6 +69,10 @@ export const RESPONSIVE_KEYS = [
   'fontSizeUnit',
   'lineHeight',
   'letterSpacing',
+  'radiusTl',
+  'radiusTr',
+  'radiusBr',
+  'radiusBl',
 ] as const
 export type ResponsiveKey = (typeof RESPONSIVE_KEYS)[number]
 export type ResponsiveDevice = 'tablet' | 'mobile'
@@ -131,6 +135,13 @@ export type BlockStyle = {
   borderStyle?: 'solid' | 'dashed' | 'dotted'
   borderColor?: string
   borderRadius?: number
+  /** Per-corner radius in px (0-999). When any is set, unset corners fall back to borderRadius. Responsive. */
+  radiusTl?: number
+  radiusTr?: number
+  radiusBr?: number
+  radiusBl?: number
+  /** Editor-only: the four corner inputs are linked. */
+  radiusLinked?: boolean
 
   // Shadow
   boxShadow?: BoxShadowPreset
@@ -432,7 +443,7 @@ export function asBlockStyle(value: unknown): BlockStyle {
   // v2 designs are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
   if (isDesignV2Raw(value)) return EMPTY_STYLE
   const style = value as BlockStyle
-  const fx = withSafeAnchor(withSafeUnits(sanitizeTypography(sanitizeVisibility(sanitizeFx(sanitizeSlides(sanitizeBgVideo(style)))))))
+  const fx = withSafeAnchor(withSafeUnits(sanitizeRadius(sanitizeTypography(sanitizeVisibility(sanitizeFx(sanitizeSlides(sanitizeBgVideo(style))))))))
   if (style.tablet === undefined && style.mobile === undefined) return fx
   // Overrides come out of JSON: keep only whitelisted, well-typed keys.
   const { tablet: rawTablet, mobile: rawMobile, ...rest } = fx
@@ -442,6 +453,31 @@ export function asBlockStyle(value: unknown): BlockStyle {
   if (tablet) out.tablet = tablet
   if (mobile) out.mobile = mobile
   return out
+}
+
+export const RADIUS_CORNER_KEYS = ['radiusTl', 'radiusTr', 'radiusBr', 'radiusBl'] as const
+const RADIUS_MAX = 999
+
+/** Clamps the per-corner radius keys to 0-999 and drops junk / non-boolean radiusLinked. */
+function sanitizeRadius(style: BlockStyle): BlockStyle {
+  const raw = style as Record<string, unknown>
+  if (!RADIUS_CORNER_KEYS.some((k) => raw[k] !== undefined) && raw.radiusLinked === undefined) return style
+  const out: Record<string, unknown> = { ...raw }
+  for (const k of RADIUS_CORNER_KEYS) {
+    if (raw[k] === undefined) continue
+    const n = clampNum(raw[k], 0, RADIUS_MAX)
+    if (n === undefined) delete out[k]
+    else out[k] = n
+  }
+  if (raw.radiusLinked !== undefined && typeof raw.radiusLinked !== 'boolean') delete out.radiusLinked
+  return out as BlockStyle
+}
+
+/** The border-radius shorthand when any corner is set (unset corners use borderRadius, else 0), else undefined. */
+export function cornerRadiusValue(s: BlockStyle): string | undefined {
+  if (!RADIUS_CORNER_KEYS.some((k) => isNum(s[k]))) return undefined
+  const base = isNum(s.borderRadius) ? s.borderRadius : 0
+  return RADIUS_CORNER_KEYS.map((k) => `${isNum(s[k]) ? s[k] : base}px`).join(' ')
 }
 
 const VIS_KEYS = ['showFrom', 'showUntil', 'showAuth', 'showRoles', 'showUrl'] as const
@@ -903,6 +939,10 @@ export function sanitizeDeviceOverride(raw: unknown): DeviceOverride | undefined
   if (typeof r.selfAlign === 'string' && SELF_ALIGNS.includes(r.selfAlign)) out.selfAlign = r.selfAlign as BlockStyle['selfAlign']
   if (typeof r.selfWidth === 'string' && SELF_WIDTHS.includes(r.selfWidth)) out.selfWidth = r.selfWidth as BlockStyle['selfWidth']
   if (isNum(r.selfWidthPercent) && r.selfWidthPercent > 0) out.selfWidthPercent = r.selfWidthPercent
+  for (const key of RADIUS_CORNER_KEYS) {
+    const n = clampNum(r[key], 0, RADIUS_MAX)
+    if (n !== undefined) out[key] = n
+  }
   if (r.hide === true) out.hide = true
   return Object.keys(out).length > 0 ? out : undefined
 }
@@ -992,6 +1032,8 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
     css.borderColor = style.borderColor || 'currentColor'
   }
   if (isNum(style.borderRadius)) css.borderRadius = `${style.borderRadius}px`
+  const corners = cornerRadiusValue(style)
+  if (corners) css.borderRadius = corners
   if (style.boxShadow && style.boxShadow !== 'none') css.boxShadow = BOX_SHADOW_PRESETS[style.boxShadow]
   const clip = maskClipPath(style.maskShape)
   if (clip) css.clipPath = clip
@@ -1108,7 +1150,15 @@ export function selfPositionCss(style: BlockStyle): React.CSSProperties {
  * Only keys in BUILT_IN_FONTS resolve, so a stored value can never inject CSS.
  * Every built-in face is loaded site-wide (see the layout), so no extra load is needed.
  */
+export const FONT_TOKEN_PATTERN = /^var\(--(?:eg-)?font-[a-z0-9-]{1,40}\)$/
+/** Theme font tokens offered in the Family select (the site sets --font-display / --font-body, see the layout). */
+export const FONT_TOKEN_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'var(--font-display)', label: 'Theme heading font' },
+  { value: 'var(--font-body)', label: 'Theme body font' },
+]
+
 export function blockFontStack(key: string | undefined): string | null {
+  if (typeof key === 'string' && FONT_TOKEN_PATTERN.test(key.trim())) return key.trim()
   const font = BUILT_IN_FONTS.find((candidate) => candidate.value === key)
   return font ? fontStack(font.family, font.category) : null
 }
@@ -1162,6 +1212,10 @@ export function deviceOverrideDecls(style: BlockStyle, device: ResponsiveDevice)
   if (!posTouched) {
     px('margin-left', own.marginLeft ?? (own.marginUnit ? mergedU.marginLeft : undefined), mu)
     px('margin-right', own.marginRight ?? (own.marginUnit ? mergedU.marginRight : undefined), mu)
+  }
+  if (RADIUS_CORNER_KEYS.some((k) => own[k] !== undefined)) {
+    const cr = cornerRadiusValue(mergedU)
+    if (cr) decls.push(`border-radius:${cr} !important`)
   }
   if (own.textAlign) decls.push(`text-align:${own.textAlign} !important`)
   if (own.fontSize !== undefined || own.fontSizeUnit !== undefined) {

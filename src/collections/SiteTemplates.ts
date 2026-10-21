@@ -80,7 +80,10 @@ export const SiteTemplates: CollectionConfig = {
       name: 'conditions',
       type: 'json',
       defaultValue: [],
-      admin: { description: 'Where this template applies. Empty = everywhere for its kind.' },
+      admin: {
+        description: 'Where this template applies. Empty = everywhere for its kind.',
+        components: { Field: '@/features/siteTemplates/admin/ConditionsField#ConditionsField' },
+      },
     },
     {
       name: 'blocks',

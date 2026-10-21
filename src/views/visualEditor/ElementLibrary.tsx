@@ -12,6 +12,8 @@ import { TemplateBrowser } from './TemplateBrowser'
 import { FAVS_KEY, RECENTS_KEY, loadList, pushRecent, saveList, toggleFavourite } from './libraryRecents'
 import './navLibraryPresets.css'
 
+const CATEGORY_KEY = 've-library-category'
+
 type Source = 'blocks' | 'templates'
 
 /**
@@ -34,7 +36,23 @@ export const ElementLibrary: React.FC<{
 }> = ({ targetLabel, onPickBlock, onPickTemplate, formMode }) => {
   const [source, setSource] = useState<Source>('blocks')
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<string>('all')
+  const [category, setCategory] = useState<string>(() => {
+    try {
+      const saved = window.localStorage.getItem(CATEGORY_KEY)
+      if (saved && BLOCK_CATEGORIES.some((c) => c.key === saved)) return saved
+    } catch {
+      /* storage unavailable */
+    }
+    return 'all'
+  })
+  const changeCategory = (key: string) => {
+    setCategory(key)
+    try {
+      window.localStorage.setItem(CATEGORY_KEY, key)
+    } catch {
+      /* storage unavailable */
+    }
+  }
   const [recents, setRecents] = useState<string[]>(() => loadList(RECENTS_KEY))
   const [favs, setFavs] = useState<string[]>(() => loadList(FAVS_KEY))
 
@@ -93,6 +111,13 @@ export const ElementLibrary: React.FC<{
       )
     })
   }, [query, category, formMode])
+
+  const allCards = useMemo(() => libraryCards({ formMode }), [formMode])
+  const counts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const b of allCards) m.set(b.category, (m.get(b.category) || 0) + 1)
+    return m
+  }, [allCards])
 
   const bySlug = useMemo(() => new Map(libraryCards({ formMode }).map((b) => [b.slug, b])), [formMode])
   const recentBlocks = recents.map((s) => bySlug.get(s)).filter((b): b is BlockDef => Boolean(b))
@@ -180,6 +205,7 @@ export const ElementLibrary: React.FC<{
 
         {source === 'blocks' && (
           <>
+            <div className="ve-library__filter-row">
             <input
               type="search"
               className="ve-library__search"
@@ -187,24 +213,20 @@ export const ElementLibrary: React.FC<{
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <div className="ve-library__tabs">
-              <button
-                type="button"
-                className={`ve-library__tab ${category === 'all' ? 've-library__tab--active' : ''}`}
-                onClick={() => setCategory('all')}
-              >
-                All
-              </button>
+            <select
+              className="ve-library__filter"
+              aria-label="Filter elements"
+              data-testid="ve-lib-filter"
+              value={category}
+              onChange={(e) => changeCategory(e.target.value)}
+            >
+              <option value="all">All categories ({allCards.length})</option>
               {BLOCK_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.key}
-                  type="button"
-                  className={`ve-library__tab ${category === cat.key ? 've-library__tab--active' : ''}`}
-                  onClick={() => setCategory(cat.key)}
-                >
-                  {cat.label}
-                </button>
+                <option key={cat.key} value={cat.key}>
+                  {cat.label} ({counts.get(cat.key) || 0})
+                </option>
               ))}
+            </select>
             </div>
           </>
         )}

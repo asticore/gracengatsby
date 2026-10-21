@@ -13,7 +13,7 @@ import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical } from './ri
 type PropSpec = { prop: string; kind: 'string' | 'lexical'; /** Text lives in items[i].text */ item?: boolean; /** The prop is rendered as HTML, so it may hold the sanitised rich subset. */ rich?: boolean }
 
 /**
- * Props that may hold sanitised inline HTML. Only heading is rendered via SafeInlineHtml. Button/quote/list render plain React text and text-editor stores Lexical JSON, so none is rendered as HTML today. Set `rich: true` on a
+ * Props that may hold sanitised inline HTML. Only heading is rich (rendered via SafeInlineHtml); button/quote/list render plain React text and text-editor stores Lexical JSON, so none is rendered as HTML today. Set `rich: true` on a
  * spec in INLINE_PROPS only once its renderer outputs the prop as HTML.
  */
 

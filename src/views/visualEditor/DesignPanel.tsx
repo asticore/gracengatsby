@@ -37,6 +37,7 @@ import {
 } from '@/lib/blockStyle'
 import { isIsoDate } from '@/lib/visibilityRules'
 import { BUILT_IN_FONTS } from '@/features/fonts/installed'
+import { useSiteFonts } from './useSiteFonts'
 
 import { MediaPicker } from './MediaPicker'
 import { DESIGN_STATES, HOVER_TRANSFORM_OPTIONS, STATE_KEYS, stateModified, type DesignState } from './designStates'
@@ -1227,6 +1228,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
   onChange,
   ctl,
 }) => {
+  const siteFonts = useSiteFonts()
   const patch = (changes: Partial<Record<keyof BlockStyle, unknown>>) => {
     const updated: Record<string, unknown> = { ...value }
     for (const [name, next] of Object.entries(changes)) {
@@ -1251,6 +1253,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
           { label: 'Site default', value: '' },
           ...FONT_TOKEN_OPTIONS,
           ...BUILT_IN_FONTS.map((font) => ({ label: font.label, value: font.value })),
+          ...siteFonts.map((font) => ({ label: `${font.family} (installed)`, value: `family:${font.family}` })),
         ]}
         onChange={(v) => patch({ fontFamily: v || undefined })}
       />

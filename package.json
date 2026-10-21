@@ -7,9 +7,9 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare deploy",
     "deploy:full": "pnpm run deploy:database && pnpm run deploy:app && pnpm run deploy:migrate && pnpm run deploy:seed",
-    "deploy:app": "opennextjs-cloudflare build --env=$CLOUDFLARE_ENV && opennextjs-cloudflare deploy --env=$CLOUDFLARE_ENV",
+    "deploy:app": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion --env=$CLOUDFLARE_ENV && opennextjs-cloudflare deploy --env=$CLOUDFLARE_ENV",
     "deploy:migrate": "curl -sf -X POST ${SITE_URL:-https://gracengatsby.com}/api/internal-migrate -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Schema call failed (non-fatal) - check /api/internal-migrate manually.'",
     "deploy:seed": "curl -sf -X POST ${SITE_URL:-https://gracengatsby.com}/api/internal-seed -H \"x-seed-key: ${INTERNAL_ROUTE_KEY:-gracengatsby-seed}\" || echo 'Seed call failed (non-fatal) - check /api/internal-seed manually.'",
     "deploy:database": "wrangler d1 execute D1 --command 'PRAGMA optimize' --env=$CLOUDFLARE_ENV --remote",

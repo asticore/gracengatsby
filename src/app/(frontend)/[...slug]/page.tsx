@@ -81,7 +81,7 @@ export default async function BuiltPage({
   // Merge tags ({{field:...}}, {{title}}, ...) are resolved here; unknown braces stay as typed.
   const content = await resolveDocumentContent('pages', page)
 
-  setBlockContext({ page: { title: page.title } })
+  setBlockContext({ page: { title: page.title }, path: currentPath })
   return (
     <div className="built-page">
       <AdsPageScope collection="pages" noAds={(page as { noAds?: boolean }).noAds} />

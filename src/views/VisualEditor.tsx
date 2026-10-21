@@ -30,6 +30,8 @@ import {
   updateNode,
   type NodePath,
 } from './visualEditor/treeOps'
+import type { BlockContext } from '@/lib/blockContext'
+import { PreviewAsPicker } from './visualEditor/PreviewAsPicker'
 import { VISUAL_EDITOR_SURFACES } from './visualEditor/surfaces'
 import { normaliseFormConfig } from '@/features/forms/config'
 import { hasUnpublishedChanges as formHasUnpublishedChanges, upgradeFieldsToLayout, walkLayout } from '@/features/forms/layout'
@@ -86,11 +88,30 @@ import { canConvertLegacy, convertLegacyBlock } from './visualEditor/convertLega
 import type { LockUi } from './visualEditor/LockControls'
 
 export const VisualEditorView: React.FC = () => {
-  const route = useMemo(() => parsePath(), [])
+  // The URL is read after mount so the server render and first client render match (no window on the server).
+  const [route, setRoute] = useState<ReturnType<typeof parsePath>>(null)
+  const [routeReady, setRouteReady] = useState(false)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync with window.location after mount
+    setRoute(parsePath())
+    setRouteReady(true)
+  }, [])
   const surface = route ? VISUAL_EDITOR_SURFACES[route.slug] : undefined
 
-  const [loading, setLoading] = useState(() => Boolean(route && surface))
-  const [error, setError] = useState<string | null>(() => (route && surface ? null : 'Unknown editor target.'))
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    if (routeReady && !(route && surface)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- route is only known after mount
+      setError('Unknown editor target.')
+      setLoading(false)
+    }
+  }, [routeReady, route, surface])
+  const [modLabel, setModLabel] = useState('Ctrl')
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator is client-only; default matches the server render
+    if (/Mac|iPhone|iPad/i.test(navigator.platform || '')) setModLabel('Cmd')
+  }, [])
   const [blocks, setBlocks] = useState<SectionNode[]>([])
   const [docTitle, setDocTitle] = useState('')
   const [status, setStatus] = useState<string | null>(null)
@@ -101,6 +122,8 @@ export const VisualEditorView: React.FC = () => {
   const [helpOpen, setHelpOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [templateKind, setTemplateKind] = useState<unknown>(null)
+  const [previewCtx, setPreviewCtx] = useState<BlockContext | null>(null)
   const [dockTab, setDockTab] = useState<DockTab>('elements')
   const [userPermissions, setUserPermissions] = useState<{ canEditStyle: boolean; canEditLayout: boolean } | null>(null)
   // Where the next element/template pick lands. Always defined (unlike the
@@ -186,6 +209,7 @@ export const VisualEditorView: React.FC = () => {
           setDocTitle(surface.titleField ? String(doc[surface.titleField] || 'Untitled') : surface.label)
           setStatus(surface.formMode ? (doc.formStatus === 'draft' ? 'draft' : 'published') : (doc._status as string) || null)
           setLocks(parseLocks(doc.locks))
+          setTemplateKind(surface.slug === 'site-templates' ? doc.kind : null)
           if (surface.kind === 'collection' && !surface.formMode) {
             const loaded = readPageSettings(doc)
             setPageSettings(loaded)
@@ -845,6 +869,11 @@ export const VisualEditorView: React.FC = () => {
     )
   }, [frameReady, blocks, selectedPath, locks, lockUser, device])
 
+  useEffect(() => {
+    if (!frameReady) return
+    iframeRef.current?.contentWindow?.postMessage({ source: 've-canvas', type: 'previewContext', context: previewCtx }, CANVAS_ORIGIN())
+  }, [frameReady, previewCtx])
+
   const sendDragHover = useCallback((key: string | null) => {
     if (lastHoverKey.current === key) return
     lastHoverKey.current = key
@@ -1057,7 +1086,6 @@ export const VisualEditorView: React.FC = () => {
     [formMode, blocks],
   )
   const formUnpublished = formMode ? formHasUnpublishedChanges({ layout: stripEditorIds(blocks, lockedKeySet(locks)), publishedLayout } as never) : false
-  const modLabel = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || '') ? 'Cmd' : 'Ctrl'
   const isAdmin = Boolean(lockUser?.roles?.includes('admin'))
 
   const backHref = surface
@@ -1302,6 +1330,8 @@ export const VisualEditorView: React.FC = () => {
           }
           pagePanel={
             pageSettings ? (
+              <>
+              {surface?.slug === 'site-templates' ? <PreviewAsPicker kind={templateKind} onContext={setPreviewCtx} /> : null}
               <PageSettingsPanel
                 value={pageSettings}
                 available={pageAvail}
@@ -1310,6 +1340,7 @@ export const VisualEditorView: React.FC = () => {
                   setDirty(true)
                 }}
               />
+              </>
             ) : undefined
           }
           formPanel={

@@ -406,6 +406,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(await cols('eg_integrations')).toEqual(expect.arrayContaining(['ai_claude_model', 'ai_openai_model', 'ai_monthly_cap_usd']))
   })
 
+  it('adds the site-wide page effects columns to site settings', async () => {
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_site_settings`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(expect.arrayContaining(['page_effects_enabled', 'page_effects_cursor', 'page_effects_scroll_progress', 'page_effects_reveal_on_scroll']))
+  })
+
   it('creates the theme styles table (raw SQL, not in the drizzle schema)', async () => {
     expect(createdTables.has('eg_theme_styles')).toBe(true)
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()).results as { name: string }[]).map((r) => r.name)

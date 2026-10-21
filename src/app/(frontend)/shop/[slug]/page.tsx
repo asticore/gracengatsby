@@ -9,6 +9,7 @@ import { BackInStockForm } from '@/components/BackInStockForm'
 import { SubscriptionOffer } from '@/features/ecommerce/subscriptions/components/SubscriptionOffer'
 import { ProductReviewForm } from '@/components/ProductReviewForm'
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
+import { setBlockContext } from '@/lib/blockContext'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
@@ -138,6 +139,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ...(aggregateRatingJsonLd(ratings) ? { aggregateRating: aggregateRatingJsonLd(ratings) } : {}),
   }
 
+  setBlockContext({ product: { title: product.title, price: (product as { priceInAUD?: number | null }).priceInAUD ?? undefined } })
   const body = (
     <VariationImageProvider>
     <div className="page-shell grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">

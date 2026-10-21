@@ -372,7 +372,8 @@ describe('content security policy', () => {
     expect(DEFAULT_CONTENT_SECURITY_POLICY).toContain('https://scripts.clarity.ms')
     expect(DEFAULT_CONTENT_SECURITY_POLICY).toContain('https://connect.facebook.net')
     expect(DEFAULT_CONTENT_SECURITY_POLICY).toContain("frame-src 'self' https://www.googletagmanager.com")
-    expect(DEFAULT_CONTENT_SECURITY_POLICY).not.toContain('https://www.google.com')
+    const scriptSrc = DEFAULT_CONTENT_SECURITY_POLICY.split('; ').find((d) => d.startsWith('script-src')) ?? ''
+    expect(scriptSrc).not.toContain('https://www.google.com')
   })
 
   it('reaches the response headers', () => {

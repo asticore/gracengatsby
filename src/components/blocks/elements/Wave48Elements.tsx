@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import React from 'react'
 
+import { EMBED_IFRAME_HOST } from '@/lib/embedHosts'
 import { safeUrl } from '@/lib/mergeTags'
 
 import { cells, flag, mediaOf, num, pick, str, type MediaRef } from './elementUtil'
@@ -320,7 +321,7 @@ export const ChartElement: React.FC<P> = (p) => {
 
 /* ---------- embed ---------- */
 
-const EMBED_PROVIDERS = ['youtube', 'vimeo', 'x', 'instagram', 'facebook-video', 'google-calendar', 'typeform', 'custom-iframe'] as const
+const EMBED_PROVIDERS = ['youtube', 'vimeo', 'x', 'instagram', 'facebook-video', 'google-calendar', 'typeform', 'lottie', 'custom-iframe'] as const
 export type EmbedProvider = (typeof EMBED_PROVIDERS)[number]
 const EMBED_NAME: Record<EmbedProvider, string> = {
   youtube: 'YouTube',
@@ -330,12 +331,13 @@ const EMBED_NAME: Record<EmbedProvider, string> = {
   'facebook-video': 'Facebook',
   'google-calendar': 'Google Calendar',
   typeform: 'Typeform',
+  lottie: 'LottieFiles',
   'custom-iframe': 'Embedded page',
 }
 const RATIO_CSS: Record<string, string> = { '16:9': '16 / 9', '4:3': '4 / 3', '1:1': '1 / 1' }
 
 /** The only hosts an iframe is built on. The src always uses one of these, never the host the editor typed. */
-const IFRAME_HOST = { youtube: 'www.youtube-nocookie.com', vimeo: 'player.vimeo.com', 'google-calendar': 'calendar.google.com', typeform: 'form.typeform.com' }
+const IFRAME_HOST = EMBED_IFRAME_HOST
 /** Hosts an address may come from, per provider. Link cards use the same rule for their own hosts. */
 const HOSTS: Record<EmbedProvider, string[]> = {
   youtube: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'www.youtube-nocookie.com'],
@@ -345,6 +347,7 @@ const HOSTS: Record<EmbedProvider, string[]> = {
   'facebook-video': ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.watch'],
   'google-calendar': ['calendar.google.com'],
   typeform: ['form.typeform.com'],
+  lottie: ['lottie.host', 'lottiefiles.com', 'www.lottiefiles.com', 'app.lottiefiles.com'],
   'custom-iframe': ['www.youtube-nocookie.com', 'youtube-nocookie.com', 'player.vimeo.com', 'calendar.google.com', 'form.typeform.com'],
 }
 const LINK_CARD: ReadonlySet<EmbedProvider> = new Set(['x', 'instagram', 'facebook-video'])
@@ -394,6 +397,15 @@ export function resolveEmbed(provider: EmbedProvider, raw: string): EmbedTarget 
       return u.pathname.startsWith('/to/')
         ? { kind: 'iframe', src: `https://${IFRAME_HOST.typeform}${u.pathname}${u.search}` }
         : { kind: 'error', message: 'Use a Typeform address that starts with /to/.' }
+    case 'lottie': {
+      // Only lottie.host/embed/<uuid>/<id>.json is an iframe form; lottiefiles.com pages are not embeddable, so they become link cards.
+      if (host === 'lottie.host') {
+        return /^\/embed\/[A-Za-z0-9-]{8,64}\/[A-Za-z0-9_-]{4,64}\.json$/.test(u.pathname)
+          ? { kind: 'iframe', src: `https://${IFRAME_HOST.lottie}${u.pathname}` }
+          : { kind: 'error', message: 'Use a lottie.host embed address (lottie.host/embed/.../....json).' }
+      }
+      return { kind: 'link', href: u.toString() }
+    }
     default:
       // Custom iframe: the host is already on the allowlist, so the src is rebuilt from it.
       return { kind: 'iframe', src: `https://${host}${u.pathname}${u.search}` }

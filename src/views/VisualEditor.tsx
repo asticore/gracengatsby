@@ -36,6 +36,8 @@ import { hasUnpublishedChanges as formHasUnpublishedChanges, upgradeFieldsToLayo
 import type { FormConfig } from '@/features/forms/types'
 import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
+import { PageSettingsPanel } from './visualEditor/PageSettingsPanel'
+import { pageAvailability, pageSettingsPatch, readPageSettings, validatePageSettings, type PageSettings } from './visualEditor/pageSettings'
 import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
 import { NAVIGATOR_CSS } from './visualEditor/navigator.styles'
@@ -127,6 +129,10 @@ export const VisualEditorView: React.FC = () => {
   const [embedKey, setEmbedKey] = useState<string | undefined>(undefined)
   const [publishedLayout, setPublishedLayout] = useState<unknown>(null)
   const formMode = surface?.formMode === true
+  // Page-level settings (title/slug/status/SEO): edited in the Settings tab, saved in the same PATCH.
+  const [pageSettings, setPageSettings] = useState<PageSettings | null>(null)
+  const [pageInitial, setPageInitial] = useState<PageSettings | null>(null)
+  const [pageAvail, setPageAvail] = useState(() => pageAvailability(null))
   const [navigatorExpandedState, setNavigatorExpandedState] = useState<Record<string, boolean>>({})
 
   const [menu, setMenu] = useState<{ x: number; y: number; path: NodePath } | null>(null)
@@ -180,6 +186,12 @@ export const VisualEditorView: React.FC = () => {
           setDocTitle(surface.titleField ? String(doc[surface.titleField] || 'Untitled') : surface.label)
           setStatus(surface.formMode ? (doc.formStatus === 'draft' ? 'draft' : 'published') : (doc._status as string) || null)
           setLocks(parseLocks(doc.locks))
+          if (surface.kind === 'collection' && !surface.formMode) {
+            const loaded = readPageSettings(doc)
+            setPageSettings(loaded)
+            setPageInitial(loaded)
+            setPageAvail(pageAvailability(doc))
+          }
         }
         if (user) {
           setLockUser({ ...user, canManageLocks: can(user, 'locks', 'update') })
@@ -938,12 +950,18 @@ export const VisualEditorView: React.FC = () => {
     [addBlockAt, insertTemplateAt, sendDragHover, resolveAt],
   )
 
+  const pageRef = useRef(pageSettings)
+  useEffect(() => {
+    pageRef.current = pageSettings
+  }, [pageSettings])
+
   const save = async (publish: boolean, options: { unpublish?: boolean } = {}) => {
     if (!apiUrl || !surface) return
     setSaving(publish ? 'publishing' : 'saving')
     // What this request carries. Edits made while it is in flight keep the dirty flag set.
-    const sent = { blocks, locks, formConfig }
+    const sent = { blocks, locks, formConfig, pageSettings }
     try {
+      if (pageSettings && pageInitial && validatePageSettings(pageSettings, pageAvail).length) throw new Error('Fix the page settings (title or slug) before saving.')
       const body: Record<string, unknown> = { [surface.blocksField]: stripEditorIds(blocks, lockedKeySet(locks)) }
       if (locksDirty && lockable) body.locks = serializeLocks(locks)
       if (surface.formMode) {
@@ -955,7 +973,10 @@ export const VisualEditorView: React.FC = () => {
         } else if (options.unpublish) {
           body.formStatus = 'draft'
         }
-      } else if (publish) body._status = 'published'
+      } else {
+        if (pageSettings && pageInitial) Object.assign(body, pageSettingsPatch(pageSettings, pageInitial, pageAvail))
+        if (publish) body._status = 'published'
+      }
 
       const res = await fetch(apiUrl, {
         method: 'PATCH',
@@ -978,9 +999,20 @@ export const VisualEditorView: React.FC = () => {
           setFormStatus('draft')
           setStatus('draft')
         }
-      } else if (publish) setStatus('published')
+      } else {
+        if (pageSettings) {
+          setPageInitial(pageSettings)
+          setDocTitle(pageSettings.title.trim() || docTitle)
+          if (!publish) setStatus(pageSettings.status)
+        }
+        if (publish) {
+          setStatus('published')
+          setPageSettings((p) => (p ? { ...p, status: 'published' } : p))
+          setPageInitial((p) => (p ? { ...p, status: 'published' } : p))
+        }
+      }
       const current = lockCtx.current
-      if (current.blocks === sent.blocks && current.locks === sent.locks && current.formConfig === sent.formConfig) {
+      if (current.blocks === sent.blocks && current.locks === sent.locks && current.formConfig === sent.formConfig && pageRef.current === sent.pageSettings) {
         setDirty(false)
         setLocksDirty(false)
       }
@@ -1267,6 +1299,18 @@ export const VisualEditorView: React.FC = () => {
                   onInsertAtEnd: aiInsertAtEnd,
                   onReplaceSelected: aiReplaceSelected,
                 }
+          }
+          pagePanel={
+            pageSettings ? (
+              <PageSettingsPanel
+                value={pageSettings}
+                available={pageAvail}
+                onChange={(next) => {
+                  setPageSettings(next)
+                  setDirty(true)
+                }}
+              />
+            ) : undefined
           }
           formPanel={
             formMode ? (

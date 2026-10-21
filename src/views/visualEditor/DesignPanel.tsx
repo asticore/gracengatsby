@@ -5,6 +5,8 @@ import React, { createContext, useContext, useState } from 'react'
 import {
   BLEND_MODE_OPTIONS,
   BOX_SHADOW_OPTIONS,
+  FONT_TOKEN_OPTIONS,
+  RADIUS_CORNER_KEYS,
   BG_EFFECT_OPTIONS,
   BORDER_FX_OPTIONS,
   KEN_BURNS_OPTIONS,
@@ -317,6 +319,7 @@ export const DesignPanel: React.FC<{
           </>
         )}
         <NumberRow label="Corner radius (px)" value={value.borderRadius} onChange={(v) => set('borderRadius', v)} min={0} />
+        <RadiusCorners ctl={resp} linked={value.radiusLinked === true} onLinked={(b) => set('radiusLinked', b ? true : undefined)} />
         <SelectRow
           label="Shadow"
           value={value.boxShadow || 'none'}
@@ -877,6 +880,30 @@ const LinkedSides: React.FC<{
   )
 }
 
+const CORNER_LABELS = ['top left', 'top right', 'bottom right', 'bottom left']
+
+/** Per-corner radius: four inputs, or one when linked (one value writes every corner in a single update). */
+const RadiusCorners: React.FC<{ ctl: ResponsiveCtl; linked: boolean; onLinked: (b: boolean) => void }> = ({ ctl, linked, onLinked }) => {
+  const { same, value } = linkedValue(RADIUS_CORNER_KEYS.map((k) => ctl.own(k)))
+  return (
+    <>
+      <CheckRow label="Link all corners" checked={linked} onChange={onLinked} />
+      {linked ? (
+        <NumberRow
+          label="Radius, all corners (px)"
+          value={value}
+          placeholder={same ? undefined : 'mixed'}
+          min={0}
+          resp={ctl.resp(RADIUS_CORNER_KEYS[0])}
+          onChange={(v) => ctl.setMany(linkedPatch(RADIUS_CORNER_KEYS, v))}
+        />
+      ) : (
+        RADIUS_CORNER_KEYS.map((k, i) => <RespNumber key={k} ctl={ctl} k={k} label={`Radius ${CORNER_LABELS[i]} (px)`} min={0} />)
+      )}
+    </>
+  )
+}
+
 /** A choice setting that follows the device toggle; tablet / mobile get an "inherited" first option. */
 export const RespSelect: React.FC<{
   ctl: ResponsiveCtl
@@ -1232,7 +1259,11 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
       <SelectRow
         label="Family"
         value={value.fontFamily || ''}
-        options={[{ label: 'Site default', value: '' }, ...BUILT_IN_FONTS.map((font) => ({ label: font.label, value: font.value }))]}
+        options={[
+          { label: 'Site default', value: '' },
+          ...FONT_TOKEN_OPTIONS,
+          ...BUILT_IN_FONTS.map((font) => ({ label: font.label, value: font.value })),
+        ]}
         onChange={(v) => patch({ fontFamily: v || undefined })}
       />
       <TypoRange

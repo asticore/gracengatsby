@@ -1,3 +1,4 @@
+import type { BlockContext } from '@/lib/blockContext'
 import type { SectionNode } from '@/lib/sectionTree'
 
 import type { NodePath } from './treeOps'
@@ -30,6 +31,8 @@ export type CanvasDevice = 'desktop' | 'tablet' | 'mobile'
 export type ParentToFrameMessage =
   | { source: typeof SOURCE; type: 'init'; blocks: SectionNode[]; selectedPath: NodePath | null; locks?: Record<string, { mode: 'structure' | 'full'; blocked: boolean }>; device?: CanvasDevice }
   | { source: typeof SOURCE; type: 'selected'; selectedPath: NodePath | null }
+  /** Site templates "Preview as": sample data the canvas shows in the template widgets' placeholders (null clears it). */
+  | { source: typeof SOURCE; type: 'previewContext'; context: BlockContext | null }
   /** Highlights the insert slot a library-card drag is currently over (or clears it with null).
    *  The parent resolves the target itself via elementFromPoint - see VisualEditor.tsx - since
    *  native dragover/drop listeners placed inside the iframe's own document don't reliably fire

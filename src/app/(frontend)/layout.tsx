@@ -51,6 +51,8 @@ import { sanitizeInstalledFonts } from '@/features/fonts/installed'
 import type { InstalledFont } from '@/features/fonts/types'
 import { buildThemeStylesCss } from '@/features/themeStyles/css'
 import { loadThemeStyles } from '@/features/themeStyles/store'
+import { SiteEffects } from '@/components/site/SiteEffects'
+import { siteEffectsFor } from '@/components/site/siteEffectsConfig'
 import { renderChromeTemplates, requestPathOf } from '@/features/siteTemplates/chrome'
 
 import './styles.css'
@@ -218,6 +220,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 
   // Header / footer templates (Site templates). Null for each when none matches, and the built-in ones draw.
   const chrome = await renderChromeTemplates(requestPathOf(await headers()))
+  const siteEffects = siteEffectsFor(settings, requestPathOf(await headers()))
 
   return (
     <html
@@ -294,6 +297,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         </Providers>
         </DisplayCurrencyProvider>
         </ShopCurrencyProvider>
+        {siteEffects && <SiteEffects config={siteEffects} />}
         <SeoBodyScripts />
       </body>
     </html>

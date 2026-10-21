@@ -187,6 +187,7 @@ export const CanvasFrame: React.FC = () => {
         key: pathKey(path),
         value: cand.value,
         multiline: cand.multiline,
+        rich: cand.rich,
         label: `Edit ${String((node as unknown as { elementType?: string }).elementType || 'text')}`,
         onCommit: (value) => {
           finishEdit(path, itemIndex, cand.field, value)

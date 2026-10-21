@@ -49,10 +49,12 @@ import { MediaEditPanel } from '@/features/media/admin/MediaEditPanel'
 import { BiddersField } from '@/features/ads/admin/BiddersField'
 import { SiteFilesField } from '@/features/seo/admin/SiteFilesField'
 import { TicketTiersField } from '@/features/editScreens/admin/TicketTiersField'
+import { StartersPanel } from '@/features/siteTemplates/admin/StartersPanel'
 import { ConditionsField } from '@/features/siteTemplates/admin/ConditionsField'
 import { DataViewEditorField } from '@/features/dataViews/admin/DataViewEditorField'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
+  '@/features/siteTemplates/admin/StartersPanel#StartersPanel': StartersPanel,
   '@/features/siteTemplates/admin/ConditionsField#ConditionsField': ConditionsField,
   '@/fields/slug/SlugComponent#SlugComponent': SlugComponent,
   '@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton': OpenVisualEditorButton,

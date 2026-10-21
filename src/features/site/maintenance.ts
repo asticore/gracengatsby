@@ -11,7 +11,7 @@ export const BYPASS_PATH_PREFIX = '/maintenance-bypass/'
 const TOKEN_PATTERN = /^[a-f0-9]{24}$/
 
 /** Paths that are never behind the maintenance screen: admin, API (webhooks included), feeds and files. */
-const EXCLUDED_PREFIXES = ['/admin', '/api', '/feeds', '/maintenance-bypass']
+const EXCLUDED_PREFIXES = ['/admin', '/api', '/feeds', '/maintenance-bypass', '/visual-editor-canvas']
 const EXCLUDED_FILES = ['/robots.txt', '/sitemap.xml', '/indexnow-key.txt', '/ads.txt', '/app-ads.txt', '/llms.txt', '/llms-full.txt', '/humans.txt']
 
 export const isValidBypassToken = (value: unknown): value is string => typeof value === 'string' && TOKEN_PATTERN.test(value)

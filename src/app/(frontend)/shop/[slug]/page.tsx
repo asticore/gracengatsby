@@ -10,6 +10,7 @@ import { SubscriptionOffer } from '@/features/ecommerce/subscriptions/components
 import { ProductReviewForm } from '@/components/ProductReviewForm'
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { setBlockContext } from '@/lib/blockContext'
+import { productBlockContext } from '@/lib/blockContextFrom'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { ProductCard } from '@/components/ProductCard'
@@ -139,7 +140,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ...(aggregateRatingJsonLd(ratings) ? { aggregateRating: aggregateRatingJsonLd(ratings) } : {}),
   }
 
-  setBlockContext({ product: { id: product.id, inventory: product.inventory, ratingAverage: (product as { ratingAverage?: number | null }).ratingAverage, ratingCount: (product as { ratingCount?: number | null }).ratingCount, title: product.title, price: (product as { priceInAUD?: number | null }).priceInAUD ?? undefined }, path: `/shop/${slug}` })
+  setBlockContext(productBlockContext(product as unknown as Record<string, unknown>, `/shop/${slug}`))
   const body = (
     <VariationImageProvider>
     <div className="page-shell grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getAdminContext, type AdminContext } from '@/admin/auth'
-import { AiError, callAiDetailed, type AiChatMessage, type CallAiArgs } from '@/features/ai/client'
+import { AiError, callAiDetailed, streamAiDetailed, type AiChatMessage, type CallAiArgs } from '@/features/ai/client'
 import { AI_BUILDER_MODEL_OPTIONS, resolveBuilderModel, type AiProvider } from '@/features/ai/models'
 import { aiKeyAvailability, readAiKey, readBuilderSettings } from '@/features/ai/keys'
 import { readSiteContext } from '@/features/ai/builderContext'
@@ -17,6 +17,7 @@ import {
   type BuilderRequest,
 } from '@/features/ai/builderRequest'
 import { validateBuilderOutput } from '@/features/ai/builderValidate'
+import { formatBuilderEvent, type BuilderStreamEvent } from '@/features/ai/streamParse'
 import { audit, auditContext } from '@/features/security/auditLog'
 import { getSecuritySettings } from '@/features/security/settings'
 
@@ -25,6 +26,8 @@ export const dynamic = 'force-dynamic'
 /** Builder replies are whole sections, so they get more room than alt text. */
 const BUILDER_MAX_TOKENS = 8000
 const BUILDER_TIMEOUT_MS = 90_000
+
+type Emit = (event: BuilderStreamEvent) => void
 
 const json = (body: unknown, status = 200): Response => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
 
@@ -135,9 +138,23 @@ export async function POST(request: Request): Promise<Response> {
   let estimated = false
 
   /** One provider call, recorded in the usage table (counts only). */
-  const ask = async (args: CallAiArgs): Promise<string> => {
+  const ask = async (args: CallAiArgs, emit?: Emit): Promise<string> => {
     try {
-      const { text, usage } = await callAiDetailed(args, options)
+      let result: { text: string; usage: { inputTokens: number; outputTokens: number } | null }
+      if (emit) {
+        try {
+          result = await streamAiDetailed(args, options, { onProgress: (chars) => emit({ event: 'delta', data: { chars } }) })
+        } catch (error) {
+          // Streaming unsupported or failed: one plain retry. Key, rate-limit and quota errors are not retried.
+          const status = error instanceof AiError ? error.status : null
+          if (status === 401 || status === 403 || status === 429 || status === 400) throw error
+          result = await callAiDetailed(args, options)
+        }
+        if (result.usage) emit({ event: 'usage', data: result.usage })
+      } else {
+        result = await callAiDetailed(args, options)
+      }
+      const { text, usage } = result
       const inChars = (args.system?.length ?? 0) + (args.messages ?? []).reduce((sum, m) => sum + m.content.length, 0)
       if (!usage) estimated = true
       await recordUsage({
@@ -157,19 +174,21 @@ export async function POST(request: Request): Promise<Response> {
   }
   const usageNow = async () => readUsageSummary(settings.capUsd)
 
-  try {
+  /** The whole plan/build flow. Returns the JSON body and status, so both response styles share it. */
+  const execute = async (emit?: Emit): Promise<{ body: Record<string, unknown>; status: number }> => {
+    const out = (body: Record<string, unknown>, status = 200) => ({ body, status })
     if (req.action === 'plan') {
-      const reply = await ask({ ...common, system: planSystemPrompt(guide), messages: firstMessages(req, 'plan') })
+      const reply = await ask({ ...common, system: planSystemPrompt(guide), messages: firstMessages(req, 'plan') }, emit)
       const plan = parsePlanReply(reply, req.answers.length > 0)
-      if (plan.ok === false) return json({ ok: false, error: plan.error }, 502)
+      if (plan.ok === false) return out({ ok: false, error: plan.error }, 502)
       await recordAudit(auth.context, request, req, 0)
       const extra = { model, usage: await usageNow(), usageEstimated: estimated }
-      return json('questions' in plan ? { ok: true, questions: plan.questions, ...extra } : { ok: true, outline: plan.outline, ...extra })
+      return out('questions' in plan ? { ok: true, questions: plan.questions, ...extra } : { ok: true, outline: plan.outline, ...extra })
     }
 
     const system = buildSystemPrompt(guide)
     const messages: AiChatMessage[] = firstMessages(req, 'build')
-    let reply = await ask({ ...common, system, messages })
+    let reply = await ask({ ...common, system, messages }, emit)
     let result = validateBuilderOutput(reply, { mode: req.mode })
 
     if (result.ok === false) {
@@ -181,18 +200,18 @@ export async function POST(request: Request): Promise<Response> {
           content: `That reply could not be used: ${result.error} Reply again with only the corrected engage-template JSON object, following the same rules.`,
         },
       ]
-      reply = await ask({ ...common, system, messages: retry })
+      reply = await ask({ ...common, system, messages: retry }, emit)
       result = validateBuilderOutput(reply, { mode: req.mode })
     }
 
-    if (result.ok === false) return json({ ok: false, error: result.error }, 502)
+    if (result.ok === false) return out({ ok: false, error: result.error }, 502)
     // Picture placeholders become library ids, or are removed and reported so the admin can choose.
     const media = await resolveMediaPlaceholders(
       result.sections,
       engineMediaFinder(auth.context.engine as unknown as Parameters<typeof engineMediaFinder>[0]),
     )
     await recordAudit(auth.context, request, req, result.sections.length)
-    return json({
+    return out({
       ok: true,
       sections: result.sections,
       warnings: result.warnings,
@@ -202,8 +221,51 @@ export async function POST(request: Request): Promise<Response> {
       usage: await usageNow(),
       usageEstimated: estimated,
     })
-  } catch (error) {
-    if (error instanceof AiError) return json({ ok: false, error: error.message }, 502)
-    return json({ ok: false, error: 'The builder could not finish. Try again.' }, 500)
   }
+
+  const failure = (error: unknown): { body: Record<string, unknown>; status: number } =>
+    error instanceof AiError
+      ? { body: { ok: false, error: error.message }, status: 502 }
+      : { body: { ok: false, error: 'The builder could not finish. Try again.' }, status: 500 }
+
+  const wantsStream = (request.headers.get('accept') ?? '').includes('text/event-stream')
+  if (!wantsStream) {
+    try {
+      const { body: payload, status } = await execute()
+      return json(payload, status)
+    } catch (error) {
+      const { body: payload, status } = failure(error)
+      return json(payload, status)
+    }
+  }
+
+  // Progress stream: delta (character count only), usage, then done (the same validated body) or error.
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const emit: Emit = (event) => {
+        try {
+          controller.enqueue(encoder.encode(formatBuilderEvent(event)))
+        } catch {
+          // The browser went away; the work still finishes and is recorded.
+        }
+      }
+      try {
+        const { body: payload, status } = await execute(emit)
+        if (payload.ok === true) emit({ event: 'done', data: payload })
+        else emit({ event: 'error', data: { error: String(payload.error ?? 'The builder could not finish.'), status } })
+      } catch (error) {
+        const { body: payload, status } = failure(error)
+        emit({ event: 'error', data: { error: String(payload.error), status } })
+      }
+      try {
+        controller.close()
+      } catch {
+        // already closed
+      }
+    },
+  })
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' },
+  })
 }

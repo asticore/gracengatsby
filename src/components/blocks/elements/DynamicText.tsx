@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { getEngine } from '@/lib/engine'
+import { getBlockContext } from '@/lib/blockContext'
 import { resolveTags } from '@/lib/dynamicTags'
 import type { DateFormat, TagContext } from '@/lib/dynamicTags'
 
@@ -23,16 +24,17 @@ export function DynamicTextView({ props, ctx }: { props: Record<string, unknown>
  */
 export async function DynamicTextElement(props: Record<string, unknown>): Promise<React.ReactElement> {
   const base = obj(props.ctx)
+  const fallback = getBlockContext()
   const ctx: TagContext = {
-    post: obj(props.post ?? base.post),
-    page: obj(props.page ?? base.page),
-    product: obj(props.product ?? base.product),
+    post: obj(props.post ?? base.post ?? fallback.post),
+    page: obj(props.page ?? base.page ?? fallback.page),
+    product: obj(props.product ?? base.product ?? fallback.product),
     site: {},
   }
   try {
     const engine = (await getEngine()) as unknown as { findGlobal: (a: unknown) => Promise<Record<string, unknown> | null> }
     const s = await engine.findGlobal({ slug: 'site-settings', depth: 0 })
-    const name = s?.siteName ?? s?.name ?? s?.title
+    const name: unknown = s?.siteName
     ctx.site = { name: typeof name === 'string' ? name : '' }
   } catch {
     // site.name stays empty

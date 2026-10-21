@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { FORM_PRESETS } from '@/views/visualEditor/formPresets'
-import { filterFormPresetCards, formPresetCards, formPresetNode } from '@/views/visualEditor/libraryFormPresets'
+import { createFormFromPreset, filterFormPresetCards, formPresetCards, formPresetNode } from '@/views/visualEditor/libraryFormPresets'
 
 describe('library form presets', () => {
   it('lists one card per preset', () => {
@@ -34,5 +34,45 @@ describe('library form presets', () => {
     expect(filterFormPresetCards(cards, 'forms')).toHaveLength(cards.length)
     expect(filterFormPresetCards(cards, 'newsletter').map((c) => c.id)).toEqual(['newsletter-signup'])
     expect(filterFormPresetCards(cards, 'zzz')).toEqual([])
+  })
+
+  describe('createFormFromPreset', () => {
+    const ok = (body: unknown, status = 201) => ({ ok: status < 400, status, json: async () => body }) as Response
+
+    it('POSTs the preset as a saved form and returns a form block pointing at it', async () => {
+      const preset = FORM_PRESETS.find((p) => p.id === 'contact')!
+      const fetchImpl = vi.fn(async () => ok({ doc: { id: 42 } }))
+      const result = await createFormFromPreset('contact', fetchImpl as unknown as typeof fetch)
+      expect(result).toEqual({ ok: true, node: { blockType: 'form', form: 42, showTitle: true } })
+      const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+      expect(url).toBe('/api/forms')
+      expect(init.method).toBe('POST')
+      const body = JSON.parse(String(init.body))
+      expect(body.title).toBe(preset.label)
+      expect(body.layout).toEqual(preset.fields)
+      expect(body.publishedLayout).toEqual(preset.fields)
+      expect(body.formStatus).toBe('published')
+      expect(body.settings).toEqual(preset.settings)
+    })
+
+    it('inserts nothing when the server refuses', async () => {
+      const result = await createFormFromPreset('contact', (async () => ok({}, 403)) as unknown as typeof fetch)
+      expect(result.ok).toBe(false)
+    })
+
+    it('inserts nothing when the response has no id or fetch throws', async () => {
+      expect((await createFormFromPreset('contact', (async () => ok({ doc: {} })) as unknown as typeof fetch)).ok).toBe(false)
+      const boom = (async () => {
+        throw new Error('offline')
+      }) as unknown as typeof fetch
+      expect((await createFormFromPreset('contact', boom)).ok).toBe(false)
+    })
+
+    it('does not call the server for an unknown preset', async () => {
+      const fetchImpl = vi.fn()
+      const result = await createFormFromPreset('nope', fetchImpl as unknown as typeof fetch)
+      expect(result.ok).toBe(false)
+      expect(fetchImpl).not.toHaveBeenCalled()
+    })
   })
 })

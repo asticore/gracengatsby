@@ -103,7 +103,7 @@ describe('wave 48 registry shape', () => {
   it('exposes the requested option sets', () => {
     const byType = Object.fromEntries(WAVE48_ELEMENTS.map((e) => [e.type, Object.fromEntries(e.fields.map((f) => [f.name, f]))]))
     expect(byType.chart!.chartType!.options!.map((o) => o.value)).toEqual(['bar', 'line', 'pie', 'radar', 'polar'])
-    expect(byType.embed!.provider!.options!.map((o) => o.value)).toEqual(['youtube', 'vimeo', 'x', 'instagram', 'facebook-video', 'google-calendar', 'typeform', 'custom-iframe'])
+    expect(byType.embed!.provider!.options!.map((o) => o.value)).toEqual(['youtube', 'vimeo', 'x', 'instagram', 'facebook-video', 'google-calendar', 'typeform', 'lottie', 'custom-iframe'])
     expect(byType.reviews!.layout!.options!.map((o) => o.value)).toEqual(['grid', 'list'])
     expect(byType.reviews!.items!.type).toBe('repeater')
     expect(byType.pagination!.align!.options!.map((o) => o.value)).toEqual(['left', 'centre', 'right'])
@@ -195,6 +195,16 @@ describe('embed', () => {
     expect(target('vimeo', 'https://vimeo.com/123456789')).toEqual({ kind: 'iframe', src: 'https://player.vimeo.com/video/123456789?dnt=1' })
     expect(target('google-calendar', 'https://calendar.google.com/calendar/embed?src=a%40b.c')).toEqual({ kind: 'iframe', src: 'https://calendar.google.com/calendar/embed?src=a%40b.c' })
     expect(target('typeform', 'https://form.typeform.com/to/abc123')).toEqual({ kind: 'iframe', src: 'https://form.typeform.com/to/abc123' })
+  })
+
+  it('maps Lottie embed URLs to an iframe and lottiefiles pages to link cards', () => {
+    const id = '0b9a1c2e-1111-4222-8333-444455556666/AbC123xyz'
+    expect(target('lottie', `https://lottie.host/embed/${id}.json`)).toEqual({ kind: 'iframe', src: `https://lottie.host/embed/${id}.json` })
+    expect(target('lottie', 'https://lottie.host/other/x').kind).toBe('error')
+    expect(target('lottie', 'https://lottiefiles.com/animations/cat-abc').kind).toBe('link')
+    expect(target('lottie', 'https://app.lottiefiles.com/share/x').kind).toBe('link')
+    expect(target('lottie', 'https://evil.example/embed/a/b.json').kind).toBe('error')
+    expect(iframeFor('lottie', `https://lottie.host/embed/${id}.json`)).not.toContain('lottie.host')
   })
 
   it('server HTML holds only the consent placeholder for every iframe provider, never the iframe or its source', () => {

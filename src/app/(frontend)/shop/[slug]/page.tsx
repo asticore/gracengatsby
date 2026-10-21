@@ -139,7 +139,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ...(aggregateRatingJsonLd(ratings) ? { aggregateRating: aggregateRatingJsonLd(ratings) } : {}),
   }
 
-  setBlockContext({ product: { title: product.title, price: (product as { priceInAUD?: number | null }).priceInAUD ?? undefined } })
+  setBlockContext({ product: { title: product.title, price: (product as { priceInAUD?: number | null }).priceInAUD ?? undefined }, path: `/shop/${slug}` })
   const body = (
     <VariationImageProvider>
     <div className="page-shell grid grid-cols-[1.1fr_0.9fr] gap-14 max-[900px]:grid-cols-1">

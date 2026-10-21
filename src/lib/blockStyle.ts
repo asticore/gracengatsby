@@ -29,6 +29,13 @@ export type BgEffect = 'none' | 'aurora' | 'mesh' | 'gradient-shift' | 'grain' |
 export type ParticlesInteract = 'none' | 'repel' | 'attract' | 'connect'
 export type Parallax = 'none' | 'background' | 'float-up' | 'float-down'
 export type Reveal = 'none' | 'fade' | 'fade-up' | 'fade-down' | 'slide-left' | 'slide-right' | 'zoom' | 'blur'
+export type HoverTransformPreset = 'none' | 'lift' | 'scale'
+
+export const HOVER_TRANSFORM_PRESETS: Record<Exclude<HoverTransformPreset, 'none'>, string> = {
+  lift: 'translateY(-4px)',
+  scale: 'scale(1.03)',
+}
+
 export type HoverFx = 'none' | 'lift' | 'glow' | 'zoom'
 export type PointerFx = 'none' | 'spotlight' | 'tilt' | 'magnetic'
 export type KenBurns = 'none' | 'zoom-in' | 'zoom-out' | 'pan'
@@ -363,6 +370,12 @@ export type BlockStyle = {
   hoverBorderRadius?: number
   /** Transition length for the hover colour/shadow/radius changes, ms 0-2000 (default 250). */
   hoverTransitionMs?: number
+  /** Opacity on hover, 0-1. */
+  hoverOpacity?: number
+  /** Preset transform on hover; ignored when the Advanced hover transform (tfh*) is set. Skipped under prefers-reduced-motion. */
+  hoverTransform?: HoverTransformPreset
+  /** Focus-visible outline colour for the block and anything focusable inside it. */
+  focusRing?: string
   position?: BlockPosition
   posTop?: number
   posRight?: number
@@ -582,6 +595,9 @@ function sanitizeFx(style: BlockStyle): BlockStyle {
   enumKey('hoverBoxShadow', BOX_SHADOW_OPTIONS)
   numKey('hoverBorderRadius', 0, 200)
   numKey('hoverTransitionMs', 0, 2000)
+  numKey('hoverOpacity', 0, 1)
+  enumKey('hoverTransform', [{ value: 'none' }, { value: 'lift' }, { value: 'scale' }])
+  colorKey('focusRing')
   numKey('overlayAngle', 0, 360)
   numKey('overlayOpacity', 0, 100)
   enumKey('overlayBlend', [
@@ -733,15 +749,20 @@ const FX_KEYS = [
   'position', 'blendMode', 'cssClasses', 'customCss', 'maskShape',
   'slideInterval', 'slideTransition', 'blobMorphSpeed', 'noise',
   'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
+  'hoverOpacity', 'hoverTransform', 'focusRing',
   'textFx', 'textFxColor', 'textFxColor2', 'textFxAngle', 'textFxStroke', 'textFxAnimated',
 ] as const
 
 /** Normal | Hover state keys (Elementor-style). Any of them set turns on the hover transition. */
 const HOVER_STATE_KEYS = [
   'hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius', 'hoverTransitionMs',
+  'hoverOpacity', 'hoverTransform',
 ] as const
 /** Properties that animate between the normal and hover values. */
 const HOVER_TRANSITION_PROPS = ['background-color', 'color', 'border-color', 'box-shadow', 'border-radius'] as const
+
+/** The pre-existing hover keys; when only the newer ones (opacity / transform preset) are set the default transition is 150ms. */
+const HOVER_TRANSITION_PROPS_KEYS = ['hoverBgColor', 'hoverTextColor', 'hoverBorderColor', 'hoverBoxShadow', 'hoverBorderRadius'] as const
 
 function hasHoverState(style: BlockStyle): boolean {
   return HOVER_STATE_KEYS.some((k) => style[k] !== undefined)
@@ -1042,7 +1063,12 @@ export function blockStyleToCss(style: BlockStyle): React.CSSProperties {
   if (hasHoverState(style)) {
     const ms = isNum(style.hoverTransitionMs) ? style.hoverTransitionMs : 250
     const parts = css.transition ? [String(css.transition)] : []
-    for (const prop of HOVER_TRANSITION_PROPS) parts.push(`${prop} ${ms}ms ease`)
+    const legacy = HOVER_TRANSITION_PROPS_KEYS.some((k) => style[k] !== undefined)
+    const fast = !legacy && style.hoverTransitionMs === undefined ? 150 : ms
+    const props: string[] = [...HOVER_TRANSITION_PROPS]
+    if (isNum(style.hoverOpacity)) props.push('opacity')
+    if (style.hoverTransform && style.hoverTransform !== 'none') props.push('transform')
+    for (const prop of props) parts.push(`${prop} ${fast}ms ease`)
     css.transition = parts.join(', ')
   }
   // The inline transition above would hide the class-based spring, so magnetic's translate is listed here.
@@ -1285,6 +1311,14 @@ export function blockStyleCss(style: BlockStyle, scopeId: string, options: { edi
   // Hover transform. !important because the normal transform is an inline style, which beats a stylesheet rule.
   const tfh = transformValue(style, 'tfh')
   if (tfh) rules.push(`@media (hover:hover){${sel}:hover{transform:${tfh} !important}}`)
+  else if (style.hoverTransform && style.hoverTransform !== 'none' && HOVER_TRANSFORM_PRESETS[style.hoverTransform]) {
+    rules.push(`@media (hover:hover) and (prefers-reduced-motion:no-preference){${sel}:hover{transform:${HOVER_TRANSFORM_PRESETS[style.hoverTransform]} !important}}`)
+  }
+
+  // Keyboard focus ring (focus-visible only, so mouse clicks do not show it).
+  if (sanitizeColor(style.focusRing) !== undefined) {
+    rules.push(`${sel}:focus-visible,${sel} :focus-visible{outline:2px solid ${style.focusRing} !important;outline-offset:2px}`)
+  }
 
   // Hover colours, shadow and radius. !important for the same reason: the normal values are inline.
   const hoverDecls = hoverStateDecls(style)
@@ -1332,6 +1366,7 @@ function hoverStateDecls(style: BlockStyle): string[] {
     if (preset) decls.push(`box-shadow:${preset} !important`)
   }
   if (isNum(style.hoverBorderRadius)) decls.push(`border-radius:${style.hoverBorderRadius}px !important`)
+  if (isNum(style.hoverOpacity) && style.hoverOpacity >= 0 && style.hoverOpacity <= 1) decls.push(`opacity:${style.hoverOpacity} !important`)
   return decls
 }
 

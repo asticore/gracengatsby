@@ -36,15 +36,7 @@ export const ElementLibrary: React.FC<{
 }> = ({ targetLabel, onPickBlock, onPickTemplate, formMode }) => {
   const [source, setSource] = useState<Source>('blocks')
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<string>(() => {
-    try {
-      const saved = window.localStorage.getItem(CATEGORY_KEY)
-      if (saved && BLOCK_CATEGORIES.some((c) => c.key === saved)) return saved
-    } catch {
-      /* storage unavailable */
-    }
-    return 'all'
-  })
+  const [category, setCategory] = useState<string>('all')
   const changeCategory = (key: string) => {
     setCategory(key)
     try {
@@ -53,8 +45,21 @@ export const ElementLibrary: React.FC<{
       /* storage unavailable */
     }
   }
-  const [recents, setRecents] = useState<string[]>(() => loadList(RECENTS_KEY))
-  const [favs, setFavs] = useState<string[]>(() => loadList(FAVS_KEY))
+  const [recents, setRecents] = useState<string[]>([])
+  const [favs, setFavs] = useState<string[]>([])
+  // Stored values are read after mount so the first client render equals the server render.
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- one-time sync with localStorage after mount */
+    try {
+      const saved = window.localStorage.getItem(CATEGORY_KEY)
+      if (saved && BLOCK_CATEGORIES.some((c) => c.key === saved)) setCategory(saved)
+    } catch {
+      /* storage unavailable */
+    }
+    setRecents(loadList(RECENTS_KEY))
+    setFavs(loadList(FAVS_KEY))
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [])
 
   const pick = useCallback(
     (slug: string) => {

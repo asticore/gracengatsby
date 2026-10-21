@@ -7,6 +7,7 @@
  * messages carry the HTTP status, never a key or a response body.
  */
 
+import { createSseParser, createStreamAccumulator, parseProviderEvent } from './streamParse'
 import { AI_MODELS, AI_TIMEOUT_MS, ANTHROPIC_URL, ANTHROPIC_VERSION, OPENAI_URL, type AiProvider } from './models'
 
 export type AiImage = { data: Uint8Array; mimeType: string }
@@ -205,6 +206,74 @@ export async function callAiDetailed(args: CallAiArgs, options: CallAiOptions): 
       throw new AiError(`${args.provider === 'claude' ? 'Claude' : 'OpenAI'} took too long to respond.`)
     }
     throw new AiError(`${args.provider === 'claude' ? 'Claude' : 'OpenAI'} could not be reached.`)
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/** Thrown when the runtime or provider cannot stream, so the caller may retry without streaming. */
+export class AiStreamUnsupportedError extends AiError {}
+
+export type StreamHandlers = {
+  /** Called with the running character count as text arrives. */
+  onProgress?: (chars: number) => void
+}
+
+/**
+ * Like callAiDetailed, but asks the provider to stream and reports progress as it goes.
+ * Returns the same shape once the stream ends. Any stream failure is an AiError; a missing
+ * body reader is AiStreamUnsupportedError.
+ */
+export async function streamAiDetailed(
+  args: CallAiArgs,
+  options: CallAiOptions,
+  handlers: StreamHandlers = {},
+): Promise<{ text: string; usage: AiUsage | null }> {
+  const name = args.provider === 'claude' ? 'Claude' : 'OpenAI'
+  if (!options.apiKey) throw new AiError(`No ${name} API key is set in Integrations.`)
+  const fetchImpl = options.fetch ?? fetch
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? AI_TIMEOUT_MS)
+  const claude = args.provider === 'claude'
+  const body = claude
+    ? { ...buildAnthropicRequest(args), stream: true }
+    : { ...buildOpenAiRequest(args), stream: true, stream_options: { include_usage: true } }
+  try {
+    const response = await fetchImpl(claude ? ANTHROPIC_URL : OPENAI_URL, {
+      method: 'POST',
+      headers: claude
+        ? { 'content-type': 'application/json', 'x-api-key': options.apiKey, 'anthropic-version': ANTHROPIC_VERSION }
+        : { 'content-type': 'application/json', authorization: `Bearer ${options.apiKey}` },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new AiError(messageForStatus(args.provider, response.status), response.status)
+    const reader = response.body?.getReader?.()
+    if (!reader) throw new AiStreamUnsupportedError(`${name} did not stream a response.`)
+
+    const decoder = new TextDecoder()
+    const parser = createSseParser()
+    const acc = createStreamAccumulator()
+    const take = (chunk: string) => {
+      const before = acc.text.length
+      for (const message of chunk ? parser.feed(chunk) : parser.flush()) acc.add(parseProviderEvent(args.provider, message))
+      if (acc.text.length !== before) handlers.onProgress?.(acc.text.length)
+    }
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      take(decoder.decode(value, { stream: true }))
+      if (acc.done) break
+    }
+    take('')
+    if (acc.error) throw new AiError(acc.error)
+    const text = acc.text.trim()
+    if (!text) throw new AiError('The model returned no text for this picture.')
+    return { text, usage: acc.usage }
+  } catch (error) {
+    if (error instanceof AiError) throw error
+    if (error instanceof Error && error.name === 'AbortError') throw new AiError(`${name} took too long to respond.`)
+    throw new AiError(`${name} could not be reached.`)
   } finally {
     clearTimeout(timer)
   }

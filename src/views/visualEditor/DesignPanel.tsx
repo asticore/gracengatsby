@@ -1440,7 +1440,7 @@ const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => v
             className={`ve-btn${state === t.value ? ' ve-btn--active' : ''}`}
             onClick={() => setState(t.value)}
           >
-            {t.label}{stateModified(value, t.value) ? ' \\u2022' : ''}
+            {t.label}{stateModified(value, t.value) ? ` ${String.fromCharCode(0x2022)}` : ''}
           </button>
         ))}
       </div>

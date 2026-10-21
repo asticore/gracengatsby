@@ -1,5 +1,6 @@
 import type { EditorField } from './fieldTypes'
 import type { ElementDef } from './registry'
+import { WAVE63_ELEMENTS } from './wave63Defs'
 
 /**
  * Wave 38: site elements. Each one reads live site data on the server (site settings, the Header menu, the blog)
@@ -97,4 +98,4 @@ export const WAVE38_ELEMENTS: ElementDef[] = [
 ]
 
 /** Element types that read live site data on the server. The editor canvas shows a placeholder for these. */
-export const SITE_ELEMENT_TYPES: ReadonlySet<string> = new Set([...WAVE38_ELEMENTS.map((e) => e.type), 'loop', 'dynamic-text'])
+export const SITE_ELEMENT_TYPES: ReadonlySet<string> = new Set([...WAVE38_ELEMENTS.map((e) => e.type), 'loop', 'dynamic-text', ...WAVE63_ELEMENTS.map((e) => e.type)])

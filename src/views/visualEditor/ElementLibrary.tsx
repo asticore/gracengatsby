@@ -6,7 +6,7 @@ import type { SectionNode } from '@/lib/sectionTree'
 
 import { BLOCK_CATEGORIES, libraryCards, type BlockDef } from './blockSchemas'
 import { globalCards, globalNode, type GlobalCard } from './libraryGlobals'
-import { filterFormPresetCards, formPresetCards, formPresetNode } from './libraryFormPresets'
+import { createFormFromPreset, filterFormPresetCards, formPresetCards } from './libraryFormPresets'
 import { TemplateBrowser } from './TemplateBrowser'
 import { FAVS_KEY, RECENTS_KEY, loadList, pushRecent, saveList, toggleFavourite } from './libraryRecents'
 import './navLibraryPresets.css'
@@ -71,8 +71,10 @@ export const ElementLibrary: React.FC<{
     return globals.filter((g) => !needle || g.name.toLowerCase().includes(needle) || g.description.toLowerCase().includes(needle) || 'global'.includes(needle))
   }, [globals, query])
 
-  /** Off until inserting a preset also creates a saved form document (the form block renders only saved forms). */
-  const FORM_PRESET_INSERT_READY = false
+  /** Inserting a preset first creates a saved form document (the form block renders only saved forms). */
+  const FORM_PRESET_INSERT_READY = true
+  const [formNotice, setFormNotice] = useState<string | null>(null)
+  const [formBusy, setFormBusy] = useState(false)
 
   const formCards = useMemo(() => filterFormPresetCards(formPresetCards(), query), [query])
 
@@ -255,11 +257,21 @@ export const ElementLibrary: React.FC<{
             {FORM_PRESET_INSERT_READY && !formMode && category === 'all' && formCards.length > 0 && (
               <div className="ve-library__group" data-testid="ve-lib-forms">
                 <h4 className="ve-library__group-title">Forms</h4>
+                {formNotice && (
+                  <p className="ve-library__empty" role="alert">
+                    {formNotice}
+                  </p>
+                )}
                 <div className="ve-library__grid">
                   {formCards.map((f) => {
-                    const insert = () => {
-                      const node = formPresetNode(f.id)
-                      if (node) onPickTemplate([node])
+                    const insert = async () => {
+                      if (formBusy) return
+                      setFormBusy(true)
+                      setFormNotice(null)
+                      const result = await createFormFromPreset(f.id)
+                      setFormBusy(false)
+                      if ('node' in result) onPickTemplate([result.node])
+                      else setFormNotice(result.error)
                     }
                     return (
                       <div
@@ -267,11 +279,11 @@ export const ElementLibrary: React.FC<{
                         role="button"
                         tabIndex={0}
                         className="ve-library__card"
-                        onClick={insert}
+                        onClick={() => void insert()}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault()
-                            insert()
+                            void insert()
                           }
                         }}
                         title={f.description}

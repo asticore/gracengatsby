@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { linkAttrs, linkHref, lines, pick } from './elementUtil'
+import { SafeInlineHtml } from './SafeInlineHtml'
 import { AnimatedHeadlineElement, DualHeadingElement } from './Wave36Elements'
 import { HighlightTextElement, SplitTextElement } from './Wave43Elements'
 
@@ -112,7 +113,7 @@ export const HeadingElement: React.FC<HeadingElementProps> = (props) => {
       {effectNode}
     </div>
   ) : (
-    <Tag style={{ textAlign: align, margin: 0 }}>{text || 'New heading'}</Tag>
+    <SafeInlineHtml as={Tag} style={{ textAlign: align, margin: 0 }} text={text || 'New heading'} />
   )
   const href = linkHref(link)
   if (!href) return body

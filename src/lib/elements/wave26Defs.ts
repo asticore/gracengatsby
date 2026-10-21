@@ -78,6 +78,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
     fields: [
       { name: 'image', label: 'Image', type: 'media' }, text('url', 'Or image address', { helpText: 'Used when no image is chosen above.' }), text('alt', 'Alt text', { helpText: 'Describe the picture for people who cannot see it.' }),
       text('caption', 'Caption'), link(), select('ratio', 'Shape', RATIO_OPTIONS), select('fit', 'Fit', opts('cover', 'contain')), slider('width', 'Width (%)', 5, 100), ALIGN,
+      { name: 'lightbox', label: 'Open in a larger view', type: 'checkbox', helpText: 'Ignored when the image has a link. Escape closes the view.' },
     ],
     defaultProps: () => ({ ratio: 'auto', fit: 'cover', width: 100, align: 'left' }),
   },

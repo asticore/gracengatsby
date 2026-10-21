@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { AdRichText } from '@/features/ads/components/AdRichText'
+import { setBlockContext } from '@/lib/blockContext'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { annotatePage } from '@/features/editScreens/toc'
 import { getEngine } from '@/lib/engine'
@@ -112,6 +113,7 @@ export default async function BlogPostPage({
   const content = await resolveDocumentContent('posts', post)
   const annotated = annotatePage({ body: content.content, blocks: content.layout || [] })
 
+  setBlockContext({ post: { title: post.title, date: post.publishedDate, excerpt: post.excerpt, author: (author as { name?: unknown } | null)?.name } })
   const body = (
     <article className="page-shell">
       <AdsPageScope collection="posts" noAds={(post as { noAds?: boolean }).noAds} />

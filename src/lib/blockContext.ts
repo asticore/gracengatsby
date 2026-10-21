@@ -4,7 +4,7 @@ import { cache } from 'react'
 export type BlockContext = {
   post?: { title?: unknown; date?: unknown; excerpt?: unknown; author?: unknown; featuredImage?: { url?: unknown; alt?: unknown }; categories?: string[] }
   page?: { title?: unknown }
-  product?: { title?: unknown; price?: unknown }
+  product?: { id?: number; title?: unknown; price?: unknown; inventory?: number | null; ratingAverage?: number | null; ratingCount?: number | null }
   /** URL path of the page being viewed, for breadcrumbs. */
   path?: string
 }

@@ -1030,6 +1030,31 @@ html[data-theme='dark'] .ve-root {
   color: var(--ve-text);
 }
 
+.ve-library__filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ve-library__filter-row .ve-library__search {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
+.ve-library__filter {
+  flex: 0 1 140px;
+  min-width: 0;
+  max-width: 45%;
+  font-size: 13px;
+  padding: 9px 8px;
+  border: 1px solid var(--ve-border-strong);
+  border-radius: 6px;
+  font-family: inherit;
+  background: var(--ve-surface);
+  color: var(--ve-text);
+}
+
 .ve-library__tabs {
   display: flex;
   gap: 6px;

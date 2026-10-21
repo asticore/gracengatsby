@@ -56,6 +56,12 @@ export type SiteSettingsDoc = {
     twitterHandle?: string | null
     siteIndexable?: boolean | null
   } | null
+  pageEffects?: {
+    enabled?: boolean | null
+    cursor?: string | null
+    scrollProgress?: boolean | null
+    revealOnScroll?: boolean | null
+  } | null
   features?: Partial<Record<FeatureKey, boolean | null>> | null
   updatedAt: string
   createdAt: string

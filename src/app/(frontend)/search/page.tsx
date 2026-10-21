@@ -2,6 +2,7 @@ import Link from 'next/link'
 import React from 'react'
 import type { Metadata } from 'next'
 
+import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
@@ -176,7 +177,7 @@ export default async function SearchPage({
   const query = normalizeQuery(first(sp.q)) || normalizeQuery(first(sp.s))
   const found = query ? await runSearch(query) : NONE
 
-  return (
+  const body = (
     <div className="page-shell">
       <div className="section-heading">
         <h1>Search</h1>
@@ -229,4 +230,5 @@ export default async function SearchPage({
       )}
     </div>
   )
+  return renderWithTemplate({ kind: 'search-results', ctx: { path: '/search' }, content: body })
 }

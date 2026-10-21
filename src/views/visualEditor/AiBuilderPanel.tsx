@@ -3,6 +3,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
+import { writingText } from '@/features/ai/streamParse'
 
 import {
   addOutlineItem,
@@ -113,6 +114,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
   const abortRef = useRef<AbortController | null>(null)
   const [usage, setUsage] = useState<AiUsage | null>(null)
   const [elapsed, setElapsed] = useState(0)
+  const [chars, setChars] = useState(0)
   const [history, setHistory] = useState<AiHistoryEntry[]>([])
   const [prevBuilt, setPrevBuilt] = useState<BuiltResult | null>(null)
   const [refineText, setRefineText] = useState('')
@@ -174,10 +176,11 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
     const controller = new AbortController()
     abortRef.current = controller
     setElapsed(0)
+    setChars(0)
     setBusy(body.action)
     setError(null)
     try {
-      return parse(await postAiBuilder(body, controller.signal))
+      return parse(await postAiBuilder(body, controller.signal, setChars))
     } catch (err) {
       if (!controller.signal.aborted) setError(messageOf(err))
       return null
@@ -770,7 +773,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           {busy && (
             <div className="ve-ai__status" role="status">
               <span className="ve-ai__spinner" aria-hidden="true" />
-              <span>{progressText(busy, elapsed)}</span>
+              <span>{chars > 0 ? writingText(chars) : progressText(busy, elapsed)}</span>
               <button type="button" className="ve-ai__btn ve-ai__btn--small" onClick={cancel}>
                 Cancel
               </button>

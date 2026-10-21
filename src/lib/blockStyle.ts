@@ -9,7 +9,7 @@
  * actually meant to be set.
  */
 
-import { BUILT_IN_FONTS, fontStack } from '@/features/fonts/installed'
+import { BUILT_IN_FONTS, fontStack, sanitizeFamily } from '@/features/fonts/installed'
 import { cleanRoles, cleanUrlText, isIsoDate, rulesFromStyle } from '@/lib/visibilityRules'
 
 import { isDesignV2Raw } from '@/lib/design/upgrade'
@@ -1183,8 +1183,15 @@ export const FONT_TOKEN_OPTIONS: ReadonlyArray<{ value: string; label: string }>
   { value: 'var(--font-body)', label: 'Theme body font' },
 ]
 
+/** Prefix for a site-installed font family stored in a block's fontFamily, e.g. `family:Lora`. */
+export const INSTALLED_FONT_PREFIX = 'family:'
+
 export function blockFontStack(key: string | undefined): string | null {
   if (typeof key === 'string' && FONT_TOKEN_PATTERN.test(key.trim())) return key.trim()
+  if (typeof key === 'string' && key.startsWith(INSTALLED_FONT_PREFIX)) {
+    const safe = sanitizeFamily(key.slice(INSTALLED_FONT_PREFIX.length))
+    return safe ? fontStack(safe) : null
+  }
   const font = BUILT_IN_FONTS.find((candidate) => candidate.value === key)
   return font ? fontStack(font.family, font.category) : null
 }

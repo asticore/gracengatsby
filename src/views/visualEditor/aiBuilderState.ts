@@ -1,4 +1,5 @@
 import type { SectionNode } from '@/lib/sectionTree'
+import { createSseParser, parseBuilderEvent, type SseMessage } from '@/features/ai/streamParse'
 
 /**
  * Pure helpers for the "Build with AI" dock tab: request building, response
@@ -464,15 +465,43 @@ export async function fetchAiStatus(signal?: AbortSignal): Promise<{ providers: 
 }
 
 /** POST a plan or build call. Returns the parsed body; throws AiBuilderError on failure. */
-export async function postAiBuilder(body: AiBuilderRequest, signal?: AbortSignal): Promise<unknown> {
+export async function postAiBuilder(body: AiBuilderRequest, signal?: AbortSignal, onProgress?: (chars: number) => void): Promise<unknown> {
   const res = await fetch(AI_BUILDER_ENDPOINT, {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: onProgress ? 'text/event-stream, application/json' : 'application/json' },
     body: JSON.stringify(body),
     signal,
   })
+  if (onProgress && res.ok && (res.headers.get('content-type') ?? '').includes('text/event-stream') && res.body) {
+    return readBuilderStream(res.body, onProgress)
+  }
   const data: unknown = await readJsonBody(res)
   if (!res.ok || !asRecord(data)?.ok) throw new AiBuilderError(failureText(data, res.status))
   return data
+}
+
+/** Reads the progress stream. Progress is a character count only; the result is applied from 'done'. */
+export async function readBuilderStream(stream: ReadableStream<Uint8Array>, onProgress: (chars: number) => void): Promise<unknown> {
+  const reader = stream.getReader()
+  const decoder = new TextDecoder()
+  const parser = createSseParser()
+  let result: unknown = null
+  const handle = (messages: SseMessage[]) => {
+    for (const message of messages) {
+      const event = parseBuilderEvent(message)
+      if (!event) continue
+      if (event.event === 'delta') onProgress(event.data.chars)
+      else if (event.event === 'done') result = event.data
+      else if (event.event === 'error') throw new AiBuilderError(event.data.error)
+    }
+  }
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    handle(parser.feed(decoder.decode(value, { stream: true })))
+  }
+  handle(parser.flush())
+  if (!asRecord(result)?.ok) throw new AiBuilderError('The AI builder stopped before finishing. Try again.')
+  return result
 }

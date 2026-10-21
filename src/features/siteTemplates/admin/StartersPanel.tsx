@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react'
 
+import { useDocumentInfo } from '@/admin/context/DocumentInfoContext'
+
 type Starter = { id: string; kind: string; label: string; description: string }
 
 const buttonClass =
@@ -12,6 +14,9 @@ export const StartersPanel: React.FC = () => {
   const [starters, setStarters] = useState<Starter[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const { id: docId } = useDocumentInfo()
+  const urlId = typeof window !== 'undefined' ? /site-templates\/(\d+)/.exec(window.location.pathname)?.[1] : undefined
+  const exportId = docId ?? urlId
   const [created, setCreated] = useState<{ id: number | string; label: string } | null>(null)
 
   useEffect(() => {
@@ -41,7 +46,27 @@ export const StartersPanel: React.FC = () => {
     }
   }
 
-  if (!starters.length && !error) return null
+  const importFile = async (file: File | undefined) => {
+    if (!file) return
+    setBusy('import')
+    setError('')
+    try {
+      const res = await fetch('/api/admin-template-io', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: await file.text(),
+      })
+      const data = (await res.json().catch(() => ({}))) as { id?: number | string; error?: string }
+      if (!res.ok || data.id === undefined) throw new Error(data.error || 'Could not import the template.')
+      setCreated({ id: data.id, label: file.name })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not import the template.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <div style={{ marginBottom: 8, maxWidth: 520 }}>
       <strong>Start from a layout</strong>
@@ -51,6 +76,17 @@ export const StartersPanel: React.FC = () => {
             {busy === s.id ? 'Creating...' : `${s.kind}: ${s.label}`}
           </button>
         ))}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+        {exportId !== undefined ? (
+          <a className={buttonClass} href={`/api/admin-template-io?id=${exportId}`} download>
+            Export current
+          </a>
+        ) : null}
+        <label className={buttonClass}>
+          {busy === 'import' ? 'Importing...' : 'Import file'}
+          <input type="file" accept=".json,application/json" hidden disabled={busy !== null} onChange={(e) => { void importFile(e.target.files?.[0]); e.target.value = '' }} />
+        </label>
       </div>
       {created ? (
         <p style={{ marginTop: 6, fontSize: 13 }}>

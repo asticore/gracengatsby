@@ -201,6 +201,31 @@ export const SiteSettings: GlobalConfig = {
         { name: 'siteIndexable', type: 'checkbox', defaultValue: true, admin: { description: 'Turn off to ask search engines not to index the whole site (useful pre-launch).' } },
       ],
     },
+    {
+      type: 'group',
+      name: 'pageEffects',
+      label: 'Effects',
+      admin: {
+        description:
+          'Site-wide cursor and scroll effects, so you do not need a Page effects element on every page. Off by default. Visitors who ask for reduced motion never see them.',
+      },
+      fields: [
+        { name: 'enabled', type: 'checkbox', defaultValue: false, label: 'Turn on site-wide effects' },
+        {
+          name: 'cursor',
+          type: 'select',
+          defaultValue: 'none',
+          label: 'Custom cursor',
+          options: [
+            { label: 'None', value: 'none' },
+            { label: 'Ring', value: 'ring' },
+            { label: 'Dot and ring', value: 'dot-ring' },
+          ],
+        },
+        { name: 'scrollProgress', type: 'checkbox', defaultValue: false, label: 'Scroll progress bar' },
+        { name: 'revealOnScroll', type: 'checkbox', defaultValue: false, label: 'Fade content in as it scrolls into view' },
+      ],
+    },
     featureToggleField,
   ],
 }

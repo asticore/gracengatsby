@@ -6,6 +6,7 @@ import type { SectionNode } from '@/lib/sectionTree'
 
 import { BLOCK_CATEGORIES, libraryCards, type BlockDef } from './blockSchemas'
 import { globalCards, globalNode, type GlobalCard } from './libraryGlobals'
+import { commercePresetCards, commercePresetNode, filterCommercePresetCards } from './libraryCommercePresets'
 import { createFormFromPreset, filterFormPresetCards, formPresetCards } from './libraryFormPresets'
 import { TemplateBrowser } from './TemplateBrowser'
 import { FAVS_KEY, RECENTS_KEY, loadList, pushRecent, saveList, toggleFavourite } from './libraryRecents'
@@ -77,6 +78,8 @@ export const ElementLibrary: React.FC<{
   const [formBusy, setFormBusy] = useState(false)
 
   const formCards = useMemo(() => filterFormPresetCards(formPresetCards(), query), [query])
+
+  const shopCards = useMemo(() => filterCommercePresetCards(commercePresetCards(), query), [query])
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -293,6 +296,33 @@ export const ElementLibrary: React.FC<{
                       </div>
                     )
                   })}
+                </div>
+              </div>
+            )}
+
+            {!formMode && category === 'all' && shopCards.length > 0 && (
+              <div className="ve-library__group" data-testid="ve-lib-shop">
+                <h4 className="ve-library__group-title">Shop</h4>
+                <div className="ve-library__grid">
+                  {shopCards.map((c) => (
+                    <div
+                      key={c.id}
+                      role="button"
+                      tabIndex={0}
+                      className="ve-library__card"
+                      onClick={() => onPickTemplate([commercePresetNode(c.id)!])}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onPickTemplate([commercePresetNode(c.id)!])
+                        }
+                      }}
+                      title={c.description}
+                    >
+                      <span className="ve-library__card-icon">{String.fromCodePoint(0x1f6d2)}</span>
+                      <span className="ve-library__card-label">{c.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

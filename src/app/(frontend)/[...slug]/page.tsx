@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
+import { setBlockContext } from '@/lib/blockContext'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { annotatePage } from '@/features/editScreens/toc'
 import { findPageByPath } from '@/utilities/pagePaths'
@@ -80,6 +81,7 @@ export default async function BuiltPage({
   // Merge tags ({{field:...}}, {{title}}, ...) are resolved here; unknown braces stay as typed.
   const content = await resolveDocumentContent('pages', page)
 
+  setBlockContext({ page: { title: page.title } })
   return (
     <div className="built-page">
       <AdsPageScope collection="pages" noAds={(page as { noAds?: boolean }).noAds} />

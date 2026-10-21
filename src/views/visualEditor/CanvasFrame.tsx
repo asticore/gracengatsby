@@ -24,6 +24,8 @@ import { inlineCandidate, listInlineTargets, neighbourTarget } from './inlineEdi
 import { QuickInsertPalette } from './QuickInsertPalette'
 import { quickInsertTarget } from './quickInsert'
 import { libraryCards } from './blockSchemas'
+import type { BlockContext } from '@/lib/blockContext'
+import { PreviewContext } from './previewContext'
 import { RECENTS_KEY, loadList, pushRecent, saveList } from './libraryRecents'
 
 /** Pointer must be within this many px of a valid insert slot for a drop to count. */
@@ -71,6 +73,7 @@ export const CanvasFrame: React.FC = () => {
   const [locks, setLocks] = useState<NonNullable<CanvasHandlers['locks']>>({})
   // The device preview the parent is showing; column widths are read and written for it.
   const [device, setDevice] = useState<CanvasDevice>('desktop')
+  const [previewCtx, setPreviewCtx] = useState<BlockContext | null>(null)
   const [dragHoverKey, setDragHoverKey] = useState<string | null>(null)
   // Which "+" is currently open (Elementor-style: it stays lit, not just a hover flash, until
   // dismissed) - purely local, since it's canvas UI state rather than document content the
@@ -108,6 +111,8 @@ export const CanvasFrame: React.FC = () => {
         setOpenInsertKey(null)
       } else if (msg.type === 'selected') {
         setSelectedPath(msg.selectedPath)
+      } else if (msg.type === 'previewContext') {
+        setPreviewCtx(msg.context)
       } else if (msg.type === 'dragHover') {
         setDragHoverKey(msg.key)
       }
@@ -289,6 +294,7 @@ export const CanvasFrame: React.FC = () => {
         </div>
       )}
 
+      <PreviewContext.Provider value={previewCtx}>
       <DndContext
         sensors={sensors}
         collisionDetection={nearestSlot}
@@ -302,6 +308,7 @@ export const CanvasFrame: React.FC = () => {
           {drag ? <div className="ve-drag-ghost">{drag.label}</div> : null}
         </DragOverlay>
       </DndContext>
+      </PreviewContext.Provider>
 
       {palette && (
         <QuickInsertPalette

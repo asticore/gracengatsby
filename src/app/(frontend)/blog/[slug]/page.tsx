@@ -21,6 +21,7 @@ import { PageAudio } from '@/features/pageAudio/PageAudio'
 import { loadPageAudioConfig } from '@/features/pageAudio/load'
 import { getPasswordGateState } from '@/features/visibility/gate'
 import { resolveDocumentContent } from '@/features/customFields/server'
+import { loadBlogSwitches } from '@/features/blog/switches'
 import { authorPath, publicAuthor, tagPath, categoryPath } from '@/features/siteTemplates/archiveQueries'
 import { slugify } from '@/utilities/formatSlug'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
@@ -114,8 +115,9 @@ export default async function BlogPostPage({
   }
 
   const image = post.featuredImage && typeof post.featuredImage === 'object' ? (post.featuredImage as Media) : null
-  const author = publicAuthor(post as unknown as { author?: unknown })
-  const tags = ((post as unknown as { tags?: Array<{ name?: string | null }> | null }).tags || [])
+  const sw = await loadBlogSwitches()
+  const author = sw.authors && !(post as unknown as { hideAuthor?: boolean | null }).hideAuthor ? publicAuthor(post as unknown as { author?: unknown }) : null
+  const tags = (sw.tags ? (post as unknown as { tags?: Array<{ name?: string | null }> | null }).tags || [] : [])
     .map((t) => (t?.name ?? '').trim())
     .filter((n) => slugify(n))
 
@@ -124,7 +126,7 @@ export default async function BlogPostPage({
   const annotated = annotatePage({ body: content.content, blocks: content.layout || [] })
 
   const audioConfig = await loadPageAudioConfig((post as { pageAudio?: Parameters<typeof loadPageAudioConfig>[0] }).pageAudio)
-  setBlockContext(postBlockContext(post as unknown as Record<string, unknown>, currentPath, (await loadSiteDetails()).businessName))
+  setBlockContext(postBlockContext(post as unknown as Record<string, unknown>, currentPath, (await loadSiteDetails()).businessName, { authors: sw.authors }))
   const body = (
     <article className="page-shell">
       <AdsPageScope collection="posts" noAds={(post as { noAds?: boolean }).noAds} />
@@ -143,7 +145,7 @@ export default async function BlogPostPage({
         ) : null}
         <h1>{post.title}</h1>
         <p className="flex justify-center gap-3 text-[0.8rem] opacity-65">
-          {author ? <Link href={authorPath(author.slug)}>{author.name}</Link> : null}
+          {author ? (sw.authorArchives ? <Link href={authorPath(author.slug)}>{author.name}</Link> : <span>{author.name}</span>) : null}
           {post.publishedDate && <time dateTime={post.publishedDate}>{new Date(post.publishedDate).toLocaleDateString()}</time>}
         </p>
       </header>

@@ -40,7 +40,9 @@ export function locationContextFor(collection: string, doc: Record<string, unkno
     ctx.postCategories = categories
       .map((c) => (c && typeof c === 'object' ? (c as { name?: unknown }).name : undefined))
       .filter((n): n is string => typeof n === 'string')
-    ctx.postTags = Array.isArray(doc.tags) ? doc.tags.filter((t): t is string => typeof t === 'string') : []
+    ctx.postTags = (Array.isArray(doc.tags) ? doc.tags : [])
+      .map((t) => (typeof t === 'string' ? t : t && typeof t === 'object' ? (t as { name?: unknown }).name : undefined))
+      .filter((n): n is string => typeof n === 'string')
   }
   return ctx
 }

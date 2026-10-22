@@ -25,6 +25,7 @@ import { QuickInsertPalette } from './QuickInsertPalette'
 import { quickInsertTarget } from './quickInsert'
 import { libraryCards } from './blockSchemas'
 import type { BlockContext } from '@/lib/blockContext'
+import { useInjectSiteFonts } from './useSiteFonts'
 import { PreviewContext } from './previewContext'
 import { RECENTS_KEY, loadList, pushRecent, saveList } from './libraryRecents'
 
@@ -74,6 +75,7 @@ export const CanvasFrame: React.FC = () => {
   // The device preview the parent is showing; column widths are read and written for it.
   const [device, setDevice] = useState<CanvasDevice>('desktop')
   const [previewCtx, setPreviewCtx] = useState<BlockContext | null>(null)
+  useInjectSiteFonts()
   const [dragHoverKey, setDragHoverKey] = useState<string | null>(null)
   // Which "+" is currently open (Elementor-style: it stays lit, not just a hover flash, until
   // dismissed) - purely local, since it's canvas UI state rather than document content the
@@ -193,6 +195,7 @@ export const CanvasFrame: React.FC = () => {
         value: cand.value,
         multiline: cand.multiline,
         rich: cand.rich,
+        formats: cand.formats,
         label: `Edit ${String((node as unknown as { elementType?: string }).elementType || 'text')}`,
         onCommit: (value) => {
           finishEdit(path, itemIndex, cand.field, value)

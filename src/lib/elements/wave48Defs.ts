@@ -1,4 +1,5 @@
 import type { EditorField } from './fieldTypes'
+import { EMBED_NAME, EMBED_PROVIDER_GROUPS } from '@/lib/embedProviders'
 import type { ElementDef } from './registry'
 
 /**
@@ -11,6 +12,12 @@ import type { ElementDef } from './registry'
  */
 
 const opts = (...values: string[]) => values.map((v) => ({ label: v.charAt(0).toUpperCase() + v.slice(1).replace(/-/g, ' '), value: v }))
+const EMBED_PROVIDER_LABEL: Record<string, string> = {
+  ...EMBED_NAME,
+  x: 'X (Twitter) post', instagram: 'Instagram post or reel', 'facebook-post': 'Facebook post', 'facebook-video': 'Facebook video', 'facebook-page': 'Facebook page',
+  tiktok: 'TikTok video', pinterest: 'Pinterest pin, board or profile', linkedin: 'LinkedIn post', spotify: 'Spotify', soundcloud: 'SoundCloud',
+  'google-calendar': 'Google Calendar', lottie: 'Lottie animation', 'custom-iframe': 'Custom iframe',
+}
 const labelled = (pairs: [string, string][]) => pairs.map(([value, label]) => ({ label, value }))
 const text = (name: string, label: string, extra: Partial<EditorField> = {}): EditorField => ({ name, label, type: 'text', ...extra })
 const area = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'textarea', helpText })
@@ -43,14 +50,11 @@ export const WAVE48_ELEMENTS: ElementDef[] = [
   },
   {
     type: 'embed', label: 'Embed', icon: String.fromCodePoint(0x1f3ac), category: 'media',
-    description: 'A video, calendar or form embed. Iframes load only from fixed hosts: YouTube, Vimeo, Google Calendar, Typeform and Lottie (lottie.host). X, Instagram and Facebook show a link card instead of a third-party script.',
+    description: 'A video, social post, audio, calendar or form embed. Pick a network and paste its address. Iframes load only from fixed hosts (YouTube, Vimeo, TikTok, Instagram, X, Facebook, Pinterest, LinkedIn, Spotify, SoundCloud, Google Calendar, Typeform, Lottie) and only after consent.',
     fields: [
-      select('provider', 'Provider', labelled([
-        ['youtube', 'YouTube'], ['vimeo', 'Vimeo'], ['x', 'X (Twitter) post'], ['instagram', 'Instagram post'],
-        ['facebook-video', 'Facebook video'], ['google-calendar', 'Google Calendar'], ['typeform', 'Typeform'], ['lottie', 'Lottie animation'], ['custom-iframe', 'Custom iframe'],
-      ]), { width: 'full' }),
-      text('url', 'Address', { width: 'full', helpText: 'Full https:// address. Only hosts that suit the provider are accepted. Custom iframe accepts the hosts of the four iframe providers. Lottie: paste a lottie.host embed link.' }),
-      select('ratio', 'Aspect ratio', labelled([['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']])),
+      select('provider', 'Provider', labelled(EMBED_PROVIDER_GROUPS.flatMap((g) => g.providers.map((v): [string, string] => [v, `${g.group}: ${EMBED_PROVIDER_LABEL[v]}`])))),
+      text('url', 'Address', { width: 'full', helpText: 'Paste the post, video, pin, track or page address (https://). Only the matching network is accepted, and the embed loads after the visitor accepts marketing cookies. Pinterest boards and profiles show a link card. Custom iframe accepts YouTube, Vimeo, Calendar and Typeform hosts. Lottie: a lottie.host embed link.' }),
+      select('ratio', 'Aspect ratio', labelled([['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']]), { helpText: 'Used by video, calendar and form embeds. Social and audio embeds use their own size.' }),
       text('title', 'Title', { helpText: 'Read by screen readers. Leave empty to use the provider name.' }),
     ],
     defaultProps: () => ({

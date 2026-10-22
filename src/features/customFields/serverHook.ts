@@ -1,5 +1,6 @@
 import { ValidationError } from '@/localapi/operations'
 
+import { loadBlogSwitches } from '@/features/blog/switches'
 import { definitionsFor, applyDefaults, validateFieldValues } from './validate'
 import { loadFieldGroups, locationContextFor } from './server'
 import { pruneHiddenValues } from './conditions'
@@ -44,7 +45,7 @@ export async function prepareCustomFieldsForSave({
     return value
   }
 
-  const defs = definitionsFor(groups, locationContextFor(collection, doc, userRoles ?? null))
+  const defs = definitionsFor(groups, locationContextFor(collection, doc, userRoles ?? null, { tags: collection === 'posts' ? (await loadBlogSwitches()).tags : true }))
   if (defs.length === 0) return value
 
   // A save that publishes must check what is stored, even when the payload leaves customFields out.

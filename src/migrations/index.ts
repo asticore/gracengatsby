@@ -87,6 +87,7 @@ import * as migration_20261106_100000_site_page_effects from './20261106_100000_
 import * as migration_20261107_100000_page_audio from './20261107_100000_page_audio';
 import * as migration_20261108_100000_social_connections from './20261108_100000_social_connections';
 import * as migration_20261109_100000_blog_tags_authors from './20261109_100000_blog_tags_authors';
+import * as migration_20261111_100000_blog_author_tag_switches from './20261111_100000_blog_author_tag_switches';
 
 export const migrations = [
   {
@@ -533,5 +534,10 @@ export const migrations = [
     up: migration_20261110_110000_post_audio.up,
     down: migration_20261110_110000_post_audio.down,
     name: '20261110_110000_post_audio',
+  },
+  {
+    up: migration_20261111_100000_blog_author_tag_switches.up,
+    down: migration_20261111_100000_blog_author_tag_switches.down,
+    name: '20261111_100000_blog_author_tag_switches',
   },
 ];

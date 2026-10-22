@@ -2,6 +2,9 @@ import React from 'react'
 
 import { sanitizeSlug } from '@/features/themeStyles/sanitize'
 
+import { MARKS_NO_LINK } from '@/views/visualEditor/inlineFormat'
+
+import { SafeInlineHtml } from './SafeInlineHtml'
 import { flag, linkAttrs, linkHref } from './elementUtil'
 
 export type ButtonElementProps = {
@@ -34,7 +37,7 @@ export const ButtonElement: React.FC<ButtonElementProps> = ({ text, url, variant
   return (
     <div style={{ textAlign: align }}>
       <a className={buttonClassName(variant, styleName, size)} href={href} {...attrs}>
-        {text || 'Button'}
+        <SafeInlineHtml text={text || 'Button'} formats={MARKS_NO_LINK} />
       </a>
     </div>
   )

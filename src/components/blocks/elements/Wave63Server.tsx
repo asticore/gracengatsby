@@ -82,5 +82,5 @@ export const WAVE63_COMPONENTS: Record<string, React.ComponentType<P>> = {
   'post-excerpt': PostExcerptElement as unknown as React.ComponentType<P>,
   'post-meta': PostMetaElement as unknown as React.ComponentType<P>,
   'product-price': ProductPriceElement as unknown as React.ComponentType<P>,
-  breadcrumbs: BreadcrumbsElement as unknown as React.ComponentType<P>,
+  'auto-breadcrumbs': BreadcrumbsElement as unknown as React.ComponentType<P>,
 }

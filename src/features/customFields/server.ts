@@ -1,4 +1,5 @@
 
+import { loadBlogSwitches } from '@/features/blog/switches'
 import { getEngine } from '@/engine'
 import type { FieldGroupDoc } from '@/fields/customFields/types'
 import { buildMergeContext, resolveDocumentBlocks } from '@/lib/mergeTags'
@@ -28,7 +29,7 @@ export async function loadFieldGroups(): Promise<FieldGroupDoc[]> {
 }
 
 /** Location context for a saved or form document in a given collection. */
-export function locationContextFor(collection: string, doc: Record<string, unknown>, userRoles?: string[] | null): LocationContext {
+export function locationContextFor(collection: string, doc: Record<string, unknown>, userRoles?: string[] | null, opts?: { tags?: boolean }): LocationContext {
   const ctx: LocationContext = { collection, status: typeof doc._status === 'string' ? doc._status : null }
   if (userRoles !== undefined) ctx.userRoles = userRoles
   if (collection === 'pages') {
@@ -40,7 +41,7 @@ export function locationContextFor(collection: string, doc: Record<string, unkno
     ctx.postCategories = categories
       .map((c) => (c && typeof c === 'object' ? (c as { name?: unknown }).name : undefined))
       .filter((n): n is string => typeof n === 'string')
-    ctx.postTags = (Array.isArray(doc.tags) ? doc.tags : [])
+    ctx.postTags = (opts?.tags === false ? [] : Array.isArray(doc.tags) ? doc.tags : [])
       .map((t) => (typeof t === 'string' ? t : t && typeof t === 'object' ? (t as { name?: unknown }).name : undefined))
       .filter((n): n is string => typeof n === 'string')
   }
@@ -86,7 +87,8 @@ export async function buildDocumentTagContext(
 ): Promise<Record<string, string>> {
   try {
     const groups = await loadFieldGroups()
-    const defs = definitionsFor(groups, locationContextFor(collection, doc))
+    const tagsOn = collection === 'posts' ? (await loadBlogSwitches()).tags : true
+    const defs = definitionsFor(groups, locationContextFor(collection, doc, undefined, { tags: tagsOn }))
     const values = (doc.customFields && typeof doc.customFields === 'object' ? doc.customFields : {}) as Record<string, unknown>
     const mediaUrls = await fetchMediaUrls(collectMediaIds(defs, values))
     const tags = buildCustomFieldContext(defs, values, { mediaUrls })
@@ -135,7 +137,8 @@ export async function buildItemTagContexts(
     const groups = await loadFieldGroups()
     const valuesOf = (item: Record<string, unknown>) =>
       (item.customFields && typeof item.customFields === 'object' ? item.customFields : {}) as Record<string, unknown>
-    const defsPerItem = items.map((item) => definitionsFor(groups, locationContextFor(collection, item)))
+    const tagsOn = collection === 'posts' ? (await loadBlogSwitches()).tags : true
+    const defsPerItem = items.map((item) => definitionsFor(groups, locationContextFor(collection, item, undefined, { tags: tagsOn })))
     const mediaIds = defsPerItem.flatMap((defs, i) => collectMediaIds(defs, valuesOf(items[i])))
     const mediaUrls = await fetchMediaUrls([...new Set(mediaIds)])
     const optionTags = options.needsOptions ? await loadOptionContext(groups) : {}

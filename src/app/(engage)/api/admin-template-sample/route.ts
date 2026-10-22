@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
+import { loadSiteDetails } from '@/features/site/details'
 import { blockContextFor, sampleCollectionFor } from '@/lib/blockContextFrom'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,7 @@ export async function GET(request: Request): Promise<Response> {
       if (!/^\d{1,12}$/.test(id)) return json({ error: 'bad id' }, 400)
       const { docs } = await find.call(context.engine, { collection, where: { and: [{ id: { equals: Number(id) } }, { _status: { equals: 'published' } }] }, limit: 1, depth: 1 })
       if (!docs[0]) return json({ error: 'not found' }, 404)
-      return json({ context: blockContextFor(collection, docs[0]) })
+      return json({ context: blockContextFor(collection, docs[0], (await loadSiteDetails()).businessName) })
     }
     const { docs } = await find.call(context.engine, { collection, where: { _status: { equals: 'published' } }, sort: '-updatedAt', limit: 8, depth: 0 })
     return json({ items: docs.map((d) => ({ id: d.id, title: String(d.title ?? d.id) })) })

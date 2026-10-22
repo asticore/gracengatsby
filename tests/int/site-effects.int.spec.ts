@@ -13,7 +13,7 @@ describe('site effects', () => {
     expect(siteEffectsFor({ pageEffects: { enabled: true, cursor: 'none' } }, '/')).toBeNull()
   })
   it('returns the chosen effects', () => {
-    expect(siteEffectsFor(on, '/about')).toEqual({ cursor: 'ring', scrollProgress: true, revealOnScroll: false })
+    expect(siteEffectsFor(on, '/about')).toEqual({ cursor: 'ring', scrollProgress: true, revealOnScroll: false, hideNativeCursor: false })
     expect(siteEffectsFor({ pageEffects: { enabled: true, cursor: 'bogus', revealOnScroll: true } }, '/')?.cursor).toBe('none')
   })
   it('skips the editor canvas and admin', () => {

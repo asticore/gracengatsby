@@ -24,10 +24,11 @@ describe('site effects', () => {
   })
   it('declares the group with defaults off and matching migration columns', () => {
     const g = SiteSettings.fields.find((f) => (f as { name?: string }).name === 'pageEffects') as { fields: { name: string; defaultValue?: unknown }[] }
-    expect(g.fields.map((f) => f.name)).toEqual(['enabled', 'cursor', 'scrollProgress', 'revealOnScroll'])
+    expect(g.fields.map((f) => f.name)).toEqual(['enabled', 'cursor', 'scrollProgress', 'revealOnScroll', 'hideNativeCursor'])
     expect(g.fields.find((f) => f.name === 'enabled')?.defaultValue).toBe(false)
     expect(PAGE_EFFECT_COLUMNS.map((c) => c[0])).toEqual([
       'page_effects_enabled', 'page_effects_cursor', 'page_effects_scroll_progress', 'page_effects_reveal_on_scroll',
     ])
   })
 })
+</content>

@@ -1,4 +1,5 @@
 import { noAdsField } from '@/features/ads/fields'
+import { pageAudioField } from '@/features/pageAudio/fields'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
@@ -148,6 +149,7 @@ export const Pages: CollectionConfig = {
     ...reviewFields,
     schemaTypeField('pages'),
     noAdsField,
+    pageAudioField,
     ...pageSpeedFields,
     trashedAtField,
   ],

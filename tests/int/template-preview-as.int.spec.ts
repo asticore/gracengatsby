@@ -16,7 +16,7 @@ describe('template preview-as mapping', () => {
     expect(post.path).toBe('/blog/hello')
     const prod = productBlockContext({ id: 3, title: 'Mug', priceInAUD: 29.99 }, '/shop/mug')
     expect(prod.product).toMatchObject({ id: 3, title: 'Mug', price: 29.99 })
-    expect(blockContextFor('events', { title: 'Gig', slug: 'gig' })).toEqual({ page: { title: 'Gig' }, path: '/events/gig' })
+    expect(blockContextFor('events', { title: 'Gig', slug: 'gig' })).toMatchObject({ page: { title: 'Gig' }, event: { title: 'Gig' }, path: '/events/gig' })
   })
 
   it('renders sample text for widgets, null without data', () => {

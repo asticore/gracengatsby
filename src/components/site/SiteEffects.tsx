@@ -5,7 +5,7 @@ import React, { useEffect } from 'react'
 import CursorFxLazy from '@/components/blocks/elements/CursorFxLazy'
 import '@/components/blocks/elements/wave44.css'
 
-import type { SiteEffectsConfig } from './siteEffectsConfig'
+import { revealTargets, type SiteEffectsConfig } from './siteEffectsConfig'
 
 const REVEAL_CSS =
   '@media (prefers-reduced-motion: no-preference){.eg-reveal{opacity:0;transform:translateY(12px);transition:opacity .6s ease,transform .6s ease}.eg-reveal.eg-in{opacity:1;transform:none}}'
@@ -14,7 +14,7 @@ function useReveal(on: boolean) {
   useEffect(() => {
     if (!on) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return
-    const targets = Array.from(document.querySelectorAll<HTMLElement>('main > *'))
+    const targets = revealTargets(document)
     const io = new IntersectionObserver(
       (entries) => {
         for (const en of entries) {
@@ -27,6 +27,8 @@ function useReveal(on: boolean) {
       { threshold: 0.08 },
     )
     for (const el of targets) {
+      // Above-the-fold targets stay visible: hiding them would flash content for no benefit.
+      if (el.getBoundingClientRect().top < window.innerHeight * 0.9) continue
       el.classList.add('eg-reveal')
       io.observe(el)
     }
@@ -44,7 +46,7 @@ export const SiteEffects: React.FC<{ config: SiteEffectsConfig }> = ({ config })
     <div className="be-el-44" aria-hidden="true">
       {config.revealOnScroll && <style>{REVEAL_CSS}</style>}
       {config.scrollProgress && <div className="be-el-44-progress" />}
-      {config.cursor !== 'none' && <CursorFxLazy mode={config.cursor} hideNative={false} />}
+      {config.cursor !== 'none' && <CursorFxLazy mode={config.cursor} hideNative={config.hideNativeCursor} />}
     </div>
   )
 }

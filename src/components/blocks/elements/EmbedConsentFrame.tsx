@@ -11,6 +11,9 @@ export type EmbedConsentFrameProps = {
   aspectRatio: string
   sandbox: string
   allow: string
+  /** Fixed height in px (tall social embeds, audio players); replaces the aspect ratio. */
+  height?: number
+  maxWidth?: number
 }
 
 /**
@@ -18,8 +21,11 @@ export type EmbedConsentFrameProps = {
  * The iframe is created here, in the browser, so the server HTML never contains it: the
  * server only renders the consent placeholder.
  */
-export const EmbedConsentFrame = ({ src, title, providerName, aspectRatio, sandbox, allow }: EmbedConsentFrameProps) => (
-  <div className="be-el-48-embed" style={{ aspectRatio } as React.CSSProperties}>
+export const EmbedConsentFrame = ({ src, title, providerName, aspectRatio, sandbox, allow, height, maxWidth }: EmbedConsentFrameProps) => (
+  <div
+    className="be-el-48-embed"
+    style={(height ? { height: `${height}px`, ...(maxWidth ? { maxWidth: `${maxWidth}px`, marginInline: 'auto' } : {}) } : { aspectRatio }) as React.CSSProperties}
+  >
     <ConsentGate
       category="marketing"
       title={`${providerName} embed`}

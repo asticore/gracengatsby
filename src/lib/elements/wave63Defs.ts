@@ -45,7 +45,7 @@ export const WAVE63_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({}),
   },
   {
-    type: 'breadcrumbs', label: 'Breadcrumbs', icon: String.fromCodePoint(0x1f9ed), category: 'siteMeta',
+    type: 'auto-breadcrumbs', label: 'Auto breadcrumbs', icon: String.fromCodePoint(0x1f9ed), category: 'siteMeta',
     description: 'Home > section > current page trail, built from the page address.',
     fields: [{ name: 'homeLabel', label: 'Home label', type: 'text', width: 'half' }],
     defaultProps: () => ({ homeLabel: 'Home' }),

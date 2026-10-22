@@ -1,7 +1,7 @@
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { pathKey, type NodePath } from './treeOps'
-import { sanitizeInlineHtml } from './inlineFormat'
+import { ALL_MARKS, MARKS_NO_LINK, sanitizeInlineHtml, type Mark } from './inlineFormat'
 import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical } from './richTextUtil'
 
 /**
@@ -10,20 +10,21 @@ import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical } from './ri
  * canEditAsPlainText says the round trip is lossless (same guard as the field panel).
  */
 
-type PropSpec = { prop: string; kind: 'string' | 'lexical'; /** Text lives in items[i].text */ item?: boolean; /** The prop is rendered as HTML, so it may hold the sanitised rich subset. */ rich?: boolean }
+type PropSpec = { prop: string; kind: 'string' | 'lexical'; /** Text lives in items[i].text */ item?: boolean; /** The prop is rendered as HTML, so it may hold the sanitised rich subset. */ rich?: boolean; /** Marks this element allows (default all). */ formats?: readonly Mark[] }
 
 /**
- * Props that may hold sanitised inline HTML. Only heading is rich (rendered via SafeInlineHtml); button/quote/list render plain React text and text-editor stores Lexical JSON, so none is rendered as HTML today. Set `rich: true` on a
- * spec in INLINE_PROPS only once its renderer outputs the prop as HTML.
+ * Props that may hold sanitised inline HTML: heading, quote, button label, list items (all rendered via SafeInlineHtml).
+ * text-editor stores Lexical JSON (already rich) and icon-list rows are "text | link" lines, so both stay plain.
+ * Set `rich: true` on a spec only once its renderer outputs the prop through SafeInlineHtml.
  */
 
 /** Which prop of each element type can be edited inline. */
 export const INLINE_PROPS: Readonly<Record<string, PropSpec>> = {
   heading: { prop: 'text', kind: 'string', rich: true },
-  button: { prop: 'text', kind: 'string' },
-  quote: { prop: 'text', kind: 'string' },
+  button: { prop: 'text', kind: 'string', rich: true, formats: MARKS_NO_LINK },
+  quote: { prop: 'text', kind: 'string', rich: true },
   'text-editor': { prop: 'content', kind: 'lexical' },
-  list: { prop: 'items', kind: 'string', item: true },
+  list: { prop: 'items', kind: 'string', item: true, rich: true },
   'icon-list': { prop: 'items', kind: 'string', item: true },
 }
 
@@ -34,7 +35,13 @@ export type InlineTarget = {
   itemIndex?: number
 }
 
-export type InlineCandidate = InlineTarget & { value: string; multiline: boolean; lexical: boolean; rich?: boolean }
+export type InlineCandidate = InlineTarget & { value: string; multiline: boolean; lexical: boolean; rich?: boolean; /** Marks the toolbar offers and the sanitiser keeps. */ formats?: readonly Mark[] }
+
+/** Marks allowed for `spec`, minus links when the text sits inside a link already. */
+const formatsFor = (spec: PropSpec, insideLink: boolean): readonly Mark[] => {
+  const base = spec.formats ?? ALL_MARKS
+  return insideLink ? base.filter((m) => m !== 'link') : base
+}
 
 const propsOf = (node: Pick<SectionNode, 'blockType'> & Record<string, unknown>): Record<string, unknown> | null => {
   const props = node.props
@@ -54,21 +61,22 @@ export function inlineCandidate(node: SectionNode | undefined, itemIndex = 0): I
     if (!Array.isArray(raw)) return null
     const item = raw[itemIndex] as Record<string, unknown> | undefined
     if (!item || typeof item !== 'object' || typeof item.text !== 'string') return null
-    return { field: spec.prop, itemIndex, value: item.text, multiline: false, lexical: false, rich: !!spec.rich }
+    const linked = typeof item.href === 'string' && item.href.trim() !== ''
+    return { field: spec.prop, itemIndex, value: item.text, multiline: false, lexical: false, rich: !!spec.rich, formats: spec.rich ? formatsFor(spec, linked) : undefined }
   }
   if (spec.kind === 'lexical') {
     if (!canEditAsPlainText(raw)) return null
     return { field: spec.prop, value: lexicalToPlainText(raw), multiline: true, lexical: true }
   }
   if (typeof raw !== 'string') return null
-  return { field: spec.prop, value: raw, multiline: n.elementType === 'quote', lexical: false, rich: !!spec.rich }
+  return { field: spec.prop, value: raw, multiline: n.elementType === 'quote', lexical: false, rich: !!spec.rich, formats: spec.rich ? formatsFor(spec, false) : undefined }
 }
 
 /** New node with the text replaced, or the same node when the target is not editable. Never rewrites rich content unless it is plain. */
 export function writeInline(node: SectionNode, target: InlineTarget, rawValue: string): SectionNode {
   const current = inlineCandidate(node, target.itemIndex ?? 0)
   if (!current || current.field !== target.field) return node
-  const value = current.rich ? sanitizeInlineHtml(rawValue) : rawValue
+  const value = current.rich ? sanitizeInlineHtml(rawValue, current.formats) : rawValue
   const n = node as unknown as Record<string, unknown>
   const props = propsOf(n as never) as Record<string, unknown>
   if (current.value === value) return node

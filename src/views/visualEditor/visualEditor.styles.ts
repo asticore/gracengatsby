@@ -569,6 +569,11 @@ html[data-theme='dark'] .ve-root {
   min-height: 0;
 }
 
+/* Single scroller: panels inside the dock never scroll on their own. */
+.ve-dock__body .ve-panel { height: auto; overflow: visible; }
+.ve-dock__body .ve-panel__body { overflow: visible; flex: none; }
+.ve-dock__body .ve-panel__header { position: sticky; top: 0; z-index: 3; background: var(--ve-surface); }
+
 /* Settings tab: nothing selected yet. */
 .ve-dock__empty {
   padding: 40px 24px;
@@ -1038,7 +1043,8 @@ html[data-theme='dark'] .ve-root {
 .ve-library {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
+  overflow: visible;
 }
 
 .ve-library__controls {
@@ -1048,6 +1054,11 @@ html[data-theme='dark'] .ve-root {
   flex-direction: column;
   gap: 10px;
   flex-shrink: 0;
+  /* The dock body is the ONLY scroller; the header sticks inside it. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--ve-surface);
 }
 
 .ve-library__search {
@@ -1135,18 +1146,19 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-library__body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 16px 24px;
+  flex: none;
+  height: auto;
+  overflow: visible;
+  padding: 10px 12px 20px;
 }
 
 .ve-library__group {
-  margin-bottom: 22px;
+  margin-bottom: 12px;
 }
 
 .ve-library__group-title {
-  margin: 0 0 10px;
-  font-size: 12px;
+  margin: 0 0 6px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ve-text-muted);
@@ -1192,10 +1204,51 @@ html[data-theme='dark'] .ve-root {
 }
 
 .ve-library__hint {
-  margin: 0 0 14px;
-  font-size: 12px;
+  margin: 0 0 8px;
+  font-size: 11px;
   color: var(--ve-text-muted);
-  line-height: 1.5;
+  line-height: 1.4;
+}
+
+/* Compact tiles (default): 3-column icon-over-label grid. */
+.ve-library--compact .ve-library__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.ve-library--compact .ve-library__card {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2px;
+  padding: 6px 4px;
+  min-height: 64px;
+  max-height: 72px;
+  border-radius: 6px;
+  min-width: 0;
+}
+.ve-library--compact .ve-library__card-icon { font-size: 18px; line-height: 1; }
+.ve-library--compact .ve-library__card-label {
+  font-size: 11px;
+  font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ve-library__card:focus-visible { outline: 2px solid var(--ve-accent); outline-offset: 1px; }
+.ve-library__density {
+  border: 1px solid var(--ve-border);
+  background: var(--ve-surface);
+  color: var(--ve-text-muted);
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  align-self: flex-end;
+}
+@media (pointer: coarse) {
+  .ve-library--compact .ve-library__card { min-height: 44px; max-height: none; padding: 8px 4px; }
+  .ve-library__density { min-height: 44px; }
 }
 
 /* Template cards get a bit more room (they represent a whole page/section, a

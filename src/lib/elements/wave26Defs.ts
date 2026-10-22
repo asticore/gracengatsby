@@ -278,7 +278,7 @@ export const WAVE26_ELEMENTS: ElementDef[] = [
   {
     type: 'html', label: 'HTML', icon: '</>', category: 'layout',
     description: 'Your own markup. Scripts, iframes, forms and event handlers are removed for safety.',
-    fields: [area('html', 'HTML', 'Basic tags only: text, lists, tables, images, links.')],
+    fields: [area('html', 'HTML', 'Basic tags only: text, lists, tables, images, links. Scripts are removed: for a third-party widget or script use the "Embed code (third-party script)" element instead.')],
     defaultProps: () => ({ html: '<p>Your <strong>HTML</strong> here.</p>' }),
   },
   // ---- site ----

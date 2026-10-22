@@ -26,6 +26,9 @@ export type BlogSettingsDoc = {
   showAuthor?: boolean | null
   showDate?: boolean | null
   showCategories?: boolean | null
+  showAuthors?: boolean | null
+  authorArchives?: boolean | null
+  showTags?: boolean | null
   updatedAt: string
   createdAt: string
 }

@@ -1,0 +1,15 @@
+.be-social-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(var(--be-social-cols, 3), minmax(0, 1fr)); }
+.be-social-feed--list { grid-template-columns: 1fr; }
+.be-social-feed--list .be-social-feed__card { flex-direction: row; align-items: flex-start; gap: 12px; }
+.be-social-feed--list .be-social-feed__img { width: 120px; flex: none; }
+.be-social-feed--carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding-bottom: 8px; }
+.be-social-feed--carousel .be-social-feed__item { flex: 0 0 calc(100% / var(--be-social-cols, 3) - 12px); min-width: 140px; scroll-snap-align: start; }
+.be-social-feed__card { display: flex; flex-direction: column; gap: 6px; color: inherit; text-decoration: none; height: 100%; }
+.be-social-feed__img { display: block; width: 100%; object-fit: cover; border-radius: 6px; background: rgba(127, 127, 127, 0.15); aspect-ratio: 1 / 1; }
+.be-social-feed--portrait .be-social-feed__img { aspect-ratio: 4 / 5; }
+.be-social-feed--landscape .be-social-feed__img { aspect-ratio: 16 / 9; }
+.be-social-feed__caption { font-size: 0.875rem; line-height: 1.4; overflow-wrap: anywhere; }
+.be-social-feed__meta { display: flex; gap: 10px; font-size: 0.75rem; opacity: 0.7; }
+@media (max-width: 640px) {
+  .be-social-feed:not(.be-social-feed--list):not(.be-social-feed--carousel) { grid-template-columns: repeat(min(var(--be-social-cols, 3), 2), minmax(0, 1fr)); }
+}

@@ -7,6 +7,11 @@
 export type Run = { text: string; b: boolean; i: boolean; href: string | null }
 export type Mark = 'bold' | 'italic' | 'link'
 
+/** Every mark the subset supports; the default for elements that allow full inline formatting. */
+export const ALL_MARKS: readonly Mark[] = ['bold', 'italic', 'link']
+/** Marks for elements that are themselves a link (button label, list row with a link): no nested links. */
+export const MARKS_NO_LINK: readonly Mark[] = ['bold', 'italic']
+
 const SAFE_HREF = /^(?:https?:\/\/|mailto:|tel:|\/(?!\/)|#|\.{1,2}\/|\?)/i
 const NO_SCHEME = /^[^:]*$/ // relative like "about" or "a/b"
 
@@ -108,8 +113,16 @@ export function serializeRuns(runs: Run[]): string {
 }
 
 /** Strict allowlist sanitiser: strong, em, a[href] (http/https/mailto/tel/relative, rel=noopener), br. Idempotent. */
-export function sanitizeInlineHtml(html: string): string {
-  return serializeRuns(parseInlineHtml(typeof html === 'string' ? html : ''))
+export function sanitizeInlineHtml(html: string, formats: readonly Mark[] = ALL_MARKS): string {
+  const runs = parseInlineHtml(typeof html === 'string' ? html : '')
+  if (formats.length < ALL_MARKS.length) {
+    for (const r of runs) {
+      if (!formats.includes('bold')) r.b = false
+      if (!formats.includes('italic')) r.i = false
+      if (!formats.includes('link')) r.href = null
+    }
+  }
+  return serializeRuns(runs)
 }
 
 /** Plain text of runs (newline for br). Offsets used by the helpers below index into this string. */

@@ -42,12 +42,12 @@ export function tokenize(code: string, lang: string): Tok[] {
   return out
 }
 
-export type PlaylistItem = { src: string; kind: 'youtube' | 'vimeo' | 'file'; title: string }
+export type PlaylistItem = { src: string; kind: 'youtube' | 'vimeo' | 'file' | 'spotify' | 'soundcloud'; title: string }
 
 /** One "url | title" per line. parse is injected (parseVideoUrl) so this stays pure. Bad lines are dropped. */
 export function parsePlaylist(
   raw: string,
-  parse: (u: string) => { kind: 'youtube' | 'vimeo' | 'file'; src: string } | null,
+  parse: (u: string) => { kind: 'youtube' | 'vimeo' | 'file' | 'spotify' | 'soundcloud'; src: string } | null,
 ): PlaylistItem[] {
   const items: PlaylistItem[] = []
   for (const line of raw.split(/\r?\n/).slice(0, 50)) {

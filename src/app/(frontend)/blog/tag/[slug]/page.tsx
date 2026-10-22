@@ -8,6 +8,7 @@ import { orderBlogPosts } from '@/features/editScreens/blogOrder'
 import { readingTimeLabel } from '@/features/editScreens/readingTime'
 import { ARCHIVE_PAGE_SIZE, tagIndex, tagPath, paginate, parsePage, postsWithTag, termSlug } from '@/features/siteTemplates/archiveQueries'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
+import { blogSwitches, loadBlogSwitches } from '@/features/blog/switches'
 import { getEngine } from '@/lib/engine'
 import { setBlockContext } from '@/lib/blockContext'
 import { getFeatureFlags } from '@/utilities/features'
@@ -38,6 +39,7 @@ async function load(rawSlug: string) {
 export async function generateMetadata({ params, searchParams }: Params): Promise<Metadata> {
   const { slug } = await params
   const page = parsePage((await searchParams).page)
+  if (!(await loadBlogSwitches()).tags) return { title: 'Not found', robots: { index: false, follow: false } }
   const term = await load(slug).catch((): null => null)
   if (!term) return { title: 'Not found', robots: { index: false, follow: false } }
   const meta = await buildMetadata({ title: term.name, path: tagPath(term.slug, page) })
@@ -49,11 +51,11 @@ export default async function TagArchivePage({ params, searchParams }: Params) {
   const flags = await getFeatureFlags()
   if (!flags.blog) notFound()
   const { slug } = await params
-  const term = await load(slug)
-  if (!term) notFound()
-
   const engine = await getEngine()
   const settings = (await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)) as BlogSetting | null
+  if (!blogSwitches(settings).tags) notFound()
+  const term = await load(slug)
+  if (!term) notFound()
   const perPage = settings?.postsPerPage || ARCHIVE_PAGE_SIZE
   const paged = paginate(term.posts, parsePage((await searchParams).page), perPage)
   const path = `/blog/tag/${term.slug}`

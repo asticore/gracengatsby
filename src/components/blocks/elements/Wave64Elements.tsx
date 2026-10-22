@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { EmbedConsentFrame } from './EmbedConsentFrame'
+import { embedLayout, parseAudioEmbedUrl } from '@/lib/embedProviders'
 import { safeUrl } from '@/lib/mergeTags'
 import { LANGS, parsePlaylist, tokenize } from '@/lib/elements/wave64Util'
 
@@ -14,6 +16,23 @@ import './wave64.css'
 type P = Record<string, unknown>
 
 export const AudioElement: React.FC<P> = (p) => {
+  const embed = mediaOf(p.file)?.url ? null : parseAudioEmbedUrl(str(p.url))
+  if (embed) {
+    const name = embed.kind === 'spotify' ? 'Spotify' : 'SoundCloud'
+    return (
+      <figure className="be-el-64-audio">
+        <EmbedConsentFrame
+          src={embed.src}
+          title={str(p.title, 'Audio') || name}
+          providerName={name}
+          aspectRatio="16 / 9"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          allow="encrypted-media; clipboard-write"
+          {...embedLayout(embed.kind, embed.src)}
+        />
+      </figure>
+    )
+  }
   const src = mediaOf(p.file)?.url || mediaOf(p.url)?.url
   if (!src) return <div className="el-placeholder">Choose an audio file</div>
   const title = str(p.title, 'Audio')
@@ -63,7 +82,7 @@ export const ImageAccordionElement: React.FC<P> = (p) => {
 }
 
 export const VideoPlaylistElement: React.FC<P> = (p) => {
-  const items = parsePlaylist(str(p.items), parseVideoUrl)
+  const items = parsePlaylist(str(p.items), (u) => parseVideoUrl(u) ?? parseAudioEmbedUrl(u))
   if (items.length === 0) return <div className="el-placeholder">Add video links, one per line</div>
   return <VideoPlaylist items={items} label={str(p.label, 'Video playlist')} />
 }

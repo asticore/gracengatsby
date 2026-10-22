@@ -49,6 +49,8 @@ export type EditorField = {
   label: string
   type: EditorFieldType
   options?: { label: string; value: string }[]
+  /** Select fields: load the options from this same-origin admin route, which answers { options: [{ label, value }] }. */
+  optionsUrl?: string
   relationTo?: string
   width?: 'full' | 'half'
   helpText?: string

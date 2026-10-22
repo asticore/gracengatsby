@@ -65,6 +65,7 @@ export const Posts: CollectionConfig = {
     },
     { name: 'categories', type: 'array', labels: { singular: 'Category', plural: 'Categories' }, fields: [{ name: 'name', type: 'text' }], admin: { position: 'sidebar', initCollapsed: true } },
     pageAudioField,
+    { name: 'hideAuthor', type: 'checkbox', defaultValue: false, admin: { position: 'sidebar', description: 'Hide the author byline and link on this post only.' } },
     { name: 'tags', type: 'array', labels: { singular: 'Tag', plural: 'Tags' }, fields: [{ name: 'name', type: 'text' }], admin: { position: 'sidebar', initCollapsed: true, description: 'Public tags. Each links to /blog/tag/<tag>.' } },
     { name: 'featuredImage', type: 'upload', relationTo: 'media' },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Shown on the blog archive card.' } },

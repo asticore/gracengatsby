@@ -4,7 +4,9 @@ import { cache } from 'react'
 export type BlockContext = {
   post?: { title?: unknown; date?: unknown; excerpt?: unknown; author?: unknown; featuredImage?: { url?: unknown; alt?: unknown }; categories?: string[] }
   page?: { title?: unknown }
-  product?: { id?: number; title?: unknown; price?: unknown; inventory?: number | null; ratingAverage?: number | null; ratingCount?: number | null }
+  product?: { id?: number; title?: unknown; price?: unknown; inventory?: number | null; ratingAverage?: number | null; ratingCount?: number | null; featuredImage?: { url?: unknown; alt?: unknown } }
+  /** Public event fields. `location` is the venue name and address as one line. */
+  event?: { title?: unknown; date?: unknown; location?: unknown; summary?: unknown }
   /** URL path of the page being viewed, for breadcrumbs. */
   path?: string
 }

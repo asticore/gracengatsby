@@ -61,6 +61,7 @@ export type SiteSettingsDoc = {
     cursor?: string | null
     scrollProgress?: boolean | null
     revealOnScroll?: boolean | null
+    hideNativeCursor?: boolean | null
   } | null
   features?: Partial<Record<FeatureKey, boolean | null>> | null
   updatedAt: string

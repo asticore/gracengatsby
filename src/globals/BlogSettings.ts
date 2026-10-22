@@ -59,5 +59,28 @@ export const BlogSettings: GlobalConfig = {
         { name: 'showCategories', type: 'checkbox', defaultValue: true, admin: { width: '33%' } },
       ],
     },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'authorArchives',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: { width: '50%', description: 'Author archive pages. When off, the author name shows as plain text with no link, /blog/author/<slug> returns 404 and authors are left out of the sitemap.' },
+        },
+        {
+          name: 'showAuthors',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: { width: '50%', description: 'Show post authors: the byline, author links and /blog/author/<name> pages. Turn off to hide authors across the whole blog. Changes show once cached pages refresh.' },
+        },
+        {
+          name: 'showTags',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: { width: '50%', description: 'Show post tags: tag links on posts and /blog/tag/<tag> pages. Turn off to hide tags across the whole blog. Changes show once cached pages refresh.' },
+        },
+      ],
+    },
   ],
 }

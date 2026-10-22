@@ -2,6 +2,7 @@ import type { CollectionConfig, CollectionBeforeChangeHook } from '@/engine'
 
 import { isAdmin, isAdminOrSelf, adminOnlyFieldAccess } from '../access/ecommerceAccess'
 import { validateRoleChange, sanitizeOverrides } from '@/features/roles/permissions'
+import { slugify } from '@/utilities/formatSlug'
 import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 
 /**
@@ -78,6 +79,25 @@ export const Users: CollectionConfig = {
   beforeChange: [validateUserRoleChange, sanitizePermissionOverrides, authorshipBeforeChange],
   fields: [
     ...authorshipFields,
+    {
+      name: 'displayName',
+      type: 'text',
+      admin: { description: 'Public author name shown on blog posts. Optional. Never use an email address.' },
+    },
+    {
+      name: 'slug',
+      type: 'text',
+      unique: true,
+      admin: { description: 'Author archive address: /blog/author/<slug>. Auto-fills from the display name.' },
+      hooks: {
+        beforeValidate: [
+          ({ data, value }: { data?: Record<string, unknown>; value?: unknown }) => {
+            const raw = typeof value === 'string' && value.trim() ? value : typeof data?.displayName === 'string' ? data.displayName : ''
+            return slugify(raw) || undefined
+          },
+        ],
+      },
+    },
     {
       name: 'roles',
       type: 'select',

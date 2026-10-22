@@ -36,7 +36,7 @@ export const STARTERS: TemplateStarter[] = [
     label: 'Classic post',
     description: 'Breadcrumbs, title, meta, featured image, then the post content.',
     blocks: () => [
-      section([el('breadcrumbs'), el('post-title', { level: 'h1' }), el('post-meta'), el('post-featured-image'), el('content-slot')]),
+      section([el('auto-breadcrumbs'), el('post-title', { level: 'h1' }), el('post-meta'), el('post-featured-image'), el('content-slot')]),
     ],
   },
   {
@@ -51,14 +51,14 @@ export const STARTERS: TemplateStarter[] = [
     kind: 'single-product',
     label: 'Classic product',
     description: 'Breadcrumbs, title, price, then the product content.',
-    blocks: () => [section([el('breadcrumbs'), el('post-title', { level: 'h1' }), el('product-price'), el('content-slot')])],
+    blocks: () => [section([el('auto-breadcrumbs'), el('post-title', { level: 'h1' }), el('product-price'), el('content-slot')])],
   },
   {
     id: 'single-event-classic',
     kind: 'single-event',
     label: 'Classic event',
     description: 'Breadcrumbs, title, featured image, then the event content.',
-    blocks: () => [section([el('breadcrumbs'), el('post-title', { level: 'h1' }), el('post-featured-image'), el('content-slot')])],
+    blocks: () => [section([el('auto-breadcrumbs'), el('post-title', { level: 'h1' }), el('post-featured-image'), el('content-slot')])],
   },
   {
     id: 'archive-blog-simple',

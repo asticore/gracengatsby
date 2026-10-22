@@ -703,6 +703,20 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(names).toEqual(expect.arrayContaining(['page_effects_enabled', 'page_effects_cursor', 'page_effects_scroll_progress', 'page_effects_reveal_on_scroll']))
   })
 
+  it('adds the per-page background audio columns to pages and page versions', async () => {
+    const live = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_pages`)').all()).results as { name: string }[]).map((r) => r.name)
+    const versions = ((await proxy.env.D1.prepare('PRAGMA table_info(`_eg_pages_v`)').all()).results as { name: string }[]).map((r) => r.name)
+    const cols = ['page_audio_enabled', 'page_audio_source_type', 'page_audio_media_id', 'page_audio_url', 'page_audio_loop', 'page_audio_volume', 'page_audio_start_muted', 'page_audio_show_controls', 'page_audio_start_on_first_interaction', 'page_audio_respect_reduced_data']
+    expect(live).toEqual(expect.arrayContaining(cols))
+    expect(versions).toEqual(expect.arrayContaining(cols.map((c) => `version_${c}`)))
+  })
+
+  it('creates the social accounts child table for integrations', async () => {
+    expect(tables).toContain('eg_integrations_social_accounts')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(expect.arrayContaining(['_order', '_parent_id', 'id', 'provider', 'label', 'account_id', 'access_token']))
+  })
+
   it('creates the theme styles table', async () => {
     expect(tables).toContain('eg_theme_styles')
     const result = await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()

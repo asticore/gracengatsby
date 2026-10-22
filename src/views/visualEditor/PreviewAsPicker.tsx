@@ -36,9 +36,9 @@ export const PreviewAsPicker: React.FC<{ kind: unknown; onContext: (ctx: BlockCo
   }
 
   return (
-    <label style={{ display: 'block', margin: '8px 0' }}>
-      <span style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>Preview as</span>
-      <select value={picked} onChange={(e) => choose(e.target.value)} style={{ width: '100%' }}>
+    <label className="ve-preview-as">
+      <span className="ve-preview-as__label">Preview as</span>
+      <select className="ve-preview-as__select" value={picked} onChange={(e) => choose(e.target.value)}>
         <option value="">No sample (placeholders)</option>
         {items.map((i) => (
           <option key={i.id} value={String(i.id)}>
@@ -46,7 +46,7 @@ export const PreviewAsPicker: React.FC<{ kind: unknown; onContext: (ctx: BlockCo
           </option>
         ))}
       </select>
-      {error ? <span role="alert" style={{ color: 'crimson' }}>{error}</span> : null}
+      {error ? <span role="alert" className="ve-preview-as__error">{error}</span> : null}
     </label>
   )
 }

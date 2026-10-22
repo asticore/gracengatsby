@@ -2,7 +2,7 @@
 
 import React, { useEffect, useReducer, useRef } from 'react'
 
-import { applyFormat, clearFormat, sanitizeInlineHtml, shortcutMark, type Mark } from './inlineFormat'
+import { ALL_MARKS, applyFormat, clearFormat, sanitizeInlineHtml, shortcutMark, type Mark } from './inlineFormat'
 import { inlineReducer, inlineResult, startInline } from './inlineEdit'
 
 export type InlineEditorProps = {
@@ -12,6 +12,8 @@ export type InlineEditorProps = {
   multiline: boolean
   /** Value is the sanitised HTML subset (strong, em, a, br); shows the Bold/Italic/Link/Clear toolbar. */
   rich?: boolean
+  /** Marks this element allows (default all): the toolbar offers only these and the sanitiser drops the rest. */
+  formats?: readonly Mark[]
   /** Accessible name, e.g. "Edit heading". */
   label: string
   /** Called once with the new text (only when it changed). */
@@ -27,7 +29,7 @@ export type InlineEditorProps = {
  * Tab commits and moves on. The session reducer (inlineEdit.ts) guarantees exactly one outcome:
  * a blur that follows Enter/Esc/Tab is ignored.
  */
-export const CanvasInlineEditor: React.FC<InlineEditorProps> = ({ value, multiline, rich, label, onCommit, onCancel, onTab }) => {
+export const CanvasInlineEditor: React.FC<InlineEditorProps> = ({ value, multiline, rich, formats, label, onCommit, onCancel, onTab }) => {
   const ref = useRef<HTMLTextAreaElement>(null)
   const [session, dispatch] = useReducer(inlineReducer, value, startInline)
   const finished = useRef(false)
@@ -49,7 +51,7 @@ export const CanvasInlineEditor: React.FC<InlineEditorProps> = ({ value, multili
     else onCancel()
   }, [session, onCommit, onCancel, onTab])
 
-  if (rich) return <RichInlineEditor {...{ value, multiline, label, onCommit, onCancel, onTab }} />
+  if (rich) return <RichInlineEditor {...{ value, multiline, formats, label, onCommit, onCancel, onTab }} />
   return (
     <textarea
       ref={ref}
@@ -159,7 +161,7 @@ const ToolButton: React.FC<{ text: string; title: string; run: () => void; style
   </button>
 )
 
-const RichInlineEditor: React.FC<Pick<InlineEditorProps, 'value' | 'multiline' | 'label' | 'onCommit' | 'onCancel' | 'onTab'>> = ({ value, multiline, label, onCommit, onCancel, onTab }) => {
+const RichInlineEditor: React.FC<Pick<InlineEditorProps, 'value' | 'multiline' | 'formats' | 'label' | 'onCommit' | 'onCancel' | 'onTab'>> = ({ value, multiline, formats = ALL_MARKS, label, onCommit, onCancel, onTab }) => {
   const ref = useRef<HTMLDivElement>(null)
   const [session, dispatch] = useReducer(inlineReducer, value, startInline)
   const finished = useRef(false)
@@ -168,7 +170,7 @@ const RichInlineEditor: React.FC<Pick<InlineEditorProps, 'value' | 'multiline' |
   const [linkDraft, setLinkDraft] = React.useState<string | null>(null)
   const savedRange = useRef<[number, number]>([0, 0])
 
-  const html = () => sanitizeInlineHtml(ref.current?.innerHTML ?? '')
+  const html = () => sanitizeInlineHtml(ref.current?.innerHTML ?? '', formats)
   const range = (): [number, number] | null => {
     const el = ref.current
     const sel = typeof window !== 'undefined' ? window.getSelection() : null
@@ -211,7 +213,7 @@ const RichInlineEditor: React.FC<Pick<InlineEditorProps, 'value' | 'multiline' |
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    el.innerHTML = sanitizeInlineHtml(value)
+    el.innerHTML = sanitizeInlineHtml(value, formats)
     el.focus()
     const r = document.createRange()
     r.selectNodeContents(el)
@@ -238,9 +240,9 @@ const RichInlineEditor: React.FC<Pick<InlineEditorProps, 'value' | 'multiline' |
         <div role="toolbar" aria-label="Text formatting" onMouseDown={(e) => { if (!(e.target instanceof HTMLInputElement)) e.preventDefault(); e.stopPropagation() }} style={{ position: 'absolute', top: bar.top, left: bar.left, zIndex: 30, display: 'flex', gap: 2, alignItems: 'center', background: '#222', borderRadius: 4, padding: 2 }}>
           {linkDraft === null ? (
             <>
-              <ToolButton text='B' title='Bold (Ctrl+B)' run={() => format('bold')} />
-              <ToolButton text='I' title='Italic (Ctrl+I)' run={() => format('italic')} style={{ fontStyle: 'italic' }} />
-              <ToolButton text='Link' title='Link (Ctrl+K)' run={() => setLinkDraft('')} />
+              {formats.includes('bold') && <ToolButton text='B' title='Bold (Ctrl+B)' run={() => format('bold')} />}
+              {formats.includes('italic') && <ToolButton text='I' title='Italic (Ctrl+I)' run={() => format('italic')} style={{ fontStyle: 'italic' }} />}
+              {formats.includes('link') && <ToolButton text='Link' title='Link (Ctrl+K)' run={() => setLinkDraft('')} />}
               <ToolButton text='Clear' title='Clear formatting' run={() => format('clear')} />
             </>
           ) : (
@@ -296,7 +298,9 @@ const RichInlineEditor: React.FC<Pick<InlineEditorProps, 'value' | 'multiline' |
         onKeyDown={(e) => {
           e.stopPropagation()
           const mark = shortcutMark(e.nativeEvent)
-          if (mark) {
+          if (mark && !formats.includes(mark)) {
+            e.preventDefault()
+          } else if (mark) {
             e.preventDefault()
             const r = range()
             if (!r || r[0] === r[1]) return

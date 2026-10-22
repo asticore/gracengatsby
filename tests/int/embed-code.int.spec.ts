@@ -174,3 +174,4 @@ describe('embed-code resize message validation', () => {
     expect(parseResizeMessage({ source: win, data: 'str' }, win, 'h')).toBeNull()
   })
 })
+

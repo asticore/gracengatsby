@@ -19,6 +19,7 @@ import { ListToolbar } from './ListToolbar'
 import { formatCellValue } from '@/admin/list/cellFormatting'
 import { SECTION_PANEL_ID, VIEW_TABS, resolveActiveTab, resolveSectionTab, resolveSectionTabs, sectionTabId, type ViewTab } from '@/admin/list/viewTabs'
 import { ListSectionTabs } from './ListSectionTabs'
+import { resolveComponent } from '@/admin/componentRegistry'
 import { AllSubmissionsTab } from './results/AllSubmissionsTab'
 import { AllRsvpsTab } from './results/AllRsvpsTab'
 import { ABResultsOverview } from './results/ABResultsOverview'
@@ -122,6 +123,7 @@ export async function ListView({
           <h1>{sectionLabel}</h1>
         </div>
         {tabBar}
+
         <div aria-labelledby={sectionTabId(activeSection.key)} className="lst-panel" id={SECTION_PANEL_ID} role="tabpanel">
           {panel}
         </div>
@@ -247,6 +249,12 @@ export async function ListView({
       </div>
 
       {tabBar}
+
+      {/* Collection-specific panels declared as admin.components.beforeList (registry paths), e.g. site-templates Starters. */}
+      {(Array.isArray(collection.admin?.components?.beforeList) ? (collection.admin.components.beforeList as string[]) : []).map((path) => {
+        const Panel = resolveComponent(path)
+        return Panel ? <Panel key={path} /> : null
+      })}
 
       <div
         aria-labelledby={activeSection ? sectionTabId(activeSection.key) : undefined}

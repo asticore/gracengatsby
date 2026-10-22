@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 
 import { EmbedConsentFrame } from './EmbedConsentFrame'
+import { EMBED_NAME, embedLayout } from '@/lib/embedProviders'
 
 /** Client parts of wave 64: code copy button, image accordion, video playlist. Props are plain data from the server render. */
 
@@ -51,7 +52,7 @@ export const ImageAccordion: React.FC<{ panels: Panel[]; height: number }> = ({ 
   )
 }
 
-export type Video = { src: string; kind: 'youtube' | 'vimeo' | 'file'; title: string }
+export type Video = { src: string; kind: 'youtube' | 'vimeo' | 'file' | 'spotify' | 'soundcloud'; title: string }
 
 export const VideoPlaylist: React.FC<{ items: Video[]; label: string }> = ({ items, label }) => {
   const [cur, setCur] = useState(0)
@@ -67,8 +68,9 @@ export const VideoPlaylist: React.FC<{ items: Video[]; label: string }> = ({ ite
             key={v.src}
             src={v.src}
             title={v.title}
-            providerName={v.kind === 'youtube' ? 'YouTube' : 'Vimeo'}
+            providerName={EMBED_NAME[v.kind]}
             aspectRatio="16 / 9"
+            {...(v.kind === 'spotify' || v.kind === 'soundcloud' ? embedLayout(v.kind, v.src) : {})}
             sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
             allow="fullscreen; picture-in-picture"
           />

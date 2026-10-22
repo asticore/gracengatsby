@@ -711,6 +711,22 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(versions).toEqual(expect.arrayContaining(cols.map((c) => `version_${c}`)))
   })
 
+  it('adds the hide-native-cursor column and the post background audio columns', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_site_settings')).toContain('page_effects_hide_native_cursor')
+    const cols = ['page_audio_enabled', 'page_audio_source_type', 'page_audio_media_id', 'page_audio_url', 'page_audio_loop', 'page_audio_volume']
+    expect(await names('eg_posts')).toEqual(expect.arrayContaining(cols))
+    expect(await names('_eg_posts_v')).toEqual(expect.arrayContaining(cols.map((c) => `version_${c}`)))
+  })
+
+  it('adds blog tags tables and public author columns on users', async () => {
+    expect(tables).toContain('eg_posts_tags')
+    expect(tables).toContain('_eg_posts_v_version_tags')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_users`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(expect.arrayContaining(['display_name', 'slug']))
+  })
+
   it('creates the social accounts child table for integrations', async () => {
     expect(tables).toContain('eg_integrations_social_accounts')
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)

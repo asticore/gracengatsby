@@ -24,7 +24,7 @@ describe('template preview-as mapping', () => {
     expect(previewTextFor('post-title', {}, ctx)).toBe('Hello')
     expect(previewTextFor('post-excerpt', {}, ctx)).toBe('Ex')
     expect(previewTextFor('post-meta', {}, ctx)).toContain('Ann')
-    expect(previewTextFor('breadcrumbs', {}, ctx)).toBe('Home / Blog / Hello')
+    expect(previewTextFor('auto-breadcrumbs', {}, ctx)).toBe('Home / Blog / Hello')
     expect(previewTextFor('product-price', {}, productBlockContext({ title: 'Mug', priceInAUD: 29.99 }, '/shop/mug'))).toContain('29.99')
     expect(previewTextFor('post-title', {}, null)).toBeNull()
     expect(previewTextFor('content-slot', {}, ctx)).toBeNull()

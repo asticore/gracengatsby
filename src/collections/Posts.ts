@@ -1,3 +1,4 @@
+import { pageAudioField } from '@/features/pageAudio/fields'
 import { noAdsField } from '@/features/ads/fields'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
@@ -21,7 +22,7 @@ import { readingTimeBeforeChange } from '@/features/editScreens/readingTime'
 export const Posts: CollectionConfig = {
   slug: 'posts',
   dbName: 'eg_posts',
-  labels: { singular: 'Post', plural: 'Posts' },
+  labels: { singular: 'Post', plural: 'Blog' },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'publishedDate', '_status'],
@@ -63,6 +64,8 @@ export const Posts: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     { name: 'categories', type: 'array', labels: { singular: 'Category', plural: 'Categories' }, fields: [{ name: 'name', type: 'text' }], admin: { position: 'sidebar', initCollapsed: true } },
+    pageAudioField,
+    { name: 'tags', type: 'array', labels: { singular: 'Tag', plural: 'Tags' }, fields: [{ name: 'name', type: 'text' }], admin: { position: 'sidebar', initCollapsed: true, description: 'Public tags. Each links to /blog/tag/<tag>.' } },
     { name: 'featuredImage', type: 'upload', relationTo: 'media' },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Shown on the blog archive card.' } },
     { name: 'content', type: 'richText', required: true },

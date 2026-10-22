@@ -137,6 +137,37 @@ html[data-theme='dark'] .ve-root {
   opacity: 0.7;
 }
 
+.ve-preview-as {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+.ve-preview-as__label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ve-preview-as__select {
+  max-width: 180px;
+  font: inherit;
+}
+
+.ve-preview-as__error {
+  color: #b42318;
+}
+
+.ve-sample-text {
+  padding: 4px 6px;
+  border-left: 3px solid rgba(46, 49, 146, 0.5);
+  background: rgba(46, 49, 146, 0.06);
+  color: inherit;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
 .ve-topbar__actions {
   display: flex;
   align-items: center;

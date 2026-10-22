@@ -727,6 +727,14 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(cols).toEqual(expect.arrayContaining(['display_name', 'slug']))
   })
 
+  it('adds the blog author and tag switches and the per-post hide-author column', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_blog_settings')).toEqual(expect.arrayContaining(['show_authors', 'show_tags', 'author_archives']))
+    expect(await names('eg_posts')).toContain('hide_author')
+    expect(await names('_eg_posts_v')).toContain('version_hide_author')
+  })
+
   it('creates the social accounts child table for integrations', async () => {
     expect(tables).toContain('eg_integrations_social_accounts')
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)

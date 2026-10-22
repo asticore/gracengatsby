@@ -108,6 +108,28 @@
   }
 }
 
+/* Text entry always gets its native pointer back (higher specificity than the rule above). */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html.be-cursor-hide input,
+  html.be-cursor-hide textarea,
+  html.be-cursor-hide select,
+  html.be-cursor-hide [contenteditable]:not([contenteditable='false']) {
+    cursor: auto !important;
+  }
+  html.be-cursor-hide input:not([type]),
+  html.be-cursor-hide input[type='text'],
+  html.be-cursor-hide input[type='email'],
+  html.be-cursor-hide input[type='search'],
+  html.be-cursor-hide input[type='password'],
+  html.be-cursor-hide input[type='url'],
+  html.be-cursor-hide input[type='tel'],
+  html.be-cursor-hide input[type='number'],
+  html.be-cursor-hide textarea,
+  html.be-cursor-hide [contenteditable]:not([contenteditable='false']) {
+    cursor: text !important;
+  }
+}
+
 @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
   .be-el-44-cursor-ring,
   .be-el-44-cursor-dot {

@@ -8,9 +8,9 @@ const text = (name: string, label: string, extra: Partial<EditorField> = {}): Ed
 export const WAVE64_ELEMENTS: ElementDef[] = [
   {
     type: 'audio', label: 'Audio', icon: String.fromCodePoint(0x1f50a), category: 'media',
-    description: 'A sound file with the browser audio player. Never plays by itself.',
+    description: 'A sound file with the browser audio player, or a Spotify or SoundCloud player. Never plays by itself.',
     fields: [
-      { name: 'file', label: 'Audio file', type: 'media' }, text('url', 'Or audio address', { helpText: 'An https address of an mp3, ogg, wav or m4a file. Used when no file is chosen.' }),
+      { name: 'file', label: 'Audio file', type: 'media' }, text('url', 'Or audio address', { helpText: 'An https address of an mp3, ogg, wav or m4a file, or a Spotify or SoundCloud track, album or playlist link (loads after consent). Used when no file is chosen.' }),
       text('title', 'Title'),
       { name: 'loop', label: 'Loop', type: 'checkbox' },
     ],
@@ -38,9 +38,9 @@ export const WAVE64_ELEMENTS: ElementDef[] = [
   },
   {
     type: 'video-playlist', label: 'Video playlist', icon: String.fromCodePoint(0x1f4fa), category: 'media',
-    description: 'A player with a list of videos beside it. YouTube and Vimeo wait for consent.',
+    description: 'A player with a list of videos beside it. YouTube, Vimeo, Spotify and SoundCloud wait for consent.',
     fields: [
-      { name: 'items', label: 'Videos', type: 'textarea', helpText: 'One per line: "https://... | Title". YouTube, Vimeo or .mp4 / .webm.' },
+      { name: 'items', label: 'Videos', type: 'textarea', helpText: 'One per line: "https://... | Title". YouTube, Vimeo, Spotify, SoundCloud or .mp4 / .webm.' },
       text('label', 'Accessible name'),
     ],
     defaultProps: () => ({ items: '', label: 'Video playlist' }),

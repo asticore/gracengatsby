@@ -13,6 +13,7 @@ import { LoopElement } from './Wave50Server'
 import { WAVE63_COMPONENTS } from './Wave63Server'
 import { WAVE65_SERVER_COMPONENTS } from './Wave65Server'
 import { WAVE66_COMPONENTS } from './Wave66Server'
+import { WAVE67_COMPONENTS } from './Wave67Server'
 import { DynamicTextElement } from './DynamicText'
 import SearchSuggest from './SearchSuggest'
 import './wave38.css'
@@ -387,6 +388,7 @@ const SITE_RENDERERS: Record<string, React.ComponentType<P>> = {
   ...WAVE63_COMPONENTS,
   ...WAVE65_SERVER_COMPONENTS,
   ...WAVE66_COMPONENTS,
+  ...WAVE67_COMPONENTS,
 }
 
 /**

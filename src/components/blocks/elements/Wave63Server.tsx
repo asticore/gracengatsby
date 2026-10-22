@@ -13,7 +13,7 @@ const HEADINGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
 
 const currentTitle = (): string => {
   const c = getBlockContext()
-  return str(c.post?.title) || str(c.product?.title) || str(c.page?.title)
+  return str(c.post?.title) || str(c.product?.title) || str(c.event?.title) || str(c.page?.title)
 }
 
 export async function PostTitleElement(props: P): Promise<React.ReactElement | null> {
@@ -24,7 +24,9 @@ export async function PostTitleElement(props: P): Promise<React.ReactElement | n
 }
 
 export async function PostFeaturedImageElement(): Promise<React.ReactElement | null> {
-  const img = getBlockContext().post?.featuredImage
+  const c = getBlockContext()
+  // Posts use their featured image; product templates use the product's first image.
+  const img = c.post?.featuredImage ?? c.product?.featuredImage
   const url = str(img?.url)
   if (!url) return null
   // eslint-disable-next-line @next/next/no-img-element

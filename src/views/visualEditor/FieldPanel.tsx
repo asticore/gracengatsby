@@ -1023,6 +1023,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
   const [pickerOpen, setPickerOpen] = useState(false)
   const [fetchedThumb, setFetchedThumb] = useState<MediaThumb | null>(null)
   const [relOptions, setRelOptions] = useState<{ id: number; label: string }[]>([])
+  const [remoteOptions, setRemoteOptions] = useState<{ label: string; value: string }[]>([])
   const [relLoaded, setRelLoaded] = useState(false)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
@@ -1043,6 +1044,18 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
           ? (value as MediaThumb)
           : null
       : null
+
+  useEffect(() => {
+    if (field.type !== 'select' || !field.optionsUrl) return
+    fetch(field.optionsUrl, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((data: { options?: { label?: unknown; value?: unknown }[] }) => {
+        setRemoteOptions(
+          (data?.options || []).filter((o) => typeof o.value === 'string').map((o) => ({ value: String(o.value), label: String(o.label || o.value) })),
+        )
+      })
+      .catch(() => {})
+  }, [field.type, field.optionsUrl])
 
   useEffect(() => {
     if (field.type === 'relationship' && field.relationTo) {
@@ -1143,7 +1156,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
           <span>{field.label}</span>
           <select value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value || undefined)}>
             <option value="">&#8212;</option>
-            {(field.options || []).map((opt) => (
+            {(field.optionsUrl ? remoteOptions : field.options || []).map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>

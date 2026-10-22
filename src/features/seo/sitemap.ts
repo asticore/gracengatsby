@@ -1,5 +1,5 @@
 import { getEngine } from '@/lib/engine'
-import { categoryIndex, type ArchivePost } from '@/features/siteTemplates/archiveQueries'
+import { authorIndex, categoryIndex, tagIndex, type ArchivePost } from '@/features/siteTemplates/archiveQueries'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
 import { isNoIndexedPage, readPasswordGate } from './indexable'
@@ -120,8 +120,10 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     await addCollection('posts', '/blog', 0.6)
     try {
       const engine = await getEngine()
-      const { docs } = await engine.find({ collection: 'posts', where: { _status: { equals: 'published' } }, limit: 0, depth: 0 })
+      const { docs } = await engine.find({ collection: 'posts', where: { _status: { equals: 'published' } }, limit: 0, depth: 1 })
       for (const slug of categoryIndex(docs as ArchivePost[]).keys()) add(`/blog/category/${slug}`, undefined, 0.4)
+      for (const slug of tagIndex(docs as ArchivePost[]).keys()) add(`/blog/tag/${slug}`, undefined, 0.4)
+      for (const slug of authorIndex(docs as ArchivePost[]).keys()) add(`/blog/author/${slug}`, undefined, 0.4)
     } catch {
       // Category archives are optional entries.
     }

@@ -8,6 +8,15 @@ export const EMBED_IFRAME_HOST = {
   'google-calendar': 'calendar.google.com',
   typeform: 'form.typeform.com',
   lottie: 'lottie.host',
+  /** Social and audio embeds (consent-gated iframes). */
+  instagram: 'www.instagram.com',
+  x: 'platform.twitter.com',
+  facebook: 'www.facebook.com',
+  tiktok: 'www.tiktok.com',
+  pinterest: 'assets.pinterest.com',
+  linkedin: 'www.linkedin.com',
+  spotify: 'open.spotify.com',
+  soundcloud: 'w.soundcloud.com',
   /** Map element: Google keyless embed and OpenStreetMap. */
   googleMaps: 'www.google.com',
   openStreetMap: 'www.openstreetmap.org',

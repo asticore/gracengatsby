@@ -2,7 +2,10 @@ import React from 'react'
 
 import { RichText } from '@/engine/editor/react'
 
+import { MARKS_NO_LINK } from '@/views/visualEditor/inlineFormat'
+
 import { Icon } from './icons'
+import { SafeInlineHtml } from './SafeInlineHtml'
 import { cells, iconName, linkAttrs, linkHref, lines, num, pick, str } from './elementUtil'
 import './list.css'
 
@@ -30,7 +33,7 @@ export const QuoteElement: React.FC<P> = (p) => {
   return (
     <figure className={`el-quote el-quote--${style} ${alignClass(p.align)}`}>
       <blockquote>
-        <p>{str(p.text, 'A memorable quotation.')}</p>
+        <SafeInlineHtml as="p" text={str(p.text, 'A memorable quotation.')} />
       </blockquote>
       {cite && <figcaption>{href ? <a href={href} {...linkAttrs(p.citeUrl)}>{cite}</a> : cite}</figcaption>}
     </figure>
@@ -104,7 +107,7 @@ export const ListElement: React.FC<P> = (p) => {
   return (
     <Tag className={cls} style={style} role={symbolic && Tag === 'ul' ? 'list' : undefined}>
       {rows.map((row, i) => {
-        const body = row.href ? <a href={row.href}>{row.text}</a> : row.text
+        const body = row.href ? <a href={row.href}><SafeInlineHtml text={row.text} formats={MARKS_NO_LINK} /></a> : <SafeInlineHtml text={row.text} />
         return (
           <li key={i}>
             {marker === 'icon' && <Icon name={iconPath} size={iconSize} className="el-list__marker" />}

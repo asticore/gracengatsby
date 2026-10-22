@@ -1,4 +1,5 @@
 import { getEngine } from '@/lib/engine'
+import { loadBlogSwitches } from '@/features/blog/switches'
 import { authorIndex, categoryIndex, tagIndex, type ArchivePost } from '@/features/siteTemplates/archiveQueries'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
@@ -122,8 +123,9 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
       const engine = await getEngine()
       const { docs } = await engine.find({ collection: 'posts', where: { _status: { equals: 'published' } }, limit: 0, depth: 1 })
       for (const slug of categoryIndex(docs as ArchivePost[]).keys()) add(`/blog/category/${slug}`, undefined, 0.4)
-      for (const slug of tagIndex(docs as ArchivePost[]).keys()) add(`/blog/tag/${slug}`, undefined, 0.4)
-      for (const slug of authorIndex(docs as ArchivePost[]).keys()) add(`/blog/author/${slug}`, undefined, 0.4)
+      const sw = await loadBlogSwitches()
+      if (sw.tags) for (const slug of tagIndex(docs as ArchivePost[]).keys()) add(`/blog/tag/${slug}`, undefined, 0.4)
+      if (sw.authorArchives) for (const slug of authorIndex(docs as ArchivePost[]).keys()) add(`/blog/author/${slug}`, undefined, 0.4)
     } catch {
       // Category archives are optional entries.
     }

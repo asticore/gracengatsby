@@ -1179,6 +1179,8 @@ export const VisualEditorView: React.FC = () => {
           </span>
         </div>
         <div className="ve-topbar__actions">
+          {/* Always in the top bar for site-template docs, whatever is selected. */}
+          {surface?.slug === 'site-templates' ? <PreviewAsPicker kind={templateKind} onContext={setPreviewCtx} /> : null}
           <div className="ve-history" role="group" aria-label="History">
             <button
               type="button"
@@ -1331,7 +1333,6 @@ export const VisualEditorView: React.FC = () => {
           pagePanel={
             pageSettings ? (
               <>
-              {surface?.slug === 'site-templates' ? <PreviewAsPicker kind={templateKind} onContext={setPreviewCtx} /> : null}
               <PageSettingsPanel
                 value={pageSettings}
                 available={pageAvail}

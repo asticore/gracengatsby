@@ -411,6 +411,20 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(cols).toEqual(expect.arrayContaining(['page_effects_enabled', 'page_effects_cursor', 'page_effects_scroll_progress', 'page_effects_reveal_on_scroll']))
   })
 
+  it('adds the per-page background audio columns to pages and page versions', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    const cols = ['page_audio_enabled', 'page_audio_source_type', 'page_audio_media_id', 'page_audio_url', 'page_audio_loop', 'page_audio_volume', 'page_audio_start_muted', 'page_audio_show_controls', 'page_audio_start_on_first_interaction', 'page_audio_respect_reduced_data']
+    expect(await names('eg_pages')).toEqual(expect.arrayContaining(cols))
+    expect(await names('_eg_pages_v')).toEqual(expect.arrayContaining(cols.map((c) => `version_${c}`)))
+  })
+
+  it('creates the social accounts child table for integrations', async () => {
+    expect(createdTables.has('eg_integrations_social_accounts')).toBe(true)
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(expect.arrayContaining(['provider', 'label', 'account_id', 'access_token']))
+  })
+
   it('creates the theme styles table (raw SQL, not in the drizzle schema)', async () => {
     expect(createdTables.has('eg_theme_styles')).toBe(true)
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_theme_styles`)').all()).results as { name: string }[]).map((r) => r.name)

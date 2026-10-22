@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import React from 'react'
 
-import { EMBED_IFRAME_HOST } from '@/lib/embedHosts'
+import { EMBED_NAME, EMBED_PROVIDERS, embedLayout, resolveEmbed, type EmbedProvider } from '@/lib/embedProviders'
 import { safeUrl } from '@/lib/mergeTags'
 
 import { cells, flag, mediaOf, num, pick, str, type MediaRef } from './elementUtil'
@@ -321,100 +321,14 @@ export const ChartElement: React.FC<P> = (p) => {
 
 /* ---------- embed ---------- */
 
-const EMBED_PROVIDERS = ['youtube', 'vimeo', 'x', 'instagram', 'facebook-video', 'google-calendar', 'typeform', 'lottie', 'custom-iframe'] as const
-export type EmbedProvider = (typeof EMBED_PROVIDERS)[number]
-const EMBED_NAME: Record<EmbedProvider, string> = {
-  youtube: 'YouTube',
-  vimeo: 'Vimeo',
-  x: 'X',
-  instagram: 'Instagram',
-  'facebook-video': 'Facebook',
-  'google-calendar': 'Google Calendar',
-  typeform: 'Typeform',
-  lottie: 'LottieFiles',
-  'custom-iframe': 'Embedded page',
-}
+export type { EmbedProvider }
+export { resolveEmbed }
 const RATIO_CSS: Record<string, string> = { '16:9': '16 / 9', '4:3': '4 / 3', '1:1': '1 / 1' }
-
-/** The only hosts an iframe is built on. The src always uses one of these, never the host the editor typed. */
-const IFRAME_HOST = EMBED_IFRAME_HOST
-/** Hosts an address may come from, per provider. Link cards use the same rule for their own hosts. */
-const HOSTS: Record<EmbedProvider, string[]> = {
-  youtube: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'www.youtube-nocookie.com'],
-  vimeo: ['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'],
-  x: ['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'],
-  instagram: ['instagram.com', 'www.instagram.com'],
-  'facebook-video': ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.watch'],
-  'google-calendar': ['calendar.google.com'],
-  typeform: ['form.typeform.com'],
-  lottie: ['lottie.host', 'lottiefiles.com', 'www.lottiefiles.com', 'app.lottiefiles.com'],
-  'custom-iframe': ['www.youtube-nocookie.com', 'youtube-nocookie.com', 'player.vimeo.com', 'calendar.google.com', 'form.typeform.com'],
-}
-const LINK_CARD: ReadonlySet<EmbedProvider> = new Set(['x', 'instagram', 'facebook-video'])
 const SANDBOX = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-presentation allow-forms'
 
-type EmbedTarget = { kind: 'iframe'; src: string } | { kind: 'link'; href: string } | { kind: 'error'; message: string }
-
-function youtubeId(u: URL): string | null {
-  const ok = (id: string | null | undefined) => (id && /^[A-Za-z0-9_-]{6,20}$/.test(id) ? id : null)
-  if (u.hostname === 'youtu.be') return ok(u.pathname.slice(1).split('/')[0])
-  if (u.pathname === '/watch') return ok(u.searchParams.get('v'))
-  return ok(/^\/(?:embed|shorts|live|v)\/([^/]+)/.exec(u.pathname)?.[1])
-}
-
-/** Works out what to show for an address. Null for an empty address (nothing renders). */
-export function resolveEmbed(provider: EmbedProvider, raw: string): EmbedTarget | null {
-  const text = raw.trim()
-  if (!text) return null
-  let u: URL
-  try {
-    u = new URL(text)
-  } catch {
-    return { kind: 'error', message: 'This is not a valid web address.' }
-  }
-  if (u.protocol !== 'https:') return { kind: 'error', message: 'Use an https:// address.' }
-  if (u.username || u.password) return { kind: 'error', message: 'This address is not allowed.' }
-  const host = u.hostname.toLowerCase()
-  const hostError: EmbedTarget = { kind: 'error', message: `This address is not from a host this embed allows for ${EMBED_NAME[provider]}.` }
-  if (!HOSTS[provider].includes(host)) return hostError
-  const noId: EmbedTarget = { kind: 'error', message: 'No video or page ID was found in this address.' }
-
-  if (LINK_CARD.has(provider)) return { kind: 'link', href: u.toString() }
-  switch (provider) {
-    case 'youtube': {
-      const id = youtubeId(u)
-      return id ? { kind: 'iframe', src: `https://${IFRAME_HOST.youtube}/embed/${id}` } : noId
-    }
-    case 'vimeo': {
-      const m = /(?:^|\/)(\d{5,12})(?:\/|$)/.exec(u.pathname)
-      return m ? { kind: 'iframe', src: `https://${IFRAME_HOST.vimeo}/video/${m[1]}?dnt=1` } : noId
-    }
-    case 'google-calendar':
-      return u.pathname.startsWith('/calendar/embed')
-        ? { kind: 'iframe', src: `https://${IFRAME_HOST['google-calendar']}${u.pathname}${u.search}` }
-        : { kind: 'error', message: 'Use a Google Calendar embed address (calendar/embed).' }
-    case 'typeform':
-      return u.pathname.startsWith('/to/')
-        ? { kind: 'iframe', src: `https://${IFRAME_HOST.typeform}${u.pathname}${u.search}` }
-        : { kind: 'error', message: 'Use a Typeform address that starts with /to/.' }
-    case 'lottie': {
-      // Only lottie.host/embed/<uuid>/<id>.json is an iframe form; lottiefiles.com pages are not embeddable, so they become link cards.
-      if (host === 'lottie.host') {
-        return /^\/embed\/[A-Za-z0-9-]{8,64}\/[A-Za-z0-9_-]{4,64}\.json$/.test(u.pathname)
-          ? { kind: 'iframe', src: `https://${IFRAME_HOST.lottie}${u.pathname}` }
-          : { kind: 'error', message: 'Use a lottie.host embed address (lottie.host/embed/.../....json).' }
-      }
-      return { kind: 'link', href: u.toString() }
-    }
-    default:
-      // Custom iframe: the host is already on the allowlist, so the src is rebuilt from it.
-      return { kind: 'iframe', src: `https://${host}${u.pathname}${u.search}` }
-  }
-}
-
 /**
- * `embed`: an iframe from a fixed host allowlist (lazy, sandboxed, with a referrer policy), or a link card for X,
- * Instagram and Facebook. Anything else gets a plain message instead of an embed.
+ * `embed`: an iframe from a fixed host allowlist (lazy, sandboxed, with a referrer policy), or a link card for
+ * Pinterest boards and LottieFiles pages. Anything else gets a plain message instead of an embed.
  */
 export const EmbedElement: React.FC<P> = (p) => {
   const provider = pick(p.provider, EMBED_PROVIDERS, 'youtube')
@@ -442,8 +356,9 @@ export const EmbedElement: React.FC<P> = (p) => {
       title={title}
       providerName={name}
       aspectRatio={RATIO_CSS[ratio]}
+      {...embedLayout(provider, target.src)}
       sandbox={SANDBOX}
-      allow="encrypted-media; picture-in-picture"
+      allow="encrypted-media; picture-in-picture; clipboard-write"
     />
   )
 }

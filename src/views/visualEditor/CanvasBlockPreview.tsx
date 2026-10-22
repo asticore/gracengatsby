@@ -24,6 +24,7 @@ import '@/features/forms/components/forms.css'
 import { HTML_ELEMENT, STEP_ELEMENT, isFieldElementType, nodeToField, type LayoutNode } from '@/features/forms/layout'
 
 import { previewTextFor } from '@/lib/blockContextFrom'
+import { EmbedCodeCanvasCard } from '@/components/blocks/elements/EmbedCodeFrame'
 import { PreviewContext } from './previewContext'
 import { useResolvedMedia, useResolvedMediaList } from './useResolvedMedia'
 
@@ -162,6 +163,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
           </div>
         )
       }
+      if (elementType === 'embed-code') return <EmbedCodeCanvasCard snippet={String(props.snippet ?? '')} title={String(props.title ?? '')} />
       // Site elements read live data on the server; the canvas shows a static placeholder and never queries.
       if (SITE_ELEMENT_TYPES.has(elementType)) {
         const sample = previewTextFor(elementType, props, previewCtx)

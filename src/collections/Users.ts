@@ -82,13 +82,13 @@ export const Users: CollectionConfig = {
     {
       name: 'displayName',
       type: 'text',
-      admin: { description: 'Public author name shown on blog posts. Optional. Never use an email address.' },
+      admin: { description: 'Public author name shown on blog posts. Optional. Never use an email address. Unused while authors are switched off in Blog settings.' },
     },
     {
       name: 'slug',
       type: 'text',
       unique: true,
-      admin: { description: 'Author archive address: /blog/author/<slug>. Auto-fills from the display name.' },
+      admin: { description: 'Author archive address: /blog/author/<slug>. Auto-fills from the display name. Unused while authors or author archives are switched off in Blog settings.' },
       hooks: {
         beforeValidate: [
           ({ data, value }: { data?: Record<string, unknown>; value?: unknown }) => {

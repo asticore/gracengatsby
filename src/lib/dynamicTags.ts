@@ -12,6 +12,7 @@ export type TagContext = {
   page?: { title?: unknown }
   site?: { name?: unknown; year?: unknown }
   product?: { title?: unknown; price?: unknown }
+  event?: { title?: unknown; date?: unknown; location?: unknown; summary?: unknown }
   /** Locale for dates. Default en-AU. */
   locale?: string
   /** Currency code for numeric prices. Default AUD. */
@@ -21,6 +22,7 @@ export type TagContext = {
 
 export const TAG_NAMES = [
   'post.title', 'post.date', 'post.excerpt', 'post.author', 'page.title', 'site.name', 'site.year', 'product.title', 'product.price',
+  'event.title', 'event.date', 'event.location', 'event.summary',
 ] as const
 
 export function escapeHtml(value: string): string {
@@ -68,6 +70,10 @@ function rawValue(name: string, ctx: TagContext): string {
     case 'site.year': return str(ctx.site?.year) || String(new Date().getUTCFullYear())
     case 'product.title': return str(ctx.product?.title)
     case 'product.price': return formatTagPrice(ctx.product?.price, ctx.currency, locale)
+    case 'event.title': return str(ctx.event?.title)
+    case 'event.date': return formatTagDate(ctx.event?.date, ctx.dateFormat, locale)
+    case 'event.location': return str(ctx.event?.location)
+    case 'event.summary': return str(ctx.event?.summary)
     default: return ''
   }
 }

@@ -14,13 +14,11 @@ const str = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'n
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' ? (v as Record<string, unknown>) : {})
 
 /**
- * Public author name for a post. The Users collection has no name column (only email, which must never be shown, and
- * its local part identifies the person too), so we use a name-like field if one ever exists (name, displayName,
- * fullName), else the site's business name from site details, else ''. Never reads or returns email.
+ * Public author name for a post. Prefers Users.displayName (public name), then name/fullName if present, else the site's business name from site details, else ''. Never reads or returns email.
  */
 export function postAuthorName(author: unknown, siteName?: unknown): string {
   const a = author && typeof author === 'object' ? rec(author) : {}
-  return str(a.name).trim() || str(a.displayName).trim() || str(a.fullName).trim() || str(siteName).trim()
+  return str(a.displayName).trim() || str(a.name).trim() || str(a.fullName).trim() || str(siteName).trim()
 }
 
 /** First image of a product (depth 1 media doc), public url and alt only. */
@@ -109,7 +107,7 @@ export function previewTextFor(elementType: string, props: Record<string, unknow
       const p = ctx.product?.price
       return p === undefined || p === null || p === '' ? null : formatTagPrice(p) || null
     }
-    case 'breadcrumbs': {
+    case 'auto-breadcrumbs': {
       if (!ctx.path) return null
       const crumbs = buildBreadcrumbs(ctx.path, title, str(props.homeLabel) || 'Home')
       return crumbs.length >= 2 ? crumbs.map((c) => c.label).join(' / ') : null

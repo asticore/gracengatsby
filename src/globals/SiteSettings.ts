@@ -224,6 +224,13 @@ export const SiteSettings: GlobalConfig = {
         },
         { name: 'scrollProgress', type: 'checkbox', defaultValue: false, label: 'Scroll progress bar' },
         { name: 'revealOnScroll', type: 'checkbox', defaultValue: false, label: 'Fade content in as it scrolls into view' },
+        {
+          name: 'hideNativeCursor',
+          type: 'checkbox',
+          defaultValue: false,
+          label: 'Hide the system pointer',
+          admin: { description: 'Hides the normal pointer only when the custom cursor effect is on. Never applies on touch screens.' },
+        },
       ],
     },
     featureToggleField,

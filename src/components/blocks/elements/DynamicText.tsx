@@ -29,6 +29,7 @@ export async function DynamicTextElement(props: Record<string, unknown>): Promis
     post: obj(props.post ?? base.post ?? fallback.post),
     page: obj(props.page ?? base.page ?? fallback.page),
     product: obj(props.product ?? base.product ?? fallback.product),
+    event: obj(props.event ?? base.event ?? fallback.event),
     site: {},
   }
   try {

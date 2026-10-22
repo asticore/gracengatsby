@@ -1043,6 +1043,7 @@ export const Integrations: GlobalConfig = {
           },
           admin: { description: 'Long-lived token from the provider. Not needed for YouTube or RSS. Stored encrypted at rest.' },
         },
+        { name: 'testConnection', type: 'ui', admin: { components: { Field: '@/features/socialFeeds/admin/TestConnectionField#TestConnectionField' } } },
       ],
     },
   ],

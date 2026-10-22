@@ -13,17 +13,35 @@ export function sampleCollectionFor(kind: unknown): 'posts' | 'products' | 'even
 const str = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '')
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' ? (v as Record<string, unknown>) : {})
 
+/**
+ * Public author name for a post. The Users collection has no name column (only email, which must never be shown, and
+ * its local part identifies the person too), so we use a name-like field if one ever exists (name, displayName,
+ * fullName), else the site's business name from site details, else ''. Never reads or returns email.
+ */
+export function postAuthorName(author: unknown, siteName?: unknown): string {
+  const a = author && typeof author === 'object' ? rec(author) : {}
+  return str(a.name).trim() || str(a.displayName).trim() || str(a.fullName).trim() || str(siteName).trim()
+}
+
+/** First image of a product (depth 1 media doc), public url and alt only. */
+function firstImage(images: unknown): { url: unknown; alt: unknown } | undefined {
+  for (const item of Array.isArray(images) ? images : []) {
+    const img = item && typeof item === 'object' ? rec(item) : null
+    if (img && str(img.url)) return { url: img.url, alt: img.alt }
+  }
+  return undefined
+}
+
 /** Context for a post document (depth 1). Shared by /blog/[slug] and the editor's "Preview as". */
-export function postBlockContext(post: Record<string, unknown>, path: string): BlockContext {
+export function postBlockContext(post: Record<string, unknown>, path: string, siteName?: string): BlockContext {
   const image = post.featuredImage && typeof post.featuredImage === 'object' ? rec(post.featuredImage) : null
-  const author = post.author && typeof post.author === 'object' ? rec(post.author) : null
   const categories = (Array.isArray(post.categories) ? post.categories : []).map((c) => str(rec(c).name)).filter((n) => !!n)
   return {
     post: {
       title: post.title,
       date: post.publishedDate,
       excerpt: post.excerpt,
-      author: author?.name,
+      author: postAuthorName(post.author, siteName) || undefined,
       featuredImage: image ? { url: image.url, alt: image.alt } : undefined,
       categories,
     },
@@ -33,6 +51,7 @@ export function postBlockContext(post: Record<string, unknown>, path: string): B
 
 /** Context for a product document. Shared by /shop/[slug] and "Preview as". */
 export function productBlockContext(product: Record<string, unknown>, path: string): BlockContext {
+  const image = firstImage(product.images)
   return {
     product: {
       id: product.id as number,
@@ -41,20 +60,27 @@ export function productBlockContext(product: Record<string, unknown>, path: stri
       ratingCount: product.ratingCount as number | null | undefined,
       title: product.title,
       price: (product.priceInAUD as number | null | undefined) ?? undefined,
+      featuredImage: image,
     },
     path,
   }
 }
 
-/** Context for an event: only its title and path are read by the widgets. */
+/** Context for an event (public fields only). Shared by /events/[slug] and "Preview as". */
 export function eventBlockContext(event: Record<string, unknown>, path: string): BlockContext {
-  return { page: { title: event.title }, path }
+  const loc = rec(event.location)
+  const location = [str(loc.venueName), str(loc.address)].filter(Boolean).join(', ')
+  return {
+    page: { title: event.title },
+    event: { title: event.title, date: event.startDate, location: location || undefined, summary: event.summary },
+    path,
+  }
 }
 
 /** Builds the context for a sample item of the given collection. */
-export function blockContextFor(collection: 'posts' | 'products' | 'events', doc: Record<string, unknown>): BlockContext {
+export function blockContextFor(collection: 'posts' | 'products' | 'events', doc: Record<string, unknown>, siteName?: string): BlockContext {
   const slug = str(doc.slug)
-  if (collection === 'posts') return postBlockContext(doc, `/blog/${slug}`)
+  if (collection === 'posts') return postBlockContext(doc, `/blog/${slug}`, siteName)
   if (collection === 'products') return productBlockContext(doc, `/shop/${slug}`)
   return eventBlockContext(doc, `/events/${slug}`)
 }
@@ -65,7 +91,7 @@ export function blockContextFor(collection: 'posts' | 'products' | 'events', doc
  */
 export function previewTextFor(elementType: string, props: Record<string, unknown>, ctx: BlockContext | null | undefined): string | null {
   if (!ctx) return null
-  const title = str(ctx.post?.title) || str(ctx.product?.title) || str(ctx.page?.title)
+  const title = str(ctx.post?.title) || str(ctx.product?.title) || str(ctx.event?.title) || str(ctx.page?.title)
   switch (elementType) {
     case 'post-title':
       return title || null
@@ -76,7 +102,7 @@ export function previewTextFor(elementType: string, props: Record<string, unknow
     case 'post-excerpt':
       return str(ctx.post?.excerpt) || null
     case 'post-featured-image': {
-      const img = ctx.post?.featuredImage
+      const img = ctx.post?.featuredImage ?? ctx.product?.featuredImage
       return img && (str(img.alt) || str(img.url)) ? `Image: ${str(img.alt) || str(img.url)}` : null
     }
     case 'product-price': {
@@ -89,7 +115,7 @@ export function previewTextFor(elementType: string, props: Record<string, unknow
       return crumbs.length >= 2 ? crumbs.map((c) => c.label).join(' / ') : null
     }
     case 'dynamic-text': {
-      const html = resolveTags(props.template, { post: rec(ctx.post), page: rec(ctx.page), product: rec(ctx.product), site: {} })
+      const html = resolveTags(props.template, { post: rec(ctx.post), page: rec(ctx.page), product: rec(ctx.product), event: rec(ctx.event), site: {} })
       return html.replace(/<[^>]*>/g, '').trim() || null
     }
     default:

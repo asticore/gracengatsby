@@ -66,14 +66,14 @@ describe('format helpers', () => {
 })
 
 describe('rich gating', () => {
-  const heading = { blockType: 'element', elementType: 'button', props: { text: 'Hi' } } as unknown as SectionNode
+  const heading = { blockType: 'element', elementType: 'icon-list', props: { items: [{ text: 'Hi' }] } } as unknown as SectionNode
   const rich = { blockType: 'element', elementType: 'heading', props: { text: 'Hi' } } as unknown as SectionNode
-  it('only heading is rich (button renders plain text)', () => {
+  it('icon-list stays plain (its rows are "text | link" lines)', () => {
     expect(inlineCandidate(heading)?.rich).toBe(false)
     expect(inlineCandidate(rich)?.rich).toBe(true)
   })
   it('plain props are written verbatim, not sanitised', () => {
-    const next = applyInlineEdit([heading], [0], { field: 'text' }, 'a <b>c</b>')
-    expect((next[0] as unknown as { props: { text: string } }).props.text).toBe('a <b>c</b>')
+    const next = applyInlineEdit([heading], [0], { field: 'items', itemIndex: 0 }, 'a <b>c</b>')
+    expect((next[0] as unknown as { props: { items: { text: string }[] } }).props.items[0].text).toBe('a <b>c</b>')
   })
 })

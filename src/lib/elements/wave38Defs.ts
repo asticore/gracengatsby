@@ -4,6 +4,7 @@ import { WAVE63_ELEMENTS } from './wave63Defs'
 import { WAVE65_SERVER_TYPES } from './wave65Defs'
 import { WAVE66_ELEMENTS } from './wave66Defs'
 import { WAVE67_ELEMENTS } from './wave67Defs'
+import { EMBED_CODE_ELEMENTS } from './embedCodeDefs'
 
 /**
  * Wave 38: site elements. Each one reads live site data on the server (site settings, the Header menu, the blog)
@@ -101,4 +102,4 @@ export const WAVE38_ELEMENTS: ElementDef[] = [
 ]
 
 /** Element types that read live site data on the server. The editor canvas shows a placeholder for these. */
-export const SITE_ELEMENT_TYPES: ReadonlySet<string> = new Set([...WAVE38_ELEMENTS.map((e) => e.type), 'loop', 'dynamic-text', ...WAVE63_ELEMENTS.map((e) => e.type), ...WAVE65_SERVER_TYPES, ...WAVE66_ELEMENTS.map((e) => e.type), ...WAVE67_ELEMENTS.map((e) => e.type)])
+export const SITE_ELEMENT_TYPES: ReadonlySet<string> = new Set([...WAVE38_ELEMENTS.map((e) => e.type), 'loop', 'dynamic-text', ...WAVE63_ELEMENTS.map((e) => e.type), ...WAVE65_SERVER_TYPES, ...WAVE66_ELEMENTS.map((e) => e.type), ...WAVE67_ELEMENTS.map((e) => e.type), ...EMBED_CODE_ELEMENTS.map((e) => e.type)])

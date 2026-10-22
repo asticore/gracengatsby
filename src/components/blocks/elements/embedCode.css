@@ -1,0 +1,6 @@
+.eg-embed-code { width: 100%; }
+.eg-embed-code__frame { display: block; width: 100%; border: 0; background: transparent; }
+.eg-embed-code__noscript { margin: 0; font-size: 0.9rem; opacity: 0.8; }
+.eg-embed-code__canvas { display: grid; gap: 4px; padding: 12px 14px; border: 1px dashed currentColor; border-radius: 8px; font-size: 0.85rem; }
+.eg-embed-code__canvas code { overflow-wrap: anywhere; opacity: 0.8; }
+.eg-embed-code__canvas span { font-size: 0.75rem; opacity: 0.65; }

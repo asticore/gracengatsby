@@ -1,4 +1,5 @@
 import { EMBED_FRAME_SOURCES } from '@/lib/embedHosts'
+import { EMBED_CODE_CSP, isEmbedFramePath } from '@/lib/embedCode'
 import { DEFAULT_SECURITY_SETTINGS, type SecuritySettings } from './settings'
 
 /**
@@ -150,6 +151,13 @@ export function securityHeaders(
 
   if (csp) {
     headers['Content-Security-Policy'] = csp
+  }
+
+  // The Embed code frame document (third-party snippet) has its own relaxed, sandboxed policy; the site policy is untouched.
+  if (isEmbedFramePath(pathname)) {
+    headers['Content-Security-Policy'] = EMBED_CODE_CSP
+    headers['X-Frame-Options'] = 'SAMEORIGIN'
+    headers['Cache-Control'] = 'private, no-store'
   }
 
   // Framing is allowed on the embed page only; the header and the policy must agree.

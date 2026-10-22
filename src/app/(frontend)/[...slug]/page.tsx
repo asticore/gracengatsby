@@ -14,6 +14,9 @@ import { PageJsonLd } from '@/features/seo'
 import { PasswordGate } from '@/components/PasswordGate'
 import { getPasswordGateState } from '@/features/visibility/gate'
 import { resolveDocumentContent } from '@/features/customFields/server'
+import { normalisePageAudio } from '@/features/pageAudio/config'
+import { PageAudio } from '@/features/pageAudio/PageAudio'
+import { getEngine } from '@/lib/engine'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,6 +84,20 @@ export default async function BuiltPage({
   // Merge tags ({{field:...}}, {{title}}, ...) are resolved here; unknown braces stay as typed.
   const content = await resolveDocumentContent('pages', page)
 
+  // Background audio: only an enabled page ships the client component. Public data only (edge cached).
+  const audioGroup = (page as { pageAudio?: { enabled?: boolean | null; sourceType?: string | null; media?: unknown } }).pageAudio
+  let audioMediaUrl: string | null = null
+  if (audioGroup?.enabled === true && audioGroup.sourceType !== 'url' && audioGroup.media) {
+    try {
+      const mediaId = typeof audioGroup.media === 'object' ? (audioGroup.media as { id: number }).id : (audioGroup.media as number)
+      const media = (await (await getEngine()).findByID({ collection: 'media', id: mediaId, depth: 0 })) as { url?: string | null } | null
+      audioMediaUrl = media?.url ?? null
+    } catch {
+      audioMediaUrl = null
+    }
+  }
+  const audioConfig = normalisePageAudio(audioGroup, audioMediaUrl)
+
   setBlockContext({ page: { title: page.title }, path: currentPath })
   return (
     <div className="built-page">
@@ -113,6 +130,7 @@ export default async function BuiltPage({
       {annotatePage({ blocks: content.blocks || [] }).blocks.map((block, index) => (
         <BlockRenderer key={block.id || index} block={block} index={index} />
       ))}
+      {audioConfig && <PageAudio config={audioConfig} />}
     </div>
   )
 }

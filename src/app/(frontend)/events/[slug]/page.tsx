@@ -11,6 +11,8 @@ import { RsvpForm, type RsvpTierOption } from '@/components/RsvpForm'
 import { loadTierViews } from '@/features/editScreens/tierLoad'
 import { tierOptionLabel } from '@/features/editScreens/tierSales'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { setBlockContext } from '@/lib/blockContext'
+import { eventBlockContext } from '@/lib/blockContextFrom'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -152,5 +154,6 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
       </div>
     </div>
   )
+  setBlockContext(eventBlockContext(event as unknown as Record<string, unknown>, `/events/${slug}`))
   return renderWithTemplate({ kind: 'single-event', ctx: { path: `/events/${slug}`, eventType: event.eventType }, content: body })
 }

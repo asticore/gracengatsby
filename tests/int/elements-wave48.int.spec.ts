@@ -103,7 +103,7 @@ describe('wave 48 registry shape', () => {
   it('exposes the requested option sets', () => {
     const byType = Object.fromEntries(WAVE48_ELEMENTS.map((e) => [e.type, Object.fromEntries(e.fields.map((f) => [f.name, f]))]))
     expect(byType.chart!.chartType!.options!.map((o) => o.value)).toEqual(['bar', 'line', 'pie', 'radar', 'polar'])
-    expect(byType.embed!.provider!.options!.map((o) => o.value)).toEqual(['youtube', 'vimeo', 'x', 'instagram', 'facebook-video', 'google-calendar', 'typeform', 'lottie', 'custom-iframe'])
+    expect(byType.embed!.provider!.options!.map((o) => o.value)).toEqual(['youtube', 'vimeo', 'tiktok', 'instagram', 'x', 'facebook-post', 'facebook-video', 'facebook-page', 'pinterest', 'linkedin', 'spotify', 'soundcloud', 'google-calendar', 'typeform', 'lottie', 'custom-iframe'])
     expect(byType.reviews!.layout!.options!.map((o) => o.value)).toEqual(['grid', 'list'])
     expect(byType.reviews!.items!.type).toBe('repeater')
     expect(byType.pagination!.align!.options!.map((o) => o.value)).toEqual(['left', 'centre', 'right'])
@@ -256,15 +256,27 @@ describe('embed', () => {
     expect(target('custom-iframe', 'https://evil.example/page').kind).toBe('error')
   })
 
-  it('renders X, Instagram and Facebook as a link card with no iframe', () => {
-    const x = iframeFor('x', 'https://x.com/user/status/1')
-    expect(x).not.toContain('<iframe')
-    expect(x).toContain('href="https://x.com/user/status/1"')
-    expect(x).toContain('target="_blank"')
-    expect(x).toContain('rel="noopener noreferrer"')
-    expect(iframeFor('instagram', 'https://www.instagram.com/p/abc/')).toContain('Open on Instagram')
-    expect(iframeFor('facebook-video', 'https://fb.watch/abc/')).toContain('Open on Facebook')
+  it('renders social and audio providers as consent placeholders with no iframe in server HTML', () => {
+    const cases: [string, string, string][] = [
+      ['x', 'https://x.com/user/status/1234567890', 'platform.twitter.com'],
+      ['instagram', 'https://www.instagram.com/p/Cabc123xyz/', 'instagram.com/p/'],
+      ['tiktok', 'https://www.tiktok.com/@u/video/7234567890123456789', 'tiktok.com/embed'],
+      ['spotify', 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC', 'open.spotify.com/embed'],
+    ]
+    for (const [provider, url, leak] of cases) {
+      const html = iframeFor(provider, url)
+      expect(html, provider).not.toContain('<iframe')
+      expect(html, provider).not.toContain(leak)
+      expect(html, provider).toContain('engage-consent-gate')
+    }
     expect(iframeFor('x', 'https://evil.example/post')).not.toContain('<a ')
+  })
+
+  it('renders Pinterest boards as a link card', () => {
+    const html = iframeFor('pinterest', 'https://www.pinterest.com/someone/a-board/')
+    expect(html).toContain('href="https://www.pinterest.com/someone/a-board/"')
+    expect(html).toContain('rel="noopener noreferrer"')
+    expect(html).not.toContain('<iframe')
   })
 
   it('keeps the aspect ratio on the placeholder box', () => {

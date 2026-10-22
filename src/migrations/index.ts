@@ -82,6 +82,8 @@ import * as migration_20261104_100000_template_kind_category from './20261104_10
 import * as migration_20261105_100000_ai_builder_usage from './20261105_100000_ai_builder_usage';
 import * as migration_20261028_400000_display_currencies from './20261028_400000_display_currencies';
 import * as migration_20261106_100000_site_page_effects from './20261106_100000_site_page_effects';
+import * as migration_20261107_100000_page_audio from './20261107_100000_page_audio';
+import * as migration_20261108_100000_social_connections from './20261108_100000_social_connections';
 
 export const migrations = [
   {
@@ -503,5 +505,15 @@ export const migrations = [
     up: migration_20261106_100000_site_page_effects.up,
     down: migration_20261106_100000_site_page_effects.down,
     name: '20261106_100000_site_page_effects',
+  },
+  {
+    up: migration_20261107_100000_page_audio.up,
+    down: migration_20261107_100000_page_audio.down,
+    name: '20261107_100000_page_audio',
+  },
+  {
+    up: migration_20261108_100000_social_connections.up,
+    down: migration_20261108_100000_social_connections.down,
+    name: '20261108_100000_social_connections',
   },
 ];

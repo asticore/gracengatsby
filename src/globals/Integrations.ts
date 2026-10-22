@@ -995,5 +995,55 @@ export const Integrations: GlobalConfig = {
         },
       ],
     },
+    {
+      name: 'socialAccounts',
+      type: 'array',
+      label: 'Social accounts',
+      labels: { singular: 'Social account', plural: 'Social accounts' },
+      admin: {
+        description:
+          'Accounts the Social feed element can show posts from. Tokens are stored encrypted, visible only to admins, and never sent to visitors. YouTube and RSS feeds need no token. X (Twitter) is not supported because its API is paid-only.',
+      },
+      fields: [
+        {
+          name: 'provider',
+          type: 'select',
+          label: 'Provider',
+          defaultValue: 'instagram',
+          options: [
+            { label: 'Instagram', value: 'instagram' },
+            { label: 'Facebook Page', value: 'facebook' },
+            { label: 'Pinterest board', value: 'pinterest' },
+            { label: 'TikTok', value: 'tiktok' },
+            { label: 'YouTube channel or playlist', value: 'youtube' },
+            { label: 'RSS or Atom feed', value: 'rss' },
+          ],
+        },
+        { name: 'label', type: 'text', label: 'Label', admin: { description: 'Shown in the editor account picker.' } },
+        {
+          name: 'accountId',
+          type: 'text',
+          label: 'Account ID, handle or feed URL',
+          admin: {
+            description:
+              'Instagram user ID, Facebook Page ID, Pinterest board ID, TikTok (leave empty), YouTube channel ID (UC...) or playlist ID (PL...), or the full https feed URL for RSS.',
+          },
+        },
+        {
+          name: 'accessToken',
+          type: 'text',
+          label: 'Access token',
+          access: {
+            read: adminOnlyFieldAccess,
+            update: adminOnlyFieldAccess,
+          },
+          hooks: {
+            beforeChange: [encryptSecretHook],
+            afterRead: [decryptSecretHook],
+          },
+          admin: { description: 'Long-lived token from the provider. Not needed for YouTube or RSS. Stored encrypted at rest.' },
+        },
+      ],
+    },
   ],
 }

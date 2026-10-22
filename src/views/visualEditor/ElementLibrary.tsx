@@ -13,6 +13,7 @@ import { FAVS_KEY, RECENTS_KEY, loadList, pushRecent, saveList, toggleFavourite 
 import './navLibraryPresets.css'
 
 const CATEGORY_KEY = 've-library-category'
+const DENSITY_KEY = 've-library-density'
 
 type Source = 'blocks' | 'templates'
 
@@ -45,6 +46,16 @@ export const ElementLibrary: React.FC<{
       /* storage unavailable */
     }
   }
+  const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
+  const toggleDensity = () => {
+    const next = density === 'compact' ? 'comfortable' : 'compact'
+    setDensity(next)
+    try {
+      window.localStorage.setItem(DENSITY_KEY, next)
+    } catch {
+      /* storage unavailable */
+    }
+  }
   const [recents, setRecents] = useState<string[]>([])
   const [favs, setFavs] = useState<string[]>([])
   // Stored values are read after mount so the first client render equals the server render.
@@ -53,6 +64,11 @@ export const ElementLibrary: React.FC<{
     try {
       const saved = window.localStorage.getItem(CATEGORY_KEY)
       if (saved && BLOCK_CATEGORIES.some((c) => c.key === saved)) setCategory(saved)
+    } catch {
+      /* storage unavailable */
+    }
+    try {
+      if (window.localStorage.getItem(DENSITY_KEY) === 'comfortable') setDensity('comfortable')
     } catch {
       /* storage unavailable */
     }
@@ -161,7 +177,8 @@ export const ElementLibrary: React.FC<{
                             pick(block.slug)
                           }
                         }}
-                        title={block.description}
+                        title={`${block.label}: ${block.description}`}
+                        aria-label={`${block.label}: ${block.description}`}
                       >
                         <span className="ve-library__card-icon">{block.icon}</span>
                         <span className="ve-library__card-label">{block.label}</span>
@@ -183,7 +200,7 @@ export const ElementLibrary: React.FC<{
                       )
 
   return (
-    <div className="ve-library">
+    <div className={`ve-library ve-library--${density}`} data-density={density}>
       <div className="ve-library__controls">
         <div className="ve-library__source-tabs" role="tablist" aria-label="Element source">
           <button
@@ -233,6 +250,15 @@ export const ElementLibrary: React.FC<{
               ))}
             </select>
             </div>
+            <button
+              type="button"
+              className="ve-library__density"
+              data-testid="ve-lib-density"
+              aria-pressed={density === 'comfortable'}
+              onClick={toggleDensity}
+            >
+              {density === 'compact' ? 'Comfortable view' : 'Compact view'}
+            </button>
           </>
         )}
       </div>
@@ -274,7 +300,8 @@ export const ElementLibrary: React.FC<{
                           onPickTemplate([globalNode(g.id)])
                         }
                       }}
-                      title={g.description || 'Edits to this global section update every page that uses it.'}
+                      title={`${g.name}: ${g.description || 'Edits to this global section update every page that uses it.'}`}
+                      aria-label={g.name}
                     >
                       <span className="ve-library__card-icon">{String.fromCodePoint(0x1f310)}</span>
                       <span className="ve-library__card-label">{g.name}</span>
@@ -316,7 +343,8 @@ export const ElementLibrary: React.FC<{
                             void insert()
                           }
                         }}
-                        title={f.description}
+                        title={`${f.label}: ${f.description}`}
+                        aria-label={f.label}
                       >
                         <span className="ve-library__card-icon">{String.fromCodePoint(0x1f4dd)}</span>
                         <span className="ve-library__card-label">{f.label}</span>
@@ -344,7 +372,8 @@ export const ElementLibrary: React.FC<{
                           onPickTemplate([commercePresetNode(c.id)!])
                         }
                       }}
-                      title={c.description}
+                      title={`${c.label}: ${c.description}`}
+                      aria-label={c.label}
                     >
                       <span className="ve-library__card-icon">{String.fromCodePoint(0x1f6d2)}</span>
                       <span className="ve-library__card-label">{c.label}</span>

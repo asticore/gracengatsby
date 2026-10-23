@@ -12,7 +12,7 @@ import './seo-audit.css'
 type AuditResponse = { rows: AuditRow[]; summary: AuditSummary }
 type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: AuditResponse }
 
-const COLLECTION_LABEL: Record<AuditCollection, string> = { pages: 'Pages', posts: 'Posts', products: 'Products', events: 'Events' }
+const COLLECTION_LABEL: Record<AuditCollection, string> = { pages: 'Pages', posts: 'Blog', products: 'Products', events: 'Events' }
 const TYPE_LABEL: Record<AuditCollection, string> = { pages: 'Page', posts: 'Post', products: 'Product', events: 'Event' }
 const STATUS_LABEL: Record<Status, string> = { good: 'Good', ok: 'Could be better', bad: 'Needs work', info: 'For information' }
 const SCORE_OPTIONS: { value: ScoreFilter; label: string }[] = [

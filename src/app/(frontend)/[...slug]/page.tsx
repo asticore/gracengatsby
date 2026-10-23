@@ -34,11 +34,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 
   if (gateState === 'locked') {
-    return buildMetadata({
+    return {
       title: 'Password Protected',
-      seo: { ...resolved.page.seo, noIndex: true },
-      path: `/${slug.join('/')}`,
-    })
+      robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+    }
   }
 
   return buildMetadata({

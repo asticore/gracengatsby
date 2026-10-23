@@ -21,7 +21,7 @@ const EMBED_PROVIDER_LABEL: Record<string, string> = {
 const labelled = (pairs: [string, string][]) => pairs.map(([value, label]) => ({ label, value }))
 const text = (name: string, label: string, extra: Partial<EditorField> = {}): EditorField => ({ name, label, type: 'text', ...extra })
 const area = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'textarea', helpText })
-const select = (name: string, label: string, options: { label: string; value: string }[], extra: Partial<EditorField> = {}): EditorField => ({ name, label, type: 'select', width: 'half', options, ...extra })
+const select = (name: string, label: string, options: { label: string; value: string; group?: string }[], extra: Partial<EditorField> = {}): EditorField => ({ name, label, type: 'select', width: 'half', options, ...extra })
 const check = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'checkbox', helpText })
 const number = (name: string, label: string, helpText?: string): EditorField => ({ name, label, type: 'number', width: 'half', helpText })
 /** Range slider for a numeric prop. Stores a plain number. min/max mirror the renderer's clamp. */
@@ -52,9 +52,9 @@ export const WAVE48_ELEMENTS: ElementDef[] = [
     type: 'embed', label: 'Embed', icon: String.fromCodePoint(0x1f3ac), category: 'media',
     description: 'A video, social post, audio, calendar or form embed. Pick a network and paste its address. Iframes load only from fixed hosts (YouTube, Vimeo, TikTok, Instagram, X, Facebook, Pinterest, LinkedIn, Spotify, SoundCloud, Google Calendar, Typeform, Lottie) and only after consent.',
     fields: [
-      select('provider', 'Provider', labelled(EMBED_PROVIDER_GROUPS.flatMap((g) => g.providers.map((v): [string, string] => [v, `${g.group}: ${EMBED_PROVIDER_LABEL[v]}`])))),
+      select('provider', 'Provider', EMBED_PROVIDER_GROUPS.flatMap((g) => g.providers.map((v) => ({ label: EMBED_PROVIDER_LABEL[v], value: v as string, group: g.group as string })))),
       text('url', 'Address', { width: 'full', helpText: 'Paste the post, video, pin, track or page address (https://). Only the matching network is accepted, and the embed loads after the visitor accepts marketing cookies. Pinterest boards and profiles show a link card. Custom iframe accepts YouTube, Vimeo, Calendar and Typeform hosts. Lottie: a lottie.host embed link.' }),
-      select('ratio', 'Aspect ratio', labelled([['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']]), { helpText: 'Used by video, calendar and form embeds. Social and audio embeds use their own size.' }),
+      select('ratio', 'Aspect ratio', labelled([['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']]), { helpText: 'Social and audio embeds use their own fixed size, so this only shows for providers that follow it.', showIf: { field: 'provider', in: ['youtube', 'vimeo', 'facebook-video', 'google-calendar', 'typeform', 'lottie', 'custom-iframe'] } }),
       text('title', 'Title', { helpText: 'Read by screen readers. Leave empty to use the provider name.' }),
     ],
     defaultProps: () => ({

@@ -72,9 +72,9 @@ function getInitialCollapsed(): boolean {
 }
 
 export const NavProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [navOpen, setNavOpenState] = useState(getInitialNavOpen)
-  const [collapsed, setCollapsedState] = useState(getInitialCollapsed)
-  const [isMobile, setIsMobile] = useState(getInitialIsMobile)
+  const [navOpen, setNavOpenState] = useState(true)
+  const [collapsed, setCollapsedState] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [shouldAnimate, setShouldAnimate] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
@@ -84,6 +84,7 @@ export const NavProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHydrated(true)
     setNavOpenState(getInitialNavOpen())
     setIsMobile(getInitialIsMobile())
+    setCollapsedState(getInitialCollapsed())
 
     const mql = window.matchMedia(MOBILE_QUERY)
     const onChange = (event: MediaQueryListEvent) => setIsMobile(event.matches)

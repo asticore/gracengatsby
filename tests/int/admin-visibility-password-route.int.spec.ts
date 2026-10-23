@@ -11,6 +11,7 @@ vi.mock('@/features/speed/purge')
 describe('admin-visibility-password route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    process.env.ENGAGE_SECRET = 'test-secret'
   })
 
   it('calls purgeCache after setting password', async () => {
@@ -43,7 +44,7 @@ describe('admin-visibility-password route', () => {
 
     const response = await POST(req)
     expect(response.status).toBe(200)
-    expect(purgeCache).toHaveBeenCalledWith('/secret')
+    expect(purgeCache).toHaveBeenCalledWith('/secret', { force: true })
   })
 
   it('does not fail request when purgeCache throws', async () => {
@@ -101,6 +102,6 @@ describe('admin-visibility-password route', () => {
 
     const response = await DELETE(req)
     expect(response.status).toBe(200)
-    expect(purgeCache).toHaveBeenCalledWith('/secret')
+    expect(purgeCache).toHaveBeenCalledWith('/secret', { force: true })
   })
 })

@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
@@ -32,13 +33,14 @@ export default async function BlogArchivePage() {
   const settings = (await engine.findGlobal({ slug: 'blog-settings' }).catch((): null => null)) as BlogSetting | null
 
   // All published posts, so sticky posts can sit above newer ones; then cut to the page size.
-  const { docs } = (await engine.find({
+  const { docs: allDocs } = (await engine.find({
     collection: 'posts',
     where: { _status: { equals: 'published' } },
     sort: '-publishedDate',
     limit: 0,
     depth: 1,
   })) as unknown as { docs: (Post & { sticky?: boolean | null; readingTime?: number | null })[] }
+  const docs = await excludeProtected('posts', allDocs)
   const posts = orderBlogPosts(docs).slice(0, settings?.postsPerPage || 9)
 
   const layout = settings?.archiveLayout || 'grid'

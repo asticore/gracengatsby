@@ -513,7 +513,7 @@ export const PERMISSION_CATEGORIES: Array<{
     label: 'Content',
     rows: [
       { resource: 'pages', label: 'Pages', actions: ['read', 'create', 'update', 'delete', 'publish'] },
-      { resource: 'posts', label: 'Posts', actions: ['read', 'create', 'update', 'delete', 'publish'] },
+      { resource: 'posts', label: 'Blog', actions: ['read', 'create', 'update', 'delete', 'publish'] },
       { resource: 'events', label: 'Events', actions: ['read', 'create', 'update', 'delete', 'publish'] },
       { resource: 'faqs', label: 'FAQs', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'page-templates', label: 'Page templates', actions: ['read', 'create', 'update', 'delete'] },

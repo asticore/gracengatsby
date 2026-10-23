@@ -10,6 +10,7 @@ import { ARCHIVE_PAGE_SIZE, tagIndex, tagPath, paginate, parsePage, postsWithTag
 import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { blogSwitches, loadBlogSwitches } from '@/features/blog/switches'
 import { getEngine } from '@/lib/engine'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { setBlockContext } from '@/lib/blockContext'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -24,13 +25,14 @@ async function load(rawSlug: string) {
   const slug = termSlug(rawSlug)
   if (!slug) return null
   const engine = await getEngine()
-  const { docs } = (await engine.find({
+  const { docs: allDocs } = (await engine.find({
     collection: 'posts',
     where: { _status: { equals: 'published' } },
     sort: '-publishedDate',
     limit: 0,
     depth: 1,
   })) as unknown as { docs: Row[] }
+  const docs = await excludeProtected('posts', allDocs)
   const name = tagIndex(docs).get(slug)
   if (!name) return null
   return { slug, name, posts: orderBlogPosts(postsWithTag(docs, slug)) as Row[] }

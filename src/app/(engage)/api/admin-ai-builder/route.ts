@@ -165,6 +165,7 @@ export async function POST(request: Request): Promise<Response> {
         inputTokens: usage?.inputTokens ?? estimateTokensFromChars(inChars),
         outputTokens: usage?.outputTokens ?? estimateTokensFromChars(text.length),
         ok: true,
+        estimated: !usage,
       })
       return text
     } catch (error) {

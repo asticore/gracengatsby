@@ -4,6 +4,7 @@ import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 import type { CollectionConfig, EngineRequest } from '@/engine'
+import { excludeProtectedAccess } from '@/features/visibility/excludeProtected'
 
 import { roleAccess, roleOrPublished } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
@@ -39,7 +40,7 @@ export const Pages: CollectionConfig = {
   access: {
     create: roleAccess('pages', 'create'),
     delete: roleAccess('pages', 'delete'),
-    read: roleOrPublished('pages'),
+    read: excludeProtectedAccess('pages', roleOrPublished('pages')),
     update: roleAccess('pages', 'update'),
   },
   versions: {

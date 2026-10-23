@@ -23,7 +23,7 @@ const EXPORT_CHOICES: Array<{ key: ImportSection; label: string; hint: string }>
   { key: 'pageTemplates', label: 'Page templates', hint: 'Templates and their blocks.' },
   { key: 'fieldGroups', label: 'Field groups', hint: 'Custom field groups.' },
   { key: 'pages', label: 'Pages', hint: 'Page content. Parent links are not kept.' },
-  { key: 'posts', label: 'Posts', hint: 'Post content. Featured image links are not kept.' },
+  { key: 'posts', label: 'Blog', hint: 'Blog post content. Featured image links are not kept.' },
   { key: 'products', label: 'Products', hint: 'Product content. Image links are not kept.' },
   { key: 'mediaMetadata', label: 'Media details', hint: 'File names and alt text. Image files are not included.' },
 ]

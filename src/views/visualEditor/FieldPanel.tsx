@@ -1156,11 +1156,25 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
           <span>{field.label}</span>
           <select value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value || undefined)}>
             <option value="">&#8212;</option>
-            {(field.optionsUrl ? remoteOptions : field.options || []).map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
+            {(() => {
+              const list: { label: string; value: string; group?: string }[] = field.optionsUrl ? remoteOptions : field.options || []
+              const renderOpt = (opt: { label: string; value: string }) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              )
+              const groups = Array.from(new Set(list.map((o) => o.group).filter((g): g is string => !!g)))
+              return (
+                <>
+                  {list.filter((o) => !o.group).map(renderOpt)}
+                  {groups.map((g) => (
+                    <optgroup key={g} label={g}>
+                      {list.filter((o) => o.group === g).map(renderOpt)}
+                    </optgroup>
+                  ))}
+                </>
+              )
+            })()}
           </select>
         </label>
       )

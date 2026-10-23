@@ -5,7 +5,7 @@ import { FindReplaceClient } from './FindReplaceClient'
 
 const LABELS: Record<FindReplaceCollection, string> = {
   pages: 'Pages',
-  posts: 'Posts',
+  posts: 'Blog',
   products: 'Products',
   events: 'Events',
 }

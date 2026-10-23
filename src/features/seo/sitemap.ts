@@ -4,6 +4,7 @@ import { authorIndex, categoryIndex, tagIndex, type ArchivePost } from '@/featur
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
 import { isNoIndexedPage, readPasswordGate } from './indexable'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getSeoContext, normalisePath, parsePathList, pathMatches } from './settings'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
@@ -71,13 +72,12 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     })
   }
 
-  // A failed lookup leaves the document listed, as it was before this helper
-  // existed. The llms.txt builder makes the opposite choice, on purpose.
+  // A failed lookup hides the document (fail closed), like llms.txt.
   const isPasswordProtected = async (collection: 'pages' | 'posts', docId: number): Promise<boolean> => {
     try {
       return await readPasswordGate(collection, docId)
     } catch {
-      return false
+      return true
     }
   }
 
@@ -90,7 +90,8 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
         limit: 0,
         depth: 0,
       })
-      ;(docs as CollectionRow[]).forEach((doc) => {
+      const visible = collection === 'posts' ? await excludeProtected('posts', docs as (CollectionRow & { id?: number })[]) : (docs as CollectionRow[])
+      visible.forEach((doc) => {
         if (!doc.slug) return
         add(`${prefix}/${doc.slug}`, doc.updatedAt, priority)
       })
@@ -121,7 +122,8 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     await addCollection('posts', '/blog', 0.6)
     try {
       const engine = await getEngine()
-      const { docs } = await engine.find({ collection: 'posts', where: { _status: { equals: 'published' } }, limit: 0, depth: 1 })
+      const found = await engine.find({ collection: 'posts', where: { _status: { equals: 'published' } }, limit: 0, depth: 1 })
+      const docs = await excludeProtected('posts', found.docs as unknown as (ArchivePost & { id?: number })[])
       for (const slug of categoryIndex(docs as ArchivePost[]).keys()) add(`/blog/category/${slug}`, undefined, 0.4)
       const sw = await loadBlogSwitches()
       if (sw.tags) for (const slug of tagIndex(docs as ArchivePost[]).keys()) add(`/blog/tag/${slug}`, undefined, 0.4)

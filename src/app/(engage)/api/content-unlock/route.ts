@@ -8,6 +8,41 @@ export const dynamic = 'force-dynamic'
 const ALLOWED_COLLECTIONS = new Set(['pages', 'posts'])
 const UNLOCK_TOKEN_TTL = 7 * 24 * 60 * 60 // 7 days
 const BRUTE_FORCE_DELAY = 400 // ms
+const MAX_FAILURES = 10
+const FAILURE_WINDOW_MS = 10 * 60 * 1000
+const MAX_TRACKED = 5000
+
+// Best-effort, per-isolate (see security/rateLimit.ts for the caveat).
+const failures = new Map<string, { count: number; resetAt: number }>()
+
+function failureKey(request: Request, collection: string, id: number): string {
+  const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || 'unknown'
+  return `${ip}|${collection}|${id}`
+}
+
+function isBlocked(key: string, now: number): boolean {
+  const entry = failures.get(key)
+  if (!entry) return false
+  if (entry.resetAt <= now) {
+    failures.delete(key)
+    return false
+  }
+  return entry.count >= MAX_FAILURES
+}
+
+function noteFailure(key: string, now: number): void {
+  const entry = failures.get(key)
+  if (entry && entry.resetAt > now) {
+    entry.count += 1
+    return
+  }
+  if (failures.size >= MAX_TRACKED) {
+    const oldest = failures.keys().next().value
+    if (oldest !== undefined) failures.delete(oldest)
+  }
+  failures.set(key, { count: 1, resetAt: now + FAILURE_WINDOW_MS })
+}
+
 
 /**
  * POST: Verify a password and set an unlock cookie.
@@ -45,6 +80,20 @@ export async function POST(request: Request): Promise<Response> {
   const isSafeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') && !redirect.includes('\\')
   const safeRedirect = isSafeRedirect ? redirect : '/'
 
+  if (!process.env.ENGAGE_SECRET) {
+    console.error('content-unlock: ENGAGE_SECRET is not set; unlock cookies cannot be signed')
+    const unavailable = new URL(safeRedirect, request.url)
+    unavailable.searchParams.set('pw', 'unavailable')
+    return NextResponse.redirect(unavailable.toString(), { status: 303 })
+  }
+
+  const key = failureKey(request, collection, id)
+  if (isBlocked(key, Date.now())) {
+    const limited = new URL(safeRedirect, request.url)
+    limited.searchParams.set('pw', 'wrong')
+    return NextResponse.redirect(limited.toString(), { status: 303 })
+  }
+
   try {
     const db = await getDb()
     const storedHash = await getPasswordHash(db, collection, id)
@@ -59,6 +108,7 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!isCorrect) {
       // Add brute-force friction
+      noteFailure(key, Date.now())
       await new Promise((resolve) => setTimeout(resolve, BRUTE_FORCE_DELAY))
 
       // Build error redirect
@@ -77,8 +127,10 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!token) {
       // ENGAGE_SECRET not set, cannot create token
-      console.error('ENGAGE_SECRET not set, cannot create unlock token')
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+      console.error('content-unlock: could not sign unlock token (ENGAGE_SECRET missing?)')
+      const unavailable = new URL(safeRedirect, request.url)
+      unavailable.searchParams.set('pw', 'unavailable')
+      return NextResponse.redirect(unavailable.toString(), { status: 303 })
     }
 
     // Create response with redirect

@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 
 import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { getEngine } from '@/lib/engine'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getFeatureFlags } from '@/utilities/features'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import type { Event as EventDoc, Post, Product } from '@/engage-types'
@@ -53,7 +54,9 @@ function contains(text: unknown, needle: string): boolean {
 /** Pages are matched in memory: their paths come from the same resolver the nav and the page route use. */
 async function searchPages(query: string): Promise<Found> {
   const needle = query.toLowerCase()
-  const entries = (await getAllResolvedPages()).slice(0, MAX_SCAN)
+  const resolved = await getAllResolvedPages()
+  const open = new Set((await excludeProtected('pages', resolved.map((r) => r.page))).map((pg) => pg.id))
+  const entries = resolved.filter((r) => open.has(r.page.id)).slice(0, MAX_SCAN)
   const matches: Hit[] = []
   for (const { page, path } of entries) {
     if (!page.isHomepage && (path.length === 0 || path.some((segment) => !segment))) continue
@@ -84,7 +87,7 @@ async function searchPosts(query: string): Promise<Found> {
     limit: MAX_RESULTS,
     depth: 0,
   })) as unknown as { docs: Post[]; totalDocs: number }
-  const hits = docs
+  const hits = (await excludeProtected('posts', docs))
     .filter((post) => post.slug)
     .map((post): Hit => ({
       key: `post-${post.id}`,

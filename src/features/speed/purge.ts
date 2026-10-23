@@ -45,7 +45,7 @@ export type PurgeResult = {
  * quickly, and the worst case is one TTL of staleness in a distant region.
  * That is the honest promise to put in front of the "clear saved copies" toggle.
  */
-export async function purgeCache(paths: string[] | string): Promise<PurgeResult> {
+export async function purgeCache(paths: string[] | string, options: { force?: boolean } = {}): Promise<PurgeResult> {
   const list = Array.from(
     new Set((Array.isArray(paths) ? paths : [paths]).map((p) => (p.startsWith('/') ? p : `/${p}`)).filter(Boolean)),
   )
@@ -53,10 +53,13 @@ export async function purgeCache(paths: string[] | string): Promise<PurgeResult>
   const result: PurgeResult = { ran: false, paths: list, edgeEvicted: [], revalidated: [], errors: [] }
   if (!list.length) return result
 
+  const force = options.force === true
   const speed = await getSpeedSettings()
   // With page caching on, every publish starts a new cache version (see epoch.ts).
-  if (speed.enabled && speed.caching.pageCache) await bumpCacheEpoch()
-  if (!speed.enabled || !speed.caching.purgeOnPublish) return result
+  // `force` (security-relevant changes such as a password set/clear) always bumps the
+  // epoch, which also orphans keyed variants (v=, m=1) that cannot be deleted by path.
+  if (force || (speed.enabled && speed.caching.pageCache)) await bumpCacheEpoch()
+  if (!force && (!speed.enabled || !speed.caching.purgeOnPublish)) return result
   result.ran = true
 
   const edge = await openEdgeCache()
@@ -89,7 +92,7 @@ export async function purgeCache(paths: string[] | string): Promise<PurgeResult>
   // and "purge on publish" is on there). Best effort, never throws.
   const cloudflare = await purgeCloudflareByUrls(
     list.flatMap((path) => Array.from(new Set([`${SITE_URL}${path}`, `${SITE_URL}${path.endsWith('/') ? path : `${path}/`}`]))),
-    { onPublish: true },
+    { onPublish: !force },
   )
   result.errors.push(...cloudflare.errors)
 

@@ -23,15 +23,39 @@ async function purgeDocument(
   label: string,
 ): Promise<void> {
   try {
-    const doc = (await context.engine.findByID({
-      collection: collection as 'pages',
-      id,
-      depth: 0,
-      overrideAccess: true,
-    })) as { path?: string | null; slug?: string | null } | null
-    const raw = doc?.path || (doc?.slug ? `/${doc.slug}` : '')
-    if (!raw) return
-    await purgeCache(raw.startsWith('/') ? raw : `/${raw}`)
+    type Doc = { slug?: string | null; parent?: unknown; isHomepage?: boolean | null } | null
+    const load = async (docId: number | string): Promise<Doc> =>
+      (await context.engine.findByID({
+        collection: collection as 'pages',
+        id: docId as number,
+        depth: 0,
+        overrideAccess: true,
+      })) as Doc
+
+    const doc = await load(id)
+    if (!doc) return
+    let path = ''
+    if (collection === 'posts') {
+      if (!doc.slug) return
+      path = `/blog/${doc.slug}`
+    } else if (doc.isHomepage) {
+      path = '/'
+    } else {
+      // Same walk as utilities/pagePaths: slugs from the root down, max 8 deep.
+      const segments: string[] = []
+      let current: Doc = doc
+      for (let guard = 0; current && guard < 8; guard += 1) {
+        if (current.slug) segments.unshift(current.slug)
+        const parent = current.parent
+        const parentId =
+          parent && typeof parent === 'object' ? (parent as { id?: number | string }).id : (parent as number | string | null)
+        current = parentId ? await load(parentId) : null
+      }
+      if (!segments.length) return
+      path = `/${segments.join('/')}`
+    }
+    // force: a password change must evict the edge copy even when purge-on-publish is off.
+    await purgeCache(path, { force: true })
   } catch (err) {
     console.error(`admin-visibility-password ${label} purgeCache error:`, err)
     // Never fail the request because of the purge
@@ -46,7 +70,7 @@ async function purgeDocument(
  */
 async function handleGet(request: Request): Promise<Response> {
   const context = await getAdminContext()
-  if (!(context.isAdmin || context.can('admin-visibility-password', 'read'))) {
+  if (!(context.isAdmin || context.can('admin-visibility-password', 'update'))) {
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
   }
 
@@ -61,7 +85,7 @@ async function handleGet(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
 
-  const access = await assertDocAccess(context, collection, id, 'read')
+  const access = await assertDocAccess(context, collection, id, 'update')
   if (!access.ok) return docAccessDenied(access)
 
   try {
@@ -93,6 +117,14 @@ async function handlePost(request: Request): Promise<Response> {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  if (!process.env.ENGAGE_SECRET) {
+    console.error('admin-visibility-password: ENGAGE_SECRET is not set; visitors could never unlock, refusing to set a password')
+    return NextResponse.json(
+      { error: 'Password protection is unavailable: the server is missing ENGAGE_SECRET. Ask your developer to set it.' },
+      { status: 503 },
+    )
   }
 
   const { collection, id, password } = body
@@ -131,7 +163,7 @@ async function handlePost(request: Request): Promise<Response> {
  */
 async function handleDelete(request: Request): Promise<Response> {
   const context = await getAdminContext()
-  if (!(context.isAdmin || context.can('admin-visibility-password', 'delete'))) {
+  if (!(context.isAdmin || context.can('admin-visibility-password', 'update'))) {
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
   }
 

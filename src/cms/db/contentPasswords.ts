@@ -3,7 +3,7 @@ import type { Drizzle } from '@/localapi/migrate'
 
 /**
  * Data access for eg_content_passwords table.
- * Stores bcrypt-hashed passwords protecting access to individual documents.
+ * Stores PBKDF2-hashed passwords protecting access to individual documents.
  * Workers-safe: uses raw SQL with the same db handle as other custom-table code.
  */
 

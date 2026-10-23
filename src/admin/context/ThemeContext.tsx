@@ -51,7 +51,12 @@ function getInitialTheme(): ThemePref {
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemePref>(getInitialTheme)
+  const [theme, setThemeState] = useState<ThemePref>('auto')
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync with localStorage after mount (server and first client render both use 'auto')
+    setThemeState(getInitialTheme())
+  }, [])
 
   useEffect(() => {
     if (theme === 'auto') {

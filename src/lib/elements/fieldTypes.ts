@@ -48,7 +48,8 @@ export type EditorField = {
   name: string
   label: string
   type: EditorFieldType
-  options?: { label: string; value: string }[]
+  /** `group` renders the option inside an <optgroup> of that name. */
+  options?: { label: string; value: string; group?: string }[]
   /** Select fields: load the options from this same-origin admin route, which answers { options: [{ label, value }] }. */
   optionsUrl?: string
   relationTo?: string

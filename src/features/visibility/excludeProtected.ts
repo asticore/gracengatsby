@@ -53,4 +53,3 @@ export function excludeProtectedAccess(collection: ProtectedCollection, base: Ac
     }
   }
 }
-</content>

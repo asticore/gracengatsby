@@ -365,6 +365,16 @@ describe('password policy - database, hooks and first admin (migrated D1)', () =
     ).resolves.toBeUndefined()
   })
 
+  it('member signup applies the same rules, and refuses before it writes anything', async () => {
+    const { registerMember } = await import('@/features/members/signup')
+    const engine = engineWith({ passwordMinLength: 8, passwordRequireNumber: true })
+    const settings = { featureEnabled: true, registration: { allowSignup: true, requireEmailVerification: false } } as never
+    const numberless = await registerMember(engine, settings, { email: 'member@example.com', password: 'nonumberhere' } as never)
+    expect(numberless).toMatchObject({ ok: false, reason: 'weak-password', error: 'Include at least one number.' })
+    const short = await registerMember(engine, settings, { email: 'member@example.com', password: 'short1' } as never)
+    expect(short).toMatchObject({ ok: false, reason: 'weak-password', error: 'Choose a password of at least 8 characters.' })
+  })
+
   it('the afterChange hook stamps the account after a password write', async () => {
     await recordPasswordAfterChange({ doc: { id: userId }, data: { password: 'after-hook-pass-4' } } as never)
     const state = await readPasswordStateById(userId)

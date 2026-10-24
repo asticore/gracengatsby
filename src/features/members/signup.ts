@@ -97,8 +97,11 @@ export const registerMember = async (
   if (!EMAIL_PATTERN.test(email)) {
     return { ok: false, reason: 'invalid-email', error: 'That does not look like an email address.' }
   }
-  if (!request.password || request.password.length < 8) {
-    return { ok: false, reason: 'weak-password', error: 'Choose a password of at least 8 characters.' }
+  // Loaded lazily: the password store reaches the database layer, which imports the collection configs that import this module.
+  const { passwordProblemFor } = await import('@/features/security/passwordCheck')
+  const weakPassword = await passwordProblemFor(engine as never, request.password ?? '', { email })
+  if (weakPassword) {
+    return { ok: false, reason: 'weak-password', error: weakPassword }
   }
 
   if (settings.registration.requireEmailVerification && !canVerifyEmail(engine)) {

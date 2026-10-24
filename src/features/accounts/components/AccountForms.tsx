@@ -2,6 +2,8 @@
 
 import React, { useActionState } from 'react'
 
+import type { PasswordRules } from './AuthForms'
+
 import {
   changeEmailAction,
   changePasswordAction,
@@ -172,7 +174,7 @@ export const EmailForm: React.FC<{ email: string }> = ({ email }) => {
   )
 }
 
-export const PasswordForm: React.FC = () => {
+export const PasswordForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
   const [state, action] = useActionState<ActionState, FormData>(changePasswordAction, IDLE)
   return (
     <form action={action} className="account-form">
@@ -182,15 +184,16 @@ export const PasswordForm: React.FC = () => {
       </label>
       <label>
         New password
-        <input name="password" type="password" autoComplete="new-password" minLength={8} required />
+        <input name="password" type="password" autoComplete="new-password" minLength={rules.minLength} required aria-describedby="password-hint" />
       </label>
+      <p className="account-hint" id="password-hint">{rules.hint}</p>
       <label>
         Confirm new password
         <input
           name="passwordConfirm"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={rules.minLength}
           required
         />
       </label>

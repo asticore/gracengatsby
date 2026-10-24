@@ -1,9 +1,10 @@
 import type { Engine } from '@/engine'
 
+import { passwordProblemFor } from '@/features/security/passwordCheck'
 import { defaultUserSessionStore } from '@/features/security/userSessionStore'
 import { revokeQuietly, sessionIdFromToken, type SessionClient } from '@/features/security/userSessions'
 
-import { emailProblem, passwordProblem, signIn, verifyPassword } from './auth'
+import { emailProblem, signIn, verifyPassword } from './auth'
 import { writePreferences } from './preferences'
 import type { AccountUser } from './session'
 import { USERS_SLUG } from './types'
@@ -104,7 +105,7 @@ export const changePassword = async (
   client?: SessionClient,
   currentSessionId?: string | null,
 ): Promise<ProfileOutcome> => {
-  const problem = passwordProblem(nextPassword)
+  const problem = await passwordProblemFor(engine, nextPassword, { id: user.id, email: user.email })
   if (problem) return { ok: false, message: problem }
   if (nextPassword !== confirmation) return { ok: false, message: 'The two passwords do not match.' }
 

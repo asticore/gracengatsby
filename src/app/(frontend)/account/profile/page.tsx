@@ -12,8 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ProfileRoute({
   searchParams,
 }: {
-  searchParams: Promise<{ social_error?: string }>
+  searchParams: Promise<{ social_error?: string; password?: string }>
 }) {
-  const { social_error: socialError } = await searchParams
-  return <ProfileScreen socialError={socialError} />
+  const { social_error: socialError, password } = await searchParams
+  return <ProfileScreen socialError={socialError} passwordDue={password === 'due'} />
 }

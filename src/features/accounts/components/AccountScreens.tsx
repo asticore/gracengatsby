@@ -21,6 +21,8 @@ import { currentSessionToken } from '../session'
 import { assertTwoFactorSatisfied, backupCodesRemaining, isEnrolled } from '@/features/security/twoFactor'
 import { defaultTwoFactorStore } from '@/features/security/twoFactorStore'
 import { getSecuritySettings } from '@/features/security/settings'
+import { passwordRulesOf } from '@/features/security/passwordCheck'
+import { DEFAULT_PASSWORD_POLICY } from '@/features/security/passwordPolicyDefaults'
 import { ConnectedAccountsPanel } from '@/features/socialLogin/components/ConnectedAccountsPanel'
 import { viewConnections } from '@/features/socialLogin/connections'
 import { socialMessage } from '@/features/socialLogin/messages'
@@ -343,7 +345,7 @@ export const BookingsScreen: React.FC = async () => {
   )
 }
 
-export const ProfileScreen: React.FC<{ socialError?: string }> = async ({ socialError }) => {
+export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boolean }> = async ({ socialError, passwordDue }) => {
   const { engine, user } = await requireCustomer('/account/profile')
   const preferences = await readPreferences(engine, user)
   const email = typeof user.email === 'string' ? user.email : ''
@@ -375,7 +377,12 @@ export const ProfileScreen: React.FC<{ socialError?: string }> = async ({ social
 
       <section className="account-section">
         <h2>Password</h2>
-        <PasswordForm />
+        {passwordDue ? (
+          <p className="account-note account-note--error">
+            This site asks you to choose a new password now. Please do it below.
+          </p>
+        ) : null}
+        <PasswordForm rules={passwordRulesOf(settings?.passwordPolicy ?? DEFAULT_PASSWORD_POLICY)} />
       </section>
 
       <section className="account-section" id="security">

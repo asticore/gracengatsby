@@ -1,5 +1,7 @@
 import type { Engine } from '@/engine'
 
+import { passwordProblemFor } from '@/features/security/passwordCheck'
+import { readPasswordStateByResetToken, recordPasswordSet } from '@/features/security/passwordStore'
 import type { SessionClient } from '@/features/security/userSessions'
 
 import {
@@ -377,7 +379,10 @@ export const completePasswordReset = async (
   token: string,
   password: string,
 ): Promise<ResetResult> => {
-  const problem = passwordProblem(password)
+  // The account behind the link (if the token is known) supplies its address and
+  // history to the policy. An unknown token is refused by the engine below, as before.
+  const account = token ? await readPasswordStateByResetToken(token).catch((): null => null) : null
+  const problem = await passwordProblemFor(engine, password, { id: account?.id ?? null, email: account?.email ?? null })
   if (problem) return { ok: false, message: problem }
   if (!token) return { ok: false, message: 'That reset link is not valid. Ask for a new one.' }
 
@@ -391,6 +396,9 @@ export const completePasswordReset = async (
       // mailbox; there is no session yet to check access against.
       overrideAccess: true,
     })
+    // A reset never passes through the Users collection hooks, so the history and
+    // the change time are stamped here.
+    if (account) await recordPasswordSet(account.id, password).catch((): undefined => undefined)
     return { ok: true }
   } catch {
     // Wrong token, used token, expired token - one answer for all three.
@@ -400,10 +408,3 @@ export const completePasswordReset = async (
 
 export const emailProblem = (email: string): string | null =>
   EMAIL_PATTERN.test(email.trim()) ? null : 'That does not look like an email address.'
-
-export const passwordProblem = (password: string): string | null => {
-  if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    return `Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.`
-  }
-  return null
-}

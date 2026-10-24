@@ -80,7 +80,10 @@ const CodeStep: React.FC<{ pendingToken: string; next: string }> = ({ pendingTok
   )
 }
 
-export const RegisterForm: React.FC = () => {
+/** Length floor and the hint line for the password fields, built on the server from the active rules. */
+export type PasswordRules = { minLength: number; hint: string }
+
+export const RegisterForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
   const [state, action] = useActionState<ActionState, FormData>(registerAction, IDLE)
 
   // On success the form is replaced by the sentence, because the sentence is
@@ -107,15 +110,16 @@ export const RegisterForm: React.FC = () => {
       </label>
       <label>
         Password
-        <input name="password" type="password" autoComplete="new-password" minLength={8} required />
+        <input name="password" type="password" autoComplete="new-password" minLength={rules.minLength} required aria-describedby="password-hint" />
       </label>
+      <p className="account-hint" id="password-hint">{rules.hint}</p>
       <label>
         Confirm password
         <input
           name="passwordConfirm"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={rules.minLength}
           required
         />
       </label>
@@ -148,7 +152,7 @@ export const ForgotPasswordForm: React.FC = () => {
   )
 }
 
-export const ResetPasswordForm: React.FC<{ token: string }> = ({ token }) => {
+export const ResetPasswordForm: React.FC<{ token: string; rules: PasswordRules }> = ({ token, rules }) => {
   const [state, action] = useActionState<ActionState, FormData>(resetPasswordAction, IDLE)
 
   return (
@@ -156,15 +160,16 @@ export const ResetPasswordForm: React.FC<{ token: string }> = ({ token }) => {
       <input type="hidden" name="token" value={token} />
       <label>
         New password
-        <input name="password" type="password" autoComplete="new-password" minLength={8} required />
+        <input name="password" type="password" autoComplete="new-password" minLength={rules.minLength} required aria-describedby="password-hint" />
       </label>
+      <p className="account-hint" id="password-hint">{rules.hint}</p>
       <label>
         Confirm new password
         <input
           name="passwordConfirm"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={rules.minLength}
           required
         />
       </label>

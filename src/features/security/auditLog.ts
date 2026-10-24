@@ -53,6 +53,10 @@ export type AuditAction =
   | 'passkey.login'
   | 'passkey.removed'
   | 'passkey.refused'
+  | 'api-key.created'
+  | 'api-key.revoked'
+  | 'api-key.used'
+  | 'api-key.refused'
 
 export type AuditEntry = {
   action: AuditAction

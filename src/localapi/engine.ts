@@ -88,6 +88,7 @@ import {
   refreshToken as authRefreshToken,
   resetPassword as authResetPassword,
   unlockUser as authUnlockUser,
+  toAuthUserDoc,
   verifyAuth,
   type AuthDbOps,
   type AuthUserDoc,
@@ -106,6 +107,10 @@ import { prepareUploadFile, storePreparedUpload, type PreparedUpload } from '@/f
 import { generateUploadFields, type UploadFile } from './uploads'
 import { attachCustomRole } from '@/features/roles/customRoleCache'
 import { defaultUserSessionStore } from '@/features/security/userSessionStore'
+import { audit } from '@/features/security/auditLog'
+import { readSecuritySettingsFromD1 } from '@/features/security/settings'
+import { authenticateApiKey, createD1ApiKeyStore, presentedApiKey, type ApiKeyContext, type ApiKeyDeps, type D1Like } from '@/features/apiKeys'
+import { resolveD1Binding } from '@/cms/db/connect'
 import type { SessionClient } from '@/features/security/userSessions'
 
 import { findUserAuthRowByID, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db'
@@ -145,7 +150,7 @@ export type Engine = {
   loginAsUser: (args: { collection: string; id: number; client?: SessionClient; skipSecondFactor?: boolean }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
   resetPassword: (args: { collection: string; data: { password: string; token: string }; overrideAccess?: boolean; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token: string }>
   forgotPassword: (args: { collection: string; data: { email: string }; disableEmail?: boolean; expiration?: number }) => Promise<string | null>
-  auth: (args: { headers: HeadersLike }) => Promise<{ user: AuthUserDoc | null }>
+  auth: (args: { headers: HeadersLike; apiKeys?: boolean }) => Promise<{ user: AuthUserDoc | null; apiKey?: ApiKeyContext }>
   logout: (args: { collection: string; headers: HeadersLike; allSessions?: boolean }) => Promise<{ message: string }>
   refreshToken: (args: { collection: string; headers: HeadersLike }) => Promise<{ exp: number; token: string; user: AuthUserDoc; setCookie: true }>
   unlock: (args: { collection: string; data: { email: string } }) => Promise<boolean>
@@ -167,6 +172,28 @@ function deriveSecret(): string {
 }
 
 /** The auth-row family (`findUserAuthRowByID`/`findUserAuthRowsPaginated`/`updateUserAuthRow`) `./auth.ts` needs - a THIRD family alongside Stage 6a's plain CRUD and versioned-drafts families, deliberately excluded from `./registry.ts` (see that file's own header) since only this factory needs it. Wiring copied from the exact pattern `tests/int/localapi-auth-parity.int.spec.ts`'s own `makeRealAuthDb()` already proves correct against the reference engine. */
+/**
+ * Dependencies for the API key path. The owner is read live on every request, so a
+ * downgrade, a lock or a deletion takes effect at once. Audit writes go through the
+ * same best-effort writer the rest of the security code uses.
+ */
+function apiKeyDeps(authDb: AuthDbOps): ApiKeyDeps {
+  return {
+    store: createD1ApiKeyStore(async () => (await resolveD1Binding()) as unknown as D1Like),
+    now: () => Date.now(),
+    audit: async (entry) => {
+      const settings = await readSecuritySettingsFromD1()
+      await audit({ ...entry, collectionSlug: 'api-keys' }, settings)
+    },
+    loadOwner: async (userId) => {
+      const row = await authDb.findByID(userId)
+      if (!row) return null
+      const locked = Boolean(row.lockUntil && Date.parse(row.lockUntil) > Date.now())
+      return { id: row.id, email: row.email, roles: row.roles ?? [], locked, user: toAuthUserDoc(row) }
+    },
+  }
+}
+
 function buildAuthDb(): AuthDbOps {
   return {
     findByEmail: async (email) => {
@@ -397,6 +424,18 @@ export function createEngine(): Engine {
     resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret, client: args.client }),
     forgotPassword: (args) => authForgotPassword(authDb, { email: args.data.email.trim().toLowerCase(), expirationMs: args.expiration ?? 60 * 60 * 1000 }),
     auth: async (args) => {
+      // API keys are honored only where the REST dispatcher asks for them (`apiKeys: true`),
+      // which then enforces scope and route rules. Everywhere else a key is just an unknown
+      // bearer token and resolves to no user, exactly as before.
+      if (args.apiKeys) {
+        const token = presentedApiKey(args.headers)
+        if (token) {
+          const settings = await readSecuritySettingsFromD1()
+          const { owner, key } = await authenticateApiKey(apiKeyDeps(authDb), token, settings.apiKeys)
+          const withRole = await attachCustomRole(engine as never, owner.user as never)
+          return { user: withRole as never, apiKey: key }
+        }
+      }
       const result = await verifyAuth(authDb, { headers: args.headers, secret })
       // Access functions are synchronous: carry the user's custom role matrix on the session user.
       return { ...result, user: await attachCustomRole(engine as never, result.user as never) } as typeof result

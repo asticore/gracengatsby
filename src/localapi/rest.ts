@@ -159,6 +159,8 @@
 import type { Where } from './access'
 import { Forbidden } from './access'
 import { AuthenticationError, InvalidResetToken, LockedAuth } from './auth'
+import { API_KEY_RATE_PER_MINUTE, ApiKeyRefused, decideRoute, forbiddenFieldIn, presentedApiKey, type ApiKeyContext } from '@/features/apiKeys'
+import { readSecuritySettingsFromD1 } from '@/features/security/settings'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
 import { clientKey, hit, limitFor } from '@/features/security/rateLimit'
@@ -295,6 +297,9 @@ function errorToResponse(err: unknown): { status: number; body: ErrorResponseBod
   if (err instanceof AuthenticationError) {
     return { status: 401, body: { errors: [{ name: 'AuthenticationError', message: err.message }] } }
   }
+  if (err instanceof ApiKeyRefused) {
+    return { status: err.status, body: { errors: [{ name: 'ApiKeyRefused', message: err.message }] } }
+  }
   if (err instanceof InvalidResetToken) {
     return { status: 400, body: { errors: [{ name: 'InvalidResetToken', message: err.message }] } }
   }
@@ -303,6 +308,48 @@ function errorToResponse(err: unknown): { status: number; body: ErrorResponseBod
   // carry anything, including sensitive internals) - masked to a generic
   // message at 500, same as the reference engine's own debug-mode-off default.
   return { status: 500, body: { errors: [{ message: 'Something went wrong.' }] } }
+}
+
+/**
+ * The API key gate. Returns a refusal response, or null to let the request through
+ * (including every request that presents no key). Order: authenticate the key, rate
+ * limit it, check the route against its scopes and the deny list, then check the body.
+ */
+export async function gateApiKeyRequest(engine: Engine, request: Request, slug: string[]): Promise<Response | null> {
+  if (!presentedApiKey(request.headers)) return null
+  const method = request.method.toUpperCase()
+  const refuseKey = async (status: number, name: string, message: string, detail: string): Promise<Response> => {
+    const settings = await readSecuritySettingsFromD1().catch((): null => null)
+    if (settings) await audit({ action: 'api-key.refused', detail }, settings).catch((): void => undefined)
+    return Response.json({ errors: [{ name, message }] }, { status })
+  }
+
+  let key: ApiKeyContext | undefined
+  try {
+    key = (await engine.auth({ headers: request.headers, apiKeys: true })).apiKey
+  } catch (err) {
+    if (err instanceof ApiKeyRefused) return Response.json({ errors: [{ name: 'ApiKeyRefused', message: err.message }] }, { status: err.status })
+    return Response.json({ errors: [{ message: 'Something went wrong.' }] }, { status: 500 })
+  }
+  if (!key) return Response.json({ errors: [{ name: 'ApiKeyRefused', message: 'API key is not valid.' }] }, { status: 401 })
+
+  const limit = hit(`api-key:${key.id}`, API_KEY_RATE_PER_MINUTE)
+  if (limit.limited) {
+    return Response.json({ errors: [{ name: 'RateLimited', message: 'Too many requests for this API key. Try again in a moment.' }] }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } })
+  }
+
+  const decision = decideRoute(key.scopes, method, slug)
+  if (decision.ok === false) return refuseKey(decision.status, 'Forbidden', decision.message, `key ${key.id}: ${method} ${slug.join('/')} not allowed`)
+
+  if (method === 'POST' || method === 'PATCH') {
+    const body = await request
+      .clone()
+      .json()
+      .catch((): null => null)
+    const field = forbiddenFieldIn(body)
+    if (field) return refuseKey(403, 'Forbidden', `API keys cannot write the field "${field}".`, `key ${key.id}: field ${field} refused`)
+  }
+  return null
 }
 
 /** Best-effort JSON body parse for a request that may have none, or malformed JSON - mirrors the reference engine's own defensive `typeof req.data?.x === 'string' ? req.data.x : ''` coercion pattern (confirmed by reading every auth handler directly) rather than letting a malformed body throw an uncaught, unmapped `SyntaxError`. */
@@ -1421,7 +1468,7 @@ async function handleLogout(engine: Engine, collection: string, request: Request
 
 /** `GET /me` - `{user, message: 'Account'}`, plus `token`/`exp` when authenticated (`auth/endpoints/me.js`, `authentication:account`). Built from `engine.auth()` (this module's own equivalent of the reference engine's strategy-already-ran `req.user`) rather than a dedicated `engine.me()` - no such member exists on `Engine` (see `./engine.ts`'s own confirmed 16-member interface), and `verifyAuth`'s own return value is already exactly what real `meOperation` computes for `result.user` in the one-token-one-collection case this app has. */
 async function handleMe(engine: Engine, request: Request): Promise<Response> {
-  const { user } = await engine.auth({ headers: request.headers })
+  const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
   const body: Record<string, unknown> = { user, message: 'Account' }
   if (user) {
     // Real `meOperation` always sets these two once `req.user` is present
@@ -1491,7 +1538,7 @@ async function handleResetPassword(engine: Engine, collection: string, request: 
  * reuse, and `users` is the one hardcoded auth collection anyway.
  */
 async function handleUnlock(engine: Engine, collection: string, request: Request): Promise<Response> {
-  const { user } = await engine.auth({ headers: request.headers })
+  const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
   if (!user) throw new Forbidden()
   const { data } = await readRequestBody(request)
   await engine.unlock({ collection, data: { email: stringField(data, 'email') } })
@@ -1692,6 +1739,12 @@ export async function handleRestRequest(request: Request, slug: string[], engine
   if (!slug || slug.length === 0) return null
   const method = request.method.toUpperCase()
 
+  // A request presenting an API key is checked here, before any route runs: the key must
+  // be live, the route must be inside its scopes and not on the deny list, and it must be
+  // within its rate limit. A key that cannot be checked is refused, never treated as anonymous.
+  const keyRefusal = await gateApiKeyRequest(engine, request, slug)
+  if (keyRefusal) return keyRefusal
+
   try {
     if (slug[0] === 'globals') {
       const globalSlug = slug[1]
@@ -1699,12 +1752,12 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       if (!globalSlug || !readRegistry.globals[globalSlug]) return null
 
       if (rest.length === 1 && rest[0] === 'access' && method === 'POST') {
-        const { user } = await engine.auth({ headers: request.headers })
+        const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
         return await handleGlobalAccess(engine, globalSlug, request, user)
       }
       if (rest.length > 0) return null
 
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       if (method === 'GET') return await handleGlobalFind(engine, globalSlug, request, user)
       if (method === 'POST') return await handleGlobalUpdate(engine, globalSlug, request, user)
       return null
@@ -1715,7 +1768,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
     // slug), needs no auth (works anonymously, see `handleAccessRoot`'s doc
     // comment).
     if (slug[0] === 'access' && slug.length === 1 && method === 'GET') {
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       return await handleAccessRoot(engine, user)
     }
 
@@ -1726,7 +1779,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
     // `engine.auth()`: it has no user/session, only a Stripe signature.
     if (slug[0] === 'payments' && slug[1] === 'stripe' && slug.length === 3 && method === 'POST') {
       if (slug[2] === 'webhooks') return await handlePaymentsStripeWebhooks(engine, request)
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       if (slug[2] === 'initiate') return await handlePaymentsStripeInitiate(engine, request, user)
       if (slug[2] === 'confirm-order') return await handlePaymentsStripeConfirmOrder(engine, request, user)
       return null
@@ -1739,19 +1792,19 @@ export async function handleRestRequest(request: Request, slug: string[], engine
 
     if (rest.length === 0) {
       if (method === 'GET') {
-        const { user } = await engine.auth({ headers: request.headers })
+        const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
         return await handleFind(engine, collectionSlug, request, user)
       }
       if (method === 'POST') {
-        const { user } = await engine.auth({ headers: request.headers })
+        const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
         return await handleCreate(engine, collectionSlug, request, user)
       }
       if (method === 'PATCH') {
-        const { user } = await engine.auth({ headers: request.headers })
+        const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
         return await handleBulkUpdate(engine, collectionSlug, request, user)
       }
       if (method === 'DELETE') {
-        const { user } = await engine.auth({ headers: request.headers })
+        const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
         return await handleBulkDelete(engine, collectionSlug, request, user)
       }
       return null
@@ -1759,7 +1812,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
 
     // `/versions` and `/versions/:id` - only the 5 collections in `versionsRegistry` (a `null` from the handler falls through). Must sit BEFORE the `rest.length === 1` block below, which would otherwise swallow `versions` as a non-numeric id and return `null`.
     if (rest[0] === 'versions' && (rest.length === 1 || rest.length === 2)) {
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       if (rest.length === 1) return method === 'GET' ? await handleFindVersions(engine, collectionSlug, request, user) : null
       const versionId = Number(rest[1])
       if (!Number.isFinite(versionId)) return null
@@ -1785,19 +1838,19 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       }
 
       if (method === 'GET' && seg === 'count') {
-        const { user } = await engine.auth({ headers: request.headers })
+        const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
         return await handleCount(engine, collectionSlug, request, user)
       }
 
       if (method === 'POST' && seg === 'access') {
-        const { user } = await engine.auth({ headers: request.headers })
+        const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
         return await handleCollectionAccess(engine, collectionSlug, undefined, request, user)
       }
 
       const id = Number(seg)
       if (!Number.isFinite(id)) return null // not a recognized named route or a valid numeric id - fall through
 
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       if (method === 'GET') return await handleFindByID(engine, collectionSlug, id, request, user)
       if (method === 'PATCH') return await handleUpdateByID(engine, collectionSlug, id, request, user)
       if (method === 'DELETE') return await handleDeleteByID(engine, collectionSlug, id, user, request)
@@ -1811,21 +1864,21 @@ export async function handleRestRequest(request: Request, slug: string[], engine
     if (rest.length === 2 && rest[1] === 'duplicate' && method === 'POST') {
       const docId = Number(rest[0])
       if (!Number.isFinite(docId)) return null
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       return await handleDuplicate(engine, collectionSlug, docId, request, user)
     }
 
     if (rest.length === 2 && rest[0] === 'access' && method === 'POST') {
       const docId = Number(rest[1])
       if (!Number.isFinite(docId)) return null
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       return await handleCollectionAccess(engine, collectionSlug, docId, request, user)
     }
 
     if (rest.length === 2 && collectionSlug === 'carts' && method === 'POST') {
       const cartId = Number(rest[0])
       if (!Number.isFinite(cartId)) return null
-      const { user } = await engine.auth({ headers: request.headers })
+      const { user } = await engine.auth({ headers: request.headers, apiKeys: true })
       if (rest[1] === 'add-item') return await handleCartAddItem(engine, cartId, request, user)
       if (rest[1] === 'remove-item') return await handleCartRemoveItem(engine, cartId, request, user)
       if (rest[1] === 'update-item') return await handleCartUpdateItem(engine, cartId, request, user)

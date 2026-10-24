@@ -61,6 +61,23 @@ export type SecuritySettings = {
   passwordless: PasswordlessSettings
   /** Passkeys (WebAuthn). Off unless the owner switches them on. See src/features/passkeys. */
   passkeys: PasskeySettings
+  /** Per-user API keys (bearer tokens for the REST API). Off unless the owner switches them on. See src/features/apiKeys. */
+  apiKeys: ApiKeySettings
+}
+
+export type ApiKeySettings = {
+  enabled: boolean
+  allowCustomers: boolean
+  maxPerUser: number
+  /** Longest lifetime a new key may have, in days. 0 means keys cannot carry an expiry date. */
+  maxLifetimeDays: number
+}
+
+export const DEFAULT_API_KEY_SETTINGS: ApiKeySettings = {
+  enabled: false,
+  allowCustomers: false,
+  maxPerUser: 5,
+  maxLifetimeDays: 365,
 }
 
 export type PasskeySettings = {
@@ -128,6 +145,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   passwordPolicy: DEFAULT_PASSWORD_POLICY,
   passwordless: DEFAULT_PASSWORDLESS_SETTINGS,
   passkeys: DEFAULT_PASSKEY_SETTINGS,
+  apiKeys: DEFAULT_API_KEY_SETTINGS,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -180,6 +198,17 @@ export const passkeysFrom = (get: (key: string) => unknown): PasskeySettings => 
     allowAdmins: asBool(get('passkeys_allow_admins'), base.allowAdmins),
     rpName: typeof rp === 'string' ? rp.trim().slice(0, 80) : base.rpName,
     userVerification: uv === 'required' ? 'required' : 'preferred',
+  }
+}
+
+/** Reads the four API key fields; `get` takes the camelCase name the engine uses. */
+export const apiKeysFrom = (get: (key: string) => unknown): ApiKeySettings => {
+  const base = DEFAULT_API_KEY_SETTINGS
+  return {
+    enabled: asBool(get('api_keys_enabled'), base.enabled),
+    allowCustomers: asBool(get('api_keys_allow_customers'), base.allowCustomers),
+    maxPerUser: asInt(get('api_keys_max_per_user'), base.maxPerUser, 1, 50),
+    maxLifetimeDays: asInt(get('api_keys_max_lifetime_days'), base.maxLifetimeDays, 0, 3650),
   }
 }
 
@@ -250,6 +279,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     passwordPolicy: passwordPolicyFrom((key) => row[key]),
     passwordless: passwordlessFrom((key) => row[key]),
     passkeys: passkeysFrom((key) => row[key]),
+    apiKeys: apiKeysFrom((key) => row[key]),
   }
 }
 
@@ -382,5 +412,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     passwordPolicy: passwordPolicyFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     passwordless: passwordlessFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     passkeys: passkeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
+    apiKeys: apiKeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
   }
 }

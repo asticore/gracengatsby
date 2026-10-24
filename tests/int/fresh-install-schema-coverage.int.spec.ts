@@ -21,6 +21,7 @@ import * as userSessionsSchema from '@/cms/db/schema/userSessions'
 import * as socialAccountsSchema from '@/cms/db/schema/socialAccounts'
 import * as loginTokensSchema from '@/cms/db/schema/loginTokens'
 import * as passkeysSchema from '@/cms/db/schema/passkeys'
+import * as apiKeysSchema from '@/cms/db/schema/apiKeys'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
@@ -241,6 +242,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Passkeys (WebAuthn) credentials: a plain drizzle table in its own schema file
       for (const [exportName, exportValue] of Object.entries(passkeysSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Per-user API keys (hashed keys, scopes): a plain drizzle table in its own schema file
+      for (const [exportName, exportValue] of Object.entries(apiKeysSchema)) {
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
@@ -624,6 +630,36 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_passkeys` WHERE credential_id = 'keep-me-cred'").first()) as { n: number }
     expect(kept.n).toBe(1)
     await proxy.env.D1.prepare("DELETE FROM `eg_passkeys` WHERE credential_id = 'keep-me-cred'").run()
+  })
+
+  it('adds the api key columns to security settings, off by default, and creates eg_api_keys', async () => {
+    const settings = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(settings.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('api_keys_enabled')).toBe('0')
+    expect(byName.get('api_keys_allow_customers')).toBe('0')
+    expect(byName.get('api_keys_max_per_user')).toBe('5')
+    expect(byName.get('api_keys_max_lifetime_days')).toBe('365')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_api_keys`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['id', 'user_id', 'name', 'prefix', 'key_hash', 'scopes', 'created_at', 'last_used_at', 'expires_at', 'revoked_at']))
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_api_keys`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(indexes).toEqual(expect.arrayContaining(['eg_api_keys_hash_idx', 'eg_api_keys_user_idx']))
+  })
+
+  it('api key migration is safe to run twice and leaves existing key rows alone', async () => {
+    const mod = await import('@/migrations/20261119_100000_api_keys')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare("INSERT INTO `eg_api_keys` (user_id, name, prefix, key_hash, scopes, created_at) VALUES (9, 'keep', 'egk_keep', 'keep-me-key-hash', '[\"read\"]', '2026-01-01T00:00:00.000Z')").run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'api_keys_enabled')).toBe(1)
+    expect(await count('eg_security_settings', 'api_keys_max_lifetime_days')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_api_keys` WHERE key_hash = 'keep-me-key-hash'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_api_keys` WHERE key_hash = 'keep-me-key-hash'").run()
   })
 
   it('passwordless migration is safe to run twice and leaves existing token rows alone', async () => {

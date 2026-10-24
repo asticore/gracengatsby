@@ -11,11 +11,11 @@ export const isNoIndexedPage = (page: { seo?: { noIndex?: boolean | null } | nul
   Boolean(page.seo?.noIndex)
 
 /**
- * Whether a document sits behind a password. Only pages and posts can be
+ * Whether a document sits behind a password. Only pages, posts, products and events can be
  * protected (see features/visibility/gate.ts). This throws when the lookup
  * fails: each caller decides whether a failed check means "listed" or "hidden".
  */
-export const readPasswordGate = async (collection: 'pages' | 'posts', docId: number): Promise<boolean> => {
+export const readPasswordGate = async (collection: 'pages' | 'posts' | 'products' | 'events', docId: number): Promise<boolean> => {
   const db = await getDb()
   const hash = await getPasswordHash(db, collection, docId)
   return hash !== null

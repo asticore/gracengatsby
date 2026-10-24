@@ -102,7 +102,7 @@ export const getSiteIcons = cache(async (): Promise<IconUrls> => {
  * document in that collection as protected, so a file that lists content never
  * exposes a gated page just because the check broke.
  */
-const protectedIds = async (collection: 'pages' | 'posts'): Promise<Set<number> | null> => {
+const protectedIds = async (collection: CollectionName): Promise<Set<number> | null> => {
   try {
     const db = await getDb()
     const rows = (await db.all(
@@ -186,8 +186,7 @@ const collectSections = async (ctx: FileContext, withBodies: boolean): Promise<L
       }
     } else {
       try {
-        // Only posts can be password-protected; the other collections skip the lookup.
-        const gated = collection === 'posts' ? await protectedIds('posts') : new Set<number>()
+        const gated = await protectedIds(collection)
         const engine = await getEngine()
         const { docs } = await engine.find({
           collection: collection as 'posts',

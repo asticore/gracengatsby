@@ -114,7 +114,8 @@ async function searchProducts(query: string): Promise<Found> {
     limit: MAX_RESULTS,
     depth: 0,
   })) as unknown as { docs: Product[]; totalDocs: number }
-  const hits = docs
+  const visible = await excludeProtected('products', docs)
+  const hits = visible
     .filter((product) => product.slug)
     .map((product): Hit => ({
       key: `product-${product.id}`,
@@ -123,7 +124,7 @@ async function searchProducts(query: string): Promise<Found> {
       href: `/shop/${product.slug}`,
       excerpt: '',
     }))
-  return { hits, total: totalDocs }
+  return { hits, total: Math.max(0, totalDocs - (docs.length - visible.length)) }
 }
 
 async function searchEvents(query: string): Promise<Found> {
@@ -140,7 +141,8 @@ async function searchEvents(query: string): Promise<Found> {
     limit: MAX_RESULTS,
     depth: 0,
   })) as unknown as { docs: EventDoc[]; totalDocs: number }
-  const hits = docs
+  const visible = await excludeProtected('events', docs)
+  const hits = visible
     .filter((event) => event.slug)
     .map((event): Hit => ({
       key: `event-${event.id}`,
@@ -149,7 +151,7 @@ async function searchEvents(query: string): Promise<Found> {
       href: `/events/${event.slug}`,
       excerpt: '',
     }))
-  return { hits, total: totalDocs }
+  return { hits, total: Math.max(0, totalDocs - (docs.length - visible.length)) }
 }
 
 /** Searches every source that is switched on. A source that fails contributes nothing; the page never throws. */

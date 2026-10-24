@@ -16,7 +16,7 @@ import type { DataViewDef, DataViewModel } from './types'
  */
 
 /** Collections where a password can protect a single document. */
-const PASSWORD_COLLECTIONS = new Set(['pages', 'posts'])
+const PASSWORD_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
 
 export const defaultDeps: ResolveDeps = {
   async findDocs(collection, { versioned, sort, limit }) {

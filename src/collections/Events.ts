@@ -1,4 +1,5 @@
 import type { CollectionConfig } from '@/engine'
+import { excludeProtectedAccess } from '@/features/visibility/excludeProtected'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 
 import { richTextEditor } from '@/engine/editor'
@@ -37,7 +38,7 @@ export const Events: CollectionConfig = {
   access: {
     create: roleAccess('events', 'create'),
     delete: roleAccess('events', 'delete'),
-    read: roleOrPublished('events'),
+    read: excludeProtectedAccess('events', roleOrPublished('events')),
     update: roleAccess('events', 'update'),
   },
   versions: {

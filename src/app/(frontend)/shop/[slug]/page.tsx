@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import React from 'react'
 import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
@@ -29,6 +30,9 @@ import { buildProductView, offersJsonLd } from '@/features/ecommerce/storefront'
 import { loadPreordersEnabled } from '@/features/ecommerce/server/shopExtra'
 import { loadShopRulesConfig } from '@/features/ecommerce/server/pricingRules'
 import { productPageNotes } from '@/features/ecommerce/lib/pricingRules'
+import { PasswordGate } from '@/components/PasswordGate'
+import { getPasswordGateState } from '@/features/visibility/gate'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -56,6 +60,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const product = await getProduct(slug)
   if (!product) return {}
+
+  // When password protected and locked, use generic metadata and keep it out of the index.
+  const lockedMeta = await getPasswordGateState({ collection: 'products', id: product.id, cookies: await cookies() })
+  if (lockedMeta === 'locked') {
+    return { title: 'Password Protected', robots: { index: false, follow: false, googleBot: { index: false, follow: false } } }
+  }
+
   return buildMetadata({
     title: product.title,
     seo: product.seo,
@@ -65,7 +76,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProductPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const sp = await searchParams
   const flags = await getFeatureFlags()
   if (!flags.ecommerce) notFound()
 
@@ -75,6 +93,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   if (!product) {
     notFound()
+  }
+
+  const gateState = await getPasswordGateState({ collection: 'products', id: product.id, cookies: await cookies() })
+  if (gateState === 'locked') {
+    return <PasswordGate collection="products" currentPath={`/shop/${slug}`} id={product.id} wrongPassword={sp.pw === 'wrong'} />
   }
 
   const [settings] = (await Promise.all([engine.findGlobal({ slug: 'shop-settings' }).catch((): null => null)])) as unknown as [ShopSetting | null]
@@ -97,7 +120,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       },
       limit: 4,
     })) as unknown as { docs: Product[] }
-    related = docs
+    related = await excludeProtected('products', docs)
   }
 
   const catalogue = product as unknown as CatalogueProduct & Record<string, unknown>
@@ -116,13 +139,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     (Array.isArray(value) ? value : []).filter((entry): entry is Record<string, unknown> & { id: number } => typeof entry === 'object' && entry !== null)
   const giftSettings = normaliseGiftCardSettings((settings as { giftCards?: unknown } | null)?.giftCards)
   const giftConfig = view.type === 'giftcard' && giftSettings.enabled ? { presets: giftSettings.presetAmounts, allowCustom: giftSettings.allowCustomAmount, min: giftSettings.minAmount, max: giftSettings.maxAmount } : undefined
+  const groupedOpen = view.type === 'grouped' ? await excludeProtected('products', asDocs(catalogue.groupedProducts)) : []
   const grouped: GroupedChild[] = view.type === 'grouped'
-    ? asDocs(catalogue.groupedProducts)
+    ? groupedOpen
         .filter((child) => child._status === 'published' && child.id !== product.id)
         .slice(0, 50)
         .map((child) => ({ id: child.id, title: String(child.title ?? ''), slug: typeof child.slug === 'string' ? child.slug : null, view: buildProductView(child as unknown as CatalogueProduct, new Date(), new Map(), { preorders: preordersOn }) }))
     : []
-  const upsells = asDocs(catalogue.upsells).filter((item) => item._status === 'published' && item.id !== product.id).slice(0, 4) as unknown as Product[]
+  const upsells = (await excludeProtected('products', asDocs(catalogue.upsells))).filter((item) => item._status === 'published' && item.id !== product.id).slice(0, 4) as unknown as Product[]
 
   // Approved reviews only; the public API never returns the reviewer's email.
   const { docs: reviewDocs } = (await engine

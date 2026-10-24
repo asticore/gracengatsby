@@ -1,4 +1,5 @@
 import { EventCard } from '@/components/EventCard'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import type { Event } from '@/engage-types'
 
@@ -14,7 +15,7 @@ export async function EventGridBlock({
   const engine = await getEngine()
   const now = new Date().toISOString()
 
-  const { docs: events } = (await engine.find({
+  const { docs: found } = (await engine.find({
     collection: 'events',
     where: {
       and: [
@@ -25,6 +26,7 @@ export async function EventGridBlock({
     sort: showPast ? '-startDate' : 'startDate',
     limit: limit || 3,
   })) as unknown as { docs: Event[] }
+  const events = await excludeProtected('events', found)
 
   if (events.length === 0) return null
 

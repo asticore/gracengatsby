@@ -6,7 +6,7 @@ import { getPasswordHash } from '@/cms/db/contentPasswords'
 
 /**
  * Live-search suggestions. Mirrors the sources and URL shapes of the /search results page (pages, posts, products,
- * events), published items only. Password protected pages and posts are left out so a private title never leaks.
+ * events), published items only. Password protected pages, posts, products and events are left out so a private title never leaks.
  */
 
 export const SUGGEST_MIN_CHARS = 2
@@ -88,10 +88,22 @@ export async function findSuggestions(rawQuery: unknown, max = SUGGEST_MAX_RESUL
     }
     return out
   }
-  const products = async (): Promise<Suggestion[]> =>
-    (await findDocs('products', query, ['title', 'slug'], '-createdAt', limit)).filter((d) => d.slug).map((d) => ({ title: String(d.title ?? ''), url: `/shop/${d.slug}`, type: 'Product', excerpt: '' }))
-  const events = async (): Promise<Suggestion[]> =>
-    (await findDocs('events', query, ['title', 'slug'], '-startDate', limit)).filter((d) => d.slug).map((d) => ({ title: String(d.title ?? ''), url: `/events/${d.slug}`, type: 'Event', excerpt: '' }))
+  const products = async (): Promise<Suggestion[]> => {
+    const out: Suggestion[] = []
+    for (const d of await findDocs('products', query, ['title', 'slug'], '-createdAt', limit)) {
+      if (!d.slug || !(await isOpen('products', d.id))) continue
+      out.push({ title: String(d.title ?? ''), url: `/shop/${d.slug}`, type: 'Product', excerpt: '' })
+    }
+    return out
+  }
+  const events = async (): Promise<Suggestion[]> => {
+    const out: Suggestion[] = []
+    for (const d of await findDocs('events', query, ['title', 'slug'], '-startDate', limit)) {
+      if (!d.slug || !(await isOpen('events', d.id))) continue
+      out.push({ title: String(d.title ?? ''), url: `/events/${d.slug}`, type: 'Event', excerpt: '' })
+    }
+    return out
+  }
 
   const none: Suggestion[] = []
   const groups = await Promise.all([

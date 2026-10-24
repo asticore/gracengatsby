@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/engine'
 import { validateWishlistIds, wishlistEnabled } from '@/features/ecommerce/lib/wishlist'
 import { wishlistCards } from '@/features/ecommerce/lib/wishlistCards'
@@ -34,12 +35,13 @@ export async function POST(request: Request): Promise<Response> {
   if (!wishlistEnabled(settings)) return NextResponse.json({ error: 'Not found.' }, { status: 404, headers: NO_STORE })
 
   if (checked.ids.length === 0) return NextResponse.json({ products: [] }, { headers: NO_STORE })
-  const { docs } = await engine.find({
+  const { docs: found } = await engine.find({
     collection: 'products',
     where: { and: [{ _status: { equals: 'published' } }, { id: { in: checked.ids } }] },
     limit: checked.ids.length,
     depth: 1,
     overrideAccess: true,
   })
+  const docs = (await excludeProtected('products', found as { id?: number | string | null }[])) as typeof found
   return NextResponse.json({ products: wishlistCards(docs, checked.ids) }, { headers: NO_STORE })
 }

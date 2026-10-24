@@ -90,7 +90,7 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
         limit: 0,
         depth: 0,
       })
-      const visible = collection === 'posts' ? await excludeProtected('posts', docs as (CollectionRow & { id?: number })[]) : (docs as CollectionRow[])
+      const visible = await excludeProtected(collection as 'posts' | 'products' | 'events', docs as (CollectionRow & { id?: number })[])
       visible.forEach((doc) => {
         if (!doc.slug) return
         add(`${prefix}/${doc.slug}`, doc.updatedAt, priority)

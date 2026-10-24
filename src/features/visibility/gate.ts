@@ -4,28 +4,18 @@
  * Returns 'open' if the document is accessible.
  */
 
-import { cookies as getCookies } from 'next/headers'
+import type { cookies as getCookies } from 'next/headers'
 import { getPasswordHash } from '@/cms/db/contentPasswords'
 import { verifyUnlockToken } from './password'
 import { getDb } from '@/cms/db/connect'
 
 export type PasswordGateState = 'open' | 'locked'
 
-/**
- * Determine if a document is gated by a password.
- * Checks: does the document have a stored password, and does the request have a valid unlock token?
- */
-export async function getPasswordGateState({
-  collection,
-  id,
-  cookies,
-}: {
-  collection: string
-  id: number
-  cookies: Awaited<ReturnType<typeof getCookies>>
-}): Promise<PasswordGateState> {
-  // Only pages and posts can be password protected
-  if (collection !== 'pages' && collection !== 'posts') {
+const GATED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
+
+async function evaluateGate(collection: string, id: number, readCookie: (name: string) => string | undefined): Promise<PasswordGateState> {
+  // Only these collections can be password protected
+  if (!GATED_COLLECTIONS.has(collection)) {
     return 'open'
   }
 
@@ -39,8 +29,7 @@ export async function getPasswordGateState({
     }
 
     // Document has a password, check for valid unlock cookie
-    const cookieName = `eg_unlock_${collection}_${id}`
-    const unlockToken = cookies.get(cookieName)?.value
+    const unlockToken = readCookie(`eg_unlock_${collection}_${id}`)
 
     if (!unlockToken) {
       return 'locked'
@@ -59,4 +48,53 @@ export async function getPasswordGateState({
     // On error, default to locked to be safe
     return 'locked'
   }
+}
+
+/**
+ * Determine if a document is gated by a password.
+ * Checks: does the document have a stored password, and does the request have a valid unlock token?
+ */
+export async function getPasswordGateState({
+  collection,
+  id,
+  cookies,
+}: {
+  collection: string
+  id: number
+  cookies: Awaited<ReturnType<typeof getCookies>>
+}): Promise<PasswordGateState> {
+  return evaluateGate(collection, id, (name) => cookies.get(name)?.value)
+}
+
+function readCookieHeader(headers: Headers | null | undefined, name: string): string | undefined {
+  const raw = headers?.get?.('cookie')
+  if (!raw) return undefined
+  for (const part of raw.split(';')) {
+    const index = part.indexOf('=')
+    if (index === -1) continue
+    if (part.slice(0, index).trim() !== name) continue
+    try {
+      return decodeURIComponent(part.slice(index + 1).trim())
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
+
+/**
+ * Same check for code that only has a request's headers (collection hooks,
+ * route handlers). Missing headers mean no cookie, so a protected document is
+ * 'locked' - fails closed for server-side callers that carry no visitor.
+ */
+export async function getPasswordGateStateForHeaders({
+  collection,
+  id,
+  headers,
+}: {
+  collection: string
+  id: number
+  headers: Headers | null | undefined
+}): Promise<PasswordGateState> {
+  return evaluateGate(collection, id, (name) => readCookieHeader(headers, name))
 }

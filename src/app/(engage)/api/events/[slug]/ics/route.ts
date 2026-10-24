@@ -1,5 +1,7 @@
 import { getEngine } from '@/engine'
 import { getFeatureFlags } from '@/utilities/features'
+import { getPasswordGateStateForHeaders } from '@/features/visibility/gate'
+import { readPasswordGate } from '@/features/seo/indexable'
 import { icsFromEvent, type IcsEventSource } from '@/features/editScreens/ics'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +29,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const event = docs[0]
   if (!event || event.trashedAt) return notFound()
 
+  // A password protected event is only downloadable by a visitor who has unlocked it.
+  const eventId = Number((event as { id?: number | string }).id)
+  let isProtected = true
+  try {
+    isProtected = await readPasswordGate('events', eventId)
+  } catch {
+    return notFound()
+  }
+  if (isProtected) {
+    const gate = await getPasswordGateStateForHeaders({ collection: 'events', id: eventId, headers: request.headers })
+    if (gate === 'locked') return notFound()
+  }
+
   const ics = icsFromEvent(event, new URL(request.url).origin)
   if (!ics) return notFound()
 
@@ -35,7 +50,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     headers: {
       'content-type': 'text/calendar; charset=utf-8',
       'content-disposition': `attachment; filename="${filename}.ics"`,
-      'cache-control': 'public, max-age=0, s-maxage=600',
+      'cache-control': isProtected ? 'private, no-store' : 'public, max-age=0, s-maxage=600',
     },
   })
 }

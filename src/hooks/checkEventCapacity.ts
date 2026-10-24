@@ -11,6 +11,21 @@ export const checkEventCapacity: CollectionBeforeChangeHook = async ({ data, req
 
   const eventID = typeof data.event === 'object' ? data.event.id : data.event
 
+  // A password-protected event takes RSVPs only from a visitor who has unlocked it (fails closed).
+  // Lazy import: gate -> connect -> schema is built from the collections, which import this file.
+  const { getPasswordGateStateForHeaders } = await import('@/features/visibility/gate')
+  const isAdminUser = Boolean((req as { user?: { roles?: string[] | null } | null }).user?.roles?.includes('admin'))
+  const gate = isAdminUser
+    ? 'open'
+    : await getPasswordGateStateForHeaders({
+        collection: 'events',
+        id: Number(eventID),
+        headers: (req as { headers?: Headers }).headers,
+      })
+  if (gate === 'locked') {
+    throw new Error('This event is password protected.')
+  }
+
   const event = await req.engine.findByID({
     id: eventID,
     collection: 'events',

@@ -1,4 +1,5 @@
 import { ProductCard } from '@/components/ProductCard'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import type { Product } from '@/engage-types'
 
@@ -13,7 +14,7 @@ export async function ProductGridBlock({
 }) {
   const engine = await getEngine()
 
-  const { docs: products } = (await engine.find({
+  const { docs: found } = (await engine.find({
     collection: 'products',
     where: {
       and: [
@@ -24,6 +25,7 @@ export async function ProductGridBlock({
     sort: '-createdAt',
     limit: limit || 4,
   })) as unknown as { docs: Product[] }
+  const products = await excludeProtected('products', found)
 
   if (products.length === 0) return null
 

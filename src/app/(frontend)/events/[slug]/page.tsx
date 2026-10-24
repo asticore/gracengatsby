@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import Image from 'next/image'
 import React from 'react'
 import type { Metadata } from 'next'
@@ -13,6 +14,8 @@ import { tierOptionLabel } from '@/features/editScreens/tierSales'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { setBlockContext } from '@/lib/blockContext'
 import { eventBlockContext } from '@/lib/blockContextFrom'
+import { PasswordGate } from '@/components/PasswordGate'
+import { getPasswordGateState } from '@/features/visibility/gate'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -39,6 +42,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const event = await getEvent(slug)
   if (!event) return {}
+
+  // When password protected and locked, use generic metadata and keep it out of the index.
+  const lockedMeta = await getPasswordGateState({ collection: 'events', id: event.id, cookies: await cookies() })
+  if (lockedMeta === 'locked') {
+    return { title: 'Password Protected', robots: { index: false, follow: false, googleBot: { index: false, follow: false } } }
+  }
+
   const details = await loadSiteDetails()
   return buildMetadata({
     title: event.title,
@@ -57,7 +67,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function EventPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const sp = await searchParams
   const flags = await getFeatureFlags()
   if (!flags.events) notFound()
 
@@ -67,6 +84,11 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
 
   if (!event) {
     notFound()
+  }
+
+  const gateState = await getPasswordGateState({ collection: 'events', id: event.id, cookies: await cookies() })
+  if (gateState === 'locked') {
+    return <PasswordGate collection="events" currentPath={`/events/${slug}`} id={event.id} wrongPassword={sp.pw === 'wrong'} />
   }
   const engine = await getEngine()
 

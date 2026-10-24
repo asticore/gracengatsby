@@ -3,6 +3,7 @@ import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 import type { CollectionConfig } from '@/engine'
+import { excludeProtectedAccess } from '@/features/visibility/excludeProtected'
 
 import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
 
@@ -117,7 +118,7 @@ export const Products: CollectionConfig = {
   },
   access: {
     create: isAdmin,
-    read: adminOrPublishedStatus,
+    read: excludeProtectedAccess('products', adminOrPublishedStatus),
     update: isAdmin,
     delete: isAdmin,
   },

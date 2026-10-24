@@ -13,6 +13,7 @@ import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { PasswordGate } from '@/components/PasswordGate'
 import { getPasswordGateState } from '@/features/visibility/gate'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import type { Event, Product } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -82,7 +83,7 @@ async function DefaultHomepage() {
   const engine = await getEngine()
   const now = new Date().toISOString()
 
-  const [{ docs: products }, { docs: events }] = (await Promise.all([
+  const [{ docs: allProducts }, { docs: allEvents }] = (await Promise.all([
     engine.find({
       collection: 'products',
       where: { _status: { equals: 'published' } },
@@ -98,6 +99,8 @@ async function DefaultHomepage() {
       limit: 3,
     }),
   ])) as unknown as [{ docs: Product[] }, { docs: Event[] }]
+  const products = await excludeProtected('products', allProducts)
+  const events = await excludeProtected('events', allEvents)
 
   return (
     <>

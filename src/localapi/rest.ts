@@ -441,8 +441,9 @@ async function handleFind(engine: Engine, collection: string, request: Request, 
  * `req.query.secret`, mirroring the real plugin's own `req.query?.secret` -
  * can actually see it. Stage 10 Ecommerce, Layer 2.
  */
-function secretReq(request: Request): { query: { secret?: string } } {
-  return { query: { secret: new URL(request.url).searchParams.get('secret') ?? undefined } }
+function secretReq(request: Request): { query: { secret?: string }; headers: Headers } {
+  // `headers` lets hooks read the visitor's unlock cookies (see features/visibility/gate.ts).
+  return { query: { secret: new URL(request.url).searchParams.get('secret') ?? undefined }, headers: request.headers }
 }
 
 async function handleFindByID(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
@@ -460,7 +461,7 @@ async function handleCount(engine: Engine, collection: string, request: Request,
 async function handleCreate(engine: Engine, collection: string, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data, file } = await readRequestBody(request)
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.create({ collection, data, draft: query.draft, user, file })
+  const doc = await engine.create({ collection, data, draft: query.draft, user, file, req: { headers: request.headers } })
   return Response.json({ doc, message: 'Successfully created.' }, { status: 201 })
 }
 
@@ -954,8 +955,8 @@ function cartItemProductId(item: CartItemRow): number | null {
 }
 
 /** Secret from a POST body (`data.secret`, matching the real plugin's own `addItem`/`removeItem`/`updateItem`/`clearCart` arg) - threaded onto `req.query.secret` the same way `secretReq` threads a `?secret=` query param, since that's what `hasCartSecretAccess` reads. */
-function bodySecretReq(secret: unknown): { query: { secret?: string } } {
-  return { query: { secret: typeof secret === 'string' ? secret : undefined } }
+function bodySecretReq(secret: unknown, request?: Request): { query: { secret?: string }; headers?: Headers } {
+  return { query: { secret: typeof secret === 'string' ? secret : undefined }, headers: request?.headers }
 }
 
 /** `POST /:id/add-item` - body `{item: {product}, quantity?}`. Matches an existing item by `product` id (no `variant` - this app has none) and increments its quantity, or appends a new item. */
@@ -967,7 +968,7 @@ async function handleCartAddItem(engine: Engine, cartId: number, request: Reques
     return Response.json({ success: false, message: 'Item with product ID is required', cart: null }, { status: 400 })
   }
   const quantity = typeof data.quantity === 'number' ? data.quantity : 1
-  const req = bodySecretReq(data.secret)
+  const req = bodySecretReq(data.secret, request)
   const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
   if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
   const items = (cart.items as CartItemRow[] | undefined) ?? []
@@ -1014,7 +1015,7 @@ async function handleCartRemoveItem(engine: Engine, cartId: number, request: Req
   if (typeof itemId !== 'string' || !itemId) {
     return Response.json({ success: false, message: 'Item ID is required', cart: null }, { status: 400 })
   }
-  const req = bodySecretReq(data.secret)
+  const req = bodySecretReq(data.secret, request)
   const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
   if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
   const items = (cart.items as CartItemRow[] | undefined) ?? []
@@ -1042,7 +1043,7 @@ async function handleCartUpdateItem(engine: Engine, cartId: number, request: Req
     return Response.json({ success: false, message: 'Quantity must be a number or { $inc: number }', cart: null }, { status: 400 })
   }
   const removeOnZero = data.removeOnZero !== false
-  const req = bodySecretReq(data.secret)
+  const req = bodySecretReq(data.secret, request)
   const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
   if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
   const items = (cart.items as CartItemRow[] | undefined) ?? []
@@ -1066,7 +1067,7 @@ async function handleCartUpdateItem(engine: Engine, cartId: number, request: Req
 /** `POST /:id/clear` - body `{secret?}`. Empties `items`. */
 async function handleCartClear(engine: Engine, cartId: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const req = bodySecretReq(data.secret)
+  const req = bodySecretReq(data.secret, request)
   const cart = await engine.findByID({ collection: 'carts', id: cartId, depth: 0, user, req })
   if (!cart) return Response.json({ success: false, message: `Cart with ID ${cartId} not found`, cart: null }, { status: 404 })
   const updatedCart = await engine.update({ collection: 'carts', id: cartId, data: { items: [] }, user, req })
@@ -1107,7 +1108,7 @@ async function handleCartMerge(engine: Engine, targetCartId: number, request: Re
       mergedItems.push(rest)
     }
   }
-  const updatedCart = await engine.update({ collection: 'carts', id: targetCartId, data: { items: mergedItems }, user })
+  const updatedCart = await engine.update({ collection: 'carts', id: targetCartId, data: { items: mergedItems }, user, req: { headers: request.headers } })
   try {
     await engine.delete({ collection: 'carts', id: sourceCartId, overrideAccess: true })
   } catch {

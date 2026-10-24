@@ -87,7 +87,8 @@ async function searchPosts(query: string): Promise<Found> {
     limit: MAX_RESULTS,
     depth: 0,
   })) as unknown as { docs: Post[]; totalDocs: number }
-  const hits = (await excludeProtected('posts', docs))
+  const visible = await excludeProtected('posts', docs)
+  const hits = visible
     .filter((post) => post.slug)
     .map((post): Hit => ({
       key: `post-${post.id}`,
@@ -96,7 +97,7 @@ async function searchPosts(query: string): Promise<Found> {
       href: `/blog/${post.slug}`,
       excerpt: snippet(post.excerpt),
     }))
-  return { hits, total: totalDocs }
+  return { hits, total: Math.max(0, totalDocs - (docs.length - visible.length)) }
 }
 
 async function searchProducts(query: string): Promise<Found> {

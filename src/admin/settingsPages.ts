@@ -169,6 +169,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     sections: [
       { kind: 'global', slug: 'security-settings' },
       { kind: 'link', label: 'Two-step sign-in', href: '/security/two-factor', description: 'Set up an authenticator app and backup codes for your own account.', type: 'view' },
+      { kind: 'link', label: 'Signed-in devices', href: '/security/sessions', description: 'See where your account is signed in, sign out a device, or sign out an account you manage.', type: 'view' },
     ],
   },
   {

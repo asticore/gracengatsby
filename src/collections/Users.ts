@@ -3,6 +3,7 @@ import type { CollectionConfig, CollectionBeforeChangeHook } from '@/engine'
 import { isAdmin, isAdminOrSelf, adminOnlyFieldAccess } from '../access/ecommerceAccess'
 import { validateRoleChange, sanitizeOverrides } from '@/features/roles/permissions'
 import { slugify } from '@/utilities/formatSlug'
+import { revokeSessionsOnPasswordChange } from '@/features/security/passwordSessionHook'
 import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
 
 /**
@@ -76,6 +77,7 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   auth: true,
+  hooks: { afterChange: [revokeSessionsOnPasswordChange] },
   beforeChange: [validateUserRoleChange, sanitizePermissionOverrides, authorshipBeforeChange],
   fields: [
     ...authorshipFields,

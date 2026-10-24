@@ -163,6 +163,7 @@ import type { Engine } from './engine'
 import { createEngine } from './engine'
 import { clientKey, hit, limitFor } from '@/features/security/rateLimit'
 import { audit, auditContext } from '@/features/security/auditLog'
+import { sessionIdFromToken } from '@/features/security/userSessions'
 import { DEFAULT_SECURITY_SETTINGS, getSecuritySettings } from '@/features/security/settings'
 import { confirmStripeOrder, finalizePaidIntent, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
 import { CheckoutError } from '@/features/ecommerce/server/pricing'
@@ -436,6 +437,12 @@ async function handleFind(engine: Engine, collection: string, request: Request, 
   return Response.json(result, { status: 200 })
 }
 
+/** What a new session row records about the browser signing in. */
+function sessionClient(request: Request): { userAgent: string | null; ip: string | null } {
+  const { ip, userAgent } = auditContext(request)
+  return { userAgent: userAgent ?? null, ip: ip ?? null }
+}
+
 /**
  * `?secret=` threaded onto `req.query.secret` for every collection (cheap,
  * ignored by every access function except the ecommerce ones) so a guest
@@ -469,7 +476,10 @@ async function handleCreate(engine: Engine, collection: string, request: Request
 async function handleUpdateByID(engine: Engine, collection: string, id: number, request: Request, user: Parameters<Engine['find']>[0]['user']): Promise<Response> {
   const { data, file } = await readRequestBody(request)
   const query = parseSearchParams(new URL(request.url).searchParams)
-  const doc = await engine.update({ collection, id, data, draft: query.draft, user, file, req: secretReq(request) })
+  // `currentSessionId` lets the Users password hook keep the caller's own session: a
+  // string is their device session, null is a token issued before session management.
+  const req = collection === AUTH_COLLECTION_SLUG ? { ...secretReq(request), currentSessionId: sessionIdFromToken(extractTokenFromRequest(request)) } : secretReq(request)
+  const doc = await engine.update({ collection, id, data, draft: query.draft, user, file, req: req as never })
   return Response.json({ doc, message: 'Updated successfully.' }, { status: 200 })
 }
 
@@ -1354,7 +1364,7 @@ async function handleGlobalUpdate(engine: Engine, slug: string, request: Request
  */
 async function handleLogin(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const result = await engine.login({ collection, data: { email: stringField(data, 'email'), password: stringField(data, 'password') } })
+  const result = await engine.login({ collection, data: { email: stringField(data, 'email'), password: stringField(data, 'password') }, client: sessionClient(request) })
   // Confirmed two-step: password right, session not yet issued. No cookie, and
   // nothing about the account beyond the fact that a code is needed.
   if (result.twoFactorRequired) {
@@ -1389,7 +1399,7 @@ async function handleLoginSecondFactor(engine: Engine, collection: string, reque
 
   const { data } = await readRequestBody(request)
   try {
-    const result = await engine.loginSecondFactor({ collection, data: { pendingToken: stringField(data, 'pendingToken'), code: stringField(data, 'code') } })
+    const result = await engine.loginSecondFactor({ collection, data: { pendingToken: stringField(data, 'pendingToken'), code: stringField(data, 'code') }, client: sessionClient(request) })
     await audit({ action: 'two-factor.verified', actorId: result.user.id, actorEmail: result.user.email, collectionSlug: collection, ...context }, settings).catch((): void => undefined)
     const headers = new Headers()
     if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
@@ -1447,7 +1457,7 @@ async function handleForgotPassword(engine: Engine, collection: string, request:
 /** `POST /reset-password` - `{message: 'Password reset successfully.', user, token}` plus a `Set-Cookie` (`auth/endpoints/resetPassword.js`, `authentication:passwordResetSuccessfully`). An invalid/expired token throws `InvalidResetToken` (400, via `errorToResponse`). */
 async function handleResetPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const result = await engine.resetPassword({ collection, data: { password: stringField(data, 'password'), token: stringField(data, 'token') } })
+  const result = await engine.resetPassword({ collection, data: { password: stringField(data, 'password'), token: stringField(data, 'token') }, client: sessionClient(request) })
   const headers = new Headers()
   headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
   return Response.json({ message: 'Password reset successfully.', user: result.user, token: result.token }, { status: 200, headers })

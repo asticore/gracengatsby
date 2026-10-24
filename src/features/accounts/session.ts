@@ -56,6 +56,19 @@ export const setSessionCookie = async (token: string): Promise<void> => {
   })
 }
 
+/** The raw session cookie, for reading which device session this request is. Not proof of anything by itself: the engine has already authenticated the request before this is used. */
+export const currentSessionToken = async (): Promise<string | null> => {
+  const jar = await cookies()
+  return jar.get(SESSION_COOKIE)?.value ?? null
+}
+
+/** What a new session row records about the browser signing in: its User-Agent and (truncated later) address. */
+export const requestClient = async (): Promise<{ userAgent: string | null; ip: string | null }> => {
+  const incoming = await headers()
+  const ip = await requestAddress()
+  return { userAgent: incoming.get('user-agent'), ip: ip === 'unknown' ? null : ip }
+}
+
 export const clearSessionCookie = async (): Promise<void> => {
   const jar = await cookies()
   jar.delete(SESSION_COOKIE)

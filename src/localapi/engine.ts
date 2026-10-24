@@ -104,6 +104,8 @@ import { deleteMediaObject } from './storage'
 import { prepareUploadFile, storePreparedUpload, type PreparedUpload } from '@/features/media/uploadHook'
 import { generateUploadFields, type UploadFile } from './uploads'
 import { attachCustomRole } from '@/features/roles/customRoleCache'
+import { defaultUserSessionStore } from '@/features/security/userSessionStore'
+import type { SessionClient } from '@/features/security/userSessions'
 
 import { findUserAuthRowByID, findUserAuthRowsPaginated, updateUserAuthRow } from '@/cms/db'
 import { getDb } from '@/cms/db/connect'
@@ -135,10 +137,10 @@ export type Engine = {
   update: (args: CommonOpts & { collection: string; id: number; data: Record<string, unknown>; draft?: boolean; file?: UploadFile }) => Promise<Doc | null>
   delete: (args: CommonOpts & { collection: string; id: number }) => Promise<Doc>
   updateGlobal: (args: CommonOpts & { slug: string; data: Record<string, unknown> }) => Promise<Doc>
-  login: (args: { collection: string; data: { email: string; password: string } }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
+  login: (args: { collection: string; data: { email: string; password: string }; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
   /** Step two of a two-step sign-in: the pending token `login` returned plus an authenticator or backup code. */
-  loginSecondFactor: (args: { collection: string; data: { pendingToken: string; code: string } }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number }>
-  resetPassword: (args: { collection: string; data: { password: string; token: string }; overrideAccess?: boolean }) => Promise<{ user: AuthUserDoc; token: string }>
+  loginSecondFactor: (args: { collection: string; data: { pendingToken: string; code: string }; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number }>
+  resetPassword: (args: { collection: string; data: { password: string; token: string }; overrideAccess?: boolean; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token: string }>
   forgotPassword: (args: { collection: string; data: { email: string }; disableEmail?: boolean; expiration?: number }) => Promise<string | null>
   auth: (args: { headers: HeadersLike }) => Promise<{ user: AuthUserDoc | null }>
   logout: (args: { collection: string; headers: HeadersLike; allSessions?: boolean }) => Promise<{ message: string }>
@@ -177,6 +179,7 @@ function buildAuthDb(): AuthDbOps {
       return (result.docs[0] as unknown as AuthUserRow | undefined) ?? null
     },
     updateByID: (id, data) => updateUserAuthRow(id, data),
+    sessions: defaultUserSessionStore,
   }
 }
 
@@ -376,7 +379,7 @@ export function createEngine(): Engine {
     },
 
     login: async (args) => {
-      const result = await authLogin(authDb, { email: args.data.email.trim().toLowerCase(), password: args.data.password, secret }).catch((err) => {
+      const result = await authLogin(authDb, { email: args.data.email.trim().toLowerCase(), password: args.data.password, secret, client: args.client }).catch((err) => {
         // The reference engine's own login rejects on a wrong password / locked
         // account too - AuthenticationError/LockedAuth are this module's
         // own error classes, re-thrown unmodified so callers that only
@@ -386,8 +389,8 @@ export function createEngine(): Engine {
       })
       return result
     },
-    loginSecondFactor: (args) => authLoginSecondFactor(authDb, { pendingToken: args.data.pendingToken, code: args.data.code, secret }),
-    resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret }),
+    loginSecondFactor: (args) => authLoginSecondFactor(authDb, { pendingToken: args.data.pendingToken, code: args.data.code, secret, client: args.client }),
+    resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret, client: args.client }),
     forgotPassword: (args) => authForgotPassword(authDb, { email: args.data.email.trim().toLowerCase(), expirationMs: args.expiration ?? 60 * 60 * 1000 }),
     auth: async (args) => {
       const result = await verifyAuth(authDb, { headers: args.headers, secret })

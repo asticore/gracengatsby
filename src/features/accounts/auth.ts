@@ -1,5 +1,7 @@
 import type { Engine } from '@/engine'
 
+import type { SessionClient } from '@/features/security/userSessions'
+
 import {
   sendAlreadyRegisteredEmail,
   sendResetEmail,
@@ -189,6 +191,7 @@ export const signIn = async (
   engine: Engine,
   email: string,
   password: string,
+  client?: SessionClient,
 ): Promise<SignInResult> => {
   const address = email.trim().toLowerCase()
   if (!address || !password) return { ok: false, message: SIGN_IN_FAILED }
@@ -197,6 +200,7 @@ export const signIn = async (
     const result = await engine.login({
       collection: USERS_SLUG,
       data: { email: address, password },
+      client,
     })
 
     // Confirmed two-step: the password was right, but no session exists until
@@ -224,6 +228,7 @@ export const signInWithCode = async (
   engine: Engine,
   pendingToken: string,
   code: string,
+  client?: SessionClient,
 ): Promise<SignInResult> => {
   if (!pendingToken || !code.trim()) return { ok: false, message: CODE_FAILED }
 
@@ -231,6 +236,7 @@ export const signInWithCode = async (
     const result = await engine.loginSecondFactor({
       collection: USERS_SLUG,
       data: { pendingToken, code: code.trim() },
+      client,
     })
     if (!result.token) return { ok: false, message: CODE_FAILED }
 
@@ -263,6 +269,8 @@ export const verifyPassword = async (
     const result = await engine.login({
       collection: USERS_SLUG,
       data: { email: email.trim().toLowerCase(), password },
+      // Only testing the password: do not leave a device session behind.
+      client: { skipSession: true },
     })
     return Boolean(result.user)
   } catch {
@@ -377,6 +385,8 @@ export const completePasswordReset = async (
     await engine.resetPassword({
       collection: USERS_SLUG,
       data: { password, token },
+      // No cookie is set from this, so no device session should be listed for it.
+      client: { skipSession: true },
       // The holder of a valid, unexpired token has proven control of the
       // mailbox; there is no session yet to check access against.
       overrideAccess: true,

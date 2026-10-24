@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import {
@@ -26,12 +27,15 @@ import { guardAttempt, tooManyAttempts } from './rateLimit'
 import {
   accountContext,
   clearSessionCookie,
+  currentSessionToken,
+  requestClient,
   requestAddress,
   setSessionCookie,
   siteOrigin,
   type AccountContext,
 } from './session'
-import { NEUTRAL_EMAIL_NOTICE, failed, succeeded, type ActionState } from './types'
+import { sessionIdFromToken } from '@/features/security/userSessions'
+import { NEUTRAL_EMAIL_NOTICE, USERS_SLUG, failed, succeeded, type ActionState } from './types'
 
 /**
  * Everything the account screens submit to.
@@ -84,7 +88,7 @@ export async function signInAction(_state: ActionState, form: FormData): Promise
   const guard = await guardAttempt(context.engine, 'sign-in', await requestAddress())
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
-  const result = await signIn(context.engine, text(form, 'email'), text(form, 'password'))
+  const result = await signIn(context.engine, text(form, 'email'), text(form, 'password'), await requestClient())
   if (result.needsTwoFactor && result.pendingToken) {
     return { status: 'idle', message: '', pendingToken: result.pendingToken }
   }
@@ -106,7 +110,7 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
   const guard = await guardAttempt(context.engine, 'two-factor', await requestAddress())
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
-  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'))
+  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'), await requestClient())
   if (!result.ok || !result.token) {
     // The same pending token stays valid for its few minutes, so a typo does not mean starting over.
     return { status: 'error', message: result.message ?? 'That did not work.', pendingToken }
@@ -117,6 +121,15 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
 }
 
 export async function signOutAction(): Promise<void> {
+  // End the session on the server too, not just in this browser, so the token
+  // cannot be replayed and the device list stops showing it. Best effort: the
+  // cookie is cleared either way.
+  try {
+    const context = await accountContext()
+    await context.engine.logout({ collection: USERS_SLUG, headers: await headers() })
+  } catch {
+    // Signing out of this browser must never fail.
+  }
   await clearSessionCookie()
   redirect('/account/sign-in')
 }
@@ -320,6 +333,7 @@ export async function changeEmailAction(_state: ActionState, form: FormData): Pr
     context.user,
     text(form, 'email'),
     text(form, 'currentPassword'),
+    await requestClient(),
   )
   if (!result.ok) return failed(result.message ?? 'That did not work.')
 
@@ -342,6 +356,8 @@ export async function changePasswordAction(
     text(form, 'currentPassword'),
     text(form, 'password'),
     text(form, 'passwordConfirm'),
+    await requestClient(),
+    sessionIdFromToken(await currentSessionToken()),
   )
   if (!result.ok) return failed(result.message ?? 'That did not work.')
 

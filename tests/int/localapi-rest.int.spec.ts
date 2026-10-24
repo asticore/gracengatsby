@@ -838,7 +838,7 @@ describe('localapi/rest - auth endpoints', () => {
     expect(setCookie).toContain('engage-token=tok')
     expect(setCookie).toContain('HttpOnly=true')
     expect(setCookie).toContain('SameSite=Lax')
-    expect(engine.login).toHaveBeenCalledWith({ collection: 'users', data: { email: 'a@b.com', password: 'x' } })
+    expect(engine.login).toHaveBeenCalledWith({ collection: 'users', data: { email: 'a@b.com', password: 'x' }, client: { userAgent: null, ip: null } })
   })
 
   it('POST /users/login maps a thrown AuthenticationError to 401', async () => {

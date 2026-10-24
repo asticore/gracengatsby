@@ -17,6 +17,7 @@ import * as dataViewsSchema from '@/cms/db/schema/dataViews'
 import * as storedValueSchema from '@/cms/db/schema/shopStoredValue'
 import * as shippingSchema from '@/cms/db/schema/shopShipping'
 import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
+import * as userSessionsSchema from '@/cms/db/schema/userSessions'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
@@ -225,6 +226,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
+      // Signed-in device sessions: a plain drizzle table in its own schema file
+      for (const [exportName, exportValue] of Object.entries(userSessionsSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
       // Product subscriptions (wave 19) live in their own schema file
       for (const [exportName, exportValue] of Object.entries(productSubscriptionsSchema)) {
         if (exportName.endsWith('Generated')) continue
@@ -428,6 +434,13 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     )
     expect(await names('eg_security_settings')).toEqual(
       expect.arrayContaining(['login_protection_require_two_factor_for_admins', 'login_protection_require_two_factor_for_members']),
+    )
+  })
+
+  it('creates the signed-in device sessions table', async () => {
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_user_sessions`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(
+      expect.arrayContaining(['id', 'user_id', 'token_hash', 'device_label', 'ip', 'created_at', 'last_seen_at', 'expires_at', 'revoked_at']),
     )
   })
 

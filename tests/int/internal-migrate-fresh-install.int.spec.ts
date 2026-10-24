@@ -777,6 +777,31 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(cols.filter((c) => c === 'two_factor_backup_hashes')).toHaveLength(1)
   })
 
+  it('creates the signed-in device sessions table with its indexes', async () => {
+    expect(tables).toContain('eg_user_sessions')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_user_sessions`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(
+      expect.arrayContaining(['id', 'user_id', 'token_hash', 'device_label', 'ip', 'created_at', 'last_seen_at', 'expires_at', 'revoked_at']),
+    )
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_user_sessions`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(indexes).toEqual(expect.arrayContaining(['eg_user_sessions_user_id_idx', 'eg_user_sessions_expires_at_idx']))
+  })
+
+  it('user sessions migration is safe to run twice and leaves existing rows alone', async () => {
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_user_sessions` (id, user_id, token_hash, created_at, expires_at) VALUES ('keep-me', 1, 'h', '2026-01-01T00:00:00.000Z', '2099-01-01T00:00:00.000Z')",
+    ).run()
+    const mod = await import('@/migrations/20261114_100000_user_sessions')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const rows = (await proxy.env.D1.prepare("SELECT id FROM `eg_user_sessions` WHERE id = 'keep-me'").all()).results as { id: string }[]
+    expect(rows).toHaveLength(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_user_sessions` WHERE id = 'keep-me'").run()
+  })
+
   it('creates the social accounts child table for integrations', async () => {
     expect(tables).toContain('eg_integrations_social_accounts')
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)

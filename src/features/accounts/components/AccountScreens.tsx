@@ -13,6 +13,11 @@ import { ORDER_STATUS_LABELS, isOrderStatus } from '@/features/ecommerce/lib/ord
 import { ReorderButton } from './ReorderButton'
 import { AccountShell } from './AccountShell'
 import { TwoFactorPanel } from '@/features/security/components/TwoFactorPanel'
+import { SessionsPanel } from '@/features/security/components/SessionsPanel'
+import { viewOwnSessions, type SessionActor } from '@/features/security/userSessionService'
+import { defaultUserSessionStore } from '@/features/security/userSessionStore'
+import { sessionIdFromToken } from '@/features/security/userSessions'
+import { currentSessionToken } from '../session'
 import { assertTwoFactorSatisfied, backupCodesRemaining, isEnrolled } from '@/features/security/twoFactor'
 import { defaultTwoFactorStore } from '@/features/security/twoFactorStore'
 import { getSecuritySettings } from '@/features/security/settings'
@@ -341,6 +346,11 @@ export const ProfileScreen: React.FC = async () => {
   const email = typeof user.email === 'string' ? user.email : ''
   const secure = await defaultTwoFactorStore.findByID(Number(user.id)).catch((): null => null)
   const settings = await getSecuritySettings(engine as never).catch((): null => null)
+  const sessions = await viewOwnSessions(
+    { store: defaultUserSessionStore, record: async (): Promise<void> => undefined, limited: () => false },
+    user as unknown as SessionActor,
+    sessionIdFromToken(await currentSessionToken()),
+  ).catch((): [] => [])
   const securityNotice =
     settings && assertTwoFactorSatisfied(user as never, settings).mustEnrol
       ? 'This site asks customers to set up two-step sign-in. Please do it below.'
@@ -369,6 +379,11 @@ export const ProfileScreen: React.FC = async () => {
         <h3>Two-step sign-in</h3>
         {securityNotice && <p className="account-note account-note--error">{securityNotice}</p>}
         <TwoFactorPanel enrolled={isEnrolled(secure)} backupCodesLeft={secure ? backupCodesRemaining(secure) : 0} />
+      </section>
+
+      <section className="account-section" id="sessions">
+        <h2>Signed-in devices</h2>
+        <SessionsPanel sessions={sessions} />
       </section>
     </AccountShell>
   )

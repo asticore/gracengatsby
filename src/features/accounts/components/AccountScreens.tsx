@@ -21,6 +21,9 @@ import { currentSessionToken } from '../session'
 import { assertTwoFactorSatisfied, backupCodesRemaining, isEnrolled } from '@/features/security/twoFactor'
 import { defaultTwoFactorStore } from '@/features/security/twoFactorStore'
 import { getSecuritySettings } from '@/features/security/settings'
+import { ConnectedAccountsPanel } from '@/features/socialLogin/components/ConnectedAccountsPanel'
+import { viewConnections } from '@/features/socialLogin/connections'
+import { socialMessage } from '@/features/socialLogin/messages'
 import { AddressForm, AddressRowActions, EmailForm, NameForm, PasswordForm } from './AccountForms'
 
 /**
@@ -340,7 +343,7 @@ export const BookingsScreen: React.FC = async () => {
   )
 }
 
-export const ProfileScreen: React.FC = async () => {
+export const ProfileScreen: React.FC<{ socialError?: string }> = async ({ socialError }) => {
   const { engine, user } = await requireCustomer('/account/profile')
   const preferences = await readPreferences(engine, user)
   const email = typeof user.email === 'string' ? user.email : ''
@@ -351,6 +354,7 @@ export const ProfileScreen: React.FC = async () => {
     user as unknown as SessionActor,
     sessionIdFromToken(await currentSessionToken()),
   ).catch((): [] => [])
+  const connections = await viewConnections(engine, user as never).catch((): null => null)
   const securityNotice =
     settings && assertTwoFactorSatisfied(user as never, settings).mustEnrol
       ? 'This site asks customers to set up two-step sign-in. Please do it below.'
@@ -380,6 +384,14 @@ export const ProfileScreen: React.FC = async () => {
         {securityNotice && <p className="account-note account-note--error">{securityNotice}</p>}
         <TwoFactorPanel enrolled={isEnrolled(secure)} backupCodesLeft={secure ? backupCodesRemaining(secure) : 0} />
       </section>
+
+      {connections && (connections.linked.length > 0 || connections.available.length > 0) && (
+        <section className="account-section" id="connected">
+          <h2>Connected accounts</h2>
+          <p>Sign in faster with an account you already have.</p>
+          <ConnectedAccountsPanel view={connections} area="account" returnTo="/account/profile" notice={socialError ? socialMessage(socialError) : ''} />
+        </section>
+      )}
 
       <section className="account-section" id="sessions">
         <h2>Signed-in devices</h2>

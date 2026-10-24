@@ -12,8 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SignInRoute({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; reset?: string }>
+  searchParams: Promise<{ next?: string; reset?: string; social_error?: string; social?: string }>
 }) {
-  const { next, reset } = await searchParams
-  return <SignInScreen next={next} justReset={reset === '1'} />
+  const { next, reset, social_error: socialError, social } = await searchParams
+  return <SignInScreen next={next} justReset={reset === '1'} socialError={socialError} social={social} />
 }

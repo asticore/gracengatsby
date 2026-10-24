@@ -83,6 +83,7 @@ import {
   forgotPassword as authForgotPassword,
   login as authLogin,
   loginWithSecondFactor as authLoginSecondFactor,
+  loginAsUser as authLoginAsUser,
   logout as authLogout,
   refreshToken as authRefreshToken,
   resetPassword as authResetPassword,
@@ -140,6 +141,8 @@ export type Engine = {
   login: (args: { collection: string; data: { email: string; password: string }; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
   /** Step two of a two-step sign-in: the pending token `login` returned plus an authenticator or backup code. */
   loginSecondFactor: (args: { collection: string; data: { pendingToken: string; code: string }; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number }>
+  /** Session (or a pending second-factor token) for an already-proven identity - social login. Locked accounts are refused; two-step accounts still need their code. */
+  loginAsUser: (args: { collection: string; id: number; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
   resetPassword: (args: { collection: string; data: { password: string; token: string }; overrideAccess?: boolean; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token: string }>
   forgotPassword: (args: { collection: string; data: { email: string }; disableEmail?: boolean; expiration?: number }) => Promise<string | null>
   auth: (args: { headers: HeadersLike }) => Promise<{ user: AuthUserDoc | null }>
@@ -389,6 +392,7 @@ export function createEngine(): Engine {
       })
       return result
     },
+    loginAsUser: (args) => authLoginAsUser(authDb, { id: args.id, secret, client: args.client }),
     loginSecondFactor: (args) => authLoginSecondFactor(authDb, { pendingToken: args.data.pendingToken, code: args.data.code, secret, client: args.client }),
     resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret, client: args.client }),
     forgotPassword: (args) => authForgotPassword(authDb, { email: args.data.email.trim().toLowerCase(), expirationMs: args.expiration ?? 60 * 60 * 1000 }),

@@ -10,6 +10,8 @@ const { getDb, getPasswordHash, getAdminContext, purgeCache, hashPassword, asser
 }))
 vi.mock('@/cms/db/connect', () => ({ getDb }))
 vi.mock('@/cms/db/contentPasswords', () => ({ getPasswordHash, setPasswordHash: vi.fn(), clearPassword: vi.fn() }))
+// No shared group or accounts rule exists for these documents (src/cms/db/passwordGroups.ts has its own specs).
+vi.mock('@/cms/db/passwordGroups', () => ({ getAccessRule: vi.fn().mockResolvedValue(null), getGroup: vi.fn(), consumeGroupUse: vi.fn() }))
 vi.mock('@/admin/auth', () => ({ getAdminContext }))
 vi.mock('@/features/speed/purge', () => ({ purgeCache }))
 vi.mock('@/features/dataViews/cache', () => ({ noteDocumentChanged: vi.fn() }))

@@ -36,7 +36,7 @@ export const defaultDeps: ResolveDeps = {
     if (!PASSWORD_COLLECTIONS.has(collection)) return new Set()
     // Not caught here: if the password table cannot be read, the view fails rather than listing protected documents.
     const db = await getDb()
-    const rows = (await db.all(sql`SELECT doc_id FROM \`eg_content_passwords\` WHERE collection = ${collection}`)) as { doc_id: number }[]
+    const rows = (await db.all(sql`SELECT doc_id FROM \`eg_content_passwords\` WHERE collection = ${collection} UNION SELECT doc_id FROM \`eg_content_access\` WHERE collection = ${collection}`)) as { doc_id: number }[]
     return new Set(rows.map((row) => Number(row.doc_id)))
   },
 }

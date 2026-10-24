@@ -81,6 +81,61 @@ export function hit(key: string, limit: number, now = Date.now()): RateLimitDeci
   }
 }
 
+type SharedD1 = {
+  prepare: (query: string) => { bind: (...values: unknown[]) => { first: () => Promise<unknown> } }
+}
+
+async function sharedD1(): Promise<SharedD1 | null> {
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
+    const context = await getCloudflareContext({ async: true })
+    return (context?.env?.D1 as unknown as SharedD1) ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Like `hit()`, but the counter lives in D1 (`eg_rate_limit_hits`), so the limit holds across isolates -
+ * the shared-state option the header of this file asks for, using the database the site already has.
+ * Use it where the count must not reset when an isolate is recycled (password guessing). One atomic
+ * upsert per call: the window rolls over inside the statement, so two isolates cannot both start a window.
+ * If the table or binding is unavailable it falls back to the per-isolate `hit()`, so a failure here can
+ * never open a route up further than the in-memory limit does.
+ */
+export async function hitShared(
+  key: string,
+  limit: number,
+  options: { now?: number; db?: SharedD1 | null } = {},
+): Promise<RateLimitDecision> {
+  const now = options.now ?? Date.now()
+  try {
+    const db = options.db === undefined ? await sharedD1() : options.db
+    if (!db) return hit(key, limit, now)
+    const resetAt = now + WINDOW_MS
+    const row = (await db
+      .prepare(
+        `INSERT INTO \`eg_rate_limit_hits\` (\`key\`, \`count\`, \`reset_at\`) VALUES (?, 1, ?)
+         ON CONFLICT(\`key\`) DO UPDATE SET
+           \`count\` = CASE WHEN \`reset_at\` <= ? THEN 1 ELSE \`count\` + 1 END,
+           \`reset_at\` = CASE WHEN \`reset_at\` <= ? THEN ? ELSE \`reset_at\` END
+         RETURNING \`count\`, \`reset_at\``,
+      )
+      .bind(key, resetAt, now, now, resetAt)
+      .first()) as { count: number | string; reset_at: number | string } | null
+    if (!row) return hit(key, limit, now)
+    const count = Number(row.count)
+    return {
+      limited: count > limit,
+      count,
+      limit,
+      retryAfterSeconds: Math.max(1, Math.ceil((Number(row.reset_at) - now) / 1000)),
+    }
+  } catch {
+    return hit(key, limit, now)
+  }
+}
+
 /** Empties the counters. Exists for tests; nothing in the request path calls it. */
 export function resetRateLimiter(): void {
   buckets.clear()

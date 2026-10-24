@@ -46,6 +46,7 @@ import { SessionsView } from '@/admin/views/SessionsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
+import { PasswordGroupsView } from '@/admin/views/PasswordGroupsView'
 import { SecurityAuditView } from '@/admin/views/SecurityAuditView'
 import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
@@ -249,6 +250,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: ImpersonationView,
     path: '/security/impersonation',
     meta: { title: 'Sign in as customer', description: 'Admins: open a customer account for a short time, with a reason. The history of every session.' },
+  },
+  {
+    key: 'passwordGroups',
+    Component: PasswordGroupsView,
+    path: '/security/password-groups',
+    meta: { title: 'Password groups', description: 'Shared passwords that protect many pages, posts, products and events. Create, rotate, delete and see what each one protects.' },
   },
   {
     key: 'securityAudit',

@@ -26,6 +26,7 @@ import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscription
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
 import * as siteTemplatesSchema from '@/cms/db/schema/siteTemplates'
+import * as passwordGroupsSchema from '@/cms/db/schema/passwordGroups'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -711,5 +712,41 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_impersonations` WHERE id = 'keep-me-imp'").first()) as { n: number }
     expect(kept.n).toBe(1)
     await proxy.env.D1.prepare("DELETE FROM `eg_impersonations` WHERE id = 'keep-me-imp'").run()
+  })
+
+  it('creates the password group tables, matching their drizzle mirrors, and the security toggle on by default', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    expect(new Map(info.map((c) => [c.name, c.dflt_value])).get('password_groups_enabled')).toBe('1')
+    for (const table of [passwordGroupsSchema.passwordGroups, passwordGroupsSchema.contentAccess, passwordGroupsSchema.rateLimitHits]) {
+      const name = getTableName(table)
+      const live = ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${name}\`)`).all()).results as { name: string }[]).map((c) => c.name).sort()
+      const declared = Object.values(getTableColumns(table)).map((c) => c.name).sort()
+      expect(live, name).toEqual(declared)
+    }
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_password_groups`)').all()).results as { name: string; unique: number }[])
+    expect(indexes.find((i) => i.name === 'eg_password_groups_name_idx')?.unique).toBe(1)
+    const accessIndexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_content_access`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(accessIndexes).toContain('eg_content_access_group_idx')
+  })
+
+  it('password groups migration is registered last and is safe to run twice, keeping existing rows', async () => {
+    const { migrations } = await import('@/migrations/index')
+    expect(migrations[migrations.length - 1].name).toBe('20261123_100000_password_groups')
+    const mod = await import('@/migrations/20261123_100000_password_groups')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_password_groups` (name, hash, use_count, created_at, updated_at) VALUES ('keep-me-group', 'h', 0, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'password_groups_enabled')).toBe(1)
+    expect(await count('eg_content_access', 'group_id')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_password_groups` WHERE name = 'keep-me-group'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_password_groups` WHERE name = 'keep-me-group'").run()
   })
 })

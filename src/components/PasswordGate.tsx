@@ -1,47 +1,77 @@
 import React from 'react'
 
+import { getGateOptions } from '@/features/visibility/gate'
+
+import './password-gate.css'
+
 /**
- * Shown instead of the content of a password-protected page or post.
- * A plain HTML form posting to /api/content-unlock (no client JS needed):
- * the route sets the unlock cookie and redirects back to `currentPath`.
+ * Shown instead of the content of a protected page, post, product or event.
+ * Plain HTML (no client JS): the password form posts to /api/content-unlock, which sets the unlock
+ * cookie and redirects back to `currentPath`; the sign-in link goes to /account/sign-in?redirect=.
+ * What is offered depends on how the document is protected: its own password or a shared group
+ * password (password form), "visible to signed-in accounts" (sign-in link, plus the password form when a group is
+ * attached). When the lookup fails the password form is shown alone; the content stays locked either way.
+ * Optional `offer` lets a caller that already knows skip the lookup.
  */
-export const PasswordGate: React.FC<{
+export const PasswordGate = async ({
+  collection,
+  id,
+  currentPath,
+  wrongPassword = false,
+  offer,
+}: {
   collection: string
   id: number
   currentPath: string
   wrongPassword?: boolean
-}> = ({ collection, id, currentPath, wrongPassword = false }) => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', padding: '2rem' }}>
-    <div style={{ maxWidth: '400px', width: '100%', padding: '2rem', border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: '#fff' }}>
-      <h1 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: 600, color: '#212121' }}>Password protected</h1>
-      <p style={{ margin: '0 0 1.5rem 0', color: '#666', fontSize: '0.95rem' }}>
-        This content is password protected. Enter the password to continue.
-      </p>
-      {wrongPassword && (
-        <div role="alert" style={{ padding: '0.75rem', marginBottom: '1rem', backgroundColor: '#ffebee', color: '#c62828', borderRadius: '4px', fontSize: '0.9rem' }}>
-          Wrong password. Please try again.
-        </div>
-      )}
-      <form action="/api/content-unlock" method="post">
-        <input name="collection" type="hidden" value={collection} />
-        <input name="id" type="hidden" value={String(id)} />
-        <input name="redirect" type="hidden" value={currentPath} />
-        <input
-          aria-label="Password"
-          autoComplete="current-password"
-          name="password"
-          placeholder="Enter password"
-          required
-          style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '1rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
-          type="password"
-        />
-        <button
-          style={{ width: '100%', padding: '0.75rem', backgroundColor: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '1rem', fontWeight: 500, cursor: 'pointer' }}
-          type="submit"
-        >
-          Unlock
-        </button>
-      </form>
+  offer?: { signIn: boolean; password: boolean }
+}): Promise<React.ReactElement> => {
+  const options = offer ?? (await getGateOptions({ collection, id }))
+  const showPassword = options.password || !options.signIn
+  const signInHref = `/account/sign-in?redirect=${encodeURIComponent(currentPath)}`
+
+  return (
+    <div className="pw-gate__wrap">
+      <div className="pw-gate__card">
+        <h1 className="pw-gate__title">{options.signIn ? 'Sign in to view this' : 'Password protected'}</h1>
+        <p className="pw-gate__text">
+          {options.signIn && showPassword
+            ? 'Sign in with an account that has access, or enter the password.'
+            : options.signIn
+              ? 'This content is available to signed-in accounts with access. Sign in to continue.'
+              : 'This content is password protected. Enter the password to continue.'}
+        </p>
+        {options.signIn && (
+          <a className="pw-gate__signin" href={signInHref}>
+            Sign in
+          </a>
+        )}
+        {options.signIn && showPassword && <p className="pw-gate__divider">or</p>}
+        {showPassword && wrongPassword && (
+          <div className="pw-gate__alert" role="alert">
+            Wrong password. Please try again.
+          </div>
+        )}
+        {showPassword && (
+          <form action="/api/content-unlock" method="post">
+            <input name="collection" type="hidden" value={collection} />
+            <input name="id" type="hidden" value={String(id)} />
+            <input name="redirect" type="hidden" value={currentPath} />
+            <input
+              aria-label="Password"
+              autoComplete="current-password"
+              className="pw-gate__input"
+              name="password"
+              placeholder="Enter password"
+              required
+              type="password"
+            />
+            <button className="pw-gate__button" type="submit">
+              Unlock
+            </button>
+          </form>
+        )}
+      </div>
     </div>
-  </div>
-)
+  )
+}

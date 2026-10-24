@@ -1,0 +1,8 @@
+.doc-visibility__access { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.doc-visibility__access-label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: #555; }
+.doc-visibility__access-input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box; }
+.doc-visibility__access-hint { font-size: 0.8rem; color: #666; margin: 0; }
+.doc-visibility__access-button { align-self: flex-start; padding: 6px 12px; background: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; }
+.doc-visibility__access-button:disabled { opacity: 0.6; cursor: not-allowed; }
+.doc-visibility__access-ok { padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 0.9rem; }
+.doc-visibility__access-error { padding: 8px 12px; background: #ffebee; color: #c62828; border-radius: 4px; font-size: 0.9rem; }

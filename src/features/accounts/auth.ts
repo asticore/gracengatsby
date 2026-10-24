@@ -51,6 +51,9 @@ export type SignInResult = {
   message?: string
   /** True when the password was right but the address is not yet verified. */
   needsVerification?: boolean
+  /** True when the password was right and a two-step code is the next step. */
+  needsTwoFactor?: boolean
+  pendingToken?: string
 }
 
 // --- Email verification -----------------------------------------------------
@@ -167,6 +170,21 @@ export const resendVerification = async (
   await issueVerification(engine, user.id, address, verifyUrlFor)
 }
 
+/** Customers who have not confirmed their address are held back, when the setting asks for it. */
+const verificationBlock = async (engine: Engine, userId: number | string): Promise<SignInResult | null> => {
+  if (!(await verificationRequired(engine))) return null
+  const user = (await engine.findByID({
+    collection: USERS_SLUG,
+    id: Number(userId),
+    depth: 0,
+    overrideAccess: true,
+  })) as { roles?: unknown; emailVerifiedAt?: string | null }
+  if (isCustomerOnly(user.roles) && !user.emailVerifiedAt) {
+    return { ok: false, message: VERIFY_FIRST_MESSAGE, needsVerification: true }
+  }
+  return null
+}
+
 export const signIn = async (
   engine: Engine,
   email: string,
@@ -180,25 +198,47 @@ export const signIn = async (
       collection: USERS_SLUG,
       data: { email: address, password },
     })
+
+    // Confirmed two-step: the password was right, but no session exists until
+    // a code is given. Only people who finished setup ever get here.
+    if (result.twoFactorRequired && result.pendingToken) {
+      return { ok: false, needsTwoFactor: true, pendingToken: result.pendingToken }
+    }
     if (!result.token) return { ok: false, message: SIGN_IN_FAILED }
 
     // Checked only after the password was right, so this answer is shown to
     // the account holder and tells a stranger nothing.
-    if (await verificationRequired(engine)) {
-      const user = (await engine.findByID({
-        collection: USERS_SLUG,
-        id: Number((result.user as { id: number | string }).id),
-        depth: 0,
-        overrideAccess: true,
-      })) as { roles?: unknown; emailVerifiedAt?: string | null }
-      if (isCustomerOnly(user.roles) && !user.emailVerifiedAt) {
-        return { ok: false, message: VERIFY_FIRST_MESSAGE, needsVerification: true }
-      }
-    }
+    const blocked = await verificationBlock(engine, (result.user as { id: number | string }).id)
+    if (blocked) return blocked
     return { ok: true, token: result.token }
   } catch {
     // Includes a locked account. Saying so would confirm the address exists.
     return { ok: false, message: SIGN_IN_FAILED }
+  }
+}
+
+const CODE_FAILED = 'That code was not right, or the sign-in took too long. Start again if needed.'
+
+/** Second step of a two-step customer sign-in: the pending token and a code. */
+export const signInWithCode = async (
+  engine: Engine,
+  pendingToken: string,
+  code: string,
+): Promise<SignInResult> => {
+  if (!pendingToken || !code.trim()) return { ok: false, message: CODE_FAILED }
+
+  try {
+    const result = await engine.loginSecondFactor({
+      collection: USERS_SLUG,
+      data: { pendingToken, code: code.trim() },
+    })
+    if (!result.token) return { ok: false, message: CODE_FAILED }
+
+    const blocked = await verificationBlock(engine, (result.user as { id: number | string }).id)
+    if (blocked) return blocked
+    return { ok: true, token: result.token }
+  } catch {
+    return { ok: false, message: CODE_FAILED }
   }
 }
 

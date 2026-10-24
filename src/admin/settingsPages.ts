@@ -168,6 +168,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     description: 'Password policies, 2FA and security options.',
     sections: [
       { kind: 'global', slug: 'security-settings' },
+      { kind: 'link', label: 'Two-step sign-in', href: '/security/two-factor', description: 'Set up an authenticator app and backup codes for your own account.', type: 'view' },
     ],
   },
   {

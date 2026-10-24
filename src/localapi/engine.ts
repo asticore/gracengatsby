@@ -82,6 +82,7 @@ import {
   AuthenticationError,
   forgotPassword as authForgotPassword,
   login as authLogin,
+  loginWithSecondFactor as authLoginSecondFactor,
   logout as authLogout,
   refreshToken as authRefreshToken,
   resetPassword as authResetPassword,
@@ -134,7 +135,9 @@ export type Engine = {
   update: (args: CommonOpts & { collection: string; id: number; data: Record<string, unknown>; draft?: boolean; file?: UploadFile }) => Promise<Doc | null>
   delete: (args: CommonOpts & { collection: string; id: number }) => Promise<Doc>
   updateGlobal: (args: CommonOpts & { slug: string; data: Record<string, unknown> }) => Promise<Doc>
-  login: (args: { collection: string; data: { email: string; password: string } }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number }>
+  login: (args: { collection: string; data: { email: string; password: string } }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
+  /** Step two of a two-step sign-in: the pending token `login` returned plus an authenticator or backup code. */
+  loginSecondFactor: (args: { collection: string; data: { pendingToken: string; code: string } }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number }>
   resetPassword: (args: { collection: string; data: { password: string; token: string }; overrideAccess?: boolean }) => Promise<{ user: AuthUserDoc; token: string }>
   forgotPassword: (args: { collection: string; data: { email: string }; disableEmail?: boolean; expiration?: number }) => Promise<string | null>
   auth: (args: { headers: HeadersLike }) => Promise<{ user: AuthUserDoc | null }>
@@ -383,6 +386,7 @@ export function createEngine(): Engine {
       })
       return result
     },
+    loginSecondFactor: (args) => authLoginSecondFactor(authDb, { pendingToken: args.data.pendingToken, code: args.data.code, secret }),
     resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret }),
     forgotPassword: (args) => authForgotPassword(authDb, { email: args.data.email.trim().toLowerCase(), expirationMs: args.expiration ?? 60 * 60 * 1000 }),
     auth: async (args) => {

@@ -42,6 +42,8 @@ export const VERIFY_FIRST_MESSAGE = 'Verify your email first'
 export type ActionState = {
   status: 'idle' | 'error' | 'success'
   message: string
+  /** Set when a password was right and a two-step code is the next step. */
+  pendingToken?: string
 }
 
 export const IDLE: ActionState = { status: 'idle', message: '' }

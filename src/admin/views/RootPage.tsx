@@ -10,6 +10,10 @@ import { EditView } from './EditView'
 import { GlobalEditView } from './GlobalEditView'
 import { LoginView } from './LoginView'
 import { VersionsView } from './VersionsView'
+import { assertTwoFactorSatisfied } from '@/features/security/twoFactor'
+import { getSecuritySettings } from '@/features/security/settings'
+
+const TWO_FACTOR_VIEW_PATH = '/security/two-factor'
 
 /**
  * The from-scratch replacement for the reference engine's own `RootPage`
@@ -133,6 +137,16 @@ export async function RootPage({ params, searchParams }: Args) {
   if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
 
   const pathname = `/${segments.join('/')}`
+
+  // Only when a Security setting asks for two-step AND this admin has not set
+  // it up: send them to the setup screen. Never a lockout - that screen (and
+  // signing out) stay reachable - and a no-op while the setting is off.
+  if (pathname !== TWO_FACTOR_VIEW_PATH && !(context.user as { twoFactorEnabled?: boolean } | null)?.twoFactorEnabled) {
+    const settings = await getSecuritySettings(context.engine as never).catch((): null => null)
+    const status = settings ? assertTwoFactorSatisfied(context.user as never, settings) : null
+    if (status?.mustEnrol && status.enrolPath) redirect(status.enrolPath)
+  }
+
   const customView = findCustomView(pathname)
   if (customView) {
     if (customView.key === 'visualEditor') {

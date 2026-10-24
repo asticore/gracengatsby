@@ -478,6 +478,8 @@
 
 import crypto from 'crypto'
 
+import { requiresSecondFactor, verifySecondFactor } from '@/features/security/twoFactor'
+
 /* -------------------------------------------------------------------------- */
 /* Config constants                                                            */
 /* -------------------------------------------------------------------------- */
@@ -515,6 +517,10 @@ const PBKDF2_ITERATIONS = 25_000
 const PBKDF2_KEY_LENGTH = 512
 const PBKDF2_DIGEST = 'sha256'
 
+/** How long a password-correct sign-in may wait for its code. */
+export const PENDING_TWO_FACTOR_SECONDS = 300
+const PENDING_PURPOSE = 'two-factor-pending'
+
 /* -------------------------------------------------------------------------- */
 /* Errors                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -533,6 +539,14 @@ export class AuthenticationError extends Error {
   constructor(message = 'The email or password provided is incorrect.') {
     super(message)
     this.name = 'AuthenticationError'
+  }
+}
+
+/** A wrong or reused second-step code. Maps to 401 like any failed sign-in. */
+export class TwoFactorCodeError extends AuthenticationError {
+  constructor(message = 'That code was not right, or the sign-in took too long. Start again if needed.') {
+    super(message)
+    this.name = 'TwoFactorCodeError'
   }
 }
 
@@ -618,9 +632,11 @@ export type AuthUserRow = {
   resetPasswordToken?: string | null
   resetPasswordExpiration?: string | null
   sessions?: AuthSession[] | null
+  twoFactorEnabled?: boolean | null
   twoFactorSecret?: string | null
   twoFactorConfirmedAt?: string | null
   twoFactorLastUsedStep?: number | null
+  twoFactorBackupHashes?: string | null
   updatedAt: string
   createdAt: string
 }
@@ -635,7 +651,7 @@ export type AuthUserRow = {
  */
 export type AuthUserDoc = Omit<
   AuthUserRow,
-  'salt' | 'hash' | 'loginAttempts' | 'lockUntil' | 'resetPasswordToken' | 'resetPasswordExpiration' | 'sessions' | 'twoFactorSecret' | 'twoFactorConfirmedAt' | 'twoFactorLastUsedStep'
+  'salt' | 'hash' | 'loginAttempts' | 'lockUntil' | 'resetPasswordToken' | 'resetPasswordExpiration' | 'sessions' | 'twoFactorSecret' | 'twoFactorConfirmedAt' | 'twoFactorLastUsedStep' | 'twoFactorBackupHashes'
 >
 
 /**
@@ -680,7 +696,13 @@ export type AuthDbOps = {
 export type HeadersLike = { get: (name: string) => string | null | undefined }
 
 export type LoginArgs = { email: string; password: string; secret: string }
-export type LoginResult = { user: AuthUserDoc; token: string; exp: number }
+/**
+ * A completed sign-in has `token` and `exp`. An account with confirmed
+ * two-step instead gets `twoFactorRequired` and a short-lived `pendingToken`
+ * (no session exists yet); `loginWithSecondFactor` turns that plus a code into
+ * the session.
+ */
+export type LoginResult = { user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }
 
 export type ResetPasswordArgs = { token: string; password: string; secret: string }
 export type ResetPasswordResult = { user: AuthUserDoc; token: string }
@@ -893,6 +915,7 @@ export function toAuthUserDoc(row: AuthUserRow): AuthUserDoc {
     twoFactorSecret: _twoFactorSecret,
     twoFactorConfirmedAt: _twoFactorConfirmedAt,
     twoFactorLastUsedStep: _twoFactorLastUsedStep,
+    twoFactorBackupHashes: _twoFactorBackupHashes,
     ...doc
   } = row
   return doc
@@ -924,6 +947,18 @@ export async function login(db: AuthDbOps, args: LoginArgs): Promise<LoginResult
     throw new AuthenticationError()
   }
 
+  // Confirmed two-step: the password alone does not earn a session. Nothing is
+  // written yet (no session, no attempt reset); the code step finishes it.
+  if (requiresSecondFactor(row)) {
+    const { token: pendingToken } = signJWT({ purpose: PENDING_PURPOSE, id: row.id, email: normalizedEmail }, args.secret, PENDING_TWO_FACTOR_SECONDS)
+    return { user: toAuthUserDoc(row), twoFactorRequired: true, pendingToken }
+  }
+
+  return finishLogin(db, row, now, args.secret, normalizedEmail)
+}
+
+/** Mints the session, clears the failed-attempt counters and signs the JWT. Shared by the one-step and two-step paths. */
+async function finishLogin(db: AuthDbOps, row: AuthUserRow, now: number, secret: string, email: string = row.email): Promise<LoginResult> {
   const { sid, row: rowAfterSession } = await mintSession(db, row, now)
 
   let finalRow = rowAfterSession
@@ -932,9 +967,38 @@ export async function login(db: AuthDbOps, args: LoginArgs): Promise<LoginResult
     if (reset) finalRow = { ...finalRow, ...reset }
   }
 
-  const { token, exp } = signJWT({ id: row.id, collection: 'users', email: normalizedEmail, sid }, args.secret, TOKEN_EXPIRATION_SECONDS)
+  const { token, exp } = signJWT({ id: row.id, collection: 'users', email, sid }, secret, TOKEN_EXPIRATION_SECONDS)
 
   return { user: toAuthUserDoc(finalRow), token, exp }
+}
+
+export type LoginSecondFactorArgs = { pendingToken: string; code: string; secret: string }
+
+/**
+ * Step two of a two-step sign-in. A wrong code counts toward the same
+ * lockout a wrong password does (the durable brute-force control; the
+ * per-address limiter in front of the endpoint is the cheap one). Success
+ * mints the session exactly as `login` would have.
+ */
+export async function loginWithSecondFactor(db: AuthDbOps, args: LoginSecondFactorArgs): Promise<LoginResult> {
+  const now = Date.now()
+  const claims = typeof args.pendingToken === 'string' ? verifyJWT(args.pendingToken, args.secret) : null
+  if (!claims || claims.purpose !== PENDING_PURPOSE || typeof claims.id !== 'number') throw new TwoFactorCodeError()
+
+  const row = await db.findByID(claims.id)
+  checkLoginPermission(row, now)
+
+  const check = await verifySecondFactor(db, row, args.code, { now })
+  if (!check.ok) {
+    const updated = await incrementAndCheckLock(db, row, now)
+    if (isLocked(updated.lockUntil, now)) throw new LockedAuth()
+    throw new TwoFactorCodeError()
+  }
+
+  // Re-read: the check just wrote lastUsedStep / the backup list, and
+  // mintSession writes the whole row back.
+  const fresh = (await db.findByID(row.id)) ?? row
+  return finishLogin(db, fresh, now, args.secret)
 }
 
 /* -------------------------------------------------------------------------- */

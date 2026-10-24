@@ -12,6 +12,10 @@ import { readPreferences } from '../preferences'
 import { ORDER_STATUS_LABELS, isOrderStatus } from '@/features/ecommerce/lib/orderStatus'
 import { ReorderButton } from './ReorderButton'
 import { AccountShell } from './AccountShell'
+import { TwoFactorPanel } from '@/features/security/components/TwoFactorPanel'
+import { assertTwoFactorSatisfied, backupCodesRemaining, isEnrolled } from '@/features/security/twoFactor'
+import { defaultTwoFactorStore } from '@/features/security/twoFactorStore'
+import { getSecuritySettings } from '@/features/security/settings'
 import { AddressForm, AddressRowActions, EmailForm, NameForm, PasswordForm } from './AccountForms'
 
 /**
@@ -335,6 +339,12 @@ export const ProfileScreen: React.FC = async () => {
   const { engine, user } = await requireCustomer('/account/profile')
   const preferences = await readPreferences(engine, user)
   const email = typeof user.email === 'string' ? user.email : ''
+  const secure = await defaultTwoFactorStore.findByID(Number(user.id)).catch((): null => null)
+  const settings = await getSecuritySettings(engine as never).catch((): null => null)
+  const securityNotice =
+    settings && assertTwoFactorSatisfied(user as never, settings).mustEnrol
+      ? 'This site asks customers to set up two-step sign-in. Please do it below.'
+      : ''
 
   return (
     <AccountShell title="Your profile" current="/account/profile">
@@ -352,6 +362,13 @@ export const ProfileScreen: React.FC = async () => {
       <section className="account-section">
         <h2>Password</h2>
         <PasswordForm />
+      </section>
+
+      <section className="account-section" id="security">
+        <h2>Security</h2>
+        <h3>Two-step sign-in</h3>
+        {securityNotice && <p className="account-note account-note--error">{securityNotice}</p>}
+        <TwoFactorPanel enrolled={isEnrolled(secure)} backupCodesLeft={secure ? backupCodesRemaining(secure) : 0} />
       </section>
     </AccountShell>
   )

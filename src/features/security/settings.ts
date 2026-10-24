@@ -27,6 +27,7 @@ export type SecuritySettings = {
     maxLoginAttempts: number
     lockoutMinutes: number
     requireTwoFactorForAdmins: boolean
+    requireTwoFactorForMembers: boolean
     sessionTimeoutMinutes: number
   }
   headers: {
@@ -61,6 +62,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
     maxLoginAttempts: 5,
     lockoutMinutes: 15,
     requireTwoFactorForAdmins: false,
+    requireTwoFactorForMembers: false,
     sessionTimeoutMinutes: 720,
   },
   headers: {
@@ -122,6 +124,10 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
       requireTwoFactorForAdmins: asBool(
         row.login_protection_require_two_factor_for_admins,
         base.loginProtection.requireTwoFactorForAdmins,
+      ),
+      requireTwoFactorForMembers: asBool(
+        row.login_protection_require_two_factor_for_members,
+        base.loginProtection.requireTwoFactorForMembers,
       ),
       sessionTimeoutMinutes: asNum(
         row.login_protection_session_timeout_minutes,
@@ -250,6 +256,10 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
       requireTwoFactorForAdmins: asBool(
         login.requireTwoFactorForAdmins,
         base.loginProtection.requireTwoFactorForAdmins,
+      ),
+      requireTwoFactorForMembers: asBool(
+        login.requireTwoFactorForMembers,
+        base.loginProtection.requireTwoFactorForMembers,
       ),
       sessionTimeoutMinutes: asNum(login.sessionTimeoutMinutes, base.loginProtection.sessionTimeoutMinutes),
     },

@@ -420,6 +420,17 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(await names('eg_site_settings')).toContain('account_settings_require_email_verification')
   })
 
+  it('adds the two-factor backup code column and the customer enforcement setting', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_users')).toEqual(
+      expect.arrayContaining(['two_factor_enabled', 'two_factor_secret', 'two_factor_confirmed_at', 'two_factor_last_used_step', 'two_factor_backup_hashes']),
+    )
+    expect(await names('eg_security_settings')).toEqual(
+      expect.arrayContaining(['login_protection_require_two_factor_for_admins', 'login_protection_require_two_factor_for_members']),
+    )
+  })
+
   it('adds the per-page background audio columns to pages and page versions', async () => {
     const names = async (t: string) =>
       ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)

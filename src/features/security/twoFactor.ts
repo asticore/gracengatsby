@@ -1,28 +1,30 @@
-import type { Field } from '@/engine'
-
-import { decryptSecretHook, encryptSecretHook } from '@/utilities/secretField'
-
 import type { SecuritySettings } from './settings'
 
 /**
- * Two-factor sign-in for admins: storage, verification and the enforcement
- * point.
+ * Two-factor sign-in for admins and customers: secret handling, TOTP and
+ * backup-code verification, enrolment, and the enforcement point.
  *
- * WHAT IS HERE AND WHAT IS NOT
+ * STORAGE
  *
- * Here: the fields the shared secret lives in (encrypted at rest, reusing the
- * same field hooks the API-key fields use), a real RFC 6238 TOTP verifier with
- * the usual one-step drift window, replay rejection, and the check that
- * decides whether a given admin may proceed.
+ * The state lives in flat columns on the users table (`twoFactorEnabled`,
+ * `twoFactorSecret`, `twoFactorConfirmedAt`, `twoFactorLastUsedStep`, and
+ * `twoFactorBackupHashes`, a JSON array of SHA-256 hex digests). They are
+ * written only through a `TwoFactorStore`, never through a form field, so no
+ * edit screen can read or overwrite them.
  *
- * NOT here, and deliberately not faked: the enrolment screen. Turning this on
- * for an account needs a page that generates a secret, renders the otpauth://
- * QR code, takes a first code to confirm the clocks agree, and shows one-time
- * recovery codes. Until that exists, `enrolTwoFactor()` is the only way to set
- * a secret and it has to be called from a script. `twoFactorStatus()` reports
- * `enrolmentAvailable: false` so nothing above it can mistake the missing
- * screen for a configured one, and the enforcement below refuses to lock out
- * an admin who has no way to enrol - see `assertTwoFactorSatisfied`.
+ * This file is deliberately free of node-only imports (it uses Web Crypto
+ * throughout) because the security feature's index is imported by the edge
+ * middleware. The secret is encrypted at rest with the same `enc:v1:` format
+ * and ENGAGE_SECRET-derived key `utilities/secretField.ts` uses, so the two
+ * are interchangeable.
+ *
+ * SAFETY
+ *
+ * Nothing here changes behaviour for an account that has not completed
+ * enrolment (`twoFactorEnabled` true AND `twoFactorConfirmedAt` set). A
+ * half-finished enrolment never gates a sign-in. Backup codes are the way
+ * back in when the authenticator is lost, and an administrator can reset an
+ * account from the two-step screen.
  */
 
 const DIGITS = 6
@@ -30,74 +32,92 @@ const PERIOD_SECONDS = 30
 /** One step either side: enough for clock skew, small enough to stay useful. */
 const DRIFT_STEPS = 1
 
-// --- Storage ----------------------------------------------------------------
+export const BACKUP_CODE_COUNT = 10
 
-/**
- * Spread into the admin user collection's `fields`.
- *
- * The secret is `hidden` rather than access-controlled alone: it must never be
- * rendered into the edit form at all, because a field an admin can read is a
- * field an admin's compromised browser can read.
- */
-export const twoFactorFields: Field[] = [
-  {
-    type: 'group',
-    name: 'twoFactor',
-    label: 'Two-step sign-in',
-    admin: {
-      description: 'Confirms a sign-in with a code from an authenticator app.',
-    },
-    fields: [
-      {
-        name: 'enabled',
-        type: 'checkbox',
-        defaultValue: false,
-        admin: {
-          readOnly: true,
-          description: 'Switched on by completing setup, not by ticking this.',
-        },
-      },
-      {
-        name: 'secret',
-        type: 'text',
-        hidden: true,
-        access: {
-          read: () => false,
-          update: () => false,
-          create: () => false,
-        },
-        hooks: {
-          beforeChange: [encryptSecretHook],
-          afterRead: [decryptSecretHook],
-        },
-      },
-      {
-        name: 'confirmedAt',
-        type: 'date',
-        admin: { readOnly: true, description: 'When setup was completed.' },
-      },
-      {
-        name: 'lastUsedStep',
-        type: 'number',
-        hidden: true,
-        admin: { readOnly: true },
-      },
-    ],
-  },
-]
+// --- Row shapes and storage -------------------------------------------------
 
-export type TwoFactorRecord = {
-  enabled?: boolean | null
-  secret?: string | null
-  confirmedAt?: string | null
-  lastUsedStep?: number | null
+/** The columns this file reads. A real users auth row satisfies it as is. */
+export type TwoFactorRow = {
+  id: number
+  email?: string
+  roles?: string[] | null
+  salt?: string | null
+  hash?: string | null
+  twoFactorEnabled?: boolean | null
+  twoFactorSecret?: string | null
+  twoFactorConfirmedAt?: string | null
+  twoFactorLastUsedStep?: number | null
+  twoFactorBackupHashes?: string | null
+}
+
+export type TwoFactorStore = {
+  findByID: (id: number) => Promise<TwoFactorRow | null>
+  updateByID: (id: number, data: Record<string, unknown>) => Promise<unknown>
+  /** Checks a password against a row; needed only by disable/regenerate. */
+  checkPassword?: (row: TwoFactorRow, password: string) => boolean
 }
 
 export type TwoFactorUser = {
   id?: number | string
   email?: string
   roles?: string[] | null
-  twoFactor?: TwoFactorRecord | null
+  twoFactorEnabled?: boolean | null
+}
+
+// --- Secret encryption (Web Crypto, same format as secretField.ts) ----------
+
+const SECRET_PREFIX = 'enc:v1:'
+
+const toHex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+
+const fromHex = (hex: string): Uint8Array => {
+  if (hex.length % 2 !== 0 || /[^0-9a-f]/i.test(hex)) throw new Error('Invalid hex.')
+  const out = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < out.length; i += 1) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
+  return out
+}
+
+async function aesKey(): Promise<CryptoKey> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(process.env.ENGAGE_SECRET || ''),
+  )
+  return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+}
+
+export async function encryptSecret(plain: string): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const sealed = new Uint8Array(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await aesKey(), new TextEncoder().encode(plain)),
+  )
+  // Web Crypto appends the 16 byte tag to the ciphertext; the stored format
+  // keeps them apart, as secretField.ts does.
+  const cipher = sealed.slice(0, sealed.length - 16)
+  const tag = sealed.slice(sealed.length - 16)
+  return `${SECRET_PREFIX}${toHex(iv)}:${toHex(tag)}:${toHex(cipher)}`
+}
+
+/** Returns '' when the value cannot be decrypted, e.g. after a key change. */
+export async function decryptSecret(value: string | null | undefined): Promise<string> {
+  if (typeof value !== 'string' || value.length === 0) return ''
+  if (!value.startsWith(SECRET_PREFIX)) return value
+  try {
+    const [ivHex, tagHex, dataHex] = value.slice(SECRET_PREFIX.length).split(':')
+    const joined = new Uint8Array([...fromHex(dataHex), ...fromHex(tagHex)])
+    const plain = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: fromHex(ivHex) as unknown as ArrayBuffer },
+      await aesKey(),
+      joined,
+    )
+    return new TextDecoder().decode(plain)
+  } catch {
+    return ''
+  }
+}
+
+export async function sha256Hex(text: string): Promise<string> {
+  return toHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))))
 }
 
 // --- Base32, because authenticator apps speak it and nothing else -----------
@@ -237,60 +257,322 @@ export function enrolTwoFactor(accountLabel: string, issuer = 'Asticore Engage')
   return { secret, otpauthUri: uri }
 }
 
+// --- Backup codes -----------------------------------------------------------
+
+/** No 0/o/1/i/l: codes get read off a screen and typed by hand. */
+const BACKUP_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
+
+/** Ten codes shaped xxxxx-xxxxx. Rejection sampling keeps every character equally likely. */
+export function generateBackupCodes(count = BACKUP_CODE_COUNT): string[] {
+  const limit = 256 - (256 % BACKUP_ALPHABET.length)
+  const codes: string[] = []
+  while (codes.length < count) {
+    let raw = ''
+    while (raw.length < 10) {
+      for (const byte of crypto.getRandomValues(new Uint8Array(16))) {
+        if (byte < limit && raw.length < 10) raw += BACKUP_ALPHABET[byte % BACKUP_ALPHABET.length]
+      }
+    }
+    const code = `${raw.slice(0, 5)}-${raw.slice(5)}`
+    if (!codes.includes(code)) codes.push(code)
+  }
+  return codes
+}
+
+export const normaliseBackupCode = (input: string): string =>
+  input.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+const looksLikeBackupCode = (input: string): boolean => normaliseBackupCode(input).length === 10
+const looksLikeTotp = (input: string): boolean => /^\d{6}$/.test(input.replace(/\s+/g, ''))
+
+export const hashBackupCode = (input: string): Promise<string> => sha256Hex(normaliseBackupCode(input))
+
+const parseHashes = (raw: string | null | undefined): string[] => {
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export const backupCodesRemaining = (row: Pick<TwoFactorRow, 'twoFactorBackupHashes'>): number =>
+  parseHashes(row.twoFactorBackupHashes).length
+
+async function newBackupSet(): Promise<{ codes: string[]; stored: string }> {
+  const codes = generateBackupCodes()
+  const hashes = await Promise.all(codes.map((code) => hashBackupCode(code)))
+  return { codes, stored: JSON.stringify(hashes) }
+}
+
+// --- Enrolment state --------------------------------------------------------
+
+/** Confirmed enrolment. A pending one (secret stored, not yet confirmed) is not. */
+export const isEnrolled = (row: Pick<TwoFactorRow, 'twoFactorEnabled' | 'twoFactorConfirmedAt'> | null | undefined): boolean =>
+  Boolean(row?.twoFactorEnabled && row?.twoFactorConfirmedAt)
+
+/**
+ * Whether a password-correct sign-in must be followed by a code.
+ *
+ * Also requires that SOMETHING can satisfy the check (a secret or at least one
+ * unused backup code). A row flagged enabled with neither is a corrupted
+ * enrolment, and gating it would lock the owner out with no way to answer.
+ */
+export const requiresSecondFactor = (row: TwoFactorRow | null | undefined): boolean =>
+  isEnrolled(row) && (Boolean(row?.twoFactorSecret) || backupCodesRemaining(row) > 0)
+
+export type TwoFactorResult = { ok: boolean; message?: string }
+
+const NOT_SIGNED_IN = 'Sign in first.'
+
+/**
+ * Step one of enrolment: a fresh secret, stored encrypted and NOT yet active.
+ * Sign-in is unaffected until `confirmEnrolment` succeeds. Calling it again
+ * before confirming simply replaces the pending secret.
+ */
+export async function startEnrolment(
+  store: TwoFactorStore,
+  user: { id?: number | string; email?: string },
+  issuer?: string,
+): Promise<{ ok: boolean; message?: string; secret?: string; otpauthUri?: string }> {
+  const id = Number(user?.id)
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, message: NOT_SIGNED_IN }
+
+  const row = await store.findByID(id)
+  if (!row) return { ok: false, message: NOT_SIGNED_IN }
+  if (isEnrolled(row)) return { ok: false, message: 'Two-step sign-in is already switched on. Turn it off first to set it up again.' }
+
+  const { secret, otpauthUri } = enrolTwoFactor(row.email || user.email || 'account', issuer)
+  await store.updateByID(id, {
+    twoFactorEnabled: false,
+    twoFactorSecret: await encryptSecret(secret),
+    twoFactorConfirmedAt: null,
+    twoFactorLastUsedStep: null,
+    twoFactorBackupHashes: null,
+  })
+  return { ok: true, secret, otpauthUri }
+}
+
+/**
+ * Step two: the first code proves the app and the server agree on the time.
+ * Only now does the account become gated. The one-time backup codes are
+ * returned here and nowhere else - only their hashes are kept.
+ */
+export async function confirmEnrolment(
+  store: TwoFactorStore,
+  user: { id?: number | string },
+  code: string,
+  options: { now?: number } = {},
+): Promise<{ ok: boolean; message?: string; backupCodes?: string[] }> {
+  const id = Number(user?.id)
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, message: NOT_SIGNED_IN }
+
+  const row = await store.findByID(id)
+  if (!row) return { ok: false, message: NOT_SIGNED_IN }
+  if (isEnrolled(row)) return { ok: false, message: 'Two-step sign-in is already switched on.' }
+
+  const secret = await decryptSecret(row.twoFactorSecret)
+  if (!secret) return { ok: false, message: 'Start setup first to get a key.' }
+
+  const result = await verifyTotp(secret, code, { now: options.now })
+  if (!result.valid) return { ok: false, message: 'That code did not match. Check the time on your phone and try the next code.' }
+
+  const { codes, stored } = await newBackupSet()
+  await store.updateByID(id, {
+    twoFactorEnabled: true,
+    twoFactorConfirmedAt: new Date(options.now ?? Date.now()).toISOString(),
+    twoFactorLastUsedStep: result.step,
+    twoFactorBackupHashes: stored,
+  })
+  return { ok: true, backupCodes: codes }
+}
+
+export type SecondFactorResult = {
+  ok: boolean
+  method?: 'totp' | 'backup'
+  backupCodesLeft?: number
+}
+
+/**
+ * Accepts a current authenticator code or an unused backup code.
+ *
+ * An authenticator code is refused if its time step was already used (replay).
+ * A backup code is removed the moment it matches. The row is re-read here so
+ * the check never runs against a stale copy.
+ */
+export async function verifySecondFactor(
+  store: TwoFactorStore,
+  user: { id?: number | string },
+  code: string,
+  options: { now?: number } = {},
+): Promise<SecondFactorResult> {
+  const id = Number(user?.id)
+  if (!Number.isInteger(id) || id <= 0 || typeof code !== 'string') return { ok: false }
+
+  const row = await store.findByID(id)
+  if (!isEnrolled(row)) return { ok: false }
+
+  if (looksLikeTotp(code)) {
+    const secret = await decryptSecret(row.twoFactorSecret)
+    if (!secret) return { ok: false }
+    const result = await verifyTotp(secret, code, { now: options.now, lastUsedStep: row.twoFactorLastUsedStep })
+    if (!result.valid) return { ok: false }
+    await store.updateByID(id, { twoFactorLastUsedStep: result.step })
+    return { ok: true, method: 'totp', backupCodesLeft: backupCodesRemaining(row) }
+  }
+
+  if (looksLikeBackupCode(code)) {
+    const hashes = parseHashes(row.twoFactorBackupHashes)
+    const candidate = await hashBackupCode(code)
+    // Compared against every entry so timing does not reveal the position.
+    let matched = -1
+    hashes.forEach((hash, index) => {
+      if (timingSafeEqual(hash, candidate)) matched = index
+    })
+    if (matched === -1) return { ok: false }
+
+    const remaining = hashes.filter((_, index) => index !== matched)
+    await store.updateByID(id, { twoFactorBackupHashes: JSON.stringify(remaining) })
+    return { ok: true, method: 'backup', backupCodesLeft: remaining.length }
+  }
+
+  return { ok: false }
+}
+
+/** A code, or failing that the account password. */
+async function proveIdentity(
+  store: TwoFactorStore,
+  row: TwoFactorRow,
+  proof: string,
+): Promise<boolean> {
+  if (typeof proof !== 'string' || proof.length === 0) return false
+  if ((looksLikeTotp(proof) || looksLikeBackupCode(proof)) && (await verifySecondFactor(store, row, proof)).ok) {
+    return true
+  }
+  return Boolean(store.checkPassword && store.checkPassword(row, proof))
+}
+
+/** Switches two-step off and wipes the secret and codes. Needs a code or the password. */
+export async function disableTwoFactor(
+  store: TwoFactorStore,
+  user: { id?: number | string },
+  passwordOrCode: string,
+): Promise<TwoFactorResult> {
+  const id = Number(user?.id)
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, message: NOT_SIGNED_IN }
+
+  const row = await store.findByID(id)
+  if (!row) return { ok: false, message: NOT_SIGNED_IN }
+  if (!row.twoFactorEnabled && !row.twoFactorSecret) return { ok: true }
+
+  // Only a confirmed enrolment needs proof; a pending one gates nothing.
+  if (isEnrolled(row) && !(await proveIdentity(store, row, passwordOrCode))) {
+    return { ok: false, message: 'That password or code was not right.' }
+  }
+
+  await resetTwoFactor(store, id)
+  return { ok: true }
+}
+
+/** Unconditional wipe. Callers are responsible for having checked who is asking. */
+export async function resetTwoFactor(store: TwoFactorStore, id: number): Promise<void> {
+  await store.updateByID(id, {
+    twoFactorEnabled: false,
+    twoFactorSecret: null,
+    twoFactorConfirmedAt: null,
+    twoFactorLastUsedStep: null,
+    twoFactorBackupHashes: null,
+  })
+}
+
+/** Replaces all backup codes. The old set stops working. Returns the new set once. */
+export async function regenerateBackupCodes(
+  store: TwoFactorStore,
+  user: { id?: number | string },
+  passwordOrCode: string,
+): Promise<{ ok: boolean; message?: string; backupCodes?: string[] }> {
+  const id = Number(user?.id)
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, message: NOT_SIGNED_IN }
+
+  const row = await store.findByID(id)
+  if (!isEnrolled(row)) return { ok: false, message: 'Two-step sign-in is not switched on.' }
+  if (!(await proveIdentity(store, row, passwordOrCode))) {
+    return { ok: false, message: 'That password or code was not right.' }
+  }
+
+  const { codes, stored } = await newBackupSet()
+  await store.updateByID(id, { twoFactorBackupHashes: stored })
+  return { ok: true, backupCodes: codes }
+}
+
 // --- Enforcement point ------------------------------------------------------
 
+export const ADMIN_ENROL_PATH = '/admin/security/two-factor'
+export const MEMBER_ENROL_PATH = '/account/profile'
+
 export type TwoFactorStatus = {
+  /** A setting asks for two-step for this user. */
   required: boolean
   enrolled: boolean
+  /** True when nothing is asked, or the ask is met. */
   satisfied: boolean
-  /** False until the enrolment screen exists. See the header of this file. */
+  /** True now that the setup screens exist. */
   enrolmentAvailable: boolean
+  /** Required, not yet enrolled, and there is a screen to do it on: send them there. */
+  mustEnrol: boolean
+  /** Where `mustEnrol` sends the user. */
+  enrolPath?: string
   reason?: string
 }
 
 const isAdminUser = (user: TwoFactorUser | null | undefined): boolean =>
   Boolean(user?.roles?.includes('admin'))
 
+/** Customer accounts: staff roles other than admin are covered by neither setting. */
+const isMemberUser = (user: TwoFactorUser | null | undefined): boolean =>
+  Array.isArray(user?.roles) && user.roles.length > 0 && user.roles.every((role) => role === 'customer')
+
 export function twoFactorStatus(
   user: TwoFactorUser | null | undefined,
   settings: SecuritySettings,
 ): TwoFactorStatus {
-  const required =
-    settings.featureEnabled && settings.loginProtection.requireTwoFactorForAdmins && isAdminUser(user)
+  const admin = isAdminUser(user)
+  const member = !admin && isMemberUser(user)
 
-  const enrolled = Boolean(user?.twoFactor?.enabled && user?.twoFactor?.confirmedAt)
+  const required =
+    Boolean(user) &&
+    settings.featureEnabled &&
+    ((admin && settings.loginProtection.requireTwoFactorForAdmins) ||
+      (member && settings.loginProtection.requireTwoFactorForMembers))
+
+  // `twoFactorEnabled` is only ever set by a confirmed enrolment.
+  const enrolled = Boolean(user?.twoFactorEnabled)
+  const enrolmentAvailable = true
+  const mustEnrol = required && !enrolled && enrolmentAvailable
 
   return {
     required,
     enrolled,
     satisfied: !required || enrolled,
-    enrolmentAvailable: false,
-    reason: required && !enrolled ? 'Two-step sign-in is required for admins but has not been set up.' : undefined,
+    enrolmentAvailable,
+    mustEnrol,
+    enrolPath: mustEnrol ? (admin ? ADMIN_ENROL_PATH : MEMBER_ENROL_PATH) : undefined,
+    reason: mustEnrol ? 'Two-step sign-in is required for this account but has not been set up.' : undefined,
   }
 }
 
 /**
- * The single place that decides whether a sign-in may proceed. Wire it as an
- * `afterLogin` hook on the admin user collection.
- *
- * It refuses to throw while enrolment is unavailable, and that is the whole
- * point of `enrolmentAvailable`: with no screen to set a secret on, enforcing
- * the requirement would lock every admin out of the portal permanently, with
- * no route back in short of a database edit. So it returns the status and lets
- * the caller surface the warning. The moment the enrolment screen lands, flip
- * `enrolmentAvailable` to true and change the marked line below to throw - it
- * is one line, and it is the only line.
+ * The single place that decides whether a signed-in user must be sent to set
+ * up two-step. It never throws and never ends a session: an unenrolled user
+ * whose account is covered by an enabled setting is redirected to the setup
+ * screen (see `mustEnrol` / `enrolPath`), where setup and sign-out are the only
+ * things they need. With both settings off (the default) `mustEnrol` is always
+ * false and nothing changes for anyone.
  */
 export function assertTwoFactorSatisfied(
   user: TwoFactorUser | null | undefined,
   settings: SecuritySettings,
 ): TwoFactorStatus {
-  const status = twoFactorStatus(user, settings)
-
-  if (!status.satisfied && status.enrolmentAvailable) {
-    // <- the one line: becomes `throw new Error(status.reason)` on that day.
-    return status
-  }
-
-  return status
+  return twoFactorStatus(user, settings)
 }

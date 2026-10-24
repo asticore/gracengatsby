@@ -20,6 +20,9 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  // Set when the password was right and the account needs a two-step code.
+  const [pendingToken, setPendingToken] = useState('')
+  const [code, setCode] = useState('')
 
   // Check if session expired and get redirect target
   const isSessionExpired = searchParams.get('expired') === '1'
@@ -38,14 +41,20 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/users/login', {
+      const response = await fetch(pendingToken ? '/api/users/login-2fa' : '/api/users/login', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(pendingToken ? { pendingToken, code } : { email, password }),
       })
 
-      const body = (await response.json()) as { errors?: Array<{ message?: string }> }
+      const body = (await response.json()) as { errors?: Array<{ message?: string }>; twoFactorRequired?: boolean; pendingToken?: string }
+
+      if (response.ok && body.twoFactorRequired && body.pendingToken) {
+        setPendingToken(body.pendingToken)
+        setPassword('')
+        return
+      }
 
       if (response.ok) {
         router.push(finalRedirectTo)
@@ -53,7 +62,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
         return
       }
 
-      const errorMessage = body.errors?.[0]?.message ?? 'Login failed. Check your email and password.'
+      const errorMessage = body.errors?.[0]?.message ?? (pendingToken ? 'That code was not right.' : 'Login failed. Check your email and password.')
       setError(errorMessage)
     } catch {
       setError('Network error. Please try again.')
@@ -73,6 +82,24 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
           )}
           {error && <div className="admin-login__error">{error}</div>}
 
+          {pendingToken ? (
+            <div className="admin-login__field">
+              <label htmlFor="field-code">Authentication code</label>
+              <input
+                id="field-code"
+                name="code"
+                type="text"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                disabled={isLoading}
+                autoFocus
+                required
+              />
+              <p className="admin-login__hint">Enter the 6-digit code from your authenticator app, or one of your backup codes.</p>
+            </div>
+          ) : (
+            <>
           <div className="admin-login__field">
             <label htmlFor="field-email">Email</label>
             <input
@@ -98,9 +125,11 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
               required
             />
           </div>
+            </>
+          )}
 
           <button className="btn btn--primary admin-login__submit" type="submit" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? 'Signing in...' : pendingToken ? 'Verify' : 'Sign in'}
           </button>
         </form>
       </div>

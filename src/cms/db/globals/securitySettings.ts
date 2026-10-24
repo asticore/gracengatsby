@@ -39,6 +39,7 @@ export type SecuritySettingsDoc = {
     maxLoginAttempts?: number | null
     lockoutMinutes?: number | null
     requireTwoFactorForAdmins?: boolean | null
+    requireTwoFactorForMembers?: boolean | null
     sessionTimeoutMinutes?: number | null
   }
   headers?: {

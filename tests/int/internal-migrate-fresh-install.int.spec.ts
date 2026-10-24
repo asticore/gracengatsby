@@ -755,6 +755,28 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(cols.filter((c) => c === 'email_verified_at')).toHaveLength(1)
   })
 
+  it('adds the two-factor backup code column and the customer enforcement setting', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_users')).toEqual(
+      expect.arrayContaining(['two_factor_enabled', 'two_factor_secret', 'two_factor_confirmed_at', 'two_factor_last_used_step', 'two_factor_backup_hashes']),
+    )
+    expect(await names('eg_security_settings')).toEqual(
+      expect.arrayContaining(['login_protection_require_two_factor_for_admins', 'login_protection_require_two_factor_for_members']),
+    )
+  })
+
+  it('two-factor migration is safe to run twice', async () => {
+    const mod = await import('@/migrations/20261113_100000_two_factor_backup_codes')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_users`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols.filter((c) => c === 'two_factor_backup_hashes')).toHaveLength(1)
+  })
+
   it('creates the social accounts child table for integrations', async () => {
     expect(tables).toContain('eg_integrations_social_accounts')
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)

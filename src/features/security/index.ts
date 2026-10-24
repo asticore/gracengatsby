@@ -45,14 +45,28 @@ export {
 } from './loginProtection'
 
 export {
+  ADMIN_ENROL_PATH,
+  MEMBER_ENROL_PATH,
   assertTwoFactorSatisfied,
+  backupCodesRemaining,
   base32Decode,
   base32Encode,
+  confirmEnrolment,
+  disableTwoFactor,
   enrolTwoFactor,
-  twoFactorFields,
+  generateBackupCodes,
+  isEnrolled,
+  regenerateBackupCodes,
+  requiresSecondFactor,
+  resetTwoFactor,
+  startEnrolment,
   twoFactorStatus,
+  verifySecondFactor,
   verifyTotp,
+  type SecondFactorResult,
+  type TwoFactorRow,
   type TwoFactorStatus,
+  type TwoFactorStore,
   type TwoFactorUser,
 } from './twoFactor'
 

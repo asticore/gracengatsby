@@ -11,6 +11,7 @@ export type EmailTemplateKey =
   | 'accountReset'
   | 'accountAlreadyRegistered'
   | 'accountWelcome'
+  | 'accountVerify'
   | 'membershipRenewal'
   | 'approvalSubmitted'
   | 'approvalDecision'
@@ -40,6 +41,14 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplate> = 
   accountWelcome: {
     subject: 'Your account is ready',
     body: ['Your account is ready.', 'You can see your orders, addresses and bookings here:\n{{link}}'].join('\n\n'),
+  },
+  accountVerify: {
+    subject: 'Confirm your email address',
+    body: [
+      'Please confirm this email address for your account.',
+      'Open this link - it works once, and expires in {{hours}} hours:\n{{link}}',
+      'If this was not you, ignore this email.',
+    ].join('\n\n'),
   },
   membershipRenewal: {
     subject: 'Your {{tier}} membership renews in {{days}} day(s)',

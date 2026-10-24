@@ -5,10 +5,12 @@ import { redirect } from 'next/navigation'
 
 import {
   completePasswordReset,
+  completeVerification,
   emailProblem,
   passwordProblem,
   registerCustomer,
   requestPasswordReset,
+  resendVerification,
   signIn,
 } from './auth'
 import {
@@ -125,7 +127,7 @@ export async function registerAction(_state: ActionState, form: FormData): Promi
     signIn: `${origin}/account/sign-in`,
     forgotPassword: `${origin}/account/forgot-password`,
     account: `${origin}/account`,
-  })
+  }, (token) => `${origin}/account/verify-email?token=${encodeURIComponent(token)}`)
 
   return succeeded(
     'Thanks. If that address could be used, your account is ready - check your inbox, then sign in.',
@@ -175,6 +177,39 @@ export async function resetPasswordAction(
   // No session is minted here. Whoever opened the link has proven they can
   // read the mailbox; signing in with the new password proves they know it.
   redirect('/account/sign-in?reset=1')
+}
+
+// --- Email verification -----------------------------------------------------
+
+export async function verifyEmailAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  const context = await openContext()
+  if (!context) return FEATURE_OFF
+
+  const guard = await guardAttempt(context.engine, 'verify', await requestAddress())
+  if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
+
+  const result = await completeVerification(context.engine, text(form, 'token'))
+  if (!result.ok) return failed(result.message ?? 'That did not work.')
+  return succeeded('Your email address is confirmed. You can sign in now.')
+}
+
+export async function resendVerificationAction(
+  _state: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const context = await openContext()
+  if (!context) return FEATURE_OFF
+
+  const guard = await guardAttempt(context.engine, 'verify', await requestAddress())
+  if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
+
+  const origin = await siteOrigin()
+  await resendVerification(
+    context.engine,
+    text(form, 'email'),
+    (token) => `${origin}/account/verify-email?token=${encodeURIComponent(token)}`,
+  )
+  return succeeded(NEUTRAL_EMAIL_NOTICE)
 }
 
 // --- Addresses --------------------------------------------------------------

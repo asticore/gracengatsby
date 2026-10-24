@@ -30,6 +30,7 @@ export {
   RegisterScreen,
   ResetPasswordScreen,
   SignInScreen,
+  VerifyEmailScreen,
 } from './components/AuthScreens'
 
 export { accountMetadata } from './meta'

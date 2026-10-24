@@ -106,6 +106,16 @@ export const SECRET_PATHS: Readonly<Record<string, readonly string[]>> = {
   ],
   'form-settings': ['turnstileSecretKey'],
   'media-settings': ['stock.unsplashAccessKey', 'stock.pexelsApiKey', 'stock.pixabayApiKey'],
+  // Social login client secrets (src/globals/socialLoginFields.ts). They sit in
+  // the socialLogin group, so the paths carry that prefix.
+  'security-settings': [
+    'socialLogin.googleClientSecret',
+    'socialLogin.githubClientSecret',
+    'socialLogin.facebookClientSecret',
+    'socialLogin.microsoftClientSecret',
+    'socialLogin.discordClientSecret',
+    'socialLogin.applePrivateKey',
+  ],
 }
 
 /** Top-level fields that every document carries and the engine regenerates. */

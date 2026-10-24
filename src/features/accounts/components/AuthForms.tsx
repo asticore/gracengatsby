@@ -24,10 +24,10 @@ import { Note, SubmitButton } from './FormBits'
  * component only draws whatever sentence comes back.
  */
 
-export const SignInForm: React.FC<{ next: string; justReset?: boolean }> = ({ next, justReset }) => {
+export const SignInForm: React.FC<{ next: string; justReset?: boolean; initialPendingToken?: string }> = ({ next, justReset, initialPendingToken }) => {
   const [state, action] = useActionState<ActionState, FormData>(signInAction, IDLE)
 
-  if (state.pendingToken) return <CodeStep pendingToken={state.pendingToken} next={next} />
+  if (state.pendingToken || initialPendingToken) return <CodeStep pendingToken={state.pendingToken || initialPendingToken || ''} next={next} />
 
   return (
     <>

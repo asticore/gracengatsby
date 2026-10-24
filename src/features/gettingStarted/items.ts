@@ -67,6 +67,14 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     href: '/admin/settings/marketing-seo',
   },
 
+  {
+    id: 'social-login',
+    category: 'Connect services',
+    title: 'Set up social login (optional)',
+    help: 'Let customers sign in with Google, GitHub, Apple, Facebook, Microsoft or Discord. Each one has a step-by-step guide under Security > Social login. Skip it if you do not need it.',
+    href: '/admin/settings/security',
+  },
+
   // Communication
   {
     id: 'email-provider',

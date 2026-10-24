@@ -9,6 +9,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return accountMetadata('Your profile')
 }
 
-export default async function ProfileRoute() {
-  return <ProfileScreen />
+export default async function ProfileRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ social_error?: string }>
+}) {
+  const { social_error: socialError } = await searchParams
+  return <ProfileScreen socialError={socialError} />
 }

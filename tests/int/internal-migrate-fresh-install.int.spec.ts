@@ -802,6 +802,53 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     await proxy.env.D1.prepare("DELETE FROM `eg_user_sessions` WHERE id = 'keep-me'").run()
   })
 
+  it('creates eg_social_accounts with its unique and lookup indexes', async () => {
+    expect(tables).toContain('eg_social_accounts')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_social_accounts`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(
+      expect.arrayContaining(['id', 'user_id', 'provider', 'provider_user_id', 'email', 'created_at', 'last_login_at']),
+    )
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_social_accounts`)').all()).results as { name: string; unique: number }[])
+    expect(indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['eg_social_accounts_provider_user_idx', 'eg_social_accounts_user_id_idx']))
+    expect(indexes.find((i) => i.name === 'eg_social_accounts_provider_user_idx')!.unique).toBe(1)
+  })
+
+  it('adds the social login columns to eg_security_settings, all switched off by default', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    for (const provider of ['google', 'github', 'apple', 'facebook', 'microsoft', 'discord']) {
+      expect(byName.get(`social_login_${provider}_enabled`)).toBe('0')
+      expect(byName.has(`social_login_${provider}_client_id`)).toBe(true)
+    }
+    expect(byName.get('social_login_allow_signup_via_social')).toBe('1')
+    expect(byName.get('social_login_allow_admin_social_login')).toBe('0')
+    expect(byName.get('social_login_microsoft_tenant')).toBe("'common'")
+    expect(byName.has('social_login_apple_private_key')).toBe(true)
+  })
+
+  it('social login migration is safe to run twice and leaves existing links and settings alone', async () => {
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_social_accounts` (user_id, provider, provider_user_id, email, created_at) VALUES (1, 'google', 'keep-me', 'a@b.co', '2026-01-01T00:00:00.000Z')",
+    ).run()
+    const mod = await import('@/migrations/20261115_100000_social_login')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const rows = (await proxy.env.D1.prepare("SELECT provider_user_id FROM `eg_social_accounts` WHERE provider_user_id = 'keep-me'").all()).results as unknown[]
+    expect(rows).toHaveLength(1)
+    // The unique index refuses the same provider identity twice.
+    await expect(
+      proxy.env.D1.prepare(
+        "INSERT INTO `eg_social_accounts` (user_id, provider, provider_user_id, created_at) VALUES (2, 'google', 'keep-me', '2026-01-01T00:00:00.000Z')",
+      ).run(),
+    ).rejects.toThrow()
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols.filter((c) => c === 'social_login_google_enabled')).toHaveLength(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_social_accounts` WHERE provider_user_id = 'keep-me'").run()
+  })
+
   it('creates the social accounts child table for integrations', async () => {
     expect(tables).toContain('eg_integrations_social_accounts')
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)

@@ -1,4 +1,11 @@
 import React from 'react'
+import { cookies } from 'next/headers'
+
+import { getEngine } from '@/lib/engine'
+import { SocialButtons } from '@/features/socialLogin/components/SocialButtons'
+import { socialMessage } from '@/features/socialLogin/messages'
+import { publicProviders, registerProviders } from '@/features/socialLogin/public'
+import { PENDING_COOKIE } from '@/features/socialLogin/http'
 
 import { redirectIfSignedIn, requireFeature } from '../guards'
 import { RESET_TTL_MINUTES, VERIFY_TTL_HOURS } from '../auth'
@@ -20,15 +27,30 @@ import {
  * screen, not with the route.
  */
 
-export const SignInScreen: React.FC<{ next?: string; justReset?: boolean }> = async ({
-  next,
-  justReset,
-}) => {
+export const SignInScreen: React.FC<{
+  next?: string
+  justReset?: boolean
+  socialError?: string
+  social?: string
+}> = async ({ next, justReset, socialError, social }) => {
   await redirectIfSignedIn()
+
+  const safeNext = next && next.startsWith('/account') && !next.startsWith('//') ? next : '/account'
+  const engine = await getEngine()
+  const providers = await publicProviders(engine, 'account')
+  // A social sign-in that still needs its two-step code parks the pending token in an HttpOnly cookie.
+  const pending = social === '2fa' ? ((await cookies()).get(PENDING_COOKIE)?.value ?? '') : ''
+  const message = socialError ? socialMessage(socialError) : ''
 
   return (
     <AuthShell title="Sign in">
-      <SignInForm next={next && next.startsWith('/account') ? next : '/account'} justReset={justReset} />
+      {message && (
+        <p className="account-note account-note--error" role="alert">
+          {message}
+        </p>
+      )}
+      <SignInForm next={safeNext} justReset={justReset} initialPendingToken={pending} />
+      {!pending && <SocialButtons providers={providers} next={safeNext} area="account" />}
     </AuthShell>
   )
 }
@@ -36,9 +58,12 @@ export const SignInScreen: React.FC<{ next?: string; justReset?: boolean }> = as
 export const RegisterScreen: React.FC = async () => {
   await redirectIfSignedIn()
 
+  const providers = await registerProviders(await getEngine())
+
   return (
     <AuthShell title="Create an account" intro="Keep track of your orders, addresses and event bookings.">
       <RegisterForm />
+      <SocialButtons providers={providers} area="account" verb="Sign up with" />
     </AuthShell>
   )
 }

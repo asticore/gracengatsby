@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 /**
@@ -23,6 +23,31 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   // Set when the password was right and the account needs a two-step code.
   const [pendingToken, setPendingToken] = useState('')
   const [code, setCode] = useState('')
+  // Social sign-in for staff: buttons only when the site allows it and a provider is configured.
+  const [socialProviders, setSocialProviders] = useState<Array<{ id: string; label: string }>>([])
+  const socialError = searchParams.get('social_error')
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/social/providers?area=admin', { credentials: 'include' })
+      .then((r): Promise<{ providers?: Array<{ id: string; label: string }> }> => (r.ok ? r.json() : Promise.resolve({ providers: [] as Array<{ id: string; label: string }> })))
+      .then((body: { providers?: Array<{ id: string; label: string }> }) => {
+        if (!cancelled) setSocialProviders(Array.isArray(body.providers) ? body.providers : [])
+      })
+      .catch((): undefined => undefined)
+    // A social sign-in that still needs its two-step code parked its pending token in a cookie.
+    if (searchParams.get('social') === '2fa') {
+      fetch('/api/social/pending', { credentials: 'include' })
+        .then((r): Promise<{ pendingToken?: string | null }> => r.json())
+        .then((body: { pendingToken?: string | null }) => {
+          if (!cancelled && body.pendingToken) setPendingToken(body.pendingToken)
+        })
+        .catch((): undefined => undefined)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams])
 
   // Check if session expired and get redirect target
   const isSessionExpired = searchParams.get('expired') === '1'
@@ -81,6 +106,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
             <div className="admin-login__notice">Your session expired. Please log in again.</div>
           )}
           {error && <div className="admin-login__error">{error}</div>}
+          {socialError && !error && <div className="admin-login__error">That sign-in did not work. Use your email and password, or try again.</div>}
 
           {pendingToken ? (
             <div className="admin-login__field">
@@ -132,6 +158,20 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
             {isLoading ? 'Signing in...' : pendingToken ? 'Verify' : 'Sign in'}
           </button>
         </form>
+
+        {!pendingToken && socialProviders.length > 0 && (
+          <div className="admin-login__social">
+            {socialProviders.map((p) => (
+              <a
+                key={p.id}
+                className="btn btn--style-secondary admin-login__submit"
+                href={`/api/social/${p.id}/start?area=admin&next=${encodeURIComponent(finalRedirectTo)}`}
+              >
+                Continue with {p.label}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,6 +1,8 @@
 import type { GlobalConfig } from '@/engine'
 
 import { adminOnlyFieldAccess, isAdmin } from '../access/ecommerceAccess'
+import { refuseSocialSwitchWithoutCredentials } from '../features/socialLogin/validate'
+import { socialLoginFields } from './socialLoginFields'
 
 /**
  * Login protection, response headers, rate limiting and the audit log.
@@ -24,6 +26,10 @@ export const SecuritySettings: GlobalConfig = {
     group: 'Settings',
     description:
       'Protection for the admin login and the rules browsers are told to follow on your site. The defaults are safe - the headers section is the one to read carefully before changing.',
+  },
+  hooks: {
+    // Server-side: a social sign-in provider cannot be switched on until its credentials are saved.
+    beforeChange: [refuseSocialSwitchWithoutCredentials],
   },
   access: {
     read: () => true,
@@ -347,6 +353,16 @@ export const SecuritySettings: GlobalConfig = {
           admin: { description: 'Extra addresses to email on every submission, one per line. Optional. Only admins can see this list.' },
         },
       ],
+    },
+    {
+      type: 'group',
+      name: 'socialLogin',
+      label: 'Social login',
+      admin: {
+        description:
+          'Let customers (and, if you allow it, staff) sign in with Google, GitHub, Apple, Facebook, Microsoft or Discord. Everything is off until you set it up: you create your own app with each provider, paste its credentials here, then switch it on. Nothing is shipped with the site. Secrets are encrypted and only admins can read them.',
+      },
+      fields: socialLoginFields,
     },
   ],
 }

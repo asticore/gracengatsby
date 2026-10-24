@@ -42,6 +42,10 @@ export type AuditAction =
   | 'session.revoked-others'
   | 'session.revoked-all'
   | 'session.admin-revoked'
+  | 'social.login'
+  | 'social.linked'
+  | 'social.unlinked'
+  | 'social.refused'
 
 export type AuditEntry = {
   action: AuditAction

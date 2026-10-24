@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import {
@@ -117,6 +117,8 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
   }
 
   await setSessionCookie(result.token)
+  // A social sign-in parks its pending token here; it has done its job.
+  ;(await cookies()).delete('eg_social_pending')
   redirect(safeNext(form.get('next')))
 }
 

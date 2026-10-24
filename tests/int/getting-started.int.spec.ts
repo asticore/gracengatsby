@@ -17,6 +17,7 @@ describe('getting-started compute', () => {
       'first-page',
       'seo-basics',
       'connect-google',
+      'social-login',
       'email-provider',
       'payments',
       'security',

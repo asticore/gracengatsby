@@ -43,6 +43,7 @@ import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 import { TwoFactorView } from '@/admin/views/TwoFactorView'
 import { SessionsView } from '@/admin/views/SessionsView'
+import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
@@ -226,6 +227,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: SessionsView,
     path: '/security/sessions',
     meta: { title: 'Signed-in devices', description: 'See where your account is signed in and sign out any device.' },
+  },
+  {
+    key: 'socialAccounts',
+    Component: SocialView,
+    path: '/security/social',
+    meta: { title: 'Connected accounts', description: 'Connect or disconnect sign-in providers on your account.' },
   },
   {
     key: 'scheduledTasks',

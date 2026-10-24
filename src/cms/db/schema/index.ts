@@ -775,7 +775,7 @@ export const siteSettings = siteSettingsGenerated.table
 export const memberSettingsGenerated = generateTable(MemberSettings)
 export const memberSettings = memberSettingsGenerated.table
 
-export const securitySettingsGenerated = generateTable(SecuritySettings)
+export const securitySettingsGenerated = generateTable({ ...SecuritySettings, fields: stripUiFields(SecuritySettings.fields) })
 export const securitySettings = securitySettingsGenerated.table
 
 /**

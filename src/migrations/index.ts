@@ -91,6 +91,7 @@ import * as migration_20261111_100000_blog_author_tag_switches from './20261111_
 import * as migration_20261112_100000_users_email_verification from './20261112_100000_users_email_verification';
 import * as migration_20261113_100000_two_factor_backup_codes from './20261113_100000_two_factor_backup_codes';
 import * as migration_20261114_100000_user_sessions from './20261114_100000_user_sessions';
+import * as migration_20261115_100000_social_login from './20261115_100000_social_login';
 
 export const migrations = [
   {
@@ -557,5 +558,10 @@ export const migrations = [
     up: migration_20261114_100000_user_sessions.up,
     down: migration_20261114_100000_user_sessions.down,
     name: '20261114_100000_user_sessions',
+  },
+  {
+    up: migration_20261115_100000_social_login.up,
+    down: migration_20261115_100000_social_login.down,
+    name: '20261115_100000_social_login',
   },
 ];

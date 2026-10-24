@@ -18,6 +18,7 @@ import * as storedValueSchema from '@/cms/db/schema/shopStoredValue'
 import * as shippingSchema from '@/cms/db/schema/shopShipping'
 import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
 import * as userSessionsSchema from '@/cms/db/schema/userSessions'
+import * as socialAccountsSchema from '@/cms/db/schema/socialAccounts'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
@@ -231,6 +232,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
+      // Linked social login identities: a plain drizzle table in its own schema file
+      for (const [exportName, exportValue] of Object.entries(socialAccountsSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
       // Product subscriptions (wave 19) live in their own schema file
       for (const [exportName, exportValue] of Object.entries(productSubscriptionsSchema)) {
         if (exportName.endsWith('Generated')) continue
@@ -441,6 +447,30 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_user_sessions`)').all()).results as { name: string }[]).map((r) => r.name)
     expect(cols).toEqual(
       expect.arrayContaining(['id', 'user_id', 'token_hash', 'device_label', 'ip', 'created_at', 'last_seen_at', 'expires_at', 'revoked_at']),
+    )
+  })
+
+  it('creates the social accounts table and the social login settings columns', async () => {
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols).toEqual(
+      expect.arrayContaining(['id', 'user_id', 'provider', 'provider_user_id', 'email', 'created_at', 'last_login_at']),
+    )
+    const security = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(security).toEqual(
+      expect.arrayContaining([
+        'social_login_allow_signup_via_social',
+        'social_login_allow_admin_social_login',
+        'social_login_google_enabled',
+        'social_login_google_client_id',
+        'social_login_google_client_secret',
+        'social_login_github_client_secret',
+        'social_login_apple_team_id',
+        'social_login_apple_key_id',
+        'social_login_apple_private_key',
+        'social_login_facebook_enabled',
+        'social_login_microsoft_tenant',
+        'social_login_discord_redirect_confirmed',
+      ]),
     )
   })
 

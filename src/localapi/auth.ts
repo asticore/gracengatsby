@@ -996,6 +996,27 @@ async function openDeviceSession(db: AuthDbOps, userId: number, now: number, cli
   return opened ?? {}
 }
 
+export type LoginAsUserArgs = { id: number; secret: string; client?: SessionClient }
+
+/**
+ * Session for an identity that was already proven elsewhere (social login).
+ * It is NOT a bypass of the account's own controls: a locked account is still
+ * refused, and a confirmed two-step account still gets only a pending token -
+ * the code step (`loginWithSecondFactor`) finishes it exactly as for a password.
+ * Server-only: reachable through the Local API, never through a REST route.
+ */
+export async function loginAsUser(db: AuthDbOps, args: LoginAsUserArgs): Promise<LoginResult> {
+  const now = Date.now()
+  const row = await db.findByID(args.id)
+  checkLoginPermission(row, now)
+
+  if (requiresSecondFactor(row)) {
+    const { token: pendingToken } = signJWT({ purpose: PENDING_PURPOSE, id: row.id, email: row.email }, args.secret, PENDING_TWO_FACTOR_SECONDS)
+    return { user: toAuthUserDoc(row), twoFactorRequired: true, pendingToken }
+  }
+  return finishLogin(db, row, now, args.secret, undefined, args.client)
+}
+
 export type LoginSecondFactorArgs = { pendingToken: string; code: string; secret: string; client?: SessionClient }
 
 /**

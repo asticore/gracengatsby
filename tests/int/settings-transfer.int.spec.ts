@@ -237,6 +237,56 @@ describe('settings export', () => {
     expect(file.globals.integrations).toMatchObject({ claudeApiKey: 'sk-live-claude' })
   })
 
+  it('omits social login secrets from a plain export and keeps them when secrets are included', async () => {
+    const state = sourceSite()
+    state.globals['security-settings'] = {
+      id: 1,
+      createdAt: '2025-01-01',
+      socialLogin: {
+        allowSignupViaSocial: true,
+        googleEnabled: true,
+        googleClientId: 'google-client-id.example',
+        googleClientSecret: 'soc-google-secret',
+        githubClientSecret: 'soc-github-secret',
+        facebookClientSecret: 'soc-facebook-secret',
+        microsoftClientSecret: 'soc-microsoft-secret',
+        discordClientSecret: 'soc-discord-secret',
+        applePrivateKey: 'soc-apple-private-key',
+      },
+    }
+    const engine = makeEngine(state)
+
+    const plain = await buildExport(asEngine(engine), { ...ALL_OFF, settings: true })
+    const plainSecurity = plain.globals['security-settings'] as { socialLogin: Record<string, unknown> }
+    expect(plainSecurity.socialLogin).toMatchObject({ googleEnabled: true, googleClientId: 'google-client-id.example' })
+    for (const key of [
+      'googleClientSecret',
+      'githubClientSecret',
+      'facebookClientSecret',
+      'microsoftClientSecret',
+      'discordClientSecret',
+      'applePrivateKey',
+    ]) {
+      expect(plainSecurity.socialLogin).not.toHaveProperty(key)
+    }
+    const plainText = JSON.stringify(plain)
+    for (const secret of ['soc-google-secret', 'soc-github-secret', 'soc-facebook-secret', 'soc-microsoft-secret', 'soc-discord-secret', 'soc-apple-private-key']) {
+      expect(plainText).not.toContain(secret)
+    }
+
+    const withSecrets = await buildExport(asEngine(makeEngine(state)), { ...ALL_OFF, settings: true, includeSecrets: true })
+    expect(withSecrets.globals['security-settings']).toMatchObject({
+      socialLogin: {
+        googleClientSecret: 'soc-google-secret',
+        githubClientSecret: 'soc-github-secret',
+        facebookClientSecret: 'soc-facebook-secret',
+        microsoftClientSecret: 'soc-microsoft-secret',
+        discordClientSecret: 'soc-discord-secret',
+        applePrivateKey: 'soc-apple-private-key',
+      },
+    })
+  })
+
   it('requires a password of at least 8 characters when secrets are included', () => {
     expect(() => parseExportOptions({ settings: true, includeSecrets: true })).toThrow(ExportFormatError)
     expect(() => parseExportOptions({ settings: true, includeSecrets: true, password: 'short' })).toThrow(/at least 8/)

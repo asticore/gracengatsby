@@ -41,7 +41,7 @@ const FONT_NAME = /^[A-Za-z0-9 _-]{1,40}$/
 const oneLine = (text: string | undefined, max: number): string => (text ?? '').replace(/[^\x20-\x7e]+/g, ' ').replace(/[\r\n\t<>]+/g, ' ').trim().slice(0, max)
 
 /** The guide, before any examples, must stay under this many characters (the aim is about 15k; theme context and media notes added to it). */
-export const GUIDE_MAX_CHARS = 17_000
+export const GUIDE_MAX_CHARS = 18_000
 
 /** Element types the builder never uses: they need a record, a relation, or a table/form context. */
 const EXCLUDED_ELEMENT_TYPES = new Set(['content-slot', 'data-view', 'ad'])

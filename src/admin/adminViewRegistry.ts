@@ -43,6 +43,7 @@ import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 import { TwoFactorView } from '@/admin/views/TwoFactorView'
 import { SessionsView } from '@/admin/views/SessionsView'
+import { PasskeysView } from '@/admin/views/PasskeysView'
 import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
@@ -227,6 +228,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: SessionsView,
     path: '/security/sessions',
     meta: { title: 'Signed-in devices', description: 'See where your account is signed in and sign out any device.' },
+  },
+  {
+    key: 'passkeys',
+    Component: PasskeysView,
+    path: '/security/passkeys',
+    meta: { title: 'Passkeys', description: 'Sign in with a passkey on this device, if the site owner allows it.' },
   },
   {
     key: 'socialAccounts',

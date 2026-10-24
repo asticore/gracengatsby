@@ -996,7 +996,13 @@ async function openDeviceSession(db: AuthDbOps, userId: number, now: number, cli
   return opened ?? {}
 }
 
-export type LoginAsUserArgs = { id: number; secret: string; client?: SessionClient }
+export type LoginAsUserArgs = {
+  id: number
+  secret: string
+  client?: SessionClient
+  /** Set only by the passkey core, when a user-verified passkey has already proven the person. Locked accounts are still refused. */
+  skipSecondFactor?: boolean
+}
 
 /**
  * Session for an identity that was already proven elsewhere (social login).
@@ -1010,7 +1016,7 @@ export async function loginAsUser(db: AuthDbOps, args: LoginAsUserArgs): Promise
   const row = await db.findByID(args.id)
   checkLoginPermission(row, now)
 
-  if (requiresSecondFactor(row)) {
+  if (requiresSecondFactor(row) && !args.skipSecondFactor) {
     const { token: pendingToken } = signJWT({ purpose: PENDING_PURPOSE, id: row.id, email: row.email }, args.secret, PENDING_TWO_FACTOR_SECONDS)
     return { user: toAuthUserDoc(row), twoFactorRequired: true, pendingToken }
   }

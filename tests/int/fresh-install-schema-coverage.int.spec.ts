@@ -20,6 +20,7 @@ import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
 import * as userSessionsSchema from '@/cms/db/schema/userSessions'
 import * as socialAccountsSchema from '@/cms/db/schema/socialAccounts'
 import * as loginTokensSchema from '@/cms/db/schema/loginTokens'
+import * as passkeysSchema from '@/cms/db/schema/passkeys'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
@@ -235,6 +236,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Passwordless sign-in tokens: a plain drizzle table in its own schema file
       for (const [exportName, exportValue] of Object.entries(loginTokensSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Passkeys (WebAuthn) credentials: a plain drizzle table in its own schema file
+      for (const [exportName, exportValue] of Object.entries(passkeysSchema)) {
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
@@ -588,6 +594,36 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(cols).toEqual(expect.arrayContaining(['id', 'user_id', 'kind', 'token_hash', 'attempts', 'created_at', 'expires_at', 'used_at']))
     const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_login_tokens`)').all()).results as { name: string }[]).map((i) => i.name)
     expect(indexes).toEqual(expect.arrayContaining(['eg_login_tokens_user_idx', 'eg_login_tokens_hash_idx']))
+  })
+
+  it('adds the passkey columns to security settings, off by default, and creates eg_passkeys', async () => {
+    const settings = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(settings.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('passkeys_enabled')).toBe('0')
+    expect(byName.get('passkeys_allow_admins')).toBe('0')
+    expect(byName.get('passkeys_user_verification')).toBe("'preferred'")
+    expect(byName.has('passkeys_rp_name')).toBe(true)
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_passkeys`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['id', 'user_id', 'credential_id', 'public_key', 'sign_count', 'transports', 'device_label', 'backed_up', 'created_at', 'last_used_at']))
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_passkeys`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(indexes).toEqual(expect.arrayContaining(['eg_passkeys_credential_idx', 'eg_passkeys_user_idx']))
+  })
+
+  it('passkey migration is safe to run twice and leaves existing passkey rows alone', async () => {
+    const mod = await import('@/migrations/20261118_100000_passkeys')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare("INSERT INTO `eg_passkeys` (user_id, credential_id, public_key, sign_count, created_at) VALUES (9, 'keep-me-cred', 'pk', 0, '2026-01-01T00:00:00.000Z')").run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'passkeys_enabled')).toBe(1)
+    expect(await count('eg_security_settings', 'passkeys_user_verification')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_passkeys` WHERE credential_id = 'keep-me-cred'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_passkeys` WHERE credential_id = 'keep-me-cred'").run()
   })
 
   it('passwordless migration is safe to run twice and leaves existing token rows alone', async () => {

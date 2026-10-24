@@ -13,11 +13,14 @@ import { ORDER_STATUS_LABELS, isOrderStatus } from '@/features/ecommerce/lib/ord
 import { ReorderButton } from './ReorderButton'
 import { AccountShell } from './AccountShell'
 import { TwoFactorPanel } from '@/features/security/components/TwoFactorPanel'
+import { PasskeysPanel } from '@/features/passkeys/components/PasskeysPanel'
+import { listPasskeys } from '@/features/passkeys'
+import { passkeyDepsFor } from '../passkeysWiring'
 import { SessionsPanel } from '@/features/security/components/SessionsPanel'
 import { viewOwnSessions, type SessionActor } from '@/features/security/userSessionService'
 import { defaultUserSessionStore } from '@/features/security/userSessionStore'
 import { sessionIdFromToken } from '@/features/security/userSessions'
-import { currentSessionToken } from '../session'
+import { currentSessionToken, requestClient } from '../session'
 import { assertTwoFactorSatisfied, backupCodesRemaining, isEnrolled } from '@/features/security/twoFactor'
 import { defaultTwoFactorStore } from '@/features/security/twoFactorStore'
 import { getSecuritySettings } from '@/features/security/settings'
@@ -351,6 +354,10 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
   const email = typeof user.email === 'string' ? user.email : ''
   const secure = await defaultTwoFactorStore.findByID(Number(user.id)).catch((): null => null)
   const settings = await getSecuritySettings(engine as never).catch((): null => null)
+  // Off unless the owner turned passkeys on: nothing new shows for existing sites.
+  const passkeyDeps = await passkeyDepsFor(engine, await requestClient(), '').catch((): null => null)
+  const passkeysOn = Boolean(passkeyDeps && passkeyDeps.settings.enabled && passkeyDeps.secret)
+  const passkeyItems = passkeyDeps && passkeysOn ? await listPasskeys(passkeyDeps, Number(user.id)) : []
   const sessions = await viewOwnSessions(
     { store: defaultUserSessionStore, record: async (): Promise<void> => undefined, limited: () => false },
     user as unknown as SessionActor,
@@ -390,6 +397,13 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
         <h3>Two-step sign-in</h3>
         {securityNotice && <p className="account-note account-note--error">{securityNotice}</p>}
         <TwoFactorPanel enrolled={isEnrolled(secure)} backupCodesLeft={secure ? backupCodesRemaining(secure) : 0} />
+        {passkeysOn && (
+          <>
+            <h3>Passkeys</h3>
+            <p>Sign in with Face ID, Touch ID, Windows Hello or a security key. A passkey is an extra way in; your password still works.</p>
+            <PasskeysPanel initial={passkeyItems} />
+          </>
+        )}
       </section>
 
       {connections && (connections.linked.length > 0 || connections.available.length > 0) && (

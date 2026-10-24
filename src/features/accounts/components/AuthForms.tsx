@@ -17,6 +17,7 @@ import {
 } from '../actions'
 import { IDLE, VERIFY_FIRST_MESSAGE, type ActionState } from '../types'
 import { Note, SubmitButton } from './FormBits'
+import { PasskeySignInButton } from '@/features/passkeys/components/PasskeySignInButton'
 
 /**
  * The four unauthenticated forms.
@@ -32,10 +33,15 @@ export const SignInForm: React.FC<{
   justReset?: boolean
   initialPendingToken?: string
   passwordless?: { magicLink: boolean; emailCode: boolean }
-}> = ({ next, justReset, initialPendingToken, passwordless }) => {
+  /** Passkey sign-in is offered only when the owner switched it on. */
+  passkey?: boolean
+}> = ({ next, justReset, initialPendingToken, passwordless, passkey }) => {
   const [state, action] = useActionState<ActionState, FormData>(signInAction, IDLE)
+  const [passkeyPending, setPasskeyPending] = React.useState('')
 
-  if (state.pendingToken || initialPendingToken) return <CodeStep pendingToken={state.pendingToken || initialPendingToken || ''} next={next} />
+  if (state.pendingToken || initialPendingToken || passkeyPending) {
+    return <CodeStep pendingToken={state.pendingToken || initialPendingToken || passkeyPending} next={next} />
+  }
 
   return (
     <>
@@ -56,6 +62,12 @@ export const SignInForm: React.FC<{
       </label>
       <Note state={state} />
       <SubmitButton>Sign in</SubmitButton>
+      {passkey && (
+        <>
+          <p className="account-hint">Or use a passkey on this device.</p>
+          <PasskeySignInButton next={next} onTwoFactor={setPasskeyPending} />
+        </>
+      )}
       <div className="account-link-row">
         <Link href="/account/register">Create an account</Link>
         <Link href="/account/forgot-password">Forgotten your password?</Link>

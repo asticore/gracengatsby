@@ -94,6 +94,7 @@ import * as migration_20261114_100000_user_sessions from './20261114_100000_user
 import * as migration_20261115_100000_social_login from './20261115_100000_social_login';
 import * as migration_20261116_100000_password_policy from './20261116_100000_password_policy';
 import * as migration_20261117_100000_passwordless_login from './20261117_100000_passwordless_login';
+import * as migration_20261118_100000_passkeys from './20261118_100000_passkeys';
 
 export const migrations = [
   {
@@ -575,5 +576,10 @@ export const migrations = [
     up: migration_20261117_100000_passwordless_login.up,
     down: migration_20261117_100000_passwordless_login.down,
     name: '20261117_100000_passwordless_login',
+  },
+  {
+    up: migration_20261118_100000_passkeys.up,
+    down: migration_20261118_100000_passkeys.down,
+    name: '20261118_100000_passkeys',
   },
 ];

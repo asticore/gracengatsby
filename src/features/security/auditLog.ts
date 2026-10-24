@@ -49,6 +49,10 @@ export type AuditAction =
   | 'passwordless.requested'
   | 'passwordless.login'
   | 'passwordless.refused'
+  | 'passkey.registered'
+  | 'passkey.login'
+  | 'passkey.removed'
+  | 'passkey.refused'
 
 export type AuditEntry = {
   action: AuditAction

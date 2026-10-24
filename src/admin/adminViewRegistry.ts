@@ -42,6 +42,7 @@ import { DisplayCurrenciesView } from '@/admin/views/DisplayCurrenciesView'
 import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 import { TwoFactorView } from '@/admin/views/TwoFactorView'
+import { SessionsView } from '@/admin/views/SessionsView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
@@ -219,6 +220,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: TwoFactorView,
     path: '/security/two-factor',
     meta: { title: 'Two-step sign-in', description: 'Set up an authenticator app and backup codes for your account.' },
+  },
+  {
+    key: 'sessions',
+    Component: SessionsView,
+    path: '/security/sessions',
+    meta: { title: 'Signed-in devices', description: 'See where your account is signed in and sign out any device.' },
   },
   {
     key: 'scheduledTasks',

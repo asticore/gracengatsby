@@ -38,6 +38,10 @@ export type AuditAction =
   | 'two-factor.disabled'
   | 'two-factor.backup-codes'
   | 'two-factor.reset'
+  | 'session.revoked'
+  | 'session.revoked-others'
+  | 'session.revoked-all'
+  | 'session.admin-revoked'
 
 export type AuditEntry = {
   action: AuditAction

@@ -479,6 +479,15 @@
 import crypto from 'crypto'
 
 import { requiresSecondFactor, verifySecondFactor } from '@/features/security/twoFactor'
+import {
+  checkSession,
+  extendSession,
+  isSessionUsable,
+  openSession,
+  revokeQuietly,
+  type SessionClient,
+  type UserSessionStore,
+} from '@/features/security/userSessions'
 
 /* -------------------------------------------------------------------------- */
 /* Config constants                                                            */
@@ -690,12 +699,19 @@ export type AuthDbOps = {
   findByResetToken: (token: string) => Promise<AuthUserRow | null>
   /** A real call site wires this straight to `updateUserAuthRow` - a plain field-overwrite `updateByID`, not an atomic-increment endpoint (see ground-truth point 4). */
   updateByID: (id: number, data: Record<string, unknown>) => Promise<AuthUserRow | null>
+  /**
+   * The per-device session list (`eg_user_sessions`). Optional: without it
+   * every token behaves like one issued before session management existed.
+   * Sign-in writes a row and puts its id in the token as `usid`; a token with
+   * a `usid` is refused only when the row is positively revoked/expired/gone.
+   */
+  sessions?: UserSessionStore
 }
 
 /** Anything with a `.get(name)` method a real `Headers`/`ReadonlyHeaders` (Next.js) satisfies - same "structural, not the real type" philosophy as `access.ts`'s `LocalReq`, so a plain test double (`{ get: (k) => map[k] ?? null }`) works without importing any web-platform lib types. */
 export type HeadersLike = { get: (name: string) => string | null | undefined }
 
-export type LoginArgs = { email: string; password: string; secret: string }
+export type LoginArgs = { email: string; password: string; secret: string; client?: SessionClient }
 /**
  * A completed sign-in has `token` and `exp`. An account with confirmed
  * two-step instead gets `twoFactorRequired` and a short-lived `pendingToken`
@@ -704,7 +720,7 @@ export type LoginArgs = { email: string; password: string; secret: string }
  */
 export type LoginResult = { user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }
 
-export type ResetPasswordArgs = { token: string; password: string; secret: string }
+export type ResetPasswordArgs = { token: string; password: string; secret: string; client?: SessionClient }
 export type ResetPasswordResult = { user: AuthUserDoc; token: string }
 
 export type ForgotPasswordArgs = { email: string; expirationMs: number }
@@ -713,7 +729,7 @@ export type VerifyAuthArgs = { headers: HeadersLike; secret: string }
 export type VerifyAuthResult = { user: AuthUserDoc | null }
 
 /** The decoded, verified claims a real `sid`-bearing JWT for this app carries - see `getFieldsToSign` in ground-truth point 7. */
-export type JWTClaims = { id: number; collection: 'users'; email: string; sid: string; iat: number; exp: number }
+export type JWTClaims = { id: number; collection: 'users'; email: string; sid: string; usid?: string; jti?: string; iat: number; exp: number }
 
 export type LogoutArgs = { headers: HeadersLike; secret: string; allSessions?: boolean }
 export type LogoutResult = { message: string }
@@ -954,12 +970,13 @@ export async function login(db: AuthDbOps, args: LoginArgs): Promise<LoginResult
     return { user: toAuthUserDoc(row), twoFactorRequired: true, pendingToken }
   }
 
-  return finishLogin(db, row, now, args.secret, normalizedEmail)
+  return finishLogin(db, row, now, args.secret, normalizedEmail, args.client)
 }
 
 /** Mints the session, clears the failed-attempt counters and signs the JWT. Shared by the one-step and two-step paths. */
-async function finishLogin(db: AuthDbOps, row: AuthUserRow, now: number, secret: string, email: string = row.email): Promise<LoginResult> {
+async function finishLogin(db: AuthDbOps, row: AuthUserRow, now: number, secret: string, email: string = row.email, client?: SessionClient): Promise<LoginResult> {
   const { sid, row: rowAfterSession } = await mintSession(db, row, now)
+  const device = await openDeviceSession(db, row.id, now, client)
 
   let finalRow = rowAfterSession
   if (needsAttemptsReset(row)) {
@@ -967,12 +984,19 @@ async function finishLogin(db: AuthDbOps, row: AuthUserRow, now: number, secret:
     if (reset) finalRow = { ...finalRow, ...reset }
   }
 
-  const { token, exp } = signJWT({ id: row.id, collection: 'users', email, sid }, secret, TOKEN_EXPIRATION_SECONDS)
+  const { token, exp } = signJWT({ id: row.id, collection: 'users', email, sid, ...device }, secret, TOKEN_EXPIRATION_SECONDS)
 
   return { user: toAuthUserDoc(finalRow), token, exp }
 }
 
-export type LoginSecondFactorArgs = { pendingToken: string; code: string; secret: string }
+/** Writes the per-device row and returns the claims for it, or `{}` when sessions are not wired, skipped, or the write failed (the token then behaves like a pre-existing one). */
+async function openDeviceSession(db: AuthDbOps, userId: number, now: number, client?: SessionClient): Promise<{ usid?: string; jti?: string }> {
+  if (!db.sessions || client?.skipSession) return {}
+  const opened = await openSession(db.sessions, { userId, client, now, ttlSeconds: TOKEN_EXPIRATION_SECONDS })
+  return opened ?? {}
+}
+
+export type LoginSecondFactorArgs = { pendingToken: string; code: string; secret: string; client?: SessionClient }
 
 /**
  * Step two of a two-step sign-in. A wrong code counts toward the same
@@ -998,7 +1022,7 @@ export async function loginWithSecondFactor(db: AuthDbOps, args: LoginSecondFact
   // Re-read: the check just wrote lastUsedStep / the backup list, and
   // mintSession writes the whole row back.
   const fresh = (await db.findByID(row.id)) ?? row
-  return finishLogin(db, fresh, now, args.secret)
+  return finishLogin(db, fresh, now, args.secret, undefined, args.client)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1025,9 +1049,15 @@ export async function resetPassword(db: AuthDbOps, args: ResetPasswordArgs): Pro
   const afterPasswordWrite = await db.updateByID(row.id, { salt, hash, resetPasswordExpiration: new Date(now).toISOString() })
   const rowAfterPasswordWrite = afterPasswordWrite ?? { ...row, salt, hash, resetPasswordExpiration: new Date(now).toISOString() }
 
-  const { sid, row: rowAfterSession } = await mintSession(db, rowAfterPasswordWrite, now)
+  // A reset is the "I may have lost control of this account" path: every
+  // tracked device is signed out before the new session is created. Quiet on
+  // failure - a session table problem must not stop someone resetting a password.
+  if (db.sessions) await revokeQuietly(db.sessions, row.id, null, now)
 
-  const { token } = signJWT({ id: row.id, collection: 'users', email: row.email, sid }, args.secret, TOKEN_EXPIRATION_SECONDS)
+  const { sid, row: rowAfterSession } = await mintSession(db, rowAfterPasswordWrite, now)
+  const device = await openDeviceSession(db, row.id, now, args.client)
+
+  const { token } = signJWT({ id: row.id, collection: 'users', email: row.email, sid, ...device }, args.secret, TOKEN_EXPIRATION_SECONDS)
 
   return { user: toAuthUserDoc(rowAfterSession), token }
 }
@@ -1135,6 +1165,13 @@ export async function verifyAuth(db: AuthDbOps, args: VerifyAuthArgs): Promise<V
   const sessionStillLive = typeof sid === 'string' && (row.sessions ?? []).some((session) => session.id === sid)
   if (!sessionStillLive) return { user: null }
 
+  // Per-device session: only tokens that carry a `usid` are checked, and only a
+  // positive "revoked / expired / unknown" answer refuses them. See userSessions.ts.
+  if (db.sessions && typeof decoded.usid === 'string') {
+    const check = await checkSession(db.sessions, { usid: decoded.usid, jti: typeof decoded.jti === 'string' ? decoded.jti : undefined, userId: id }, Date.now())
+    if (!isSessionUsable(check)) return { user: null }
+  }
+
   return { user: toAuthUserDoc(row) }
 }
 
@@ -1174,6 +1211,19 @@ export async function logout(db: AuthDbOps, args: LogoutArgs): Promise<LogoutRes
   const { id: _id, createdAt: _createdAt, ...rest } = row
   await db.updateByID(id, { ...rest, sessions: remaining, updatedAt: null })
 
+  // Mark the per-device row ended too, so the session list stops showing it.
+  if (db.sessions) {
+    const usid = typeof decoded?.usid === 'string' ? decoded.usid : null
+    if (args.allSessions) await revokeQuietly(db.sessions, id, null)
+    else if (usid) {
+      try {
+        await db.sessions.revoke(usid, id, new Date().toISOString())
+      } catch (error) {
+        console.warn(JSON.stringify({ level: 'warn', msg: 'Session not marked revoked at logout', error: String(error) }))
+      }
+    }
+  }
+
   return { message: 'Logged out successfully.' }
 }
 
@@ -1209,6 +1259,14 @@ export async function refreshToken(db: AuthDbOps, args: RefreshTokenArgs): Promi
   const existing = (row.sessions ?? []).find((session) => session.id === sid)
   if (!existing) throw new AuthenticationError()
 
+  // A refresh must not resurrect an ended device session.
+  const usid = typeof decoded?.usid === 'string' ? decoded.usid : undefined
+  const jti = typeof decoded?.jti === 'string' ? decoded.jti : undefined
+  if (db.sessions && usid) {
+    const check = await checkSession(db.sessions, { usid, jti, userId: id }, now)
+    if (!isSessionUsable(check)) throw new AuthenticationError()
+  }
+
   const refreshed: AuthSession = { ...existing, expiresAt: new Date(now + TOKEN_EXPIRATION_SECONDS * 1000).toISOString() }
   const newSessions = [...pruneExpiredSessions(row.sessions, now).filter((session) => session.id !== sid), refreshed]
 
@@ -1216,7 +1274,9 @@ export async function refreshToken(db: AuthDbOps, args: RefreshTokenArgs): Promi
   const updated = await db.updateByID(id, { ...rest, sessions: newSessions, updatedAt: null })
   const finalRow = updated ?? { ...row, sessions: newSessions }
 
-  const { token: newToken, exp } = signJWT({ id, collection: 'users', email: finalRow.email, sid }, args.secret, TOKEN_EXPIRATION_SECONDS)
+  if (db.sessions && usid) await extendSession(db.sessions, usid, new Date(now + TOKEN_EXPIRATION_SECONDS * 1000))
+
+  const { token: newToken, exp } = signJWT({ id, collection: 'users', email: finalRow.email, sid, ...(usid ? { usid } : {}), ...(jti ? { jti } : {}) }, args.secret, TOKEN_EXPIRATION_SECONDS)
 
   return { exp, token: newToken, user: toAuthUserDoc(finalRow), setCookie: true }
 }

@@ -1,5 +1,8 @@
 import type { Engine } from '@/engine'
 
+import { defaultUserSessionStore } from '@/features/security/userSessionStore'
+import { revokeQuietly, sessionIdFromToken, type SessionClient } from '@/features/security/userSessions'
+
 import { emailProblem, passwordProblem, signIn, verifyPassword } from './auth'
 import { writePreferences } from './preferences'
 import type { AccountUser } from './session'
@@ -49,6 +52,7 @@ export const changeEmail = async (
   user: AccountUser,
   nextEmail: string,
   currentPassword: string,
+  client?: SessionClient,
 ): Promise<ProfileOutcome> => {
   const email = nextEmail.trim().toLowerCase()
   const problem = emailProblem(email)
@@ -77,7 +81,7 @@ export const changeEmail = async (
     return { ok: false, message: 'That email address cannot be used.' }
   }
 
-  const session = await signIn(engine, email, currentPassword)
+  const session = await signIn(engine, email, currentPassword, client)
   return {
     ok: true,
     token: session.ok ? session.token : undefined,
@@ -97,6 +101,8 @@ export const changePassword = async (
   currentPassword: string,
   nextPassword: string,
   confirmation: string,
+  client?: SessionClient,
+  currentSessionId?: string | null,
 ): Promise<ProfileOutcome> => {
   const problem = passwordProblem(nextPassword)
   if (problem) return { ok: false, message: problem }
@@ -119,7 +125,15 @@ export const changePassword = async (
     return { ok: false, message: 'That password could not be saved.' }
   }
 
-  const session = await signIn(engine, email, nextPassword)
+  const session = await signIn(engine, email, nextPassword, client)
+
+  // Every other signed-in device goes: whoever knew the old password may be
+  // one of them. The device making the change is kept - the fresh session when
+  // there is one, otherwise (a two-step account signs in in two steps) the
+  // session it already has, so this never signs the person out of their own
+  // browser.
+  await revokeQuietly(defaultUserSessionStore, Number(user.id), sessionIdFromToken(session.token) ?? currentSessionId ?? null)
+
   return {
     ok: true,
     token: session.ok ? session.token : undefined,

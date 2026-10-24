@@ -14,6 +14,7 @@ import {
   emailProblem,
   registerCustomer,
   requestPasswordReset,
+  resendCooldownSeconds,
   resendVerification,
   signIn,
   signInWithCode,
@@ -106,6 +107,8 @@ export async function signInAction(_state: ActionState, form: FormData): Promise
         actorEmail: address || null,
         detail: 'password step',
       }, origin)
+    } else if (result.needsVerification) {
+      await recordAuthEvent(context.engine, { action: 'email.refused', actorEmail: address || null, detail: 'sign-in held back: email not verified' }, origin)
     }
     return failed(result.message ?? 'That did not work.')
   }
@@ -284,7 +287,9 @@ export async function resendVerificationAction(
     text(form, 'email'),
     (token) => `${origin}/account/verify-email?token=${encodeURIComponent(token)}`,
   )
-  return succeeded(NEUTRAL_EMAIL_NOTICE)
+  // The wait is the same for everyone, so saying it reveals nothing about the address.
+  const wait = await resendCooldownSeconds(context.engine)
+  return succeeded(wait > 0 ? `${NEUTRAL_EMAIL_NOTICE} You can ask for another in ${wait} seconds.` : NEUTRAL_EMAIL_NOTICE)
 }
 
 // --- Addresses --------------------------------------------------------------

@@ -1,6 +1,12 @@
 import type { Engine } from '@/engine'
 
 import { passwordProblemFor } from '@/features/security/passwordCheck'
+import {
+  consumeVerificationToken,
+  latestVerificationSentAt,
+  storeVerificationToken,
+} from '@/features/security/emailVerificationStore'
+import { DEFAULT_SECURITY_SETTINGS, getSecuritySettings } from '@/features/security/settings'
 import { readPasswordStateByResetToken, recordPasswordSet } from '@/features/security/passwordStore'
 import type { SessionClient } from '@/features/security/userSessions'
 
@@ -76,12 +82,24 @@ const toHex = (bytes: Uint8Array): string =>
 export const hashVerifyToken = async (token: string): Promise<string> =>
   toHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))))
 
-/** Whether the site has switched verification on (off unless set). */
+/**
+ * Whether sign-in is held back until the address is confirmed: the Security setting
+ * "Require a verified email to sign in", or the older Accounts setting. Either one is
+ * enough; both default to off.
+ */
 export const verificationRequired = async (engine: Engine): Promise<boolean> => {
+  const security = await getSecuritySettings(engine as never).catch(() => DEFAULT_SECURITY_SETTINGS)
+  if (security.emailVerification.requireToSignIn) return true
   const settings = (await engine
     .findGlobal({ slug: 'site-settings', depth: 0 })
     .catch((): null => null)) as { accountSettings?: { requireEmailVerification?: boolean | null } | null } | null
   return settings?.accountSettings?.requireEmailVerification === true
+}
+
+/** The least gap between two verification emails to one account, in seconds. */
+export const resendCooldownSeconds = async (engine: Engine): Promise<number> => {
+  const security = await getSecuritySettings(engine as never).catch(() => DEFAULT_SECURITY_SETTINGS)
+  return security.emailVerification.resendCooldownSeconds
 }
 
 /** Customer-only accounts: admins, editors and viewers are never gated. */
@@ -101,15 +119,22 @@ export const issueVerification = async (
   const token = toHex(crypto.getRandomValues(new Uint8Array(32)))
   const expires = new Date(Date.now() + VERIFY_TTL_HOURS * 60 * 60 * 1000).toISOString()
 
+  const tokenHash = await hashVerifyToken(token)
   try {
-    await engine.update({
-      collection: USERS_SLUG,
-      id: Number(userId),
-      data: { emailVerifyTokenHash: await hashVerifyToken(token), emailVerifyExpiresAt: expires },
-      overrideAccess: true,
-    })
+    await storeVerificationToken(Number(userId), email, tokenHash, expires)
   } catch {
-    return false
+    // The token table is not reachable (not migrated yet): keep the older single-token
+    // columns on the user row working, so verification never silently stops.
+    try {
+      await engine.update({
+        collection: USERS_SLUG,
+        id: Number(userId),
+        data: { emailVerifyTokenHash: tokenHash, emailVerifyExpiresAt: expires },
+        overrideAccess: true,
+      })
+    } catch {
+      return false
+    }
   }
 
   await sendVerifyEmail(email, verifyUrlFor(token), VERIFY_TTL_HOURS).catch((): undefined => undefined)
@@ -123,10 +148,29 @@ const VERIFY_INVALID = 'That link has expired or has already been used.'
 /** Consumes a token once: hash, match, check expiry, mark verified, clear. */
 export const completeVerification = async (engine: Engine, token: string): Promise<VerifyResult> => {
   if (!token) return { ok: false, message: VERIFY_INVALID }
+  const tokenHash = await hashVerifyToken(token)
+
+  // Current links live in eg_email_verifications and are spent in one statement.
+  try {
+    const consumed = await consumeVerificationToken(tokenHash)
+    if (consumed) {
+      await engine.update({
+        collection: USERS_SLUG,
+        id: consumed.userId,
+        data: { emailVerifiedAt: new Date().toISOString(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
+        overrideAccess: true,
+      })
+      return { ok: true, userId: consumed.userId }
+    }
+  } catch {
+    // Table unreachable: fall through to the older per-user token.
+  }
+
+  // Links sent before the token table existed still work until they expire.
   try {
     const found = await engine.find({
       collection: USERS_SLUG,
-      where: { emailVerifyTokenHash: { equals: await hashVerifyToken(token) } },
+      where: { emailVerifyTokenHash: { equals: tokenHash } },
       limit: 1,
       depth: 0,
       overrideAccess: true,
@@ -177,6 +221,14 @@ export const resendVerification = async (
     | { id: number | string; roles?: unknown; emailVerifiedAt?: string | null }
     | undefined
   if (!user || user.emailVerifiedAt || !isCustomerOnly(user.roles)) return
+
+  // Inside the cooldown nothing is sent. The caller's answer is the same either way.
+  const cooldown = await resendCooldownSeconds(engine)
+  if (cooldown > 0) {
+    const last = await latestVerificationSentAt(Number(user.id)).catch((): null => null)
+    const sentAt = last ? Date.parse(last) : NaN
+    if (Number.isFinite(sentAt) && Date.now() - sentAt < cooldown * 1000) return
+  }
 
   await issueVerification(engine, user.id, address, verifyUrlFor)
 }

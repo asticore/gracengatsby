@@ -165,6 +165,7 @@ import type { Engine } from './engine'
 import { createEngine } from './engine'
 import { clientKey, hit, limitFor } from '@/features/security/rateLimit'
 import { audit, auditContext } from '@/features/security/auditLog'
+import { recordAuthEvent } from '@/features/security/authAudit'
 import { sessionIdFromToken } from '@/features/security/userSessions'
 import { DEFAULT_SECURITY_SETTINGS, getSecuritySettings } from '@/features/security/settings'
 import { confirmStripeOrder, finalizePaidIntent, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
@@ -1411,12 +1412,17 @@ async function handleGlobalUpdate(engine: Engine, slug: string, request: Request
  */
 async function handleLogin(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const result = await engine.login({ collection, data: { email: stringField(data, 'email'), password: stringField(data, 'password') }, client: sessionClient(request) })
+  const address = stringField(data, 'email').trim().toLowerCase() || null
+  const result = await engine.login({ collection, data: { email: stringField(data, 'email'), password: stringField(data, 'password') }, client: sessionClient(request) }).catch(async (err: unknown): Promise<never> => {
+    await recordAuthEvent(engine, { action: err instanceof LockedAuth ? 'login.locked' : 'login.failed', collectionSlug: collection, actorEmail: address, detail: 'password step' }, auditContext(request))
+    throw err
+  })
   // Confirmed two-step: password right, session not yet issued. No cookie, and
   // nothing about the account beyond the fact that a code is needed.
   if (result.twoFactorRequired) {
     return Response.json({ message: 'A two-step code is required.', twoFactorRequired: true, pendingToken: result.pendingToken }, { status: 200 })
   }
+  await recordAuthEvent(engine, { action: 'login.success', collectionSlug: collection, actorId: result.user?.id ?? null, actorEmail: address }, auditContext(request))
   const headers = new Headers()
   if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
   return Response.json({ message: 'Authentication Passed', ...result }, { status: 200, headers })
@@ -1448,6 +1454,7 @@ async function handleLoginSecondFactor(engine: Engine, collection: string, reque
   try {
     const result = await engine.loginSecondFactor({ collection, data: { pendingToken: stringField(data, 'pendingToken'), code: stringField(data, 'code') }, client: sessionClient(request) })
     await audit({ action: 'two-factor.verified', actorId: result.user.id, actorEmail: result.user.email, collectionSlug: collection, ...context }, settings).catch((): void => undefined)
+    await recordAuthEvent(engine, { action: 'login.success', collectionSlug: collection, actorId: result.user.id, actorEmail: result.user.email, detail: 'two-step' }, context)
     const headers = new Headers()
     if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
     return Response.json({ message: 'Authentication Passed', ...result }, { status: 200, headers })
@@ -1460,7 +1467,12 @@ async function handleLoginSecondFactor(engine: Engine, collection: string, reque
 /** `POST /logout` - `{message: 'Logout successful.'}` plus an expired `Set-Cookie` (`auth/endpoints/logout.js`, `authentication:logoutSuccessful`). This app's own `./auth.ts`'s `logout()` never throws (an already-invalid/missing token is a no-op success, by design - see its own doc comment), so there is no failure branch to reproduce from the reference engine's own `error:logoutFailed` 400 case. */
 async function handleLogout(engine: Engine, collection: string, request: Request): Promise<Response> {
   const url = new URL(request.url)
-  await engine.logout({ collection, headers: request.headers, allSessions: url.searchParams.get('allSessions') === 'true' })
+  const allSessions = url.searchParams.get('allSessions') === 'true'
+  const who = await engine.auth({ headers: request.headers }).then((r) => r.user as { id?: number | string; email?: string } | null, (): null => null)
+  await engine.logout({ collection, headers: request.headers, allSessions })
+  if (who) {
+    await recordAuthEvent(engine, { action: 'logout', collectionSlug: collection, actorId: who.id ?? null, actorEmail: who.email ?? null, detail: allSessions ? 'all devices' : 'this device' }, auditContext(request))
+  }
   const headers = new Headers()
   headers.set('Set-Cookie', buildExpiredAuthCookie())
   return Response.json({ message: 'Logout successful.' }, { status: 200, headers })
@@ -1505,6 +1517,7 @@ async function handleForgotPassword(engine: Engine, collection: string, request:
 async function handleResetPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
   const result = await engine.resetPassword({ collection, data: { password: stringField(data, 'password'), token: stringField(data, 'token') }, client: sessionClient(request) })
+  await recordAuthEvent(engine, { action: 'password.reset', collectionSlug: collection, actorId: result.user?.id ?? null, actorEmail: result.user?.email ?? null, detail: 'api' }, auditContext(request))
   const headers = new Headers()
   headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
   return Response.json({ message: 'Password reset successfully.', user: result.user, token: result.token }, { status: 200, headers })

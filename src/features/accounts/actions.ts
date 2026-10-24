@@ -6,6 +6,7 @@ import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { passwordProblemFor } from '@/features/security/passwordCheck'
+import { recordAuthEvent } from '@/features/security/authAudit'
 
 import {
   completePasswordReset,
@@ -92,12 +93,24 @@ export async function signInAction(_state: ActionState, form: FormData): Promise
   const guard = await guardAttempt(context.engine, 'sign-in', await requestAddress())
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
-  const result = await signIn(context.engine, text(form, 'email'), text(form, 'password'), await requestClient())
+  const address = text(form, 'email').trim().toLowerCase()
+  const origin = await requestClient()
+  const result = await signIn(context.engine, text(form, 'email'), text(form, 'password'), origin)
   if (result.needsTwoFactor && result.pendingToken) {
     return { status: 'idle', message: '', pendingToken: result.pendingToken }
   }
-  if (!result.ok || !result.token) return failed(result.message ?? 'That did not work.')
+  if (!result.ok || !result.token) {
+    if (result.reason) {
+      await recordAuthEvent(context.engine, {
+        action: result.reason === 'locked' ? 'login.locked' : 'login.failed',
+        actorEmail: address || null,
+        detail: 'password step',
+      }, origin)
+    }
+    return failed(result.message ?? 'That did not work.')
+  }
 
+  await recordAuthEvent(context.engine, { action: 'login.success', actorId: result.userId ?? null, actorEmail: address || null }, origin)
   await setSessionCookie(result.token)
   redirect(safeNext(form.get('next')))
 }
@@ -114,12 +127,19 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
   const guard = await guardAttempt(context.engine, 'two-factor', await requestAddress())
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
-  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'), await requestClient())
+  const origin = await requestClient()
+  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'), origin)
   if (!result.ok || !result.token) {
+    await recordAuthEvent(context.engine, {
+      action: result.reason === 'locked' ? 'login.locked' : 'two-factor.failed',
+      detail: 'code step',
+    }, origin)
     // The same pending token stays valid for its few minutes, so a typo does not mean starting over.
     return { status: 'error', message: result.message ?? 'That did not work.', pendingToken }
   }
 
+  await recordAuthEvent(context.engine, { action: 'two-factor.verified', actorId: result.userId ?? null }, origin)
+  await recordAuthEvent(context.engine, { action: 'login.success', actorId: result.userId ?? null, detail: 'two-step' }, origin)
   await setSessionCookie(result.token)
   // A social sign-in parks its pending token here; it has done its job.
   ;(await cookies()).delete('eg_social_pending')
@@ -132,7 +152,11 @@ export async function signOutAction(): Promise<void> {
   // cookie is cleared either way.
   try {
     const context = await accountContext()
+    const who = context.user as { id?: number | string; email?: string } | null
     await context.engine.logout({ collection: USERS_SLUG, headers: await headers() })
+    if (who) {
+      await recordAuthEvent(context.engine, { action: 'logout', actorId: who.id ?? null, actorEmail: who.email ?? null, detail: 'this device' }, await requestClient())
+    }
   } catch {
     // Signing out of this browser must never fail.
   }
@@ -218,6 +242,7 @@ export async function resetPasswordAction(
 
   const result = await completePasswordReset(context.engine, text(form, 'token'), password)
   if (!result.ok) return failed(result.message ?? 'That did not work.')
+  await recordAuthEvent(context.engine, { action: 'password.reset', actorId: result.userId ?? null, detail: 'emailed link' }, await requestClient())
 
   // No session is minted here. Whoever opened the link has proven they can
   // read the mailbox; signing in with the new password proves they know it.
@@ -234,6 +259,11 @@ export async function verifyEmailAction(_state: ActionState, form: FormData): Pr
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
   const result = await completeVerification(context.engine, text(form, 'token'))
+  await recordAuthEvent(
+    context.engine,
+    result.ok ? { action: 'email.verified', actorId: result.userId ?? null } : { action: 'email.refused', detail: 'link expired or already used' },
+    await requestClient(),
+  )
   if (!result.ok) return failed(result.message ?? 'That did not work.')
   return succeeded('Your email address is confirmed. You can sign in now.')
 }

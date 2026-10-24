@@ -19,7 +19,12 @@ import type { CollectionAfterChangeHook } from '@/engine'
  * collection config, which the database layer itself imports.
  */
 
-type Req = { user?: { id?: number | string } | null; currentSessionId?: string | null; engine?: unknown }
+type Req = {
+  user?: { id?: number | string } | null
+  currentSessionId?: string | null
+  engine?: unknown
+  headers?: Headers
+}
 
 export const revokeSessionsOnPasswordChange: CollectionAfterChangeHook = async (args) => {
   const { doc, data, operation, req } = args as unknown as {
@@ -38,6 +43,18 @@ export const revokeSessionsOnPasswordChange: CollectionAfterChangeHook = async (
 
     const actorId = req?.user?.id !== undefined ? Number(req.user.id) : null
     const own = actorId !== null && actorId === targetId
+
+    // Every password change through the Users collection is an auth event,
+    // whichever screen or route made it. Written before the session logic so
+    // that a change with no session to keep (the profile path) is still recorded.
+    if (req?.engine) {
+      const { recordAuthEvent, originFromHeaders } = await import('./authAudit')
+      await recordAuthEvent(
+        req.engine,
+        { action: 'password.changed', actorId, collectionSlug: 'users', documentId: targetId, detail: own ? 'own account' : 'another account' },
+        originFromHeaders(req.headers),
+      )
+    }
 
     let keep: string | null = null
     if (own) {

@@ -60,6 +60,56 @@ export type AuditAction =
   | 'impersonation.started'
   | 'impersonation.ended'
   | 'impersonation.refused'
+  | 'password.changed'
+  | 'password.reset'
+  | 'email.verified'
+  | 'email.refused'
+
+/**
+ * Every action an account-security event can write. The admin review screen
+ * (/security/audit) lists exactly these, so an event added to the union above
+ * and left out of this list would be written but never shown.
+ */
+export const AUTH_AUDIT_ACTIONS: readonly AuditAction[] = [
+  'login.success',
+  'login.failed',
+  'login.locked',
+  'logout',
+  'session.expired',
+  'rate-limit.blocked',
+  'password.changed',
+  'password.reset',
+  'email.verified',
+  'email.refused',
+  'two-factor.enrolled',
+  'two-factor.failed',
+  'two-factor.verified',
+  'two-factor.disabled',
+  'two-factor.backup-codes',
+  'two-factor.reset',
+  'session.revoked',
+  'session.revoked-others',
+  'session.revoked-all',
+  'session.admin-revoked',
+  'social.login',
+  'social.linked',
+  'social.unlinked',
+  'social.refused',
+  'passwordless.requested',
+  'passwordless.login',
+  'passwordless.refused',
+  'passkey.registered',
+  'passkey.login',
+  'passkey.removed',
+  'passkey.refused',
+  'api-key.created',
+  'api-key.revoked',
+  'api-key.used',
+  'api-key.refused',
+  'impersonation.started',
+  'impersonation.ended',
+  'impersonation.refused',
+]
 
 export type AuditEntry = {
   action: AuditAction

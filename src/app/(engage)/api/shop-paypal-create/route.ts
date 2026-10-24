@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getEngine } from '@/engine'
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { clientKey, hit } from '@/features/security/rateLimit'
 import { CheckoutError } from '@/features/ecommerce/server/pricing'
 import { createPayPalCheckout } from '@/features/ecommerce/payments/paypalCheckout'
@@ -19,6 +20,9 @@ const obj = (v: unknown): Record<string, unknown> | undefined => (v && typeof v 
  * The browser never supplies a total. Rate limited because it also checks gift card codes.
  */
 export async function POST(request: Request): Promise<Response> {
+  // Placing an order is not available while an admin is signed in as a customer.
+  const blocked = refuseWhileImpersonating(request.headers)
+  if (blocked) return NextResponse.json({ error: blocked }, { status: 403 })
   const decision = hit(`shop-paypal-create:${clientKey(request)}`, 20)
   if (decision.limited) {
     return NextResponse.json({ error: 'Too many requests. Try again in a moment.' }, { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } })

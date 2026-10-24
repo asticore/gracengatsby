@@ -45,6 +45,7 @@ import { TwoFactorView } from '@/admin/views/TwoFactorView'
 import { SessionsView } from '@/admin/views/SessionsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
+import { ImpersonationView } from '@/admin/views/ImpersonationView'
 import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
@@ -241,6 +242,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: ApiKeysView,
     path: '/security/api-keys',
     meta: { title: 'API keys', description: 'Create and revoke keys for scripts that call the site API. Admins see every key.' },
+  },
+  {
+    key: 'impersonation',
+    Component: ImpersonationView,
+    path: '/security/impersonation',
+    meta: { title: 'Sign in as customer', description: 'Admins: open a customer account for a short time, with a reason. The history of every session.' },
   },
   {
     key: 'socialAccounts',

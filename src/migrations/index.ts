@@ -96,6 +96,7 @@ import * as migration_20261116_100000_password_policy from './20261116_100000_pa
 import * as migration_20261117_100000_passwordless_login from './20261117_100000_passwordless_login';
 import * as migration_20261118_100000_passkeys from './20261118_100000_passkeys';
 import * as migration_20261119_100000_api_keys from './20261119_100000_api_keys';
+import * as migration_20261120_100000_impersonation from './20261120_100000_impersonation';
 
 export const migrations = [
   {
@@ -587,5 +588,10 @@ export const migrations = [
     up: migration_20261119_100000_api_keys.up,
     down: migration_20261119_100000_api_keys.down,
     name: '20261119_100000_api_keys',
+  },
+  {
+    up: migration_20261120_100000_impersonation.up,
+    down: migration_20261120_100000_impersonation.down,
+    name: '20261120_100000_impersonation',
   },
 ];

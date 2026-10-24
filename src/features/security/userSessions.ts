@@ -61,6 +61,8 @@ export type SessionClient = {
   ip?: string | null
   /** Re-authentication checks (password confirmations) sign in only to test a password; they must not leave a session behind. */
   skipSession?: boolean
+  /** Replaces the device label derived from the User-Agent. Impersonation uses this to flag its sessions. */
+  label?: string
 }
 
 export type SessionClaims = { usid: string; jti?: string; userId: number }
@@ -160,7 +162,7 @@ export async function openSession(
       id: usid,
       userId: args.userId,
       tokenHash: hashJti(jti),
-      deviceLabel: deviceLabelFromUserAgent(args.client?.userAgent),
+      deviceLabel: args.client?.label ?? deviceLabelFromUserAgent(args.client?.userAgent),
       ip: coarseIp(args.client?.ip),
       createdAt: at,
       lastSeenAt: at,

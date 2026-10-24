@@ -57,6 +57,9 @@ export type AuditAction =
   | 'api-key.revoked'
   | 'api-key.used'
   | 'api-key.refused'
+  | 'impersonation.started'
+  | 'impersonation.ended'
+  | 'impersonation.refused'
 
 export type AuditEntry = {
   action: AuditAction

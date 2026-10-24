@@ -1,5 +1,6 @@
 'use server'
 
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { headers } from 'next/headers'
 
 import { reauthenticate } from '@/features/accounts/passkeysWiring'
@@ -116,7 +117,9 @@ export async function listAllApiKeys(): Promise<ApiKeyActionResult> {
   return { ok: true, keys: await toViews(await listApiKeys(s.deps.store, 'all'), s.deps.now()) }
 }
 
-export async function createMyApiKey(input: { name: string; scopes: string[]; expiresInDays?: string; password?: string; code?: string }): Promise<ApiKeyActionResult> {
+export async function createMyApiKey(input: { name: string; scopes: string[]; expiresInDays?: string; password?: string; code?: string }): Promise<ApiKeyActionResult> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, error: blocked }
+
   const s = await session()
   if (!s) return { ok: false, error: 'Sign in to create an API key.' }
   if (!s.settings.apiKeys.enabled) return { ok: false, error: 'API keys are not turned on for this site.' }
@@ -137,7 +140,9 @@ export async function createMyApiKey(input: { name: string; scopes: string[]; ex
 }
 
 /** Revokes one key. The owner may revoke their own; an admin may revoke any (audited). */
-export async function revokeApiKeyAction(keyId: number): Promise<ApiKeyActionResult> {
+export async function revokeApiKeyAction(keyId: number): Promise<ApiKeyActionResult> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, error: blocked }
+
   const s = await session()
   if (!s) return { ok: false, error: 'Sign in to revoke a key.' }
   const result = await revokeApiKey(s.deps, { id: s.actor.id, email: s.actor.email, isAdmin: s.actor.isAdmin }, Number(keyId))

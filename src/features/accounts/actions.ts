@@ -1,5 +1,6 @@
 'use server'
 
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -328,7 +329,9 @@ export async function saveNameAction(_state: ActionState, form: FormData): Promi
   return result.ok ? succeeded(result.message) : failed(result.message)
 }
 
-export async function changeEmailAction(_state: ActionState, form: FormData): Promise<ActionState> {
+export async function changeEmailAction(_state: ActionState, form: FormData): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return failed(blocked)
+
   const context = await openContext()
   if (!context) return FEATURE_OFF
   if (!context.user) return SIGNED_OUT
@@ -350,7 +353,9 @@ export async function changeEmailAction(_state: ActionState, form: FormData): Pr
 export async function changePasswordAction(
   _state: ActionState,
   form: FormData,
-): Promise<ActionState> {
+): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return failed(blocked)
+
   const context = await openContext()
   if (!context) return FEATURE_OFF
   if (!context.user) return SIGNED_OUT
@@ -430,7 +435,9 @@ export async function verifyCodeAction(_state: ActionState, form: FormData): Pro
  * the one place the link is spent, so a mail scanner that fetches the URL cannot
  * sign anyone in or use the link up.
  */
-export async function confirmLinkAction(_state: ActionState, form: FormData): Promise<ActionState> {
+export async function confirmLinkAction(_state: ActionState, form: FormData): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return failed(blocked)
+
   const context = await openContext()
   if (!context) return FEATURE_OFF
 

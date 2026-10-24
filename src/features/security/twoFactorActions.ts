@@ -1,5 +1,6 @@
 'use server'
 
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { headers } from 'next/headers'
 
 import { getEngine } from '@/lib/engine'
@@ -79,7 +80,9 @@ export async function twoFactorSummaryAction(): Promise<TwoFactorSummary> {
   }
 }
 
-export async function beginTwoFactorAction(): Promise<TwoFactorActionResult> {
+export async function beginTwoFactorAction(): Promise<TwoFactorActionResult> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { user } = await currentUser()
   if (!user) return SIGNED_OUT
 
@@ -88,7 +91,9 @@ export async function beginTwoFactorAction(): Promise<TwoFactorActionResult> {
   return { ok: true, secret: result.secret, qrSvg: renderQrSvg(result.otpauthUri) }
 }
 
-export async function confirmTwoFactorAction(code: string): Promise<TwoFactorActionResult> {
+export async function confirmTwoFactorAction(code: string): Promise<TwoFactorActionResult> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { engine, user } = await currentUser()
   if (!user) return SIGNED_OUT
   if (limited(user.id)) return SLOW_DOWN
@@ -100,7 +105,9 @@ export async function confirmTwoFactorAction(code: string): Promise<TwoFactorAct
   return { ok: true, backupCodes: result.backupCodes }
 }
 
-export async function disableTwoFactorAction(passwordOrCode: string): Promise<TwoFactorActionResult> {
+export async function disableTwoFactorAction(passwordOrCode: string): Promise<TwoFactorActionResult> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { engine, user } = await currentUser()
   if (!user) return SIGNED_OUT
   if (limited(user.id)) return SLOW_DOWN
@@ -112,7 +119,9 @@ export async function disableTwoFactorAction(passwordOrCode: string): Promise<Tw
   return { ok: true, message: 'Two-step sign-in is off.' }
 }
 
-export async function regenerateBackupCodesAction(passwordOrCode: string): Promise<TwoFactorActionResult> {
+export async function regenerateBackupCodesAction(passwordOrCode: string): Promise<TwoFactorActionResult> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { engine, user } = await currentUser()
   if (!user) return SIGNED_OUT
   if (limited(user.id)) return SLOW_DOWN
@@ -129,7 +138,9 @@ export async function regenerateBackupCodesAction(passwordOrCode: string): Promi
  * codes: an administrator switches two-step off on their account. They then
  * sign in with a password alone and can set it up again. Admin sessions only.
  */
-export async function adminResetTwoFactorAction(email: string): Promise<TwoFactorActionResult> {
+export async function adminResetTwoFactorAction(email: string): Promise<TwoFactorActionResult> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { engine, user } = await currentUser()
   if (!user) return SIGNED_OUT
   if (!user.roles?.includes('admin')) return { ok: false, message: 'Only an administrator can do that.' }

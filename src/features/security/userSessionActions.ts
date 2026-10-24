@@ -1,5 +1,6 @@
 'use server'
 
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { cookies, headers } from 'next/headers'
 
 import { getEngine } from '@/lib/engine'
@@ -73,7 +74,9 @@ export async function mySessionsAction(): Promise<SessionListResult> {
   }
 }
 
-export async function revokeSessionAction(sessionId: string): Promise<SessionOutcome> {
+export async function revokeSessionAction(sessionId: string): Promise<SessionOutcome> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { actor, currentId, deps } = await context()
   if (!actor) return SIGNED_OUT
   try {
@@ -83,7 +86,9 @@ export async function revokeSessionAction(sessionId: string): Promise<SessionOut
   }
 }
 
-export async function revokeOtherSessionsAction(): Promise<SessionOutcome> {
+export async function revokeOtherSessionsAction(): Promise<SessionOutcome> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { actor, currentId, deps } = await context()
   if (!actor) return SIGNED_OUT
   try {
@@ -110,7 +115,9 @@ export async function accountSessionsAction(email: string): Promise<SessionListR
 }
 
 /** Admin only: ends one session of any account. */
-export async function adminRevokeSessionAction(sessionId: string): Promise<SessionOutcome> {
+export async function adminRevokeSessionAction(sessionId: string): Promise<SessionOutcome> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { actor, deps } = await context()
   if (!actor) return SIGNED_OUT
   try {
@@ -121,7 +128,9 @@ export async function adminRevokeSessionAction(sessionId: string): Promise<Sessi
 }
 
 /** Admin only: ends every session of the account with this email address. */
-export async function adminRevokeAllSessionsAction(email: string): Promise<SessionOutcome> {
+export async function adminRevokeAllSessionsAction(email: string): Promise<SessionOutcome> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const { engine, actor, deps } = await context()
   if (!actor) return SIGNED_OUT
   if (!actor.roles?.includes('admin')) return { ok: false, message: 'Only an administrator can do that.' }

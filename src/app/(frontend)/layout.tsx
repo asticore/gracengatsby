@@ -54,6 +54,7 @@ import { loadThemeStyles } from '@/features/themeStyles/store'
 import { SiteEffects } from '@/components/site/SiteEffects'
 import { siteEffectsFor } from '@/components/site/siteEffectsConfig'
 import { renderChromeTemplates, requestPathOf } from '@/features/siteTemplates/chrome'
+import { ImpersonationBanner } from '@/features/impersonation/components/ImpersonationBanner'
 
 import './styles.css'
 
@@ -243,6 +244,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {fontCss && <style dangerouslySetInnerHTML={{ __html: fontCss }} />}
       </head>
       <body>
+        <ImpersonationBanner />
         <SeoScripts country={country} />
         <SeoJsonLd />
         <AdsRoot />

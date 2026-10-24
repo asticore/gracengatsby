@@ -678,4 +678,38 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(kept.n).toBe(1)
     await proxy.env.D1.prepare("DELETE FROM `eg_login_tokens` WHERE token_hash = 'keep-me-hash'").run()
   })
+
+  it('adds the impersonation columns to security settings, off by default, and creates eg_impersonations', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('impersonation_enabled')).toBe('0')
+    expect(byName.get('impersonation_max_minutes')).toBe('30')
+    expect(byName.get('impersonation_require2fa')).toBe('1')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_impersonations`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(
+      expect.arrayContaining(['id', 'admin_id', 'admin_email', 'target_user_id', 'target_email', 'reason', 'started_at', 'ended_at', 'expires_at', 'session_id', 'ip', 'user_agent']),
+    )
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_impersonations`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(indexes).toEqual(expect.arrayContaining(['eg_impersonations_admin_idx', 'eg_impersonations_target_idx', 'eg_impersonations_started_idx']))
+  })
+
+  it('impersonation migration is safe to run twice and leaves existing impersonation rows alone', async () => {
+    const mod = await import('@/migrations/20261120_100000_impersonation')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_impersonations` (id, admin_id, admin_email, target_user_id, target_email, reason, started_at, expires_at) VALUES ('keep-me-imp', 1, 'a@example.com', 2, 'c@example.com', 'keep me please', '2026-01-01T00:00:00.000Z', '2026-01-01T00:30:00.000Z')",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'impersonation_enabled')).toBe(1)
+    expect(await count('eg_security_settings', 'impersonation_require2fa')).toBe(1)
+    expect(await count('eg_impersonations', 'session_id')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_impersonations` WHERE id = 'keep-me-imp'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_impersonations` WHERE id = 'keep-me-imp'").run()
+  })
 })

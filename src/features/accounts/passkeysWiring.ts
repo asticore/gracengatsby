@@ -37,7 +37,7 @@ const hasOtherSignIn = async (engine: Engine, userId: number, settings: Security
 }
 
 /** Registration and removal: a signed-in session is necessary, and a password or two-step code is needed when the account has a password. */
-const reauthenticate = async (userId: number, data: { password?: string; code?: string }): Promise<boolean> => {
+export const reauthenticate = async (userId: number, data: { password?: string; code?: string }): Promise<boolean> => {
   const row = await defaultTwoFactorStore.findByID(userId).catch((): null => null)
   if (!row) return false
   const hasPassword = typeof row.salt === 'string' && typeof row.hash === 'string'

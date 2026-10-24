@@ -198,6 +198,51 @@ export const SecuritySettings: GlobalConfig = {
           'Required makes every passkey sign-in confirm the device PIN or biometric. A passkey signed in this way also skips the authenticator-app code, if the account has one.',
       },
     },
+    // API keys (bearer tokens for the REST API). Flat, like the fields above. Column names are
+    // the snake_case of these names, listed in src/migrations/20261119_100000_api_keys.ts.
+    // Off by default; with the feature off, no key is accepted anywhere.
+    {
+      name: 'apiKeysEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow API keys',
+      admin: {
+        description:
+          'Lets people create API keys (Authorization: Bearer egk_...) that call the REST API with the same permissions as their own account, narrowed to read and/or write scopes. Off by default; existing sign-in and requests are unchanged.',
+      },
+    },
+    {
+      name: 'apiKeysAllowCustomers',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow customers to create API keys',
+      admin: {
+        description: 'Off: only admins can create API keys. On: customers can also create keys on their profile.',
+      },
+    },
+    {
+      name: 'apiKeysMaxPerUser',
+      type: 'number',
+      defaultValue: 5,
+      label: 'Maximum active keys per user',
+      min: 1,
+      max: 50,
+      admin: {
+        description: 'How many keys one person may hold at once. Revoked and expired keys do not count.',
+      },
+    },
+    {
+      name: 'apiKeysMaxLifetimeDays',
+      type: 'number',
+      defaultValue: 365,
+      label: 'Maximum key lifetime (days)',
+      min: 0,
+      max: 3650,
+      admin: {
+        description:
+          'The longest a new key may run before it expires, from 1 to 3650 days. Set to 0 to forbid expiry dates: new keys then never expire until revoked.',
+      },
+    },
     {
       type: 'group',
       name: 'loginProtection',

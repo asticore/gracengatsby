@@ -16,6 +16,8 @@ import { TwoFactorPanel } from '@/features/security/components/TwoFactorPanel'
 import { PasskeysPanel } from '@/features/passkeys/components/PasskeysPanel'
 import { listPasskeys } from '@/features/passkeys'
 import { passkeyDepsFor } from '../passkeysWiring'
+import { listMyApiKeys } from '@/features/apiKeys/actions'
+import { ApiKeysPanel } from '@/features/apiKeys/components/ApiKeysPanel'
 import { SessionsPanel } from '@/features/security/components/SessionsPanel'
 import { viewOwnSessions, type SessionActor } from '@/features/security/userSessionService'
 import { defaultUserSessionStore } from '@/features/security/userSessionStore'
@@ -402,6 +404,13 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
             <h3>Passkeys</h3>
             <p>Sign in with Face ID, Touch ID, Windows Hello or a security key. A passkey is an extra way in; your password still works.</p>
             <PasskeysPanel initial={passkeyItems} />
+          </>
+        )}
+        {settings?.apiKeys.enabled && settings.apiKeys.allowCustomers && (
+          <>
+            <h3>API keys</h3>
+            <p>Let a script call the site API as you, with a key limited to read and/or write. Shown once at creation.</p>
+            <ApiKeysPanel initial={(await listMyApiKeys()).keys ?? []} />
           </>
         )}
       </section>

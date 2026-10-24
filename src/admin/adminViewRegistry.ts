@@ -44,6 +44,7 @@ import { OptionsView } from '@/features/customFields/admin/OptionsView'
 import { TwoFactorView } from '@/admin/views/TwoFactorView'
 import { SessionsView } from '@/admin/views/SessionsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
+import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
@@ -234,6 +235,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: PasskeysView,
     path: '/security/passkeys',
     meta: { title: 'Passkeys', description: 'Sign in with a passkey on this device, if the site owner allows it.' },
+  },
+  {
+    key: 'apiKeys',
+    Component: ApiKeysView,
+    path: '/security/api-keys',
+    meta: { title: 'API keys', description: 'Create and revoke keys for scripts that call the site API. Admins see every key.' },
   },
   {
     key: 'socialAccounts',

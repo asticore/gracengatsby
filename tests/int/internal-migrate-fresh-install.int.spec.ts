@@ -970,6 +970,31 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(tableRows.n).toBe(1)
   })
 
+  it('adds the api key columns to security settings, off by default, and creates eg_api_keys', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('api_keys_enabled')).toBe('0')
+    expect(byName.get('api_keys_allow_customers')).toBe('0')
+    expect(byName.get('api_keys_max_per_user')).toBe('5')
+    expect(tables).toContain('eg_api_keys')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_api_keys`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['user_id', 'key_hash', 'scopes', 'last_used_at', 'expires_at', 'revoked_at']))
+  })
+
+  it('api key migration is safe to run a second time and leaves the columns and table single', async () => {
+    const mod = await import('@/migrations/20261119_100000_api_keys')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    expect(info.filter((c) => c.name === 'api_keys_enabled')).toHaveLength(1)
+    expect(info.filter((c) => c.name === 'api_keys_max_lifetime_days')).toHaveLength(1)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_api_keys'").first()) as { n: number }
+    expect(tableRows.n).toBe(1)
+  })
+
   it('passwordless migration is safe to run a second time and leaves the columns and table single', async () => {
     const mod = await import('@/migrations/20261117_100000_passwordless_login')
     const { drizzle } = await import('drizzle-orm/d1')

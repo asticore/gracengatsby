@@ -56,6 +56,11 @@ export const revokeSessionsOnPasswordChange: CollectionAfterChangeHook = async (
       )
     }
 
+    // A new password ends every remembered device, whoever made the change and whatever happens below.
+    const { defaultTrustedDeviceStore } = await import('./trustedDeviceStore')
+    const { revokeAllTrustedDevices } = await import('./trustedDevices')
+    await revokeAllTrustedDevices(defaultTrustedDeviceStore, targetId)
+
     let keep: string | null = null
     if (own) {
       if (req?.currentSessionId === undefined) return doc

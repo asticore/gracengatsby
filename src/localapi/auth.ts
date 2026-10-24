@@ -706,6 +706,26 @@ export type AuthDbOps = {
    * a `usid` is refused only when the row is positively revoked/expired/gone.
    */
   sessions?: UserSessionStore
+  /** Emailed six-digit codes as a second step. Absent: the email method is simply unavailable. */
+  emailOtp?: EmailOtpOps
+  /** "Remember this device". Absent: every sign-in asks for its code. */
+  trustedDevices?: TrustedDeviceOps
+}
+
+export type EmailOtpOps = {
+  /** True when `code` is the live emailed code for this user. Consumes it. */
+  verify: (userId: number, code: string) => Promise<boolean>
+  /** Emails a new code to the account address. */
+  send: (user: { id: number; email: string }) => Promise<{ ok: boolean; message: string }>
+}
+
+export type TrustedDeviceOps = {
+  /** True when `token` is a live remembered device of this user (and the feature is on). */
+  check: (token: string | null | undefined, userId: number, secret: string) => Promise<boolean>
+  /** Remembers the device; null when the feature is off or the write failed. */
+  issue: (userId: number, client: SessionClient | undefined, secret: string) => Promise<{ token: string; maxAgeSeconds: number } | null>
+  /** Ends every remembered device of the account. Must not throw. */
+  revokeAll: (userId: number) => Promise<void>
 }
 
 /** Anything with a `.get(name)` method a real `Headers`/`ReadonlyHeaders` (Next.js) satisfies - same "structural, not the real type" philosophy as `access.ts`'s `LocalReq`, so a plain test double (`{ get: (k) => map[k] ?? null }`) works without importing any web-platform lib types. */
@@ -718,7 +738,7 @@ export type LoginArgs = { email: string; password: string; secret: string; clien
  * (no session exists yet); `loginWithSecondFactor` turns that plus a code into
  * the session.
  */
-export type LoginResult = { user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }
+export type LoginResult = { user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string; trustedDevice?: { token: string; maxAgeSeconds: number } }
 
 export type ResetPasswordArgs = { token: string; password: string; secret: string; client?: SessionClient }
 export type ResetPasswordResult = { user: AuthUserDoc; token: string }
@@ -965,12 +985,22 @@ export async function login(db: AuthDbOps, args: LoginArgs): Promise<LoginResult
 
   // Confirmed two-step: the password alone does not earn a session. Nothing is
   // written yet (no session, no attempt reset); the code step finishes it.
-  if (requiresSecondFactor(row)) {
+  if (requiresSecondFactor(row) && !(await deviceIsTrusted(db, row.id, args.client, args.secret))) {
     const { token: pendingToken } = signJWT({ purpose: PENDING_PURPOSE, id: row.id, email: normalizedEmail }, args.secret, PENDING_TWO_FACTOR_SECONDS)
     return { user: toAuthUserDoc(row), twoFactorRequired: true, pendingToken }
   }
 
   return finishLogin(db, row, now, args.secret, normalizedEmail, args.client)
+}
+
+/** A remembered device stands in for the code, never for the password. False on any doubt or failure. */
+async function deviceIsTrusted(db: AuthDbOps, userId: number, client: SessionClient | undefined, secret: string): Promise<boolean> {
+  if (!db.trustedDevices || !client?.trustedDeviceToken) return false
+  try {
+    return await db.trustedDevices.check(client.trustedDeviceToken, userId, secret)
+  } catch {
+    return false
+  }
 }
 
 /** Mints the session, clears the failed-attempt counters and signs the JWT. Shared by the one-step and two-step paths. */
@@ -1025,14 +1055,14 @@ export async function loginAsUser(db: AuthDbOps, args: LoginAsUserArgs): Promise
   const row = await db.findByID(args.id)
   checkLoginPermission(row, now)
 
-  if (requiresSecondFactor(row) && !args.skipSecondFactor) {
+  if (requiresSecondFactor(row) && !args.skipSecondFactor && !(await deviceIsTrusted(db, row.id, args.client, args.secret))) {
     const { token: pendingToken } = signJWT({ purpose: PENDING_PURPOSE, id: row.id, email: row.email }, args.secret, PENDING_TWO_FACTOR_SECONDS)
     return { user: toAuthUserDoc(row), twoFactorRequired: true, pendingToken }
   }
   return finishLogin(db, row, now, args.secret, undefined, args.client, args.session)
 }
 
-export type LoginSecondFactorArgs = { pendingToken: string; code: string; secret: string; client?: SessionClient }
+export type LoginSecondFactorArgs = { pendingToken: string; code: string; secret: string; client?: SessionClient; /** 'email' checks the emailed code instead of an authenticator or backup code. */ method?: 'email' | 'app' }
 
 /**
  * Step two of a two-step sign-in. A wrong code counts toward the same
@@ -1048,7 +1078,8 @@ export async function loginWithSecondFactor(db: AuthDbOps, args: LoginSecondFact
   const row = await db.findByID(claims.id)
   checkLoginPermission(row, now)
 
-  const check = await verifySecondFactor(db, row, args.code, { now })
+  const emailOk = args.method === 'email' && db.emailOtp ? await db.emailOtp.verify(row.id, args.code).catch((): boolean => false) : false
+  const check = args.method === 'email' ? { ok: emailOk } : await verifySecondFactor(db, row, args.code, { now })
   if (!check.ok) {
     const updated = await incrementAndCheckLock(db, row, now)
     if (isLocked(updated.lockUntil, now)) throw new LockedAuth()
@@ -1058,7 +1089,27 @@ export async function loginWithSecondFactor(db: AuthDbOps, args: LoginSecondFact
   // Re-read: the check just wrote lastUsedStep / the backup list, and
   // mintSession writes the whole row back.
   const fresh = (await db.findByID(row.id)) ?? row
-  return finishLogin(db, fresh, now, args.secret, undefined, args.client)
+  const result = await finishLogin(db, fresh, now, args.secret, undefined, args.client)
+
+  // "Remember this device" was ticked: hand back a device cookie for the caller to set.
+  if (args.client?.trustDevice && db.trustedDevices) {
+    const trusted = await db.trustedDevices.issue(row.id, args.client, args.secret).catch((): null => null)
+    if (trusted) return { ...result, trustedDevice: trusted }
+  }
+  return result
+}
+
+/**
+ * Emails the second-step code for a pending sign-in. The pending token proves the password step
+ * passed; nothing else about the account is revealed. Refused when the email method is not wired.
+ */
+export async function sendSecondFactorEmail(db: AuthDbOps, args: { pendingToken: string; secret: string }): Promise<{ ok: boolean; message: string }> {
+  const claims = typeof args.pendingToken === 'string' ? verifyJWT(args.pendingToken, args.secret) : null
+  if (!claims || claims.purpose !== PENDING_PURPOSE || typeof claims.id !== 'number') throw new TwoFactorCodeError()
+  const row = await db.findByID(claims.id)
+  checkLoginPermission(row, Date.now())
+  if (!db.emailOtp || !requiresSecondFactor(row)) return { ok: false, message: 'Email codes are not available.' }
+  return db.emailOtp.send({ id: row.id, email: row.email })
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1089,6 +1140,8 @@ export async function resetPassword(db: AuthDbOps, args: ResetPasswordArgs): Pro
   // tracked device is signed out before the new session is created. Quiet on
   // failure - a session table problem must not stop someone resetting a password.
   if (db.sessions) await revokeQuietly(db.sessions, row.id, null, now)
+  // ...and every remembered device must answer the second step again.
+  if (db.trustedDevices) await db.trustedDevices.revokeAll(row.id).catch((): undefined => undefined)
 
   const { sid, row: rowAfterSession } = await mintSession(db, rowAfterPasswordWrite, now)
   const device = await openDeviceSession(db, row.id, now, args.client)

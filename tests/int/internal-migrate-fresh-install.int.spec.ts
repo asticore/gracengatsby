@@ -1033,4 +1033,37 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_impersonations'").first()) as { n: number }
     expect(tableRows.n).toBe(1)
   })
+
+  it('adds the auth slice 3 columns to security settings, all off by default, and creates the email code and trusted device tables', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.has('two_factor_required_roles')).toBe(true)
+    expect(byName.has('two_factor_grace_ends_at')).toBe(true)
+    expect(byName.get('two_factor_email_otp_enabled')).toBe('0')
+    expect(byName.get('trusted_devices_enabled')).toBe('0')
+    expect(byName.get('trusted_device_days')).toBe('30')
+    expect(tables).toContain('eg_two_factor_email_codes')
+    expect(tables).toContain('eg_trusted_devices')
+    const emailCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_two_factor_email_codes`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(emailCols).toEqual(expect.arrayContaining(['user_id', 'purpose', 'code_hash', 'attempts', 'created_at', 'expires_at', 'used_at']))
+    const deviceCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_trusted_devices`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(deviceCols).toEqual(expect.arrayContaining(['id', 'user_id', 'token_hash', 'label', 'ip', 'created_at', 'last_used_at', 'expires_at', 'revoked_at']))
+  })
+
+  it('auth slice 3 migration is safe to run a second time and leaves the columns and tables single', async () => {
+    const mod = await import('@/migrations/20261122_100000_auth_slice_3')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    for (const column of ['two_factor_required_roles', 'two_factor_grace_ends_at', 'two_factor_email_otp_enabled', 'trusted_devices_enabled', 'trusted_device_days']) {
+      expect(info.filter((c) => c.name === column), column).toHaveLength(1)
+    }
+    for (const table of ['eg_two_factor_email_codes', 'eg_trusted_devices']) {
+      const rows = (await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='${table}'`).first()) as { n: number }
+      expect(rows.n, table).toBe(1)
+    }
+  })
 })

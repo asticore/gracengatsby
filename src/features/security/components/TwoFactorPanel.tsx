@@ -1,16 +1,21 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import {
   adminResetTwoFactorAction,
+  beginEmailTwoFactorAction,
   beginTwoFactorAction,
+  confirmEmailTwoFactorAction,
   confirmTwoFactorAction,
   disableTwoFactorAction,
   regenerateBackupCodesAction,
+  twoFactorPanelOptionsAction,
   type TwoFactorActionResult,
 } from '../twoFactorActions'
+import { TrustedDevicesList } from './TrustedDevicesList'
+import './twoFactorExtras.css'
 
 /**
  * The two-step sign-in controls, shared by the admin screen and the customer
@@ -49,6 +54,20 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
   const [proof, setProof] = useState('')
   const [shownCodes, setShownCodes] = useState<string[] | null>(null)
   const [resetEmail, setResetEmail] = useState('')
+  const [emailEnabled, setEmailEnabled] = useState(false)
+  const [emailSetup, setEmailSetup] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    twoFactorPanelOptionsAction()
+      .then((options) => {
+        if (!cancelled) setEmailEnabled(options.emailEnabled)
+      })
+      .catch((): undefined => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const run = async (task: () => Promise<TwoFactorActionResult>, onOk?: (result: TwoFactorActionResult) => void) => {
     setBusy(true)
@@ -79,6 +98,24 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
       () => confirmTwoFactorAction(code),
       (result) => {
         setSetup(null)
+        setCode('')
+        setShownCodes(result.backupCodes ?? [])
+      },
+    )
+  }
+
+  const beginEmail = () =>
+    run(beginEmailTwoFactorAction, () => {
+      setEmailSetup(true)
+      setCode('')
+    })
+
+  const confirmEmail = (event: React.FormEvent) => {
+    event.preventDefault()
+    return run(
+      () => confirmEmailTwoFactorAction(code),
+      (result) => {
+        setEmailSetup(false)
         setCode('')
         setShownCodes(result.backupCodes ?? [])
       },
@@ -134,6 +171,42 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
             I have saved them
           </button>
         </div>
+      </div>
+    )
+  }
+
+  if (emailSetup) {
+    return (
+      <div>
+        <p>We emailed a 6-digit code to the address on your account. Enter it to turn on two-step sign-in by email.</p>
+        <form onSubmit={confirmEmail}>
+          <label style={fieldStyle}>
+            Code from your email
+            <input
+              name="emailCode"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              disabled={busy}
+              required
+            />
+          </label>
+          {banner}
+          <div style={rowStyle}>
+            <button type="submit" className="btn btn--primary" disabled={busy}>
+              Turn on two-step sign-in
+            </button>
+            <button type="button" className="btn btn--ghost" disabled={busy} onClick={beginEmail}>
+              Send a new code
+            </button>
+            <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => { setEmailSetup(false); setNotice(null) }}>
+              Cancel
+            </button>
+          </div>
+        </form>
+        <p>Nothing changes about how you sign in until you enter a code correctly.</p>
       </div>
     )
   }
@@ -195,14 +268,22 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
             </button>
           </div>
           <p>Making new backup codes stops the old ones working.</p>
+          <TrustedDevicesList />
         </>
       ) : (
         <>
           <p>Add a second step to signing in: a code from an app on your phone, as well as your password.</p>
           {banner}
-          <button type="button" className="btn btn--primary" disabled={busy} onClick={begin}>
-            Set up two-step sign-in
-          </button>
+          <div className="tf-methods">
+            <button type="button" className="btn btn--primary" disabled={busy} onClick={begin}>
+              Set up with an authenticator app
+            </button>
+            {emailEnabled && (
+              <button type="button" className="btn btn--ghost" disabled={busy} onClick={beginEmail}>
+                Set up with a code by email
+              </button>
+            )}
+          </div>
         </>
       )}
 

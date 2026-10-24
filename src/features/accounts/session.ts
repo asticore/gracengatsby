@@ -2,6 +2,7 @@ import { cookies, headers } from 'next/headers'
 import type { Engine, TypedUser } from '@/engine'
 
 import { getEngine } from '@/lib/engine'
+import { TRUSTED_DEVICE_COOKIE, trustedTokenFromCookieHeader } from '@/features/security/trustedDevices'
 import { getFeatureFlags } from '@/utilities/features'
 import type { FeatureFlags } from '@/features/registry'
 import { SESSION_COOKIE, loginProtectionAuth } from '@/features/security'
@@ -65,10 +66,27 @@ export const currentSessionToken = async (): Promise<string | null> => {
 }
 
 /** What a new session row records about the browser signing in: its User-Agent and (truncated later) address. */
-export const requestClient = async (): Promise<{ userAgent: string | null; ip: string | null }> => {
+export const requestClient = async (): Promise<{ userAgent: string | null; ip: string | null; trustedDeviceToken: string | null }> => {
   const incoming = await headers()
   const ip = await requestAddress()
-  return { userAgent: incoming.get('user-agent'), ip: ip === 'unknown' ? null : ip }
+  return {
+    userAgent: incoming.get('user-agent'),
+    ip: ip === 'unknown' ? null : ip,
+    // A remembered device stands in for the second-step code; the password is still checked.
+    trustedDeviceToken: trustedTokenFromCookieHeader(incoming.get('cookie')),
+  }
+}
+
+/** Sets the remembered-device cookie handed back after a second step with "remember this device" ticked. */
+export const setTrustedDeviceCookie = async (token: string, maxAgeSeconds: number): Promise<void> => {
+  const jar = await cookies()
+  jar.set(TRUSTED_DEVICE_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: maxAgeSeconds,
+  })
 }
 
 export const clearSessionCookie = async (): Promise<void> => {

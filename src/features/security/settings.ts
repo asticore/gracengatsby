@@ -65,6 +65,28 @@ export type SecuritySettings = {
   apiKeys: ApiKeySettings
   /** Admin "sign in as customer". Off unless the owner switches it on. See src/features/impersonation. */
   impersonation: ImpersonationSettings
+  /** Role-based two-step enforcement, email codes and trusted devices. All off by default. See twoFactorEnforcement.ts. */
+  twoFactor: TwoFactorSettings
+}
+
+export type TwoFactorSettings = {
+  /** Role names (admin, editor, viewer, customer) or custom role slugs that must use two-step sign-in. */
+  requiredRoles: string[]
+  /** Until this instant an unenrolled user is only reminded, not confined. Null means no grace period. */
+  graceEndsAt: string | null
+  /** Lets a six-digit code emailed to the account address answer the second step. */
+  emailOtpEnabled: boolean
+  /** Lets the second-step screen remember a device for `trustedDeviceDays`. */
+  trustedDevicesEnabled: boolean
+  trustedDeviceDays: number
+}
+
+export const DEFAULT_TWO_FACTOR_SETTINGS: TwoFactorSettings = {
+  requiredRoles: [],
+  graceEndsAt: null,
+  emailOtpEnabled: false,
+  trustedDevicesEnabled: false,
+  trustedDeviceDays: 30,
 }
 
 export type ImpersonationSettings = {
@@ -162,6 +184,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   passwordless: DEFAULT_PASSWORDLESS_SETTINGS,
   passkeys: DEFAULT_PASSKEY_SETTINGS,
   apiKeys: DEFAULT_API_KEY_SETTINGS,
+  twoFactor: DEFAULT_TWO_FACTOR_SETTINGS,
   impersonation: DEFAULT_IMPERSONATION_SETTINGS,
 }
 
@@ -226,6 +249,26 @@ export const apiKeysFrom = (get: (key: string) => unknown): ApiKeySettings => {
     allowCustomers: asBool(get('api_keys_allow_customers'), base.allowCustomers),
     maxPerUser: asInt(get('api_keys_max_per_user'), base.maxPerUser, 1, 50),
     maxLifetimeDays: asInt(get('api_keys_max_lifetime_days'), base.maxLifetimeDays, 0, 3650),
+  }
+}
+
+/** Splits the stored role list ("admin, editor") into clean lower-case tokens. */
+export const parseRoleList = (value: unknown): string[] => {
+  const raw = Array.isArray(value) ? value.join(',') : typeof value === 'string' ? value : ''
+  return [...new Set(raw.split(/[\s,;]+/).map((part) => part.trim().toLowerCase()).filter((part) => /^[a-z0-9_-]{1,64}$/.test(part)))]
+}
+
+/** Reads the five two-step fields; `get` takes the column name (`two_factor_required_roles`, ...). */
+export const twoFactorFrom = (get: (column: string) => unknown): TwoFactorSettings => {
+  const base = DEFAULT_TWO_FACTOR_SETTINGS
+  const grace = get('two_factor_grace_ends_at')
+  const graceMs = typeof grace === 'string' || grace instanceof Date ? Date.parse(String(grace instanceof Date ? grace.toISOString() : grace)) : NaN
+  return {
+    requiredRoles: parseRoleList(get('two_factor_required_roles')),
+    graceEndsAt: Number.isFinite(graceMs) ? new Date(graceMs).toISOString() : base.graceEndsAt,
+    emailOtpEnabled: asBool(get('two_factor_email_otp_enabled'), base.emailOtpEnabled),
+    trustedDevicesEnabled: asBool(get('trusted_devices_enabled'), base.trustedDevicesEnabled),
+    trustedDeviceDays: asInt(get('trusted_device_days'), base.trustedDeviceDays, 1, 90),
   }
 }
 
@@ -319,6 +362,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     passkeys: passkeysFrom((key) => row[key]),
     apiKeys: apiKeysFrom((key) => row[key]),
     impersonation: impersonationFrom((key) => row[key]),
+    twoFactor: twoFactorFrom((key) => row[key]),
   }
 }
 
@@ -453,5 +497,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     passkeys: passkeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     apiKeys: apiKeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     impersonation: impersonationFrom((key) => (settings as Record<string, unknown>)[IMPERSONATION_GLOBAL_KEYS[key] ?? key]),
+    twoFactor: twoFactorFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
   }
 }

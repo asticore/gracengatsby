@@ -11,6 +11,7 @@ import {
   revokeSessionAction,
 } from '../userSessionActions'
 import type { SessionOutcome, SessionView } from '../userSessionService'
+import { TrustedDevicesList } from './TrustedDevicesList'
 
 /**
  * The signed-in devices list, shared by the admin screen and the customer
@@ -127,6 +128,8 @@ export const SessionsPanel: React.FC<Props> = ({ sessions, isAdmin }) => {
           {notice.text}
         </p>
       )}
+
+      <TrustedDevicesList />
 
       {isAdmin && (
         <div style={{ marginTop: '2rem' }}>

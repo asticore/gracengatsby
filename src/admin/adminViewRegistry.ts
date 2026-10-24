@@ -41,6 +41,7 @@ import { ShopReportsView } from '@/admin/views/ShopReportsView'
 import { DisplayCurrenciesView } from '@/admin/views/DisplayCurrenciesView'
 import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
+import { TwoFactorView } from '@/admin/views/TwoFactorView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
@@ -212,6 +213,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: SiteHealthView,
     path: '/site-health',
     meta: { title: 'Site health', description: 'Storage, scheduled job health, versions and the main site settings, with warnings.' },
+  },
+  {
+    key: 'twoFactor',
+    Component: TwoFactorView,
+    path: '/security/two-factor',
+    meta: { title: 'Two-step sign-in', description: 'Set up an authenticator app and backup codes for your account.' },
   },
   {
     key: 'scheduledTasks',

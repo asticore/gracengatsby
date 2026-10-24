@@ -34,6 +34,10 @@ export type AuditAction =
   | 'probe.blocked'
   | 'two-factor.enrolled'
   | 'two-factor.failed'
+  | 'two-factor.verified'
+  | 'two-factor.disabled'
+  | 'two-factor.backup-codes'
+  | 'two-factor.reset'
 
 export type AuditEntry = {
   action: AuditAction

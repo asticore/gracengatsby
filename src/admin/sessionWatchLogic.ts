@@ -25,6 +25,7 @@ export function shouldRedirectOn401(url: string, status: number, origin: string)
     // Exclude login endpoints from redirect
     if (
       pathname === '/api/users/login' ||
+      pathname === '/api/users/login-2fa' ||
       pathname === '/api/users/logout' ||
       pathname === '/api/users/me'
     ) {

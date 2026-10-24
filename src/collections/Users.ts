@@ -116,6 +116,15 @@ export const Users: CollectionConfig = {
       admin: { hidden: true, readOnly: true },
     },
     {
+      // JSON array of SHA-256 digests of the unused two-step backup codes. The
+      // codes themselves are shown once at setup and never stored. The other
+      // two-step columns are engine auth columns and are not fields at all.
+      name: 'twoFactorBackupHashes',
+      type: 'text',
+      access: { read: () => false, update: () => false, create: () => false },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
       name: 'roles',
       type: 'select',
       hasMany: true,

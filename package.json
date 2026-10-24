@@ -47,6 +47,7 @@
     "fflate": "^0.8.3",
     "graphql": "^16.8.1",
     "next": "15.4.11",
+    "qrcode-generator": "1.4.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "stripe": "^22.6.1",

@@ -89,6 +89,7 @@ import * as migration_20261108_100000_social_connections from './20261108_100000
 import * as migration_20261109_100000_blog_tags_authors from './20261109_100000_blog_tags_authors';
 import * as migration_20261111_100000_blog_author_tag_switches from './20261111_100000_blog_author_tag_switches';
 import * as migration_20261112_100000_users_email_verification from './20261112_100000_users_email_verification';
+import * as migration_20261113_100000_two_factor_backup_codes from './20261113_100000_two_factor_backup_codes';
 
 export const migrations = [
   {
@@ -545,5 +546,10 @@ export const migrations = [
     up: migration_20261112_100000_users_email_verification.up,
     down: migration_20261112_100000_users_email_verification.down,
     name: '20261112_100000_users_email_verification',
+  },
+  {
+    up: migration_20261113_100000_two_factor_backup_codes.up,
+    down: migration_20261113_100000_two_factor_backup_codes.down,
+    name: '20261113_100000_two_factor_backup_codes',
   },
 ];

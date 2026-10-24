@@ -66,7 +66,7 @@ export const SecuritySettings: GlobalConfig = {
               admin: {
                 width: '50%',
                 description:
-                  'Make admins confirm sign-in with a second step. Set this up on your own account before switching it on for everyone, or you can lock yourself out.',
+                  'Admins without two-step are taken to the setup screen after signing in (Security > Two-step sign-in). Nobody is locked out, but set it up on your own account first.',
               },
             },
             {
@@ -79,6 +79,16 @@ export const SecuritySettings: GlobalConfig = {
               },
             },
           ],
+        },
+        {
+          name: 'requireTwoFactorForMembers',
+          type: 'checkbox',
+          defaultValue: false,
+          label: 'Require two-step sign-in for customer accounts',
+          admin: {
+            description:
+              'Off by default. When on, customers who have not set up two-step are taken to the Security section of their profile after signing in. They are never locked out. Only used while the Customer accounts feature is on.',
+          },
         },
       ],
     },

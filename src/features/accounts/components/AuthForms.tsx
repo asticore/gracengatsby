@@ -9,6 +9,7 @@ import {
   resendVerificationAction,
   resetPasswordAction,
   signInAction,
+  signInCodeAction,
   verifyEmailAction,
 } from '../actions'
 import { IDLE, VERIFY_FIRST_MESSAGE, type ActionState } from '../types'
@@ -25,6 +26,8 @@ import { Note, SubmitButton } from './FormBits'
 
 export const SignInForm: React.FC<{ next: string; justReset?: boolean }> = ({ next, justReset }) => {
   const [state, action] = useActionState<ActionState, FormData>(signInAction, IDLE)
+
+  if (state.pendingToken) return <CodeStep pendingToken={state.pendingToken} next={next} />
 
   return (
     <>
@@ -52,6 +55,28 @@ export const SignInForm: React.FC<{ next: string; justReset?: boolean }> = ({ ne
     </form>
     {state.status === 'error' && state.message === VERIFY_FIRST_MESSAGE && <ResendVerificationForm />}
     </>
+  )
+}
+
+/** The second step: a code from the authenticator app, or a backup code. */
+const CodeStep: React.FC<{ pendingToken: string; next: string }> = ({ pendingToken, next }) => {
+  const [state, action] = useActionState<ActionState, FormData>(signInCodeAction, IDLE)
+
+  return (
+    <form action={action} className="account-form">
+      <p>Enter the 6-digit code from your authenticator app. Lost your phone? Use one of your backup codes instead.</p>
+      <input type="hidden" name="next" value={next} />
+      <input type="hidden" name="pendingToken" value={state.pendingToken || pendingToken} />
+      <label>
+        Code
+        <input name="code" type="text" inputMode="text" autoComplete="one-time-code" autoFocus required />
+      </label>
+      <Note state={state} />
+      <SubmitButton>Continue</SubmitButton>
+      <div className="account-link-row">
+        <Link href="/account/sign-in">Start again</Link>
+      </div>
+    </form>
   )
 }
 

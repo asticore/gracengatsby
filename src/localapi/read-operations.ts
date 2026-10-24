@@ -275,6 +275,7 @@ const SENSITIVE_AUTH_COLUMNS = [
   'twoFactorSecret',
   'twoFactorConfirmedAt',
   'twoFactorLastUsedStep',
+  'twoFactorBackupHashes',
 ] as const
 
 /** Applied to every doc this module returns for an `auth: true` collection - see `ReadEntityConfig.auth`'s doc comment for why this can't just be field-level access. A no-op for every non-auth collection/global. */

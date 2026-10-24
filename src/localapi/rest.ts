@@ -161,7 +161,9 @@ import { Forbidden } from './access'
 import { AuthenticationError, InvalidResetToken, LockedAuth } from './auth'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
-import { clientKey, hit } from '@/features/security/rateLimit'
+import { clientKey, hit, limitFor } from '@/features/security/rateLimit'
+import { audit, auditContext } from '@/features/security/auditLog'
+import { DEFAULT_SECURITY_SETTINGS, getSecuritySettings } from '@/features/security/settings'
 import { confirmStripeOrder, finalizePaidIntent, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
 import { CheckoutError } from '@/features/ecommerce/server/pricing'
 import { loadPaymentSettings, resolveStripeSecret, resolveStripeWebhookSecret } from '@/features/ecommerce/payments/config'
@@ -1353,9 +1355,49 @@ async function handleGlobalUpdate(engine: Engine, slug: string, request: Request
 async function handleLogin(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
   const result = await engine.login({ collection, data: { email: stringField(data, 'email'), password: stringField(data, 'password') } })
+  // Confirmed two-step: password right, session not yet issued. No cookie, and
+  // nothing about the account beyond the fact that a code is needed.
+  if (result.twoFactorRequired) {
+    return Response.json({ message: 'A two-step code is required.', twoFactorRequired: true, pendingToken: result.pendingToken }, { status: 200 })
+  }
   const headers = new Headers()
   if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
   return Response.json({ message: 'Authentication Passed', ...result }, { status: 200, headers })
+}
+
+/**
+ * `POST /login-2fa` - second step of a two-step sign-in: `{ pendingToken, code }`
+ * (an authenticator code or a backup code). Same response as `/login` on success.
+ *
+ * Rate limited per address in its own bucket (`two-factor:`), on top of the
+ * account lockout the wrong code also counts toward. Both outcomes are
+ * written to the audit log.
+ */
+async function handleLoginSecondFactor(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const settings = await getSecuritySettings(engine as never).catch(() => DEFAULT_SECURITY_SETTINGS)
+  const limit = limitFor(settings, 'login') ?? Math.max(5, DEFAULT_SECURITY_SETTINGS.loginProtection.maxLoginAttempts * 2)
+  const decision = hit(`two-factor:${clientKey(request)}`, limit)
+  const context = auditContext(request)
+
+  if (decision.limited) {
+    await audit({ action: 'rate-limit.blocked', collectionSlug: collection, detail: 'two-factor code step', ...context }, settings).catch((): void => undefined)
+    return Response.json(
+      { errors: [{ name: 'TooManyRequests', message: 'Too many attempts. Wait a few minutes and sign in again.' }] },
+      { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } },
+    )
+  }
+
+  const { data } = await readRequestBody(request)
+  try {
+    const result = await engine.loginSecondFactor({ collection, data: { pendingToken: stringField(data, 'pendingToken'), code: stringField(data, 'code') } })
+    await audit({ action: 'two-factor.verified', actorId: result.user.id, actorEmail: result.user.email, collectionSlug: collection, ...context }, settings).catch((): void => undefined)
+    const headers = new Headers()
+    if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
+    return Response.json({ message: 'Authentication Passed', ...result }, { status: 200, headers })
+  } catch (err) {
+    await audit({ action: err instanceof LockedAuth ? 'login.locked' : 'two-factor.failed', collectionSlug: collection, detail: 'code step', ...context }, settings).catch((): void => undefined)
+    throw err
+  }
 }
 
 /** `POST /logout` - `{message: 'Logout successful.'}` plus an expired `Set-Cookie` (`auth/endpoints/logout.js`, `authentication:logoutSuccessful`). This app's own `./auth.ts`'s `logout()` never throws (an already-invalid/missing token is a no-op success, by design - see its own doc comment), so there is no failure branch to reproduce from the reference engine's own `error:logoutFailed` 400 case. */
@@ -1450,7 +1492,7 @@ async function handleUnlock(engine: Engine, collection: string, request: Request
 /* Dispatch                                                                    */
 /* -------------------------------------------------------------------------- */
 
-const AUTH_ROUTE_NAMES = new Set(['login', 'logout', 'me', 'refresh-token', 'forgot-password', 'reset-password', 'unlock'])
+const AUTH_ROUTE_NAMES = new Set(['login', 'login-2fa', 'logout', 'me', 'refresh-token', 'forgot-password', 'reset-password', 'unlock'])
 
 /* -------------------------------------------------------------------------- */
 /* Versions: GET /:c/versions, GET /:c/versions/:id, POST /:c/versions/:id    */
@@ -1721,6 +1763,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
 
       if (isAuthCollection && method === 'POST' && AUTH_ROUTE_NAMES.has(seg) && seg !== 'me') {
         if (seg === 'login') return await handleLogin(engine, collectionSlug, request)
+        if (seg === 'login-2fa') return await handleLoginSecondFactor(engine, collectionSlug, request)
         if (seg === 'logout') return await handleLogout(engine, collectionSlug, request)
         if (seg === 'refresh-token') return await handleRefreshToken(engine, collectionSlug, request)
         if (seg === 'forgot-password') return await handleForgotPassword(engine, collectionSlug, request)

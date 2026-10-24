@@ -12,6 +12,7 @@ import {
   requestPasswordReset,
   resendVerification,
   signIn,
+  signInWithCode,
 } from './auth'
 import {
   createAddress,
@@ -84,7 +85,32 @@ export async function signInAction(_state: ActionState, form: FormData): Promise
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
   const result = await signIn(context.engine, text(form, 'email'), text(form, 'password'))
+  if (result.needsTwoFactor && result.pendingToken) {
+    return { status: 'idle', message: '', pendingToken: result.pendingToken }
+  }
   if (!result.ok || !result.token) return failed(result.message ?? 'That did not work.')
+
+  await setSessionCookie(result.token)
+  redirect(safeNext(form.get('next')))
+}
+
+/**
+ * Second step of a two-step sign-in. Its own rate-limit bucket ('two-factor'),
+ * and a wrong code also counts toward the account lockout.
+ */
+export async function signInCodeAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  const context = await openContext()
+  if (!context) return FEATURE_OFF
+
+  const pendingToken = text(form, 'pendingToken')
+  const guard = await guardAttempt(context.engine, 'two-factor', await requestAddress())
+  if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
+
+  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'))
+  if (!result.ok || !result.token) {
+    // The same pending token stays valid for its few minutes, so a typo does not mean starting over.
+    return { status: 'error', message: result.message ?? 'That did not work.', pendingToken }
+  }
 
   await setSessionCookie(result.token)
   redirect(safeNext(form.get('next')))

@@ -56,6 +56,7 @@ export type UserAuthRow = UserDoc & {
   twoFactorSecret?: string | null
   twoFactorConfirmedAt?: string | null
   twoFactorLastUsedStep?: number | null
+  twoFactorBackupHashes?: string | null
   sessions?: Array<{ id: string; createdAt?: string | null; expiresAt: string }>
 }
 

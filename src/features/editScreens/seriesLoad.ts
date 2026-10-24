@@ -38,7 +38,16 @@ export async function loadSeries(engine: unknown, event: SeriesEvent): Promise<S
     depth: 0,
   })
 
+  // Other dates of a password protected series member are not listed (the current event always is). A failed lookup lists only the current event.
+  let hidden = new Set<number>()
+  try {
+    const { getProtectedIds } = await import('@/features/visibility/excludeProtected')
+    hidden = await getProtectedIds('events')
+  } catch {
+    return null
+  }
   const items = [...(root ? [root] : []), ...children.docs]
+    .filter((doc) => String(doc.id) === String(event.id) || !hidden.has(Number(doc.id)))
     .map(toItem)
     .filter((item): item is SeriesItem => item !== null)
     .sort((a, b) => a.startDate.localeCompare(b.startDate))

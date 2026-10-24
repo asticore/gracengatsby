@@ -167,14 +167,14 @@ describe('getPasswordGateState', () => {
     expect(state).toBe('locked')
   })
 
-  it('returns open for non-pages/posts collections regardless of password', async () => {
+  it('returns open for collections that cannot be protected regardless of password', async () => {
     getDb.mockResolvedValue({})
     getPasswordHash.mockResolvedValue(null)
 
     const cookies = { get: (name: string): undefined => undefined }
 
     const state = await getPasswordGateState({
-      collection: 'products',
+      collection: 'courses',
       id: 123,
       cookies: cookies as any,
     })

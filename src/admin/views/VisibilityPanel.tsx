@@ -15,7 +15,7 @@ export const VisibilityPanel: React.FC<{
     path: 'membersOnly',
   })
 
-  const isSupported = collectionSlug === 'pages' || collectionSlug === 'posts'
+  const isSupported = collectionSlug === 'pages' || collectionSlug === 'posts' || collectionSlug === 'products' || collectionSlug === 'events'
   const isEnabled = membersOnlyValue?.enabled ?? false
   const [visibilityMode, setVisibilityMode] = useState<'public' | 'members-only' | 'password'>('public')
   const [passwordInput, setPasswordInput] = useState('')

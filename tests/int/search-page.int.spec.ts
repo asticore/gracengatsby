@@ -16,6 +16,12 @@ vi.mock('@/lib/engine', () => ({
   getEngine: vi.fn(async () => mockEngine),
 }))
 
+// No database here: password protection is covered in password-leaks*.int.spec.ts.
+vi.mock('@/features/visibility/excludeProtected', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/visibility/excludeProtected')>()),
+  excludeProtected: async (_c: string, docs: unknown[]) => docs,
+}))
+
 import SearchPage, { metadata } from '@/app/(frontend)/search/page'
 
 const PAGES: Row[] = [

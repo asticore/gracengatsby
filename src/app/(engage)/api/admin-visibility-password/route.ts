@@ -9,7 +9,7 @@ import { purgeCache } from '@/features/speed/purge'
 
 export const dynamic = 'force-dynamic'
 
-const ALLOWED_COLLECTIONS = new Set(['pages', 'posts'])
+const ALLOWED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
 const MIN_PASSWORD_LENGTH = 4
 
 /**
@@ -35,9 +35,19 @@ async function purgeDocument(
     const doc = await load(id)
     if (!doc) return
     let path = ''
+    // Products and events live under their own prefix; their archive lists change too, so it is purged with the document.
+    const extra: string[] = []
     if (collection === 'posts') {
       if (!doc.slug) return
       path = `/blog/${doc.slug}`
+    } else if (collection === 'products') {
+      if (!doc.slug) return
+      path = `/shop/${doc.slug}`
+      extra.push('/shop')
+    } else if (collection === 'events') {
+      if (!doc.slug) return
+      path = `/events/${doc.slug}`
+      extra.push('/events')
     } else if (doc.isHomepage) {
       path = '/'
     } else {
@@ -55,7 +65,7 @@ async function purgeDocument(
       path = `/${segments.join('/')}`
     }
     // force: a password change must evict the edge copy even when purge-on-publish is off.
-    await purgeCache(path, { force: true })
+    await purgeCache(extra.length ? [path, ...extra] : path, { force: true })
   } catch (err) {
     console.error(`admin-visibility-password ${label} purgeCache error:`, err)
     // Never fail the request because of the purge

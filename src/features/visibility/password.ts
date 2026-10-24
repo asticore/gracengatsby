@@ -10,7 +10,7 @@ const PBKDF2_ITERATIONS = 100000
 const SALT_BYTES = 16
 const HASH_BYTES = 32
 const UNLOCK_SECRET_SUFFIX = ':unlock'
-const ALLOWED_COLLECTIONS = new Set(['pages', 'posts'])
+const ALLOWED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
 
 function base64urlEncode(data: Uint8Array): string {
   return btoa(String.fromCharCode(...data))

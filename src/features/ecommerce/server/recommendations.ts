@@ -1,4 +1,5 @@
 import { priceInfo } from '../pricing'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { computeStockStatus } from '../stock'
 import { coPurchaseCounts, pickRecommendations, recommendationMaxFrom, RECOMMENDATION_MAX_ORDERS, RECOMMENDATION_WINDOW_DAYS, scoreFor, type CoPurchaseCounts, type RecommendationCandidate } from '../lib/recommendations'
 import type { CrossSellCard } from '../lib/crossSells'
@@ -79,9 +80,10 @@ export async function recommendedProducts(engine: RecommendEngine, input: { anch
   const togetherIds = [...scoreFor(anchorIds, counts).keys()].slice(0, 60)
   const wanted = [...new Set([...togetherIds, ...peers.map((doc) => doc.id)])].slice(0, CANDIDATE_LIMIT)
   if (wanted.length === 0) return []
-  const { docs } = (await engine
+  const { docs: found } = (await engine
     .find({ collection: 'products', where: { and: [{ _status: { equals: 'published' } }, { id: { in: wanted } }] }, limit: CANDIDATE_LIMIT, depth: 1, overrideAccess: true })
     .catch((): { docs: Doc[] } => ({ docs: [] }))) as { docs: Doc[] }
+  const docs = await excludeProtected('products', found)
   const byId = new Map(docs.map((doc) => [doc.id, doc]))
   const candidates = new Map<number, RecommendationCandidate>(
     docs.filter(shoppable).map((doc) => [doc.id, { published: doc._status === 'published', inStock: computeStockStatus(doc as never) !== 'outofstock' }]),

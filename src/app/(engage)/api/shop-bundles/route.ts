@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/engine'
 import { bundleContentsOf, resolveBundle, type BundleEngine } from '@/features/ecommerce/server/bundles'
 import { clientKey, hit } from '@/features/security/rateLimit'
@@ -25,9 +26,10 @@ export async function POST(request: Request): Promise<Response> {
   const ids = [...new Set(body.productIds.slice(0, MAX_CART_PRODUCTS).map(Number).filter((id) => Number.isInteger(id) && id > 0))]
   const engine = (await getEngine()) as unknown as BundleEngine & { find: (a: unknown) => Promise<{ docs: Doc[] }> }
   if (ids.length === 0) return NextResponse.json({}, { headers: { 'Cache-Control': 'no-store' } })
-  const { docs } = await engine
+  const { docs: foundBundles } = await engine
     .find({ collection: 'products', where: { and: [{ _status: { equals: 'published' } }, { productType: { equals: 'bundle' } }, { id: { in: ids } }] }, limit: MAX_CART_PRODUCTS, depth: 0, overrideAccess: true })
     .catch((): { docs: Doc[] } => ({ docs: [] }))
+  const docs = await excludeProtected('products', foundBundles)
   const out: Record<string, { priceCents: number | null; available: boolean; contents: Array<{ title: string; quantity: number }> }> = {}
   for (const doc of docs) {
     const result = await resolveBundle(engine, doc, 1, new Date(), new Map())

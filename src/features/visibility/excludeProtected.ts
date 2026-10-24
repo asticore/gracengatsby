@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { Access } from '@/engine'
 
-export type ProtectedCollection = 'pages' | 'posts'
+export type ProtectedCollection = 'pages' | 'posts' | 'products' | 'events'
 
 /**
  * Ids of every password-protected document in a collection, from one query.

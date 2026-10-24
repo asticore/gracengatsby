@@ -5,7 +5,7 @@ import { verifyPassword, signUnlockToken, cookieName } from '@/features/visibili
 
 export const dynamic = 'force-dynamic'
 
-const ALLOWED_COLLECTIONS = new Set(['pages', 'posts'])
+const ALLOWED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
 const UNLOCK_TOKEN_TTL = 7 * 24 * 60 * 60 // 7 days
 const BRUTE_FORCE_DELAY = 400 // ms
 const MAX_FAILURES = 10

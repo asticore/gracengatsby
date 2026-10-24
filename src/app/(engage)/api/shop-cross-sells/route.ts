@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/engine'
 import { computeStockStatus } from '@/features/ecommerce/stock'
 import { priceInfo } from '@/features/ecommerce/pricing'
@@ -71,9 +72,10 @@ export async function POST(request: Request): Promise<Response> {
   const suggestedIds = [...new Set(sources.flatMap((source) => source.crossSellIds))].slice(0, 200)
   if (suggestedIds.length === 0) return NextResponse.json([], { headers: { 'Cache-Control': 'no-store' } })
 
-  const { docs: candidateDocs } = await engine
+  const { docs: foundCandidates } = await engine
     .find({ collection: 'products', where: { and: [{ _status: { equals: 'published' } }, { id: { in: suggestedIds } }] }, limit: 200, depth: 1, overrideAccess: true })
     .catch((): { docs: Doc[] } => ({ docs: [] }))
+  const candidateDocs = await excludeProtected('products', foundCandidates)
   const candidateById = new Map(candidateDocs.map((doc) => [doc.id, doc]))
   const candidates: CrossSellCandidate[] = candidateDocs.map((doc) => ({
     id: doc.id,

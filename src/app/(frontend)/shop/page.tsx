@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/ProductCard'
 import { WishlistHeart } from '@/components/WishlistHeart'
 import { wishlistEnabled } from '@/features/ecommerce/lib/wishlist'
 import { availableFilterOptions, filterHref, matchesAttributeFilters, parseAttributeFilters } from '@/features/ecommerce/filters'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -50,8 +51,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       limit: 300,
     }),
   ])) as unknown as [ShopSetting | null, { docs: Product[] }]
-  const products = scanned.filter((product) => matchesAttributeFilters(product as never, filters)).slice(0, 100)
-  const filterOptions = availableFilterOptions(scanned as never[])
+  const open = await excludeProtected('products', scanned)
+  const products = open.filter((product) => matchesAttributeFilters(product as never, filters)).slice(0, 100)
+  const filterOptions = availableFilterOptions(open as never[])
 
   const layout = settings?.archiveLayout || 'grid-4'
   const context = await getSeoContext()

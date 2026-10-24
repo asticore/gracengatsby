@@ -1,5 +1,6 @@
 import { getEngine } from '@/engine'
 
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { buildFeedItems, type FeedItem } from '../lib/feeds'
 
 type Doc = Record<string, unknown>
@@ -18,7 +19,9 @@ export async function loadFeed(request: Request): Promise<{ items: FeedItem[]; t
   if (sf.feedsEnabled !== true) return null
   const payment = (await engine.findGlobal({ slug: 'payment-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { general?: { currency?: string } }
   const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch((): Doc => ({}))) as { siteName?: string }
-  const products = await engine.find({ collection: 'products', where: { _status: { equals: 'published' } }, limit: 1000, depth: 1, overrideAccess: true })
+  const found = await engine.find({ collection: 'products', where: { _status: { equals: 'published' } }, limit: 1000, depth: 1, overrideAccess: true })
+  // Password protected products never appear in a public feed (fails closed to an empty feed).
+  const products = { docs: await excludeProtected('products', found.docs as { id?: number | string | null }[]) as Doc[] }
   const origin = new URL(request.url).origin
   const title = String(site.siteName || shop.tax?.businessName || 'Shop')
   const condition = ['new', 'used', 'refurbished'].includes(String(sf.feedCondition)) ? (sf.feedCondition as 'new' | 'used' | 'refurbished') : 'new'

@@ -75,6 +75,16 @@ export const beforeChangeCart = async ({ data, originalDoc, operation, req }: Re
       const productId = productIdOf(item)
       if (!productId || !item.quantity) continue
       const product = (await engine.findByID({ collection: 'products', id: productId, depth: 0, overrideAccess: true }).catch((): null => null)) as CatalogueProduct | null
+      // A password-protected product can only be added by a visitor who has unlocked it. A line already in the cart can still be tidied.
+      if (product && !before.includes(`${productId}|${item.variation ?? ''}|${item.quantity}`)) {
+        // Lazy import: gate -> connect -> schema is built from the collections, which import this file.
+        const { getPasswordGateStateForHeaders } = await import('@/features/visibility/gate')
+        const gate = await getPasswordGateStateForHeaders({ collection: 'products', id: Number(productId), headers: (req as { headers?: Headers }).headers })
+        if (gate === 'locked') {
+          errors.push({ path: `items.${index}`, message: 'This product is password protected.' })
+          continue
+        }
+      }
       if (product && (product as { productType?: string }).productType === 'giftcard') {
         // A gift card is priced from the buyer's amount, checked against the shop's limits and recipient rules.
         const shop = (await engine.findGlobal({ slug: 'shop-settings', depth: 0, overrideAccess: true }).catch((): null => null)) as { giftCards?: unknown } | null

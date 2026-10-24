@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { EventCard } from '@/components/EventCard'
+import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -25,7 +26,7 @@ export default async function EventsPage() {
 
   const now = new Date().toISOString()
 
-  const [{ docs: upcoming }, { docs: past }] = (await Promise.all([
+  const [{ docs: upcomingAll }, { docs: pastAll }] = (await Promise.all([
     engine.find({
       collection: 'events',
       where: {
@@ -43,6 +44,8 @@ export default async function EventsPage() {
       limit: 12,
     }),
   ])) as unknown as [{ docs: Event[] }, { docs: Event[] }]
+  const upcoming = await excludeProtected('events', upcomingAll)
+  const past = await excludeProtected('events', pastAll)
 
   const jsonLd = context.enabled
     ? buildPageJsonLd({

@@ -154,6 +154,50 @@ export const SecuritySettings: GlobalConfig = {
           'How long an emailed sign-in link or code stays valid, from 5 to 60 minutes. A new request makes any earlier link or code for the same account stop working.',
       },
     },
+    // Passkeys (WebAuthn). Flat, like the fields above. Column names are the snake_case of
+    // these names, listed in src/migrations/20261118_100000_passkeys.ts. Off by default.
+    {
+      name: 'passkeysEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow passkeys',
+      admin: {
+        description:
+          'Lets customers register a passkey (Face ID, Touch ID, Windows Hello or a security key) on their profile and sign in with it. A passkey is an extra way in: passwords and any other sign-in method keep working. Off by default; existing sign-in is unchanged.',
+      },
+    },
+    {
+      name: 'passkeysAllowAdmins',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow admins to use passkeys',
+      admin: {
+        description:
+          'Off: only customers can register or use passkeys. On: admins can also register a passkey on the Security screen and sign in with one on the admin login screen.',
+      },
+    },
+    {
+      name: 'passkeysRpName',
+      type: 'text',
+      label: 'Passkey display name',
+      admin: {
+        description: 'The name shown in the device prompt when a passkey is created. Leave empty to use the site name.',
+      },
+    },
+    {
+      name: 'passkeysUserVerification',
+      type: 'select',
+      defaultValue: 'preferred',
+      label: 'User verification',
+      options: [
+        { label: 'Preferred (use a device PIN or biometric when available)', value: 'preferred' },
+        { label: 'Required (always ask for a PIN or biometric)', value: 'required' },
+      ],
+      admin: {
+        description:
+          'Required makes every passkey sign-in confirm the device PIN or biometric. A passkey signed in this way also skips the authenticator-app code, if the account has one.',
+      },
+    },
     {
       type: 'group',
       name: 'loginProtection',

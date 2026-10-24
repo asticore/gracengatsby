@@ -59,6 +59,23 @@ export type SecuritySettings = {
   passwordPolicy: PasswordPolicy
   /** Emailed sign-in links and codes. Off unless the owner switches them on. */
   passwordless: PasswordlessSettings
+  /** Passkeys (WebAuthn). Off unless the owner switches them on. See src/features/passkeys. */
+  passkeys: PasskeySettings
+}
+
+export type PasskeySettings = {
+  enabled: boolean
+  allowAdmins: boolean
+  /** Shown in the device prompt. Empty means the site name. */
+  rpName: string
+  userVerification: 'preferred' | 'required'
+}
+
+export const DEFAULT_PASSKEY_SETTINGS: PasskeySettings = {
+  enabled: false,
+  allowAdmins: false,
+  rpName: '',
+  userVerification: 'preferred',
 }
 
 export type PasswordlessSettings = {
@@ -110,6 +127,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   },
   passwordPolicy: DEFAULT_PASSWORD_POLICY,
   passwordless: DEFAULT_PASSWORDLESS_SETTINGS,
+  passkeys: DEFAULT_PASSKEY_SETTINGS,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -149,6 +167,19 @@ export const passwordPolicyFrom = (get: (key: string) => unknown): PasswordPolic
     breachCheck: asBool(get('password_breach_check'), base.breachCheck),
     historyCount: asInt(get('password_history_count'), base.historyCount, 0, HISTORY_LIMIT),
     maxAgeDays: asInt(get('password_max_age_days'), base.maxAgeDays, 0, 3650),
+  }
+}
+
+/** Reads the four passkey fields; `get` takes the camelCase name the engine uses. */
+export const passkeysFrom = (get: (key: string) => unknown): PasskeySettings => {
+  const base = DEFAULT_PASSKEY_SETTINGS
+  const rp = get('passkeys_rp_name')
+  const uv = get('passkeys_user_verification')
+  return {
+    enabled: asBool(get('passkeys_enabled'), base.enabled),
+    allowAdmins: asBool(get('passkeys_allow_admins'), base.allowAdmins),
+    rpName: typeof rp === 'string' ? rp.trim().slice(0, 80) : base.rpName,
+    userVerification: uv === 'required' ? 'required' : 'preferred',
   }
 }
 
@@ -218,6 +249,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     },
     passwordPolicy: passwordPolicyFrom((key) => row[key]),
     passwordless: passwordlessFrom((key) => row[key]),
+    passkeys: passkeysFrom((key) => row[key]),
   }
 }
 
@@ -349,5 +381,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     },
     passwordPolicy: passwordPolicyFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     passwordless: passwordlessFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
+    passkeys: passkeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
   }
 }

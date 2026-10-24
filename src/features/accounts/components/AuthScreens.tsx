@@ -21,6 +21,7 @@ import {
   VerifyEmailForm,
 } from './AuthForms'
 import { passwordlessDepsFor, passwordlessOptions } from '../passwordlessWiring'
+import { passkeySignInAvailable } from '../passkeysWiring'
 import { inspectLink, safeLandingPath } from '@/features/passwordless'
 import { requestClient } from '../session'
 
@@ -49,6 +50,8 @@ export const SignInScreen: React.FC<{
   const message = socialError ? socialMessage(socialError) : ''
   // Off unless the owner switched an emailed option on, so an existing site renders exactly as before.
   const passwordless = await passwordlessOptions(engine, 'account')
+  // Off unless the owner switched passkeys on. Existing sign-in screens render exactly as before.
+  const passkey = await passkeySignInAvailable(engine, 'account')
 
   return (
     <AuthShell title="Sign in">
@@ -57,7 +60,7 @@ export const SignInScreen: React.FC<{
           {message}
         </p>
       )}
-      <SignInForm next={safeNext} justReset={justReset} initialPendingToken={pending} passwordless={passwordless} />
+      <SignInForm next={safeNext} justReset={justReset} initialPendingToken={pending} passwordless={passwordless} passkey={passkey} />
       {!pending && <SocialButtons providers={providers} next={safeNext} area="account" />}
     </AuthShell>
   )

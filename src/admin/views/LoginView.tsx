@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { PasskeySignInButton } from '@/features/passkeys/components/PasskeySignInButton'
 
 /**
  * Admin login form - simple email/password auth with POST to /api/users/login.
@@ -28,6 +29,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   const socialError = searchParams.get('social_error')
   // Emailed sign-in for staff: only when the owner allowed admins to use it. The server checks again.
   const [pwOptions, setPwOptions] = useState({ magicLink: false, emailCode: false })
+  const [passkeyOn, setPasskeyOn] = useState(false)
   const [pwStep, setPwStep] = useState<'choose' | 'code'>('choose')
   const [pwCode, setPwCode] = useState('')
   const [pwNote, setPwNote] = useState('')
@@ -64,6 +66,13 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
     }
     return redirectTo
   }, [searchParams, redirectTo])
+
+  useEffect(() => {
+    fetch('/api/passkeys/availability?area=admin', { credentials: 'include' })
+      .then((response) => response.json() as Promise<{ enabled?: boolean }>)
+      .then((body) => setPasskeyOn(Boolean(body.enabled)))
+      .catch((): undefined => undefined)
+  }, [])
 
   useEffect(() => {
     fetch('/api/passwordless/options?area=admin', { credentials: 'include' })
@@ -220,6 +229,8 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
             {isLoading ? 'Signing in...' : pendingToken ? 'Verify' : 'Sign in'}
           </button>
         </form>
+
+        {!pendingToken && passkeyOn && <PasskeySignInButton next={finalRedirectTo} area="admin" onTwoFactor={setPendingToken} />}
 
         {!pendingToken && (pwOptions.magicLink || pwOptions.emailCode) && (
           <div className="admin-login__passwordless">

@@ -20,6 +20,10 @@ async function evaluateGate(collection: string, id: number, readCookie: (name: s
   }
 
   try {
+    // "Visible to members of organisation X" (src/features/organizations/visibility.ts). Locked unless the visitor is a member; fails closed.
+    const { orgGateLocked } = await import('@/features/organizations/visibility')
+    if (await orgGateLocked(collection, id, readCookie('engage-token'))) return 'locked'
+
     const db = await getDb()
     const hash = await getPasswordHash(db, collection, id)
 

@@ -14,7 +14,11 @@ export async function getProtectedIds(collection: ProtectedCollection): Promise<
   const rows = (await db.all(
     sql`SELECT doc_id FROM \`eg_content_passwords\` WHERE collection = ${collection}`
   )) as { doc_id: number | string }[]
-  return new Set((rows ?? []).map((row) => Number(row.doc_id)))
+  const ids = new Set((rows ?? []).map((row) => Number(row.doc_id)))
+  // Documents limited to an organisation's members are kept out of listings the same way.
+  const { listOrgRestrictedIdsLive } = await import('@/features/organizations/visibility')
+  for (const id of await listOrgRestrictedIdsLive(collection)) ids.add(id)
+  return ids
 }
 
 /**

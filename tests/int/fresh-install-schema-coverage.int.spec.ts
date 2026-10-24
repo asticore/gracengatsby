@@ -22,6 +22,7 @@ import * as socialAccountsSchema from '@/cms/db/schema/socialAccounts'
 import * as loginTokensSchema from '@/cms/db/schema/loginTokens'
 import * as passkeysSchema from '@/cms/db/schema/passkeys'
 import * as apiKeysSchema from '@/cms/db/schema/apiKeys'
+import * as organizationsSchema from '@/cms/db/schema/organizations'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
@@ -247,6 +248,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Per-user API keys (hashed keys, scopes): a plain drizzle table in its own schema file
       for (const [exportName, exportValue] of Object.entries(apiKeysSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Customer organisations, members, teams, invitations, custom roles and content limits: plain drizzle tables in their own schema file
+      for (const [exportName, exportValue] of Object.entries(organizationsSchema)) {
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
@@ -711,5 +717,45 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_impersonations` WHERE id = 'keep-me-imp'").first()) as { n: number }
     expect(kept.n).toBe(1)
     await proxy.env.D1.prepare("DELETE FROM `eg_impersonations` WHERE id = 'keep-me-imp'").run()
+  })
+
+  it('adds the organization columns to security settings, off by default, and creates the organization tables', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('organizations_enabled')).toBe('0')
+    expect(byName.get('organizations_max_per_account')).toBe('5')
+    expect(byName.get('organizations_who_may_create')).toBe("'anyone'")
+    const colsOf = async (table: string) => ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()).results as { name: string }[]).map((c) => c.name)
+    expect(await colsOf('eg_organizations')).toEqual(expect.arrayContaining(['id', 'name', 'slug', 'logo', 'metadata', 'created_by', 'created_at', 'updated_at']))
+    expect(await colsOf('eg_organization_members')).toEqual(expect.arrayContaining(['id', 'organization_id', 'user_id', 'role', 'created_at']))
+    expect(await colsOf('eg_organization_roles')).toEqual(expect.arrayContaining(['organization_id', 'name', 'permissions']))
+    expect(await colsOf('eg_organization_teams')).toEqual(expect.arrayContaining(['id', 'organization_id', 'name']))
+    expect(await colsOf('eg_organization_team_members')).toEqual(expect.arrayContaining(['team_id', 'user_id']))
+    expect(await colsOf('eg_organization_invitations')).toEqual(
+      expect.arrayContaining(['id', 'organization_id', 'email', 'role', 'team_id', 'token_hash', 'status', 'inviter_id', 'expires_at', 'resolved_at', 'last_sent_at']),
+    )
+    expect(await colsOf('eg_content_org_visibility')).toEqual(expect.arrayContaining(['collection', 'doc_id', 'organization_id']))
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_organization_invitations`)').all()).results as { name: string; unique: number }[])
+    expect(indexes.find((i) => i.name === 'eg_organization_invitations_token_idx')?.unique).toBe(1)
+  })
+
+  it('organizations migration is safe to run twice and leaves existing organization rows alone', async () => {
+    const mod = await import('@/migrations/20261124_100000_organizations')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_organizations` (id, name, slug, created_by, created_at, updated_at) VALUES ('keep-me-org', 'Keep', 'keep-me', 1, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'organizations_enabled')).toBe(1)
+    expect(await count('eg_security_settings', 'organizations_who_may_create')).toBe(1)
+    expect(await count('eg_organizations', 'slug')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_organizations` WHERE id = 'keep-me-org'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_organizations` WHERE id = 'keep-me-org'").run()
   })
 })

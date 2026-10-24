@@ -46,6 +46,7 @@ import { SessionsView } from '@/admin/views/SessionsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
+import { OrganizationsView } from '@/admin/views/OrganizationsView'
 import { SecurityAuditView } from '@/admin/views/SecurityAuditView'
 import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
@@ -249,6 +250,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: ImpersonationView,
     path: '/security/impersonation',
     meta: { title: 'Sign in as customer', description: 'Admins: open a customer account for a short time, with a reason. The history of every session.' },
+  },
+  {
+    key: 'organizations',
+    Component: OrganizationsView,
+    path: '/security/organizations',
+    meta: { title: 'Organizations', description: 'Every customer organization with its member count. Administrators can delete one.' },
   },
   {
     key: 'securityAudit',

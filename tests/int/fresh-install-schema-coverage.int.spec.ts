@@ -19,6 +19,7 @@ import * as shippingSchema from '@/cms/db/schema/shopShipping'
 import * as stockSubscriptionsSchema from '@/cms/db/schema/stockSubscriptions'
 import * as userSessionsSchema from '@/cms/db/schema/userSessions'
 import * as socialAccountsSchema from '@/cms/db/schema/socialAccounts'
+import * as loginTokensSchema from '@/cms/db/schema/loginTokens'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
@@ -229,6 +230,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Signed-in device sessions: a plain drizzle table in its own schema file
       for (const [exportName, exportValue] of Object.entries(userSessionsSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Passwordless sign-in tokens: a plain drizzle table in its own schema file
+      for (const [exportName, exportValue] of Object.entries(loginTokensSchema)) {
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
@@ -569,5 +575,35 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(await count('eg_security_settings', 'password_max_age_days')).toBe(1)
     expect(await count('eg_users', 'password_changed_at')).toBe(1)
     expect(await count('eg_users', 'password_history_hashes')).toBe(1)
+  })
+
+  it('adds the passwordless columns to security settings, all off by default, and creates eg_login_tokens', async () => {
+    const settings = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(settings.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('magic_link_enabled')).toBe('0')
+    expect(byName.get('email_code_enabled')).toBe('0')
+    expect(byName.get('allow_passwordless_for_admins')).toBe('0')
+    expect(byName.get('passwordless_token_minutes')).toBe('15')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_login_tokens`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['id', 'user_id', 'kind', 'token_hash', 'attempts', 'created_at', 'expires_at', 'used_at']))
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_login_tokens`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(indexes).toEqual(expect.arrayContaining(['eg_login_tokens_user_idx', 'eg_login_tokens_hash_idx']))
+  })
+
+  it('passwordless migration is safe to run twice and leaves existing token rows alone', async () => {
+    const mod = await import('@/migrations/20261117_100000_passwordless_login')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare("INSERT INTO `eg_login_tokens` (user_id, kind, token_hash, created_at, expires_at) VALUES (9, 'link', 'keep-me-hash', '2026-01-01T00:00:00.000Z', '2026-01-01T00:15:00.000Z')").run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'magic_link_enabled')).toBe(1)
+    expect(await count('eg_security_settings', 'passwordless_token_minutes')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_login_tokens` WHERE token_hash = 'keep-me-hash'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_login_tokens` WHERE token_hash = 'keep-me-hash'").run()
   })
 })

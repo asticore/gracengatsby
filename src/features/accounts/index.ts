@@ -30,6 +30,7 @@ export {
   RegisterScreen,
   ResetPasswordScreen,
   SignInScreen,
+  SignInLinkScreen,
   VerifyEmailScreen,
 } from './components/AuthScreens'
 

@@ -46,6 +46,9 @@ export type AuditAction =
   | 'social.linked'
   | 'social.unlinked'
   | 'social.refused'
+  | 'passwordless.requested'
+  | 'passwordless.login'
+  | 'passwordless.refused'
 
 export type AuditEntry = {
   action: AuditAction

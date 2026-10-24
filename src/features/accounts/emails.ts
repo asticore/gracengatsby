@@ -78,3 +78,27 @@ export const sendVerifyEmail = async (to: string, verifyUrl: string, hours: numb
     html: `${mail.html}\n<p><a href="${escapeHtml(verifyUrl)}">Confirm your email address</a></p>`,
   })
 }
+
+/** The emailed one-click sign-in link. The button sends the reader to a page that signs them in only when they press it. */
+export const sendMagicLinkEmail = async (to: string, link: string, minutes: number): Promise<SendEmailResult> => {
+  const { renderEmailTemplate } = await loadTemplates()
+  const mail = await renderEmailTemplate('accountMagicLink', { link, minutes: String(minutes) })
+
+  const sendEmail = await loadSendEmail()
+  return sendEmail({
+    to,
+    template: 'account.magic-link',
+    subject: mail.subject,
+    text: mail.text,
+    html: `${mail.html}\n<p><a href="${escapeHtml(link)}">Sign in</a></p>`,
+  })
+}
+
+/** The six-digit sign-in code. Digits only, so nothing in it needs escaping beyond the template itself. */
+export const sendLoginCodeEmail = async (to: string, code: string, minutes: number): Promise<SendEmailResult> => {
+  const { renderEmailTemplate } = await loadTemplates()
+  const mail = await renderEmailTemplate('accountLoginCode', { code, minutes: String(minutes) })
+
+  const sendEmail = await loadSendEmail()
+  return sendEmail({ to, template: 'account.login-code', subject: mail.subject, text: mail.text, html: mail.html })
+}

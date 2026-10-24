@@ -44,6 +44,9 @@ export type ActionState = {
   message: string
   /** Set when a password was right and a two-step code is the next step. */
   pendingToken?: string
+  /** Set after an emailed sign-in request: which kind was sent, and the address it went to (echoed back for the code step). */
+  kind?: 'link' | 'code'
+  email?: string
 }
 
 export const IDLE: ActionState = { status: 'idle', message: '' }

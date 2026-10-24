@@ -163,7 +163,7 @@ import { API_KEY_RATE_PER_MINUTE, ApiKeyRefused, decideRoute, forbiddenFieldIn, 
 import { readSecuritySettingsFromD1 } from '@/features/security/settings'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
-import { clientKey, hit, limitFor } from '@/features/security/rateLimit'
+import { clientKey, hit, hitShared, limitFor } from '@/features/security/rateLimit'
 import { audit, auditContext } from '@/features/security/auditLog'
 import { recordAuthEvent } from '@/features/security/authAudit'
 import { sessionIdFromToken } from '@/features/security/userSessions'
@@ -1440,7 +1440,7 @@ async function handleLogin(engine: Engine, collection: string, request: Request)
 async function handleLoginSecondFactor(engine: Engine, collection: string, request: Request): Promise<Response> {
   const settings = await getSecuritySettings(engine as never).catch(() => DEFAULT_SECURITY_SETTINGS)
   const limit = limitFor(settings, 'login') ?? Math.max(5, DEFAULT_SECURITY_SETTINGS.loginProtection.maxLoginAttempts * 2)
-  const decision = hit(`two-factor:${clientKey(request)}`, limit)
+  const decision = await hitShared(`two-factor:${clientKey(request)}`, limit)
   const context = auditContext(request)
 
   if (decision.limited) {
@@ -1517,7 +1517,24 @@ async function handleForgotPassword(engine: Engine, collection: string, request:
 /** `POST /reset-password` - `{message: 'Password reset successfully.', user, token}` plus a `Set-Cookie` (`auth/endpoints/resetPassword.js`, `authentication:passwordResetSuccessfully`). An invalid/expired token throws `InvalidResetToken` (400, via `errorToResponse`). */
 async function handleResetPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const result = await engine.resetPassword({ collection, data: { password: stringField(data, 'password'), token: stringField(data, 'token') }, client: sessionClient(request) })
+  const password = stringField(data, 'password')
+  const token = stringField(data, 'token')
+
+  // A reset does not pass through the collection hooks, so the password rules and the
+  // history are applied here. Admin-screen floor: no new minimum unless the owner raised it.
+  const { readPasswordStateByResetToken, recordPasswordSet } = await import('@/features/security/passwordStore')
+  const { passwordProblemFor } = await import('@/features/security/passwordCheck')
+  const account = token ? await readPasswordStateByResetToken(token).catch((): null => null) : null
+  if (account) {
+    const problem = await passwordProblemFor(engine, password, { id: account.id, email: account.email }, { adminScreen: true })
+    if (problem) {
+      await recordAuthEvent(engine, { action: 'password.reset', collectionSlug: collection, actorId: account.id, actorEmail: account.email, detail: `api refused: ${problem}` }, auditContext(request))
+      return Response.json({ errors: [{ name: 'ValidationError', message: problem }] }, { status: 400 })
+    }
+  }
+
+  const result = await engine.resetPassword({ collection, data: { password, token }, client: sessionClient(request) })
+  if (account) await recordPasswordSet(account.id, password).catch((): undefined => undefined)
   await recordAuthEvent(engine, { action: 'password.reset', collectionSlug: collection, actorId: result.user?.id ?? null, actorEmail: result.user?.email ?? null, detail: 'api' }, auditContext(request))
   const headers = new Headers()
   headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))

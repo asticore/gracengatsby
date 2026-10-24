@@ -1033,4 +1033,29 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_impersonations'").first()) as { n: number }
     expect(tableRows.n).toBe(1)
   })
+
+  it('adds the email verification settings, off by default, and creates eg_email_verifications and eg_rate_limits', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('email_verification_required')).toBe('0')
+    expect(byName.get('email_verification_cooldown_seconds')).toBe('60')
+    expect(tables).toContain('eg_email_verifications')
+    expect(tables).toContain('eg_rate_limits')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_rate_limits`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['key', 'window_start', 'count', 'expires_at']))
+  })
+
+  it('auth slice 2 migration is safe to run a second time and leaves the columns and tables single', async () => {
+    const mod = await import('@/migrations/20261121_100000_auth_slice_2')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    expect(info.filter((c) => c.name === 'email_verification_required')).toHaveLength(1)
+    expect(info.filter((c) => c.name === 'email_verification_cooldown_seconds')).toHaveLength(1)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name IN ('eg_email_verifications','eg_rate_limits')").first()) as { n: number }
+    expect(tableRows.n).toBe(2)
+  })
 })

@@ -99,7 +99,10 @@ export async function confirmTwoFactorAction(code: string): Promise<TwoFactorAct
   if (limited(user.id)) return SLOW_DOWN
 
   const result = await confirmEnrolment(store, user, String(code ?? ''))
-  if (!result.ok) return { ok: false, message: result.message }
+  if (!result.ok) {
+    await record(engine, user, 'two-factor.failed', 'enrolment code')
+    return { ok: false, message: result.message }
+  }
 
   await record(engine, user, 'two-factor.enrolled')
   return { ok: true, backupCodes: result.backupCodes }
@@ -113,7 +116,10 @@ export async function disableTwoFactorAction(passwordOrCode: string): Promise<Tw
   if (limited(user.id)) return SLOW_DOWN
 
   const result = await disableTwoFactor(store, user, String(passwordOrCode ?? ''))
-  if (!result.ok) return { ok: false, message: result.message }
+  if (!result.ok) {
+    await record(engine, user, 'two-factor.failed', 'disable')
+    return { ok: false, message: result.message }
+  }
 
   await record(engine, user, 'two-factor.disabled')
   return { ok: true, message: 'Two-step sign-in is off.' }
@@ -127,7 +133,10 @@ export async function regenerateBackupCodesAction(passwordOrCode: string): Promi
   if (limited(user.id)) return SLOW_DOWN
 
   const result = await regenerateBackupCodes(store, user, String(passwordOrCode ?? ''))
-  if (!result.ok) return { ok: false, message: result.message }
+  if (!result.ok) {
+    await record(engine, user, 'two-factor.failed', 'backup codes')
+    return { ok: false, message: result.message }
+  }
 
   await record(engine, user, 'two-factor.backup-codes')
   return { ok: true, backupCodes: result.backupCodes }

@@ -46,6 +46,7 @@ import { SessionsView } from '@/admin/views/SessionsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
+import { SecurityAuditView } from '@/admin/views/SecurityAuditView'
 import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
@@ -248,6 +249,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: ImpersonationView,
     path: '/security/impersonation',
     meta: { title: 'Sign in as customer', description: 'Admins: open a customer account for a short time, with a reason. The history of every session.' },
+  },
+  {
+    key: 'securityAudit',
+    Component: SecurityAuditView,
+    path: '/security/audit',
+    meta: { title: 'Security audit', description: 'Every sign-in, failed attempt, lockout, password, two-step, passkey, API key, connected account and impersonation event. Administrators only.' },
   },
   {
     key: 'socialAccounts',

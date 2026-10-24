@@ -58,7 +58,14 @@ export type SignInResult = {
   /** True when the password was right and a two-step code is the next step. */
   needsTwoFactor?: boolean
   pendingToken?: string
+  /** Set on a refused password or code: `locked` when the account is in its lockout window. For the audit log only. */
+  reason?: 'failed' | 'locked'
+  /** The account a successful sign-in belongs to, for the audit log. */
+  userId?: number | string | null
 }
+
+/** The engine's lockout error, recognised by name so this file need not import the Local API. */
+const isLockout = (error: unknown): boolean => (error as { name?: unknown } | null)?.name === 'LockedAuth'
 
 // --- Email verification -----------------------------------------------------
 
@@ -109,7 +116,7 @@ export const issueVerification = async (
   return true
 }
 
-export type VerifyResult = { ok: boolean; message?: string }
+export type VerifyResult = { ok: boolean; message?: string; userId?: number | string | null }
 
 const VERIFY_INVALID = 'That link has expired or has already been used.'
 
@@ -138,7 +145,7 @@ export const completeVerification = async (engine: Engine, token: string): Promi
       },
       overrideAccess: true,
     })
-    return { ok: true }
+    return { ok: true, userId: user.id }
   } catch {
     return { ok: false, message: VERIFY_INVALID }
   }
@@ -210,16 +217,17 @@ export const signIn = async (
     if (result.twoFactorRequired && result.pendingToken) {
       return { ok: false, needsTwoFactor: true, pendingToken: result.pendingToken }
     }
-    if (!result.token) return { ok: false, message: SIGN_IN_FAILED }
+    if (!result.token) return { ok: false, message: SIGN_IN_FAILED, reason: 'failed' }
 
     // Checked only after the password was right, so this answer is shown to
     // the account holder and tells a stranger nothing.
     const blocked = await verificationBlock(engine, (result.user as { id: number | string }).id)
     if (blocked) return blocked
-    return { ok: true, token: result.token }
-  } catch {
+    return { ok: true, token: result.token, userId: (result.user as { id: number | string }).id }
+  } catch (error) {
     // Includes a locked account. Saying so would confirm the address exists.
-    return { ok: false, message: SIGN_IN_FAILED }
+    // The reason goes to the audit log only, never to the person at the form.
+    return { ok: false, message: SIGN_IN_FAILED, reason: isLockout(error) ? 'locked' : 'failed' }
   }
 }
 
@@ -240,13 +248,13 @@ export const signInWithCode = async (
       data: { pendingToken, code: code.trim() },
       client,
     })
-    if (!result.token) return { ok: false, message: CODE_FAILED }
+    if (!result.token) return { ok: false, message: CODE_FAILED, reason: 'failed' }
 
     const blocked = await verificationBlock(engine, (result.user as { id: number | string }).id)
     if (blocked) return blocked
-    return { ok: true, token: result.token }
-  } catch {
-    return { ok: false, message: CODE_FAILED }
+    return { ok: true, token: result.token, userId: (result.user as { id: number | string }).id }
+  } catch (error) {
+    return { ok: false, message: CODE_FAILED, reason: isLockout(error) ? 'locked' : 'failed' }
   }
 }
 
@@ -372,7 +380,7 @@ export const requestPasswordReset = async (
   )
 }
 
-export type ResetResult = { ok: boolean; message?: string }
+export type ResetResult = { ok: boolean; message?: string; userId?: number | string | null }
 
 export const completePasswordReset = async (
   engine: Engine,
@@ -399,7 +407,7 @@ export const completePasswordReset = async (
     // A reset never passes through the Users collection hooks, so the history and
     // the change time are stamped here.
     if (account) await recordPasswordSet(account.id, password).catch((): undefined => undefined)
-    return { ok: true }
+    return { ok: true, userId: account?.id ?? null }
   } catch {
     // Wrong token, used token, expired token - one answer for all three.
     return { ok: false, message: 'That reset link has expired or has already been used.' }

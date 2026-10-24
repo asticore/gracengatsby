@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { getDb } = vi.hoisted(() => ({ getDb: vi.fn() }))
+vi.mock('@/features/organizations/visibility', () => ({ orgGateLocked: async () => false, listOrgRestrictedIdsLive: async () => new Set<number>() }))
 vi.mock('@/cms/db/connect', () => ({ getDb }))
 
 import {

@@ -6,7 +6,7 @@ import { headers } from 'next/headers'
 import { getEngine } from '@/lib/engine'
 
 import { audit, auditContext, type AuditAction } from './auditLog'
-import { hit } from './rateLimit'
+import { hitShared } from './rateLimitStore'
 import { getSecuritySettings } from './settings'
 import {
   backupCodesRemaining,
@@ -63,7 +63,7 @@ async function record(engine: Awaited<ReturnType<typeof getEngine>>, user: { id:
   }
 }
 
-const limited = (userId: number): boolean => hit(`two-factor:manage:${userId}`, GUESSES_PER_MINUTE).limited
+const limited = async (userId: number): Promise<boolean> => (await hitShared(`two-factor:manage:${userId}`, GUESSES_PER_MINUTE)).limited
 
 const SIGNED_OUT: TwoFactorActionResult = { ok: false, message: 'Your session has ended. Sign in and try again.' }
 const SLOW_DOWN: TwoFactorActionResult = { ok: false, message: 'Too many attempts. Wait a minute and try again.' }
@@ -96,7 +96,7 @@ export async function confirmTwoFactorAction(code: string): Promise<TwoFactorAct
 
   const { engine, user } = await currentUser()
   if (!user) return SIGNED_OUT
-  if (limited(user.id)) return SLOW_DOWN
+  if (await limited(user.id)) return SLOW_DOWN
 
   const result = await confirmEnrolment(store, user, String(code ?? ''))
   if (!result.ok) {
@@ -113,7 +113,7 @@ export async function disableTwoFactorAction(passwordOrCode: string): Promise<Tw
 
   const { engine, user } = await currentUser()
   if (!user) return SIGNED_OUT
-  if (limited(user.id)) return SLOW_DOWN
+  if (await limited(user.id)) return SLOW_DOWN
 
   const result = await disableTwoFactor(store, user, String(passwordOrCode ?? ''))
   if (!result.ok) {
@@ -130,7 +130,7 @@ export async function regenerateBackupCodesAction(passwordOrCode: string): Promi
 
   const { engine, user } = await currentUser()
   if (!user) return SIGNED_OUT
-  if (limited(user.id)) return SLOW_DOWN
+  if (await limited(user.id)) return SLOW_DOWN
 
   const result = await regenerateBackupCodes(store, user, String(passwordOrCode ?? ''))
   if (!result.ok) {

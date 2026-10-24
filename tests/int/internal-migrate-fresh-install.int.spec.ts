@@ -1020,6 +1020,29 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(cols).toEqual(expect.arrayContaining(['admin_id', 'target_user_id', 'reason', 'started_at', 'ended_at', 'expires_at', 'session_id']))
   })
 
+  it('creates eg_rate_limits with its expiry index', async () => {
+    expect(tables).toContain('eg_rate_limits')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_rate_limits`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['key', 'count', 'window_start', 'expires_at']))
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_rate_limits`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(indexes).toEqual(expect.arrayContaining(['eg_rate_limits_expires_at_idx']))
+  })
+
+  it('rate limits migration is safe to run a second time and leaves existing counters alone', async () => {
+    const mod = await import('@/migrations/20261121_100000_rate_limits')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare("INSERT INTO `eg_rate_limits` (`key`, `count`, `window_start`, `expires_at`) VALUES ('keep-me-rl', 3, 1, 2)").run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_rate_limits'").first()) as { n: number }
+    expect(tableRows.n).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT `count` AS c FROM `eg_rate_limits` WHERE `key` = 'keep-me-rl'").first()) as { c: number }
+    expect(kept.c).toBe(3)
+    await proxy.env.D1.prepare("DELETE FROM `eg_rate_limits` WHERE `key` = 'keep-me-rl'").run()
+  })
+
   it('impersonation migration is safe to run a second time and leaves the columns and table single', async () => {
     const mod = await import('@/migrations/20261120_100000_impersonation')
     const { drizzle } = await import('drizzle-orm/d1')

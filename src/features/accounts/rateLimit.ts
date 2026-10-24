@@ -3,9 +3,9 @@ import type { Engine } from '@/engine'
 import {
   DEFAULT_SECURITY_SETTINGS,
   getSecuritySettings,
-  hit,
   limitFor,
 } from '@/features/security'
+import { hitShared } from '@/features/security/rateLimitStore'
 
 /**
  * The per-address budget on the three unauthenticated endpoints: sign in,
@@ -17,10 +17,10 @@ import {
  * floor below takes over. Turning off a headers-and-hardening screen should
  * not silently open the sign-in form to unlimited guessing.
  *
- * The counter is per-isolate, not global; see the note at the top of
- * security/rateLimit.ts for exactly what that is and is not worth. The durable
- * control on guessing one account's password remains the engine's own lockout,
- * which counts failures on the user row.
+ * The counter is shared across isolates through D1 (eg_rate_limits), falling
+ * back to the per-isolate counter if D1 is unavailable - see
+ * security/sharedRateLimit.ts. The durable control on guessing one account's
+ * password remains the engine's own lockout, which counts failures on the user row.
  */
 
 const FLOOR = Math.max(5, DEFAULT_SECURITY_SETTINGS.loginProtection.maxLoginAttempts * 2)
@@ -45,7 +45,7 @@ export const guardAttempt = async (
 
   // Separate buckets per attempt type: someone registering should not be
   // spending the same allowance as someone mistyping their password.
-  const decision = hit(`account:${attempt}:${address}`, limit)
+  const decision = await hitShared(`account:${attempt}:${address}`, limit)
 
   return decision.limited
     ? { allowed: false, retryAfterSeconds: decision.retryAfterSeconds }

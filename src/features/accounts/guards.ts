@@ -5,6 +5,7 @@ import { accountContext, type AccountUser } from './session'
 import type { FeatureFlags } from '@/features/registry'
 import { MEMBER_ENROL_PATH, assertTwoFactorSatisfied } from '@/features/security/twoFactor'
 import { getSecuritySettings } from '@/features/security/settings'
+import { passwordChangeIsDue } from '@/features/security/passwordCheck'
 
 /**
  * The two guards every account screen starts with.
@@ -40,6 +41,14 @@ export const requireCustomer = async (returnTo: string): Promise<SignedIn> => {
     const settings = await getSecuritySettings(context.engine as never).catch((): null => null)
     const status = settings ? assertTwoFactorSatisfied(context.user as never, settings) : null
     if (status?.mustEnrol && status.enrolPath) redirect(`${status.enrolPath}#security`)
+  }
+
+  // Only when the owner set a maximum password age and this account's password is
+  // older than it: the profile screen, where the change form lives, is the one page
+  // that stays open. Nobody is locked out, and the change clears the redirect.
+  if (returnTo !== MEMBER_ENROL_PATH) {
+    const due = await passwordChangeIsDue(context.engine as never, context.user.id).catch((): false => false)
+    if (due) redirect(`${MEMBER_ENROL_PATH}?password=due`)
   }
   return context as SignedIn
 }

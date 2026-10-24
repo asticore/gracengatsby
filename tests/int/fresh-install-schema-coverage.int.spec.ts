@@ -542,4 +542,32 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const secondTables = new Set((secondRun.results as { name: string }[]).map((r) => r.name))
     expect(secondTables).toEqual(createdTables)
   }, 300_000)
+
+  it('adds the password policy columns to security settings and the password columns to users', async () => {
+    const settings = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(settings.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('password_min_length')).toBe('8')
+    for (const column of ['password_require_mixed_case', 'password_require_number', 'password_require_symbol', 'password_block_common', 'password_breach_check']) {
+      expect(byName.get(column)).toBe('0')
+    }
+    expect(byName.get('password_history_count')).toBe('0')
+    expect(byName.get('password_max_age_days')).toBe('0')
+    const userCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_users`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(userCols).toEqual(expect.arrayContaining(['password_changed_at', 'password_history_hashes']))
+  })
+
+  it('password policy migration is safe to run twice and adds each column once', async () => {
+    const mod = await import('@/migrations/20261116_100000_password_policy')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'password_min_length')).toBe(1)
+    expect(await count('eg_security_settings', 'password_max_age_days')).toBe(1)
+    expect(await count('eg_users', 'password_changed_at')).toBe(1)
+    expect(await count('eg_users', 'password_history_hashes')).toBe(1)
+  })
 })

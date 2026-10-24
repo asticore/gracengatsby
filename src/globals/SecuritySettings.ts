@@ -36,6 +36,81 @@ export const SecuritySettings: GlobalConfig = {
     update: isAdmin,
   },
   fields: [
+    // Password rules. Flat on purpose (see socialLoginFields.ts): the schema
+    // generator cannot nest a group in a group. Column names are the snake_case
+    // of these names, listed in src/migrations/20261116_100000_password_policy.ts.
+    // Every default is today's behaviour, so nothing changes until the owner opts in.
+    {
+      name: 'passwordMinLength',
+      type: 'number',
+      defaultValue: 8,
+      label: 'Minimum password length',
+      admin: {
+        description:
+          'Shortest password for customers when they register, reset or change one. 8 is the site default. Passwords set on the admin screens, for example an admin choosing a password for a customer, keep the existing no-minimum behaviour unless this is raised above 8. Existing passwords are never checked.',
+      },
+    },
+    {
+      name: 'passwordRequireMixedCase',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Require upper and lower case letters',
+      admin: { description: 'New passwords must contain both an upper-case and a lower-case letter.' },
+    },
+    {
+      name: 'passwordRequireNumber',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Require a number',
+      admin: { description: 'New passwords must contain at least one digit.' },
+    },
+    {
+      name: 'passwordRequireSymbol',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Require a symbol',
+      admin: { description: 'New passwords must contain at least one character that is not a letter or a digit, such as ! or #.' },
+    },
+    {
+      name: 'passwordBlockCommon',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Block common passwords',
+      admin: {
+        description:
+          'Refuses a bundled list of the most commonly used passwords, and any password that contains the name part of the email address (before the @). Checked on the server only, offline.',
+      },
+    },
+    {
+      name: 'passwordBreachCheck',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Check for breached passwords',
+      admin: {
+        description:
+          'Asks the Have I Been Pwned range service whether a password has appeared in a known data breach. Only the first five characters of a one-way hash are sent. If the service cannot be reached within two seconds the password is accepted, so a third-party outage never blocks anyone.',
+      },
+    },
+    {
+      name: 'passwordHistoryCount',
+      type: 'number',
+      defaultValue: 0,
+      label: 'Passwords remembered (no reuse)',
+      admin: {
+        description:
+          'How many previous passwords an account may not reuse. 0 turns this off. Up to 10. Passwords set since this version of the site are remembered; older ones are not.',
+      },
+    },
+    {
+      name: 'passwordMaxAgeDays',
+      type: 'number',
+      defaultValue: 0,
+      label: 'Maximum password age (days)',
+      admin: {
+        description:
+          'After this many days a customer or admin is asked to choose a new password the next time they sign in. Nobody is locked out, and a new password is required only once. 0 turns this off. The age counts from the last change, or from the account creation date if the password has never changed since this version of the site.',
+      },
+    },
     {
       type: 'group',
       name: 'loginProtection',

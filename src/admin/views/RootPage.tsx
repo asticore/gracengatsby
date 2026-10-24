@@ -11,6 +11,7 @@ import { GlobalEditView } from './GlobalEditView'
 import { LoginView } from './LoginView'
 import { VersionsView } from './VersionsView'
 import { assertTwoFactorSatisfied } from '@/features/security/twoFactor'
+import { passwordChangeIsDue } from '@/features/security/passwordCheck'
 import { getSecuritySettings } from '@/features/security/settings'
 
 const TWO_FACTOR_VIEW_PATH = '/security/two-factor'
@@ -145,6 +146,16 @@ export async function RootPage({ params, searchParams }: Args) {
     const settings = await getSecuritySettings(context.engine as never).catch((): null => null)
     const status = settings ? assertTwoFactorSatisfied(context.user as never, settings) : null
     if (status?.mustEnrol && status.enrolPath) redirect(status.enrolPath)
+  }
+
+  // Only when a maximum password age is set and this admin's password is older
+  // than it: every other admin page redirects to their own user screen, where the
+  // password is changed. Nothing is locked out, and the change clears the redirect.
+  // A no-op while the setting is off (the default).
+  const adminUserId = (context.user as { id?: number | string } | null)?.id
+  if (adminUserId !== undefined && !pathname.startsWith(`/collections/users/${adminUserId}`)) {
+    const due = await passwordChangeIsDue(context.engine as never, adminUserId).catch((): false => false)
+    if (due) redirect(`/admin/collections/users/${adminUserId}`)
   }
 
   const customView = findCustomView(pathname)

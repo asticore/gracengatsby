@@ -1,5 +1,7 @@
 import type { FeatureKey } from '@/features/registry'
 
+import { DEFAULT_PASSWORD_POLICY, HISTORY_LIMIT, MAX_POLICY_LENGTH, type PasswordPolicy } from './passwordPolicyDefaults'
+
 /**
  * The values behind the Security screen, in a shape the enforcement code can
  * use, plus the two ways of getting them.
@@ -53,6 +55,8 @@ export type SecuritySettings = {
     enabled: boolean
     retentionDays: number
   }
+  /** Password rules for customers and admins - see passwordPolicy.ts. */
+  passwordPolicy: PasswordPolicy
 }
 
 /** Mirrors the `defaultValue` of every field on the Security screen. */
@@ -88,6 +92,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
     enabled: true,
     retentionDays: 90,
   },
+  passwordPolicy: DEFAULT_PASSWORD_POLICY,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -102,6 +107,32 @@ const asBool = (value: unknown, fallback: boolean): boolean =>
 const asNum = (value: unknown, fallback: number): number => {
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+/** A whole number within [min, max]. Zero is a real answer for the password settings, so it is not treated as missing. */
+const asInt = (value: unknown, fallback: number, min: number, max: number): number => {
+  if (value === null || value === undefined || value === '') return fallback
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, Math.trunc(parsed)))
+}
+
+/** Reads the eight flat password fields from any source that can look them up by column-style key. */
+/** `password_min_length` to `passwordMinLength`: the engine hands back camelCase names. */
+const camel = (key: string): string => key.replace(/_([a-z])/g, (_match, letter: string) => letter.toUpperCase())
+
+export const passwordPolicyFrom = (get: (key: string) => unknown): PasswordPolicy => {
+  const base = DEFAULT_PASSWORD_POLICY
+  return {
+    minLength: asInt(get('password_min_length'), base.minLength, 1, MAX_POLICY_LENGTH),
+    requireMixedCase: asBool(get('password_require_mixed_case'), base.requireMixedCase),
+    requireNumber: asBool(get('password_require_number'), base.requireNumber),
+    requireSymbol: asBool(get('password_require_symbol'), base.requireSymbol),
+    blockCommon: asBool(get('password_block_common'), base.blockCommon),
+    breachCheck: asBool(get('password_breach_check'), base.breachCheck),
+    historyCount: asInt(get('password_history_count'), base.historyCount, 0, HISTORY_LIMIT),
+    maxAgeDays: asInt(get('password_max_age_days'), base.maxAgeDays, 0, 3650),
+  }
 }
 
 const asText = (value: unknown, fallback: string): string =>
@@ -157,6 +188,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
       enabled: asBool(row.audit_log_enabled, base.auditLog.enabled),
       retentionDays: asNum(row.audit_log_retention_days, base.auditLog.retentionDays),
     },
+    passwordPolicy: passwordPolicyFrom((key) => row[key]),
   }
 }
 
@@ -286,5 +318,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
       enabled: asBool(audit.enabled, base.auditLog.enabled),
       retentionDays: asNum(audit.retentionDays, base.auditLog.retentionDays),
     },
+    passwordPolicy: passwordPolicyFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
   }
 }

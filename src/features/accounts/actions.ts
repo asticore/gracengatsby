@@ -4,11 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+import { passwordProblemFor } from '@/features/security/passwordCheck'
+
 import {
   completePasswordReset,
   completeVerification,
   emailProblem,
-  passwordProblem,
   registerCustomer,
   requestPasswordReset,
   resendVerification,
@@ -159,7 +160,7 @@ export async function registerAction(_state: ActionState, form: FormData): Promi
   const badEmail = emailProblem(email)
   if (badEmail) return failed(badEmail)
 
-  const badPassword = passwordProblem(password)
+  const badPassword = await passwordProblemFor(context.engine, password, { email })
   if (badPassword) return failed(badPassword)
   if (password !== text(form, 'passwordConfirm')) return failed('The two passwords do not match.')
 

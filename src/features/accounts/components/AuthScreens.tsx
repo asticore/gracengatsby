@@ -7,6 +7,8 @@ import { socialMessage } from '@/features/socialLogin/messages'
 import { publicProviders, registerProviders } from '@/features/socialLogin/public'
 import { PENDING_COOKIE } from '@/features/socialLogin/http'
 
+import { passwordFormRules } from '@/features/security/passwordCheck'
+
 import { redirectIfSignedIn, requireFeature } from '../guards'
 import { RESET_TTL_MINUTES, VERIFY_TTL_HOURS } from '../auth'
 import { AuthShell } from './AccountShell'
@@ -58,11 +60,13 @@ export const SignInScreen: React.FC<{
 export const RegisterScreen: React.FC = async () => {
   await redirectIfSignedIn()
 
-  const providers = await registerProviders(await getEngine())
+  const engine = await getEngine()
+  const providers = await registerProviders(engine)
+  const rules = await passwordFormRules(engine)
 
   return (
     <AuthShell title="Create an account" intro="Keep track of your orders, addresses and event bookings.">
-      <RegisterForm />
+      <RegisterForm rules={rules} />
       <SocialButtons providers={providers} area="account" verb="Sign up with" />
     </AuthShell>
   )
@@ -88,7 +92,7 @@ export const ForgotPasswordScreen: React.FC = async () => {
  * that cannot succeed.
  */
 export const ResetPasswordScreen: React.FC<{ token?: string }> = async ({ token }) => {
-  await requireFeature()
+  const { engine } = await requireFeature()
 
   if (!token) {
     return (
@@ -105,7 +109,7 @@ export const ResetPasswordScreen: React.FC<{ token?: string }> = async ({ token 
       title="Choose a new password"
       intro={`This link works once, and only within ${RESET_TTL_MINUTES} minutes of being sent.`}
     >
-      <ResetPasswordForm token={token} />
+      <ResetPasswordForm token={token} rules={await passwordFormRules(engine)} />
     </AuthShell>
   )
 }

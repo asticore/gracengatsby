@@ -63,6 +63,10 @@ export type SessionClient = {
   skipSession?: boolean
   /** Replaces the device label derived from the User-Agent. Impersonation uses this to flag its sessions. */
   label?: string
+  /** The remembered-device cookie the request carried, if any. A valid one stands in for the second-step code. */
+  trustedDeviceToken?: string | null
+  /** Set on the second-step request when "remember this device" was ticked. */
+  trustDevice?: boolean
 }
 
 export type SessionClaims = { usid: string; jti?: string; userId: number }

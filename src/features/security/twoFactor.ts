@@ -1,4 +1,5 @@
 import type { SecuritySettings } from './settings'
+import { evaluateEnforcement } from './twoFactorEnforcement'
 
 /**
  * Two-factor sign-in for admins and customers: secret handling, TOTP and
@@ -61,6 +62,7 @@ export type TwoFactorUser = {
   id?: number | string
   email?: string
   roles?: string[] | null
+  customRoleSlug?: string | null
   twoFactorEnabled?: boolean | null
 }
 
@@ -388,6 +390,42 @@ export async function confirmEnrolment(
   return { ok: true, backupCodes: codes }
 }
 
+/**
+ * Email enrolment, step two: the emailed code proves the person can read the account's mailbox.
+ * The account is then gated exactly as after an authenticator enrolment, except there is no
+ * authenticator secret: the second step is an emailed code, and the ten backup codes (returned
+ * here once, only their hashes kept) are the way in if the mailbox is unreachable.
+ *
+ * `verifyEmailCode` is the caller's check of the emailed code (it consumes the code).
+ */
+export async function confirmEmailEnrolment(
+  store: TwoFactorStore,
+  user: { id?: number | string },
+  verifyEmailCode: (userId: number) => Promise<boolean>,
+  options: { now?: number } = {},
+): Promise<{ ok: boolean; message?: string; backupCodes?: string[] }> {
+  const id = Number(user?.id)
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, message: NOT_SIGNED_IN }
+
+  const row = await store.findByID(id)
+  if (!row) return { ok: false, message: NOT_SIGNED_IN }
+  if (isEnrolled(row)) return { ok: false, message: 'Two-step sign-in is already switched on.' }
+  if (!(await verifyEmailCode(id))) return { ok: false, message: 'That code did not match, or it has expired. Ask for a new one.' }
+
+  const { codes, stored } = await newBackupSet()
+  await store.updateByID(id, {
+    twoFactorEnabled: true,
+    twoFactorSecret: null,
+    twoFactorConfirmedAt: new Date(options.now ?? Date.now()).toISOString(),
+    twoFactorLastUsedStep: null,
+    twoFactorBackupHashes: stored,
+  })
+  return { ok: true, backupCodes: codes }
+}
+
+/** Whether the account has an authenticator secret (as opposed to being enrolled by email only). */
+export const hasAuthenticatorSecret = (row: Pick<TwoFactorRow, 'twoFactorSecret'> | null | undefined): boolean => Boolean(row?.twoFactorSecret)
+
 export type SecondFactorResult = {
   ok: boolean
   method?: 'totp' | 'backup'
@@ -515,12 +553,17 @@ export type TwoFactorStatus = {
   /** A setting asks for two-step for this user. */
   required: boolean
   enrolled: boolean
-  /** True when nothing is asked, or the ask is met. */
+  /** True when nothing is asked of them right now (not required, enrolled, in grace, or exempt). */
   satisfied: boolean
   /** True now that the setup screens exist. */
   enrolmentAvailable: boolean
-  /** Required, not yet enrolled, and there is a screen to do it on: send them there. */
+  /** Required, not yet enrolled, past any grace period, and there is a screen to do it on: send them there. */
   mustEnrol: boolean
+  /** Required, not enrolled, and still inside the grace period. */
+  inGrace: boolean
+  graceEndsAt: string | null
+  /** The REST API should refuse this user until they enrol. False for the last admin. */
+  reject: boolean
   /** Where `mustEnrol` sends the user. */
   enrolPath?: string
   reason?: string
@@ -529,36 +572,29 @@ export type TwoFactorStatus = {
 const isAdminUser = (user: TwoFactorUser | null | undefined): boolean =>
   Boolean(user?.roles?.includes('admin'))
 
-/** Customer accounts: staff roles other than admin are covered by neither setting. */
-const isMemberUser = (user: TwoFactorUser | null | undefined): boolean =>
-  Array.isArray(user?.roles) && user.roles.length > 0 && user.roles.every((role) => role === 'customer')
+const usesAdminPanel = (user: TwoFactorUser | null | undefined): boolean =>
+  Boolean(user?.roles?.some((role) => role === 'admin' || role === 'editor' || role === 'viewer'))
 
 export function twoFactorStatus(
   user: TwoFactorUser | null | undefined,
   settings: SecuritySettings,
+  options: { now?: number; soleAdmin?: boolean; env?: Record<string, string | undefined> } = {},
 ): TwoFactorStatus {
-  const admin = isAdminUser(user)
-  const member = !admin && isMemberUser(user)
-
-  const required =
-    Boolean(user) &&
-    settings.featureEnabled &&
-    ((admin && settings.loginProtection.requireTwoFactorForAdmins) ||
-      (member && settings.loginProtection.requireTwoFactorForMembers))
-
-  // `twoFactorEnabled` is only ever set by a confirmed enrolment.
-  const enrolled = Boolean(user?.twoFactorEnabled)
+  const result = evaluateEnforcement(user, settings, options)
   const enrolmentAvailable = true
-  const mustEnrol = required && !enrolled && enrolmentAvailable
+  const mustEnrol = result.state === 'enforced' && enrolmentAvailable
 
   return {
-    required,
-    enrolled,
-    satisfied: !required || enrolled,
+    required: result.required,
+    enrolled: result.enrolled,
+    satisfied: !mustEnrol,
     enrolmentAvailable,
     mustEnrol,
-    enrolPath: mustEnrol ? (admin ? ADMIN_ENROL_PATH : MEMBER_ENROL_PATH) : undefined,
-    reason: mustEnrol ? 'Two-step sign-in is required for this account but has not been set up.' : undefined,
+    inGrace: result.state === 'grace',
+    graceEndsAt: result.graceEndsAt,
+    reject: result.reject,
+    enrolPath: mustEnrol ? (usesAdminPanel(user) ? ADMIN_ENROL_PATH : MEMBER_ENROL_PATH) : undefined,
+    reason: result.state === 'enforced' || result.state === 'grace' ? result.reason : undefined,
   }
 }
 
@@ -567,12 +603,14 @@ export function twoFactorStatus(
  * up two-step. It never throws and never ends a session: an unenrolled user
  * whose account is covered by an enabled setting is redirected to the setup
  * screen (see `mustEnrol` / `enrolPath`), where setup and sign-out are the only
- * things they need. With both settings off (the default) `mustEnrol` is always
- * false and nothing changes for anyone.
+ * things they need, and the REST API refuses them (see `reject` and
+ * twoFactorEnforcement.ts). With every setting off (the default) `mustEnrol` is
+ * always false and nothing changes for anyone.
  */
 export function assertTwoFactorSatisfied(
   user: TwoFactorUser | null | undefined,
   settings: SecuritySettings,
+  options: { now?: number; soleAdmin?: boolean; env?: Record<string, string | undefined> } = {},
 ): TwoFactorStatus {
-  return twoFactorStatus(user, settings)
+  return twoFactorStatus(user, settings, options)
 }

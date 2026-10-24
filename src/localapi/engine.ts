@@ -83,6 +83,7 @@ import {
   forgotPassword as authForgotPassword,
   login as authLogin,
   loginWithSecondFactor as authLoginSecondFactor,
+  sendSecondFactorEmail as authSendSecondFactorEmail,
   loginAsUser as authLoginAsUser,
   type SessionOverride,
   logout as authLogout,
@@ -110,6 +111,7 @@ import { attachCustomRole } from '@/features/roles/customRoleCache'
 import { defaultUserSessionStore } from '@/features/security/userSessionStore'
 import { audit } from '@/features/security/auditLog'
 import { readSecuritySettingsFromD1 } from '@/features/security/settings'
+import { emailOtpOps, trustedDeviceOps } from '@/features/security/twoFactorRuntime'
 import { authenticateApiKey, createD1ApiKeyStore, presentedApiKey, type ApiKeyContext, type ApiKeyDeps, type D1Like } from '@/features/apiKeys'
 import { resolveD1Binding } from '@/cms/db/connect'
 import type { SessionClient } from '@/features/security/userSessions'
@@ -146,7 +148,9 @@ export type Engine = {
   updateGlobal: (args: CommonOpts & { slug: string; data: Record<string, unknown> }) => Promise<Doc>
   login: (args: { collection: string; data: { email: string; password: string }; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
   /** Step two of a two-step sign-in: the pending token `login` returned plus an authenticator or backup code. */
-  loginSecondFactor: (args: { collection: string; data: { pendingToken: string; code: string }; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number }>
+  loginSecondFactor: (args: { collection: string; data: { pendingToken: string; code: string; method?: 'email' | 'app' }; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; trustedDevice?: { token: string; maxAgeSeconds: number } }>
+  /** Emails the second-step code for a pending sign-in (the pending token proves the password step passed). */
+  sendSecondFactorEmail: (args: { collection: string; data: { pendingToken: string } }) => Promise<{ ok: boolean; message: string }>
   /** Session (or a pending second-factor token) for an already-proven identity - social login. Locked accounts are refused; two-step accounts still need their code. */
   loginAsUser: (args: { collection: string; id: number; client?: SessionClient; skipSecondFactor?: boolean; session?: SessionOverride }) => Promise<{ user: AuthUserDoc; token?: string; exp?: number; twoFactorRequired?: boolean; pendingToken?: string }>
   resetPassword: (args: { collection: string; data: { password: string; token: string }; overrideAccess?: boolean; client?: SessionClient }) => Promise<{ user: AuthUserDoc; token: string }>
@@ -211,6 +215,8 @@ function buildAuthDb(): AuthDbOps {
     },
     updateByID: (id, data) => updateUserAuthRow(id, data),
     sessions: defaultUserSessionStore,
+    emailOtp: emailOtpOps,
+    trustedDevices: trustedDeviceOps,
   }
 }
 
@@ -421,7 +427,8 @@ export function createEngine(): Engine {
       return result
     },
     loginAsUser: (args) => authLoginAsUser(authDb, { id: args.id, secret, client: args.client, skipSecondFactor: args.skipSecondFactor, session: args.session }),
-    loginSecondFactor: (args) => authLoginSecondFactor(authDb, { pendingToken: args.data.pendingToken, code: args.data.code, secret, client: args.client }),
+    loginSecondFactor: (args) => authLoginSecondFactor(authDb, { pendingToken: args.data.pendingToken, code: args.data.code, method: args.data.method, secret, client: args.client }),
+    sendSecondFactorEmail: (args) => authSendSecondFactorEmail(authDb, { pendingToken: args.data.pendingToken, secret }),
     resetPassword: (args) => authResetPassword(authDb, { token: args.data.token, password: args.data.password, secret, client: args.client }),
     forgotPassword: (args) => authForgotPassword(authDb, { email: args.data.email.trim().toLowerCase(), expirationMs: args.expiration ?? 60 * 60 * 1000 }),
     auth: async (args) => {

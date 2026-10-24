@@ -1,7 +1,7 @@
 // @vitest-environment node
 // Passwordless sign-in (emailed link and six-digit code), against in-memory stand-ins
 // for the engine, the token table and the mailer. The clock is ours, so expiry is exact.
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { guardAttempt } from '@/features/accounts/rateLimit'
 import {
@@ -128,6 +128,15 @@ const customer = (engine: ReturnType<typeof makeEngine>, extra: Record<string, u
   engine.add({ email: 'sam@example.com', roles: ['customer'], emailVerifiedAt: null, lockUntil: null, ...extra })
 
 const tokenFrom = (sent: Sent) => new URL(sent.link as string).searchParams.get('token') as string
+
+// The account limits count in D1 in production. Each D1 call in a unit spec
+// goes through a wrangler proxy and is far too slow for 25 guesses per test, so
+// this spec keeps the counter in memory. rate-limits-d1.int.spec.ts covers the
+// D1 store itself.
+vi.mock('@/features/security/rateLimitStore', async () => {
+  const { hit } = await import('@/features/security/rateLimit')
+  return { hitShared: async (key: string, limit: number) => hit(key, limit) }
+})
 
 beforeEach(() => resetRateLimiter())
 

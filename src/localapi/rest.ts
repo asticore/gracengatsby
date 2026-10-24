@@ -164,6 +164,7 @@ import { readSecuritySettingsFromD1 } from '@/features/security/settings'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
 import { clientKey, hit, limitFor } from '@/features/security/rateLimit'
+import { hitShared } from '@/features/security/rateLimitStore'
 import { audit, auditContext } from '@/features/security/auditLog'
 import { recordAuthEvent } from '@/features/security/authAudit'
 import { sessionIdFromToken } from '@/features/security/userSessions'
@@ -1440,7 +1441,7 @@ async function handleLogin(engine: Engine, collection: string, request: Request)
 async function handleLoginSecondFactor(engine: Engine, collection: string, request: Request): Promise<Response> {
   const settings = await getSecuritySettings(engine as never).catch(() => DEFAULT_SECURITY_SETTINGS)
   const limit = limitFor(settings, 'login') ?? Math.max(5, DEFAULT_SECURITY_SETTINGS.loginProtection.maxLoginAttempts * 2)
-  const decision = hit(`two-factor:${clientKey(request)}`, limit)
+  const decision = await hitShared(`two-factor:${clientKey(request)}`, limit)
   const context = auditContext(request)
 
   if (decision.limited) {

@@ -57,6 +57,22 @@ export type SecuritySettings = {
   }
   /** Password rules for customers and admins - see passwordPolicy.ts. */
   passwordPolicy: PasswordPolicy
+  /** Emailed sign-in links and codes. Off unless the owner switches them on. */
+  passwordless: PasswordlessSettings
+}
+
+export type PasswordlessSettings = {
+  magicLinkEnabled: boolean
+  emailCodeEnabled: boolean
+  allowForAdmins: boolean
+  tokenMinutes: number
+}
+
+export const DEFAULT_PASSWORDLESS_SETTINGS: PasswordlessSettings = {
+  magicLinkEnabled: false,
+  emailCodeEnabled: false,
+  allowForAdmins: false,
+  tokenMinutes: 15,
 }
 
 /** Mirrors the `defaultValue` of every field on the Security screen. */
@@ -93,6 +109,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
     retentionDays: 90,
   },
   passwordPolicy: DEFAULT_PASSWORD_POLICY,
+  passwordless: DEFAULT_PASSWORDLESS_SETTINGS,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -132,6 +149,17 @@ export const passwordPolicyFrom = (get: (key: string) => unknown): PasswordPolic
     breachCheck: asBool(get('password_breach_check'), base.breachCheck),
     historyCount: asInt(get('password_history_count'), base.historyCount, 0, HISTORY_LIMIT),
     maxAgeDays: asInt(get('password_max_age_days'), base.maxAgeDays, 0, 3650),
+  }
+}
+
+/** Reads the four passwordless fields; `get` takes the camelCase name the engine uses. */
+export const passwordlessFrom = (get: (key: string) => unknown): PasswordlessSettings => {
+  const base = DEFAULT_PASSWORDLESS_SETTINGS
+  return {
+    magicLinkEnabled: asBool(get('magic_link_enabled'), base.magicLinkEnabled),
+    emailCodeEnabled: asBool(get('email_code_enabled'), base.emailCodeEnabled),
+    allowForAdmins: asBool(get('allow_passwordless_for_admins'), base.allowForAdmins),
+    tokenMinutes: asInt(get('passwordless_token_minutes'), base.tokenMinutes, 5, 60),
   }
 }
 
@@ -189,6 +217,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
       retentionDays: asNum(row.audit_log_retention_days, base.auditLog.retentionDays),
     },
     passwordPolicy: passwordPolicyFrom((key) => row[key]),
+    passwordless: passwordlessFrom((key) => row[key]),
   }
 }
 
@@ -319,5 +348,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
       retentionDays: asNum(audit.retentionDays, base.auditLog.retentionDays),
     },
     passwordPolicy: passwordPolicyFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
+    passwordless: passwordlessFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
   }
 }

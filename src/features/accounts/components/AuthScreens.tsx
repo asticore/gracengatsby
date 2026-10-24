@@ -17,8 +17,12 @@ import {
   RegisterForm,
   ResetPasswordForm,
   SignInForm,
+  SignInLinkForm,
   VerifyEmailForm,
 } from './AuthForms'
+import { passwordlessDepsFor, passwordlessOptions } from '../passwordlessWiring'
+import { inspectLink, safeLandingPath } from '@/features/passwordless'
+import { requestClient } from '../session'
 
 /**
  * The four screens an unauthenticated visitor can reach.
@@ -43,6 +47,8 @@ export const SignInScreen: React.FC<{
   // A social sign-in that still needs its two-step code parks the pending token in an HttpOnly cookie.
   const pending = social === '2fa' ? ((await cookies()).get(PENDING_COOKIE)?.value ?? '') : ''
   const message = socialError ? socialMessage(socialError) : ''
+  // Off unless the owner switched an emailed option on, so an existing site renders exactly as before.
+  const passwordless = await passwordlessOptions(engine, 'account')
 
   return (
     <AuthShell title="Sign in">
@@ -51,7 +57,7 @@ export const SignInScreen: React.FC<{
           {message}
         </p>
       )}
-      <SignInForm next={safeNext} justReset={justReset} initialPendingToken={pending} />
+      <SignInForm next={safeNext} justReset={justReset} initialPendingToken={pending} passwordless={passwordless} />
       {!pending && <SocialButtons providers={providers} next={safeNext} area="account" />}
     </AuthShell>
   )
@@ -141,3 +147,36 @@ export const VerifyEmailScreen: React.FC<{ token?: string }> = async ({ token })
     </AuthShell>
   )
 }
+
+/**
+ * The page an emailed sign-in link opens. It only shows the confirm button after
+ * checking the link is still good, and does not spend it: the button does that.
+ */
+export const SignInLinkScreen: React.FC<{ token?: string; next?: string }> = async ({ token, next }) => {
+  await requireFeature()
+
+  const landing = safeLandingPath(next)
+  const engine = await getEngine()
+  const deps = await passwordlessDepsFor(engine, await requestClient())
+  const valid = token ? await inspectLink(deps, token) : false
+
+  if (!valid) {
+    return (
+      <AuthShell title="Sign in">
+        <p className="account-note account-note--error">
+          That sign-in link is not valid. It may have expired or been used already.
+        </p>
+        <p className="account-link-row">
+          <a href="/account/sign-in">Ask for a new one</a>
+        </p>
+      </AuthShell>
+    )
+  }
+
+  return (
+    <AuthShell title="Sign in" intro="Confirm it is you to finish signing in.">
+      <SignInLinkForm token={token ?? ''} next={landing} />
+    </AuthShell>
+  )
+}
+

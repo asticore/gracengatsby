@@ -111,6 +111,49 @@ export const SecuritySettings: GlobalConfig = {
           'After this many days a customer or admin is asked to choose a new password the next time they sign in. Nobody is locked out, and a new password is required only once. 0 turns this off. The age counts from the last change, or from the account creation date if the password has never changed since this version of the site.',
       },
     },
+    // Passwordless sign-in (magic link and email code). Flat, like the password rules above.
+    // Column names are the snake_case of these names, listed in
+    // src/migrations/20261117_100000_passwordless_login.ts. Everything is off by default.
+    {
+      name: 'magicLinkEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Email me a sign-in link',
+      admin: {
+        description:
+          'Shows an "Email me a sign-in link" option on the customer sign-in screen. The link works once and expires after the lifetime set below. Only accounts whose email address can receive mail can use it. Off by default; existing sign-in is unchanged.',
+      },
+    },
+    {
+      name: 'emailCodeEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Email me a sign-in code',
+      admin: {
+        description:
+          'Shows an "Email me a code" option with a six-digit code to type in. A code stops working after five wrong tries. Off by default; existing sign-in is unchanged.',
+      },
+    },
+    {
+      name: 'allowPasswordlessForAdmins',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow admins to sign in this way too',
+      admin: {
+        description:
+          'Off: only customers can use the email options, and the admin login screen shows no email option. On: admins can also request a link or code on the admin login screen. Two-step sign-in still applies to any account that has it switched on.',
+      },
+    },
+    {
+      name: 'passwordlessTokenMinutes',
+      type: 'number',
+      defaultValue: 15,
+      label: 'Link and code lifetime (minutes)',
+      admin: {
+        description:
+          'How long an emailed sign-in link or code stays valid, from 5 to 60 minutes. A new request makes any earlier link or code for the same account stop working.',
+      },
+    },
     {
       type: 'group',
       name: 'loginProtection',

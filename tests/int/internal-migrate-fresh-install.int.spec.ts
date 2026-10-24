@@ -933,4 +933,30 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(info.filter((c) => c.name === 'password_history_hashes')).toHaveLength(1)
     expect(info.filter((c) => c.name === 'password_changed_at')).toHaveLength(1)
   })
+
+  it('adds the passwordless columns to security settings, all off by default, and creates eg_login_tokens', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('magic_link_enabled')).toBe('0')
+    expect(byName.get('email_code_enabled')).toBe('0')
+    expect(byName.get('allow_passwordless_for_admins')).toBe('0')
+    expect(byName.get('passwordless_token_minutes')).toBe('15')
+    expect(tables).toContain('eg_login_tokens')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_login_tokens`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['user_id', 'kind', 'token_hash', 'attempts', 'expires_at', 'used_at']))
+  })
+
+  it('passwordless migration is safe to run a second time and leaves the columns and table single', async () => {
+    const mod = await import('@/migrations/20261117_100000_passwordless_login')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    expect(info.filter((c) => c.name === 'magic_link_enabled')).toHaveLength(1)
+    expect(info.filter((c) => c.name === 'passwordless_token_minutes')).toHaveLength(1)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_login_tokens'").first()) as { n: number }
+    expect(tableRows.n).toBe(1)
+  })
 })

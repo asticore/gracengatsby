@@ -4,8 +4,11 @@ import Link from 'next/link'
 import React, { useActionState } from 'react'
 
 import {
+  confirmLinkAction,
   forgotPasswordAction,
   registerAction,
+  requestLoginAction,
+  verifyCodeAction,
   resendVerificationAction,
   resetPasswordAction,
   signInAction,
@@ -24,7 +27,12 @@ import { Note, SubmitButton } from './FormBits'
  * component only draws whatever sentence comes back.
  */
 
-export const SignInForm: React.FC<{ next: string; justReset?: boolean; initialPendingToken?: string }> = ({ next, justReset, initialPendingToken }) => {
+export const SignInForm: React.FC<{
+  next: string
+  justReset?: boolean
+  initialPendingToken?: string
+  passwordless?: { magicLink: boolean; emailCode: boolean }
+}> = ({ next, justReset, initialPendingToken, passwordless }) => {
   const [state, action] = useActionState<ActionState, FormData>(signInAction, IDLE)
 
   if (state.pendingToken || initialPendingToken) return <CodeStep pendingToken={state.pendingToken || initialPendingToken || ''} next={next} />
@@ -54,12 +62,15 @@ export const SignInForm: React.FC<{ next: string; justReset?: boolean; initialPe
       </div>
     </form>
     {state.status === 'error' && state.message === VERIFY_FIRST_MESSAGE && <ResendVerificationForm />}
+    {passwordless && (passwordless.magicLink || passwordless.emailCode) && (
+      <PasswordlessPanel magicLink={passwordless.magicLink} emailCode={passwordless.emailCode} next={next} />
+    )}
     </>
   )
 }
 
 /** The second step: a code from the authenticator app, or a backup code. */
-const CodeStep: React.FC<{ pendingToken: string; next: string }> = ({ pendingToken, next }) => {
+export const CodeStep: React.FC<{ pendingToken: string; next: string }> = ({ pendingToken, next }) => {
   const [state, action] = useActionState<ActionState, FormData>(signInCodeAction, IDLE)
 
   return (
@@ -218,6 +229,95 @@ export const ResendVerificationForm: React.FC<{ email?: string }> = ({ email }) 
       </label>
       <Note state={state} />
       <SubmitButton variant="ghost">Send me a new link</SubmitButton>
+    </form>
+  )
+}
+
+/**
+ * Emailed sign-in, offered beside the password form when the owner switched it on.
+ * Only the enabled options are drawn. After a request the same sentence comes back
+ * whether or not the address has an account; a code then gets its own entry step.
+ */
+export const PasswordlessPanel: React.FC<{ magicLink: boolean; emailCode: boolean; next: string }> = ({ magicLink, emailCode, next }) => {
+  const [state, action] = useActionState<ActionState, FormData>(requestLoginAction, IDLE)
+  const [email, setEmail] = React.useState('')
+
+  if (state.status === 'success' && state.kind === 'code') {
+    return <VerifyCodeForm email={state.email ?? ''} next={next} />
+  }
+  if (state.status === 'success') {
+    return (
+      <div className="account-passwordless">
+        <Note state={state} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="account-passwordless">
+      <p className="account-hint">Or sign in without a password.</p>
+      <form action={action} className="account-form">
+        <input type="hidden" name="next" value={next} />
+        <label>
+          Email
+          <input name="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <Note state={state} />
+        {magicLink && (
+          <button type="submit" name="kind" value="link" className="btn btn--style-secondary">
+            Email me a sign-in link
+          </button>
+        )}
+        {emailCode && (
+          <button type="submit" name="kind" value="code" className="btn btn--style-secondary">
+            Email me a code
+          </button>
+        )}
+      </form>
+    </div>
+  )
+}
+
+/** The code step after an emailed code request. A two-step account is then asked for its authenticator code. */
+export const VerifyCodeForm: React.FC<{ email: string; next: string }> = ({ email, next }) => {
+  const [state, action] = useActionState<ActionState, FormData>(verifyCodeAction, IDLE)
+
+  if (state.pendingToken) return <CodeStep pendingToken={state.pendingToken} next={next} />
+
+  return (
+    <form action={action} className="account-form">
+      <p>Enter the six-digit code we emailed to you. It works once.</p>
+      <input type="hidden" name="email" value={email} />
+      <input type="hidden" name="next" value={next} />
+      <label>
+        Code
+        <input name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} autoFocus required />
+      </label>
+      <Note state={state} />
+      <SubmitButton>Sign in</SubmitButton>
+      <div className="account-link-row">
+        <Link href="/account/sign-in">Start again</Link>
+      </div>
+    </form>
+  )
+}
+
+/**
+ * The confirm page for an emailed link. The button is the only thing that spends
+ * the link: opening the page, or a scanner fetching it, changes nothing.
+ */
+export const SignInLinkForm: React.FC<{ token: string; next: string }> = ({ token, next }) => {
+  const [state, action] = useActionState<ActionState, FormData>(confirmLinkAction, IDLE)
+
+  if (state.pendingToken) return <CodeStep pendingToken={state.pendingToken} next={next} />
+
+  return (
+    <form action={action} className="account-form">
+      <input type="hidden" name="token" value={token} />
+      <input type="hidden" name="next" value={next} />
+      <p>Press the button to sign in. The link works once.</p>
+      <Note state={state} />
+      <SubmitButton>Sign me in</SubmitButton>
     </form>
   )
 }

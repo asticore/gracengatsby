@@ -26,6 +26,11 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   // Social sign-in for staff: buttons only when the site allows it and a provider is configured.
   const [socialProviders, setSocialProviders] = useState<Array<{ id: string; label: string }>>([])
   const socialError = searchParams.get('social_error')
+  // Emailed sign-in for staff: only when the owner allowed admins to use it. The server checks again.
+  const [pwOptions, setPwOptions] = useState({ magicLink: false, emailCode: false })
+  const [pwStep, setPwStep] = useState<'choose' | 'code'>('choose')
+  const [pwCode, setPwCode] = useState('')
+  const [pwNote, setPwNote] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -59,6 +64,63 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
     }
     return redirectTo
   }, [searchParams, redirectTo])
+
+  useEffect(() => {
+    fetch('/api/passwordless/options?area=admin', { credentials: 'include' })
+      .then((response) => response.json() as Promise<{ magicLink?: boolean; emailCode?: boolean }>)
+      .then((body) =>
+        setPwOptions({ magicLink: Boolean(body.magicLink), emailCode: Boolean(body.emailCode) }),
+      )
+      .catch((): undefined => undefined)
+  }, [])
+
+  const requestEmailed = async (kind: 'link' | 'code') => {
+    if (!email) {
+      setPwNote('Enter your email address first.')
+      return
+    }
+    setPwNote('')
+    try {
+      const response = await fetch('/api/passwordless/request', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, kind, next: finalRedirectTo }),
+      })
+      const body = (await response.json()) as { message?: string }
+      setPwNote(body.message ?? 'That did not work.')
+      if (response.ok && kind === 'code') setPwStep('code')
+    } catch {
+      setPwNote('Network error. Please try again.')
+    }
+  }
+
+  const verifyEmailed = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPwNote('')
+    try {
+      const response = await fetch('/api/passwordless/verify', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: pwCode, next: finalRedirectTo }),
+      })
+      const body = (await response.json()) as { ok?: boolean; redirect?: string; pendingToken?: string; message?: string }
+      if (response.ok && body.ok) {
+        router.push(body.redirect ?? finalRedirectTo)
+        router.refresh()
+        return
+      }
+      if (body.pendingToken) {
+        setPendingToken(body.pendingToken)
+        setPwStep('choose')
+        return
+      }
+      setPwNote(body.message ?? 'That code was not right.')
+    } catch {
+      setPwNote('Network error. Please try again.')
+    }
+  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -158,6 +220,46 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
             {isLoading ? 'Signing in...' : pendingToken ? 'Verify' : 'Sign in'}
           </button>
         </form>
+
+        {!pendingToken && (pwOptions.magicLink || pwOptions.emailCode) && (
+          <div className="admin-login__passwordless">
+            {pwStep === 'code' ? (
+              <form onSubmit={verifyEmailed}>
+                <div className="admin-login__field">
+                  <label htmlFor="field-pw-code">Code from your email</label>
+                  <input
+                    id="field-pw-code"
+                    name="code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={pwCode}
+                    onChange={(e) => setPwCode(e.target.value)}
+                    required
+                  />
+                </div>
+                <button className="btn btn--primary admin-login__submit" type="submit">
+                  Sign in with code
+                </button>
+              </form>
+            ) : (
+              <div>
+                {pwOptions.magicLink && (
+                  <button type="button" className="btn btn--style-secondary admin-login__submit" onClick={() => requestEmailed('link')}>
+                    Email me a sign-in link
+                  </button>
+                )}
+                {pwOptions.emailCode && (
+                  <button type="button" className="btn btn--style-secondary admin-login__submit" onClick={() => requestEmailed('code')}>
+                    Email me a code
+                  </button>
+                )}
+              </div>
+            )}
+            {pwNote && <p className="admin-login__hint">{pwNote}</p>}
+          </div>
+        )}
 
         {!pendingToken && socialProviders.length > 0 && (
           <div className="admin-login__social">

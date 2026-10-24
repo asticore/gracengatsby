@@ -25,7 +25,7 @@ import {
 
 const FLOOR = Math.max(5, DEFAULT_SECURITY_SETTINGS.loginProtection.maxLoginAttempts * 2)
 
-export type Attempt = 'sign-in' | 'reset' | 'register' | 'verify' | 'two-factor' | 'social'
+export type Attempt = 'sign-in' | 'reset' | 'register' | 'verify' | 'two-factor' | 'social' | 'passwordless-request' | 'passwordless-verify'
 
 /**
  * Optional rather than discriminated fields, because this project compiles

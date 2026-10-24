@@ -93,6 +93,7 @@ import * as migration_20261113_100000_two_factor_backup_codes from './20261113_1
 import * as migration_20261114_100000_user_sessions from './20261114_100000_user_sessions';
 import * as migration_20261115_100000_social_login from './20261115_100000_social_login';
 import * as migration_20261116_100000_password_policy from './20261116_100000_password_policy';
+import * as migration_20261117_100000_passwordless_login from './20261117_100000_passwordless_login';
 
 export const migrations = [
   {
@@ -569,5 +570,10 @@ export const migrations = [
     up: migration_20261116_100000_password_policy.up,
     down: migration_20261116_100000_password_policy.down,
     name: '20261116_100000_password_policy',
+  },
+  {
+    up: migration_20261117_100000_passwordless_login.up,
+    down: migration_20261117_100000_passwordless_login.down,
+    name: '20261117_100000_passwordless_login',
   },
 ];

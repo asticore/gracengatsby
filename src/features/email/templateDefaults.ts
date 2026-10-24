@@ -12,6 +12,8 @@ export type EmailTemplateKey =
   | 'accountAlreadyRegistered'
   | 'accountWelcome'
   | 'accountVerify'
+  | 'accountMagicLink'
+  | 'accountLoginCode'
   | 'membershipRenewal'
   | 'approvalSubmitted'
   | 'approvalDecision'
@@ -48,6 +50,20 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplate> = 
       'Please confirm this email address for your account.',
       'Open this link - it works once, and expires in {{hours}} hours:\n{{link}}',
       'If this was not you, ignore this email.',
+    ].join('\n\n'),
+  },
+  accountMagicLink: {
+    subject: 'Your sign-in link',
+    body: [
+      'Open this link to sign in to your account. It works once, and expires in {{minutes}} minutes:\n{{link}}',
+      'If you did not ask for this, ignore this email. Nobody can sign in without the link.',
+    ].join('\n\n'),
+  },
+  accountLoginCode: {
+    subject: 'Your sign-in code',
+    body: [
+      'Your sign-in code is {{code}}. It works once, expires in {{minutes}} minutes, and stops working after five wrong tries.',
+      'If you did not ask for this, ignore this email. Nobody can sign in without the code.',
     ].join('\n\n'),
   },
   membershipRenewal: {

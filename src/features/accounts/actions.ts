@@ -37,6 +37,8 @@ import {
 } from './session'
 import { sessionIdFromToken } from '@/features/security/userSessions'
 import { NEUTRAL_EMAIL_NOTICE, USERS_SLUG, failed, succeeded, type ActionState } from './types'
+import { confirmLink, requestLogin, safeLandingPath, verifyCode } from '@/features/passwordless'
+import { passwordlessDepsFor } from './passwordlessWiring'
 
 /**
  * Everything the account screens submit to.
@@ -367,3 +369,80 @@ export async function changePasswordAction(
   if (result.token) await setSessionCookie(result.token ?? '')
   return succeeded(result.message)
 }
+
+// --- Passwordless sign-in (emailed link or code) ----------------------------
+
+/**
+ * Asks for a link or a code. The answer is the same sentence for every address
+ * that is well formed, so the reply never shows whether an account exists. The
+ * per-address and per-IP limits are counted before anything is looked up.
+ */
+export async function requestLoginAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  const context = await openContext()
+  if (!context) return FEATURE_OFF
+
+  const kind = text(form, 'kind') === 'code' ? 'code' : 'link'
+  const address = text(form, 'email').trim().toLowerCase()
+  const ip = await requestAddress()
+
+  const byIp = await guardAttempt(context.engine, 'passwordless-request', `ip:${ip}`)
+  if (!byIp.allowed) return failed(tooManyAttempts(byIp.retryAfterSeconds ?? 60))
+  const byEmail = await guardAttempt(context.engine, 'passwordless-request', `email:${address}`)
+  if (!byEmail.allowed) return failed(tooManyAttempts(byEmail.retryAfterSeconds ?? 60))
+
+  const client = await requestClient()
+  const deps = await passwordlessDepsFor(context.engine, client)
+  const origin = await siteOrigin()
+  const next = safeLandingPath(text(form, 'next'))
+
+  const outcome = await requestLogin(deps, {
+    email: address,
+    kind,
+    linkFor: (token) =>
+      `${origin}/account/sign-in/link?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`,
+  })
+  if (!outcome.ok) return failed(outcome.message)
+  return { status: 'success', message: outcome.message, kind, email: address }
+}
+
+/** The six-digit code, typed with the address it was sent to. */
+export async function verifyCodeAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  const context = await openContext()
+  if (!context) return FEATURE_OFF
+
+  const email = text(form, 'email').trim().toLowerCase()
+  const byIp = await guardAttempt(context.engine, 'passwordless-verify', `ip:${await requestAddress()}`)
+  if (!byIp.allowed) return failed(tooManyAttempts(byIp.retryAfterSeconds ?? 60))
+  const byEmail = await guardAttempt(context.engine, 'passwordless-verify', `email:${email}`)
+  if (!byEmail.allowed) return failed(tooManyAttempts(byEmail.retryAfterSeconds ?? 60))
+
+  const deps = await passwordlessDepsFor(context.engine, await requestClient())
+  const outcome = await verifyCode(deps, email, text(form, 'code'))
+  if (outcome.status === 'refused') return failed(outcome.message)
+  if (outcome.status === 'two-factor') return { status: 'idle', message: '', pendingToken: outcome.pendingToken }
+
+  await setSessionCookie(outcome.token)
+  redirect(safeLandingPath(text(form, 'next')))
+}
+
+/**
+ * The confirm button on an emailed link. The page only shows the button; this is
+ * the one place the link is spent, so a mail scanner that fetches the URL cannot
+ * sign anyone in or use the link up.
+ */
+export async function confirmLinkAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  const context = await openContext()
+  if (!context) return FEATURE_OFF
+
+  const byIp = await guardAttempt(context.engine, 'passwordless-verify', `ip:${await requestAddress()}`)
+  if (!byIp.allowed) return failed(tooManyAttempts(byIp.retryAfterSeconds ?? 60))
+
+  const deps = await passwordlessDepsFor(context.engine, await requestClient())
+  const outcome = await confirmLink(deps, text(form, 'token'))
+  if (outcome.status === 'refused') return failed(outcome.message)
+  if (outcome.status === 'two-factor') return { status: 'idle', message: '', pendingToken: outcome.pendingToken }
+
+  await setSessionCookie(outcome.token)
+  redirect(safeLandingPath(text(form, 'next')))
+}
+

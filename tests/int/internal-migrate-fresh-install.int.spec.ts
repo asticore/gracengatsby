@@ -735,6 +735,26 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await names('_eg_posts_v')).toContain('version_hide_author')
   })
 
+  it('adds the customer email verification columns and the site setting', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_users')).toEqual(
+      expect.arrayContaining(['email_verified_at', 'email_verify_token_hash', 'email_verify_expires_at']),
+    )
+    expect(await names('eg_site_settings')).toContain('account_settings_require_email_verification')
+  })
+
+  it('email verification migration is safe to run twice', async () => {
+    const mod = await import('@/migrations/20261112_100000_users_email_verification')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_users`)').all()).results as { name: string }[]).map((r) => r.name)
+    expect(cols.filter((c) => c === 'email_verified_at')).toHaveLength(1)
+  })
+
   it('creates the social accounts child table for integrations', async () => {
     expect(tables).toContain('eg_integrations_social_accounts')
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_integrations_social_accounts`)').all()).results as { name: string }[]).map((r) => r.name)

@@ -1,13 +1,14 @@
 import React from 'react'
 
 import { redirectIfSignedIn, requireFeature } from '../guards'
-import { RESET_TTL_MINUTES } from '../auth'
+import { RESET_TTL_MINUTES, VERIFY_TTL_HOURS } from '../auth'
 import { AuthShell } from './AccountShell'
 import {
   ForgotPasswordForm,
   RegisterForm,
   ResetPasswordForm,
   SignInForm,
+  VerifyEmailForm,
 } from './AuthForms'
 
 /**
@@ -80,6 +81,34 @@ export const ResetPasswordScreen: React.FC<{ token?: string }> = async ({ token 
       intro={`This link works once, and only within ${RESET_TTL_MINUTES} minutes of being sent.`}
     >
       <ResetPasswordForm token={token} />
+    </AuthShell>
+  )
+}
+
+/**
+ * The link in the verification email lands here. Nothing is consumed on load -
+ * only on pressing the button - so a mail scanner that opens the link cannot
+ * spend the token before the customer does.
+ */
+export const VerifyEmailScreen: React.FC<{ token?: string }> = async ({ token }) => {
+  await requireFeature()
+
+  if (!token) {
+    return (
+      <AuthShell title="Confirm your email">
+        <p className="account-note account-note--error">
+          That link is incomplete. Sign in to be sent a new one.
+        </p>
+      </AuthShell>
+    )
+  }
+
+  return (
+    <AuthShell
+      title="Confirm your email"
+      intro={`This link works once, and only within ${VERIFY_TTL_HOURS} hours of being sent.`}
+    >
+      <VerifyEmailForm token={token} />
     </AuthShell>
   )
 }

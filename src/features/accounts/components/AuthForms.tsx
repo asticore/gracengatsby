@@ -6,10 +6,12 @@ import React, { useActionState } from 'react'
 import {
   forgotPasswordAction,
   registerAction,
+  resendVerificationAction,
   resetPasswordAction,
   signInAction,
+  verifyEmailAction,
 } from '../actions'
-import { IDLE, type ActionState } from '../types'
+import { IDLE, VERIFY_FIRST_MESSAGE, type ActionState } from '../types'
 import { Note, SubmitButton } from './FormBits'
 
 /**
@@ -25,6 +27,7 @@ export const SignInForm: React.FC<{ next: string; justReset?: boolean }> = ({ ne
   const [state, action] = useActionState<ActionState, FormData>(signInAction, IDLE)
 
   return (
+    <>
     <form action={action} className="account-form">
       {justReset && (
         <p className="account-note account-note--success">
@@ -47,6 +50,8 @@ export const SignInForm: React.FC<{ next: string; justReset?: boolean }> = ({ ne
         <Link href="/account/forgot-password">Forgotten your password?</Link>
       </div>
     </form>
+    {state.status === 'error' && state.message === VERIFY_FIRST_MESSAGE && <ResendVerificationForm />}
+    </>
   )
 }
 
@@ -143,6 +148,46 @@ export const ResetPasswordForm: React.FC<{ token: string }> = ({ token }) => {
       <div className="account-link-row">
         <Link href="/account/forgot-password">Send me a new link</Link>
       </div>
+    </form>
+  )
+}
+
+export const VerifyEmailForm: React.FC<{ token: string }> = ({ token }) => {
+  const [state, action] = useActionState<ActionState, FormData>(verifyEmailAction, IDLE)
+
+  if (state.status === 'success') {
+    return (
+      <>
+        <Note state={state} />
+        <div className="account-link-row">
+          <Link href="/account/sign-in">Sign in</Link>
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <form action={action} className="account-form">
+      <input type="hidden" name="token" value={token} />
+      <Note state={state} />
+      <SubmitButton>Confirm my email address</SubmitButton>
+    </form>
+  )
+}
+
+export const ResendVerificationForm: React.FC<{ email?: string }> = ({ email }) => {
+  const [state, action] = useActionState<ActionState, FormData>(resendVerificationAction, IDLE)
+
+  if (state.status === 'success') return <Note state={state} />
+
+  return (
+    <form action={action} className="account-form">
+      <label>
+        Email
+        <input name="email" type="email" autoComplete="email" defaultValue={email} required />
+      </label>
+      <Note state={state} />
+      <SubmitButton variant="ghost">Send me a new link</SubmitButton>
     </form>
   )
 }

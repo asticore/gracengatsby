@@ -63,6 +63,7 @@ export type SiteSettingsDoc = {
     revealOnScroll?: boolean | null
     hideNativeCursor?: boolean | null
   } | null
+  accountSettings?: { requireEmailVerification?: boolean | null } | null
   features?: Partial<Record<FeatureKey, boolean | null>> | null
   updatedAt: string
   createdAt: string

@@ -1,7 +1,12 @@
 import type { Engine } from '@/engine'
 
-import { sendAlreadyRegisteredEmail, sendResetEmail, sendWelcomeEmail } from './emails'
-import { USERS_SLUG } from './types'
+import {
+  sendAlreadyRegisteredEmail,
+  sendResetEmail,
+  sendVerifyEmail,
+  sendWelcomeEmail,
+} from './emails'
+import { USERS_SLUG, VERIFY_FIRST_MESSAGE } from './types'
 
 /**
  * Sign in, register, forgotten password, reset.
@@ -37,7 +42,130 @@ export const RESET_TTL_MINUTES = 30
  */
 const SIGN_IN_FAILED = 'Those details do not match an account.'
 
-export type SignInResult = { ok: boolean; token?: string; message?: string }
+/** How long an email verification link lives. */
+export const VERIFY_TTL_HOURS = 24
+
+export type SignInResult = {
+  ok: boolean
+  token?: string
+  message?: string
+  /** True when the password was right but the address is not yet verified. */
+  needsVerification?: boolean
+}
+
+// --- Email verification -----------------------------------------------------
+
+const toHex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+
+/** SHA-256 of a token, hex. Only this is stored; the token lives in the email. */
+export const hashVerifyToken = async (token: string): Promise<string> =>
+  toHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))))
+
+/** Whether the site has switched verification on (off unless set). */
+export const verificationRequired = async (engine: Engine): Promise<boolean> => {
+  const settings = (await engine
+    .findGlobal({ slug: 'site-settings', depth: 0 })
+    .catch((): null => null)) as { accountSettings?: { requireEmailVerification?: boolean | null } | null } | null
+  return settings?.accountSettings?.requireEmailVerification === true
+}
+
+/** Customer-only accounts: admins, editors and viewers are never gated. */
+const isCustomerOnly = (roles: unknown): boolean =>
+  Array.isArray(roles) && roles.length > 0 && roles.every((role) => role === 'customer')
+
+/**
+ * Mints a 32-byte token, stores its SHA-256 and a 24 hour expiry on the user,
+ * and emails the link. Returns false if nothing could be stored.
+ */
+export const issueVerification = async (
+  engine: Engine,
+  userId: number | string,
+  email: string,
+  verifyUrlFor: (token: string) => string,
+): Promise<boolean> => {
+  const token = toHex(crypto.getRandomValues(new Uint8Array(32)))
+  const expires = new Date(Date.now() + VERIFY_TTL_HOURS * 60 * 60 * 1000).toISOString()
+
+  try {
+    await engine.update({
+      collection: USERS_SLUG,
+      id: Number(userId),
+      data: { emailVerifyTokenHash: await hashVerifyToken(token), emailVerifyExpiresAt: expires },
+      overrideAccess: true,
+    })
+  } catch {
+    return false
+  }
+
+  await sendVerifyEmail(email, verifyUrlFor(token), VERIFY_TTL_HOURS).catch((): undefined => undefined)
+  return true
+}
+
+export type VerifyResult = { ok: boolean; message?: string }
+
+const VERIFY_INVALID = 'That link has expired or has already been used.'
+
+/** Consumes a token once: hash, match, check expiry, mark verified, clear. */
+export const completeVerification = async (engine: Engine, token: string): Promise<VerifyResult> => {
+  if (!token) return { ok: false, message: VERIFY_INVALID }
+  try {
+    const found = await engine.find({
+      collection: USERS_SLUG,
+      where: { emailVerifyTokenHash: { equals: await hashVerifyToken(token) } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const user = found.docs[0] as { id: number | string; emailVerifyExpiresAt?: string | null } | undefined
+    const expires = user?.emailVerifyExpiresAt ? Date.parse(user.emailVerifyExpiresAt) : NaN
+    if (!user || !(expires > Date.now())) return { ok: false, message: VERIFY_INVALID }
+
+    await engine.update({
+      collection: USERS_SLUG,
+      id: Number(user.id),
+      data: {
+        emailVerifiedAt: new Date().toISOString(),
+        emailVerifyTokenHash: null,
+        emailVerifyExpiresAt: null,
+      },
+      overrideAccess: true,
+    })
+    return { ok: true }
+  } catch {
+    return { ok: false, message: VERIFY_INVALID }
+  }
+}
+
+/**
+ * Sends a fresh link to an unverified, customer-only account. Silent for
+ * every other case so the caller learns nothing about who has an account.
+ */
+export const resendVerification = async (
+  engine: Engine,
+  email: string,
+  verifyUrlFor: (token: string) => string,
+): Promise<void> => {
+  const address = email.trim().toLowerCase()
+  if (!EMAIL_PATTERN.test(address)) return
+  if (!(await verificationRequired(engine))) return
+
+  const found = await engine
+    .find({
+      collection: USERS_SLUG,
+      where: { email: { equals: address } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    .catch(() => ({ docs: [] as unknown[] }))
+  const user = found.docs[0] as
+    | { id: number | string; roles?: unknown; emailVerifiedAt?: string | null }
+    | undefined
+  if (!user || user.emailVerifiedAt || !isCustomerOnly(user.roles)) return
+
+  await issueVerification(engine, user.id, address, verifyUrlFor)
+}
 
 export const signIn = async (
   engine: Engine,
@@ -53,6 +181,20 @@ export const signIn = async (
       data: { email: address, password },
     })
     if (!result.token) return { ok: false, message: SIGN_IN_FAILED }
+
+    // Checked only after the password was right, so this answer is shown to
+    // the account holder and tells a stranger nothing.
+    if (await verificationRequired(engine)) {
+      const user = (await engine.findByID({
+        collection: USERS_SLUG,
+        id: Number((result.user as { id: number | string }).id),
+        depth: 0,
+        overrideAccess: true,
+      })) as { roles?: unknown; emailVerifiedAt?: string | null }
+      if (isCustomerOnly(user.roles) && !user.emailVerifiedAt) {
+        return { ok: false, message: VERIFY_FIRST_MESSAGE, needsVerification: true }
+      }
+    }
     return { ok: true, token: result.token }
   } catch {
     // Includes a locked account. Saying so would confirm the address exists.
@@ -108,6 +250,7 @@ export const registerCustomer = async (
   email: string,
   password: string,
   urls: { signIn: string; forgotPassword: string; account: string },
+  verifyUrlFor?: (token: string) => string,
 ): Promise<RegistrationOutcome> => {
   const address = email.trim().toLowerCase()
 
@@ -135,6 +278,9 @@ export const registerCustomer = async (
       overrideAccess: true,
     })) as { id: number | string }
 
+    if (verifyUrlFor && (await verificationRequired(engine))) {
+      await issueVerification(engine, user.id, address, verifyUrlFor)
+    }
     await sendWelcomeEmail(address, urls.account).catch((): undefined => undefined)
     return { created: true, userId: user.id }
   } catch {

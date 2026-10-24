@@ -99,6 +99,23 @@ export const Users: CollectionConfig = {
       },
     },
     {
+      name: 'emailVerifiedAt',
+      type: 'date',
+      admin: { description: 'When the customer confirmed their email address. Empty means not confirmed.' },
+    },
+    {
+      // SHA-256 of the emailed token; the token itself is never stored.
+      name: 'emailVerifyTokenHash',
+      type: 'text',
+      access: { read: () => false },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'emailVerifyExpiresAt',
+      type: 'date',
+      admin: { hidden: true, readOnly: true },
+    },
+    {
       name: 'roles',
       type: 'select',
       hasMany: true,

@@ -13,6 +13,7 @@ export const TEST_SAMPLE_VALUES: Record<string, TemplateValues> = {
   accountReset: { minutes: 60, link: `${SITE}/reset-password?token=sample` },
   accountAlreadyRegistered: { signInLink: `${SITE}/sign-in`, resetLink: `${SITE}/reset-password` },
   accountWelcome: { link: `${SITE}/account` },
+  accountVerify: { hours: 24, link: `${SITE}/account/verify-email?token=sample` },
   membershipRenewal: { tier: 'Gold', days: 7, renewsAt: '1 November 2026' },
   approvalSubmitted: {
     requesterName: 'Sam Example',
@@ -54,6 +55,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   accountReset: 'Password reset',
   accountAlreadyRegistered: 'Account already exists',
   accountWelcome: 'Welcome to a new account',
+  accountVerify: 'Confirm your email address',
   membershipRenewal: 'Membership renewal reminder',
   approvalSubmitted: 'Approval requested',
   approvalDecision: 'Approval decision',

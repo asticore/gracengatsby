@@ -411,6 +411,15 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(cols).toEqual(expect.arrayContaining(['page_effects_enabled', 'page_effects_cursor', 'page_effects_scroll_progress', 'page_effects_reveal_on_scroll']))
   })
 
+  it('adds the customer email verification columns and site setting', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_users')).toEqual(
+      expect.arrayContaining(['email_verified_at', 'email_verify_token_hash', 'email_verify_expires_at']),
+    )
+    expect(await names('eg_site_settings')).toContain('account_settings_require_email_verification')
+  })
+
   it('adds the per-page background audio columns to pages and page versions', async () => {
     const names = async (t: string) =>
       ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)

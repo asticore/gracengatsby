@@ -35,6 +35,9 @@ export type AccountPreferences = {
 
 export const EMPTY_PREFERENCES: AccountPreferences = { name: '', defaultAddressId: null }
 
+/** The sign-in refusal for an unverified customer; the form offers a resend when it sees it. */
+export const VERIFY_FIRST_MESSAGE = 'Verify your email first'
+
 /** What every form on these screens hands back to its component. */
 export type ActionState = {
   status: 'idle' | 'error' | 'success'

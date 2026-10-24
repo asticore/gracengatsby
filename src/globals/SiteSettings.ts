@@ -233,6 +233,21 @@ export const SiteSettings: GlobalConfig = {
         },
       ],
     },
+    {
+      type: 'group',
+      name: 'accountSettings',
+      label: 'Customer accounts',
+      admin: { description: 'Options for customer sign-in. Only used while the Customer accounts feature is on.' },
+      fields: [
+        {
+          name: 'requireEmailVerification',
+          type: 'checkbox',
+          defaultValue: false,
+          label: 'Require customers to verify their email before signing in',
+          admin: { description: 'Off by default. Existing customers are not marked verified; with this on they confirm by email the next time they sign in.' },
+        },
+      ],
+    },
     featureToggleField,
   ],
 }

@@ -88,6 +88,7 @@ import * as migration_20261107_100000_page_audio from './20261107_100000_page_au
 import * as migration_20261108_100000_social_connections from './20261108_100000_social_connections';
 import * as migration_20261109_100000_blog_tags_authors from './20261109_100000_blog_tags_authors';
 import * as migration_20261111_100000_blog_author_tag_switches from './20261111_100000_blog_author_tag_switches';
+import * as migration_20261112_100000_users_email_verification from './20261112_100000_users_email_verification';
 
 export const migrations = [
   {
@@ -539,5 +540,10 @@ export const migrations = [
     up: migration_20261111_100000_blog_author_tag_switches.up,
     down: migration_20261111_100000_blog_author_tag_switches.down,
     name: '20261111_100000_blog_author_tag_switches',
+  },
+  {
+    up: migration_20261112_100000_users_email_verification.up,
+    down: migration_20261112_100000_users_email_verification.down,
+    name: '20261112_100000_users_email_verification',
   },
 ];

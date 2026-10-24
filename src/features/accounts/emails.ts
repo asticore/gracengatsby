@@ -64,3 +64,17 @@ export const sendWelcomeEmail = async (to: string, accountUrl: string): Promise<
   const sendEmail = await loadSendEmail()
   return sendEmail({ to, template: 'account.welcome', subject: mail.subject, text: mail.text, html: mail.html })
 }
+
+export const sendVerifyEmail = async (to: string, verifyUrl: string, hours: number): Promise<SendEmailResult> => {
+  const { renderEmailTemplate } = await loadTemplates()
+  const mail = await renderEmailTemplate('accountVerify', { link: verifyUrl, hours: String(hours) })
+
+  const sendEmail = await loadSendEmail()
+  return sendEmail({
+    to,
+    template: 'account.verify',
+    subject: mail.subject,
+    text: mail.text,
+    html: `${mail.html}\n<p><a href="${escapeHtml(verifyUrl)}">Confirm your email address</a></p>`,
+  })
+}

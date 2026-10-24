@@ -1,5 +1,6 @@
 import React from 'react'
 import { cookies } from 'next/headers'
+import Link from 'next/link'
 
 import { getEngine } from '@/lib/engine'
 import { SocialButtons } from '@/features/socialLogin/components/SocialButtons'
@@ -170,7 +171,7 @@ export const SignInLinkScreen: React.FC<{ token?: string; next?: string }> = asy
           That sign-in link is not valid. It may have expired or been used already.
         </p>
         <p className="account-link-row">
-          <a href="/account/sign-in">Ask for a new one</a>
+          <Link href="/account/sign-in">Ask for a new one</Link>
         </p>
       </AuthShell>
     )

@@ -37,7 +37,10 @@ export async function withPageCache(
     request.method === 'GET' &&
     !request.headers.has('range') &&
     !hasUnlockCookie(request) &&
-    (!hasSession(request) || speed.caching.cacheLoggedInUsers)
+    // Never the shared copy for a signed-in visitor, whatever "cache logged-in users" says: the page may be
+    // showing content that is visible to signed-in accounts only, and the key carries no visitor. The
+    // private browser cache from applySpeedHeaders is all that setting grants.
+    !hasSession(request)
 
   if (!eligible) {
     return applySpeedHeaders(await build(), speed, { pathname: url.pathname, request })

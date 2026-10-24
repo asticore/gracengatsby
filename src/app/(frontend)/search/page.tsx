@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { getEngine } from '@/lib/engine'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
+import { viewerFromRequestContext } from '@/features/visibility/gate'
 import { getFeatureFlags } from '@/utilities/features'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
 import type { Event as EventDoc, Post, Product } from '@/engage-types'
@@ -55,7 +56,7 @@ function contains(text: unknown, needle: string): boolean {
 async function searchPages(query: string): Promise<Found> {
   const needle = query.toLowerCase()
   const resolved = await getAllResolvedPages()
-  const open = new Set((await excludeProtected('pages', resolved.map((r) => r.page))).map((pg) => pg.id))
+  const open = new Set((await excludeProtected('pages', resolved.map((r) => r.page), await viewerFromRequestContext())).map((pg) => pg.id))
   const entries = resolved.filter((r) => open.has(r.page.id)).slice(0, MAX_SCAN)
   const matches: Hit[] = []
   for (const { page, path } of entries) {
@@ -87,7 +88,7 @@ async function searchPosts(query: string): Promise<Found> {
     limit: MAX_RESULTS,
     depth: 0,
   })) as unknown as { docs: Post[]; totalDocs: number }
-  const visible = await excludeProtected('posts', docs)
+  const visible = await excludeProtected('posts', docs, await viewerFromRequestContext())
   const hits = visible
     .filter((post) => post.slug)
     .map((post): Hit => ({
@@ -114,7 +115,7 @@ async function searchProducts(query: string): Promise<Found> {
     limit: MAX_RESULTS,
     depth: 0,
   })) as unknown as { docs: Product[]; totalDocs: number }
-  const visible = await excludeProtected('products', docs)
+  const visible = await excludeProtected('products', docs, await viewerFromRequestContext())
   const hits = visible
     .filter((product) => product.slug)
     .map((product): Hit => ({
@@ -141,7 +142,7 @@ async function searchEvents(query: string): Promise<Found> {
     limit: MAX_RESULTS,
     depth: 0,
   })) as unknown as { docs: EventDoc[]; totalDocs: number }
-  const visible = await excludeProtected('events', docs)
+  const visible = await excludeProtected('events', docs, await viewerFromRequestContext())
   const hits = visible
     .filter((event) => event.slug)
     .map((event): Hit => ({

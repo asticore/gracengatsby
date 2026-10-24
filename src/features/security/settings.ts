@@ -65,6 +65,16 @@ export type SecuritySettings = {
   apiKeys: ApiKeySettings
   /** Admin "sign in as customer". Off unless the owner switches it on. See src/features/impersonation. */
   impersonation: ImpersonationSettings
+  /** Shared password groups for protected content. On by default; off locks every group-protected document. */
+  passwordGroups: PasswordGroupSettings
+}
+
+export type PasswordGroupSettings = {
+  enabled: boolean
+}
+
+export const DEFAULT_PASSWORD_GROUP_SETTINGS: PasswordGroupSettings = {
+  enabled: true,
 }
 
 export type ImpersonationSettings = {
@@ -163,6 +173,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   passkeys: DEFAULT_PASSKEY_SETTINGS,
   apiKeys: DEFAULT_API_KEY_SETTINGS,
   impersonation: DEFAULT_IMPERSONATION_SETTINGS,
+  passwordGroups: DEFAULT_PASSWORD_GROUP_SETTINGS,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -243,6 +254,11 @@ export const impersonationFrom = (get: (column: string) => unknown): Impersonati
   }
 }
 
+/** Reads the password group switch (`password_groups_enabled`). On unless explicitly turned off. */
+export const passwordGroupsFrom = (get: (column: string) => unknown): PasswordGroupSettings => ({
+  enabled: asBool(get('password_groups_enabled'), DEFAULT_PASSWORD_GROUP_SETTINGS.enabled),
+})
+
 /** Maps each impersonation column to the global field the engine returns it under. */
 const IMPERSONATION_GLOBAL_KEYS: Record<string, string> = {
   impersonation_enabled: 'impersonationEnabled',
@@ -319,6 +335,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     passkeys: passkeysFrom((key) => row[key]),
     apiKeys: apiKeysFrom((key) => row[key]),
     impersonation: impersonationFrom((key) => row[key]),
+    passwordGroups: passwordGroupsFrom((key) => row[key]),
   }
 }
 
@@ -453,5 +470,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     passkeys: passkeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     apiKeys: apiKeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     impersonation: impersonationFrom((key) => (settings as Record<string, unknown>)[IMPERSONATION_GLOBAL_KEYS[key] ?? key]),
+    passwordGroups: passwordGroupsFrom((key) => (settings as Record<string, unknown>)[key === 'password_groups_enabled' ? 'passwordGroupsEnabled' : key]),
   }
 }

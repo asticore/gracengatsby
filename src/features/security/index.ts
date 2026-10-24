@@ -29,6 +29,7 @@ export {
   classifyRoute,
   clientKey,
   hit,
+  hitShared,
   limitFor,
   resetRateLimiter,
   type RateLimitDecision,

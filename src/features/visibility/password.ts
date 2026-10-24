@@ -10,7 +10,9 @@ const PBKDF2_ITERATIONS = 100000
 const SALT_BYTES = 16
 const HASH_BYTES = 32
 const UNLOCK_SECRET_SUFFIX = ':unlock'
-const ALLOWED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
+/** 'password-groups' tokens carry a group id: one cookie unlocks every document in the group. */
+export const GROUP_TOKEN_COLLECTION = 'password-groups'
+const ALLOWED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events', GROUP_TOKEN_COLLECTION])
 
 function base64urlEncode(data: Uint8Array): string {
   return btoa(String.fromCharCode(...data))
@@ -251,4 +253,9 @@ export async function verifyUnlockToken(
  */
 export function cookieName(collection: string, id: number): string {
   return `eg_unlock_${collection}_${id}`
+}
+
+/** Cookie name for a password group's unlock token. Starts with eg_unlock_ so every cache layer bypasses it. */
+export function groupCookieName(groupId: number): string {
+  return `eg_unlock_group_${groupId}`
 }

@@ -12,6 +12,7 @@ const { mockEngine } = vi.hoisted(() => ({
   },
 }))
 
+vi.mock('@/features/organizations/visibility', () => ({ orgGateLocked: async () => false, listOrgRestrictedIdsLive: async () => new Set<number>() }))
 vi.mock('@/lib/engine', () => ({
   getEngine: vi.fn(async () => mockEngine),
 }))

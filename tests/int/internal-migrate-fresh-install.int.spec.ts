@@ -1033,4 +1033,30 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_impersonations'").first()) as { n: number }
     expect(tableRows.n).toBe(1)
   })
+
+  it('adds the organization columns to security settings, off by default, and creates the organization tables', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('organizations_enabled')).toBe('0')
+    expect(byName.get('organizations_max_per_account')).toBe('5')
+    for (const table of ['eg_organizations', 'eg_organization_members', 'eg_organization_roles', 'eg_organization_teams', 'eg_organization_team_members', 'eg_organization_invitations', 'eg_content_org_visibility']) {
+      expect(tables, table).toContain(table)
+    }
+  })
+
+  it('organizations migration is registered last and is safe to run a second time', async () => {
+    const { migrations } = await import('@/migrations/index')
+    expect(migrations[migrations.length - 1].name).toBe('20261124_100000_organizations')
+    const mod = await import('@/migrations/20261124_100000_organizations')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    expect(info.filter((c) => c.name === 'organizations_enabled')).toHaveLength(1)
+    expect(info.filter((c) => c.name === 'organizations_who_may_create')).toHaveLength(1)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_organizations'").first()) as { n: number }
+    expect(tableRows.n).toBe(1)
+  })
 })

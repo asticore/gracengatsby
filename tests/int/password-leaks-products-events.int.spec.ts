@@ -8,6 +8,7 @@ const { getDb, getPasswordHash, getAdminContext, purgeCache, hashPassword, asser
   hashPassword: vi.fn(),
   assertDocAccess: vi.fn(),
 }))
+vi.mock('@/features/organizations/visibility', () => ({ orgGateLocked: async () => false, listOrgRestrictedIdsLive: async () => new Set<number>() }))
 vi.mock('@/cms/db/connect', () => ({ getDb }))
 vi.mock('@/cms/db/contentPasswords', () => ({ getPasswordHash, setPasswordHash: vi.fn(), clearPassword: vi.fn() }))
 vi.mock('@/admin/auth', () => ({ getAdminContext }))

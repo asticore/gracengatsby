@@ -16,6 +16,7 @@ export const TEST_SAMPLE_VALUES: Record<string, TemplateValues> = {
   accountVerify: { hours: 24, link: `${SITE}/account/verify-email?token=sample` },
   accountMagicLink: { minutes: 15, link: `${SITE}/account/sign-in/link?token=sample` },
   accountLoginCode: { minutes: 15, code: '482913' },
+  organizationInvite: { organization: 'Example Co', inviter: 'sam@example.com', role: 'member', days: 7, link: `${SITE}/account/invite/sample` },
   membershipRenewal: { tier: 'Gold', days: 7, renewsAt: '1 November 2026' },
   approvalSubmitted: {
     requesterName: 'Sam Example',
@@ -60,6 +61,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   accountVerify: 'Confirm your email address',
   accountMagicLink: 'Sign-in link',
   accountLoginCode: 'Sign-in code',
+  organizationInvite: 'Organisation invitation',
   membershipRenewal: 'Membership renewal reminder',
   approvalSubmitted: 'Approval requested',
   approvalDecision: 'Approval decision',

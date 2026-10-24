@@ -25,20 +25,37 @@ const LINKS: { href: string; label: string }[] = [
   { href: '/account/profile', label: 'Profile' },
 ]
 
-export const AccountShell: React.FC<{
+/** The Organizations link shows only while that feature is switched on (Security settings). Any read failure hides it. */
+const organizationsOn = async (): Promise<boolean> => {
+  try {
+    const [{ getEngine }, { getSecuritySettings }] = await Promise.all([import('@/lib/engine'), import('@/features/security/settings')])
+    return (await getSecuritySettings((await getEngine()) as never)).organizations.enabled
+  } catch {
+    return false
+  }
+}
+
+export const AccountShell = async ({
+  title,
+  current,
+  children,
+}: {
   title: string
   current: string
   children: React.ReactNode
-}> = ({ title, current, children }) => (
-  <div className="page-shell">
-    <AccountStyles />
-    <h1>{title}</h1>
-    <div className="account">
-      <AccountNav links={LINKS} current={current} />
-      <div className="account-panel">{children}</div>
+}) => {
+  const links = (await organizationsOn()) ? [...LINKS.slice(0, -1), { href: '/account/organizations', label: 'Organizations' }, LINKS[LINKS.length - 1]] : LINKS
+  return (
+    <div className="page-shell">
+      <AccountStyles />
+      <h1>{title}</h1>
+      <div className="account">
+        <AccountNav links={links} current={current} />
+        <div className="account-panel">{children}</div>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 /** Sign in, register, forgotten password, reset - no navigation to show yet. */
 export const AuthShell: React.FC<{ title: string; intro?: string; children: React.ReactNode }> = ({

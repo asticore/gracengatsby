@@ -63,6 +63,22 @@ export type SecuritySettings = {
   passkeys: PasskeySettings
   /** Per-user API keys (bearer tokens for the REST API). Off unless the owner switches them on. See src/features/apiKeys. */
   apiKeys: ApiKeySettings
+  /** Admin "sign in as customer". Off unless the owner switches it on. See src/features/impersonation. */
+  impersonation: ImpersonationSettings
+}
+
+export type ImpersonationSettings = {
+  enabled: boolean
+  /** Lifetime of an impersonated session, in minutes. Clamped to 5..120. */
+  maxMinutes: number
+  /** Admin must have two-step sign-in or a passkey before impersonating. */
+  requireTwoFactor: boolean
+}
+
+export const DEFAULT_IMPERSONATION_SETTINGS: ImpersonationSettings = {
+  enabled: false,
+  maxMinutes: 30,
+  requireTwoFactor: true,
 }
 
 export type ApiKeySettings = {
@@ -146,6 +162,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   passwordless: DEFAULT_PASSWORDLESS_SETTINGS,
   passkeys: DEFAULT_PASSKEY_SETTINGS,
   apiKeys: DEFAULT_API_KEY_SETTINGS,
+  impersonation: DEFAULT_IMPERSONATION_SETTINGS,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -210,6 +227,27 @@ export const apiKeysFrom = (get: (key: string) => unknown): ApiKeySettings => {
     maxPerUser: asInt(get('api_keys_max_per_user'), base.maxPerUser, 1, 50),
     maxLifetimeDays: asInt(get('api_keys_max_lifetime_days'), base.maxLifetimeDays, 0, 3650),
   }
+}
+
+/**
+ * Reads the three impersonation fields. `get` takes the column name
+ * (`impersonation_enabled`, `impersonation_max_minutes`, `impersonation_require2fa`).
+ * Minutes are clamped to 5..120 here, so no reader can ever hand back a longer lifetime.
+ */
+export const impersonationFrom = (get: (column: string) => unknown): ImpersonationSettings => {
+  const base = DEFAULT_IMPERSONATION_SETTINGS
+  return {
+    enabled: asBool(get('impersonation_enabled'), base.enabled),
+    maxMinutes: asInt(get('impersonation_max_minutes'), base.maxMinutes, 5, 120),
+    requireTwoFactor: asBool(get('impersonation_require2fa'), base.requireTwoFactor),
+  }
+}
+
+/** Maps each impersonation column to the global field the engine returns it under. */
+const IMPERSONATION_GLOBAL_KEYS: Record<string, string> = {
+  impersonation_enabled: 'impersonationEnabled',
+  impersonation_max_minutes: 'impersonationMaxMinutes',
+  impersonation_require2fa: 'impersonationRequire2fa',
 }
 
 /** Reads the four passwordless fields; `get` takes the camelCase name the engine uses. */
@@ -280,6 +318,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     passwordless: passwordlessFrom((key) => row[key]),
     passkeys: passkeysFrom((key) => row[key]),
     apiKeys: apiKeysFrom((key) => row[key]),
+    impersonation: impersonationFrom((key) => row[key]),
   }
 }
 
@@ -413,5 +452,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     passwordless: passwordlessFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     passkeys: passkeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     apiKeys: apiKeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
+    impersonation: impersonationFrom((key) => (settings as Record<string, unknown>)[IMPERSONATION_GLOBAL_KEYS[key] ?? key]),
   }
 }

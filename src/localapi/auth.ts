@@ -974,9 +974,9 @@ export async function login(db: AuthDbOps, args: LoginArgs): Promise<LoginResult
 }
 
 /** Mints the session, clears the failed-attempt counters and signs the JWT. Shared by the one-step and two-step paths. */
-async function finishLogin(db: AuthDbOps, row: AuthUserRow, now: number, secret: string, email: string = row.email, client?: SessionClient): Promise<LoginResult> {
+async function finishLogin(db: AuthDbOps, row: AuthUserRow, now: number, secret: string, email: string = row.email, client?: SessionClient, override?: SessionOverride): Promise<LoginResult> {
   const { sid, row: rowAfterSession } = await mintSession(db, row, now)
-  const device = await openDeviceSession(db, row.id, now, client)
+  const device = await openDeviceSession(db, row.id, now, override?.label ? { ...client, label: override.label } : client, override?.ttlSeconds)
 
   let finalRow = rowAfterSession
   if (needsAttemptsReset(row)) {
@@ -984,17 +984,24 @@ async function finishLogin(db: AuthDbOps, row: AuthUserRow, now: number, secret:
     if (reset) finalRow = { ...finalRow, ...reset }
   }
 
-  const { token, exp } = signJWT({ id: row.id, collection: 'users', email, sid, ...device }, secret, TOKEN_EXPIRATION_SECONDS)
+  const { token, exp } = signJWT({ id: row.id, collection: 'users', email, sid, ...device, ...(override?.claims ?? {}) }, secret, override?.ttlSeconds ?? TOKEN_EXPIRATION_SECONDS)
 
   return { user: toAuthUserDoc(finalRow), token, exp }
 }
 
 /** Writes the per-device row and returns the claims for it, or `{}` when sessions are not wired, skipped, or the write failed (the token then behaves like a pre-existing one). */
-async function openDeviceSession(db: AuthDbOps, userId: number, now: number, client?: SessionClient): Promise<{ usid?: string; jti?: string }> {
+async function openDeviceSession(db: AuthDbOps, userId: number, now: number, client?: SessionClient, ttlSeconds: number = TOKEN_EXPIRATION_SECONDS): Promise<{ usid?: string; jti?: string }> {
   if (!db.sessions || client?.skipSession) return {}
-  const opened = await openSession(db.sessions, { userId, client, now, ttlSeconds: TOKEN_EXPIRATION_SECONDS })
+  const opened = await openSession(db.sessions, { userId, client, now, ttlSeconds })
   return opened ?? {}
 }
+
+/**
+ * A session that differs from an ordinary one: shorter-lived, with extra claims
+ * and a label on its device row. Used only by admin impersonation
+ * (src/features/impersonation). Absent for every other sign-in.
+ */
+export type SessionOverride = { ttlSeconds: number; claims: Record<string, unknown>; label?: string }
 
 export type LoginAsUserArgs = {
   id: number
@@ -1002,6 +1009,8 @@ export type LoginAsUserArgs = {
   client?: SessionClient
   /** Set only by the passkey core, when a user-verified passkey has already proven the person. Locked accounts are still refused. */
   skipSecondFactor?: boolean
+  /** Set only by admin impersonation. See SessionOverride. */
+  session?: SessionOverride
 }
 
 /**
@@ -1020,7 +1029,7 @@ export async function loginAsUser(db: AuthDbOps, args: LoginAsUserArgs): Promise
     const { token: pendingToken } = signJWT({ purpose: PENDING_PURPOSE, id: row.id, email: row.email }, args.secret, PENDING_TWO_FACTOR_SECONDS)
     return { user: toAuthUserDoc(row), twoFactorRequired: true, pendingToken }
   }
-  return finishLogin(db, row, now, args.secret, undefined, args.client)
+  return finishLogin(db, row, now, args.secret, undefined, args.client, args.session)
 }
 
 export type LoginSecondFactorArgs = { pendingToken: string; code: string; secret: string; client?: SessionClient }
@@ -1278,6 +1287,8 @@ export async function refreshToken(db: AuthDbOps, args: RefreshTokenArgs): Promi
   const id = decoded?.id
   const sid = decoded?.sid
   if (typeof id !== 'number' || typeof sid !== 'string') throw new AuthenticationError()
+  // An impersonated session is short-lived by design and cannot be extended.
+  if (decoded?.imp !== undefined) throw new AuthenticationError()
 
   const row = await db.findByID(id)
   if (!row) throw new AuthenticationError()

@@ -172,6 +172,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
       { kind: 'link', label: 'Signed-in devices', href: '/security/sessions', description: 'See where your account is signed in, sign out a device, or sign out an account you manage.', type: 'view' },
       { kind: 'link', label: 'Passkeys', href: '/security/passkeys', description: 'Register a passkey on your own account, and see whether the site allows passkeys for admins.', type: 'view' },
       { kind: 'link', label: 'API keys', href: '/security/api-keys', description: 'Create and revoke keys for scripts that call the site API. Admins see and revoke every key.', type: 'view' },
+      { kind: 'link', label: 'Sign in as customer', href: '/security/impersonation', description: 'Admins: open a customer account for a short time, with a reason. Every start and stop is recorded in the history here.', type: 'view' },
       { kind: 'link', label: 'Connected accounts', href: '/security/social', description: 'Connect or disconnect Google, GitHub and other sign-in providers on your own account. Provider setup is above in Security > Social login.', type: 'view' },
     ],
   },

@@ -1,3 +1,4 @@
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -67,7 +68,9 @@ const UNAVAILABLE = 'Passkeys are not available on this site.'
 const SIGNED_OUT = 'Sign in first.'
 
 /** POST /api/passkeys/register-options: creation options for the signed-in person. */
-export async function registerOptionsResponse(request: Request): Promise<Response> {
+export async function registerOptionsResponse(request: Request): Promise<Response> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return json({ ok: false, message: blocked }, 403)
+
   if (!(await sameSite(request))) return json({ ok: false, message: UNAVAILABLE }, 403)
   const context = await accountContext()
   if (!context.flags.accounts || !context.user) return json({ ok: false, message: SIGNED_OUT }, 401)
@@ -79,7 +82,9 @@ export async function registerOptionsResponse(request: Request): Promise<Respons
 }
 
 /** POST /api/passkeys/register-verify: checks the new credential. Body carries the answer and a password or code. */
-export async function registerVerifyResponse(request: Request): Promise<Response> {
+export async function registerVerifyResponse(request: Request): Promise<Response> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return json({ ok: false, message: blocked }, 403)
+
   if (!(await sameSite(request))) return json({ ok: false, message: UNAVAILABLE }, 403)
   const context = await accountContext()
   if (!context.flags.accounts || !context.user) return json({ ok: false, message: SIGNED_OUT }, 401)
@@ -137,7 +142,9 @@ export async function listResponse(request: Request): Promise<Response> {
 }
 
 /** POST /api/passkeys/rename: body { id, label }. The id must belong to the signed-in person. */
-export async function renameResponse(request: Request): Promise<Response> {
+export async function renameResponse(request: Request): Promise<Response> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return json({ ok: false, message: blocked }, 403)
+
   if (!(await sameSite(request))) return json({ ok: false, message: UNAVAILABLE }, 403)
   const context = await accountContext()
   if (!context.user) return json({ ok: false, message: SIGNED_OUT }, 401)
@@ -148,7 +155,9 @@ export async function renameResponse(request: Request): Promise<Response> {
 }
 
 /** POST /api/passkeys/remove: body { id, password? , code? }. Re-authentication and the last-method rule apply. */
-export async function removeResponse(request: Request): Promise<Response> {
+export async function removeResponse(request: Request): Promise<Response> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return json({ ok: false, message: blocked }, 403)
+
   if (!(await sameSite(request))) return json({ ok: false, message: UNAVAILABLE }, 403)
   const context = await accountContext()
   if (!context.user) return json({ ok: false, message: SIGNED_OUT }, 401)

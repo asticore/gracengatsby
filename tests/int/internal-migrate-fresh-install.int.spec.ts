@@ -1008,4 +1008,29 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_login_tokens'").first()) as { n: number }
     expect(tableRows.n).toBe(1)
   })
+
+  it('adds the impersonation columns to security settings, off by default, and creates eg_impersonations', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('impersonation_enabled')).toBe('0')
+    expect(byName.get('impersonation_max_minutes')).toBe('30')
+    expect(byName.get('impersonation_require2fa')).toBe('1')
+    expect(tables).toContain('eg_impersonations')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_impersonations`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['admin_id', 'target_user_id', 'reason', 'started_at', 'ended_at', 'expires_at', 'session_id']))
+  })
+
+  it('impersonation migration is safe to run a second time and leaves the columns and table single', async () => {
+    const mod = await import('@/migrations/20261120_100000_impersonation')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    expect(info.filter((c) => c.name === 'impersonation_enabled')).toHaveLength(1)
+    expect(info.filter((c) => c.name === 'impersonation_require2fa')).toHaveLength(1)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_impersonations'").first()) as { n: number }
+    expect(tableRows.n).toBe(1)
+  })
 })

@@ -5,6 +5,7 @@ import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import type { FeatureFlags } from '@/features/registry'
 import { SESSION_COOKIE, loginProtectionAuth } from '@/features/security'
+import { headersForCustomerView } from '@/features/impersonation/policy'
 
 /**
  * Who is asking, and whether this feature is switched on.
@@ -28,7 +29,8 @@ export const accountContext = async (): Promise<AccountContext> => {
   const [flags, auth] = await Promise.all([
     getFeatureFlags(),
     engine
-      .auth({ headers: await headers() })
+      // While an admin is signed in as a customer, this resolves the customer (see src/features/impersonation).
+      .auth({ headers: headersForCustomerView(await headers()) })
       .catch((): { user: AccountUser | null } => ({ user: null })),
   ])
 

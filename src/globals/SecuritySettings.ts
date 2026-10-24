@@ -243,6 +243,39 @@ export const SecuritySettings: GlobalConfig = {
           'The longest a new key may run before it expires, from 1 to 3650 days. Set to 0 to forbid expiry dates: new keys then never expire until revoked.',
       },
     },
+    // Admin "sign in as customer" (src/features/impersonation). Flat, like the fields above. Column
+    // names are the snake_case of these names, listed in src/migrations/20261120_100000_impersonation.ts.
+    // Off by default; with the feature off, no impersonation starts.
+    {
+      name: 'impersonationEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow admins to sign in as a customer',
+      admin: {
+        description:
+          'Lets an administrator open a customer account for a short time to see what they see. Every start, stop and refusal is recorded in the audit log and the impersonation history. Off by default.',
+      },
+    },
+    {
+      name: 'impersonationMaxMinutes',
+      type: 'number',
+      defaultValue: 30,
+      label: 'Impersonated session length (minutes)',
+      min: 5,
+      max: 120,
+      admin: {
+        description: 'How long an impersonated session lasts before it ends by itself. Between 5 and 120 minutes.',
+      },
+    },
+    {
+      name: 'impersonationRequire2fa',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Require two-step sign-in or a passkey for the admin',
+      admin: {
+        description: 'On: an administrator without an authenticator app or a passkey cannot impersonate anyone. Recommended.',
+      },
+    },
     {
       type: 'group',
       name: 'loginProtection',

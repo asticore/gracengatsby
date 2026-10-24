@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getEngine } from '@/engine'
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { clientKey, hit } from '@/features/security/rateLimit'
 import { capturePayPalCheckout } from '@/features/ecommerce/payments/paypalCheckout'
 import { withErrorLog } from '@/features/errors/withErrorLog'
@@ -13,6 +14,9 @@ export const dynamic = 'force-dynamic'
  * same order without charging again. Amount and currency are checked against the stored order, never the browser.
  */
 async function handleCapture(request: Request): Promise<Response> {
+  // Completing a payment is not available while an admin is signed in as a customer.
+  const blocked = refuseWhileImpersonating(request.headers)
+  if (blocked) return NextResponse.json({ error: blocked }, { status: 403 })
   const decision = hit(`shop-paypal-capture:${clientKey(request)}`, 30)
   if (decision.limited) {
     return NextResponse.json({ error: 'Too many requests. Try again in a moment.' }, { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } })

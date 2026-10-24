@@ -1,5 +1,6 @@
 'use server'
 
+import { refuseWhileImpersonating } from '@/features/impersonation/policy'
 import { headers } from 'next/headers'
 
 import { guardAttempt } from '@/features/accounts/rateLimit'
@@ -16,7 +17,9 @@ import { defaultSocialStore } from './store'
  * Disconnect a provider from the signed-in account. The user is the session's,
  * never an argument. Refuses to remove the last way in.
  */
-export async function unlinkSocialAction(provider: string): Promise<{ ok: boolean; message: string }> {
+export async function unlinkSocialAction(provider: string): Promise<{ ok: boolean; message: string }> {  const blocked = refuseWhileImpersonating(await headers())
+  if (blocked) return { ok: false, message: blocked }
+
   const incoming = await headers()
   const engine = await getEngine()
   const { user } = await engine.auth({ headers: incoming }).catch((): { user: null } => ({ user: null }))

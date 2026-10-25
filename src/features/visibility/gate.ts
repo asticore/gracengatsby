@@ -6,14 +6,77 @@
 
 import type { cookies as getCookies } from 'next/headers'
 import { getPasswordHash } from '@/cms/db/contentPasswords'
-import { verifyUnlockToken } from './password'
+import { getAccessRule, getGroup } from '@/cms/db/passwordGroups'
+import { groupFingerprint, groupIsUsable, viewerQualifies, type Viewer } from './access'
+import { GROUP_TOKEN_COLLECTION, groupCookieName, verifyUnlockToken } from './password'
 import { getDb } from '@/cms/db/connect'
 
 export type PasswordGateState = 'open' | 'locked'
 
 const GATED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
 
-async function evaluateGate(collection: string, id: number, readCookie: (name: string) => string | undefined): Promise<PasswordGateState> {
+type ResolveViewer = () => Promise<Viewer | null>
+
+/** The signed-in visitor of the current server-component request, or null. Never throws. */
+export async function viewerFromRequestContext(): Promise<Viewer | null> {
+  try {
+    const { accountContext } = await import('@/features/accounts/session')
+    const context = await accountContext()
+    return { user: context.user, getEngine: async () => context.engine as never }
+  } catch {
+    return null
+  }
+}
+
+/** The signed-in visitor behind a request's headers, or null. Never throws. */
+function viewerFromHeaders(headers: Headers | null | undefined): ResolveViewer {
+  return async () => {
+    if (!headers) return null
+    try {
+      const { getEngine } = await import('@/lib/engine')
+      const engine = await getEngine()
+      const { user } = await engine.auth({ headers }).catch((): { user: null } => ({ user: null }))
+      return { user: user as never, getEngine: async () => engine as never }
+    } catch {
+      return null
+    }
+  }
+}
+
+/**
+ * Evaluates a shared-group or accounts rule. The decision is made from this request's own cookies and
+ * session, every time. Anything unexpected (rule without a group, deleted group, expired group, group
+ * passwords switched off, a bad token) stays locked.
+ */
+async function evaluateRule(
+  db: Awaited<ReturnType<typeof getDb>>,
+  rule: NonNullable<Awaited<ReturnType<typeof getAccessRule>>>,
+  readCookie: (name: string) => string | undefined,
+  resolveViewer: ResolveViewer,
+): Promise<PasswordGateState> {
+  if (rule.mode === 'accounts' && (await viewerQualifies(rule, await resolveViewer()))) return 'open'
+
+  if (rule.groupId === null) return 'locked'
+  const { readSecuritySettingsFromD1 } = await import('@/features/security/settings')
+  const settings = await readSecuritySettingsFromD1()
+  if (!settings.passwordGroups.enabled) return 'locked'
+
+  const group = await getGroup(db, rule.groupId)
+  if (!group || !groupIsUsable(group)) return 'locked'
+
+  const token = readCookie(groupCookieName(group.id))
+  if (!token) return 'locked'
+  const payload = await verifyUnlockToken(token)
+  if (!payload || payload.c !== GROUP_TOKEN_COLLECTION || payload.i !== group.id || payload.h !== groupFingerprint(group)) return 'locked'
+  return 'open'
+}
+
+async function evaluateGate(
+  collection: string,
+  id: number,
+  readCookie: (name: string) => string | undefined,
+  resolveViewer: ResolveViewer = async () => null,
+): Promise<PasswordGateState> {
   // Only these collections can be password protected
   if (!GATED_COLLECTIONS.has(collection)) {
     return 'open'
@@ -23,9 +86,11 @@ async function evaluateGate(collection: string, id: number, readCookie: (name: s
     const db = await getDb()
     const hash = await getPasswordHash(db, collection, id)
 
-    // No password set, document is open
+    // No per-document password: a shared group or accounts rule may still protect it
     if (!hash) {
-      return 'open'
+      const rule = await getAccessRule(db, collection, id)
+      if (!rule) return 'open'
+      return await evaluateRule(db, rule, readCookie, resolveViewer)
     }
 
     // Document has a password, check for valid unlock cookie
@@ -63,7 +128,32 @@ export async function getPasswordGateState({
   id: number
   cookies: Awaited<ReturnType<typeof getCookies>>
 }): Promise<PasswordGateState> {
-  return evaluateGate(collection, id, (name) => cookies.get(name)?.value)
+  return evaluateGate(collection, id, (name) => cookies.get(name)?.value, viewerFromRequestContext)
+}
+
+export type GateOptions = { signIn: boolean; password: boolean }
+
+/**
+ * What a locked visitor may be offered on the gate: signing in (accounts rule) and/or a password
+ * (the document's own, or its group). Falls back to the password form alone when the lookup fails; the
+ * document stays locked either way.
+ */
+export async function getGateOptions({ collection, id }: { collection: string; id: number }): Promise<GateOptions> {
+  try {
+    const db = await getDb()
+    const hash = await getPasswordHash(db, collection, id)
+    if (hash) return { signIn: false, password: true }
+    const rule = await getAccessRule(db, collection, id)
+    if (!rule) return { signIn: false, password: true }
+    let password = false
+    if (rule.groupId !== null) {
+      const { readSecuritySettingsFromD1 } = await import('@/features/security/settings')
+      password = (await readSecuritySettingsFromD1()).passwordGroups.enabled && groupIsUsable(await getGroup(db, rule.groupId))
+    }
+    return { signIn: rule.mode === 'accounts', password }
+  } catch {
+    return { signIn: false, password: true }
+  }
 }
 
 function readCookieHeader(headers: Headers | null | undefined, name: string): string | undefined {
@@ -96,5 +186,5 @@ export async function getPasswordGateStateForHeaders({
   id: number
   headers: Headers | null | undefined
 }): Promise<PasswordGateState> {
-  return evaluateGate(collection, id, (name) => readCookieHeader(headers, name))
+  return evaluateGate(collection, id, (name) => readCookieHeader(headers, name), viewerFromHeaders(headers))
 }

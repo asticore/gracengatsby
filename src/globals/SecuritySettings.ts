@@ -347,6 +347,19 @@ export const SecuritySettings: GlobalConfig = {
       max: 90,
       admin: { description: 'Between 1 and 90 days.' },
     },
+    // Shared password groups (src/features/visibility). Flat; column password_groups_enabled, added in
+    // src/migrations/20261123_100000_password_groups.ts. On by default; off locks every document that
+    // uses a group, for everyone, until it is switched back on.
+    {
+      name: 'passwordGroupsEnabled',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Allow shared password groups',
+      admin: {
+        description:
+          'Lets one shared password protect many pages, posts, products and events. Off: every document that uses a group is locked and no group password works until you turn this back on.',
+      },
+    },
     {
       type: 'group',
       name: 'loginProtection',

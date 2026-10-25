@@ -1091,4 +1091,29 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
       expect(rows.n, table).toBe(1)
     }
   })
+
+  it('adds password_groups_enabled (on by default) and creates the password group tables with their indexes', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    expect(new Map(info.map((c) => [c.name, c.dflt_value])).get('password_groups_enabled')).toBe('1')
+    for (const table of ['eg_password_groups', 'eg_content_access']) expect(tables, table).toContain(table)
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_password_groups`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['id', 'name', 'hash', 'expires_at', 'max_uses', 'use_count', 'created_at', 'updated_at']))
+    const accessCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_content_access`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(accessCols).toEqual(expect.arrayContaining(['collection', 'doc_id', 'mode', 'group_id', 'roles', 'tiers', 'updated_at']))
+  })
+
+  it('password groups migration is safe to run a second time and leaves the columns and tables single', async () => {
+    const mod = await import('@/migrations/20261123_100000_password_groups')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    expect(info.filter((c) => c.name === 'password_groups_enabled')).toHaveLength(1)
+    for (const table of ['eg_password_groups', 'eg_content_access']) {
+      const row = (await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='${table}'`).first()) as { n: number }
+      expect(row.n, table).toBe(1)
+    }
+  })
 })

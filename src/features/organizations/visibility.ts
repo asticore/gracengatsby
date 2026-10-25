@@ -78,3 +78,17 @@ export async function orgGateLocked(collection: string, docId: number, sessionTo
     return true
   }
 }
+
+/**
+ * What the page gate shows when the organisation restriction is what locks a document: the organisation's
+ * name, or null when the document is not restricted or the visitor (by session cookie) may read it. Throws on
+ * a failed lookup; the caller falls back to its plain state, and the document stays locked regardless.
+ */
+export async function orgGateInfo(collection: string, docId: number, sessionToken: string | undefined): Promise<{ name: string } | null> {
+  const d1 = await liveD1()
+  const orgId = await getOrgVisibility(d1, collection, docId)
+  if (!orgId) return null
+  if (!(await orgGateLocked(collection, docId, sessionToken))) return null
+  const row = (await d1.prepare('SELECT name FROM `eg_organizations` WHERE id = ? LIMIT 1').bind(orgId).first()) as { name?: string } | null
+  return { name: row?.name ?? 'this organisation' }
+}

@@ -14,6 +14,7 @@ import {
   emailProblem,
   registerCustomer,
   requestPasswordReset,
+  resendCooldownSeconds,
   resendVerification,
   signIn,
   signInWithCode,
@@ -34,6 +35,7 @@ import {
   requestClient,
   requestAddress,
   setSessionCookie,
+  setTrustedDeviceCookie,
   siteOrigin,
   type AccountContext,
 } from './session'
@@ -106,6 +108,8 @@ export async function signInAction(_state: ActionState, form: FormData): Promise
         actorEmail: address || null,
         detail: 'password step',
       }, origin)
+    } else if (result.needsVerification) {
+      await recordAuthEvent(context.engine, { action: 'email.refused', actorEmail: address || null, detail: 'sign-in held back: email not verified' }, origin)
     }
     return failed(result.message ?? 'That did not work.')
   }
@@ -128,7 +132,10 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
   const origin = await requestClient()
-  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'), origin)
+  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'), origin, {
+    method: text(form, 'method') === 'email' ? 'email' : 'app',
+    trustDevice: text(form, 'trustDevice') === 'on',
+  })
   if (!result.ok || !result.token) {
     await recordAuthEvent(context.engine, {
       action: result.reason === 'locked' ? 'login.locked' : 'two-factor.failed',
@@ -141,6 +148,7 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
   await recordAuthEvent(context.engine, { action: 'two-factor.verified', actorId: result.userId ?? null }, origin)
   await recordAuthEvent(context.engine, { action: 'login.success', actorId: result.userId ?? null, detail: 'two-step' }, origin)
   await setSessionCookie(result.token)
+  if (result.trustedDevice) await setTrustedDeviceCookie(result.trustedDevice.token, result.trustedDevice.maxAgeSeconds)
   // A social sign-in parks its pending token here; it has done its job.
   ;(await cookies()).delete('eg_social_pending')
   redirect(safeNext(form.get('next')))
@@ -284,7 +292,9 @@ export async function resendVerificationAction(
     text(form, 'email'),
     (token) => `${origin}/account/verify-email?token=${encodeURIComponent(token)}`,
   )
-  return succeeded(NEUTRAL_EMAIL_NOTICE)
+  // The wait is the same for everyone, so saying it reveals nothing about the address.
+  const wait = await resendCooldownSeconds(context.engine)
+  return succeeded(wait > 0 ? `${NEUTRAL_EMAIL_NOTICE} You can ask for another in ${wait} seconds.` : NEUTRAL_EMAIL_NOTICE)
 }
 
 // --- Addresses --------------------------------------------------------------

@@ -17,6 +17,7 @@ export const TEST_SAMPLE_VALUES: Record<string, TemplateValues> = {
   accountMagicLink: { minutes: 15, link: `${SITE}/account/sign-in/link?token=sample` },
   accountLoginCode: { minutes: 15, code: '482913' },
   organizationInvite: { organization: 'Example Co', inviter: 'sam@example.com', role: 'member', days: 7, link: `${SITE}/account/invite/sample` },
+  accountTwoFactorCode: { minutes: 10, code: '730216' },
   membershipRenewal: { tier: 'Gold', days: 7, renewsAt: '1 November 2026' },
   approvalSubmitted: {
     requesterName: 'Sam Example',
@@ -62,6 +63,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   accountMagicLink: 'Sign-in link',
   accountLoginCode: 'Sign-in code',
   organizationInvite: 'Organisation invitation',
+  accountTwoFactorCode: 'Two-step code',
   membershipRenewal: 'Membership renewal reminder',
   approvalSubmitted: 'Approval requested',
   approvalDecision: 'Approval decision',

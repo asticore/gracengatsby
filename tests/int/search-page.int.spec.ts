@@ -82,13 +82,15 @@ describe('/search results page', () => {
     expect(html).toContain('role="search"')
     expect(html).toContain('Enter a word or phrase')
     expect(html).not.toContain('<ol')
-    expect(mockEngine.find).not.toHaveBeenCalled()
+    // The page template lookup is not a search; no content collection may be queried.
+    expect(mockEngine.find.mock.calls.filter(([args]) => (args as { collection: string }).collection !== 'site-templates')).toEqual([])
   })
 
   it('treats a whitespace-only query as empty', async () => {
     const html = await render({ q: '   ' })
     expect(html).toContain('Enter a word or phrase')
-    expect(mockEngine.find).not.toHaveBeenCalled()
+    // The page template lookup is not a search; no content collection may be queried.
+    expect(mockEngine.find.mock.calls.filter(([args]) => (args as { collection: string }).collection !== 'site-templates')).toEqual([])
   })
 
   it('lists matching titles from every switched-on collection and skips the rest', async () => {

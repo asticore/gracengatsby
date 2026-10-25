@@ -47,6 +47,7 @@ import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
 import { OrganizationsView } from '@/admin/views/OrganizationsView'
+import { PasswordGroupsView } from '@/admin/views/PasswordGroupsView'
 import { SecurityAuditView } from '@/admin/views/SecurityAuditView'
 import { SocialView } from '@/admin/views/SocialView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
@@ -256,6 +257,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: OrganizationsView,
     path: '/security/organizations',
     meta: { title: 'Organizations', description: 'Every customer organization with its member count. Administrators can delete one.' },
+  },
+  {
+    key: 'passwordGroups',
+    Component: PasswordGroupsView,
+    path: '/security/password-groups',
+    meta: { title: 'Password groups', description: 'Shared passwords that protect many pages, posts, products and events. Create, rotate, delete and see what each one protects.' },
   },
   {
     key: 'securityAudit',

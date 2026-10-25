@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { PasskeySignInButton } from '@/features/passkeys/components/PasskeySignInButton'
+import { SecondFactorChoice, type SecondFactorMethod } from '@/features/security/components/SecondFactorChoice'
 
 /**
  * Admin login form - simple email/password auth with POST to /api/users/login.
@@ -24,6 +25,8 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   // Set when the password was right and the account needs a two-step code.
   const [pendingToken, setPendingToken] = useState('')
   const [code, setCode] = useState('')
+  const [method, setMethod] = useState<SecondFactorMethod>('app')
+  const [trust, setTrust] = useState(false)
   // Social sign-in for staff: buttons only when the site allows it and a provider is configured.
   const [socialProviders, setSocialProviders] = useState<Array<{ id: string; label: string }>>([])
   const socialError = searchParams.get('social_error')
@@ -141,7 +144,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pendingToken ? { pendingToken, code } : { email, password }),
+        body: JSON.stringify(pendingToken ? { pendingToken, code, method, trustDevice: trust } : { email, password }),
       })
 
       const body = (await response.json()) as { errors?: Array<{ message?: string }>; twoFactorRequired?: boolean; pendingToken?: string }
@@ -193,7 +196,12 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
                 autoFocus
                 required
               />
-              <p className="admin-login__hint">Enter the 6-digit code from your authenticator app, or one of your backup codes.</p>
+              <p className="admin-login__hint">
+                {method === 'email'
+                  ? 'Enter the 6-digit code we emailed you.'
+                  : 'Enter the 6-digit code from your authenticator app, or one of your backup codes.'}
+              </p>
+              <SecondFactorChoice pendingToken={pendingToken} method={method} onMethod={setMethod} trust={trust} onTrust={setTrust} disabled={isLoading} />
             </div>
           ) : (
             <>

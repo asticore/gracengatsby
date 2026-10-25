@@ -1,24 +1,47 @@
 import { sql } from 'drizzle-orm'
 import type { Access } from '@/engine'
+import { viewerQualifies, type Viewer } from './access'
 
 export type ProtectedCollection = 'pages' | 'posts' | 'products' | 'events'
 
 /**
- * Ids of every password-protected document in a collection, from one query.
+ * Ids of every protected document in a collection, from one query: per-document passwords, shared
+ * password groups, and accounts rules. A document under an accounts rule is left out of the set only when
+ * `viewer` is given and qualifies; with no viewer it is hidden like any other protected document.
  * Throws when the lookup fails; callers pick their own fail-closed behaviour.
  */
-export async function getProtectedIds(collection: ProtectedCollection): Promise<Set<number>> {
+export async function getProtectedIds(collection: ProtectedCollection, viewer?: Viewer | null): Promise<Set<number>> {
   // Lazy import: collections import this file, and connect pulls in the schema built from collections.
   const { getDb } = await import('@/cms/db/connect')
   const db = await getDb()
   const rows = (await db.all(
-    sql`SELECT doc_id FROM \`eg_content_passwords\` WHERE collection = ${collection}`
-  )) as { doc_id: number | string }[]
-  const ids = new Set((rows ?? []).map((row) => Number(row.doc_id)))
-  // Documents limited to an organisation's members are kept out of listings the same way.
+    sql`SELECT doc_id, NULL AS mode, NULL AS roles, NULL AS tiers FROM \`eg_content_passwords\` WHERE collection = ${collection}
+        UNION ALL
+        SELECT doc_id, mode, roles, tiers FROM \`eg_content_access\` WHERE collection = ${collection}`
+  )) as { doc_id: number | string; mode?: string | null; roles?: string | null; tiers?: string | null }[]
+  const ids = new Set<number>()
+  for (const row of rows ?? []) {
+    if (row.mode === 'accounts' && viewer) {
+      const rule = { mode: 'accounts' as const, roles: parseList(row.roles), tiers: parseList(row.tiers) }
+      if (await viewerQualifies(rule, viewer)) continue
+    }
+    ids.add(Number(row.doc_id))
+  }
+  // Documents limited to an organisation's members are kept out of listings the same way. A throw here
+  // propagates so every caller fails closed.
   const { listOrgRestrictedIdsLive } = await import('@/features/organizations/visibility')
   for (const id of await listOrgRestrictedIdsLive(collection)) ids.add(id)
   return ids
+}
+
+function parseList(value: unknown): string[] {
+  if (typeof value !== 'string' || !value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string' && v.length > 0) : []
+  } catch {
+    return []
+  }
 }
 
 /**
@@ -28,9 +51,10 @@ export async function getProtectedIds(collection: ProtectedCollection): Promise<
 export async function excludeProtected<T extends { id?: number | string | null }>(
   collection: ProtectedCollection,
   docs: T[],
+  viewer?: Viewer | null,
 ): Promise<T[]> {
   try {
-    const ids = await getProtectedIds(collection)
+    const ids = await getProtectedIds(collection, viewer)
     if (ids.size === 0) return docs
     return docs.filter((doc) => !ids.has(Number(doc.id)))
   } catch {
@@ -49,7 +73,12 @@ export function excludeProtectedAccess(collection: ProtectedCollection, base: Ac
     const result = await base(args)
     if (result === true || result === false) return result
     try {
-      const ids = await getProtectedIds(collection)
+      const user = (args as { req?: { user?: Viewer['user'] } })?.req?.user
+      const viewer: Viewer = {
+        user,
+        getEngine: async () => (await (await import('@/lib/engine')).getEngine()) as never,
+      }
+      const ids = await getProtectedIds(collection, viewer)
       if (ids.size === 0) return result
       return { and: [result, { id: { not_in: [...ids] } }] } as typeof result
     } catch {

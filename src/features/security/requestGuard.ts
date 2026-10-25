@@ -5,7 +5,7 @@ import { audit, auditContext } from './auditLog'
 import { FINGERPRINT_HEADERS, securityHeaders } from './headers'
 import { SESSION_COOKIE, isSessionExpired } from './loginProtection'
 import { isDirectoryListingRequest, isProbePath } from './probePaths'
-import { classifyRoute, clientKey, hit, limitFor } from './rateLimit'
+import { classifyRoute, clientKey, hit, hitShared, limitFor } from './rateLimit'
 import { readSecuritySettingsFromD1, type SecuritySettings } from './settings'
 import { resolveRedirect, recordRedirectHit } from '@/features/redirects'
 import { readServerRules, type ServerRules } from '@/features/seo/serverRules'
@@ -239,7 +239,10 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
   const limit = limitFor(settings, route)
 
   if (limit !== null) {
-    const decision = hit(`${route}:${clientKey(request)}`, limit)
+    const decision =
+      route === 'login'
+        ? await hitShared(`${route}:${clientKey(request)}`, limit)
+        : hit(`${route}:${clientKey(request)}`, limit)
 
     if (decision.limited) {
       void audit(

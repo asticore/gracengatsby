@@ -15,6 +15,7 @@ export type EmailTemplateKey =
   | 'accountMagicLink'
   | 'accountLoginCode'
   | 'organizationInvite'
+  | 'accountTwoFactorCode'
   | 'membershipRenewal'
   | 'approvalSubmitted'
   | 'approvalDecision'
@@ -73,6 +74,13 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplate> = 
       '{{inviter}} invited you to join {{organization}} as {{role}}.',
       'Open this link to accept or decline. It expires in {{days}} days, and only works when you are signed in with this email address:\n{{link}}',
       'If you were not expecting this, ignore this email. Nothing happens unless you accept.',
+    ].join('\n\n'),
+  },
+  accountTwoFactorCode: {
+    subject: 'Your two-step code',
+    body: [
+      'Your two-step sign-in code is {{code}}. It works once, expires in {{minutes}} minutes, and stops working after five wrong tries.',
+      'If you did not just try to sign in or set up two-step, change your password: someone may know it.',
     ].join('\n\n'),
   },
   membershipRenewal: {

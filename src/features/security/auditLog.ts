@@ -76,6 +76,14 @@ export type AuditAction =
   | 'password.reset'
   | 'email.verified'
   | 'email.refused'
+  | 'password-group.created'
+  | 'password-group.rotated'
+  | 'password-group.updated'
+  | 'password-group.deleted'
+  | 'password-group.assigned'
+  | 'password-group.unlock'
+  | 'password-group.unlock-failed'
+  | 'password-group.refused'
 
 /**
  * Every action an account-security event can write. The admin review screen
@@ -133,6 +141,14 @@ export const AUTH_AUDIT_ACTIONS: readonly AuditAction[] = [
   'organization.invite-declined',
   'organization.invite-canceled',
   'organization.refused',
+  'password-group.created',
+  'password-group.rotated',
+  'password-group.updated',
+  'password-group.deleted',
+  'password-group.assigned',
+  'password-group.unlock',
+  'password-group.unlock-failed',
+  'password-group.refused',
 ]
 
 export type AuditEntry = {

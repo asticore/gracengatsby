@@ -10,7 +10,9 @@ import {
   revokeOtherSessionsAction,
   revokeSessionAction,
 } from '../userSessionActions'
+import { markEmailVerifiedAction } from '../emailVerificationActions'
 import type { SessionOutcome, SessionView } from '../userSessionService'
+import { TrustedDevicesList } from './TrustedDevicesList'
 
 /**
  * The signed-in devices list, shared by the admin screen and the customer
@@ -128,10 +130,12 @@ export const SessionsPanel: React.FC<Props> = ({ sessions, isAdmin }) => {
         </p>
       )}
 
+      <TrustedDevicesList />
+
       {isAdmin && (
         <div style={{ marginTop: '2rem' }}>
           <h3>Another account</h3>
-          <p>Look up the signed-in devices of a customer or team member and sign them out. Each sign-out is written to the audit log.</p>
+          <p>Look up the signed-in devices of a customer or team member and sign them out, or mark their email address as verified. Each action is written to the audit log.</p>
           <div style={rowStyle}>
             <input
               type="email"
@@ -144,6 +148,14 @@ export const SessionsPanel: React.FC<Props> = ({ sessions, isAdmin }) => {
             />
             <button type="button" className="btn btn--ghost" disabled={busy || !lookupEmail} onClick={() => lookup(lookupEmail.trim())}>
               Show their devices
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              disabled={busy || !lookupEmail}
+              onClick={() => run(() => markEmailVerifiedAction(lookupEmail.trim()))}
+            >
+              Mark email as verified
             </button>
           </div>
           {looked && (

@@ -1,48 +1,116 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/cms/db/connect'
 import { getPasswordHash } from '@/cms/db/contentPasswords'
-import { verifyPassword, signUnlockToken, cookieName } from '@/features/visibility/password'
+import { consumeGroupUse, getAccessRule, getGroup } from '@/cms/db/passwordGroups'
+import { hitShared, peekShared } from '@/features/security/rateLimit'
+import { groupFingerprint, groupIsUsable } from '@/features/visibility/access'
+import { recordGroupEvent } from '@/features/visibility/groupAudit'
+import { verifyPassword, signUnlockToken, cookieName, groupCookieName, GROUP_TOKEN_COLLECTION } from '@/features/visibility/password'
 
 export const dynamic = 'force-dynamic'
 
 const ALLOWED_COLLECTIONS = new Set(['pages', 'posts', 'products', 'events'])
 const UNLOCK_TOKEN_TTL = 7 * 24 * 60 * 60 // 7 days
 const BRUTE_FORCE_DELAY = 400 // ms
+const GROUP_UNLOCKS_PER_MINUTE = 8
 const MAX_FAILURES = 10
 const FAILURE_WINDOW_MS = 10 * 60 * 1000
-const MAX_TRACKED = 5000
 
-// Best-effort, per-isolate (see security/rateLimit.ts for the caveat).
-const failures = new Map<string, { count: number; resetAt: number }>()
+// Counted in D1 (fixed window, shared by every isolate) with an in-memory fallback;
+// see security/rateLimit.ts hitShared.
+const WINDOW = { windowMs: FAILURE_WINDOW_MS }
 
 function failureKey(request: Request, collection: string, id: number): string {
   const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || 'unknown'
-  return `${ip}|${collection}|${id}`
+  return `content-unlock:${ip}|${collection}|${id}`
 }
 
-function isBlocked(key: string, now: number): boolean {
-  const entry = failures.get(key)
-  if (!entry) return false
-  if (entry.resetAt <= now) {
-    failures.delete(key)
-    return false
-  }
-  return entry.count >= MAX_FAILURES
+async function isBlocked(key: string): Promise<boolean> {
+  return (await peekShared(key, WINDOW)) >= MAX_FAILURES
 }
 
-function noteFailure(key: string, now: number): void {
-  const entry = failures.get(key)
-  if (entry && entry.resetAt > now) {
-    entry.count += 1
-    return
-  }
-  if (failures.size >= MAX_TRACKED) {
-    const oldest = failures.keys().next().value
-    if (oldest !== undefined) failures.delete(oldest)
-  }
-  failures.set(key, { count: 1, resetAt: now + FAILURE_WINDOW_MS })
+async function noteFailure(key: string): Promise<void> {
+  await hitShared(key, MAX_FAILURES, WINDOW)
 }
 
+
+type UnlockDb = Parameters<typeof getGroup>[0]
+
+/**
+ * Unlock with a shared password group. One cookie per group unlocks every document that references it.
+ * Fails closed at every step: switched off, rate limited, missing or expired group, wrong password and an
+ * exhausted use cap all send the visitor back to the gate with no cookie. Each outcome is audited.
+ */
+async function unlockWithGroup(args: {
+  request: Request
+  db: UnlockDb
+  groupId: number
+  collection: string
+  id: number
+  password: string
+  safeRedirect: string
+  key: string
+}): Promise<Response> {
+  const { request, db, groupId, collection, id, password, safeRedirect, key } = args
+  const back = (pw: 'wrong' | 'unavailable') => {
+    const url = new URL(safeRedirect, request.url)
+    url.searchParams.set('pw', pw)
+    return NextResponse.redirect(url.toString(), { status: 303 })
+  }
+  const ref = `${collection}/${id}`
+  const record = (action: Parameters<typeof recordGroupEvent>[0]['action'], detail: string) =>
+    recordGroupEvent({ action, headers: request.headers, groupId, detail })
+
+  const { readSecuritySettingsFromD1 } = await import('@/features/security/settings')
+  if (!(await readSecuritySettingsFromD1()).passwordGroups.enabled) {
+    await record('password-group.refused', `group passwords are switched off (${ref})`)
+    return back('unavailable')
+  }
+
+  const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || 'unknown'
+  const decision = await hitShared(`group-unlock|${ip}|${groupId}`, GROUP_UNLOCKS_PER_MINUTE)
+  if (decision.limited) {
+    await record('password-group.refused', `rate limited (${ref})`)
+    return back('wrong')
+  }
+
+  const group = await getGroup(db, groupId)
+  if (!group || !groupIsUsable(group)) {
+    await record('password-group.refused', `${group ? 'expired' : 'missing'} group (${ref})`)
+    return back('wrong')
+  }
+
+  if (!(await verifyPassword(password, group.hash))) {
+    await noteFailure(key)
+    await record('password-group.unlock-failed', `wrong password for "${group.name}" (${ref})`)
+    await new Promise((resolve) => setTimeout(resolve, BRUTE_FORCE_DELAY))
+    return back('wrong')
+  }
+
+  if (!(await consumeGroupUse(db, group.id))) {
+    await record('password-group.refused', `use limit reached for "${group.name}" (${ref})`)
+    return back('wrong')
+  }
+
+  const untilExpiry = group.expiresAt ? Math.floor((Date.parse(group.expiresAt) - Date.now()) / 1000) : UNLOCK_TOKEN_TTL
+  const ttlSeconds = Math.max(60, Math.min(UNLOCK_TOKEN_TTL, untilExpiry))
+  const token = await signUnlockToken({ collection: GROUP_TOKEN_COLLECTION, id: group.id, ttlSeconds, fingerprint: groupFingerprint(group) })
+  if (!token) {
+    console.error('content-unlock: could not sign group unlock token (ENGAGE_SECRET missing?)')
+    return back('unavailable')
+  }
+
+  await record('password-group.unlock', `unlocked via "${group.name}" (${ref})`)
+  const response = NextResponse.redirect(new URL(safeRedirect, request.url), { status: 303 })
+  response.cookies.set(groupCookieName(group.id), token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: ttlSeconds,
+  })
+  return response
+}
 
 /**
  * POST: Verify a password and set an unlock cookie.
@@ -88,7 +156,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const key = failureKey(request, collection, id)
-  if (isBlocked(key, Date.now())) {
+  if (await isBlocked(key)) {
     const limited = new URL(safeRedirect, request.url)
     limited.searchParams.set('pw', 'wrong')
     return NextResponse.redirect(limited.toString(), { status: 303 })
@@ -98,8 +166,12 @@ export async function POST(request: Request): Promise<Response> {
     const db = await getDb()
     const storedHash = await getPasswordHash(db, collection, id)
 
-    // No password set for this document
+    // No per-document password: the document may use a shared password group instead
     if (!storedHash) {
+      const rule = await getAccessRule(db, collection, id)
+      if (rule && rule.groupId !== null) {
+        return await unlockWithGroup({ request, db, groupId: rule.groupId, collection, id, password, safeRedirect, key })
+      }
       return NextResponse.redirect(new URL(safeRedirect, request.url), { status: 303 })
     }
 
@@ -108,7 +180,7 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!isCorrect) {
       // Add brute-force friction
-      noteFailure(key, Date.now())
+      await noteFailure(key)
       await new Promise((resolve) => setTimeout(resolve, BRUTE_FORCE_DELAY))
 
       // Build error redirect

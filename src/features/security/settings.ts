@@ -67,6 +67,52 @@ export type SecuritySettings = {
   impersonation: ImpersonationSettings
   /** Customer organisations, members, teams and invitations. Off unless the owner switches it on. See src/features/organizations. */
   organizations: OrganizationSettings
+  /** Role-based two-step enforcement, email codes and trusted devices. All off by default. See twoFactorEnforcement.ts. */
+  twoFactor: TwoFactorSettings
+  /** Verified email for customer sign-in. Off unless the owner switches it on. See src/features/accounts/auth.ts. */
+  emailVerification: EmailVerificationSettings
+  /** Shared password groups for protected content. On by default; off locks every group-protected document. */
+  passwordGroups: PasswordGroupSettings
+}
+
+export type TwoFactorSettings = {
+  /** Role names (admin, editor, viewer, customer) or custom role slugs that must use two-step sign-in. */
+  requiredRoles: string[]
+  /** Until this instant an unenrolled user is only reminded, not confined. Null means no grace period. */
+  graceEndsAt: string | null
+  /** Lets a six-digit code emailed to the account address answer the second step. */
+  emailOtpEnabled: boolean
+  /** Lets the second-step screen remember a device for `trustedDeviceDays`. */
+  trustedDevicesEnabled: boolean
+  trustedDeviceDays: number
+}
+
+export const DEFAULT_TWO_FACTOR_SETTINGS: TwoFactorSettings = {
+  requiredRoles: [],
+  graceEndsAt: null,
+  emailOtpEnabled: false,
+  trustedDevicesEnabled: false,
+  trustedDeviceDays: 30,
+}
+
+export type EmailVerificationSettings = {
+  /** Customers must confirm their address before they can sign in. */
+  requireToSignIn: boolean
+  /** Least gap, in seconds, between two verification emails to the same account. 0 turns the gap off. */
+  resendCooldownSeconds: number
+}
+
+export const DEFAULT_EMAIL_VERIFICATION_SETTINGS: EmailVerificationSettings = {
+  requireToSignIn: false,
+  resendCooldownSeconds: 60,
+}
+
+export type PasswordGroupSettings = {
+  enabled: boolean
+}
+
+export const DEFAULT_PASSWORD_GROUP_SETTINGS: PasswordGroupSettings = {
+  enabled: true,
 }
 
 export type OrganizationSettings = {
@@ -178,8 +224,11 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   passwordless: DEFAULT_PASSWORDLESS_SETTINGS,
   passkeys: DEFAULT_PASSKEY_SETTINGS,
   apiKeys: DEFAULT_API_KEY_SETTINGS,
+  twoFactor: DEFAULT_TWO_FACTOR_SETTINGS,
   impersonation: DEFAULT_IMPERSONATION_SETTINGS,
   organizations: DEFAULT_ORGANIZATION_SETTINGS,
+  passwordGroups: DEFAULT_PASSWORD_GROUP_SETTINGS,
+  emailVerification: DEFAULT_EMAIL_VERIFICATION_SETTINGS,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -246,6 +295,26 @@ export const apiKeysFrom = (get: (key: string) => unknown): ApiKeySettings => {
   }
 }
 
+/** Splits the stored role list ("admin, editor") into clean lower-case tokens. */
+export const parseRoleList = (value: unknown): string[] => {
+  const raw = Array.isArray(value) ? value.join(',') : typeof value === 'string' ? value : ''
+  return [...new Set(raw.split(/[\s,;]+/).map((part) => part.trim().toLowerCase()).filter((part) => /^[a-z0-9_-]{1,64}$/.test(part)))]
+}
+
+/** Reads the five two-step fields; `get` takes the column name (`two_factor_required_roles`, ...). */
+export const twoFactorFrom = (get: (column: string) => unknown): TwoFactorSettings => {
+  const base = DEFAULT_TWO_FACTOR_SETTINGS
+  const grace = get('two_factor_grace_ends_at')
+  const graceMs = typeof grace === 'string' || grace instanceof Date ? Date.parse(String(grace instanceof Date ? grace.toISOString() : grace)) : NaN
+  return {
+    requiredRoles: parseRoleList(get('two_factor_required_roles')),
+    graceEndsAt: Number.isFinite(graceMs) ? new Date(graceMs).toISOString() : base.graceEndsAt,
+    emailOtpEnabled: asBool(get('two_factor_email_otp_enabled'), base.emailOtpEnabled),
+    trustedDevicesEnabled: asBool(get('trusted_devices_enabled'), base.trustedDevicesEnabled),
+    trustedDeviceDays: asInt(get('trusted_device_days'), base.trustedDeviceDays, 1, 90),
+  }
+}
+
 /**
  * Reads the three impersonation fields. `get` takes the column name
  * (`impersonation_enabled`, `impersonation_max_minutes`, `impersonation_require2fa`).
@@ -275,6 +344,25 @@ const ORGANIZATION_GLOBAL_KEYS: Record<string, string> = {
   organizations_enabled: 'organizationsEnabled',
   organizations_max_per_account: 'organizationsMaxPerAccount',
   organizations_who_may_create: 'organizationsWhoMayCreate',
+}
+
+/** Reads the password group switch (`password_groups_enabled`). On unless explicitly turned off. */
+export const passwordGroupsFrom = (get: (column: string) => unknown): PasswordGroupSettings => ({
+  enabled: asBool(get('password_groups_enabled'), DEFAULT_PASSWORD_GROUP_SETTINGS.enabled),
+})
+
+/** Reads the two verification fields; `get` takes the column name. The cooldown is clamped to 0..3600. */
+export const emailVerificationFrom = (get: (column: string) => unknown): EmailVerificationSettings => {
+  const base = DEFAULT_EMAIL_VERIFICATION_SETTINGS
+  return {
+    requireToSignIn: asBool(get('email_verification_required'), base.requireToSignIn),
+    resendCooldownSeconds: asInt(get('email_verification_cooldown_seconds'), base.resendCooldownSeconds, 0, 3600),
+  }
+}
+
+const EMAIL_VERIFICATION_GLOBAL_KEYS: Record<string, string> = {
+  email_verification_required: 'emailVerificationRequired',
+  email_verification_cooldown_seconds: 'emailVerificationCooldownSeconds',
 }
 
 /** Maps each impersonation column to the global field the engine returns it under. */
@@ -354,6 +442,9 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     apiKeys: apiKeysFrom((key) => row[key]),
     impersonation: impersonationFrom((key) => row[key]),
     organizations: organizationsFrom((key) => row[key]),
+    passwordGroups: passwordGroupsFrom((key) => row[key]),
+    twoFactor: twoFactorFrom((key) => row[key]),
+    emailVerification: emailVerificationFrom((key) => row[key]),
   }
 }
 
@@ -489,5 +580,8 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     apiKeys: apiKeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     impersonation: impersonationFrom((key) => (settings as Record<string, unknown>)[IMPERSONATION_GLOBAL_KEYS[key] ?? key]),
     organizations: organizationsFrom((key) => (settings as Record<string, unknown>)[ORGANIZATION_GLOBAL_KEYS[key] ?? key]),
+    passwordGroups: passwordGroupsFrom((key) => (settings as Record<string, unknown>)[key === 'password_groups_enabled' ? 'passwordGroupsEnabled' : key]),
+    twoFactor: twoFactorFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
+    emailVerification: emailVerificationFrom((key) => (settings as Record<string, unknown>)[EMAIL_VERIFICATION_GLOBAL_KEYS[key] ?? key]),
   }
 }

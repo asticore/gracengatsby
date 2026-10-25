@@ -3,7 +3,7 @@ import type { Engine } from '@/engine'
 import {
   DEFAULT_SECURITY_SETTINGS,
   getSecuritySettings,
-  hit,
+  hitShared,
   limitFor,
 } from '@/features/security'
 
@@ -17,8 +17,9 @@ import {
  * floor below takes over. Turning off a headers-and-hardening screen should
  * not silently open the sign-in form to unlimited guessing.
  *
- * The counter is per-isolate, not global; see the note at the top of
- * security/rateLimit.ts for exactly what that is and is not worth. The durable
+ * The counter is a fixed window in D1 (security/rateLimitStore.ts), shared by
+ * every isolate; if D1 cannot be reached it falls back to the per-isolate map
+ * described at the top of security/rateLimit.ts. The durable
  * control on guessing one account's password remains the engine's own lockout,
  * which counts failures on the user row.
  */
@@ -45,7 +46,7 @@ export const guardAttempt = async (
 
   // Separate buckets per attempt type: someone registering should not be
   // spending the same allowance as someone mistyping their password.
-  const decision = hit(`account:${attempt}:${address}`, limit)
+  const decision = await hitShared(`account:${attempt}:${address}`, limit)
 
   return decision.limited
     ? { allowed: false, retryAfterSeconds: decision.retryAfterSeconds }

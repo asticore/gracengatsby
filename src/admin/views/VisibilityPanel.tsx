@@ -4,6 +4,11 @@ import React, { useEffect, useState } from 'react'
 import { useField } from '@/admin/context'
 import { OrganizationVisibilitySection } from './OrganizationVisibilitySection'
 
+import './visibility-access.css'
+
+type VisibilityMode = 'public' | 'members-only' | 'password' | 'group' | 'accounts'
+type GroupOption = { id: number; name: string; expired: boolean }
+
 export const VisibilityPanel: React.FC<{
   collectionSlug: string
   id?: number
@@ -18,12 +23,20 @@ export const VisibilityPanel: React.FC<{
 
   const isSupported = collectionSlug === 'pages' || collectionSlug === 'posts' || collectionSlug === 'products' || collectionSlug === 'events'
   const isEnabled = membersOnlyValue?.enabled ?? false
-  const [visibilityMode, setVisibilityMode] = useState<'public' | 'members-only' | 'password'>('public')
+  const [visibilityMode, setVisibilityMode] = useState<VisibilityMode>('public')
   const [passwordInput, setPasswordInput] = useState('')
   const [hasPassword, setHasPassword] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [hasRule, setHasRule] = useState(false)
+  const [groups, setGroups] = useState<GroupOption[]>([])
+  const [groupId, setGroupId] = useState('')
+  const [rolesInput, setRolesInput] = useState('')
+  const [tiersInput, setTiersInput] = useState('')
+  const [accessBusy, setAccessBusy] = useState(false)
+  const [accessMessage, setAccessMessage] = useState('')
+  const [accessError, setAccessError] = useState('')
 
   // Initialize visibility mode on mount or when id/membersOnly changes
   useEffect(() => {
@@ -36,8 +49,30 @@ export const VisibilityPanel: React.FC<{
         const data = (await response.json()) as { hasPassword: boolean }
         setHasPassword(data.hasPassword)
 
+        let rule: { mode?: 'group' | 'accounts' | null; groupId?: number | null; roles?: string[]; tiers?: string[] } = {}
+        try {
+          const ruleResponse = await fetch(`/api/admin-visibility-access?collection=${collectionSlug}&id=${id}`)
+          if (ruleResponse.ok) rule = (await ruleResponse.json()) as typeof rule
+        } catch {
+          // The rule lookup is optional for the panel; the password state above still applies.
+        }
+        setHasRule(Boolean(rule.mode))
+        setGroupId(rule.groupId ? String(rule.groupId) : '')
+        setRolesInput((rule.roles ?? []).join(', '))
+        setTiersInput((rule.tiers ?? []).join(', '))
+        try {
+          const groupResponse = await fetch('/api/admin-password-groups')
+          if (groupResponse.ok) setGroups(((await groupResponse.json()) as { groups: GroupOption[] }).groups)
+        } catch {
+          // No group list: the group choices stay empty.
+        }
+
         if (data.hasPassword) {
           setVisibilityMode('password')
+        } else if (rule.mode === 'group') {
+          setVisibilityMode('group')
+        } else if (rule.mode === 'accounts') {
+          setVisibilityMode('accounts')
         } else if (isEnabled) {
           setVisibilityMode('members-only')
         } else {
@@ -51,16 +86,74 @@ export const VisibilityPanel: React.FC<{
     checkPassword()
   }, [id, collectionSlug, isEnabled])
 
-  const handleVisibilityChange = async (mode: 'public' | 'members-only' | 'password') => {
+  const clearRule = async () => {
+    if (!hasRule || !id) return
+    try {
+      const response = await fetch(`/api/admin-visibility-access?collection=${collectionSlug}&id=${id}`, { method: 'DELETE' })
+      if (response.ok) setHasRule(false)
+    } catch (error) {
+      console.error('Error clearing access rule:', error)
+    }
+  }
+
+  const splitList = (value: string): string[] =>
+    value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+
+  const handleSaveAccess = async (mode: 'group' | 'accounts') => {
+    if (!id) {
+      setAccessError('Save the document first')
+      return
+    }
+    setAccessBusy(true)
+    setAccessError('')
+    setAccessMessage('')
+    try {
+      const response = await fetch('/api/admin-visibility-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collection: collectionSlug,
+          id,
+          mode,
+          groupId: groupId ? Number(groupId) : null,
+          roles: mode === 'accounts' ? splitList(rolesInput) : [],
+          tiers: mode === 'accounts' ? splitList(tiersInput) : [],
+        }),
+      })
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string }
+        throw new Error(data.error || 'Failed to save')
+      }
+      setHasRule(true)
+      setHasPassword(false)
+      setMembersOnly({ enabled: false, tier: membersOnlyValue?.tier ?? null })
+      setAccessMessage('Saved')
+      setTimeout(() => setAccessMessage(''), 3000)
+    } catch (error) {
+      setAccessError(error instanceof Error ? error.message : 'Unknown error')
+    } finally {
+      setAccessBusy(false)
+    }
+  }
+
+  const handleVisibilityChange = async (mode: VisibilityMode) => {
     setVisibilityMode(mode)
     setPasswordError('')
     setPasswordSuccess(false)
+    setAccessError('')
+    setAccessMessage('')
 
-    if (mode === 'password') {
+    if (mode === 'group' || mode === 'accounts') {
+      // Nothing is protected until Save is pressed in the choices below.
+    } else if (mode === 'password') {
       // Password mode will be set via the password input
       setPasswordInput('')
     } else if (mode === 'members-only') {
       // Set membersOnly in form
+      void clearRule()
       setMembersOnly({
         enabled: true,
         tier: membersOnlyValue?.tier ?? null,
@@ -82,6 +175,7 @@ export const VisibilityPanel: React.FC<{
       }
     } else {
       // Public mode
+      void clearRule()
       setMembersOnly({
         enabled: false,
         tier: membersOnlyValue?.tier ?? null,
@@ -138,6 +232,7 @@ export const VisibilityPanel: React.FC<{
       }
 
       setHasPassword(true)
+      void clearRule()
       setPasswordInput('')
       setPasswordSuccess(true)
       setVisibilityMode('password')
@@ -195,13 +290,107 @@ export const VisibilityPanel: React.FC<{
       <select
         className="doc-visibility__select"
         disabled={readOnly}
-        onChange={(e) => handleVisibilityChange(e.target.value as 'public' | 'members-only' | 'password')}
+        onChange={(e) => handleVisibilityChange(e.target.value as VisibilityMode)}
         value={visibilityMode}
       >
         <option value="public">Public</option>
         <option value="members-only">Members only</option>
         <option value="password">Password protected</option>
+        <option value="group">Use a shared password group</option>
+        <option value="accounts">Visible to signed-in accounts</option>
       </select>
+
+      {visibilityMode === 'group' && (
+        <div className="doc-visibility__access">
+          <label className="doc-visibility__access-label">
+            Password group
+            <select
+              className="doc-visibility__access-input"
+              disabled={readOnly || accessBusy}
+              onChange={(e) => setGroupId(e.target.value)}
+              value={groupId}
+            >
+              <option value="">Choose a group</option>
+              {groups.map((g) => (
+                <option key={g.id} value={String(g.id)}>
+                  {g.name}
+                  {g.expired ? ' (expired)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="doc-visibility__access-hint">
+            One password unlocks every document in the group. Create and rotate groups under Settings, Security, Password groups.
+          </p>
+          <button
+            className="doc-visibility__access-button"
+            disabled={!groupId || !id || accessBusy || readOnly}
+            onClick={() => handleSaveAccess('group')}
+            type="button"
+          >
+            {accessBusy ? 'Saving...' : 'Use this group'}
+          </button>
+          {!id && <p className="doc-visibility__access-hint">Save the document first</p>}
+          {accessMessage && <div className="doc-visibility__access-ok">{accessMessage}</div>}
+          {accessError && <div className="doc-visibility__access-error">{accessError}</div>}
+        </div>
+      )}
+
+      {visibilityMode === 'accounts' && (
+        <div className="doc-visibility__access">
+          <label className="doc-visibility__access-label">
+            Allowed roles (optional, comma separated)
+            <input
+              className="doc-visibility__access-input"
+              disabled={readOnly || accessBusy}
+              onChange={(e) => setRolesInput(e.target.value)}
+              placeholder="customer, editor"
+              value={rolesInput}
+            />
+          </label>
+          <label className="doc-visibility__access-label">
+            Allowed membership tiers (optional, comma separated tier names)
+            <input
+              className="doc-visibility__access-input"
+              disabled={readOnly || accessBusy}
+              onChange={(e) => setTiersInput(e.target.value)}
+              placeholder="gold, silver"
+              value={tiersInput}
+            />
+          </label>
+          <p className="doc-visibility__access-hint">
+            Leave both empty to allow any signed-in account. A role or a tier match is enough. Everyone else sees a gate with a sign-in link.
+          </p>
+          <label className="doc-visibility__access-label">
+            Also allow a password group (optional)
+            <select
+              className="doc-visibility__access-input"
+              disabled={readOnly || accessBusy}
+              onChange={(e) => setGroupId(e.target.value)}
+              value={groupId}
+            >
+              <option value="">No password alternative</option>
+              {groups.map((g) => (
+                <option key={g.id} value={String(g.id)}>
+                  {g.name}
+                  {g.expired ? ' (expired)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="doc-visibility__access-button"
+            disabled={!id || accessBusy || readOnly}
+            onClick={() => handleSaveAccess('accounts')}
+            type="button"
+          >
+            {accessBusy ? 'Saving...' : 'Save'}
+          </button>
+          {!id && <p className="doc-visibility__access-hint">Save the document first</p>}
+          {accessMessage && <div className="doc-visibility__access-ok">{accessMessage}</div>}
+          {accessError && <div className="doc-visibility__access-error">{accessError}</div>}
+        </div>
+      )}
 
       {visibilityMode === 'password' && (
         <div style={{ marginTop: '12px' }}>

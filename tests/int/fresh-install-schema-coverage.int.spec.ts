@@ -23,10 +23,15 @@ import * as loginTokensSchema from '@/cms/db/schema/loginTokens'
 import * as passkeysSchema from '@/cms/db/schema/passkeys'
 import * as apiKeysSchema from '@/cms/db/schema/apiKeys'
 import * as organizationsSchema from '@/cms/db/schema/organizations'
+import * as emailVerificationsSchema from '@/cms/db/schema/emailVerifications'
+import * as rateLimitsSchema from '@/cms/db/schema/rateLimits'
+import * as twoFactorEmailCodesSchema from '@/cms/db/schema/twoFactorEmailCodes'
+import * as trustedDevicesSchema from '@/cms/db/schema/trustedDevices'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
 import * as siteTemplatesSchema from '@/cms/db/schema/siteTemplates'
+import * as passwordGroupsSchema from '@/cms/db/schema/passwordGroups'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -251,6 +256,14 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
+      // Email verification tokens and shared rate limit counters: plain drizzle tables in their own schema files
+      for (const [exportName, exportValue] of Object.entries(emailVerificationsSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+      for (const [exportName, exportValue] of Object.entries(rateLimitsSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
       // Customer organisations, members, teams, invitations, custom roles and content limits: plain drizzle tables in their own schema file
       for (const [exportName, exportValue] of Object.entries(organizationsSchema)) {
         drizzleTables.push({ name: exportName, table: exportValue })
@@ -258,6 +271,14 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Linked social login identities: a plain drizzle table in its own schema file
       for (const [exportName, exportValue] of Object.entries(socialAccountsSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Emailed second-step codes and remembered devices: plain drizzle tables in their own schema files
+      for (const [exportName, exportValue] of Object.entries(twoFactorEmailCodesSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+      for (const [exportName, exportValue] of Object.entries(trustedDevicesSchema)) {
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
@@ -717,6 +738,117 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_impersonations` WHERE id = 'keep-me-imp'").first()) as { n: number }
     expect(kept.n).toBe(1)
     await proxy.env.D1.prepare("DELETE FROM `eg_impersonations` WHERE id = 'keep-me-imp'").run()
+  })
+
+  it('adds the email verification settings, off by default, and creates eg_email_verifications and eg_rate_limits', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('email_verification_required')).toBe('0')
+    expect(byName.get('email_verification_cooldown_seconds')).toBe('60')
+    const cols = async (table: string) => ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()).results as { name: string }[]).map((c) => c.name)
+    expect(await cols('eg_email_verifications')).toEqual(expect.arrayContaining(['id', 'user_id', 'email', 'token_hash', 'created_at', 'expires_at', 'used_at']))
+    expect(await cols('eg_rate_limits')).toEqual(expect.arrayContaining(['key', 'window_start', 'count', 'expires_at']))
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_email_verifications`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(indexes).toEqual(expect.arrayContaining(['eg_email_verifications_token_idx', 'eg_email_verifications_user_idx']))
+  })
+
+  it('auth slice 2 migration is safe to run twice and leaves existing rows alone', async () => {
+    const mod = await import('@/migrations/20261121_100000_auth_slice_2')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_rate_limits` (key, window_start, count, expires_at) VALUES ('keep-me', 1, 3, 99999999999999)",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'email_verification_required')).toBe(1)
+    expect(await count('eg_security_settings', 'email_verification_cooldown_seconds')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT count FROM `eg_rate_limits` WHERE key = 'keep-me'").first()) as { count: number }
+    expect(kept.count).toBe(3)
+    await proxy.env.D1.prepare("DELETE FROM `eg_rate_limits` WHERE key = 'keep-me'").run()
+  })
+
+  it('adds the auth slice 3 columns to security settings, off by default, and creates the email code and trusted device tables', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.has('two_factor_required_roles')).toBe(true)
+    expect(byName.has('two_factor_grace_ends_at')).toBe(true)
+    expect(byName.get('two_factor_email_otp_enabled')).toBe('0')
+    expect(byName.get('trusted_devices_enabled')).toBe('0')
+    expect(byName.get('trusted_device_days')).toBe('30')
+    const emailCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_two_factor_email_codes`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(emailCols).toEqual(expect.arrayContaining(['id', 'user_id', 'purpose', 'code_hash', 'attempts', 'created_at', 'expires_at', 'used_at']))
+    const deviceCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_trusted_devices`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(deviceCols).toEqual(expect.arrayContaining(['id', 'user_id', 'token_hash', 'label', 'ip', 'created_at', 'last_used_at', 'expires_at', 'revoked_at']))
+    const emailIdx = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_two_factor_email_codes`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(emailIdx).toEqual(expect.arrayContaining(['eg_two_factor_email_codes_user_idx']))
+    const deviceIdx = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_trusted_devices`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(deviceIdx).toEqual(expect.arrayContaining(['eg_trusted_devices_user_idx', 'eg_trusted_devices_hash_idx']))
+  })
+
+  it('auth slice 3 migration is safe to run twice and leaves existing rows alone', async () => {
+    const mod = await import('@/migrations/20261122_100000_auth_slice_3')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_trusted_devices` (id, user_id, token_hash, created_at, expires_at) VALUES ('keep-me-device', 9, 'keep-me-device-hash', '2026-01-01T00:00:00.000Z', '2099-01-01T00:00:00.000Z')",
+    ).run()
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_two_factor_email_codes` (user_id, purpose, code_hash, created_at, expires_at) VALUES (9, 'login', 'keep-me-code-hash', '2026-01-01T00:00:00.000Z', '2026-01-01T00:10:00.000Z')",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'two_factor_required_roles')).toBe(1)
+    expect(await count('eg_security_settings', 'trusted_device_days')).toBe(1)
+    expect(await count('eg_trusted_devices', 'token_hash')).toBe(1)
+    const device = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_trusted_devices` WHERE id = 'keep-me-device'").first()) as { n: number }
+    const code = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_two_factor_email_codes` WHERE code_hash = 'keep-me-code-hash'").first()) as { n: number }
+    expect(device.n).toBe(1)
+    expect(code.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_trusted_devices` WHERE id = 'keep-me-device'").run()
+    await proxy.env.D1.prepare("DELETE FROM `eg_two_factor_email_codes` WHERE code_hash = 'keep-me-code-hash'").run()
+  })
+
+  it('creates the password group tables, matching their drizzle mirrors, and the security toggle on by default', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    expect(new Map(info.map((c) => [c.name, c.dflt_value])).get('password_groups_enabled')).toBe('1')
+    for (const table of [passwordGroupsSchema.passwordGroups, passwordGroupsSchema.contentAccess]) {
+      const name = getTableName(table)
+      const live = ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${name}\`)`).all()).results as { name: string }[]).map((c) => c.name).sort()
+      const declared = Object.values(getTableColumns(table)).map((c) => c.name).sort()
+      expect(live, name).toEqual(declared)
+    }
+    const indexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_password_groups`)').all()).results as { name: string; unique: number }[])
+    expect(indexes.find((i) => i.name === 'eg_password_groups_name_idx')?.unique).toBe(1)
+    const accessIndexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_content_access`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(accessIndexes).toContain('eg_content_access_group_idx')
+  })
+
+  it('password groups migration is registered right before organizations and is safe to run twice, keeping existing rows', async () => {
+    const { migrations } = await import('@/migrations/index')
+    expect(migrations.map((x) => x.name).slice(-2)).toEqual(['20261123_100000_password_groups', '20261124_100000_organizations'])
+    const mod = await import('@/migrations/20261123_100000_password_groups')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_password_groups` (name, hash, use_count, created_at, updated_at) VALUES ('keep-me-group', 'h', 0, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_security_settings', 'password_groups_enabled')).toBe(1)
+    expect(await count('eg_content_access', 'group_id')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_password_groups` WHERE name = 'keep-me-group'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_password_groups` WHERE name = 'keep-me-group'").run()
   })
 
   it('adds the organization columns to security settings, off by default, and creates the organization tables', async () => {

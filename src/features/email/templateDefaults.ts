@@ -14,6 +14,7 @@ export type EmailTemplateKey =
   | 'accountVerify'
   | 'accountMagicLink'
   | 'accountLoginCode'
+  | 'accountTwoFactorCode'
   | 'membershipRenewal'
   | 'approvalSubmitted'
   | 'approvalDecision'
@@ -64,6 +65,13 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplate> = 
     body: [
       'Your sign-in code is {{code}}. It works once, expires in {{minutes}} minutes, and stops working after five wrong tries.',
       'If you did not ask for this, ignore this email. Nobody can sign in without the code.',
+    ].join('\n\n'),
+  },
+  accountTwoFactorCode: {
+    subject: 'Your two-step code',
+    body: [
+      'Your two-step sign-in code is {{code}}. It works once, expires in {{minutes}} minutes, and stops working after five wrong tries.',
+      'If you did not just try to sign in or set up two-step, change your password: someone may know it.',
     ].join('\n\n'),
   },
   membershipRenewal: {

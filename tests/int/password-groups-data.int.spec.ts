@@ -6,7 +6,6 @@ import {
   CONTENT_ACCESS_TABLE,
   PASSWORD_GROUPS_TABLE,
   PASSWORD_GROUP_INDEXES,
-  RATE_LIMIT_HITS_TABLE,
 } from '@/migrations/20261123_100000_password_groups'
 import {
   clearAccessRule,
@@ -21,7 +20,6 @@ import {
   setAccessRule,
   updateGroupSettings,
 } from '@/cms/db/passwordGroups'
-import { hitShared, resetRateLimiter } from '@/features/security/rateLimit'
 import { DEFAULT_SECURITY_SETTINGS, passwordGroupsFrom, rowToSettings } from '@/features/security/settings'
 import { AUTH_AUDIT_ACTIONS } from '@/features/security/auditLog'
 
@@ -31,7 +29,7 @@ describe('password group data layer on a real D1', () => {
 
   beforeAll(async () => {
     proxy = await getPlatformProxy<{ D1: D1Database }>({ persist: false })
-    for (const statement of [PASSWORD_GROUPS_TABLE, CONTENT_ACCESS_TABLE, RATE_LIMIT_HITS_TABLE, ...PASSWORD_GROUP_INDEXES]) {
+    for (const statement of [PASSWORD_GROUPS_TABLE, CONTENT_ACCESS_TABLE, ...PASSWORD_GROUP_INDEXES]) {
       await proxy.env.D1.prepare(statement).run()
     }
     const { drizzle } = await import('drizzle-orm/d1')
@@ -91,30 +89,6 @@ describe('password group data layer on a real D1', () => {
     await setAccessRule(db, { collection: 'events', docId: 8, mode: 'accounts', groupId: null, roles: ['a'], tiers: [] })
     await setAccessRule(db, { collection: 'events', docId: 8, mode: 'accounts', groupId: null, roles: ['b'], tiers: [] })
     expect((await getAccessRule(db, 'events', 8))?.roles).toEqual(['b'])
-  })
-
-  it('hitShared counts in D1 across callers and rolls the window over', async () => {
-    resetRateLimiter()
-    const d1 = proxy.env.D1 as never
-    const t0 = 1_000_000
-    const first = await hitShared('k', 2, { now: t0, db: d1 })
-    const second = await hitShared('k', 2, { now: t0 + 10, db: d1 })
-    const third = await hitShared('k', 2, { now: t0 + 20, db: d1 })
-    expect([first.limited, second.limited, third.limited]).toEqual([false, false, true])
-    expect(third.count).toBe(3)
-    const later = await hitShared('k', 2, { now: t0 + 61_000, db: d1 })
-    expect(later.count).toBe(1)
-    expect(later.limited).toBe(false)
-  })
-
-  it('hitShared falls back to the per-isolate limiter when the store is unavailable', async () => {
-    resetRateLimiter()
-    const broken = { prepare: () => ({ bind: () => ({ first: async () => { throw new Error('no table') } }) }) } as never
-    const a = await hitShared('fb', 1, { db: broken })
-    const b = await hitShared('fb', 1, { db: broken })
-    expect([a.limited, b.limited]).toEqual([false, true])
-    const none = await hitShared('fb2', 1, { db: null })
-    expect(none.count).toBe(1)
   })
 })
 

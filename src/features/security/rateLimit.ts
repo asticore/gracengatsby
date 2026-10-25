@@ -1,3 +1,4 @@
+import { purgeExpiredWindows, incrementWindow, readWindow, resolveRateLimitD1, type RateLimitD1 } from './rateLimitStore'
 import type { SecuritySettings } from './settings'
 
 /**
@@ -13,6 +14,11 @@ import type { SecuritySettings } from './settings'
  * It stops a single client hammering a single isolate, which is the shape of
  * most casual abuse and form spam, and it costs nothing. It is not a defence
  * against a distributed flood.
+ *
+ * Sign-in, reset, register, content-unlock and the login route class no longer rely on
+ * this alone: they count in D1 through `hitShared` (rateLimitStore.ts) and use this
+ * map only as the fallback when D1 is unavailable. The general API and form limits
+ * below still use `hit` directly.
  *
  * Making it global needs shared state, in order of preference:
  *   1. A Durable Object keyed by client identifier - exact counts, strongly
@@ -64,11 +70,11 @@ function sweep(now: number): void {
   }
 }
 
-export function hit(key: string, limit: number, now = Date.now()): RateLimitDecision {
+export function hit(key: string, limit: number, now = Date.now(), windowMs = WINDOW_MS): RateLimitDecision {
   sweep(now)
 
   const existing = buckets.get(key)
-  const bucket = existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + WINDOW_MS }
+  const bucket = existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs }
 
   bucket.count += 1
   buckets.set(key, bucket)
@@ -81,58 +87,53 @@ export function hit(key: string, limit: number, now = Date.now()): RateLimitDeci
   }
 }
 
-type SharedD1 = {
-  prepare: (query: string) => { bind: (...values: unknown[]) => { first: () => Promise<unknown> } }
+/** The in-memory count for a key in its live window, without counting. */
+export function peek(key: string, now = Date.now()): number {
+  const existing = buckets.get(key)
+  return existing && existing.resetAt > now ? existing.count : 0
 }
 
-async function sharedD1(): Promise<SharedD1 | null> {
+export type SharedOptions = {
+  windowMs?: number
+  now?: number
+  /** Tests pass a D1 binding directly; production resolves it from the Cloudflare context. */
+  d1?: RateLimitD1 | null
+  /** Share of writes that also purge ended windows. */
+  purgeChance?: number
+}
+
+const PURGE_CHANCE = 0.02
+
+/**
+ * `hit`, but counted in D1 (fixed window) so the limit holds across isolates.
+ * Falls back to the in-memory counter, with the same limit, when D1 is not there
+ * or the write fails: a limiter must not be able to take sign-in down with it.
+ */
+export async function hitShared(key: string, limit: number, options: SharedOptions = {}): Promise<RateLimitDecision> {
+  const now = options.now ?? Date.now()
+  const windowMs = options.windowMs ?? WINDOW_MS
   try {
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
-    const context = await getCloudflareContext({ async: true })
-    return (context?.env?.D1 as unknown as SharedD1) ?? null
+    const d1 = options.d1 === undefined ? await resolveRateLimitD1() : options.d1
+    if (!d1) return hit(key, limit, now, windowMs)
+    const { count, retryAfterSeconds } = await incrementWindow(d1, key, windowMs, now)
+    if (Math.random() < (options.purgeChance ?? PURGE_CHANCE)) {
+      await purgeExpiredWindows(d1, now).catch((): undefined => undefined)
+    }
+    return { limited: count > limit, count, limit, retryAfterSeconds }
   } catch {
-    return null
+    return hit(key, limit, now, windowMs)
   }
 }
 
-/**
- * Like `hit()`, but the counter lives in D1 (`eg_rate_limit_hits`), so the limit holds across isolates -
- * the shared-state option the header of this file asks for, using the database the site already has.
- * Use it where the count must not reset when an isolate is recycled (password guessing). One atomic
- * upsert per call: the window rolls over inside the statement, so two isolates cannot both start a window.
- * If the table or binding is unavailable it falls back to the per-isolate `hit()`, so a failure here can
- * never open a route up further than the in-memory limit does.
- */
-export async function hitShared(
-  key: string,
-  limit: number,
-  options: { now?: number; db?: SharedD1 | null } = {},
-): Promise<RateLimitDecision> {
+/** The shared count for a key in its live window, without counting. Memory when D1 is unavailable. */
+export async function peekShared(key: string, options: Pick<SharedOptions, 'windowMs' | 'now' | 'd1'> = {}): Promise<number> {
   const now = options.now ?? Date.now()
   try {
-    const db = options.db === undefined ? await sharedD1() : options.db
-    if (!db) return hit(key, limit, now)
-    const resetAt = now + WINDOW_MS
-    const row = (await db
-      .prepare(
-        `INSERT INTO \`eg_rate_limit_hits\` (\`key\`, \`count\`, \`reset_at\`) VALUES (?, 1, ?)
-         ON CONFLICT(\`key\`) DO UPDATE SET
-           \`count\` = CASE WHEN \`reset_at\` <= ? THEN 1 ELSE \`count\` + 1 END,
-           \`reset_at\` = CASE WHEN \`reset_at\` <= ? THEN ? ELSE \`reset_at\` END
-         RETURNING \`count\`, \`reset_at\``,
-      )
-      .bind(key, resetAt, now, now, resetAt)
-      .first()) as { count: number | string; reset_at: number | string } | null
-    if (!row) return hit(key, limit, now)
-    const count = Number(row.count)
-    return {
-      limited: count > limit,
-      count,
-      limit,
-      retryAfterSeconds: Math.max(1, Math.ceil((Number(row.reset_at) - now) / 1000)),
-    }
+    const d1 = options.d1 === undefined ? await resolveRateLimitD1() : options.d1
+    if (!d1) return peek(key, now)
+    return await readWindow(d1, key, options.windowMs ?? WINDOW_MS, now)
   } catch {
-    return hit(key, limit, now)
+    return peek(key, now)
   }
 }
 

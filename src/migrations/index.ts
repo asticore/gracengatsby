@@ -97,6 +97,8 @@ import * as migration_20261117_100000_passwordless_login from './20261117_100000
 import * as migration_20261118_100000_passkeys from './20261118_100000_passkeys';
 import * as migration_20261119_100000_api_keys from './20261119_100000_api_keys';
 import * as migration_20261120_100000_impersonation from './20261120_100000_impersonation';
+import * as migration_20261121_100000_auth_slice_2 from './20261121_100000_auth_slice_2';
+import * as migration_20261122_100000_auth_slice_3 from './20261122_100000_auth_slice_3';
 import * as migration_20261123_100000_password_groups from './20261123_100000_password_groups';
 
 export const migrations = [
@@ -594,6 +596,16 @@ export const migrations = [
     up: migration_20261120_100000_impersonation.up,
     down: migration_20261120_100000_impersonation.down,
     name: '20261120_100000_impersonation',
+  },
+  {
+    up: migration_20261121_100000_auth_slice_2.up,
+    down: migration_20261121_100000_auth_slice_2.down,
+    name: '20261121_100000_auth_slice_2',
+  },
+  {
+    up: migration_20261122_100000_auth_slice_3.up,
+    down: migration_20261122_100000_auth_slice_3.down,
+    name: '20261122_100000_auth_slice_3',
   },
   {
     up: migration_20261123_100000_password_groups.up,

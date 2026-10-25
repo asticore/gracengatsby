@@ -1,7 +1,7 @@
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 /**
- * Drizzle mirrors of `eg_password_groups`, `eg_content_access` and `eg_rate_limit_hits` (hand-migrated: see
+ * Drizzle mirrors of `eg_password_groups`, and `eg_content_access` (hand-migrated: see
  * src/migrations/20261123_100000_password_groups.ts). Rows are written with bound raw SQL by
  * src/cms/db/passwordGroups.ts, so these are declared directly rather than through generateTable.
  * Column names must keep matching the migration. Only a PBKDF2 hash of a group password is stored.
@@ -33,14 +33,4 @@ export const contentAccess = sqliteTable(
     updatedAt: text('updated_at').notNull(),
   },
   (table) => [primaryKey({ columns: [table.collection, table.docId] }), index('eg_content_access_group_idx').on(table.groupId)],
-)
-
-export const rateLimitHits = sqliteTable(
-  'eg_rate_limit_hits',
-  {
-    key: text('key').primaryKey().notNull(),
-    count: integer('count').notNull().default(0),
-    resetAt: integer('reset_at').notNull(),
-  },
-  (table) => [index('eg_rate_limit_hits_reset_idx').on(table.resetAt)],
 )

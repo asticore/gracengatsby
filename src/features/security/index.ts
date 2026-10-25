@@ -31,6 +31,7 @@ export {
   hit,
   hitShared,
   limitFor,
+  peekShared,
   resetRateLimiter,
   type RateLimitDecision,
   type RouteClass,

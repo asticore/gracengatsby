@@ -7,9 +7,7 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@/engine/db'
 //      per-document password. mode 'group' needs group_id; mode 'accounts' lists allowed roles and membership
 //      tier slugs as JSON text (both empty = any signed-in account) and may also carry a group_id as the
 //      password fallback offered on the gate.
-//   3. `eg_rate_limit_hits`: shared fixed-window counters behind hitShared() in
-//      src/features/security/rateLimit.ts, so a limit holds across isolates.
-//   4. One flat field on the Security global (`eg_security_settings`): password_groups_enabled (1).
+//   3. One flat field on the Security global (`eg_security_settings`): password_groups_enabled (1).
 //      Mirror: passwordGroupsEnabled in src/globals/SecuritySettings.ts. Change one, change the other.
 // Mirrors: src/cms/db/schema/passwordGroups.ts. Idempotent: anything already there is left alone.
 // Registered last in src/migrations/index.ts.
@@ -60,23 +58,15 @@ export const CONTENT_ACCESS_TABLE = `CREATE TABLE IF NOT EXISTS \`eg_content_acc
   PRIMARY KEY (\`collection\`, \`doc_id\`)
 )`
 
-export const RATE_LIMIT_HITS_TABLE = `CREATE TABLE IF NOT EXISTS \`eg_rate_limit_hits\` (
-  \`key\` text PRIMARY KEY NOT NULL,
-  \`count\` integer DEFAULT 0 NOT NULL,
-  \`reset_at\` integer NOT NULL
-)`
-
 export const PASSWORD_GROUP_INDEXES = [
   'CREATE UNIQUE INDEX IF NOT EXISTS `eg_password_groups_name_idx` ON `eg_password_groups` (`name`)',
   'CREATE INDEX IF NOT EXISTS `eg_content_access_group_idx` ON `eg_content_access` (`group_id`)',
-  'CREATE INDEX IF NOT EXISTS `eg_rate_limit_hits_reset_idx` ON `eg_rate_limit_hits` (`reset_at`)',
 ]
 
 export async function up({ db, engine }: MigrateUpArgs): Promise<void> {
   await addColumns(db, 'eg_security_settings', SECURITY_SETTINGS_PASSWORD_GROUP_COLUMNS)
   await db.run(sql.raw(PASSWORD_GROUPS_TABLE))
   await db.run(sql.raw(CONTENT_ACCESS_TABLE))
-  await db.run(sql.raw(RATE_LIMIT_HITS_TABLE))
   for (const statement of PASSWORD_GROUP_INDEXES) {
     await db.run(sql.raw(statement))
   }

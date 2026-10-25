@@ -11,7 +11,7 @@ import { getSecuritySettings, type SecuritySettings } from '@/features/security/
 import { getEngine } from '@/lib/engine'
 
 import { createD1ApiKeyStore, createApiKey, isActive, listApiKeys, revokeApiKey, type ApiKeyDeps, type ApiKeyRow, type D1Like, type LiveOwner } from './index'
-import { isStaffRoles } from './core'
+import { isStaffRoles, scopableCollections, type ScopeCollection } from './core'
 
 /**
  * What the API key screens call. The signed-in person is always the cookie session's own:
@@ -149,4 +149,12 @@ export async function revokeApiKeyAction(keyId: number): Promise<ApiKeyActionRes
   if (result.ok === false) return { ok: false, error: result.error }
   const keys = s.actor.isAdmin ? await toViews(await listApiKeys(s.deps.store, 'all'), s.deps.now()) : await myKeys(s)
   return { ok: true, keys }
+}
+
+/** The collections the scope picker offers, from the live config. Empty when nobody is signed in. */
+export async function apiKeyScopeChoicesAction(): Promise<ScopeCollection[]> {
+  const s = await session()
+  if (!s) return []
+  const engine = await getEngine()
+  return scopableCollections(engine.config.collections as unknown as Array<{ slug?: unknown; labels?: { plural?: unknown } | null }>)
 }

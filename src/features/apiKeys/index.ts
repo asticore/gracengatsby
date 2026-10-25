@@ -2,7 +2,14 @@ export {
   API_KEY_RATE_PER_MINUTE,
   DISPLAY_PREFIX_LENGTH,
   KEY_PREFIX,
+  MAX_SCOPES_PER_KEY,
+  isScopableCollection,
+  scopableCollections,
+  type ScopeCollection,
   SCOPES,
+  SCOPE_ACTIONS,
+  normalizeScope,
+  scopesAllow,
   decideRoute,
   forbiddenFieldIn,
   generateApiKey,
@@ -12,6 +19,7 @@ export {
   validateName,
   validateScopes,
   type ApiKeyScope,
+  type ScopeAction,
   type RouteDecision,
 } from './core'
 export {

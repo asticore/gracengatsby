@@ -1034,10 +1034,68 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(tableRows.n).toBe(1)
   })
 
+  it('adds the email verification settings, off by default, and creates eg_email_verifications and eg_rate_limits', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.get('email_verification_required')).toBe('0')
+    expect(byName.get('email_verification_cooldown_seconds')).toBe('60')
+    expect(tables).toContain('eg_email_verifications')
+    expect(tables).toContain('eg_rate_limits')
+    const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_rate_limits`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(cols).toEqual(expect.arrayContaining(['key', 'window_start', 'count', 'expires_at']))
+  })
+
+  it('auth slice 2 migration is safe to run a second time and leaves the columns and tables single', async () => {
+    const mod = await import('@/migrations/20261121_100000_auth_slice_2')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    expect(info.filter((c) => c.name === 'email_verification_required')).toHaveLength(1)
+    expect(info.filter((c) => c.name === 'email_verification_cooldown_seconds')).toHaveLength(1)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name IN ('eg_email_verifications','eg_rate_limits')").first()) as { n: number }
+    expect(tableRows.n).toBe(2)
+  })
+
+  it('adds the auth slice 3 columns to security settings, all off by default, and creates the email code and trusted device tables', async () => {
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
+    const byName = new Map(info.map((c) => [c.name, c.dflt_value]))
+    expect(byName.has('two_factor_required_roles')).toBe(true)
+    expect(byName.has('two_factor_grace_ends_at')).toBe(true)
+    expect(byName.get('two_factor_email_otp_enabled')).toBe('0')
+    expect(byName.get('trusted_devices_enabled')).toBe('0')
+    expect(byName.get('trusted_device_days')).toBe('30')
+    expect(tables).toContain('eg_two_factor_email_codes')
+    expect(tables).toContain('eg_trusted_devices')
+    const emailCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_two_factor_email_codes`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(emailCols).toEqual(expect.arrayContaining(['user_id', 'purpose', 'code_hash', 'attempts', 'created_at', 'expires_at', 'used_at']))
+    const deviceCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_trusted_devices`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(deviceCols).toEqual(expect.arrayContaining(['id', 'user_id', 'token_hash', 'label', 'ip', 'created_at', 'last_used_at', 'expires_at', 'revoked_at']))
+  })
+
+  it('auth slice 3 migration is safe to run a second time and leaves the columns and tables single', async () => {
+    const mod = await import('@/migrations/20261122_100000_auth_slice_3')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
+    for (const column of ['two_factor_required_roles', 'two_factor_grace_ends_at', 'two_factor_email_otp_enabled', 'trusted_devices_enabled', 'trusted_device_days']) {
+      expect(info.filter((c) => c.name === column), column).toHaveLength(1)
+    }
+    for (const table of ['eg_two_factor_email_codes', 'eg_trusted_devices']) {
+      const rows = (await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='${table}'`).first()) as { n: number }
+      expect(rows.n, table).toBe(1)
+    }
+  })
+
   it('adds password_groups_enabled (on by default) and creates the password group tables with their indexes', async () => {
     const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string; dflt_value: string | null }[]
     expect(new Map(info.map((c) => [c.name, c.dflt_value])).get('password_groups_enabled')).toBe('1')
-    for (const table of ['eg_password_groups', 'eg_content_access', 'eg_rate_limit_hits']) expect(tables, table).toContain(table)
+    for (const table of ['eg_password_groups', 'eg_content_access']) expect(tables, table).toContain(table)
     const cols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_password_groups`)').all()).results as { name: string }[]).map((c) => c.name)
     expect(cols).toEqual(expect.arrayContaining(['id', 'name', 'hash', 'expires_at', 'max_uses', 'use_count', 'created_at', 'updated_at']))
     const accessCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_content_access`)').all()).results as { name: string }[]).map((c) => c.name)
@@ -1053,7 +1111,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     await mod.up({ db, engine } as never)
     const info = (await proxy.env.D1.prepare('PRAGMA table_info(`eg_security_settings`)').all()).results as { name: string }[]
     expect(info.filter((c) => c.name === 'password_groups_enabled')).toHaveLength(1)
-    for (const table of ['eg_password_groups', 'eg_content_access', 'eg_rate_limit_hits']) {
+    for (const table of ['eg_password_groups', 'eg_content_access']) {
       const row = (await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='${table}'`).first()) as { n: number }
       expect(row.n, table).toBe(1)
     }

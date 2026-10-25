@@ -243,6 +243,30 @@ export const SecuritySettings: GlobalConfig = {
           'The longest a new key may run before it expires, from 1 to 3650 days. Set to 0 to forbid expiry dates: new keys then never expire until revoked.',
       },
     },
+    // Verified email for customer sign-in (src/features/accounts/auth.ts). Flat, like the fields above.
+    // Column names are the snake_case of these names, listed in src/migrations/20261121_100000_auth_slice_2.ts.
+    // Off by default; existing sites sign in exactly as before.
+    {
+      name: 'emailVerificationRequired',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Require a verified email to sign in',
+      admin: {
+        description:
+          'Customers who have not confirmed their email address cannot sign in until they do. Administrators and editors are never held back. Existing customers must be marked verified first (Users, Email verified) or they will be asked to confirm on their next sign-in. Off by default.',
+      },
+    },
+    {
+      name: 'emailVerificationCooldownSeconds',
+      type: 'number',
+      defaultValue: 60,
+      label: 'Gap between verification emails (seconds)',
+      min: 0,
+      max: 3600,
+      admin: {
+        description: 'The least time between two verification emails to the same account, so the resend button cannot be used to flood a mailbox. 0 turns the gap off.',
+      },
+    },
     // Admin "sign in as customer" (src/features/impersonation). Flat, like the fields above. Column
     // names are the snake_case of these names, listed in src/migrations/20261120_100000_impersonation.ts.
     // Off by default; with the feature off, no impersonation starts.
@@ -275,6 +299,53 @@ export const SecuritySettings: GlobalConfig = {
       admin: {
         description: 'On: an administrator without an authenticator app or a passkey cannot impersonate anyone. Recommended.',
       },
+    },
+    // Two-step enforcement by role, email codes and trusted devices (src/features/security/twoFactorEnforcement.ts).
+    // Flat, like the fields above. Column names are the snake_case of these names, listed in
+    // src/migrations/20261122_100000_auth_slice_3.ts. All off by default.
+    {
+      name: 'twoFactorRequiredRoles',
+      type: 'text',
+      label: 'Require two-step sign-in for roles',
+      admin: {
+        description:
+          'Comma-separated role names: admin, editor, viewer, customer, or the slug of a custom role. People in these roles who have not set up two-step are sent to the setup screen and cannot use the site or API until they do. The last administrator is never locked out. Empty means nobody is required (the two checkboxes under Login protection still apply).',
+      },
+    },
+    {
+      name: 'twoFactorGraceEndsAt',
+      type: 'date',
+      label: 'Grace period ends',
+      admin: {
+        description: 'Until this date, people who must set up two-step are only reminded. Leave empty to enforce straight away.',
+      },
+    },
+    {
+      name: 'twoFactorEmailOtpEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow a code by email as the second step',
+      admin: {
+        description: 'Adds "Email me a code" to the two-step screens. The six-digit code lasts 10 minutes and allows five tries.',
+      },
+    },
+    {
+      name: 'trustedDevicesEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow "remember this device"',
+      admin: {
+        description: 'Lets a person skip the second step on a device they ticked "remember" on. Changing a password ends every remembered device.',
+      },
+    },
+    {
+      name: 'trustedDeviceDays',
+      type: 'number',
+      defaultValue: 30,
+      label: 'Remember a device for (days)',
+      min: 1,
+      max: 90,
+      admin: { description: 'Between 1 and 90 days.' },
     },
     // Shared password groups (src/features/visibility). Flat; column password_groups_enabled, added in
     // src/migrations/20261123_100000_password_groups.ts. On by default; off locks every document that

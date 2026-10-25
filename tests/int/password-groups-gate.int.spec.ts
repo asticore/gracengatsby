@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   consumeGroupUse: vi.fn(),
   settings: vi.fn(),
   hitShared: vi.fn(),
+  peekShared: vi.fn(),
   recordGroupEvent: vi.fn(),
   getEngine: vi.fn(),
   accountContext: vi.fn(),
@@ -18,7 +19,7 @@ vi.mock('@/cms/db/connect', () => ({ getDb: m.getDb }))
 vi.mock('@/cms/db/contentPasswords', () => ({ getPasswordHash: m.getPasswordHash }))
 vi.mock('@/cms/db/passwordGroups', () => ({ getAccessRule: m.getAccessRule, getGroup: m.getGroup, consumeGroupUse: m.consumeGroupUse }))
 vi.mock('@/features/security/settings', () => ({ readSecuritySettingsFromD1: m.settings }))
-vi.mock('@/features/security/rateLimit', () => ({ hitShared: m.hitShared }))
+vi.mock('@/features/security/rateLimit', () => ({ hitShared: m.hitShared, peekShared: m.peekShared }))
 vi.mock('@/features/visibility/groupAudit', () => ({ recordGroupEvent: m.recordGroupEvent }))
 vi.mock('@/lib/engine', () => ({ getEngine: m.getEngine }))
 vi.mock('@/features/accounts/session', () => ({ accountContext: m.accountContext }))
@@ -55,6 +56,7 @@ beforeEach(() => {
   m.getAccessRule.mockResolvedValue(null)
   m.settings.mockResolvedValue({ passwordGroups: { enabled: true } })
   m.hitShared.mockResolvedValue({ limited: false, count: 1, limit: 8, retryAfterSeconds: 1 })
+  m.peekShared.mockResolvedValue(0)
   m.consumeGroupUse.mockResolvedValue(true)
   m.recordGroupEvent.mockResolvedValue(undefined)
 })

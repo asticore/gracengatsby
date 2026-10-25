@@ -163,9 +163,12 @@ import { API_KEY_RATE_PER_MINUTE, ApiKeyRefused, decideRoute, forbiddenFieldIn, 
 import { readSecuritySettingsFromD1 } from '@/features/security/settings'
 import type { Engine } from './engine'
 import { createEngine } from './engine'
-import { clientKey, hit, limitFor } from '@/features/security/rateLimit'
+import { clientKey, hit, hitShared, limitFor } from '@/features/security/rateLimit'
 import { audit, auditContext } from '@/features/security/auditLog'
 import { recordAuthEvent } from '@/features/security/authAudit'
+import { TRUSTED_DEVICE_COOKIE, trustedTokenFromCookieHeader } from '@/features/security/trustedDevices'
+import { evaluateEnforcement, isEnrolmentSafeRoute } from '@/features/security/twoFactorEnforcement'
+import { ADMIN_ENROL_PATH, MEMBER_ENROL_PATH } from '@/features/security/twoFactor'
 import { sessionIdFromToken } from '@/features/security/userSessions'
 import { DEFAULT_SECURITY_SETTINGS, getSecuritySettings } from '@/features/security/settings'
 import { confirmStripeOrder, finalizePaidIntent, getStripeClient, initiateStripePayment, type PaymentsCartDoc } from '@/features/ecommerce/payments/stripeAdapter'
@@ -309,6 +312,48 @@ function errorToResponse(err: unknown): { status: number; body: ErrorResponseBod
   // carry anything, including sensitive internals) - masked to a generic
   // message at 500, same as the reference engine's own debug-mode-off default.
   return { status: 500, body: { errors: [{ message: 'Something went wrong.' }] } }
+}
+
+/**
+ * The two-step enforcement gate. A signed-in user (cookie session or API key owner) whose role is
+ * covered by the "require two-step" settings, who has not set it up, and whose grace period is over,
+ * gets 403 `TwoFactorRequired` from every route except the sign-out and session lookup ones, so they
+ * can only enrol. Cheap when nothing is configured: one cached settings read and out. Never throws.
+ */
+export async function gateTwoFactorEnforcement(engine: Engine, request: Request, slug: string[]): Promise<Response | null> {
+  try {
+    const settings = await readSecuritySettingsFromD1()
+    const configured =
+      settings.featureEnabled &&
+      (settings.twoFactor.requiredRoles.length > 0 || settings.loginProtection.requireTwoFactorForAdmins || settings.loginProtection.requireTwoFactorForMembers)
+    if (!configured || isEnrolmentSafeRoute(slug)) return null
+
+    const { user } = await engine.auth({ headers: request.headers, apiKeys: true }).catch((): { user: null } => ({ user: null }))
+    if (!user) return null
+    const subject = user as unknown as { id?: number; roles?: string[]; customRoleSlug?: string | null; twoFactorEnabled?: boolean | null }
+
+    let outcome = evaluateEnforcement(subject, settings)
+    if (!outcome.reject) return null
+
+    // The last administrator is never refused: check only when it would matter.
+    if (subject.roles?.includes('admin')) {
+      const found = await engine
+        .find({ collection: 'users', limit: 500, depth: 0, overrideAccess: true })
+        .catch((): { docs: unknown[] } => ({ docs: [] }))
+      const admins = (found.docs as Array<{ roles?: string[] }>).filter((doc) => doc.roles?.includes('admin'))
+      outcome = evaluateEnforcement(subject, settings, { soleAdmin: admins.length <= 1 })
+      if (!outcome.reject) return null
+    }
+
+    const enrolPath = subject.roles?.some((role) => role === 'admin' || role === 'editor' || role === 'viewer') ? ADMIN_ENROL_PATH : MEMBER_ENROL_PATH
+    return Response.json(
+      { errors: [{ name: 'TwoFactorRequired', message: 'Two-step sign-in is required for this account. Set it up before continuing.', enrolPath }] },
+      { status: 403 },
+    )
+  } catch {
+    // Fails open: a settings or lookup problem must not lock people out.
+    return null
+  }
 }
 
 /**
@@ -486,9 +531,14 @@ async function handleFind(engine: Engine, collection: string, request: Request, 
 }
 
 /** What a new session row records about the browser signing in. */
-function sessionClient(request: Request): { userAgent: string | null; ip: string | null } {
+function sessionClient(request: Request): { userAgent: string | null; ip: string | null; trustedDeviceToken: string | null } {
   const { ip, userAgent } = auditContext(request)
-  return { userAgent: userAgent ?? null, ip: ip ?? null }
+  return { userAgent: userAgent ?? null, ip: ip ?? null, trustedDeviceToken: trustedTokenFromCookieHeader(request.headers.get('cookie')) }
+}
+
+/** The remembered-device cookie: HttpOnly, lax, scoped to the whole site, lasting `maxAgeSeconds`. */
+function buildTrustedDeviceCookie(token: string, maxAgeSeconds: number): string {
+  return `${TRUSTED_DEVICE_COOKIE}=${token}; Max-Age=${maxAgeSeconds}; Path=/; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`
 }
 
 /**
@@ -1430,6 +1480,21 @@ async function handleLogin(engine: Engine, collection: string, request: Request)
 }
 
 /**
+ * `POST /login-2fa-email` - emails the second-step code for a pending sign-in: `{ pendingToken }`.
+ * The code is then submitted to `/login-2fa` with `method: "email"`. Own rate-limit bucket per address
+ * on top of the per-account send limit; the answer never says more than "sent" or "not available".
+ */
+async function handleSecondFactorEmail(engine: Engine, collection: string, request: Request): Promise<Response> {
+  const decision = hit(`two-factor-email:${clientKey(request)}`, 5)
+  if (decision.limited) {
+    return Response.json({ errors: [{ name: 'TooManyRequests', message: 'Too many attempts. Wait a few minutes and sign in again.' }] }, { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } })
+  }
+  const { data } = await readRequestBody(request)
+  const result = await engine.sendSecondFactorEmail({ collection, data: { pendingToken: stringField(data, 'pendingToken') } })
+  return Response.json({ ok: result.ok, message: result.message }, { status: result.ok ? 200 : 400 })
+}
+
+/**
  * `POST /login-2fa` - second step of a two-step sign-in: `{ pendingToken, code }`
  * (an authenticator code or a backup code). Same response as `/login` on success.
  *
@@ -1440,7 +1505,7 @@ async function handleLogin(engine: Engine, collection: string, request: Request)
 async function handleLoginSecondFactor(engine: Engine, collection: string, request: Request): Promise<Response> {
   const settings = await getSecuritySettings(engine as never).catch(() => DEFAULT_SECURITY_SETTINGS)
   const limit = limitFor(settings, 'login') ?? Math.max(5, DEFAULT_SECURITY_SETTINGS.loginProtection.maxLoginAttempts * 2)
-  const decision = hit(`two-factor:${clientKey(request)}`, limit)
+  const decision = await hitShared(`two-factor:${clientKey(request)}`, limit)
   const context = auditContext(request)
 
   if (decision.limited) {
@@ -1453,12 +1518,16 @@ async function handleLoginSecondFactor(engine: Engine, collection: string, reque
 
   const { data } = await readRequestBody(request)
   try {
-    const result = await engine.loginSecondFactor({ collection, data: { pendingToken: stringField(data, 'pendingToken'), code: stringField(data, 'code') }, client: sessionClient(request) })
+    const method = stringField(data, 'method') === 'email' ? 'email' : 'app'
+    const client = { ...sessionClient(request), trustDevice: (data as Record<string, unknown>).trustDevice === true }
+    const result = await engine.loginSecondFactor({ collection, data: { pendingToken: stringField(data, 'pendingToken'), code: stringField(data, 'code'), method }, client })
     await audit({ action: 'two-factor.verified', actorId: result.user.id, actorEmail: result.user.email, collectionSlug: collection, ...context }, settings).catch((): void => undefined)
     await recordAuthEvent(engine, { action: 'login.success', collectionSlug: collection, actorId: result.user.id, actorEmail: result.user.email, detail: 'two-step' }, context)
     const headers = new Headers()
-    if (result.token) headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
-    return Response.json({ message: 'Authentication Passed', ...result }, { status: 200, headers })
+    if (result.token) headers.append('Set-Cookie', buildAuthCookie(result.token, 7200))
+    if (result.trustedDevice) headers.append('Set-Cookie', buildTrustedDeviceCookie(result.trustedDevice.token, result.trustedDevice.maxAgeSeconds))
+    const { trustedDevice: _trusted, ...publicResult } = result
+    return Response.json({ message: 'Authentication Passed', ...publicResult }, { status: 200, headers })
   } catch (err) {
     await audit({ action: err instanceof LockedAuth ? 'login.locked' : 'two-factor.failed', collectionSlug: collection, detail: 'code step', ...context }, settings).catch((): void => undefined)
     throw err
@@ -1517,7 +1586,24 @@ async function handleForgotPassword(engine: Engine, collection: string, request:
 /** `POST /reset-password` - `{message: 'Password reset successfully.', user, token}` plus a `Set-Cookie` (`auth/endpoints/resetPassword.js`, `authentication:passwordResetSuccessfully`). An invalid/expired token throws `InvalidResetToken` (400, via `errorToResponse`). */
 async function handleResetPassword(engine: Engine, collection: string, request: Request): Promise<Response> {
   const { data } = await readRequestBody(request)
-  const result = await engine.resetPassword({ collection, data: { password: stringField(data, 'password'), token: stringField(data, 'token') }, client: sessionClient(request) })
+  const password = stringField(data, 'password')
+  const token = stringField(data, 'token')
+
+  // A reset does not pass through the collection hooks, so the password rules and the
+  // history are applied here. Admin-screen floor: no new minimum unless the owner raised it.
+  const { readPasswordStateByResetToken, recordPasswordSet } = await import('@/features/security/passwordStore')
+  const { passwordProblemFor } = await import('@/features/security/passwordCheck')
+  const account = token ? await readPasswordStateByResetToken(token).catch((): null => null) : null
+  if (account) {
+    const problem = await passwordProblemFor(engine, password, { id: account.id, email: account.email }, { adminScreen: true })
+    if (problem) {
+      await recordAuthEvent(engine, { action: 'password.reset', collectionSlug: collection, actorId: account.id, actorEmail: account.email, detail: `api refused: ${problem}` }, auditContext(request))
+      return Response.json({ errors: [{ name: 'ValidationError', message: problem }] }, { status: 400 })
+    }
+  }
+
+  const result = await engine.resetPassword({ collection, data: { password, token }, client: sessionClient(request) })
+  if (account) await recordPasswordSet(account.id, password).catch((): undefined => undefined)
   await recordAuthEvent(engine, { action: 'password.reset', collectionSlug: collection, actorId: result.user?.id ?? null, actorEmail: result.user?.email ?? null, detail: 'api' }, auditContext(request))
   const headers = new Headers()
   headers.set('Set-Cookie', buildAuthCookie(result.token, 7200))
@@ -1563,7 +1649,7 @@ async function handleUnlock(engine: Engine, collection: string, request: Request
 /* Dispatch                                                                    */
 /* -------------------------------------------------------------------------- */
 
-const AUTH_ROUTE_NAMES = new Set(['login', 'login-2fa', 'logout', 'me', 'refresh-token', 'forgot-password', 'reset-password', 'unlock'])
+const AUTH_ROUTE_NAMES = new Set(['login', 'login-2fa', 'login-2fa-email', 'logout', 'me', 'refresh-token', 'forgot-password', 'reset-password', 'unlock'])
 
 /* -------------------------------------------------------------------------- */
 /* Versions: GET /:c/versions, GET /:c/versions/:id, POST /:c/versions/:id    */
@@ -1759,6 +1845,10 @@ export async function handleRestRequest(request: Request, slug: string[], engine
   const keyRefusal = await gateApiKeyRequest(engine, request, slug)
   if (keyRefusal) return keyRefusal
 
+  // Required-but-not-enrolled users may only reach the enrolment-safe routes (see twoFactorEnforcement.ts).
+  const twoFactorRefusal = await gateTwoFactorEnforcement(engine, request, slug)
+  if (twoFactorRefusal) return twoFactorRefusal
+
   try {
     if (slug[0] === 'globals') {
       const globalSlug = slug[1]
@@ -1841,6 +1931,7 @@ export async function handleRestRequest(request: Request, slug: string[], engine
       if (isAuthCollection && method === 'POST' && AUTH_ROUTE_NAMES.has(seg) && seg !== 'me') {
         if (seg === 'login') return await handleLogin(engine, collectionSlug, request)
         if (seg === 'login-2fa') return await handleLoginSecondFactor(engine, collectionSlug, request)
+        if (seg === 'login-2fa-email') return await handleSecondFactorEmail(engine, collectionSlug, request)
         if (seg === 'logout') return await handleLogout(engine, collectionSlug, request)
         if (seg === 'refresh-token') return await handleRefreshToken(engine, collectionSlug, request)
         if (seg === 'forgot-password') return await handleForgotPassword(engine, collectionSlug, request)

@@ -1,8 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-import { createMyApiKey, revokeApiKeyAction, type ApiKeyView } from '../actions'
+import { apiKeyScopeChoicesAction, createMyApiKey, revokeApiKeyAction, type ApiKeyView } from '../actions'
+import { buildScopes, type ScopeMode } from '../scopePicker'
+import type { ScopeCollection } from '../core'
+import './apiKeysScopes.css'
 
 /**
  * The API keys list and the create form, for the customer profile and the admin screen.
@@ -25,8 +28,9 @@ const status = (k: ApiKeyView): string => {
 export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean; canCreate?: boolean }> = ({ initial, showOwner = false, canCreate = true }) => {
   const [keys, setKeys] = useState<ApiKeyView[]>(initial)
   const [name, setName] = useState('')
-  const [read, setRead] = useState(true)
-  const [write, setWrite] = useState(false)
+  const [mode, setMode] = useState<ScopeMode>('read-all')
+  const [collections, setCollections] = useState<ScopeCollection[]>([])
+  const [picked, setPicked] = useState<Record<string, { read: boolean; write: boolean }>>({})
   const [expiry, setExpiry] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
@@ -34,8 +38,21 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
   const [notice, setNotice] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
+  useEffect(() => {
+    let cancelled = false
+    apiKeyScopeChoicesAction()
+      .then((list) => {
+        if (!cancelled) setCollections(list)
+      })
+      .catch((): undefined => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const scopes = buildScopes(mode, picked)
+
   const create = async () => {
-    const scopes = [read ? 'read' : null, write ? 'write' : null].filter((s): s is string => Boolean(s))
     setBusy(true)
     setNotice(null)
     const result = await createMyApiKey({ name, scopes, expiresInDays: expiry, password, code })
@@ -101,14 +118,54 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
             Name
             <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
           </label>
-          <fieldset>
+          <fieldset className="api-scopes">
             <legend>Scopes</legend>
-            <label>
-              <input type="checkbox" checked={read} onChange={(e) => setRead(e.target.checked)} /> Read
-            </label>{' '}
-            <label>
-              <input type="checkbox" checked={write} onChange={(e) => setWrite(e.target.checked)} /> Write (create and update)
+            <label className="api-scopes__mode">
+              <input type="radio" name="scope-mode" checked={mode === 'read-all'} onChange={() => setMode('read-all')} /> Read everything (<code>*:read</code>)
             </label>
+            <label className="api-scopes__mode">
+              <input type="radio" name="scope-mode" checked={mode === 'all'} onChange={() => setMode('all')} /> Read and write everything (<code>*</code>)
+            </label>
+            <label className="api-scopes__mode">
+              <input type="radio" name="scope-mode" checked={mode === 'custom'} onChange={() => setMode('custom')} /> Choose per collection
+            </label>
+            {mode === 'custom' && (
+              <table className="api-scopes__table">
+                <thead>
+                  <tr>
+                    <th>Collection</th>
+                    <th>Read</th>
+                    <th>Write</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {collections.map((c) => (
+                    <tr key={c.slug}>
+                      <td>
+                        {c.label} <code>{c.slug}</code>
+                      </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label={`${c.slug}:read`}
+                          checked={picked[c.slug]?.read ?? false}
+                          onChange={(e) => setPicked({ ...picked, [c.slug]: { read: e.target.checked, write: picked[c.slug]?.write ?? false } })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label={`${c.slug}:write`}
+                          checked={picked[c.slug]?.write ?? false}
+                          onChange={(e) => setPicked({ ...picked, [c.slug]: { read: picked[c.slug]?.read ?? false, write: e.target.checked } })}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <p className="api-scopes__summary">Scopes: {scopes.length === 0 ? 'none chosen' : scopes.join(', ')}. A key can never delete.</p>
           </fieldset>
           <label>
             Expires after (days, leave empty for the site maximum)
@@ -123,7 +180,7 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
             Or a six-digit code
             <input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
           </label>
-          <button type="submit" disabled={busy || (!read && !write)}>
+          <button type="submit" disabled={busy || scopes.length === 0}>
             Create key
           </button>
         </form>

@@ -14,6 +14,20 @@ vi.mock('@/features/accounts/emails', () => ({
   sendAlreadyRegisteredEmail: async () => ({ ok: true }),
 }))
 
+// The token table is exercised in auth-slice-2.int.spec.ts; here it is "not migrated", so the older per-user token path runs.
+vi.mock('@/features/security/emailVerificationStore', () => ({
+  storeVerificationToken: async (): Promise<never> => {
+    throw new Error('no table')
+  },
+  consumeVerificationToken: async (): Promise<never> => {
+    throw new Error('no table')
+  },
+  latestVerificationSentAt: async (): Promise<never> => {
+    throw new Error('no table')
+  },
+  voidVerificationTokens: async (): Promise<void> => undefined,
+}))
+
 import {
   completeVerification,
   hashVerifyToken,

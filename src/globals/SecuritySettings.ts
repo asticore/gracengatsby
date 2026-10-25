@@ -243,6 +243,30 @@ export const SecuritySettings: GlobalConfig = {
           'The longest a new key may run before it expires, from 1 to 3650 days. Set to 0 to forbid expiry dates: new keys then never expire until revoked.',
       },
     },
+    // Verified email for customer sign-in (src/features/accounts/auth.ts). Flat, like the fields above.
+    // Column names are the snake_case of these names, listed in src/migrations/20261121_100000_auth_slice_2.ts.
+    // Off by default; existing sites sign in exactly as before.
+    {
+      name: 'emailVerificationRequired',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Require a verified email to sign in',
+      admin: {
+        description:
+          'Customers who have not confirmed their email address cannot sign in until they do. Administrators and editors are never held back. Existing customers must be marked verified first (Users, Email verified) or they will be asked to confirm on their next sign-in. Off by default.',
+      },
+    },
+    {
+      name: 'emailVerificationCooldownSeconds',
+      type: 'number',
+      defaultValue: 60,
+      label: 'Gap between verification emails (seconds)',
+      min: 0,
+      max: 3600,
+      admin: {
+        description: 'The least time between two verification emails to the same account, so the resend button cannot be used to flood a mailbox. 0 turns the gap off.',
+      },
+    },
     // Admin "sign in as customer" (src/features/impersonation). Flat, like the fields above. Column
     // names are the snake_case of these names, listed in src/migrations/20261120_100000_impersonation.ts.
     // Off by default; with the feature off, no impersonation starts.

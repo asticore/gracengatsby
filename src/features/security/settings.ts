@@ -67,6 +67,8 @@ export type SecuritySettings = {
   impersonation: ImpersonationSettings
   /** Role-based two-step enforcement, email codes and trusted devices. All off by default. See twoFactorEnforcement.ts. */
   twoFactor: TwoFactorSettings
+  /** Verified email for customer sign-in. Off unless the owner switches it on. See src/features/accounts/auth.ts. */
+  emailVerification: EmailVerificationSettings
 }
 
 export type TwoFactorSettings = {
@@ -87,6 +89,18 @@ export const DEFAULT_TWO_FACTOR_SETTINGS: TwoFactorSettings = {
   emailOtpEnabled: false,
   trustedDevicesEnabled: false,
   trustedDeviceDays: 30,
+}
+
+export type EmailVerificationSettings = {
+  /** Customers must confirm their address before they can sign in. */
+  requireToSignIn: boolean
+  /** Least gap, in seconds, between two verification emails to the same account. 0 turns the gap off. */
+  resendCooldownSeconds: number
+}
+
+export const DEFAULT_EMAIL_VERIFICATION_SETTINGS: EmailVerificationSettings = {
+  requireToSignIn: false,
+  resendCooldownSeconds: 60,
 }
 
 export type ImpersonationSettings = {
@@ -186,6 +200,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   apiKeys: DEFAULT_API_KEY_SETTINGS,
   twoFactor: DEFAULT_TWO_FACTOR_SETTINGS,
   impersonation: DEFAULT_IMPERSONATION_SETTINGS,
+  emailVerification: DEFAULT_EMAIL_VERIFICATION_SETTINGS,
 }
 
 export const SECURITY_FEATURE_KEY: FeatureKey = 'security'
@@ -286,6 +301,20 @@ export const impersonationFrom = (get: (column: string) => unknown): Impersonati
   }
 }
 
+/** Reads the two verification fields; `get` takes the column name. The cooldown is clamped to 0..3600. */
+export const emailVerificationFrom = (get: (column: string) => unknown): EmailVerificationSettings => {
+  const base = DEFAULT_EMAIL_VERIFICATION_SETTINGS
+  return {
+    requireToSignIn: asBool(get('email_verification_required'), base.requireToSignIn),
+    resendCooldownSeconds: asInt(get('email_verification_cooldown_seconds'), base.resendCooldownSeconds, 0, 3600),
+  }
+}
+
+const EMAIL_VERIFICATION_GLOBAL_KEYS: Record<string, string> = {
+  email_verification_required: 'emailVerificationRequired',
+  email_verification_cooldown_seconds: 'emailVerificationCooldownSeconds',
+}
+
 /** Maps each impersonation column to the global field the engine returns it under. */
 const IMPERSONATION_GLOBAL_KEYS: Record<string, string> = {
   impersonation_enabled: 'impersonationEnabled',
@@ -363,6 +392,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     apiKeys: apiKeysFrom((key) => row[key]),
     impersonation: impersonationFrom((key) => row[key]),
     twoFactor: twoFactorFrom((key) => row[key]),
+    emailVerification: emailVerificationFrom((key) => row[key]),
   }
 }
 
@@ -498,5 +528,6 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     apiKeys: apiKeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     impersonation: impersonationFrom((key) => (settings as Record<string, unknown>)[IMPERSONATION_GLOBAL_KEYS[key] ?? key]),
     twoFactor: twoFactorFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
+    emailVerification: emailVerificationFrom((key) => (settings as Record<string, unknown>)[EMAIL_VERIFICATION_GLOBAL_KEYS[key] ?? key]),
   }
 }

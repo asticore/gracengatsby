@@ -8,6 +8,7 @@ import { hashPassword, login, loginWithSecondFactor, LockedAuth, TwoFactorCodeEr
 import {
   assertTwoFactorSatisfied,
   backupCodesRemaining,
+  graceNoticeFor,
   base32Encode,
   confirmEnrolment,
   decryptSecret,
@@ -416,6 +417,44 @@ describe('enforcement settings', () => {
 
   it('never throws', () => {
     expect(() => assertTwoFactorSatisfied(null, settings({ requireTwoFactorForAdmins: true }))).not.toThrow()
+  })
+})
+
+describe('grace period notice', () => {
+  const DAY = 86_400_000
+  const NOW = Date.parse('2026-10-01T12:00:00Z')
+  const graceSettings = (days: number): SecuritySettings => ({
+    ...settings({ requireTwoFactorForAdmins: true }),
+    twoFactor: { ...DEFAULT_SECURITY_SETTINGS.twoFactor, graceEndsAt: new Date(NOW + days * DAY).toISOString() },
+  })
+  const admin = { id: 1, roles: ['admin'], twoFactorEnabled: false }
+  const customer = { id: 2, roles: ['customer'], twoFactorEnabled: false }
+
+  it('shows the days left, rounded up, for an unenrolled account inside the grace period', () => {
+    const status = twoFactorStatus(admin, graceSettings(3.5), { now: NOW })
+    expect(status.inGrace).toBe(true)
+    expect(status.graceDaysLeft).toBe(4)
+    expect(graceNoticeFor(status)).toEqual({ text: 'Two-factor required in 4 days', href: '/admin/security/two-factor' })
+  })
+
+  it('uses the singular for one day and the member enrolment page for customers', () => {
+    const status = twoFactorStatus(customer, { ...graceSettings(1), loginProtection: { ...DEFAULT_SECURITY_SETTINGS.loginProtection, requireTwoFactorForMembers: true } }, { now: NOW })
+    expect(graceNoticeFor(status)).toEqual({ text: 'Two-factor required in 1 day', href: '/account/profile' })
+  })
+
+  it('shows nothing once enrolled, after the grace period, when not covered, or with the feature off', () => {
+    expect(graceNoticeFor(twoFactorStatus({ ...admin, twoFactorEnabled: true }, graceSettings(3), { now: NOW }))).toBeNull()
+    expect(graceNoticeFor(twoFactorStatus(admin, graceSettings(-1), { now: NOW }))).toBeNull()
+    expect(graceNoticeFor(twoFactorStatus(customer, graceSettings(3), { now: NOW }))).toBeNull()
+    expect(graceNoticeFor(twoFactorStatus(admin, graceSettings(3), { now: NOW, env: { ENGAGE_DISABLE_2FA_ENFORCEMENT: '1' } }))).toBeNull()
+    expect(graceNoticeFor(twoFactorStatus(admin, { ...graceSettings(3), featureEnabled: false }, { now: NOW }))).toBeNull()
+  })
+
+  it('stops showing the notice once the grace period is over and the account is enforced', () => {
+    const status = twoFactorStatus(admin, graceSettings(-2), { now: NOW })
+    expect(status.inGrace).toBe(false)
+    expect(status.mustEnrol).toBe(true)
+    expect(graceNoticeFor(status)).toBeNull()
   })
 })
 

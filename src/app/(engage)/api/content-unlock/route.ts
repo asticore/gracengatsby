@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/cms/db/connect'
 import { getPasswordHash } from '@/cms/db/contentPasswords'
+import { hitShared, peekShared } from '@/features/security/rateLimit'
 import { verifyPassword, signUnlockToken, cookieName } from '@/features/visibility/password'
 
 export const dynamic = 'force-dynamic'
@@ -10,39 +11,23 @@ const UNLOCK_TOKEN_TTL = 7 * 24 * 60 * 60 // 7 days
 const BRUTE_FORCE_DELAY = 400 // ms
 const MAX_FAILURES = 10
 const FAILURE_WINDOW_MS = 10 * 60 * 1000
-const MAX_TRACKED = 5000
 
-// Best-effort, per-isolate (see security/rateLimit.ts for the caveat).
-const failures = new Map<string, { count: number; resetAt: number }>()
+// Counted in D1 (fixed window, shared by every isolate) with an in-memory fallback;
+// see security/rateLimit.ts hitShared.
+const WINDOW = { windowMs: FAILURE_WINDOW_MS }
 
 function failureKey(request: Request, collection: string, id: number): string {
   const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || 'unknown'
-  return `${ip}|${collection}|${id}`
+  return `content-unlock:${ip}|${collection}|${id}`
 }
 
-function isBlocked(key: string, now: number): boolean {
-  const entry = failures.get(key)
-  if (!entry) return false
-  if (entry.resetAt <= now) {
-    failures.delete(key)
-    return false
-  }
-  return entry.count >= MAX_FAILURES
+async function isBlocked(key: string): Promise<boolean> {
+  return (await peekShared(key, WINDOW)) >= MAX_FAILURES
 }
 
-function noteFailure(key: string, now: number): void {
-  const entry = failures.get(key)
-  if (entry && entry.resetAt > now) {
-    entry.count += 1
-    return
-  }
-  if (failures.size >= MAX_TRACKED) {
-    const oldest = failures.keys().next().value
-    if (oldest !== undefined) failures.delete(oldest)
-  }
-  failures.set(key, { count: 1, resetAt: now + FAILURE_WINDOW_MS })
+async function noteFailure(key: string): Promise<void> {
+  await hitShared(key, MAX_FAILURES, WINDOW)
 }
-
 
 /**
  * POST: Verify a password and set an unlock cookie.
@@ -88,7 +73,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const key = failureKey(request, collection, id)
-  if (isBlocked(key, Date.now())) {
+  if (await isBlocked(key)) {
     const limited = new URL(safeRedirect, request.url)
     limited.searchParams.set('pw', 'wrong')
     return NextResponse.redirect(limited.toString(), { status: 303 })
@@ -108,7 +93,7 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!isCorrect) {
       // Add brute-force friction
-      noteFailure(key, Date.now())
+      await noteFailure(key)
       await new Promise((resolve) => setTimeout(resolve, BRUTE_FORCE_DELAY))
 
       // Build error redirect

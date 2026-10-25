@@ -33,6 +33,7 @@ import { ThemeToggler } from '@/admin/ui/ThemeToggler'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { SessionWatch } from '@/admin/SessionWatch'
 import { THEME_SCRIPT } from '@/admin/context/themeScript'
+import { ImpersonationBanner } from '@/features/impersonation/components/ImpersonationBanner'
 
 export async function RootLayout({ children }: { children: ReactNode; config?: unknown; importMap?: unknown; serverFunction?: unknown }) {
   const context = await getAdminContext()
@@ -60,6 +61,8 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
                     <ThemeToggler />
                     <AdminNav i18n={context.i18n} engine={context.engine} permissions={context.permissions} visibleEntities={context.visibleEntities} user={context.user} />
                     <div className="admin-shell__main">
+                      {/* Shown on every admin page while signed in as a customer. Renders nothing otherwise. */}
+                      <ImpersonationBanner />
                       <main className="admin-shell__content">{children}</main>
                     </div>
                   </AdminShell>

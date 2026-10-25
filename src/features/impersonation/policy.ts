@@ -189,3 +189,19 @@ export const unverifiedClaims = (token: string | null | undefined): Record<strin
     return null
   }
 }
+
+/**
+ * Whether an impersonation row really describes the request's actor, so an
+ * audit line may name the admin behind it. Only an open, unexpired row for
+ * this exact customer counts. A forged or stale cookie matches no such row.
+ */
+export const auditTagFor = (
+  row: { adminId: number; targetUserId: number; endedAt: string | null; expiresAt: string } | null,
+  actorId: number | string,
+  now: number,
+): { actorId: number; impersonating: number } | null => {
+  if (!row || row.endedAt) return null
+  if (Date.parse(row.expiresAt) <= now) return null
+  if (Number(actorId) !== row.targetUserId) return null
+  return { actorId: row.adminId, impersonating: row.targetUserId }
+}

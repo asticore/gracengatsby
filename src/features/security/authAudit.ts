@@ -1,4 +1,4 @@
-import { audit, type AuditAction, type AuditEntry } from './auditLog'
+import { audit, impersonatorTag, type AuditAction, type AuditEntry } from './auditLog'
 import { getSecuritySettings } from './settings'
 
 /**
@@ -15,7 +15,7 @@ export type AuthEvent = Omit<AuditEntry, 'action' | 'ip' | 'userAgent'> & {
   action: AuditAction
 }
 
-export type AuthOrigin = { ip?: string | null; userAgent?: string | null }
+export type AuthOrigin = { ip?: string | null; userAgent?: string | null; cookie?: string | null }
 
 export async function recordAuthEvent(
   engine: unknown,
@@ -24,7 +24,9 @@ export async function recordAuthEvent(
 ): Promise<void> {
   try {
     const settings = await getSecuritySettings(engine as Parameters<typeof getSecuritySettings>[0])
-    await audit({ ip: origin.ip ?? null, userAgent: origin.userAgent ?? null, ...event }, settings)
+    // Tagged with the real admin when this request is an admin signed in as a customer.
+    const tag = await impersonatorTag(origin.cookie, event.actorId)
+    await audit({ ip: origin.ip ?? null, userAgent: origin.userAgent ?? null, ...event, ...(tag ?? {}) }, settings)
   } catch {
     // Recording must never be able to fail the request it describes.
   }
@@ -37,5 +39,7 @@ export function originFromHeaders(headers: Headers | null | undefined): AuthOrig
   return {
     ip: headers.get('cf-connecting-ip') || headers.get('x-real-ip') || forwarded,
     userAgent: headers.get('user-agent'),
+    // Only the impersonation tag reads this, and only when the request carries a cookie.
+    ...(headers.get('cookie') ? { cookie: headers.get('cookie') } : {}),
   }
 }

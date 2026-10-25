@@ -5,6 +5,9 @@ import { sanitizeFieldsForClient } from '@/admin/fields/shared'
 import { VISUAL_EDITOR_SURFACES } from '@/views/visualEditor/surfaces'
 import type { ReactNode } from 'react'
 import { EditForm } from './EditForm'
+import { SignInAsCustomerButton } from '@/features/impersonation/components/SignInAsCustomerButton'
+import { isCustomerRoles } from '@/features/impersonation/policy'
+import { getSecuritySettings } from '@/features/security/settings'
 import type { DocumentPanelInfo } from './DocumentPanel'
 import { EditTabs } from './EditTabs'
 import { bulkPermissions, isBulkCollection } from '@/features/editScreens/authors'
@@ -169,6 +172,13 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   })
   const resultsPanel = resultsTab?.allowed && id !== undefined ? resultsPanelFor(collectionSlug, id, docRecord) : null
 
+  // "Sign in as" on an admin's view of a customer account. Shown to admins only, with the feature on,
+  // for a customer that is not the admin themselves. The server repeats every one of these checks.
+  const signInAs =
+    collectionSlug === 'users' && id !== undefined && context.isAdmin && docRecord && isCustomerRoles(docRecord.roles) && Number(id) !== Number((context.user as { id?: unknown } | null)?.id)
+      ? await signInAsFor(context.engine, String(docRecord.email ?? ''))
+      : null
+
   const editForm = (
     <EditForm
       collectionSlug={collectionSlug}
@@ -193,6 +203,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
         <span>{id === undefined ? 'Create' : docTitle || `#${id}`}</span>
       </nav>
       <h1 className="doc-title">{id === undefined ? `Create ${label}` : docTitle || `Edit ${label}`}</h1>
+      {signInAs ? <SignInAsCustomerButton email={signInAs.email} maxMinutes={signInAs.maxMinutes} /> : null}
       {resultsTab ? (
         <EditTabs
           deniedReason={resultsTab.allowed ? undefined : resultsTab.deniedReason}
@@ -208,3 +219,11 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 }
 
 export default EditView
+
+/** The button's settings, or null when signing in as a customer is switched off or the customer has no email. */
+async function signInAsFor(engine: Parameters<typeof getSecuritySettings>[0], email: string): Promise<{ email: string; maxMinutes: number } | null> {
+  if (!email) return null
+  const settings = await getSecuritySettings(engine)
+  if (!settings.impersonation.enabled) return null
+  return { email, maxMinutes: settings.impersonation.maxMinutes }
+}

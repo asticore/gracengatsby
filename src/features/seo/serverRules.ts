@@ -39,7 +39,7 @@ export async function readServerRules(): Promise<ServerRules> {
   const now = Date.now()
   if (cached && now < cached.expiresAt) return cached.value
 
-  let value: ServerRules
+  let value: ServerRules = EMPTY_SERVER_RULES
   try {
     const db = await getD1()
     if (db) {

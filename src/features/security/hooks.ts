@@ -4,7 +4,7 @@ import type {
   GlobalAfterChangeHook,
 } from '@/engine'
 
-import { audit, auditContext, type AuditEntry } from './auditLog'
+import { audit, auditContext, impersonatorTag, type AuditEntry } from './auditLog'
 import { getSecuritySettings, invalidateSecuritySettingsCache } from './settings'
 import { assertTwoFactorSatisfied, type TwoFactorUser } from './twoFactor'
 
@@ -31,7 +31,7 @@ type ReqLike = {
 const engineOf = (req: ReqLike) => req?.engine as Parameters<typeof getSecuritySettings>[0]
 
 /** Requests inside the engine carry real headers; background jobs may not. */
-const contextOf = (req: ReqLike): Pick<AuditEntry, 'ip' | 'userAgent'> =>
+const contextOf = (req: ReqLike): Pick<AuditEntry, 'ip' | 'userAgent'> & { cookie?: string | null } =>
   req?.headers ? auditContext(new Request('https://engage.local', { headers: req.headers })) : {}
 
 async function write(req: ReqLike, entry: AuditEntry): Promise<void> {
@@ -40,12 +40,15 @@ async function write(req: ReqLike, entry: AuditEntry): Promise<void> {
     if (!engine) return
 
     const settings = await getSecuritySettings(engine)
+    // An admin signed in as a customer acts as the admin: the tag names the real actor.
+    const tag = await impersonatorTag(req?.headers?.get('cookie'), req?.user?.id)
     await audit(
       {
         ...entry,
         ...contextOf(req),
         actorId: req?.user?.id ?? null,
         actorEmail: req?.user?.email ?? null,
+        ...(tag ?? {}),
       },
       settings,
     )

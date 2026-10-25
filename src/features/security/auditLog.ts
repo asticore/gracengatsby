@@ -161,6 +161,13 @@ export type AuditEntry = {
   userAgent?: string | null
   /** Free text for the one detail that makes the entry worth reading later. */
   detail?: string | null
+  /**
+   * The customer whose account the request was acting on, when an admin made
+   * it while signed in as them. Set only by `impersonatorTag`, so `actorId`
+   * then names the real admin. Stored at the front of `detail` rather than in
+   * a column of its own, so the table needs no migration.
+   */
+  impersonating?: number | string | null
 }
 
 type D1Like = {
@@ -168,6 +175,32 @@ type D1Like = {
     bind: (...values: unknown[]) => { run: () => Promise<unknown>; all: () => Promise<{ results?: unknown[] }> }
     run: () => Promise<unknown>
     all: () => Promise<{ results?: unknown[] }>
+  }
+}
+
+/** Puts `impersonating: <id>` in front of the detail text, so the admin review screen shows it without a new column. */
+const withImpersonating = (entry: AuditEntry): string | null => {
+  if (entry.impersonating === null || entry.impersonating === undefined) return entry.detail ?? null
+  const tag = `impersonating: ${entry.impersonating}`
+  return entry.detail ? `${tag}; ${entry.detail}` : tag
+}
+
+/**
+ * When the request is an admin acting through "sign in as customer", the real
+ * admin and the customer. Null otherwise. The impersonation module is loaded
+ * on demand, so the request paths that never impersonate do not load its store.
+ * Never throws: an unreadable cookie or store means no tag, not a failed write.
+ */
+export async function impersonatorTag(
+  cookieHeader: string | null | undefined,
+  actorId: number | string | null | undefined,
+): Promise<Pick<AuditEntry, 'actorId' | 'actorEmail' | 'impersonating'> | null> {
+  if (!cookieHeader || actorId === null || actorId === undefined) return null
+  try {
+    const { impersonatorForAudit } = await import('@/features/impersonation/audit')
+    return await impersonatorForAudit(cookieHeader, actorId)
+  } catch {
+    return null
   }
 }
 
@@ -211,7 +244,7 @@ export async function recordAuditEvent(entry: AuditEntry, settings: SecuritySett
         clip(entry.documentId, 64),
         clip(entry.ip, 64),
         clip(entry.userAgent, 255),
-        clip(entry.detail, 1000),
+        clip(withImpersonating(entry), 1000),
         now,
         now,
       )
@@ -260,7 +293,7 @@ export async function audit(entry: AuditEntry, settings: SecuritySettings): Prom
 }
 
 /** Pulls the address and agent off a request, in the shape an entry wants. */
-export function auditContext(request: Request): Pick<AuditEntry, 'ip' | 'userAgent'> {
+export function auditContext(request: Request): Pick<AuditEntry, 'ip' | 'userAgent'> & { cookie?: string | null } {
   return {
     ip:
       request.headers.get('cf-connecting-ip') ||
@@ -268,5 +301,7 @@ export function auditContext(request: Request): Pick<AuditEntry, 'ip' | 'userAge
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       null,
     userAgent: request.headers.get('user-agent'),
+    // Read only to tag the entry with an impersonating admin; never stored as it is.
+    cookie: request.headers.get('cookie'),
   }
 }

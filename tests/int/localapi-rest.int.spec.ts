@@ -318,25 +318,25 @@ describe('localapi/rest - carts ?secret= threading', () => {
     const engine = makeMockEngine()
     const res = await handleRestRequest(req('GET', 'http://x/api/carts/1?secret=abc123'), ['carts', '1'], engine)
     expect(res!.status).toBe(200)
-    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc123' } } }))
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: expect.objectContaining({ query: { secret: 'abc123' } }) }))
   })
 
   it('PATCH /:id passes ?secret= through the same way', async () => {
     const engine = makeMockEngine()
     await handleRestRequest(req('PATCH', 'http://x/api/carts/1?secret=abc123', { items: [] }), ['carts', '1'], engine)
-    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc123' } } }))
+    expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: expect.objectContaining({ query: { secret: 'abc123' } }) }))
   })
 
   it('DELETE /:id passes ?secret= through the same way', async () => {
     const engine = makeMockEngine()
     await handleRestRequest(req('DELETE', 'http://x/api/carts/1?secret=abc123'), ['carts', '1'], engine)
-    expect(engine.delete).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc123' } } }))
+    expect(engine.delete).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: expect.objectContaining({ query: { secret: 'abc123' } }) }))
   })
 
   it('with no ?secret=, req.query.secret is undefined rather than a missing key', async () => {
     const engine = makeMockEngine()
     await handleRestRequest(req('GET', 'http://x/api/carts/1'), ['carts', '1'], engine)
-    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ req: { query: { secret: undefined } } }))
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ req: expect.objectContaining({ query: { secret: undefined } }) }))
   })
 })
 
@@ -354,7 +354,7 @@ describe('localapi/rest - cart item endpoints', () => {
     const body = await res!.json()
     expect(res!.status).toBe(200)
     expect(body).toEqual({ success: true, message: 'Item added to cart', cart: { id: 1, items: [{ id: 'x', product: 5, quantity: 2 }] } })
-    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: { query: { secret: 'abc' } } }))
+    expect(engine.findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, req: expect.objectContaining({ query: { secret: 'abc' } }) }))
     expect(engine.update).toHaveBeenCalledWith(expect.objectContaining({ collection: 'carts', id: 1, data: { items: [{ product: 5, quantity: 2 }] } }))
   })
 
@@ -838,7 +838,7 @@ describe('localapi/rest - auth endpoints', () => {
     expect(setCookie).toContain('engage-token=tok')
     expect(setCookie).toContain('HttpOnly=true')
     expect(setCookie).toContain('SameSite=Lax')
-    expect(engine.login).toHaveBeenCalledWith({ collection: 'users', data: { email: 'a@b.com', password: 'x' }, client: { userAgent: null, ip: null } })
+    expect(engine.login).toHaveBeenCalledWith({ collection: 'users', data: { email: 'a@b.com', password: 'x' }, client: { userAgent: null, ip: null, trustedDeviceToken: null } })
   })
 
   it('POST /users/login maps a thrown AuthenticationError to 401', async () => {

@@ -35,6 +35,7 @@ import {
   requestClient,
   requestAddress,
   setSessionCookie,
+  setTrustedDeviceCookie,
   siteOrigin,
   type AccountContext,
 } from './session'
@@ -131,7 +132,10 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
   if (!guard.allowed) return failed(tooManyAttempts(guard.retryAfterSeconds ?? 60))
 
   const origin = await requestClient()
-  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'), origin)
+  const result = await signInWithCode(context.engine, pendingToken, text(form, 'code'), origin, {
+    method: text(form, 'method') === 'email' ? 'email' : 'app',
+    trustDevice: text(form, 'trustDevice') === 'on',
+  })
   if (!result.ok || !result.token) {
     await recordAuthEvent(context.engine, {
       action: result.reason === 'locked' ? 'login.locked' : 'two-factor.failed',
@@ -144,6 +148,7 @@ export async function signInCodeAction(_state: ActionState, form: FormData): Pro
   await recordAuthEvent(context.engine, { action: 'two-factor.verified', actorId: result.userId ?? null }, origin)
   await recordAuthEvent(context.engine, { action: 'login.success', actorId: result.userId ?? null, detail: 'two-step' }, origin)
   await setSessionCookie(result.token)
+  if (result.trustedDevice) await setTrustedDeviceCookie(result.trustedDevice.token, result.trustedDevice.maxAgeSeconds)
   // A social sign-in parks its pending token here; it has done its job.
   ;(await cookies()).delete('eg_social_pending')
   redirect(safeNext(form.get('next')))

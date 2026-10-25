@@ -300,6 +300,53 @@ export const SecuritySettings: GlobalConfig = {
         description: 'On: an administrator without an authenticator app or a passkey cannot impersonate anyone. Recommended.',
       },
     },
+    // Two-step enforcement by role, email codes and trusted devices (src/features/security/twoFactorEnforcement.ts).
+    // Flat, like the fields above. Column names are the snake_case of these names, listed in
+    // src/migrations/20261122_100000_auth_slice_3.ts. All off by default.
+    {
+      name: 'twoFactorRequiredRoles',
+      type: 'text',
+      label: 'Require two-step sign-in for roles',
+      admin: {
+        description:
+          'Comma-separated role names: admin, editor, viewer, customer, or the slug of a custom role. People in these roles who have not set up two-step are sent to the setup screen and cannot use the site or API until they do. The last administrator is never locked out. Empty means nobody is required (the two checkboxes under Login protection still apply).',
+      },
+    },
+    {
+      name: 'twoFactorGraceEndsAt',
+      type: 'date',
+      label: 'Grace period ends',
+      admin: {
+        description: 'Until this date, people who must set up two-step are only reminded. Leave empty to enforce straight away.',
+      },
+    },
+    {
+      name: 'twoFactorEmailOtpEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow a code by email as the second step',
+      admin: {
+        description: 'Adds "Email me a code" to the two-step screens. The six-digit code lasts 10 minutes and allows five tries.',
+      },
+    },
+    {
+      name: 'trustedDevicesEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Allow "remember this device"',
+      admin: {
+        description: 'Lets a person skip the second step on a device they ticked "remember" on. Changing a password ends every remembered device.',
+      },
+    },
+    {
+      name: 'trustedDeviceDays',
+      type: 'number',
+      defaultValue: 30,
+      label: 'Remember a device for (days)',
+      min: 1,
+      max: 90,
+      admin: { description: 'Between 1 and 90 days.' },
+    },
     {
       type: 'group',
       name: 'loginProtection',

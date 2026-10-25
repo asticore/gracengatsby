@@ -94,10 +94,12 @@ export const auditGlobalAfterChange: GlobalAfterChangeHook = ({ doc, req, global
 /**
  * Records the sign-in and runs the two-factor check.
  *
- * Attach to the admin user collection as an `afterLogin` hook. The check does
- * not currently reject - see the enforcement note in twoFactor.ts - but it
- * writes the reason it would have, so the requirement being unmet is visible
- * in the log rather than silent.
+ * Attach to the admin user collection as an `afterLogin` hook. The hook itself
+ * never rejects (a hook that can fail a sign-in is a lockout). Enforcement lives
+ * where it cannot be skipped: the admin and account screens redirect to the setup
+ * screen, and the REST gate refuses the API until the user enrols - see
+ * twoFactorEnforcement.ts. This hook writes the reason into the log so a
+ * requirement that is unmet is visible rather than silent.
  */
 export const auditAfterLogin: CollectionAfterChangeHook = ({ doc, req, collection }) => {
   void (async () => {

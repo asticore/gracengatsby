@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import React, { useActionState } from 'react'
+import React, { useActionState, useState } from 'react'
 
 import {
   confirmLinkAction,
@@ -18,6 +18,7 @@ import {
 import { IDLE, VERIFY_FIRST_MESSAGE, type ActionState } from '../types'
 import { Note, SubmitButton } from './FormBits'
 import { PasskeySignInButton } from '@/features/passkeys/components/PasskeySignInButton'
+import { SecondFactorChoice, type SecondFactorMethod } from '@/features/security/components/SecondFactorChoice'
 
 /**
  * The four unauthenticated forms.
@@ -84,16 +85,24 @@ export const SignInForm: React.FC<{
 /** The second step: a code from the authenticator app, or a backup code. */
 export const CodeStep: React.FC<{ pendingToken: string; next: string }> = ({ pendingToken, next }) => {
   const [state, action] = useActionState<ActionState, FormData>(signInCodeAction, IDLE)
+  const [method, setMethod] = useState<SecondFactorMethod>('app')
+  const [trust, setTrust] = useState(false)
+  const token = state.pendingToken || pendingToken
 
   return (
     <form action={action} className="account-form">
-      <p>Enter the 6-digit code from your authenticator app. Lost your phone? Use one of your backup codes instead.</p>
+      <p>
+        {method === 'email'
+          ? 'Enter the 6-digit code we emailed you.'
+          : 'Enter the 6-digit code from your authenticator app. Lost your phone? Use one of your backup codes instead.'}
+      </p>
       <input type="hidden" name="next" value={next} />
-      <input type="hidden" name="pendingToken" value={state.pendingToken || pendingToken} />
+      <input type="hidden" name="pendingToken" value={token} />
       <label>
         Code
         <input name="code" type="text" inputMode="text" autoComplete="one-time-code" autoFocus required />
       </label>
+      <SecondFactorChoice pendingToken={token} method={method} onMethod={setMethod} trust={trust} onTrust={setTrust} />
       <Note state={state} />
       <SubmitButton>Continue</SubmitButton>
       <div className="account-link-row">

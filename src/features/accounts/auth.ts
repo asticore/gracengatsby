@@ -64,6 +64,8 @@ export type SignInResult = {
   /** True when the password was right and a two-step code is the next step. */
   needsTwoFactor?: boolean
   pendingToken?: string
+  /** Set after a second step with "remember this device" ticked: the cookie value to store. */
+  trustedDevice?: { token: string; maxAgeSeconds: number }
   /** Set on a refused password or code: `locked` when the account is in its lockout window. For the audit log only. */
   reason?: 'failed' | 'locked'
   /** The account a successful sign-in belongs to, for the audit log. */
@@ -291,20 +293,21 @@ export const signInWithCode = async (
   pendingToken: string,
   code: string,
   client?: SessionClient,
+  options: { method?: 'email' | 'app'; trustDevice?: boolean } = {},
 ): Promise<SignInResult> => {
   if (!pendingToken || !code.trim()) return { ok: false, message: CODE_FAILED }
 
   try {
     const result = await engine.loginSecondFactor({
       collection: USERS_SLUG,
-      data: { pendingToken, code: code.trim() },
-      client,
+      data: { pendingToken, code: code.trim(), method: options.method },
+      client: { ...client, trustDevice: options.trustDevice === true },
     })
     if (!result.token) return { ok: false, message: CODE_FAILED, reason: 'failed' }
 
     const blocked = await verificationBlock(engine, (result.user as { id: number | string }).id)
     if (blocked) return blocked
-    return { ok: true, token: result.token, userId: (result.user as { id: number | string }).id }
+    return { ok: true, token: result.token, userId: (result.user as { id: number | string }).id, trustedDevice: result.trustedDevice }
   } catch (error) {
     return { ok: false, message: CODE_FAILED, reason: isLockout(error) ? 'locked' : 'failed' }
   }

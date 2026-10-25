@@ -11,8 +11,43 @@ import { randomBytes, sha256, toBase64Url, utf8 } from '@/features/passkeys/enco
 
 export const KEY_PREFIX = 'egk_'
 export const DISPLAY_PREFIX_LENGTH = 8
-export const SCOPES = ['read', 'write'] as const
-export type ApiKeyScope = (typeof SCOPES)[number]
+/**
+ * Scopes. A scope is `collection:action` with `*` allowed in either place, or a bare `*`:
+ *   pages:read    read the pages collection          orders:write  create and update orders
+ *   *:read        read every collection              *             every collection, read and write
+ * The actions a key can have are read (GET/HEAD) and write (POST/PATCH). Deletion is not a scope:
+ * no key can delete, whatever it holds. Keys made before scopes were per collection hold the bare words
+ * `read` and `write`; they stay as stored and mean `*:read` and `*:write`.
+ */
+export const SCOPE_ACTIONS = ['read', 'write'] as const
+export type ScopeAction = (typeof SCOPE_ACTIONS)[number]
+/** The two legacy words, still accepted and still stored as written. */
+export const SCOPES = SCOPE_ACTIONS
+export type ApiKeyScope = string
+export const MAX_SCOPES_PER_KEY = 50
+
+const SCOPE_SHAPE = /^(\*|[a-z0-9][a-z0-9_-]{0,63}):(read|write|\*)$/
+
+/** A scope in its full `collection:action` form, or null when it is not a valid scope. Lower-cased. */
+export function normalizeScope(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const scope = raw.trim().toLowerCase()
+  if (scope === 'read') return '*:read'
+  if (scope === 'write') return '*:write'
+  if (scope === '*') return '*:*'
+  return SCOPE_SHAPE.test(scope) ? scope : null
+}
+
+/** True when any of the scopes covers `action` on `collection`. */
+export function scopesAllow(scopes: readonly string[], collection: string, action: ScopeAction): boolean {
+  const wanted = collection.toLowerCase()
+  return scopes.some((scope) => {
+    const full = normalizeScope(scope)
+    if (!full) return false
+    const [scopeCollection, scopeAction] = full.split(':')
+    return (scopeCollection === '*' || scopeCollection === wanted) && (scopeAction === '*' || scopeAction === action)
+  })
+}
 
 /** Requests per minute allowed for one key, counted in the `api-key` rate-limit bucket. */
 export const API_KEY_RATE_PER_MINUTE = 120
@@ -56,6 +91,7 @@ export function presentedApiKey(headers: HeadersLike): string | null {
   return header && header.startsWith(KEY_PREFIX) ? header : null
 }
 
+/** The stored scope list, keeping only valid entries (legacy `read`/`write` kept as written). */
 export function parseScopes(raw: string | readonly string[] | null | undefined): ApiKeyScope[] {
   let list: unknown = raw
   if (typeof raw === 'string') {
@@ -66,7 +102,14 @@ export function parseScopes(raw: string | readonly string[] | null | undefined):
     }
   }
   if (!Array.isArray(list)) return []
-  return SCOPES.filter((scope) => list.includes(scope))
+  const kept: string[] = []
+  for (const item of list) {
+    const full = normalizeScope(item)
+    if (!full) continue
+    const stored = typeof item === 'string' && (item === 'read' || item === 'write') ? item : full
+    if (!kept.includes(stored)) kept.push(stored)
+  }
+  return kept
 }
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -81,8 +124,14 @@ export function validateName(name: unknown): ValidationResult<string> {
 
 export function validateScopes(input: unknown): ValidationResult<ApiKeyScope[]> {
   if (!Array.isArray(input) || input.length === 0) return { ok: false, error: 'Choose at least one scope.' }
-  const picked = SCOPES.filter((scope) => input.includes(scope))
-  if (picked.length !== new Set(input).size) return { ok: false, error: 'Unknown scope. Choose read or write.' }
+  if (input.length > MAX_SCOPES_PER_KEY) return { ok: false, error: `A key can hold at most ${MAX_SCOPES_PER_KEY} scopes. Use * for everything.` }
+  const picked: string[] = []
+  for (const item of input) {
+    const full = normalizeScope(item)
+    if (!full) return { ok: false, error: 'Unknown scope. Use collection:action (for example pages:read or orders:write), or *.' }
+    const stored = item === 'read' || item === 'write' ? item : full
+    if (!picked.includes(stored)) picked.push(stored)
+  }
   return { ok: true, value: picked }
 }
 
@@ -108,6 +157,25 @@ export type RouteDecision = { ok: true } | { ok: false; status: 403; message: st
 
 /** Collections no key may touch at all. */
 const DENIED_COLLECTIONS = new Set(['users', 'api-keys', 'api_keys'])
+
+export type ScopeCollection = { slug: string; label: string }
+
+/** Whether a collection may appear in the scope picker: any collection a key could be let into. */
+export const isScopableCollection = (slug: string): boolean => !DENIED_COLLECTIONS.has(slug) && /^[a-z0-9][a-z0-9_-]{0,63}$/.test(slug)
+
+/** The collections a key can be scoped to, from the engine's config, sorted by label. */
+export function scopableCollections(collections: ReadonlyArray<{ slug?: unknown; labels?: { plural?: unknown } | null }>): ScopeCollection[] {
+  const seen = new Set<string>()
+  const out: ScopeCollection[] = []
+  for (const collection of collections) {
+    const slug = typeof collection.slug === 'string' ? collection.slug : ''
+    if (!slug || seen.has(slug) || !isScopableCollection(slug)) continue
+    seen.add(slug)
+    const plural = collection.labels?.plural
+    out.push({ slug, label: typeof plural === 'string' && plural ? plural : slug })
+  }
+  return out.sort((a, b) => a.label.localeCompare(b.label))
+}
 
 /**
  * Any path segment matching this is refused, wherever it sits. Covers the auth
@@ -135,11 +203,12 @@ export function decideRoute(scopes: readonly ApiKeyScope[], method: string, slug
   if (slug[0] === 'globals') return deny('API keys cannot read or change site settings.')
   if (DENIED_COLLECTIONS.has(slug[0])) return deny('API keys cannot use this collection.')
   if (slug.some((segment) => DENIED_SEGMENT.test(segment))) return deny('API keys cannot use this route.')
+  const collection = slug[0]
   if (verb === 'GET' || verb === 'HEAD') {
-    return scopes.includes('read') ? { ok: true } : deny('This API key does not have the read scope.')
+    return scopesAllow(scopes, collection, 'read') ? { ok: true } : deny(`This API key does not have the ${collection}:read scope.`)
   }
   if (verb === 'POST' || verb === 'PATCH') {
-    return scopes.includes('write') ? { ok: true } : deny('This API key does not have the write scope.')
+    return scopesAllow(scopes, collection, 'write') ? { ok: true } : deny(`This API key does not have the ${collection}:write scope.`)
   }
   if (verb === 'DELETE') return deny('API keys cannot delete. Deletion is not a key scope.')
   return deny('API keys cannot use this method.')

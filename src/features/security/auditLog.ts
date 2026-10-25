@@ -60,6 +60,18 @@ export type AuditAction =
   | 'impersonation.started'
   | 'impersonation.ended'
   | 'impersonation.refused'
+  | 'organization.created'
+  | 'organization.updated'
+  | 'organization.deleted'
+  | 'organization.member-removed'
+  | 'organization.member-left'
+  | 'organization.role-changed'
+  | 'organization.owner-transferred'
+  | 'organization.invite-sent'
+  | 'organization.invite-accepted'
+  | 'organization.invite-declined'
+  | 'organization.invite-canceled'
+  | 'organization.refused'
   | 'password.changed'
   | 'password.reset'
   | 'email.verified'
@@ -117,6 +129,18 @@ export const AUTH_AUDIT_ACTIONS: readonly AuditAction[] = [
   'impersonation.started',
   'impersonation.ended',
   'impersonation.refused',
+  'organization.created',
+  'organization.updated',
+  'organization.deleted',
+  'organization.member-removed',
+  'organization.member-left',
+  'organization.role-changed',
+  'organization.owner-transferred',
+  'organization.invite-sent',
+  'organization.invite-accepted',
+  'organization.invite-declined',
+  'organization.invite-canceled',
+  'organization.refused',
   'password-group.created',
   'password-group.rotated',
   'password-group.updated',

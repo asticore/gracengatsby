@@ -65,6 +65,8 @@ export type SecuritySettings = {
   apiKeys: ApiKeySettings
   /** Admin "sign in as customer". Off unless the owner switches it on. See src/features/impersonation. */
   impersonation: ImpersonationSettings
+  /** Customer organisations, members, teams and invitations. Off unless the owner switches it on. See src/features/organizations. */
+  organizations: OrganizationSettings
   /** Role-based two-step enforcement, email codes and trusted devices. All off by default. See twoFactorEnforcement.ts. */
   twoFactor: TwoFactorSettings
   /** Verified email for customer sign-in. Off unless the owner switches it on. See src/features/accounts/auth.ts. */
@@ -111,6 +113,20 @@ export type PasswordGroupSettings = {
 
 export const DEFAULT_PASSWORD_GROUP_SETTINGS: PasswordGroupSettings = {
   enabled: true,
+}
+
+export type OrganizationSettings = {
+  enabled: boolean
+  /** Most organisations one account may own. Clamped to 1..100. */
+  maxPerAccount: number
+  /** `anyone`: every signed-in account. `admins`: site administrators only. */
+  whoMayCreate: 'anyone' | 'admins'
+}
+
+export const DEFAULT_ORGANIZATION_SETTINGS: OrganizationSettings = {
+  enabled: false,
+  maxPerAccount: 5,
+  whoMayCreate: 'anyone',
 }
 
 export type ImpersonationSettings = {
@@ -210,6 +226,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   apiKeys: DEFAULT_API_KEY_SETTINGS,
   twoFactor: DEFAULT_TWO_FACTOR_SETTINGS,
   impersonation: DEFAULT_IMPERSONATION_SETTINGS,
+  organizations: DEFAULT_ORGANIZATION_SETTINGS,
   passwordGroups: DEFAULT_PASSWORD_GROUP_SETTINGS,
   emailVerification: DEFAULT_EMAIL_VERIFICATION_SETTINGS,
 }
@@ -312,6 +329,23 @@ export const impersonationFrom = (get: (column: string) => unknown): Impersonati
   }
 }
 
+/** Reads the three organisation fields. `get` takes the column name (`organizations_enabled`, ...). */
+export const organizationsFrom = (get: (column: string) => unknown): OrganizationSettings => {
+  const base = DEFAULT_ORGANIZATION_SETTINGS
+  return {
+    enabled: asBool(get('organizations_enabled'), base.enabled),
+    maxPerAccount: asInt(get('organizations_max_per_account'), base.maxPerAccount, 1, 100),
+    whoMayCreate: get('organizations_who_may_create') === 'admins' ? 'admins' : 'anyone',
+  }
+}
+
+/** Maps each organisation column to the global field the engine returns it under. */
+const ORGANIZATION_GLOBAL_KEYS: Record<string, string> = {
+  organizations_enabled: 'organizationsEnabled',
+  organizations_max_per_account: 'organizationsMaxPerAccount',
+  organizations_who_may_create: 'organizationsWhoMayCreate',
+}
+
 /** Reads the password group switch (`password_groups_enabled`). On unless explicitly turned off. */
 export const passwordGroupsFrom = (get: (column: string) => unknown): PasswordGroupSettings => ({
   enabled: asBool(get('password_groups_enabled'), DEFAULT_PASSWORD_GROUP_SETTINGS.enabled),
@@ -407,6 +441,7 @@ export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean):
     passkeys: passkeysFrom((key) => row[key]),
     apiKeys: apiKeysFrom((key) => row[key]),
     impersonation: impersonationFrom((key) => row[key]),
+    organizations: organizationsFrom((key) => row[key]),
     passwordGroups: passwordGroupsFrom((key) => row[key]),
     twoFactor: twoFactorFrom((key) => row[key]),
     emailVerification: emailVerificationFrom((key) => row[key]),
@@ -544,6 +579,7 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
     passkeys: passkeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     apiKeys: apiKeysFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     impersonation: impersonationFrom((key) => (settings as Record<string, unknown>)[IMPERSONATION_GLOBAL_KEYS[key] ?? key]),
+    organizations: organizationsFrom((key) => (settings as Record<string, unknown>)[ORGANIZATION_GLOBAL_KEYS[key] ?? key]),
     passwordGroups: passwordGroupsFrom((key) => (settings as Record<string, unknown>)[key === 'password_groups_enabled' ? 'passwordGroupsEnabled' : key]),
     twoFactor: twoFactorFrom((key) => (settings as Record<string, unknown>)[camel(key)]),
     emailVerification: emailVerificationFrom((key) => (settings as Record<string, unknown>)[EMAIL_VERIFICATION_GLOBAL_KEYS[key] ?? key]),

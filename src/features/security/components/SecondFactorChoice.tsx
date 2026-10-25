@@ -43,7 +43,7 @@ export const SecondFactorChoice: React.FC<Props> = ({ pendingToken, method, onMe
     }
   }, [])
 
-  const useEmail = async () => {
+  const sendEmailCode = async () => {
     setBusy(true)
     setNote('')
     try {
@@ -63,12 +63,12 @@ export const SecondFactorChoice: React.FC<Props> = ({ pendingToken, method, onMe
       {options.emailAvailable && (
         <div className="tf-methods">
           {method === 'app' ? (
-            <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => void useEmail()}>
+            <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => void sendEmailCode()}>
               Email me a code instead
             </button>
           ) : (
             <>
-              <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => void useEmail()}>
+              <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => void sendEmailCode()}>
                 Send a new code
               </button>
               <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => { onMethod('app'); setNote('') }}>

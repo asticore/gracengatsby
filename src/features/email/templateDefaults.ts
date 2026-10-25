@@ -14,6 +14,7 @@ export type EmailTemplateKey =
   | 'accountVerify'
   | 'accountMagicLink'
   | 'accountLoginCode'
+  | 'organizationInvite'
   | 'accountTwoFactorCode'
   | 'membershipRenewal'
   | 'approvalSubmitted'
@@ -65,6 +66,14 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplate> = 
     body: [
       'Your sign-in code is {{code}}. It works once, expires in {{minutes}} minutes, and stops working after five wrong tries.',
       'If you did not ask for this, ignore this email. Nobody can sign in without the code.',
+    ].join('\n\n'),
+  },
+  organizationInvite: {
+    subject: 'You are invited to join {{organization}}',
+    body: [
+      '{{inviter}} invited you to join {{organization}} as {{role}}.',
+      'Open this link to accept or decline. It expires in {{days}} days, and only works when you are signed in with this email address:\n{{link}}',
+      'If you were not expecting this, ignore this email. Nothing happens unless you accept.',
     ].join('\n\n'),
   },
   accountTwoFactorCode: {

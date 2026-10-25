@@ -100,6 +100,7 @@ import * as migration_20261120_100000_impersonation from './20261120_100000_impe
 import * as migration_20261121_100000_auth_slice_2 from './20261121_100000_auth_slice_2';
 import * as migration_20261122_100000_auth_slice_3 from './20261122_100000_auth_slice_3';
 import * as migration_20261123_100000_password_groups from './20261123_100000_password_groups';
+import * as migration_20261124_100000_organizations from './20261124_100000_organizations';
 
 export const migrations = [
   {
@@ -611,5 +612,10 @@ export const migrations = [
     up: migration_20261123_100000_password_groups.up,
     down: migration_20261123_100000_password_groups.down,
     name: '20261123_100000_password_groups',
+  },
+  {
+    up: migration_20261124_100000_organizations.up,
+    down: migration_20261124_100000_organizations.down,
+    name: '20261124_100000_organizations',
   },
 ];

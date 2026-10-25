@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useField } from '@/admin/context'
+import { OrganizationVisibilitySection } from './OrganizationVisibilitySection'
 
 import './visibility-access.css'
 
@@ -505,6 +506,7 @@ export const VisibilityPanel: React.FC<{
           )}
         </div>
       )}
+      <OrganizationVisibilitySection collectionSlug={collectionSlug} id={id} readOnly={readOnly} />
     </div>
   )
 }

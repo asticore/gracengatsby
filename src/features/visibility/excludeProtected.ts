@@ -27,6 +27,10 @@ export async function getProtectedIds(collection: ProtectedCollection, viewer?: 
     }
     ids.add(Number(row.doc_id))
   }
+  // Documents limited to an organisation's members are kept out of listings the same way. A throw here
+  // propagates so every caller fails closed.
+  const { listOrgRestrictedIdsLive } = await import('@/features/organizations/visibility')
+  for (const id of await listOrgRestrictedIdsLive(collection)) ids.add(id)
   return ids
 }
 

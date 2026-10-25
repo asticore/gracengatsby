@@ -300,6 +300,38 @@ export const SecuritySettings: GlobalConfig = {
         description: 'On: an administrator without an authenticator app or a passkey cannot impersonate anyone. Recommended.',
       },
     },
+    // Customer organisations (src/features/organizations). Flat, like the fields above. Column names are the
+    // snake_case of these names, listed in src/migrations/20261124_100000_organizations.ts. Off by default.
+    {
+      name: 'organizationsEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Let customers create and join organisations',
+      admin: {
+        description:
+          'Adds organisations, members with roles, teams and emailed invitations to the customer account area. Every change is recorded in the audit log. Off by default.',
+      },
+    },
+    {
+      name: 'organizationsMaxPerAccount',
+      type: 'number',
+      defaultValue: 5,
+      label: 'Most organisations one account may own',
+      min: 1,
+      max: 100,
+      admin: { description: 'Between 1 and 100. Joining someone else\'s organisation does not count.' },
+    },
+    {
+      name: 'organizationsWhoMayCreate',
+      type: 'select',
+      defaultValue: 'anyone',
+      label: 'Who may create an organisation',
+      options: [
+        { label: 'Any signed-in account', value: 'anyone' },
+        { label: 'Site administrators only', value: 'admins' },
+      ],
+      admin: { description: 'Administrators only: customers can still be invited into organisations an administrator creates.' },
+    },
     // Two-step enforcement by role, email codes and trusted devices (src/features/security/twoFactorEnforcement.ts).
     // Flat, like the fields above. Column names are the snake_case of these names, listed in
     // src/migrations/20261122_100000_auth_slice_3.ts. All off by default.

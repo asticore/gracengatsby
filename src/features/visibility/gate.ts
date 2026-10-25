@@ -83,6 +83,10 @@ async function evaluateGate(
   }
 
   try {
+    // "Visible to members of organisation X" (src/features/organizations/visibility.ts). Locked unless the visitor is a member; fails closed.
+    const { orgGateLocked } = await import('@/features/organizations/visibility')
+    if (await orgGateLocked(collection, id, readCookie('engage-token'))) return 'locked'
+
     const db = await getDb()
     const hash = await getPasswordHash(db, collection, id)
 
@@ -131,7 +135,12 @@ export async function getPasswordGateState({
   return evaluateGate(collection, id, (name) => cookies.get(name)?.value, viewerFromRequestContext)
 }
 
-export type GateOptions = { signIn: boolean; password: boolean }
+export type GateOptions = {
+  signIn: boolean
+  password: boolean
+  /** Set when "members of an organisation only" is what locks the document: no password can unlock it. */
+  org?: { name: string }
+}
 
 /**
  * What a locked visitor may be offered on the gate: signing in (accounts rule) and/or a password
@@ -139,6 +148,18 @@ export type GateOptions = { signIn: boolean; password: boolean }
  * document stays locked either way.
  */
 export async function getGateOptions({ collection, id }: { collection: string; id: number }): Promise<GateOptions> {
+  // The organisation restriction is checked before any password (see evaluateGate), so while it locks the
+  // visitor out a password form would be a dead end: offer sign-in only. Once they are a member, the
+  // normal options (a password, if one applies) take over.
+  try {
+    const { cookies } = await import('next/headers')
+    const token = (await cookies()).get('engage-token')?.value
+    const { orgGateInfo } = await import('@/features/organizations/visibility')
+    const org = await orgGateInfo(collection, id, token)
+    if (org) return { signIn: true, password: false, org }
+  } catch {
+    // fall through to the plain options; evaluateGate has already locked the document
+  }
   try {
     const db = await getDb()
     const hash = await getPasswordHash(db, collection, id)

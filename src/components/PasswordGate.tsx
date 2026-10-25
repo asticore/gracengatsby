@@ -24,18 +24,24 @@ export const PasswordGate = async ({
   id: number
   currentPath: string
   wrongPassword?: boolean
-  offer?: { signIn: boolean; password: boolean }
+  offer?: { signIn: boolean; password: boolean; org?: { name: string } }
 }): Promise<React.ReactElement> => {
   const options = offer ?? (await getGateOptions({ collection, id }))
-  const showPassword = options.password || !options.signIn
+  const orgName = options.org?.name
+  // An organisation-only page never offers a password form: no password can unlock it for a non-member.
+  const showPassword = !orgName && (options.password || !options.signIn)
   const signInHref = `/account/sign-in?redirect=${encodeURIComponent(currentPath)}`
 
   return (
     <div className="pw-gate__wrap">
       <div className="pw-gate__card">
-        <h1 className="pw-gate__title">{options.signIn ? 'Sign in to view this' : 'Password protected'}</h1>
+        <h1 className="pw-gate__title">
+          {orgName ? `Members of ${orgName} only` : options.signIn ? 'Sign in to view this' : 'Password protected'}
+        </h1>
         <p className="pw-gate__text">
-          {options.signIn && showPassword
+          {orgName
+            ? `This content is only for members of ${orgName}. Sign in with an account that belongs to it to continue.`
+            : options.signIn && showPassword
             ? 'Sign in with an account that has access, or enter the password.'
             : options.signIn
               ? 'This content is available to signed-in accounts with access. Sign in to continue.'

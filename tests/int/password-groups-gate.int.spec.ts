@@ -15,6 +15,7 @@ const m = vi.hoisted(() => ({
   resolveEntitlement: vi.fn(),
 }))
 
+vi.mock('@/features/organizations/visibility', () => ({ orgGateLocked: async () => false, orgGateInfo: async (): Promise<null> => null, listOrgRestrictedIdsLive: async () => new Set<number>() }))
 vi.mock('@/cms/db/connect', () => ({ getDb: m.getDb }))
 vi.mock('@/cms/db/contentPasswords', () => ({ getPasswordHash: m.getPasswordHash }))
 vi.mock('@/cms/db/passwordGroups', () => ({ getAccessRule: m.getAccessRule, getGroup: m.getGroup, consumeGroupUse: m.consumeGroupUse }))

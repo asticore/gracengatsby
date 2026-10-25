@@ -9,6 +9,7 @@ const { getPasswordHash } = vi.hoisted(() => ({
   getPasswordHash: vi.fn(),
 }))
 
+vi.mock('@/features/organizations/visibility', () => ({ orgGateLocked: async () => false, listOrgRestrictedIdsLive: async () => new Set<number>() }))
 vi.mock('@/cms/db/connect', () => ({ getDb }))
 vi.mock('@/cms/db/contentPasswords', () => ({ getPasswordHash }))
 // No shared group or accounts rule exists for these documents (src/cms/db/passwordGroups.ts has its own specs).

@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!event) return {}
 
   // When password protected and locked, use generic metadata and keep it out of the index.
-  const lockedMeta = await getPasswordGateState({ collection: 'events', id: event.id, cookies: await cookies() })
+  const lockedMeta = await getPasswordGateState({ collection: 'events', id: event.id, cookies: await cookies(), withAccount: true })
   if (lockedMeta === 'locked') {
     return { title: 'Password Protected', robots: { index: false, follow: false, googleBot: { index: false, follow: false } } }
   }
@@ -86,7 +86,7 @@ export default async function EventPage({
     notFound()
   }
 
-  const gateState = await getPasswordGateState({ collection: 'events', id: event.id, cookies: await cookies() })
+  const gateState = await getPasswordGateState({ collection: 'events', id: event.id, cookies: await cookies(), withAccount: true })
   if (gateState === 'locked') {
     return <PasswordGate collection="events" currentPath={`/events/${slug}`} id={event.id} wrongPassword={sp.pw === 'wrong'} />
   }

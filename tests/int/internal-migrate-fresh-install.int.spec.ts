@@ -1033,4 +1033,30 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_impersonations'").first()) as { n: number }
     expect(tableRows.n).toBe(1)
   })
+  it('creates eg_password_groups and the unlock columns on eg_content_passwords, empty by default', async () => {
+    const groupCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_password_groups`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(groupCols).toEqual(expect.arrayContaining(['id', 'name', 'hash', 'created_at', 'updated_at']))
+    const groupIndexes = ((await proxy.env.D1.prepare('PRAGMA index_list(`eg_password_groups`)').all()).results as { name: string }[]).map((i) => i.name)
+    expect(groupIndexes).toContain('eg_password_groups_name_idx')
+    const passwordCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_content_passwords`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(passwordCols).toEqual(expect.arrayContaining(['group_id', 'unlock_roles', 'unlock_tiers']))
+  })
+
+  it('password group migration is safe to run a second time and leaves existing rows alone', async () => {
+    const mod = await import('@/migrations/20261121_100000_password_groups')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare("INSERT INTO `eg_password_groups` (name, hash, created_at, updated_at) VALUES ('keep-group', 'keep-hash', '2026-01-01', '2026-01-01')").run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const passwordCols = ((await proxy.env.D1.prepare('PRAGMA table_info(`eg_content_passwords`)').all()).results as { name: string }[]).map((c) => c.name)
+    expect(passwordCols.filter((name) => name === 'group_id')).toHaveLength(1)
+    expect(passwordCols.filter((name) => name === 'unlock_roles')).toHaveLength(1)
+    const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_password_groups'").first()) as { n: number }
+    expect(tableRows.n).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_password_groups` WHERE name = 'keep-group'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_password_groups` WHERE name = 'keep-group'").run()
+  })
 })

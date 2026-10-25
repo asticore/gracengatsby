@@ -3,6 +3,16 @@
 import React, { useEffect, useState } from 'react'
 import { useField } from '@/admin/context'
 
+type AccessState = {
+  protected: boolean
+  groupId: number | null
+  unlockRoles: string[]
+  unlockTiers: number[]
+  groups: { id: number; name: string }[]
+  tiers: { id: number; name: string }[]
+  roles: string[]
+}
+
 export const VisibilityPanel: React.FC<{
   collectionSlug: string
   id?: number
@@ -23,6 +33,54 @@ export const VisibilityPanel: React.FC<{
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [access, setAccess] = useState<AccessState | null>(null)
+  const [accessMessage, setAccessMessage] = useState('')
+
+  // Shared group and member unlock settings. Only meaningful once the item is protected.
+  useEffect(() => {
+    if (!id || !isSupported || !hasPassword) return
+    let cancelled = false
+    fetch(`/api/admin-visibility-access?collection=${collectionSlug}&id=${id}`)
+      .then((response) => (response.ok ? (response.json() as Promise<AccessState>) : null))
+      .then((data) => {
+        if (!cancelled) setAccess(data)
+      })
+      .catch(() => {
+        if (!cancelled) setAccess(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id, collectionSlug, isSupported, hasPassword])
+
+  const mergeChange = (change: Partial<{ groupId: number | null; unlockRoles: string[]; unlockTiers: number[] }>) => ({
+    ...(change.groupId !== undefined ? { groupId: change.groupId } : {}),
+    ...(change.unlockRoles !== undefined ? { unlockRoles: change.unlockRoles } : {}),
+    ...(change.unlockTiers !== undefined ? { unlockTiers: change.unlockTiers } : {}),
+  })
+
+  const saveAccess = async (change: Partial<{ groupId: number | null; unlockRoles: string[]; unlockTiers: number[] }>) => {
+    if (!id || !access) return
+    setAccessMessage('')
+    try {
+      const response = await fetch('/api/admin-visibility-access', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection: collectionSlug, id, ...change }),
+      })
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string }
+        throw new Error(data.error || 'Could not save access settings')
+      }
+      setAccess({ ...access, ...mergeChange(change) })
+      setAccessMessage('Saved')
+      setTimeout(() => setAccessMessage(''), 2000)
+    } catch (error) {
+      setAccessMessage(error instanceof Error ? error.message : 'Could not save access settings')
+    }
+  }
+
+  const toggleInList = <T,>(list: T[], value: T): T[] => (list.includes(value) ? list.filter((item) => item !== value) : [...list, value])
 
   // Initialize visibility mode on mount or when id/membersOnly changes
   useEffect(() => {
@@ -283,6 +341,64 @@ export const VisibilityPanel: React.FC<{
                 </div>
               )}
             </>
+          )}
+
+          {hasPassword && access && (
+            <div style={{ marginBottom: '12px', padding: '10px 12px', border: '1px solid #ddd', borderRadius: '4px' }}>
+              <label className="doc-visibility__label" htmlFor="doc-visibility-group">
+                Shared password group
+              </label>
+              <select
+                id="doc-visibility-group"
+                className="doc-visibility__select"
+                disabled={readOnly}
+                value={access.groupId === null ? '' : String(access.groupId)}
+                onChange={(e) => {
+                  if (e.target.value === '') {
+                    setAccessMessage('To use the item’s own password again, set a new password above.')
+                    return
+                  }
+                  saveAccess({ groupId: Number(e.target.value) })
+                }}
+              >
+                <option value="">None (own password)</option>
+                {access.groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+              {access.groups.length === 0 && (
+                <div style={{ marginTop: '6px', fontSize: '0.85rem', color: '#666' }}>
+                  No shared groups yet. Create one under Shared passwords.
+                </div>
+              )}
+
+              <fieldset style={{ marginTop: '12px', border: 'none', padding: 0 }} disabled={readOnly}>
+                <legend className="doc-visibility__label">Also unlock without the password for signed-in</legend>
+                {access.roles.map((role) => (
+                  <label key={role} style={{ display: 'block', fontSize: '0.9rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={access.unlockRoles.includes(role)}
+                      onChange={() => saveAccess({ unlockRoles: toggleInList(access.unlockRoles, role) })}
+                    />{' '}
+                    Role: {role}
+                  </label>
+                ))}
+                {access.tiers.map((tier) => (
+                  <label key={tier.id} style={{ display: 'block', fontSize: '0.9rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={access.unlockTiers.includes(tier.id)}
+                      onChange={() => saveAccess({ unlockTiers: toggleInList(access.unlockTiers, tier.id) })}
+                    />{' '}
+                    Membership: {tier.name}
+                  </label>
+                ))}
+              </fieldset>
+              {accessMessage && <div style={{ marginTop: '6px', fontSize: '0.85rem' }}>{accessMessage}</div>}
+            </div>
           )}
 
           {passwordError && (

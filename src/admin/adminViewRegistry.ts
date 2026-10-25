@@ -43,6 +43,7 @@ import { AdsOverviewView, AdsReportView } from '@/features/ads/admin/AdsViews'
 import { OptionsView } from '@/features/customFields/admin/OptionsView'
 import { TwoFactorView } from '@/admin/views/TwoFactorView'
 import { SessionsView } from '@/admin/views/SessionsView'
+import { PasswordGroupsView } from '@/admin/views/PasswordGroupsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
@@ -231,6 +232,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: SessionsView,
     path: '/security/sessions',
     meta: { title: 'Signed-in devices', description: 'See where your account is signed in and sign out any device.' },
+  },
+  {
+    key: 'passwordGroups',
+    Component: PasswordGroupsView,
+    path: '/password-groups',
+    meta: { title: 'Shared passwords', description: 'One password that unlocks a group of protected items.' },
   },
   {
     key: 'passkeys',

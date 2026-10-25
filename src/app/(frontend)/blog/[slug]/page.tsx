@@ -55,6 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     collection: 'posts',
     id: post.id,
     cookies: cookieStore,
+    withAccount: true,
   })
 
   if (gateState === 'locked') {
@@ -104,6 +105,7 @@ export default async function BlogPostPage({
     collection: 'posts',
     id: post.id,
     cookies: cookieStore,
+    withAccount: true,
   })
 
   const currentPath = `/blog/${slug}`

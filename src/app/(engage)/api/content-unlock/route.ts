@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/cms/db/connect'
 import { getPasswordHash } from '@/cms/db/contentPasswords'
 import { verifyPassword, signUnlockToken, cookieName } from '@/features/visibility/password'
+import { getItemGroupId, groupMembers } from '@/cms/db/passwordGroups'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,39 @@ function noteFailure(key: string, now: number): void {
   failures.set(key, { count: 1, resetAt: now + FAILURE_WINDOW_MS })
 }
 
+
+/** The shared group an item belongs to, or null. Any lookup failure reads as no group. */
+async function readItemGroupId(db: Awaited<ReturnType<typeof getDb>>, collection: string, id: number): Promise<number | null> {
+  try {
+    return await getItemGroupId(db, collection, id)
+  } catch {
+    return null
+  }
+}
+
+async function readGroupMembers(
+  db: Awaited<ReturnType<typeof getDb>>,
+  groupId: number,
+): Promise<{ collection: string; docId: number }[]> {
+  try {
+    return await groupMembers(db, groupId)
+  } catch {
+    return []
+  }
+}
+
+/** Shared account rate limit on group-password attempts. Fails closed when the limiter is unavailable. */
+async function allowGroupAttempt(request: Request): Promise<boolean> {
+  try {
+    const { getEngine } = await import('@/lib/engine')
+    const { guardAttempt } = await import('@/features/accounts/rateLimit')
+    const address = request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || 'unknown'
+    const decision = await guardAttempt(await getEngine(), 'password-group', address)
+    return decision.allowed
+  } catch {
+    return false
+  }
+}
 
 /**
  * POST: Verify a password and set an unlock cookie.
@@ -103,6 +137,19 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.redirect(new URL(safeRedirect, request.url), { status: 303 })
     }
 
+    // A shared group password is guessed across every item it unlocks, so its attempts
+    // get the account rate-limit budget too. Lookup failure here means no group, and the
+    // item's effective hash is then unusable if its group has gone, so it stays locked.
+    const groupId = await readItemGroupId(db, collection, id)
+    if (groupId !== null) {
+      const allowed = await allowGroupAttempt(request)
+      if (!allowed) {
+        const limited = new URL(safeRedirect, request.url)
+        limited.searchParams.set('pw', 'wrong')
+        return NextResponse.redirect(limited.toString(), { status: 303 })
+      }
+    }
+
     // Verify password
     const isCorrect = await verifyPassword(password, storedHash)
 
@@ -144,6 +191,28 @@ export async function POST(request: Request): Promise<Response> {
       path: '/',
       maxAge: UNLOCK_TOKEN_TTL,
     })
+
+    // A group password opens every item in the group: one cookie each, same style and fingerprint.
+    if (groupId !== null) {
+      const members = await readGroupMembers(db, groupId)
+      for (const member of members) {
+        if (member.collection === collection && member.docId === id) continue
+        const memberToken = await signUnlockToken({
+          collection: member.collection,
+          id: member.docId,
+          ttlSeconds: UNLOCK_TOKEN_TTL,
+          fingerprint: storedHash.slice(-16),
+        })
+        if (!memberToken) continue
+        response.cookies.set(cookieName(member.collection, member.docId), memberToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: UNLOCK_TOKEN_TTL,
+        })
+      }
+    }
 
     return response
   } catch (error) {

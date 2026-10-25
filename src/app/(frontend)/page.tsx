@@ -28,6 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
       collection: 'pages',
       id: homepage.id,
       cookies: cookieStore,
+      withAccount: true,
     })
 
     if (gateState === 'locked') {
@@ -60,6 +61,7 @@ export default async function HomePage({
       collection: 'pages',
       id: homepage.id,
       cookies: cookieStore,
+      withAccount: true,
     })
 
     if (gateState === 'locked') {

@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     collection: 'pages',
     id: resolved.page.id,
     cookies: cookieStore,
+    withAccount: true,
   })
 
   if (gateState === 'locked') {
@@ -72,6 +73,7 @@ export default async function BuiltPage({
     collection: 'pages',
     id: page.id,
     cookies: cookieStore,
+    withAccount: true,
   })
 
   const currentPath = `/${slug.join('/')}`

@@ -22,6 +22,7 @@ import * as socialAccountsSchema from '@/cms/db/schema/socialAccounts'
 import * as loginTokensSchema from '@/cms/db/schema/loginTokens'
 import * as passkeysSchema from '@/cms/db/schema/passkeys'
 import * as apiKeysSchema from '@/cms/db/schema/apiKeys'
+import * as passwordGroupsSchema from '@/cms/db/schema/passwordGroups'
 import * as productSubscriptionsSchema from '@/cms/db/schema/productSubscriptions'
 import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
@@ -247,6 +248,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
       // Per-user API keys (hashed keys, scopes): a plain drizzle table in its own schema file
       for (const [exportName, exportValue] of Object.entries(apiKeysSchema)) {
+        drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Shared password groups and the per-item unlock columns on eg_content_passwords
+      for (const [exportName, exportValue] of Object.entries(passwordGroupsSchema)) {
         drizzleTables.push({ name: exportName, table: exportValue })
       }
 
@@ -711,5 +717,21 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_impersonations` WHERE id = 'keep-me-imp'").first()) as { n: number }
     expect(kept.n).toBe(1)
     await proxy.env.D1.prepare("DELETE FROM `eg_impersonations` WHERE id = 'keep-me-imp'").run()
+  })
+  it('password group migration is safe to run twice and leaves existing group rows alone', async () => {
+    const mod = await import('@/migrations/20261121_100000_password_groups')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare("INSERT INTO `eg_password_groups` (name, hash, created_at, updated_at) VALUES ('keep-group-cov', 'keep-hash', '2026-01-01', '2026-01-01')").run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_content_passwords', 'group_id')).toBe(1)
+    expect(await count('eg_content_passwords', 'unlock_tiers')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_password_groups` WHERE name = 'keep-group-cov'").first()) as { n: number }
+    expect(kept.n).toBe(1)
+    await proxy.env.D1.prepare("DELETE FROM `eg_password_groups` WHERE name = 'keep-group-cov'").run()
   })
 })

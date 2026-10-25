@@ -42,6 +42,15 @@ export type Enforcement = {
   reason?: string
 }
 
+const DAY_MS = 86_400_000
+
+/** Whole days left in a grace period, rounded up. Null when there is no grace period still running at `now`. */
+export const graceDaysLeft = (graceEndsAt: string | null | undefined, now: number = Date.now()): number | null => {
+  const endMs = graceEndsAt ? Date.parse(graceEndsAt) : NaN
+  if (!Number.isFinite(endMs) || endMs <= now) return null
+  return Math.ceil((endMs - now) / DAY_MS)
+}
+
 export const ENFORCEMENT_OVERRIDE_ENV = 'ENGAGE_DISABLE_2FA_ENFORCEMENT'
 
 export const enforcementDisabledByEnv = (env: Record<string, string | undefined> = process.env): boolean =>

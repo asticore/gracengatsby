@@ -11,7 +11,7 @@ import { sendLoginCodeEmail, sendMagicLinkEmail } from './emails'
  * actions.ts because that file may export only server actions.
  */
 
-export type PasswordlessClient = { ip: string | null; userAgent: string | null }
+export type PasswordlessClient = { ip: string | null; userAgent: string | null; trustedDeviceToken?: string | null }
 
 export const passwordlessDepsFor = async (engine: Engine, client: PasswordlessClient): Promise<PasswordlessDeps> => {
   const settings = await getSecuritySettings(engine as never).catch(() => DEFAULT_SECURITY_SETTINGS)
@@ -21,7 +21,7 @@ export const passwordlessDepsFor = async (engine: Engine, client: PasswordlessCl
     settings: settings.passwordless,
     verificationRequired: await verificationRequired(engine),
     mail: { magicLink: sendMagicLinkEmail, loginCode: sendLoginCodeEmail },
-    client: { userAgent: client.userAgent, ip: client.ip },
+    client: { userAgent: client.userAgent, ip: client.ip, trustedDeviceToken: client.trustedDeviceToken ?? null },
     audit: async (action, detail, userId) => {
       try {
         await audit(

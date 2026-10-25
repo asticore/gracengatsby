@@ -3,6 +3,7 @@ import { findUserAuthRowByID } from '@/cms/db/collections/users'
 import { guardAttempt } from '@/features/accounts/rateLimit'
 import { audit, auditContext, type AuditAction } from '@/features/security/auditLog'
 import { SESSION_COOKIE, loginProtectionAuth } from '@/features/security/loginProtection'
+import { trustedTokenFromCookieHeader } from '@/features/security/trustedDevices'
 import { getSecuritySettings } from '@/features/security/settings'
 import { getEngine } from '@/lib/engine'
 import { publicOrigin } from '@/features/google/origin'
@@ -102,7 +103,12 @@ export async function defaultRuntime(): Promise<SocialRuntime> {
       const result = await engine.loginAsUser({
         collection: 'users',
         id: userId,
-        client: { userAgent: request.headers.get('user-agent'), ip: addressOf(request) === 'unknown' ? null : addressOf(request) },
+        client: {
+          userAgent: request.headers.get('user-agent'),
+          ip: addressOf(request) === 'unknown' ? null : addressOf(request),
+          // A remembered device stands in for the second-step code; the engine still requires the account match.
+          trustedDeviceToken: trustedTokenFromCookieHeader(request.headers.get('cookie')),
+        },
       })
       return { token: result.token, pendingToken: result.pendingToken }
     },

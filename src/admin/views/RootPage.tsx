@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { CUSTOM_ADMIN_VIEWS } from '@/admin/adminViewRegistry'
 import { getAdminContext, hasAdminPanelAccess, getCollectionConfig, getGlobalConfig, type AdminContext } from '@/admin/auth'
@@ -10,7 +10,7 @@ import { EditView } from './EditView'
 import { GlobalEditView } from './GlobalEditView'
 import { LoginView } from './LoginView'
 import { VersionsView } from './VersionsView'
-import { assertTwoFactorSatisfied } from '@/features/security/twoFactor'
+import { assertTwoFactorSatisfied, graceNoticeFor, twoFactorStatus } from '@/features/security/twoFactor'
 import { passwordChangeIsDue } from '@/features/security/passwordCheck'
 import { getSecuritySettings } from '@/features/security/settings'
 
@@ -124,7 +124,40 @@ function buildViewProps(context: AdminContext, searchParams: Record<string, stri
   } as unknown as AdminViewServerProps
 }
 
-export async function RootPage({ params, searchParams }: Args) {
+/**
+ * "Two-factor required in N days" above the admin views, while this admin is inside the grace
+ * period and has not set two-step up. Nothing on the sign-in or setup screens.
+ */
+async function twoFactorGraceNotice(pathname: string): Promise<ReactNode> {
+  if (pathname === TWO_FACTOR_VIEW_PATH || pathname === '/login') return null
+  const context = await getAdminContext()
+  const user = context.user as { twoFactorEnabled?: boolean } | null
+  if (!user || user.twoFactorEnabled) return null
+  const settings = await getSecuritySettings(context.engine as never).catch((): null => null)
+  const notice = settings ? graceNoticeFor(twoFactorStatus(context.user as never, settings)) : null
+  if (!notice) return null
+  return (
+    <div role="status" style={{ padding: '8px 12px', margin: '0 0 12px', border: '1px solid currentColor', borderRadius: 4 }}>
+      <a href={notice.href}>{notice.text}</a>
+    </div>
+  )
+}
+
+export async function RootPage(args: Args) {
+  const page = await renderRootPage(args)
+  const { segments = [] } = await args.params
+  const notice = await twoFactorGraceNotice(`/${segments.join('/')}`)
+  return notice ? (
+    <>
+      {notice}
+      {page}
+    </>
+  ) : (
+    page
+  )
+}
+
+async function renderRootPage({ params, searchParams }: Args) {
   const { segments = [] } = await params
   const search = await searchParams
 

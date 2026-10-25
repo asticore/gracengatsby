@@ -23,7 +23,7 @@ import { viewOwnSessions, type SessionActor } from '@/features/security/userSess
 import { defaultUserSessionStore } from '@/features/security/userSessionStore'
 import { sessionIdFromToken } from '@/features/security/userSessions'
 import { currentSessionToken, requestClient } from '../session'
-import { assertTwoFactorSatisfied, backupCodesRemaining, isEnrolled } from '@/features/security/twoFactor'
+import { assertTwoFactorSatisfied, backupCodesRemaining, graceNoticeFor, isEnrolled, twoFactorStatus } from '@/features/security/twoFactor'
 import { defaultTwoFactorStore } from '@/features/security/twoFactorStore'
 import { getSecuritySettings } from '@/features/security/settings'
 import { passwordRulesOf } from '@/features/security/passwordCheck'
@@ -47,6 +47,12 @@ const statusLabel = (status?: string | null): string => (status && isOrderStatus
 
 const displayName = (name: string, email: string): string => name || email
 
+/** "Two-factor required in N days" while a customer is inside the grace period and not enrolled. Null otherwise. */
+const twoFactorGraceNoticeFor = async (engine: Parameters<typeof getSecuritySettings>[0], user: unknown) => {
+  const settings = await getSecuritySettings(engine as never).catch((): null => null)
+  return settings ? graceNoticeFor(twoFactorStatus(user as never, settings)) : null
+}
+
 export const AccountHomeScreen: React.FC = async () => {
   const { engine, user } = await requireCustomer('/account')
   const [preferences, orders, bookings] = await Promise.all([
@@ -56,9 +62,11 @@ export const AccountHomeScreen: React.FC = async () => {
   ])
 
   const email = typeof user.email === 'string' ? user.email : ''
+  const graceNotice = await twoFactorGraceNoticeFor(engine, user)
 
   return (
     <AccountShell title={`Hello, ${displayName(preferences.name, email)}`} current="/account">
+      {graceNotice && <p className="account-note"><a href={graceNotice.href}>{graceNotice.text}</a></p>}
       <section className="account-section">
         <h2>Recent orders</h2>
         {orders.length === 0 ? (
@@ -370,6 +378,7 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
     settings && assertTwoFactorSatisfied(user as never, settings).mustEnrol
       ? 'This site asks customers to set up two-step sign-in. Please do it below.'
       : ''
+  const graceNotice = await twoFactorGraceNoticeFor(engine, user)
 
   return (
     <AccountShell title="Your profile" current="/account/profile">
@@ -398,6 +407,7 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
         <h2>Security</h2>
         <h3>Two-step sign-in</h3>
         {securityNotice && <p className="account-note account-note--error">{securityNotice}</p>}
+        {graceNotice && <p className="account-note"><a href={graceNotice.href}>{graceNotice.text}</a></p>}
         <TwoFactorPanel enrolled={isEnrolled(secure)} backupCodesLeft={secure ? backupCodesRemaining(secure) : 0} />
         {passkeysOn && (
           <>

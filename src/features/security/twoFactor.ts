@@ -1,5 +1,5 @@
 import type { SecuritySettings } from './settings'
-import { evaluateEnforcement } from './twoFactorEnforcement'
+import { evaluateEnforcement, graceDaysLeft } from './twoFactorEnforcement'
 
 /**
  * Two-factor sign-in for admins and customers: secret handling, TOTP and
@@ -562,6 +562,10 @@ export type TwoFactorStatus = {
   /** Required, not enrolled, and still inside the grace period. */
   inGrace: boolean
   graceEndsAt: string | null
+  /** Whole days left in the grace period, or null when none is running. */
+  graceDaysLeft: number | null
+  /** Where an account that is required but not enrolled goes to set it up, in or out of grace. */
+  enrolLink?: string
   /** The REST API should refuse this user until they enrol. False for the last admin. */
   reject: boolean
   /** Where `mustEnrol` sends the user. */
@@ -592,10 +596,22 @@ export function twoFactorStatus(
     mustEnrol,
     inGrace: result.state === 'grace',
     graceEndsAt: result.graceEndsAt,
+    graceDaysLeft: result.state === 'grace' ? graceDaysLeft(result.graceEndsAt, options.now) : null,
+    enrolLink: result.required && !result.enrolled ? (usesAdminPanel(user) ? ADMIN_ENROL_PATH : MEMBER_ENROL_PATH) : undefined,
     reject: result.reject,
     enrolPath: mustEnrol ? (usesAdminPanel(user) ? ADMIN_ENROL_PATH : MEMBER_ENROL_PATH) : undefined,
     reason: result.state === 'enforced' || result.state === 'grace' ? result.reason : undefined,
   }
+}
+
+/**
+ * The in-page notice for a required, unenrolled account still inside its grace period:
+ * "Two-factor required in N days", linking to the setup screen. Null otherwise.
+ */
+export function graceNoticeFor(status: TwoFactorStatus): { text: string; href: string } | null {
+  if (!status.inGrace || status.graceDaysLeft === null || !status.enrolLink) return null
+  const days = status.graceDaysLeft
+  return { text: `Two-factor required in ${days} ${days === 1 ? 'day' : 'days'}`, href: status.enrolLink }
 }
 
 /**

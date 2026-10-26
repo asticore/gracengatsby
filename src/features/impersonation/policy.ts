@@ -205,3 +205,13 @@ export const auditTagFor = (
   if (Number(actorId) !== row.targetUserId) return null
   return { actorId: row.adminId, impersonating: row.targetUserId }
 }
+
+/**
+ * Whether a row on the Users list gets the "Sign in as" action. The same rules as the edit
+ * screen button: a customer with an email, never the admin's own account. The feature switch
+ * is checked by the list view, and the server action repeats every check.
+ */
+export const showSignInAsRow = (row: { id: unknown; roles: unknown; email: unknown }, admin: { id: unknown } | null | undefined): boolean => {
+  if (!row.email || !isCustomerRoles(row.roles)) return false
+  return Number(row.id) !== Number(admin?.id)
+}

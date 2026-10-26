@@ -15,6 +15,10 @@ import { readingTimeLabel } from '@/features/editScreens/readingTime'
 import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
+import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
+import { archivePageHref } from '@/lib/templateWidgets'
+import { setBlockContext } from '@/lib/blockContext'
+import { postArchiveItems } from '@/lib/blockContextFrom'
 import type { BlogSetting, Media, Post } from '@/engage-types'
 
 export const dynamic = 'force-dynamic'
@@ -25,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildMetadata({ title: settings?.archiveTitle || 'Journal', path: '/blog' })
 }
 
-export default async function BlogArchivePage() {
+export default async function BlogArchivePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const flags = await getFeatureFlags()
   if (!flags.blog) notFound()
 
@@ -41,7 +45,9 @@ export default async function BlogArchivePage() {
     depth: 1,
   })) as unknown as { docs: (Post & { sticky?: boolean | null; readingTime?: number | null })[] }
   const docs = await excludeProtected('posts', allDocs)
-  const posts = orderBlogPosts(docs).slice(0, settings?.postsPerPage || 9)
+  const paged = paginate(orderBlogPosts(docs), parsePage((await searchParams).page), settings?.postsPerPage || 9)
+  const posts = paged.items
+  setBlockContext({ path: '/blog', archive: { basePath: '/blog', page: paged.page, pages: paged.pages, items: postArchiveItems(posts) } })
 
   const layout = settings?.archiveLayout || 'grid'
 
@@ -115,5 +121,12 @@ export default async function BlogArchivePage() {
       )}
     </div>
   )
-  return renderWithTemplate({ kind: 'archive-blog', ctx: { path: '/blog' }, content: body })
+  const pager = paged.pages > 1 ? (
+    <nav className="mt-8 flex items-center justify-between" aria-label="Pagination">
+      {paged.page > 1 ? <Link href={archivePageHref('/blog', paged.page - 1)} rel="prev">Newer posts</Link> : <span />}
+      <span className="opacity-60">Page {paged.page} of {paged.pages}</span>
+      {paged.page < paged.pages ? <Link href={archivePageHref('/blog', paged.page + 1)} rel="next">Older posts</Link> : <span />}
+    </nav>
+  ) : null
+  return renderWithTemplate({ kind: 'archive-blog', ctx: { path: '/blog' }, content: <>{body}{pager}</> })
 }

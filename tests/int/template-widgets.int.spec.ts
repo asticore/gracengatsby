@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildBreadcrumbs, formatPostMeta } from '@/lib/templateWidgets'
+import { setBlockContext } from '@/lib/blockContext'
+import { ARCHIVE_PAGE_SIZE, paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
+import { ArchiveGridElement } from '@/components/blocks/elements/Wave63Server'
+import { WAVE63_ELEMENTS } from '@/lib/elements/wave63Defs'
+import { SITE_ELEMENT_TYPES } from '@/lib/elements/wave38Defs'
+import { archivePageHref, buildBreadcrumbs, formatPostMeta } from '@/lib/templateWidgets'
 
 describe('buildBreadcrumbs', () => {
   it('builds home plus segments with the title on the last', () => {
@@ -23,5 +28,30 @@ describe('formatPostMeta', () => {
   it('formats the date and skips missing data', () => {
     expect(formatPostMeta(post, { date: true, dateFormat: 'long' })[0]).toContain('2026')
     expect(formatPostMeta({}, { author: true, date: true, categories: true })).toEqual([])
+  })
+})
+
+describe('archive paging', () => {
+  it('leaves page 1 at the bare address and adds ?page= (or &page= after a query) from page 2', () => {
+    expect(archivePageHref('/blog', 1)).toBe('/blog')
+    expect(archivePageHref('/blog', 2)).toBe('/blog?page=2')
+    expect(archivePageHref('/shop?category=homeware', 3)).toBe('/shop?category=homeware&page=3')
+  })
+  it('clamps pages and reads a bad page as page 1', () => {
+    const items = Array.from({ length: ARCHIVE_PAGE_SIZE + 1 }, (_, i) => i)
+    expect(paginate(items, 2).items).toEqual([ARCHIVE_PAGE_SIZE])
+    expect(paginate(items, 99).page).toBe(2)
+    expect(parsePage('abc')).toBe(1)
+  })
+})
+
+describe('archive-grid widget', () => {
+  it('is registered as a server site element with a default', () => {
+    expect(WAVE63_ELEMENTS.some((e) => e.type === 'archive-grid')).toBe(true)
+    expect(SITE_ELEMENT_TYPES.has('archive-grid')).toBe(true)
+  })
+  it('renders nothing outside an archive', async () => {
+    setBlockContext({ path: '/blog/x' })
+    expect(await ArchiveGridElement({})).toBeNull()
   })
 })

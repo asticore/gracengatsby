@@ -12,6 +12,7 @@ import { blogSwitches, loadBlogSwitches } from '@/features/blog/switches'
 import { getEngine } from '@/lib/engine'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { setBlockContext } from '@/lib/blockContext'
+import { postArchiveItems } from '@/lib/blockContextFrom'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
 import type { BlogSetting, Media, Post } from '@/engage-types'
@@ -61,7 +62,7 @@ export default async function AuthorArchivePage({ params, searchParams }: Params
   const perPage = settings?.postsPerPage || ARCHIVE_PAGE_SIZE
   const paged = paginate(term.posts, parsePage((await searchParams).page), perPage)
   const path = `/blog/author/${term.slug}`
-  setBlockContext({ page: { title: term.name }, path })
+  setBlockContext({ page: { title: term.name }, path, archive: { basePath: path, page: paged.page, pages: paged.pages, items: postArchiveItems(paged.items) } })
 
   const body = (
     <div className="page-shell">

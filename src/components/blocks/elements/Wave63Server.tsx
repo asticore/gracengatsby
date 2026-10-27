@@ -2,8 +2,8 @@ import Link from 'next/link'
 import React from 'react'
 
 import { getBlockContext } from '@/lib/blockContext'
-import { formatTagPrice } from '@/lib/dynamicTags'
-import { buildBreadcrumbs, formatPostMeta } from '@/lib/templateWidgets'
+import { formatTagDate, formatTagPrice } from '@/lib/dynamicTags'
+import { archivePageHref, buildBreadcrumbs, formatPostMeta } from '@/lib/templateWidgets'
 
 /** Wave 63 template widgets. Async server components reading the per-request block context (public data only). */
 
@@ -76,6 +76,46 @@ export async function BreadcrumbsElement(props: P): Promise<React.ReactElement |
   )
 }
 
+export async function ArchiveGridElement(props: P): Promise<React.ReactElement | null> {
+  const archive = getBlockContext().archive
+  if (!archive || archive.items.length === 0) return null
+  const cols = ['2', '3', '4'].includes(str(props.columns)) ? str(props.columns) : '3'
+  const showImage = props.showImage !== false
+  const showExcerpt = props.showExcerpt !== false
+  const showDate = props.showDate !== false
+  return (
+    <div className="archive-grid">
+      <ul className="archive-grid__items" style={{ display: 'grid', gap: '1.5rem', listStyle: 'none', padding: 0, margin: 0, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        {archive.items.map((item) => {
+          const date = showDate && item.date ? formatTagDate(item.date, 'long') : ''
+          const price = item.price !== undefined && item.price !== null && item.price !== '' ? formatTagPrice(item.price) : ''
+          return (
+            <li key={item.href}>
+              <Link href={item.href} className="archive-grid__item block">
+                {showImage && item.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.image.url} alt={item.image.alt ?? ''} style={{ width: '100%', height: 'auto', objectFit: 'cover' }} />
+                ) : null}
+                <h2 style={{ fontSize: '1.1rem' }}>{item.title}</h2>
+                {showExcerpt && item.excerpt ? <p>{item.excerpt}</p> : null}
+                {price ? <p className="archive-grid__price">{price}</p> : null}
+                {date ? <time dateTime={String(item.date)} className="block text-[0.75rem] opacity-60">{date}</time> : null}
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+      {archive.pages > 1 ? (
+        <nav aria-label="Pagination" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
+          {archive.page > 1 ? <Link href={archivePageHref(archive.basePath, archive.page - 1)} rel="prev">Newer</Link> : <span />}
+          <span className="opacity-60">Page {archive.page} of {archive.pages}</span>
+          {archive.page < archive.pages ? <Link href={archivePageHref(archive.basePath, archive.page + 1)} rel="next">Older</Link> : <span />}
+        </nav>
+      ) : null}
+    </div>
+  )
+}
+
 export const WAVE63_COMPONENTS: Record<string, React.ComponentType<P>> = {
   'post-title': PostTitleElement as unknown as React.ComponentType<P>,
   'post-featured-image': PostFeaturedImageElement as unknown as React.ComponentType<P>,
@@ -83,4 +123,5 @@ export const WAVE63_COMPONENTS: Record<string, React.ComponentType<P>> = {
   'post-meta': PostMetaElement as unknown as React.ComponentType<P>,
   'product-price': ProductPriceElement as unknown as React.ComponentType<P>,
   'auto-breadcrumbs': BreadcrumbsElement as unknown as React.ComponentType<P>,
+  'archive-grid': ArchiveGridElement as unknown as React.ComponentType<P>,
 }

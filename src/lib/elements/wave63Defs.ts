@@ -45,6 +45,17 @@ export const WAVE63_ELEMENTS: ElementDef[] = [
     defaultProps: () => ({}),
   },
   {
+    type: 'archive-grid', label: 'Archive grid', icon: String.fromCodePoint(0x1f5c2), category: 'siteMeta',
+    description: 'The items of the archive being viewed (blog posts or products), in a grid with Newer and Older links when there is more than one page.',
+    fields: [
+      { name: 'columns', label: 'Columns', type: 'select', width: 'half', options: labelled([['2', '2'], ['3', '3'], ['4', '4']]) },
+      { name: 'showImage', label: 'Show the picture', type: 'checkbox' },
+      { name: 'showExcerpt', label: 'Show the excerpt', type: 'checkbox' },
+      { name: 'showDate', label: 'Show the date', type: 'checkbox' },
+    ],
+    defaultProps: () => ({ columns: '3', showImage: true, showExcerpt: true, showDate: true }),
+  },
+  {
     type: 'auto-breadcrumbs', label: 'Auto breadcrumbs', icon: String.fromCodePoint(0x1f9ed), category: 'siteMeta',
     description: 'Home > section > current page trail, built from the page address.',
     fields: [{ name: 'homeLabel', label: 'Home label', type: 'text', width: 'half' }],

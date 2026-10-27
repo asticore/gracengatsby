@@ -42,3 +42,9 @@ export function formatPostMeta(
   }
   return parts
 }
+
+/** Address of one page of an archive. Page 1 has no query, so it renders the same address as before paging existed. */
+export function archivePageHref(basePath: string, page: number): string {
+  if (page <= 1) return basePath
+  return `${basePath}${basePath.includes('?') ? '&' : '?'}page=${page}`
+}

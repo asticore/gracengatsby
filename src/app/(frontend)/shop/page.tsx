@@ -15,6 +15,10 @@ import { buildPageJsonLd } from '@/features/seo/pageSchema'
 import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
+import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
+import { archivePageHref } from '@/lib/templateWidgets'
+import { setBlockContext } from '@/lib/blockContext'
+import { productArchiveItems } from '@/lib/blockContextFrom'
 import type { Product, ShopSetting } from '@/engage-types'
 
 export async function generateMetadata() {
@@ -52,7 +56,11 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     }),
   ])) as unknown as [ShopSetting | null, { docs: Product[] }]
   const open = await excludeProtected('products', scanned)
-  const products = open.filter((product) => matchesAttributeFilters(product as never, filters)).slice(0, 100)
+  const matching = open.filter((product) => matchesAttributeFilters(product as never, filters))
+  const paged = paginate(matching, parsePage(params.page), 100)
+  const products = paged.items
+  const archiveBase = category ? `/shop?category=${encodeURIComponent(category)}` : '/shop'
+  const pageHref = (n: number) => archivePageHref(archiveBase, n)
   const filterOptions = availableFilterOptions(open as never[])
 
   const layout = settings?.archiveLayout || 'grid-4'
@@ -138,7 +146,15 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           ))}
         </div>
       )}
+      {paged.pages > 1 && (
+        <nav className="mt-8 flex items-center justify-between" aria-label="Pagination">
+          {paged.page > 1 ? <Link href={pageHref(paged.page - 1)} rel="prev">Newer products</Link> : <span />}
+          <span className="opacity-60">Page {paged.page} of {paged.pages}</span>
+          {paged.page < paged.pages ? <Link href={pageHref(paged.page + 1)} rel="next">Older products</Link> : <span />}
+        </nav>
+      )}
     </div>
   )
+  setBlockContext({ path: '/shop', archive: { basePath: archiveBase, page: paged.page, pages: paged.pages, items: productArchiveItems(products) } })
   return renderWithTemplate({ kind: 'archive-shop', ctx: { path: '/shop', productCategory: category ?? null }, content: body })
 }

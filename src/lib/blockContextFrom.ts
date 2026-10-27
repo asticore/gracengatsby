@@ -1,4 +1,4 @@
-import type { BlockContext } from '@/lib/blockContext'
+import type { ArchiveItem, BlockContext } from '@/lib/blockContext'
 import { formatTagDate, formatTagPrice, resolveTags } from '@/lib/dynamicTags'
 import { buildBreadcrumbs } from '@/lib/templateWidgets'
 
@@ -120,4 +120,33 @@ export function previewTextFor(elementType: string, props: Record<string, unknow
     default:
       return null
   }
+}
+
+/** Archive cards for posts (public title, link, excerpt, date and featured image only). */
+export function postArchiveItems(posts: unknown[]): ArchiveItem[] {
+  return posts.map((raw) => {
+    const post = rec(raw)
+    const image = rec(post.featuredImage)
+    return {
+      title: str(post.title),
+      href: `/blog/${str(post.slug)}`,
+      excerpt: str(post.excerpt) || undefined,
+      date: post.publishedDate,
+      image: str(image.url) ? { url: str(image.url), alt: str(image.alt) } : undefined,
+    }
+  })
+}
+
+/** Archive cards for products (title, link, price and first image). */
+export function productArchiveItems(products: unknown[]): ArchiveItem[] {
+  return products.map((raw) => {
+    const product = rec(raw)
+    const image = firstImage(product.images)
+    return {
+      title: str(product.title),
+      href: `/shop/${str(product.slug)}`,
+      price: product.priceInAUD ?? undefined,
+      image: image && str(image.url) ? { url: str(image.url), alt: str(image.alt) } : undefined,
+    }
+  })
 }

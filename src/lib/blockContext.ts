@@ -9,7 +9,15 @@ export type BlockContext = {
   event?: { title?: unknown; date?: unknown; location?: unknown; summary?: unknown }
   /** URL path of the page being viewed, for breadcrumbs. */
   path?: string
+  /** The archive being viewed (blog, shop, category, tag, author): one page of public items for the archive-grid widget. */
+  archive?: ArchiveContext
 }
+
+/** One card in an archive grid. Public fields only. `href` is the item's own page. */
+export type ArchiveItem = { title: string; href: string; excerpt?: string; date?: unknown; price?: unknown; image?: { url: string; alt?: string } }
+
+/** `basePath` may carry a query (e.g. /shop?category=x); page links add `page` after it. */
+export type ArchiveContext = { basePath: string; page: number; pages: number; items: ArchiveItem[] }
 
 // React cache() gives one mutable holder per server request; outside a request it is a fresh object per call.
 const holder = cache((): { ctx: BlockContext } => ({ ctx: {} }))

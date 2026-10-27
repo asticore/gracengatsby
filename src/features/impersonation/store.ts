@@ -1,4 +1,4 @@
-import { resolveD1Binding } from '@/cms/db/connect'
+import { resolveD1Binding } from '@/cms/db/d1Binding'
 
 import type { ImpersonationRow, ImpersonationStore } from './service'
 

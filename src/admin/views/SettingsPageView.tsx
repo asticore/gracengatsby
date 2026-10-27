@@ -80,7 +80,7 @@ export async function SettingsPageView({ pageKey }: { pageKey: string }) {
     } else {
       const link = section as LinkSection
       if (link.type === 'collection') {
-        const slug = link.href.replace(/^\/collections\//, '')
+        const slug = link.href.split('/').pop() ?? ''
         if (!collectionExists(slug)) continue
       }
       visibleSections.push(link)

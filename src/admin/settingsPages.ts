@@ -1,3 +1,4 @@
+import { collectionRoute } from '@/admin/adminPaths'
 /**
  * Settings pages configuration for the refactored admin settings.
  *
@@ -79,7 +80,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     description: 'Search engine optimization and redirects.',
     sections: [
       { kind: 'global', slug: 'seo-settings' },
-      { kind: 'link', label: 'Redirects', href: '/collections/redirects', description: 'Create and manage URL redirects.', type: 'collection' },
+      { kind: 'link', label: 'Redirects', href: collectionRoute('redirects'), description: 'Create and manage URL redirects.', type: 'collection' },
     ],
   },
   {
@@ -147,7 +148,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
         description: 'Check the email connection, send test copies of each email and check the sending domain.',
         type: 'view',
       },
-      { kind: 'link', label: 'Email log', href: '/collections/email-log', description: 'Every email the site has sent, with a resend button.', type: 'collection' },
+      { kind: 'link', label: 'Email log', href: collectionRoute('email-log'), description: 'Every email the site has sent, with a resend button.', type: 'collection' },
     ],
   },
   {
@@ -189,9 +190,9 @@ export const SETTINGS_PAGES: SettingsPage[] = [
       { kind: 'link', label: 'Database', href: '/database', description: 'Per-feature table usage and cleanup.', type: 'view' },
       { kind: 'link', label: 'Site health', href: '/site-health', description: 'Storage, scheduled job health, versions and warnings.', type: 'view' },
       { kind: 'link', label: 'Scheduled tasks', href: '/scheduled-tasks', description: 'Every timed job, its last result and what is waiting to go live.', type: 'view' },
-      { kind: 'link', label: 'Users', href: '/collections/users', description: 'Manage admin user accounts.', type: 'collection' },
-      { kind: 'link', label: 'Audit log', href: '/collections/audit-log', description: 'View a record of all admin changes.', type: 'collection' },
-      { kind: 'link', label: 'Error log', href: '/collections/error-log', description: 'Errors the site ran into, with repeats counted once.', type: 'collection' },
+      { kind: 'link', label: 'Users', href: collectionRoute('users'), description: 'Manage admin user accounts.', type: 'collection' },
+      { kind: 'link', label: 'Audit log', href: collectionRoute('audit-log'), description: 'View a record of all admin changes.', type: 'collection' },
+      { kind: 'link', label: 'Error log', href: collectionRoute('error-log'), description: 'Errors the site ran into, with repeats counted once.', type: 'collection' },
       { kind: 'link', label: 'Roles', href: '/roles', description: 'Manage role permissions with a matrix grid.', type: 'view' },
       { kind: 'link', label: 'Export and import', href: '/settings-transfer', description: 'Export settings, content and users, or import them from another site.', type: 'view' },
       { kind: 'link', label: 'Find and replace', href: '/find-replace', description: 'Change a word or phrase across pages, posts, products and events. Preview first.', type: 'view' },

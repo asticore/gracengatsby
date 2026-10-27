@@ -17,8 +17,8 @@
 export type NavEntityRef = {
   slug: string
   /**
-   * 'collections' links to /admin/content/<slug> (content collections, see
-   * `@/admin/adminPaths`) or /admin/collections/<slug> (all others), 'globals' to
+   * 'collections' links to /admin/<group>/<slug>, the group being the lower-case
+   * name of the entry's group here (see `@/admin/adminPaths`), 'globals' to
    * /admin/globals/<slug>, and 'view' to a custom screen at /admin/<href> -
    * the translations table and the database tool are screens rather than
    * documents, so they have no collection to hang off.

@@ -71,7 +71,7 @@ export const CarrierTestPanel: React.FC = () => (
       </div>
     ))}
     <p>
-      <Link href="/admin/collections/shipping-zones">Shipping zones and rates</Link> are the fall-back when a carrier cannot quote. <Link href="/admin/collections/shipping-manifests">Manifests</Link> are listed here too.
+      <Link href="/admin/shop/shipping-zones">Shipping zones and rates</Link> are the fall-back when a carrier cannot quote. <Link href="/admin/shop/shipping-manifests">Manifests</Link> are listed here too.
     </p>
   </div>
 )

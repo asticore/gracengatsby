@@ -69,7 +69,7 @@ export async function ABResultsOverview({ engine, user }: { engine: Engine; user
               row.goals.length === 0 ? (
                 <tr key={row.id}>
                   <td className="et-clip">
-                    <Link href={`/admin/collections/ab-tests/${row.id}#results`}>{row.test.name}</Link>
+                    <Link href={`/admin/content/ab-tests/${row.id}#results`}>{row.test.name}</Link>
                   </td>
                   <td><span className="lst-pill">{row.status}</span></td>
                   <td colSpan={5} className="et-muted">No goals yet, so nothing is measured.</td>
@@ -78,7 +78,7 @@ export async function ABResultsOverview({ engine, user }: { engine: Engine; user
                 row.goals.map((goal, index) => (
                   <tr key={`${row.id}:${goal.goal}:${index}`}>
                     <td className="et-clip">
-                      {index === 0 ? <Link href={`/admin/collections/ab-tests/${row.id}#results`}>{row.test.name}</Link> : null}
+                      {index === 0 ? <Link href={`/admin/content/ab-tests/${row.id}#results`}>{row.test.name}</Link> : null}
                     </td>
                     <td>{index === 0 ? <span className="lst-pill">{row.status}</span> : null}</td>
                     <td className="et-clip">{goal.goal}</td>

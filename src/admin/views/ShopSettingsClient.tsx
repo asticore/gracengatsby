@@ -199,8 +199,8 @@ export const ShopSettingsClient: React.FC<Props> = ({ shopDoc, shopFields, payme
               <div className="shop-settings__links">
                 <p>Shipping zones, rates and classes are managed in the Shop menu.</p>
                 <ul>
-                  <li><Link href="/admin/collections/shipping-zones">Shipping zones and rates</Link></li>
-                  <li><Link href="/admin/collections/shipping-classes">Shipping classes</Link></li>
+                  <li><Link href="/admin/shop/shipping-zones">Shipping zones and rates</Link></li>
+                  <li><Link href="/admin/shop/shipping-classes">Shipping classes</Link></li>
                 </ul>
               </div>
               {shippingDoc && shippingFields ? (

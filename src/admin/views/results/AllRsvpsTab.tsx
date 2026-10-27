@@ -71,7 +71,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                     <td className="et-clip">{row.ticketTier || '-'}</td>
                     <td className="et-nowrap">{formatWhen(row.createdAt)}</td>
                     <td className="et-nowrap">
-                      <Link href={`/admin/collections/event-rsvps/${row.id}`}>Open</Link>
+                      <Link href={`/admin/other/event-rsvps/${row.id}`}>Open</Link>
                     </td>
                   </tr>
                 ))}

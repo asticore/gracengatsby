@@ -38,7 +38,7 @@ describe('buildAuditRow', () => {
   it('falls back to the name field for products and events', () => {
     const row = buildAuditRow({ id: 9, name: 'Trail shoe', slug: 'trail-shoe' }, 'products')
     expect(row.title).toBe('Trail shoe')
-    expect(row.editHref).toBe(`/admin/content/products/9`)
+    expect(row.editHref).toBe(`/admin/shop/products/9`)
   })
 
   it('treats a non-object seo group as empty', () => {

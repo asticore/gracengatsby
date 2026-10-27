@@ -25,7 +25,7 @@ export function sectionTabHref(pathname: string, tab: Pick<ListSectionTabInfo, '
  * The tab bar at the top of the Forms, Events and A/B tests list pages: a real
  * ARIA tablist. The selected tab is `?tab=<key>` (the server renders the
  * matching panel), and `#<key>` in the address bar is honoured too, so a link
- * such as /admin/collections/forms#submissions opens the right tab.
+ * such as /admin/content/forms#submissions opens the right tab.
  *
  * Arrow keys, Home and End move between tabs (the tab activates as it gets
  * focus). A tab the user may not open is still shown, marked unavailable and

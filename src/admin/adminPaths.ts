@@ -1,51 +1,52 @@
+import { FALLBACK_GROUP_LABEL, NAV_STRUCTURE } from '@/components/admin/nav/navStructure'
+
 /**
- * Admin URLs for collections. Content collections live under
- * /admin/content/<slug>; every other collection stays under
- * /admin/collections/<slug>. The old /admin/collections/<content-slug> URLs
- * answer with a permanent (308) redirect, see legacyCollectionRedirect.
+ * Admin URLs for collections. A collection lives under the admin menu group it
+ * sits in (NAV_STRUCTURE), named in lower case: /admin/content/pages,
+ * /admin/shop/orders, /admin/other/users. Collections in no group use `other`.
+ * The old /admin/collections/<slug> prefix is gone; those URLs answer with a
+ * permanent (308) redirect, see legacyCollectionRedirect.
  *
  * Pure module: safe to import from server, client and middleware code.
  */
 
-export const CONTENT_COLLECTION_SLUGS = [
-  'pages',
-  'posts',
-  'products',
-  'events',
-  'media',
-  'faqs',
-  'page-templates',
-  'site-templates',
-  'reusable-sections',
-  'courses',
-  'lessons',
-] as const
+const GROUP_BY_SLUG: ReadonlyMap<string, string> = new Map(
+  NAV_STRUCTURE.flatMap((group) =>
+    group.entities.filter((entity) => entity.type === 'collections').map((entity) => [entity.slug, group.label.toLowerCase()] as const),
+  ),
+)
 
-export type ContentCollectionSlug = (typeof CONTENT_COLLECTION_SLUGS)[number]
-
-const CONTENT_SET: ReadonlySet<string> = new Set<string>(CONTENT_COLLECTION_SLUGS)
-
-export function isContentCollection(slug: string): boolean {
-  return CONTENT_SET.has(slug)
+/** Lower-case menu group name for a collection; `other` when it sits in no group. */
+export function collectionGroup(slug: string): string {
+  return GROUP_BY_SLUG.get(slug) ?? FALLBACK_GROUP_LABEL.toLowerCase()
 }
 
-/** A collection's route below the admin root: `/content/posts` or `/collections/users`. For callers that pass it to formatAdminURL. */
+/** A collection's route below the admin root: `/content/pages`, `/other/users`. For callers that pass it to formatAdminURL. */
 export function collectionRoute(slug: string): string {
-  return `/${isContentCollection(slug) ? 'content' : 'collections'}/${slug}`
+  return `/${collectionGroup(slug)}/${slug}`
 }
 
-/** The admin URL of a collection's list screen: `/admin/content/posts` or `/admin/collections/users`. Append `/create`, `/<id>` etc. at the call site. */
+/** The admin URL of a collection's list screen: `/admin/content/pages`. Append `/create`, `/<id>` etc. at the call site. */
 export function adminCollectionPath(slug: string, base = '/admin'): string {
   return `${base}${collectionRoute(slug)}`
 }
 
 /**
- * For a request path under the old `/admin/collections/<content-slug>` form,
- * the new path (query string kept). Null for anything else, including every
- * non-content collection and every path already under /admin/content.
+ * True when the admin path segments name a collection: the first segment is the
+ * menu group the collection sits in. Views and globals never use a group name
+ * for their own path, so they are not matched here.
+ */
+export function isCollectionSegments(segments: readonly string[]): boolean {
+  return segments.length >= 2 && segments[0] === collectionGroup(segments[1])
+}
+
+/**
+ * For a request path under the old `/admin/collections/<slug>` form, the new
+ * path with the rest of the path and the query string kept. Null for anything
+ * else, including `/admin/collections` with no slug and every new-style path.
  */
 export function legacyCollectionRedirect(pathname: string, search = ''): string | null {
   const match = /^\/admin\/collections\/([^/]+)(\/.*)?$/.exec(pathname)
-  if (!match || !isContentCollection(match[1])) return null
-  return `/admin/content/${match[1]}${match[2] ?? ''}${search}`
+  if (!match) return null
+  return `${adminCollectionPath(match[1])}${match[2] ?? ''}${search}`
 }

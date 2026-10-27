@@ -57,7 +57,7 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
   // Extract current page ID from URL
   const currentPageId = typeof window !== 'undefined'
     ? (() => {
-        const match = window.location.pathname.match(/\/(?:content|collections)\/pages\/(\d+)/)
+        const match = window.location.pathname.match(/\/content\/pages\/(\d+)/)
         return match ? parseInt(match[1], 10) : null
       })()
     : null

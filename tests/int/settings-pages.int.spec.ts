@@ -80,7 +80,7 @@ describe('Settings Pages Configuration', () => {
       expect(linkHrefs).toContain('/settings/site#integrations')
       expect(linkHrefs).toContain('/email-designer')
       expect(linkHrefs).toContain('/email-testing')
-      expect(linkHrefs).toContain('/collections/email-log')
+      expect(linkHrefs).toContain('/other/email-log')
     })
 
     it('Speed page has correct sections', () => {

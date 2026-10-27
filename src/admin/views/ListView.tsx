@@ -28,6 +28,7 @@ import { EventsCalendarView } from '@/views/events/EventsCalendarView'
 import { PagesTreeView } from './PagesTreeView'
 import { breadcrumbTitle } from '@/features/pagesTree/breadcrumb'
 import { ListRowActions } from './ListRowActions'
+import { getSecuritySettings } from '@/features/security/settings'
 import { shouldShowRowActions } from '@/admin/list/quickEdit'
 import { PageSpeedBadge } from '@/features/pagespeed/ui/PageSpeedBadge'
 import { orderNameSearchBranches } from '@/features/ecommerce/server/orderSearch'
@@ -222,6 +223,12 @@ export async function ListView({
   const canCreate = context.permissions.collections?.[collectionSlug]?.create
   const canUpdate = context.permissions.collections?.[collectionSlug]?.update
   const showRowActions = shouldShowRowActions(collectionSlug, hasDrafts)
+  // "Sign in as" on customer rows of the Users list, for admins, when the feature is switched on.
+  const signInAsMaxMinutes =
+    collectionSlug === 'users' && context.isAdmin
+      ? await getSecuritySettings(context.engine).then((s) => (s.impersonation.enabled ? s.impersonation.maxMinutes : null))
+      : null
+  const showActionsCell = showRowActions || signInAsMaxMinutes !== null
   const label = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
 
   const bulkPerms = bulkCollection ? bulkPermissions(context as never, bulkCollection) : null
@@ -373,7 +380,7 @@ export async function ListView({
                         </a>
                       </th>
                     ))}
-                    {showRowActions && (
+                    {showActionsCell && (
                       <th key="actions" className="list-th">
                         Actions
                       </th>
@@ -455,14 +462,15 @@ export async function ListView({
                           </td>
                         )
                       })}
-                      {showRowActions && (
+                      {showActionsCell && (
                         <td key="actions" className="list-td">
                           <ListRowActions
                             collectionSlug={collectionSlug}
                             doc={doc as Record<string, unknown>}
                             hasDrafts={hasDrafts}
-                            canDuplicate={canCreate}
-                            canUpdate={canUpdate}
+                            canDuplicate={showRowActions && canCreate}
+                            canUpdate={showRowActions && canUpdate}
+                            signInAs={signInAsMaxMinutes !== null ? { maxMinutes: signInAsMaxMinutes, admin: { id: (context.user as { id?: unknown } | null)?.id } } : undefined}
                           />
                         </td>
                       )}

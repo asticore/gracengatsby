@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { buildQuickEditPatch, getDescendantIds, type QuickEditData } from '@/admin/list/quickEdit'
+import { SignInAsCustomerButton } from '@/features/impersonation/components/SignInAsCustomerButton'
+import { showSignInAsRow } from '@/features/impersonation/policy'
 
 interface ListRowActionsProps {
   collectionSlug: string
@@ -11,6 +13,8 @@ interface ListRowActionsProps {
   hasDrafts: boolean
   canDuplicate: boolean
   canUpdate: boolean
+  /** Set when the Users list may offer "Sign in as" (feature on, admin viewing). */
+  signInAs?: { maxMinutes: number; admin: { id: unknown } }
 }
 
 interface PageOption {
@@ -24,6 +28,7 @@ export function ListRowActions({
   hasDrafts,
   canDuplicate,
   canUpdate,
+  signInAs,
 }: ListRowActionsProps) {
   const router = useRouter()
   const [showQuickEdit, setShowQuickEdit] = useState(false)
@@ -154,6 +159,9 @@ export function ListRowActions({
           >
             {isDuplicating ? '...' : 'Duplicate'}
           </button>
+        )}
+        {signInAs && showSignInAsRow({ id: doc.id, roles: doc.roles, email: doc.email }, signInAs.admin) && (
+          <SignInAsCustomerButton email={String(doc.email)} maxMinutes={signInAs.maxMinutes} />
         )}
         {canUpdate && (
           <button

@@ -1,4 +1,5 @@
 'use client'
+import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { useEffect, useState, type FormEvent } from 'react'
 
@@ -55,7 +56,7 @@ function MediaCreatePanel() {
       <MediaUploader
         scope="inline"
         onUploaded={(docs) => {
-          window.location.assign(docs.length === 1 ? `/admin/collections/media/${docs[0].id}` : '/admin/collections/media')
+          window.location.assign(docs.length === 1 ? `/admin/content/media/${docs[0].id}` : adminCollectionPath('media'))
         }}
       />
     </section>

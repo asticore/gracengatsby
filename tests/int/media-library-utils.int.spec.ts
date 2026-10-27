@@ -84,7 +84,7 @@ describe('where-used scanning', () => {
   })
 
   it('builds the edit link for collections and globals', () => {
-    expect(editUrlFor({ kind: 'collection', slug: 'posts' }, 12, '/admin')).toBe('/admin/collections/posts/12')
+    expect(editUrlFor({ kind: 'collection', slug: 'posts' }, 12, '/admin')).toBe(`/admin/content/posts/12`)
     expect(editUrlFor({ kind: 'global', slug: 'site-settings' }, null, '/admin')).toBe('/admin/globals/site-settings')
   })
 

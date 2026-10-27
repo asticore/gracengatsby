@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
@@ -198,7 +199,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
       <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
         <Link href="/admin">Dashboard</Link>
         <span aria-hidden="true">/</span>
-        <Link href={`/admin/collections/${collectionSlug}`}>{pluralLabel}</Link>
+        <Link href={`${adminCollectionPath(collectionSlug)}`}>{pluralLabel}</Link>
         <span aria-hidden="true">/</span>
         <span>{id === undefined ? 'Create' : docTitle || `#${id}`}</span>
       </nav>

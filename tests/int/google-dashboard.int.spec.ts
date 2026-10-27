@@ -266,7 +266,7 @@ describe('PageSpeed summary', () => {
     expect(summary.tested).toBe(6)
     expect(summary.averagePerformance).toBe(63)
     expect(summary.worst.map((w) => w.performance)).toEqual([20, 40, 61, 70, 90])
-    expect(summary.worst[0].editHref).toBe('/admin/collections/pages/4')
+    expect(summary.worst[0].editHref).toBe(`/admin/content/pages/4`)
   })
 
   it('has no average when nothing is tested', () => {

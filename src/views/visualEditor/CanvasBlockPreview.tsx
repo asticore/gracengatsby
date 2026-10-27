@@ -111,7 +111,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
             </strong>
             <p>Shown from one shared section. Editing it changes every page that uses it.</p>
             {id && (
-              <a href={`/admin/collections/reusable-sections/${id}`} target="_blank" rel="noreferrer">
+              <a href={`/admin/content/reusable-sections/${id}`} target="_blank" rel="noreferrer">
                 Edit global
               </a>
             )}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ComponentType, ReactNode } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { CUSTOM_ADMIN_VIEWS } from '@/admin/adminViewRegistry'
+import { isContentCollection } from '@/admin/adminPaths'
 import { getAdminContext, hasAdminPanelAccess, getCollectionConfig, getGlobalConfig, type AdminContext } from '@/admin/auth'
 import { getEngine } from '@/lib/engine'
 import type { AdminViewServerProps } from '@/engine'
@@ -43,10 +44,11 @@ const TWO_FACTOR_VIEW_PATH = '/security/two-factor'
  *   - `/admin`                                -> dashboard
  *   - `/admin/login`                          -> LoginView (the only route
  *     reachable without an admin session)
- *   - `/admin/collections/:slug`              -> ListView
- *   - `/admin/collections/:slug/create`       -> EditView (blank)
- *   - `/admin/collections/:slug/:id`          -> EditView (seeded)
- *   - `/admin/collections/:slug/:id/versions` -> VersionsView
+ *   - `/admin/content/:slug` (content collections, see `@/admin/adminPaths`)
+ *     and `/admin/collections/:slug` (all others) -> ListView
+ *   - `.../:slug/create`                      -> EditView (blank)
+ *   - `.../:slug/:id`                         -> EditView (seeded)
+ *   - `.../:slug/:id/versions`                -> VersionsView
  *   - `/admin/globals/:slug`                  -> GlobalEditView
  *   - any `CUSTOM_ADMIN_VIEWS` path (translations/database/ab-test-results/
  *     visual-editor) -> that view's own registered `Component`
@@ -201,7 +203,10 @@ async function renderRootPage({ params, searchParams }: Args) {
     return <Component {...buildViewProps(context, search)} />
   }
 
-  if (segments[0] === 'collections') {
+  // `/admin/content/<slug>` serves content collections only; the old
+  // `/admin/collections/<content-slug>` URLs are redirected by middleware.
+  const isCollectionRoute = segments[0] === 'collections' || (segments[0] === 'content' && isContentCollection(segments[1] ?? ''))
+  if (isCollectionRoute) {
     const collectionSlug = segments[1]
     if (!collectionSlug) notFound()
     if (!getCollectionConfig(context.engine, collectionSlug)) notFound()
@@ -250,7 +255,7 @@ export async function generatePageMetadata({ params }: Args): Promise<Metadata> 
 
   if (segments[0] === 'login') return { title: 'Login - Admin' }
 
-  if (segments[0] === 'collections' && segments[1]) {
+  if ((segments[0] === 'collections' || (segments[0] === 'content' && isContentCollection(segments[1] ?? ''))) && segments[1]) {
     if (segments[3] === 'versions') return { title: 'Versions - Admin' }
 
     const engine = await getEngine()

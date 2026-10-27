@@ -1,4 +1,5 @@
 'use client'
+import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -128,7 +129,7 @@ export function VersionsList({
           setError(message)
           return
         }
-        router.push(`/admin/collections/${collectionSlug}/${id}`)
+        router.push(`${adminCollectionPath(collectionSlug)}/${id}`)
         router.refresh()
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Restore failed')

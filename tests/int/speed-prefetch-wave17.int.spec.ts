@@ -68,7 +68,7 @@ describe('hover prefetch: link eligibility', () => {
 
   it('refuses the admin, api, cart and checkout paths', () => {
     expect(ok('/admin')).toBe(false)
-    expect(ok('/admin/collections/pages')).toBe(false)
+    expect(ok('/admin/content/pages')).toBe(false)
     expect(ok('/api/forms/3/submit')).toBe(false)
     expect(ok('/cart')).toBe(false)
     expect(ok('/checkout/confirm')).toBe(false)

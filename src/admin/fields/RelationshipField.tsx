@@ -49,7 +49,7 @@ function relationTo(field: Field): string | undefined {
  * field key rather than silently matching nothing (see its own doc comment),
  * and the fetch here swallows a non-2xx into an empty result, so the search
  * box just silently never found anything on affected collections. Found live
- * via `/admin/collections/posts/create`'s `author` (relationTo: 'users')
+ * via `/admin/content/posts/create`'s `author` (relationTo: 'users')
  * field. Fixed by fetching one unfiltered page (`limit=100&depth=0`) per
  * collection and filtering client-side by `labelFor()`/id substring match -
  * no `where` clause is ever sent, so this can't hit that throw for any

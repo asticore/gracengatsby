@@ -165,7 +165,7 @@ describe('pending scheduled actions', () => {
     const titles = new Map([[titleKey('pages', 3), 'About us']])
     const actions = pendingActions(rows, titles)
     expect(actions.map((a) => `${a.action}:${a.collection}:${a.docId}`)).toEqual(['Publish:posts:8', 'Publish:pages:3', 'Unpublish:pages:3'])
-    expect(actions[1]).toMatchObject({ title: 'About us', href: '/admin/collections/pages/3' })
+    expect(actions[1]).toMatchObject({ title: 'About us', href: `/admin/content/pages/3` })
     expect(actions[0].title).toBeNull()
   })
 

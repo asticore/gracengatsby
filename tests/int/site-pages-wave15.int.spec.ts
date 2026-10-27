@@ -47,7 +47,7 @@ describe('maintenance rules', () => {
   })
 
   it('never covers admin, API (webhooks included), feeds, files or the bypass link', () => {
-    for (const path of ['/admin', '/admin/collections/pages', '/api/shop-stripe-webhook', '/feeds/google-merchant.xml', '/robots.txt', '/sitemap.xml', '/indexnow-key.txt']) {
+    for (const path of ['/admin', '/admin/content/pages', '/api/shop-stripe-webhook', '/feeds/google-merchant.xml', '/robots.txt', '/sitemap.xml', '/indexnow-key.txt']) {
       expect(isExcludedPath(path)).toBe(true)
       expect(shouldShowMaintenance({ ...base, path })).toBe(false)
     }

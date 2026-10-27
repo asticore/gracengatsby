@@ -63,7 +63,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                 {data.docs.map((row) => (
                   <tr key={row.id}>
                     <td className="et-clip">
-                      <Link href={`/admin/collections/events/${row.eventId}`}>{row.eventTitle}</Link>
+                      <Link href={`/admin/content/events/${row.eventId}`}>{row.eventTitle}</Link>
                     </td>
                     <td className="et-clip">{row.name}</td>
                     <td className="et-clip">{row.email}</td>

@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import { purgeCache } from '@/features/speed/purge'
 import {
   loadApprovalSettings,
@@ -495,7 +496,7 @@ export async function loadReviewQueue({
         title: titleOf(doc, id),
         requestedBy,
         requestedAt: typeof doc.reviewRequestedAt === 'string' ? doc.reviewRequestedAt : null,
-        href: `/admin/collections/${collection}/${id}`,
+        href: `${adminCollectionPath(collection)}/${id}`,
         ...(awaiting ? { awaiting } : {}),
       })
     }

@@ -1,4 +1,5 @@
 'use client'
+import { adminCollectionPath } from '@/admin/adminPaths'
 
 /**
  * Save/publish/duplicate/delete requests for the document edit screen.
@@ -87,7 +88,7 @@ export function useDocumentSave(target: SaveTarget) {
       if (target.collectionSlug && !target.id) {
         const newId = (body as { doc?: { id?: number } } | null)?.doc?.id
         if (newId !== undefined) {
-          router.push(`/admin/collections/${target.collectionSlug}/${newId}`)
+          router.push(`${adminCollectionPath(target.collectionSlug)}/${newId}`)
           return true
         }
       }
@@ -133,7 +134,7 @@ export function useDocumentSave(target: SaveTarget) {
       }
       const newId = (body as { doc?: { id?: number } } | null)?.doc?.id
       reportUpdate({ entitySlug, updatedAt: new Date().toISOString() })
-      router.push(newId !== undefined ? `/admin/collections/${target.collectionSlug}/${newId}` : `/admin/collections/${target.collectionSlug}`)
+      router.push(newId !== undefined ? `${adminCollectionPath(target.collectionSlug)}/${newId}` : `${adminCollectionPath(target.collectionSlug)}`)
     } catch {
       setError('Could not duplicate - check your connection and try again.')
     } finally {
@@ -154,7 +155,7 @@ export function useDocumentSave(target: SaveTarget) {
       }
       resetModified()
       reportUpdate({ entitySlug, updatedAt: new Date().toISOString() })
-      router.push(`/admin/collections/${target.collectionSlug}`)
+      router.push(`${adminCollectionPath(target.collectionSlug)}`)
       router.refresh()
     } catch {
       setError('Could not delete - check your connection and try again.')
@@ -183,7 +184,7 @@ export function useDocumentSave(target: SaveTarget) {
       }
       resetModified()
       reportUpdate({ entitySlug, updatedAt: new Date().toISOString() })
-      if (action === 'trash') router.push(`/admin/collections/${target.collectionSlug}`)
+      if (action === 'trash') router.push(`${adminCollectionPath(target.collectionSlug)}`)
       router.refresh()
     } catch {
       setError('Could not do that - check your connection and try again.')

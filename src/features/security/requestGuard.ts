@@ -8,6 +8,7 @@ import { isDirectoryListingRequest, isProbePath } from './probePaths'
 import { classifyRoute, clientKey, hit, hitShared, limitFor } from './rateLimit'
 import { readSecuritySettingsFromD1, type SecuritySettings } from './settings'
 import { resolveRedirect, recordRedirectHit } from '@/features/redirects'
+import { legacyCollectionRedirect } from '@/admin/adminPaths'
 import { readServerRules, type ServerRules } from '@/features/seo/serverRules'
 import { isBlockedPath } from '@/features/seo/siteFiles'
 import { readAdsCspAdditions } from '@/features/ads/d1'
@@ -196,6 +197,9 @@ export function normaliseRequestPath(pathname: string): string {
 export async function securityMiddleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   const settings = await readSecuritySettingsFromD1()
+  // Old /admin/collections/<content> URLs move to /admin/content (permanent, query kept).
+  const movedAdminPath = request.method === 'GET' || request.method === 'HEAD' ? legacyCollectionRedirect(pathname, request.nextUrl.search) : null
+  if (movedAdminPath) return applySecurityHeaders(NextResponse.redirect(new URL(movedAdminPath, request.url), 308), settings, pathname)
   // Fails open to no rules, so a settings read problem cannot take the site down.
   const rules = await readServerRules()
   // Ad hosts are added to the default CSP of public pages, and only while Ads is on.

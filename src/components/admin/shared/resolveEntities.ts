@@ -1,3 +1,4 @@
+import { collectionRoute } from '@/admin/adminPaths'
 import { cache } from 'react'
 import type { Engine, SanitizedCollectionConfig, SanitizedGlobalConfig } from '@/engine'
 import { formatAdminURL } from '@/engine/shared'
@@ -134,7 +135,7 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
     if (!permissions?.collections?.[collection.slug]?.read) continue
     if (!isCollectionEnabled(collection.slug, flags)) continue
 
-    const href = formatAdminURL({ adminRoute, path: `/collections/${collection.slug}` })
+    const href = formatAdminURL({ adminRoute, path: collectionRoute(collection.slug) })
 
     available.set(`collections:${collection.slug}`, {
       slug: collection.slug,

@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 /**
  * The scheduled publishes and unpublishes still waiting to run, as rows the
  * Scheduled tasks screen can show. Pure: the rows and titles are passed in.
@@ -33,7 +34,7 @@ export function pendingActions(rows: ScheduleRow[], titles: Map<string, string |
   for (const row of rows) {
     if (!allowed.has(row.collection)) continue
     const title = titles.get(titleKey(row.collection, row.doc_id)) ?? null
-    const href = `/admin/collections/${row.collection}/${row.doc_id}`
+    const href = `${adminCollectionPath(row.collection)}/${row.doc_id}`
     if (row.publish_at && !row.publish_done) {
       actions.push({ collection: row.collection, docId: row.doc_id, title, action: 'Publish', when: row.publish_at, href })
     }

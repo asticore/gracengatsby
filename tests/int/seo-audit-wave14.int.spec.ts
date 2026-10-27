@@ -17,7 +17,7 @@ describe('buildAuditRow', () => {
     expect(row.id).toBe(7)
     expect(row.title).toBe('Running shoes guide')
     expect(row.slug).toBe('running-shoes-guide')
-    expect(row.editHref).toBe('/admin/collections/pages/7')
+    expect(row.editHref).toBe(`/admin/content/pages/7`)
     expect(row.hasKeyphrase).toBe(true)
     expect(row.hasMetaDescription).toBe(false)
     expect(row.noIndex).toBe(true)
@@ -38,7 +38,7 @@ describe('buildAuditRow', () => {
   it('falls back to the name field for products and events', () => {
     const row = buildAuditRow({ id: 9, name: 'Trail shoe', slug: 'trail-shoe' }, 'products')
     expect(row.title).toBe('Trail shoe')
-    expect(row.editHref).toBe('/admin/collections/products/9')
+    expect(row.editHref).toBe(`/admin/content/products/9`)
   })
 
   it('treats a non-object seo group as empty', () => {
@@ -53,7 +53,7 @@ const rowOf = (over: Partial<AuditRow>): AuditRow => ({
   id: 1,
   title: 'A',
   slug: 'a',
-  editHref: '/admin/collections/pages/1',
+  editHref: `/admin/content/pages/1`,
   seoScore: 'good',
   readabilityScore: 'good',
   hasKeyphrase: true,

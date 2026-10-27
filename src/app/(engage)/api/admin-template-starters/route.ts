@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
-import { SITE_TEMPLATE_KINDS } from '@/collections/SiteTemplates'
+import { KIND_LABELS, SITE_TEMPLATE_KINDS } from '@/features/siteTemplates/kinds'
 import { getStarter, STARTERS } from '@/features/siteTemplates/starters'
 
 export const dynamic = 'force-dynamic'
@@ -19,22 +19,27 @@ export async function GET(): Promise<Response> {
   }
 }
 
-/** POST { starterId }: creates a draft (disabled) site template from the starter and returns its id. */
+/** POST { starterId } or { kind } (blank): creates a draft (disabled) site template and returns its id. */
 export async function POST(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
     if (!hasAdminPanelAccess(context.user)) return json({ error: 'Unauthorised' }, 401)
     if (!(context.isAdmin || context.can('site-templates', 'create'))) return json({ error: 'Forbidden' }, 403)
 
-    const body = (await request.json().catch((): null => null)) as { starterId?: unknown } | null
-    const starter = getStarter(body?.starterId)
-    if (!starter || !SITE_TEMPLATE_KINDS.includes(starter.kind)) return json({ error: 'Unknown starter.' }, 400)
+    const body = (await request.json().catch((): null => null)) as { starterId?: unknown; kind?: unknown } | null
+    let data: Record<string, unknown>
+    if (body?.starterId !== undefined) {
+      const starter = getStarter(body.starterId)
+      if (!starter || !SITE_TEMPLATE_KINDS.includes(starter.kind)) return json({ error: 'Unknown starter.' }, 400)
+      data = { name: `${starter.label} (draft)`, kind: starter.kind, enabled: false, conditions: [], blocks: starter.blocks() }
+    } else {
+      // Blank draft for a kind that has no starter yet. Same defaults as a starter: switched off, everywhere for its type.
+      const kind = SITE_TEMPLATE_KINDS.find((k) => k === body?.kind)
+      if (!kind) return json({ error: 'Unknown template type.' }, 400)
+      data = { name: `${KIND_LABELS[kind]} (draft)`, kind, enabled: false, conditions: [], blocks: [] }
+    }
 
-    const doc = await context.engine.create({
-      collection: 'site-templates',
-      data: { name: `${starter.label} (draft)`, kind: starter.kind, enabled: false, conditions: [], blocks: starter.blocks() },
-      overrideAccess: true,
-    } as never)
+    const doc = await context.engine.create({ collection: 'site-templates', data, overrideAccess: true } as never)
     const id = (doc as { id: number | string }).id
     return json({ ok: true, id, editorUrl: `/admin/visual-editor/collection/site-templates/${id}` })
   } catch (error) {

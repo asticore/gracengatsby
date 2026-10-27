@@ -4,39 +4,11 @@ import { roleAccess } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { locksField } from '../fields/locks'
 import { lockGuard } from '@/features/roles/lockGuard'
+import { KIND_LABELS, SITE_TEMPLATE_KINDS, type SiteTemplateKind } from '@/features/siteTemplates/kinds'
 
 /** Which part of the site a template draws. The resolver (src/features/siteTemplates) matches on this. */
-export const SITE_TEMPLATE_KINDS = [
-  'header',
-  'footer',
-  'single-post',
-  'single-product',
-  'single-event',
-  'archive-blog',
-  'archive-shop',
-  'not-found',
-  'search-results',
-  'archive-category',
-  'archive-tag',
-  'archive-author',
-] as const
-
-export type SiteTemplateKind = (typeof SITE_TEMPLATE_KINDS)[number]
-
-const KIND_LABELS: Record<SiteTemplateKind, string> = {
-  header: 'Header',
-  footer: 'Footer',
-  'single-post': 'Single post',
-  'single-product': 'Single product',
-  'single-event': 'Single event',
-  'archive-blog': 'Blog archive',
-  'archive-shop': 'Shop archive',
-  'not-found': '404 page',
-  'search-results': 'Search results',
-  'archive-category': 'Category archive',
-  'archive-tag': 'Tag archive',
-  'archive-author': 'Author archive',
-}
+export { SITE_TEMPLATE_KINDS, KIND_LABELS }
+export type { SiteTemplateKind }
 
 /**
  * Site templates: a header, footer or whole-page layout (single post, product, event, archives, 404) built from the same blocks as pages. Several can exist per kind; the enabled one whose
@@ -54,7 +26,7 @@ export const SiteTemplates: CollectionConfig = {
       'Reusable headers, footers and page layouts for posts, products, events, archives, and 404. Built from the same sections as pages.',
     components: {
       // Starters + Import on the list screen (rendered by admin/views/ListView.tsx above the table).
-      beforeList: ['@/features/siteTemplates/admin/StartersPanel#StartersPanel'],
+      beforeList: ['@/features/siteTemplates/admin/TemplatesDashboard#TemplatesDashboard', '@/features/siteTemplates/admin/StartersPanel#StartersPanel'],
       edit: {
         beforeDocumentControls: ['@/features/siteTemplates/admin/StartersPanel#StartersPanel', '@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton', '@/fields/locks/DocumentLockControl#DocumentLockControl'],
       },

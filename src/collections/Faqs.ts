@@ -3,13 +3,14 @@ import type { CollectionConfig } from '@/engine'
 import { roleAccess } from '../access/ecommerceAccess'
 import { customFieldsField } from '../fields/customFields'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
+import { outdatedAfterChange } from '@/features/multilingual/outdated'
 
 export const Faqs: CollectionConfig = {
   slug: 'faqs',
   dbName: 'eg_faqs',
   labels: { singular: 'FAQ', plural: 'FAQs' },
   hooks: {
-    afterChange: [machineAutoDraftAfterChange('faqs')],
+    afterChange: [machineAutoDraftAfterChange('faqs'), outdatedAfterChange('faqs')],
   },
   admin: {
     useAsTitle: 'question',

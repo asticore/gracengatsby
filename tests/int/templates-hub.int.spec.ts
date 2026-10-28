@@ -68,8 +68,10 @@ describe('templates hub rows', () => {
     })
     expect(byKey['site-templates:2'].previewHref).toBeNull()
     expect(byKey['page-templates:7'].visualHref).toBe('/admin/visual-editor/collection/page-templates/7')
-    // Reusable sections have no visual builder entry (not in VISUAL_EDITOR_SURFACES), so they link only to their edit screen.
-    expect(byKey['reusable-sections:9']).toMatchObject({ visualHref: null, editHref: adminCollectionPath('reusable-sections') + '/9' })
+    expect(byKey['reusable-sections:9']).toMatchObject({
+      visualHref: '/admin/visual-editor/collection/reusable-sections/9',
+      editHref: adminCollectionPath('reusable-sections') + '/9',
+    })
   })
 
   it('filters by type, by label, and by status', () => {

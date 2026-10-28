@@ -111,8 +111,7 @@ const plainRow = (doc: HubSourceDoc, collection: 'page-templates' | 'reusable-se
     priority: null,
     updatedAt: doc.updatedAt ?? null,
     editHref: `${adminCollectionPath(collection)}/${doc.id}`,
-    // Reusable sections have no visual builder entry (not in VISUAL_EDITOR_SURFACES), so no link.
-    visualHref: isPage ? `/admin/visual-editor/collection/${collection}/${doc.id}` : null,
+    visualHref: `/admin/visual-editor/collection/${collection}/${doc.id}`,
     previewHref: null,
     toggleable: false,
   }

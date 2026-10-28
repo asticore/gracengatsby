@@ -37,11 +37,12 @@ import {
 
 const asPreferences = (value: unknown): AccountPreferences => {
   if (!value || typeof value !== 'object') return EMPTY_PREFERENCES
-  const raw = value as { name?: unknown; defaultAddressId?: unknown }
+  const raw = value as { name?: unknown; defaultAddressId?: unknown; locale?: unknown }
   const id = Number(raw.defaultAddressId)
   return {
     name: typeof raw.name === 'string' ? raw.name : '',
     defaultAddressId: Number.isFinite(id) && id > 0 ? id : null,
+    locale: typeof raw.locale === 'string' && raw.locale.trim() ? raw.locale.trim() : null,
   }
 }
 

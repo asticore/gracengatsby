@@ -1,5 +1,8 @@
 import React from 'react'
 
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
+import { portalText, type PortalStringKey } from '@/features/multilingual/portalStrings'
+
 import { AccountNav } from './AccountNav'
 import { AccountStyles } from './styles'
 
@@ -15,14 +18,14 @@ import { AccountStyles } from './styles'
  * plain Server Component.
  */
 
-const LINKS: { href: string; label: string }[] = [
-  { href: '/account', label: 'Overview' },
-  { href: '/account/orders', label: 'Orders' },
-  { href: '/account/store-credit', label: 'Store credit' },
-  { href: '/account/subscriptions', label: 'Subscriptions' },
-  { href: '/account/addresses', label: 'Addresses' },
-  { href: '/account/bookings', label: 'Event bookings' },
-  { href: '/account/profile', label: 'Profile' },
+const LINKS: { href: string; key: PortalStringKey }[] = [
+  { href: '/account', key: 'nav.overview' },
+  { href: '/account/orders', key: 'nav.orders' },
+  { href: '/account/store-credit', key: 'nav.storeCredit' },
+  { href: '/account/subscriptions', key: 'nav.subscriptions' },
+  { href: '/account/addresses', key: 'nav.addresses' },
+  { href: '/account/bookings', key: 'nav.bookings' },
+  { href: '/account/profile', key: 'nav.profile' },
 ]
 
 /** The Organizations link shows only while that feature is switched on (Security settings). Any read failure hides it. */
@@ -44,7 +47,11 @@ export const AccountShell = async ({
   current: string
   children: React.ReactNode
 }) => {
-  const links = (await organizationsOn()) ? [...LINKS.slice(0, -1), { href: '/account/organizations', label: 'Organizations' }, LINKS[LINKS.length - 1]] : LINKS
+  const portalLocale = await currentPortalLocale()
+  const entries = (await organizationsOn())
+    ? [...LINKS.slice(0, -1), { href: '/account/organizations', key: 'nav.organizations' as const }, LINKS[LINKS.length - 1]]
+    : LINKS
+  const links = entries.map((entry) => ({ href: entry.href, label: portalText(entry.key, portalLocale) }))
   return (
     <div className="page-shell">
       <AccountStyles />

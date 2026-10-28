@@ -27,6 +27,9 @@ import {
   updateAddress,
 } from './addresses'
 import { changeEmail, changeName, changePassword } from './profile'
+import { writePreferences } from './preferences'
+import { isLocaleRoutable } from '@/features/multilingual/routing'
+import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 import { guardAttempt, tooManyAttempts } from './rateLimit'
 import {
   accountContext,
@@ -61,6 +64,7 @@ import { passwordlessDepsFor } from './passwordlessWiring'
  */
 
 const FEATURE_OFF = failed('Accounts are not available on this site.')
+const PORTAL_LANGUAGE_INVALID = 'That language is not available on this site.'
 const SIGNED_OUT = failed('Your session has ended. Sign in and try again.')
 
 /** The shared preamble: flags, engine, session. */
@@ -367,6 +371,26 @@ export async function saveNameAction(_state: ActionState, form: FormData): Promi
   const result = await changeName(context.engine, context.user, text(form, 'name'))
   revalidatePath('/account/profile')
   return result.ok ? succeeded(result.message) : failed(result.message)
+}
+
+/**
+ * The portal language. Empty clears the choice (automatic: cookie, then browser). Anything else must be one of
+ * the site's active locales, and the refusal names no other language.
+ */
+export async function saveLanguageAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  const context = await openContext()
+  if (!context) return FEATURE_OFF
+  if (!context.user) return SIGNED_OUT
+
+  const requested = text(form, 'locale').trim()
+  const settings = await readMultilingualSettingsFromD1()
+  if (requested && !(isLocaleRoutable(settings) && settings.activeLocales.includes(requested))) {
+    return failed(PORTAL_LANGUAGE_INVALID)
+  }
+
+  await writePreferences(context.engine, context.user, { locale: requested || null })
+  revalidatePath('/account', 'layout')
+  return succeeded(requested ? 'Your language has been saved.' : 'Your language will follow your browser.')
 }
 
 export async function changeEmailAction(_state: ActionState, form: FormData): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())

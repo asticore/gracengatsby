@@ -45,6 +45,28 @@ const EXACT: Record<string, PortalStringKey> = {
   'Fill in the name, street, city and country.': 'msg.addressFields',
   'Passkeys are not available on this site.': 'msg.passkeysOff',
   'Sign in first.': 'msg.signInFirst',
+  'Passkey setup was cancelled.': 'srv.passkeyCancelledSetup',
+  'Passkey sign-in was cancelled.': 'srv.passkeyCancelledSignIn',
+  'This device could not create a passkey.': 'srv.passkeyCreateFailed',
+  'No passkey was found on this device.': 'srv.passkeyNoneOnDevice',
+  'That passkey was not found.': 'srv.passkeyNotFound',
+  'Give the passkey a name.': 'srv.passkeyNameMissing',
+  'The passkey could not be added. Try again.': 'srv.passkeyAddFailed',
+  'Passkeys are not turned on for this site.': 'srv.passkeysOff',
+  'Could not reach the site. Check your connection and try again.': 'srv.cannotReach',
+  'Two-step sign-in is off.': 'srv.twoStepOff',
+  'Two-step sign-in is already switched on.': 'srv.twoStepAlreadyOn',
+  'That device will ask for a code next time.': 'srv.askCodeNextTime',
+  'That device is already forgotten or could not be found.': 'srv.deviceForgotten',
+  'No devices were remembered.': 'srv.noRemembered',
+  'Email codes are not turned on for this site.': 'srv.emailCodesOff',
+  'That code did not match. Check the time on your phone and try the next code.': 'srv.codeMismatchClock',
+  'That code did not match, or it has expired. Ask for a new one.': 'srv.codeMismatchExpired',
+  'That password or code was not right.': 'srv.passwordOrCodeWrong',
+  'Confirm it is you with your password or your authenticator code first.': 'srv.confirmFirst',
+  'Only an administrator can do that.': 'srv.adminOnly',
+  'That account is not connected.': 'srv.accountNotConnected',
+  'This is the only way you can sign in. Set a password first (use Forgotten your password), then disconnect it.': 'srv.lastSignInWay',
   'Include both upper-case and lower-case letters.': 'pw.mixedCase',
   'Include at least one number.': 'pw.number',
   'Include at least one symbol, such as ! or #.': 'pw.symbol',
@@ -53,7 +75,9 @@ const EXACT: Record<string, PortalStringKey> = {
   'That password has appeared in a known data breach. Choose a different one.': 'pw.breached',
 }
 
-const PATTERNS: Array<[RegExp, (match: RegExpMatchArray, tx: PortalTexts) => string]> = [
+type MessageText = (key: PortalStringKey, vars?: UiStringVars) => string
+
+const PATTERNS: Array<[RegExp, (match: RegExpMatchArray, tx: MessageText) => string]> = [
   [
     /^Too many attempts\. Try again in (\d+) minute\(s\)\.$/,
     (match, tx) => tx('msg.tooMany', { minutes: match[1] ?? '' }),
@@ -73,7 +97,7 @@ const PATTERNS: Array<[RegExp, (match: RegExpMatchArray, tx: PortalTexts) => str
 ]
 
 /** Returns the visitor's language for an English service message, or the message itself when it is not in the table. */
-export function localiseMessage(message: string, tx: PortalTexts): string {
+export function localiseMessage(message: string, tx: MessageText): string {
   if (!message) return message
   if (Object.prototype.hasOwnProperty.call(EXACT, message)) return tx(EXACT[message]!)
   for (const [pattern, build] of PATTERNS) {

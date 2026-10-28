@@ -17,6 +17,7 @@ import {
 import type { AddressInput } from '../addresses'
 import { IDLE, type ActionState } from '../types'
 import { Note, SubmitButton } from './FormBits'
+import { usePortalText } from '@/features/multilingual/PortalTextProvider'
 
 /**
  * The signed-in forms.
@@ -27,80 +28,82 @@ import { Note, SubmitButton } from './FormBits'
  * else comes back as "could not be saved" because the update matched nothing.
  */
 
-export const SignOutButton: React.FC = () => (
-  <form action={signOutAction}>
-    <SubmitButton variant="ghost">Sign out</SubmitButton>
-  </form>
-)
-
-const COUNTRY_HINT = 'Two-letter country code, e.g. AU'
+export const SignOutButton: React.FC = () => {
+  const tx = usePortalText()
+  return (
+    <form action={signOutAction}>
+      <SubmitButton variant="ghost">{tx('common.signOut')}</SubmitButton>
+    </form>
+  )
+}
 
 export const AddressForm: React.FC<{ address?: (AddressInput & { id?: number }) | null }> = ({
   address,
 }) => {
   const [state, action] = useActionState<ActionState, FormData>(saveAddressAction, IDLE)
+  const tx = usePortalText()
 
   return (
     <form action={action} className="account-form">
       {address?.id ? <input type="hidden" name="id" value={address.id} /> : null}
       <label>
-        Label (optional)
-        <input name="title" defaultValue={address?.title ?? ''} placeholder="Home" />
+        {tx('addresses.label')}
+        <input name="title" defaultValue={address?.title ?? ''} placeholder={tx('addresses.homePlaceholder')} />
       </label>
       <div className="account-form__row">
         <label>
-          First name
+          {tx('addresses.firstName')}
           <input name="firstName" defaultValue={address?.firstName ?? ''} required />
         </label>
         <label>
-          Last name
+          {tx('addresses.lastName')}
           <input name="lastName" defaultValue={address?.lastName ?? ''} required />
         </label>
       </div>
       <label>
-        Company (optional)
+        {tx('addresses.company')}
         <input name="company" defaultValue={address?.company ?? ''} />
       </label>
       <label>
-        Street address
+        {tx('addresses.street')}
         <input name="addressLine1" defaultValue={address?.addressLine1 ?? ''} required />
       </label>
       <label>
-        Apartment, suite (optional)
+        {tx('addresses.apartment')}
         <input name="addressLine2" defaultValue={address?.addressLine2 ?? ''} />
       </label>
       <div className="account-form__row">
         <label>
-          City
+          {tx('addresses.city')}
           <input name="city" defaultValue={address?.city ?? ''} required />
         </label>
         <label>
-          State
+          {tx('addresses.state')}
           <input name="state" defaultValue={address?.state ?? ''} />
         </label>
       </div>
       <div className="account-form__row">
         <label>
-          Postcode
+          {tx('addresses.postcode')}
           <input name="postalCode" defaultValue={address?.postalCode ?? ''} />
         </label>
         <label>
-          Country
+          {tx('addresses.country')}
           <input
             name="country"
             defaultValue={address?.country ?? 'AU'}
             maxLength={2}
-            title={COUNTRY_HINT}
+            title={tx('addresses.countryHint')}
             required
           />
         </label>
       </div>
       <label>
-        Phone (optional)
+        {tx('addresses.phone')}
         <input name="phone" type="tel" defaultValue={address?.phone ?? ''} />
       </label>
       <Note state={state} />
-      <SubmitButton>{address?.id ? 'Save changes' : 'Add address'}</SubmitButton>
+      <SubmitButton>{address?.id ? tx('addresses.saveChanges') : tx('addresses.addButton')}</SubmitButton>
     </form>
   )
 }
@@ -114,22 +117,23 @@ export const AddressRowActions: React.FC<{ id: number; isDefault: boolean }> = (
     IDLE,
   )
   const [deleteState, remove] = useActionState<ActionState, FormData>(deleteAddressAction, IDLE)
+  const tx = usePortalText()
 
   return (
     <>
       <div className="account-card__actions">
         <a className="btn btn--ghost" href={`/account/addresses/${id}`}>
-          Edit
+          {tx('addresses.edit')}
         </a>
         {!isDefault && (
           <form action={makeDefault}>
             <input type="hidden" name="id" value={id} />
-            <SubmitButton variant="ghost">Make default</SubmitButton>
+            <SubmitButton variant="ghost">{tx('addresses.makeDefault')}</SubmitButton>
           </form>
         )}
         <form action={remove}>
           <input type="hidden" name="id" value={id} />
-          <SubmitButton variant="ghost">Remove</SubmitButton>
+          <SubmitButton variant="ghost">{tx('addresses.remove')}</SubmitButton>
         </form>
       </div>
       <Note state={defaultState} />
@@ -140,14 +144,15 @@ export const AddressRowActions: React.FC<{ id: number; isDefault: boolean }> = (
 
 export const NameForm: React.FC<{ name: string }> = ({ name }) => {
   const [state, action] = useActionState<ActionState, FormData>(saveNameAction, IDLE)
+  const tx = usePortalText()
   return (
     <form action={action} className="account-form">
       <label>
-        Name
+        {tx('profile.name')}
         <input name="name" defaultValue={name} autoComplete="name" />
       </label>
       <Note state={state} />
-      <SubmitButton>Save name</SubmitButton>
+      <SubmitButton>{tx('profile.saveName')}</SubmitButton>
     </form>
   )
 }
@@ -181,14 +186,15 @@ export const LanguageForm: React.FC<{
 
 export const EmailForm: React.FC<{ email: string }> = ({ email }) => {
   const [state, action] = useActionState<ActionState, FormData>(changeEmailAction, IDLE)
+  const tx = usePortalText()
   return (
     <form action={action} className="account-form">
       <label>
-        Email
+        {tx('auth.email')}
         <input name="email" type="email" defaultValue={email} autoComplete="email" required />
       </label>
       <label>
-        Current password
+        {tx('profile.currentPassword')}
         <input
           name="currentPassword"
           type="password"
@@ -197,26 +203,27 @@ export const EmailForm: React.FC<{ email: string }> = ({ email }) => {
         />
       </label>
       <Note state={state} />
-      <SubmitButton>Change email</SubmitButton>
+      <SubmitButton>{tx('profile.changeEmail')}</SubmitButton>
     </form>
   )
 }
 
 export const PasswordForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
   const [state, action] = useActionState<ActionState, FormData>(changePasswordAction, IDLE)
+  const tx = usePortalText()
   return (
     <form action={action} className="account-form">
       <label>
-        Current password
+        {tx('profile.currentPassword')}
         <input name="currentPassword" type="password" autoComplete="current-password" required />
       </label>
       <label>
-        New password
+        {tx('auth.newPassword')}
         <input name="password" type="password" autoComplete="new-password" minLength={rules.minLength} required aria-describedby="password-hint" />
       </label>
       <p className="account-hint" id="password-hint">{rules.hint}</p>
       <label>
-        Confirm new password
+        {tx('auth.confirmNewPassword')}
         <input
           name="passwordConfirm"
           type="password"
@@ -226,7 +233,7 @@ export const PasswordForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
         />
       </label>
       <Note state={state} />
-      <SubmitButton>Change password</SubmitButton>
+      <SubmitButton>{tx('profile.changePassword')}</SubmitButton>
     </form>
   )
 }

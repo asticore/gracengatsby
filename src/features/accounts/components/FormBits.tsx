@@ -4,6 +4,7 @@ import React from 'react'
 import { useFormStatus } from 'react-dom'
 
 import type { ActionState } from '../types'
+import { usePortalText } from '@/features/multilingual/PortalTextProvider'
 
 /**
  * The two pieces every form on these screens shares.
@@ -19,9 +20,10 @@ export const SubmitButton: React.FC<{ children: React.ReactNode; variant?: 'prim
   variant = 'primary',
 }) => {
   const { pending } = useFormStatus()
+  const tx = usePortalText()
   return (
     <button type="submit" className={`btn btn--${variant}`} disabled={pending}>
-      {pending ? 'Working…' : children}
+      {pending ? tx('common.working') : children}
     </button>
   )
 }

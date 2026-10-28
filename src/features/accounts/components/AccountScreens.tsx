@@ -30,13 +30,12 @@ import { passwordRulesOf } from '@/features/security/passwordCheck'
 import { DEFAULT_PASSWORD_POLICY } from '@/features/security/passwordPolicyDefaults'
 import { ConnectedAccountsPanel } from '@/features/socialLogin/components/ConnectedAccountsPanel'
 import { viewConnections } from '@/features/socialLogin/connections'
-import { socialMessage } from '@/features/socialLogin/messages'
+import { socialMessageText } from '../messages'
+import { accountTexts } from '../portalCopy'
 import { AddressForm, AddressRowActions, EmailForm, LanguageForm, NameForm, PasswordForm, type LanguageOption } from './AccountForms'
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 import { isLocaleRoutable } from '@/features/multilingual/routing'
 import { localeNativeName } from '@/features/multilingual/locales'
-import { portalText } from '@/features/multilingual/portalStrings'
-import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 
 /**
  * The signed-in screens.
@@ -68,14 +67,15 @@ export const AccountHomeScreen: React.FC = async () => {
 
   const email = typeof user.email === 'string' ? user.email : ''
   const graceNotice = await twoFactorGraceNoticeFor(engine, user)
+  const tx = await accountTexts()
 
   return (
-    <AccountShell title={`Hello, ${displayName(preferences.name, email)}`} current="/account">
+    <AccountShell title={tx('account.hello', { name: displayName(preferences.name, email) })} current="/account">
       {graceNotice && <p className="account-note"><a href={graceNotice.href}>{graceNotice.text}</a></p>}
       <section className="account-section">
-        <h2>Recent orders</h2>
+        <h2>{tx('account.recentOrders')}</h2>
         {orders.length === 0 ? (
-          <p className="account-empty">You have not placed an order yet.</p>
+          <p className="account-empty">{tx('account.noOrders')}</p>
         ) : (
           <table className="account-table eg-table">
             <tbody>
@@ -92,17 +92,17 @@ export const AccountHomeScreen: React.FC = async () => {
           </table>
         )}
         <div className="account-link-row">
-          <Link href="/account/orders">All orders</Link>
+          <Link href="/account/orders">{tx('account.allOrders')}</Link>
         </div>
       </section>
 
       <section className="account-section">
-        <h2>Upcoming bookings</h2>
+        <h2>{tx('account.upcomingBookings')}</h2>
         {bookings.length === 0 ? (
-          <p className="account-empty">You have no event bookings.</p>
+          <p className="account-empty">{tx('account.noBookings')}</p>
         ) : (
           <p>
-            You have {bookings.length} booking(s). <Link href="/account/bookings">See them</Link>.
+            {tx('account.bookingsCount', { count: bookings.length })} <Link href="/account/bookings">{tx('account.seeThem')}</Link>.
           </p>
         )}
       </section>
@@ -268,18 +268,19 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
 export const AddressesScreen: React.FC = async () => {
   const { engine, user } = await requireCustomer('/account/addresses')
   const addresses = await addressesForCustomer(engine, user)
+  const tx = await accountTexts()
 
   return (
-    <AccountShell title="Saved addresses" current="/account/addresses">
+    <AccountShell title={tx('addresses.title')} current="/account/addresses">
       <section className="account-section">
         {addresses.length === 0 ? (
-          <p className="account-empty">You have not saved an address yet.</p>
+          <p className="account-empty">{tx('addresses.empty')}</p>
         ) : (
           addresses.map((address) => (
             <article className="account-card" key={address.id}>
               <h3>
                 {address.title || [address.firstName, address.lastName].filter(Boolean).join(' ')}{' '}
-                {address.isDefault ? <span className="account-badge">Default</span> : null}
+                {address.isDefault ? <span className="account-badge">{tx('addresses.default')}</span> : null}
               </h3>
               <p>
                 {address.addressLine1}
@@ -297,7 +298,7 @@ export const AddressesScreen: React.FC = async () => {
       </section>
 
       <section className="account-section">
-        <h2>Add an address</h2>
+        <h2>{tx('addresses.add')}</h2>
         <AddressForm />
       </section>
     </AccountShell>
@@ -308,9 +309,10 @@ export const AddressEditScreen: React.FC<{ id: string }> = async ({ id }) => {
   const { engine, user } = await requireCustomer(`/account/addresses/${id}`)
   const address = await addressForCustomer(engine, user, id)
   if (!address) notFound()
+  const tx = await accountTexts()
 
   return (
-    <AccountShell title="Edit address" current="/account/addresses">
+    <AccountShell title={tx('addresses.editTitle')} current="/account/addresses">
       <AddressForm
         address={{
           id: address.id,
@@ -328,7 +330,7 @@ export const AddressEditScreen: React.FC<{ id: string }> = async ({ id }) => {
         }}
       />
       <div className="account-link-row">
-        <Link href="/account/addresses">Back to addresses</Link>
+        <Link href="/account/addresses">{tx('addresses.backLink')}</Link>
       </div>
     </AccountShell>
   )
@@ -368,10 +370,10 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
   const preferences = await readPreferences(engine, user)
   // Shown only while multilingual is on with two or more languages. Otherwise the profile is unchanged.
   const multilingual = await readMultilingualSettingsFromD1()
-  const portalLocale = await currentPortalLocale()
+  const tx = await accountTexts()
   const languageOptions: LanguageOption[] | null = isLocaleRoutable(multilingual)
     ? [
-        { value: '', label: portalText('profile.languageAuto', portalLocale) },
+        { value: '', label: tx('profile.languageAuto') },
         ...multilingual.activeLocales.map((code) => ({ value: code, label: localeNativeName(code) })),
       ]
     : null
@@ -389,62 +391,58 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
   ).catch((): [] => [])
   const connections = await viewConnections(engine, user as never).catch((): null => null)
   const securityNotice =
-    settings && assertTwoFactorSatisfied(user as never, settings).mustEnrol
-      ? 'This site asks customers to set up two-step sign-in. Please do it below.'
-      : ''
+    settings && assertTwoFactorSatisfied(user as never, settings).mustEnrol ? tx('profile.twoStepNotice') : ''
   const graceNotice = await twoFactorGraceNoticeFor(engine, user)
 
   return (
-    <AccountShell title="Your profile" current="/account/profile">
+    <AccountShell title={tx('profile.title')} current="/account/profile">
       <section className="account-section">
-        <h2>Name</h2>
+        <h2>{tx('profile.name')}</h2>
         <NameForm name={preferences.name} />
       </section>
 
       {languageOptions && (
         <section className="account-section">
-          <h2>{portalText('profile.language', portalLocale)}</h2>
+          <h2>{tx('profile.language')}</h2>
           <LanguageForm
             current={preferences.locale ?? ''}
             options={languageOptions}
-            labels={{ heading: portalText('profile.language', portalLocale), save: portalText('profile.languageSave', portalLocale) }}
+            labels={{ heading: tx('profile.language'), save: tx('profile.languageSave') }}
           />
         </section>
       )}
 
       <section className="account-section">
-        <h2>Email address</h2>
-        <p>Changing this changes what you sign in with.</p>
+        <h2>{tx('profile.emailHeading')}</h2>
+        <p>{tx('profile.emailNote')}</p>
         <EmailForm email={email} />
       </section>
 
       <section className="account-section">
-        <h2>Password</h2>
+        <h2>{tx('auth.password')}</h2>
         {passwordDue ? (
-          <p className="account-note account-note--error">
-            This site asks you to choose a new password now. Please do it below.
-          </p>
+          <p className="account-note account-note--error">{tx('profile.passwordDue')}</p>
         ) : null}
         <PasswordForm rules={passwordRulesOf(settings?.passwordPolicy ?? DEFAULT_PASSWORD_POLICY)} />
       </section>
 
       <section className="account-section" id="security">
-        <h2>Security</h2>
-        <h3>Two-step sign-in</h3>
+        <h2>{tx('profile.securityHeading')}</h2>
+        <h3>{tx('profile.twoStepHeading')}</h3>
         {securityNotice && <p className="account-note account-note--error">{securityNotice}</p>}
         {graceNotice && <p className="account-note"><a href={graceNotice.href}>{graceNotice.text}</a></p>}
         <TwoFactorPanel enrolled={isEnrolled(secure)} backupCodesLeft={secure ? backupCodesRemaining(secure) : 0} />
         {passkeysOn && (
           <>
-            <h3>Passkeys</h3>
-            <p>Sign in with Face ID, Touch ID, Windows Hello or a security key. A passkey is an extra way in; your password still works.</p>
+            <h3>{tx('profile.passkeysHeading')}</h3>
+            <p>{tx('profile.passkeysIntro')}</p>
             <PasskeysPanel initial={passkeyItems} />
           </>
         )}
         {settings?.apiKeys.enabled && settings.apiKeys.allowCustomers && (
           <>
-            <h3>API keys</h3>
-            <p>Let a script call the site API as you, with a key limited to read and/or write. Shown once at creation.</p>
+            <h3>{tx('profile.apiKeysHeading')}</h3>
+            <p>{tx('profile.apiKeysIntro')}</p>
             <ApiKeysPanel initial={(await listMyApiKeys()).keys ?? []} />
           </>
         )}
@@ -452,14 +450,14 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
 
       {connections && (connections.linked.length > 0 || connections.available.length > 0) && (
         <section className="account-section" id="connected">
-          <h2>Connected accounts</h2>
-          <p>Sign in faster with an account you already have.</p>
-          <ConnectedAccountsPanel view={connections} area="account" returnTo="/account/profile" notice={socialError ? socialMessage(socialError) : ''} />
+          <h2>{tx('profile.connectedHeading')}</h2>
+          <p>{tx('profile.connectedIntro')}</p>
+          <ConnectedAccountsPanel view={connections} area="account" returnTo="/account/profile" notice={socialMessageText(socialError, tx)} />
         </section>
       )}
 
       <section className="account-section" id="sessions">
-        <h2>Signed-in devices</h2>
+        <h2>{tx('profile.sessionsHeading')}</h2>
         <SessionsPanel sessions={sessions} />
       </section>
     </AccountShell>

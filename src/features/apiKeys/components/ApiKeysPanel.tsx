@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react'
 
+import { usePortalText } from '@/features/accounts/components/PortalText'
+
 import { apiKeyScopeChoicesAction, createMyApiKey, revokeApiKeyAction, type ApiKeyView } from '../actions'
 import { buildScopes, type ScopeMode } from '../scopePicker'
 import type { ScopeCollection } from '../core'
@@ -13,16 +15,10 @@ import './apiKeysScopes.css'
  * stored. Creating a key asks for the password or the six-digit authenticator code first.
  */
 
-const when = (iso: string | null): string => {
-  if (!iso) return 'Never'
+const when = (iso: string | null, never: string, unknown: string): string => {
+  if (!iso) return never
   const date = new Date(iso)
-  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleDateString()
-}
-
-const status = (k: ApiKeyView): string => {
-  if (k.revokedAt) return 'Revoked'
-  if (k.expiresAt && !k.active) return 'Expired'
-  return k.expiresAt ? `Expires ${when(k.expiresAt)}` : 'No expiry'
+  return Number.isNaN(date.getTime()) ? unknown : date.toLocaleDateString()
 }
 
 export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean; canCreate?: boolean }> = ({ initial, showOwner = false, canCreate = true }) => {
@@ -37,6 +33,13 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
   const [revealed, setRevealed] = useState<string | null>(null)
   const [notice, setNotice] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
+  const tx = usePortalText()
+  const dateText = (iso: string | null): string => when(iso, tx('panel.never'), tx('panel.unknown'))
+  const status = (k: ApiKeyView): string => {
+    if (k.revokedAt) return tx('panel.akStatusRevoked')
+    if (k.expiresAt && !k.active) return tx('panel.akStatusExpired')
+    return k.expiresAt ? tx('panel.akExpires', { date: dateText(k.expiresAt) }) : tx('panel.akNoExpiry')
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -63,9 +66,9 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
       setName('')
       setPassword('')
       setCode('')
-      setNotice({ tone: 'ok', text: 'Key created. Copy it now: it will not be shown again.' })
+      setNotice({ tone: 'ok', text: tx('panel.akCreatedNotice') })
     } else {
-      setNotice({ tone: 'error', text: result.error ?? 'The key could not be created.' })
+      setNotice({ tone: 'error', text: result.error ?? tx('panel.akCreateFailed') })
     }
   }
 
@@ -75,9 +78,9 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
     setBusy(false)
     if (result.ok && result.keys) {
       setKeys(result.keys)
-      setNotice({ tone: 'ok', text: 'Key revoked. It stops working immediately.' })
+      setNotice({ tone: 'ok', text: tx('panel.akRevokedNotice') })
     } else {
-      setNotice({ tone: 'error', text: result.error ?? 'The key could not be revoked.' })
+      setNotice({ tone: 'error', text: result.error ?? tx('panel.akRevokeFailed') })
     }
   }
 
@@ -85,9 +88,9 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
     if (!revealed) return
     try {
       await navigator.clipboard.writeText(revealed)
-      setNotice({ tone: 'ok', text: 'Copied.' })
+      setNotice({ tone: 'ok', text: tx('panel.copied') })
     } catch {
-      setNotice({ tone: 'error', text: 'Copy did not work. Select the key and copy it by hand.' })
+      setNotice({ tone: 'error', text: tx('panel.copyFailed') })
     }
   }
 
@@ -97,11 +100,11 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
 
       {revealed && (
         <div className="api-keys-reveal">
-          <p>Your new key</p>
+          <p>{tx('panel.akNewKey')}</p>
           <code style={{ wordBreak: 'break-all' }}>{revealed}</code>
           <div>
-            <button type="button" onClick={copy}>Copy key</button>{' '}
-            <button type="button" onClick={() => setRevealed(null)}>I have copied it</button>
+            <button type="button" onClick={copy}>{tx('panel.akCopy')}</button>{' '}
+            <button type="button" onClick={() => setRevealed(null)}>{tx('panel.akCopied')}</button>
           </div>
         </div>
       )}
@@ -113,29 +116,29 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
             void create()
           }}
         >
-          <h4>Create a key</h4>
+          <h4>{tx('panel.akCreateHeading')}</h4>
           <label>
-            Name
+            {tx('panel.akName')}
             <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
           </label>
           <fieldset className="api-scopes">
-            <legend>Scopes</legend>
+            <legend>{tx('panel.akScopes')}</legend>
             <label className="api-scopes__mode">
-              <input type="radio" name="scope-mode" checked={mode === 'read-all'} onChange={() => setMode('read-all')} /> Read everything (<code>*:read</code>)
+              <input type="radio" name="scope-mode" checked={mode === 'read-all'} onChange={() => setMode('read-all')} /> {tx('panel.akReadAll')} (<code>*:read</code>)
             </label>
             <label className="api-scopes__mode">
-              <input type="radio" name="scope-mode" checked={mode === 'all'} onChange={() => setMode('all')} /> Read and write everything (<code>*</code>)
+              <input type="radio" name="scope-mode" checked={mode === 'all'} onChange={() => setMode('all')} /> {tx('panel.akAll')} (<code>*</code>)
             </label>
             <label className="api-scopes__mode">
-              <input type="radio" name="scope-mode" checked={mode === 'custom'} onChange={() => setMode('custom')} /> Choose per collection
+              <input type="radio" name="scope-mode" checked={mode === 'custom'} onChange={() => setMode('custom')} /> {tx('panel.akPerCollection')}
             </label>
             {mode === 'custom' && (
               <table className="api-scopes__table">
                 <thead>
                   <tr>
-                    <th>Collection</th>
-                    <th>Read</th>
-                    <th>Write</th>
+                    <th>{tx('panel.akCollection')}</th>
+                    <th>{tx('panel.akRead')}</th>
+                    <th>{tx('panel.akWrite')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,41 +168,41 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
                 </tbody>
               </table>
             )}
-            <p className="api-scopes__summary">Scopes: {scopes.length === 0 ? 'none chosen' : scopes.join(', ')}. A key can never delete.</p>
+            <p className="api-scopes__summary">{tx('panel.akSummary', { scopes: scopes.length === 0 ? tx('panel.akNoneChosen') : scopes.join(', ') })}</p>
           </fieldset>
           <label>
-            Expires after (days, leave empty for the site maximum)
+            {tx('panel.akExpiry')}
             <input value={expiry} onChange={(e) => setExpiry(e.target.value)} inputMode="numeric" />
           </label>
-          <p>Confirm it is you:</p>
+          <p>{tx('panel.akConfirm')}</p>
           <label>
             Password
             <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
           <label>
-            Or a six-digit code
+            {tx('panel.akOrCode')}
             <input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
           </label>
           <button type="submit" disabled={busy || scopes.length === 0}>
-            Create key
+            {tx('panel.akCreate')}
           </button>
         </form>
       )}
 
-      <h4>Keys</h4>
+      <h4>{tx('panel.akKeys')}</h4>
       {keys.length === 0 ? (
-        <p>No API keys yet.</p>
+        <p>{tx('panel.akNone')}</p>
       ) : (
         <table>
           <thead>
             <tr>
               {showOwner && <th>Owner</th>}
-              <th>Name</th>
-              <th>Key</th>
-              <th>Scopes</th>
-              <th>Created</th>
-              <th>Last used</th>
-              <th>Expiry</th>
+              <th>{tx('panel.akName')}</th>
+              <th>{tx('panel.akKey')}</th>
+              <th>{tx('panel.akScopes')}</th>
+              <th>{tx('panel.akColCreated')}</th>
+              <th>{tx('panel.akColLastUsed')}</th>
+              <th>{tx('panel.akColExpiry')}</th>
               <th />
             </tr>
           </thead>
@@ -212,13 +215,13 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
                   <code>{k.prefix}...</code>
                 </td>
                 <td>{k.scopes.join(', ')}</td>
-                <td>{when(k.createdAt)}</td>
-                <td>{when(k.lastUsedAt)}</td>
+                <td>{dateText(k.createdAt)}</td>
+                <td>{dateText(k.lastUsedAt)}</td>
                 <td>{status(k)}</td>
                 <td>
                   {k.active && (
                     <button type="button" disabled={busy} onClick={() => void revoke(k.id)}>
-                      Revoke
+                      {tx('panel.revoke')}
                     </button>
                   )}
                 </td>

@@ -2004,6 +2004,24 @@ export const UI_STRING_SOURCE = {
   'tb.lit.striped_row_background': "Striped row background",
   'tb.lit.text_alignment': "Text alignment",
   'tb.lit.use_as_default': "Use as default",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "Add a text style",
+  'ty.lit.add_text_style': "Add text style",
+  'ty.lit.body_font': "Body font",
+  'ty.lit.colour': "Colour",
+  'ty.lit.delete': "Delete",
+  'ty.lit.font': "Font",
+  'ty.lit.heading_font': "Heading font",
+  'ty.lit.inherit': "Inherit",
+  'ty.lit.letter_spacing_px': "Letter spacing (px)",
+  'ty.lit.line_height': "Line height",
+  'ty.lit.mobile_size_px': "Mobile size (px)",
+  'ty.lit.name': "Name",
+  'ty.lit.size_px': "Size (px)",
+  'ty.lit.tablet_size_px': "Tablet size (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "Text styles apply across the whole site. Tablet and mobile sizes of 0 use the main size.",
+  'ty.lit.transform': "Transform",
+  'ty.lit.weight': "Weight",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

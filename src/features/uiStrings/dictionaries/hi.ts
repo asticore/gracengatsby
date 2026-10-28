@@ -1964,6 +1964,24 @@ const hi: UiDictionary = {
   'tb.lit.striped_row_background': "धारीदार पंक्ति की पृष्ठभूमि",
   'tb.lit.text_alignment': "टेक्स्ट संरेखण",
   'tb.lit.use_as_default': "डिफ़ॉल्ट के रूप में उपयोग करें",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "टेक्स्ट स्टाइल जोड़ें",
+  'ty.lit.add_text_style': "टेक्स्ट स्टाइल जोड़ें",
+  'ty.lit.body_font': "बॉडी फ़ॉन्ट",
+  'ty.lit.colour': "रंग",
+  'ty.lit.delete': "हटाएँ",
+  'ty.lit.font': "फ़ॉन्ट",
+  'ty.lit.heading_font': "हेडिंग फ़ॉन्ट",
+  'ty.lit.inherit': "विरासत",
+  'ty.lit.letter_spacing_px': "अक्षर अंतराल (px)",
+  'ty.lit.line_height': "लाइन की ऊंचाई",
+  'ty.lit.mobile_size_px': "मोबाइल आकार (px)",
+  'ty.lit.name': "नाम",
+  'ty.lit.size_px': "आकार (px)",
+  'ty.lit.tablet_size_px': "टैबलेट आकार (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "Стили текста применяются ко всему сайту. Размер 0 для планшета и телефона использует основной размер.",
+  'ty.lit.transform': "रूपांतरण",
+  'ty.lit.weight': "वज़न",
 }
 
 export default hi

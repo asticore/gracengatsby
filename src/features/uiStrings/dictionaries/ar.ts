@@ -1964,6 +1964,24 @@ const ar: UiDictionary = {
   'tb.lit.striped_row_background': "خلفية الصف المخطط",
   'tb.lit.text_alignment': "محاذاة النص",
   'tb.lit.use_as_default': "استخدام كافتراضي",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "إضافة نمط نص",
+  'ty.lit.add_text_style': "إضافة نمط نص",
+  'ty.lit.body_font': "خط النص",
+  'ty.lit.colour': "اللون",
+  'ty.lit.delete': "حذف",
+  'ty.lit.font': "الخط",
+  'ty.lit.heading_font': "خط العناوين",
+  'ty.lit.inherit': "وراثة",
+  'ty.lit.letter_spacing_px': "تباعد الأحرف (px)",
+  'ty.lit.line_height': "ارتفاع السطر",
+  'ty.lit.mobile_size_px': "حجم الهاتف (px)",
+  'ty.lit.name': "الاسم",
+  'ty.lit.size_px': "الحجم (px)",
+  'ty.lit.tablet_size_px': "حجم الجهاز اللوحي (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "تنطبق أنماط النص على الموقع بأكمله. تستخدم أحجام الجهاز اللوحي والهاتف القيمة 0 الحجم الرئيسي.",
+  'ty.lit.transform': "التحويل",
+  'ty.lit.weight': "السماكة",
 }
 
 export default ar

@@ -1964,6 +1964,24 @@ const it: UiDictionary = {
   'tb.lit.striped_row_background': "Sfondo righe alternate",
   'tb.lit.text_alignment': "Allineamento del testo",
   'tb.lit.use_as_default': "Usa come predefinito",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "Aggiungi uno stile di testo",
+  'ty.lit.add_text_style': "Aggiungi stile di testo",
+  'ty.lit.body_font': "Font del corpo",
+  'ty.lit.colour': "Colore",
+  'ty.lit.delete': "Elimina",
+  'ty.lit.font': "Font",
+  'ty.lit.heading_font': "Font dei titoli",
+  'ty.lit.inherit': "Eredita",
+  'ty.lit.letter_spacing_px': "Spaziatura lettere (px)",
+  'ty.lit.line_height': "Altezza della riga",
+  'ty.lit.mobile_size_px': "Dimensione mobile (px)",
+  'ty.lit.name': "Nome",
+  'ty.lit.size_px': "Dimensione (px)",
+  'ty.lit.tablet_size_px': "Dimensione tablet (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "Gli stili di testo si applicano a tutto il sito. Le dimensioni tablet e mobile pari a 0 usano la dimensione principale.",
+  'ty.lit.transform': "Trasformazione",
+  'ty.lit.weight': "Spessore",
 }
 
 export default it

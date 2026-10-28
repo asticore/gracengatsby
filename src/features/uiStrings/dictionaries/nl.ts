@@ -1964,6 +1964,24 @@ const nl: UiDictionary = {
   'tb.lit.striped_row_background': "Achtergrond gestreepte rij",
   'tb.lit.text_alignment': "Tekstuitlijning",
   'tb.lit.use_as_default': "Als standaard gebruiken",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "Tekststijl toevoegen",
+  'ty.lit.add_text_style': "Tekststijl toevoegen",
+  'ty.lit.body_font': "Lopende tekstlettertype",
+  'ty.lit.colour': "Kleur",
+  'ty.lit.delete': "Verwijderen",
+  'ty.lit.font': "Lettertype",
+  'ty.lit.heading_font': "Kopjeslettertype",
+  'ty.lit.inherit': "Overnemen",
+  'ty.lit.letter_spacing_px': "Letterafstand (px)",
+  'ty.lit.line_height': "Regelhoogte",
+  'ty.lit.mobile_size_px': "Mobiele grootte (px)",
+  'ty.lit.name': "Naam",
+  'ty.lit.size_px': "Grootte (px)",
+  'ty.lit.tablet_size_px': "Tabletgrootte (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "Tekststijlen gelden voor de hele site. Tablet- en mobiele formaten van 0 gebruiken het hoofdformaat.",
+  'ty.lit.transform': "Transformatie",
+  'ty.lit.weight': "Dikte",
 }
 
 export default nl

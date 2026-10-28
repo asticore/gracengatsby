@@ -1,3 +1,4 @@
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useRef, useState } from 'react'
 
 import { errorMessageFrom, TranslationStatusBadge } from '@/features/multilingual/views/TranslationStatusBadge'
@@ -62,6 +63,7 @@ function FieldEditor({
   focused: boolean
   onDraftChange?: (fieldPath: string, value: string) => void
 }): React.ReactElement {
+  const t = useAdminT()
   const sectionRef = useRef<HTMLElement | null>(null)
   useEffect(() => {
     if (focused) sectionRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -130,7 +132,7 @@ function FieldEditor({
       ) : (
         <>
           <label className="ve-translate__label">
-            <span className="ve-translate__hint">Translation</span>
+            <span className="ve-translate__hint">{t('ve.translate.hint')}</span>
             {field.size === 'long' ? (
               <textarea rows={3} value={draft} onChange={(event) => changeDraft(event.target.value)} disabled={busy !== 'idle'} />
             ) : (

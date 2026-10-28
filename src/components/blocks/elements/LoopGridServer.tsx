@@ -19,6 +19,7 @@ import {
 import { renderTemplateBlocks } from '@/features/siteTemplates/render'
 import { loadSiteTemplate, prepareTemplateBlocks } from '@/features/siteTemplates/resolve'
 import { archivePageHref } from '@/lib/templateWidgets'
+import { localizeForRequest } from '@/features/multilingual/requestLinkLocale'
 
 /**
  * Loop grid widget: draws the chosen loop template once per item. Items come from the archive being viewed (no
@@ -102,8 +103,8 @@ async function planFor(props: P): Promise<Plan | null> {
       page: paged.page,
       pages: paged.pages,
       pageHref: ownPaging
-        ? (n: number) => loopPageHref(path, query, s.pageParam, n)
-        : (n: number) => archivePageHref(archive ? archive.basePath : path, n),
+        ? (n: number) => localizeForRequest(loopPageHref(path, query, s.pageParam, n))
+        : (n: number) => localizeForRequest(archivePageHref(archive ? archive.basePath : path, n)),
       pagination: s.pagination,
       linkCards: s.linkCards,
       columns: s.columns,

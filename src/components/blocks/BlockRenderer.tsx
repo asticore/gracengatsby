@@ -27,6 +27,7 @@ import { MEDIA_PROP_KEYS } from './elements/elementUtil'
 import { renderElement } from './elements/renderElement'
 import { SiteElement } from './elements/Wave38Elements'
 import { SITE_ELEMENT_TYPES } from '@/lib/elements/wave38Defs'
+import { localizeBlockLinks } from '@/features/multilingual/requestLinkLocale'
 
 /**
  * Renders one block's own markup, without the Design wrapper.
@@ -37,7 +38,9 @@ import { SITE_ELEMENT_TYPES } from '@/lib/elements/wave38Defs'
  * column (untyped), and a template's blocks after merge tags have been
  * substituted (also untyped). Field access is defensive throughout.
  */
-export const renderBlockBody = (block: SectionNode, key: string): React.ReactNode => {
+export const renderBlockBody = (node: SectionNode, key: string): React.ReactNode => {
+  // Link fields (CTA and link URLs) take the request's locale prefix; a copy, so the source node is untouched.
+  const block = localizeBlockLinks(node)
   const get = <T,>(name: string): T => block[name] as T
 
   switch (block.blockType) {

@@ -4,7 +4,9 @@ import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 import { portalText, type PortalStringKey } from '@/features/multilingual/portalStrings'
 
 import { AccountNav } from './AccountNav'
+import { PortalTextProvider } from './PortalText'
 import { AccountStyles } from './styles'
+import { portalClientStrings } from '../portalClientStrings'
 
 /**
  * The frame around every signed-in screen, and the plainer one around the four
@@ -53,27 +55,38 @@ export const AccountShell = async ({
     : LINKS
   const links = entries.map((entry) => ({ href: entry.href, label: portalText(entry.key, portalLocale) }))
   return (
-    <div className="page-shell">
-      <AccountStyles />
-      <h1>{title}</h1>
-      <div className="account">
-        <AccountNav links={links} current={current} />
-        <div className="account-panel">{children}</div>
+    <PortalTextProvider strings={portalClientStrings(portalLocale)}>
+      <div className="page-shell">
+        <AccountStyles />
+        <h1>{title}</h1>
+        <div className="account">
+          <AccountNav links={links} current={current} />
+          <div className="account-panel">{children}</div>
+        </div>
       </div>
-    </div>
+    </PortalTextProvider>
   )
 }
 
 /** Sign in, register, forgotten password, reset - no navigation to show yet. */
-export const AuthShell: React.FC<{ title: string; intro?: string; children: React.ReactNode }> = ({
+export const AuthShell = async ({
   title,
   intro,
   children,
-}) => (
-  <div className="page-shell">
-    <AccountStyles />
-    <h1>{title}</h1>
-    {intro ? <p>{intro}</p> : null}
-    {children}
-  </div>
-)
+}: {
+  title: string
+  intro?: string
+  children: React.ReactNode
+}) => {
+  const portalLocale = await currentPortalLocale()
+  return (
+    <PortalTextProvider strings={portalClientStrings(portalLocale)}>
+      <div className="page-shell">
+        <AccountStyles />
+        <h1>{title}</h1>
+        {intro ? <p>{intro}</p> : null}
+        {children}
+      </div>
+    </PortalTextProvider>
+  )
+}

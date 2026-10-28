@@ -1,9 +1,11 @@
 import React from 'react'
 
 import { creditBalance } from '@/features/ecommerce/server/storedValue'
+import { portalTextFor } from '@/features/multilingual/portalStrings'
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 
 import { requireCustomer } from '../guards'
-import { formatAmount, formatDate } from '../orders'
+import { formatAmount, formatDate, portalFormatLocale } from '../orders'
 import { AccountShell } from './AccountShell'
 
 type LedgerRow = { id: number; direction?: string; amount?: number; balanceAfter?: number; reason?: string; createdAt?: string }
@@ -16,35 +18,38 @@ export const StoreCreditScreen: React.FC = async () => {
   const ledger = (await (engine as unknown as { find: (a: unknown) => Promise<{ docs: LedgerRow[] }> })
     .find({ collection: 'credit-ledger', where: { and: [{ user: { equals: userId } }, { kind: { equals: 'store-credit' } }] }, sort: '-createdAt', limit: 50, depth: 0, overrideAccess: true })
     .catch(() => ({ docs: [] as LedgerRow[] }))).docs
+  const portalLocale = await currentPortalLocale()
+  const tx = portalTextFor(portalLocale)
+  const dateLocale = portalFormatLocale(portalLocale)
 
   return (
-    <AccountShell title="Store credit" current="/account/store-credit">
+    <AccountShell title={tx('storeCredit.title')} current="/account/store-credit">
       <p>
-        Your balance: <strong>{formatAmount(balance, 'AUD')}</strong>
+        {tx('storeCredit.balance')} <strong>{formatAmount(balance, 'AUD', dateLocale)}</strong>
       </p>
-      <p className="account-muted">Store credit is applied at checkout when you choose to use it. It can pay for any order, including courses and memberships.</p>
+      <p className="account-muted">{tx('storeCredit.note')}</p>
       {ledger.length === 0 ? (
-        <p className="account-empty">No store credit activity yet.</p>
+        <p className="account-empty">{tx('storeCredit.empty')}</p>
       ) : (
         <table className="account-table eg-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Activity</th>
-              <th>Amount</th>
-              <th>Balance</th>
+              <th>{tx('storeCredit.colDate')}</th>
+              <th>{tx('storeCredit.colActivity')}</th>
+              <th>{tx('storeCredit.colAmount')}</th>
+              <th>{tx('storeCredit.colBalance')}</th>
             </tr>
           </thead>
           <tbody>
             {ledger.map((row) => (
               <tr key={row.id}>
-                <td>{formatDate(row.createdAt ?? '')}</td>
-                <td>{row.reason || (row.direction === 'credit' ? 'Credit added' : 'Credit used')}</td>
+                <td>{formatDate(row.createdAt ?? '', dateLocale)}</td>
+                <td>{row.reason || (row.direction === 'credit' ? tx('storeCredit.creditAdded') : tx('storeCredit.creditUsed'))}</td>
                 <td>
                   {row.direction === 'credit' ? '+' : '-'}
-                  {formatAmount(row.amount ?? 0, 'AUD')}
+                  {formatAmount(row.amount ?? 0, 'AUD', dateLocale)}
                 </td>
-                <td>{formatAmount(row.balanceAfter ?? 0, 'AUD')}</td>
+                <td>{formatAmount(row.balanceAfter ?? 0, 'AUD', dateLocale)}</td>
               </tr>
             ))}
           </tbody>

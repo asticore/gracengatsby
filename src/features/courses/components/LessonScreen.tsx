@@ -4,6 +4,10 @@ import React from 'react'
 
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import type { Media } from '@/engage-types'
+import { PortalTextProvider } from '@/features/accounts/components/PortalText'
+import { portalClientStrings } from '@/features/accounts/portalClientStrings'
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
+import { portalTextFor } from '@/features/multilingual/portalStrings'
 
 import { progressForCourse } from '../progress'
 import {
@@ -53,66 +57,70 @@ export const LessonScreen: React.FC<{ courseSlug: string; lessonSlug: string }> 
   const { previous, next } = neighbours(navigable, lesson.id)
   const coursePath = `/courses/${course.slug}`
   const isDone = progress.completedLessonIds.includes(lesson.id)
+  const portalLocale = await currentPortalLocale()
+  const tx = portalTextFor(portalLocale)
 
   return (
-    <article className="page-shell">
-      <CourseStyles />
-      <p className="curriculum__meta">
-        <Link href={coursePath}>{course.title}</Link>
-      </p>
-      <div className="section-heading">
-        <h1>{lesson.title}</h1>
-      </div>
-
-      {lesson.videoUrl && (
-        <p className="lesson-video">
-          <a href={lesson.videoUrl} target="_blank" rel="noreferrer">
-            Watch the video
-          </a>
+    <PortalTextProvider strings={portalClientStrings(portalLocale)}>
+      <article className="page-shell">
+        <CourseStyles />
+        <p className="curriculum__meta">
+          <Link href={coursePath}>{course.title}</Link>
         </p>
-      )}
+        <div className="section-heading">
+          <h1>{lesson.title}</h1>
+        </div>
 
-      {(lesson.content ?? []).map((block, index) => (
-        <BlockRenderer key={(block as { id?: string }).id || index} block={block} index={index} />
-      ))}
-
-      {lesson.resources && lesson.resources.length > 0 && (
-        <>
-          <h2>Resources</h2>
-          <ul className="lesson-resources">
-            {lesson.resources.map((resource, index) => {
-              const file = resource.file && typeof resource.file === 'object' ? (resource.file as Media) : null
-              if (!file?.url) return null
-              return (
-                <li key={index}>
-                  <a href={file.url} download>
-                    {resource.label || file.filename}
-                  </a>
-                </li>
-              )
-            })}
-          </ul>
-        </>
-      )}
-
-      {context.user && <MarkCompleteButton lessonId={lesson.id} completed={isDone} coursePath={coursePath} />}
-
-      <nav className="lesson-nav">
-        {previous?.slug ? (
-          <Link className="btn btn--ghost" href={`${coursePath}/${previous.slug}`}>
-            ← {previous.title}
-          </Link>
-        ) : (
-          <span />
+        {lesson.videoUrl && (
+          <p className="lesson-video">
+            <a href={lesson.videoUrl} target="_blank" rel="noreferrer">
+              {tx('lesson.watchVideo')}
+            </a>
+          </p>
         )}
-        {next?.slug ? (
-          <Link className="btn btn--ghost" href={`${coursePath}/${next.slug}`}>
-            {next.title} →
-          </Link>
-        ) : (
-          <span />
+
+        {(lesson.content ?? []).map((block, index) => (
+          <BlockRenderer key={(block as { id?: string }).id || index} block={block} index={index} />
+        ))}
+
+        {lesson.resources && lesson.resources.length > 0 && (
+          <>
+            <h2>{tx('lesson.resources')}</h2>
+            <ul className="lesson-resources">
+              {lesson.resources.map((resource, index) => {
+                const file = resource.file && typeof resource.file === 'object' ? (resource.file as Media) : null
+                if (!file?.url) return null
+                return (
+                  <li key={index}>
+                    <a href={file.url} download>
+                      {resource.label || file.filename}
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
-      </nav>
-    </article>
+
+        {context.user && <MarkCompleteButton lessonId={lesson.id} completed={isDone} coursePath={coursePath} />}
+
+        <nav className="lesson-nav">
+          {previous?.slug ? (
+            <Link className="btn btn--ghost" href={`${coursePath}/${previous.slug}`}>
+              {tx('lesson.previous', { title: previous.title })}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {next?.slug ? (
+            <Link className="btn btn--ghost" href={`${coursePath}/${next.slug}`}>
+              {tx('lesson.next', { title: next.title })}
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      </article>
+    </PortalTextProvider>
   )
 }

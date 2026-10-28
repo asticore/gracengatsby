@@ -2,6 +2,8 @@ import React from 'react'
 import type { Metadata } from 'next'
 
 import { LessonScreen } from '@/features/courses'
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
+import { portalText } from '@/features/multilingual/portalStrings'
 import { buildMetadata } from '@/utilities/seo'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +15,7 @@ export const dynamic = 'force-dynamic'
  * chance to refuse. The lesson body itself carries the real heading.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  return buildMetadata({ title: 'Lesson', seo: { noIndex: true } })
+  return buildMetadata({ title: portalText('lesson.metaTitle', await currentPortalLocale()), seo: { noIndex: true } })
 }
 
 export default async function LessonRoute({ params }: { params: Promise<{ slug: string; lesson: string }> }) {

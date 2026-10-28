@@ -5,11 +5,14 @@ import React, { useState } from 'react'
 
 import { useCart } from '@/engine/commerce/react'
 
+import { usePortalText } from './PortalText'
+
 /** Adds every line of a past order to the cart again (current prices and stock apply at checkout). */
 export const ReorderButton: React.FC<{ items: { product: number; quantity: number }[] }> = ({ items }) => {
   const { addItem } = useCart()
   const router = useRouter()
   const [busy, setBusy] = useState(false)
+  const t = usePortalText()
   return (
     <button
       type="button"
@@ -25,7 +28,7 @@ export const ReorderButton: React.FC<{ items: { product: number; quantity: numbe
         }
       }}
     >
-      {busy ? 'Adding...' : 'Order again'}
+      {busy ? t('orders.adding') : t('orders.orderAgain')}
     </button>
   )
 }

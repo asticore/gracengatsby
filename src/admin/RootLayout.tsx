@@ -34,18 +34,23 @@ import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { SessionWatch } from '@/admin/SessionWatch'
 import { THEME_SCRIPT } from '@/admin/context/themeScript'
 import { ImpersonationBanner } from '@/features/impersonation/components/ImpersonationBanner'
+import { AdminUiProvider } from './i18n/AdminUiProvider'
+import { getAdminUi } from './i18n/serverUi'
 
 export async function RootLayout({ children }: { children: ReactNode; config?: unknown; importMap?: unknown; serverFunction?: unknown }) {
   const context = await getAdminContext()
   const hasAdminAccess = hasAdminPanelAccess(context.user)
+  // The admin's own language (user choice, else browser, else English). Sets <html lang/dir>.
+  const ui = await getAdminUi()
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={ui.locale} dir={ui.dir} suppressHydrationWarning>
       <head>
         {/* Sets data-theme before first paint; see themeScript.ts. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>
+        <AdminUiProvider locale={ui.locale} dir={ui.dir} dict={ui.dict}>
         <DocumentEventsProvider>
           <NavProvider>
             <ThemeProvider>
@@ -73,6 +78,7 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
             </ThemeProvider>
           </NavProvider>
         </DocumentEventsProvider>
+        </AdminUiProvider>
       </body>
     </html>
   )

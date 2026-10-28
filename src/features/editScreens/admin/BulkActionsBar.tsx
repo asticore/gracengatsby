@@ -1,5 +1,7 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
@@ -45,6 +47,7 @@ const selectedBoxes = (): HTMLInputElement[] => Array.from(document.querySelecto
  * and lists each row that was refused with its reason.
  */
 export function BulkActionsBar(props: BulkBarProps) {
+  const t = useAdminT()
   const router = useRouter()
   const choices = bulkChoices(props)
   const [selected, setSelected] = useState<Array<{ id: number; label: string }>>([])
@@ -158,7 +161,7 @@ export function BulkActionsBar(props: BulkBarProps) {
   }
 
   return (
-    <div aria-label="Bulk actions" className="es-bulk" role="region">
+    <div aria-label={t('common.bulkActions')} className="es-bulk" role="region">
       <span className="es-bulk__count" aria-live="polite">
         {selected.length === 0 ? `Select ${props.noun}s with the boxes` : `${selected.length} selected`}
       </span>
@@ -214,7 +217,7 @@ export function BulkActionsBar(props: BulkBarProps) {
             {busy ? 'Working...' : 'Yes, do it'}
           </button>{' '}
           <button className="btn" disabled={busy} onClick={() => setConfirming(false)} type="button">
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       )}

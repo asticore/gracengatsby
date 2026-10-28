@@ -34,6 +34,7 @@ import { shouldShowRowActions } from '@/admin/list/quickEdit'
 import { PageSpeedBadge } from '@/features/pagespeed/ui/PageSpeedBadge'
 import { orderNameSearchBranches } from '@/features/ecommerce/server/orderSearch'
 import { BulkActionsBar } from '@/features/editScreens/admin/BulkActionsBar'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { actionRefusal } from '@/features/editScreens/bulk'
 import { bulkPermissions, isBulkCollection } from '@/features/editScreens/authors'
 import '@/features/editScreens/admin/edit-screens.css'
@@ -134,6 +135,7 @@ export async function ListView({
   }
 
   // Parse URL search params
+  const ui = await getAdminUi()
   const urlState = parseListSearchParams(searchParams)
 
   // Load saved user preferences
@@ -347,7 +349,7 @@ export async function ListView({
             />
           )}
           {result.docs.length === 0 ? (
-            <p className="list-empty">{trashView ? 'The trash is empty.' : 'No documents yet.'}</p>
+            <p className="list-empty">{trashView ? 'The trash is empty.' : ui.t('list.empty')}</p>
           ) : (
             <div className="list-table-wrapper">
               <table className="list-table">
@@ -498,7 +500,7 @@ export async function ListView({
                   })}`}
                   className="list-pagination-btn"
                 >
-                  Prev
+                  {ui.t('list.previous')}
                 </a>
               )}
               <span className="list-pagination-info">
@@ -517,7 +519,7 @@ export async function ListView({
                   })}`}
                   className="list-pagination-btn"
                 >
-                  Next
+                  {ui.t('list.next')}
                 </a>
               )}
               <span className="list-pagination-total">

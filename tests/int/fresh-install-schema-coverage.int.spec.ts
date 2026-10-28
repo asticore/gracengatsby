@@ -477,6 +477,12 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(await names('eg_site_settings')).toContain('account_settings_require_email_verification')
   })
 
+  it('adds the per-user admin interface language column to users', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_users')).toContain('admin_language')
+  })
+
   it('adds the two-factor backup code column and the customer enforcement setting', async () => {
     const names = async (t: string) =>
       ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
@@ -830,14 +836,15 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     expect(accessIndexes).toContain('eg_content_access_group_idx')
   })
 
-  it('password groups migration is registered right before organizations and is safe to run twice, keeping existing rows', async () => {
+  it('password groups migration is registered before organizations and is safe to run twice, keeping existing rows', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations.map((x) => x.name).slice(-5)).toEqual([
+    expect(migrations.map((x) => x.name).slice(-6)).toEqual([
       '20261123_100000_password_groups',
       '20261124_100000_organizations',
       '20261125_100000_translation_workflow',
       '20261126_100000_machine_translation',
       '20261127_100000_machine_autodraft',
+      '20261128_100000_admin_ui_language',
     ])
     const mod = await import('@/migrations/20261123_100000_password_groups')
     const { drizzle } = await import('drizzle-orm/d1')

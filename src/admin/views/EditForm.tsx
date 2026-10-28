@@ -32,6 +32,8 @@
  * a by-ID text input, not a real file picker - Phase 3 polish item).
  */
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import React, { useMemo } from 'react'
 import type { Field } from '@/engine'
 import { DocumentInfoProvider, FormProvider } from '@/admin/context'
@@ -170,6 +172,7 @@ export function splitFieldSections(fields: Field[]): FieldSection[] {
  * (draft flag, `_status`) live in `useDocumentSave`.
  */
 const SaveButton: React.FC<SaveTarget> = (target) => {
+  const t = useAdminT()
   const { busy, error, save } = useDocumentSave(target)
   const { draftsEnabled } = target
   return (
@@ -180,7 +183,7 @@ const SaveButton: React.FC<SaveTarget> = (target) => {
         </button>
       )}
       <button className="btn btn--primary" disabled={busy !== null} onClick={() => save('published')} type="button">
-        {busy === 'published' ? 'Saving...' : draftsEnabled ? 'Publish' : 'Save'}
+        {busy === 'published' ? 'Saving...' : draftsEnabled ? t('common.publish') : t('common.save')}
       </button>
       {error && <span style={{ color: 'var(--theme-error-500, #b3261e)' }}>{error}</span>}
     </div>

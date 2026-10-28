@@ -134,6 +134,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'settings-data-system', type: 'view', href: '/settings/data-system', label: 'Data and System' },
       { slug: 'theme-styles', type: 'view', href: '/theme-styles', label: 'Theming' },
       { slug: 'roles', type: 'view', href: '/roles', label: 'Roles' },
+      { slug: 'interface-languages', type: 'view', href: '/interface-languages', label: 'Interface languages' },
     ],
   },
 ]

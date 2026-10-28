@@ -1,5 +1,7 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { PasskeySignInButton } from '@/features/passkeys/components/PasskeySignInButton'
@@ -16,6 +18,7 @@ import { SecondFactorChoice, type SecondFactorMethod } from '@/features/security
  * - redirect=<path>: Redirects to this path after successful login (must be relative, start with /admin)
  */
 export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {}) {
+  const t = useAdminT()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -173,7 +176,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   return (
     <div className="admin-login">
       <div className="admin-login__card">
-        <h1 className="admin-login__title">Admin Login</h1>
+        <h1 className="admin-login__title">{t('login.heading')}</h1>
 
         <form onSubmit={handleSubmit}>
           {isSessionExpired && (
@@ -206,7 +209,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
           ) : (
             <>
           <div className="admin-login__field">
-            <label htmlFor="field-email">Email</label>
+            <label htmlFor="field-email">{t('login.email')}</label>
             <input
               id="field-email"
               name="email"
@@ -219,7 +222,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
           </div>
 
           <div className="admin-login__field">
-            <label htmlFor="field-password">Password</label>
+            <label htmlFor="field-password">{t('login.password')}</label>
             <input
               id="field-password"
               name="password"
@@ -234,7 +237,7 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
           )}
 
           <button className="btn btn--primary admin-login__submit" type="submit" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : pendingToken ? 'Verify' : 'Sign in'}
+            {isLoading ? 'Signing in...' : pendingToken ? 'Verify' : t('login.submit')}
           </button>
         </form>
 

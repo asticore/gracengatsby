@@ -49,8 +49,12 @@ const clean = (value: unknown): string => (typeof value === 'string' ? value.rep
  * The wording to use for one template. A blank subject or body falls back to the
  * built-in default, so filling in only one of the two still sends a full email.
  */
-export const templateFrom = (stored: StoredTemplates, key: EmailTemplateKey): EmailTemplate => {
-  const defaults = EMAIL_TEMPLATE_DEFAULTS[key]
+export const templateFrom = (
+  stored: StoredTemplates,
+  key: EmailTemplateKey,
+  builtIn: Record<EmailTemplateKey, EmailTemplate> = EMAIL_TEMPLATE_DEFAULTS,
+): EmailTemplate => {
+  const defaults = builtIn[key]
   const group = stored?.[key]
   return {
     subject: clean(group?.subject) || defaults.subject,

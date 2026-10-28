@@ -1345,6 +1345,21 @@ const nl: UiDictionary = {
   'orders.filter.toTip': "Toon bestellingen die op of vóór deze dag zijn geplaatst. Dagen zijn in UTC.",
   'orders.filter.clearTip': "Verwijder de filters voor status, betaling en datum.",
   'orders.filter.clearLabel': "Bestellingfilters wissen",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "Vervoerder voor het manifest",
+  'orders.manifest.carrierTip': "Alleen vervoerders die zijn ingeschakeld in Winkelinstellingen > Verzending, met opgeslagen sleutels",
+  'orders.manifest.allCarriers': "Alle vervoerders",
+  'orders.manifest.createTip': "Verwerkt de aangevinkte bestellingen met label, of alle pakketten met label die nog niet op een manifest staan als er niets is aangevinkt",
+  'orders.manifest.creating': "Aanmaken...",
+  'orders.manifest.create': "Manifest aanmaken",
+  'orders.manifest.createCount': "Manifest aanmaken ({count})",
+  'orders.manifest.print': "Afdrukken",
+  'orders.manifest.parcels': "pakket(ten)",
+  'orders.manifest.pickTip': "Vink de bestellingen aan die op dit manifest moeten. Als er niets is aangevinkt, gaan alle bestellingen met label erop.",
+  'orders.manifest.ticked': "{count} bestelling(en) aangevinkt",
+  'orders.manifest.pick': "Bestellingen kiezen",
+  'orders.manifest.noLabelled': "Nog geen bestellingen met label. Koop eerst een label.",
+  'orders.manifest.clearTicks': "Vinkjes wissen",
 }
 
 export default nl

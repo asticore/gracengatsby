@@ -1345,6 +1345,21 @@ const fr: UiDictionary = {
   'orders.filter.toTip': "Afficher les commandes passées à ce jour ou avant. Les jours sont en UTC.",
   'orders.filter.clearTip': "Supprimer les filtres de statut, de paiement et de date.",
   'orders.filter.clearLabel': "Effacer les filtres de commandes",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "Transporteur du bordereau",
+  'orders.manifest.carrierTip': "Seuls les transporteurs activés dans Paramètres de la boutique > Livraison, dont les clés sont enregistrées",
+  'orders.manifest.allCarriers': "Tous les transporteurs",
+  'orders.manifest.createTip': "Regroupe les commandes étiquetées cochées, ou tous les colis étiquetés pas encore sur un bordereau si aucune n’est cochée",
+  'orders.manifest.creating': "Création...",
+  'orders.manifest.create': "Créer le bordereau",
+  'orders.manifest.createCount': "Créer le bordereau ({count})",
+  'orders.manifest.print': "Imprimer",
+  'orders.manifest.parcels': "colis",
+  'orders.manifest.pickTip': "Cochez les commandes à mettre sur ce bordereau. Si aucune n’est cochée, toutes les commandes étiquetées sont incluses.",
+  'orders.manifest.ticked': "{count} commande(s) cochée(s)",
+  'orders.manifest.pick': "Choisir des commandes",
+  'orders.manifest.noLabelled': "Aucune commande étiquetée pour l’instant. Achetez d’abord une étiquette.",
+  'orders.manifest.clearTicks': "Retirer les coches",
 }
 
 export default fr

@@ -1345,6 +1345,21 @@ const ru: UiDictionary = {
   'orders.filter.toTip': "Показывать заказы, оформленные в этот день или раньше. Дни указаны в UTC.",
   'orders.filter.clearTip': "Убрать фильтры по статусу, оплате и дате.",
   'orders.filter.clearLabel': "Сбросить фильтры заказов",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "Перевозчик для манифеста",
+  'orders.manifest.carrierTip': "Только перевозчики, включённые в «Настройки магазина» > «Доставка», с сохранёнными ключами",
+  'orders.manifest.allCarriers': "Все перевозчики",
+  'orders.manifest.createTip': "Пакетно обработать отмеченные заказы с этикетками, а если ничего не отмечено, то все посылки с этикетками, ещё не вошедшие в манифест",
+  'orders.manifest.creating': "Создание...",
+  'orders.manifest.create': "Создать манифест",
+  'orders.manifest.createCount': "Создать манифест ({count})",
+  'orders.manifest.print': "Печать",
+  'orders.manifest.parcels': "посылка(и)",
+  'orders.manifest.pickTip': "Отметьте заказы, которые нужно включить в манифест. Если ничего не отмечено, включаются все заказы с этикетками.",
+  'orders.manifest.ticked': "Отмечено заказов: {count}",
+  'orders.manifest.pick': "Выбрать заказы",
+  'orders.manifest.noLabelled': "Пока нет заказов с этикетками. Сначала купите этикетку.",
+  'orders.manifest.clearTicks': "Снять отметки",
 }
 
 export default ru

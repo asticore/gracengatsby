@@ -1345,6 +1345,21 @@ const es: UiDictionary = {
   'orders.filter.toTip': "Mostrar los pedidos realizados hasta este día o antes. Los días están en UTC.",
   'orders.filter.clearTip': "Quitar los filtros de estado, pago y fecha.",
   'orders.filter.clearLabel': "Borrar filtros de pedidos",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "Transportista para el manifiesto",
+  'orders.manifest.carrierTip': "Solo los transportistas activados en Configuración de la tienda > Envío, con sus claves guardadas",
+  'orders.manifest.allCarriers': "Todos los transportistas",
+  'orders.manifest.createTip': "Procesa en lote los pedidos etiquetados marcados, o todos los paquetes etiquetados que aún no están en un manifiesto si no hay ninguno marcado",
+  'orders.manifest.creating': "Creando...",
+  'orders.manifest.create': "Crear manifiesto",
+  'orders.manifest.createCount': "Crear manifiesto ({count})",
+  'orders.manifest.print': "Imprimir",
+  'orders.manifest.parcels': "paquete(s)",
+  'orders.manifest.pickTip': "Marque los pedidos que incluirá en este manifiesto. Si no marca ninguno, se incluyen todos los pedidos etiquetados.",
+  'orders.manifest.ticked': "{count} pedido(s) marcado(s)",
+  'orders.manifest.pick': "Elegir pedidos",
+  'orders.manifest.noLabelled': "Aún no hay pedidos etiquetados. Compre primero una etiqueta.",
+  'orders.manifest.clearTicks': "Quitar marcas",
 }
 
 export default es

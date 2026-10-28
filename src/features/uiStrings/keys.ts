@@ -1385,6 +1385,21 @@ export const UI_STRING_SOURCE = {
   'orders.filter.toTip': "Show orders placed on or before this day. Days are in UTC.",
   'orders.filter.clearTip': "Remove the status, payment and date filters.",
   'orders.filter.clearLabel': "Clear order filters",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "Carrier for the manifest",
+  'orders.manifest.carrierTip': "Only carriers switched on in Shop settings > Shipping, with their keys saved",
+  'orders.manifest.allCarriers': "All carriers",
+  'orders.manifest.createTip': "Batch the ticked labelled orders, or every labelled parcel not on a manifest yet if none are ticked",
+  'orders.manifest.creating': "Creating...",
+  'orders.manifest.create': "Create manifest",
+  'orders.manifest.createCount': "Create manifest ({count})",
+  'orders.manifest.print': "Print",
+  'orders.manifest.parcels': "parcel(s)",
+  'orders.manifest.pickTip': "Tick the orders to put on this manifest. None ticked means all labelled orders.",
+  'orders.manifest.ticked': "{count} order(s) ticked",
+  'orders.manifest.pick': "Pick orders",
+  'orders.manifest.noLabelled': "No labelled orders yet. Buy a label first.",
+  'orders.manifest.clearTicks': "Clear ticks",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

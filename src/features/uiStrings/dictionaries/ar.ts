@@ -1345,6 +1345,21 @@ const ar: UiDictionary = {
   'orders.filter.toTip': "إظهار الطلبات المُقدَّمة في هذا اليوم أو قبله. الأيام بالتوقيت العالمي UTC.",
   'orders.filter.clearTip': "إزالة مرشحات الحالة والدفع والتاريخ.",
   'orders.filter.clearLabel': "مسح مرشحات الطلبات",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "شركة الشحن للبيان",
+  'orders.manifest.carrierTip': "شركات الشحن المفعّلة فقط في إعدادات المتجر > الشحن، مع حفظ مفاتيحها",
+  'orders.manifest.allCarriers': "كل شركات الشحن",
+  'orders.manifest.createTip': "معالجة الطلبات المحددة ذات الملصقات دفعة واحدة، أو كل الطرود ذات الملصقات غير المدرجة في بيان بعد إذا لم يُحدَّد شيء",
+  'orders.manifest.creating': "جارٍ الإنشاء...",
+  'orders.manifest.create': "إنشاء البيان",
+  'orders.manifest.createCount': "إنشاء البيان ({count})",
+  'orders.manifest.print': "طباعة",
+  'orders.manifest.parcels': "طرد/طرود",
+  'orders.manifest.pickTip': "حدّد الطلبات التي تريد إدراجها في هذا البيان. إذا لم يُحدَّد شيء فستُدرج كل الطلبات ذات الملصقات.",
+  'orders.manifest.ticked': "تم تحديد {count} طلب",
+  'orders.manifest.pick': "اختيار الطلبات",
+  'orders.manifest.noLabelled': "لا توجد طلبات ذات ملصقات بعد. اشترِ ملصقًا أولاً.",
+  'orders.manifest.clearTicks': "مسح التحديدات",
 }
 
 export default ar

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 /** A collapsed checklist of labelled orders. Ticking none means "all labelled orders not yet on a manifest". */
 export function OrdersManifestPicker({
@@ -12,14 +13,15 @@ export function OrdersManifestPicker({
   picked: number[]
   onChange: (ids: number[]) => void
 }) {
+  const t = useAdminT()
   const toggle = (id: number) => onChange(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id])
   return (
     <details className="list-toolbar-picker">
-      <summary className="list-toolbar-btn" title="Tick the orders to put on this manifest. None ticked means all labelled orders.">
-        {picked.length > 0 ? `${picked.length} order(s) ticked` : 'Pick orders'}
+      <summary className="list-toolbar-btn" title={t('orders.manifest.pickTip')}>
+        {picked.length > 0 ? t('orders.manifest.ticked', { count: picked.length }) : t('orders.manifest.pick')}
       </summary>
       {orders.length === 0 ? (
-        <p>No labelled orders yet. Buy a label first.</p>
+        <p>{t('orders.manifest.noLabelled')}</p>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 240, overflowY: 'auto' }}>
           {orders.map((o) => (
@@ -32,7 +34,7 @@ export function OrdersManifestPicker({
         </ul>
       )}
       {picked.length > 0 && (
-        <button type="button" className="list-toolbar-btn" onClick={() => onChange([])}>Clear ticks</button>
+        <button type="button" className="list-toolbar-btn" onClick={() => onChange([])}>{t('orders.manifest.clearTicks')}</button>
       )}
     </details>
   )

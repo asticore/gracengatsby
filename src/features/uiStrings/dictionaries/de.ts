@@ -1346,6 +1346,21 @@ const de: UiDictionary = {
   'orders.filter.toTip': "Bestellungen anzeigen, die an diesem Tag oder früher aufgegeben wurden. Die Tage sind in UTC.",
   'orders.filter.clearTip': "Die Filter für Status, Zahlung und Datum entfernen.",
   'orders.filter.clearLabel': "Bestellfilter löschen",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "Versanddienstleister für das Manifest",
+  'orders.manifest.carrierTip': "Nur Versanddienstleister, die unter Shop-Einstellungen > Versand aktiviert sind und deren Schlüssel gespeichert wurden",
+  'orders.manifest.allCarriers': "Alle Versanddienstleister",
+  'orders.manifest.createTip': "Stapelt die markierten Bestellungen mit Etikett oder alle Pakete mit Etikett, die noch auf keinem Manifest stehen, wenn keine markiert sind",
+  'orders.manifest.creating': "Wird erstellt...",
+  'orders.manifest.create': "Manifest erstellen",
+  'orders.manifest.createCount': "Manifest erstellen ({count})",
+  'orders.manifest.print': "Drucken",
+  'orders.manifest.parcels': "Paket(e)",
+  'orders.manifest.pickTip': "Markieren Sie die Bestellungen, die in dieses Manifest sollen. Ohne Markierung werden alle Bestellungen mit Etikett verwendet.",
+  'orders.manifest.ticked': "{count} Bestellung(en) markiert",
+  'orders.manifest.pick': "Bestellungen auswählen",
+  'orders.manifest.noLabelled': "Noch keine Bestellungen mit Etikett. Kaufen Sie zuerst ein Etikett.",
+  'orders.manifest.clearTicks': "Auswahl aufheben",
 }
 
 export default de

@@ -1345,6 +1345,21 @@ const hi: UiDictionary = {
   'orders.filter.toTip': "इस दिन या उससे पहले दिए गए ऑर्डर दिखाएँ। दिन UTC में हैं।",
   'orders.filter.clearTip': "स्थिति, भुगतान और तारीख़ के फ़िल्टर हटाएँ।",
   'orders.filter.clearLabel': "ऑर्डर फ़िल्टर साफ़ करें",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "मेनिफ़ेस्ट के लिए कैरियर",
+  'orders.manifest.carrierTip': "केवल वे कैरियर जो स्टोर सेटिंग्स > शिपिंग में चालू हैं और जिनकी कुंजियाँ सहेजी गई हैं",
+  'orders.manifest.allCarriers': "सभी कैरियर",
+  'orders.manifest.createTip': "चिह्नित लेबल वाले ऑर्डर एक साथ प्रोसेस करें, या यदि कुछ भी चिह्नित नहीं है तो अभी तक मेनिफ़ेस्ट में न जुड़े सभी लेबल वाले पार्सल",
+  'orders.manifest.creating': "बनाया जा रहा है...",
+  'orders.manifest.create': "मेनिफ़ेस्ट बनाएँ",
+  'orders.manifest.createCount': "मेनिफ़ेस्ट बनाएँ ({count})",
+  'orders.manifest.print': "प्रिंट",
+  'orders.manifest.parcels': "पार्सल",
+  'orders.manifest.pickTip': "इस मेनिफ़ेस्ट में डालने वाले ऑर्डर चिह्नित करें। कुछ भी चिह्नित न होने पर सभी लेबल वाले ऑर्डर शामिल होंगे।",
+  'orders.manifest.ticked': "{count} ऑर्डर चिह्नित",
+  'orders.manifest.pick': "ऑर्डर चुनें",
+  'orders.manifest.noLabelled': "अभी कोई लेबल वाला ऑर्डर नहीं है। पहले लेबल खरीदें।",
+  'orders.manifest.clearTicks': "चिह्न हटाएँ",
 }
 
 export default hi

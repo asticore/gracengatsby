@@ -13,6 +13,7 @@ import { BundleContentsList } from '@/components/BundleContentsList'
 import { useBundleInfo } from '@/features/ecommerce/lib/useBundleInfo'
 import { useDisplayCurrencyState, useDisplayMoney } from '@/components/DisplayCurrencyContext'
 import type { Product } from '@/engage-types'
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 
 /**
  * Was `useCurrency().formatCurrency` (real `the vendor package`
@@ -25,6 +26,7 @@ import type { Product } from '@/engage-types'
  */
 export default function CartPage() {
   const { cart, decrementItem, incrementItem, removeItem, isLoading } = useCart()
+  const t = useStoreText()
   const money = useDisplayMoney()
   const displayState = useDisplayCurrencyState()
 
@@ -33,11 +35,11 @@ export default function CartPage() {
 
   return (
     <div className="page-shell">
-      <h1>Your cart</h1>
+      <h1>{t('store.yourCart')}</h1>
 
       {items.length === 0 ? (
         <p>
-          Your cart is empty. <Link href="/shop">Continue shopping</Link>
+          {t('store.emptyCart')} <Link href="/shop">{t('store.continueShopping')}</Link>
         </p>
       ) : (
         <>
@@ -55,7 +57,7 @@ export default function CartPage() {
                   className="flex items-center justify-between gap-6 border-b border-[var(--color-line)] py-5"
                 >
                   <div>
-                    <h3>{typeof product === 'object' ? product.title : 'Item'}</h3>
+                    <h3>{typeof product === 'object' ? product.title : t('store.item')}</h3>
                     {line && line.ok && line.variationLabel ? <p className="opacity-70">{line.variationLabel}</p> : null}
                     {readAddOnChoices(item.addOns).length > 0 ? <p className="text-[0.85rem] opacity-70">{addOnSummary(readAddOnChoices(item.addOns))}</p> : null}
                     <p>{money(unitPrice)}</p>

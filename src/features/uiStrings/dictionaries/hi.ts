@@ -1242,6 +1242,26 @@ const hi: UiDictionary = {
   'settings.link.security-audit.description': "एडमिन: हर साइन-इन, विफल प्रयास, लॉकआउट और खाता सुरक्षा बदलाव, सबसे नए पहले, घटना या खाते के अनुसार फ़िल्टर योग्य।",
   'settings.link.connected-accounts.label': "जुड़े हुए खाते",
   'settings.link.connected-accounts.description': "अपने खाते पर Google, GitHub और अन्य साइन-इन प्रदाता जोड़ें या हटाएँ। प्रदाता सेटअप ऊपर सुरक्षा > सोशल लॉगिन में है।",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "आपकी कार्ट",
+  "store.item": "आइटम",
+  "store.from": "से ",
+  "store.addingProgress": "जोड़ा जा रहा है...",
+  "store.invalidAmount": "कृपया मान्य राशि दर्ज करें।",
+  "store.giftCardsUnavailable": "गिफ़्ट कार्ड अभी उपलब्ध नहीं हैं।",
+  "store.productUnavailable": "यह उत्पाद अभी उपलब्ध नहीं है।",
+  "store.noProductsInGroup": "इस समूह में अभी कोई उत्पाद नहीं है।",
+  "store.chooseOption": "एक विकल्प चुनें",
+  "store.firstName": "पहला नाम",
+  "store.lastName": "अंतिम नाम",
+  "store.address": "पता",
+  "store.suburbCity": "शहर",
+  "store.state": "राज्य",
+  "store.postcode": "पिन कोड",
+  "store.country": "देश (जैसे AU)",
+  "store.couldNotPriceCart": "आपकी कार्ट की कीमत की गणना नहीं हो सकी।",
+  "store.storeCredit": "स्टोर क्रेडिट",
 }
 
 export default hi

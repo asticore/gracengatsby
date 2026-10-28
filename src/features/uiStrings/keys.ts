@@ -1283,6 +1283,26 @@ export const UI_STRING_SOURCE = {
   'settings.link.security-audit.description': "Admins: every sign-in, failed attempt, lockout and account security change, newest first, filterable by event or account.",
   'settings.link.connected-accounts.label': "Connected accounts",
   'settings.link.connected-accounts.description': "Connect or disconnect Google, GitHub and other sign-in providers on your own account. Provider setup is above in Security > Social login.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Your cart",
+  "store.item": "Item",
+  "store.from": "From ",
+  "store.addingProgress": "Adding...",
+  "store.invalidAmount": "Please enter a valid amount.",
+  "store.giftCardsUnavailable": "Gift cards are not available right now.",
+  "store.productUnavailable": "This product is not available right now.",
+  "store.noProductsInGroup": "No products in this group yet.",
+  "store.chooseOption": "Choose an option",
+  "store.firstName": "First name",
+  "store.lastName": "Last name",
+  "store.address": "Address",
+  "store.suburbCity": "Suburb / city",
+  "store.state": "State",
+  "store.postcode": "Postcode",
+  "store.country": "Country (e.g. AU)",
+  "store.couldNotPriceCart": "Could not price your cart.",
+  "store.storeCredit": "Store credit",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

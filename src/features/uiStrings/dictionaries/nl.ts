@@ -1242,6 +1242,26 @@ const nl: UiDictionary = {
   'settings.link.security-audit.description': "Beheerders: elke aanmelding, mislukte poging, blokkering en wijziging in accountbeveiliging, nieuwste eerst, filterbaar op gebeurtenis of account.",
   'settings.link.connected-accounts.label': "Gekoppelde accounts",
   'settings.link.connected-accounts.description': "Koppel of ontkoppel Google, GitHub en andere inlogproviders aan je eigen account. De instelling van providers staat hierboven bij Beveiliging > Social login.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Je winkelwagen",
+  "store.item": "Artikel",
+  "store.from": "Vanaf ",
+  "store.addingProgress": "Bezig met toevoegen...",
+  "store.invalidAmount": "Vul een geldig bedrag in.",
+  "store.giftCardsUnavailable": "Cadeaukaarten zijn momenteel niet beschikbaar.",
+  "store.productUnavailable": "Dit product is momenteel niet beschikbaar.",
+  "store.noProductsInGroup": "Er zijn in deze groep nog geen producten.",
+  "store.chooseOption": "Kies een optie",
+  "store.firstName": "Voornaam",
+  "store.lastName": "Achternaam",
+  "store.address": "Adres",
+  "store.suburbCity": "Plaats",
+  "store.state": "Provincie",
+  "store.postcode": "Postcode",
+  "store.country": "Land (bijv. AU)",
+  "store.couldNotPriceCart": "We konden je winkelwagen niet prijzen.",
+  "store.storeCredit": "Tegoed",
 }
 
 export default nl

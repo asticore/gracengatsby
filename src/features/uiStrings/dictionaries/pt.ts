@@ -1242,6 +1242,26 @@ const pt: UiDictionary = {
   'settings.link.security-audit.description': "Administradores: todos os logins, tentativas falhas, bloqueios e alterações de segurança de contas, do mais recente para o mais antigo, filtráveis por evento ou conta.",
   'settings.link.connected-accounts.label': "Contas conectadas",
   'settings.link.connected-accounts.description': "Conecte ou desconecte Google, GitHub e outros provedores de login na sua própria conta. A configuração dos provedores fica acima, em Segurança > Login social.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Seu carrinho",
+  "store.item": "Item",
+  "store.from": "A partir de ",
+  "store.addingProgress": "Adicionando...",
+  "store.invalidAmount": "Insira um valor válido.",
+  "store.giftCardsUnavailable": "Cartões-presente não estão disponíveis no momento.",
+  "store.productUnavailable": "Este produto não está disponível no momento.",
+  "store.noProductsInGroup": "Este grupo ainda não tem produtos.",
+  "store.chooseOption": "Escolha uma opção",
+  "store.firstName": "Nome",
+  "store.lastName": "Sobrenome",
+  "store.address": "Endereço",
+  "store.suburbCity": "Cidade",
+  "store.state": "Estado",
+  "store.postcode": "CEP",
+  "store.country": "País (ex.: AU)",
+  "store.couldNotPriceCart": "Não foi possível calcular o seu carrinho.",
+  "store.storeCredit": "Crédito na loja",
 }
 
 export default pt

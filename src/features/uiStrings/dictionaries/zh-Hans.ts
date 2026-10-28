@@ -1241,6 +1241,26 @@ const zhHans: UiDictionary = {
   'settings.link.security-audit.description': "管理员：所有登录、失败尝试、锁定和账户安全变更，按最新排序，可按事件或账户筛选。",
   'settings.link.connected-accounts.label': "已连接的账户",
   'settings.link.connected-accounts.description': "在您自己的账户上连接或断开 Google、GitHub 等登录提供商。提供商设置位于上方的\"安全 > 社交登录\"中。",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "您的购物车",
+  "store.item": "商品",
+  "store.from": "起价 ",
+  "store.addingProgress": "添加中...",
+  "store.invalidAmount": "请输入有效金额。",
+  "store.giftCardsUnavailable": "礼品卡目前不可用。",
+  "store.productUnavailable": "该商品目前不可用。",
+  "store.noProductsInGroup": "该分组暂时没有商品。",
+  "store.chooseOption": "请选择",
+  "store.firstName": "名字",
+  "store.lastName": "姓氏",
+  "store.address": "地址",
+  "store.suburbCity": "城市",
+  "store.state": "省/州",
+  "store.postcode": "邮政编码",
+  "store.country": "国家（例如 AU）",
+  "store.couldNotPriceCart": "无法为您的购物车计算价格。",
+  "store.storeCredit": "商店余额",
 }
 
 export default zhHans

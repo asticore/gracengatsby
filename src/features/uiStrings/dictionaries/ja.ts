@@ -1242,6 +1242,26 @@ const ja: UiDictionary = {
   'settings.link.security-audit.description': "管理者向け：すべてのサインイン、失敗した試行、ロックアウト、アカウントのセキュリティ変更を新しい順に表示し、イベントやアカウントで絞り込めます。",
   'settings.link.connected-accounts.label': "連携アカウント",
   'settings.link.connected-accounts.description': "ご自身のアカウントでGoogle、GitHubなどのサインインプロバイダーを連携または解除します。プロバイダーの設定は上のセキュリティ > ソーシャルログインにあります。",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "カート",
+  "store.item": "商品",
+  "store.from": "～から",
+  "store.addingProgress": "追加中...",
+  "store.invalidAmount": "有効な金額を入力してください。",
+  "store.giftCardsUnavailable": "ギフトカードは現在ご利用いただけません。",
+  "store.productUnavailable": "この商品は現在ご利用いただけません。",
+  "store.noProductsInGroup": "このグループにはまだ商品がありません。",
+  "store.chooseOption": "オプションを選択",
+  "store.firstName": "名",
+  "store.lastName": "姓",
+  "store.address": "住所",
+  "store.suburbCity": "市区町村",
+  "store.state": "都道府県",
+  "store.postcode": "郵便番号",
+  "store.country": "国（例: AU）",
+  "store.couldNotPriceCart": "カートの金額を計算できませんでした。",
+  "store.storeCredit": "ストアクレジット",
 }
 
 export default ja

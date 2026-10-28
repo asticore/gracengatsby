@@ -1242,6 +1242,26 @@ const ar: UiDictionary = {
   'settings.link.security-audit.description': "المسؤولون: كل تسجيل دخول ومحاولة فاشلة وقفل وتغيير أمني للحسابات، الأحدث أولاً، ويمكن التصفية حسب الحدث أو الحساب.",
   'settings.link.connected-accounts.label': "الحسابات المرتبطة",
   'settings.link.connected-accounts.description': "اربط أو افصل Google وGitHub وغيرها من مزودي تسجيل الدخول على حسابك. يوجد إعداد المزودين أعلاه في الأمان > تسجيل الدخول الاجتماعي.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "سلة التسوق",
+  "store.item": "عنصر",
+  "store.from": "بدءًا من ",
+  "store.addingProgress": "جارٍ الإضافة...",
+  "store.invalidAmount": "يُرجى إدخال مبلغ صالح.",
+  "store.giftCardsUnavailable": "بطاقات الهدايا غير متاحة حاليًا.",
+  "store.productUnavailable": "هذا المنتج غير متاح حاليًا.",
+  "store.noProductsInGroup": "لا توجد منتجات في هذه المجموعة بعد.",
+  "store.chooseOption": "اختر خيارًا",
+  "store.firstName": "الاسم الأول",
+  "store.lastName": "اسم العائلة",
+  "store.address": "العنوان",
+  "store.suburbCity": "المدينة",
+  "store.state": "الولاية",
+  "store.postcode": "الرمز البريدي",
+  "store.country": "الدولة (مثال: AU)",
+  "store.couldNotPriceCart": "تعذّر احتساب سعر سلة التسوق.",
+  "store.storeCredit": "رصيد المتجر",
 }
 
 export default ar

@@ -1242,6 +1242,26 @@ const ko: UiDictionary = {
   'settings.link.security-audit.description': "관리자: 모든 로그인, 실패 시도, 잠금, 계정 보안 변경을 최신순으로 보고 이벤트나 계정으로 거를 수 있습니다.",
   'settings.link.connected-accounts.label': "연결된 계정",
   'settings.link.connected-accounts.description': "본인 계정에서 Google, GitHub 등 로그인 제공업체를 연결하거나 해제합니다. 제공업체 설정은 위의 보안 > 소셜 로그인에 있습니다.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "장바구니",
+  "store.item": "상품",
+  "store.from": "~부터 ",
+  "store.addingProgress": "담는 중...",
+  "store.invalidAmount": "올바른 금액을 입력해 주세요.",
+  "store.giftCardsUnavailable": "선물 카드는 현재 이용할 수 없습니다.",
+  "store.productUnavailable": "이 상품은 현재 이용할 수 없습니다.",
+  "store.noProductsInGroup": "이 그룹에는 아직 상품이 없습니다.",
+  "store.chooseOption": "옵션 선택",
+  "store.firstName": "이름",
+  "store.lastName": "성",
+  "store.address": "주소",
+  "store.suburbCity": "시/구",
+  "store.state": "시/도",
+  "store.postcode": "우편번호",
+  "store.country": "국가(예: AU)",
+  "store.couldNotPriceCart": "장바구니 금액을 계산할 수 없습니다.",
+  "store.storeCredit": "스토어 크레딧",
 }
 
 export default ko

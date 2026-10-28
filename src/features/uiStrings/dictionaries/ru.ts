@@ -1242,6 +1242,26 @@ const ru: UiDictionary = {
   'settings.link.security-audit.description': "Администраторы: все входы, неудачные попытки, блокировки и изменения безопасности учётных записей, сначала новые, с фильтрами по событию или учётной записи.",
   'settings.link.connected-accounts.label': "Связанные учётные записи",
   'settings.link.connected-accounts.description': "Подключайте и отключайте Google, GitHub и другие провайдеры входа для своей учётной записи. Настройка провайдеров находится выше, в разделе «Безопасность» > «Вход через соцсети».",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Ваша корзина",
+  "store.item": "Товар",
+  "store.from": "От ",
+  "store.addingProgress": "Добавляем...",
+  "store.invalidAmount": "Введите корректную сумму.",
+  "store.giftCardsUnavailable": "Подарочные карты сейчас недоступны.",
+  "store.productUnavailable": "Этот товар сейчас недоступен.",
+  "store.noProductsInGroup": "В этой группе пока нет товаров.",
+  "store.chooseOption": "Выберите вариант",
+  "store.firstName": "Имя",
+  "store.lastName": "Фамилия",
+  "store.address": "Адрес",
+  "store.suburbCity": "Город",
+  "store.state": "Область",
+  "store.postcode": "Почтовый индекс",
+  "store.country": "Страна (например, AU)",
+  "store.couldNotPriceCart": "Не удалось рассчитать корзину.",
+  "store.storeCredit": "Кредит магазина",
 }
 
 export default ru

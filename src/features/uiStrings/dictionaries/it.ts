@@ -1345,6 +1345,21 @@ const it: UiDictionary = {
   'orders.filter.toTip': "Mostra gli ordini effettuati in questo giorno o prima. I giorni sono in UTC.",
   'orders.filter.clearTip': "Rimuovi i filtri di stato, pagamento e data.",
   'orders.filter.clearLabel': "Cancella filtri ordini",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "Corriere per il manifesto",
+  'orders.manifest.carrierTip': "Solo i corrieri attivati in Impostazioni negozio > Spedizione, con le chiavi salvate",
+  'orders.manifest.allCarriers': "Tutti i corrieri",
+  'orders.manifest.createTip': "Elabora in blocco gli ordini etichettati selezionati, o tutti i pacchi etichettati non ancora in un manifesto se nessuno è selezionato",
+  'orders.manifest.creating': "Creazione...",
+  'orders.manifest.create': "Crea manifesto",
+  'orders.manifest.createCount': "Crea manifesto ({count})",
+  'orders.manifest.print': "Stampa",
+  'orders.manifest.parcels': "pacco/i",
+  'orders.manifest.pickTip': "Seleziona gli ordini da inserire in questo manifesto. Se non selezioni nulla, vengono inclusi tutti gli ordini etichettati.",
+  'orders.manifest.ticked': "{count} ordine/i selezionato/i",
+  'orders.manifest.pick': "Scegli gli ordini",
+  'orders.manifest.noLabelled': "Nessun ordine etichettato per ora. Acquista prima un’etichetta.",
+  'orders.manifest.clearTicks': "Rimuovi selezioni",
 }
 
 export default it

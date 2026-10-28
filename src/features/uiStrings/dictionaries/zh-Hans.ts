@@ -1344,6 +1344,21 @@ const zhHans: UiDictionary = {
   'orders.filter.toTip': "显示在此日或之前下单的订单。日期以 UTC 为准。",
   'orders.filter.clearTip': "移除状态、付款和日期筛选。",
   'orders.filter.clearLabel': "清除订单筛选",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "清单的承运商",
+  'orders.manifest.carrierTip': "仅显示在“商店设置 > 配送”中已启用且已保存密钥的承运商",
+  'orders.manifest.allCarriers': "所有承运商",
+  'orders.manifest.createTip': "批量处理已勾选的带面单订单；若未勾选，则处理所有尚未加入清单的带面单包裹",
+  'orders.manifest.creating': "创建中...",
+  'orders.manifest.create': "创建清单",
+  'orders.manifest.createCount': "创建清单（{count}）",
+  'orders.manifest.print': "打印",
+  'orders.manifest.parcels': "个包裹",
+  'orders.manifest.pickTip': "勾选要放入此清单的订单。若未勾选，则包含所有带面单的订单。",
+  'orders.manifest.ticked': "已勾选 {count} 个订单",
+  'orders.manifest.pick': "选择订单",
+  'orders.manifest.noLabelled': "暂无带面单的订单。请先购买面单。",
+  'orders.manifest.clearTicks': "取消勾选",
 }
 
 export default zhHans

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import { OrdersManifestPicker } from './OrdersManifestPicker'
 
@@ -9,6 +10,7 @@ type Options = { carriers: { id: string; label: string }[]; orders: { id: number
 
 /** Orders list toolbar: batch every labelled parcel not yet on a manifest into one driver manifest. */
 export function OrdersManifestAction() {
+  const t = useAdminT()
   const [options, setOptions] = useState<Options>({ carriers: [], orders: [] })
   const [carrier, setCarrier] = useState('')
   const [picked, setPicked] = useState<number[]>([])
@@ -51,20 +53,20 @@ export function OrdersManifestAction() {
 
   return (
     <span className="list-toolbar-manifest">
-      <select value={carrier} onChange={(e) => setCarrier(e.target.value)} aria-label="Carrier for the manifest" className="list-filter-value-input" title="Only carriers switched on in Shop settings > Shipping, with their keys saved">
-        <option value="">All carriers</option>
+      <select value={carrier} onChange={(e) => setCarrier(e.target.value)} aria-label={t('orders.manifest.carrierLabel')} className="list-filter-value-input" title={t('orders.manifest.carrierTip')}>
+        <option value="">{t('orders.manifest.allCarriers')}</option>
         {options.carriers.map((c) => (
           <option key={c.id} value={c.id}>{c.label}</option>
         ))}
       </select>
       <OrdersManifestPicker orders={options.orders} picked={picked} onChange={setPicked} />
-      <button type="button" className="list-toolbar-btn" disabled={busy} onClick={create} title="Batch the ticked labelled orders, or every labelled parcel not on a manifest yet if none are ticked">
-        {busy ? 'Creating...' : picked.length > 0 ? `Create manifest (${picked.length})` : 'Create manifest'}
+      <button type="button" className="list-toolbar-btn" disabled={busy} onClick={create} title={t('orders.manifest.createTip')}>
+        {busy ? t('orders.manifest.creating') : picked.length > 0 ? t('orders.manifest.createCount', { count: picked.length }) : t('orders.manifest.create')}
       </button>
       {made && (
         <span role="status">
-          {made.number}: {made.totals.parcels} parcel(s) -{' '}
-          <a href={made.htmlUrl} target="_blank" rel="noopener noreferrer">Print</a> | <a href={made.csvUrl}>CSV</a>
+          {made.number}: {made.totals.parcels} {t('orders.manifest.parcels')} -{' '}
+          <a href={made.htmlUrl} target="_blank" rel="noopener noreferrer">{t('orders.manifest.print')}</a> | <a href={made.csvUrl}>CSV</a>
         </span>
       )}
       {error && <span role="alert">{error}</span>}

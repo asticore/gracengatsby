@@ -1345,6 +1345,21 @@ const ja: UiDictionary = {
   'orders.filter.toTip': "この日以前に行われた注文を表示します。日付はUTCです。",
   'orders.filter.clearTip': "ステータス、支払い、日付のフィルターを解除します。",
   'orders.filter.clearLabel': "注文フィルターをクリア",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "マニフェストの配送業者",
+  'orders.manifest.carrierTip': "ショップ設定 > 配送 で有効にされ、キーが保存された配送業者のみ",
+  'orders.manifest.allCarriers': "すべての配送業者",
+  'orders.manifest.createTip': "チェックした発送ラベル付き注文を一括処理します。チェックがない場合は、まだマニフェストにないラベル付きの荷物すべてを処理します",
+  'orders.manifest.creating': "作成中...",
+  'orders.manifest.create': "マニフェストを作成",
+  'orders.manifest.createCount': "マニフェストを作成（{count}）",
+  'orders.manifest.print': "印刷",
+  'orders.manifest.parcels': "個の荷物",
+  'orders.manifest.pickTip': "このマニフェストに含める注文にチェックを入れます。チェックがなければ、ラベル付きのすべての注文が対象になります。",
+  'orders.manifest.ticked': "{count} 件の注文を選択中",
+  'orders.manifest.pick': "注文を選択",
+  'orders.manifest.noLabelled': "ラベル付きの注文はまだありません。先にラベルを購入してください。",
+  'orders.manifest.clearTicks': "チェックを外す",
 }
 
 export default ja

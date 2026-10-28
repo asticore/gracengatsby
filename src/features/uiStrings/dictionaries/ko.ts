@@ -1345,6 +1345,21 @@ const ko: UiDictionary = {
   'orders.filter.toTip': "이 날짜 이전에 접수된 주문을 표시합니다. 날짜는 UTC 기준입니다.",
   'orders.filter.clearTip': "상태, 결제, 날짜 필터를 제거합니다.",
   'orders.filter.clearLabel': "주문 필터 지우기",
+  // --- admin leftovers (orders manifest) ---
+  'orders.manifest.carrierLabel': "매니페스트 운송업체",
+  'orders.manifest.carrierTip': "쇼핑몰 설정 > 배송에서 켜져 있고 키가 저장된 운송업체만 표시됩니다",
+  'orders.manifest.allCarriers': "모든 운송업체",
+  'orders.manifest.createTip': "선택한 라벨 발행 주문을 일괄 처리하며, 선택한 항목이 없으면 매니페스트에 아직 없는 라벨 발행 소포 전체를 처리합니다",
+  'orders.manifest.creating': "생성 중...",
+  'orders.manifest.create': "매니페스트 생성",
+  'orders.manifest.createCount': "매니페스트 생성 ({count})",
+  'orders.manifest.print': "인쇄",
+  'orders.manifest.parcels': "개 소포",
+  'orders.manifest.pickTip': "이 매니페스트에 넣을 주문을 선택합니다. 아무것도 선택하지 않으면 라벨이 발행된 모든 주문이 포함됩니다.",
+  'orders.manifest.ticked': "{count}개 주문 선택됨",
+  'orders.manifest.pick': "주문 선택",
+  'orders.manifest.noLabelled': "아직 라벨이 발행된 주문이 없습니다. 먼저 라벨을 구매하세요.",
+  'orders.manifest.clearTicks': "선택 해제",
 }
 
 export default ko

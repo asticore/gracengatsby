@@ -25,7 +25,7 @@ import { passkeySignInAvailable } from '../passkeysWiring'
 import { inspectLink, safeLandingPath } from '@/features/passwordless'
 import { requestClient } from '../session'
 import { accountTexts } from '../portalCopy'
-import { socialMessageText } from '../messages'
+import { passwordHintSay, socialMessageText } from '../messages'
 
 /**
  * The four screens an unauthenticated visitor can reach.
@@ -82,8 +82,8 @@ export const RegisterScreen: React.FC = async () => {
 
   const engine = await getEngine()
   const providers = await registerProviders(engine)
-  const rules = await passwordFormRules(engine)
   const tx = await accountTexts()
+  const rules = await passwordFormRules(engine, passwordHintSay(tx))
 
   return (
     <AuthShell title={tx('auth.createAccount')} intro={tx('auth.createAccountIntro')}>
@@ -124,7 +124,7 @@ export const ResetPasswordScreen: React.FC<{ token?: string }> = async ({ token 
 
   return (
     <AuthShell title={tx('auth.chooseNewPassword')} intro={tx('auth.resetIntro', { minutes: RESET_TTL_MINUTES })}>
-      <ResetPasswordForm token={token} rules={await passwordFormRules(engine)} />
+      <ResetPasswordForm token={token} rules={await passwordFormRules(engine, passwordHintSay(tx))} />
     </AuthShell>
   )
 }

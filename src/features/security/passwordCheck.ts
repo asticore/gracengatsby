@@ -1,7 +1,7 @@
 import type { Engine } from '@/engine'
 
 import { getSecuritySettings } from './settings'
-import { passwordChangeDue, passwordHint, passwordProblems, type PasswordContext } from './passwordPolicy'
+import { passwordChangeDue, passwordHint, passwordProblems, type PasswordContext, type PasswordHintSay } from './passwordPolicy'
 import { DEFAULT_PASSWORD_POLICY, type PasswordPolicy } from './passwordPolicyDefaults'
 import { readPasswordStateById } from './passwordStore'
 
@@ -45,13 +45,13 @@ export const passwordChangeIsDue = async (engine: Engine, userId: number | strin
 }
 
 /** What a password form needs from the server: the length floor and the line that describes the active rules. */
-export const passwordRulesOf = (policy: PasswordPolicy): { minLength: number; hint: string } => ({
+export const passwordRulesOf = (policy: PasswordPolicy, say?: PasswordHintSay): { minLength: number; hint: string } => ({
   minLength: policy.minLength,
-  hint: passwordHint(policy),
+  hint: passwordHint(policy, say),
 })
 
 /** The form rules for the account screens, read from the Security settings. */
-export const passwordFormRules = async (engine: Engine): Promise<{ minLength: number; hint: string }> => {
+export const passwordFormRules = async (engine: Engine, say?: PasswordHintSay): Promise<{ minLength: number; hint: string }> => {
   const settings = await getSecuritySettings(engine).catch((): null => null)
-  return passwordRulesOf(settings?.passwordPolicy ?? DEFAULT_PASSWORD_POLICY)
+  return passwordRulesOf(settings?.passwordPolicy ?? DEFAULT_PASSWORD_POLICY, say)
 }

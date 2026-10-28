@@ -169,6 +169,8 @@ export const EditorDock: React.FC<{
   formPanel?: React.ReactNode
   /** Page-level settings (title, slug, SEO); shown in the Settings tab when no block is selected. */
   pagePanel?: React.ReactNode
+  /** Translate mode: replaces the dock body while a non-default language is being edited. */
+  translatePanel?: React.ReactNode
   /** The device being edited (top bar toggle); responsive settings in the panels follow it. */
   device?: EditDevice
   /** Settings for the column selected on the canvas; shown in place of a block's settings. */
@@ -207,6 +209,7 @@ export const EditorDock: React.FC<{
   lockUi,
   formPanel,
   pagePanel,
+  translatePanel,
   device,
   columnPanel,
   onSelectColumn,
@@ -297,7 +300,9 @@ export const EditorDock: React.FC<{
       </div>
 
       <div className="ve-dock__body">
-        {tab === 'form' && formPanel ? (
+        {translatePanel ? (
+          translatePanel
+        ) : tab === 'form' && formPanel ? (
           formPanel
         ) : tab === 'navigator' ? (
           <>

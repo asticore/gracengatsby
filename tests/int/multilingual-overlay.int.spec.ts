@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { localisedHref, sourceIdFor, type MultilingualSettings, type TranslationRow } from '@/features/multilingual'
-import { isTranslationPublishable, lookupFromRows, overlayDocument } from '@/features/multilingual/overlay'
+import { lookupFromRows, overlayDocument } from '@/features/multilingual/overlay'
+import { publishableLocalesForDocument, publishIndex } from '@/features/multilingual/availability'
+import { isTranslationPublishable } from '@/features/multilingual/translationStatus'
 
-const row = (sourceId: string, fieldPath: string, value: string | null, locale = 'fr'): TranslationRow => ({
+type RowOverrides = Partial<Pick<TranslationRow, 'status' | 'sourceText' | 'locale' | 'reviewedBy'>>
+
+const row = (sourceId: string, fieldPath: string, value: string | null, extra: RowOverrides = {}): TranslationRow => ({
   id: `${sourceId}:${fieldPath}`,
-  locale,
+  locale: 'fr',
   sourceKind: 'collection',
   sourceId,
   fieldPath,
@@ -16,29 +20,34 @@ const row = (sourceId: string, fieldPath: string, value: string | null, locale =
   machineProvider: null,
   reviewedBy: null,
   reviewedAt: null,
+  ...extra,
 })
 
-const lookupFor = (rows: TranslationRow[], locale = 'fr') => lookupFromRows(locale, rows)
+const review = { requireReview: true } as const
+const noReview = { requireReview: false } as const
+
+const lookupFor = (rows: TranslationRow[], locale = 'fr', settings: { requireReview: boolean } = noReview) =>
+  lookupFromRows(locale, rows, settings)
 
 const page = {
   id: 7,
   title: 'About us',
-  meta: { title: 'About | Site', description: 'Who we are' },
+  seo: { metaTitle: 'About | Site', metaDescription: 'Who we are' },
   slug: 'about',
   layout: [{ blockType: 'hero', heading: 'Hello' }],
 }
 
 describe('overlayDocument', () => {
   it('overlays translated plain-string fields and leaves everything else alone', () => {
-    const rows = [row(sourceIdFor('pages', 7), 'title', 'À propos'), row(sourceIdFor('pages', 7), 'meta.title', 'À propos | Site')]
+    const rows = [row(sourceIdFor('pages', 7), 'title', 'À propos'), row(sourceIdFor('pages', 7), 'seo.metaTitle', 'À propos | Site')]
     const translated = overlayDocument(page, 'pages', 7, (s, p) => {
       const hit = rows.find((r) => r.sourceId === s && r.fieldPath === p)
       return hit?.value ?? null
     }, true)
     expect(translated.title).toBe('À propos')
-    expect(translated.meta.title).toBe('À propos | Site')
+    expect(translated.seo.metaTitle).toBe('À propos | Site')
     // Not translated: no row for meta.description, and slug/layout are not in the field list.
-    expect(translated.meta.description).toBe('Who we are')
+    expect(translated.seo.metaDescription).toBe('Who we are')
     expect(translated.slug).toBe('about')
     expect(translated.layout).toBe(page.layout)
     // The source document is not mutated.
@@ -53,8 +62,8 @@ describe('overlayDocument', () => {
   it('leaves a field empty when there is no translation and fallbackToDefault is false', () => {
     const out = overlayDocument(page, 'pages', 7, () => null, false)
     expect(out.title).toBe('')
-    expect(out.meta.title).toBe('')
-    expect(out.meta.description).toBe('')
+    expect(out.seo.metaTitle).toBe('')
+    expect(out.seo.metaDescription).toBe('')
     expect(out.slug).toBe('about')
   })
 
@@ -97,9 +106,90 @@ describe('overlayDocument', () => {
   })
 })
 
-describe('isTranslationPublishable seam', () => {
-  it('accepts every row by default', () => {
-    expect(isTranslationPublishable(row('pages:1', 'title', 'x'))).toBe(true)
+describe('publish rule on the overlay', () => {
+  const pageId = sourceIdFor('pages', 7)
+
+  it('with review off, shows machine drafts and rows with no status, as before', () => {
+    const rows = [row(pageId, 'title', 'Brouillon', { status: 'machine_draft' }), row(pageId, 'seo.metaTitle', 'Legacy', { status: null })]
+    const out = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', noReview), true)
+    expect(out.title).toBe('Brouillon')
+    expect(out.seo.metaTitle).toBe('Legacy')
+  })
+
+  it('with review off, a stale translation is still shown', () => {
+    const rows = [row(pageId, 'title', 'Ancien', { status: 'approved', sourceText: 'Old title' })]
+    const out = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', noReview), true)
+    expect(out.title).toBe('Ancien')
+  })
+
+  it('with review on, shows only approved and current translations', () => {
+    const rows = [
+      row(pageId, 'title', 'À propos', { status: 'approved', sourceText: 'About us' }),
+      row(pageId, 'seo.metaTitle', 'Brouillon', { status: 'needs_review', sourceText: 'About | Site' }),
+      row(pageId, 'seo.metaDescription', 'Machine', { status: 'machine_draft', sourceText: 'Who we are' }),
+    ]
+    const out = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', review), true)
+    expect(out.title).toBe('À propos')
+    expect(out.seo.metaTitle).toBe('About | Site')
+    expect(out.seo.metaDescription).toBe('Who we are')
+  })
+
+  it('with review on, an approved translation of changed source text is not shown', () => {
+    const rows = [row(pageId, 'title', 'Ancien titre', { status: 'approved', sourceText: 'Old title' })]
+    const withFallback = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', review), true)
+    expect(withFallback.title).toBe('About us')
+    const without = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', review), false)
+    expect(without.title).toBe('')
+  })
+
+  it('with review on, an approved translation whose snapshot matches the current source is shown', () => {
+    const rows = [row(pageId, 'title', 'À propos', { status: 'approved', sourceText: 'About us' })]
+    expect(overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', review), false).title).toBe('À propos')
+  })
+
+  it('does not treat a stale approval as current when the source has changed since it was saved', () => {
+    const current = { title: 'About us, revised' }
+    expect(
+      isTranslationPublishable({ value: 'À propos', status: 'approved', sourceText: 'About us' }, review, current.title),
+    ).toBe(false)
+  })
+})
+
+describe('publishable locales for a document', () => {
+  const settings: MultilingualSettings = {
+    enabled: true,
+    defaultLocale: 'en',
+    activeLocales: ['en', 'fr', 'de'],
+    fallbackToDefault: true,
+    showLanguageSwitcher: true,
+    switcherPosition: 'header',
+    requireReview: false,
+    adminsBypassReview: true,
+    translationRules: {},
+    machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
+  }
+  const pageId = sourceIdFor('pages', 7)
+
+  it('lists only the non-default locales with a publishable field', () => {
+    const rows = [
+      row(pageId, 'title', 'À propos', { locale: 'fr', status: 'approved', sourceText: 'About us' }),
+      row(pageId, 'title', 'Über', { locale: 'de', status: 'needs_review', sourceText: 'About us' }),
+    ]
+    const index = publishIndex(rows)
+    expect(publishableLocalesForDocument({ collection: 'pages', id: 7, doc: page, index, settings: { ...settings, requireReview: true } })).toEqual(['fr'])
+    expect(publishableLocalesForDocument({ collection: 'pages', id: 7, doc: page, index, settings: { ...settings, requireReview: false } })).toEqual(['fr', 'de'])
+  })
+
+  it('is empty when nothing is translated, and null for a collection with no translatable fields', () => {
+    const index = publishIndex([])
+    expect(publishableLocalesForDocument({ collection: 'pages', id: 7, doc: page, index, settings })).toEqual([])
+    expect(publishableLocalesForDocument({ collection: 'unknown', id: 1, doc: page, index, settings })).toBeNull()
+  })
+
+  it('ignores rich-text fields, as the overlay does', () => {
+    const post = { id: 3, content: 'texte' }
+    const index = publishIndex([row(sourceIdFor('posts', 3), 'content', 'texte', { status: 'approved', sourceText: 'texte' })])
+    expect(publishableLocalesForDocument({ collection: 'posts', id: 3, doc: post, index, settings })).toEqual([])
   })
 })
 
@@ -109,12 +199,12 @@ describe('locale off is identity', () => {
     defaultLocale: 'en',
     activeLocales: ['en', 'fr'],
     fallbackToDefault: true,
+    showLanguageSwitcher: true,
+    switcherPosition: 'header',
     requireReview: false,
     adminsBypassReview: true,
     translationRules: {},
     machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
-    showLanguageSwitcher: true,
-    switcherPosition: 'header',
   }
 
   it('does not prefix links while multilingual is off', () => {

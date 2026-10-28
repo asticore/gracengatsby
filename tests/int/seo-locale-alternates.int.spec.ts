@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { MultilingualSettings } from '@/features/multilingual/settings'
-import { hreflangAlternates, localeSeoFields, languagesMap, ogLocale, sitemapVariants } from '@/features/seo/localeSeo'
+import { hreflangAlternates, localeSeoFields, languagesMap, localesFor, ogLocale, sitemapVariants } from '@/features/seo/localeSeo'
 import { renderSitemapXml, type SitemapEntry } from '@/features/seo/sitemap'
 
 const BASE = 'https://example.com'
@@ -11,12 +11,12 @@ const on: MultilingualSettings = {
   defaultLocale: 'en-AU',
   activeLocales: ['en-AU', 'fr', 'zh-Hans'],
   fallbackToDefault: true,
-  requireReview: false,
-  adminsBypassReview: true,
-  translationRules: {},
   machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
   showLanguageSwitcher: true,
   switcherPosition: 'header',
+  requireReview: false,
+  adminsBypassReview: true,
+  translationRules: {},
 }
 const off: MultilingualSettings = { ...on, enabled: false }
 const single: MultilingualSettings = { ...on, activeLocales: ['en-AU'] }
@@ -125,5 +125,57 @@ describe('renderSitemapXml', () => {
   it('escapes alternate hrefs', () => {
     const xml = renderSitemapXml([{ ...plain, alternates: [{ hreflang: 'en', href: `${BASE}/a?b=1&c=2` }] }])
     expect(xml).toContain('href="https://example.com/a?b=1&amp;c=2"')
+  })
+})
+
+describe('locales restricted to a page\'s publishable translations', () => {
+  it('localesFor keeps every active locale when nothing is restricted', () => {
+    expect(localesFor(on)).toEqual(['en-AU', 'fr', 'zh-Hans'])
+    expect(localesFor(on, null)).toEqual(['en-AU', 'fr', 'zh-Hans'])
+  })
+
+  it('localesFor keeps the default locale and only the available non-default ones, in configured order', () => {
+    expect(localesFor(on, ['zh-Hans'])).toEqual(['en-AU', 'zh-Hans'])
+    expect(localesFor(on, [])).toEqual(['en-AU'])
+  })
+
+  it('hreflang omits a locale with no publishable translation and keeps x-default on the default URL', () => {
+    expect(hreflangAlternates('/about', BASE, on, ['fr'])).toEqual([
+      { hreflang: 'en-AU', href: `${BASE}/about` },
+      { hreflang: 'fr', href: `${BASE}/fr/about` },
+      { hreflang: 'x-default', href: `${BASE}/about` },
+    ])
+  })
+
+  it('a page with no translations still gets the default alternate and x-default', () => {
+    expect(hreflangAlternates('/about', BASE, on, [])).toEqual([
+      { hreflang: 'en-AU', href: `${BASE}/about` },
+      { hreflang: 'x-default', href: `${BASE}/about` },
+    ])
+  })
+
+  it('stays null for a single-language site, whatever is available', () => {
+    expect(hreflangAlternates('/about', BASE, single, [])).toBeNull()
+  })
+
+  it('localeSeoFields drops withheld locales from the og alternates and the alternates list', () => {
+    const fields = localeSeoFields({ baseUrl: BASE, path: '/about', locale: 'en-AU', settings: on, explicitCanonical: false, available: ['fr'] })
+    expect(fields?.ogAlternateLocales).toEqual(['fr_FR'])
+    expect(languagesMap(fields?.alternates ?? [])).toEqual({
+      'en-AU': `${BASE}/about`,
+      fr: `${BASE}/fr/about`,
+      'x-default': `${BASE}/about`,
+    })
+  })
+
+  it('sitemapVariants lists a URL only for the locales a page is offered in', () => {
+    expect(sitemapVariants('/about', BASE, on, ['zh-Hans']).map((v) => v.url)).toEqual([`${BASE}/about`, `${BASE}/zh-Hans/about`])
+    const onlyDefault = sitemapVariants('/about', BASE, on, [])
+    expect(onlyDefault).toHaveLength(1)
+    expect(onlyDefault[0]?.alternates?.map((a) => a.hreflang)).toEqual(['en-AU', 'x-default'])
+  })
+
+  it('sitemapVariants with no restriction is unchanged', () => {
+    expect(sitemapVariants('/about', BASE, on, null)).toEqual(sitemapVariants('/about', BASE, on))
   })
 })

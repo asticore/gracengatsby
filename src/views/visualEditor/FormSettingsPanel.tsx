@@ -69,7 +69,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
         <Section title={t('ve.form.sectionStatus')} open>
           <p className="ve-panel__hint">
             This form is <strong>{formStatus === 'published' ? 'published' : 'a draft'}</strong>.
-            {formStatus === 'published' && hasUnpublishedChanges ? ' You have changes that visitors cannot see until you publish again.' : ''}
+            {formStatus === 'published' && hasUnpublishedChanges ? t('ve.fsp.unpubChanges') : ''}
           </p>
           <div className="ve-col-row">
             <button type="button" className="ve-btn ve-btn--primary" onClick={onPublish} disabled={busy}>
@@ -85,7 +85,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
 
         <Section title={t('ve.form.sectionLook')}>
           <label className="ve-field ve-field--full">
-            <span>Style</span>
+            <span>{t('ve.fsp.style')}</span>
             <select value={style.preset || 'theme'} onChange={(event) => set('style', { ...style, preset: event.target.value as FormStylePreset })}>
               {STYLE_PRESETS.map((preset) => (
                 <option key={preset.value} value={preset.value}>
@@ -95,28 +95,28 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
             </select>
           </label>
           <label className="ve-field ve-field--full">
-            <span>Accent colour (blank = site accent)</span>
+            <span>{t('ve.fsp.accent')}</span>
             <input type="text" placeholder="#2e3192" value={style.accent || ''} onChange={(event) => set('style', { ...style, accent: event.target.value })} />
           </label>
           <label className="ve-field ve-field--full">
-            <span>Custom CSS for this form</span>
+            <span>{t('ve.fsp.customCss')}</span>
             <textarea rows={6} spellCheck={false} value={style.customCss || ''} onChange={(event) => set('style', { ...style, customCss: event.target.value })} />
-            <span className="ve-field__help">Applies to this form only. Imports and scripts are removed.</span>
+            <span className="ve-field__help">{t('ve.fsp.customCssHelp')}</span>
           </label>
         </Section>
 
         <Section title={t('ve.form.sectionSteps')}>
-          <p className="ve-panel__hint">Add a Step break element between sections to split the form into steps.</p>
+          <p className="ve-panel__hint">{t('ve.fsp.stepHint')}</p>
           <label className="ve-field ve-field--checkbox">
             <input type="checkbox" checked={steps.showProgress !== false} onChange={(event) => set('steps', { ...steps, showProgress: event.target.checked })} />
-            <span>Show progress</span>
+            <span>{t('ve.fsp.showProgress')}</span>
           </label>
           <label className="ve-field ve-field--full">
-            <span>Progress style</span>
+            <span>{t('ve.fsp.progressStyle')}</span>
             <select value={steps.progressStyle || 'bar'} onChange={(event) => set('steps', { ...steps, progressStyle: event.target.value as 'bar' | 'steps' | 'text' })}>
-              <option value="bar">Bar</option>
-              <option value="steps">Numbered steps</option>
-              <option value="text">Text (Step 2 of 3)</option>
+              <option value="bar">{t('ve.fsp.progBar')}</option>
+              <option value="steps">{t('ve.fsp.progSteps')}</option>
+              <option value="text">{t('ve.fsp.progText')}</option>
             </select>
           </label>
           <div className="ve-col-row">
@@ -127,20 +127,20 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
 
         <Section title={t('ve.form.sectionAfter')}>
           <label className="ve-field ve-field--full">
-            <span>What happens</span>
+            <span>{t('ve.fsp.whatHappens')}</span>
             <select value={success.mode || 'message'} onChange={(event) => set('success', { ...success, mode: event.target.value as 'message' | 'redirect' })}>
-              <option value="message">Show a message</option>
-              <option value="redirect">Go to another page</option>
+              <option value="message">{t('ve.fsp.showMessage')}</option>
+              <option value="redirect">{t('ve.fsp.goRedirect')}</option>
             </select>
           </label>
           {success.mode === 'redirect' ? (
             <label className="ve-field ve-field--full">
-              <span>Address to go to</span>
+              <span>{t('ve.fsp.redirectAddr')}</span>
               <input type="text" placeholder="/thank-you" value={success.redirectUrl || ''} onChange={(event) => set('success', { ...success, redirectUrl: event.target.value })} />
             </label>
           ) : (
             <label className="ve-field ve-field--full">
-              <span>Message</span>
+              <span>{t('ve.fsp.messageLabel')}</span>
               <textarea rows={3} value={success.message || ''} onChange={(event) => set('success', { ...success, message: event.target.value })} />
             </label>
           )}
@@ -148,17 +148,17 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
 
         <Section title={t('ve.form.sectionBehaviour')}>
           <label className="ve-field ve-field--full">
-            <span>Pre-fill from the address (keys, comma-separated)</span>
+            <span>{t('ve.fsp.prefill')}</span>
             <input
               type="text"
-              placeholder="name, email"
+              placeholder={t('ve.fsp.prefillPh')}
               value={(config.prefillKeys || []).join(', ')}
               onChange={(event) => set('prefillKeys', event.target.value.split(',').map((entry) => entry.trim()).filter(Boolean))}
             />
-            <span className="ve-field__help">A field only fills from the web address when its pre-fill key is listed here.</span>
+            <span className="ve-field__help">{t('ve.fsp.prefillHelp')}</span>
           </label>
           <label className="ve-field ve-field--full">
-            <span>Delete entries after (days, 0 = keep, blank = site default)</span>
+            <span>{t('ve.fsp.retention')}</span>
             <input
               type="number"
               min={0}
@@ -187,24 +187,24 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
                     checked={Boolean(rule.conditions?.enabled)}
                     onChange={(event) => setRule(index, { conditions: { ...(rule.conditions || { action: 'show', match: 'all', rules: [] }), enabled: event.target.checked } })}
                   />
-                  <span>Only when</span>
+                  <span>{t('ve.fsp.onlyWhen')}</span>
                 </label>
                 {rule.conditions?.enabled && (
                   <>
                     <input
                       type="text"
                       aria-label={t('ve.form.fieldName')}
-                      placeholder="field name"
+                      placeholder={t('ve.fsp.fieldNamePh')}
                       value={rule.conditions.rules?.[0]?.field || ''}
                       onChange={(event) =>
                         setRule(index, { conditions: { ...rule.conditions, rules: [{ operator: 'equals', ...(rule.conditions?.rules?.[0] || {}), field: event.target.value }] } })
                       }
                     />
-                    <span>is</span>
+                    <span>{t('ve.fsp.is')}</span>
                     <input
                       type="text"
                       aria-label={t('ve.form.value')}
-                      placeholder="value"
+                      placeholder={t('ve.fsp.valuePh')}
                       value={rule.conditions.rules?.[0]?.value || ''}
                       onChange={(event) =>
                         setRule(index, { conditions: { ...rule.conditions, rules: [{ operator: 'equals', ...(rule.conditions?.rules?.[0] || {}), value: event.target.value }] } })
@@ -261,11 +261,11 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
         <Section title={t('ve.form.sectionEmbed')}>
           <label className="ve-field ve-field--checkbox">
             <input type="checkbox" checked={embed.enabled !== false} onChange={(event) => set('embed', { ...embed, enabled: event.target.checked })} />
-            <span>Allow this form to be embedded</span>
+            <span>{t('ve.fsp.allowEmbed')}</span>
           </label>
           {isAdmin ? (
             <label className="ve-field ve-field--full">
-              <span>Websites allowed to embed it (one per line)</span>
+              <span>{t('ve.fsp.embedSites')}</span>
               <textarea
                 rows={3}
                 placeholder="https://example.com"
@@ -283,14 +283,14 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
           {key ? (
             <>
               <label className="ve-field ve-field--full">
-                <span>Script snippet</span>
+                <span>{t('ve.fsp.scriptSnippet')}</span>
                 <textarea readOnly rows={2} value={scriptSnippet(origin, key)} onFocus={(event) => event.currentTarget.select()} />
                 <button type="button" className="ve-btn ve-btn--ghost" onClick={() => copy('script', scriptSnippet(origin, key))}>
                   {copied === 'script' ? t('ve.nav.copied') : t('ve.form.copy')}
                 </button>
               </label>
               <label className="ve-field ve-field--full">
-                <span>Iframe snippet</span>
+                <span>{t('ve.fsp.iframeSnippet')}</span>
                 <textarea readOnly rows={3} value={iframeSnippet(origin, key)} onFocus={(event) => event.currentTarget.select()} />
                 <button type="button" className="ve-btn ve-btn--ghost" onClick={() => copy('iframe', iframeSnippet(origin, key))}>
                   {copied === 'iframe' ? t('ve.nav.copied') : t('ve.form.copy')}

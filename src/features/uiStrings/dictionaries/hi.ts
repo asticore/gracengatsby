@@ -1320,6 +1320,12 @@ const hi: UiDictionary = {
   "store.searchTheSite": "साइट पर खोजें",
   "store.newerProducts": "नए उत्पाद",
   "store.olderProducts": "पुराने उत्पाद",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Analytics प्रॉपर्टी",
+  'integrations.google.gtmLabel': "Tag Manager कंटेनर",
+  'integrations.google.adsenseLabel': "AdSense खाता",
+  'integrations.google.ga4Help': "वह Google Analytics 4 प्रॉपर्टी जिसके विज़िटर और पेज डैशबोर्ड दिखाता है।",
+  'integrations.google.adsenseHelp': "वह AdSense खाता जिसकी कमाई डैशबोर्ड दिखाता है।",
   // --- store (blog archive, consent) ---
   "store.newerPosts": "नई पोस्ट",
   "store.olderPosts": "पुरानी पोस्ट",

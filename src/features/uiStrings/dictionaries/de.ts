@@ -1321,6 +1321,12 @@ const de: UiDictionary = {
   "store.searchTheSite": "Website durchsuchen",
   "store.newerProducts": "Neuere Produkte",
   "store.olderProducts": "Ältere Produkte",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Analytics-Property",
+  'integrations.google.gtmLabel': "Tag-Manager-Container",
+  'integrations.google.adsenseLabel': "AdSense-Konto",
+  'integrations.google.ga4Help': "Die Google-Analytics-4-Property, deren Besucher und Seiten das Dashboard anzeigt.",
+  'integrations.google.adsenseHelp': "Das AdSense-Konto, dessen Einnahmen das Dashboard anzeigt.",
   // --- store (blog archive, consent) ---
   "store.newerPosts": "Neuere Beiträge",
   "store.olderPosts": "Ältere Beiträge",

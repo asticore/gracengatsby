@@ -1319,6 +1319,12 @@ const zhHans: UiDictionary = {
   "store.searchTheSite": "搜索本站",
   "store.newerProducts": "较新的商品",
   "store.olderProducts": "较早的商品",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Analytics 资源",
+  'integrations.google.gtmLabel': "Tag Manager 容器",
+  'integrations.google.adsenseLabel': "AdSense 账户",
+  'integrations.google.ga4Help': "仪表板显示其访客和页面的 Google Analytics 4 资源。",
+  'integrations.google.adsenseHelp': "仪表板显示其收入的 AdSense 账户。",
   // --- store (blog archive, consent) ---
   "store.newerPosts": "较新的文章",
   "store.olderPosts": "较早的文章",

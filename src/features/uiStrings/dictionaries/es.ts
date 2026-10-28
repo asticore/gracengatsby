@@ -1320,6 +1320,12 @@ const es: UiDictionary = {
   "store.searchTheSite": "Buscar en el sitio",
   "store.newerProducts": "Productos más recientes",
   "store.olderProducts": "Productos anteriores",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Propiedad de Analytics",
+  'integrations.google.gtmLabel': "Contenedor de Tag Manager",
+  'integrations.google.adsenseLabel': "Cuenta de AdSense",
+  'integrations.google.ga4Help': "La propiedad de Google Analytics 4 cuyos visitantes y páginas muestra el panel.",
+  'integrations.google.adsenseHelp': "La cuenta de AdSense cuyos ingresos muestra el panel.",
   // --- store (blog archive, consent) ---
   "store.newerPosts": "Entradas más recientes",
   "store.olderPosts": "Entradas anteriores",

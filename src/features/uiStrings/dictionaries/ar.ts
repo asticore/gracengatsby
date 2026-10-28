@@ -1320,6 +1320,12 @@ const ar: UiDictionary = {
   "store.searchTheSite": "ابحث في الموقع",
   "store.newerProducts": "المنتجات الأحدث",
   "store.olderProducts": "المنتجات الأقدم",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "خاصية Analytics",
+  'integrations.google.gtmLabel': "حاوية Tag Manager",
+  'integrations.google.adsenseLabel': "حساب AdSense",
+  'integrations.google.ga4Help': "خاصية Google Analytics 4 التي تعرض لوحة المعلومات زوارها وصفحاتها.",
+  'integrations.google.adsenseHelp': "حساب AdSense الذي تعرض لوحة المعلومات أرباحه.",
   // --- store (blog archive, consent) ---
   "store.newerPosts": "المقالات الأحدث",
   "store.olderPosts": "المقالات الأقدم",

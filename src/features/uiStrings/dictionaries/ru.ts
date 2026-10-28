@@ -1320,6 +1320,12 @@ const ru: UiDictionary = {
   "store.searchTheSite": "Поиск по сайту",
   "store.newerProducts": "Более новые товары",
   "store.olderProducts": "Более старые товары",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Ресурс Analytics",
+  'integrations.google.gtmLabel': "Контейнер Tag Manager",
+  'integrations.google.adsenseLabel': "Аккаунт AdSense",
+  'integrations.google.ga4Help': "Ресурс Google Analytics 4, посетители и страницы которого показывает панель.",
+  'integrations.google.adsenseHelp': "Аккаунт AdSense, доходы которого показывает панель.",
   // --- store (blog archive, consent) ---
   "store.newerPosts": "Более новые записи",
   "store.olderPosts": "Более старые записи",

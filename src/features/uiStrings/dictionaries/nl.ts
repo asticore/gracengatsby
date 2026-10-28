@@ -1320,6 +1320,12 @@ const nl: UiDictionary = {
   "store.searchTheSite": "Doorzoek de site",
   "store.newerProducts": "Nieuwere producten",
   "store.olderProducts": "Oudere producten",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Analytics-property",
+  'integrations.google.gtmLabel': "Tag Manager-container",
+  'integrations.google.adsenseLabel': "AdSense-account",
+  'integrations.google.ga4Help': "De Google Analytics 4-property waarvan de dashboard bezoekers en pagina's toont.",
+  'integrations.google.adsenseHelp': "Het AdSense-account waarvan de dashboard de inkomsten toont.",
   // --- store (blog archive, consent) ---
   "store.newerPosts": "Nieuwere berichten",
   "store.olderPosts": "Oudere berichten",

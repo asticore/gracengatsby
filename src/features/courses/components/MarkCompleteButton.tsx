@@ -3,6 +3,8 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 
+import { usePortalText } from '@/features/accounts/components/PortalText'
+
 import { setLessonCompleteAction } from '../actions'
 import type { MarkOutcome } from '../progress'
 
@@ -24,6 +26,7 @@ export const MarkCompleteButton: React.FC<{
   const [isDone, setIsDone] = React.useState(completed)
   const [error, setError] = React.useState<string | null>(null)
   const [pending, startTransition] = React.useTransition()
+  const t = usePortalText()
 
   const toggle = () => {
     const next = !isDone
@@ -49,7 +52,7 @@ export const MarkCompleteButton: React.FC<{
         disabled={pending}
         aria-pressed={isDone}
       >
-        {isDone ? 'Completed - undo' : 'Mark as complete'}
+        {isDone ? t('lesson.completed') : t('lesson.complete')}
       </button>
       {error && <p className="lesson-complete__error">{error}</p>}
     </div>

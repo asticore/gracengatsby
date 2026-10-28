@@ -21,7 +21,7 @@ export const ReusableSections: CollectionConfig = {
       'Sections you use on many pages. Build one here, then add it to a page with the "Reusable section" block. Edits here update every page that uses it.',
     components: {
       edit: {
-        beforeDocumentControls: ['@/fields/locks/DocumentLockControl#DocumentLockControl'],
+        beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton', '@/fields/locks/DocumentLockControl#DocumentLockControl'],
       },
     },
   },

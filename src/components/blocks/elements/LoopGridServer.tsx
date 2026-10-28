@@ -1,12 +1,21 @@
 import Link from 'next/link'
 import React from 'react'
 
-import { getBlockContext, type ArchiveFilterValues, type ArchiveItem } from '@/lib/blockContext'
+import { getBlockContext, getRequestQuery, type ArchiveFilterValues, type ArchiveItem } from '@/lib/blockContext'
 import { getEngine } from '@/lib/engine'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
-import { paginate } from '@/features/siteTemplates/archiveQueries'
+import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
 import { NO_ARCHIVE_FILTERS } from '@/features/siteTemplates/archiveFilter'
-import { isLoopTemplate, loopItemBlocks, loopItemsFromDocs, parseLoopGridSettings, selectLoopItems, type LoopGridSettings } from '@/features/siteTemplates/loopGrid'
+import {
+  isLoopTemplate,
+  loopItemBlocks,
+  loopItemsFromDocs,
+  loopPageHref,
+  loopPageNumbers,
+  parseLoopGridSettings,
+  selectLoopItems,
+  type LoopGridSettings,
+} from '@/features/siteTemplates/loopGrid'
 import { renderTemplateBlocks } from '@/features/siteTemplates/render'
 import { loadSiteTemplate, prepareTemplateBlocks } from '@/features/siteTemplates/resolve'
 import { archivePageHref } from '@/lib/templateWidgets'
@@ -14,7 +23,9 @@ import { archivePageHref } from '@/lib/templateWidgets'
 /**
  * Loop grid widget: draws the chosen loop template once per item. Items come from the archive being viewed (no
  * source set) or from a bounded scan of published posts, products or events. The same archive filter params the
- * Filter widget writes apply here when the archive is the same kind. Renders nothing on any problem.
+ * Filter widget writes apply here when the archive is the same kind. A fixed source pages itself: its page number comes
+ * from the grid's page parameter (`page` by default) in the request query, and the links keep the other params.
+ * Renders nothing on any problem.
  */
 
 type P = Record<string, unknown>
@@ -53,7 +64,18 @@ async function itemsFor(s: LoopGridSettings): Promise<{ items: ArchiveItem[]; ow
   }
 }
 
-type Plan = { blocks: unknown[]; items: ArchiveItem[]; ownPaging: boolean; page: number; pages: number; basePath: string; pagination: boolean; linkCards: boolean; columns: number }
+type Plan = {
+  blocks: unknown[]
+  items: ArchiveItem[]
+  ownPaging: boolean
+  page: number
+  pages: number
+  /** Link to another page of this grid. */
+  pageHref: (page: number) => string
+  pagination: boolean
+  linkCards: boolean
+  columns: number
+}
 
 /** Everything the markup needs, gathered before any JSX so a failure renders nothing. */
 async function planFor(props: P): Promise<Plan | null> {
@@ -67,8 +89,11 @@ async function planFor(props: P): Promise<Plan | null> {
 
     const { items: all, ownPaging } = await itemsFor(s)
     const archive = getBlockContext().archive
-    // Explicit sources page through their own list; archive mode uses the archive's page and links.
-    const paged = ownPaging ? paginate(all, archive?.page ?? 1, s.count) : { items: all, page: 1, pages: 1, total: all.length }
+    const path = getBlockContext().path || '/'
+    const query = getRequestQuery()
+    // Explicit sources page through their own list, numbered by this grid's param; archive mode uses the archive's page.
+    const requested = ownPaging ? (s.pagination ? parsePage(query[s.pageParam]) : 1) : archive?.page ?? 1
+    const paged = ownPaging ? paginate(all, requested, s.count) : { items: all, page: 1, pages: 1, total: all.length }
     if (paged.items.length === 0) return null
     return {
       blocks,
@@ -76,7 +101,9 @@ async function planFor(props: P): Promise<Plan | null> {
       ownPaging,
       page: paged.page,
       pages: paged.pages,
-      basePath: archive ? archive.basePath : getBlockContext().path || '/',
+      pageHref: ownPaging
+        ? (n: number) => loopPageHref(path, query, s.pageParam, n)
+        : (n: number) => archivePageHref(archive ? archive.basePath : path, n),
       pagination: s.pagination,
       linkCards: s.linkCards,
       columns: s.columns,
@@ -89,12 +116,23 @@ async function planFor(props: P): Promise<Plan | null> {
 export async function LoopGridElement(props: P): Promise<React.ReactElement | null> {
   const plan = await planFor(props)
   if (!plan) return null
+  // Numbered pager for a fixed source. Inside an archive the archive's own pager (below the page) is used instead.
   const pager =
     plan.ownPaging && plan.pagination && plan.pages > 1 ? (
-      <nav className="mt-8 flex items-center justify-between" aria-label="Pagination">
-        {plan.page > 1 ? <Link href={archivePageHref(plan.basePath, plan.page - 1)} rel="prev">Previous</Link> : <span />}
-        <span className="opacity-60">Page {plan.page} of {plan.pages}</span>
-        {plan.page < plan.pages ? <Link href={archivePageHref(plan.basePath, plan.page + 1)} rel="next">Next</Link> : <span />}
+      <nav className="mt-8 flex flex-wrap items-center justify-between gap-3" aria-label="Pagination">
+        {plan.page > 1 ? <Link href={plan.pageHref(plan.page - 1)} rel="prev">Previous</Link> : <span />}
+        <ul className="flex flex-wrap items-center gap-1" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          {loopPageNumbers(plan.page, plan.pages).map((n, index) =>
+            n === null ? (
+              <li key={`gap-${index}`}><span className="px-2 opacity-60">...</span></li>
+            ) : n === plan.page ? (
+              <li key={n}><span aria-current="page" className="px-2 font-semibold">{n}</span></li>
+            ) : (
+              <li key={n}><Link href={plan.pageHref(n)} className="px-2">{n}</Link></li>
+            ),
+          )}
+        </ul>
+        {plan.page < plan.pages ? <Link href={plan.pageHref(plan.page + 1)} rel="next">Next</Link> : <span />}
       </nav>
     ) : null
 

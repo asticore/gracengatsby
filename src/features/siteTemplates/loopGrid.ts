@@ -3,6 +3,7 @@ import { parseColumns } from '@/lib/sectionTree'
 import { slugify } from '@/utilities/formatSlug'
 import { filterArchiveItems, NO_ARCHIVE_FILTERS, sortArchiveItems } from './archiveFilter'
 import { publicAuthor, type ArchivePost } from './archiveQueries'
+import { resolveLoopMergeTags, resolveLoopMergeTagsInRichText, safeLoopLink } from './loopMergeTags'
 import type { SiteTemplate } from './types'
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '')
@@ -38,6 +39,8 @@ export type LoopGridSettings = {
   count: number
   columns: number
   pagination: boolean
+  /** The URL parameter that carries this grid's page number (`page` unless the grid sets its own). */
+  pageParam: string
   linkCards: boolean
 }
 
@@ -55,13 +58,56 @@ export function parseLoopGridSettings(p: Record<string, unknown>): LoopGridSetti
     count: Math.round(num(p.count, 9, 1, 48)),
     columns: Math.round(num(p.columns, 3, 1, 4)),
     pagination: flag(p.pagination, false),
+    pageParam: loopPageParam(p.pageParam),
     linkCards: flag(p.linkCards, true),
   }
+}
+
+/** The URL parameter for a grid's page number. Plain words only; anything else is `page`. Give two numbered grids on one page different names (lp2). */
+export function loopPageParam(raw: unknown): string {
+  const v = typeof raw === 'string' ? raw.trim() : ''
+  return /^[a-z][a-z0-9_-]{0,23}$/i.test(v) ? v : 'page'
+}
+
+/**
+ * Link to another page of a grid: the path with every other query param kept (filters, other grids' pages) and this
+ * grid's param set to `page`, or removed for page 1.
+ */
+export function loopPageHref(path: string, query: Record<string, string | string[] | undefined>, param: string, page: number): string {
+  const q = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    if (key === param || value === undefined) continue
+    for (const v of Array.isArray(value) ? value : [value]) q.append(key, v)
+  }
+  if (page > 1) q.set(param, String(page))
+  const s = q.toString()
+  return s ? `${path}?${s}` : path
+}
+
+/** Page numbers to list around the current one, first and last always in. `null` marks a gap ("..."). */
+export function loopPageNumbers(page: number, pages: number, radius = 2): (number | null)[] {
+  const keep = new Set<number>([1, pages])
+  for (let p = page - radius; p <= page + radius; p++) if (p >= 1 && p <= pages) keep.add(p)
+  const out: (number | null)[] = []
+  let prev = 0
+  for (const p of [...keep].sort((a, b) => a - b)) {
+    if (p - prev > 1) out.push(null)
+    out.push(p)
+    prev = p
+  }
+  return out
 }
 
 /** A template is usable as a loop item template only when it is a kind `loop` template that is switched on. */
 export function isLoopTemplate(t: Pick<SiteTemplate, 'kind' | 'enabled' | 'blocks'> | null | undefined): boolean {
   return !!t && t.kind === 'loop' && t.enabled !== false && Array.isArray(t.blocks) && t.blocks.length > 0
+}
+
+/** Text-like elements whose text takes per-item merge tags inside a loop template, and their link props. */
+export const LOOP_MERGE_PROPS: Readonly<Record<string, { text: readonly string[]; links: readonly string[] }>> = {
+  heading: { text: ['text', 'secondText'], links: ['link'] },
+  button: { text: ['text'], links: ['url'] },
+  'text-editor': { text: ['content'], links: [] },
 }
 
 /** Element types that read `__loopItem` when they are inside a loop template. */
@@ -75,10 +121,29 @@ export function loopItemOf(props: Record<string, unknown> | undefined): ArchiveI
 
 type Node = { blockType?: string; elementType?: string; props?: Record<string, unknown>; columns?: unknown; [key: string]: unknown }
 
+/** Props with the item's merge tags resolved (text, rich text and link props). Other props are kept as they are. */
+function mergeProps(props: Record<string, unknown>, item: ArchiveItem, spec: { text: readonly string[]; links: readonly string[] }): Record<string, unknown> {
+  const out = { ...props }
+  for (const name of spec.text) {
+    const value = props[name]
+    if (typeof value === 'string') out[name] = resolveLoopMergeTags(value, item)
+    else if (value && typeof value === 'object') out[name] = resolveLoopMergeTagsInRichText(value, item)
+  }
+  for (const name of spec.links) {
+    const value = props[name]
+    if (typeof value === 'string' && value.includes('{{')) out[name] = safeLoopLink(resolveLoopMergeTags(value, item))
+  }
+  return out
+}
+
 const withItem = (node: Node, item: ArchiveItem): Node => {
   const next: Node = { ...node }
-  if (node.blockType === 'element' && LOOP_ITEM_WIDGETS.has(String(node.elementType))) {
-    next.props = { ...(node.props ?? {}), __loopItem: item }
+  if (node.blockType === 'element') {
+    let props: Record<string, unknown> = node.props ?? {}
+    if (LOOP_ITEM_WIDGETS.has(String(node.elementType))) props = { ...props, __loopItem: item }
+    const merge = LOOP_MERGE_PROPS[String(node.elementType)]
+    if (merge) props = mergeProps(props, item, merge)
+    next.props = props
   }
   if (node.blockType === 'section' && Array.isArray(node.columns)) {
     next.columns = parseColumns(node.columns).map((col) => ({

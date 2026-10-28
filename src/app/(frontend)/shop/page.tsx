@@ -18,7 +18,7 @@ import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
 import { archiveQueryString, filterArchiveItems, parseArchiveFilters, sortArchiveItems } from '@/features/siteTemplates/archiveFilter'
 import { archivePageHref } from '@/lib/templateWidgets'
-import { setBlockContext } from '@/lib/blockContext'
+import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { productArchiveItems } from '@/lib/blockContextFrom'
 import type { Product, ShopSetting } from '@/engage-types'
 
@@ -40,6 +40,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   if (!flags.ecommerce) notFound()
 
   const params = await searchParams
+  setRequestQuery(params)
   const category = typeof params.category === 'string' ? params.category.slice(0, 40) : undefined
   const filters = parseAttributeFilters(params)
   const engine = await getEngine()

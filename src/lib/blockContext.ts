@@ -56,3 +56,16 @@ export function setBlockContext(ctx: BlockContext): void {
 export function getBlockContext(): BlockContext {
   return holder().ctx
 }
+
+/** The request's query string (the page's searchParams), so a Loop grid can read its own page number. */
+export type RequestQuery = Record<string, string | string[] | undefined>
+
+const queryHolder = cache((): { query: RequestQuery } => ({ query: {} }))
+
+export function setRequestQuery(query: RequestQuery): void {
+  queryHolder().query = query && typeof query === 'object' ? query : {}
+}
+
+export function getRequestQuery(): RequestQuery {
+  return queryHolder().query
+}

@@ -6,12 +6,14 @@ import type { Metadata } from 'next'
 
 import { orderBlogPosts } from '@/features/editScreens/blogOrder'
 import { readingTimeLabel } from '@/features/editScreens/readingTime'
-import { ARCHIVE_PAGE_SIZE, authorIndex, authorPath, paginate, parsePage, postsByAuthor, termSlug } from '@/features/siteTemplates/archiveQueries'
+import { ARCHIVE_PAGE_SIZE, authorIndex, authorPath, paginate, parsePage, postsByAuthor, termSlug, archivePostFacets, filterArchivePosts } from '@/features/siteTemplates/archiveQueries'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
+import { archiveQueryString, parseArchiveFilters } from '@/features/siteTemplates/archiveFilter'
+import { archivePageHref } from '@/lib/templateWidgets'
 import { blogSwitches, loadBlogSwitches } from '@/features/blog/switches'
 import { getEngine } from '@/lib/engine'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
-import { setBlockContext } from '@/lib/blockContext'
+import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { postArchiveItems } from '@/lib/blockContextFrom'
 import { getFeatureFlags } from '@/utilities/features'
 import { buildMetadata } from '@/utilities/seo'
@@ -60,9 +62,18 @@ export default async function AuthorArchivePage({ params, searchParams }: Params
   const term = await load(slug)
   if (!term) notFound()
   const perPage = settings?.postsPerPage || ARCHIVE_PAGE_SIZE
-  const paged = paginate(term.posts, parsePage((await searchParams).page), perPage)
+  const query = await searchParams
+  // Filter params (?category=&tag=&q=&sort=) narrow the posts before paging. With none, the list and pages are unchanged.
+  const filters = parseArchiveFilters(query)
+  const paged = paginate(filterArchivePosts(term.posts, filters), parsePage(query.page), perPage)
   const path = `/blog/author/${term.slug}`
-  setBlockContext({ page: { title: term.name }, path, archive: { basePath: path, page: paged.page, pages: paged.pages, items: postArchiveItems(paged.items) } })
+  const basePath = `${path}${archiveQueryString(filters)}`
+  setRequestQuery(query)
+  setBlockContext({
+    page: { title: term.name },
+    path,
+    archive: { basePath, page: paged.page, pages: paged.pages, items: postArchiveItems(paged.items), kind: 'posts', filters, facets: archivePostFacets(term.posts) },
+  })
 
   const body = (
     <div className="page-shell">
@@ -96,9 +107,9 @@ export default async function AuthorArchivePage({ params, searchParams }: Params
       </div>
       {paged.pages > 1 && (
         <nav className="mt-8 flex items-center justify-between" aria-label="Pagination">
-          {paged.page > 1 ? <Link href={authorPath(term.slug, paged.page - 1)} rel="prev">Newer posts</Link> : <span />}
+          {paged.page > 1 ? <Link href={archivePageHref(basePath, paged.page - 1)} rel="prev">Newer posts</Link> : <span />}
           <span className="opacity-60">Page {paged.page} of {paged.pages}</span>
-          {paged.page < paged.pages ? <Link href={authorPath(term.slug, paged.page + 1)} rel="next">Older posts</Link> : <span />}
+          {paged.page < paged.pages ? <Link href={archivePageHref(basePath, paged.page + 1)} rel="next">Older posts</Link> : <span />}
         </nav>
       )}
     </div>

@@ -1333,6 +1333,18 @@ const nl: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "Sleutels worden hier nooit getoond. Om er een toe te voegen of te wijzigen, open je de pagina Integraties:",
   'integrations.pageLink': "Integraties",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "Bestellingfilters",
+  'orders.filter.statusTip': "Toon alleen bestellingen met deze status.",
+  'orders.filter.status': "Status",
+  'orders.filter.anyStatus': "Elke status",
+  'orders.filter.payment': "Betaling",
+  'orders.filter.placedFrom': "Geplaatst vanaf",
+  'orders.filter.placedTo': "Geplaatst tot",
+  'orders.filter.fromTip': "Toon bestellingen die op of na deze dag zijn geplaatst. Dagen zijn in UTC.",
+  'orders.filter.toTip': "Toon bestellingen die op of vóór deze dag zijn geplaatst. Dagen zijn in UTC.",
+  'orders.filter.clearTip': "Verwijder de filters voor status, betaling en datum.",
+  'orders.filter.clearLabel': "Bestellingfilters wissen",
 }
 
 export default nl

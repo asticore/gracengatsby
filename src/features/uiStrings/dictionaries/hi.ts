@@ -1333,6 +1333,18 @@ const hi: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "कुंजियाँ यहाँ कभी नहीं दिखाई जातीं। कोई कुंजी जोड़ने या बदलने के लिए इंटीग्रेशन पेज खोलें:",
   'integrations.pageLink': "इंटीग्रेशन",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "ऑर्डर फ़िल्टर",
+  'orders.filter.statusTip': "केवल इस स्थिति वाले ऑर्डर दिखाएँ।",
+  'orders.filter.status': "स्थिति",
+  'orders.filter.anyStatus': "कोई भी स्थिति",
+  'orders.filter.payment': "भुगतान",
+  'orders.filter.placedFrom': "इससे शुरू",
+  'orders.filter.placedTo': "इस तक",
+  'orders.filter.fromTip': "इस दिन या उसके बाद दिए गए ऑर्डर दिखाएँ। दिन UTC में हैं।",
+  'orders.filter.toTip': "इस दिन या उससे पहले दिए गए ऑर्डर दिखाएँ। दिन UTC में हैं।",
+  'orders.filter.clearTip': "स्थिति, भुगतान और तारीख़ के फ़िल्टर हटाएँ।",
+  'orders.filter.clearLabel': "ऑर्डर फ़िल्टर साफ़ करें",
 }
 
 export default hi

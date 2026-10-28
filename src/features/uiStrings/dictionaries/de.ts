@@ -1334,6 +1334,18 @@ const de: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "Schlüssel werden hier nie angezeigt. Um einen Schlüssel hinzuzufügen oder zu ändern, öffnen Sie die Seite Integrationen:",
   'integrations.pageLink': "Integrationen",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "Bestellfilter",
+  'orders.filter.statusTip': "Nur Bestellungen mit diesem Status anzeigen.",
+  'orders.filter.status': "Status",
+  'orders.filter.anyStatus': "Alle Status",
+  'orders.filter.payment': "Zahlung",
+  'orders.filter.placedFrom': "Bestellt ab",
+  'orders.filter.placedTo': "Bestellt bis",
+  'orders.filter.fromTip': "Bestellungen anzeigen, die an diesem Tag oder später aufgegeben wurden. Die Tage sind in UTC.",
+  'orders.filter.toTip': "Bestellungen anzeigen, die an diesem Tag oder früher aufgegeben wurden. Die Tage sind in UTC.",
+  'orders.filter.clearTip': "Die Filter für Status, Zahlung und Datum entfernen.",
+  'orders.filter.clearLabel': "Bestellfilter löschen",
 }
 
 export default de

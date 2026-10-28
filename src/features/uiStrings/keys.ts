@@ -1373,6 +1373,18 @@ export const UI_STRING_SOURCE = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "Keys are never shown here. To add or change one, open the Integrations page:",
   'integrations.pageLink': "Integrations",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "Order filters",
+  'orders.filter.statusTip': "Only show orders with this status.",
+  'orders.filter.status': "Status",
+  'orders.filter.anyStatus': "Any status",
+  'orders.filter.payment': "Payment",
+  'orders.filter.placedFrom': "Placed from",
+  'orders.filter.placedTo': "Placed to",
+  'orders.filter.fromTip': "Show orders placed on or after this day. Days are in UTC.",
+  'orders.filter.toTip': "Show orders placed on or before this day. Days are in UTC.",
+  'orders.filter.clearTip': "Remove the status, payment and date filters.",
+  'orders.filter.clearLabel': "Clear order filters",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

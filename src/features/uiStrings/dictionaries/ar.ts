@@ -604,6 +604,18 @@ const ar: UiDictionary = {
   'label.field.seo': 'تحسين محركات البحث',
   'label.field.metaTitle': 'عنوان الوصف الوصفي',
   'label.field.metaDescription': 'وصف الميتا',
+  // --- builder translate ---
+  'builder.translate.banner': 'جارٍ الترجمة إلى {language} — البنية مقفلة',
+  'builder.translate.exit': 'خروج',
+  'builder.translate.approvePage': 'اعتماد الصفحة',
+  'builder.translate.requestReview': 'طلب مراجعة',
+  'builder.translate.machinePage': 'ترجمة الصفحة آلياً',
+  'builder.translate.copySource': 'نسخ المصدر إلى الفارغ',
+  'builder.translate.usage': 'استخدام الترجمة الآلية هذا الشهر: {used} من {limit} حرفاً',
+  'builder.translate.untranslated': 'غير مترجم',
+  'builder.translate.inPanel': 'ترجم هذا النص في اللوحة',
+  'builder.translate.locked': 'البنية مقفلة أثناء الترجمة. اخرج من وضع الترجمة لتغيير التخطيط.',
+  'builder.translate.result': 'تم تحديث {updated}، وتم تخطي {skipped}',
 }
 
 export default ar

@@ -604,6 +604,18 @@ const ko: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': '메타 제목',
   'label.field.metaDescription': '메타 설명',
+  // --- builder translate ---
+  'builder.translate.banner': '{language}(으)로 번역 중 — 구조가 잠겨 있습니다',
+  'builder.translate.exit': '나가기',
+  'builder.translate.approvePage': '페이지 승인',
+  'builder.translate.requestReview': '검토 요청',
+  'builder.translate.machinePage': '페이지 기계 번역',
+  'builder.translate.copySource': '원문을 빈 칸에 복사',
+  'builder.translate.usage': '이번 달 기계 번역 사용량: {limit}자 중 {used}자',
+  'builder.translate.untranslated': '번역되지 않음',
+  'builder.translate.inPanel': '이 텍스트는 패널에서 번역',
+  'builder.translate.locked': '번역 중에는 구조가 잠깁니다. 레이아웃을 바꾸려면 번역 모드를 종료하세요.',
+  'builder.translate.result': '{updated}개 업데이트, {skipped}개 건너뜀',
 }
 
 export default ko

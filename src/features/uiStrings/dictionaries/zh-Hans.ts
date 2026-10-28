@@ -603,6 +603,18 @@ const zhHans: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta 标题',
   'label.field.metaDescription': 'Meta 描述',
+  // --- builder translate ---
+  'builder.translate.banner': '正在翻译为{language} — 结构已锁定',
+  'builder.translate.exit': '退出',
+  'builder.translate.approvePage': '批准页面',
+  'builder.translate.requestReview': '请求审核',
+  'builder.translate.machinePage': '机器翻译整个页面',
+  'builder.translate.copySource': '将原文复制到空白处',
+  'builder.translate.usage': '本月机器翻译用量：{used} / {limit} 字符',
+  'builder.translate.untranslated': '未翻译',
+  'builder.translate.inPanel': '在面板中翻译此文本',
+  'builder.translate.locked': '翻译期间结构已锁定。退出翻译模式以更改布局。',
+  'builder.translate.result': '已更新 {updated} 项，跳过 {skipped} 项',
 }
 
 export default zhHans

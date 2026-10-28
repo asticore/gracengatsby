@@ -604,6 +604,18 @@ const ja: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'メタタイトル',
   'label.field.metaDescription': 'メタディスクリプション',
+  // --- builder translate ---
+  'builder.translate.banner': '{language} に翻訳中 — 構造はロックされています',
+  'builder.translate.exit': '終了',
+  'builder.translate.approvePage': 'ページを承認',
+  'builder.translate.requestReview': 'レビューを依頼',
+  'builder.translate.machinePage': 'ページを機械翻訳',
+  'builder.translate.copySource': '空欄に原文をコピー',
+  'builder.translate.usage': '今月の機械翻訳の使用量: {limit} 文字中 {used} 文字',
+  'builder.translate.untranslated': '未翻訳',
+  'builder.translate.inPanel': 'このテキストはパネルで翻訳',
+  'builder.translate.locked': '翻訳中は構造がロックされます。レイアウトを変更するには翻訳モードを終了してください。',
+  'builder.translate.result': '{updated} 件更新、{skipped} 件スキップ',
 }
 
 export default ja

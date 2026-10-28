@@ -604,6 +604,18 @@ const ru: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Мета-заголовок',
   'label.field.metaDescription': 'Мета-описание',
+  // --- builder translate ---
+  'builder.translate.banner': 'Перевод на {language} — структура заблокирована',
+  'builder.translate.exit': 'Выйти',
+  'builder.translate.approvePage': 'Утвердить страницу',
+  'builder.translate.requestReview': 'Запросить проверку',
+  'builder.translate.machinePage': 'Машинный перевод страницы',
+  'builder.translate.copySource': 'Скопировать оригинал в пустые поля',
+  'builder.translate.usage': 'Использование машинного перевода в этом месяце: {used} из {limit} символов',
+  'builder.translate.untranslated': 'Не переведено',
+  'builder.translate.inPanel': 'Переведите этот текст в панели',
+  'builder.translate.locked': 'Структура заблокирована во время перевода. Выйдите из режима перевода, чтобы изменить макет.',
+  'builder.translate.result': 'Обновлено: {updated}, пропущено: {skipped}',
 }
 
 export default ru

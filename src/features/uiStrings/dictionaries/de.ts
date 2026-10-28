@@ -605,6 +605,18 @@ const de: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta-Titel',
   'label.field.metaDescription': 'Meta-Beschreibung',
+  // --- builder translate ---
+  'builder.translate.banner': 'Übersetzung nach {language} — Struktur ist gesperrt',
+  'builder.translate.exit': 'Beenden',
+  'builder.translate.approvePage': 'Seite freigeben',
+  'builder.translate.requestReview': 'Überprüfung anfordern',
+  'builder.translate.machinePage': 'Seite maschinell übersetzen',
+  'builder.translate.copySource': 'Quelle in leere Felder kopieren',
+  'builder.translate.usage': 'Maschinelle Nutzung diesen Monat: {used} von {limit} Zeichen',
+  'builder.translate.untranslated': 'Nicht übersetzt',
+  'builder.translate.inPanel': 'Diesen Text im Panel übersetzen',
+  'builder.translate.locked': 'Die Struktur ist während der Übersetzung gesperrt. Beende den Übersetzungsmodus, um das Layout zu ändern.',
+  'builder.translate.result': '{updated} aktualisiert, {skipped} übersprungen',
 }
 
 export default de

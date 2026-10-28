@@ -645,6 +645,18 @@ export const UI_STRING_SOURCE = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta title',
   'label.field.metaDescription': 'Meta description',
+  // --- builder translate ---
+  'builder.translate.banner': 'Translating to {language} — structure is locked',
+  'builder.translate.exit': 'Exit',
+  'builder.translate.approvePage': 'Approve page',
+  'builder.translate.requestReview': 'Request review',
+  'builder.translate.machinePage': 'Machine translate page',
+  'builder.translate.copySource': 'Copy source to empty',
+  'builder.translate.usage': 'Machine usage this month: {used} of {limit} characters',
+  'builder.translate.untranslated': 'Untranslated',
+  'builder.translate.inPanel': 'Translate this text in the panel',
+  'builder.translate.locked': 'Structure is locked while translating. Exit translate mode to change the layout.',
+  'builder.translate.result': '{updated} updated, {skipped} skipped',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

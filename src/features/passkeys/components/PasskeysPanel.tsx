@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from 'react'
 
+import { usePortalText } from '@/features/accounts/components/PortalText'
+
 import { addPasskey, listPasskeysRequest, passkeysSupported, removePasskeyRequest, renamePasskeyRequest } from '../client'
 
 /**
@@ -12,10 +14,10 @@ import { addPasskey, listPasskeysRequest, passkeysSupported, removePasskeyReques
 
 export type PasskeyItem = { id: number; deviceLabel: string; createdAt: string; lastUsedAt: string | null; backedUp: boolean }
 
-const when = (iso: string | null): string => {
-  if (!iso) return 'Never'
+const when = (iso: string | null, never: string, unknown: string): string => {
+  if (!iso) return never
   const date = new Date(iso)
-  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleDateString()
+  return Number.isNaN(date.getTime()) ? unknown : date.toLocaleDateString()
 }
 
 const subscribeNever = (): (() => void) => () => undefined
@@ -30,6 +32,8 @@ export const PasskeysPanel: React.FC<{ initial: PasskeyItem[] }> = ({ initial })
   const [editLabel, setEditLabel] = useState('')
   const [notice, setNotice] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
+  const tx = usePortalText()
+  const dateText = (iso: string | null): string => when(iso, tx('panel.never'), tx('panel.unknown'))
 
   useEffect(() => {
     listPasskeysRequest().then((result) => {
@@ -46,9 +50,9 @@ export const PasskeysPanel: React.FC<{ initial: PasskeyItem[] }> = ({ initial })
       setItems(result.passkeys as PasskeyItem[])
       setLabel('')
       setConfirm('')
-      setNotice({ tone: 'ok', text: 'Passkey added.' })
+      setNotice({ tone: 'ok', text: tx('panel.pkAddedNotice') })
     } else {
-      setNotice({ tone: 'error', text: result.message || 'The passkey could not be added.' })
+      setNotice({ tone: 'error', text: result.message || tx('panel.pkAddFailed') })
     }
   }
 
@@ -58,52 +62,50 @@ export const PasskeysPanel: React.FC<{ initial: PasskeyItem[] }> = ({ initial })
       setItems((list) => list.map((item) => (item.id === id ? { ...item, deviceLabel: editLabel.trim() } : item)))
       setEditing(null)
     } else {
-      setNotice({ tone: 'error', text: result.message || 'The name could not be saved.' })
+      setNotice({ tone: 'error', text: result.message || tx('panel.pkRenameFailed') })
     }
   }
 
   const remove = async (id: number) => {
-    if (!window.confirm('Remove this passkey? You will not be able to sign in with it.')) return
+    if (!window.confirm(tx('panel.pkConfirmRemove'))) return
     setBusy(true)
     const result = await removePasskeyRequest(id, confirm)
     setBusy(false)
     if (result.ok) {
       setItems((list) => list.filter((item) => item.id !== id))
-      setNotice({ tone: 'ok', text: 'Passkey removed.' })
+      setNotice({ tone: 'ok', text: tx('panel.pkRemovedNotice') })
     } else {
-      setNotice({ tone: 'error', text: result.message || 'The passkey could not be removed.' })
+      setNotice({ tone: 'error', text: result.message || tx('panel.pkRemoveFailed') })
     }
   }
 
   return (
     <div className="account-passkeys">
-      {!supported && <p className="account-hint">This browser cannot use passkeys. Try a current version of Safari, Chrome, Edge or Firefox.</p>}
+      {!supported && <p className="account-hint">{tx('panel.pkUnsupported')}</p>}
       {notice && (
         <p className={`account-note ${notice.tone === 'ok' ? 'account-note--success' : 'account-note--error'}`} role="status">
           {notice.text}
         </p>
       )}
       {items.length === 0 ? (
-        <p className="account-hint">No passkeys yet.</p>
+        <p className="account-hint">{tx('panel.pkNone')}</p>
       ) : (
         <ul>
           {items.map((item) => (
             <li key={item.id} style={{ margin: '0.5rem 0' }}>
               {editing === item.id ? (
                 <span>
-                  <input aria-label="Passkey name" value={editLabel} maxLength={60} onChange={(e) => setEditLabel(e.target.value)} />{' '}
-                  <button type="button" onClick={() => rename(item.id)}>Save name</button>{' '}
-                  <button type="button" onClick={() => setEditing(null)}>Cancel</button>
+                  <input aria-label={tx('panel.pkNameAria')} value={editLabel} maxLength={60} onChange={(e) => setEditLabel(e.target.value)} />{' '}
+                  <button type="button" onClick={() => rename(item.id)}>{tx('panel.pkSaveName')}</button>{' '}
+                  <button type="button" onClick={() => setEditing(null)}>{tx('panel.cancel')}</button>
                 </span>
               ) : (
                 <span>
                   <strong>{item.deviceLabel}</strong>
-                  {' - added '}
-                  {when(item.createdAt)}
-                  {', last used '}
-                  {when(item.lastUsedAt)}{' '}
-                  <button type="button" onClick={() => { setEditing(item.id); setEditLabel(item.deviceLabel) }}>Rename</button>{' '}
-                  <button type="button" onClick={() => remove(item.id)} disabled={busy}>Remove</button>
+                  {' '}
+                  {tx('panel.pkDetail', { added: dateText(item.createdAt), used: dateText(item.lastUsedAt) })}{' '}
+                  <button type="button" onClick={() => { setEditing(item.id); setEditLabel(item.deviceLabel) }}>{tx('panel.rename')}</button>{' '}
+                  <button type="button" onClick={() => remove(item.id)} disabled={busy}>{tx('panel.remove')}</button>
                 </span>
               )}
             </li>
@@ -113,17 +115,17 @@ export const PasskeysPanel: React.FC<{ initial: PasskeyItem[] }> = ({ initial })
       {supported && (
         <div className="account-form">
           <label>
-            Name this passkey (optional)
-            <input value={label} maxLength={60} onChange={(e) => setLabel(e.target.value)} placeholder="For example: My laptop" />
+            {tx('panel.pkNameLabel')}
+            <input value={label} maxLength={60} onChange={(e) => setLabel(e.target.value)} placeholder={tx('panel.pkNamePlaceholder')} />
           </label>
           <label>
-            Your password or authenticator code
+            {tx('panel.pkConfirmLabel')}
             <input type="password" autoComplete="current-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </label>
           <button type="button" className="account-button" onClick={add} disabled={busy}>
-            {busy ? 'Waiting for your device...' : 'Add passkey'}
+            {busy ? tx('common.waitingDevice') : tx('panel.pkAdd')}
           </button>
-          <p className="account-hint">Used for adding and removing passkeys. If the account has no password, you can leave this empty.</p>
+          <p className="account-hint">{tx('panel.pkHint')}</p>
         </div>
       )}
     </div>

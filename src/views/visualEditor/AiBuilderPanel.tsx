@@ -1,5 +1,7 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
 import React, { useEffect, useId, useRef, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
@@ -73,10 +75,10 @@ type BuiltResult = AiBuildResult & { mode: AiMode; selectionId?: string }
 
 const newId = (): string => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
 
-const MODE_OPTIONS: { value: AiMode; label: string }[] = [
-  { value: 'section', label: 'New section' },
-  { value: 'page', label: 'Whole page content' },
-  { value: 'edit', label: 'Edit selected section' },
+const MODE_OPTIONS: { value: AiMode; labelKey: UiStringKey }[] = [
+  { value: 'section', labelKey: 'ai.lit.new_section' },
+  { value: 'page', labelKey: 'ai.lit.whole_page_content' },
+  { value: 'edit', labelKey: 'ai.lit.edit_selected_section' },
 ]
 
 const TIP_TEXT =
@@ -94,6 +96,7 @@ function messageOf(err: unknown): string {
 }
 
 export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selectedSection, onInsertAtEnd, onReplaceSelected, showTitle = true }) => {
+  const t = useAdminT()
   const ids = useId()
   const [load, setLoad] = useState<ProviderLoad>({ status: 'loading' })
   const [loadKey, setLoadKey] = useState(0)
@@ -271,7 +274,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
   const saveCurrentPrompt = () => {
     const next = addSavedPrompt(savedPrompts, saveName, brief, newId())
     setSavedPrompts(next)
-    setSaveNote(storeSavedPrompts(next) ? 'Saved.' : 'Saved for this visit only: your browser blocked storage.')
+    setSaveNote(storeSavedPrompts(next) ? t('ai.lit.saved') : t('ai.lit.saved_for_this_visit_only_your_browser_b'))
     setSaveName('')
   }
 
@@ -330,7 +333,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
     <>
       <div className="ve-ai__group">
         <label className="ve-ai__label">
-          <span>Model</span>
+          <span>{t('ai.lit.model')}</span>
           <select id={`${ids}-model`} className="ve-ai__select" value={provider ?? ''} onChange={(event) => setChosen(event.target.value as AiProvider)}>
             {connected.map((p) => (
               <option key={p} value={p}>
@@ -342,7 +345,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       </div>
 
       <fieldset className="ve-ai__group">
-        <legend className="ve-ai__legend">What should it make?</legend>
+        <legend className="ve-ai__legend">{t('ai.lit.what_should_it_make')}</legend>
         <div className="ve-ai__segments" aria-describedby={modeHintId}>
           {MODE_OPTIONS.map((option) => (
             <label key={option.value} className="ve-ai__segment">
@@ -354,7 +357,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
                 disabled={option.value === 'edit' && selectedSection === null}
                 onChange={() => setModeChoice(option.value)}
               />
-              <span>{option.label}</span>
+              <span>{t(option.labelKey)}</span>
             </label>
           ))}
         </div>
@@ -371,12 +374,12 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           setTipOpen(false)
         }}>
           <label htmlFor={briefId} className="ve-ai__legend">
-            Describe what you want
+            {t('ai.lit.describe_what_you_want')}
           </label>
           <button
             type="button"
             className="ve-ai__info"
-            aria-label="Tips for better results"
+            aria-label={t('ai.lit.tips_for_better_results')}
             aria-expanded={tipOpen}
             aria-controls={tipId}
             onClick={() => setTipOpen((open) => !open)}
@@ -405,7 +408,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       <div className="ve-ai__group">
         <div className="ve-ai__save">
           <label htmlFor={`${ids}-save`} className="ve-ai__note">
-            Save this brief as
+            {t('ai.lit.save_this_brief_as')}
           </label>
           <input
             id={`${ids}-save`}
@@ -413,11 +416,11 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
             className="ve-ai__input"
             value={saveName}
             maxLength={60}
-            placeholder="Name, e.g. Bakery hero"
+            placeholder={t('ai.lit.name_e_g_bakery_hero')}
             onChange={(event) => setSaveName(event.target.value)}
           />
           <button type="button" className="ve-ai__btn ve-ai__btn--small" disabled={!saveName.trim() || !brief.trim()} onClick={saveCurrentPrompt}>
-            Save
+            {t('ai.lit.save')}
           </button>
         </div>
         {saveNote && (
@@ -426,7 +429,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           </p>
         )}
         {savedPrompts.length > 0 && (
-          <ul className="ve-ai__saved" aria-label="Saved prompts">
+          <ul className="ve-ai__saved" aria-label={t('ai.lit.saved_prompts')}>
             {savedPrompts.map((item) => (
               <li key={item.id} className="ve-ai__saved-item">
                 <button type="button" className="ve-ai__chip" title={item.brief} onClick={() => setBrief(item.brief)}>
@@ -438,7 +441,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
                   aria-label={`Delete saved prompt ${item.name}`}
                   onClick={() => removeSavedPrompt(item.id)}
                 >
-                  Delete
+                  {t('ai.lit.delete')}
                 </button>
               </li>
             ))}
@@ -447,8 +450,8 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       </div>
 
       <div className="ve-ai__group">
-        <span className="ve-ai__note">Quick starts</span>
-        <div className="ve-ai__chips" role="group" aria-label="Quick starts">
+        <span className="ve-ai__note">{t('ai.lit.quick_starts')}</span>
+        <div className="ve-ai__chips" role="group" aria-label={t('ai.lit.quick_starts')}>
           {AI_QUICK_STARTS.map((text) => (
             <button key={text} type="button" className="ve-ai__chip" onClick={() => setBrief(text)}>
               {text}
@@ -458,7 +461,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       </div>
 
       <div className="ve-ai__examples">
-        <span className="ve-ai__label">Examples (optional)</span>
+        <span className="ve-ai__label">{t('ai.lit.examples_optional')}</span>
         {examples.map((example, i) => (
           <div className="ve-ai__example" key={i}>
             <div className="ve-ai__row">
@@ -471,7 +474,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
                 aria-label={`Remove example ${i + 1}`}
                 onClick={() => setExamples(examples.filter((_item, index) => index !== i))}
               >
-                Remove
+                {t('ai.lit.remove')}
               </button>
             </div>
             <textarea
@@ -493,14 +496,14 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
             + Add example
           </button>
           <button type="button" className="ve-ai__btn ve-ai__btn--small" aria-expanded={templatesOpen} onClick={toggleTemplates}>
-            Use a saved template as an example
+            {t('ai.lit.use_a_saved_template_as_an_example')}
           </button>
           {examples.length >= AI_LIMITS.examples && <span className="ve-ai__note">Up to {AI_LIMITS.examples} examples.</span>}
         </div>
         {templatesOpen && (
-          <div className="ve-ai__chips" role="group" aria-label="Saved templates">
-            {templateExamples === null && <span className="ve-ai__note">Loading templates...</span>}
-            {templateExamples?.length === 0 && <span className="ve-ai__note">No saved templates yet.</span>}
+          <div className="ve-ai__chips" role="group" aria-label={t('ai.lit.saved_templates')}>
+            {templateExamples === null && <span className="ve-ai__note">{t('ai.lit.loading_templates')}</span>}
+            {templateExamples?.length === 0 && <span className="ve-ai__note">{t('ai.lit.no_saved_templates_yet')}</span>}
             {templateExamples?.map((item) => (
               <button key={item.id} type="button" className="ve-ai__chip" disabled={examples.length >= AI_LIMITS.examples} onClick={() => addTemplateExample(item.text)}>
                 {item.name}
@@ -512,10 +515,10 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
 
       <div className="ve-ai__actions">
         <button type="button" className="ve-ai__btn ve-ai__btn--primary" disabled={!provider || briefError !== null} onClick={planIt}>
-          Plan it
+          {t('ai.lit.plan_it')}
         </button>
         <button type="button" className="ve-ai__link" disabled={!provider || briefError !== null} onClick={() => runBuild(undefined)}>
-          Skip planning, build now
+          {t('ai.lit.skip_planning_build_now')}
         </button>
       </div>
       {brief.length > 0 && briefError && <p className="ve-ai__note">{briefError}</p>}
@@ -524,7 +527,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
 
   const questionsStep = (
     <>
-      <p className="ve-ai__hint">A few questions so the AI gets it right. Short answers are fine.</p>
+      <p className="ve-ai__hint">{t('ai.lit.a_few_questions_so_the_ai_gets_it_right')}</p>
       {questions.map((question, i) => (
         <div className="ve-ai__example" key={i}>
           <label htmlFor={`${ids}-q-${i}`} className="ve-ai__label">
@@ -542,22 +545,22 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       ))}
       <div className="ve-ai__actions">
         <button type="button" className="ve-ai__btn ve-ai__btn--primary" onClick={continueQuestions}>
-          Continue
+          {t('ai.lit.continue')}
         </button>
         <button type="button" className="ve-ai__btn" onClick={() => setStep('brief')}>
-          Back
+          {t('ai.lit.back')}
         </button>
       </div>
       <button type="button" className="ve-ai__link" disabled={!provider} onClick={() => runBuild(undefined)}>
-        Skip planning, build now
+        {t('ai.lit.skip_planning_build_now')}
       </button>
     </>
   )
 
   const outlineStep = (
     <>
-      <p className="ve-ai__hint">Edit the sections below. Build makes one section per item, in this order.</p>
-      <ol className="ve-ai__list" aria-label="Outline">
+      <p className="ve-ai__hint">{t('ai.lit.edit_the_sections_below_build_makes_one')}</p>
+      <ol className="ve-ai__list" aria-label={t('ai.lit.outline')}>
         {outline.map((item, i) => (
           <li className="ve-ai__item" key={i}>
             <div className="ve-ai__item-head">
@@ -570,7 +573,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
                   disabled={i === 0}
                   onClick={() => setOutline(moveOutlineItem(outline, i, -1))}
                 >
-                  Up
+                  {t('ai.lit.up')}
                 </button>
                 <button
                   type="button"
@@ -579,7 +582,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
                   disabled={i === outline.length - 1}
                   onClick={() => setOutline(moveOutlineItem(outline, i, 1))}
                 >
-                  Down
+                  {t('ai.lit.down')}
                 </button>
                 <button
                   type="button"
@@ -587,12 +590,12 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
                   aria-label={`Remove section ${i + 1}`}
                   onClick={() => setOutline(removeOutlineItem(outline, i))}
                 >
-                  Remove
+                  {t('ai.lit.remove')}
                 </button>
               </span>
             </div>
             <label className="ve-ai__label">
-              <span>Title</span>
+              <span>{t('ai.lit.title')}</span>
               <input
                 type="text"
                 className="ve-ai__input"
@@ -602,7 +605,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
               />
             </label>
             <label className="ve-ai__label">
-              <span>Summary</span>
+              <span>{t('ai.lit.summary')}</span>
               <textarea
                 className="ve-ai__textarea"
                 value={item.summary}
@@ -621,10 +624,10 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       {outlineError && <p className="ve-ai__note">{outlineError}</p>}
       <div className="ve-ai__actions">
         <button type="button" className="ve-ai__btn ve-ai__btn--primary" disabled={outlineError !== null} onClick={() => runBuild(outline)}>
-          Build
+          {t('ai.lit.build')}
         </button>
         <button type="button" className="ve-ai__btn" onClick={() => setStep('brief')}>
-          Back to brief
+          {t('ai.lit.back_to_brief')}
         </button>
       </div>
     </>
@@ -651,7 +654,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       )}
       {inserted && built.mediaPlaceholders.length > 0 && (
         <div className="ve-ai__media">
-          <p className="ve-ai__label">Add images for:</p>
+          <p className="ve-ai__label">{t('ai.lit.add_images_for')}</p>
           <ul>
             {built.mediaPlaceholders.map((item, i) => (
               <li key={i}>{item.alt}</li>
@@ -662,7 +665,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       {!inserted && (
         <div className="ve-ai__refine">
           <label htmlFor={`${ids}-refine`} className="ve-ai__label">
-            Refine
+            {t('ai.lit.refine')}
           </label>
           <input
             id={`${ids}-refine`}
@@ -681,11 +684,11 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           />
           <div className="ve-ai__actions">
             <button type="button" className="ve-ai__btn" disabled={!provider || !refineText.trim()} onClick={refine}>
-              Refine
+              {t('ai.lit.refine')}
             </button>
             {prevBuilt && (
               <button type="button" className="ve-ai__btn" onClick={goBackOne}>
-                Back to previous version
+                {t('ai.lit.back_to_previous_version')}
               </button>
             )}
           </div>
@@ -694,22 +697,22 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
       <div className="ve-ai__actions">
         {!inserted && (
           <button type="button" className="ve-ai__btn ve-ai__btn--primary" onClick={insertBuilt}>
-            {built.mode === 'edit' ? 'Replace selected section' : 'Insert at end of page'}
+            {built.mode === 'edit' ? t('ai.lit.replace_selected_section') : 'Insert at end of page'}
           </button>
         )}
         {!inserted && (
           <button type="button" className="ve-ai__btn" disabled={!provider} onClick={() => runBuild(outline.length ? outline : undefined)}>
-            Try again
+            {t('ai.lit.try_again')}
           </button>
         )}
         {!inserted && outline.length > 0 && (
           <button type="button" className="ve-ai__btn" onClick={() => setStep('outline')}>
-            Back to outline
+            {t('ai.lit.back_to_outline')}
           </button>
         )}
         {inserted && (
           <button type="button" className="ve-ai__btn ve-ai__btn--primary" onClick={startAgain}>
-            Make another
+            {t('ai.lit.make_another')}
           </button>
         )}
       </div>
@@ -720,7 +723,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
     <section className="ve-ai" aria-labelledby={showTitle ? `${ids}-title` : undefined}>
       {showTitle && (
         <h2 id={`${ids}-title`} className="ve-ai__title">
-          Build with AI
+          {t('ai.lit.build_with_ai')}
         </h2>
       )}
       <p className="ve-ai__hint">
@@ -729,7 +732,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
 
       {load.status === 'loading' && (
         <p className="ve-ai__note" role="status">
-          Checking which AI models are connected...
+          {t('ai.lit.checking_which_ai_models_are_connected')}
         </p>
       )}
       {load.status === 'error' && (
@@ -739,30 +742,30 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
           </p>
           <div className="ve-ai__actions">
             <button type="button" className="ve-ai__btn" onClick={retryLoad}>
-              Try again
+              {t('ai.lit.try_again')}
             </button>
           </div>
         </div>
       )}
       {load.status === 'ready' && connected.length === 0 && (
         <div className="ve-ai__empty" role="status">
-          <p>No AI model is connected yet.</p>
+          <p>{t('ai.lit.no_ai_model_is_connected_yet')}</p>
           <p>
             <a href={INTEGRATIONS_HREF} target="_blank" rel="noopener noreferrer">
-              Connect Claude or OpenAI in Integrations
+              {t('ai.lit.connect_claude_or_openai_in_integrations')}
             </a>
           </p>
-          <p className="ve-ai__note">Opens in a new tab, so your unsaved edits stay here.</p>
+          <p className="ve-ai__note">{t('ai.lit.opens_in_a_new_tab_so_your_unsaved_edits')}</p>
         </div>
       )}
 
       {load.status === 'ready' && connected.length > 0 && (
         <>
-          <ol className="ve-ai__steps" aria-label="Progress">
+          <ol className="ve-ai__steps" aria-label={t('ai.lit.progress')}>
             {[
-              { n: 1, label: 'Brief' },
-              { n: 2, label: 'Questions or outline' },
-              { n: 3, label: 'Review and insert' },
+              { n: 1, label: t('ai.lit.brief') },
+              { n: 2, label: t('ai.lit.questions_or_outline') },
+              { n: 3, label: t('ai.lit.review_and_insert') },
             ].map((item) => (
               <li key={item.n} aria-current={item.n === stepNumber ? 'step' : undefined} className={item.n === stepNumber ? 've-ai__step--current' : undefined}>
                 {item.n}. {item.label}
@@ -775,7 +778,7 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
               <span className="ve-ai__spinner" aria-hidden="true" />
               <span>{chars > 0 ? writingText(chars) : progressText(busy, elapsed)}</span>
               <button type="button" className="ve-ai__btn ve-ai__btn--small" onClick={cancel}>
-                Cancel
+                {t('ai.lit.cancel')}
               </button>
             </div>
           )}

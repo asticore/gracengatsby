@@ -1330,6 +1330,9 @@ const nl: UiDictionary = {
   "store.newerPosts": "Nieuwere berichten",
   "store.olderPosts": "Oudere berichten",
   "store.alwaysOn": "Altijd aan.",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "Sleutels worden hier nooit getoond. Om er een toe te voegen of te wijzigen, open je de pagina Integraties:",
+  'integrations.pageLink': "Integraties",
 }
 
 export default nl

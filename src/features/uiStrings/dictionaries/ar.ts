@@ -1330,6 +1330,9 @@ const ar: UiDictionary = {
   "store.newerPosts": "المقالات الأحدث",
   "store.olderPosts": "المقالات الأقدم",
   "store.alwaysOn": "مفعّل دائمًا.",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "لا تُعرض المفاتيح هنا أبدًا. لإضافة مفتاح أو تغييره، افتح صفحة التكاملات:",
+  'integrations.pageLink': "التكاملات",
 }
 
 export default ar

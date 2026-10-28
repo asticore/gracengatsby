@@ -1330,6 +1330,9 @@ const ja: UiDictionary = {
   "store.newerPosts": "新しい記事",
   "store.olderPosts": "古い記事",
   "store.alwaysOn": "常に有効。",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "キーはここには表示されません。追加または変更するには、連携ページを開いてください：",
+  'integrations.pageLink': "連携",
 }
 
 export default ja

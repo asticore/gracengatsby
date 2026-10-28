@@ -1330,6 +1330,9 @@ const ru: UiDictionary = {
   "store.newerPosts": "Более новые записи",
   "store.olderPosts": "Более старые записи",
   "store.alwaysOn": "Всегда включены.",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "Ключи здесь никогда не показываются. Чтобы добавить или изменить ключ, откройте страницу «Интеграции»:",
+  'integrations.pageLink': "Интеграции",
 }
 
 export default ru

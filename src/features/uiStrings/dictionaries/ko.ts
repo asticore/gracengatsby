@@ -1330,6 +1330,9 @@ const ko: UiDictionary = {
   "store.newerPosts": "최신 글",
   "store.olderPosts": "이전 글",
   "store.alwaysOn": "항상 사용.",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "키는 여기에 표시되지 않습니다. 키를 추가하거나 변경하려면 통합 페이지를 여세요:",
+  'integrations.pageLink': "통합",
 }
 
 export default ko

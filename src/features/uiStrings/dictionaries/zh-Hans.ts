@@ -1329,6 +1329,9 @@ const zhHans: UiDictionary = {
   "store.newerPosts": "较新的文章",
   "store.olderPosts": "较早的文章",
   "store.alwaysOn": "始终开启。",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "此处从不显示密钥。要添加或更改密钥，请打开“集成”页面：",
+  'integrations.pageLink': "集成",
 }
 
 export default zhHans

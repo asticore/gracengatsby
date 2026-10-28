@@ -1370,6 +1370,9 @@ export const UI_STRING_SOURCE = {
   "store.newerPosts": "Newer posts",
   "store.olderPosts": "Older posts",
   "store.alwaysOn": "Always on.",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "Keys are never shown here. To add or change one, open the Integrations page:",
+  'integrations.pageLink': "Integrations",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

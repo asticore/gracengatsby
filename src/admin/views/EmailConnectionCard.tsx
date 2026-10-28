@@ -1,6 +1,6 @@
 import React from 'react'
-import Link from 'next/link'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
+import { EmailConnectionNote } from './EmailConnectionNote'
 import { connectionHeadline } from '@/features/email/connectionRead'
 import type { ProviderState, ProviderStateSummary } from '@/features/email/providerState'
 
@@ -48,10 +48,7 @@ export function EmailConnectionCard({ summary }: { summary: ProviderStateSummary
           ))}
         </tbody>
       </table>
-      <p className="et-muted">
-        Keys are never shown here. To add or change one, open the Integrations page:{' '}
-        <Link href="/admin/settings/site#integrations">Integrations</Link>.
-      </p>
+      <EmailConnectionNote />
     </CollapsibleCard>
   )
 }

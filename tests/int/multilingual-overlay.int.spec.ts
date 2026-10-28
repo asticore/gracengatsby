@@ -32,22 +32,22 @@ const lookupFor = (rows: TranslationRow[], locale = 'fr', settings: { requireRev
 const page = {
   id: 7,
   title: 'About us',
-  meta: { title: 'About | Site', description: 'Who we are' },
+  seo: { metaTitle: 'About | Site', metaDescription: 'Who we are' },
   slug: 'about',
   layout: [{ blockType: 'hero', heading: 'Hello' }],
 }
 
 describe('overlayDocument', () => {
   it('overlays translated plain-string fields and leaves everything else alone', () => {
-    const rows = [row(sourceIdFor('pages', 7), 'title', 'À propos'), row(sourceIdFor('pages', 7), 'meta.title', 'À propos | Site')]
+    const rows = [row(sourceIdFor('pages', 7), 'title', 'À propos'), row(sourceIdFor('pages', 7), 'seo.metaTitle', 'À propos | Site')]
     const translated = overlayDocument(page, 'pages', 7, (s, p) => {
       const hit = rows.find((r) => r.sourceId === s && r.fieldPath === p)
       return hit?.value ?? null
     }, true)
     expect(translated.title).toBe('À propos')
-    expect(translated.meta.title).toBe('À propos | Site')
+    expect(translated.seo.metaTitle).toBe('À propos | Site')
     // Not translated: no row for meta.description, and slug/layout are not in the field list.
-    expect(translated.meta.description).toBe('Who we are')
+    expect(translated.seo.metaDescription).toBe('Who we are')
     expect(translated.slug).toBe('about')
     expect(translated.layout).toBe(page.layout)
     // The source document is not mutated.
@@ -62,8 +62,8 @@ describe('overlayDocument', () => {
   it('leaves a field empty when there is no translation and fallbackToDefault is false', () => {
     const out = overlayDocument(page, 'pages', 7, () => null, false)
     expect(out.title).toBe('')
-    expect(out.meta.title).toBe('')
-    expect(out.meta.description).toBe('')
+    expect(out.seo.metaTitle).toBe('')
+    expect(out.seo.metaDescription).toBe('')
     expect(out.slug).toBe('about')
   })
 
@@ -110,10 +110,10 @@ describe('publish rule on the overlay', () => {
   const pageId = sourceIdFor('pages', 7)
 
   it('with review off, shows machine drafts and rows with no status, as before', () => {
-    const rows = [row(pageId, 'title', 'Brouillon', { status: 'machine_draft' }), row(pageId, 'meta.title', 'Legacy', { status: null })]
+    const rows = [row(pageId, 'title', 'Brouillon', { status: 'machine_draft' }), row(pageId, 'seo.metaTitle', 'Legacy', { status: null })]
     const out = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', noReview), true)
     expect(out.title).toBe('Brouillon')
-    expect(out.meta.title).toBe('Legacy')
+    expect(out.seo.metaTitle).toBe('Legacy')
   })
 
   it('with review off, a stale translation is still shown', () => {
@@ -125,13 +125,13 @@ describe('publish rule on the overlay', () => {
   it('with review on, shows only approved and current translations', () => {
     const rows = [
       row(pageId, 'title', 'À propos', { status: 'approved', sourceText: 'About us' }),
-      row(pageId, 'meta.title', 'Brouillon', { status: 'needs_review', sourceText: 'About | Site' }),
-      row(pageId, 'meta.description', 'Machine', { status: 'machine_draft', sourceText: 'Who we are' }),
+      row(pageId, 'seo.metaTitle', 'Brouillon', { status: 'needs_review', sourceText: 'About | Site' }),
+      row(pageId, 'seo.metaDescription', 'Machine', { status: 'machine_draft', sourceText: 'Who we are' }),
     ]
     const out = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', review), true)
     expect(out.title).toBe('À propos')
-    expect(out.meta.title).toBe('About | Site')
-    expect(out.meta.description).toBe('Who we are')
+    expect(out.seo.metaTitle).toBe('About | Site')
+    expect(out.seo.metaDescription).toBe('Who we are')
   })
 
   it('with review on, an approved translation of changed source text is not shown', () => {

@@ -2145,6 +2145,17 @@ const hi: UiDictionary = {
   'st.lit.waiting_to_go_live': "लाइव होने की प्रतीक्षा",
   'st.lit.when': "कब",
   'st.lit.worked': "सफल",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "एक बटन कॉलम को पॉपअप डायलॉग में खोलता है।",
+  'fp.help.columns_become_equal_cells_in_rows': "कॉलम पंक्तियों में बराबर आकार के सेल बन जाते हैं।",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "कॉलम लचीली पंक्ति या स्टैक के रूप में बहते हैं: नीचे दिशा, रैप, संरेखण और गैप सेट करें।",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "कॉलम साथ-साथ रहते हैं और जगह कम होने पर नई पंक्ति में चले जाते हैं।",
+  'fp.help.each_column_becomes_a_collapsible_panel': "हर कॉलम एक फोल्डेबल पैनल बन जाता है। उसकी कॉलम सेटिंग में नाम दें।",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "हर कॉलम एक टैब बन जाता है। उसकी कॉलम सेटिंग में नाम दें।",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "हर कॉलम एक पूरी चौड़ाई वाला कार्ड है जो पेज स्क्रॉल होने पर ढेर बनता है।",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "हर कॉलम एक स्लाइड है, जिसे पाठक स्वाइप या स्क्रॉल करके देखते हैं।",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "पाठक के पेज नीचे स्क्रॉल करने पर कॉलम बगल में खिसकते हैं।",
+  'fp.help.the_first_column_stays_in_place_while_th': "पहला कॉलम अपनी जगह रहता है और बाकी कॉलम चरणों की तरह उसके पास से गुज़रते हैं।",
 }
 
 export default hi

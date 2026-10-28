@@ -2144,6 +2144,17 @@ const zhHans: UiDictionary = {
   'st.lit.waiting_to_go_live': "等待上线",
   'st.lit.when': "时间",
   'st.lit.worked': "成功",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "按钮会在弹出对话框中打开各列。",
+  'fp.help.columns_become_equal_cells_in_rows': "列会变为同等大小的单元格，按行排列。",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "列以弹性行或堆叠方式排列：请在下方设置方向、换行、对齐和间距。",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "列并排显示，空间不足时自动换到新行。",
+  'fp.help.each_column_becomes_a_collapsible_panel': "每列会变成一个可折叠面板。请在列设置中为其命名。",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "每列会变成一个标签页。请在列设置中为其命名。",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "每列是全宽卡片，随页面滚动层层堆叠。",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "每列是一张幻灯片，读者可滑动或滚动浏览。",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "读者向下滚动页面时，列会横向滑动。",
+  'fp.help.the_first_column_stays_in_place_while_th': "第一列保持不动，其他列作为步骤从它旁边滚过。",
 }
 
 export default zhHans

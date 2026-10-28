@@ -2145,6 +2145,17 @@ const pt: UiDictionary = {
   'st.lit.waiting_to_go_live': "Aguardando publicação",
   'st.lit.when': "Quando",
   'st.lit.worked': "Funcionou",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "Um botão abre as colunas em uma caixa de diálogo.",
+  'fp.help.columns_become_equal_cells_in_rows': "As colunas viram células iguais em linhas.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "As colunas fluem como uma linha ou pilha flexível: defina abaixo direção, quebra, alinhamento e espaçamento.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "As colunas ficam lado a lado e quebram para uma nova linha quando não há espaço.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "Cada coluna vira um painel recolhível. Dê um nome a ele nas configurações da coluna.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "Cada coluna vira uma aba. Dê um nome a ela nas configurações da coluna.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "Cada coluna é um cartão de largura total que se empilha conforme a página rola.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "Cada coluna é um slide que o leitor percorre deslizando ou rolando.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "As colunas deslizam para o lado conforme o leitor desce a página.",
+  'fp.help.the_first_column_stays_in_place_while_th': "A primeira coluna fica fixa enquanto as outras passam por ela como etapas.",
 }
 
 export default pt

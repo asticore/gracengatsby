@@ -2146,6 +2146,17 @@ const de: UiDictionary = {
   'st.lit.waiting_to_go_live': "Wartet auf Veröffentlichung",
   'st.lit.when': "Wann",
   'st.lit.worked': "Erfolgreich",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "Eine Schaltfläche öffnet die Spalten in einem Dialogfenster.",
+  'fp.help.columns_become_equal_cells_in_rows': "Spalten werden zu gleich großen Zellen in Zeilen.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "Spalten fließen als flexible Zeile oder Stapel: Richtung, Umbruch, Ausrichtung und Abstand unten festlegen.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "Spalten stehen nebeneinander und brechen in eine neue Zeile um, wenn der Platz nicht ausreicht.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "Jede Spalte wird zu einem ausklappbaren Bereich. Benennen Sie ihn in den Spalteneinstellungen.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "Jede Spalte wird zu einem Tab. Benennen Sie ihn in den Spalteneinstellungen.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "Jede Spalte ist eine Karte in voller Breite, die sich beim Scrollen stapelt.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "Jede Spalte ist eine Folie, die der Leser durchwischt oder durchscrollt.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "Die Spalten gleiten seitlich, während der Leser die Seite hinunterscrollt.",
+  'fp.help.the_first_column_stays_in_place_while_th': "Die erste Spalte bleibt stehen, während die anderen als Schritte an ihr vorbeiscrollen.",
 }
 
 export default de

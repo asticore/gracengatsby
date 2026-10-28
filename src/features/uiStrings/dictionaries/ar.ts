@@ -2145,6 +2145,17 @@ const ar: UiDictionary = {
   'st.lit.waiting_to_go_live': "بانتظار النشر",
   'st.lit.when': "متى",
   'st.lit.worked': "نجح",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "يفتح زر الأعمدة في مربع حوار منبثق.",
+  'fp.help.columns_become_equal_cells_in_rows': "تتحول الأعمدة إلى خلايا متساوية في صفوف.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "تتدفق الأعمدة كصف أو كومة مرنة: اضبط الاتجاه والالتفاف والمحاذاة والمسافة أدناه.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "تُعرض الأعمدة جنباً إلى جنب وتنتقل إلى سطر جديد عند نفاد المساحة.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "يصبح كل عمود لوحة قابلة للطي. سمِّها من إعدادات العمود.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "يصبح كل عمود علامة تبويب. سمِّها من إعدادات العمود.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "كل عمود بطاقة بعرض كامل تتراكم أثناء تمرير الصفحة.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "كل عمود شريحة يتصفحها القارئ بالتمرير أو السحب.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "تنزلق الأعمدة جانباً أثناء نزول القارئ في الصفحة.",
+  'fp.help.the_first_column_stays_in_place_while_th': "يبقى العمود الأول في مكانه بينما تمر الأعمدة الأخرى بجانبه كخطوات.",
 }
 
 export default ar

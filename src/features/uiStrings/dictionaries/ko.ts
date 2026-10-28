@@ -2145,6 +2145,17 @@ const ko: UiDictionary = {
   'st.lit.waiting_to_go_live': "게시 대기 중",
   'st.lit.when': "언제",
   'st.lit.worked': "성공",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "버튼을 누르면 열이 팝업 대화상자에 열립니다.",
+  'fp.help.columns_become_equal_cells_in_rows': "열이 행 안에서 같은 크기의 셀이 됩니다.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "열이 유연한 행 또는 스택으로 배치됩니다. 아래에서 방향, 줄바꿈, 정렬, 간격을 설정하세요.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "열은 나란히 배치되며, 공간이 부족하면 새 줄로 넘어갑니다.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "각 열이 접을 수 있는 패널이 됩니다. 열 설정에서 이름을 지정하세요.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "각 열이 탭이 됩니다. 열 설정에서 탭 이름을 지정하세요.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "각 열은 페이지를 스크롤하면서 쌓이는 전체 너비 카드입니다.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "각 열은 독자가 스와이프하거나 스크롤하며 넘기는 슬라이드입니다.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "독자가 페이지를 아래로 스크롤하면 열이 옆으로 밀려 나옵니다.",
+  'fp.help.the_first_column_stays_in_place_while_th': "첫 번째 열은 제자리에 머물고 나머지 열이 단계처럼 지나갑니다.",
 }
 
 export default ko

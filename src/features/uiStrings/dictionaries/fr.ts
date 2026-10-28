@@ -2145,6 +2145,17 @@ const fr: UiDictionary = {
   'st.lit.waiting_to_go_live': "En attente de publication",
   'st.lit.when': "Quand",
   'st.lit.worked': "Réussi",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "Un bouton ouvre les colonnes dans une boîte de dialogue.",
+  'fp.help.columns_become_equal_cells_in_rows': "Les colonnes deviennent des cellules égales en lignes.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "Les colonnes s’enchaînent en ligne ou en pile flexible : réglez ci-dessous la direction, le retour à la ligne, l’alignement et l’espace.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "Les colonnes sont côte à côte et passent à la ligne suivante lorsque l’espace manque.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "Chaque colonne devient un panneau repliable. Nommez-le dans les réglages de la colonne.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "Chaque colonne devient un onglet. Nommez-le dans les réglages de la colonne.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "Chaque colonne est une carte pleine largeur qui s’empile au fil du défilement.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "Chaque colonne est une diapositive que le lecteur fait défiler en glissant ou en faisant défiler.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "Les colonnes glissent latéralement lorsque le lecteur descend dans la page.",
+  'fp.help.the_first_column_stays_in_place_while_th': "La première colonne reste en place pendant que les autres défilent devant elle, comme des étapes.",
 }
 
 export default fr

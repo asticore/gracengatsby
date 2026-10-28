@@ -2185,6 +2185,17 @@ export const UI_STRING_SOURCE = {
   'st.lit.waiting_to_go_live': "Waiting to go live",
   'st.lit.when': "When",
   'st.lit.worked': "Worked",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "A button opens the columns in a popup dialog.",
+  'fp.help.columns_become_equal_cells_in_rows': "Columns become equal cells in rows.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "Columns flow as a flexible row or stack: set direction, wrap, alignment and gap below.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "Columns sit side by side and wrap onto a new line when space runs out.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "Each column becomes a collapsible panel. Name it in its column settings.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "Each column becomes a tab. Name a tab in its column settings.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "Each column is a full-width card that piles up as the page scrolls.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "Each column is a slide the reader swipes or scrolls through.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "The columns slide sideways as the reader scrolls down the page.",
+  'fp.help.the_first_column_stays_in_place_while_th': "The first column stays in place while the others scroll past it as steps.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

@@ -11,7 +11,14 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
-import { translateWith, type UiDictionary, type UiStringKey, type UiStringVars } from '@/features/uiStrings'
+import {
+  adminLabel,
+  translateWith,
+  type AdminLabelKind,
+  type UiDictionary,
+  type UiStringKey,
+  type UiStringVars,
+} from '@/features/uiStrings'
 
 type AdminUiValue = {
   locale: string
@@ -38,6 +45,15 @@ export function AdminUiProvider({
 export function useAdminT(): (key: UiStringKey, vars?: UiStringVars) => string {
   const { dict } = useContext(AdminUiContext)
   return useMemo(() => (key: UiStringKey, vars?: UiStringVars) => translateWith(dict, key, vars), [dict])
+}
+
+/** `labelFor('collection', 'pages', 'Pages')`: the admin label for a config name, English when the language has no translation. */
+export function useAdminLabel(): (kind: AdminLabelKind, slug: string, fallbackEnglish: string) => string {
+  const { locale, dict } = useContext(AdminUiContext)
+  return useMemo(
+    () => (kind: AdminLabelKind, slug: string, fallbackEnglish: string) => adminLabel(kind, slug, fallbackEnglish, { locale, dict }),
+    [locale, dict],
+  )
 }
 
 export function useAdminUi(): { locale: string; dir: 'ltr' | 'rtl' } {

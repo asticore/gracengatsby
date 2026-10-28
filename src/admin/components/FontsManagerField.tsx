@@ -210,7 +210,7 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
 
   return (
     <div className="field-type fm-root">
-      <FieldLabel label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
 
       <section className="fm-panel" aria-label="Find a font">
         <div className="fm-row">

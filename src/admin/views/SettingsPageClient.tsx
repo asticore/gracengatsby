@@ -2,7 +2,7 @@
 
 import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
-import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { useAdminLabel, useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { UI_STRING_SOURCE, type UiStringKey } from '@/features/uiStrings'
 import { EditForm } from './EditForm'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
@@ -51,6 +51,7 @@ const readServerHash = () => ''
  */
 export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, sections }) => {
   const t = useAdminT()
+  const labelFor = useAdminLabel()
   // Page title and description come from the reference table, keyed by page key.
   // A page with no key in the table keeps the English text from settingsPages.ts.
   const titleKey = `settings.page.${page.key}.title` as UiStringKey
@@ -58,6 +59,8 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
   const pageTitle = titleKey in UI_STRING_SOURCE ? t(titleKey) : page.title
   const pageDescription = descriptionKey in UI_STRING_SOURCE ? t(descriptionKey) : page.description
   const globalSections = sections.filter((s) => s.kind === 'global')
+  const firstSection = globalSections[0]
+  const firstGlobalLabel = firstSection?.kind === 'global' ? labelFor('global', firstSection.slug, firstSection.label) : firstSection?.label
   const linkSections = sections.filter((s) => s.kind === 'link')
   const showTabs = globalSections.length >= 2
   const tabSlugs = globalSections.map((s) => s.slug)
@@ -137,14 +140,14 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
                       onClick={() => selectTab(section.slug)}
                       onKeyDown={(event) => handleTabKeyDown(event, index)}
                     >
-                      {section.label}
+                      {labelFor('global', section.slug, section.label)}
                     </button>
                   )
                 })}
               </div>
             ) : (
               <div className="settings-tabs__heading">
-                <h2 className="settings-page__section-title">{globalSections[0].label}</h2>
+                <h2 className="settings-page__section-title">{firstGlobalLabel}</h2>
               </div>
             )}
 

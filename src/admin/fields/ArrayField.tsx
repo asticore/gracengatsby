@@ -412,7 +412,7 @@ export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
 
   return (
     <div className="field-type array array-field">
-      <FieldLabel label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
 
       {arrayValue.length === 0 ? (
         <p className="array-field__empty">

@@ -1,3 +1,4 @@
+import { adminLabel } from '@/features/uiStrings'
 import React from 'react'
 import { Logout } from '@/engine/ui'
 import { AdminLanguagePicker } from '@/admin/ui/AdminLanguagePicker'
@@ -15,6 +16,7 @@ import {
   type ResolvedNavGroup,
 } from './AdminNavClient'
 import { readFeatureFlags, resolveEntityGroups } from '@/components/admin/shared/resolveEntities'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { SettingsRefresh } from '@/components/admin/shared/SettingsRefresh'
 import { getMultilingualSettings } from '@/features/multilingual/settings'
 import { countItemsNeedingTranslation } from '@/features/multilingual/views/translationsData'
@@ -109,7 +111,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     return can(user as unknown as { roles?: string[] }, resource as Resource, action)
   }
 
-  const groups: ResolvedNavGroup[] = resolveEntityGroups({
+  const resolvedGroups = resolveEntityGroups({
     engine,
     flags,
     i18n,
@@ -118,6 +120,15 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     isAdmin,
     can: canFn,
   })
+  // Collection and global names follow the admin language. Views keep their own label.
+  const ui = await getAdminUi()
+  const groups: ResolvedNavGroup[] = resolvedGroups.map((group) => ({
+    ...group,
+    entities: group.entities.map((entity) => ({
+      ...entity,
+      label: entity.type === 'globals' ? adminLabel('global', entity.slug, entity.label, ui) : adminLabel('collection', entity.slug, entity.label, ui),
+    })),
+  }))
 
   // The Translations badge: how many items still have a language to finish. Only for people who can open the screen.
   const badges: Record<string, number> = {}

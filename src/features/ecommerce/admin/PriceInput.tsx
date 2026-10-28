@@ -37,7 +37,7 @@ export function PriceInput({ field, path, readOnly }: ScalarFieldRendererProps) 
 
   return (
     <div className="field-type number">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
       <div style={{ alignItems: 'center', display: 'flex', gap: 4 }}>
         <span aria-hidden style={{ opacity: 0.7 }}>
           $

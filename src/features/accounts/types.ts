@@ -31,9 +31,11 @@ export const ACCOUNT_PREFERENCE_KEY = 'engage-account-profile'
 export type AccountPreferences = {
   name: string
   defaultAddressId: number | null
+  /** Chosen portal language (an active locale code). Null means automatic: cookie, then browser. */
+  locale: string | null
 }
 
-export const EMPTY_PREFERENCES: AccountPreferences = { name: '', defaultAddressId: null }
+export const EMPTY_PREFERENCES: AccountPreferences = { name: '', defaultAddressId: null, locale: null }
 
 /** The sign-in refusal for an unverified customer; the form offers a resend when it sees it. */
 export const VERIFY_FIRST_MESSAGE = 'Verify your email first'

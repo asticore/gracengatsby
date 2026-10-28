@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { LOCALE_COOKIE } from './detect'
+import { isPortalPath } from './portal'
 import { LOCALE_COOKIE_MAX_AGE, LOCALE_HEADER, isLocaleRoutable, routeLocale } from './routing'
 import { readMultilingualSettingsFromD1 } from './settings'
 
@@ -22,6 +23,23 @@ export async function multilingualMiddleware(request: NextRequest, handle: Handl
   const readable = request.method === 'GET' || request.method === 'HEAD'
   // Only reads are rebuilt; a rebuilt request would drop a POST body.
   if (!readable) return handle(request)
+
+  // The logged-in portal (account, sign-in, enrolled lessons) never takes part in locale routing: no prefix
+  // strip, no redirect, no cookie. Its language is resolved from the visitor in the layout. A locale header
+  // sent by the client is removed, so nothing downstream can read a language from it.
+  if (isPortalPath(request.nextUrl.pathname, settings.activeLocales)) {
+    const headers = new Headers(request.headers)
+    headers.delete(LOCALE_HEADER)
+    const target = new NextRequest(request.url, { headers, method: request.method })
+    const response = await handle(target)
+    if (response.headers.get('x-middleware-next') !== '1') return response
+    const out = NextResponse.next({ request: { headers: target.headers } })
+    response.headers.forEach((value, key) => {
+      if (!key.startsWith('x-middleware-') && key !== 'set-cookie') out.headers.set(key, value)
+    })
+    for (const cookie of response.headers.getSetCookie()) out.headers.append('set-cookie', cookie)
+    return out
+  }
 
   const route = routeLocale(request.nextUrl.pathname, settings)
 

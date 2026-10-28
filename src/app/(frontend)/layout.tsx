@@ -57,6 +57,8 @@ import { renderChromeTemplates, requestPathOf } from '@/features/siteTemplates/c
 import { ImpersonationBanner } from '@/features/impersonation/components/ImpersonationBanner'
 import { directionFor } from '@/features/multilingual/detect'
 import { LOCALE_HEADER, requestLocale } from '@/features/multilingual/routing'
+import { isPortalPath } from '@/features/multilingual/portal'
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 
 import './styles.css'
@@ -224,7 +226,11 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 
   // Language for this request (null while multilingual is off: the document keeps its single-language markup).
   const multilingual = await readMultilingualSettingsFromD1()
-  const locale = requestLocale((await headers()).get(LOCALE_HEADER), multilingual)
+  // The logged-in portal takes its language from the visitor (profile, cookie, browser), never from a URL.
+  const portal = isPortalPath(requestPathOf(await headers()), multilingual.activeLocales)
+  const locale = portal
+    ? await currentPortalLocale()
+    : requestLocale((await headers()).get(LOCALE_HEADER), multilingual)
 
   // Header / footer templates (Site templates). Null for each when none matches, and the built-in ones draw.
   const chrome = await renderChromeTemplates(requestPathOf(await headers()))

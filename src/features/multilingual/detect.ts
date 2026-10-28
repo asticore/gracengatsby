@@ -32,7 +32,7 @@ export type LocaleDecision = {
  * and `Accept-Language` offers `en-au` for `en-AU`. Exact-matching either
  * would mean a switcher that works and a shared link that does not.
  */
-function matchActive(candidate: string | null | undefined, active: string[]): string | null {
+export function matchActive(candidate: string | null | undefined, active: string[]): string | null {
   if (!candidate) return null
   const wanted = candidate.trim().toLowerCase()
   if (!wanted) return null

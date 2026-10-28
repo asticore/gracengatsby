@@ -31,7 +31,12 @@ import { DEFAULT_PASSWORD_POLICY } from '@/features/security/passwordPolicyDefau
 import { ConnectedAccountsPanel } from '@/features/socialLogin/components/ConnectedAccountsPanel'
 import { viewConnections } from '@/features/socialLogin/connections'
 import { socialMessage } from '@/features/socialLogin/messages'
-import { AddressForm, AddressRowActions, EmailForm, NameForm, PasswordForm } from './AccountForms'
+import { AddressForm, AddressRowActions, EmailForm, LanguageForm, NameForm, PasswordForm, type LanguageOption } from './AccountForms'
+import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
+import { isLocaleRoutable } from '@/features/multilingual/routing'
+import { localeNativeName } from '@/features/multilingual/locales'
+import { portalText } from '@/features/multilingual/portalStrings'
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 
 /**
  * The signed-in screens.
@@ -361,6 +366,15 @@ export const BookingsScreen: React.FC = async () => {
 export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boolean }> = async ({ socialError, passwordDue }) => {
   const { engine, user } = await requireCustomer('/account/profile')
   const preferences = await readPreferences(engine, user)
+  // Shown only while multilingual is on with two or more languages. Otherwise the profile is unchanged.
+  const multilingual = await readMultilingualSettingsFromD1()
+  const portalLocale = await currentPortalLocale()
+  const languageOptions: LanguageOption[] | null = isLocaleRoutable(multilingual)
+    ? [
+        { value: '', label: portalText('profile.languageAuto', portalLocale) },
+        ...multilingual.activeLocales.map((code) => ({ value: code, label: localeNativeName(code) })),
+      ]
+    : null
   const email = typeof user.email === 'string' ? user.email : ''
   const secure = await defaultTwoFactorStore.findByID(Number(user.id)).catch((): null => null)
   const settings = await getSecuritySettings(engine as never).catch((): null => null)
@@ -386,6 +400,17 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
         <h2>Name</h2>
         <NameForm name={preferences.name} />
       </section>
+
+      {languageOptions && (
+        <section className="account-section">
+          <h2>{portalText('profile.language', portalLocale)}</h2>
+          <LanguageForm
+            current={preferences.locale ?? ''}
+            options={languageOptions}
+            labels={{ heading: portalText('profile.language', portalLocale), save: portalText('profile.languageSave', portalLocale) }}
+          />
+        </section>
+      )}
 
       <section className="account-section">
         <h2>Email address</h2>

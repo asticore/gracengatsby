@@ -9,6 +9,7 @@ import {
   changePasswordAction,
   deleteAddressAction,
   saveAddressAction,
+  saveLanguageAction,
   saveNameAction,
   setDefaultAddressAction,
   signOutAction,
@@ -147,6 +148,33 @@ export const NameForm: React.FC<{ name: string }> = ({ name }) => {
       </label>
       <Note state={state} />
       <SubmitButton>Save name</SubmitButton>
+    </form>
+  )
+}
+
+export type LanguageOption = { value: string; label: string }
+
+/** The portal language choice. `options` is the automatic choice followed by each active locale. */
+export const LanguageForm: React.FC<{
+  current: string
+  options: LanguageOption[]
+  labels: { heading: string; save: string }
+}> = ({ current, options, labels }) => {
+  const [state, action] = useActionState<ActionState, FormData>(saveLanguageAction, IDLE)
+  return (
+    <form action={action} className="account-form">
+      <label>
+        {labels.heading}
+        <select name="locale" defaultValue={current}>
+          {options.map((option) => (
+            <option key={option.value || 'auto'} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Note state={state} />
+      <SubmitButton>{labels.save}</SubmitButton>
     </form>
   )
 }

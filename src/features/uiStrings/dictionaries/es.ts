@@ -1223,6 +1223,25 @@ const es: UiDictionary = {
   'settings.link.display-currencies.description': "Muestre los precios en otras monedas. Los compradores siempre pagan en la moneda de la tienda.",
   'settings.link.cache-tools.label': "Herramientas de caché",
   'settings.link.cache-tools.description': "Borre ahora las copias guardadas de páginas y active o desactive el modo de desarrollo de Cloudflare.",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "Inicio en dos pasos",
+  'settings.link.two-step-sign-in.description': "Configure una app de autenticación y códigos de respaldo para su propia cuenta.",
+  'settings.link.signed-in-devices.label': "Dispositivos con sesión iniciada",
+  'settings.link.signed-in-devices.description': "Vea dónde tiene la sesión iniciada su cuenta, cierre la sesión de un dispositivo o de una cuenta que administre.",
+  'settings.link.passkeys.label': "Llaves de acceso",
+  'settings.link.passkeys.description': "Registre una llave de acceso en su cuenta y vea si el sitio permite llaves de acceso a los administradores.",
+  'settings.link.api-keys.label': "Claves de API",
+  'settings.link.api-keys.description': "Cree y revoque claves para scripts que llaman a la API del sitio. Los administradores ven y revocan todas las claves.",
+  'settings.link.sign-in-as-customer.label': "Iniciar sesión como cliente",
+  'settings.link.sign-in-as-customer.description': "Administradores: abra la cuenta de un cliente por poco tiempo, indicando un motivo. Cada inicio y cierre se registra en el historial de aquí.",
+  'settings.link.organizations.label': "Organizaciones",
+  'settings.link.organizations.description': "Administradores: todas las organizaciones de clientes con su número de miembros, y eliminar una. Active la función arriba.",
+  'settings.link.password-groups.label': "Grupos de contraseñas",
+  'settings.link.password-groups.description': "Contraseñas compartidas que protegen muchas páginas, entradas, productos y eventos. Cree, rote o elimine un grupo y vea qué contenido lo usa.",
+  'settings.link.security-audit.label': "Registro de seguridad",
+  'settings.link.security-audit.description': "Administradores: cada inicio de sesión, intento fallido, bloqueo y cambio de seguridad de cuentas, del más reciente al más antiguo, con filtros por evento o cuenta.",
+  'settings.link.connected-accounts.label': "Cuentas vinculadas",
+  'settings.link.connected-accounts.description': "Conecte o desconecte Google, GitHub y otros proveedores de inicio de sesión en su propia cuenta. La configuración de los proveedores está arriba, en Seguridad > Inicio de sesión social.",
 }
 
 export default es

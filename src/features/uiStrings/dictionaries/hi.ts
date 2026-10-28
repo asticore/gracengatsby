@@ -1223,6 +1223,25 @@ const hi: UiDictionary = {
   'settings.link.display-currencies.description': "अन्य मुद्राओं में कीमतें दिखाएँ। खरीदार हमेशा स्टोर की मुद्रा में भुगतान करते हैं।",
   'settings.link.cache-tools.label': "कैश टूल",
   'settings.link.cache-tools.description': "सहेजी गई पेज प्रतियाँ अभी साफ़ करें और Cloudflare डेव्लपमेंट मोड चालू या बंद करें।",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "दो-चरणीय साइन-इन",
+  'settings.link.two-step-sign-in.description': "अपने खाते के लिए ऑथेंटिकेटर ऐप और बैकअप कोड सेट करें।",
+  'settings.link.signed-in-devices.label': "साइन-इन किए गए डिवाइस",
+  'settings.link.signed-in-devices.description': "देखें कि आपका खाता कहाँ साइन-इन है, कोई डिवाइस या आपके द्वारा प्रबंधित खाता साइन-आउट करें।",
+  'settings.link.passkeys.label': "पासकी",
+  'settings.link.passkeys.description': "अपने खाते पर पासकी रजिस्टर करें और देखें कि साइट एडमिन के लिए पासकी की अनुमति देती है या नहीं।",
+  'settings.link.api-keys.label': "API कुंजियाँ",
+  'settings.link.api-keys.description': "साइट API को कॉल करने वाली स्क्रिप्ट के लिए कुंजियाँ बनाएँ और रद्द करें। एडमिन सभी कुंजियाँ देख और रद्द कर सकते हैं।",
+  'settings.link.sign-in-as-customer.label': "ग्राहक के रूप में साइन इन करें",
+  'settings.link.sign-in-as-customer.description': "एडमिन: कारण के साथ कुछ समय के लिए किसी ग्राहक का खाता खोलें। हर शुरुआत और समाप्ति यहाँ इतिहास में दर्ज होती है।",
+  'settings.link.organizations.label': "संगठन",
+  'settings.link.organizations.description': "एडमिन: सदस्य संख्या के साथ सभी ग्राहक संगठन, और किसी एक को हटाना। ऊपर यह सुविधा चालू करें।",
+  'settings.link.password-groups.label': "पासवर्ड समूह",
+  'settings.link.password-groups.description': "कई पेज, पोस्ट, उत्पाद और इवेंट की सुरक्षा करने वाले साझा पासवर्ड। समूह बनाएँ, बदलें या हटाएँ और देखें कि कौन-सा कंटेंट इसका उपयोग करता है।",
+  'settings.link.security-audit.label': "सुरक्षा ऑडिट",
+  'settings.link.security-audit.description': "एडमिन: हर साइन-इन, विफल प्रयास, लॉकआउट और खाता सुरक्षा बदलाव, सबसे नए पहले, घटना या खाते के अनुसार फ़िल्टर योग्य।",
+  'settings.link.connected-accounts.label': "जुड़े हुए खाते",
+  'settings.link.connected-accounts.description': "अपने खाते पर Google, GitHub और अन्य साइन-इन प्रदाता जोड़ें या हटाएँ। प्रदाता सेटअप ऊपर सुरक्षा > सोशल लॉगिन में है।",
 }
 
 export default hi

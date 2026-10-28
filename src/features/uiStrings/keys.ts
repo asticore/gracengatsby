@@ -1264,6 +1264,25 @@ export const UI_STRING_SOURCE = {
   'settings.link.display-currencies.description': "Show prices in other currencies. Shoppers always pay in the shop currency.",
   'settings.link.cache-tools.label': "Cache tools",
   'settings.link.cache-tools.description': "Clear saved page copies now, and switch Cloudflare development mode on or off.",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "Two-step sign-in",
+  'settings.link.two-step-sign-in.description': "Set up an authenticator app and backup codes for your own account.",
+  'settings.link.signed-in-devices.label': "Signed-in devices",
+  'settings.link.signed-in-devices.description': "See where your account is signed in, sign out a device, or sign out an account you manage.",
+  'settings.link.passkeys.label': "Passkeys",
+  'settings.link.passkeys.description': "Register a passkey on your own account, and see whether the site allows passkeys for admins.",
+  'settings.link.api-keys.label': "API keys",
+  'settings.link.api-keys.description': "Create and revoke keys for scripts that call the site API. Admins see and revoke every key.",
+  'settings.link.sign-in-as-customer.label': "Sign in as customer",
+  'settings.link.sign-in-as-customer.description': "Admins: open a customer account for a short time, with a reason. Every start and stop is recorded in the history here.",
+  'settings.link.organizations.label': "Organizations",
+  'settings.link.organizations.description': "Admins: every customer organization with its member count, and delete one. Switch the feature on above.",
+  'settings.link.password-groups.label': "Password groups",
+  'settings.link.password-groups.description': "Shared passwords that protect many pages, posts, products and events. Create, rotate or delete a group and see which content uses it.",
+  'settings.link.security-audit.label': "Security audit",
+  'settings.link.security-audit.description': "Admins: every sign-in, failed attempt, lockout and account security change, newest first, filterable by event or account.",
+  'settings.link.connected-accounts.label': "Connected accounts",
+  'settings.link.connected-accounts.description': "Connect or disconnect Google, GitHub and other sign-in providers on your own account. Provider setup is above in Security > Social login.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

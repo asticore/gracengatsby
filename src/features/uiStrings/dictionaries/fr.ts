@@ -1223,6 +1223,25 @@ const fr: UiDictionary = {
   'settings.link.display-currencies.description': "Affichez les prix dans d'autres devises. Les acheteurs paient toujours dans la devise de la boutique.",
   'settings.link.cache-tools.label': "Outils de cache",
   'settings.link.cache-tools.description': "Effacez maintenant les copies de pages enregistrées et activez ou désactivez le mode développement Cloudflare.",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "Connexion en deux étapes",
+  'settings.link.two-step-sign-in.description': "Configurez une application d'authentification et des codes de secours pour votre compte.",
+  'settings.link.signed-in-devices.label': "Appareils connectés",
+  'settings.link.signed-in-devices.description': "Voyez où votre compte est connecté, déconnectez un appareil ou un compte que vous gérez.",
+  'settings.link.passkeys.label': "Clés d'accès",
+  'settings.link.passkeys.description': "Enregistrez une clé d'accès sur votre compte et voyez si le site autorise les clés d'accès pour les administrateurs.",
+  'settings.link.api-keys.label': "Clés API",
+  'settings.link.api-keys.description': "Créez et révoquez des clés pour les scripts qui appellent l'API du site. Les administrateurs voient et révoquent toutes les clés.",
+  'settings.link.sign-in-as-customer.label': "Se connecter en tant que client",
+  'settings.link.sign-in-as-customer.description': "Administrateurs : ouvrez le compte d'un client pour une courte durée, avec un motif. Chaque ouverture et fermeture est enregistrée dans l'historique ici.",
+  'settings.link.organizations.label': "Organisations",
+  'settings.link.organizations.description': "Administrateurs : toutes les organisations clientes avec leur nombre de membres, et suppression d'une organisation. Activez la fonctionnalité ci-dessus.",
+  'settings.link.password-groups.label': "Groupes de mots de passe",
+  'settings.link.password-groups.description': "Mots de passe partagés qui protègent de nombreuses pages, articles, produits et événements. Créez, renouvelez ou supprimez un groupe et voyez quel contenu l'utilise.",
+  'settings.link.security-audit.label': "Journal de sécurité",
+  'settings.link.security-audit.description': "Administrateurs : chaque connexion, tentative échouée, verrouillage et modification de sécurité des comptes, du plus récent au plus ancien, filtrable par événement ou compte.",
+  'settings.link.connected-accounts.label': "Comptes connectés",
+  'settings.link.connected-accounts.description': "Connectez ou déconnectez Google, GitHub et d'autres fournisseurs de connexion sur votre compte. La configuration des fournisseurs se trouve plus haut, dans Sécurité > Connexion sociale.",
 }
 
 export default fr

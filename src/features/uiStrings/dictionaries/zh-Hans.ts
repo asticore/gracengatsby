@@ -1222,6 +1222,25 @@ const zhHans: UiDictionary = {
   'settings.link.display-currencies.description': "以其他货币显示价格。买家始终使用商店货币付款。",
   'settings.link.cache-tools.label': "缓存工具",
   'settings.link.cache-tools.description': "立即清除已保存的页面副本，并开启或关闭 Cloudflare 开发模式。",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "两步登录",
+  'settings.link.two-step-sign-in.description': "为您自己的账户设置身份验证应用和备用代码。",
+  'settings.link.signed-in-devices.label': "已登录的设备",
+  'settings.link.signed-in-devices.description': "查看您的账户在哪些设备上登录，退出某台设备，或退出您管理的账户。",
+  'settings.link.passkeys.label': "通行密钥",
+  'settings.link.passkeys.description': "为您的账户注册通行密钥，并查看网站是否允许管理员使用通行密钥。",
+  'settings.link.api-keys.label': "API 密钥",
+  'settings.link.api-keys.description': "为调用网站 API 的脚本创建和撤销密钥。管理员可查看并撤销所有密钥。",
+  'settings.link.sign-in-as-customer.label': "以客户身份登录",
+  'settings.link.sign-in-as-customer.description': "管理员：附上原因，短时间打开客户账户。每次开始和停止都会记录在此处的历史中。",
+  'settings.link.organizations.label': "组织",
+  'settings.link.organizations.description': "管理员：查看所有客户组织及其成员数，并可删除某个组织。请先在上方开启该功能。",
+  'settings.link.password-groups.label': "密码组",
+  'settings.link.password-groups.description': "保护多个页面、文章、商品和活动的共享密码。可创建、轮换或删除组，并查看哪些内容在使用它。",
+  'settings.link.security-audit.label': "安全审计",
+  'settings.link.security-audit.description': "管理员：所有登录、失败尝试、锁定和账户安全变更，按最新排序，可按事件或账户筛选。",
+  'settings.link.connected-accounts.label': "已连接的账户",
+  'settings.link.connected-accounts.description': "在您自己的账户上连接或断开 Google、GitHub 等登录提供商。提供商设置位于上方的\"安全 > 社交登录\"中。",
 }
 
 export default zhHans

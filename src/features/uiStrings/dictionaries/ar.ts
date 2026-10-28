@@ -1223,6 +1223,25 @@ const ar: UiDictionary = {
   'settings.link.display-currencies.description': "اعرض الأسعار بعملات أخرى. يدفع المتسوقون دائمًا بعملة المتجر.",
   'settings.link.cache-tools.label': "أدوات التخزين المؤقت",
   'settings.link.cache-tools.description': "امسح نسخ الصفحات المحفوظة الآن، وفعّل وضع التطوير في Cloudflare أو أوقفه.",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "تسجيل الدخول بخطوتين",
+  'settings.link.two-step-sign-in.description': "إعداد تطبيق المصادقة ورموز النسخ الاحتياطي لحسابك.",
+  'settings.link.signed-in-devices.label': "الأجهزة المسجلة الدخول",
+  'settings.link.signed-in-devices.description': "اطّلع على الأماكن التي سجّل فيها حسابك الدخول، وسجّل الخروج من جهاز أو من حساب تديره.",
+  'settings.link.passkeys.label': "مفاتيح المرور",
+  'settings.link.passkeys.description': "سجّل مفتاح مرور لحسابك، وتحقق مما إذا كان الموقع يسمح بمفاتيح المرور للمسؤولين.",
+  'settings.link.api-keys.label': "مفاتيح API",
+  'settings.link.api-keys.description': "أنشئ مفاتيح للنصوص التي تستدعي واجهة برمجة التطبيقات الخاصة بالموقع وألغِها. يرى المسؤولون كل المفاتيح ويلغونها.",
+  'settings.link.sign-in-as-customer.label': "تسجيل الدخول كعميل",
+  'settings.link.sign-in-as-customer.description': "المسؤولون: افتح حساب عميل لفترة قصيرة مع ذكر السبب. يُسجَّل كل بدء وإيقاف في السجل هنا.",
+  'settings.link.organizations.label': "المؤسسات",
+  'settings.link.organizations.description': "المسؤولون: كل مؤسسات العملاء مع عدد أعضاء كل منها، ويمكن حذف إحداها. فعّل الميزة أعلاه.",
+  'settings.link.password-groups.label': "مجموعات كلمات المرور",
+  'settings.link.password-groups.description': "كلمات مرور مشتركة تحمي صفحات ومنشورات ومنتجات وفعاليات كثيرة. أنشئ مجموعة أو دوّرها أو احذفها، واطّلع على المحتوى الذي يستخدمها.",
+  'settings.link.security-audit.label': "تدقيق الأمان",
+  'settings.link.security-audit.description': "المسؤولون: كل تسجيل دخول ومحاولة فاشلة وقفل وتغيير أمني للحسابات، الأحدث أولاً، ويمكن التصفية حسب الحدث أو الحساب.",
+  'settings.link.connected-accounts.label': "الحسابات المرتبطة",
+  'settings.link.connected-accounts.description': "اربط أو افصل Google وGitHub وغيرها من مزودي تسجيل الدخول على حسابك. يوجد إعداد المزودين أعلاه في الأمان > تسجيل الدخول الاجتماعي.",
 }
 
 export default ar

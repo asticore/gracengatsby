@@ -1224,6 +1224,25 @@ const de: UiDictionary = {
   'settings.link.display-currencies.description': "Preise in anderen Währungen anzeigen. Kundschaft zahlt immer in der Shop-Währung.",
   'settings.link.cache-tools.label': "Cache-Werkzeuge",
   'settings.link.cache-tools.description': "Gespeicherte Seitenkopien jetzt leeren und den Cloudflare-Entwicklungsmodus ein- oder ausschalten.",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "Zweistufige Anmeldung",
+  'settings.link.two-step-sign-in.description': "Richten Sie eine Authenticator-App und Backup-Codes für Ihr eigenes Konto ein.",
+  'settings.link.signed-in-devices.label': "Angemeldete Geräte",
+  'settings.link.signed-in-devices.description': "Sehen Sie, wo Ihr Konto angemeldet ist, melden Sie ein Gerät ab oder ein von Ihnen verwaltetes Konto.",
+  'settings.link.passkeys.label': "Passkeys",
+  'settings.link.passkeys.description': "Registrieren Sie einen Passkey für Ihr Konto und prüfen Sie, ob die Website Passkeys für Admins erlaubt.",
+  'settings.link.api-keys.label': "API-Schlüssel",
+  'settings.link.api-keys.description': "Schlüssel für Skripte erstellen und widerrufen, die die Website-API aufrufen. Admins sehen und widerrufen alle Schlüssel.",
+  'settings.link.sign-in-as-customer.label': "Als Kunde anmelden",
+  'settings.link.sign-in-as-customer.description': "Admins: Kundenkonto für kurze Zeit mit Begründung öffnen. Jeder Start und jedes Ende wird hier im Verlauf protokolliert.",
+  'settings.link.organizations.label': "Organisationen",
+  'settings.link.organizations.description': "Admins: alle Kundenorganisationen mit Mitgliederzahl, eine davon löschen. Aktivieren Sie die Funktion oben.",
+  'settings.link.password-groups.label': "Passwortgruppen",
+  'settings.link.password-groups.description': "Gemeinsame Passwörter, die viele Seiten, Beiträge, Produkte und Veranstaltungen schützen. Gruppe erstellen, rotieren oder löschen und sehen, welche Inhalte sie nutzen.",
+  'settings.link.security-audit.label': "Sicherheitsprüfung",
+  'settings.link.security-audit.description': "Admins: jede Anmeldung, fehlgeschlagene Versuche, Sperren und Änderungen an der Kontosicherheit, neueste zuerst, filterbar nach Ereignis oder Konto.",
+  'settings.link.connected-accounts.label': "Verbundene Konten",
+  'settings.link.connected-accounts.description': "Verbinden oder trennen Sie Google, GitHub und andere Anmeldeanbieter für Ihr eigenes Konto. Die Einrichtung der Anbieter finden Sie oben unter Sicherheit > Social Login.",
 }
 
 export default de

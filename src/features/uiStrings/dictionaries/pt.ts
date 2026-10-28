@@ -1223,6 +1223,25 @@ const pt: UiDictionary = {
   'settings.link.display-currencies.description': "Mostre preços em outras moedas. Os compradores sempre pagam na moeda da loja.",
   'settings.link.cache-tools.label': "Ferramentas de cache",
   'settings.link.cache-tools.description': "Limpe agora as cópias salvas das páginas e ative ou desative o modo de desenvolvimento do Cloudflare.",
+  // --- admin leftovers (settings link cards security) ---
+  'settings.link.two-step-sign-in.label': "Login em duas etapas",
+  'settings.link.two-step-sign-in.description': "Configure um aplicativo autenticador e códigos de backup para sua própria conta.",
+  'settings.link.signed-in-devices.label': "Dispositivos conectados",
+  'settings.link.signed-in-devices.description': "Veja onde sua conta está conectada, desconecte um dispositivo ou uma conta que você gerencia.",
+  'settings.link.passkeys.label': "Chaves de acesso",
+  'settings.link.passkeys.description': "Registre uma chave de acesso na sua conta e veja se o site permite chaves de acesso para administradores.",
+  'settings.link.api-keys.label': "Chaves de API",
+  'settings.link.api-keys.description': "Crie e revogue chaves para scripts que chamam a API do site. Os administradores veem e revogam todas as chaves.",
+  'settings.link.sign-in-as-customer.label': "Entrar como cliente",
+  'settings.link.sign-in-as-customer.description': "Administradores: abra a conta de um cliente por pouco tempo, com um motivo. Cada início e fim é registrado no histórico aqui.",
+  'settings.link.organizations.label': "Organizações",
+  'settings.link.organizations.description': "Administradores: todas as organizações de clientes com o número de membros, e exclua uma. Ative o recurso acima.",
+  'settings.link.password-groups.label': "Grupos de senhas",
+  'settings.link.password-groups.description': "Senhas compartilhadas que protegem muitas páginas, posts, produtos e eventos. Crie, gire ou exclua um grupo e veja qual conteúdo o usa.",
+  'settings.link.security-audit.label': "Auditoria de segurança",
+  'settings.link.security-audit.description': "Administradores: todos os logins, tentativas falhas, bloqueios e alterações de segurança de contas, do mais recente para o mais antigo, filtráveis por evento ou conta.",
+  'settings.link.connected-accounts.label': "Contas conectadas",
+  'settings.link.connected-accounts.description': "Conecte ou desconecte Google, GitHub e outros provedores de login na sua própria conta. A configuração dos provedores fica acima, em Segurança > Login social.",
 }
 
 export default pt

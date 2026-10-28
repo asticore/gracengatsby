@@ -136,10 +136,29 @@ describe('right-to-left direction', () => {
 })
 
 describe('customer portal still resolves as before', () => {
-  it('portalText returns the same English text for every language, as it always did', () => {
-    for (const locale of ['fr', 'de', 'ja', 'ar', 'zh-Hans', null]) {
+  it('portalText returns English for an unsupported or missing locale', () => {
+    for (const locale of ['xx', null]) {
       expect(portalText('nav.orders', locale)).toBe('Orders')
       expect(portalText('profile.languageAuto', locale)).toBe('Automatic (match my browser)')
+    }
+  })
+
+  it('portalText returns the translated portal strings for the translated locales', async () => {
+    for (const locale of ADMIN_UI_LOCALES) await loadStrings(locale)
+    expect(portalText('nav.orders', 'fr')).toBe('Commandes')
+    expect(portalText('nav.orders', 'de')).toBe('Bestellungen')
+    expect(portalText('profile.languageSave', 'ja')).toBe('言語を保存')
+    expect(portalText('nav.overview', 'ar')).toBe('نظرة عامة')
+    expect(portalText('nav.overview', 'zh-Hans')).toBe('概览')
+  })
+
+  it('every portal key is translated in every non-English dictionary', async () => {
+    const portalKeys = Object.keys(UI_STRING_SOURCE).filter((key) => key.startsWith('portal.'))
+    for (const locale of ADMIN_UI_LOCALES.filter((code) => code !== 'en')) {
+      await loadStrings(locale)
+      for (const key of portalKeys) {
+        expect(t(key as never, locale), `${locale} ${key}`).not.toBe(UI_STRING_SOURCE[key as never])
+      }
     }
   })
 

@@ -1375,6 +1375,16 @@ const ar: UiDictionary = {
   'customers.credit.errLookup': "فشل البحث.",
   'customers.credit.errRequest': "فشل الطلب.",
   'customers.credit.errFailed': "فشل.",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "الوسائط",
+  'media.countOne': "{count} ملف",
+  'media.countOther': "{count} ملف",
+  'media.allFolders': "كل المجلدات",
+  'media.searchPlaceholder': "ابحث عن اسم الملف...",
+  'media.preview': "معاينة",
+  'media.folder': "المجلد",
+  'media.alt': "النص البديل",
+  'media.show': "عرض",
 }
 
 export default ar

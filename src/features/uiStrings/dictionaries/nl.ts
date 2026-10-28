@@ -1375,6 +1375,16 @@ const nl: UiDictionary = {
   'customers.credit.errLookup': "Zoeken mislukt.",
   'customers.credit.errRequest': "Verzoek mislukt.",
   'customers.credit.errFailed': "Mislukt.",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "Media",
+  'media.countOne': "{count} bestand",
+  'media.countOther': "{count} bestanden",
+  'media.allFolders': "Alle mappen",
+  'media.searchPlaceholder': "Bestandsnaam zoeken...",
+  'media.preview': "Voorbeeld",
+  'media.folder': "Map",
+  'media.alt': "Alt",
+  'media.show': "Tonen",
 }
 
 export default nl

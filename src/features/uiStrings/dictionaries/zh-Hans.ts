@@ -1374,6 +1374,16 @@ const zhHans: UiDictionary = {
   'customers.credit.errLookup': "查找失败。",
   'customers.credit.errRequest': "请求失败。",
   'customers.credit.errFailed': "失败。",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "媒体库",
+  'media.countOne': "{count} 个文件",
+  'media.countOther': "{count} 个文件",
+  'media.allFolders': "所有文件夹",
+  'media.searchPlaceholder': "搜索文件名...",
+  'media.preview': "预览",
+  'media.folder': "文件夹",
+  'media.alt': "替代文本",
+  'media.show': "显示",
 }
 
 export default zhHans

@@ -12,8 +12,9 @@ import { UI_STRING_SOURCE } from './keys'
  *   kind 'global'      label.global.<global slug>
  *   kind 'field'       label.field.<field name>
  *   kind 'singular'    label.singular.<collection slug>   (singular name, edit screen)
+ *   kind 'desc'        desc.<slug>                        (short description text)
  */
-export type AdminLabelKind = 'collection' | 'global' | 'field' | 'singular'
+export type AdminLabelKind = 'collection' | 'global' | 'field' | 'singular' | 'desc'
 
 export type AdminLabelContext = {
   locale?: string | null
@@ -22,7 +23,7 @@ export type AdminLabelContext = {
 
 /** The reference-table key for a label, when one exists. */
 export function adminLabelKey(kind: AdminLabelKind, slug: string): UiStringKey | null {
-  const key = `label.${kind}.${slug}`
+  const key = kind === 'desc' ? `desc.${slug}` : `label.${kind}.${slug}`
   return key in UI_STRING_SOURCE ? (key as UiStringKey) : null
 }
 

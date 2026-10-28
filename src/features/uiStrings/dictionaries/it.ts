@@ -1168,6 +1168,17 @@ const it: UiDictionary = {
   "email.abandonedCart.body": "Hai lasciato alcuni articoli nel carrello di {site_name}. Ti stanno ancora aspettando.",
   "email.backInStock.subject": "Di nuovo disponibile: {label}",
   "email.backInStock.body": "Buone notizie. {label} è di nuovo disponibile.\n\nGuardalo qui: {url}\n\nHai chiesto di essere avvisato, quindi questa è l'unica email che ti invieremo al riguardo.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "Connessioni e-mail e SMS",
+  'settings.link.email-and-text-connections.description': "I provider di e-mail e SMS si collegano nella pagina Integrazioni. Le chiavi non vengono mai mostrate qui.",
+  'settings.link.email-design.label': "Design delle e-mail",
+  'settings.link.email-design.description': "Definisci l'aspetto delle e-mail: logo, colori, pulsanti e blocchi di contenuto.",
+  'settings.link.abandoned-cart-emails.label': "E-mail per carrello abbandonato",
+  'settings.link.abandoned-cart-emails.description': "Inviate agli acquirenti che lasciano articoli nel carrello. I ritardi si impostano in Impostazioni negozio > E-mail.",
+  'settings.link.email-testing.label': "Test delle e-mail",
+  'settings.link.email-testing.description': "Verifica la connessione e-mail, invia copie di prova di ogni e-mail e controlla il dominio di invio.",
+  'settings.link.email-log.label': "Registro e-mail",
+  'settings.link.email-log.description': "Ogni e-mail inviato dal sito, con un pulsante per reinviarlo.",
 
   // --- store ---
   "store.addToCart": "Aggiungi al carrello",

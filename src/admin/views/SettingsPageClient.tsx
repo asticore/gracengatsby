@@ -59,6 +59,11 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
   const pageTitle = titleKey in UI_STRING_SOURCE ? t(titleKey) : page.title
   const pageDescription = descriptionKey in UI_STRING_SOURCE ? t(descriptionKey) : page.description
   const globalSections = sections.filter((s) => s.kind === 'global')
+  // Link card text comes from the reference table, keyed by the card label; English text is kept when no key exists.
+  const linkText = (cardLabel: string, field: 'label' | 'description', english: string): string => {
+    const key = `settings.link.${cardLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}.${field}` as UiStringKey
+    return key in UI_STRING_SOURCE ? t(key) : english
+  }
   const firstSection = globalSections[0]
   const firstGlobalLabel = firstSection?.kind === 'global' ? labelFor('global', firstSection.slug, firstSection.label) : firstSection?.label
   const linkSections = sections.filter((s) => s.kind === 'link')
@@ -182,8 +187,8 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
               className="settings-page__link-card"
             >
               <div className="settings-page__link-card-content">
-                <h3 className="settings-page__link-card-title">{section.label}</h3>
-                <p className="settings-page__link-card-description">{section.description}</p>
+                <h3 className="settings-page__link-card-title">{linkText(section.label, 'label', section.label)}</h3>
+                <p className="settings-page__link-card-description">{linkText(section.label, 'description', section.description)}</p>
               </div>
               <div className="settings-page__link-card-icon">→</div>
             </a>

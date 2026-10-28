@@ -1168,6 +1168,17 @@ const fr: UiDictionary = {
   "email.abandonedCart.body": "Vous avez laissé des articles dans votre panier sur {site_name}. Ils vous attendent toujours.",
   "email.backInStock.subject": "De retour en stock : {label}",
   "email.backInStock.body": "Bonne nouvelle. {label} est de nouveau en stock.\n\nVoir l'article : {url}\n\nVous nous avez demandé de vous prévenir, c'est donc le seul e-mail que nous vous enverrons à ce sujet.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "Connexions e-mail et SMS",
+  'settings.link.email-and-text-connections.description': "Les fournisseurs d'e-mail et de SMS se connectent sur la page Intégrations. Les clés ne sont jamais affichées ici.",
+  'settings.link.email-design.label': "Conception des e-mails",
+  'settings.link.email-design.description': "Définissez l'apparence des e-mails : logo, couleurs, boutons et blocs de contenu.",
+  'settings.link.abandoned-cart-emails.label': "E-mails de panier abandonné",
+  'settings.link.abandoned-cart-emails.description': "Envoyés aux acheteurs qui laissent des articles dans leur panier. Leurs délais se règlent dans Paramètres de la boutique > E-mails.",
+  'settings.link.email-testing.label': "Test des e-mails",
+  'settings.link.email-testing.description': "Vérifiez la connexion e-mail, envoyez des copies test de chaque e-mail et contrôlez le domaine d'envoi.",
+  'settings.link.email-log.label': "Journal des e-mails",
+  'settings.link.email-log.description': "Chaque e-mail envoyé par le site, avec un bouton de renvoi.",
 
   // --- store ---
   "store.addToCart": "Ajouter au panier",

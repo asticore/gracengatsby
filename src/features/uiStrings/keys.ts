@@ -1210,6 +1210,17 @@ export const UI_STRING_SOURCE = {
   "email.abandonedCart.body": "You left some items in your cart at {site_name}. They are still waiting for you.",
   "email.backInStock.subject": "Back in stock: {label}",
   "email.backInStock.body": "Good news. {label} is back in stock.\n\nSee it here: {url}\n\nYou asked us to let you know, so this is the only email we will send about it.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "Email and text connections",
+  'settings.link.email-and-text-connections.description': "Email and text providers are connected on the Integrations page. Keys are never shown here.",
+  'settings.link.email-design.label': "Email design",
+  'settings.link.email-design.description': "Lay out the look of emails: logo, colours, buttons and content blocks.",
+  'settings.link.abandoned-cart-emails.label': "Abandoned cart emails",
+  'settings.link.abandoned-cart-emails.description': "Sent to shoppers who leave items in their cart. Their delays are set under Shop settings > Emails.",
+  'settings.link.email-testing.label': "Email testing",
+  'settings.link.email-testing.description': "Check the email connection, send test copies of each email and check the sending domain.",
+  'settings.link.email-log.label': "Email log",
+  'settings.link.email-log.description': "Every email the site has sent, with a resend button.",
   // --- store ---
   "store.addToCart": "Add to cart",
   "store.adding": "Adding…",

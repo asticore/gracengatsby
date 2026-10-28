@@ -1167,6 +1167,17 @@ const zhHans: UiDictionary = {
   "email.abandonedCart.body": "您在 {site_name} 的购物车里还有商品，它们仍在等您。",
   "email.backInStock.subject": "已重新到货：{label}",
   "email.backInStock.body": "好消息，{label} 已重新到货。\n\n在此查看：{url}\n\n您曾要求我们通知您，因此这是我们就此发送的唯一一封邮件。",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "邮件和短信连接",
+  'settings.link.email-and-text-connections.description': "邮件和短信服务商在\"集成\"页面中连接。此处从不显示密钥。",
+  'settings.link.email-design.label': "邮件设计",
+  'settings.link.email-design.description': "设置邮件外观：徽标、颜色、按钮和内容模块。",
+  'settings.link.abandoned-cart-emails.label': "购物车放弃邮件",
+  'settings.link.abandoned-cart-emails.description': "发送给把商品留在购物车中的买家。延迟时间在\"商店设置 > 邮件\"中设置。",
+  'settings.link.email-testing.label': "邮件测试",
+  'settings.link.email-testing.description': "检查邮件连接，发送每封邮件的测试副本，并检查发件域名。",
+  'settings.link.email-log.label': "邮件日志",
+  'settings.link.email-log.description': "网站发送过的每封邮件，并带有重新发送按钮。",
 
   // --- store ---
   "store.addToCart": "加入购物车",

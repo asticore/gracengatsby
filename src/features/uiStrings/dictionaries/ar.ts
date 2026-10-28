@@ -1168,6 +1168,17 @@ const ar: UiDictionary = {
   "email.abandonedCart.body": "تركت بعض العناصر في سلة التسوق الخاصة بك في {site_name}. ما زالت في انتظارك.",
   "email.backInStock.subject": "متوفر مجددًا: {label}",
   "email.backInStock.body": "أخبار سارة. {label} متوفر مجددًا.\n\nشاهده هنا: {url}\n\nلقد طلبت منا إخبارك، لذلك فهذه هي الرسالة الوحيدة التي سنرسلها بخصوص ذلك.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "اتصالات البريد الإلكتروني والرسائل النصية",
+  'settings.link.email-and-text-connections.description': "يتم ربط مزودي البريد الإلكتروني والرسائل النصية من صفحة التكاملات. لا تُعرض المفاتيح هنا أبدًا.",
+  'settings.link.email-design.label': "تصميم البريد الإلكتروني",
+  'settings.link.email-design.description': "صمّم شكل الرسائل: الشعار والألوان والأزرار وكتل المحتوى.",
+  'settings.link.abandoned-cart-emails.label': "رسائل السلة المتروكة",
+  'settings.link.abandoned-cart-emails.description': "تُرسل إلى المتسوقين الذين يتركون عناصر في سلتهم. تُضبط فترات التأخير ضمن إعدادات المتجر > رسائل البريد.",
+  'settings.link.email-testing.label': "اختبار البريد الإلكتروني",
+  'settings.link.email-testing.description': "تحقق من اتصال البريد، وأرسل نسخًا تجريبية من كل رسالة، وتحقق من نطاق الإرسال.",
+  'settings.link.email-log.label': "سجل البريد الإلكتروني",
+  'settings.link.email-log.description': "كل رسالة أرسلها الموقع، مع زر لإعادة الإرسال.",
 
   // --- store ---
   "store.addToCart": "أضف إلى السلة",

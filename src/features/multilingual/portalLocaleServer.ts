@@ -5,8 +5,9 @@ import { accountContext } from '@/features/accounts/session'
 import { readPreferences } from '@/features/accounts/preferences'
 
 import { LOCALE_COOKIE } from './detect'
-import { resolvePortalLocale } from './portal'
-import { readMultilingualSettingsFromD1 } from './settings'
+import { isPortalPath, resolvePortalLocale } from './portal'
+import { readMultilingualSettingsFromD1, type MultilingualSettings } from './settings'
+import { LOCALE_HEADER, requestLocale } from './routing'
 import { loadStrings } from '@/features/uiStrings'
 
 /**
@@ -31,3 +32,26 @@ export const currentPortalLocale = cache(async (): Promise<string | null> => {
   await loadStrings(locale)
   return locale
 })
+
+/**
+ * True when this request is for a logged-in portal page. The path comes from the
+ * middleware's x-pathname (or next-url), the same source the layout reads.
+ */
+export async function isPortalRequest(settings: MultilingualSettings): Promise<boolean> {
+  const reader = await headers()
+  const raw = reader.get('x-pathname') || reader.get('next-url') || ''
+  const cut = raw.search(/[?#]/)
+  const pathname = cut === -1 ? raw : raw.slice(0, cut)
+  return isPortalPath(pathname || '/', settings.activeLocales)
+}
+
+/**
+ * The language a request's content and chrome should use. Portal pages take the
+ * visitor's portal language (profile, cookie, browser). Every other page reads the
+ * locale the middleware routed to, from the request header. Never a URL prefix:
+ * the portal has none, and its translations are only the published ones.
+ */
+export async function requestContentLocale(settings: MultilingualSettings): Promise<string | null> {
+  if (await isPortalRequest(settings)) return currentPortalLocale()
+  return requestLocale((await headers()).get(LOCALE_HEADER), settings)
+}

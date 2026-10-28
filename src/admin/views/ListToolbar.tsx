@@ -3,6 +3,7 @@ import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import type { ListState, ColumnDef, ListFilter } from '@/admin/list/listQuery'
 import { serializeListState } from '@/admin/list/listQuery'
 import { OrdersManifestAction } from '@/features/ecommerce/admin/OrdersManifestAction'
@@ -30,6 +31,7 @@ export function ListToolbar({
   totalDocs,
   view,
 }: ListToolbarProps) {
+  const t = useAdminT()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -110,10 +112,10 @@ export function ListToolbar({
         setSaveError(null)
         router.refresh()
       } else {
-        setSaveError('Could not save your defaults')
+        setSaveError(t('list.saveDefaultError'))
       }
     } catch {
-      setSaveError('Could not save your defaults')
+      setSaveError(t('list.saveDefaultError'))
     } finally {
       setIsSaving(false)
     }
@@ -179,22 +181,22 @@ export function ListToolbar({
         <input
           type="text"
           name="q"
-          placeholder={collectionSlug === 'orders' ? 'Order number, email or name' : 'Search...'}
+          placeholder={collectionSlug === 'orders' ? t('list.ordersSearchPlaceholder') : t('list.searchPlaceholder')}
           title={collectionSlug === 'orders' ? 'Find orders by order number, customer email or customer name.' : undefined}
           defaultValue={state.q || ''}
           className="list-search-input"
         />
         <button type="submit" className="list-search-btn">
-          Search
+          {t('common.search')}
         </button>
       </form>
 
       {/* Page size selector */}
       <select value={limit} onChange={handleLimitChange} className="list-limit-select">
-        <option value="10">10 per page</option>
-        <option value="25">25 per page</option>
-        <option value="50">50 per page</option>
-        <option value="100">100 per page</option>
+        <option value="10">{t('list.perPage', { count: 10 })}</option>
+        <option value="25">{t('list.perPage', { count: 25 })}</option>
+        <option value="50">{t('list.perPage', { count: 50 })}</option>
+        <option value="100">{t('list.perPage', { count: 100 })}</option>
       </select>
 
       {/* Filter builder dropdown */}
@@ -204,7 +206,7 @@ export function ListToolbar({
             onClick={() => setShowFilterBuilder(!showFilterBuilder)}
             className="list-column-picker-btn"
           >
-            Filter
+            {t('common.filter')}
             {state.filters.length > 0 && <span className="list-filter-badge">{state.filters.length}</span>}
           </button>
           {showFilterBuilder && (
@@ -227,18 +229,18 @@ export function ListToolbar({
                     onChange={(e) => handleFilterChange(idx, 'op', e.target.value)}
                     className="list-filter-op-select"
                   >
-                    <option value="equals">equals</option>
-                    <option value="not_equals">not equals</option>
-                    <option value="contains">contains</option>
-                    <option value="greater_than">greater than</option>
-                    <option value="less_than">less than</option>
-                    <option value="exists">exists</option>
+                    <option value="equals">{t('list.op.equals')}</option>
+                    <option value="not_equals">{t('list.op.notEquals')}</option>
+                    <option value="contains">{t('list.op.contains')}</option>
+                    <option value="greater_than">{t('list.op.greaterThan')}</option>
+                    <option value="less_than">{t('list.op.lessThan')}</option>
+                    <option value="exists">{t('list.op.exists')}</option>
                   </select>
                   <input
                     type="text"
                     value={filter.value}
                     onChange={(e) => handleFilterChange(idx, 'value', e.target.value)}
-                    placeholder="value"
+                    placeholder={t('list.filterValue')}
                     className="list-filter-value-input"
                   />
                   <button
@@ -246,7 +248,7 @@ export function ListToolbar({
                     className="list-filter-remove-btn"
                     type="button"
                   >
-                    Remove
+                    {t('common.remove')}
                   </button>
                 </div>
               ))}
@@ -256,14 +258,14 @@ export function ListToolbar({
                   className="list-filter-add-btn"
                   type="button"
                 >
-                  Add Filter
+                  {t('list.addFilter')}
                 </button>
                 <button
                   onClick={handleApplyFilters}
                   className="list-filter-apply-btn"
                   type="button"
                 >
-                  Apply
+                  {t('common.apply')}
                 </button>
               </div>
             </div>
@@ -277,7 +279,7 @@ export function ListToolbar({
           onClick={() => setShowColumnPicker(!showColumnPicker)}
           className="list-column-picker-btn"
         >
-          Columns
+          {t('common.columns')}
         </button>
         {showColumnPicker && (
           <div className="list-column-picker-menu">
@@ -298,7 +300,7 @@ export function ListToolbar({
                     <button
                       onClick={() => handleColumnReorder(visibleIdx, visibleIdx - 1)}
                       className="list-column-up-btn"
-                      title="Move up"
+                      title={t('list.moveUp')}
                       type="button"
                     >
                       ↑
@@ -308,7 +310,7 @@ export function ListToolbar({
                     <button
                       onClick={() => handleColumnReorder(visibleIdx, visibleIdx + 1)}
                       className="list-column-down-btn"
-                      title="Move down"
+                      title={t('list.moveDown')}
                       type="button"
                     >
                       ↓
@@ -328,7 +330,7 @@ export function ListToolbar({
         className="list-toolbar-btn"
         title="Save current columns, sort, and page size as your default"
       >
-        {isSaving ? 'Saving...' : 'Save as default'}
+        {isSaving ? t('common.saving') : t('list.saveDefault')}
       </button>
       {saveError && (
         <span role="alert" className="list-toolbar-error">

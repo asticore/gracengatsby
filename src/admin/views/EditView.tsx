@@ -11,6 +11,7 @@ import { isCustomerRoles } from '@/features/impersonation/policy'
 import { getSecuritySettings } from '@/features/security/settings'
 import type { DocumentPanelInfo } from './DocumentPanel'
 import { EditTabs } from './EditTabs'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { bulkPermissions, isBulkCollection } from '@/features/editScreens/authors'
 import { actionRefusal } from '@/features/editScreens/bulk'
 import { resultsTabState } from './results/resultsTabs'
@@ -83,6 +84,7 @@ async function liveHrefFor(engine: AdminEngine, collectionSlug: string, doc: Rec
  * calls instead.
  */
 export async function EditView({ collectionSlug, id }: { collectionSlug: string; id?: number }) {
+  const ui = await getAdminUi()
   const context = await getAdminContext()
   const hasAdminAccess = hasAdminPanelAccess(context.user)
   if (!hasAdminAccess) redirect('/admin/login')
@@ -197,16 +199,17 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   return (
     <div className="collection-edit">
       <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
-        <Link href="/admin">Dashboard</Link>
+        <Link href="/admin">{ui.t('nav.dashboard')}</Link>
         <span aria-hidden="true">/</span>
         <Link href={`${adminCollectionPath(collectionSlug)}`}>{pluralLabel}</Link>
         <span aria-hidden="true">/</span>
-        <span>{id === undefined ? 'Create' : docTitle || `#${id}`}</span>
+        <span>{id === undefined ? ui.t('edit.create') : docTitle || `#${id}`}</span>
       </nav>
       <h1 className="doc-title">{id === undefined ? `Create ${label}` : docTitle || `Edit ${label}`}</h1>
       {signInAs ? <SignInAsCustomerButton email={signInAs.email} maxMinutes={signInAs.maxMinutes} /> : null}
       {resultsTab ? (
         <EditTabs
+          editLabel={ui.t('common.edit')}
           deniedReason={resultsTab.allowed ? undefined : resultsTab.deniedReason}
           edit={editForm}
           results={resultsPanel}

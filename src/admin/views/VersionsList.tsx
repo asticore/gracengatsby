@@ -1,4 +1,5 @@
 'use client'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { useCallback, useEffect, useState } from 'react'
@@ -69,6 +70,7 @@ export function VersionsList({
   currentDoc: Record<string, unknown>
   titleField: string
 }) {
+  const t = useAdminT()
   const router = useRouter()
   const [versions, setVersions] = useState<Version[]>([])
   const [loading, setLoading] = useState(true)
@@ -195,9 +197,9 @@ export function VersionsList({
   }, [expandedCompare, diffs, versions, currentDoc])
 
   const body = loading ? (
-    <p>Loading versions...</p>
+    <p>{t('edit.versionsLoading')}</p>
   ) : versions.length === 0 && !error ? (
-    <p>No saved versions yet.</p>
+    <p>{t('edit.versionsEmpty')}</p>
   ) : (
     <>
       {review.state?.enabled && (
@@ -229,7 +231,7 @@ export function VersionsList({
             const changed = getChangedFields(version.version, currentDoc, titleField)
             const changedText =
               changed.length === 0
-                ? 'Same as current'
+                ? t('edit.sameAsCurrent')
                 : changed.length <= 4
                   ? changed.join(', ')
                   : `${changed.slice(0, 4).join(', ')} +${changed.length - 4} more`
@@ -277,14 +279,14 @@ export function VersionsList({
                           onClick={() => openConfirm(version.id, 'draft')}
                           disabled={busy !== null}
                         >
-                          Restore as draft
+                          {t('edit.restoreAsDraft')}
                         </button>
                         <button
                           className="btn btn--small btn--accent"
                           onClick={() => openConfirm(version.id, 'publish')}
                           disabled={busy !== null}
                         >
-                          Restore and publish
+                          {t('edit.restoreAndPublish')}
                         </button>
                         <button
                           className="btn btn--small"
@@ -304,7 +306,7 @@ export function VersionsList({
                       onClick={() => toggleCompare(version.id)}
                       disabled={busy !== null}
                     >
-                      {isCompareExpanded ? 'Hide compare' : 'Compare'}
+                      {isCompareExpanded ? t('edit.hideCompare') : t('edit.compare')}
                     </button>
                   </td>
               </tr>
@@ -357,7 +359,7 @@ export function VersionsList({
   )
 
   return (
-    <CollapsibleCard id="ver:history" title="Version history">
+    <CollapsibleCard id="ver:history" title={t('edit.versionHistory')}>
       {body}
     </CollapsibleCard>
   )

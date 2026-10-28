@@ -141,6 +141,7 @@ const PreviewButton: React.FC<{
   id: number
   hasUnsavedChanges: boolean
 }> = ({ collectionSlug, id, hasUnsavedChanges }) => {
+  const t = useAdminT()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -169,15 +170,16 @@ const PreviewButton: React.FC<{
   return (
     <>
       <button className="btn btn--secondary" disabled={loading} onClick={handlePreview} type="button">
-        {loading ? 'Generating…' : 'Preview'}
+        {loading ? 'Generating…' : t('edit.preview')}
       </button>
-      {hasUnsavedChanges && <p className="doc-muted">Preview shows the last saved version.</p>}
+      {hasUnsavedChanges && <p className="doc-muted">{t('edit.previewLastSaved')}</p>}
       {error && <p className="doc-error">{error}</p>}
     </>
   )
 }
 
 const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: string }> = ({ collectionSlug, id, updatedAt }) => {
+  const t = useAdminT()
   const [state, setState] = useState<{ total: number; latest?: string; updatedBy?: unknown } | 'loading' | 'unavailable'>('loading')
   const resolveName_ = useAuthorNames(state !== 'loading' && typeof state === 'object' ? [state.updatedBy] : [])
 
@@ -198,7 +200,7 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
   }, [collectionSlug, id, updatedAt])
 
   return (
-    <Box id="revisions" title="Revisions">
+    <Box id="revisions" title={t('edit.revisions')}>
       {state === 'loading' && <p className="doc-muted">Loading…</p>}
       {state === 'unavailable' && <p className="doc-muted">Version history is not available.</p>}
       {typeof state === 'object' && (
@@ -217,24 +219,25 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
 }
 
 const DetailsBox: React.FC<{ info: DocumentPanelInfo }> = ({ info }) => {
+  const t = useAdminT()
   const [copied, setCopied] = useState(false)
   const apiPath = info.id ? `/api/${info.collectionSlug}/${info.id}` : undefined
   return (
-    <Box id="details" title="Details">
+    <Box id="details" title={t('edit.details')}>
       <dl className="doc-details">
         <dt>ID</dt>
         <dd>{info.id ?? '-'}</dd>
         {info.trackAuthorship && (
           <>
-            <dt>Last edited by</dt>
-            <dd>{info.updatedByName || 'Unknown'} on {formatDate(info.updatedAt)}</dd>
-            <dt>Created by</dt>
-            <dd>{info.createdByName || 'Unknown'}</dd>
+            <dt>{t('edit.lastEditedBy')}</dt>
+            <dd>{t('edit.editedOn', { name: info.updatedByName || t('edit.unknown'), date: formatDate(info.updatedAt) })}</dd>
+            <dt>{t('edit.createdBy')}</dt>
+            <dd>{info.createdByName || t('edit.unknown')}</dd>
           </>
         )}
-        <dt>Last modified</dt>
+        <dt>{t('edit.lastModified')}</dt>
         <dd>{formatDate(info.updatedAt)}</dd>
-        <dt>Created</dt>
+        <dt>{t('edit.created')}</dt>
         <dd>{formatDate(info.createdAt)}</dd>
         {apiPath && (
           <>
@@ -285,7 +288,7 @@ export const DocumentPanel: React.FC<{
   const review = useReviewState(info.collectionSlug, info.id, savedAt)
   const hidePublish = !isNew && publishHidden(review.state)
 
-  const badge = isNew ? 'New' : info.draftsEnabled ? (isPublished ? 'Published' : 'Draft') : 'Saved'
+  const badge = isNew ? t('status.new') : info.draftsEnabled ? (isPublished ? t('status.published') : t('status.draft')) : t('status.saved')
 
   return (
     <div className="doc-panel">
@@ -294,8 +297,8 @@ export const DocumentPanel: React.FC<{
         <div className="doc-status">
           <span className={isPublished ? 'pill pill--accent' : 'pill'}>{badge}</span>
           <ReviewStatusPill state={review.state} />
-          {modified && <span className="doc-unsaved">Unsaved changes</span>}
-          {!modified && savedAt && <span className="doc-saved">Saved</span>}
+          {modified && <span className="doc-unsaved">{t('edit.unsavedChanges')}</span>}
+          {!modified && savedAt && <span className="doc-saved">{t('status.saved')}</span>}
         </div>
 
         {info.visualEditorHref ? (
@@ -336,7 +339,7 @@ export const DocumentPanel: React.FC<{
           <div className="doc-buttons">
             {info.draftsEnabled && (
               <button className="btn" disabled={anyBusy} onClick={() => save('draft')} type="button">
-                {busy === 'draft' ? 'Saving…' : 'Save draft'}
+                {busy === 'draft' ? 'Saving…' : t('common.saveDraft')}
               </button>
             )}
             {!hidePublish && (
@@ -348,9 +351,9 @@ export const DocumentPanel: React.FC<{
           {info.draftsEnabled && isPublished && !isNew && (
             <ConfirmButton
               busy={busy === 'unpublish'}
-              confirmLabel="Yes, switch to draft"
+              confirmLabel={t('edit.yesSwitchToDraft')}
               disabled={anyBusy}
-              label="Switch to draft"
+              label={t('edit.switchToDraft')}
               onConfirm={() => save('unpublish')}
             />
           )}
@@ -359,7 +362,7 @@ export const DocumentPanel: React.FC<{
             <div className="doc-secondary">
               {info.canCreate && (
                 <button className="doc-link" disabled={anyBusy} onClick={duplicate} type="button">
-                  {busy === 'duplicate' ? 'Duplicating…' : 'Duplicate'}
+                  {busy === 'duplicate' ? t('edit.duplicating') : t('common.duplicate')}
                 </button>
               )}
               {info.canDelete && info.trashEnabled && !info.trashedAt && (
@@ -368,7 +371,7 @@ export const DocumentPanel: React.FC<{
                   confirmLabel={busy === 'trash' ? 'Moving…' : `Yes, move this ${info.label.toLowerCase()} to the trash`}
                   danger
                   disabled={anyBusy}
-                  label="Move to trash"
+                  label={t('edit.moveToTrash')}
                   onConfirm={() => setTrashed('trash')}
                 />
               )}
@@ -388,7 +391,7 @@ export const DocumentPanel: React.FC<{
       )}
 
       {!isNew && review.state?.enabled && (
-        <Box id="review" title="Review">
+        <Box id="review" title={t('edit.review')}>
           <ReviewBox review={review} />
         </Box>
       )}
@@ -398,13 +401,13 @@ export const DocumentPanel: React.FC<{
       )}
 
       {!isNew && info.canChangeAuthor && info.id !== undefined && (
-        <Box id="author" title="Author">
+        <Box id="author" title={t('edit.author')}>
           <AuthorBox authorId={info.authorId} authorName={info.createdByName} collection={info.collectionSlug} id={info.id} />
         </Box>
       )}
 
       {pageTypeField && (
-        <Box id="pagetype" title="Page type">
+        <Box id="pagetype" title={t('edit.pageType')}>
           <FieldRenderer fields={[pageTypeField]} readOnly={readOnly} />
           <p className="doc-muted">Used for search engine structured data.</p>
         </Box>

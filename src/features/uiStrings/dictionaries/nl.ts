@@ -1320,6 +1320,10 @@ const nl: UiDictionary = {
   "store.searchTheSite": "Doorzoek de site",
   "store.newerProducts": "Nieuwere producten",
   "store.olderProducts": "Oudere producten",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Nieuwere berichten",
+  "store.olderPosts": "Oudere berichten",
+  "store.alwaysOn": "Altijd aan.",
 }
 
 export default nl

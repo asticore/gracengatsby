@@ -1321,6 +1321,10 @@ const de: UiDictionary = {
   "store.searchTheSite": "Website durchsuchen",
   "store.newerProducts": "Neuere Produkte",
   "store.olderProducts": "Ältere Produkte",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Neuere Beiträge",
+  "store.olderPosts": "Ältere Beiträge",
+  "store.alwaysOn": "Immer aktiv.",
 }
 
 export default de

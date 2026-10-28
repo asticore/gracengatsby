@@ -1,4 +1,6 @@
 import Image from 'next/image'
+import { publicLocale } from '@/features/uiStrings/storeTextsServer'
+import { formatDateFor } from '@/features/uiStrings/publicFormat'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import React from 'react'
@@ -47,6 +49,7 @@ async function getPost(slug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
+  const locale = await publicLocale()
   const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
   if (!post) return {}
 
@@ -78,7 +81,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       excerpt: post.excerpt,
       category: post.categories?.[0]?.name,
       date: post.publishedDate
-        ? new Date(post.publishedDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+        ? formatDateFor(post.publishedDate, await publicLocale(), { day: 'numeric', month: 'long', year: 'numeric' })
         : undefined,
     },
   })
@@ -97,6 +100,7 @@ export default async function BlogPostPage({
   if (!flags.blog) notFound()
 
   const { slug } = await params
+  const locale = await publicLocale()
   const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
   if (!post) notFound()
 
@@ -146,7 +150,7 @@ export default async function BlogPostPage({
         <h1>{post.title}</h1>
         <p className="flex justify-center gap-3 text-[0.8rem] opacity-65">
           {author ? (sw.authorArchives ? <Link href={authorPath(author.slug)}>{author.name}</Link> : <span>{author.name}</span>) : null}
-          {post.publishedDate && <time dateTime={post.publishedDate}>{new Date(post.publishedDate).toLocaleDateString()}</time>}
+          {post.publishedDate && <time dateTime={post.publishedDate}>{formatDateFor(post.publishedDate, locale)}</time>}
         </p>
       </header>
 

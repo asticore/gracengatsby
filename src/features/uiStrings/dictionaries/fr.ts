@@ -1320,6 +1320,10 @@ const fr: UiDictionary = {
   "store.searchTheSite": "Rechercher sur le site",
   "store.newerProducts": "Produits plus récents",
   "store.olderProducts": "Produits plus anciens",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Articles plus récents",
+  "store.olderPosts": "Articles plus anciens",
+  "store.alwaysOn": "Toujours activés.",
 }
 
 export default fr

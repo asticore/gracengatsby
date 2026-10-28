@@ -28,9 +28,12 @@ export async function storeTextsFor(locale: string | null | undefined) {
  * The storefront text for the current public request. Multilingual off gives
  * English (no locale), so a site that never turns languages on sees what it saw before.
  */
-export const storeTexts = cache(async () => {
+/** The language of the current public request: null while multilingual is off. */
+export const publicLocale = cache(async (): Promise<string | null> => {
   const settings = await readMultilingualSettingsFromD1()
-  if (!settings.enabled) return storeTextsFor(null)
+  if (!settings.enabled) return null
   const fromRequest = requestLocale((await headers()).get(LOCALE_HEADER), settings)
-  return storeTextsFor(fromRequest ?? settings.defaultLocale)
+  return fromRequest ?? settings.defaultLocale
 })
+
+export const storeTexts = cache(async () => storeTextsFor(await publicLocale()))

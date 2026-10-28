@@ -1360,6 +1360,10 @@ export const UI_STRING_SOURCE = {
   "store.searchTheSite": "Search the site",
   "store.newerProducts": "Newer products",
   "store.olderProducts": "Older products",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Newer posts",
+  "store.olderPosts": "Older posts",
+  "store.alwaysOn": "Always on.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

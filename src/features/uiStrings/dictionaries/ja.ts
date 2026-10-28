@@ -1320,6 +1320,10 @@ const ja: UiDictionary = {
   "store.searchTheSite": "サイト内を検索",
   "store.newerProducts": "新しい商品",
   "store.olderProducts": "古い商品",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "新しい記事",
+  "store.olderPosts": "古い記事",
+  "store.alwaysOn": "常に有効。",
 }
 
 export default ja

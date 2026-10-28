@@ -1320,6 +1320,10 @@ const ko: UiDictionary = {
   "store.searchTheSite": "사이트 검색",
   "store.newerProducts": "최신 상품",
   "store.olderProducts": "이전 상품",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "최신 글",
+  "store.olderPosts": "이전 글",
+  "store.alwaysOn": "항상 사용.",
 }
 
 export default ko

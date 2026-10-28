@@ -1307,6 +1307,19 @@ const ja: UiDictionary = {
   'integrations.google.gtmHelp': "連携で空欄のままの場合に、サイトに追加されるコンテナのIDです。",
   'integrations.openLink': "連携を開く",
   'integrations.seeIds': "入力された測定IDとコンテナIDを確認します。",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "このサイトのCookie",
+  "store.cookieBannerText": "このサイトの利用状況を把握するためにCookieを使用します。分析用およびマーケティング用のタグは、同意いただいた後にのみ読み込まれます。",
+  "store.acceptAll": "すべて許可",
+  "store.rejectAll": "すべて拒否",
+  "store.customise": "カスタマイズ",
+  "store.saveChoices": "選択を保存",
+  "store.cookieSettings": "Cookieの設定",
+  "store.privacyPolicy": "プライバシーポリシー",
+  "store.pageOf": "{page} / {pages} ページ",
+  "store.searchTheSite": "サイト内を検索",
+  "store.newerProducts": "新しい商品",
+  "store.olderProducts": "古い商品",
 }
 
 export default ja

@@ -1307,6 +1307,19 @@ const it: UiDictionary = {
   'integrations.google.gtmHelp': "Il contenitore il cui ID viene aggiunto al sito quando Integrazioni lo lascia vuoto.",
   'integrations.openLink': "Apri Integrazioni",
   'integrations.seeIds': "per vedere l'ID di misurazione e l'ID del contenitore che sono stati compilati.",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Cookie su questo sito",
+  "store.cookieBannerText": "Usiamo i cookie per capire come viene usato questo sito. I tag di analisi e marketing vengono caricati solo dopo il tuo consenso.",
+  "store.acceptAll": "Accetta tutto",
+  "store.rejectAll": "Rifiuta tutto",
+  "store.customise": "Personalizza",
+  "store.saveChoices": "Salva le scelte",
+  "store.cookieSettings": "Impostazioni dei cookie",
+  "store.privacyPolicy": "Informativa sulla privacy",
+  "store.pageOf": "Pagina {page} di {pages}",
+  "store.searchTheSite": "Cerca nel sito",
+  "store.newerProducts": "Prodotti più recenti",
+  "store.olderProducts": "Prodotti meno recenti",
 }
 
 export default it

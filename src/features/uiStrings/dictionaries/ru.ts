@@ -1307,6 +1307,19 @@ const ru: UiDictionary = {
   'integrations.google.gtmHelp': "Контейнер, ID которого добавляется на сайт, если в разделе «Интеграции» поле пустое.",
   'integrations.openLink': "Открыть «Интеграции»",
   'integrations.seeIds': "чтобы увидеть заполненные ID измерения и контейнера.",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Файлы cookie на этом сайте",
+  "store.cookieBannerText": "Мы используем файлы cookie, чтобы понимать, как пользуются этим сайтом. Аналитические и маркетинговые метки загружаются только после вашего согласия.",
+  "store.acceptAll": "Принять все",
+  "store.rejectAll": "Отклонить все",
+  "store.customise": "Настроить",
+  "store.saveChoices": "Сохранить выбор",
+  "store.cookieSettings": "Настройки файлов cookie",
+  "store.privacyPolicy": "Политика конфиденциальности",
+  "store.pageOf": "Страница {page} из {pages}",
+  "store.searchTheSite": "Поиск по сайту",
+  "store.newerProducts": "Более новые товары",
+  "store.olderProducts": "Более старые товары",
 }
 
 export default ru

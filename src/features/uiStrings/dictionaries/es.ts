@@ -1307,6 +1307,19 @@ const es: UiDictionary = {
   'integrations.google.gtmHelp': "El contenedor cuyo ID se añade al sitio cuando Integraciones lo deja vacío.",
   'integrations.openLink': "Abrir Integraciones",
   'integrations.seeIds': "para ver el ID de medición y el ID del contenedor que se completaron.",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Cookies en este sitio",
+  "store.cookieBannerText": "Usamos cookies para entender cómo se usa este sitio. Las etiquetas de analítica y marketing solo se cargan cuando aceptas.",
+  "store.acceptAll": "Aceptar todo",
+  "store.rejectAll": "Rechazar todo",
+  "store.customise": "Personalizar",
+  "store.saveChoices": "Guardar selección",
+  "store.cookieSettings": "Configuración de cookies",
+  "store.privacyPolicy": "Política de privacidad",
+  "store.pageOf": "Página {page} de {pages}",
+  "store.searchTheSite": "Buscar en el sitio",
+  "store.newerProducts": "Productos más recientes",
+  "store.olderProducts": "Productos anteriores",
 }
 
 export default es

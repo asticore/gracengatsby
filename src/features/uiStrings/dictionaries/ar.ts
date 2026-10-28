@@ -1307,6 +1307,19 @@ const ar: UiDictionary = {
   'integrations.google.gtmHelp': "الحاوية التي يُضاف معرّفها إلى الموقع عندما تترك صفحة التكاملات هذا الحقل فارغًا.",
   'integrations.openLink': "فتح التكاملات",
   'integrations.seeIds': "لعرض معرّف القياس ومعرّف الحاوية اللذين تمت تعبئتهما.",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "ملفات تعريف الارتباط على هذا الموقع",
+  "store.cookieBannerText": "نستخدم ملفات تعريف الارتباط لفهم كيفية استخدام هذا الموقع. لا تُحمَّل وسوم التحليلات والتسويق إلا بعد موافقتك.",
+  "store.acceptAll": "قبول الكل",
+  "store.rejectAll": "رفض الكل",
+  "store.customise": "تخصيص",
+  "store.saveChoices": "حفظ الاختيارات",
+  "store.cookieSettings": "إعدادات ملفات تعريف الارتباط",
+  "store.privacyPolicy": "سياسة الخصوصية",
+  "store.pageOf": "الصفحة {page} من {pages}",
+  "store.searchTheSite": "ابحث في الموقع",
+  "store.newerProducts": "المنتجات الأحدث",
+  "store.olderProducts": "المنتجات الأقدم",
 }
 
 export default ar

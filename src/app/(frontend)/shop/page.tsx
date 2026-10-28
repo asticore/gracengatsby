@@ -17,6 +17,9 @@ import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
+import { storeTexts } from '@/features/uiStrings/storeTextsServer'
+import { translateWith } from '@/features/uiStrings/t'
+import type { UiStringKey } from '@/features/uiStrings/keys'
 import { archiveQueryString, filterArchiveItems, parseArchiveFilters, sortArchiveItems } from '@/features/siteTemplates/archiveFilter'
 import { archivePageHref } from '@/lib/templateWidgets'
 import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
@@ -41,6 +44,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   if (!flags.ecommerce) notFound()
 
   const params = await searchParams
+  const storeDict = await storeTexts()
+  const tx = (key: UiStringKey, vars?: Record<string, string | number>) => translateWith(storeDict, key, vars)
   setRequestQuery(params)
   const category = typeof params.category === 'string' ? params.category.slice(0, 40) : undefined
   const filters = parseAttributeFilters(params)
@@ -159,9 +164,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       )}
       {paged.pages > 1 && (
         <nav className="mt-8 flex items-center justify-between" aria-label="Pagination">
-          {paged.page > 1 ? <Link href={pageHref(paged.page - 1)} rel="prev">Newer products</Link> : <span />}
-          <span className="opacity-60">Page {paged.page} of {paged.pages}</span>
-          {paged.page < paged.pages ? <Link href={pageHref(paged.page + 1)} rel="next">Older products</Link> : <span />}
+          {paged.page > 1 ? <Link href={pageHref(paged.page - 1)} rel="prev">{tx('store.newerProducts')}</Link> : <span />}
+          <span className="opacity-60">{tx('store.pageOf', { page: paged.page, pages: paged.pages })}</span>
+          {paged.page < paged.pages ? <Link href={pageHref(paged.page + 1)} rel="next">{tx('store.olderProducts')}</Link> : <span />}
         </nav>
       )}
     </div>

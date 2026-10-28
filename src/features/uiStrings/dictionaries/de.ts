@@ -1308,6 +1308,19 @@ const de: UiDictionary = {
   'integrations.google.gtmHelp': "Der Container, dessen ID der Website hinzugefügt wird, wenn sie unter Integrationen leer bleibt.",
   'integrations.openLink': "Integrationen öffnen",
   'integrations.seeIds': "um die ausgefüllte Mess-ID und Container-ID zu sehen.",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Cookies auf dieser Website",
+  "store.cookieBannerText": "Wir verwenden Cookies, um zu verstehen, wie diese Website genutzt wird. Analyse- und Marketing-Tags werden erst geladen, wenn du zustimmst.",
+  "store.acceptAll": "Alle akzeptieren",
+  "store.rejectAll": "Alle ablehnen",
+  "store.customise": "Anpassen",
+  "store.saveChoices": "Auswahl speichern",
+  "store.cookieSettings": "Cookie-Einstellungen",
+  "store.privacyPolicy": "Datenschutzerklärung",
+  "store.pageOf": "Seite {page} von {pages}",
+  "store.searchTheSite": "Website durchsuchen",
+  "store.newerProducts": "Neuere Produkte",
+  "store.olderProducts": "Ältere Produkte",
 }
 
 export default de

@@ -1964,6 +1964,17 @@ const ja: UiDictionary = {
   'tb.lit.striped_row_background': "縞模様の行の背景",
   'tb.lit.text_alignment': "テキストの配置",
   'tb.lit.use_as_default': "既定として使用",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "適用",
+  'ps.lit.cancel': "キャンセル",
+  'ps.lit.delete': "削除",
+  'ps.lit.new_name': "新しい名前",
+  'ps.lit.no_saved_presets_yet': "保存されたプリセットはまだありません。",
+  'ps.lit.preset_name': "プリセット名",
+  'ps.lit.rename': "名前を変更",
+  'ps.lit.save_current_design_as_preset': "現在のデザインをプリセットとして保存",
+  'ps.lit.saved_presets': "保存したプリセット",
+  'ps.lit.starter_presets': "スターターのプリセット",
 }
 
 export default ja

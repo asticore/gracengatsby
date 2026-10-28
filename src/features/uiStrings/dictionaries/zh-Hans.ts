@@ -1963,6 +1963,17 @@ const zhHans: UiDictionary = {
   'tb.lit.striped_row_background': "斑马纹行背景",
   'tb.lit.text_alignment': "文字对齐",
   'tb.lit.use_as_default': "设为默认",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "应用",
+  'ps.lit.cancel': "取消",
+  'ps.lit.delete': "删除",
+  'ps.lit.new_name': "新名称",
+  'ps.lit.no_saved_presets_yet': "暂无已保存的预设。",
+  'ps.lit.preset_name': "预设名称",
+  'ps.lit.rename': "重命名",
+  'ps.lit.save_current_design_as_preset': "将当前设计保存为预设",
+  'ps.lit.saved_presets': "已保存的预设",
+  'ps.lit.starter_presets': "入门预设",
 }
 
 export default zhHans

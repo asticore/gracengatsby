@@ -1964,6 +1964,17 @@ const pt: UiDictionary = {
   'tb.lit.striped_row_background': "Fundo de linha listrada",
   'tb.lit.text_alignment': "Alinhamento do texto",
   'tb.lit.use_as_default': "Usar como padrão",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Aplicar",
+  'ps.lit.cancel': "Cancelar",
+  'ps.lit.delete': "Excluir",
+  'ps.lit.new_name': "Novo nome",
+  'ps.lit.no_saved_presets_yet': "Ainda não há predefinições salvas.",
+  'ps.lit.preset_name': "Nome da predefinição",
+  'ps.lit.rename': "Renomear",
+  'ps.lit.save_current_design_as_preset': "Salvar design atual como predefinição",
+  'ps.lit.saved_presets': "Predefinições salvas",
+  'ps.lit.starter_presets': "Predefinições iniciais",
 }
 
 export default pt

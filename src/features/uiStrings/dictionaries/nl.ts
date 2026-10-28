@@ -1964,6 +1964,17 @@ const nl: UiDictionary = {
   'tb.lit.striped_row_background': "Achtergrond gestreepte rij",
   'tb.lit.text_alignment': "Tekstuitlijning",
   'tb.lit.use_as_default': "Als standaard gebruiken",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Toepassen",
+  'ps.lit.cancel': "Annuleren",
+  'ps.lit.delete': "Verwijderen",
+  'ps.lit.new_name': "Nieuwe naam",
+  'ps.lit.no_saved_presets_yet': "Nog geen opgeslagen presets.",
+  'ps.lit.preset_name': "Presetnaam",
+  'ps.lit.rename': "Hernoemen",
+  'ps.lit.save_current_design_as_preset': "Huidig ontwerp opslaan als preset",
+  'ps.lit.saved_presets': "Opgeslagen presets",
+  'ps.lit.starter_presets': "Startpresets",
 }
 
 export default nl

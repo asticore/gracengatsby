@@ -1964,6 +1964,17 @@ const it: UiDictionary = {
   'tb.lit.striped_row_background': "Sfondo righe alternate",
   'tb.lit.text_alignment': "Allineamento del testo",
   'tb.lit.use_as_default': "Usa come predefinito",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Applica",
+  'ps.lit.cancel': "Annulla",
+  'ps.lit.delete': "Elimina",
+  'ps.lit.new_name': "Nuovo nome",
+  'ps.lit.no_saved_presets_yet': "Nessun preset salvato ancora.",
+  'ps.lit.preset_name': "Nome del preset",
+  'ps.lit.rename': "Rinomina",
+  'ps.lit.save_current_design_as_preset': "Salva il design attuale come preset",
+  'ps.lit.saved_presets': "Preset salvati",
+  'ps.lit.starter_presets': "Preset iniziali",
 }
 
 export default it

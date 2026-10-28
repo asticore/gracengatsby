@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { STYLE_PRESETS } from '@/features/forms/config'
 import { iframeSnippet, scriptSnippet } from '@/features/forms/embedScript'
 import type { FormConfig, FormNotificationRule, FormStylePreset, FormWebhook } from '@/features/forms/types'
@@ -35,6 +37,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode; open?: boole
 const uid = (): string => `x${Math.random().toString(36).slice(2, 8)}`
 
 export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, embedKey, formStatus, hasUnpublishedChanges, isAdmin, busy, onPublish, onUnpublish }) => {
+  const t = useAdminT()
   const [copied, setCopied] = useState<string | null>(null)
   const set = <K extends keyof FormConfig>(key: K, value: FormConfig[K]) => onChange({ ...config, [key]: value })
   const style = config.style || {}
@@ -63,14 +66,14 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
   return (
     <div className="ve-panel ve-form-settings">
       <div className="ve-panel__body">
-        <Section title="Status and publishing" open>
+        <Section title={t('ve.form.sectionStatus')} open>
           <p className="ve-panel__hint">
             This form is <strong>{formStatus === 'published' ? 'published' : 'a draft'}</strong>.
             {formStatus === 'published' && hasUnpublishedChanges ? ' You have changes that visitors cannot see until you publish again.' : ''}
           </p>
           <div className="ve-col-row">
             <button type="button" className="ve-btn ve-btn--primary" onClick={onPublish} disabled={busy}>
-              {formStatus === 'published' ? 'Publish changes' : 'Publish'}
+              {formStatus === 'published' ? t('ve.form.publishChanges') : t('ve.form.publish')}
             </button>
             {formStatus === 'published' && (
               <button type="button" className="ve-btn ve-btn--ghost" onClick={onUnpublish} disabled={busy}>
@@ -80,7 +83,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
           </div>
         </Section>
 
-        <Section title="Look">
+        <Section title={t('ve.form.sectionLook')}>
           <label className="ve-field ve-field--full">
             <span>Style</span>
             <select value={style.preset || 'theme'} onChange={(event) => set('style', { ...style, preset: event.target.value as FormStylePreset })}>
@@ -102,7 +105,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
           </label>
         </Section>
 
-        <Section title="Steps">
+        <Section title={t('ve.form.sectionSteps')}>
           <p className="ve-panel__hint">Add a Step break element between sections to split the form into steps.</p>
           <label className="ve-field ve-field--checkbox">
             <input type="checkbox" checked={steps.showProgress !== false} onChange={(event) => set('steps', { ...steps, showProgress: event.target.checked })} />
@@ -117,12 +120,12 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
             </select>
           </label>
           <div className="ve-col-row">
-            <input type="text" aria-label="Next button label" placeholder="Next" value={steps.nextLabel || ''} onChange={(event) => set('steps', { ...steps, nextLabel: event.target.value })} />
-            <input type="text" aria-label="Back button label" placeholder="Back" value={steps.backLabel || ''} onChange={(event) => set('steps', { ...steps, backLabel: event.target.value })} />
+            <input type="text" aria-label={t('ve.form.nextLabel')} placeholder={t('ve.form.next')} value={steps.nextLabel || ''} onChange={(event) => set('steps', { ...steps, nextLabel: event.target.value })} />
+            <input type="text" aria-label={t('ve.form.backLabel')} placeholder={t('ve.form.back')} value={steps.backLabel || ''} onChange={(event) => set('steps', { ...steps, backLabel: event.target.value })} />
           </div>
         </Section>
 
-        <Section title="After sending">
+        <Section title={t('ve.form.sectionAfter')}>
           <label className="ve-field ve-field--full">
             <span>What happens</span>
             <select value={success.mode || 'message'} onChange={(event) => set('success', { ...success, mode: event.target.value as 'message' | 'redirect' })}>
@@ -143,7 +146,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
           )}
         </Section>
 
-        <Section title="Behaviour">
+        <Section title={t('ve.form.sectionBehaviour')}>
           <label className="ve-field ve-field--full">
             <span>Pre-fill from the address (keys, comma-separated)</span>
             <input
@@ -165,7 +168,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
           </label>
         </Section>
 
-        <Section title="Notifications">
+        <Section title={t('ve.form.sectionNotifications')}>
           <p className="ve-panel__hint">Each rule sends an email when an entry arrives. Add conditions to send only for some entries. Merge tags: {'{{field name}}'}.</p>
           {rules.map((rule, index) => (
             <div className="ve-form-card" key={rule.id || index}>
@@ -173,10 +176,10 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
                 <input type="checkbox" checked={rule.enabled !== false} onChange={(event) => setRule(index, { enabled: event.target.checked })} />
                 <span>{rule.name || `Notification ${index + 1}`}</span>
               </label>
-              <input type="text" aria-label="Name" placeholder="Name" value={rule.name || ''} onChange={(event) => setRule(index, { name: event.target.value })} />
-              <input type="text" aria-label="Send to" placeholder="Send to (comma-separated)" value={rule.recipients || ''} onChange={(event) => setRule(index, { recipients: event.target.value })} />
-              <input type="text" aria-label="Subject" placeholder="Subject" value={rule.subject || ''} onChange={(event) => setRule(index, { subject: event.target.value })} />
-              <textarea rows={3} aria-label="Message" placeholder="Message" value={rule.message || ''} onChange={(event) => setRule(index, { message: event.target.value })} />
+              <input type="text" aria-label={t('ve.form.name')} placeholder={t('ve.form.name')} value={rule.name || ''} onChange={(event) => setRule(index, { name: event.target.value })} />
+              <input type="text" aria-label={t('ve.form.sendToLabel')} placeholder={t('ve.form.sendTo')} value={rule.recipients || ''} onChange={(event) => setRule(index, { recipients: event.target.value })} />
+              <input type="text" aria-label={t('ve.form.subject')} placeholder={t('ve.form.subject')} value={rule.subject || ''} onChange={(event) => setRule(index, { subject: event.target.value })} />
+              <textarea rows={3} aria-label={t('ve.form.message')} placeholder={t('ve.form.message')} value={rule.message || ''} onChange={(event) => setRule(index, { message: event.target.value })} />
               <div className="ve-col-row">
                 <label className="ve-field--checkbox">
                   <input
@@ -190,7 +193,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
                   <>
                     <input
                       type="text"
-                      aria-label="Field name"
+                      aria-label={t('ve.form.fieldName')}
                       placeholder="field name"
                       value={rule.conditions.rules?.[0]?.field || ''}
                       onChange={(event) =>
@@ -200,7 +203,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
                     <span>is</span>
                     <input
                       type="text"
-                      aria-label="Value"
+                      aria-label={t('ve.form.value')}
                       placeholder="value"
                       value={rule.conditions.rules?.[0]?.value || ''}
                       onChange={(event) =>
@@ -226,7 +229,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
         </Section>
 
         {isAdmin && (
-          <Section title="Webhooks (administrators)">
+          <Section title={t('ve.form.sectionWebhooks')}>
             <p className="ve-panel__hint">
               Each new entry is sent as JSON to the address, signed with HMAC-SHA256 in the <code>X-Engage-Signature</code> header. Failed deliveries are retried with a growing delay.
             </p>
@@ -236,9 +239,9 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
                   <input type="checkbox" checked={hook.enabled !== false} onChange={(event) => setHook(index, { enabled: event.target.checked })} />
                   <span>{hook.name || `Webhook ${index + 1}`}</span>
                 </label>
-                <input type="text" aria-label="Name" placeholder="Name" value={hook.name || ''} onChange={(event) => setHook(index, { name: event.target.value })} />
-                <input type="url" aria-label="URL" placeholder="https://example.com/hook" value={hook.url || ''} onChange={(event) => setHook(index, { url: event.target.value })} />
-                <input type="password" aria-label="Signing secret" placeholder="Signing secret" autoComplete="new-password" value={hook.secret || ''} onChange={(event) => setHook(index, { secret: event.target.value })} />
+                <input type="text" aria-label={t('ve.form.name')} placeholder={t('ve.form.name')} value={hook.name || ''} onChange={(event) => setHook(index, { name: event.target.value })} />
+                <input type="url" aria-label={t('ve.form.url')} placeholder="https://example.com/hook" value={hook.url || ''} onChange={(event) => setHook(index, { url: event.target.value })} />
+                <input type="password" aria-label={t('ve.form.signingSecret')} placeholder={t('ve.form.signingSecret')} autoComplete="new-password" value={hook.secret || ''} onChange={(event) => setHook(index, { secret: event.target.value })} />
                 <button type="button" className="ve-btn ve-btn--ghost" onClick={() => set('webhooks', hooks.filter((_, i) => i !== index))}>
                   Remove
                 </button>
@@ -255,7 +258,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
           </Section>
         )}
 
-        <Section title="Embed on another website">
+        <Section title={t('ve.form.sectionEmbed')}>
           <label className="ve-field ve-field--checkbox">
             <input type="checkbox" checked={embed.enabled !== false} onChange={(event) => set('embed', { ...embed, enabled: event.target.checked })} />
             <span>Allow this form to be embedded</span>
@@ -276,21 +279,21 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
               Any website can embed this form. List the websites that may, to restrict it.
             </p>
           )}
-          {formStatus !== 'published' && <p className="ve-panel__hint">Publish the form first: a draft cannot be embedded.</p>}
+          {formStatus !== 'published' && <p className="ve-panel__hint">{t('ve.form.publishFirst')}</p>}
           {key ? (
             <>
               <label className="ve-field ve-field--full">
                 <span>Script snippet</span>
                 <textarea readOnly rows={2} value={scriptSnippet(origin, key)} onFocus={(event) => event.currentTarget.select()} />
                 <button type="button" className="ve-btn ve-btn--ghost" onClick={() => copy('script', scriptSnippet(origin, key))}>
-                  {copied === 'script' ? 'Copied' : 'Copy'}
+                  {copied === 'script' ? t('ve.nav.copied') : t('ve.form.copy')}
                 </button>
               </label>
               <label className="ve-field ve-field--full">
                 <span>Iframe snippet</span>
                 <textarea readOnly rows={3} value={iframeSnippet(origin, key)} onFocus={(event) => event.currentTarget.select()} />
                 <button type="button" className="ve-btn ve-btn--ghost" onClick={() => copy('iframe', iframeSnippet(origin, key))}>
-                  {copied === 'iframe' ? 'Copied' : 'Copy'}
+                  {copied === 'iframe' ? t('ve.nav.copied') : t('ve.form.copy')}
                 </button>
               </label>
               <p className="ve-panel__hint">
@@ -298,7 +301,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
               </p>
             </>
           ) : (
-            <p className="ve-panel__hint">Save the form once to get its embed address.</p>
+            <p className="ve-panel__hint">{t('ve.form.saveForEmbed')}</p>
           )}
         </Section>
       </div>

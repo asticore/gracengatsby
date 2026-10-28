@@ -2,6 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey, UiStringVars } from '@/features/uiStrings'
+
 import type { SectionColumn, SectionNode } from '@/lib/sectionTree'
 import { getElementDef } from '@/lib/elements/registry'
 
@@ -67,10 +70,12 @@ type Row = {
   children: Row[]
 }
 
-function describe(node: SectionNode, index: number): Pick<Row, 'icon' | 'typeLabel' | 'name' | 'custom' | 'kind'> {
+type Tr = (key: UiStringKey, vars?: UiStringVars) => string
+
+function describe(node: SectionNode, index: number, t: Tr): Pick<Row, 'icon' | 'typeLabel' | 'name' | 'custom' | 'kind'> {
   const label = typeof node.label === 'string' ? node.label.trim() : ''
   if (node.blockType === 'section') {
-    return { kind: 'section', icon: '▭', typeLabel: 'Section', name: label || `Section ${index + 1}`, custom: Boolean(label) }
+    return { kind: 'section', icon: '▭', typeLabel: t('ve.nav.section'), name: label || t('ve.nav.sectionNumbered', { n: index + 1 }), custom: Boolean(label) }
   }
   let typeLabel = node.blockType
   let icon = '▫'
@@ -80,7 +85,7 @@ function describe(node: SectionNode, index: number): Pick<Row, 'icon' | 'typeLab
     if (def) {
       typeLabel = def.label
       icon = def.icon
-    } else typeLabel = elType ? elType.charAt(0).toUpperCase() + elType.slice(1) : 'Element'
+    } else typeLabel = elType ? elType.charAt(0).toUpperCase() + elType.slice(1) : t('ve.nav.element')
     if (!label) {
       const props = ((node as { props?: Record<string, unknown> }).props || {}) as Record<string, unknown>
       let main = ''
@@ -106,33 +111,31 @@ function describe(node: SectionNode, index: number): Pick<Row, 'icon' | 'typeLab
   return { kind: 'block', icon, typeLabel, name: label || typeLabel, custom: Boolean(label) }
 }
 
-const LEGACY_HINT = 'Old-style block: convert to sections to edit each part on the canvas'
-
 function str(v: unknown): string {
   if (typeof v !== 'string') return ''
   const t = v.trim()
   return t.length > 28 ? `${t.slice(0, 27)}…` : t
 }
 
-function virtualParts(node: SectionNode): Array<[string, string, string]> {
+function virtualParts(node: SectionNode, t: Tr): Array<[string, string, string]> {
   const n = node as Record<string, unknown>
   const part = (label: string, v: unknown): [string, string, string] => [label, label, str(v)]
   switch (node.blockType) {
     case 'hero':
-      return [part('Heading', n.heading), part('Subheading', n.subheading), part('Primary button', n.primaryCtaLabel)]
+      return [part(t('ve.nav.heading'), n.heading), part(t('ve.nav.subheading'), n.subheading), part(t('ve.nav.primaryButton'), n.primaryCtaLabel)]
     case 'ctaBanner':
-      return [part('Heading', n.heading), part('Text', n.text), part('Button', n.buttonLabel)]
+      return [part(t('ve.nav.heading'), n.heading), part(t('ve.nav.text'), n.text), part(t('ve.nav.button'), n.buttonLabel)]
     case 'imageText':
-      return [['Image', 'Image', ''], part('Text', n.text)]
+      return [[t('ve.nav.image'), t('ve.nav.image'), ''], part(t('ve.nav.text'), n.text)]
     default:
       return []
   }
 }
 
-function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
+function buildRows(nodes: SectionNode[], base: NodePath, depth: number, t: Tr): Row[] {
   return nodes.map((node, i) => {
     const path = [...base, i]
-    const info = describe(node, i)
+    const info = describe(node, i, t)
     const columns: SectionColumn[] = node.blockType === 'section' && Array.isArray(node.columns) ? node.columns : []
     const mk = (extra: Pick<Row, 'kind' | 'icon' | 'typeLabel' | 'name'> & Partial<Row>, d: number, key: string): Row => ({
       key, path, depth: d, custom: false, anchor: '', hasChildren: false, children: [], ...extra,
@@ -142,20 +145,20 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
     let children: Row[]
     if (columns.length === 1 && !panelKind) {
       // Single column: show its blocks directly under the section (real paths kept).
-      children = buildRows(columns[0].blocks || [], [...path, 0], depth + 1)
+      children = buildRows(columns[0].blocks || [], [...path, 0], depth + 1, t)
     } else {
       children = columns.map((column, ci) => {
         const cPath = [...path, ci]
         const label = typeof column.label === 'string' ? column.label.trim() : ''
-        const kids = buildRows(column.blocks || [], cPath, depth + 2)
+        const kids = buildRows(column.blocks || [], cPath, depth + 2, t)
         return {
           key: pathKey(cPath),
           path: cPath,
           depth: depth + 1,
           kind: 'column' as const,
           icon: '▯',
-          typeLabel: 'Column',
-          name: label || (panelKind ? `${panelKind} ${ci + 1}` : `Column ${ci + 1}`),
+          typeLabel: t('ve.nav.column'),
+          name: label || (dispMode === 'tabs' ? t('ve.nav.tabNumbered', { n: ci + 1 }) : dispMode === 'accordion' ? t('ve.nav.panelNumbered', { n: ci + 1 }) : t('ve.nav.columnNumbered', { n: ci + 1 })),
           custom: Boolean(label),
           anchor: column.design?.anchorId || '',
           blockCount: (column.blocks || []).length,
@@ -165,8 +168,8 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number): Row[] {
       })
     }
     if (node.blockType !== 'section') {
-      for (const [label, typeLabel, value] of virtualParts(node)) {
-        children.push(mk({ kind: 'virtual', icon: '▫', typeLabel, name: value ? `${label}: ${value}` : label, hint: LEGACY_HINT }, depth + 1, `${pathKey(path)}:${label}`))
+      for (const [label, typeLabel, value] of virtualParts(node, t)) {
+        children.push(mk({ kind: 'virtual', icon: '▫', typeLabel, name: value ? `${label}: ${value}` : label, hint: t('ve.nav.legacyHint') }, depth + 1, `${pathKey(path)}:${label}`))
       }
     }
     return {
@@ -228,6 +231,7 @@ const NavRow: React.FC<{
   onSetAnchor: (path: NodePath, anchor: string) => void
   dnd: Dnd
 }> = ({ row, expanded, forceOpen, selectedKey, onToggle, onSelect, onRename, onSetAnchor, dnd }) => {
+  const t = useAdminT()
   const [renaming, setRenaming] = useState(false)
   const [anchoring, setAnchoring] = useState(false)
   const [draft, setDraft] = useState('')
@@ -352,7 +356,7 @@ const NavRow: React.FC<{
         <button
           type="button"
           className={`ve-nav__caret${row.hasChildren ? '' : ' ve-nav__caret--empty'}`}
-          aria-label={open ? 'Collapse' : 'Expand'}
+          aria-label={open ? t('ve.nav.collapse') : t('ve.nav.expand')}
           tabIndex={-1}
           onClick={(e) => {
             e.stopPropagation()
@@ -368,7 +372,7 @@ const NavRow: React.FC<{
           <input
             className="ve-nav__input"
             autoFocus
-            aria-label={`Rename ${row.typeLabel}`}
+            aria-label={t('ve.nav.renameType', { type: row.typeLabel })}
             placeholder={row.custom ? row.typeLabel : row.name}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -388,26 +392,26 @@ const NavRow: React.FC<{
             {row.custom && row.kind !== 'column' && <span className="ve-nav__type">{row.typeLabel}</span>}
           </>
         )}
-        {hidden && !renaming && <span className="ve-nav__flag" title="Hidden on all devices" aria-label="Hidden on all devices">{String.fromCharCode(0x1f6ab)}</span>}
-        {locked && !renaming && <span className="ve-nav__flag" title="Locked" aria-label="Locked">{String.fromCharCode(0x1f512)}</span>}
+        {hidden && !renaming && <span className="ve-nav__flag" title={t('ve.nav.hiddenAll')} aria-label={t('ve.nav.hiddenAll')}>{String.fromCharCode(0x1f6ab)}</span>}
+        {locked && !renaming && <span className="ve-nav__flag" title={t('ve.nav.locked')} aria-label={t('ve.nav.locked')}>{String.fromCharCode(0x1f512)}</span>}
         {row.kind === 'virtual' && <span className="ve-nav__type" title={row.hint}>legacy</span>}
-        {row.anchor && !renaming && <span className="ve-nav__anchor" title={`Jump link: #${row.anchor}`}>#{row.anchor}</span>}
+        {row.anchor && !renaming && <span className="ve-nav__anchor" title={t('ve.nav.jumpLink', { anchor: row.anchor })}>#{row.anchor}</span>}
         {!renaming && !readOnly && (
           <span className="ve-nav__actions" onClick={(e) => e.stopPropagation()}>
             {dnd.onDesignChange && !isColumn && !locked && (
               <button
                 type="button"
                 className="ve-nav__icon-btn"
-                title={hidden ? 'Show on all devices' : 'Hide on all devices'}
-                aria-label={`${hidden ? 'Show' : 'Hide'} ${row.name}`}
+                title={hidden ? t('ve.nav.showOnAll') : t('ve.nav.hideOnAll')}
+                aria-label={hidden ? t('ve.nav.showNamed', { name: row.name }) : t('ve.nav.hideNamed', { name: row.name })}
                 aria-pressed={hidden}
                 onClick={() => dnd.onDesignChange?.(row.path, toggleHideEverywhere(row.design))}
               >
                 {hidden ? String.fromCharCode(0x1f576) : String.fromCharCode(0x1f441)}
               </button>
             )}
-            <button type="button" className="ve-nav__icon-btn" title="Rename (F2)" aria-label={`Rename ${row.name}`} onClick={startRename}>✎</button>
-            <button type="button" className="ve-nav__icon-btn" title="Set anchor for jump links" aria-label={`Set anchor for ${row.name}`} onClick={startAnchor}>🔗</button>
+            <button type="button" className="ve-nav__icon-btn" title={t('ve.nav.rename')} aria-label={t('ve.nav.renameNamed', { name: row.name })} onClick={startRename}>✎</button>
+            <button type="button" className="ve-nav__icon-btn" title={t('ve.nav.setAnchor')} aria-label={t('ve.nav.setAnchorNamed', { name: row.name })} onClick={startAnchor}>🔗</button>
           </span>
         )}
       </div>
@@ -418,8 +422,8 @@ const NavRow: React.FC<{
             <input
               className="ve-nav__input"
               autoFocus
-              aria-label="Anchor id"
-              placeholder="e.g. pricing"
+              aria-label={t('ve.nav.anchorId')}
+              placeholder={t('ve.nav.anchorPlaceholder')}
               value={draft}
               onChange={(e) => setDraft(sanitiseAnchor(e.target.value))}
               onBlur={commitAnchor}
@@ -430,12 +434,12 @@ const NavRow: React.FC<{
               }}
             />
           </div>
-          <p className="ve-nav__hint">Link to it with <code>#{draft || 'anchor'}</code>. Letters, numbers, - and _ only.</p>
+          <p className="ve-nav__hint">{t('ve.nav.anchorHintLead')} <code>#{draft || 'anchor'}</code>. {t('ve.nav.anchorHintTail')}</p>
         </>
       )}
       {row.anchor && !anchoring && selected && (
         <p className="ve-nav__hint">
-          <button type="button" className="ve-nav__icon-btn" onClick={copyLink}>{copied ? 'Copied' : `Copy #${row.anchor}`}</button>
+          <button type="button" className="ve-nav__icon-btn" onClick={copyLink}>{copied ? t('ve.nav.copied') : t('ve.nav.copyLink', { anchor: row.anchor })}</button>
         </p>
       )}
       {row.hasChildren && open && (
@@ -475,7 +479,8 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
   const [dragFrom, setDragFrom] = useState<NodePath | null>(null)
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
-  const allRows = useMemo(() => buildRows(nodes, [], 0), [nodes])
+  const t = useAdminT()
+  const allRows = useMemo(() => buildRows(nodes, [], 0, t), [nodes, t])
   const rows = useMemo(() => (q ? filterRows(allRows, q) : allRows), [allRows, q])
   const selectedKey = useMemo(() => resolveSelectedKey(nodes, selectedPath), [nodes, selectedPath])
 
@@ -521,18 +526,18 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
         <input
           type="search"
           className="ve-nav__search"
-          placeholder="Search name, type or #anchor"
-          aria-label="Search page structure"
+          placeholder={t('ve.nav.searchPlaceholder')}
+          aria-label={t('ve.nav.searchLabel')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button type="button" className="ve-nav__btn" onClick={expandAll}>Expand</button>
-        <button type="button" className="ve-nav__btn" onClick={collapseAll}>Collapse</button>
+        <button type="button" className="ve-nav__btn" onClick={expandAll}>{t('ve.nav.expand')}</button>
+        <button type="button" className="ve-nav__btn" onClick={collapseAll}>{t('ve.nav.collapse')}</button>
       </div>
       {rows.length === 0 ? (
-        <p className="ve-nav__empty">{q ? 'No matches.' : 'This page has no sections yet.'}</p>
+        <p className="ve-nav__empty">{q ? t('ve.nav.noMatches') : t('ve.nav.noSections')}</p>
       ) : (
-        <ul className="ve-nav__tree" role="tree" aria-label="Page structure">
+        <ul className="ve-nav__tree" role="tree" aria-label={t('ve.nav.tree')}>
           {rows.map((row) => (
             <NavRow
               key={row.key}

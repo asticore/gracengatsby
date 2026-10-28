@@ -17,6 +17,7 @@ import { resolveDocumentContent } from '@/features/customFields/server'
 import { normalisePageAudio } from '@/features/pageAudio/config'
 import { PageAudio } from '@/features/pageAudio/PageAudio'
 import { getEngine } from '@/lib/engine'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,12 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const resolved = await findPageByPath(slug)
   if (!resolved) return {}
+  const page = await applyTranslations(resolved.page, 'pages', await currentRequestLocale())
 
   // When password-protected, use generic metadata and mark as noindex
   const cookieStore = await cookies()
   const gateState = await getPasswordGateState({
     collection: 'pages',
-    id: resolved.page.id,
+    id: page.id,
     cookies: cookieStore,
   })
 
@@ -41,11 +43,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return buildMetadata({
-    title: resolved.page.title,
-    seo: resolved.page.seo,
+    title: page.title,
+    seo: page.seo,
     path: `/${slug.join('/')}`,
     contentType: 'page',
-    tokens: { excerpt: (resolved.page as { excerpt?: string | null }).excerpt },
+    tokens: { excerpt: (page as { excerpt?: string | null }).excerpt },
   })
 }
 
@@ -65,7 +67,9 @@ export default async function BuiltPage({
     notFound()
   }
 
-  const { page, ancestors } = resolved
+  const locale = await currentRequestLocale()
+  const page = await applyTranslations(resolved.page, 'pages', locale)
+  const ancestors = await applyTranslationsToDocs(resolved.ancestors, 'pages', locale)
 
   // Check password gate
   const cookieStore = await cookies()

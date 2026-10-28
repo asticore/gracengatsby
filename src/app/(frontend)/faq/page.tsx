@@ -6,6 +6,7 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import type { Faq, FaqSetting } from '@/engage-types'
 
@@ -22,10 +23,11 @@ export default async function FaqPage() {
   if (!flags.faq) notFound()
 
   const engine = await getEngine()
-  const [settings, { docs: faqs }] = (await Promise.all([
+  const [settings, { docs: rawFaqs }] = (await Promise.all([
     engine.findGlobal({ slug: 'faq-settings' }).catch((): null => null),
     engine.find({ collection: 'faqs', sort: 'order', limit: 200 }),
   ])) as unknown as [FaqSetting | null, { docs: Faq[] }]
+  const faqs = await applyTranslationsToDocs(rawFaqs, 'faqs', await currentRequestLocale())
 
   return (
     <div className="page-shell">

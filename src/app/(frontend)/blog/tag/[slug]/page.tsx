@@ -16,6 +16,7 @@ import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { postArchiveItems } from '@/lib/blockContextFrom'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import type { BlogSetting, Media, Post } from '@/engage-types'
 
@@ -35,7 +36,7 @@ async function load(rawSlug: string) {
     limit: 0,
     depth: 1,
   })) as unknown as { docs: Row[] }
-  const docs = await excludeProtected('posts', allDocs)
+  const docs = await applyTranslationsToDocs(await excludeProtected('posts', allDocs), 'posts', await currentRequestLocale())
   const name = tagIndex(docs).get(slug)
   if (!name) return null
   return { slug, name, posts: orderBlogPosts(postsWithTag(docs, slug)) as Row[] }

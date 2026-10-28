@@ -1992,6 +1992,24 @@ const ru: UiDictionary = {
   'tb.lit.striped_row_background': "Фон полосатой строки",
   'tb.lit.text_alignment': "Выравнивание текста",
   'tb.lit.use_as_default': "Использовать по умолчанию",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "Добавить стиль текста",
+  'ty.lit.add_text_style': "Добавить стиль текста",
+  'ty.lit.body_font': "Шрифт текста",
+  'ty.lit.colour': "Цвет",
+  'ty.lit.delete': "Удалить",
+  'ty.lit.font': "Шрифт",
+  'ty.lit.heading_font': "Шрифт заголовков",
+  'ty.lit.inherit': "Наследовать",
+  'ty.lit.letter_spacing_px': "Межбуквенный интервал (px)",
+  'ty.lit.line_height': "Высота строки",
+  'ty.lit.mobile_size_px': "Размер на телефоне (px)",
+  'ty.lit.name': "Название",
+  'ty.lit.size_px': "Размер (px)",
+  'ty.lit.tablet_size_px': "Размер на планшете (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "Font",
+  'ty.lit.transform': "Трансформация",
+  'ty.lit.weight': "Насыщенность",
 }
 
 export default ru

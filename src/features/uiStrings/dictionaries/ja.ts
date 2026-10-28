@@ -1992,6 +1992,24 @@ const ja: UiDictionary = {
   'tb.lit.striped_row_background': "縞模様の行の背景",
   'tb.lit.text_alignment': "テキストの配置",
   'tb.lit.use_as_default': "既定として使用",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "テキストスタイルを追加",
+  'ty.lit.add_text_style': "テキストスタイルを追加",
+  'ty.lit.body_font': "本文フォント",
+  'ty.lit.colour': "色",
+  'ty.lit.delete': "削除",
+  'ty.lit.font': "フォント",
+  'ty.lit.heading_font': "見出しフォント",
+  'ty.lit.inherit': "継承",
+  'ty.lit.letter_spacing_px': "文字間隔 (px)",
+  'ty.lit.line_height': "行の高さ",
+  'ty.lit.mobile_size_px': "モバイルのサイズ (px)",
+  'ty.lit.name': "名前",
+  'ty.lit.size_px': "サイズ (px)",
+  'ty.lit.tablet_size_px': "タブレットのサイズ (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "テキストスタイルはサイト全体に適用されます。タブレットとモバイルのサイズが0の場合は、メインのサイズを使用します。",
+  'ty.lit.transform': "変形",
+  'ty.lit.weight': "太さ",
 }
 
 export default ja

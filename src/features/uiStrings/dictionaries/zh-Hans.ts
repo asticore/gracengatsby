@@ -1991,6 +1991,24 @@ const zhHans: UiDictionary = {
   'tb.lit.striped_row_background': "斑马纹行背景",
   'tb.lit.text_alignment': "文字对齐",
   'tb.lit.use_as_default': "设为默认",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "添加文字样式",
+  'ty.lit.add_text_style': "添加文字样式",
+  'ty.lit.body_font': "正文字体",
+  'ty.lit.colour': "颜色",
+  'ty.lit.delete': "删除",
+  'ty.lit.font': "字体",
+  'ty.lit.heading_font': "标题字体",
+  'ty.lit.inherit': "继承",
+  'ty.lit.letter_spacing_px': "字间距 (px)",
+  'ty.lit.line_height': "行高",
+  'ty.lit.mobile_size_px': "手机大小 (px)",
+  'ty.lit.name': "名称",
+  'ty.lit.size_px': "大小 (px)",
+  'ty.lit.tablet_size_px': "平板大小 (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "文字样式适用于整个网站。平板和手机尺寸为 0 时使用主尺寸。",
+  'ty.lit.transform': "变换",
+  'ty.lit.weight': "字重",
 }
 
 export default zhHans

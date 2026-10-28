@@ -1992,6 +1992,24 @@ const ko: UiDictionary = {
   'tb.lit.striped_row_background': "줄무늬 행 배경",
   'tb.lit.text_alignment': "텍스트 정렬",
   'tb.lit.use_as_default': "기본값으로 사용",
+  // --- admin leftovers (theme styles typography controls) ---
+  'ty.lit.add_a_text_style': "텍스트 스타일 추가",
+  'ty.lit.add_text_style': "텍스트 스타일 추가",
+  'ty.lit.body_font': "본문 글꼴",
+  'ty.lit.colour': "색상",
+  'ty.lit.delete': "삭제",
+  'ty.lit.font': "글꼴",
+  'ty.lit.heading_font': "제목 글꼴",
+  'ty.lit.inherit': "상속",
+  'ty.lit.letter_spacing_px': "자간 (px)",
+  'ty.lit.line_height': "줄 높이",
+  'ty.lit.mobile_size_px': "모바일 크기 (px)",
+  'ty.lit.name': "이름",
+  'ty.lit.size_px': "크기 (px)",
+  'ty.lit.tablet_size_px': "태블릿 크기 (px)",
+  'ty.lit.text_styles_apply_across_the_whole_site': "텍스트 스타일은 사이트 전체에 적용됩니다. 태블릿과 모바일 크기가 0이면 기본 크기를 사용합니다.",
+  'ty.lit.transform': "변형",
+  'ty.lit.weight': "굵기",
 }
 
 export default ko

@@ -1204,6 +1204,25 @@ const fr: UiDictionary = {
   "store.shipping": "Livraison",
   "store.tax": "Taxes",
   "store.orderConfirmed": "Merci ! Votre commande est confirmée.",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Consentement aux cookies",
+  'settings.link.cookie-consent.description': "Texte de la bannière, couleurs, aperçu et journal des consentements.",
+  'settings.link.google-connection.label': "Connexion Google",
+  'settings.link.google-connection.description': "Connectez Google Analytics, Search Console, Tag Manager et AdSense avec votre propre client Google Cloud.",
+  'settings.link.theming.label': "Styles du thème",
+  'settings.link.theming.description': "Couleurs, texte, boutons, tableaux, formulaires, mise en page et préréglages, définis une fois pour tout le site.",
+  'settings.link.translations.label': "Traductions",
+  'settings.link.translations.description': "Gérez toutes les traductions dans un seul tableau.",
+  'settings.link.redirects.label': "Redirections",
+  'settings.link.redirects.description': "Créez et gérez les redirections d'URL.",
+  'settings.link.options-pages.label': "Pages d'options",
+  'settings.link.options-pages.description': "Valeurs de champs à l'échelle du site, comme les coordonnées et les horaires d'ouverture.",
+  'settings.link.shop-settings.label': "Paramètres de la boutique",
+  'settings.link.shop-settings.description': "Unités, paiements, livraison, factures, cartes cadeaux, paiement et e-mails",
+  'settings.link.display-currencies.label': "Devises d'affichage",
+  'settings.link.display-currencies.description': "Affichez les prix dans d'autres devises. Les acheteurs paient toujours dans la devise de la boutique.",
+  'settings.link.cache-tools.label': "Outils de cache",
+  'settings.link.cache-tools.description': "Effacez maintenant les copies de pages enregistrées et activez ou désactivez le mode développement Cloudflare.",
 }
 
 export default fr

@@ -1204,6 +1204,25 @@ const ar: UiDictionary = {
   "store.shipping": "الشحن",
   "store.tax": "الضريبة",
   "store.orderConfirmed": "شكرًا لك، تم تأكيد طلبك.",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "موافقة ملفات تعريف الارتباط",
+  'settings.link.cookie-consent.description': "نص الشريط والألوان والمعاينة وسجل الموافقات",
+  'settings.link.google-connection.label': "ربط Google",
+  'settings.link.google-connection.description': "اربط Google Analytics وSearch Console وTag Manager وAdSense باستخدام عميل Google Cloud الخاص بك.",
+  'settings.link.theming.label': "تنسيق السمة",
+  'settings.link.theming.description': "الألوان والنص والأزرار والجداول والنماذج والتخطيط والإعدادات المسبقة، تُضبط مرة واحدة للموقع كله.",
+  'settings.link.translations.label': "الترجمات",
+  'settings.link.translations.description': "إدارة كل الترجمات في جدول واحد.",
+  'settings.link.redirects.label': "عمليات إعادة التوجيه",
+  'settings.link.redirects.description': "إنشاء عمليات إعادة توجيه الروابط وإدارتها.",
+  'settings.link.options-pages.label': "صفحات الخيارات",
+  'settings.link.options-pages.description': "قيم حقول على مستوى الموقع، مثل بيانات الاتصال وساعات العمل.",
+  'settings.link.shop-settings.label': "إعدادات المتجر",
+  'settings.link.shop-settings.description': "الوحدات والدفع والشحن والفواتير وبطاقات الهدايا والدفع والرسائل",
+  'settings.link.display-currencies.label': "عملات العرض",
+  'settings.link.display-currencies.description': "اعرض الأسعار بعملات أخرى. يدفع المتسوقون دائمًا بعملة المتجر.",
+  'settings.link.cache-tools.label': "أدوات التخزين المؤقت",
+  'settings.link.cache-tools.description': "امسح نسخ الصفحات المحفوظة الآن، وفعّل وضع التطوير في Cloudflare أو أوقفه.",
 }
 
 export default ar

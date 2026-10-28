@@ -1204,6 +1204,25 @@ const ja: UiDictionary = {
   "store.shipping": "配送料",
   "store.tax": "税",
   "store.orderConfirmed": "ありがとうございます。ご注文が確定しました。",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Cookie同意",
+  'settings.link.cookie-consent.description': "バナーの文章、色、プレビュー、同意ログ",
+  'settings.link.google-connection.label': "Google連携",
+  'settings.link.google-connection.description': "ご自身のGoogle Cloudクライアントで、Google Analytics、Search Console、Tag Manager、AdSenseを接続します。",
+  'settings.link.theming.label': "テーマのスタイル",
+  'settings.link.theming.description': "色、テキスト、ボタン、表、フォーム、レイアウト、プリセットを設定します。サイト全体に一度設定すれば十分です。",
+  'settings.link.translations.label': "翻訳",
+  'settings.link.translations.description': "すべての翻訳を1つの表で管理します。",
+  'settings.link.redirects.label': "リダイレクト",
+  'settings.link.redirects.description': "URLのリダイレクトを作成・管理します。",
+  'settings.link.options-pages.label': "オプションページ",
+  'settings.link.options-pages.description': "連絡先や営業時間など、サイト全体で共通の項目の値です。",
+  'settings.link.shop-settings.label': "ショップ設定",
+  'settings.link.shop-settings.description': "単位、支払い、配送、請求書、ギフトカード、チェックアウト、メール",
+  'settings.link.display-currencies.label': "表示通貨",
+  'settings.link.display-currencies.description': "他の通貨で価格を表示します。購入者は常にショップの通貨で支払います。",
+  'settings.link.cache-tools.label': "キャッシュツール",
+  'settings.link.cache-tools.description': "保存済みのページのコピーを今すぐ消去し、Cloudflareの開発モードをオン/オフします。",
 }
 
 export default ja

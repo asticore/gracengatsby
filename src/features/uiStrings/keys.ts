@@ -1245,6 +1245,25 @@ export const UI_STRING_SOURCE = {
   "store.shipping": "Shipping",
   "store.tax": "Tax",
   "store.orderConfirmed": "Thank you - your order is confirmed.",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Cookie consent",
+  'settings.link.cookie-consent.description': "Banner text, colours, preview and consent log",
+  'settings.link.google-connection.label': "Google connection",
+  'settings.link.google-connection.description': "Connect Google Analytics, Search Console, Tag Manager and AdSense with your own Google Cloud client.",
+  'settings.link.theming.label': "Theming",
+  'settings.link.theming.description': "Colours, text, buttons, tables, forms, layout and presets, set once for the whole site.",
+  'settings.link.translations.label': "Translations",
+  'settings.link.translations.description': "Manage every translation in one table.",
+  'settings.link.redirects.label': "Redirects",
+  'settings.link.redirects.description': "Create and manage URL redirects.",
+  'settings.link.options-pages.label': "Options pages",
+  'settings.link.options-pages.description': "Site-wide field values, such as contact details and opening hours.",
+  'settings.link.shop-settings.label': "Shop settings",
+  'settings.link.shop-settings.description': "Units, payments, shipping, invoices, gift cards, checkout and emails",
+  'settings.link.display-currencies.label': "Display currencies",
+  'settings.link.display-currencies.description': "Show prices in other currencies. Shoppers always pay in the shop currency.",
+  'settings.link.cache-tools.label': "Cache tools",
+  'settings.link.cache-tools.description': "Clear saved page copies now, and switch Cloudflare development mode on or off.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

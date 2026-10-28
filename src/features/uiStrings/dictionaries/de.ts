@@ -1205,6 +1205,25 @@ const de: UiDictionary = {
   "store.shipping": "Versand",
   "store.tax": "MwSt.",
   "store.orderConfirmed": "Vielen Dank - deine Bestellung ist bestätigt.",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Cookie-Einwilligung",
+  'settings.link.cookie-consent.description': "Bannertext, Farben, Vorschau und Einwilligungsprotokoll.",
+  'settings.link.google-connection.label': "Google-Verbindung",
+  'settings.link.google-connection.description': "Verbinden Sie Google Analytics, Search Console, Tag Manager und AdSense mit Ihrem eigenen Google-Cloud-Client.",
+  'settings.link.theming.label': "Theme-Gestaltung",
+  'settings.link.theming.description': "Farben, Text, Schaltflächen, Tabellen, Formulare, Layout und Voreinstellungen, einmal für die gesamte Website festgelegt.",
+  'settings.link.translations.label': "Übersetzungen",
+  'settings.link.translations.description': "Alle Übersetzungen in einer Tabelle verwalten.",
+  'settings.link.redirects.label': "Weiterleitungen",
+  'settings.link.redirects.description': "URL-Weiterleitungen erstellen und verwalten.",
+  'settings.link.options-pages.label': "Optionsseiten",
+  'settings.link.options-pages.description': "Website-weite Feldwerte, etwa Kontaktdaten und Öffnungszeiten.",
+  'settings.link.shop-settings.label': "Shop-Einstellungen",
+  'settings.link.shop-settings.description': "Einheiten, Zahlungen, Versand, Rechnungen, Geschenkkarten, Kasse und E-Mails",
+  'settings.link.display-currencies.label': "Anzeigewährungen",
+  'settings.link.display-currencies.description': "Preise in anderen Währungen anzeigen. Kundschaft zahlt immer in der Shop-Währung.",
+  'settings.link.cache-tools.label': "Cache-Werkzeuge",
+  'settings.link.cache-tools.description': "Gespeicherte Seitenkopien jetzt leeren und den Cloudflare-Entwicklungsmodus ein- oder ausschalten.",
 }
 
 export default de

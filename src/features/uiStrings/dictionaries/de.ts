@@ -1124,6 +1124,20 @@ const de: UiDictionary = {
   "email.order.customerNote.body": "Hallo {customer_name},\n\nzu deiner Bestellung #{order_id} gibt es eine Notiz:\n\n{note}",
   "email.order.shipped.subject": "Deine Bestellung #{order_id} ist unterwegs",
   "email.order.shipped.body": "Hallo {customer_name},\n\ndeine Bestellung #{order_id} wurde mit {carrier} versandt.\nSendungsnummer: {tracking_number}\nSendung verfolgen: {tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "Du wurdest eingeladen, {organization} beizutreten",
+  "email.organizationInvite.body": "{inviter} hat dich eingeladen, {organization} als {role} beizutreten.\n\nÖffne diesen Link, um die Einladung anzunehmen oder abzulehnen. Sie läuft in {days} Tagen ab und funktioniert nur, wenn du mit dieser E-Mail-Adresse angemeldet bist:\n{link}\n\nWenn du damit nicht gerechnet hast, ignoriere diese E-Mail. Ohne deine Zustimmung passiert nichts.",
+  "email.membershipRenewal.subject": "Deine Mitgliedschaft {tier} wird in {days} Tag(en) verlängert",
+  "email.membershipRenewal.body": "Deine Mitgliedschaft {tier} soll am {renewsAt} verlängert werden - das ist in {days} Tag(en).",
+  "email.rsvpConfirmation.subject": "Deine Buchung: {eventTitle}",
+  "email.rsvpConfirmation.body": "Hallo {name}, deine Buchung für {eventTitle} ist bestätigt.\n\nWann: {eventDate}\nGäste: {guestCount}\n\nWir freuen uns auf dich.",
+  "email.eventReminder.subject": "Erinnerung: {eventTitle} findet {when} statt",
+  "email.eventReminder.body": "Hallo {name}, eine Erinnerung: {eventTitle} findet {when} statt.\n\nGäste: {guestCount}\n\nWir freuen uns auf dich.",
+  "email.abandonedCart.subject": "Du hast etwas in deinem Warenkorb vergessen",
+  "email.abandonedCart.body": "Du hast noch Artikel in deinem Warenkorb bei {site_name} liegen. Sie warten noch auf dich.",
+  "email.backInStock.subject": "Wieder auf Lager: {label}",
+  "email.backInStock.body": "Gute Nachrichten. {label} ist wieder auf Lager.\n\nHier findest du den Artikel: {url}\n\nDu hast darum gebeten, benachrichtigt zu werden, deshalb ist dies die einzige E-Mail dazu.",
 }
 
 export default de

@@ -1165,6 +1165,20 @@ export const UI_STRING_SOURCE = {
   "email.order.shipped.subject": "Your order #{order_id} is on its way",
   "email.order.shipped.body": "Hi {customer_name},\n\nYour order #{order_id} has shipped with {carrier}.\nTracking number: {tracking_number}\nTrack it here: {tracking_url}",
 
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "You are invited to join {organization}",
+  "email.organizationInvite.body": "{inviter} invited you to join {organization} as {role}.\n\nOpen this link to accept or decline. It expires in {days} days, and only works when you are signed in with this email address:\n{link}\n\nIf you were not expecting this, ignore this email. Nothing happens unless you accept.",
+  "email.membershipRenewal.subject": "Your {tier} membership renews in {days} day(s)",
+  "email.membershipRenewal.body": "Your {tier} membership is due to renew on {renewsAt} - that is {days} day(s) away.",
+  "email.rsvpConfirmation.subject": "You're booked: {eventTitle}",
+  "email.rsvpConfirmation.body": "Hi {name}, your booking for {eventTitle} is confirmed.\n\nWhen: {eventDate}\nGuests: {guestCount}\n\nSee you there.",
+  "email.eventReminder.subject": "Reminder: {eventTitle} is {when}",
+  "email.eventReminder.body": "Hi {name}, a reminder that {eventTitle} is on {when}.\n\nGuests: {guestCount}\n\nSee you there.",
+  "email.abandonedCart.subject": "You left something in your cart",
+  "email.abandonedCart.body": "You left some items in your cart at {site_name}. They are still waiting for you.",
+  "email.backInStock.subject": "Back in stock: {label}",
+  "email.backInStock.body": "Good news. {label} is back in stock.\n\nSee it here: {url}\n\nYou asked us to let you know, so this is the only email we will send about it.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

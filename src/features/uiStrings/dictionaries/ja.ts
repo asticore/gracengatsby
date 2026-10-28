@@ -1123,6 +1123,20 @@ const ja: UiDictionary = {
   "email.order.customerNote.body": "{customer_name} 様\n\nご注文番号 {order_id} にお知らせがあります:\n\n{note}",
   "email.order.shipped.subject": "ご注文番号 {order_id} は発送されました",
   "email.order.shipped.body": "{customer_name} 様\n\nご注文番号 {order_id} を {carrier} で発送しました。\n追跡番号: {tracking_number}\n追跡はこちら: {tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "{organization} への招待が届いています",
+  "email.organizationInvite.body": "{inviter} さんから、{organization} に {role} として参加するよう招待が届いています。\n\n次のリンクから招待を承諾または辞退できます。リンクは {days} 日後に期限切れとなり、このメールアドレスでサインインしている場合のみ使用できます:\n{link}\n\n心当たりがない場合は、このメールを無視してください。承諾するまで何も起こりません。",
+  "email.membershipRenewal.subject": "{tier} メンバーシップは {days} 日後に更新されます",
+  "email.membershipRenewal.body": "{tier} メンバーシップは {renewsAt} に更新予定です（{days} 日後）。",
+  "email.rsvpConfirmation.subject": "ご予約: {eventTitle}",
+  "email.rsvpConfirmation.body": "{name} 様、{eventTitle} のご予約が確定しました。\n\n日時: {eventDate}\nご人数: {guestCount}\n\nお待ちしております。",
+  "email.eventReminder.subject": "リマインダー: {eventTitle} は {when} です",
+  "email.eventReminder.body": "{name} 様、{eventTitle} は {when} です。\n\nご人数: {guestCount}\n\nお待ちしております。",
+  "email.abandonedCart.subject": "カートに商品が残っています",
+  "email.abandonedCart.body": "{site_name} のカートに商品が残っています。まだお待ちしています。",
+  "email.backInStock.subject": "再入荷しました: {label}",
+  "email.backInStock.body": "朗報です。{label} が再入荷しました。\n\nこちらからご覧いただけます: {url}\n\nご希望により再入荷のお知らせをお送りしています。このメールはこの件に関する唯一のお知らせです。",
 }
 
 export default ja

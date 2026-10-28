@@ -1072,6 +1072,20 @@ const ar: UiDictionary = {
   "email.order.customerNote.body": "مرحبًا {customer_name}،\n\nتوجد ملاحظة على طلبك رقم {order_id}:\n\n{note}",
   "email.order.shipped.subject": "طلبك رقم {order_id} في الطريق إليك",
   "email.order.shipped.body": "مرحبًا {customer_name}،\n\nتم شحن طلبك رقم {order_id} عبر {carrier}.\nرقم التتبع: {tracking_number}\nتتبّع شحنتك هنا: {tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "تمت دعوتك للانضمام إلى {organization}",
+  "email.organizationInvite.body": "دعاك {inviter} للانضمام إلى {organization} بصفة {role}.\n\nافتح هذا الرابط لقبول الدعوة أو رفضها. ينتهي مفعوله خلال {days} أيام، ولا يعمل إلا إذا سجّلت الدخول بعنوان البريد الإلكتروني هذا:\n{link}\n\nإذا لم تكن تتوقع هذه الرسالة، فتجاهلها. لن يحدث شيء ما لم تقبل الدعوة.",
+  "email.membershipRenewal.subject": "ستُجدَّد عضويتك {tier} خلال {days} يومًا",
+  "email.membershipRenewal.body": "من المقرر تجديد عضويتك {tier} في {renewsAt}، أي بعد {days} يومًا.",
+  "email.rsvpConfirmation.subject": "تم تأكيد حجزك: {eventTitle}",
+  "email.rsvpConfirmation.body": "مرحبًا {name}، تم تأكيد حجزك لـ {eventTitle}.\n\nالموعد: {eventDate}\nعدد الضيوف: {guestCount}\n\nنراك هناك.",
+  "email.eventReminder.subject": "تذكير: {eventTitle} يبدأ {when}",
+  "email.eventReminder.body": "مرحبًا {name}، تذكير بأن {eventTitle} يبدأ {when}.\n\nعدد الضيوف: {guestCount}\n\nنراك هناك.",
+  "email.abandonedCart.subject": "لقد تركت شيئًا في سلة التسوق",
+  "email.abandonedCart.body": "تركت بعض العناصر في سلة التسوق الخاصة بك في {site_name}. ما زالت في انتظارك.",
+  "email.backInStock.subject": "متوفر مجددًا: {label}",
+  "email.backInStock.body": "أخبار سارة. {label} متوفر مجددًا.\n\nشاهده هنا: {url}\n\nلقد طلبت منا إخبارك، لذلك فهذه هي الرسالة الوحيدة التي سنرسلها بخصوص ذلك.",
 }
 
 export default ar

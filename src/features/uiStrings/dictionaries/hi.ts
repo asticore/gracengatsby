@@ -1072,6 +1072,20 @@ const hi: UiDictionary = {
   "email.order.customerNote.body": "नमस्ते {customer_name},\n\nआपके ऑर्डर #{order_id} पर एक नोट है:\n\n{note}",
   "email.order.shipped.subject": "आपका ऑर्डर #{order_id} रास्ते में है",
   "email.order.shipped.body": "नमस्ते {customer_name},\n\nआपका ऑर्डर #{order_id} {carrier} के साथ भेज दिया गया है।\nट्रैकिंग नंबर: {tracking_number}\nयहाँ ट्रैक करें: {tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "आपको {organization} से जुड़ने का निमंत्रण मिला है",
+  "email.organizationInvite.body": "{inviter} ने आपको {role} के रूप में {organization} से जुड़ने के लिए आमंत्रित किया है।\n\nनिमंत्रण स्वीकार या अस्वीकार करने के लिए यह लिंक खोलें। यह {days} दिनों में समाप्त हो जाएगा, और केवल तब काम करेगा जब आप इस ईमेल पते से साइन इन हों:\n{link}\n\nयदि आपको यह उम्मीद नहीं थी, तो इस ईमेल को अनदेखा करें। आपके स्वीकार करने तक कुछ नहीं होगा।",
+  "email.membershipRenewal.subject": "आपकी {tier} सदस्यता {days} दिनों में नवीनीकृत होगी",
+  "email.membershipRenewal.body": "आपकी {tier} सदस्यता {renewsAt} को नवीनीकृत होनी है - यानी {days} दिनों में।",
+  "email.rsvpConfirmation.subject": "आपकी बुकिंग: {eventTitle}",
+  "email.rsvpConfirmation.body": "नमस्ते {name}, {eventTitle} के लिए आपकी बुकिंग की पुष्टि हो गई है।\n\nकब: {eventDate}\nमेहमान: {guestCount}\n\nवहाँ मिलते हैं।",
+  "email.eventReminder.subject": "अनुस्मारक: {eventTitle} {when} है",
+  "email.eventReminder.body": "नमस्ते {name}, याद दिलाना चाहते हैं कि {eventTitle} {when} है।\n\nमेहमान: {guestCount}\n\nवहाँ मिलते हैं।",
+  "email.abandonedCart.subject": "आप अपनी कार्ट में कुछ छोड़ गए हैं",
+  "email.abandonedCart.body": "आप {site_name} पर अपनी कार्ट में कुछ सामान छोड़ गए हैं। वे अब भी आपका इंतज़ार कर रहे हैं।",
+  "email.backInStock.subject": "फिर से स्टॉक में: {label}",
+  "email.backInStock.body": "अच्छी खबर है। {label} फिर से स्टॉक में है।\n\nयहाँ देखें: {url}\n\nआपने सूचित करने के लिए कहा था, इसलिए इस बारे में यही एकमात्र ईमेल है जो हम भेजेंगे।",
 }
 
 export default hi

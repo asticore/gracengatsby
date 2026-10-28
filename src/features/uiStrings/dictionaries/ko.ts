@@ -1072,6 +1072,20 @@ const ko: UiDictionary = {
   "email.order.customerNote.body": "{customer_name}님, 안녕하세요.\n\n주문 {order_id}번에 안내 사항이 있습니다:\n\n{note}",
   "email.order.shipped.subject": "주문 {order_id}번이 발송되었습니다",
   "email.order.shipped.body": "{customer_name}님, 안녕하세요.\n\n주문 {order_id}번이 {carrier}(으)로 발송되었습니다.\n운송장 번호: {tracking_number}\n배송 조회: {tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "{organization} 가입 초대를 받으셨습니다",
+  "email.organizationInvite.body": "{inviter}님이 {organization}에 {role}(으)로 참여하도록 초대했습니다.\n\n아래 링크에서 초대를 수락하거나 거절할 수 있습니다. 링크는 {days}일 후에 만료되며, 이 이메일 주소로 로그인한 상태에서만 사용할 수 있습니다:\n{link}\n\n예상하지 못한 이메일이라면 무시하세요. 수락하기 전까지는 아무 일도 일어나지 않습니다.",
+  "email.membershipRenewal.subject": "{tier} 멤버십이 {days}일 후 갱신됩니다",
+  "email.membershipRenewal.body": "{tier} 멤버십은 {renewsAt}에 갱신될 예정입니다. {days}일 후입니다.",
+  "email.rsvpConfirmation.subject": "예약 완료: {eventTitle}",
+  "email.rsvpConfirmation.body": "{name}님, 안녕하세요. {eventTitle} 예약이 확정되었습니다.\n\n일시: {eventDate}\n인원: {guestCount}명\n\n그때 뵙겠습니다.",
+  "email.eventReminder.subject": "알림: {eventTitle}이(가) {when}에 열립니다",
+  "email.eventReminder.body": "{name}님, 안녕하세요. {eventTitle}이(가) {when}에 열린다는 알림입니다.\n\n인원: {guestCount}명\n\n그때 뵙겠습니다.",
+  "email.abandonedCart.subject": "장바구니에 담긴 상품이 있습니다",
+  "email.abandonedCart.body": "{site_name} 장바구니에 상품이 남아 있습니다. 여전히 기다리고 있어요.",
+  "email.backInStock.subject": "재입고되었습니다: {label}",
+  "email.backInStock.body": "반가운 소식입니다. {label}이(가) 다시 입고되었습니다.\n\n여기에서 확인하세요: {url}\n\n재입고 알림을 요청하셨기에 이 메일이 이 내용에 대해 보내는 유일한 메일입니다.",
 }
 
 export default ko

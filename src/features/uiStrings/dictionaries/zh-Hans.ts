@@ -1071,6 +1071,20 @@ const zhHans: UiDictionary = {
   "email.order.customerNote.body": "您好，{customer_name}：\n\n您的订单 #{order_id} 有一条备注：\n\n{note}",
   "email.order.shipped.subject": "您的订单 #{order_id} 正在派送中",
   "email.order.shipped.body": "您好，{customer_name}：\n\n您的订单 #{order_id} 已通过 {carrier} 发出。\n快递单号：{tracking_number}\n查询物流：{tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "您受邀加入 {organization}",
+  "email.organizationInvite.body": "{inviter} 邀请您以 {role} 的身份加入 {organization}。\n\n打开此链接即可接受或拒绝邀请。链接将在 {days} 天后失效，且仅在您使用此邮箱地址登录时有效：\n{link}\n\n如果您并未期待此邮件，请忽略。在您接受之前，不会发生任何变化。",
+  "email.membershipRenewal.subject": "您的 {tier} 会员将在 {days} 天后续费",
+  "email.membershipRenewal.body": "您的 {tier} 会员计划将于 {renewsAt} 续费，即 {days} 天后。",
+  "email.rsvpConfirmation.subject": "预订成功：{eventTitle}",
+  "email.rsvpConfirmation.body": "您好，{name}：您预订的 {eventTitle} 已确认。\n\n时间：{eventDate}\n人数：{guestCount}\n\n期待与您见面。",
+  "email.eventReminder.subject": "提醒：{eventTitle} 将于 {when} 举行",
+  "email.eventReminder.body": "您好，{name}：提醒您，{eventTitle} 将于 {when} 举行。\n\n人数：{guestCount}\n\n期待与您见面。",
+  "email.abandonedCart.subject": "您的购物车里还有商品",
+  "email.abandonedCart.body": "您在 {site_name} 的购物车里还有商品，它们仍在等您。",
+  "email.backInStock.subject": "已重新到货：{label}",
+  "email.backInStock.body": "好消息，{label} 已重新到货。\n\n在此查看：{url}\n\n您曾要求我们通知您，因此这是我们就此发送的唯一一封邮件。",
 }
 
 export default zhHans

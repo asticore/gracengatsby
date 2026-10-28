@@ -1072,6 +1072,20 @@ const pt: UiDictionary = {
   "email.order.customerNote.body": "Olá, {customer_name},\n\nHá uma observação no seu pedido n.º {order_id}:\n\n{note}",
   "email.order.shipped.subject": "Seu pedido n.º {order_id} está a caminho",
   "email.order.shipped.body": "Olá, {customer_name},\n\nseu pedido n.º {order_id} foi enviado pela {carrier}.\nCódigo de rastreamento: {tracking_number}\nAcompanhe aqui: {tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "Você foi convidado(a) para participar de {organization}",
+  "email.organizationInvite.body": "{inviter} convidou você para participar de {organization} como {role}.\n\nAbra este link para aceitar ou recusar o convite. Ele expira em {days} dias e só funciona quando você estiver conectado(a) com este endereço de e-mail:\n{link}\n\nSe você não esperava este e-mail, ignore-o. Nada acontece sem a sua aceitação.",
+  "email.membershipRenewal.subject": "Sua assinatura {tier} será renovada em {days} dia(s)",
+  "email.membershipRenewal.body": "Sua assinatura {tier} deve ser renovada em {renewsAt}, ou seja, daqui a {days} dia(s).",
+  "email.rsvpConfirmation.subject": "Sua reserva: {eventTitle}",
+  "email.rsvpConfirmation.body": "Olá, {name}, sua reserva para {eventTitle} está confirmada.\n\nQuando: {eventDate}\nConvidados: {guestCount}\n\nAté lá.",
+  "email.eventReminder.subject": "Lembrete: {eventTitle} é {when}",
+  "email.eventReminder.body": "Olá, {name}, lembrete de que {eventTitle} é {when}.\n\nConvidados: {guestCount}\n\nAté lá.",
+  "email.abandonedCart.subject": "Você deixou algo no carrinho",
+  "email.abandonedCart.body": "Você deixou alguns itens no carrinho em {site_name}. Eles ainda estão esperando por você.",
+  "email.backInStock.subject": "De volta ao estoque: {label}",
+  "email.backInStock.body": "Boa notícia. {label} voltou ao estoque.\n\nVeja aqui: {url}\n\nVocê pediu para ser avisado(a), então este é o único e-mail que enviaremos sobre isso.",
 }
 
 export default pt

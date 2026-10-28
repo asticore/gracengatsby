@@ -1072,6 +1072,20 @@ const ru: UiDictionary = {
   "email.order.customerNote.body": "Здравствуйте, {customer_name}!\n\nК вашему заказу №{order_id} добавлено примечание:\n\n{note}",
   "email.order.shipped.subject": "Ваш заказ №{order_id} в пути",
   "email.order.shipped.body": "Здравствуйте, {customer_name}!\n\nВаш заказ №{order_id} отправлен через {carrier}.\nТрек-номер: {tracking_number}\nОтследить можно здесь: {tracking_url}",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "Вас пригласили присоединиться к {organization}",
+  "email.organizationInvite.body": "{inviter} пригласил(а) вас присоединиться к {organization} в роли «{role}».\n\nОткройте эту ссылку, чтобы принять или отклонить приглашение. Она истекает через {days} дн. и работает только если вы вошли с этим адресом электронной почты:\n{link}\n\nЕсли вы не ждали это письмо, проигнорируйте его. Ничего не произойдёт, пока вы не примете приглашение.",
+  "email.membershipRenewal.subject": "Ваше членство «{tier}» продлится через {days} дн.",
+  "email.membershipRenewal.body": "Ваше членство «{tier}» будет продлено {renewsAt} — то есть через {days} дн.",
+  "email.rsvpConfirmation.subject": "Вы записаны: {eventTitle}",
+  "email.rsvpConfirmation.body": "Здравствуйте, {name}! Ваша запись на {eventTitle} подтверждена.\n\nКогда: {eventDate}\nГостей: {guestCount}\n\nДо встречи.",
+  "email.eventReminder.subject": "Напоминание: {eventTitle} — {when}",
+  "email.eventReminder.body": "Здравствуйте, {name}! Напоминаем, что {eventTitle} — {when}.\n\nГостей: {guestCount}\n\nДо встречи.",
+  "email.abandonedCart.subject": "Вы оставили товары в корзине",
+  "email.abandonedCart.body": "Вы оставили несколько товаров в корзине магазина {site_name}. Они всё ещё ждут вас.",
+  "email.backInStock.subject": "Снова в наличии: {label}",
+  "email.backInStock.body": "Хорошие новости. {label} снова в наличии.\n\nПосмотреть: {url}\n\nВы попросили сообщить вам, поэтому это единственное письмо об этом.",
 }
 
 export default ru

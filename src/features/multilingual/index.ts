@@ -59,11 +59,14 @@ export {
 
 export {
   TRANSLATABLE_COLLECTIONS,
+  fieldsForDocument,
   sourceIdFor,
   translatableSource,
   type TranslatableFieldDef,
   type TranslatableSourceDef,
 } from './translatableFields'
+
+export { BLOCK_TEXT, ELEMENT_TEXT, type BlockTextFieldSpec, type BlockTextSpec } from './blockTextRegistry'
 
 export { Translations } from './translationsCollection'
 

@@ -144,6 +144,29 @@ function FieldEditor({
   )
 }
 
+/**
+ * The fields in the order the page lists them, with a block's fields kept
+ * together under one heading. Page-level fields (title, SEO) come first.
+ */
+function fieldSections(fields: DocumentTranslationField[]): Array<{ key: string; block: DocumentTranslationField['group']; fields: DocumentTranslationField[] }> {
+  const sections: Array<{ key: string; block: DocumentTranslationField['group']; fields: DocumentTranslationField[] }> = []
+  const byBlock = new Map<string, (typeof sections)[number]>()
+  for (const field of fields) {
+    if (!field.group) {
+      sections.push({ key: `field:${field.fieldPath}`, block: null, fields: [field] })
+      continue
+    }
+    let section = byBlock.get(field.group.key)
+    if (!section) {
+      section = { key: `block:${field.group.key}`, block: field.group, fields: [] }
+      byBlock.set(field.group.key, section)
+      sections.push(section)
+    }
+    section.fields.push(field)
+  }
+  return sections
+}
+
 export function TranslatePanel({ state, locale, localeLabel, title, users, onSaved, onExit }: Props): React.ReactElement {
   const group = state.locales.find((entry) => entry.locale === locale)
   return (
@@ -161,9 +184,23 @@ export function TranslatePanel({ state, locale, localeLabel, title, users, onSav
         {group ? `${group.approved}/${group.total} approved` : 'No translatable text on this page.'} Layout and blocks are
         edited in the default language; the canvas is read-only while translating.
       </p>
-      {group?.fields.map((field) => (
-        <FieldEditor key={field.fieldPath} field={field} locale={locale} sourceId={state.sourceId} users={users} onSaved={onSaved} />
-      ))}
+      {fieldSections(group?.fields ?? []).map((section) =>
+        section.block ? (
+          <div className="ve-translate__block" key={section.key} data-block={section.block.key}>
+            <header className="ve-translate__block-head">
+              <strong>{section.block.blockLabel}</strong>
+              {section.block.preview ? <span className="ve-translate__hint">{section.block.preview}</span> : null}
+            </header>
+            {section.fields.map((field) => (
+              <FieldEditor key={field.fieldPath} field={field} locale={locale} sourceId={state.sourceId} users={users} onSaved={onSaved} />
+            ))}
+          </div>
+        ) : (
+          section.fields.map((field) => (
+            <FieldEditor key={field.fieldPath} field={field} locale={locale} sourceId={state.sourceId} users={users} onSaved={onSaved} />
+          ))
+        ),
+      )}
     </div>
   )
 }
@@ -180,6 +217,8 @@ export const TRANSLATE_PANEL_CSS = `
 .ve-translate__actions { display: flex; gap: 8px; }
 .ve-translate__assignees, .ve-translate__note { font-size: 12px; margin: 0; color: var(--theme-elevation-600, #52525b); }
 .ve-translate__error { font-size: 12px; margin: 0; color: var(--theme-error-500, #dc2626); }
+.ve-translate__block { display: flex; flex-direction: column; gap: 8px; border-left: 3px solid var(--theme-elevation-200, #d4d4d8); padding-left: 10px; }
+.ve-translate__block-head { display: flex; flex-direction: column; gap: 2px; }
 .ve-canvas-wrap--translating { position: relative; }
 .ve-canvas-wrap--translating .ve-canvas { pointer-events: none; opacity: 0.85; }
 `

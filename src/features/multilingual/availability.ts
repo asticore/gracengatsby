@@ -1,4 +1,4 @@
-import { sourceIdFor, translatableSource } from './translatableFields'
+import { fieldsForDocument, sourceIdFor, translatableSource } from './translatableFields'
 import type { MultilingualSettings } from './settings'
 import { valueAtPath, type TranslationRow } from './store'
 import { isTranslationPublishable } from './translationStatus'
@@ -64,7 +64,7 @@ export function publishableLocalesForDocument(args: {
   const source = translatableSource(collection)
   if (!source || !doc || typeof doc !== 'object') return null
   const sourceId = sourceIdFor(collection, id)
-  const fields = source.fields.filter((field) => !field.richText)
+  const fields = fieldsForDocument(collection, doc).filter((field) => !field.richText)
 
   return nonDefaultLocales(settings).filter((locale) =>
     fields.some((field) => {

@@ -2145,6 +2145,17 @@ const it: UiDictionary = {
   'st.lit.waiting_to_go_live': "In attesa di pubblicazione",
   'st.lit.when': "Quando",
   'st.lit.worked': "Riuscito",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "Un pulsante apre le colonne in una finestra di dialogo.",
+  'fp.help.columns_become_equal_cells_in_rows': "Le colonne diventano celle uguali in righe.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "Le colonne scorrono come riga o pila flessibile: imposta sotto direzione, a capo, allineamento e spaziatura.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "Le colonne stanno affiancate e vanno a capo quando finisce lo spazio.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "Ogni colonna diventa un pannello richiudibile. Assegnagli un nome nelle impostazioni della colonna.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "Ogni colonna diventa una scheda. Assegnale un nome nelle impostazioni della colonna.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "Ogni colonna è una scheda a tutta larghezza che si accumula scorrendo la pagina.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "Ogni colonna è una diapositiva che il lettore scorre con swipe o scroll.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "Le colonne scorrono di lato mentre il lettore scende nella pagina.",
+  'fp.help.the_first_column_stays_in_place_while_th': "La prima colonna resta ferma mentre le altre scorrono oltre come passaggi.",
 }
 
 export default it

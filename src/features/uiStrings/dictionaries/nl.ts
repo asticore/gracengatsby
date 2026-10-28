@@ -2145,6 +2145,17 @@ const nl: UiDictionary = {
   'st.lit.waiting_to_go_live': "Wacht op publicatie",
   'st.lit.when': "Wanneer",
   'st.lit.worked': "Gelukt",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "Een knop opent de kolommen in een dialoogvenster.",
+  'fp.help.columns_become_equal_cells_in_rows': "Kolommen worden gelijke cellen in rijen.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "Kolommen stromen als flexibele rij of stapel: stel hieronder richting, terugloop, uitlijning en tussenruimte in.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "Kolommen staan naast elkaar en gaan naar een nieuwe regel als er geen ruimte meer is.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "Elke kolom wordt een inklapbaar paneel. Geef het een naam in de kolominstellingen.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "Elke kolom wordt een tabblad. Geef het een naam in de kolominstellingen.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "Elke kolom is een kaart over de volle breedte die zich opstapelt bij het scrollen.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "Elke kolom is een dia die de lezer doorveegt of doorscrolt.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "De kolommen schuiven opzij terwijl de lezer de pagina doorscrolt.",
+  'fp.help.the_first_column_stays_in_place_while_th': "De eerste kolom blijft staan terwijl de andere als stappen eraan voorbijscrollen.",
 }
 
 export default nl

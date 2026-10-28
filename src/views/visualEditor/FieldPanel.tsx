@@ -1,5 +1,6 @@
 'use client'
 
+import type { UiStringKey } from '@/features/uiStrings'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useRef, useState } from 'react'
 
@@ -198,17 +199,17 @@ function cleanDeep<T>(value: T): T | undefined {
 const GAP_PRESETS: Record<string, number> = { none: 0, narrow: 10, wide: 40 }
 
 /** One-line help under "Display as", per mode. */
-const DISPLAY_HELP: Record<string, string> = {
-  columns: 'Columns sit side by side and wrap onto a new line when space runs out.',
-  tabs: 'Each column becomes a tab. Name a tab in its column settings.',
-  accordion: 'Each column becomes a collapsible panel. Name it in its column settings.',
-  carousel: 'Each column is a slide the reader swipes or scrolls through.',
-  grid: 'Columns become equal cells in rows.',
-  flex: 'Columns flow as a flexible row or stack: set direction, wrap, alignment and gap below.',
-  modal: 'A button opens the columns in a popup dialog.',
-  stack: 'Each column is a full-width card that piles up as the page scrolls.',
-  hscroll: 'The columns slide sideways as the reader scrolls down the page.',
-  'sticky-steps': 'The first column stays in place while the others scroll past it as steps.',
+const DISPLAY_HELP: Record<string, UiStringKey> = {
+  columns: 'fp.help.columns_sit_side_by_side_and_wrap_onto_a',
+  tabs: 'fp.help.each_column_becomes_a_tab_name_a_tab_in',
+  accordion: 'fp.help.each_column_becomes_a_collapsible_panel',
+  carousel: 'fp.help.each_column_is_a_slide_the_reader_swipes',
+  grid: 'fp.help.columns_become_equal_cells_in_rows',
+  flex: 'fp.help.columns_flow_as_a_flexible_row_or_stack',
+  modal: 'fp.help.a_button_opens_the_columns_in_a_popup_di',
+  stack: 'fp.help.each_column_is_a_full_width_card_that_pi',
+  hscroll: 'fp.help.the_columns_slide_sideways_as_the_reader',
+  'sticky-steps': 'fp.help.the_first_column_stays_in_place_while_th',
 }
 
 /** Clamps a typed number into [min, max] for a layout field; an empty box clears the field. */
@@ -415,7 +416,7 @@ const SectionLayoutFields: React.FC<{
       <Accordion title={t('ve.fp.section')} defaultOpen>
         <SelectRow
           label={t('ve.fp.displayAs')}
-          help={DISPLAY_HELP[layout.display || 'columns']}
+          help={t(DISPLAY_HELP[layout.display || 'columns'])}
           value={layout.display || 'columns'}
           options={[
             { label: t('ve.fp.mode.columns'), value: 'columns' },

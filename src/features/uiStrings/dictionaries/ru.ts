@@ -2145,6 +2145,17 @@ const ru: UiDictionary = {
   'st.lit.waiting_to_go_live': "Ожидает публикации",
   'st.lit.when': "Когда",
   'st.lit.worked': "Успешно",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "Кнопка открывает столбцы во всплывающем окне.",
+  'fp.help.columns_become_equal_cells_in_rows': "Столбцы становятся равными ячейками в строках.",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "Столбцы выстраиваются гибкой строкой или стеком: задайте ниже направление, перенос, выравнивание и отступ.",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "Столбцы стоят рядом и переносятся на новую строку, когда не хватает места.",
+  'fp.help.each_column_becomes_a_collapsible_panel': "Каждый столбец становится сворачиваемой панелью. Назовите её в настройках столбца.",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "Каждый столбец становится вкладкой. Назовите её в настройках столбца.",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "Каждый столбец — карточка на всю ширину, которые накапливаются при прокрутке страницы.",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "Каждый столбец — слайд, который читатель листает или прокручивает.",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "Столбцы сдвигаются в сторону при прокрутке страницы читателем.",
+  'fp.help.the_first_column_stays_in_place_while_th': "Первый столбец остаётся на месте, а остальные проходят мимо него, как шаги.",
 }
 
 export default ru

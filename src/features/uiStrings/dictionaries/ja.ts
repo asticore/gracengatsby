@@ -2145,6 +2145,17 @@ const ja: UiDictionary = {
   'st.lit.waiting_to_go_live': "公開待ち",
   'st.lit.when': "いつ",
   'st.lit.worked': "成功",
+  // --- admin leftovers (visual editor field panel display help) ---
+  'fp.help.a_button_opens_the_columns_in_a_popup_di': "ボタンを押すと、列がポップアップのダイアログで開きます。",
+  'fp.help.columns_become_equal_cells_in_rows': "列が同じ大きさのセルとして行に並びます。",
+  'fp.help.columns_flow_as_a_flexible_row_or_stack': "列は柔軟な行またはスタックとして流れます。下で方向、折り返し、配置、間隔を設定してください。",
+  'fp.help.columns_sit_side_by_side_and_wrap_onto_a': "列は横に並び、スペースが足りなくなると次の行に折り返します。",
+  'fp.help.each_column_becomes_a_collapsible_panel': "各列が折りたたみ可能なパネルになります。列の設定で名前を付けてください。",
+  'fp.help.each_column_becomes_a_tab_name_a_tab_in': "各列がタブになります。列の設定でタブ名を付けてください。",
+  'fp.help.each_column_is_a_full_width_card_that_pi': "各列は全幅のカードになり、ページのスクロールに合わせて積み重なります。",
+  'fp.help.each_column_is_a_slide_the_reader_swipes': "各列はスライドになり、読者はスワイプやスクロールで切り替えます。",
+  'fp.help.the_columns_slide_sideways_as_the_reader': "読者がページを下にスクロールすると、列が横にスライドします。",
+  'fp.help.the_first_column_stays_in_place_while_th': "最初の列は固定され、他の列がステップとして通り過ぎていきます。",
 }
 
 export default ja

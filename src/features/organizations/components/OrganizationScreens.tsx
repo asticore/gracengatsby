@@ -4,6 +4,9 @@ import React from 'react'
 
 import { AccountShell, AuthShell } from '@/features/accounts/components/AccountShell'
 import { requireCustomer } from '@/features/accounts/guards'
+import { portalFormatLocale } from '@/features/accounts/orders'
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
+import { portalTextFor } from '@/features/multilingual/portalStrings'
 
 import { switchOrganizationAction } from '../actions'
 import { ORG_ACTIONS, BUILT_IN_ROLES, isBuiltInRole } from '../permissions'
@@ -46,20 +49,27 @@ const ensureOn = async (returnTo: string) => {
   return runtime
 }
 
-const formatDate = (iso: string): string => new Date(iso).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })
+const formatDate = (iso: string, locale: string): string => {
+  try {
+    return new Date(iso).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return new Date(iso).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+}
 
 export const OrganizationsListScreen: React.FC = async () => {
   const runtime = await ensureOn(START)
   const mine = await listMyOrganizations(runtime.deps, runtime.actor)
   const orgs = mine.value ?? []
   const active = await activeOrganization(runtime)
+  const tx = portalTextFor(await currentPortalLocale())
   return (
-    <AccountShell title="Organizations" current={START}>
+    <AccountShell title={tx('orgs.title')} current={START}>
       <OrganizationStyles />
       {orgs.length > 1 ? (
         <form action={switchOrganizationAction} className="org-switcher">
           <label>
-            Working in
+            {tx('orgs.workingIn')}
             <select name="organizationId" defaultValue={active?.id ?? ''}>
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>
@@ -69,12 +79,12 @@ export const OrganizationsListScreen: React.FC = async () => {
             </select>
           </label>
           <button type="submit" className="btn btn--ghost">
-            Switch
+            {tx('orgs.switch')}
           </button>
         </form>
       ) : null}
       {orgs.length === 0 ? (
-        <p className="account-empty">You are not in any organization yet. Create one, or open an invitation link from your email.</p>
+        <p className="account-empty">{tx('orgs.none')}</p>
       ) : (
         <ul className="org-list">
           {orgs.map((o) => (
@@ -84,7 +94,7 @@ export const OrganizationsListScreen: React.FC = async () => {
                   <strong>{o.name}</strong>
                 </Link>{' '}
                 <span className="org-badge">{o.role}</span>
-                {active?.id === o.id ? <span className="org-badge"> active</span> : null}
+                {active?.id === o.id ? <span className="org-badge"> {tx('orgs.active')}</span> : null}
               </div>
             </li>
           ))}
@@ -92,7 +102,7 @@ export const OrganizationsListScreen: React.FC = async () => {
       )}
       <p>
         <Link className="btn btn--primary" href={`${START}/new`}>
-          Create an organization
+          {tx('orgs.create')}
         </Link>
       </p>
     </AccountShell>
@@ -101,8 +111,9 @@ export const OrganizationsListScreen: React.FC = async () => {
 
 export const OrganizationCreateScreen: React.FC = async () => {
   await ensureOn(`${START}/new`)
+  const tx = portalTextFor(await currentPortalLocale())
   return (
-    <AccountShell title="Create an organization" current={START}>
+    <AccountShell title={tx('orgs.create')} current={START}>
       <OrganizationStyles />
       <CreateOrganizationForm />
     </AccountShell>
@@ -117,7 +128,10 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
   const { org } = detail
   const can = (action: (typeof ORG_ACTIONS)[number]) => detail.permissions.includes(action)
   const emails = await memberEmails(runtime.context.engine, detail.members.map((m) => m.userId))
-  const labelOf = (userId: number) => emails.get(userId) ?? `Member ${userId}`
+  const portalLocale = await currentPortalLocale()
+  const tx = portalTextFor(portalLocale)
+  const dateLocale = portalFormatLocale(portalLocale)
+  const labelOf = (userId: number) => emails.get(userId) ?? tx('orgs.memberFallback', { id: userId })
   const roleNames = [...BUILT_IN_ROLES.filter((r) => r !== 'owner' || detail.myRole === 'owner'), ...detail.roles.map((r) => r.name)]
   const meta = parseMetadata(org.metadata)
   const pending = detail.invites.filter((i) => i.status === 'pending')
@@ -132,20 +146,20 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
       <div className="org-head">
         {org.logo ? <img className="org-logo" src={org.logo} alt="" width={56} height={56} /> : null}
         <div>
-          <span className="org-badge">Your role: {detail.myRole}</span>
+          <span className="org-badge">{tx('orgs.roleBadge', { role: detail.myRole })}</span>
           <p className="org-muted">/{org.slug}</p>
         </div>
       </div>
       {Object.keys(meta).length > 0 ? <p className="org-muted">{JSON.stringify(meta)}</p> : null}
 
       <section className="org-section">
-        <h2>Members ({detail.members.length})</h2>
+        <h2>{tx('orgs.members', { count: detail.members.length })}</h2>
         <ul className="org-list">
           {detail.members.map((m) => (
             <li key={m.id} className="org-row">
               <div className="org-row__main">
                 {labelOf(m.userId)} <span className="org-badge">{m.role}</span>
-                {m.userId === myId ? <span className="org-muted"> (you)</span> : null}
+                {m.userId === myId ? <span className="org-muted"> {tx('orgs.you')}</span> : null}
               </div>
               <div className="org-row__actions">
                 {can('member:update') && m.userId !== myId && manages(m.role) ? <ChangeRoleForm organizationId={org.id} userId={String(m.userId)} role={m.role} roles={roleNames} /> : null}
@@ -159,8 +173,8 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
 
       {can('team:read') ? (
         <section className="org-section">
-          <h2>Teams ({detail.teams.length})</h2>
-          {detail.teams.length === 0 ? <p className="account-empty">No teams yet.</p> : null}
+          <h2>{tx('orgs.teams', { count: detail.teams.length })}</h2>
+          {detail.teams.length === 0 ? <p className="account-empty">{tx('orgs.noTeams')}</p> : null}
           <ul className="org-list">
             {detail.teams.map((t) => {
               const inTeam = detail.members.filter((m) => t.memberIds.includes(m.userId))
@@ -169,7 +183,7 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
                 <li key={t.id} className="org-row">
                   <div className="org-row__main">
                     <strong>{t.name}</strong>
-                    <div className="org-muted">{inTeam.length === 0 ? 'No members' : inTeam.map((m) => labelOf(m.userId)).join(', ')}</div>
+                    <div className="org-muted">{inTeam.length === 0 ? tx('orgs.noMembers') : inTeam.map((m) => labelOf(m.userId)).join(', ')}</div>
                   </div>
                   {can('team:manage') ? (
                     <div className="org-row__actions">
@@ -188,14 +202,14 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
 
       {can('invitation:read') ? (
         <section className="org-section">
-          <h2>Invitations</h2>
-          {pending.length === 0 ? <p className="account-empty">No pending invitations.</p> : null}
+          <h2>{tx('orgs.invitations')}</h2>
+          {pending.length === 0 ? <p className="account-empty">{tx('orgs.noPending')}</p> : null}
           <ul className="org-list">
             {pending.map((i) => (
               <li key={i.id} className="org-row">
                 <div className="org-row__main">
                   {i.email} <span className="org-badge">{i.role}</span>
-                  <div className="org-muted">Expires {formatDate(i.expiresAt)}</div>
+                  <div className="org-muted">{tx('orgs.expires', { date: formatDate(i.expiresAt, dateLocale) })}</div>
                 </div>
                 <div className="org-row__actions">
                   {can('invitation:create') ? <ResendInviteForm organizationId={org.id} inviteId={i.id} /> : null}
@@ -209,7 +223,7 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
           ) : null}
           {past.length > 0 ? (
             <details>
-              <summary>Past invitations ({past.length})</summary>
+              <summary>{tx('orgs.pastInvites', { count: past.length })}</summary>
               <ul className="org-list">
                 {past.map((i) => (
                   <li key={i.id} className="org-row">
@@ -224,13 +238,13 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
 
       {can('role:manage') ? (
         <section className="org-section">
-          <h2>Custom roles</h2>
+          <h2>{tx('orgs.customRoles')}</h2>
           <ul className="org-list">
             {detail.roles.map((r) => (
               <li key={r.id} className="org-row">
                 <div className="org-row__main">
                   <strong>{r.name}</strong>
-                  <div className="org-muted">{r.permissions.join(', ') || 'No permissions'}</div>
+                  <div className="org-muted">{r.permissions.join(', ') || tx('orgs.noPermissions')}</div>
                 </div>
                 <DeleteRoleForm organizationId={org.id} name={r.name} />
               </li>
@@ -242,7 +256,7 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
 
       {can('organization:update') ? (
         <section className="org-section">
-          <h2>Details</h2>
+          <h2>{tx('orgs.details')}</h2>
           <EditOrganizationForm organizationId={org.id} name={org.name} slug={org.slug} logo={org.logo ?? ''} metadata={org.metadata ?? ''} />
         </section>
       ) : null}
@@ -250,8 +264,8 @@ export const OrganizationDetailScreen: React.FC<{ id: string }> = async ({ id })
       <section className="org-danger">
         <LeaveOrganizationForm organizationId={org.id} />
         {can('organization:delete') ? <DeleteOrganizationForm organizationId={org.id} /> : null}
-        {detail.myRole === 'owner' ? <p className="org-muted">The last owner cannot leave. Make another member an owner first, or delete the organization.</p> : null}
-        {isBuiltInRole(detail.myRole) ? null : <p className="org-muted">Your role is custom to this organization.</p>}
+        {detail.myRole === 'owner' ? <p className="org-muted">{tx('orgs.lastOwnerNote')}</p> : null}
+        {isBuiltInRole(detail.myRole) ? null : <p className="org-muted">{tx('orgs.customRoleNote')}</p>}
       </section>
     </AccountShell>
   )
@@ -264,13 +278,16 @@ export const AcceptInviteScreen: React.FC<{ token: string }> = async ({ token })
   const runtime = await orgRuntime()
   if (!runtime.settings.enabled) notFound()
   const preview = await previewInvite(runtime.deps, token)
+  const portalLocale = await currentPortalLocale()
+  const tx = portalTextFor(portalLocale)
+  const dateLocale = portalFormatLocale(portalLocale)
   if (!preview.ok) {
     return (
-      <AuthShell title="Invitation">
+      <AuthShell title={tx('orgs.inviteTitle')}>
         <OrganizationStyles />
         <p role="alert">{preview.message ?? REFUSAL_MESSAGES.invite_invalid}</p>
         <p>
-          <Link href="/account">Back to your account</Link>
+          <Link href="/account">{tx('orgs.backToAccount')}</Link>
         </p>
       </AuthShell>
     )
@@ -278,13 +295,11 @@ export const AcceptInviteScreen: React.FC<{ token: string }> = async ({ token })
   const invite = preview.value
   const mine = (runtime.actor?.email ?? '').trim().toLowerCase() === invite.email
   return (
-    <AuthShell title={`Join ${invite.organizationName}`}>
+    <AuthShell title={tx('orgs.joinTitle', { name: invite.organizationName })}>
       <OrganizationStyles />
       <div className="account-card">
         <h3>{invite.organizationName}</h3>
-        <p>
-          You are invited as <strong>{invite.role}</strong>. Sent to {invite.email}; expires {formatDate(invite.expiresAt)}.
-        </p>
+        <p>{tx('orgs.invitedAs', { role: invite.role, email: invite.email, date: formatDate(invite.expiresAt, dateLocale) })}</p>
         {!invite.usable ? <p role="alert">{REFUSAL_MESSAGES[invite.problem ?? 'invite_used']}</p> : null}
         {invite.usable && !mine ? <p role="alert">{REFUSAL_MESSAGES.wrong_account}</p> : null}
         {invite.usable && mine ? <InviteDecisionForm token={token} /> : null}

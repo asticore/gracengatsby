@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { sendChallengeEmailAction, twoFactorChallengeOptionsAction, type TwoFactorChallengeOptions } from '../twoFactorActions'
-import { usePortalText } from '@/features/multilingual/PortalTextProvider'
+import { usePortalText } from '@/features/accounts/components/PortalText'
 import './twoFactorExtras.css'
 
 /**

@@ -1,10 +1,10 @@
 import React from 'react'
 
-import { PortalTextProvider } from '@/features/multilingual/PortalTextProvider'
 import type { PortalStringKey } from '@/features/multilingual/portalStrings'
 
 import { accountTexts } from '../portalCopy'
 import { AccountNav } from './AccountNav'
+import { PortalTextProvider } from './PortalText'
 import { AccountStyles } from './styles'
 
 /**
@@ -57,7 +57,7 @@ export const AccountShell = async ({
     : LINKS
   const links = entries.map((entry) => ({ href: entry.href, label: tx(entry.key) }))
   return (
-    <PortalTextProvider dictionary={tx.dictionary}>
+    <PortalTextProvider strings={tx.dictionary}>
       <div className="page-shell">
         <AccountStyles />
         <h1>{title}</h1>
@@ -78,7 +78,7 @@ export const AuthShell: React.FC<{ title: string; intro?: string; children: Reac
 }) => {
   const tx = await accountTexts()
   return (
-    <PortalTextProvider dictionary={tx.dictionary}>
+    <PortalTextProvider strings={tx.dictionary}>
       <div className="page-shell">
         <AccountStyles />
         <h1>{title}</h1>

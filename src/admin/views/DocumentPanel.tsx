@@ -368,7 +368,7 @@ export const DocumentPanel: React.FC<{
               {info.canDelete && info.trashEnabled && !info.trashedAt && (
                 <ConfirmButton
                   busy={busy === 'trash'}
-                  confirmLabel={busy === 'trash' ? 'Moving…' : `Yes, move this ${info.label.toLowerCase()} to the trash`}
+                  confirmLabel={busy === 'trash' ? t('trash.moving') : t('trash.confirmMove', { thing: info.label.toLowerCase() })}
                   danger
                   disabled={anyBusy}
                   label={t('edit.moveToTrash')}
@@ -378,7 +378,7 @@ export const DocumentPanel: React.FC<{
               {info.canDelete && !info.trashEnabled && (
                 <ConfirmButton
                   busy={busy === 'delete'}
-                  confirmLabel={busy === 'delete' ? 'Deleting…' : `Yes, delete this ${info.label.toLowerCase()}`}
+                  confirmLabel={busy === 'delete' ? t('edit.deleting') : t('edit.confirmDelete', { thing: info.label.toLowerCase() })}
                   danger
                   disabled={anyBusy}
                   label={t('common.delete')}

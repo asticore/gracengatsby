@@ -67,20 +67,30 @@ export const orderForCustomer = async (
 }
 
 /** Money is stored in the smallest unit of the currency. */
-export const formatAmount = (amount?: number | null, currency?: string | null): string => {
+/**
+ * The Intl locale for a portal screen. English (or no portal language at all) keeps
+ * the Australian format the account has always used; any other language formats in its own locale.
+ */
+export const portalFormatLocale = (portalLocale: string | null | undefined): string =>
+  !portalLocale || portalLocale.toLowerCase().startsWith('en') ? 'en-AU' : portalLocale
+
+export const formatAmount = (amount?: number | null, currency?: string | null, locale: string = 'en-AU'): string => {
   if (typeof amount !== 'number') return '-'
   const code = currency || 'AUD'
   try {
-    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: code }).format(amount / 100)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(amount / 100)
   } catch {
     return `${(amount / 100).toFixed(2)} ${code}`
   }
 }
 
-export const formatDate = (value?: string | null): string => {
+export const formatDate = (value?: string | null, locale: string = 'en-AU'): string => {
   if (!value) return '-'
   const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? '-'
-    : date.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+  if (Number.isNaN(date.getTime())) return '-'
+  try {
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {
+    return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
 }

@@ -298,7 +298,7 @@ export async function ListView({
                     filters: effectiveState.filters.filter((_, i) => i !== idx),
                   })}`}
                   className="list-filter-chip-remove"
-                  aria-label="Remove filter"
+                  aria-label={ui.t('list.removeFilter')}
                 >
                   ×
                 </a>
@@ -357,7 +357,7 @@ export async function ListView({
                   <tr>
                     {showBulk && (
                       <th className="list-th es-check" scope="col">
-                        <input aria-label="Select all on this page" data-bulk-all type="checkbox" />
+                        <input aria-label={ui.t('list.selectAllPage')} data-bulk-all type="checkbox" />
                       </th>
                     )}
                     {visibleColumns.map((column) => (
@@ -396,7 +396,7 @@ export async function ListView({
                       {showBulk && (
                         <td className="list-td es-check">
                           <input
-                            aria-label={`Select ${String((doc as Record<string, unknown>)[useAsTitle ?? 'title'] ?? `#${doc.id}`)}`}
+                            aria-label={ui.t('list.selectRow', { title: String((doc as Record<string, unknown>)[useAsTitle ?? 'title'] ?? `#${doc.id}`) })}
                             data-bulk-label={String((doc as Record<string, unknown>)[useAsTitle ?? 'title'] ?? `#${doc.id}`)}
                             data-bulk-row
                             type="checkbox"

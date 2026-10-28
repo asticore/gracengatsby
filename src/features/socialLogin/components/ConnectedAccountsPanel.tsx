@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { usePortalText } from '@/features/multilingual/PortalTextProvider'
+import { usePortalText } from '@/features/accounts/components/PortalText'
 
 import { unlinkSocialAction } from '../actions'
 import type { ConnectionView } from '../connections'

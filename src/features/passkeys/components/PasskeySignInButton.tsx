@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 
-import { usePortalText } from '@/features/multilingual/PortalTextProvider'
+import { usePortalText } from '@/features/accounts/components/PortalText'
 
 import { signInWithPasskey } from '../client'
 

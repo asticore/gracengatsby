@@ -17,7 +17,7 @@ import {
 } from '../actions'
 import { IDLE, type ActionState } from '../types'
 import { Note, SubmitButton } from './FormBits'
-import { usePortalText } from '@/features/multilingual/PortalTextProvider'
+import { usePortalText } from './PortalText'
 import { PasskeySignInButton } from '@/features/passkeys/components/PasskeySignInButton'
 import { SecondFactorChoice, type SecondFactorMethod } from '@/features/security/components/SecondFactorChoice'
 

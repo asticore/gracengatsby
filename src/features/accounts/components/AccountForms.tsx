@@ -17,7 +17,7 @@ import {
 import type { AddressInput } from '../addresses'
 import { IDLE, type ActionState } from '../types'
 import { Note, SubmitButton } from './FormBits'
-import { usePortalText } from '@/features/multilingual/PortalTextProvider'
+import { usePortalText } from './PortalText'
 
 /**
  * The signed-in forms.

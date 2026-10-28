@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 
-import { usePortalText } from '@/features/multilingual/PortalTextProvider'
+import { usePortalText } from './PortalText'
 
 import { SignOutButton } from './AccountForms'
 

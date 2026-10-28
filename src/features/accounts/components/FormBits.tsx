@@ -4,7 +4,7 @@ import React from 'react'
 import { useFormStatus } from 'react-dom'
 
 import type { ActionState } from '../types'
-import { usePortalText } from '@/features/multilingual/PortalTextProvider'
+import { usePortalText } from './PortalText'
 
 /**
  * The two pieces every form on these screens shares.

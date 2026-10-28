@@ -5,14 +5,15 @@
  * `portal.*` keys), the same mechanism the admin uses. Every portal screen reads
  * them through this module:
  *
- *   - Server components call `loadPortalTexts(locale)` once, then `tx(key, vars)`.
- *   - Client components read the same dictionary through `PortalTextProvider`
- *     and `usePortalText()` (see `PortalTextProvider.tsx`).
+ *   - Server components call `loadPortalTexts(locale)` once, then `tx(key, vars)`,
+ *     or `portalTextFor(locale)` where a screen already has the locale.
+ *   - Client components read the same strings through `PortalTextProvider` and
+ *     `usePortalText()` (accounts/components/PortalText.tsx).
  *
  * English is always the fallback, so an untranslated key never shows a raw key.
  */
 
-import { loadStrings, translateWith, t, type UiStringVars } from '@/features/uiStrings'
+import { loadStrings, t, translateWith, type UiStringVars } from '@/features/uiStrings'
 import { portalKey, type PortalStringKey } from '@/features/uiStrings/portalAdapter'
 
 export type { PortalStringKey }
@@ -43,8 +44,15 @@ export async function loadPortalTexts(locale: string | null | undefined): Promis
 
 /**
  * Sync lookup against a dictionary already loaded with `loadStrings` (or
- * `loadPortalTexts`). Kept for callers that loaded the locale earlier.
+ * `loadPortalTexts`). `currentPortalLocale` loads the visitor's language, so
+ * screens that call it first can use this directly.
  */
 export function portalText(key: PortalStringKey, locale: string | null | undefined, vars?: UiStringVars): string {
   return t(portalKey(key), locale, vars)
 }
+
+/** `portalText` bound to one request's language, for screens that translate many strings. */
+export const portalTextFor =
+  (locale: string | null | undefined) =>
+  (key: PortalStringKey, vars?: UiStringVars): string =>
+    portalText(key, locale, vars)

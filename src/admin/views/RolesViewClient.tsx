@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useMemo } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import styles from '@/admin/admin.module.css'
 import {
   RESOURCES,
@@ -71,6 +72,7 @@ function tabStyle(active: boolean): React.CSSProperties {
  * Roles admin view client: list, select, create, edit matrix, save, delete.
  */
 export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], approvalEnabled = true }: RolesViewClientProps) {
+  const t = useAdminT()
   const [tab, setTab] = useState<RolesTab>('permissions')
 
   // UI state
@@ -123,7 +125,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
       })
 
       if (!res.ok) {
-        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to save role'))
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), t('roles.error.save')))
       } else {
         // REST answers { doc, message }
         const updated = unwrapDoc<RoleDoc>(await res.json().catch((): null => null))
@@ -134,7 +136,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
         }
       }
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Network error'
+      const errMsg = err instanceof Error ? err.message : t('roles.error.network')
       setErrorMsg(errMsg)
     } finally {
       setSavingId(null)
@@ -147,7 +149,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
   const handleCreate = useCallback(async () => {
     const validation = validateRoleName(createForm.name, Object.keys(BUILT_IN_ROLES))
     if (!validation.valid) {
-      setErrorMsg(validation.error || 'Invalid role name')
+      setErrorMsg(validation.error || t('roles.error.invalidName'))
       return
     }
 
@@ -168,7 +170,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
       })
 
       if (!res.ok) {
-        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to create role'))
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), t('roles.error.create')))
       } else {
         const newRole = unwrapDoc<RoleDoc>(await res.json().catch((): null => null))
         if (newRole) {
@@ -179,7 +181,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
         setCreateForm({ name: '', description: '' })
       }
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Network error'
+      const errMsg = err instanceof Error ? err.message : t('roles.error.network')
       setErrorMsg(errMsg)
     } finally {
       setSavingId(null)
@@ -210,7 +212,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
       })
 
       if (!res.ok) {
-        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to duplicate role'))
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), t('roles.error.duplicate')))
       } else {
         const newRole = unwrapDoc<RoleDoc>(await res.json().catch((): null => null))
         if (newRole) {
@@ -219,7 +221,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
         }
       }
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Network error'
+      const errMsg = err instanceof Error ? err.message : t('roles.error.network')
       setErrorMsg(errMsg)
     } finally {
       setSavingId(null)
@@ -245,14 +247,14 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
       })
 
       if (!res.ok) {
-        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), 'Failed to delete role'))
+        setErrorMsg(errorMessageFrom(await res.json().catch((): null => null), t('roles.error.delete')))
       } else {
         setRoles((prev) => prev.filter((r) => r.id !== selectedRole.id))
         setSelectedRoleId(null)
         setDeletingId(null)
       }
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Network error'
+      const errMsg = err instanceof Error ? err.message : t('roles.error.network')
       setErrorMsg(errMsg)
     } finally {
       setSavingId(null)
@@ -262,16 +264,16 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Roles</h1>
-        <p>Manage role permissions with a matrix grid, and set up approval workflows.</p>
+        <h1>{t('roles.title')}</h1>
+        <p>{t('roles.description')}</p>
       </div>
 
-      <div className="rw-tabs" role="tablist" aria-label="Roles sections" style={TAB_BAR_STYLE}>
+      <div className="rw-tabs" role="tablist" aria-label={t('roles.tabsAria')} style={TAB_BAR_STYLE}>
         <button type="button" role="tab" id="roles-tab-permissions" aria-selected={tab === 'permissions'} aria-controls="roles-panel-permissions" className="rw-tab" style={tabStyle(tab === 'permissions')} onClick={() => setTab('permissions')}>
-          Permissions
+          {t('roles.tabPermissions')}
         </button>
         <button type="button" role="tab" id="roles-tab-workflows" aria-selected={tab === 'workflows'} aria-controls="roles-panel-workflows" className="rw-tab" style={tabStyle(tab === 'workflows')} onClick={() => setTab('workflows')}>
-          Approval workflows
+          {t('roles.tabWorkflows')}
         </button>
       </div>
 
@@ -290,13 +292,13 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
         {/* Left: role list */}
         <div className={styles.rolesList}>
           <div className={styles.rolesHeader}>
-            <h2>Roles</h2>
+            <h2>{t('roles.title')}</h2>
             {canEdit && (
               <button
                 onClick={() => setShowCreateDialog(true)}
                 className={styles.btnPrimary}
               >
-                + Create Role
+                {t('roles.createButton')}
               </button>
             )}
           </div>
@@ -305,16 +307,16 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
           {showCreateDialog && (
             <div className={styles.dialog}>
               <div className={styles.dialogContent}>
-                <h3>Create Custom Role</h3>
+                <h3>{t('roles.createHeading')}</h3>
                 <input
                   type="text"
-                  placeholder="Role name"
+                  placeholder={t('roles.namePlaceholder')}
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                   className={styles.input}
                 />
                 <textarea
-                  placeholder="Description (optional)"
+                  placeholder={t('roles.descriptionPlaceholder')}
                   value={createForm.description}
                   onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
                   className={styles.input}
@@ -329,14 +331,14 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
                     }}
                     className={styles.btnSecondary}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleCreate}
                     disabled={savingId === -1}
                     className={styles.btnPrimary}
                   >
-                    {savingId === -1 ? 'Creating...' : 'Create'}
+                    {savingId === -1 ? t('roles.creating') : t('edit.create')}
                   </button>
                 </div>
               </div>
@@ -351,7 +353,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
               className={`${styles.roleItem} ${selectedRoleId === role.id ? styles.roleItemActive : ''}`}
             >
               <div className={styles.roleItemName}>{role.name}</div>
-              {role.builtIn && <span className={styles.badge}>Built-in</span>}
+              {role.builtIn && <span className={styles.badge}>{t('roles.builtIn')}</span>}
             </div>
           ))}
         </div>
@@ -364,7 +366,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
                 <div>
                   <h2>{selectedRole.name}</h2>
                   {selectedRole.description && <p className={styles.desc}>{selectedRole.description}</p>}
-                  {selectedRole.builtIn && <p className={styles.readOnly}>Read-only (built-in role)</p>}
+                  {selectedRole.builtIn && <p className={styles.readOnly}>{t('roles.readOnlyBuiltIn')}</p>}
                 </div>
                 {!selectedRole.builtIn && canEdit && (
                   <div className={styles.matrixActions}>
@@ -373,21 +375,21 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
                       disabled={savingId !== null}
                       className={styles.btnSecondary}
                     >
-                      Duplicate
+                      {t('common.duplicate')}
                     </button>
                     <button
                       onClick={handleSaveMatrix}
                       disabled={savingId !== null || selectedRole.builtIn}
                       className={styles.btnPrimary}
                     >
-                      {savingId === selectedRole.id ? 'Saving...' : 'Save'}
+                      {savingId === selectedRole.id ? t('common.saving') : t('common.save')}
                     </button>
                     <button
                       onClick={handleDelete}
                       disabled={savingId !== null || selectedRole.builtIn}
                       className={styles.btnDanger}
                     >
-                      {deletingId === selectedRole.id ? 'Confirm delete?' : 'Delete'}
+                      {deletingId === selectedRole.id ? t('roles.confirmDelete') : t('common.delete')}
                     </button>
                   </div>
                 )}
@@ -406,7 +408,7 @@ export function RolesViewClient({ roles: initialRoles, canEdit, workflows = [], 
             </div>
           ) : (
             <div className={styles.emptyState}>
-              <p>Select a role to edit its permissions.</p>
+              <p>{t('roles.selectRole')}</p>
             </div>
           )}
         </div>

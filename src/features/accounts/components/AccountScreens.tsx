@@ -7,9 +7,9 @@ import { addressForCustomer, addressesForCustomer } from '../addresses'
 import { bookingsForCustomer } from '../bookings'
 import { ORDERS_SLUG } from '../types'
 import { requireCustomer } from '../guards'
-import { formatAmount, formatDate, orderForCustomer, ordersForCustomer } from '../orders'
+import { formatAmount, formatDate, orderForCustomer, ordersForCustomer, portalFormatLocale } from '../orders'
 import { readPreferences } from '../preferences'
-import { ORDER_STATUS_LABELS, isOrderStatus } from '@/features/ecommerce/lib/orderStatus'
+import { isOrderStatus } from '@/features/ecommerce/lib/orderStatus'
 import { ReorderButton } from './ReorderButton'
 import { AccountShell } from './AccountShell'
 import { TwoFactorPanel } from '@/features/security/components/TwoFactorPanel'
@@ -36,6 +36,8 @@ import { AddressForm, AddressRowActions, EmailForm, LanguageForm, NameForm, Pass
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 import { isLocaleRoutable } from '@/features/multilingual/routing'
 import { localeNativeName } from '@/features/multilingual/locales'
+import { portalText, portalTextFor, type PortalStringKey } from '@/features/multilingual/portalStrings'
+import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 
 /**
  * The signed-in screens.
@@ -47,7 +49,8 @@ import { localeNativeName } from '@/features/multilingual/locales'
  * that could have been fetched if it did not.
  */
 
-const statusLabel = (status?: string | null): string => (status && isOrderStatus(status) ? ORDER_STATUS_LABELS[status] : (status ?? '-'))
+const statusLabel = (status: string | null | undefined, locale: string | null): string =>
+  status && isOrderStatus(status) ? portalText(`orderStatus.${status}` as PortalStringKey, locale) : (status ?? '-')
 
 const displayName = (name: string, email: string): string => name || email
 
@@ -113,30 +116,33 @@ export const AccountHomeScreen: React.FC = async () => {
 export const OrdersScreen: React.FC = async () => {
   const { engine, user } = await requireCustomer('/account/orders')
   const orders = await ordersForCustomer(engine, user)
+  const portalLocale = await currentPortalLocale()
+  const tx = portalTextFor(portalLocale)
+  const dateLocale = portalFormatLocale(portalLocale)
 
   return (
-    <AccountShell title="Your orders" current="/account/orders">
+    <AccountShell title={tx('orders.title')} current="/account/orders">
       {orders.length === 0 ? (
-        <p className="account-empty">You have not placed an order yet.</p>
+        <p className="account-empty">{tx('orders.empty')}</p>
       ) : (
         <table className="account-table eg-table">
           <thead>
             <tr>
-              <th>Order</th>
-              <th>Placed</th>
-              <th>Status</th>
-              <th>Total</th>
+              <th>{tx('orders.colOrder')}</th>
+              <th>{tx('orders.colPlaced')}</th>
+              <th>{tx('orders.colStatus')}</th>
+              <th>{tx('orders.colTotal')}</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((order) => (
               <tr key={order.id}>
                 <td>
-                  <Link href={`/account/orders/${order.id}`}>#{order.id}</Link>
+                  <Link href={`/account/orders/${order.id}`}>{tx('orders.numberLink', { id: order.id })}</Link>
                 </td>
-                <td>{formatDate(order.createdAt)}</td>
-                <td>{statusLabel(order.status)}</td>
-                <td>{formatAmount(order.amount, order.currency)}</td>
+                <td>{formatDate(order.createdAt, dateLocale)}</td>
+                <td>{statusLabel(order.status, portalLocale)}</td>
+                <td>{formatAmount(order.amount, order.currency, dateLocale)}</td>
               </tr>
             ))}
           </tbody>
@@ -174,21 +180,28 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
     pricesIncludeTax?: boolean
   } | null
   const notes = (full?.notes ?? []).filter((n) => n.type === 'customer')
+  const portalLocale = await currentPortalLocale()
+  const tx = portalTextFor(portalLocale)
+  const dateLocale = portalFormatLocale(portalLocale)
+  const money = (value?: number | null) => formatAmount(value, order.currency, dateLocale)
   const reorder = lines
     .map((l) => ({ product: typeof l.product === 'object' && l.product ? Number((l.product as { id: number }).id) : Number(l.product), quantity: l.quantity }))
     .filter((l) => l.product > 0)
 
   return (
-    <AccountShell title={`Order #${order.id}`} current="/account/orders">
+    <AccountShell title={tx('orders.detailTitle', { id: order.id })} current="/account/orders">
       <p>
-        Placed {formatDate(order.createdAt)} · {statusLabel(order.status ?? 'processing')} ·{' '}
-        {formatAmount(order.amount, order.currency)}
+        {tx('orders.placedSummary', {
+          date: formatDate(order.createdAt, dateLocale),
+          status: statusLabel(order.status ?? 'processing', portalLocale),
+          total: money(order.amount),
+        })}
       </p>
 
       <section className="account-section">
-        <h2>Items</h2>
+        <h2>{tx('orders.itemsHeading')}</h2>
         {lines.length === 0 ? (
-          <p className="account-empty">No items were recorded on this order.</p>
+          <p className="account-empty">{tx('orders.noItems')}</p>
         ) : (
           <table className="account-table eg-table">
             <tbody>
@@ -196,12 +209,12 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
                 const product = line.product
                 const title =
                   product && typeof product === 'object'
-                    ? ((product as Product).title ?? 'Item')
-                    : 'Item'
+                    ? ((product as Product).title ?? tx('orders.itemFallback'))
+                    : tx('orders.itemFallback')
                 return (
                   <tr key={line.id ?? index}>
                     <td>{title}</td>
-                    <td>× {line.quantity}</td>
+                    <td>{tx('orders.quantity', { quantity: line.quantity })}</td>
                   </tr>
                 )
               })}
@@ -212,7 +225,7 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
 
       {shipping?.addressLine1 ? (
         <section className="account-section">
-          <h2>Shipped to</h2>
+          <h2>{tx('orders.shippedTo')}</h2>
           <p>
             {[shipping.firstName, shipping.lastName].filter(Boolean).join(' ')}
             <br />
@@ -233,20 +246,20 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
 
       {full && typeof full.subtotal === 'number' ? (
         <section className="account-section">
-          <h2>Totals</h2>
+          <h2>{tx('orders.totalsHeading')}</h2>
           <p>
-            Subtotal {formatAmount(full.subtotal, order.currency)}
-            {full.discountTotal ? <> · Discount -{formatAmount(full.discountTotal, order.currency)}</> : null}
-            {full.shippingTotal ? <> · Shipping {formatAmount(full.shippingTotal, order.currency)}</> : null}
-            {full.taxTotal ? <> · GST {full.pricesIncludeTax ? 'included' : ''} {formatAmount(full.taxTotal, order.currency)}</> : null}
-            {' '}· <strong>Total {formatAmount(order.amount, order.currency)}</strong>
+            {tx('orders.subtotal', { amount: money(full.subtotal) })}
+            {full.discountTotal ? <> · {tx('orders.discount', { amount: money(full.discountTotal) })}</> : null}
+            {full.shippingTotal ? <> · {tx('orders.shipping', { amount: money(full.shippingTotal) })}</> : null}
+            {full.taxTotal ? <> · {tx(full.pricesIncludeTax ? 'orders.gstIncluded' : 'orders.gst', { amount: money(full.taxTotal) })}</> : null}
+            {' '}· <strong>{tx('orders.total', { amount: money(order.amount) })}</strong>
           </p>
         </section>
       ) : null}
 
       {notes.length > 0 ? (
         <section className="account-section">
-          <h2>Notes from the shop</h2>
+          <h2>{tx('orders.notesHeading')}</h2>
           {notes.map((n, i) => (
             <p key={i}>
               {n.text}
@@ -259,7 +272,7 @@ export const OrderScreen: React.FC<{ id: string }> = async ({ id }) => {
 
       <div className="account-link-row">
         <ReorderButton items={reorder} />
-        <Link href="/account/orders">Back to orders</Link>
+        <Link href="/account/orders">{tx('orders.backToOrders')}</Link>
       </div>
     </AccountShell>
   )
@@ -339,11 +352,14 @@ export const AddressEditScreen: React.FC<{ id: string }> = async ({ id }) => {
 export const BookingsScreen: React.FC = async () => {
   const { engine, user } = await requireCustomer('/account/bookings')
   const bookings = await bookingsForCustomer(engine, user)
+  const portalLocale = await currentPortalLocale()
+  const tx = portalTextFor(portalLocale)
+  const dateLocale = portalFormatLocale(portalLocale)
 
   return (
-    <AccountShell title="Event bookings" current="/account/bookings">
+    <AccountShell title={tx('bookings.title')} current="/account/bookings">
       {bookings.length === 0 ? (
-        <p className="account-empty">You have not booked onto an event.</p>
+        <p className="account-empty">{tx('bookings.empty')}</p>
       ) : (
         bookings.map((booking) => (
           <article className="account-card" key={booking.id}>
@@ -354,10 +370,8 @@ export const BookingsScreen: React.FC = async () => {
                 booking.eventTitle
               )}
             </h3>
-            <p>{formatDate(booking.eventDate)}</p>
-            <p>
-              {booking.guestCount ?? 1} guest(s) · booked {formatDate(booking.createdAt)}
-            </p>
+            <p>{formatDate(booking.eventDate, dateLocale)}</p>
+            <p>{tx('bookings.guests', { count: booking.guestCount ?? 1, date: formatDate(booking.createdAt, dateLocale) })}</p>
           </article>
         ))
       )}

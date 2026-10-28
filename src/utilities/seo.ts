@@ -5,6 +5,7 @@ import { contentTemplatesFor, type ContentType } from '@/features/seo/templates'
 import { getSeoContext } from '@/features/seo/settings'
 import { currentPageLocale } from '@/features/seo/pageLocale'
 import { localeSeoFields, languagesMap } from '@/features/seo/localeSeo'
+import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
 import { getEngine } from '@/lib/engine'
 import type { Media, SiteSetting } from '@/engage-types'
 
@@ -155,6 +156,7 @@ export const buildMetadata = async (opts: {
         locale: pageLocale.locale,
         settings: pageLocale.settings,
         explicitCanonical: Boolean(opts.seo?.canonicalUrl),
+        available: await availableLocalesForPath(opts.path),
       })
     : null
 

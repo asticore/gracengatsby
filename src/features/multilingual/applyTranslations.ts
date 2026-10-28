@@ -1,9 +1,9 @@
 import { cache } from 'react'
-import { headers } from 'next/headers'
 
 import { getEngine } from '@/lib/engine'
 
-import { LOCALE_HEADER, isLocaleRoutable, requestLocale } from './routing'
+import { isLocaleRoutable } from './routing'
+import { requestContentLocale } from './portalLocaleServer'
 import { nonDefaultLocales, publishIndex, publishableLocalesForDocument } from './availability'
 import { sourceIdFor } from './translatableFields'
 import { findPageByPath, getHomepage } from '@/utilities/pagePaths'
@@ -31,7 +31,7 @@ const loadLocaleRows = cache(async (locale: string): Promise<TranslationRow[]> =
 /** The locale the current request is served in, or null when multilingual is off. */
 export async function currentRequestLocale(): Promise<string | null> {
   const settings = await readMultilingualSettingsFromD1()
-  return requestLocale((await headers()).get(LOCALE_HEADER), settings)
+  return requestContentLocale(settings)
 }
 
 async function translatableContext(locale: string | null | undefined): Promise<{ locale: string; settings: MultilingualSettings } | null> {

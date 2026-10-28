@@ -604,6 +604,18 @@ const it: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta titolo',
   'label.field.metaDescription': 'Meta descrizione',
+  // --- builder translate ---
+  'builder.translate.banner': 'Traduzione in {language} — la struttura è bloccata',
+  'builder.translate.exit': 'Esci',
+  'builder.translate.approvePage': 'Approva pagina',
+  'builder.translate.requestReview': 'Richiedi revisione',
+  'builder.translate.machinePage': 'Traduci pagina con macchina',
+  'builder.translate.copySource': 'Copia l\'originale nei campi vuoti',
+  'builder.translate.usage': 'Uso della traduzione automatica questo mese: {used} di {limit} caratteri',
+  'builder.translate.untranslated': 'Non tradotto',
+  'builder.translate.inPanel': 'Traduci questo testo nel pannello',
+  'builder.translate.locked': 'La struttura è bloccata durante la traduzione. Esci dalla modalità traduzione per modificare il layout.',
+  'builder.translate.result': '{updated} aggiornati, {skipped} saltati',
   // --- portal leftovers ---
   'portal.pw.length': 'Scegli una password di almeno {min} caratteri.',
   'portal.pw.mixedCase': 'Includi lettere maiuscole e minuscole.',

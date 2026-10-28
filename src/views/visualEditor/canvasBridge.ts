@@ -2,6 +2,7 @@ import type { BlockContext } from '@/lib/blockContext'
 import type { SectionNode } from '@/lib/sectionTree'
 
 import type { NodePath } from './treeOps'
+import type { CanvasBlockMark } from './translateCanvas'
 
 /**
  * The canvas iframe (src/app/(frontend)/visual-editor-canvas) renders the
@@ -38,6 +39,8 @@ export type ParentToFrameMessage =
    *  native dragover/drop listeners placed inside the iframe's own document don't reliably fire
    *  for a drag that started in the parent document (a known cross-iframe HTML5 DnD limitation). */
   | { source: typeof SOURCE; type: 'dragHover'; key: string | null }
+  /** Translate mode: the canvas shows the page in `marks`' language; `active` false clears it. Keyed by block path (see translateCanvas.ts). */
+  | { source: typeof SOURCE; type: 'translate'; active: boolean; marks: Record<string, CanvasBlockMark>; untranslatedLabel: string }
 
 export type FrameToParentMessage =
   | { source: typeof SOURCE; type: 'ready' }
@@ -57,6 +60,8 @@ export type FrameToParentMessage =
   | { source: typeof SOURCE; type: 'editDone'; path: NodePath; field: string; itemIndex?: number; value: string }
   /** Quick insert palette ("/"): insert `blockType` (a library slug) at the slot, same path as a library drop. */
   | { source: typeof SOURCE; type: 'quickInsert'; blockType: string; containerPath: NodePath; at: number }
+  /** Translate mode: a double-click on text that is not translatable here (rich text, a divider): point at the panel. */
+  | { source: typeof SOURCE; type: 'translateHint'; path: NodePath }
 
 /** True for any message this bridge sent, from either side - narrow further on `.type` after this. */
 export const isBridgeMessage = (data: unknown): data is FrameToParentMessage | ParentToFrameMessage =>

@@ -604,6 +604,18 @@ const nl: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Metatitel',
   'label.field.metaDescription': 'Metabeschrijving',
+  // --- builder translate ---
+  'builder.translate.banner': 'Vertalen naar {language} — structuur is vergrendeld',
+  'builder.translate.exit': 'Afsluiten',
+  'builder.translate.approvePage': 'Pagina goedkeuren',
+  'builder.translate.requestReview': 'Review aanvragen',
+  'builder.translate.machinePage': 'Pagina machinaal vertalen',
+  'builder.translate.copySource': 'Bron naar lege velden kopiëren',
+  'builder.translate.usage': 'Machinegebruik deze maand: {used} van {limit} tekens',
+  'builder.translate.untranslated': 'Niet vertaald',
+  'builder.translate.inPanel': 'Vertaal deze tekst in het paneel',
+  'builder.translate.locked': 'De structuur is vergrendeld tijdens het vertalen. Sluit de vertaalmodus af om de lay-out te wijzigen.',
+  'builder.translate.result': '{updated} bijgewerkt, {skipped} overgeslagen',
   // --- portal leftovers ---
   'portal.pw.length': 'Kies een wachtwoord van minstens {min} tekens.',
   'portal.pw.mixedCase': 'Gebruik hoofdletters én kleine letters.',

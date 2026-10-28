@@ -604,6 +604,18 @@ const hi: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'मेटा शीर्षक',
   'label.field.metaDescription': 'मेटा विवरण',
+  // --- builder translate ---
+  'builder.translate.banner': '{language} में अनुवाद — संरचना लॉक है',
+  'builder.translate.exit': 'बाहर निकलें',
+  'builder.translate.approvePage': 'पृष्ठ स्वीकृत करें',
+  'builder.translate.requestReview': 'समीक्षा का अनुरोध करें',
+  'builder.translate.machinePage': 'पृष्ठ का मशीन अनुवाद करें',
+  'builder.translate.copySource': 'स्रोत को खाली जगह में कॉपी करें',
+  'builder.translate.usage': 'इस माह मशीन उपयोग: {limit} में से {used} अक्षर',
+  'builder.translate.untranslated': 'अनूदित नहीं',
+  'builder.translate.inPanel': 'इस पाठ को पैनल में अनुवाद करें',
+  'builder.translate.locked': 'अनुवाद के दौरान संरचना लॉक रहती है। लेआउट बदलने के लिए अनुवाद मोड से बाहर निकलें।',
+  'builder.translate.result': '{updated} अपडेट, {skipped} छोड़े गए',
   // --- portal leftovers ---
   'portal.pw.length': 'कम से कम {min} अक्षरों का पासवर्ड चुनें।',
   'portal.pw.mixedCase': 'बड़े और छोटे दोनों अक्षर शामिल करें।',

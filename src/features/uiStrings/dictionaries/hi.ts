@@ -1443,6 +1443,27 @@ const hi: UiDictionary = {
   'label.field.blocks': "ब्लॉक",
   'label.field.layout': "लेआउट",
   'label.field.sourceUrl': "स्रोत URL",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "आकार",
+  've.ie.blocks': "ब्लॉक",
+  've.ie.copyPageJson': "पेज JSON कॉपी करें",
+  've.ie.downloadJson': ".json डाउनलोड करें",
+  've.ie.downloadHtml': "HTML डाउनलोड करें",
+  've.ie.jsonFile': "JSON फ़ाइल",
+  've.ie.pasteJson': "या JSON चिपकाएँ",
+  've.ie.validate': "सत्यापित करें",
+  've.ie.kind': "प्रकार",
+  've.ie.schemaVersion': "स्कीमा संस्करण",
+  've.ie.sections': "सेक्शन",
+  've.ie.blocksNested': "ब्लॉक (नेस्टेड सहित)",
+  've.ie.howToImport': "आयात कैसे करें",
+  've.ie.replacePage': "पेज बदलें",
+  've.ie.import': "आयात करें",
+  've.ie.freshIds': "आयात किए गए ब्लॉक को नई आईडी मिलती है। पूर्ववत करने से आयात उलट जाता है।",
+  've.ie.importExport': "आयात / निर्यात",
+  've.ie.close': "बंद करें",
+  've.ie.export': "निर्यात",
+  've.ie.exportHint': "संपादक-विशिष्ट आईडी हटाकर पूरा पेज एक engage टेम्पलेट फ़ाइल के रूप में। इसे इस या किसी अन्य पेज पर आयात टैब से लोड करें। कॉपी टेक्स्ट को क्लिपबोर्ड पर रखता है; डाउनलोड .json फ़ाइल सहेजता है।",
 }
 
 export default hi

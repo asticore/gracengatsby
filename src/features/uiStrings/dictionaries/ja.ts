@@ -1443,6 +1443,27 @@ const ja: UiDictionary = {
   'label.field.blocks': "ブロック",
   'label.field.layout': "レイアウト",
   'label.field.sourceUrl': "ソースURL",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "サイズ",
+  've.ie.blocks': "ブロック",
+  've.ie.copyPageJson': "ページのJSONをコピー",
+  've.ie.downloadJson': ".json をダウンロード",
+  've.ie.downloadHtml': "HTML をダウンロード",
+  've.ie.jsonFile': "JSON ファイル",
+  've.ie.pasteJson': "またはJSONを貼り付け",
+  've.ie.validate': "検証",
+  've.ie.kind': "種類",
+  've.ie.schemaVersion': "スキーマのバージョン",
+  've.ie.sections': "セクション",
+  've.ie.blocksNested': "ブロック（ネストを含む）",
+  've.ie.howToImport': "インポートの方法",
+  've.ie.replacePage': "ページを置き換え",
+  've.ie.import': "インポート",
+  've.ie.freshIds': "インポートしたブロックには新しいIDが付きます。元に戻すとインポートを取り消します。",
+  've.ie.importExport': "インポート / エクスポート",
+  've.ie.close': "閉じる",
+  've.ie.export': "エクスポート",
+  've.ie.exportHint': "ページ全体を、エディター専用のIDを除いたEngageテンプレートファイルとして出力します。このページまたは別のページに、インポートタブから読み込めます。コピーはテキストをクリップボードに、ダウンロードは .json ファイルを保存します。",
 }
 
 export default ja

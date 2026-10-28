@@ -1443,6 +1443,27 @@ const nl: UiDictionary = {
   'label.field.blocks': "Blokken",
   'label.field.layout': "Lay-out",
   'label.field.sourceUrl': "Bron-URL",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "Grootte",
+  've.ie.blocks': "Blokken",
+  've.ie.copyPageJson': "JSON van de pagina kopiëren",
+  've.ie.downloadJson': ".json downloaden",
+  've.ie.downloadHtml': "HTML downloaden",
+  've.ie.jsonFile': "JSON-bestand",
+  've.ie.pasteJson': "Of plak de JSON",
+  've.ie.validate': "Valideren",
+  've.ie.kind': "Soort",
+  've.ie.schemaVersion': "Schemaversie",
+  've.ie.sections': "Secties",
+  've.ie.blocksNested': "Blokken (incl. geneste)",
+  've.ie.howToImport': "Zo importeer je",
+  've.ie.replacePage': "Pagina vervangen",
+  've.ie.import': "Importeren",
+  've.ie.freshIds': "Geïmporteerde blokken krijgen nieuwe ids. Ongedaan maken draait een import terug.",
+  've.ie.importExport': "Importeren / Exporteren",
+  've.ie.close': "Sluiten",
+  've.ie.export': "Exporteren",
+  've.ie.exportHint': "De hele pagina als één engage-sjabloonbestand, zonder editor-ids. Laad het op deze of een andere pagina via het tabblad Importeren. Kopiëren zet de tekst op het klembord; Downloaden slaat een .json-bestand op.",
 }
 
 export default nl

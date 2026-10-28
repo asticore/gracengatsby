@@ -5,6 +5,7 @@ import { getSeoContext, mediaUrl, absoluteUrl, type DocumentSeo } from './settin
 import { articleFacts, authorNameOf, eventExtraFor, loadFaqItems } from './pageSchemaData'
 import { currentPageLocale } from './pageLocale'
 import { breadcrumbTrail, type TrailItem } from './schemaNodes'
+import { localisedHref } from '@/features/multilingual/detect'
 import type { Media } from '@/engage-types'
 
 /**
@@ -67,8 +68,14 @@ export const PageJsonLd = async ({
   const title = doc.seo?.metaTitle || doc.title || ''
   if (!title) return null
 
-  // Build absolute URL for the page
-  const url = context.baseUrl + (path.startsWith('/') ? path : `/${path}`)
+  // Locale: a non-default language gets its own URL (/fr/about) in the schema, so the node
+  // describes the page the reader is on. Off, or the default language, the path is unchanged.
+  const page = await currentPageLocale()
+  const sitePath = path.startsWith('/') ? path : `/${path}`
+  const localePath = page ? localisedHref(sitePath, page.locale, page.settings) : sitePath
+  // The prefix alone (e.g. '/fr'), recovered from the localised path.
+  const localePrefix = localePath === sitePath ? '' : sitePath === '/' ? localePath : localePath.slice(0, localePath.length - sitePath.length)
+  const url = context.baseUrl + localePath
 
   // Derive image: prefer social image, fall back to featured image, convert to absolute URL
   let imageUrl: string | undefined
@@ -84,7 +91,7 @@ export const PageJsonLd = async ({
 
   const organizerName = context.settings?.schema?.organisationName?.trim() || context.siteName
   const record = doc as Record<string, unknown>
-  const article = articleFacts(record, (await currentPageLocale())?.locale)
+  const article = articleFacts(record, page?.locale)
   const faqs = await loadFaqItems(record)
   const eventFields = collection === 'events' ? eventExtraFor(record, url, organizerName) : {}
 
@@ -115,6 +122,7 @@ export const PageJsonLd = async ({
       path,
       title: doc.title || title,
       pageTrail: trail,
+      localePrefix,
     }),
     extra: { ...eventFields, ...extra },
   })

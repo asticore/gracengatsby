@@ -20,6 +20,7 @@ import { columnPercentFor, resizeAdjacent } from './columnOps'
 import { pathKey, type NodePath } from './treeOps'
 import { CanvasInlineEditor, type InlineEditorProps } from './CanvasInlineEditor'
 import { inlineCandidate } from './inlineEdit'
+import type { CanvasBlockMark } from './translateCanvas'
 
 export type CanvasHandlers = {
   /** Double-click on editable text: start editing it in place (itemIndex for list items). */
@@ -34,6 +35,8 @@ export type CanvasHandlers = {
   onDelete: (path: NodePath) => void
   onDuplicate: (path: NodePath) => void
   onMove: (path: NodePath, direction: -1 | 1) => void
+  /** Translate mode: the language's mark per block (see translateCanvas.ts) and the 'Untranslated' badge text. Drag is off while set. */
+  translate?: { marks: Record<string, CanvasBlockMark>; untranslatedLabel: string }
   /** Column toolbar / empty-column actions (add, duplicate, delete, move, inner section). */
   onColumnOp?: (path: NodePath, op: ColumnOp) => void
   /** Double-click rename of a section tab / accordion panel (writes column.label, same as the Navigator). '' clears it. */
@@ -118,13 +121,15 @@ const CanvasNode: React.FC<{
   const design = asBlockStyle(node.design)
   const lock = handlers.locks?.[key]
   const blocked = Boolean(lock?.blocked)
+  // In translate mode the structure is locked, so nothing can be dragged.
+  const translateMark = handlers.translate?.marks[key]
 
   // The block itself is not moved while dragging (a DragOverlay ghost follows the pointer, see
   // CanvasFrame.tsx), so cross-container moves never fight a sortable list's transforms.
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `node:${key}`,
     data: { path, label: `${def?.icon ?? ''} ${def?.label || node.blockType}`.trim() },
-    disabled: blocked,
+    disabled: blocked || Boolean(handlers.translate),
   })
 
   const wrapperStyle: React.CSSProperties = {
@@ -144,6 +149,14 @@ const CanvasNode: React.FC<{
       ref={setNodeRef}
       id={scopeId}
       data-ve-node={JSON.stringify(path)}
+      {...(handlers.translate
+        ? {
+            'data-ve-tr': translateMark?.status ?? 'none',
+            'data-ve-tr-label': handlers.translate.untranslatedLabel,
+            'data-ve-tr-hint': translateMark ? undefined : def?.label ?? node.blockType,
+            title: translateMark?.source ? `Source: ${translateMark.source}` : undefined,
+          }
+        : {})}
       className={`ve-node ${isSelected ? 've-node--selected' : ''} ${lock ? 've-node--locked' : ''} ${hasMinHeight ? 've-node--minh' : ''} ${blockFxClasses(design)} ve-node--depth-${Math.min(depth, 3)} ${depth === 0 && index === 0 ? 've-node--first' : ''}`}
       style={wrapperStyle}
       onClick={(event) => {
@@ -284,7 +297,8 @@ const CanvasNode: React.FC<{
               // List types: the clicked <li> picks the item; everything else edits its one text.
               const li = (e.target as HTMLElement | null)?.closest?.('li')
               const itemIndex = li && li.parentElement ? Array.from(li.parentElement.children).filter((c) => c.tagName === 'LI').indexOf(li) : 0
-              if (!inlineCandidate(node, Math.max(itemIndex, 0))) return
+              // In translate mode every double-click goes to the frame, which decides (and says why when it cannot edit).
+              if (!handlers.translate && !inlineCandidate(node, Math.max(itemIndex, 0))) return
               e.preventDefault()
               handlers.onEditText?.(path, Math.max(itemIndex, 0))
             }}

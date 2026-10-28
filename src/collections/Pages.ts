@@ -1,5 +1,6 @@
 import { noAdsField } from '@/features/ads/fields'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
+import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { pageAudioField } from '@/features/pageAudio/fields'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
@@ -173,7 +174,7 @@ export const Pages: CollectionConfig = {
         return data
       },
     ],
-    afterChange: [pageSpeedAfterChange('pages'), indexNowAfterChange('pages'), machineAutoDraftAfterChange('pages')],
+    afterChange: [pageSpeedAfterChange('pages'), indexNowAfterChange('pages'), machineAutoDraftAfterChange('pages'), outdatedAfterChange('pages')],
     afterDelete: [indexNowAfterDelete('pages')],
     beforeChange: [
       authorshipBeforeChange,

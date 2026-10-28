@@ -1,3 +1,4 @@
+import { localizeForRequest } from '@/features/multilingual/requestLinkLocale'
 /**
  * From-scratch replacement for `the vendor package`'s
  * `RichText` component - the READ-SIDE renderer that turns stored Lexical
@@ -113,6 +114,7 @@ import * as React from 'react'
  * its own `dist/nodeTypes.d.ts`. Narrowing per-converter below reads the
  * specific fields each node type is documented (above) to carry.
  */
+
 export type LexicalNode = { type: string } & Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- see doc comment above
 
 export interface SerializedLexicalDoc {
@@ -280,7 +282,7 @@ function convertLink({ node, convertChildren }: ConverterArgs): ReactNode {
   const children = convertChildren(node.children, node)
   const rel = node.fields?.newTab ? 'noopener noreferrer' : undefined
   const target = node.fields?.newTab ? '_blank' : undefined
-  let href = node.fields?.url ?? ''
+  let href = localizeForRequest(node.fields?.url ?? '')
   if (node.fields?.linkType === 'internal') {
     console.error('RichText: Link converter: found internal link, but internalDocToHref is not provided')
     href = '#'

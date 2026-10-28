@@ -1303,6 +1303,11 @@ const de: UiDictionary = {
   "store.home": "Startseite",
   "store.blog": "Blog",
   "store.shop": "Shop",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "Wählen Sie die Property und die Websites, die die Dashboards auslesen. Die Auswahl einer Analytics-Property füllt die Mess-ID aus, und die Auswahl eines Tag-Manager-Containers füllt die Container-ID auf der Seite Integrationen aus, aber nur, wenn dieses Feld leer ist.",
+  'integrations.google.gtmHelp': "Der Container, dessen ID der Website hinzugefügt wird, wenn sie unter Integrationen leer bleibt.",
+  'integrations.openLink': "Integrationen öffnen",
+  'integrations.seeIds': "um die ausgefüllte Mess-ID und Container-ID zu sehen.",
   // --- store (consent, archive) ---
   "store.cookieBannerTitle": "Cookies auf dieser Website",
   "store.cookieBannerText": "Wir verwenden Cookies, um zu verstehen, wie diese Website genutzt wird. Analyse- und Marketing-Tags werden erst geladen, wenn du zustimmst.",

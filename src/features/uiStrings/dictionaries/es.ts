@@ -1302,6 +1302,11 @@ const es: UiDictionary = {
   "store.home": "Inicio",
   "store.blog": "Blog",
   "store.shop": "Tienda",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "Elija la propiedad y los sitios que leen los paneles. Al elegir una propiedad de Analytics se completa el ID de medición, y al elegir un contenedor de Tag Manager se completa el ID del contenedor en la página de Integraciones, pero solo donde ese campo esté vacío.",
+  'integrations.google.gtmHelp': "El contenedor cuyo ID se añade al sitio cuando Integraciones lo deja vacío.",
+  'integrations.openLink': "Abrir Integraciones",
+  'integrations.seeIds': "para ver el ID de medición y el ID del contenedor que se completaron.",
   // --- store (consent, archive) ---
   "store.cookieBannerTitle": "Cookies en este sitio",
   "store.cookieBannerText": "Usamos cookies para entender cómo se usa este sitio. Las etiquetas de analítica y marketing solo se cargan cuando aceptas.",

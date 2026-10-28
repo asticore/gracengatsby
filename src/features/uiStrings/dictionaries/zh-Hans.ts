@@ -1301,6 +1301,11 @@ const zhHans: UiDictionary = {
   "store.home": "首页",
   "store.blog": "博客",
   "store.shop": "商店",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "选择仪表板读取的资源和网站。选择 Analytics 资源会填入衡量 ID；选择 Tag Manager 容器会在“集成”页面中填入容器 ID，但仅限该字段为空时。",
+  'integrations.google.gtmHelp': "当“集成”中该字段留空时，会添加到网站中的容器。",
+  'integrations.openLink': "打开“集成”",
+  'integrations.seeIds': "查看已填入的衡量 ID 和容器 ID。",
   // --- store (consent, archive) ---
   "store.cookieBannerTitle": "本站的 Cookie",
   "store.cookieBannerText": "我们使用 Cookie 来了解本站的使用情况。只有在您同意后，分析和营销标签才会加载。",

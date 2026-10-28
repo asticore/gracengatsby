@@ -1302,6 +1302,11 @@ const ja: UiDictionary = {
   "store.home": "ホーム",
   "store.blog": "ブログ",
   "store.shop": "ショップ",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "ダッシュボードが読み取るプロパティとサイトを選択します。Analyticsプロパティを選ぶと測定IDが入力され、Tag Managerコンテナを選ぶと、連携ページのコンテナIDが空欄の場合にのみ入力されます。",
+  'integrations.google.gtmHelp': "連携で空欄のままの場合に、サイトに追加されるコンテナのIDです。",
+  'integrations.openLink': "連携を開く",
+  'integrations.seeIds': "入力された測定IDとコンテナIDを確認します。",
   // --- store (consent, archive) ---
   "store.cookieBannerTitle": "このサイトのCookie",
   "store.cookieBannerText": "このサイトの利用状況を把握するためにCookieを使用します。分析用およびマーケティング用のタグは、同意いただいた後にのみ読み込まれます。",

@@ -1302,6 +1302,11 @@ const ko: UiDictionary = {
   "store.home": "홈",
   "store.blog": "블로그",
   "store.shop": "쇼핑몰",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "대시보드가 읽을 속성과 사이트를 선택합니다. Analytics 속성을 고르면 측정 ID가 채워지고, Tag Manager 컨테이너를 고르면 통합 페이지의 컨테이너 ID가 비어 있을 때만 채워집니다.",
+  'integrations.google.gtmHelp': "통합에서 비워 둘 때 사이트에 추가되는 컨테이너의 ID입니다.",
+  'integrations.openLink': "통합 열기",
+  'integrations.seeIds': "채워진 측정 ID와 컨테이너 ID를 확인하려면",
   // --- store (consent, archive) ---
   "store.cookieBannerTitle": "이 사이트의 쿠키",
   "store.cookieBannerText": "이 사이트의 이용 방식을 파악하기 위해 쿠키를 사용합니다. 분석 및 마케팅 태그는 동의하신 후에만 로드됩니다.",

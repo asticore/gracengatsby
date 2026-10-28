@@ -1342,6 +1342,11 @@ export const UI_STRING_SOURCE = {
   "store.home": "Home",
   "store.blog": "Blog",
   "store.shop": "Shop",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "Pick the property and sites the dashboards read. Choosing an Analytics property fills the measurement ID, and choosing a Tag Manager container fills the container ID on the Integrations page, but only where that field is blank.",
+  'integrations.google.gtmHelp': "The container whose ID is added to the site when Integrations leaves it blank.",
+  'integrations.openLink': "Open Integrations",
+  'integrations.seeIds': "to see the measurement ID and container ID that were filled in.",
   // --- store (consent, archive) ---
   "store.cookieBannerTitle": "Cookies on this site",
   "store.cookieBannerText": "We use cookies to understand how this site is used. Analytics and marketing tags only load once you agree.",

@@ -1302,6 +1302,11 @@ const ru: UiDictionary = {
   "store.home": "Главная",
   "store.blog": "Блог",
   "store.shop": "Магазин",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "Выберите ресурс и сайты, данные которых читают панели. Выбор ресурса Analytics заполняет ID измерения, а выбор контейнера Tag Manager заполняет ID контейнера на странице «Интеграции», но только если это поле пустое.",
+  'integrations.google.gtmHelp': "Контейнер, ID которого добавляется на сайт, если в разделе «Интеграции» поле пустое.",
+  'integrations.openLink': "Открыть «Интеграции»",
+  'integrations.seeIds': "чтобы увидеть заполненные ID измерения и контейнера.",
   // --- store (consent, archive) ---
   "store.cookieBannerTitle": "Файлы cookie на этом сайте",
   "store.cookieBannerText": "Мы используем файлы cookie, чтобы понимать, как пользуются этим сайтом. Аналитические и маркетинговые метки загружаются только после вашего согласия.",

@@ -1360,6 +1360,21 @@ const fr: UiDictionary = {
   'orders.manifest.pick': "Choisir des commandes",
   'orders.manifest.noLabelled': "Aucune commande étiquetée pour l’instant. Achetez d’abord une étiquette.",
   'orders.manifest.clearTicks': "Retirer les coches",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "E-mail du client",
+  'customers.credit.find': "Trouver le client",
+  'customers.credit.balance': "{email} : solde",
+  'customers.credit.add': "Ajouter un crédit",
+  'customers.credit.deduct': "Déduire le crédit",
+  'customers.credit.amount': "Montant ($)",
+  'customers.credit.reason': "Motif (obligatoire)",
+  'customers.credit.save': "Enregistrer",
+  'customers.credit.ledger': "{amount} - {reason} - solde {balance} - {date}",
+  'customers.credit.confirmAdd': "Ajouter {amount} à {email} ?",
+  'customers.credit.confirmDeduct': "Déduire {amount} de {email} ?",
+  'customers.credit.errLookup': "Échec de la recherche.",
+  'customers.credit.errRequest': "La requête a échoué.",
+  'customers.credit.errFailed': "Échec.",
 }
 
 export default fr

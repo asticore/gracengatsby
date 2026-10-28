@@ -1360,6 +1360,21 @@ const ja: UiDictionary = {
   'orders.manifest.pick': "注文を選択",
   'orders.manifest.noLabelled': "ラベル付きの注文はまだありません。先にラベルを購入してください。",
   'orders.manifest.clearTicks': "チェックを外す",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "顧客のメール",
+  'customers.credit.find': "顧客を検索",
+  'customers.credit.balance': "{email}：残高",
+  'customers.credit.add': "クレジットを追加",
+  'customers.credit.deduct': "クレジットを差し引く",
+  'customers.credit.amount': "金額 ($)",
+  'customers.credit.reason': "理由（必須）",
+  'customers.credit.save': "保存",
+  'customers.credit.ledger': "{amount} - {reason} - 残高 {balance} - {date}",
+  'customers.credit.confirmAdd': "{email} に {amount} を追加しますか？",
+  'customers.credit.confirmDeduct': "{email} から {amount} を差し引きますか？",
+  'customers.credit.errLookup': "検索に失敗しました。",
+  'customers.credit.errRequest': "リクエストに失敗しました。",
+  'customers.credit.errFailed': "失敗しました。",
 }
 
 export default ja

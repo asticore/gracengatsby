@@ -1359,6 +1359,21 @@ const zhHans: UiDictionary = {
   'orders.manifest.pick': "选择订单",
   'orders.manifest.noLabelled': "暂无带面单的订单。请先购买面单。",
   'orders.manifest.clearTicks': "取消勾选",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "客户邮箱",
+  'customers.credit.find': "查找客户",
+  'customers.credit.balance': "{email}：余额",
+  'customers.credit.add': "增加余额",
+  'customers.credit.deduct': "扣减余额",
+  'customers.credit.amount': "金额 ($)",
+  'customers.credit.reason': "原因（必填）",
+  'customers.credit.save': "保存",
+  'customers.credit.ledger': "{amount} - {reason} - 余额 {balance} - {date}",
+  'customers.credit.confirmAdd': "向 {email} 增加 {amount}？",
+  'customers.credit.confirmDeduct': "从 {email} 扣减 {amount}？",
+  'customers.credit.errLookup': "查找失败。",
+  'customers.credit.errRequest': "请求失败。",
+  'customers.credit.errFailed': "失败。",
 }
 
 export default zhHans

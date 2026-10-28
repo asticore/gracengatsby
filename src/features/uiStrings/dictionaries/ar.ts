@@ -1360,6 +1360,21 @@ const ar: UiDictionary = {
   'orders.manifest.pick': "اختيار الطلبات",
   'orders.manifest.noLabelled': "لا توجد طلبات ذات ملصقات بعد. اشترِ ملصقًا أولاً.",
   'orders.manifest.clearTicks': "مسح التحديدات",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "بريد العميل الإلكتروني",
+  'customers.credit.find': "البحث عن العميل",
+  'customers.credit.balance': "{email}: الرصيد",
+  'customers.credit.add': "إضافة رصيد",
+  'customers.credit.deduct': "خصم رصيد",
+  'customers.credit.amount': "المبلغ ($)",
+  'customers.credit.reason': "السبب (مطلوب)",
+  'customers.credit.save': "حفظ",
+  'customers.credit.ledger': "{amount} - {reason} - الرصيد {balance} - {date}",
+  'customers.credit.confirmAdd': "إضافة {amount} إلى {email}؟",
+  'customers.credit.confirmDeduct': "خصم {amount} من {email}؟",
+  'customers.credit.errLookup': "فشل البحث.",
+  'customers.credit.errRequest': "فشل الطلب.",
+  'customers.credit.errFailed': "فشل.",
 }
 
 export default ar

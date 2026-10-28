@@ -1360,6 +1360,21 @@ const ru: UiDictionary = {
   'orders.manifest.pick': "Выбрать заказы",
   'orders.manifest.noLabelled': "Пока нет заказов с этикетками. Сначала купите этикетку.",
   'orders.manifest.clearTicks': "Снять отметки",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "Email клиента",
+  'customers.credit.find': "Найти клиента",
+  'customers.credit.balance': "{email}: баланс",
+  'customers.credit.add': "Начислить баланс",
+  'customers.credit.deduct': "Списать баланс",
+  'customers.credit.amount': "Сумма ($)",
+  'customers.credit.reason': "Причина (обязательно)",
+  'customers.credit.save': "Сохранить",
+  'customers.credit.ledger': "{amount} - {reason} - баланс {balance} - {date}",
+  'customers.credit.confirmAdd': "Начислить {amount} на {email}?",
+  'customers.credit.confirmDeduct': "Списать {amount} с {email}?",
+  'customers.credit.errLookup': "Не удалось выполнить поиск.",
+  'customers.credit.errRequest': "Запрос не выполнен.",
+  'customers.credit.errFailed': "Не удалось.",
 }
 
 export default ru

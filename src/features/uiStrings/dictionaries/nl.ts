@@ -1360,6 +1360,21 @@ const nl: UiDictionary = {
   'orders.manifest.pick': "Bestellingen kiezen",
   'orders.manifest.noLabelled': "Nog geen bestellingen met label. Koop eerst een label.",
   'orders.manifest.clearTicks': "Vinkjes wissen",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "E-mail van de klant",
+  'customers.credit.find': "Klant zoeken",
+  'customers.credit.balance': "{email}: saldo",
+  'customers.credit.add': "Tegoed toevoegen",
+  'customers.credit.deduct': "Tegoed aftrekken",
+  'customers.credit.amount': "Bedrag ($)",
+  'customers.credit.reason': "Reden (verplicht)",
+  'customers.credit.save': "Opslaan",
+  'customers.credit.ledger': "{amount} - {reason} - saldo {balance} - {date}",
+  'customers.credit.confirmAdd': "{amount} toevoegen aan {email}?",
+  'customers.credit.confirmDeduct': "{amount} aftrekken van {email}?",
+  'customers.credit.errLookup': "Zoeken mislukt.",
+  'customers.credit.errRequest': "Verzoek mislukt.",
+  'customers.credit.errFailed': "Mislukt.",
 }
 
 export default nl

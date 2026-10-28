@@ -1400,6 +1400,21 @@ export const UI_STRING_SOURCE = {
   'orders.manifest.pick': "Pick orders",
   'orders.manifest.noLabelled': "No labelled orders yet. Buy a label first.",
   'orders.manifest.clearTicks': "Clear ticks",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "Customer email",
+  'customers.credit.find': "Find customer",
+  'customers.credit.balance': "{email}: balance",
+  'customers.credit.add': "Add credit",
+  'customers.credit.deduct': "Deduct credit",
+  'customers.credit.amount': "Amount ($)",
+  'customers.credit.reason': "Reason (required)",
+  'customers.credit.save': "Save",
+  'customers.credit.ledger': "{amount} - {reason} - balance {balance} - {date}",
+  'customers.credit.confirmAdd': "Add {amount} to {email}?",
+  'customers.credit.confirmDeduct': "Deduct {amount} from {email}?",
+  'customers.credit.errLookup': "Lookup failed.",
+  'customers.credit.errRequest': "Request failed.",
+  'customers.credit.errFailed': "Failed.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

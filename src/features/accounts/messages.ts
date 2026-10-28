@@ -1,6 +1,7 @@
 import type { PortalStringKey, PortalTexts } from '@/features/multilingual/portalStrings'
 import type { UiStringVars } from '@/features/uiStrings'
 import { socialMessage } from '@/features/socialLogin/messages'
+import type { PasswordHintSay } from '@/features/security/passwordPolicy'
 
 /**
  * Account messages are written in English by the services (auth, profile,
@@ -44,12 +45,26 @@ const EXACT: Record<string, PortalStringKey> = {
   'Fill in the name, street, city and country.': 'msg.addressFields',
   'Passkeys are not available on this site.': 'msg.passkeysOff',
   'Sign in first.': 'msg.signInFirst',
+  'Include both upper-case and lower-case letters.': 'pw.mixedCase',
+  'Include at least one number.': 'pw.number',
+  'Include at least one symbol, such as ! or #.': 'pw.symbol',
+  'That password is too common. Choose something less easy to guess.': 'pw.common',
+  'Do not use the name part of your email address in the password.': 'pw.emailName',
+  'That password has appeared in a known data breach. Choose a different one.': 'pw.breached',
 }
 
 const PATTERNS: Array<[RegExp, (match: RegExpMatchArray, tx: PortalTexts) => string]> = [
   [
     /^Too many attempts\. Try again in (\d+) minute\(s\)\.$/,
     (match, tx) => tx('msg.tooMany', { minutes: match[1] ?? '' }),
+  ],
+  [
+    /^Choose a password of at least (\d+) characters\.$/,
+    (match, tx) => tx('pw.length', { min: match[1] ?? '' }),
+  ],
+  [
+    /^You cannot reuse one of your last (\d+) passwords\.$/,
+    (match, tx) => tx('pw.reuse', { count: match[1] ?? '' }),
   ],
   [
     /^(If that address has an account, we have sent it an email\. Check your inbox, and your spam folder\.) You can ask for another in (\d+) seconds\.$/,
@@ -93,5 +108,11 @@ export function socialMessageText(code: string | null | undefined, tx: PortalTex
   if (Object.prototype.hasOwnProperty.call(SOCIAL_KEYS, code)) return tx(SOCIAL_KEYS[code]!)
   return socialMessage(code)
 }
+
+/** Hint sentences for the password field, in the visitor's language (see `passwordHint`). */
+export const passwordHintSay =
+  (tx: PortalTexts): PasswordHintSay =>
+  (key, vars) =>
+    tx(`pw.${key}` as PortalStringKey, vars)
 
 export type { UiStringVars }

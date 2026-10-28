@@ -204,24 +204,59 @@ export const passwordProblems = async (
   return []
 }
 
+/** Keys of the sentences the password hint is built from. Mirrored as `portal.pw.*` for the customer portal. */
+export type PasswordHintKey =
+  | 'hintLength'
+  | 'hintInclude'
+  | 'hintClassCase'
+  | 'hintClassNumber'
+  | 'hintClassSymbol'
+  | 'hintListAnd'
+  | 'hintListThree'
+  | 'hintCommon'
+  | 'hintBreach'
+  | 'hintHistory'
+
+/** Returns the sentence for a hint key, with `{name}` placeholders filled from `vars`. */
+export type PasswordHintSay = (key: PasswordHintKey, vars?: Record<string, string | number>) => string
+
+const ENGLISH_HINT: Record<PasswordHintKey, string> = {
+  hintLength: 'At least {min} characters.',
+  hintInclude: 'Include {classes}.',
+  hintClassCase: 'upper and lower case letters',
+  hintClassNumber: 'a number',
+  hintClassSymbol: 'a symbol',
+  hintListAnd: '{a} and {b}',
+  hintListThree: '{a}, {b} and {c}',
+  hintCommon: 'Common passwords and your email name are not allowed.',
+  hintBreach: 'Passwords from known data breaches are not allowed.',
+  hintHistory: 'You cannot reuse your last {count} passwords.',
+}
+
+const englishHint: PasswordHintSay = (key, vars) =>
+  ENGLISH_HINT[key].replace(/\{([A-Za-z][A-Za-z0-9_]*)\}/g, (match, name: string) =>
+    vars && Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match,
+  )
+
 /**
  * The line under a password field. Built from the active rules only, so the
  * default site reads exactly as it did before: "At least 8 characters."
+ * `say` supplies the sentences; the default is the English text.
  */
-export const passwordHint = (policy: PasswordPolicy): string => {
-  const parts: string[] = [`At least ${policy.minLength} characters.`]
+export const passwordHint = (policy: PasswordPolicy, say: PasswordHintSay = englishHint): string => {
+  const parts: string[] = [say('hintLength', { min: policy.minLength })]
   const classes: string[] = []
-  if (policy.requireMixedCase) classes.push('upper and lower case letters')
-  if (policy.requireNumber) classes.push('a number')
-  if (policy.requireSymbol) classes.push('a symbol')
-  if (classes.length > 0) parts.push(`Include ${joinWords(classes)}.`)
-  if (policy.blockCommon) parts.push('Common passwords and your email name are not allowed.')
-  if (policy.breachCheck) parts.push('Passwords from known data breaches are not allowed.')
-  if (policy.historyCount > 0) parts.push(`You cannot reuse your last ${policy.historyCount} passwords.`)
+  if (policy.requireMixedCase) classes.push(say('hintClassCase'))
+  if (policy.requireNumber) classes.push(say('hintClassNumber'))
+  if (policy.requireSymbol) classes.push(say('hintClassSymbol'))
+  if (classes.length > 0) parts.push(say('hintInclude', { classes: joinWords(classes, say) }))
+  if (policy.blockCommon) parts.push(say('hintCommon'))
+  if (policy.breachCheck) parts.push(say('hintBreach'))
+  if (policy.historyCount > 0) parts.push(say('hintHistory', { count: policy.historyCount }))
   return parts.join(' ')
 }
 
-const joinWords = (words: string[]): string => {
-  if (words.length <= 1) return words.join('')
-  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`
+const joinWords = (words: string[], say: PasswordHintSay): string => {
+  if (words.length === 3) return say('hintListThree', { a: words[0], b: words[1], c: words[2] })
+  return words.slice(1).reduce((joined, word) => say('hintListAnd', { a: joined, b: word }), words[0] ?? '')
 }

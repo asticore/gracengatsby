@@ -193,8 +193,8 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
         </p>
         <PickerRow
           kind="ga4"
-          label="Analytics property"
-          help="The Google Analytics 4 property whose visitors and pages the dashboard shows."
+          label={t('integrations.google.ga4Label')}
+          help={t('integrations.google.ga4Help')}
           current={status.ga4PropertyId}
           currentLabel={status.ga4PropertyId ? `Property ${status.ga4PropertyId}` : ''}
           disabled={!connected}
@@ -209,7 +209,7 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
         />
         <PickerRow
           kind="gtm"
-          label="Tag Manager container"
+          label={t('integrations.google.gtmLabel')}
           help={t('integrations.google.gtmHelp')}
           current={status.gtmAccountId && status.gtmContainerId ? `${status.gtmAccountId}/${status.gtmContainerId}` : ''}
           currentLabel={status.gtmContainerId ? `Container ${status.gtmContainerId}` : ''}
@@ -217,8 +217,8 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
         />
         <PickerRow
           kind="adsense"
-          label="AdSense account"
-          help="The AdSense account whose earnings the dashboard shows."
+          label={t('integrations.google.adsenseLabel')}
+          help={t('integrations.google.adsenseHelp')}
           current={status.adsenseAccountId}
           currentLabel={status.adsensePublisherId || status.adsenseAccountId}
           disabled={!connected}

@@ -1360,6 +1360,12 @@ export const UI_STRING_SOURCE = {
   "store.searchTheSite": "Search the site",
   "store.newerProducts": "Newer products",
   "store.olderProducts": "Older products",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Analytics property",
+  'integrations.google.gtmLabel': "Tag Manager container",
+  'integrations.google.adsenseLabel': "AdSense account",
+  'integrations.google.ga4Help': "The Google Analytics 4 property whose visitors and pages the dashboard shows.",
+  'integrations.google.adsenseHelp': "The AdSense account whose earnings the dashboard shows.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

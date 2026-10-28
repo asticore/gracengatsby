@@ -1320,6 +1320,12 @@ const ja: UiDictionary = {
   "store.searchTheSite": "サイト内を検索",
   "store.newerProducts": "新しい商品",
   "store.olderProducts": "古い商品",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Analyticsプロパティ",
+  'integrations.google.gtmLabel': "Tag Managerコンテナ",
+  'integrations.google.adsenseLabel': "AdSenseアカウント",
+  'integrations.google.ga4Help': "ダッシュボードに訪問者とページを表示する Google Analytics 4 プロパティです。",
+  'integrations.google.adsenseHelp': "ダッシュボードに収益を表示する AdSense アカウントです。",
 }
 
 export default ja

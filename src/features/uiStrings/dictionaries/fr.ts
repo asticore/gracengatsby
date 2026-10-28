@@ -1320,6 +1320,12 @@ const fr: UiDictionary = {
   "store.searchTheSite": "Rechercher sur le site",
   "store.newerProducts": "Produits plus récents",
   "store.olderProducts": "Produits plus anciens",
+  // --- admin leftovers (google picker labels) ---
+  'integrations.google.ga4Label': "Propriété Analytics",
+  'integrations.google.gtmLabel': "Conteneur Tag Manager",
+  'integrations.google.adsenseLabel': "Compte AdSense",
+  'integrations.google.ga4Help': "La propriété Google Analytics 4 dont le tableau de bord affiche les visiteurs et les pages.",
+  'integrations.google.adsenseHelp': "Le compte AdSense dont le tableau de bord affiche les revenus.",
 }
 
 export default fr

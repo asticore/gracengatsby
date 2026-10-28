@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 
 import { revokeAllTrustedDevicesAction, revokeTrustedDeviceAction, twoFactorPanelOptionsAction } from '../twoFactorActions'
 import { usePortalText } from '@/features/accounts/components/PortalText'
+import { localiseMessage } from '@/features/accounts/messages'
 import type { TrustedDeviceView } from '../trustedDevices'
 import './twoFactorExtras.css'
 
@@ -45,7 +46,7 @@ export const TrustedDevicesList: React.FC = () => {
     setNote('')
     try {
       const result = await task()
-      setNote(result.message ?? '')
+      setNote(result.message ? localiseMessage(result.message, tx) : '')
       if (result.ok && result.devices) setDevices(result.devices)
     } catch {
       setNote(tx('common.somethingWrong'))

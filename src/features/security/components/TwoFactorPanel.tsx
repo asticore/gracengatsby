@@ -15,6 +15,7 @@ import {
   type TwoFactorActionResult,
 } from '../twoFactorActions'
 import { usePortalText } from '@/features/accounts/components/PortalText'
+import { localiseMessage } from '@/features/accounts/messages'
 
 import { TrustedDevicesList } from './TrustedDevicesList'
 import './twoFactorExtras.css'
@@ -79,9 +80,9 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
       const result = await task()
       if (result.ok) {
         onOk?.(result)
-        if (result.message) setNotice({ tone: 'ok', text: result.message })
+        if (result.message) setNotice({ tone: 'ok', text: localiseMessage(result.message, tx) })
       } else {
-        setNotice({ tone: 'error', text: result.message || tx('msg.didNotWork') })
+        setNotice({ tone: 'error', text: result.message ? localiseMessage(result.message, tx) : tx('msg.didNotWork') })
       }
     } catch {
       setNotice({ tone: 'error', text: tx('panel.networkError') })

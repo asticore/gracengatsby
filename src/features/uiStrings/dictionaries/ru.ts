@@ -1401,6 +1401,17 @@ const ru: UiDictionary = {
   'importContent.showingFirst': "Показаны первые {limit} из {count} элементов.",
   'importContent.skipped': "Пропущенные элементы и элементы, которые нельзя импортировать, не включаются.",
   'importContent.failed': "Элементы с ошибкой",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "Нет",
+  'dp.opt.default': "По умолчанию",
+  'dp.opt.normal': "Обычный",
+  'dp.opt.gradient': "Градиент",
+  'dp.opt.fullWidth': "На всю ширину",
+  'dp.opt.centre': "По центру",
+  'dp.opt.fitScreen': "По высоте экрана",
+  'dp.opt.minHeight': "Минимальная высота",
+  'dp.sizeUnit': "Единица размера",
+  'dp.letterSpacingUnit': "Единица межбуквенного интервала",
 }
 
 export default ru

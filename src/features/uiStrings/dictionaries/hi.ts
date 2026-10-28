@@ -1401,6 +1401,17 @@ const hi: UiDictionary = {
   'importContent.showingFirst': "{count} आइटम में से पहले {limit} दिखाए जा रहे हैं।",
   'importContent.skipped': "छोड़े गए या आयात न हो सकने वाले आइटम शामिल नहीं किए जाते।",
   'importContent.failed': "विफल आइटम",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "कोई नहीं",
+  'dp.opt.default': "डिफ़ॉल्ट",
+  'dp.opt.normal': "सामान्य",
+  'dp.opt.gradient': "ग्रेडिएंट",
+  'dp.opt.fullWidth': "पूरी चौड़ाई",
+  'dp.opt.centre': "केंद्र",
+  'dp.opt.fitScreen': "स्क्रीन पर फ़िट करें",
+  'dp.opt.minHeight': "न्यूनतम ऊँचाई",
+  'dp.sizeUnit': "आकार की इकाई",
+  'dp.letterSpacingUnit': "अक्षर अंतर की इकाई",
 }
 
 export default hi

@@ -1401,6 +1401,17 @@ const es: UiDictionary = {
   'importContent.showingFirst': "Se muestran los primeros {limit} de {count} elementos.",
   'importContent.skipped': "Los elementos omitidos o que no se pueden importar no se incluyen.",
   'importContent.failed': "Elementos que fallaron",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "Ninguno",
+  'dp.opt.default': "Predeterminado",
+  'dp.opt.normal': "Normal",
+  'dp.opt.gradient': "Degradado",
+  'dp.opt.fullWidth': "Ancho completo",
+  'dp.opt.centre': "Centro",
+  'dp.opt.fitScreen': "Ajustar a la pantalla",
+  'dp.opt.minHeight': "Altura mínima",
+  'dp.sizeUnit': "Unidad de tamaño",
+  'dp.letterSpacingUnit': "Unidad del espaciado entre letras",
 }
 
 export default es

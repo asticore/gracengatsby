@@ -1402,6 +1402,17 @@ const de: UiDictionary = {
   'importContent.showingFirst': "Die ersten {limit} von {count} Einträgen werden angezeigt.",
   'importContent.skipped': "Übersprungene oder nicht importierbare Einträge werden ausgelassen.",
   'importContent.failed': "Fehlgeschlagene Einträge",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "Keine",
+  'dp.opt.default': "Standard",
+  'dp.opt.normal': "Normal",
+  'dp.opt.gradient': "Verlauf",
+  'dp.opt.fullWidth': "Volle Breite",
+  'dp.opt.centre': "Zentriert",
+  'dp.opt.fitScreen': "An Bildschirm anpassen",
+  'dp.opt.minHeight': "Mindesthöhe",
+  'dp.sizeUnit': "Größeneinheit",
+  'dp.letterSpacingUnit': "Einheit für Buchstabenabstand",
 }
 
 export default de

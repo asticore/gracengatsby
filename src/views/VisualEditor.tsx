@@ -1354,13 +1354,13 @@ export const VisualEditorView: React.FC = () => {
             type="button"
             className="ve-btn ve-btn--ghost ve-btn--icon"
             onClick={() => setDockCollapsed((c) => !c)}
-            aria-label={dockCollapsed ? 'Show panel' : 'Collapse panel'}
-            title={dockCollapsed ? 'Show panel' : 'Collapse panel'}
+            aria-label={dockCollapsed ? t('ve.top.showPanel') : t('ve.top.collapsePanel')}
+            title={dockCollapsed ? t('ve.top.showPanel') : t('ve.top.collapsePanel')}
           >
             {dockCollapsed ? String.fromCodePoint(0xbb) : String.fromCodePoint(0xab)}
           </button>
           <span className="ve-topbar__title">
-            Visual editor - {docTitle} {status && <span className="ve-topbar__status">({status})</span>}
+            {t('ve.top.title', { title: docTitle })} {status && <span className="ve-topbar__status">({status})</span>}
           </span>
         </div>
         <div className="ve-topbar__actions">
@@ -1384,30 +1384,30 @@ export const VisualEditorView: React.FC = () => {
               }}
             />
           ) : null}
-          <div className="ve-history" role="group" aria-label="History">
+          <div className="ve-history" role="group" aria-label={t('ve.top.history')}>
             <button
               type="button"
               className="ve-btn ve-btn--ghost"
               onClick={undo}
               disabled={!historyFlags.undo}
-              aria-label="Undo"
-              title={`Undo (${modLabel}+Z)`}
+              aria-label={t('ve.shortcut.undo')}
+              title={t('ve.top.undoTitle', { mod: modLabel })}
             >
-              Undo
+              {t('ve.shortcut.undo')}
             </button>
             <button
               type="button"
               className="ve-btn ve-btn--ghost"
               onClick={redo}
               disabled={!historyFlags.redo}
-              aria-label="Redo"
-              title={`Redo (${modLabel}+Shift+Z)`}
+              aria-label={t('ve.shortcut.redo')}
+              title={t('ve.top.redoTitle', { mod: modLabel })}
             >
-              Redo
+              {t('ve.shortcut.redo')}
             </button>
           </div>
-          <button type="button" className="ve-btn ve-btn--ghost" onClick={() => setImportOpen(true)} title="Import or export this page as JSON">
-            Import / Export
+          <button type="button" className="ve-btn ve-btn--ghost" onClick={() => setImportOpen(true)} title={t('ve.top.importTitle')}>
+            {t('ve.top.importExport')}
           </button>
           <ShortcutsHelp
             modLabel={modLabel}
@@ -1415,33 +1415,33 @@ export const VisualEditorView: React.FC = () => {
             onOpenChange={setHelpOpen}
             onTour={() => setTourOpen(true)}
           />
-          <div className="ve-device-toggle" role="group" aria-label="Preview device">
+          <div className="ve-device-toggle" role="group" aria-label={t('ve.top.devicePreview')}>
             <button
               type="button"
               className={`ve-device-btn ${device === 'desktop' ? 've-device-btn--active' : ''}`}
               onClick={() => setDevice('desktop')}
-              aria-label="Desktop preview"
-              title="Desktop preview - full width"
+              aria-label={t('ve.top.desktopPreview')}
+              title={t('ve.top.desktopPreviewTitle')}
             >
-              Desktop
+              {t('ve.top.desktop')}
             </button>
             <button
               type="button"
               className={`ve-device-btn ${device === 'tablet' ? 've-device-btn--active' : ''}`}
               onClick={() => setDevice('tablet')}
-              aria-label="Tablet preview"
-              title="Tablet preview"
+              aria-label={t('ve.top.tabletPreview')}
+              title={t('ve.top.tabletPreview')}
             >
-              Tablet
+              {t('ve.top.tablet')}
             </button>
             <button
               type="button"
               className={`ve-device-btn ${device === 'mobile' ? 've-device-btn--active' : ''}`}
               onClick={() => setDevice('mobile')}
-              aria-label="Mobile preview"
-              title="Mobile preview"
+              aria-label={t('ve.top.mobilePreview')}
+              title={t('ve.top.mobilePreview')}
             >
-              Mobile
+              {t('ve.top.mobile')}
             </button>
           </div>
           {!formMode && (
@@ -1450,14 +1450,14 @@ export const VisualEditorView: React.FC = () => {
               className="ve-btn"
               onClick={() => setSaveTemplateOpen(true)}
               disabled={blocks.length === 0}
-              title={selectedPath && selectedPath.length === 1 ? 'Save the selected section, or the whole page, as a reusable template' : 'Save this page as a reusable template'}
+              title={selectedPath && selectedPath.length === 1 ? t('ve.top.templateSection') : t('ve.top.templatePage')}
             >
-              Save as template
+              {t('ve.top.saveAsTemplate')}
             </button>
           )}
           <SaveStatusChip status={saving} dirty={dirty} savedAt={savedAt} onRetry={() => save(false)} />
           <button type="button" className="ve-btn" onClick={() => save(false)} disabled={saving === 'saving'}>
-            {saving === 'saving' ? 'Saving' : saving === 'saved' ? 'Saved' : 'Save draft'}
+            {saving === 'saving' ? t('ve.top.saving') : saving === 'saved' ? t('status.saved') : t('common.saveDraft')}
           </button>
           <button
             type="button"
@@ -1465,7 +1465,7 @@ export const VisualEditorView: React.FC = () => {
             onClick={() => save(true)}
             disabled={saving === 'publishing'}
           >
-            {saving === 'publishing' ? 'Publishing' : saving === 'published' ? 'Published' : 'Publish'}
+            {saving === 'publishing' ? t('ve.top.publishing') : saving === 'published' ? t('status.published') : t('common.publish')}
           </button>
         </div>
       </div>

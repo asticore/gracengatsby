@@ -1262,6 +1262,27 @@ const nl: UiDictionary = {
   "store.country": "Land (bijv. AU)",
   "store.couldNotPriceCart": "We konden je winkelwagen niet prijzen.",
   "store.storeCredit": "Tegoed",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "Database",
+  'settings.link.database.description': "Tabelgebruik en opschonen per functie.",
+  'settings.link.site-health.label': "Sitestatus",
+  'settings.link.site-health.description': "Opslag, status van geplande taken, versies en waarschuwingen.",
+  'settings.link.scheduled-tasks.label': "Geplande taken",
+  'settings.link.scheduled-tasks.description': "Elke getimede taak, het laatste resultaat en wat wacht om live te gaan.",
+  'settings.link.users.label': "Gebruikers",
+  'settings.link.users.description': "Beheer de beheerdersaccounts.",
+  'settings.link.audit-log.label': "Auditlogboek",
+  'settings.link.audit-log.description': "Overzicht van alle wijzigingen in de beheeromgeving.",
+  'settings.link.error-log.label': "Foutenlogboek",
+  'settings.link.error-log.description': "Fouten die de site tegenkwam, herhalingen worden één keer geteld.",
+  'settings.link.roles.label': "Rollen",
+  'settings.link.roles.description': "Beheer de rechten per rol in een matrixraster.",
+  'settings.link.export-and-import.label': "Exporteren en importeren",
+  'settings.link.export-and-import.description': "Exporteer instellingen, inhoud en gebruikers, of importeer ze van een andere site.",
+  'settings.link.find-and-replace.label': "Zoeken en vervangen",
+  'settings.link.find-and-replace.description': "Wijzig een woord of zin in pagina’s, berichten, producten en evenementen. Bekijk eerst een voorbeeld.",
+  'settings.link.import-pages-and-posts.label': "Pagina’s en berichten importeren",
+  'settings.link.import-pages-and-posts.description': "Importeer inhoud uit een WordPress-export of een CSV-bestand. Geïmporteerde items worden als concepten opgeslagen.",
 }
 
 export default nl

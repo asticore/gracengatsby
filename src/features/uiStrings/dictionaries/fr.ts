@@ -1262,6 +1262,27 @@ const fr: UiDictionary = {
   "store.country": "Pays (ex. AU)",
   "store.couldNotPriceCart": "Impossible de calculer votre panier.",
   "store.storeCredit": "Crédit boutique",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "Base de données",
+  'settings.link.database.description': "Utilisation des tables et nettoyage par fonctionnalité.",
+  'settings.link.site-health.label': "État du site",
+  'settings.link.site-health.description': "Stockage, état des tâches planifiées, versions et avertissements.",
+  'settings.link.scheduled-tasks.label': "Tâches planifiées",
+  'settings.link.scheduled-tasks.description': "Chaque tâche programmée, son dernier résultat et ce qui attend d'être mis en ligne.",
+  'settings.link.users.label': "Utilisateurs",
+  'settings.link.users.description': "Gérez les comptes utilisateurs de l'administration.",
+  'settings.link.audit-log.label': "Journal d'audit",
+  'settings.link.audit-log.description': "Journal de toutes les modifications faites dans l'administration.",
+  'settings.link.error-log.label': "Journal des erreurs",
+  'settings.link.error-log.description': "Erreurs rencontrées par le site, les répétitions n'étant comptées qu'une fois.",
+  'settings.link.roles.label': "Rôles",
+  'settings.link.roles.description': "Gérez les autorisations de chaque rôle avec une grille matricielle.",
+  'settings.link.export-and-import.label': "Exporter et importer",
+  'settings.link.export-and-import.description': "Exportez les réglages, le contenu et les utilisateurs, ou importez-les depuis un autre site.",
+  'settings.link.find-and-replace.label': "Rechercher et remplacer",
+  'settings.link.find-and-replace.description': "Modifiez un mot ou une expression dans les pages, articles, produits et événements. Prévisualisez d'abord.",
+  'settings.link.import-pages-and-posts.label': "Importer pages et articles",
+  'settings.link.import-pages-and-posts.description': "Importez du contenu depuis un export WordPress ou un fichier CSV. Les éléments importés sont enregistrés comme brouillons.",
 }
 
 export default fr

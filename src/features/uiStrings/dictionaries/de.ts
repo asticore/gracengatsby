@@ -1263,6 +1263,27 @@ const de: UiDictionary = {
   "store.country": "Land (z. B. AU)",
   "store.couldNotPriceCart": "Dein Warenkorb konnte nicht berechnet werden.",
   "store.storeCredit": "Guthaben",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "Datenbank",
+  'settings.link.database.description': "Tabellennutzung und Bereinigung pro Funktion.",
+  'settings.link.site-health.label': "Zustand der Website",
+  'settings.link.site-health.description': "Speicher, Zustand geplanter Aufgaben, Versionen und Warnungen.",
+  'settings.link.scheduled-tasks.label': "Geplante Aufgaben",
+  'settings.link.scheduled-tasks.description': "Jede zeitgesteuerte Aufgabe, ihr letztes Ergebnis und was auf die Veröffentlichung wartet.",
+  'settings.link.users.label': "Benutzer",
+  'settings.link.users.description': "Admin-Benutzerkonten verwalten.",
+  'settings.link.audit-log.label': "Audit-Protokoll",
+  'settings.link.audit-log.description': "Protokoll aller Änderungen im Admin-Bereich.",
+  'settings.link.error-log.label': "Fehlerprotokoll",
+  'settings.link.error-log.description': "Fehler der Website, Wiederholungen werden nur einmal gezählt.",
+  'settings.link.roles.label': "Rollen",
+  'settings.link.roles.description': "Rollenrechte in einem Matrixraster verwalten.",
+  'settings.link.export-and-import.label': "Exportieren und Importieren",
+  'settings.link.export-and-import.description': "Einstellungen, Inhalte und Benutzer exportieren oder aus einer anderen Website importieren.",
+  'settings.link.find-and-replace.label': "Suchen und Ersetzen",
+  'settings.link.find-and-replace.description': "Ein Wort oder eine Phrase auf Seiten, Beiträgen, Produkten und Veranstaltungen ändern. Vorher Vorschau ansehen.",
+  'settings.link.import-pages-and-posts.label': "Seiten und Beiträge importieren",
+  'settings.link.import-pages-and-posts.description': "Inhalte aus einem WordPress-Export oder einer CSV-Datei importieren. Importierte Einträge werden als Entwürfe gespeichert.",
 }
 
 export default de

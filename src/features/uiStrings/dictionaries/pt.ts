@@ -1262,6 +1262,27 @@ const pt: UiDictionary = {
   "store.country": "País (ex.: AU)",
   "store.couldNotPriceCart": "Não foi possível calcular o seu carrinho.",
   "store.storeCredit": "Crédito na loja",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "Banco de dados",
+  'settings.link.database.description': "Uso de tabelas e limpeza por recurso.",
+  'settings.link.site-health.label': "Saúde do site",
+  'settings.link.site-health.description': "Armazenamento, saúde das tarefas agendadas, versões e alertas.",
+  'settings.link.scheduled-tasks.label': "Tarefas agendadas",
+  'settings.link.scheduled-tasks.description': "Cada tarefa temporizada, seu último resultado e o que aguarda para entrar no ar.",
+  'settings.link.users.label': "Usuários",
+  'settings.link.users.description': "Gerencie as contas de usuário do painel.",
+  'settings.link.audit-log.label': "Log de auditoria",
+  'settings.link.audit-log.description': "Registro de todas as alterações feitas no painel.",
+  'settings.link.error-log.label': "Log de erros",
+  'settings.link.error-log.description': "Erros que o site encontrou, com repetições contadas uma única vez.",
+  'settings.link.roles.label': "Funções",
+  'settings.link.roles.description': "Gerencie as permissões de cada função em uma grade de matriz.",
+  'settings.link.export-and-import.label': "Exportar e importar",
+  'settings.link.export-and-import.description': "Exporte configurações, conteúdo e usuários, ou importe-os de outro site.",
+  'settings.link.find-and-replace.label': "Localizar e substituir",
+  'settings.link.find-and-replace.description': "Altere uma palavra ou frase em páginas, posts, produtos e eventos. Veja a prévia antes.",
+  'settings.link.import-pages-and-posts.label': "Importar páginas e posts",
+  'settings.link.import-pages-and-posts.description': "Importe conteúdo de uma exportação do WordPress ou de um arquivo CSV. Os itens importados são salvos como rascunhos.",
 }
 
 export default pt

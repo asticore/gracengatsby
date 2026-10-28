@@ -1303,6 +1303,27 @@ export const UI_STRING_SOURCE = {
   "store.country": "Country (e.g. AU)",
   "store.couldNotPriceCart": "Could not price your cart.",
   "store.storeCredit": "Store credit",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "Database",
+  'settings.link.database.description': "Per-feature table usage and cleanup.",
+  'settings.link.site-health.label': "Site health",
+  'settings.link.site-health.description': "Storage, scheduled job health, versions and warnings.",
+  'settings.link.scheduled-tasks.label': "Scheduled tasks",
+  'settings.link.scheduled-tasks.description': "Every timed job, its last result and what is waiting to go live.",
+  'settings.link.users.label': "Users",
+  'settings.link.users.description': "Manage admin user accounts.",
+  'settings.link.audit-log.label': "Audit log",
+  'settings.link.audit-log.description': "View a record of all admin changes.",
+  'settings.link.error-log.label': "Error log",
+  'settings.link.error-log.description': "Errors the site ran into, with repeats counted once.",
+  'settings.link.roles.label': "Roles",
+  'settings.link.roles.description': "Manage role permissions with a matrix grid.",
+  'settings.link.export-and-import.label': "Export and import",
+  'settings.link.export-and-import.description': "Export settings, content and users, or import them from another site.",
+  'settings.link.find-and-replace.label': "Find and replace",
+  'settings.link.find-and-replace.description': "Change a word or phrase across pages, posts, products and events. Preview first.",
+  'settings.link.import-pages-and-posts.label': "Import pages and posts",
+  'settings.link.import-pages-and-posts.description': "Bring content in from a WordPress export or a CSV file. Imported items are saved as drafts.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

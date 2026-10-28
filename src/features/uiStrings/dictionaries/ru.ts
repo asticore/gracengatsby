@@ -1262,6 +1262,27 @@ const ru: UiDictionary = {
   "store.country": "Страна (например, AU)",
   "store.couldNotPriceCart": "Не удалось рассчитать корзину.",
   "store.storeCredit": "Кредит магазина",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "База данных",
+  'settings.link.database.description': "Использование таблиц по функциям и очистка.",
+  'settings.link.site-health.label': "Состояние сайта",
+  'settings.link.site-health.description': "Хранилище, состояние плановых задач, версии и предупреждения.",
+  'settings.link.scheduled-tasks.label': "Плановые задачи",
+  'settings.link.scheduled-tasks.description': "Каждая задача по расписанию, её последний результат и то, что ждёт публикации.",
+  'settings.link.users.label': "Пользователи",
+  'settings.link.users.description': "Управление учётными записями администраторов.",
+  'settings.link.audit-log.label': "Журнал аудита",
+  'settings.link.audit-log.description': "Запись всех изменений, сделанных в панели администратора.",
+  'settings.link.error-log.label': "Журнал ошибок",
+  'settings.link.error-log.description': "Ошибки сайта; повторы учитываются один раз.",
+  'settings.link.roles.label': "Роли",
+  'settings.link.roles.description': "Управление правами ролей в матрице.",
+  'settings.link.export-and-import.label': "Экспорт и импорт",
+  'settings.link.export-and-import.description': "Экспорт настроек, контента и пользователей или импорт с другого сайта.",
+  'settings.link.find-and-replace.label': "Поиск и замена",
+  'settings.link.find-and-replace.description': "Измените слово или фразу на страницах, в записях, товарах и событиях. Сначала посмотрите предпросмотр.",
+  'settings.link.import-pages-and-posts.label': "Импорт страниц и записей",
+  'settings.link.import-pages-and-posts.description': "Загрузите контент из экспорта WordPress или CSV-файла. Импортированные элементы сохраняются как черновики.",
 }
 
 export default ru

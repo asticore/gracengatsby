@@ -1261,6 +1261,27 @@ const zhHans: UiDictionary = {
   "store.country": "国家（例如 AU）",
   "store.couldNotPriceCart": "无法为您的购物车计算价格。",
   "store.storeCredit": "商店余额",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "数据库",
+  'settings.link.database.description': "按功能查看表占用并清理。",
+  'settings.link.site-health.label': "站点健康",
+  'settings.link.site-health.description': "存储、定时任务状态、版本和警告。",
+  'settings.link.scheduled-tasks.label': "定时任务",
+  'settings.link.scheduled-tasks.description': "每个定时任务、其上次结果以及等待上线的内容。",
+  'settings.link.users.label': "用户",
+  'settings.link.users.description': "管理后台用户账户。",
+  'settings.link.audit-log.label': "审计日志",
+  'settings.link.audit-log.description': "记录管理后台的所有更改。",
+  'settings.link.error-log.label': "错误日志",
+  'settings.link.error-log.description': "网站遇到的错误，重复出现的只计一次。",
+  'settings.link.roles.label': "角色",
+  'settings.link.roles.description': "通过矩阵表管理角色权限。",
+  'settings.link.export-and-import.label': "导出和导入",
+  'settings.link.export-and-import.description': "导出设置、内容和用户，或从其他网站导入。",
+  'settings.link.find-and-replace.label': "查找和替换",
+  'settings.link.find-and-replace.description': "更改页面、文章、商品和活动中的词语或短语。请先预览。",
+  'settings.link.import-pages-and-posts.label': "导入页面和文章",
+  'settings.link.import-pages-and-posts.description': "从 WordPress 导出文件或 CSV 文件导入内容。导入的条目将保存为草稿。",
 }
 
 export default zhHans

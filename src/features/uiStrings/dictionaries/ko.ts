@@ -1262,6 +1262,27 @@ const ko: UiDictionary = {
   "store.country": "국가(예: AU)",
   "store.couldNotPriceCart": "장바구니 금액을 계산할 수 없습니다.",
   "store.storeCredit": "스토어 크레딧",
+  // --- admin leftovers (settings link cards data and system) ---
+  'settings.link.database.label': "데이터베이스",
+  'settings.link.database.description': "기능별 테이블 사용량과 정리.",
+  'settings.link.site-health.label': "사이트 상태",
+  'settings.link.site-health.description': "저장공간, 예약 작업 상태, 버전 및 경고.",
+  'settings.link.scheduled-tasks.label': "예약 작업",
+  'settings.link.scheduled-tasks.description': "모든 시간 기반 작업, 마지막 결과, 공개 대기 중인 항목.",
+  'settings.link.users.label': "사용자",
+  'settings.link.users.description': "관리자 사용자 계정을 관리합니다.",
+  'settings.link.audit-log.label': "감사 로그",
+  'settings.link.audit-log.description': "관리자에서 이루어진 모든 변경 기록.",
+  'settings.link.error-log.label': "오류 로그",
+  'settings.link.error-log.description': "사이트에서 발생한 오류이며, 반복된 오류는 한 번만 셉니다.",
+  'settings.link.roles.label': "역할",
+  'settings.link.roles.description': "권한을 매트릭스 표에서 관리합니다.",
+  'settings.link.export-and-import.label': "내보내기 및 가져오기",
+  'settings.link.export-and-import.description': "설정, 콘텐츠, 사용자를 내보내거나 다른 사이트에서 가져옵니다.",
+  'settings.link.find-and-replace.label': "찾기 및 바꾸기",
+  'settings.link.find-and-replace.description': "페이지, 글, 상품, 이벤트에서 단어나 문구를 변경합니다. 먼저 미리보기로 확인하세요.",
+  'settings.link.import-pages-and-posts.label': "페이지 및 글 가져오기",
+  'settings.link.import-pages-and-posts.description': "WordPress 내보내기 또는 CSV 파일에서 콘텐츠를 가져옵니다. 가져온 항목은 초안으로 저장됩니다.",
 }
 
 export default ko

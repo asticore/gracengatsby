@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { usePortalText } from '@/features/accounts/components/PortalText'
+import { localiseMessage } from '@/features/accounts/messages'
 
 import { addPasskey, listPasskeysRequest, passkeysSupported, removePasskeyRequest, renamePasskeyRequest } from '../client'
 
@@ -52,7 +53,7 @@ export const PasskeysPanel: React.FC<{ initial: PasskeyItem[] }> = ({ initial })
       setConfirm('')
       setNotice({ tone: 'ok', text: tx('panel.pkAddedNotice') })
     } else {
-      setNotice({ tone: 'error', text: result.message || tx('panel.pkAddFailed') })
+      setNotice({ tone: 'error', text: result.message ? localiseMessage(result.message, tx) : tx('panel.pkAddFailed') })
     }
   }
 
@@ -62,7 +63,7 @@ export const PasskeysPanel: React.FC<{ initial: PasskeyItem[] }> = ({ initial })
       setItems((list) => list.map((item) => (item.id === id ? { ...item, deviceLabel: editLabel.trim() } : item)))
       setEditing(null)
     } else {
-      setNotice({ tone: 'error', text: result.message || tx('panel.pkRenameFailed') })
+      setNotice({ tone: 'error', text: result.message ? localiseMessage(result.message, tx) : tx('panel.pkRenameFailed') })
     }
   }
 
@@ -75,7 +76,7 @@ export const PasskeysPanel: React.FC<{ initial: PasskeyItem[] }> = ({ initial })
       setItems((list) => list.filter((item) => item.id !== id))
       setNotice({ tone: 'ok', text: tx('panel.pkRemovedNotice') })
     } else {
-      setNotice({ tone: 'error', text: result.message || tx('panel.pkRemoveFailed') })
+      setNotice({ tone: 'error', text: result.message ? localiseMessage(result.message, tx) : tx('panel.pkRemoveFailed') })
     }
   }
 

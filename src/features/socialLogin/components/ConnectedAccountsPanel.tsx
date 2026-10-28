@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { usePortalText } from '@/features/accounts/components/PortalText'
+import { localiseMessage } from '@/features/accounts/messages'
 
 import { unlinkSocialAction } from '../actions'
 import type { ConnectionView } from '../connections'
@@ -29,7 +30,7 @@ export const ConnectedAccountsPanel: React.FC<{
     setMessage(null)
     const result = await unlinkSocialAction(provider)
     setBusy(false)
-    setMessage({ ok: result.ok, text: result.message })
+    setMessage({ ok: result.ok, text: localiseMessage(result.message, tx) })
     if (result.ok) router.refresh()
   }
 

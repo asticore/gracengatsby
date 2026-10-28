@@ -2167,6 +2167,24 @@ export const UI_STRING_SOURCE = {
   'se.lit.title': "Title",
   'se.lit.title_a_to_z': "Title A to Z",
   'se.lit.type': "Type",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "Action",
+  'st.lit.item': "Item",
+  'st.lit.job': "Job",
+  'st.lit.jobs': "Jobs",
+  'st.lit.last_20_runs': "Last 20 runs",
+  'st.lit.last_run': "Last run",
+  'st.lit.no_runs_recorded_yet': "No runs recorded yet.",
+  'st.lit.not_finished': "Not finished",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "Nothing is scheduled to publish or unpublish.",
+  'st.lit.open': "Open",
+  'st.lit.result': "Result",
+  'st.lit.runs': "Runs",
+  'st.lit.scheduled_tasks': "Scheduled tasks",
+  'st.lit.took': "Took",
+  'st.lit.waiting_to_go_live': "Waiting to go live",
+  'st.lit.when': "When",
+  'st.lit.worked': "Worked",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

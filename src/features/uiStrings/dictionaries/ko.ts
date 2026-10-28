@@ -2127,6 +2127,24 @@ const ko: UiDictionary = {
   'se.lit.title': "제목",
   'se.lit.title_a_to_z': "제목 가나다순",
   'se.lit.type': "유형",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "작업",
+  'st.lit.item': "항목",
+  'st.lit.job': "작업",
+  'st.lit.jobs': "작업",
+  'st.lit.last_20_runs': "최근 20회 실행",
+  'st.lit.last_run': "마지막 실행",
+  'st.lit.no_runs_recorded_yet': "아직 기록된 실행이 없습니다.",
+  'st.lit.not_finished': "완료되지 않음",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "게시 또는 게시 취소가 예약된 항목이 없습니다.",
+  'st.lit.open': "열기",
+  'st.lit.result': "결과",
+  'st.lit.runs': "실행 횟수",
+  'st.lit.scheduled_tasks': "예약된 작업",
+  'st.lit.took': "소요 시간",
+  'st.lit.waiting_to_go_live': "게시 대기 중",
+  'st.lit.when': "언제",
+  'st.lit.worked': "성공",
 }
 
 export default ko

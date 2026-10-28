@@ -2127,6 +2127,24 @@ const nl: UiDictionary = {
   'se.lit.title': "Titel",
   'se.lit.title_a_to_z': "Titel A tot Z",
   'se.lit.type': "Type",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "Actie",
+  'st.lit.item': "Item",
+  'st.lit.job': "Taak",
+  'st.lit.jobs': "Taken",
+  'st.lit.last_20_runs': "Laatste 20 uitvoeringen",
+  'st.lit.last_run': "Laatste uitvoering",
+  'st.lit.no_runs_recorded_yet': "Nog geen uitvoeringen vastgelegd.",
+  'st.lit.not_finished': "Niet voltooid",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "Er staat niets gepland om te publiceren of te depubliceren.",
+  'st.lit.open': "Openen",
+  'st.lit.result': "Resultaat",
+  'st.lit.runs': "Uitvoeringen",
+  'st.lit.scheduled_tasks': "Geplande taken",
+  'st.lit.took': "Duur",
+  'st.lit.waiting_to_go_live': "Wacht op publicatie",
+  'st.lit.when': "Wanneer",
+  'st.lit.worked': "Gelukt",
 }
 
 export default nl

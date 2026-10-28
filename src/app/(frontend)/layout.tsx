@@ -55,6 +55,9 @@ import { SiteEffects } from '@/components/site/SiteEffects'
 import { siteEffectsFor } from '@/components/site/siteEffectsConfig'
 import { renderChromeTemplates, requestPathOf } from '@/features/siteTemplates/chrome'
 import { ImpersonationBanner } from '@/features/impersonation/components/ImpersonationBanner'
+import { directionFor } from '@/features/multilingual/detect'
+import { LOCALE_HEADER, requestLocale } from '@/features/multilingual/routing'
+import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 
 import './styles.css'
 
@@ -219,13 +222,18 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       })
     : false
 
+  // Language for this request (null while multilingual is off: the document keeps its single-language markup).
+  const multilingual = await readMultilingualSettingsFromD1()
+  const locale = requestLocale((await headers()).get(LOCALE_HEADER), multilingual)
+
   // Header / footer templates (Site templates). Null for each when none matches, and the built-in ones draw.
   const chrome = await renderChromeTemplates(requestPathOf(await headers()))
   const siteEffects = siteEffectsFor(settings, requestPathOf(await headers()))
 
   return (
     <html
-      lang="en"
+      lang={locale ?? 'en'}
+      dir={locale ? directionFor(locale) : undefined}
       data-btn={theme?.buttonStyle || 'solid'}
       data-hover={theme?.hoverEffect || 'fade'}
     >

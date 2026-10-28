@@ -1,8 +1,11 @@
 import React from 'react'
+import { headers } from 'next/headers'
 
 import { getBlockContext } from '@/lib/blockContext'
 import { getEngine } from '@/lib/engine'
-import { getMultilingualSettings, localisedHref, localeNativeName, splitLocalePath } from '@/features/multilingual'
+
+import { getMultilingualSettings, localisedHref, localeNativeName } from '@/features/multilingual'
+import { LOCALE_HEADER, requestLocale } from '@/features/multilingual/routing'
 
 import { mediaOf, str } from './elementUtil'
 import './wave65.css'
@@ -72,8 +75,9 @@ async function languageData() {
   try {
     const settings = await getMultilingualSettings((await getEngine()) as never)
     if (!settings.enabled || settings.activeLocales.length < 2) return null
-    const { locale, rest } = splitLocalePath(getBlockContext().path || '/', settings.activeLocales)
-    return { settings, rest, current: locale ?? settings.defaultLocale }
+    // The middleware strips the locale prefix, so the path is the page and the header carries the language.
+    const current = requestLocale((await headers()).get(LOCALE_HEADER), settings) ?? settings.defaultLocale
+    return { settings, rest: getBlockContext().path || '/', current }
   } catch {
     return null
   }

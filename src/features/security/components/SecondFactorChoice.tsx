@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { sendChallengeEmailAction, twoFactorChallengeOptionsAction, type TwoFactorChallengeOptions } from '../twoFactorActions'
+import { usePortalText } from '@/features/accounts/components/PortalText'
 import './twoFactorExtras.css'
 
 /**
@@ -30,6 +31,7 @@ export const SecondFactorChoice: React.FC<Props> = ({ pendingToken, method, onMe
   const [options, setOptions] = useState<TwoFactorChallengeOptions>({ emailAvailable: false, trustAvailable: false, trustDays: 30 })
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const tx = usePortalText()
 
   useEffect(() => {
     let cancelled = false
@@ -51,7 +53,7 @@ export const SecondFactorChoice: React.FC<Props> = ({ pendingToken, method, onMe
       setNote(result.message ?? '')
       if (result.ok) onMethod('email')
     } catch {
-      setNote('Something went wrong. Try again.')
+      setNote(tx('common.somethingWrong'))
     } finally {
       setBusy(false)
     }
@@ -64,15 +66,15 @@ export const SecondFactorChoice: React.FC<Props> = ({ pendingToken, method, onMe
         <div className="tf-methods">
           {method === 'app' ? (
             <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => void sendEmailCode()}>
-              Email me a code instead
+              {tx('auth.emailCodeInstead')}
             </button>
           ) : (
             <>
               <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => void sendEmailCode()}>
-                Send a new code
+                {tx('auth.sendNewCode')}
               </button>
               <button type="button" className="btn btn--ghost" disabled={disabled || busy} onClick={() => { onMethod('app'); setNote('') }}>
-                Use my authenticator app
+                {tx('auth.useAuthenticatorApp')}
               </button>
             </>
           )}
@@ -86,7 +88,7 @@ export const SecondFactorChoice: React.FC<Props> = ({ pendingToken, method, onMe
       {options.trustAvailable && (
         <label className="tf-choice__remember">
           <input type="checkbox" name="trustDevice" checked={trust} onChange={(event) => onTrust(event.target.checked)} disabled={disabled} />
-          Remember this device for {options.trustDays} day{options.trustDays === 1 ? '' : 's'}
+          {options.trustDays === 1 ? tx('auth.rememberDeviceOne') : tx('auth.rememberDeviceMany', { days: options.trustDays })}
         </label>
       )}
     </div>

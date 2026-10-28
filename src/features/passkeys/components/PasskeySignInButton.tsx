@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 
+import { usePortalText } from '@/features/accounts/components/PortalText'
+
 import { signInWithPasskey } from '../client'
 
 /**
@@ -16,6 +18,7 @@ export const PasskeySignInButton: React.FC<{ next: string; area?: 'account' | 'a
 }) => {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const tx = usePortalText()
 
   const go = async () => {
     setBusy(true)
@@ -30,14 +33,14 @@ export const PasskeySignInButton: React.FC<{ next: string; area?: 'account' | 'a
       setBusy(false)
       return
     }
-    setMessage(result.message || 'Passkey sign-in did not work. Try again, or use another way to sign in.')
+    setMessage(result.message || tx('common.passkeyFailed'))
     setBusy(false)
   }
 
   return (
     <div className="account-passkey">
       <button type="button" className="account-button account-button--secondary" onClick={go} disabled={busy}>
-        {busy ? 'Waiting for your device...' : 'Sign in with a passkey'}
+        {busy ? tx('common.waitingDevice') : tx('common.signInWithPasskey')}
       </button>
       {message && (
         <p className="account-note account-note--error" role="alert">

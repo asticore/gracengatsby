@@ -46,6 +46,8 @@ import { sessionIdFromToken } from '@/features/security/userSessions'
 import { NEUTRAL_EMAIL_NOTICE, USERS_SLUG, failed, succeeded, type ActionState } from './types'
 import { confirmLink, requestLogin, safeLandingPath, verifyCode } from '@/features/passwordless'
 import { passwordlessDepsFor } from './passwordlessWiring'
+import { accountTexts } from './portalCopy'
+import { localiseMessage } from './messages'
 
 /**
  * Everything the account screens submit to.
@@ -92,7 +94,7 @@ const text = (form: FormData, field: string): string => {
 
 // --- Sign in, out, register -------------------------------------------------
 
-export async function signInAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function signInActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
 
@@ -115,7 +117,7 @@ export async function signInAction(_state: ActionState, form: FormData): Promise
     } else if (result.needsVerification) {
       await recordAuthEvent(context.engine, { action: 'email.refused', actorEmail: address || null, detail: 'sign-in held back: email not verified' }, origin)
     }
-    return failed(result.message ?? 'That did not work.')
+    return { ...failed(result.message ?? 'That did not work.'), code: result.needsVerification ? 'verify-first' : undefined }
   }
 
   await recordAuthEvent(context.engine, { action: 'login.success', actorId: result.userId ?? null, actorEmail: address || null }, origin)
@@ -127,7 +129,7 @@ export async function signInAction(_state: ActionState, form: FormData): Promise
  * Second step of a two-step sign-in. Its own rate-limit bucket ('two-factor'),
  * and a wrong code also counts toward the account lockout.
  */
-export async function signInCodeAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function signInCodeActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
 
@@ -186,7 +188,7 @@ export async function signOutAction(): Promise<void> {
  * screen, and the mailbox owner is emailed either a welcome or a "you already
  * have an account" note.
  */
-export async function registerAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function registerActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
 
@@ -217,7 +219,7 @@ export async function registerAction(_state: ActionState, form: FormData): Promi
 
 // --- Forgotten password -----------------------------------------------------
 
-export async function forgotPasswordAction(
+async function forgotPasswordActionImpl(
   _state: ActionState,
   form: FormData,
 ): Promise<ActionState> {
@@ -239,7 +241,7 @@ export async function forgotPasswordAction(
   return succeeded(NEUTRAL_EMAIL_NOTICE)
 }
 
-export async function resetPasswordAction(
+async function resetPasswordActionImpl(
   _state: ActionState,
   form: FormData,
 ): Promise<ActionState> {
@@ -263,7 +265,7 @@ export async function resetPasswordAction(
 
 // --- Email verification -----------------------------------------------------
 
-export async function verifyEmailAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function verifyEmailActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
 
@@ -280,7 +282,7 @@ export async function verifyEmailAction(_state: ActionState, form: FormData): Pr
   return succeeded('Your email address is confirmed. You can sign in now.')
 }
 
-export async function resendVerificationAction(
+async function resendVerificationActionImpl(
   _state: ActionState,
   form: FormData,
 ): Promise<ActionState> {
@@ -303,7 +305,7 @@ export async function resendVerificationAction(
 
 // --- Addresses --------------------------------------------------------------
 
-export async function saveAddressAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function saveAddressActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
   if (!context.user) return SIGNED_OUT
@@ -325,7 +327,7 @@ export async function saveAddressAction(_state: ActionState, form: FormData): Pr
   redirect('/account/addresses')
 }
 
-export async function deleteAddressAction(
+async function deleteAddressActionImpl(
   _state: ActionState,
   form: FormData,
 ): Promise<ActionState> {
@@ -343,7 +345,7 @@ export async function deleteAddressAction(
   return succeeded('That address has been removed.')
 }
 
-export async function setDefaultAddressAction(
+async function setDefaultAddressActionImpl(
   _state: ActionState,
   form: FormData,
 ): Promise<ActionState> {
@@ -363,7 +365,7 @@ export async function setDefaultAddressAction(
 
 // --- Profile ----------------------------------------------------------------
 
-export async function saveNameAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function saveNameActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
   if (!context.user) return SIGNED_OUT
@@ -377,7 +379,7 @@ export async function saveNameAction(_state: ActionState, form: FormData): Promi
  * The portal language. Empty clears the choice (automatic: cookie, then browser). Anything else must be one of
  * the site's active locales, and the refusal names no other language.
  */
-export async function saveLanguageAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function saveLanguageActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
   if (!context.user) return SIGNED_OUT
@@ -393,7 +395,7 @@ export async function saveLanguageAction(_state: ActionState, form: FormData): P
   return succeeded(requested ? 'Your language has been saved.' : 'Your language will follow your browser.')
 }
 
-export async function changeEmailAction(_state: ActionState, form: FormData): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
+async function changeEmailActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
   if (blocked) return failed(blocked)
 
   const context = await openContext()
@@ -414,7 +416,7 @@ export async function changeEmailAction(_state: ActionState, form: FormData): Pr
   return succeeded(result.message)
 }
 
-export async function changePasswordAction(
+async function changePasswordActionImpl(
   _state: ActionState,
   form: FormData,
 ): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
@@ -446,7 +448,7 @@ export async function changePasswordAction(
  * that is well formed, so the reply never shows whether an account exists. The
  * per-address and per-IP limits are counted before anything is looked up.
  */
-export async function requestLoginAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function requestLoginActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
 
@@ -475,7 +477,7 @@ export async function requestLoginAction(_state: ActionState, form: FormData): P
 }
 
 /** The six-digit code, typed with the address it was sent to. */
-export async function verifyCodeAction(_state: ActionState, form: FormData): Promise<ActionState> {
+async function verifyCodeActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {
   const context = await openContext()
   if (!context) return FEATURE_OFF
 
@@ -499,7 +501,7 @@ export async function verifyCodeAction(_state: ActionState, form: FormData): Pro
  * the one place the link is spent, so a mail scanner that fetches the URL cannot
  * sign anyone in or use the link up.
  */
-export async function confirmLinkAction(_state: ActionState, form: FormData): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
+async function confirmLinkActionImpl(_state: ActionState, form: FormData): Promise<ActionState> {  const blocked = refuseWhileImpersonating(await headers())
   if (blocked) return failed(blocked)
 
   const context = await openContext()
@@ -517,3 +519,82 @@ export async function confirmLinkAction(_state: ActionState, form: FormData): Pr
   redirect(safeLandingPath(text(form, 'next')))
 }
 
+// --- Portal language for messages -----------------------------------------
+/**
+ * Every action's sentence is written in English by the services. This hands the
+ * visitor the same sentence in their language (see `messages.ts`). Redirects
+ * still throw straight through, so a successful submit is unchanged.
+ */
+async function localisedState(result: ActionState): Promise<ActionState> {
+  if (!result.message) return result
+  const tx = await accountTexts()
+  return { ...result, message: localiseMessage(result.message, tx) }
+}
+
+export async function signInAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await signInActionImpl(state, form))
+}
+
+export async function signInCodeAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await signInCodeActionImpl(state, form))
+}
+
+export async function registerAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await registerActionImpl(state, form))
+}
+
+export async function forgotPasswordAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await forgotPasswordActionImpl(state, form))
+}
+
+export async function resetPasswordAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await resetPasswordActionImpl(state, form))
+}
+
+export async function verifyEmailAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await verifyEmailActionImpl(state, form))
+}
+
+export async function resendVerificationAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await resendVerificationActionImpl(state, form))
+}
+
+export async function saveAddressAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await saveAddressActionImpl(state, form))
+}
+
+export async function deleteAddressAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await deleteAddressActionImpl(state, form))
+}
+
+export async function setDefaultAddressAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await setDefaultAddressActionImpl(state, form))
+}
+
+export async function saveNameAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await saveNameActionImpl(state, form))
+}
+
+export async function saveLanguageAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await saveLanguageActionImpl(state, form))
+}
+
+export async function changeEmailAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await changeEmailActionImpl(state, form))
+}
+
+export async function changePasswordAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await changePasswordActionImpl(state, form))
+}
+
+export async function requestLoginAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await requestLoginActionImpl(state, form))
+}
+
+export async function verifyCodeAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await verifyCodeActionImpl(state, form))
+}
+
+export async function confirmLinkAction(state: ActionState, form: FormData): Promise<ActionState> {
+  return localisedState(await confirmLinkActionImpl(state, form))
+}

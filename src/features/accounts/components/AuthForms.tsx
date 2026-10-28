@@ -15,8 +15,9 @@ import {
   signInCodeAction,
   verifyEmailAction,
 } from '../actions'
-import { IDLE, VERIFY_FIRST_MESSAGE, type ActionState } from '../types'
+import { IDLE, type ActionState } from '../types'
 import { Note, SubmitButton } from './FormBits'
+import { usePortalText } from './PortalText'
 import { PasskeySignInButton } from '@/features/passkeys/components/PasskeySignInButton'
 import { SecondFactorChoice, type SecondFactorMethod } from '@/features/security/components/SecondFactorChoice'
 
@@ -39,6 +40,7 @@ export const SignInForm: React.FC<{
 }> = ({ next, justReset, initialPendingToken, passwordless, passkey }) => {
   const [state, action] = useActionState<ActionState, FormData>(signInAction, IDLE)
   const [passkeyPending, setPasskeyPending] = React.useState('')
+  const tx = usePortalText()
 
   if (state.pendingToken || initialPendingToken || passkeyPending) {
     return <CodeStep pendingToken={state.pendingToken || initialPendingToken || passkeyPending} next={next} />
@@ -49,32 +51,32 @@ export const SignInForm: React.FC<{
     <form action={action} className="account-form">
       {justReset && (
         <p className="account-note account-note--success">
-          Your password has been changed. Sign in with it below.
+          {tx('auth.passwordChanged')}
         </p>
       )}
       <input type="hidden" name="next" value={next} />
       <label>
-        Email
+        {tx('auth.email')}
         <input name="email" type="email" autoComplete="email" required />
       </label>
       <label>
-        Password
+        {tx('auth.password')}
         <input name="password" type="password" autoComplete="current-password" required />
       </label>
       <Note state={state} />
-      <SubmitButton>Sign in</SubmitButton>
+      <SubmitButton>{tx('auth.signIn')}</SubmitButton>
       {passkey && (
         <>
-          <p className="account-hint">Or use a passkey on this device.</p>
+          <p className="account-hint">{tx('auth.passkeyOr')}</p>
           <PasskeySignInButton next={next} onTwoFactor={setPasskeyPending} />
         </>
       )}
       <div className="account-link-row">
-        <Link href="/account/register">Create an account</Link>
-        <Link href="/account/forgot-password">Forgotten your password?</Link>
+        <Link href="/account/register">{tx('auth.createAccount')}</Link>
+        <Link href="/account/forgot-password">{tx('auth.forgotPasswordLink')}</Link>
       </div>
     </form>
-    {state.status === 'error' && state.message === VERIFY_FIRST_MESSAGE && <ResendVerificationForm />}
+    {state.status === 'error' && state.code === 'verify-first' && <ResendVerificationForm />}
     {passwordless && (passwordless.magicLink || passwordless.emailCode) && (
       <PasswordlessPanel magicLink={passwordless.magicLink} emailCode={passwordless.emailCode} next={next} />
     )}
@@ -88,25 +90,26 @@ export const CodeStep: React.FC<{ pendingToken: string; next: string }> = ({ pen
   const [method, setMethod] = useState<SecondFactorMethod>('app')
   const [trust, setTrust] = useState(false)
   const token = state.pendingToken || pendingToken
+  const tx = usePortalText()
 
   return (
     <form action={action} className="account-form">
       <p>
         {method === 'email'
-          ? 'Enter the 6-digit code we emailed you.'
-          : 'Enter the 6-digit code from your authenticator app. Lost your phone? Use one of your backup codes instead.'}
+          ? tx('auth.codeHintEmail')
+          : tx('auth.codeHintApp')}
       </p>
       <input type="hidden" name="next" value={next} />
       <input type="hidden" name="pendingToken" value={token} />
       <label>
-        Code
+        {tx('auth.code')}
         <input name="code" type="text" inputMode="text" autoComplete="one-time-code" autoFocus required />
       </label>
       <SecondFactorChoice pendingToken={token} method={method} onMethod={setMethod} trust={trust} onTrust={setTrust} />
       <Note state={state} />
-      <SubmitButton>Continue</SubmitButton>
+      <SubmitButton>{tx('auth.continue')}</SubmitButton>
       <div className="account-link-row">
-        <Link href="/account/sign-in">Start again</Link>
+        <Link href="/account/sign-in">{tx('auth.startAgain')}</Link>
       </div>
     </form>
   )
@@ -117,6 +120,7 @@ export type PasswordRules = { minLength: number; hint: string }
 
 export const RegisterForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
   const [state, action] = useActionState<ActionState, FormData>(registerAction, IDLE)
+  const tx = usePortalText()
 
   // On success the form is replaced by the sentence, because the sentence is
   // deliberately the same whether or not an account was created - leaving the
@@ -127,7 +131,7 @@ export const RegisterForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
         <Note state={state} />
         <p>
           <Link className="btn btn--primary" href="/account/sign-in">
-            Go to sign in
+            {tx('auth.goToSignIn')}
           </Link>
         </p>
       </div>
@@ -137,16 +141,16 @@ export const RegisterForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
   return (
     <form action={action} className="account-form">
       <label>
-        Email
+        {tx('auth.email')}
         <input name="email" type="email" autoComplete="email" required />
       </label>
       <label>
-        Password
+        {tx('auth.password')}
         <input name="password" type="password" autoComplete="new-password" minLength={rules.minLength} required aria-describedby="password-hint" />
       </label>
       <p className="account-hint" id="password-hint">{rules.hint}</p>
       <label>
-        Confirm password
+        {tx('auth.confirmPassword')}
         <input
           name="passwordConfirm"
           type="password"
@@ -156,9 +160,9 @@ export const RegisterForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
         />
       </label>
       <Note state={state} />
-      <SubmitButton>Create account</SubmitButton>
+      <SubmitButton>{tx('auth.createAccount')}</SubmitButton>
       <div className="account-link-row">
-        <Link href="/account/sign-in">Already have an account?</Link>
+        <Link href="/account/sign-in">{tx('auth.alreadyHaveAccount')}</Link>
       </div>
     </form>
   )
@@ -166,19 +170,20 @@ export const RegisterForm: React.FC<{ rules: PasswordRules }> = ({ rules }) => {
 
 export const ForgotPasswordForm: React.FC = () => {
   const [state, action] = useActionState<ActionState, FormData>(forgotPasswordAction, IDLE)
+  const tx = usePortalText()
 
   if (state.status === 'success') return <Note state={state} />
 
   return (
     <form action={action} className="account-form">
       <label>
-        Email
+        {tx('auth.email')}
         <input name="email" type="email" autoComplete="email" required />
       </label>
       <Note state={state} />
-      <SubmitButton>Email me a reset link</SubmitButton>
+      <SubmitButton>{tx('auth.emailResetLink')}</SubmitButton>
       <div className="account-link-row">
-        <Link href="/account/sign-in">Back to sign in</Link>
+        <Link href="/account/sign-in">{tx('auth.backToSignIn')}</Link>
       </div>
     </form>
   )
@@ -186,17 +191,18 @@ export const ForgotPasswordForm: React.FC = () => {
 
 export const ResetPasswordForm: React.FC<{ token: string; rules: PasswordRules }> = ({ token, rules }) => {
   const [state, action] = useActionState<ActionState, FormData>(resetPasswordAction, IDLE)
+  const tx = usePortalText()
 
   return (
     <form action={action} className="account-form">
       <input type="hidden" name="token" value={token} />
       <label>
-        New password
+        {tx('auth.newPassword')}
         <input name="password" type="password" autoComplete="new-password" minLength={rules.minLength} required aria-describedby="password-hint" />
       </label>
       <p className="account-hint" id="password-hint">{rules.hint}</p>
       <label>
-        Confirm new password
+        {tx('auth.confirmNewPassword')}
         <input
           name="passwordConfirm"
           type="password"
@@ -206,9 +212,9 @@ export const ResetPasswordForm: React.FC<{ token: string; rules: PasswordRules }
         />
       </label>
       <Note state={state} />
-      <SubmitButton>Save new password</SubmitButton>
+      <SubmitButton>{tx('auth.saveNewPassword')}</SubmitButton>
       <div className="account-link-row">
-        <Link href="/account/forgot-password">Send me a new link</Link>
+        <Link href="/account/forgot-password">{tx('auth.sendNewLink')}</Link>
       </div>
     </form>
   )
@@ -216,13 +222,14 @@ export const ResetPasswordForm: React.FC<{ token: string; rules: PasswordRules }
 
 export const VerifyEmailForm: React.FC<{ token: string }> = ({ token }) => {
   const [state, action] = useActionState<ActionState, FormData>(verifyEmailAction, IDLE)
+  const tx = usePortalText()
 
   if (state.status === 'success') {
     return (
       <>
         <Note state={state} />
         <div className="account-link-row">
-          <Link href="/account/sign-in">Sign in</Link>
+          <Link href="/account/sign-in">{tx('auth.signIn')}</Link>
         </div>
       </>
     )
@@ -232,24 +239,25 @@ export const VerifyEmailForm: React.FC<{ token: string }> = ({ token }) => {
     <form action={action} className="account-form">
       <input type="hidden" name="token" value={token} />
       <Note state={state} />
-      <SubmitButton>Confirm my email address</SubmitButton>
+      <SubmitButton>{tx('auth.confirmMyEmail')}</SubmitButton>
     </form>
   )
 }
 
 export const ResendVerificationForm: React.FC<{ email?: string }> = ({ email }) => {
   const [state, action] = useActionState<ActionState, FormData>(resendVerificationAction, IDLE)
+  const tx = usePortalText()
 
   if (state.status === 'success') return <Note state={state} />
 
   return (
     <form action={action} className="account-form">
       <label>
-        Email
+        {tx('auth.email')}
         <input name="email" type="email" autoComplete="email" defaultValue={email} required />
       </label>
       <Note state={state} />
-      <SubmitButton variant="ghost">Send me a new link</SubmitButton>
+      <SubmitButton variant="ghost">{tx('auth.sendNewLink')}</SubmitButton>
     </form>
   )
 }
@@ -262,6 +270,7 @@ export const ResendVerificationForm: React.FC<{ email?: string }> = ({ email }) 
 export const PasswordlessPanel: React.FC<{ magicLink: boolean; emailCode: boolean; next: string }> = ({ magicLink, emailCode, next }) => {
   const [state, action] = useActionState<ActionState, FormData>(requestLoginAction, IDLE)
   const [email, setEmail] = React.useState('')
+  const tx = usePortalText()
 
   if (state.status === 'success' && state.kind === 'code') {
     return <VerifyCodeForm email={state.email ?? ''} next={next} />
@@ -276,22 +285,22 @@ export const PasswordlessPanel: React.FC<{ magicLink: boolean; emailCode: boolea
 
   return (
     <div className="account-passwordless">
-      <p className="account-hint">Or sign in without a password.</p>
+      <p className="account-hint">{tx('auth.orNoPassword')}</p>
       <form action={action} className="account-form">
         <input type="hidden" name="next" value={next} />
         <label>
-          Email
+          {tx('auth.email')}
           <input name="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
         </label>
         <Note state={state} />
         {magicLink && (
           <button type="submit" name="kind" value="link" className="btn btn--style-secondary">
-            Email me a sign-in link
+            {tx('auth.emailSignInLink')}
           </button>
         )}
         {emailCode && (
           <button type="submit" name="kind" value="code" className="btn btn--style-secondary">
-            Email me a code
+            {tx('auth.emailCodeButton')}
           </button>
         )}
       </form>
@@ -302,22 +311,23 @@ export const PasswordlessPanel: React.FC<{ magicLink: boolean; emailCode: boolea
 /** The code step after an emailed code request. A two-step account is then asked for its authenticator code. */
 export const VerifyCodeForm: React.FC<{ email: string; next: string }> = ({ email, next }) => {
   const [state, action] = useActionState<ActionState, FormData>(verifyCodeAction, IDLE)
+  const tx = usePortalText()
 
   if (state.pendingToken) return <CodeStep pendingToken={state.pendingToken} next={next} />
 
   return (
     <form action={action} className="account-form">
-      <p>Enter the six-digit code we emailed to you. It works once.</p>
+      <p>{tx('auth.codeEmailedOnce')}</p>
       <input type="hidden" name="email" value={email} />
       <input type="hidden" name="next" value={next} />
       <label>
-        Code
+        {tx('auth.code')}
         <input name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} autoFocus required />
       </label>
       <Note state={state} />
-      <SubmitButton>Sign in</SubmitButton>
+      <SubmitButton>{tx('auth.signIn')}</SubmitButton>
       <div className="account-link-row">
-        <Link href="/account/sign-in">Start again</Link>
+        <Link href="/account/sign-in">{tx('auth.startAgain')}</Link>
       </div>
     </form>
   )
@@ -329,6 +339,7 @@ export const VerifyCodeForm: React.FC<{ email: string; next: string }> = ({ emai
  */
 export const SignInLinkForm: React.FC<{ token: string; next: string }> = ({ token, next }) => {
   const [state, action] = useActionState<ActionState, FormData>(confirmLinkAction, IDLE)
+  const tx = usePortalText()
 
   if (state.pendingToken) return <CodeStep pendingToken={state.pendingToken} next={next} />
 
@@ -336,9 +347,9 @@ export const SignInLinkForm: React.FC<{ token: string; next: string }> = ({ toke
     <form action={action} className="account-form">
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="next" value={next} />
-      <p>Press the button to sign in. The link works once.</p>
+      <p>{tx('auth.pressToSignIn')}</p>
       <Note state={state} />
-      <SubmitButton>Sign me in</SubmitButton>
+      <SubmitButton>{tx('auth.signMeIn')}</SubmitButton>
     </form>
   )
 }

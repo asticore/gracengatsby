@@ -1,12 +1,11 @@
 import React from 'react'
 
-import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
-import { portalText, type PortalStringKey } from '@/features/multilingual/portalStrings'
+import type { PortalStringKey } from '@/features/multilingual/portalStrings'
 
+import { accountTexts } from '../portalCopy'
 import { AccountNav } from './AccountNav'
 import { PortalTextProvider } from './PortalText'
 import { AccountStyles } from './styles'
-import { portalClientStrings } from '../portalClientStrings'
 
 /**
  * The frame around every signed-in screen, and the plainer one around the four
@@ -18,6 +17,9 @@ import { portalClientStrings } from '../portalClientStrings'
  * `'use client'` component, for its off-canvas-drawer toggle state on mobile -
  * added 2026-09-26, see that file's header comment) - this shell stays a
  * plain Server Component.
+ *
+ * Both shells load the visitor's translated strings and hand them to the client
+ * components below through `PortalTextProvider`.
  */
 
 const LINKS: { href: string; key: PortalStringKey }[] = [
@@ -49,13 +51,13 @@ export const AccountShell = async ({
   current: string
   children: React.ReactNode
 }) => {
-  const portalLocale = await currentPortalLocale()
+  const tx = await accountTexts()
   const entries = (await organizationsOn())
     ? [...LINKS.slice(0, -1), { href: '/account/organizations', key: 'nav.organizations' as const }, LINKS[LINKS.length - 1]]
     : LINKS
-  const links = entries.map((entry) => ({ href: entry.href, label: portalText(entry.key, portalLocale) }))
+  const links = entries.map((entry) => ({ href: entry.href, label: tx(entry.key) }))
   return (
-    <PortalTextProvider strings={portalClientStrings(portalLocale)}>
+    <PortalTextProvider strings={tx.dictionary}>
       <div className="page-shell">
         <AccountStyles />
         <h1>{title}</h1>
@@ -69,18 +71,14 @@ export const AccountShell = async ({
 }
 
 /** Sign in, register, forgotten password, reset - no navigation to show yet. */
-export const AuthShell = async ({
+export const AuthShell: React.FC<{ title: string; intro?: string; children: React.ReactNode }> = async ({
   title,
   intro,
   children,
-}: {
-  title: string
-  intro?: string
-  children: React.ReactNode
 }) => {
-  const portalLocale = await currentPortalLocale()
+  const tx = await accountTexts()
   return (
-    <PortalTextProvider strings={portalClientStrings(portalLocale)}>
+    <PortalTextProvider strings={tx.dictionary}>
       <div className="page-shell">
         <AccountStyles />
         <h1>{title}</h1>

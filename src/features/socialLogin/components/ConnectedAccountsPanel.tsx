@@ -3,6 +3,8 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { usePortalText } from '@/features/accounts/components/PortalText'
+
 import { unlinkSocialAction } from '../actions'
 import type { ConnectionView } from '../connections'
 
@@ -18,6 +20,7 @@ export const ConnectedAccountsPanel: React.FC<{
   notice?: string
 }> = ({ view, area, returnTo, notice }) => {
   const router = useRouter()
+  const tx = usePortalText()
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(notice ? { ok: false, text: notice } : null)
 
@@ -31,7 +34,7 @@ export const ConnectedAccountsPanel: React.FC<{
   }
 
   if (view.linked.length === 0 && view.available.length === 0) {
-    return <p>No sign-in providers are available on this site.</p>
+    return <p>{tx('social.noProviders')}</p>
   }
 
   return (
@@ -50,14 +53,14 @@ export const ConnectedAccountsPanel: React.FC<{
                 {row.email ? ` (${row.email})` : ''}
               </span>
               <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => unlink(row.provider)}>
-                Disconnect
+                {tx('common.disconnect')}
               </button>
             </li>
           ))}
         </ul>
       )}
       {view.linked.length > 0 && !view.hasPassword && (
-        <p className="account-note">You have no password yet. Use Forgotten your password to set one before disconnecting your last provider.</p>
+        <p className="account-note">{tx('social.noPasswordYet')}</p>
       )}
       {view.available.length > 0 && (
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -67,7 +70,7 @@ export const ConnectedAccountsPanel: React.FC<{
               className="btn btn--ghost"
               href={`/api/social/${p.id}/start?mode=link&area=${area}&next=${encodeURIComponent(returnTo)}`}
             >
-              Connect {p.label}
+              {tx('common.connect', { provider: p.label })}
             </a>
           ))}
         </div>

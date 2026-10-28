@@ -49,6 +49,8 @@ export type ActionState = {
   /** Set after an emailed sign-in request: which kind was sent, and the address it went to (echoed back for the code step). */
   kind?: 'link' | 'code'
   email?: string
+  /** A stable reason, so a screen never has to compare English text. */
+  code?: 'verify-first'
 }
 
 export const IDLE: ActionState = { status: 'idle', message: '' }

@@ -20,10 +20,10 @@ export const SubmitButton: React.FC<{ children: React.ReactNode; variant?: 'prim
   variant = 'primary',
 }) => {
   const { pending } = useFormStatus()
-  const t = usePortalText()
+  const tx = usePortalText()
   return (
     <button type="submit" className={`btn btn--${variant}`} disabled={pending}>
-      {pending ? t('form.working') : children}
+      {pending ? tx('common.working') : children}
     </button>
   )
 }

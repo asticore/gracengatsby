@@ -4,7 +4,6 @@ import Link from 'next/link'
 
 import { getEngine } from '@/lib/engine'
 import { SocialButtons } from '@/features/socialLogin/components/SocialButtons'
-import { socialMessage } from '@/features/socialLogin/messages'
 import { publicProviders, registerProviders } from '@/features/socialLogin/public'
 import { PENDING_COOKIE } from '@/features/socialLogin/http'
 
@@ -25,6 +24,8 @@ import { passwordlessDepsFor, passwordlessOptions } from '../passwordlessWiring'
 import { passkeySignInAvailable } from '../passkeysWiring'
 import { inspectLink, safeLandingPath } from '@/features/passwordless'
 import { requestClient } from '../session'
+import { accountTexts } from '../portalCopy'
+import { socialMessageText } from '../messages'
 
 /**
  * The four screens an unauthenticated visitor can reach.
@@ -48,21 +49,30 @@ export const SignInScreen: React.FC<{
   const providers = await publicProviders(engine, 'account')
   // A social sign-in that still needs its two-step code parks the pending token in an HttpOnly cookie.
   const pending = social === '2fa' ? ((await cookies()).get(PENDING_COOKIE)?.value ?? '') : ''
-  const message = socialError ? socialMessage(socialError) : ''
+  const tx = await accountTexts()
+  const message = socialError ? socialMessageText(socialError, tx) : ''
   // Off unless the owner switched an emailed option on, so an existing site renders exactly as before.
   const passwordless = await passwordlessOptions(engine, 'account')
   // Off unless the owner switched passkeys on. Existing sign-in screens render exactly as before.
   const passkey = await passkeySignInAvailable(engine, 'account')
 
   return (
-    <AuthShell title="Sign in">
+    <AuthShell title={tx('auth.signIn')}>
       {message && (
         <p className="account-note account-note--error" role="alert">
           {message}
         </p>
       )}
       <SignInForm next={safeNext} justReset={justReset} initialPendingToken={pending} passwordless={passwordless} passkey={passkey} />
-      {!pending && <SocialButtons providers={providers} next={safeNext} area="account" />}
+      {!pending && (
+        <SocialButtons
+          providers={providers}
+          next={safeNext}
+          area="account"
+          verb={tx('common.continueWith')}
+          orLabel={tx('common.or')}
+        />
+      )}
     </AuthShell>
   )
 }
@@ -73,23 +83,22 @@ export const RegisterScreen: React.FC = async () => {
   const engine = await getEngine()
   const providers = await registerProviders(engine)
   const rules = await passwordFormRules(engine)
+  const tx = await accountTexts()
 
   return (
-    <AuthShell title="Create an account" intro="Keep track of your orders, addresses and event bookings.">
+    <AuthShell title={tx('auth.createAccount')} intro={tx('auth.createAccountIntro')}>
       <RegisterForm rules={rules} />
-      <SocialButtons providers={providers} area="account" verb="Sign up with" />
+      <SocialButtons providers={providers} area="account" verb={tx('common.signUpWith')} orLabel={tx('common.or')} />
     </AuthShell>
   )
 }
 
 export const ForgotPasswordScreen: React.FC = async () => {
   await requireFeature()
+  const tx = await accountTexts()
 
   return (
-    <AuthShell
-      title="Forgotten your password"
-      intro="Enter your email address and we will send you a link to choose a new password."
-    >
+    <AuthShell title={tx('auth.forgotTitle')} intro={tx('auth.forgotIntro')}>
       <ForgotPasswordForm />
     </AuthShell>
   )
@@ -103,22 +112,18 @@ export const ForgotPasswordScreen: React.FC = async () => {
  */
 export const ResetPasswordScreen: React.FC<{ token?: string }> = async ({ token }) => {
   const { engine } = await requireFeature()
+  const tx = await accountTexts()
 
   if (!token) {
     return (
-      <AuthShell title="Choose a new password">
-        <p className="account-note account-note--error">
-          That link is incomplete. Ask for a new one from the forgotten password page.
-        </p>
+      <AuthShell title={tx('auth.chooseNewPassword')}>
+        <p className="account-note account-note--error">{tx('auth.resetIncomplete')}</p>
       </AuthShell>
     )
   }
 
   return (
-    <AuthShell
-      title="Choose a new password"
-      intro={`This link works once, and only within ${RESET_TTL_MINUTES} minutes of being sent.`}
-    >
+    <AuthShell title={tx('auth.chooseNewPassword')} intro={tx('auth.resetIntro', { minutes: RESET_TTL_MINUTES })}>
       <ResetPasswordForm token={token} rules={await passwordFormRules(engine)} />
     </AuthShell>
   )
@@ -131,22 +136,18 @@ export const ResetPasswordScreen: React.FC<{ token?: string }> = async ({ token 
  */
 export const VerifyEmailScreen: React.FC<{ token?: string }> = async ({ token }) => {
   await requireFeature()
+  const tx = await accountTexts()
 
   if (!token) {
     return (
-      <AuthShell title="Confirm your email">
-        <p className="account-note account-note--error">
-          That link is incomplete. Sign in to be sent a new one.
-        </p>
+      <AuthShell title={tx('auth.confirmEmailTitle')}>
+        <p className="account-note account-note--error">{tx('auth.verifyIncomplete')}</p>
       </AuthShell>
     )
   }
 
   return (
-    <AuthShell
-      title="Confirm your email"
-      intro={`This link works once, and only within ${VERIFY_TTL_HOURS} hours of being sent.`}
-    >
+    <AuthShell title={tx('auth.confirmEmailTitle')} intro={tx('auth.verifyIntro', { hours: VERIFY_TTL_HOURS })}>
       <VerifyEmailForm token={token} />
     </AuthShell>
   )
@@ -163,22 +164,21 @@ export const SignInLinkScreen: React.FC<{ token?: string; next?: string }> = asy
   const engine = await getEngine()
   const deps = await passwordlessDepsFor(engine, await requestClient())
   const valid = token ? await inspectLink(deps, token) : false
+  const tx = await accountTexts()
 
   if (!valid) {
     return (
-      <AuthShell title="Sign in">
-        <p className="account-note account-note--error">
-          That sign-in link is not valid. It may have expired or been used already.
-        </p>
+      <AuthShell title={tx('auth.signIn')}>
+        <p className="account-note account-note--error">{tx('auth.linkNotValid')}</p>
         <p className="account-link-row">
-          <Link href="/account/sign-in">Ask for a new one</Link>
+          <Link href="/account/sign-in">{tx('auth.askForNewOne')}</Link>
         </p>
       </AuthShell>
     )
   }
 
   return (
-    <AuthShell title="Sign in" intro="Confirm it is you to finish signing in.">
+    <AuthShell title={tx('auth.signIn')} intro={tx('auth.confirmItIsYou')}>
       <SignInLinkForm token={token ?? ''} next={landing} />
     </AuthShell>
   )

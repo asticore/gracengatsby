@@ -7,6 +7,7 @@ import { readPreferences } from '@/features/accounts/preferences'
 import { LOCALE_COOKIE } from './detect'
 import { resolvePortalLocale } from './portal'
 import { readMultilingualSettingsFromD1 } from './settings'
+import { loadStrings } from '@/features/uiStrings'
 
 /**
  * The portal language for the current request, or null when multilingual is
@@ -25,5 +26,8 @@ export const currentPortalLocale = cache(async (): Promise<string | null> => {
     // A failed profile read falls through to the cookie and the browser.
   }
 
-  return resolvePortalLocale({ settings, preferred, cookie: cookieValue, acceptLanguage })?.locale ?? null
+  const locale = resolvePortalLocale({ settings, preferred, cookie: cookieValue, acceptLanguage })?.locale ?? null
+  // Load the language now, so the synchronous portal lookups in this request (portalText, portalTextFor) read it.
+  await loadStrings(locale)
+  return locale
 })

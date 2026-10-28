@@ -12,11 +12,13 @@ export const SocialButtons: React.FC<{
   next?: string
   area?: 'account' | 'admin'
   verb?: string
-}> = ({ providers, next, area = 'account', verb = 'Continue with' }) => {
+  /** The word between the form and the buttons. English unless the caller passes a translation. */
+  orLabel?: string
+}> = ({ providers, next, area = 'account', verb = 'Continue with', orLabel = 'or' }) => {
   if (providers.length === 0) return null
   return (
     <div className="account-social" data-testid="social-buttons">
-      <p className="account-social__or">or</p>
+      <p className="account-social__or">{orLabel}</p>
       <ul className="account-social__list" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem' }}>
         {providers.map((provider) => {
           const query = new URLSearchParams({ area })

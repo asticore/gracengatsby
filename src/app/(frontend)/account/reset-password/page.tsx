@@ -1,12 +1,14 @@
 import React from 'react'
 import type { Metadata } from 'next'
 
+import { accountTitle } from '@/features/accounts/portalCopy'
+
 import { ResetPasswordScreen, accountMetadata } from '@/features/accounts'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return accountMetadata('Choose a new password')
+  return accountMetadata(await accountTitle('auth.chooseNewPassword'))
 }
 
 export default async function ResetPasswordRoute({

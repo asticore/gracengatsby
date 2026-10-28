@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/admin/auth'
 import { runTranslationBulk } from '@/features/multilingual/translationActions'
+import { isClearInactiveBody, runClearInactive } from '@/features/multilingual/clearInactive'
 import { buildDocumentTranslations } from '@/features/multilingual/documentTranslations'
 import { getMultilingualSettings } from '@/features/multilingual/settings'
 import { findTranslations } from '@/features/multilingual/store'
@@ -23,9 +24,25 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const context = await getAdminContext()
     const body: unknown = await request.json().catch((): null => null)
+    const user = context.user ? { id: Number((context.user as { id?: unknown }).id) } : null
+
+    if (isClearInactiveBody(body)) {
+      const cleared = await runClearInactive({
+        engine: context.engine as never,
+        user: user
+          ? { id: user.id, email: (context.user as { email?: string } | null)?.email ?? null }
+          : null,
+        isAdmin: context.isAdmin,
+        canDelete: Boolean(context.can('translations', 'delete')),
+        body,
+        request,
+      })
+      return NextResponse.json(cleared.body, { status: cleared.status, headers: { 'Cache-Control': 'no-store' } })
+    }
+
     const result = await runTranslationBulk({
       engine: context.engine as never,
-      user: context.user ? { id: Number((context.user as { id?: unknown }).id) } : null,
+      user,
       isAdmin: context.isAdmin,
       canUpdate: Boolean(context.can('translations', 'update')),
       body,

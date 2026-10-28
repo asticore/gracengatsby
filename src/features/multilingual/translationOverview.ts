@@ -134,12 +134,12 @@ export function statusOf(row: OverviewRow, locale: string | null): TranslationSt
  * language), `status` (equals / not_equals) and `assignee` (equals a user id,
  * `me` being resolved by the caller). Anything else is ignored, as on the hub.
  */
-export function filterOverviewRows(
-  rows: OverviewRow[],
+export function filterOverviewRows<T extends OverviewRow>(
+  rows: T[],
   filters: ListFilter[],
   q: string,
   viewerId: number | null,
-): OverviewRow[] {
+): T[] {
   const needle = q.trim().toLowerCase()
   const locale = filters.find((filter) => filter.field === 'locale' && filter.op === 'equals')?.value ?? null
 
@@ -177,7 +177,7 @@ export function filterOverviewRows(
 }
 
 /** Sort by a column, `-` for descending. Unknown columns fall back to the default. */
-export function sortOverviewRows(rows: OverviewRow[], sort: string): OverviewRow[] {
+export function sortOverviewRows<T extends OverviewRow>(rows: T[], sort: string): T[] {
   const known = (SORT_FIELDS as readonly string[]).includes(sort.replace(/^-/, ''))
   const column = known ? sort.replace(/^-/, '') : OVERVIEW_DEFAULT_SORT.slice(1)
   const direction = known && sort.startsWith('-') ? -1 : known ? 1 : -1
@@ -207,7 +207,7 @@ export function sortOverviewRows(rows: OverviewRow[], sort: string): OverviewRow
   })
 }
 
-export function pageOverviewRows(rows: OverviewRow[], page: number, limit: number): { rows: OverviewRow[]; totalPages: number; page: number } {
+export function pageOverviewRows<T extends OverviewRow>(rows: T[], page: number, limit: number): { rows: T[]; totalPages: number; page: number } {
   const size = Math.max(1, limit)
   const totalPages = Math.max(1, Math.ceil(rows.length / size))
   const current = Math.min(Math.max(1, Math.floor(page) || 1), totalPages)

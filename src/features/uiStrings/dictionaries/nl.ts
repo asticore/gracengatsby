@@ -1204,6 +1204,25 @@ const nl: UiDictionary = {
   "store.shipping": "Verzending",
   "store.tax": "Btw",
   "store.orderConfirmed": "Bedankt - je bestelling is bevestigd.",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Cookietoestemming",
+  'settings.link.cookie-consent.description': "Bannertekst, kleuren, voorbeeld en toestemmingslog.",
+  'settings.link.google-connection.label': "Google-verbinding",
+  'settings.link.google-connection.description': "Koppel Google Analytics, Search Console, Tag Manager en AdSense met je eigen Google Cloud-client.",
+  'settings.link.theming.label': "Thema-opmaak",
+  'settings.link.theming.description': "Kleuren, tekst, knoppen, tabellen, formulieren, layout en presets, één keer ingesteld voor de hele site.",
+  'settings.link.translations.label': "Vertalingen",
+  'settings.link.translations.description': "Beheer alle vertalingen in één tabel.",
+  'settings.link.redirects.label': "Doorverwijzingen",
+  'settings.link.redirects.description': "URL-doorverwijzingen maken en beheren.",
+  'settings.link.options-pages.label': "Optiepagina's",
+  'settings.link.options-pages.description': "Veldwaarden voor de hele site, zoals contactgegevens en openingstijden.",
+  'settings.link.shop-settings.label': "Winkelinstellingen",
+  'settings.link.shop-settings.description': "Eenheden, betalingen, verzending, facturen, cadeaubonnen, afrekenen en e-mails",
+  'settings.link.display-currencies.label': "Weergavevaluta's",
+  'settings.link.display-currencies.description': "Toon prijzen in andere valuta's. Klanten betalen altijd in de winkelvaluta.",
+  'settings.link.cache-tools.label': "Cachehulpmiddelen",
+  'settings.link.cache-tools.description': "Wis nu de opgeslagen paginakopieën en zet de Cloudflare-ontwikkelmodus aan of uit.",
 }
 
 export default nl

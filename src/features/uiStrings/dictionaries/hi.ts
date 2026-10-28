@@ -1204,6 +1204,25 @@ const hi: UiDictionary = {
   "store.shipping": "शिपिंग",
   "store.tax": "कर",
   "store.orderConfirmed": "धन्यवाद - आपका ऑर्डर पक्का हो गया है।",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "कुकी सहमति",
+  'settings.link.cookie-consent.description': "बैनर का टेक्स्ट, रंग, पूर्वावलोकन और सहमति लॉग",
+  'settings.link.google-connection.label': "Google कनेक्शन",
+  'settings.link.google-connection.description': "अपने Google Cloud क्लाइंट से Google Analytics, Search Console, Tag Manager और AdSense जोड़ें।",
+  'settings.link.theming.label': "थीम स्टाइलिंग",
+  'settings.link.theming.description': "रंग, टेक्स्ट, बटन, टेबल, फ़ॉर्म, लेआउट और प्रीसेट, पूरी साइट के लिए एक बार सेट करें।",
+  'settings.link.translations.label': "अनुवाद",
+  'settings.link.translations.description': "हर अनुवाद एक ही टेबल में प्रबंधित करें।",
+  'settings.link.redirects.label': "रीडायरेक्ट",
+  'settings.link.redirects.description': "URL रीडायरेक्ट बनाएँ और प्रबंधित करें।",
+  'settings.link.options-pages.label': "विकल्प पेज",
+  'settings.link.options-pages.description': "संपर्क विवरण और कार्य समय जैसे साइट-व्यापी फ़ील्ड मान।",
+  'settings.link.shop-settings.label': "स्टोर सेटिंग्स",
+  'settings.link.shop-settings.description': "इकाइयाँ, भुगतान, शिपिंग, इनवॉइस, गिफ्ट कार्ड, चेकआउट और ईमेल",
+  'settings.link.display-currencies.label': "प्रदर्शन मुद्राएँ",
+  'settings.link.display-currencies.description': "अन्य मुद्राओं में कीमतें दिखाएँ। खरीदार हमेशा स्टोर की मुद्रा में भुगतान करते हैं।",
+  'settings.link.cache-tools.label': "कैश टूल",
+  'settings.link.cache-tools.description': "सहेजी गई पेज प्रतियाँ अभी साफ़ करें और Cloudflare डेव्लपमेंट मोड चालू या बंद करें।",
 }
 
 export default hi

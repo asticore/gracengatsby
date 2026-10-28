@@ -1203,6 +1203,25 @@ const zhHans: UiDictionary = {
   "store.shipping": "运费",
   "store.tax": "税费",
   "store.orderConfirmed": "感谢您，您的订单已确认。",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Cookie 同意",
+  'settings.link.cookie-consent.description': "横幅文字、颜色、预览和同意记录",
+  'settings.link.google-connection.label': "Google 连接",
+  'settings.link.google-connection.description': "使用您自己的 Google Cloud 客户端连接 Google Analytics、Search Console、Tag Manager 和 AdSense。",
+  'settings.link.theming.label': "主题样式",
+  'settings.link.theming.description': "颜色、文字、按钮、表格、表单、布局和预设，一次设置即可应用于整个网站。",
+  'settings.link.translations.label': "翻译",
+  'settings.link.translations.description': "在一个表格中管理所有翻译。",
+  'settings.link.redirects.label': "重定向",
+  'settings.link.redirects.description': "创建和管理 URL 重定向。",
+  'settings.link.options-pages.label': "选项页面",
+  'settings.link.options-pages.description': "全站通用的字段值，例如联系方式和营业时间。",
+  'settings.link.shop-settings.label': "商店设置",
+  'settings.link.shop-settings.description': "单位、付款、配送、发票、礼品卡、结账和邮件",
+  'settings.link.display-currencies.label': "显示货币",
+  'settings.link.display-currencies.description': "以其他货币显示价格。买家始终使用商店货币付款。",
+  'settings.link.cache-tools.label': "缓存工具",
+  'settings.link.cache-tools.description': "立即清除已保存的页面副本，并开启或关闭 Cloudflare 开发模式。",
 }
 
 export default zhHans

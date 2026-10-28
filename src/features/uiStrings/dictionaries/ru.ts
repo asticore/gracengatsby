@@ -1204,6 +1204,25 @@ const ru: UiDictionary = {
   "store.shipping": "Доставка",
   "store.tax": "Налог",
   "store.orderConfirmed": "Спасибо! Ваш заказ подтверждён.",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Согласие на cookies",
+  'settings.link.cookie-consent.description': "Текст баннера, цвета, предпросмотр и журнал согласий",
+  'settings.link.google-connection.label': "Подключение Google",
+  'settings.link.google-connection.description': "Подключите Google Analytics, Search Console, Tag Manager и AdSense с помощью собственного клиента Google Cloud.",
+  'settings.link.theming.label': "Оформление темы",
+  'settings.link.theming.description': "Цвета, текст, кнопки, таблицы, формы, макет и пресеты, настраиваются один раз для всего сайта.",
+  'settings.link.translations.label': "Переводы",
+  'settings.link.translations.description': "Управляйте всеми переводами в одной таблице.",
+  'settings.link.redirects.label': "Перенаправления",
+  'settings.link.redirects.description': "Создание и управление перенаправлениями URL.",
+  'settings.link.options-pages.label': "Страницы настроек",
+  'settings.link.options-pages.description': "Значения полей для всего сайта, например контакты и часы работы.",
+  'settings.link.shop-settings.label': "Настройки магазина",
+  'settings.link.shop-settings.description': "Единицы, оплата, доставка, счета, подарочные карты, оформление заказа и письма",
+  'settings.link.display-currencies.label': "Валюты отображения",
+  'settings.link.display-currencies.description': "Показывайте цены в других валютах. Покупатели всегда платят в валюте магазина.",
+  'settings.link.cache-tools.label': "Инструменты кеша",
+  'settings.link.cache-tools.description': "Сейчас очистить сохранённые копии страниц и включить или выключить режим разработки Cloudflare.",
 }
 
 export default ru

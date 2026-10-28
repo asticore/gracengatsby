@@ -1204,6 +1204,25 @@ const it: UiDictionary = {
   "store.shipping": "Spedizione",
   "store.tax": "Imposte",
   "store.orderConfirmed": "Grazie, il tuo ordine è confermato.",
+  // --- admin leftovers (settings link cards 2) ---
+  'settings.link.cookie-consent.label': "Consenso cookie",
+  'settings.link.cookie-consent.description': "Testo del banner, colori, anteprima e registro dei consensi.",
+  'settings.link.google-connection.label': "Connessione Google",
+  'settings.link.google-connection.description': "Collega Google Analytics, Search Console, Tag Manager e AdSense con il tuo client Google Cloud.",
+  'settings.link.theming.label': "Stili del tema",
+  'settings.link.theming.description': "Colori, testo, pulsanti, tabelle, moduli, layout e preset, impostati una sola volta per tutto il sito.",
+  'settings.link.translations.label': "Traduzioni",
+  'settings.link.translations.description': "Gestisci tutte le traduzioni in un'unica tabella.",
+  'settings.link.redirects.label': "Reindirizzamenti",
+  'settings.link.redirects.description': "Crea e gestisci i reindirizzamenti degli URL.",
+  'settings.link.options-pages.label': "Pagine opzioni",
+  'settings.link.options-pages.description': "Valori dei campi per tutto il sito, come contatti e orari di apertura.",
+  'settings.link.shop-settings.label': "Impostazioni negozio",
+  'settings.link.shop-settings.description': "Unità, pagamenti, spedizioni, fatture, buoni regalo, checkout ed e-mail",
+  'settings.link.display-currencies.label': "Valute di visualizzazione",
+  'settings.link.display-currencies.description': "Mostra i prezzi in altre valute. Gli acquirenti pagano sempre nella valuta del negozio.",
+  'settings.link.cache-tools.label': "Strumenti della cache",
+  'settings.link.cache-tools.description': "Cancella subito le copie salvate delle pagine e attiva o disattiva la modalità sviluppo di Cloudflare.",
 }
 
 export default it

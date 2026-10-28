@@ -30,7 +30,7 @@ import { passwordRulesOf } from '@/features/security/passwordCheck'
 import { DEFAULT_PASSWORD_POLICY } from '@/features/security/passwordPolicyDefaults'
 import { ConnectedAccountsPanel } from '@/features/socialLogin/components/ConnectedAccountsPanel'
 import { viewConnections } from '@/features/socialLogin/connections'
-import { socialMessageText } from '../messages'
+import { passwordHintSay, socialMessageText } from '../messages'
 import { accountTexts } from '../portalCopy'
 import { AddressForm, AddressRowActions, EmailForm, LanguageForm, NameForm, PasswordForm, type LanguageOption } from './AccountForms'
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
@@ -437,7 +437,7 @@ export const ProfileScreen: React.FC<{ socialError?: string; passwordDue?: boole
         {passwordDue ? (
           <p className="account-note account-note--error">{tx('profile.passwordDue')}</p>
         ) : null}
-        <PasswordForm rules={passwordRulesOf(settings?.passwordPolicy ?? DEFAULT_PASSWORD_POLICY)} />
+        <PasswordForm rules={passwordRulesOf(settings?.passwordPolicy ?? DEFAULT_PASSWORD_POLICY, passwordHintSay(tx))} />
       </section>
 
       <section className="account-section" id="security">

@@ -22,8 +22,23 @@ export type OverviewListRow = {
   typeLabel: string
   progress: number
   updatedAt: string | null
+  /** Public address of the page, or null. */
+  url: string | null
+  /** Where the title goes: the builder's Translate mode, or the document editor fallback. */
   editHref: string
-  cells: Array<{ locale: string; status: TranslationStatus; statusLabel: string; approved: number; total: number }>
+  mode: 'builder' | 'editor'
+  inactiveCount: number
+  outdatedCount: number
+  inactive: Array<{ locale: string; localeLabel: string; fieldPath: string; reason: 'field-removed' | 'document-missing'; value: string }>
+  cells: Array<{
+    locale: string
+    status: TranslationStatus
+    statusLabel: string
+    approved: number
+    total: number
+    href: string
+    mode: 'builder' | 'editor'
+  }>
   assignees: Array<{ id: number; label: string }>
 }
 
@@ -38,6 +53,8 @@ export type TranslationsOverviewProps = {
   sortState: string
   sortLinks: Record<string, string>
   bulkApi: string
+  /** The same route as bulkApi; clear-inactive is a second action on it. */
+  clearApi?: string
   hasRows: boolean
   emptyFiltered: boolean
   selectedKey: string | null
@@ -50,11 +67,18 @@ export type TranslationsOverviewProps = {
 
 const SORTABLE = new Set(['title', 'type', 'progress', 'updatedAt'])
 const COLUMN_LABELS: Record<string, string> = {
-  title: 'Item',
+  title: 'Title',
   type: 'Type',
+  url: 'URL',
   progress: 'Progress',
+  inactive: 'Inactive',
   assignee: 'Assigned to',
-  updatedAt: 'Updated',
+  updatedAt: 'Last source change',
+}
+
+const REASON_LABELS: Record<'field-removed' | 'document-missing', string> = {
+  'field-removed': 'The field or block is gone from the page',
+  'document-missing': 'The page was deleted',
 }
 
 type Notice = { tone: 'ok' | 'error'; text: string } | null
@@ -108,16 +132,105 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
 
   const keys = [...picked]
 
+  // Clear inactive: count first (dry run), confirm with the number, then delete. Only orphaned rows are ever deleted.
+  const clearInactive = async (payload: Record<string, unknown>): Promise<void> => {
+    if (!props.clearApi) return
+    setBusy(true)
+    setNotice(null)
+    try {
+      const preview = await fetch(props.clearApi, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ...payload, action: 'clear-inactive', dryRun: true }),
+      })
+      const previewBody = (await preview.json().catch((): null => null)) as { count?: number; error?: string } | null
+      if (!preview.ok) {
+        setNotice({ tone: 'error', text: previewBody?.error ?? 'Could not check the inactive translations.' })
+        return
+      }
+      const count = Number(previewBody?.count ?? 0)
+      if (count === 0) {
+        setNotice({ tone: 'ok', text: 'No inactive translations to clear.' })
+        return
+      }
+      const scope = payload.scope === 'all' ? 'across the whole site' : 'for the selected items'
+      const confirmed = window.confirm(
+        `Delete ${count} inactive translation${count === 1 ? '' : 's'} ${scope}? Their field or page no longer exists. Active and outdated translations are kept.`,
+      )
+      if (!confirmed) return
+      const response = await fetch(props.clearApi, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ...payload, action: 'clear-inactive' }),
+      })
+      const body = (await response.json().catch((): null => null)) as { deleted?: number; refused?: string[]; error?: string } | null
+      if (!response.ok) {
+        setNotice({ tone: 'error', text: body?.error ?? 'The inactive translations could not be cleared.' })
+        return
+      }
+      const refused = body?.refused ?? []
+      setNotice({
+        tone: refused.length ? 'error' : 'ok',
+        text: [`Cleared ${body?.deleted ?? 0} inactive translation${body?.deleted === 1 ? '' : 's'}.`, ...refused.map((r) => `Could not remove ${r}.`)].join(' '),
+      })
+      if ((body?.deleted ?? 0) > 0) setTimeout(() => window.location.reload(), 600)
+    } catch {
+      setNotice({ tone: 'error', text: 'Could not reach the server. Try again.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const cell = (row: OverviewListRow, name: string) => {
     switch (name) {
       case 'title':
         return (
-          <a className="list-link" href={row.editHref} aria-current={props.selectedKey === row.key ? 'true' : undefined}>
-            {row.title}
-          </a>
+          <div className="flex flex-col gap-[2px]">
+            <a
+              className="list-link"
+              href={row.editHref}
+              title={row.mode === 'builder' ? 'Open in the builder, translating' : 'Open the translation editor'}
+              aria-current={props.selectedKey === row.key ? 'true' : undefined}
+            >
+              {row.title}
+            </a>
+            {row.inactive.length > 0 ? (
+              <details className="text-[12px]">
+                <summary className="cursor-pointer text-[var(--theme-elevation-600)]">
+                  {row.inactiveCount} inactive translation{row.inactiveCount === 1 ? '' : 's'}
+                </summary>
+                <div className="mt-[4px] flex flex-col gap-[4px] rounded-[5px] border border-[var(--theme-elevation-150)] p-[8px]">
+                  <p className="text-[var(--theme-elevation-600)]">These no longer match anything on the page. Active and outdated translations are not affected.</p>
+                  <ul className="flex flex-col gap-[4px]">
+                    {row.inactive.map((entry, index) => (
+                      <li key={`${entry.locale}:${entry.fieldPath}:${index}`}>
+                        <strong>{entry.localeLabel}</strong> · <code>{entry.fieldPath}</code> · {REASON_LABELS[entry.reason]}
+                        <div className="text-[var(--theme-elevation-500)]">{entry.value}</div>
+                      </li>
+                    ))}
+                  </ul>
+                  <button type="button" className="btn self-start" disabled={busy} onClick={() => clearInactive({ scope: 'items', items: [row.key] })}>
+                    Clear inactive for this page
+                  </button>
+                </div>
+              </details>
+            ) : null}
+          </div>
         )
       case 'type':
         return row.typeLabel
+      case 'url':
+        return row.url ? (
+          <a className="list-link text-[12px]" href={row.url} target="_blank" rel="noreferrer">
+            {row.url}
+          </a>
+        ) : (
+          '-'
+        )
+      case 'inactive':
+        return row.inactiveCount > 0 ? <span className="whitespace-nowrap">{row.inactiveCount}</span> : '-'
       case 'progress':
         return (
           <span className="whitespace-nowrap">
@@ -139,6 +252,24 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
         <span>{keys.length} selected</span>
         <button type="button" className="btn" disabled={busy || keys.length === 0} onClick={() => send({ action: 'approve', items: keys }, 'Approved')}>
           Mark approved
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={busy || keys.length === 0 || !props.clearApi}
+          title="Deletes inactive translations (their field or page is gone) for the selected pages. Active and outdated translations are kept."
+          onClick={() => clearInactive({ scope: 'items', items: keys })}
+        >
+          Clear inactive
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={busy || !props.clearApi}
+          title="Deletes every inactive translation on the site, after confirming the number. Admins only."
+          onClick={() => clearInactive({ scope: 'all' })}
+        >
+          Clear all inactive
         </button>
         <button
           type="button"
@@ -253,9 +384,18 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
                     return (
                       <td key={code} className="list-td">
                         {entry ? (
-                          <span title={`${entry.approved} of ${entry.total} approved`}>
-                            <TranslationStatusBadge status={entry.status} label={entry.statusLabel} />
-                          </span>
+                          <a
+                            href={entry.href}
+                            className="inline-flex no-underline"
+                            title={`${entry.approved} of ${entry.total} approved. ${entry.mode === 'builder' ? 'Open the page in this language.' : 'Open the translation editor.'}`}
+                          >
+                            <span className="whitespace-nowrap">
+                              <TranslationStatusBadge status={entry.status} label={entry.statusLabel} />
+                              <span className="ml-[4px] text-[12px] tabular-nums">
+                                {entry.approved}/{entry.total}
+                              </span>
+                            </span>
+                          </a>
                         ) : null}
                       </td>
                     )

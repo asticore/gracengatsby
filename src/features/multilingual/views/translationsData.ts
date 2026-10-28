@@ -1,10 +1,10 @@
 import { adminCollectionPath } from '@/admin/adminPaths'
 
-import { INTERFACE_SOURCE_ID, INTERFACE_STRINGS } from '../interfaceStrings'
 import type { MultilingualSettings } from '../settings'
 import { findTranslations, sourceTextOf, valueAtPath, type TranslationRow } from '../store'
 import { fieldsForDocument, sourceIdFor, TRANSLATABLE_COLLECTIONS } from '../translatableFields'
 import { buildOverviewRows, type OverviewItemInput } from '../translationOverview'
+import type { LiveDocument } from '../documentRows'
 
 /**
  * Loads every translatable item and its stored translations for the overview.
@@ -16,6 +16,9 @@ import { buildOverviewRows, type OverviewItemInput } from '../translationOvervie
  *
  * Capped per collection: the overview is a working list, and a site with more
  * than this many documents in one collection should filter by type first.
+ *
+ * On-page content only. Interface strings (admin and portal chrome) are not
+ * listed here; the storefront's own strings stay in interfaceStrings.ts.
  */
 
 export const ITEMS_PER_COLLECTION = 500
@@ -30,24 +33,18 @@ type EngineLike = {
 export type OverviewUser = { id: number; label: string; email: string }
 
 export type OverviewData = {
+  /** Documents with at least one translatable field that has source text. */
   items: OverviewItemInput[]
+  /** Every loaded document with all of its translatable fields, empty or not. Used to classify stored rows. */
+  documents: LiveDocument[]
   stored: TranslationRow[]
 }
 
-const interfaceItems = (): OverviewItemInput[] =>
-  INTERFACE_STRINGS.map((entry): OverviewItemInput => ({
-    sourceKind: 'interface',
-    sourceId: INTERFACE_SOURCE_ID,
-    type: 'interface',
-    typeLabel: 'Interface string',
-    title: entry.key,
-    updatedAt: null,
-    editHref: null,
-    fields: [{ fieldPath: entry.key, label: entry.key, sourceText: entry.en }],
-  }))
+export type ContentLoad = { items: OverviewItemInput[]; documents: LiveDocument[] }
 
-async function contentItems(engine: EngineLike, user: unknown): Promise<OverviewItemInput[]> {
+export async function loadContent(engine: EngineLike, user: unknown): Promise<ContentLoad> {
   const items: OverviewItemInput[] = []
+  const documents: LiveDocument[] = []
 
   for (const source of TRANSLATABLE_COLLECTIONS) {
     let docs: Record<string, unknown>[] = []
@@ -67,48 +64,60 @@ async function contentItems(engine: EngineLike, user: unknown): Promise<Overview
 
     for (const doc of docs) {
       const id = String(doc.id)
-      const fields = fieldsForDocument(source.slug, doc)
-        .map((field) => ({
-          fieldPath: field.path,
-          label: field.label,
-          sourceText: sourceTextOf(valueAtPath(doc, field.path)),
-        }))
-        // An empty field has nothing to translate, and an empty source cell teaches a translator nothing.
-        .filter((field) => field.sourceText.length > 0)
+      const sourceId = sourceIdFor(source.slug, id)
+      const allFields = fieldsForDocument(source.slug, doc).map((field) => ({
+        fieldPath: field.path,
+        label: field.label,
+        sourceText: sourceTextOf(valueAtPath(doc, field.path)),
+      }))
+      const slug = typeof doc.slug === 'string' && doc.slug.length > 0 ? doc.slug : null
+      const updatedAt = typeof doc.updatedAt === 'string' ? doc.updatedAt : null
+
+      documents.push({
+        collection: source.slug,
+        documentId: id,
+        sourceId,
+        title: String(valueAtPath(doc, source.titleField) ?? `Untitled ${id}`),
+        slug,
+        updatedAt,
+        fields: new Map(allFields.map((field) => [field.fieldPath, field.sourceText])),
+      })
+
+      // An empty field has nothing to translate, and an empty source cell teaches a translator nothing.
+      const fields = allFields.filter((field) => field.sourceText.length > 0)
+      if (fields.length === 0) continue
 
       items.push({
         sourceKind: 'collection' as const,
-        sourceId: sourceIdFor(source.slug, id),
+        sourceId,
         type: source.slug,
         typeLabel: source.label,
         title: String(valueAtPath(doc, source.titleField) ?? `Untitled ${id}`),
-        updatedAt: typeof doc.updatedAt === 'string' ? doc.updatedAt : null,
+        updatedAt,
         editHref: `${adminCollectionPath(source.slug)}/${id}`,
         fields,
       })
     }
   }
 
-  return items
+  return { items, documents }
 }
 
-/** Every item the overview can list, with its translatable fields and their current source text. */
+/** Every document the table can list, with its translatable fields and their current source text. */
 export async function loadOverviewData(args: {
   engine: EngineLike
   user: unknown
   settings: MultilingualSettings
 }): Promise<OverviewData> {
   const targetLocales = args.settings.activeLocales.filter((code) => code !== args.settings.defaultLocale)
-  if (targetLocales.length === 0) return { items: [], stored: [] }
+  if (targetLocales.length === 0) return { items: [], documents: [], stored: [] }
 
   const [content, stored] = await Promise.all([
-    contentItems(args.engine, args.user),
+    loadContent(args.engine, args.user),
     findTranslations(args.engine, { locales: targetLocales }),
   ])
 
-  // Interface strings sit first in the list only because they are the first
-  // thing a new site needs translated; the table sorts them like everything else.
-  return { items: [...interfaceItems(), ...content].filter((item) => item.fields.length > 0), stored }
+  return { items: content.items, documents: content.documents, stored }
 }
 
 const BACKLOG_TTL_MS = 60_000

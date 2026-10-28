@@ -1,15 +1,15 @@
 import type { NextRequest } from 'next/server'
 
+import { multilingualMiddleware } from '@/features/multilingual/middleware'
 import { securityMiddleware } from '@/features/security'
 
 /**
- * Everything here lives in features/security: the security headers, probe-path
- * blocking, rate limiting, and the `x-pathname` header the layout reads to
- * work out which page it is rendering.
+ * Locale routing (features/multilingual) wraps the security pipeline in
+ * features/security. Both live in their features; this file only composes them.
  *
  * Kept as a one-liner on purpose. Middleware runs on every single request, so
  * it is the worst place for logic to accumulate quietly.
  */
 export function middleware(request: NextRequest) {
-  return securityMiddleware(request)
+  return multilingualMiddleware(request, securityMiddleware)
 }

@@ -1,5 +1,8 @@
 import { revalidatePath } from 'next/cache'
 
+import { localeVariantPaths, localeVariantUrls } from '@/features/multilingual/routing'
+import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
+
 import { bumpCacheEpoch } from './epoch'
 import { getSpeedSettings } from './settings'
 
@@ -46,9 +49,12 @@ export type PurgeResult = {
  * That is the honest promise to put in front of the "clear saved copies" toggle.
  */
 export async function purgeCache(paths: string[] | string, options: { force?: boolean } = {}): Promise<PurgeResult> {
-  const list = Array.from(
+  const base = Array.from(
     new Set((Array.isArray(paths) ? paths : [paths]).map((p) => (p.startsWith('/') ? p : `/${p}`)).filter(Boolean)),
   )
+  // Locale variants (/fr/...) are cached under their own URLs, so they are purged with the page.
+  const multilingual = await readMultilingualSettingsFromD1()
+  const list = Array.from(new Set(base.flatMap((p) => localeVariantPaths(p, multilingual))))
 
   const result: PurgeResult = { ran: false, paths: list, edgeEvicted: [], revalidated: [], errors: [] }
   if (!list.length) return result
@@ -175,6 +181,8 @@ export async function purgeCloudflareByUrls(urls: string[], options: { onPublish
 
   if (urls.length === 0) return result
 
+  const targets = localeVariantUrls(urls, await readMultilingualSettingsFromD1())
+
   try {
     const { getEngine } = await import('@/lib/engine')
     const engine = await getEngine()
@@ -195,8 +203,8 @@ export async function purgeCloudflareByUrls(urls: string[], options: { onPublish
     const { zoneId, apiToken } = integrations.cloudflare as { zoneId: string; apiToken: string }
 
     // Batch into groups of 30
-    for (let i = 0; i < urls.length; i += 30) {
-      const batch = urls.slice(i, i + 30)
+    for (let i = 0; i < targets.length; i += 30) {
+      const batch = targets.slice(i, i + 30)
       const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
         method: 'POST',
         headers: {

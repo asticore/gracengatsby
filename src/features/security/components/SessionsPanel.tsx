@@ -12,6 +12,7 @@ import {
 } from '../userSessionActions'
 import { markEmailVerifiedAction } from '../emailVerificationActions'
 import type { SessionOutcome, SessionView } from '../userSessionService'
+import { usePortalText } from '@/features/accounts/components/PortalText'
 import { TrustedDevicesList } from './TrustedDevicesList'
 
 /**
@@ -48,28 +49,29 @@ const itemStyle: React.CSSProperties = {
 }
 const badgeStyle: React.CSSProperties = { marginLeft: '0.5rem', padding: '0.1rem 0.5rem', borderRadius: 999, border: '1px solid currentColor', fontSize: '0.8rem' }
 
-const when = (iso: string | null): string => {
-  if (!iso) return 'Unknown'
+const when = (iso: string | null, unknown: string): string => {
+  if (!iso) return unknown
   const time = Date.parse(iso)
-  return Number.isFinite(time) ? new Date(time).toLocaleString() : 'Unknown'
+  return Number.isFinite(time) ? new Date(time).toLocaleString() : unknown
 }
 
 const SessionList: React.FC<{ sessions: SessionView[]; busy: boolean; onRevoke: (id: string) => void }> = ({ sessions, busy, onRevoke }) => {
-  if (sessions.length === 0) return <p>No signed-in devices are listed.</p>
+  const tx = usePortalText()
+  if (sessions.length === 0) return <p>{tx('panel.sessionsNone')}</p>
   return (
     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
       {sessions.map((session) => (
         <li key={session.id} style={itemStyle}>
           <div>
             <strong>{session.device}</strong>
-            {session.current && <span style={badgeStyle}>This device</span>}
+            {session.current && <span style={badgeStyle}>{tx('panel.thisDevice')}</span>}
             <div>
-              Near {session.ip ?? 'unknown address'} - signed in {when(session.createdAt)} - last active {when(session.lastSeenAt)}
+              {tx('panel.sessionDetail', { ip: session.ip ?? tx('panel.unknownAddress'), signed: when(session.createdAt, tx('panel.unknown')), active: when(session.lastSeenAt, tx('panel.unknown')) })}
             </div>
           </div>
           {!session.current && (
             <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => onRevoke(session.id)}>
-              Revoke
+              {tx('panel.revoke')}
             </button>
           )}
         </li>
@@ -84,16 +86,17 @@ export const SessionsPanel: React.FC<Props> = ({ sessions, isAdmin }) => {
   const [notice, setNotice] = useState<Notice>(null)
   const [lookupEmail, setLookupEmail] = useState('')
   const [looked, setLooked] = useState<{ email: string; sessions: SessionView[] } | null>(null)
+  const tx = usePortalText()
 
   const run = async (task: () => Promise<SessionOutcome>, after?: () => Promise<void> | void) => {
     setBusy(true)
     setNotice(null)
     try {
       const result = await task()
-      setNotice({ tone: result.ok ? 'ok' : 'error', text: result.message || (result.ok ? 'Done.' : 'That did not work.') })
+      setNotice({ tone: result.ok ? 'ok' : 'error', text: result.message || (result.ok ? tx('panel.done') : tx('msg.didNotWork')) })
       if (result.ok) await after?.()
     } catch {
-      setNotice({ tone: 'error', text: 'Something went wrong. Check your connection and try again.' })
+      setNotice({ tone: 'error', text: tx('panel.networkError') })
     } finally {
       setBusy(false)
     }
@@ -120,10 +123,10 @@ export const SessionsPanel: React.FC<Props> = ({ sessions, isAdmin }) => {
           disabled={busy || others === 0}
           onClick={() => run(() => revokeOtherSessionsAction(), () => router.refresh())}
         >
-          Sign out other devices
+          {tx('panel.signOutOthers')}
         </button>
       </div>
-      <p>Devices that signed in before this list existed are not shown here. They sign out on their own within a couple of hours.</p>
+      <p>{tx('panel.sessionsLegacy')}</p>
       {notice && (
         <p role="status" aria-live="polite" style={noticeStyle(notice.tone)}>
           {notice.text}

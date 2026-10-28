@@ -695,6 +695,22 @@ export const UI_STRING_SOURCE = {
   'portal.orgs.refusal.wrong_account': 'This invitation was sent to a different email address. Sign in with that account.',
   'portal.orgs.refusal.role_in_use': 'That role is still held by a member or a pending invitation.',
   'portal.orgs.refusal.email_failed': 'The invitation was saved but the email could not be sent. Try resending it.',
+  'portal.panel.unknown': 'Unknown',
+  'portal.panel.unknownAddress': 'unknown address',
+  'portal.panel.devicesHeading': 'Remembered devices',
+  'portal.panel.devicesIntro': 'These devices skip the second step until they expire. A password change forgets all of them.',
+  'portal.panel.devicesNone': 'No devices are remembered.',
+  'portal.panel.devicesDetail': 'Near {ip} - added {added} - expires {expires}',
+  'portal.panel.forget': 'Forget',
+  'portal.panel.forgetAll': 'Forget all devices',
+  'portal.panel.thisDevice': 'This device',
+  'portal.panel.revoke': 'Revoke',
+  'portal.panel.sessionsNone': 'No signed-in devices are listed.',
+  'portal.panel.sessionDetail': 'Near {ip} - signed in {signed} - last active {active}',
+  'portal.panel.signOutOthers': 'Sign out other devices',
+  'portal.panel.sessionsLegacy': 'Devices that signed in before this list existed are not shown here. They sign out on their own within a couple of hours.',
+  'portal.panel.done': 'Done.',
+  'portal.panel.networkError': 'Something went wrong. Check your connection and try again.',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

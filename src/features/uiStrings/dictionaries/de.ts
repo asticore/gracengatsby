@@ -655,6 +655,22 @@ const de: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'Diese Einladung wurde an eine andere E-Mail-Adresse gesendet. Melden Sie sich mit diesem Konto an.',
   'portal.orgs.refusal.role_in_use': 'Diese Rolle ist noch einem Mitglied oder einer offenen Einladung zugeordnet.',
   'portal.orgs.refusal.email_failed': 'Die Einladung wurde gespeichert, aber die E-Mail konnte nicht gesendet werden. Versuchen Sie, sie erneut zu senden.',
+  'portal.panel.unknown': 'Unbekannt',
+  'portal.panel.unknownAddress': 'unbekannte Adresse',
+  'portal.panel.devicesHeading': 'Gemerkte Geräte',
+  'portal.panel.devicesIntro': 'Diese Geräte überspringen den zweiten Schritt, bis sie ablaufen. Eine Passwortänderung vergisst alle.',
+  'portal.panel.devicesNone': 'Keine Geräte gemerkt.',
+  'portal.panel.devicesDetail': 'In der Nähe von {ip} - hinzugefügt {added} - läuft ab {expires}',
+  'portal.panel.forget': 'Vergessen',
+  'portal.panel.forgetAll': 'Alle Geräte vergessen',
+  'portal.panel.thisDevice': 'Dieses Gerät',
+  'portal.panel.revoke': 'Widerrufen',
+  'portal.panel.sessionsNone': 'Keine angemeldeten Geräte aufgelistet.',
+  'portal.panel.sessionDetail': 'In der Nähe von {ip} - angemeldet {signed} - zuletzt aktiv {active}',
+  'portal.panel.signOutOthers': 'Auf anderen Geräten abmelden',
+  'portal.panel.sessionsLegacy': 'Geräte, die sich angemeldet haben, bevor es diese Liste gab, werden hier nicht angezeigt. Sie melden sich innerhalb weniger Stunden automatisch ab.',
+  'portal.panel.done': 'Fertig.',
+  'portal.panel.networkError': 'Etwas ist schiefgelaufen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
 }
 
 export default de

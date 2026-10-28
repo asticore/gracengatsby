@@ -654,6 +654,22 @@ const fr: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'Cette invitation a été envoyée à une autre adresse e-mail. Connectez-vous avec ce compte.',
   'portal.orgs.refusal.role_in_use': 'Ce rôle est encore attribué à un membre ou à une invitation en attente.',
   'portal.orgs.refusal.email_failed': 'L\'invitation a été enregistrée, mais l\'e-mail n\'a pas pu être envoyé. Essayez de la renvoyer.',
+  'portal.panel.unknown': 'Inconnu',
+  'portal.panel.unknownAddress': 'adresse inconnue',
+  'portal.panel.devicesHeading': 'Appareils mémorisés',
+  'portal.panel.devicesIntro': 'Ces appareils ignorent la deuxième étape jusqu\'à leur expiration. Un changement de mot de passe les oublie tous.',
+  'portal.panel.devicesNone': 'Aucun appareil mémorisé.',
+  'portal.panel.devicesDetail': 'Près de {ip} - ajouté le {added} - expire le {expires}',
+  'portal.panel.forget': 'Oublier',
+  'portal.panel.forgetAll': 'Oublier tous les appareils',
+  'portal.panel.thisDevice': 'Cet appareil',
+  'portal.panel.revoke': 'Révoquer',
+  'portal.panel.sessionsNone': 'Aucun appareil connecté n\'est listé.',
+  'portal.panel.sessionDetail': 'Près de {ip} - connecté le {signed} - dernière activité {active}',
+  'portal.panel.signOutOthers': 'Déconnecter les autres appareils',
+  'portal.panel.sessionsLegacy': 'Les appareils connectés avant la création de cette liste n\'apparaissent pas ici. Ils se déconnectent d\'eux-mêmes dans quelques heures.',
+  'portal.panel.done': 'Terminé.',
+  'portal.panel.networkError': 'Une erreur s\'est produite. Vérifiez votre connexion et réessayez.',
 }
 
 export default fr

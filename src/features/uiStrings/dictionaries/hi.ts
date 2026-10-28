@@ -654,6 +654,22 @@ const hi: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'यह आमंत्रण किसी दूसरे ईमेल पते पर भेजा गया था। उस खाते से साइन इन करें।',
   'portal.orgs.refusal.role_in_use': 'यह भूमिका अब भी किसी सदस्य या लंबित आमंत्रण के पास है।',
   'portal.orgs.refusal.email_failed': 'आमंत्रण सहेज लिया गया, पर ईमेल नहीं भेजा जा सका। उसे दोबारा भेजने की कोशिश करें।',
+  'portal.panel.unknown': 'अज्ञात',
+  'portal.panel.unknownAddress': 'अज्ञात पता',
+  'portal.panel.devicesHeading': 'याद रखे गए डिवाइस',
+  'portal.panel.devicesIntro': 'ये डिवाइस समाप्त होने तक दूसरा चरण छोड़ देते हैं। पासवर्ड बदलने पर ये सब भूल जाए जाते हैं।',
+  'portal.panel.devicesNone': 'कोई डिवाइस याद नहीं रखा गया है।',
+  'portal.panel.devicesDetail': '{ip} के पास - {added} को जोड़ा गया - {expires} को समाप्त होगा',
+  'portal.panel.forget': 'भूलें',
+  'portal.panel.forgetAll': 'सभी डिवाइस भूलें',
+  'portal.panel.thisDevice': 'यह डिवाइस',
+  'portal.panel.revoke': 'रद्द करें',
+  'portal.panel.sessionsNone': 'कोई साइन-इन किया हुआ डिवाइस सूचीबद्ध नहीं है।',
+  'portal.panel.sessionDetail': '{ip} के पास - {signed} को साइन इन किया - अंतिम सक्रियता {active}',
+  'portal.panel.signOutOthers': 'अन्य डिवाइस से साइन आउट करें',
+  'portal.panel.sessionsLegacy': 'यह सूची बनने से पहले साइन इन किए गए डिवाइस यहाँ नहीं दिखते। वे कुछ घंटों में अपने-आप साइन आउट हो जाते हैं।',
+  'portal.panel.done': 'हो गया।',
+  'portal.panel.networkError': 'कुछ गड़बड़ हो गई। अपना कनेक्शन जाँचें और फिर से कोशिश करें।',
 }
 
 export default hi

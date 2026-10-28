@@ -654,6 +654,22 @@ const ar: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'أُرسلت هذه الدعوة إلى عنوان بريد إلكتروني مختلف. سجّل الدخول بذلك الحساب.',
   'portal.orgs.refusal.role_in_use': 'ما زال هذا الدور مشغولاً بعضو أو بدعوة معلّقة.',
   'portal.orgs.refusal.email_failed': 'تم حفظ الدعوة لكن تعذّر إرسال البريد الإلكتروني. حاول إعادة إرسالها.',
+  'portal.panel.unknown': 'غير معروف',
+  'portal.panel.unknownAddress': 'عنوان غير معروف',
+  'portal.panel.devicesHeading': 'الأجهزة المتذكَّرة',
+  'portal.panel.devicesIntro': 'تتخطى هذه الأجهزة الخطوة الثانية حتى تنتهي صلاحيتها. يؤدي تغيير كلمة المرور إلى نسيانها جميعاً.',
+  'portal.panel.devicesNone': 'لا توجد أجهزة متذكَّرة.',
+  'portal.panel.devicesDetail': 'قرب {ip} - أُضيف في {added} - تنتهي في {expires}',
+  'portal.panel.forget': 'نسيان',
+  'portal.panel.forgetAll': 'نسيان جميع الأجهزة',
+  'portal.panel.thisDevice': 'هذا الجهاز',
+  'portal.panel.revoke': 'إلغاء',
+  'portal.panel.sessionsNone': 'لا توجد أجهزة مسجّلة الدخول معروضة.',
+  'portal.panel.sessionDetail': 'قرب {ip} - سجّل الدخول في {signed} - آخر نشاط {active}',
+  'portal.panel.signOutOthers': 'تسجيل الخروج من الأجهزة الأخرى',
+  'portal.panel.sessionsLegacy': 'لا تظهر هنا الأجهزة التي سجّلت الدخول قبل إنشاء هذه القائمة. تسجّل خروجها تلقائياً خلال ساعات قليلة.',
+  'portal.panel.done': 'تم.',
+  'portal.panel.networkError': 'حدث خطأ ما. تحقّق من اتصالك وحاول مرة أخرى.',
 }
 
 export default ar

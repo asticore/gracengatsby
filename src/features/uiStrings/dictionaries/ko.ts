@@ -654,6 +654,22 @@ const ko: UiDictionary = {
   'portal.orgs.refusal.wrong_account': '이 초대는 다른 이메일 주소로 보내졌습니다. 해당 계정으로 로그인하세요.',
   'portal.orgs.refusal.role_in_use': '이 역할은 아직 구성원이나 대기 중인 초대가 사용하고 있습니다.',
   'portal.orgs.refusal.email_failed': '초대는 저장되었지만 이메일을 보낼 수 없었습니다. 다시 보내 보세요.',
+  'portal.panel.unknown': '알 수 없음',
+  'portal.panel.unknownAddress': '알 수 없는 주소',
+  'portal.panel.devicesHeading': '기억된 기기',
+  'portal.panel.devicesIntro': '이 기기들은 만료될 때까지 2단계 인증을 건너뜁니다. 비밀번호를 바꾸면 모두 잊혀집니다.',
+  'portal.panel.devicesNone': '기억된 기기가 없습니다.',
+  'portal.panel.devicesDetail': '{ip} 근처 - {added}에 추가됨 - {expires}에 만료',
+  'portal.panel.forget': '잊기',
+  'portal.panel.forgetAll': '모든 기기 잊기',
+  'portal.panel.thisDevice': '이 기기',
+  'portal.panel.revoke': '취소',
+  'portal.panel.sessionsNone': '로그인된 기기가 없습니다.',
+  'portal.panel.sessionDetail': '{ip} 근처 - {signed}에 로그인 - 마지막 활동 {active}',
+  'portal.panel.signOutOthers': '다른 기기에서 로그아웃',
+  'portal.panel.sessionsLegacy': '이 목록이 생기기 전에 로그인한 기기는 여기에 표시되지 않습니다. 몇 시간 안에 자동으로 로그아웃됩니다.',
+  'portal.panel.done': '완료.',
+  'portal.panel.networkError': '문제가 발생했습니다. 연결을 확인하고 다시 시도하세요.',
 }
 
 export default ko

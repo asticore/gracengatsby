@@ -11,11 +11,6 @@ const row = (sourceId: string, fieldPath: string, value: string | null, extra: R
   id: `${sourceId}:${fieldPath}`,
   locale: 'fr',
   sourceKind: 'collection',
-  status: null,
-  assignedTo: [],
-  machineProvider: null,
-  reviewedBy: null,
-  reviewedAt: null,
   sourceId,
   fieldPath,
   value,
@@ -115,10 +110,10 @@ describe('publish rule on the overlay', () => {
   const pageId = sourceIdFor('pages', 7)
 
   it('with review off, shows machine drafts and rows with no status, as before', () => {
-    const rows = [row(pageId, 'title', 'Brouillon', { status: 'machine_draft' }), row(pageId, 'meta.title', 'Legacy', { status: null })]
+    const rows = [row(pageId, 'title', 'Brouillon', { status: 'machine_draft' }), row(pageId, 'seo.metaTitle', 'Legacy', { status: null })]
     const out = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', noReview), true)
     expect(out.title).toBe('Brouillon')
-    expect(out.meta.title).toBe('Legacy')
+    expect(out.seo.metaTitle).toBe('Legacy')
   })
 
   it('with review off, a stale translation is still shown', () => {
@@ -130,13 +125,13 @@ describe('publish rule on the overlay', () => {
   it('with review on, shows only approved and current translations', () => {
     const rows = [
       row(pageId, 'title', 'À propos', { status: 'approved', sourceText: 'About us' }),
-      row(pageId, 'meta.title', 'Brouillon', { status: 'needs_review', sourceText: 'About | Site' }),
-      row(pageId, 'meta.description', 'Machine', { status: 'machine_draft', sourceText: 'Who we are' }),
+      row(pageId, 'seo.metaTitle', 'Brouillon', { status: 'needs_review', sourceText: 'About | Site' }),
+      row(pageId, 'seo.metaDescription', 'Machine', { status: 'machine_draft', sourceText: 'Who we are' }),
     ]
     const out = overlayDocument(page, 'pages', 7, lookupFor(rows, 'fr', review), true)
     expect(out.title).toBe('À propos')
-    expect(out.meta.title).toBe('About | Site')
-    expect(out.meta.description).toBe('Who we are')
+    expect(out.seo.metaTitle).toBe('About | Site')
+    expect(out.seo.metaDescription).toBe('Who we are')
   })
 
   it('with review on, an approved translation of changed source text is not shown', () => {

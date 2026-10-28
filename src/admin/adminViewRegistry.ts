@@ -24,6 +24,7 @@ import { ABResultsView } from '@/features/abTesting/components/ABResultsView'
 import { VisualEditorView } from '@/views/VisualEditor'
 import { RolesView } from '@/admin/views/RolesView'
 import { SettingsTransferView } from '@/admin/views/SettingsTransferView'
+import { InterfaceLanguagesView } from '@/admin/views/InterfaceLanguagesView'
 import { FindReplaceView } from '@/admin/views/FindReplaceView'
 import { SeoAuditView } from '@/admin/views/SeoAuditView'
 import { ImportContentView } from '@/admin/views/ImportContentView'
@@ -88,6 +89,15 @@ export const CUSTOM_ADMIN_VIEWS = [
     meta: {
       title: 'Header and footer',
       description: 'Manage site header and footer content.',
+    },
+  },
+  {
+    key: 'interfaceLanguages',
+    Component: InterfaceLanguagesView,
+    path: '/interface-languages',
+    meta: {
+      title: 'Interface languages',
+      description: 'Every admin string in every supported language, with gaps highlighted.',
     },
   },
   {

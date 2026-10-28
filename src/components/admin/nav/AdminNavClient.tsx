@@ -3,6 +3,8 @@
 import React from 'react'
 import { Hamburger, Link, NavGroup, useNav } from '@/engine/ui'
 import { usePathname } from 'next/navigation'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { NAV_GROUP_KEYS } from '@/admin/i18n/navKeys'
 
 const baseClass = 'nav'
 
@@ -46,6 +48,11 @@ export const AdminNavClient: React.FC<{
   badges?: Record<string, number>
 }> = ({ groups, openGroups, badges = {} }) => {
   const pathname = usePathname()
+  const t = useAdminT()
+  const groupText = (label: string): string => {
+    const key = NAV_GROUP_KEYS[label]
+    return key ? t(key) : label
+  }
 
   const renderEntity = (entity: ResolvedNavEntity, entityKey: string) => {
     const isActive = pathname.startsWith(entity.href) && ['/', undefined].includes(pathname[entity.href.length])
@@ -83,7 +90,7 @@ export const AdminNavClient: React.FC<{
   return (
     <React.Fragment>
       {groups.map((group) => (
-        <NavGroup key={group.label} label={group.label} isOpen={openGroups[group.label] ?? false}>
+        <NavGroup key={group.label} label={groupText(group.label)} isOpen={openGroups[group.label] ?? false}>
           {group.entities.map((entity) => renderEntity(entity, entity.slug))}
         </NavGroup>
       ))}
@@ -97,6 +104,7 @@ export const AdminNavClient: React.FC<{
  */
 export const AdminNavDashboardLink: React.FC<{ href: string }> = ({ href }) => {
   const pathname = usePathname()
+  const t = useAdminT()
   const isActive = pathname === href || pathname === `${href}/`
 
   return (
@@ -105,7 +113,7 @@ export const AdminNavDashboardLink: React.FC<{ href: string }> = ({ href }) => {
       href={href}
       id="nav-dashboard"
       prefetch={false}
-      title="Dashboard"
+      title={t('nav.dashboard')}
     >
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
@@ -113,7 +121,7 @@ export const AdminNavDashboardLink: React.FC<{ href: string }> = ({ href }) => {
         <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
         <rect x="9" y="9" width="5.5" height="5.5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
       </svg>
-      <span>Dashboard</span>
+      <span>{t('nav.dashboard')}</span>
     </Link>
   )
 }

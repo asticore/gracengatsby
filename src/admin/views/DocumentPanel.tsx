@@ -1,4 +1,6 @@
 'use client'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { adminCollectionPath } from '@/admin/adminPaths'
 
 /**
@@ -268,6 +270,7 @@ export const DocumentPanel: React.FC<{
   readOnly?: boolean
   pageTypeField?: Field
 }> = ({ info, readOnly, pageTypeField }) => {
+  const t = useAdminT()
   const modified = useFormModified()
   const { busy, duplicate, error, remove, save, savedAt, setTrashed } = useDocumentSave({
     collectionSlug: info.collectionSlug,
@@ -316,7 +319,7 @@ export const DocumentPanel: React.FC<{
       </div>
 
       {!readOnly && info.canUpdate && (
-        <Box alwaysOpen id="publish" title={info.draftsEnabled ? 'Publish' : 'Save'}>
+        <Box alwaysOpen id="publish" title={info.draftsEnabled ? t('common.publish') : t('common.save')}>
           <VisibilityPanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} />
           {info.draftsEnabled && (
             <SchedulePanel collectionSlug={info.collectionSlug} id={info.id} readOnly={readOnly} status={info.status} />
@@ -338,7 +341,7 @@ export const DocumentPanel: React.FC<{
             )}
             {!hidePublish && (
               <button className="btn btn--primary" disabled={anyBusy} onClick={() => save('published')} type="button">
-                {busy === 'published' ? 'Saving…' : info.draftsEnabled ? (isPublished ? 'Update' : 'Publish') : 'Save'}
+                {busy === 'published' ? 'Saving…' : info.draftsEnabled ? (isPublished ? 'Update' : t('common.publish')) : t('common.save')}
               </button>
             )}
           </div>
@@ -375,7 +378,7 @@ export const DocumentPanel: React.FC<{
                   confirmLabel={busy === 'delete' ? 'Deleting…' : `Yes, delete this ${info.label.toLowerCase()}`}
                   danger
                   disabled={anyBusy}
-                  label="Delete"
+                  label={t('common.delete')}
                   onConfirm={remove}
                 />
               )}

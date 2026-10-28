@@ -1,5 +1,6 @@
 import React from 'react'
 import { Logout } from '@/engine/ui'
+import { AdminLanguagePicker } from '@/admin/ui/AdminLanguagePicker'
 import { PREFERENCE_KEYS, formatAdminURL } from '@/engine/shared'
 import type { Engine, TypedUser } from '@/engine'
 import { can, type Resource } from '@/features/roles/permissions'
@@ -139,6 +140,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
         <AdminNavClient groups={groups} openGroups={openGroups} badges={badges} />
         <AsticoreSaasComingSoon />
         <div className={`${baseClass}__controls`}>
+          <AdminLanguagePicker userId={(user as { id?: number | string } | null)?.id} current={(user as { adminLanguage?: string | null } | null)?.adminLanguage} />
           <Logout />
         </div>
       </nav>

@@ -16,6 +16,8 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 const LogoutIcon: React.FC = () => (
   <svg aria-hidden="true" height="15" viewBox="0 0 16 16" width="15">
     <path
@@ -31,6 +33,7 @@ const LogoutIcon: React.FC = () => (
 
 export const Logout: React.FC = () => {
   const router = useRouter()
+  const t = useAdminT()
   const [loggingOut, setLoggingOut] = useState(false)
 
   const onClick = async () => {
@@ -44,9 +47,9 @@ export const Logout: React.FC = () => {
   }
 
   return (
-    <button aria-label="Log out" className="nav__log-out" disabled={loggingOut} onClick={onClick} title="Log out" type="button">
+    <button aria-label={t('nav.logOut')} className="nav__log-out" disabled={loggingOut} onClick={onClick} title={t('nav.logOut')} type="button">
       <LogoutIcon />
-      <span>{loggingOut ? 'Logging out…' : 'Log out'}</span>
+      <span>{loggingOut ? t('nav.loggingOut') : t('nav.logOut')}</span>
     </button>
   )
 }

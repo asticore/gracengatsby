@@ -1,4 +1,6 @@
 'use client'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { createPortal } from 'react-dom'
@@ -31,6 +33,7 @@ export function ListRowActions({
   canUpdate,
   signInAs,
 }: ListRowActionsProps) {
+  const t = useAdminT()
   const router = useRouter()
   const [showQuickEdit, setShowQuickEdit] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -268,7 +271,7 @@ export function ListRowActions({
                   className="list-quick-edit-save-btn"
                   type="button"
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving ? 'Saving...' : t('common.save')}
                 </button>
               </div>
             </div>

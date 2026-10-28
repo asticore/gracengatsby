@@ -50,7 +50,7 @@ function fixture(extra: { translations?: Doc[] } = {}) {
     create: vi.fn(async () => ({})),
     update: vi.fn(async () => ({})),
   }
-  return { engine, deletes }
+  return { engine: engine as unknown as Parameters<typeof runClearInactive>[0]['engine'], deletes }
 }
 
 const admin = { id: 1, email: 'admin@example.com' }

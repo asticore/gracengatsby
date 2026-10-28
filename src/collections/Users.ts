@@ -6,6 +6,7 @@ import { slugify } from '@/utilities/formatSlug'
 import { revokeSessionsOnPasswordChange } from '@/features/security/passwordSessionHook'
 import { enforcePasswordPolicyBeforeChange, recordPasswordAfterChange } from '@/features/security/passwordPolicyHooks'
 import { authorshipFields, authorshipBeforeChange } from '../fields/authorship'
+import { ADMIN_UI_LOCALES, ADMIN_UI_LOCALE_LABELS } from '@/features/uiStrings/locales'
 
 /**
  * Validates role changes to prevent removing the last admin or self-lockout.
@@ -126,6 +127,21 @@ export const Users: CollectionConfig = {
       type: 'text',
       access: { read: () => false, update: () => false, create: () => false },
       admin: { hidden: true, readOnly: true },
+    },
+    {
+      // The language this person sees the admin in. Automatic (null or 'auto')
+      // follows the browser; see src/features/uiStrings/locales.ts. Each user
+      // may set their own; an admin may set anyone's from the Users edit screen.
+      name: 'adminLanguage',
+      type: 'select',
+      defaultValue: 'auto',
+      options: [
+        { label: 'Automatic (match browser)', value: 'auto' },
+        ...ADMIN_UI_LOCALES.map((code) => ({ label: `${ADMIN_UI_LOCALE_LABELS[code].native} (${ADMIN_UI_LOCALE_LABELS[code].label})`, value: code })),
+      ],
+      admin: {
+        description: 'Language of the admin screens for this account. Website languages are not affected.',
+      },
     },
     {
       name: 'roles',

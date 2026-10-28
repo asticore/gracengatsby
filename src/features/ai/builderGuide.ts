@@ -19,7 +19,7 @@ import {
   BUILDER_SECTION_DISPLAYS,
 } from './builderDesign'
 
-export type BuilderMode = 'section' | 'page' | 'edit'
+export type BuilderMode = 'section' | 'page' | 'edit' | 'translate'
 
 /** A theme colour the model may use, as the Design panel token var(--eg-c-<id>). Value is for the model's judgement only. */
 export type GuideColour = { id: string; value: string }

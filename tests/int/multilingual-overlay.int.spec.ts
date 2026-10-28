@@ -11,6 +11,11 @@ const row = (sourceId: string, fieldPath: string, value: string | null, locale =
   fieldPath,
   value,
   sourceText: null,
+  status: null,
+  assignedTo: [],
+  machineProvider: null,
+  reviewedBy: null,
+  reviewedAt: null,
 })
 
 const lookupFor = (rows: TranslationRow[], locale = 'fr') => lookupFromRows(locale, rows)
@@ -104,6 +109,10 @@ describe('locale off is identity', () => {
     defaultLocale: 'en',
     activeLocales: ['en', 'fr'],
     fallbackToDefault: true,
+    requireReview: false,
+    adminsBypassReview: true,
+    translationRules: {},
+    machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
     showLanguageSwitcher: true,
     switcherPosition: 'header',
   }

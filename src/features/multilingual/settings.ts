@@ -1,6 +1,8 @@
 import type { FeatureKey } from '@/features/registry'
 
 import { DEFAULT_LOCALE, isKnownLocale } from './locales'
+import { DEFAULT_MACHINE_SETTINGS, parseMachineCharLimit, parseMachineOverrides, type MachineSettings } from './machine/config'
+import { isMachineProviderId } from './machine/providers'
 import { parseTranslationRules, type TranslationRules } from './translationStatus'
 
 /**
@@ -41,6 +43,8 @@ export type MultilingualSettings = {
   adminsBypassReview: boolean
   /** Translators and reviewers per language. */
   translationRules: TranslationRules
+  /** Machine translation: on/off, default provider, per-language overrides, monthly limit. Keys are on Integrations. */
+  machine: MachineSettings
 }
 
 export const MULTILINGUAL_FEATURE_KEY: FeatureKey = 'multilingual'
@@ -55,6 +59,7 @@ export const DEFAULT_MULTILINGUAL_SETTINGS: MultilingualSettings = {
   requireReview: false,
   adminsBypassReview: true,
   translationRules: {},
+  machine: DEFAULT_MACHINE_SETTINGS,
 }
 
 const SETTINGS_TABLE = 'eg_language_settings'
@@ -124,6 +129,12 @@ export async function getMultilingualSettings(engine: EngineLike): Promise<Multi
     requireReview: asBool(group.requireReview, base.requireReview),
     adminsBypassReview: asBool(group.adminsBypassReview, base.adminsBypassReview),
     translationRules: parseTranslationRules(group.translationRules),
+    machine: {
+      enabled: asBool(group.machineEnabled, base.machine.enabled),
+      defaultProvider: isMachineProviderId(group.machineDefaultProvider) ? group.machineDefaultProvider : null,
+      overrides: parseMachineOverrides(group.machineOverrides),
+      monthlyCharLimit: parseMachineCharLimit(group.machineMonthlyCharLimit),
+    },
   }
 }
 
@@ -197,6 +208,8 @@ export async function readMultilingualSettingsFromD1(): Promise<MultilingualSett
         requireReview: asBool(row.multilingual_require_review, DEFAULT_MULTILINGUAL_SETTINGS.requireReview),
         adminsBypassReview: asBool(row.multilingual_admins_bypass_review, DEFAULT_MULTILINGUAL_SETTINGS.adminsBypassReview),
         translationRules: parseTranslationRules(row.multilingual_translation_rules),
+        // Machine translation is only needed by the admin side; the cold-isolate reader does not load it.
+        machine: DEFAULT_MACHINE_SETTINGS,
       }
     }
   } catch {

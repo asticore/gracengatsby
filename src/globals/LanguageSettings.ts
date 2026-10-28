@@ -138,6 +138,66 @@ export const LanguageSettings: GlobalConfig = {
           ],
         },
         {
+          type: 'row',
+          fields: [
+            {
+              name: 'machineEnabled',
+              type: 'checkbox',
+              defaultValue: false,
+              admin: {
+                width: '50%',
+                description:
+                  'Let a machine translation provider write draft translations. Drafts are marked as machine drafts and follow the review setting above. Keys are on Integrations.',
+              },
+            },
+            {
+              name: 'machineDefaultProvider',
+              type: 'select',
+              admin: {
+                width: '50%',
+                description: 'The provider used for every language unless an override below names another.',
+                condition: (_, s) => Boolean(s?.machineEnabled),
+              },
+              options: [
+                { label: 'Google Cloud Translation', value: 'google' },
+                { label: 'DeepL', value: 'deepl' },
+                { label: 'AI: Claude', value: 'claude' },
+                { label: 'AI: OpenAI', value: 'openai' },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'machineOverrides',
+          type: 'textarea',
+          defaultValue: '{}',
+          admin: {
+            description:
+              'Optional per-language provider, as JSON: {"de": "deepl", "ja": "google"}. Languages not listed use the default provider.',
+            condition: (_, s) => Boolean(s?.machineEnabled),
+          },
+        },
+        {
+          name: 'machineMonthlyCharLimit',
+          type: 'number',
+          defaultValue: 0,
+          min: 0,
+          admin: {
+            description:
+              'Characters machine translation may send each calendar month, across all providers. 0 means no limit. Shown with the current month\'s usage below.',
+            condition: (_, s) => Boolean(s?.machineEnabled),
+          },
+        },
+        {
+          name: 'machineStatus',
+          type: 'ui',
+          admin: {
+            components: {
+              Field: '@/features/multilingual/components/MachineTranslationField#MachineTranslationField',
+            },
+          },
+        },
+        {
           name: 'translationRules',
           type: 'textarea',
           defaultValue: '{}',

@@ -11,6 +11,10 @@ const on: MultilingualSettings = {
   defaultLocale: 'en-AU',
   activeLocales: ['en-AU', 'fr', 'zh-Hans'],
   fallbackToDefault: true,
+  requireReview: false,
+  adminsBypassReview: true,
+  translationRules: {},
+  machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
   showLanguageSwitcher: true,
   switcherPosition: 'header',
 }

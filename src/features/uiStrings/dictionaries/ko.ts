@@ -1283,6 +1283,25 @@ const ko: UiDictionary = {
   'settings.link.find-and-replace.description': "페이지, 글, 상품, 이벤트에서 단어나 문구를 변경합니다. 먼저 미리보기로 확인하세요.",
   'settings.link.import-pages-and-posts.label': "페이지 및 글 가져오기",
   'settings.link.import-pages-and-posts.description': "WordPress 내보내기 또는 CSV 파일에서 콘텐츠를 가져옵니다. 가져온 항목은 초안으로 저장됩니다.",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "나중에 보기",
+  "store.savedOnDevice": "이 기기에 저장한 상품입니다.",
+  "store.loadingSaved": "저장한 상품을 불러오는 중...",
+  "store.wishlistError": "저장한 상품을 불러올 수 없습니다. 페이지를 새로고침해 주세요.",
+  "store.saveForLater": "나중에 보기에 저장",
+  "store.thankYou": "감사합니다!",
+  "store.orderPlaced": "주문이 접수되었습니다.",
+  "store.orderReference": "주문 번호:",
+  "store.enterEmail": "이메일 주소를 입력해 주세요.",
+  "store.enterEmailFirst": "먼저 이메일 주소를 입력해 주세요.",
+  "store.pricesIn": "가격 통화",
+  "store.pageNotFound": "페이지를 찾을 수 없습니다",
+  "store.notFoundHelp": "찾으시는 페이지가 이동되었거나 주소에 오타가 있을 수 있습니다.",
+  "store.helpfulLinks": "유용한 링크",
+  "store.home": "홈",
+  "store.blog": "블로그",
+  "store.shop": "쇼핑몰",
 }
 
 export default ko

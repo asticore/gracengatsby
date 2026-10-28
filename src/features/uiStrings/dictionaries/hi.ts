@@ -1283,6 +1283,25 @@ const hi: UiDictionary = {
   'settings.link.find-and-replace.description': "पेज, पोस्ट, उत्पाद और इवेंट में कोई शब्द या वाक्यांश बदलें। पहले पूर्वावलोकन देखें।",
   'settings.link.import-pages-and-posts.label': "पेज और पोस्ट आयात करें",
   'settings.link.import-pages-and-posts.description': "WordPress एक्सपोर्ट या CSV फ़ाइल से कंटेंट लाएँ। आयात की गई चीज़ें ड्राफ़्ट के रूप में सहेजी जाती हैं।",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "बाद के लिए सहेजा गया",
+  "store.savedOnDevice": "इस डिवाइस पर आपके सहेजे गए आइटम।",
+  "store.loadingSaved": "आपके सहेजे गए आइटम लोड हो रहे हैं...",
+  "store.wishlistError": "आपके सहेजे गए आइटम लोड नहीं हो सके। कृपया पेज रीफ़्रेश करें।",
+  "store.saveForLater": "बाद के लिए सहेजें",
+  "store.thankYou": "धन्यवाद!",
+  "store.orderPlaced": "आपका ऑर्डर दे दिया गया है।",
+  "store.orderReference": "ऑर्डर संदर्भ:",
+  "store.enterEmail": "कृपया अपना ईमेल पता दर्ज करें।",
+  "store.enterEmailFirst": "कृपया पहले अपना ईमेल पता दर्ज करें।",
+  "store.pricesIn": "कीमतें इस मुद्रा में",
+  "store.pageNotFound": "पेज नहीं मिला",
+  "store.notFoundHelp": "आप जो पेज खोज रहे थे वह शायद स्थानांतरित हो गया है, या पते में कोई टाइपो है।",
+  "store.helpfulLinks": "उपयोगी लिंक",
+  "store.home": "होम",
+  "store.blog": "ब्लॉग",
+  "store.shop": "शॉप",
 }
 
 export default hi

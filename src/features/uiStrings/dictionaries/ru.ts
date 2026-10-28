@@ -1283,6 +1283,25 @@ const ru: UiDictionary = {
   'settings.link.find-and-replace.description': "Измените слово или фразу на страницах, в записях, товарах и событиях. Сначала посмотрите предпросмотр.",
   'settings.link.import-pages-and-posts.label': "Импорт страниц и записей",
   'settings.link.import-pages-and-posts.description': "Загрузите контент из экспорта WordPress или CSV-файла. Импортированные элементы сохраняются как черновики.",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "Сохранено на потом",
+  "store.savedOnDevice": "Товары, которые вы сохранили на этом устройстве.",
+  "store.loadingSaved": "Загружаем сохранённые товары...",
+  "store.wishlistError": "Не удалось загрузить сохранённые товары. Обновите страницу.",
+  "store.saveForLater": "Сохранить на потом",
+  "store.thankYou": "Спасибо!",
+  "store.orderPlaced": "Ваш заказ оформлен.",
+  "store.orderReference": "Номер заказа:",
+  "store.enterEmail": "Укажите адрес электронной почты.",
+  "store.enterEmailFirst": "Сначала укажите адрес электронной почты.",
+  "store.pricesIn": "Цены в",
+  "store.pageNotFound": "Страница не найдена",
+  "store.notFoundHelp": "Возможно, страница, которую вы искали, была перемещена, или в адресе есть опечатка.",
+  "store.helpfulLinks": "Полезные ссылки",
+  "store.home": "Главная",
+  "store.blog": "Блог",
+  "store.shop": "Магазин",
 }
 
 export default ru

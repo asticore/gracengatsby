@@ -1283,6 +1283,25 @@ const es: UiDictionary = {
   'settings.link.find-and-replace.description': "Cambie una palabra o frase en páginas, entradas, productos y eventos. Vea primero una vista previa.",
   'settings.link.import-pages-and-posts.label': "Importar páginas y entradas",
   'settings.link.import-pages-and-posts.description': "Importe contenido desde una exportación de WordPress o un archivo CSV. Los elementos importados se guardan como borradores.",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "Guardado para más tarde",
+  "store.savedOnDevice": "Artículos que has guardado en este dispositivo.",
+  "store.loadingSaved": "Cargando tus artículos guardados...",
+  "store.wishlistError": "No pudimos cargar tus artículos guardados. Actualiza la página.",
+  "store.saveForLater": "Guardar para más tarde",
+  "store.thankYou": "¡Gracias!",
+  "store.orderPlaced": "Tu pedido se ha realizado.",
+  "store.orderReference": "Referencia del pedido:",
+  "store.enterEmail": "Introduce tu dirección de correo electrónico.",
+  "store.enterEmailFirst": "Introduce primero tu dirección de correo electrónico.",
+  "store.pricesIn": "Precios en",
+  "store.pageNotFound": "Página no encontrada",
+  "store.notFoundHelp": "Es posible que la página que buscas se haya movido o que la dirección tenga una errata.",
+  "store.helpfulLinks": "Enlaces útiles",
+  "store.home": "Inicio",
+  "store.blog": "Blog",
+  "store.shop": "Tienda",
 }
 
 export default es

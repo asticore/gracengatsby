@@ -1282,6 +1282,25 @@ const zhHans: UiDictionary = {
   'settings.link.find-and-replace.description': "更改页面、文章、商品和活动中的词语或短语。请先预览。",
   'settings.link.import-pages-and-posts.label': "导入页面和文章",
   'settings.link.import-pages-and-posts.description': "从 WordPress 导出文件或 CSV 文件导入内容。导入的条目将保存为草稿。",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "稍后再看",
+  "store.savedOnDevice": "您在此设备上保存的商品。",
+  "store.loadingSaved": "正在加载您保存的商品...",
+  "store.wishlistError": "无法加载您保存的商品，请刷新页面。",
+  "store.saveForLater": "稍后再看",
+  "store.thankYou": "谢谢！",
+  "store.orderPlaced": "您的订单已提交。",
+  "store.orderReference": "订单编号：",
+  "store.enterEmail": "请输入您的电子邮箱地址。",
+  "store.enterEmailFirst": "请先输入您的电子邮箱地址。",
+  "store.pricesIn": "价格显示为",
+  "store.pageNotFound": "页面未找到",
+  "store.notFoundHelp": "您要查找的页面可能已被移动，或地址中有拼写错误。",
+  "store.helpfulLinks": "实用链接",
+  "store.home": "首页",
+  "store.blog": "博客",
+  "store.shop": "商店",
 }
 
 export default zhHans

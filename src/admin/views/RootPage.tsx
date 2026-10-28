@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import type { ComponentType, ReactNode } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { CUSTOM_ADMIN_VIEWS } from '@/admin/adminViewRegistry'
-import { adminCollectionPath, collectionRoute, isCollectionSegments } from '@/admin/adminPaths'
+import { adminCollectionPath, collectionRoute, hubListRedirect, isCollectionSegments } from '@/admin/adminPaths'
 import { getAdminContext, hasAdminPanelAccess, getCollectionConfig, getGlobalConfig, type AdminContext } from '@/admin/auth'
 import { getEngine } from '@/lib/engine'
 import type { AdminViewServerProps } from '@/engine'
@@ -210,9 +210,13 @@ async function renderRootPage({ params, searchParams }: Args) {
     if (!collectionSlug) notFound()
     if (!getCollectionConfig(context.engine, collectionSlug)) notFound()
 
-    // The site-templates list is now the Templates hub (admin/templates). Its edit screens still work.
-    if (segments.length === 2 && collectionSlug === 'site-templates') redirect('/admin/templates')
-    if (segments.length === 2) return <ListView collectionSlug={collectionSlug} searchParams={search} />
+    // The list screens of site templates, page templates and reusable sections are the Templates hub (admin/templates).
+    // Their edit and create screens still work.
+    if (segments.length === 2) {
+      const hub = hubListRedirect(collectionSlug)
+      if (hub) redirect(hub)
+      return <ListView collectionSlug={collectionSlug} searchParams={search} />
+    }
     if (segments.length === 3 && segments[2] === 'create') return <EditView collectionSlug={collectionSlug} />
     if (segments.length === 4 && segments[3] === 'versions') {
       const id = Number(segments[2])

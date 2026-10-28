@@ -33,9 +33,10 @@ export const LOOP_GRID_ELEMENTS: ElementDef[] = [
       { name: 'count', label: 'Items per page (1-48)', type: 'range', width: 'half', min: 1, max: 48, step: 1 },
       { name: 'columns', label: 'Columns (1-4)', type: 'range', width: 'half', min: 1, max: 4, step: 1 },
       check('pagination', 'Numbered pages', 'For a fixed source. Inside an archive the archive pager is used.'),
+      { name: 'pageParam', label: 'Page parameter', type: 'text', width: 'half', showIf: { field: 'pagination', equals: true }, helpText: 'URL parameter for this grid\'s page number. Keep "page". A second numbered grid on the same page needs its own name, such as lp2.' },
       check('linkCards', 'Make each card a link', 'Turn off when the loop template already has its own links.'),
     ],
-    defaultProps: () => ({ loopTemplate: '', source: '', category: '', tag: '', author: '', type: '', orderBy: 'newest', count: 9, columns: 3, pagination: false, linkCards: true }),
+    defaultProps: () => ({ loopTemplate: '', source: '', category: '', tag: '', author: '', type: '', orderBy: 'newest', count: 9, columns: 3, pagination: false, pageParam: 'page', linkCards: true }),
   },
   {
     type: 'archive-filter', label: 'Archive filter', icon: String.fromCodePoint(0x1f50e), category: 'siteMeta',

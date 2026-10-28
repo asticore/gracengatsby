@@ -10,7 +10,7 @@ import { BackInStockForm } from '@/components/BackInStockForm'
 import { SubscriptionOffer } from '@/features/ecommerce/subscriptions/components/SubscriptionOffer'
 import { ProductReviewForm } from '@/components/ProductReviewForm'
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
-import { setBlockContext } from '@/lib/blockContext'
+import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { productBlockContext } from '@/lib/blockContextFrom'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { FaqList } from '@/components/FaqList'
@@ -84,6 +84,7 @@ export default async function ProductPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const sp = await searchParams
+  setRequestQuery(sp)
   const flags = await getFeatureFlags()
   if (!flags.ecommerce) notFound()
 

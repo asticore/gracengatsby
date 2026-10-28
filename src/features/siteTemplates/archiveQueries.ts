@@ -1,4 +1,7 @@
+import type { ArchiveFilterValues } from '@/lib/blockContext'
+import { orderBlogPosts } from '@/features/editScreens/blogOrder'
 import { slugify } from '@/utilities/formatSlug'
+import { archiveFacets, filterArchiveItems, sortArchiveItems } from './archiveFilter'
 
 /**
  * Pure helpers for the public term archives (/blog/category/[slug]). Posts store categories as an array of
@@ -114,4 +117,32 @@ export function authorIndex(posts: ArchivePost[]): Map<string, string> {
 export function postsByAuthor<T extends ArchivePost>(posts: T[], slug: string): T[] {
   if (!termSlug(slug)) return []
   return posts.filter((p) => publicAuthor(p)?.slug === slug)
+}
+
+/** The fields the archive filters read from a post. Posts keep their identity through the filter and sort. */
+type FilterablePost = ArchivePost & { title: string; excerpt?: string | null; publishedDate?: string | null; sticky?: boolean | null }
+
+function postFilterRows<T extends FilterablePost>(posts: T[]) {
+  return posts.map((post) => ({
+    post,
+    title: post.title,
+    excerpt: post.excerpt,
+    date: post.publishedDate,
+    categories: (post.categories ?? []).map((c) => c?.name ?? ''),
+    tags: (post.tags ?? []).map((t) => t?.name ?? ''),
+  }))
+}
+
+/**
+ * Posts after the archive filter params (?category=&tag=&q=&sort=). Filters first, then the sort: newest keeps the
+ * blog's own order (sticky posts first). With no filter set the list is returned in that same order.
+ */
+export function filterArchivePosts<T extends FilterablePost>(posts: T[], filters: ArchiveFilterValues): T[] {
+  const kept = filterArchiveItems(postFilterRows(posts), filters)
+  return filters.sort === 'newest' ? orderBlogPosts(kept.map((k) => k.post)) : sortArchiveItems(kept, filters.sort).map((k) => k.post)
+}
+
+/** Choices for the Filter widget, from the unfiltered posts of the archive. */
+export function archivePostFacets<T extends FilterablePost>(posts: T[]) {
+  return archiveFacets(postFilterRows(posts))
 }

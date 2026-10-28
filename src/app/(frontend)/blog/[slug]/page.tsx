@@ -7,7 +7,7 @@ import { cookies } from 'next/headers'
 
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
 import { AdRichText } from '@/features/ads/components/AdRichText'
-import { setBlockContext } from '@/lib/blockContext'
+import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { loadSiteDetails } from '@/features/site/details'
 import { postBlockContext } from '@/lib/blockContextFrom'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
@@ -91,6 +91,7 @@ export default async function BlogPostPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const sp = await searchParams
+  setRequestQuery(sp)
   const flags = await getFeatureFlags()
   if (!flags.blog) notFound()
 

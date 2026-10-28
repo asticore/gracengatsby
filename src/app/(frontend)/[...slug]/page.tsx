@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 
 import { AdsPageScope } from '@/features/ads/components/AdsPageScope'
-import { setBlockContext } from '@/lib/blockContext'
+import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { annotatePage } from '@/features/editScreens/toc'
 import { findPageByPath } from '@/utilities/pagePaths'
@@ -57,6 +57,7 @@ export default async function BuiltPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const sp = await searchParams
+  setRequestQuery(sp)
   const { slug } = await params
   const resolved = await findPageByPath(slug)
 

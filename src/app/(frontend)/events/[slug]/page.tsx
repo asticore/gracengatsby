@@ -12,7 +12,7 @@ import { RsvpForm, type RsvpTierOption } from '@/components/RsvpForm'
 import { loadTierViews } from '@/features/editScreens/tierLoad'
 import { tierOptionLabel } from '@/features/editScreens/tierSales'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
-import { setBlockContext } from '@/lib/blockContext'
+import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { eventBlockContext } from '@/lib/blockContextFrom'
 import { PasswordGate } from '@/components/PasswordGate'
 import { getPasswordGateState } from '@/features/visibility/gate'
@@ -75,6 +75,7 @@ export default async function EventPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const sp = await searchParams
+  setRequestQuery(sp)
   const flags = await getFeatureFlags()
   if (!flags.events) notFound()
 

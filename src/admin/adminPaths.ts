@@ -50,3 +50,19 @@ export function legacyCollectionRedirect(pathname: string, search = ''): string 
   if (!match) return null
   return `${adminCollectionPath(match[1])}${match[2] ?? ''}${search}`
 }
+
+/**
+ * List screens that now live in the Templates hub (/admin/templates). Only the list route redirects; the edit and
+ * create routes of each collection still work. The page-template and reusable-section lists open the hub with their
+ * type filter already set (the hub reads it from `f=type:equals:<type>`, see templatesHub/rows).
+ */
+const HUB_TYPE_FILTER: Readonly<Record<string, string>> = { 'page-templates': 'page-template', 'reusable-sections': 'reusable-section' }
+const HUB_PATH = '/admin/templates'
+
+/** Where a collection's list route redirects to, or null when the list is still its own screen. */
+export function hubListRedirect(slug: string): string | null {
+  if (slug === 'site-templates') return HUB_PATH
+  const type = HUB_TYPE_FILTER[slug]
+  if (!type) return null
+  return `${HUB_PATH}?${new URLSearchParams({ f: `type:equals:${type}` }).toString()}`
+}

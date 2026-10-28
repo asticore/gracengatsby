@@ -18,7 +18,7 @@ import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
 import { archiveFacets, archiveQueryString, filterArchiveItems, parseArchiveFilters, sortArchiveItems } from '@/features/siteTemplates/archiveFilter'
 import { archivePageHref } from '@/lib/templateWidgets'
-import { setBlockContext } from '@/lib/blockContext'
+import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { postArchiveItems } from '@/lib/blockContextFrom'
 import type { BlogSetting, Media, Post } from '@/engage-types'
 
@@ -48,6 +48,7 @@ export default async function BlogArchivePage({ searchParams }: { searchParams: 
   const docs = await excludeProtected('posts', allDocs)
   // Filter params (?category=&tag=&q=&sort=) narrow the list before paging. With none, the order and pages are unchanged.
   const params = await searchParams
+  setRequestQuery(params)
   const filters = parseArchiveFilters(params)
   const pool = docs.map((post) => ({
     post,

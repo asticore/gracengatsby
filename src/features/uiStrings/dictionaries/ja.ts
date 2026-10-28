@@ -3,6 +3,18 @@ import { PORTAL_ENGLISH } from './portal'
 
 const ja: UiDictionary = {
   ...PORTAL_ENGLISH,
+  // Customer portal (portal.*), translated. Keep this block under the portal spread.
+  'portal.nav.overview': '概要',
+  'portal.nav.orders': '注文',
+  'portal.nav.storeCredit': 'ストアクレジット',
+  'portal.nav.subscriptions': 'サブスクリプション',
+  'portal.nav.addresses': '住所',
+  'portal.nav.bookings': 'イベント予約',
+  'portal.nav.profile': 'プロフィール',
+  'portal.nav.organizations': '組織',
+  'portal.profile.language': '言語',
+  'portal.profile.languageAuto': '自動（ブラウザーに合わせる）',
+  'portal.profile.languageSave': '言語を保存',
   'nav.group.content': 'コンテンツ',
   'nav.group.shop': 'ショップ',
   'nav.group.members': '会員',

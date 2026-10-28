@@ -1,5 +1,6 @@
 import { INTERFACE_SOURCE_ID, interfaceSourceText } from './interfaceStrings'
 import { sourceIdFor } from './translatableFields'
+import { parseAssignedTo, parseStatus, type TranslationStatus } from './translationStatus'
 
 /**
  * Reading and writing `eg_translations`.
@@ -24,6 +25,13 @@ export type TranslationRow = {
   fieldPath: string
   value: string | null
   sourceText: string | null
+  /** Stored status. Null on a row written before the workflow columns existed. */
+  status: TranslationStatus | null
+  /** Item-level assignment; empty means the language's rules apply. */
+  assignedTo: number[]
+  machineProvider: string | null
+  reviewedBy: number | null
+  reviewedAt: string | null
   updatedAt?: string
 }
 
@@ -58,6 +66,11 @@ function toRow(doc: unknown): TranslationRow {
     fieldPath: String(record.fieldPath ?? ''),
     value: (record.value as string | null) ?? null,
     sourceText: (record.sourceText as string | null) ?? null,
+    status: parseStatus(record.status),
+    assignedTo: parseAssignedTo(record.assignedTo),
+    machineProvider: (record.machineProvider as string | null) ?? null,
+    reviewedBy: record.reviewedBy === null || record.reviewedBy === undefined ? null : Number(record.reviewedBy),
+    reviewedAt: (record.reviewedAt as string | null) ?? null,
     updatedAt: record.updatedAt as string | undefined,
   }
 }

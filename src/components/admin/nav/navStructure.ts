@@ -58,6 +58,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'field-groups', type: 'collections' },
       { slug: 'data-views', type: 'collections' },
       { slug: 'review-queue', type: 'view', href: '/review-queue', label: 'Review queue' },
+      { slug: 'translations', type: 'view', href: '/translations', label: 'Translations' },
       { slug: 'media', type: 'collections' },
     ],
   },
@@ -184,7 +185,6 @@ export const HIDDEN_FROM_NAV = new Set<string>([
   'error-log',
   'users',
   'integrations',
-  'translations',
 ])
 
 /** Group that catches any collection/global not named in NAV_STRUCTURE. */

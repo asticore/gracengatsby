@@ -2372,6 +2372,26 @@ export interface Translation {
   sourceText?: string | null;
   updatedAt: string;
   createdAt: string;
+  /**
+   * Set by the workflow, not typed in: a changed value needs review when review is on, and only a permitted reviewer can approve.
+   */
+  status?: ('missing' | 'machine_draft' | 'needs_review' | 'approved') | null;
+  /**
+   * The machine translation provider that wrote this draft, if any.
+   */
+  machineProvider?: string | null;
+  /**
+   * Users assigned to this translation, overriding the language rules. JSON list of user ids.
+   */
+  assignedTo?: string | null;
+  /**
+   * The user who approved this translation.
+   */
+  reviewedBy?: number | null;
+  /**
+   * When it was approved (ISO 8601).
+   */
+  reviewedAt?: string | null;
 }
 /**
  * Who is a member, at what level, and until when.
@@ -6755,6 +6775,18 @@ export interface LanguageSetting {
      * Where that control appears.
      */
     switcherPosition?: ('header' | 'footer' | 'both') | null;
+    /**
+     * Only approved translations appear on the public site. A translation someone edits, or whose source text has changed, waits for a reviewer. Off: every translation with text in it is shown.
+     */
+    requireReview?: boolean | null;
+    /**
+     * Admins can approve any translation without being named as a reviewer.
+     */
+    adminsBypassReview?: boolean | null;
+    /**
+     * Who translates and who reviews each language. Items are assigned from these rules unless one is assigned directly on the Translations screen.
+     */
+    translationRules?: string | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;

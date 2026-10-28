@@ -1,21 +1,44 @@
 import React from 'react'
 import type { AdminViewServerProps } from '@/engine'
 
+import { loadListPrefs } from '@/admin/list/listPrefs'
+import { parseListSearchParams, resolveVisibleColumns, serializeListState, type ListState } from '@/admin/list/listQuery'
+import { isAdminUser } from '@/admin/auth'
+
+import { localeLabel } from '../locales'
 import { getMultilingualSettings } from '../settings'
-import { TranslationsTable } from './TranslationsTable'
-import { getTranslationsPageData } from './translationsData'
+import { TRANSLATABLE_COLLECTIONS } from '../translatableFields'
+import {
+  canApproveTranslation,
+  computeTranslationStatus,
+  parseAssignedTo,
+  STATUS_LABELS,
+  type TranslationStatus,
+} from '../translationStatus'
+import {
+  buildOverviewRows,
+  filterOverviewRows,
+  itemKey,
+  OVERVIEW_DEFAULT_COLUMNS,
+  OVERVIEW_DEFAULT_SORT,
+  overviewColumns,
+  pageOverviewRows,
+  sortOverviewRows,
+} from '../translationOverview'
+import { translationKey } from '../store'
+import { TranslationEditor, type EditorCell, type EditorField } from './TranslationEditor'
+import { TranslationsOverview } from './TranslationsOverview'
+import { loadAssignableUsers, loadOverviewData } from './translationsData'
+import { ListToolbar } from '@/admin/views/ListToolbar'
 
 /**
- * `/admin/translations` - the one screen where a person writes translations.
+ * `/admin/translations` - every translatable item, one status per language.
  *
- * Server-rendered so the source text and the existing translations are real at
- * first paint. A translator on a slow connection staring at a spinner is a
- * translator who opens the spreadsheet instead.
- *
- * The screen refuses rather than degrades when multilingual is off or only one
- * language is configured, because a translation table with no target column is
- * not a lesser version of this screen - it is a puzzle. The message says where
- * to go and why.
+ * Server-rendered so the table is real at first paint. The list controls are
+ * the same ones the Pages list and the Templates hub use (search, filters,
+ * columns, sort), and a click on an item opens its editor beside the table.
+ * Writing happens in the editor or in the bulk bar; both go through the
+ * collection's own write rule.
  */
 
 const first = (value: unknown): string | null => {
@@ -27,19 +50,19 @@ const first = (value: unknown): string | null => {
 const noticeClassName =
   'flex flex-col gap-[calc(var(--base)*1.25)] px-[var(--gutter-h)] pt-[calc(var(--base)*1.5)] pb-[calc(var(--base)*3)]'
 const noticeTextClassName = 'max-w-[60ch] text-[var(--theme-elevation-600)]'
+const LIST_LIMIT = 25
 
 export const TranslationsView: React.FC<AdminViewServerProps> = async (props) => {
   const engine = props.engine
   if (!engine?.config) return null
 
   const searchParams = (props.searchParams ?? {}) as Record<string, unknown>
-  // The feature's readers are typed against the narrow slice of the engine
-  // they use, so they stay testable without a live instance. Widening them to
-  // the engine's own generic signatures is the tail wagging the dog.
   const settings = await getMultilingualSettings(engine as Parameters<typeof getMultilingualSettings>[0])
-
-  const routes = engine.config.routes
-  const apiBase = `${engine.config.serverURL ?? ''}${routes?.api ?? '/api'}/translations`
+  const user = props.user
+  const viewerId = Number(user?.id)
+  const viewer = Number.isInteger(viewerId) && viewerId > 0 ? viewerId : null
+  const apiBase = `${engine.config.serverURL ?? ''}${engine.config.routes?.api ?? '/api'}/translations`
+  const bulkApi = `${engine.config.serverURL ?? ''}${engine.config.routes?.api ?? '/api'}/admin-translations`
 
   if (!settings.enabled) {
     return (
@@ -54,7 +77,6 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   }
 
   const targets = settings.activeLocales.filter((code) => code !== settings.defaultLocale)
-
   if (targets.length === 0) {
     return (
       <div className={noticeClassName}>
@@ -67,30 +89,176 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
     )
   }
 
-  const scope = first(searchParams.scope) ?? 'interface'
-  const documentId = first(searchParams.doc)
-  const group = first(searchParams.group)
+  const savedPrefs = await loadListPrefs(engine, user, 'translations')
+  const urlState = parseListSearchParams(searchParams as Record<string, string | string[] | undefined>)
+  const state: ListState = {
+    ...urlState,
+    sort: urlState.sort || savedPrefs.sort || OVERVIEW_DEFAULT_SORT,
+    limit: urlState.limit || savedPrefs.limit || LIST_LIMIT,
+    cols: urlState.cols || savedPrefs.cols || null,
+    view: null,
+  }
 
-  const data = await getTranslationsPageData({
-    engine: engine as unknown as Parameters<typeof getTranslationsPageData>[0]['engine'],
-    settings,
-    scope,
-    documentId,
-    group,
+  const [data, users] = await Promise.all([
+    loadOverviewData({ engine, user, settings }),
+    loadAssignableUsers({ engine, user }),
+  ])
+  const userLabel = new Map(users.map((entry) => [entry.id, entry.label]))
+
+  const typeOptions = [
+    { value: 'interface', label: 'Interface string' },
+    ...TRANSLATABLE_COLLECTIONS.map((entry) => ({ value: entry.slug, label: entry.label })),
+  ]
+  const columns = overviewColumns({ targetLocales: targets, typeOptions, localeLabel })
+  const defaults = OVERVIEW_DEFAULT_COLUMNS(targets)
+  const { visibleNames } = resolveVisibleColumns(columns, state.cols, savedPrefs.cols, defaults)
+
+  const rows = buildOverviewRows({ items: data.items, stored: data.stored, targetLocales: targets, rules: settings.translationRules })
+  const matching = sortOverviewRows(filterOverviewRows(rows, state.filters, state.q, viewer), state.sort)
+  const paged = pageOverviewRows(matching, state.page, state.limit)
+
+  const selectedKey = first(searchParams.item)
+  const selected = selectedKey ? data.items.find((item) => itemKey(item.sourceKind, item.sourceId) === selectedKey) : undefined
+
+  // Per-language progress, for the header. Counted over the whole site, not the filtered list.
+  const progress = targets.map((locale) => {
+    const cells = rows.map((row) => row.cells.find((cell) => cell.locale === locale)).filter(Boolean)
+    const done = cells.filter((cell) => cell?.status === 'approved').length
+    return { locale, label: localeLabel(locale), done, total: cells.length }
   })
 
+  let editor: React.ReactNode = null
+  if (selected) {
+    const storedRows = data.stored.filter((row) => row.sourceKind === selected.sourceKind && row.sourceId === selected.sourceId)
+    const byKey = new Map(storedRows.map((row) => [translationKey(row), row]))
+    const fields: EditorField[] = selected.fields.map((field) => ({
+      fieldPath: field.fieldPath,
+      label: field.label,
+      sourceText: field.sourceText,
+    }))
+    const cells: EditorCell[] = []
+    for (const field of selected.fields) {
+      for (const locale of targets) {
+        const row = byKey.get(translationKey({ locale, sourceKind: selected.sourceKind, sourceId: selected.sourceId, fieldPath: field.fieldPath }))
+        const status: TranslationStatus = computeTranslationStatus(
+          { value: row?.value ?? null, status: row?.status ?? null, sourceText: row?.sourceText ?? null },
+          field.sourceText,
+        )
+        cells.push({
+          fieldPath: field.fieldPath,
+          locale,
+          value: row?.value ?? '',
+          id: row?.id ?? null,
+          status,
+          statusLabel: STATUS_LABELS[status],
+          assignees: parseAssignedTo(row?.assignedTo),
+        })
+      }
+    }
+    const approvable = Object.fromEntries(
+      targets.map((locale) => [locale, canApproveTranslation({ id: viewer ?? 0, isAdmin: isAdminUser(user) }, locale, settings).ok]),
+    )
+    editor = (
+      <TranslationEditor
+        key={selectedKey ?? ''}
+        itemKey={selectedKey ?? ''}
+        title={selected.title}
+        typeLabel={selected.typeLabel}
+        editHref={selected.editHref}
+        sourceKind={selected.sourceKind}
+        sourceId={selected.sourceId}
+        sourceLocale={settings.defaultLocale}
+        sourceLabel={localeLabel(settings.defaultLocale)}
+        targetLocales={targets}
+        localeLabels={Object.fromEntries(targets.map((code) => [code, localeLabel(code)]))}
+        fields={fields}
+        cells={cells}
+        users={users}
+        approvable={approvable}
+        apiBase={apiBase}
+        bulkApi={bulkApi}
+        requireReview={settings.requireReview}
+        closeHref={`?${serializeListState(state, { page: state.page })}`}
+      />
+    )
+  }
+
+  const listRows = paged.rows.map((row) => ({
+    key: row.key,
+    title: row.title,
+    typeLabel: row.typeLabel,
+    progress: row.progress,
+    updatedAt: row.updatedAt,
+    editHref: `?${serializeListState(state, { page: state.page })}&item=${encodeURIComponent(row.key)}`,
+    cells: row.cells.map((cell) => ({
+      locale: cell.locale,
+      status: cell.status,
+      statusLabel: STATUS_LABELS[cell.status],
+      approved: cell.approved,
+      total: cell.total,
+    })),
+    assignees: row.assignees.map((id) => ({ id, label: userLabel.get(id) ?? `User ${id}` })),
+  }))
+
   return (
-    <TranslationsTable
-      rows={data.rows}
-      targetLocales={data.targetLocales}
-      sourceLocale={settings.defaultLocale}
-      progress={data.progress}
-      collections={data.collections}
-      documents={data.documents}
-      scope={scope}
-      documentId={documentId}
-      group={group}
-      apiBase={apiBase}
-    />
+    <div className="list-view">
+      <div className="list-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <h1>Translations</h1>
+        <div className="text-[13px]" style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          {progress.map((entry) => (
+            <span key={entry.locale}>
+              {entry.label}: {entry.done} of {entry.total} approved
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div className="lst-panel" style={{ flex: '1 1 640px', minWidth: 0 }}>
+          <ListToolbar
+            collectionSlug="translations"
+            state={state}
+            columns={columns}
+            visibleNames={visibleNames}
+            limit={state.limit}
+            hasSavedPrefs={!!(savedPrefs.cols || savedPrefs.sort || savedPrefs.limit)}
+            totalDocs={matching.length}
+            view="list"
+          />
+          <TranslationsOverview
+            rows={listRows}
+            visibleNames={visibleNames}
+            targetLocales={targets}
+            localeLabels={Object.fromEntries(targets.map((code) => [code, localeLabel(code)]))}
+            users={users}
+            sortState={state.sort}
+            bulkApi={bulkApi}
+            hasRows={rows.length > 0}
+            emptyFiltered={matching.length === 0 && rows.length > 0}
+            selectedKey={selectedKey}
+            page={paged.page}
+            totalPages={paged.totalPages}
+            totalMatching={matching.length}
+            prevHref={paged.page > 1 ? `?${serializeListState(state, { page: paged.page - 1 })}` : null}
+            nextHref={paged.page < paged.totalPages ? `?${serializeListState(state, { page: paged.page + 1 })}` : null}
+            sortLinks={Object.fromEntries(
+              ['title', 'type', 'progress', 'updatedAt'].map((column) => [
+                column,
+                `?${serializeListState(state, { sort: nextSort(state.sort, column), page: 1 })}`,
+              ]),
+            )}
+          />
+        </div>
+        {editor ? <div style={{ flex: '1 1 420px', minWidth: 0 }}>{editor}</div> : null}
+      </div>
+    </div>
   )
 }
+
+function nextSort(current: string, column: string): string {
+  if (current === column) return `-${column}`
+  if (current === `-${column}`) return ''
+  return column
+}
+
+export default TranslationsView

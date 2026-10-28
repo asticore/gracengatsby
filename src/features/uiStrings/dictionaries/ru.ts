@@ -1326,6 +1326,10 @@ const ru: UiDictionary = {
   'integrations.google.adsenseLabel': "Аккаунт AdSense",
   'integrations.google.ga4Help': "Ресурс Google Analytics 4, посетители и страницы которого показывает панель.",
   'integrations.google.adsenseHelp': "Аккаунт AdSense, доходы которого показывает панель.",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Более новые записи",
+  "store.olderPosts": "Более старые записи",
+  "store.alwaysOn": "Всегда включены.",
 }
 
 export default ru

@@ -1326,6 +1326,10 @@ const pt: UiDictionary = {
   'integrations.google.adsenseLabel': "Conta do AdSense",
   'integrations.google.ga4Help': "A propriedade do Google Analytics 4 cujos visitantes e páginas o painel mostra.",
   'integrations.google.adsenseHelp': "A conta do AdSense cujos ganhos o painel mostra.",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Posts mais recentes",
+  "store.olderPosts": "Posts mais antigos",
+  "store.alwaysOn": "Sempre ativos.",
 }
 
 export default pt

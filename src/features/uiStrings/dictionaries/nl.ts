@@ -1326,6 +1326,10 @@ const nl: UiDictionary = {
   'integrations.google.adsenseLabel': "AdSense-account",
   'integrations.google.ga4Help': "De Google Analytics 4-property waarvan de dashboard bezoekers en pagina's toont.",
   'integrations.google.adsenseHelp': "Het AdSense-account waarvan de dashboard de inkomsten toont.",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Nieuwere berichten",
+  "store.olderPosts": "Oudere berichten",
+  "store.alwaysOn": "Altijd aan.",
 }
 
 export default nl

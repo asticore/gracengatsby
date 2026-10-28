@@ -1326,6 +1326,10 @@ const hi: UiDictionary = {
   'integrations.google.adsenseLabel': "AdSense खाता",
   'integrations.google.ga4Help': "वह Google Analytics 4 प्रॉपर्टी जिसके विज़िटर और पेज डैशबोर्ड दिखाता है।",
   'integrations.google.adsenseHelp': "वह AdSense खाता जिसकी कमाई डैशबोर्ड दिखाता है।",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "नई पोस्ट",
+  "store.olderPosts": "पुरानी पोस्ट",
+  "store.alwaysOn": "हमेशा चालू।",
 }
 
 export default hi

@@ -1325,6 +1325,10 @@ const zhHans: UiDictionary = {
   'integrations.google.adsenseLabel': "AdSense 账户",
   'integrations.google.ga4Help': "仪表板显示其访客和页面的 Google Analytics 4 资源。",
   'integrations.google.adsenseHelp': "仪表板显示其收入的 AdSense 账户。",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "较新的文章",
+  "store.olderPosts": "较早的文章",
+  "store.alwaysOn": "始终开启。",
 }
 
 export default zhHans

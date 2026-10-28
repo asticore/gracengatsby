@@ -1326,6 +1326,10 @@ const ar: UiDictionary = {
   'integrations.google.adsenseLabel': "حساب AdSense",
   'integrations.google.ga4Help': "خاصية Google Analytics 4 التي تعرض لوحة المعلومات زوارها وصفحاتها.",
   'integrations.google.adsenseHelp': "حساب AdSense الذي تعرض لوحة المعلومات أرباحه.",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "المقالات الأحدث",
+  "store.olderPosts": "المقالات الأقدم",
+  "store.alwaysOn": "مفعّل دائمًا.",
 }
 
 export default ar

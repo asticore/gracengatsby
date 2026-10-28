@@ -329,6 +329,7 @@ type CategoryRowProps = {
 }
 
 const CategoryRow = ({ category, copy, checked, cookies, onToggle }: CategoryRowProps) => {
+  const storeText = useStoreText()
   const id = `engage-consent-${category}`
   const necessary = category === 'necessary'
   return (
@@ -343,7 +344,7 @@ const CategoryRow = ({ category, copy, checked, cookies, onToggle }: CategoryRow
           onChange={(event) => onToggle(event.target.checked)}
         />
       </label>
-      <p className="engage-consent__category-text">{necessary && !/always on/i.test(copy.description) ? `${copy.description} Always on.` : copy.description}</p>
+      <p className="engage-consent__category-text">{necessary && !/always on/i.test(copy.description) ? `${copy.description} ${storeText('store.alwaysOn')}` : copy.description}</p>
       {cookies.length > 0 ? (
         <ul className="engage-consent__cookies">
           {cookies.map((cookie) => (

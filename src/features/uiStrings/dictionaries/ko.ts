@@ -1326,6 +1326,10 @@ const ko: UiDictionary = {
   'integrations.google.adsenseLabel': "AdSense 계정",
   'integrations.google.ga4Help': "대시보드가 방문자와 페이지를 보여 주는 Google Analytics 4 속성입니다.",
   'integrations.google.adsenseHelp': "대시보드가 수익을 보여 주는 AdSense 계정입니다.",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "최신 글",
+  "store.olderPosts": "이전 글",
+  "store.alwaysOn": "항상 사용.",
 }
 
 export default ko

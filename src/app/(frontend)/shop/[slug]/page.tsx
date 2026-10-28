@@ -5,6 +5,8 @@ import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
 
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { priceLocale } from '@/features/uiStrings/publicFormat'
+import { publicLocale } from '@/features/uiStrings/storeTextsServer'
 import { ProductPurchase, type GroupedChild } from '@/components/ProductPurchase'
 import { BackInStockForm } from '@/components/BackInStockForm'
 import { SubscriptionOffer } from '@/features/ecommerce/subscriptions/components/SubscriptionOffer'
@@ -73,7 +75,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     seo: product.seo,
     path: `/shop/${slug}`,
     contentType: 'product',
-    tokens: { price: formatPriceInAUD(product.priceInAUD), excerpt: product.shortDescription },
+    tokens: { price: formatPriceInAUD(product.priceInAUD, 'AUD', priceLocale(await publicLocale())), excerpt: product.shortDescription },
   })
 }
 

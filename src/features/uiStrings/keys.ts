@@ -1366,6 +1366,10 @@ export const UI_STRING_SOURCE = {
   'integrations.google.adsenseLabel': "AdSense account",
   'integrations.google.ga4Help': "The Google Analytics 4 property whose visitors and pages the dashboard shows.",
   'integrations.google.adsenseHelp': "The AdSense account whose earnings the dashboard shows.",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Newer posts",
+  "store.olderPosts": "Older posts",
+  "store.alwaysOn": "Always on.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

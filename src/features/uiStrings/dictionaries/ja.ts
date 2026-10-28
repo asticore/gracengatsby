@@ -1326,6 +1326,10 @@ const ja: UiDictionary = {
   'integrations.google.adsenseLabel': "AdSenseアカウント",
   'integrations.google.ga4Help': "ダッシュボードに訪問者とページを表示する Google Analytics 4 プロパティです。",
   'integrations.google.adsenseHelp': "ダッシュボードに収益を表示する AdSense アカウントです。",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "新しい記事",
+  "store.olderPosts": "古い記事",
+  "store.alwaysOn": "常に有効。",
 }
 
 export default ja

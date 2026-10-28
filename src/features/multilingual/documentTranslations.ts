@@ -1,6 +1,7 @@
 import type { MultilingualSettings } from './settings'
 import { sourceTextOf, valueAtPath, type TranslationRow } from './store'
-import { sourceIdFor, translatableSource } from './translatableFields'
+import { fieldsForDocument, sourceIdFor, translatableSource } from './translatableFields'
+import type { BlockGroup } from './blockText'
 import {
   canApproveTranslation,
   computeTranslationStatus,
@@ -36,6 +37,8 @@ export type DocumentTranslationField = {
   assignees: number[]
   /** Whether the viewer may press Approve for this field in this language. */
   canApprove: boolean
+  /** The builder block this text belongs to, or null for a page-level field. */
+  group: BlockGroup | null
 }
 
 export type DocumentTranslationLocale = {
@@ -74,7 +77,7 @@ export function buildDocumentTranslations(input: DocumentTranslationInput): Docu
   const sourceId = sourceIdFor(input.collection, input.documentId)
   const targets = input.settings.activeLocales.filter((code) => code !== input.settings.defaultLocale)
 
-  const sourceFields = source.fields
+  const sourceFields = fieldsForDocument(input.collection, input.doc)
     .map((field) => ({
       ...field,
       sourceText: sourceTextOf(valueAtPath(input.doc, field.path)),
@@ -114,6 +117,7 @@ export function buildDocumentTranslations(input: DocumentTranslationInput): Docu
         canApprove: field.richText
           ? false
           : canApproveTranslation({ id: input.viewer.id, isAdmin: input.viewer.isAdmin }, locale, input.settings).ok,
+        group: field.group ?? null,
       }
     })
 

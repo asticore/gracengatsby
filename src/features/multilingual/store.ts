@@ -1,4 +1,5 @@
 import { INTERFACE_SOURCE_ID, interfaceSourceText } from './interfaceStrings'
+import { isBlockFieldPath, readBlockField } from './blockText'
 import { sourceIdFor } from './translatableFields'
 import { parseAssignedTo, parseStatus, type TranslationStatus } from './translationStatus'
 
@@ -195,8 +196,12 @@ export const sourceLookup = (locale: string): TranslationLookup => buildLookup(l
 
 // --- Value extraction -------------------------------------------------------
 
-/** Walks a dot path, returning undefined rather than throwing on a gap. */
+/**
+ * Walks a dot path, returning undefined rather than throwing on a gap. A path
+ * into a builder block (`blocks.<key>.heading`) is resolved by the block's key.
+ */
 export function valueAtPath(document: unknown, path: string): unknown {
+  if (isBlockFieldPath(path)) return readBlockField(document, path)
   return path.split('.').reduce<unknown>((current, part) => {
     if (current === null || typeof current !== 'object') return undefined
     return (current as Record<string, unknown>)[part]

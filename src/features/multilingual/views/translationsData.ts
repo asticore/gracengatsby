@@ -3,7 +3,7 @@ import { adminCollectionPath } from '@/admin/adminPaths'
 import { INTERFACE_SOURCE_ID, INTERFACE_STRINGS } from '../interfaceStrings'
 import type { MultilingualSettings } from '../settings'
 import { findTranslations, sourceTextOf, valueAtPath, type TranslationRow } from '../store'
-import { sourceIdFor, TRANSLATABLE_COLLECTIONS } from '../translatableFields'
+import { fieldsForDocument, sourceIdFor, TRANSLATABLE_COLLECTIONS } from '../translatableFields'
 import { buildOverviewRows, type OverviewItemInput } from '../translationOverview'
 
 /**
@@ -67,7 +67,7 @@ async function contentItems(engine: EngineLike, user: unknown): Promise<Overview
 
     for (const doc of docs) {
       const id = String(doc.id)
-      const fields = source.fields
+      const fields = fieldsForDocument(source.slug, doc)
         .map((field) => ({
           fieldPath: field.path,
           label: field.label,

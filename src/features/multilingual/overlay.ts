@@ -1,5 +1,6 @@
 import { valueAtPath, type TranslationRow } from './store'
-import { translatableSource, sourceIdFor } from './translatableFields'
+import { fieldsForDocument, sourceIdFor, translatableSource } from './translatableFields'
+import { isBlockFieldPath, writeBlockField } from './blockText'
 import { publishIndex, publishableText } from './availability'
 import type { MultilingualSettings } from './settings'
 
@@ -41,7 +42,7 @@ export function overlayDocument<T>(
   let out = doc
   const sourceId = sourceIdFor(collection, documentId)
 
-  for (const field of source.fields) {
+  for (const field of fieldsForDocument(collection, doc)) {
     if (field.richText) continue
     const original = valueAtPath(doc, field.path)
     if (typeof original !== 'string') continue
@@ -49,7 +50,8 @@ export function overlayDocument<T>(
     const translated = lookup(sourceId, field.path, original)
     if (translated !== null && translated.trim().length > 0) {
       out = withValueAtPath(out, field.path, translated)
-    } else if (!fallbackToDefault) {
+    } else if (!fallbackToDefault && !field.group) {
+      // Block text is never blanked: a button or heading with no translation shows the source line.
       out = withValueAtPath(out, field.path, '')
     }
   }
@@ -58,6 +60,7 @@ export function overlayDocument<T>(
 
 /** Immutable set along a dot path; creates intermediate objects when they are missing. */
 function withValueAtPath<T>(document: T, path: string, value: unknown): T {
+  if (isBlockFieldPath(path)) return writeBlockField(document, path, value) as T
   const [head, ...rest] = path.split('.')
   if (head === undefined) return document
   const base = (document && typeof document === 'object' ? document : {}) as Record<string, unknown>

@@ -50,6 +50,8 @@ import { OrganizationsView } from '@/admin/views/OrganizationsView'
 import { PasswordGroupsView } from '@/admin/views/PasswordGroupsView'
 import { SecurityAuditView } from '@/admin/views/SecurityAuditView'
 import { SocialView } from '@/admin/views/SocialView'
+import { TemplatesHubView } from '@/admin/views/TemplatesHubView'
+import { TemplateLibrariesView } from '@/admin/views/TemplateLibrariesView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
@@ -62,6 +64,18 @@ export { AdminNav, ExtensionDomSafetyProvider, AsticoreIcon, AsticoreLogo }
 
 export const CUSTOM_ADMIN_VIEWS = [
   ...SETTINGS_PAGE_VIEWS,
+  {
+    key: 'templates',
+    Component: TemplatesHubView,
+    path: '/templates',
+    meta: { title: 'Templates', description: 'Site templates, page templates and reusable sections in one list.' },
+  },
+  {
+    key: 'templateLibraries',
+    Component: TemplateLibrariesView,
+    path: '/settings/template-libraries',
+    meta: { title: 'Template libraries', description: 'Libraries of ready-made templates.' },
+  },
   {
     key: 'dashboard',
     Component: Dashboard,

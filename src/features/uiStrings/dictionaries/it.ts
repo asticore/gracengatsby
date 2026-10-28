@@ -1223,6 +1223,26 @@ const it: UiDictionary = {
   'settings.link.display-currencies.description': "Mostra i prezzi in altre valute. Gli acquirenti pagano sempre nella valuta del negozio.",
   'settings.link.cache-tools.label': "Strumenti della cache",
   'settings.link.cache-tools.description': "Cancella subito le copie salvate delle pagine e attiva o disattiva la modalità sviluppo di Cloudflare.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Il tuo carrello",
+  "store.item": "Articolo",
+  "store.from": "Da ",
+  "store.addingProgress": "Aggiunta in corso...",
+  "store.invalidAmount": "Inserisci un importo valido.",
+  "store.giftCardsUnavailable": "Le carte regalo non sono disponibili al momento.",
+  "store.productUnavailable": "Questo prodotto non è disponibile al momento.",
+  "store.noProductsInGroup": "Non ci sono ancora prodotti in questo gruppo.",
+  "store.chooseOption": "Scegli un'opzione",
+  "store.firstName": "Nome",
+  "store.lastName": "Cognome",
+  "store.address": "Indirizzo",
+  "store.suburbCity": "Città",
+  "store.state": "Provincia",
+  "store.postcode": "CAP",
+  "store.country": "Paese (es. AU)",
+  "store.couldNotPriceCart": "Impossibile calcolare il tuo carrello.",
+  "store.storeCredit": "Credito del negozio",
 }
 
 export default it

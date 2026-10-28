@@ -1222,6 +1222,26 @@ const zhHans: UiDictionary = {
   'settings.link.display-currencies.description': "以其他货币显示价格。买家始终使用商店货币付款。",
   'settings.link.cache-tools.label': "缓存工具",
   'settings.link.cache-tools.description': "立即清除已保存的页面副本，并开启或关闭 Cloudflare 开发模式。",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "您的购物车",
+  "store.item": "商品",
+  "store.from": "起价 ",
+  "store.addingProgress": "添加中...",
+  "store.invalidAmount": "请输入有效金额。",
+  "store.giftCardsUnavailable": "礼品卡目前不可用。",
+  "store.productUnavailable": "该商品目前不可用。",
+  "store.noProductsInGroup": "该分组暂时没有商品。",
+  "store.chooseOption": "请选择",
+  "store.firstName": "名字",
+  "store.lastName": "姓氏",
+  "store.address": "地址",
+  "store.suburbCity": "城市",
+  "store.state": "省/州",
+  "store.postcode": "邮政编码",
+  "store.country": "国家（例如 AU）",
+  "store.couldNotPriceCart": "无法为您的购物车计算价格。",
+  "store.storeCredit": "商店余额",
 }
 
 export default zhHans

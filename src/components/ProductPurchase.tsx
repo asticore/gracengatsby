@@ -1,5 +1,6 @@
 'use client'
 
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 import { useCart } from '@/engine/commerce/react'
 import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
@@ -21,6 +22,7 @@ import type { ProductView, VariationView } from '@/features/ecommerce/storefront
 export type GroupedChild = { id: number; title: string; slug: string | null; view: ProductView }
 
 function PriceLine({ price, regular, onSale, from }: { price: number | null; regular: number | null; onSale: boolean; from?: boolean }) {
+  const t = useStoreText()
   const money = useDisplayMoney()
   if (price === null) return null
   return (
@@ -29,11 +31,11 @@ function PriceLine({ price, regular, onSale, from }: { price: number | null; reg
         <>
           <s className="mr-2 opacity-50">{money(regular)}</s>
           <span>{money(price)}</span>
-          <span className="sale-badge ml-3 align-middle text-[0.7rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">Sale</span>
+          <span className="sale-badge ml-3 align-middle text-[0.7rem] uppercase tracking-[0.1em] text-[var(--color-gold)]">{t('store.sale')}</span>
         </>
       ) : (
         <span>
-          {from ? 'From ' : ''}
+          {from ? t('store.from') : ''}
           {money(price)}
         </span>
       )}
@@ -45,7 +47,8 @@ type Limits = { min: number; max: number | null }
 type BuyerPrice = { enabled: boolean; suggested: number | null; minimum: number | null }
 
 /** Quantity box plus Add to cart. The server re-checks price, stock, limits and the option; it can still say no. */
-function AddControl({ productId, variationId, disabled, label = 'Add to cart', limits, buyerPrice, addOns = [] }: { productId: number; variationId?: string | null; disabled?: boolean; label?: string; limits?: Limits; buyerPrice?: BuyerPrice; addOns?: AddOnView[] }) {
+function AddControl({ productId, variationId, disabled, label, limits, buyerPrice, addOns = [] }: { productId: number; variationId?: string | null; disabled?: boolean; label?: string; limits?: Limits; buyerPrice?: BuyerPrice; addOns?: AddOnView[] }) {
+  const t = useStoreText()
   const { addItem, isLoading } = useCart()
   const min = limits?.min ?? 1
   const cap = limits?.max ?? 99
@@ -63,7 +66,7 @@ function AddControl({ productId, variationId, disabled, label = 'Add to cart', l
       const minimumCents = named.minimum != null ? Math.floor(named.minimum * 100 + 1e-9) : null
       const check = validateNamedPrice(Math.round(Number(priceText) * 100), { minPrice: minimumCents })
       if (!check.ok || check.cents == null) {
-        setMessage(check.error ?? 'Please enter a valid amount.')
+        setMessage(check.error ?? t('store.invalidAmount'))
         return
       }
       priceCents = check.cents
@@ -85,7 +88,7 @@ function AddControl({ productId, variationId, disabled, label = 'Add to cart', l
         <ProductAddOns defs={addOns} values={answers} onChange={(id, value) => setAnswers((current) => ({ ...current, [id]: value }))} />
         <QtyPriceFields qty={qty} onQty={setQty} min={min} max={limits?.max ?? null} buyerPrice={named} priceText={priceText} onPriceText={setPriceText} />
         <button type="button" className="btn btn--primary" onClick={add} disabled={disabled || isLoading}>
-          {isLoading ? 'Adding...' : label}
+          {isLoading ? t('store.addingProgress') : (label ?? t('store.addToCart'))}
         </button>
       </div>
       {message ? (
@@ -103,6 +106,7 @@ function AddControl({ productId, variationId, disabled, label = 'Add to cart', l
 }
 
 export function ProductPurchase({ productId, view, grouped = [], giftConfig }: { productId: number; view: ProductView; grouped?: GroupedChild[]; giftConfig?: GiftCardConfig }) {
+  const t = useStoreText()
   const [selection, setSelection] = useState<Record<string, string>>({})
   const { setImageUrl } = useVariationImage()
 
@@ -113,7 +117,7 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
   }, [selection, view])
 
   if (view.type === 'giftcard') {
-    return giftConfig ? <GiftCardForm productId={productId} config={giftConfig} /> : <p>Gift cards are not available right now.</p>
+    return giftConfig ? <GiftCardForm productId={productId} config={giftConfig} /> : <p>{t('store.giftCardsUnavailable')}</p>
   }
 
   if (view.type === 'external') {
@@ -126,7 +130,7 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
             {view.external.label}
           </a>
         ) : (
-          <p>This product is not available right now.</p>
+          <p>{t('store.productUnavailable')}</p>
         )}
       </div>
     )
@@ -135,7 +139,7 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
   if (view.type === 'grouped') {
     return (
       <div>
-        {grouped.length === 0 ? <p>No products in this group yet.</p> : null}
+        {grouped.length === 0 ? <p>{t('store.noProductsInGroup')}</p> : null}
         <ul className="m-0 list-none border-t border-[var(--color-line)] p-0">
           {grouped.map((child) => (
             <li key={child.id} className="border-b border-[var(--color-line)] py-4">
@@ -171,7 +175,7 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
                 setImageUrl(imageForSelection(view.variations, view.options, next))
               }}
             >
-              <option value="">Choose an option</option>
+              <option value="">{t('store.chooseOption')}</option>
               {option.values.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -190,7 +194,7 @@ export function ProductPurchase({ productId, view, grouped = [], giftConfig }: {
         ) : view.options.length > 0 ? (
           <p className="text-[0.9rem] opacity-70">Choose every option to see the price and availability.</p>
         ) : (
-          <p>This product is not available right now.</p>
+          <p>{t('store.productUnavailable')}</p>
         )}
         {shown ? <PreorderNotice info={shown.preorder} /> : null}
         <PricingRuleNotes notes={view.pricingNotes} />

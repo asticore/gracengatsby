@@ -1264,6 +1264,26 @@ export const UI_STRING_SOURCE = {
   'settings.link.display-currencies.description': "Show prices in other currencies. Shoppers always pay in the shop currency.",
   'settings.link.cache-tools.label': "Cache tools",
   'settings.link.cache-tools.description': "Clear saved page copies now, and switch Cloudflare development mode on or off.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Your cart",
+  "store.item": "Item",
+  "store.from": "From ",
+  "store.addingProgress": "Adding...",
+  "store.invalidAmount": "Please enter a valid amount.",
+  "store.giftCardsUnavailable": "Gift cards are not available right now.",
+  "store.productUnavailable": "This product is not available right now.",
+  "store.noProductsInGroup": "No products in this group yet.",
+  "store.chooseOption": "Choose an option",
+  "store.firstName": "First name",
+  "store.lastName": "Last name",
+  "store.address": "Address",
+  "store.suburbCity": "Suburb / city",
+  "store.state": "State",
+  "store.postcode": "Postcode",
+  "store.country": "Country (e.g. AU)",
+  "store.couldNotPriceCart": "Could not price your cart.",
+  "store.storeCredit": "Store credit",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

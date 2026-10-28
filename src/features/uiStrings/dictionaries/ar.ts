@@ -1223,6 +1223,26 @@ const ar: UiDictionary = {
   'settings.link.display-currencies.description': "اعرض الأسعار بعملات أخرى. يدفع المتسوقون دائمًا بعملة المتجر.",
   'settings.link.cache-tools.label': "أدوات التخزين المؤقت",
   'settings.link.cache-tools.description': "امسح نسخ الصفحات المحفوظة الآن، وفعّل وضع التطوير في Cloudflare أو أوقفه.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "سلة التسوق",
+  "store.item": "عنصر",
+  "store.from": "بدءًا من ",
+  "store.addingProgress": "جارٍ الإضافة...",
+  "store.invalidAmount": "يُرجى إدخال مبلغ صالح.",
+  "store.giftCardsUnavailable": "بطاقات الهدايا غير متاحة حاليًا.",
+  "store.productUnavailable": "هذا المنتج غير متاح حاليًا.",
+  "store.noProductsInGroup": "لا توجد منتجات في هذه المجموعة بعد.",
+  "store.chooseOption": "اختر خيارًا",
+  "store.firstName": "الاسم الأول",
+  "store.lastName": "اسم العائلة",
+  "store.address": "العنوان",
+  "store.suburbCity": "المدينة",
+  "store.state": "الولاية",
+  "store.postcode": "الرمز البريدي",
+  "store.country": "الدولة (مثال: AU)",
+  "store.couldNotPriceCart": "تعذّر احتساب سعر سلة التسوق.",
+  "store.storeCredit": "رصيد المتجر",
 }
 
 export default ar

@@ -1223,6 +1223,26 @@ const nl: UiDictionary = {
   'settings.link.display-currencies.description': "Toon prijzen in andere valuta's. Klanten betalen altijd in de winkelvaluta.",
   'settings.link.cache-tools.label': "Cachehulpmiddelen",
   'settings.link.cache-tools.description': "Wis nu de opgeslagen paginakopieën en zet de Cloudflare-ontwikkelmodus aan of uit.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Je winkelwagen",
+  "store.item": "Artikel",
+  "store.from": "Vanaf ",
+  "store.addingProgress": "Bezig met toevoegen...",
+  "store.invalidAmount": "Vul een geldig bedrag in.",
+  "store.giftCardsUnavailable": "Cadeaukaarten zijn momenteel niet beschikbaar.",
+  "store.productUnavailable": "Dit product is momenteel niet beschikbaar.",
+  "store.noProductsInGroup": "Er zijn in deze groep nog geen producten.",
+  "store.chooseOption": "Kies een optie",
+  "store.firstName": "Voornaam",
+  "store.lastName": "Achternaam",
+  "store.address": "Adres",
+  "store.suburbCity": "Plaats",
+  "store.state": "Provincie",
+  "store.postcode": "Postcode",
+  "store.country": "Land (bijv. AU)",
+  "store.couldNotPriceCart": "We konden je winkelwagen niet prijzen.",
+  "store.storeCredit": "Tegoed",
 }
 
 export default nl

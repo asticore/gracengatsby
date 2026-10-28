@@ -1223,6 +1223,26 @@ const es: UiDictionary = {
   'settings.link.display-currencies.description': "Muestre los precios en otras monedas. Los compradores siempre pagan en la moneda de la tienda.",
   'settings.link.cache-tools.label': "Herramientas de caché",
   'settings.link.cache-tools.description': "Borre ahora las copias guardadas de páginas y active o desactive el modo de desarrollo de Cloudflare.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Tu carrito",
+  "store.item": "Artículo",
+  "store.from": "Desde ",
+  "store.addingProgress": "Añadiendo...",
+  "store.invalidAmount": "Introduce un importe válido.",
+  "store.giftCardsUnavailable": "Las tarjetas regalo no están disponibles en este momento.",
+  "store.productUnavailable": "Este producto no está disponible en este momento.",
+  "store.noProductsInGroup": "Este grupo aún no tiene productos.",
+  "store.chooseOption": "Elige una opción",
+  "store.firstName": "Nombre",
+  "store.lastName": "Apellidos",
+  "store.address": "Dirección",
+  "store.suburbCity": "Localidad",
+  "store.state": "Provincia",
+  "store.postcode": "Código postal",
+  "store.country": "País (p. ej. AU)",
+  "store.couldNotPriceCart": "No se pudo calcular tu carrito.",
+  "store.storeCredit": "Crédito de la tienda",
 }
 
 export default es

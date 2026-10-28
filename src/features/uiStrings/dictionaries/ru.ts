@@ -1137,6 +1137,31 @@ const ru: UiDictionary = {
   "email.abandonedCart.body": "Вы оставили несколько товаров в корзине магазина {site_name}. Они всё ещё ждут вас.",
   "email.backInStock.subject": "Снова в наличии: {label}",
   "email.backInStock.body": "Хорошие новости. {label} снова в наличии.\n\nПосмотреть: {url}\n\nВы попросили сообщить вам, поэтому это единственное письмо об этом.",
+
+  // --- store ---
+  "store.addToCart": "В корзину",
+  "store.adding": "Добавляем…",
+  "store.addedToCart": "Добавлено в корзину.",
+  "store.viewCart": "Открыть корзину",
+  "store.outOfStock": "Нет в наличии",
+  "store.sale": "Скидка",
+  "store.cart": "Корзина",
+  "store.emptyCart": "Ваша корзина пуста.",
+  "store.continueShopping": "Продолжить покупки",
+  "store.subtotal": "Промежуточный итог",
+  "store.total": "Итого",
+  "store.quantity": "Количество",
+  "store.remove": "Удалить",
+  "store.checkout": "Оформить заказ",
+  "store.readMore": "Читать далее",
+  "store.search": "Поиск",
+  "store.previous": "Назад",
+  "store.next": "Далее",
+  "store.wishlist": "Список желаний",
+  "store.compare": "Сравнить",
+  "store.shipping": "Доставка",
+  "store.tax": "Налог",
+  "store.orderConfirmed": "Спасибо! Ваш заказ подтверждён.",
 }
 
 export default ru

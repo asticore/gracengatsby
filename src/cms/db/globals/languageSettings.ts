@@ -30,6 +30,8 @@ import { languageSettings, languageSettingsGroupFields, languageSettingsMultilin
  */
 export type LanguageSettingsDoc = {
   id: number
+  /** Owner wording for storefront interface text: [{ key, locale, value }]. See src/features/uiStrings/storeTexts.ts. */
+  interfaceOverrides?: unknown
   multilingual?: {
     enabled?: boolean | null
     defaultLocale?: string | null

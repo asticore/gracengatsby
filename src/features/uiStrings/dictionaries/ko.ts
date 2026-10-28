@@ -1137,6 +1137,31 @@ const ko: UiDictionary = {
   "email.abandonedCart.body": "{site_name} 장바구니에 상품이 남아 있습니다. 여전히 기다리고 있어요.",
   "email.backInStock.subject": "재입고되었습니다: {label}",
   "email.backInStock.body": "반가운 소식입니다. {label}이(가) 다시 입고되었습니다.\n\n여기에서 확인하세요: {url}\n\n재입고 알림을 요청하셨기에 이 메일이 이 내용에 대해 보내는 유일한 메일입니다.",
+
+  // --- store ---
+  "store.addToCart": "장바구니에 담기",
+  "store.adding": "담는 중…",
+  "store.addedToCart": "장바구니에 담았습니다.",
+  "store.viewCart": "장바구니 보기",
+  "store.outOfStock": "품절",
+  "store.sale": "세일",
+  "store.cart": "장바구니",
+  "store.emptyCart": "장바구니가 비어 있습니다.",
+  "store.continueShopping": "쇼핑 계속하기",
+  "store.subtotal": "소계",
+  "store.total": "합계",
+  "store.quantity": "수량",
+  "store.remove": "삭제",
+  "store.checkout": "결제하기",
+  "store.readMore": "더 읽기",
+  "store.search": "검색",
+  "store.previous": "이전",
+  "store.next": "다음",
+  "store.wishlist": "위시리스트",
+  "store.compare": "비교",
+  "store.shipping": "배송비",
+  "store.tax": "세금",
+  "store.orderConfirmed": "감사합니다. 주문이 확정되었습니다.",
 }
 
 export default ko

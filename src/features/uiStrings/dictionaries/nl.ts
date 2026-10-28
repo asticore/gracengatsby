@@ -1137,6 +1137,31 @@ const nl: UiDictionary = {
   "email.abandonedCart.body": "Je hebt nog artikelen in je winkelmandje bij {site_name} staan. Ze wachten nog op je.",
   "email.backInStock.subject": "Weer op voorraad: {label}",
   "email.backInStock.body": "Goed nieuws. {label} is weer op voorraad.\n\nBekijk het hier: {url}\n\nJe vroeg om een melding, dus dit is de enige e-mail die we hierover sturen.",
+
+  // --- store ---
+  "store.addToCart": "In winkelwagen",
+  "store.adding": "Bezig met toevoegen…",
+  "store.addedToCart": "Toegevoegd aan je winkelwagen.",
+  "store.viewCart": "Bekijk winkelwagen",
+  "store.outOfStock": "Uitverkocht",
+  "store.sale": "Actie",
+  "store.cart": "Winkelwagen",
+  "store.emptyCart": "Je winkelwagen is leeg.",
+  "store.continueShopping": "Verder winkelen",
+  "store.subtotal": "Subtotaal",
+  "store.total": "Totaal",
+  "store.quantity": "Aantal",
+  "store.remove": "Verwijderen",
+  "store.checkout": "Afrekenen",
+  "store.readMore": "Lees verder",
+  "store.search": "Zoeken",
+  "store.previous": "Vorige",
+  "store.next": "Volgende",
+  "store.wishlist": "Verlanglijst",
+  "store.compare": "Vergelijken",
+  "store.shipping": "Verzending",
+  "store.tax": "Btw",
+  "store.orderConfirmed": "Bedankt - je bestelling is bevestigd.",
 }
 
 export default nl

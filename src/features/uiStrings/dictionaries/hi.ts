@@ -1137,6 +1137,31 @@ const hi: UiDictionary = {
   "email.abandonedCart.body": "आप {site_name} पर अपनी कार्ट में कुछ सामान छोड़ गए हैं। वे अब भी आपका इंतज़ार कर रहे हैं।",
   "email.backInStock.subject": "फिर से स्टॉक में: {label}",
   "email.backInStock.body": "अच्छी खबर है। {label} फिर से स्टॉक में है।\n\nयहाँ देखें: {url}\n\nआपने सूचित करने के लिए कहा था, इसलिए इस बारे में यही एकमात्र ईमेल है जो हम भेजेंगे।",
+
+  // --- store ---
+  "store.addToCart": "कार्ट में डालें",
+  "store.adding": "जोड़ा जा रहा है…",
+  "store.addedToCart": "आपकी कार्ट में जोड़ दिया गया है।",
+  "store.viewCart": "कार्ट देखें",
+  "store.outOfStock": "स्टॉक में नहीं",
+  "store.sale": "सेल",
+  "store.cart": "कार्ट",
+  "store.emptyCart": "आपकी कार्ट खाली है।",
+  "store.continueShopping": "खरीदारी जारी रखें",
+  "store.subtotal": "उप-योग",
+  "store.total": "कुल",
+  "store.quantity": "मात्रा",
+  "store.remove": "हटाएँ",
+  "store.checkout": "चेकआउट",
+  "store.readMore": "और पढ़ें",
+  "store.search": "खोजें",
+  "store.previous": "पिछला",
+  "store.next": "अगला",
+  "store.wishlist": "विशलिस्ट",
+  "store.compare": "तुलना करें",
+  "store.shipping": "शिपिंग",
+  "store.tax": "कर",
+  "store.orderConfirmed": "धन्यवाद - आपका ऑर्डर पक्का हो गया है।",
 }
 
 export default hi

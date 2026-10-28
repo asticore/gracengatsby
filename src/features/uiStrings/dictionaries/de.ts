@@ -1361,6 +1361,21 @@ const de: UiDictionary = {
   'orders.manifest.pick': "Bestellungen auswählen",
   'orders.manifest.noLabelled': "Noch keine Bestellungen mit Etikett. Kaufen Sie zuerst ein Etikett.",
   'orders.manifest.clearTicks': "Auswahl aufheben",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "E-Mail des Kunden",
+  'customers.credit.find': "Kunden suchen",
+  'customers.credit.balance': "{email}: Guthaben",
+  'customers.credit.add': "Guthaben hinzufügen",
+  'customers.credit.deduct': "Guthaben abziehen",
+  'customers.credit.amount': "Betrag ($)",
+  'customers.credit.reason': "Grund (erforderlich)",
+  'customers.credit.save': "Speichern",
+  'customers.credit.ledger': "{amount} - {reason} - Guthaben {balance} - {date}",
+  'customers.credit.confirmAdd': "{amount} zu {email} hinzufügen?",
+  'customers.credit.confirmDeduct': "{amount} von {email} abziehen?",
+  'customers.credit.errLookup': "Suche fehlgeschlagen.",
+  'customers.credit.errRequest': "Anfrage fehlgeschlagen.",
+  'customers.credit.errFailed': "Fehlgeschlagen.",
 }
 
 export default de

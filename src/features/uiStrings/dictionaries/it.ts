@@ -1360,6 +1360,21 @@ const it: UiDictionary = {
   'orders.manifest.pick': "Scegli gli ordini",
   'orders.manifest.noLabelled': "Nessun ordine etichettato per ora. Acquista prima un’etichetta.",
   'orders.manifest.clearTicks': "Rimuovi selezioni",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "E-mail del cliente",
+  'customers.credit.find': "Trova cliente",
+  'customers.credit.balance': "{email}: saldo",
+  'customers.credit.add': "Aggiungi credito",
+  'customers.credit.deduct': "Detrai credito",
+  'customers.credit.amount': "Importo ($)",
+  'customers.credit.reason': "Motivo (obbligatorio)",
+  'customers.credit.save': "Salva",
+  'customers.credit.ledger': "{amount} - {reason} - saldo {balance} - {date}",
+  'customers.credit.confirmAdd': "Aggiungere {amount} a {email}?",
+  'customers.credit.confirmDeduct': "Detrarre {amount} da {email}?",
+  'customers.credit.errLookup': "Ricerca non riuscita.",
+  'customers.credit.errRequest': "Richiesta non riuscita.",
+  'customers.credit.errFailed': "Non riuscito.",
 }
 
 export default it

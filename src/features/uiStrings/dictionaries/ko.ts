@@ -1360,6 +1360,21 @@ const ko: UiDictionary = {
   'orders.manifest.pick': "주문 선택",
   'orders.manifest.noLabelled': "아직 라벨이 발행된 주문이 없습니다. 먼저 라벨을 구매하세요.",
   'orders.manifest.clearTicks': "선택 해제",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "고객 이메일",
+  'customers.credit.find': "고객 찾기",
+  'customers.credit.balance': "{email}: 잔액",
+  'customers.credit.add': "적립금 추가",
+  'customers.credit.deduct': "적립금 차감",
+  'customers.credit.amount': "금액 ($)",
+  'customers.credit.reason': "사유 (필수)",
+  'customers.credit.save': "저장",
+  'customers.credit.ledger': "{amount} - {reason} - 잔액 {balance} - {date}",
+  'customers.credit.confirmAdd': "{email}에 {amount}을(를) 추가할까요?",
+  'customers.credit.confirmDeduct': "{email}에서 {amount}을(를) 차감할까요?",
+  'customers.credit.errLookup': "조회에 실패했습니다.",
+  'customers.credit.errRequest': "요청에 실패했습니다.",
+  'customers.credit.errFailed': "실패했습니다.",
 }
 
 export default ko

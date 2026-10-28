@@ -1360,6 +1360,21 @@ const hi: UiDictionary = {
   'orders.manifest.pick': "ऑर्डर चुनें",
   'orders.manifest.noLabelled': "अभी कोई लेबल वाला ऑर्डर नहीं है। पहले लेबल खरीदें।",
   'orders.manifest.clearTicks': "चिह्न हटाएँ",
+  // --- admin leftovers (customers store credit) ---
+  'customers.credit.emailPlaceholder': "ग्राहक का ईमेल",
+  'customers.credit.find': "ग्राहक खोजें",
+  'customers.credit.balance': "{email}: शेष",
+  'customers.credit.add': "क्रेडिट जोड़ें",
+  'customers.credit.deduct': "क्रेडिट घटाएँ",
+  'customers.credit.amount': "राशि ($)",
+  'customers.credit.reason': "कारण (आवश्यक)",
+  'customers.credit.save': "सहेजें",
+  'customers.credit.ledger': "{amount} - {reason} - शेष {balance} - {date}",
+  'customers.credit.confirmAdd': "{email} में {amount} जोड़ें?",
+  'customers.credit.confirmDeduct': "{email} से {amount} घटाएँ?",
+  'customers.credit.errLookup': "खोज विफल रही।",
+  'customers.credit.errRequest': "अनुरोध विफल रहा।",
+  'customers.credit.errFailed': "विफल।",
 }
 
 export default hi

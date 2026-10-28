@@ -1385,6 +1385,22 @@ const hi: UiDictionary = {
   'media.folder': "फ़ोल्डर",
   'media.alt': "वैकल्पिक पाठ",
   'media.show': "दिखाएँ",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "पेज और पोस्ट आयात करें",
+  'importContent.limit': "एक आयात में अधिकतम 6 MB और 500 आइटम।",
+  'importContent.csvHeading': "CSV कॉलम का अर्थ",
+  'importContent.urlInUse': "जब कोई वेब पता पहले से उपयोग में हो",
+  'importContent.keepPublished': "\"publish\" चिह्नित आइटम की प्रकाशित स्थिति रखें (सब कुछ ड्राफ़्ट के रूप में सहेजने के लिए बंद करें)",
+  'importContent.previewNote': "पूर्वावलोकन कुछ भी सहेजता नहीं है।",
+  'importContent.problems': "फ़ाइल में मिली समस्याएँ",
+  'importContent.colTitle': "शीर्षक",
+  'importContent.colUrl': "वेब पता",
+  'importContent.colType': "प्रकार",
+  'importContent.colStatus': "स्थिति",
+  'importContent.colAction': "क्या होगा",
+  'importContent.showingFirst': "{count} आइटम में से पहले {limit} दिखाए जा रहे हैं।",
+  'importContent.skipped': "छोड़े गए या आयात न हो सकने वाले आइटम शामिल नहीं किए जाते।",
+  'importContent.failed': "विफल आइटम",
 }
 
 export default hi

@@ -1385,6 +1385,22 @@ const ja: UiDictionary = {
   'media.folder': "フォルダー",
   'media.alt': "代替テキスト",
   'media.show': "表示",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "ページと投稿のインポート",
+  'importContent.limit': "1回のインポートで最大6 MB、500件まで。",
+  'importContent.csvHeading': "CSVの列の意味",
+  'importContent.urlInUse': "Web アドレスが既に使用されている場合",
+  'importContent.keepPublished': "「公開」と指定された項目は公開状態を維持（オフにするとすべて下書きとして保存）",
+  'importContent.previewNote': "プレビューでは何も保存されません。",
+  'importContent.problems': "ファイルで見つかった問題",
+  'importContent.colTitle': "タイトル",
+  'importContent.colUrl': "Web アドレス",
+  'importContent.colType': "種類",
+  'importContent.colStatus': "ステータス",
+  'importContent.colAction': "何が起きるか",
+  'importContent.showingFirst': "{count} 件中、最初の {limit} 件を表示しています。",
+  'importContent.skipped': "スキップされた項目やインポートできない項目は含まれません。",
+  'importContent.failed': "失敗した項目",
 }
 
 export default ja

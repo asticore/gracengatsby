@@ -1385,6 +1385,22 @@ const ru: UiDictionary = {
   'media.folder': "Папка",
   'media.alt': "Alt",
   'media.show': "Показать",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "Импорт страниц и записей",
+  'importContent.limit': "До 6 МБ и 500 элементов за один импорт.",
+  'importContent.csvHeading': "Что означают столбцы CSV",
+  'importContent.urlInUse': "Когда веб-адрес уже занят",
+  'importContent.keepPublished': "Сохранять статус «опубликовано» для элементов с пометкой «публиковать» (выключите, чтобы сохранить всё как черновики)",
+  'importContent.previewNote': "Предпросмотр ничего не сохраняет.",
+  'importContent.problems': "Проблемы в файле",
+  'importContent.colTitle': "Заголовок",
+  'importContent.colUrl': "Веб-адрес",
+  'importContent.colType': "Тип",
+  'importContent.colStatus': "Статус",
+  'importContent.colAction': "Что произойдёт",
+  'importContent.showingFirst': "Показаны первые {limit} из {count} элементов.",
+  'importContent.skipped': "Пропущенные элементы и элементы, которые нельзя импортировать, не включаются.",
+  'importContent.failed': "Элементы с ошибкой",
 }
 
 export default ru

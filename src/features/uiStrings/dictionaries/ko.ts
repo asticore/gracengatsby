@@ -1385,6 +1385,22 @@ const ko: UiDictionary = {
   'media.folder': "폴더",
   'media.alt': "대체 텍스트",
   'media.show': "표시",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "페이지 및 글 가져오기",
+  'importContent.limit': "가져오기 한 번에 최대 6MB, 500개 항목.",
+  'importContent.csvHeading': "CSV 열의 의미",
+  'importContent.urlInUse': "웹 주소가 이미 사용 중일 때",
+  'importContent.keepPublished': "\"게시\"로 표시된 항목의 게시 상태 유지(끄면 모두 초안으로 저장)",
+  'importContent.previewNote': "미리보기는 아무것도 저장하지 않습니다.",
+  'importContent.problems': "파일에서 발견된 문제",
+  'importContent.colTitle': "제목",
+  'importContent.colUrl': "웹 주소",
+  'importContent.colType': "유형",
+  'importContent.colStatus': "상태",
+  'importContent.colAction': "어떤 일이 일어나는지",
+  'importContent.showingFirst': "전체 {count}개 중 처음 {limit}개를 표시합니다.",
+  'importContent.skipped': "건너뛰었거나 가져올 수 없는 항목은 제외됩니다.",
+  'importContent.failed': "실패한 항목",
 }
 
 export default ko

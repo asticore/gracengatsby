@@ -1385,6 +1385,22 @@ const nl: UiDictionary = {
   'media.folder': "Map",
   'media.alt': "Alt",
   'media.show': "Tonen",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "Pagina's en berichten importeren",
+  'importContent.limit': "Tot 6 MB en 500 items per import.",
+  'importContent.csvHeading': "Wat de CSV-kolommen betekenen",
+  'importContent.urlInUse': "Wanneer een webadres al in gebruik is",
+  'importContent.keepPublished': "Gepubliceerde status behouden voor items met publiceren (uitzetten om alles als concept op te slaan)",
+  'importContent.previewNote': "De voorvertoning slaat niets op.",
+  'importContent.problems': "Problemen gevonden in het bestand",
+  'importContent.colTitle': "Titel",
+  'importContent.colUrl': "Webadres",
+  'importContent.colType': "Type",
+  'importContent.colStatus': "Status",
+  'importContent.colAction': "Wat er gebeurt",
+  'importContent.showingFirst': "De eerste {limit} van {count} items worden getoond.",
+  'importContent.skipped': "Overgeslagen items of items die niet kunnen worden geïmporteerd, worden niet meegenomen.",
+  'importContent.failed': "Items die mislukten",
 }
 
 export default nl

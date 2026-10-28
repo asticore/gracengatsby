@@ -1385,6 +1385,22 @@ const ar: UiDictionary = {
   'media.folder': "المجلد",
   'media.alt': "النص البديل",
   'media.show': "عرض",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "استيراد الصفحات والمنشورات",
+  'importContent.limit': "حتى 6 ميغابايت و500 عنصر لكل استيراد.",
+  'importContent.csvHeading': "معنى أعمدة ملف CSV",
+  'importContent.urlInUse': "عندما يكون عنوان الويب مستخدمًا بالفعل",
+  'importContent.keepPublished': "الإبقاء على حالة النشر للعناصر المعلّمة للنشر (أوقفه لحفظ كل شيء كمسودات)",
+  'importContent.previewNote': "المعاينة لا تحفظ أي شيء.",
+  'importContent.problems': "مشكلات في الملف",
+  'importContent.colTitle': "العنوان",
+  'importContent.colUrl': "عنوان الويب",
+  'importContent.colType': "النوع",
+  'importContent.colStatus': "الحالة",
+  'importContent.colAction': "ماذا سيحدث",
+  'importContent.showingFirst': "عرض أول {limit} من {count} عنصرًا.",
+  'importContent.skipped': "يتم استبعاد العناصر المتخطاة أو التي لا يمكن استيرادها.",
+  'importContent.failed': "العناصر التي فشلت",
 }
 
 export default ar

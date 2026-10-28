@@ -1425,6 +1425,22 @@ export const UI_STRING_SOURCE = {
   'media.folder': "Folder",
   'media.alt': "Alt",
   'media.show': "Show",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "Import pages and posts",
+  'importContent.limit': "Up to 6 MB and 500 items per import.",
+  'importContent.csvHeading': "What the CSV columns mean",
+  'importContent.urlInUse': "When a web address is already in use",
+  'importContent.keepPublished': "Keep published status for items marked publish (leave this off to save everything as drafts)",
+  'importContent.previewNote': "The preview saves nothing.",
+  'importContent.problems': "Problems found in the file",
+  'importContent.colTitle': "Title",
+  'importContent.colUrl': "Web address",
+  'importContent.colType': "Type",
+  'importContent.colStatus': "Status",
+  'importContent.colAction': "What will happen",
+  'importContent.showingFirst': "Showing the first {limit} of {count} items.",
+  'importContent.skipped': "Items that are skipped or cannot be imported are left out.",
+  'importContent.failed': "Items that failed",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

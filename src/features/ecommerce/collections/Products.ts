@@ -1,5 +1,6 @@
 import { noAdsField } from '@/features/ads/fields'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
+import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
@@ -175,7 +176,7 @@ export const Products: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
-    afterChange: [stockAlertAfterChange, backInStockAfterChange, subscriptionAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products'), machineAutoDraftAfterChange('products')],
+    afterChange: [stockAlertAfterChange, backInStockAfterChange, subscriptionAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products'), machineAutoDraftAfterChange('products'), outdatedAfterChange('products')],
     afterDelete: [indexNowAfterDelete('products')],
   },
 }

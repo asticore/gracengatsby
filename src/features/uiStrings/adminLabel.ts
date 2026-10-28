@@ -11,8 +11,9 @@ import { UI_STRING_SOURCE } from './keys'
  *   kind 'collection'  label.collection.<collection slug>   (plural name)
  *   kind 'global'      label.global.<global slug>
  *   kind 'field'       label.field.<field name>
+ *   kind 'singular'    label.singular.<collection slug>   (singular name, edit screen)
  */
-export type AdminLabelKind = 'collection' | 'global' | 'field'
+export type AdminLabelKind = 'collection' | 'global' | 'field' | 'singular'
 
 export type AdminLabelContext = {
   locale?: string | null

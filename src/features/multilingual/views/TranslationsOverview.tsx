@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { formatDateCell } from '@/admin/list/dateFormatter'
+import type { UiStringKey } from '@/features/uiStrings'
 
 import { TranslationStatusBadge, errorMessageFrom } from './TranslationStatusBadge'
 import type { TranslationStatus } from '../translationStatus'
@@ -66,24 +68,26 @@ export type TranslationsOverviewProps = {
 }
 
 const SORTABLE = new Set(['title', 'type', 'progress', 'updatedAt'])
-const COLUMN_LABELS: Record<string, string> = {
-  title: 'Title',
-  type: 'Type',
-  url: 'URL',
-  progress: 'Progress',
-  inactive: 'Inactive',
-  assignee: 'Assigned to',
-  updatedAt: 'Last source change',
+const COLUMN_KEYS: Record<string, UiStringKey> = {
+  title: 'translations.colTitle',
+  type: 'translations.colType',
+  url: 'translations.colUrl',
+  progress: 'translations.colProgress',
+  inactive: 'translations.colInactive',
+  assignee: 'translations.colAssignee',
+  updatedAt: 'translations.colUpdatedAt',
 }
 
-const REASON_LABELS: Record<'field-removed' | 'document-missing', string> = {
-  'field-removed': 'The field or block is gone from the page',
-  'document-missing': 'The page was deleted',
+const REASON_KEYS: Record<'field-removed' | 'document-missing', UiStringKey> = {
+  'field-removed': 'translations.reasonFieldRemoved',
+  'document-missing': 'translations.reasonDocumentMissing',
 }
 
 type Notice = { tone: 'ok' | 'error'; text: string } | null
 
 export function TranslationsOverview(props: TranslationsOverviewProps) {
+  const t = useAdminT()
+  const columnLabel = (name: string): string => (COLUMN_KEYS[name] ? t(COLUMN_KEYS[name]) : name)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [assignees, setAssignees] = useState<number[]>([])
   const [overwrite, setOverwrite] = useState(false)
@@ -113,18 +117,18 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
       })
       const body: unknown = await response.json().catch((): null => null)
       if (!response.ok) {
-        setNotice({ tone: 'error', text: errorMessageFrom(body, 'The change could not be saved.') })
+        setNotice({ tone: 'error', text: errorMessageFrom(body, t('translations.errSave')) })
         return
       }
       const result = body as { updated?: number; skipped?: number; refused?: string[]; notified?: number }
       const refused = result.refused ?? []
-      const parts = [`${done}: ${result.updated ?? 0} changed`]
-      if (result.skipped) parts.push(`${result.skipped} left as they were`)
+      const parts = [t('translations.resultChanged', { done, count: result.updated ?? 0 })]
+      if (result.skipped) parts.push(t('translations.resultSkipped', { count: result.skipped }))
       if (result.notified) parts.push(`${result.notified} notified`)
       setNotice({ tone: refused.length ? 'error' : 'ok', text: [parts.join(', ') + '.', ...refused].join(' ') })
       if ((result.updated ?? 0) > 0) setTimeout(() => window.location.reload(), 600)
     } catch {
-      setNotice({ tone: 'error', text: 'Could not reach the server. Try again.' })
+      setNotice({ tone: 'error', text: t('translations.errReach') })
     } finally {
       setBusy(false)
     }
@@ -146,17 +150,19 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
       })
       const previewBody = (await preview.json().catch((): null => null)) as { count?: number; error?: string } | null
       if (!preview.ok) {
-        setNotice({ tone: 'error', text: previewBody?.error ?? 'Could not check the inactive translations.' })
+        setNotice({ tone: 'error', text: previewBody?.error ?? t('translations.errInactiveCheck') })
         return
       }
       const count = Number(previewBody?.count ?? 0)
       if (count === 0) {
-        setNotice({ tone: 'ok', text: 'No inactive translations to clear.' })
+        setNotice({ tone: 'ok', text: t('translations.noInactive') })
         return
       }
-      const scope = payload.scope === 'all' ? 'across the whole site' : 'for the selected items'
+      const scope = payload.scope === 'all' ? t('translations.scopeAll') : t('translations.scopeSelected')
       const confirmed = window.confirm(
-        `Delete ${count} inactive translation${count === 1 ? '' : 's'} ${scope}? Their field or page no longer exists. Active and outdated translations are kept.`,
+        count === 1
+          ? t('translations.confirmClearOne', { count, scope })
+          : t('translations.confirmClearOther', { count, scope }),
       )
       if (!confirmed) return
       const response = await fetch(props.clearApi, {
@@ -167,7 +173,7 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
       })
       const body = (await response.json().catch((): null => null)) as { deleted?: number; refused?: string[]; error?: string } | null
       if (!response.ok) {
-        setNotice({ tone: 'error', text: body?.error ?? 'The inactive translations could not be cleared.' })
+        setNotice({ tone: 'error', text: body?.error ?? t('translations.errInactiveClear') })
         return
       }
       const refused = body?.refused ?? []
@@ -177,7 +183,7 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
       })
       if ((body?.deleted ?? 0) > 0) setTimeout(() => window.location.reload(), 600)
     } catch {
-      setNotice({ tone: 'error', text: 'Could not reach the server. Try again.' })
+      setNotice({ tone: 'error', text: t('translations.errReach') })
     } finally {
       setBusy(false)
     }
@@ -191,7 +197,7 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
             <a
               className="list-link"
               href={row.editHref}
-              title={row.mode === 'builder' ? 'Open in the builder, translating' : 'Open the translation editor'}
+              title={row.mode === 'builder' ? t('translations.openBuilder') : t('translations.openEditor')}
               aria-current={props.selectedKey === row.key ? 'true' : undefined}
             >
               {row.title}
@@ -199,14 +205,14 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
             {row.inactive.length > 0 ? (
               <details className="text-[12px]">
                 <summary className="cursor-pointer text-[var(--theme-elevation-600)]">
-                  {row.inactiveCount} inactive translation{row.inactiveCount === 1 ? '' : 's'}
+                  {t(row.inactiveCount === 1 ? 'translations.inactiveOne' : 'translations.inactiveOther', { count: row.inactiveCount })}
                 </summary>
                 <div className="mt-[4px] flex flex-col gap-[4px] rounded-[5px] border border-[var(--theme-elevation-150)] p-[8px]">
-                  <p className="text-[var(--theme-elevation-600)]">These no longer match anything on the page. Active and outdated translations are not affected.</p>
+                  <p className="text-[var(--theme-elevation-600)]">{t('translations.inactiveNote')}</p>
                   <ul className="flex flex-col gap-[4px]">
                     {row.inactive.map((entry, index) => (
                       <li key={`${entry.locale}:${entry.fieldPath}:${index}`}>
-                        <strong>{entry.localeLabel}</strong> · <code>{entry.fieldPath}</code> · {REASON_LABELS[entry.reason]}
+                        <strong>{entry.localeLabel}</strong> · <code>{entry.fieldPath}</code> · {t(REASON_KEYS[entry.reason])}
                         <div className="text-[var(--theme-elevation-500)]">{entry.value}</div>
                       </li>
                     ))}
@@ -248,46 +254,46 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
 
   return (
     <div className="flex flex-col gap-[12px]">
-      <div className="flex flex-wrap items-center gap-[8px] px-[4px] text-[13px]" role="toolbar" aria-label="Bulk actions">
-        <span>{keys.length} selected</span>
-        <button type="button" className="btn" disabled={busy || keys.length === 0} onClick={() => send({ action: 'approve', items: keys }, 'Approved')}>
-          Mark approved
+      <div className="flex flex-wrap items-center gap-[8px] px-[4px] text-[13px]" role="toolbar" aria-label={t('translations.bulkActions')}>
+        <span>{t('translations.selected', { count: keys.length })}</span>
+        <button type="button" className="btn" disabled={busy || keys.length === 0} onClick={() => send({ action: 'approve', items: keys }, t('translations.statusApproved'))}>
+          {t('translations.markApproved')}
         </button>
         <button
           type="button"
           className="btn"
           disabled={busy || keys.length === 0 || !props.clearApi}
-          title="Deletes inactive translations (their field or page is gone) for the selected pages. Active and outdated translations are kept."
+          title={t('translations.clearInactiveHint')}
           onClick={() => clearInactive({ scope: 'items', items: keys })}
         >
-          Clear inactive
+          {t('translations.clearInactive')}
         </button>
         <button
           type="button"
           className="btn"
           disabled={busy || !props.clearApi}
-          title="Deletes every inactive translation on the site, after confirming the number. Admins only."
+          title={t('translations.clearAllInactiveHint')}
           onClick={() => clearInactive({ scope: 'all' })}
         >
-          Clear all inactive
+          {t('translations.clearAllInactive')}
         </button>
         <button
           type="button"
           className="btn"
           disabled={busy || keys.length === 0}
-          title="Writes machine drafts for the empty or changed fields. Up to 100 items at a time."
-          onClick={() => send({ action: 'translate', items: keys, overwrite }, 'Translated with machine')}
+          title={t('translations.translateMachineHint')}
+          onClick={() => send({ action: 'translate', items: keys, overwrite }, t('translations.doneTranslated'))}
         >
-          Translate with machine
+          {t('translations.translateMachine')}
         </button>
         <label className="flex items-center gap-[4px]">
           <input type="checkbox" checked={overwrite} onChange={(event) => setOverwrite(event.target.checked)} />
-          Overwrite approved and human text
+          {t('translations.overwrite')}
         </label>
         <details>
-          <summary className="cursor-pointer">Assign to…</summary>
+          <summary className="cursor-pointer">{t('translations.assignTo')}</summary>
           <div className="mt-[6px] flex flex-col gap-[4px] rounded-[5px] border border-[var(--theme-elevation-150)] p-[8px]">
-            {props.users.length === 0 ? <span>No users to assign.</span> : null}
+            {props.users.length === 0 ? <span>{t('translations.noUsers')}</span> : null}
             {props.users.map((user) => (
               <label key={user.id} className="flex items-center gap-[6px]">
                 <input
@@ -304,17 +310,17 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
               type="button"
               className="btn"
               disabled={busy || keys.length === 0}
-              onClick={() => send({ action: 'assign', items: keys, assignees }, 'Assigned')}
+              onClick={() => send({ action: 'assign', items: keys, assignees }, t('translations.doneAssigned'))}
             >
-              Assign selected
+              {t('translations.assignSelected')}
             </button>
             <button
               type="button"
               className="text-[12px] underline"
               disabled={busy || keys.length === 0}
-              onClick={() => send({ action: 'assign', items: keys, assignees: [] }, 'Assignments cleared')}
+              onClick={() => send({ action: 'assign', items: keys, assignees: [] }, t('translations.doneCleared'))}
             >
-              Clear assignment (use the language rules)
+              {t('translations.clearAssignment')}
             </button>
           </div>
         </details>
@@ -327,9 +333,9 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
       ) : null}
 
       {!props.hasRows ? (
-        <p className="list-empty">Nothing to translate yet. Add pages, posts, products, events or FAQs, and interface strings will appear here.</p>
+        <p className="list-empty">{t('translations.emptyNone')}</p>
       ) : props.emptyFiltered ? (
-        <p className="list-empty">No items match this search or filter.</p>
+        <p className="list-empty">{t('translations.emptyFiltered')}</p>
       ) : (
         <div className="list-table-wrapper">
           <table className="list-table">
@@ -338,7 +344,7 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
                 <th className="list-th">
                   <input
                     type="checkbox"
-                    aria-label="Select all on this page"
+                    aria-label={t('translations.selectAllPage')}
                     checked={allSelected}
                     onChange={(event) =>
                       setPicked(event.target.checked ? new Set(props.rows.map((row) => row.key)) : new Set())
@@ -351,11 +357,11 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
                     <th key={name} className="list-th">
                       {SORTABLE.has(name) && props.sortLinks[name] ? (
                         <a className="list-sort-link" href={props.sortLinks[name]}>
-                          {COLUMN_LABELS[name] ?? name}
+                          {columnLabel(name)}
                           {props.sortState === name ? ' ▲' : props.sortState === `-${name}` ? ' ▼' : ''}
                         </a>
                       ) : (
-                        COLUMN_LABELS[name] ?? name
+                        columnLabel(name)
                       )}
                     </th>
                   ))}
@@ -387,7 +393,7 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
                           <a
                             href={entry.href}
                             className="inline-flex no-underline"
-                            title={`${entry.approved} of ${entry.total} approved. ${entry.mode === 'builder' ? 'Open the page in this language.' : 'Open the translation editor.'}`}
+                            title={t('translations.entryApproved', { approved: entry.approved, total: entry.total, hint: entry.mode === 'builder' ? t('translations.hintOpenPage') : t('translations.hintOpenEditor') })}
                           >
                             <span className="whitespace-nowrap">
                               <TranslationStatusBadge status={entry.status} label={entry.statusLabel} />
@@ -409,12 +415,12 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
 
       {props.totalPages > 1 ? (
         <div className="list-pagination">
-          {props.prevHref ? <a className="list-pagination-btn" href={props.prevHref}>Prev</a> : null}
+          {props.prevHref ? <a className="list-pagination-btn" href={props.prevHref}>{t('list.previous')}</a> : null}
           <span className="list-pagination-info">
-            Page {props.page} of {props.totalPages}
+            {t('translations.pageOf', { page: props.page, total: props.totalPages })}
           </span>
-          {props.nextHref ? <a className="list-pagination-btn" href={props.nextHref}>Next</a> : null}
-          <span className="list-pagination-total">Total: {props.totalMatching}</span>
+          {props.nextHref ? <a className="list-pagination-btn" href={props.nextHref}>{t('list.next')}</a> : null}
+          <span className="list-pagination-total">{t('translations.total', { total: props.totalMatching })}</span>
         </div>
       ) : null}
     </div>

@@ -2,18 +2,18 @@ import React from 'react'
 import type { AdminViewServerProps } from '@/engine'
 
 import { loadListPrefs } from '@/admin/list/listPrefs'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { parseListSearchParams, resolveVisibleColumns, serializeListState, type ListState } from '@/admin/list/listQuery'
 import { isAdminUser } from '@/admin/auth'
 
 import { localeLabel } from '../locales'
 import { getMultilingualSettings } from '../settings'
 import { TRANSLATABLE_COLLECTIONS } from '../translatableFields'
-import { buildDocumentRows, documentColumns, DOCUMENT_DEFAULT_COLUMNS } from '../documentRows'
+import { buildDocumentRows, documentColumns, DOCUMENT_DEFAULT_COLUMNS, STATUS_TEXT_KEYS } from '../documentRows'
 import {
   canApproveTranslation,
   computeTranslationStatus,
   parseAssignedTo,
-  STATUS_LABELS,
   type TranslationStatus,
 } from '../translationStatus'
 import {
@@ -53,6 +53,8 @@ const LIST_LIMIT = 25
 export const TranslationsView: React.FC<AdminViewServerProps> = async (props) => {
   const engine = props.engine
   if (!engine?.config) return null
+  const ui = await getAdminUi()
+  const statusText = (status: TranslationStatus): string => ui.t(STATUS_TEXT_KEYS[status])
 
   const searchParams = (props.searchParams ?? {}) as Record<string, unknown>
   const settings = await getMultilingualSettings(engine as Parameters<typeof getMultilingualSettings>[0])
@@ -65,11 +67,8 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   if (!settings.enabled) {
     return (
       <div className={noticeClassName}>
-        <h1>Translations</h1>
-        <p className={noticeTextClassName}>
-          Multiple languages are switched off, so there is nothing to translate yet. Turn them on under Settings →
-          Languages, choose the languages you want to offer, then come back here.
-        </p>
+        <h1>{ui.t('translations.heading')}</h1>
+        <p className={noticeTextClassName}>{ui.t('translations.disabled')}</p>
       </div>
     )
   }
@@ -78,11 +77,8 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   if (targets.length === 0) {
     return (
       <div className={noticeClassName}>
-        <h1>Translations</h1>
-        <p className={noticeTextClassName}>
-          Only your primary language is switched on. Add at least one more language under Settings → Languages and each
-          one gets a column here.
-        </p>
+        <h1>{ui.t('translations.heading')}</h1>
+        <p className={noticeTextClassName}>{ui.t('translations.onlyPrimary')}</p>
       </div>
     )
   }
@@ -103,7 +99,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   ])
   const userLabel = new Map(users.map((entry) => [entry.id, entry.label]))
 
-  const columns = documentColumns({ targetLocales: targets, localeLabel })
+  const columns = documentColumns({ targetLocales: targets, localeLabel, t: ui.t })
   const defaults = DOCUMENT_DEFAULT_COLUMNS(targets)
   const { visibleNames } = resolveVisibleColumns(columns, state.cols, savedPrefs.cols, defaults)
 
@@ -157,7 +153,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
           value: row?.value ?? '',
           id: row?.id ?? null,
           status,
-          statusLabel: STATUS_LABELS[status],
+          statusLabel: statusText(status),
           assignees: parseAssignedTo(row?.assignedTo),
         })
       }
@@ -211,7 +207,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
     cells: row.cells.map((cell) => ({
       locale: cell.locale,
       status: cell.status,
-      statusLabel: STATUS_LABELS[cell.status],
+      statusLabel: statusText(cell.status),
       approved: cell.approved,
       total: cell.total,
       href: cell.href,
@@ -223,7 +219,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   return (
     <div className="list-view">
       <div className="list-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-        <h1>Translations</h1>
+        <h1>{ui.t('translations.heading')}</h1>
         <div className="text-[13px]" style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
           {progress.map((entry) => (
             <span key={entry.locale}>

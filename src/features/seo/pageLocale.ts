@@ -1,7 +1,8 @@
 import { headers } from 'next/headers'
 
 import { splitLocalePath } from '@/features/multilingual/detect'
-import { LOCALE_HEADER, isLocaleRoutable, requestLocale } from '@/features/multilingual/routing'
+import { isLocaleRoutable } from '@/features/multilingual/routing'
+import { requestContentLocale } from '@/features/multilingual/portalLocaleServer'
 import { readMultilingualSettingsFromD1, type MultilingualSettings } from '@/features/multilingual/settings'
 
 export type PageLocale = {
@@ -22,7 +23,7 @@ export async function currentPageLocale(): Promise<PageLocale | null> {
     const settings = await readMultilingualSettingsFromD1()
     if (!isLocaleRoutable(settings)) return null
     const reader = await headers()
-    const locale = requestLocale(reader.get(LOCALE_HEADER), settings)
+    const locale = await requestContentLocale(settings)
     if (!locale) return null
     const raw = reader.get('x-pathname') || reader.get('next-url') || ''
     const cut = raw.search(/[?#]/)

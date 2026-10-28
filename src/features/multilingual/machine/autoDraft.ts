@@ -27,7 +27,7 @@ type EngineLike = {
 }
 
 /** Runs work after the response where the platform allows it. Never rejects. */
-const after = (work: Promise<unknown>): void => {
+export const after = (work: Promise<unknown>): void => {
   void getCloudflareContext({ async: true })
     .then(({ ctx }) => {
       const waitUntil = (ctx as { waitUntil?: (promise: Promise<unknown>) => void } | undefined)?.waitUntil

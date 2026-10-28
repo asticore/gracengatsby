@@ -1,5 +1,7 @@
 import type { CollectionConfig } from '@/engine'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
+import { tierIdsBeforeChange } from '@/features/editScreens/tiers'
+import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { excludeProtectedAccess } from '@/features/visibility/excludeProtected'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 
@@ -194,8 +196,8 @@ export const Events: CollectionConfig = {
     trashedAtField,
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, publishGuard, pageSpeedBeforeChange],
-    afterChange: [pageSpeedAfterChange('events'), indexNowAfterChange('events'), machineAutoDraftAfterChange('events')],
+    beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, publishGuard, pageSpeedBeforeChange, tierIdsBeforeChange],
+    afterChange: [pageSpeedAfterChange('events'), indexNowAfterChange('events'), machineAutoDraftAfterChange('events'), outdatedAfterChange('events')],
     afterDelete: [indexNowAfterDelete('events')],
   },
 }

@@ -4,6 +4,8 @@ import { roleAccess } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
 import { locksField } from '../fields/locks'
 import { lockGuard } from '@/features/roles/lockGuard'
+import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
+import { outdatedAfterChange } from '@/features/multilingual/outdated'
 
 /**
  * Reusable sections: a block list built once and shown wherever a Reusable
@@ -45,5 +47,6 @@ export const ReusableSections: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [lockGuard],
+    afterChange: [machineAutoDraftAfterChange('reusable-sections'), outdatedAfterChange('reusable-sections')],
   },
 }

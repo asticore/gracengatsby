@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { formatLimit, loadUploadRules, runPool, UPLOAD_CONCURRENCY, uploadFile, type UploadRules } from '@/features/media/admin/uploadClient'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { filenameToAlt, filesFromClipboard, validateFiles } from './mediaPickerUpload'
 
 type MediaDoc = {
@@ -19,6 +21,7 @@ export const MediaPicker: React.FC<{
   onSelectMany?: (docs: MediaDoc[]) => void
   onClose: () => void
 }> = ({ onSelect, onSelectMany, onClose }) => {
+  const t = useAdminT()
   const [rules, setRules] = useState<UploadRules | null>(null)
   const [status, setStatus] = useState('')
   const [errors, setErrors] = useState<string[]>([])
@@ -45,7 +48,7 @@ export const MediaPicker: React.FC<{
       const problems = check.rejected.map((r) => `${r.name}: ${r.error}`)
       setErrors(problems)
       if (check.accepted.length === 0) {
-        setStatus('No files were uploaded.')
+        setStatus(t('ve.media.noFiles'))
         return
       }
       setUploading(true)
@@ -64,7 +67,7 @@ export const MediaPicker: React.FC<{
       setProgress({})
       setErrors(failed)
       if (done.length === 0) {
-        setStatus('Upload failed.')
+        setStatus(t('ve.media.uploadFailed'))
         return
       }
       setStatus(`Uploaded ${done.length} file${done.length === 1 ? '' : 's'}.`)
@@ -113,7 +116,7 @@ export const MediaPicker: React.FC<{
     <div className="ve-modal-overlay" onClick={onClose}>
       <div className="ve-modal" onClick={(e) => e.stopPropagation()}>
         <div className="ve-modal__header">
-          <h3>Choose an image</h3>
+          <h3>{t('ve.media.title')}</h3>
           <button type="button" className="ve-icon-btn" onClick={onClose} aria-label="Close">
             ✕
           </button>
@@ -171,7 +174,7 @@ export const MediaPicker: React.FC<{
               </ul>
             )}
           </div>
-          {loading && <p>Loading media library…</p>}
+          {loading && <p>{t('ve.media.loading')}</p>}
           {error && <p className="ve-error">Couldn&apos;t load media: {error}</p>}
           {!loading && !error && items.length === 0 && (
             <p>
@@ -192,7 +195,7 @@ export const MediaPicker: React.FC<{
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.url} alt={item.alt || ''} />
                 ) : (
-                  <span>No preview</span>
+                  <span>{t('ve.media.noPreview')}</span>
                 )}
               </button>
             ))}

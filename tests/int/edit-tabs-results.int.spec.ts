@@ -2,9 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // EditView reads the admin language on the server; the spec runs in jsdom, so use English.
 vi.mock('@/admin/i18n/serverUi', () => ({
   getAdminUi: async () => {
-    const { UI_STRING_SOURCE, translateWith } = await import('@/features/uiStrings')
+    const { UI_STRING_SOURCE, translateWith, adminLabel } = await import('@/features/uiStrings')
     const dict = UI_STRING_SOURCE
-    return { locale: 'en', dir: 'ltr', source: 'default', dict, t: (key: keyof typeof dict, vars?: Record<string, string | number>) => translateWith(dict, key, vars) }
+    return {
+      locale: 'en',
+      dir: 'ltr',
+      source: 'default',
+      dict,
+      t: (key: keyof typeof dict, vars?: Record<string, string | number>) => translateWith(dict, key, vars),
+      label: (kind: 'collection' | 'global' | 'field' | 'singular', slug: string, fallback: string) => adminLabel(kind, slug, fallback, { locale: 'en', dict }),
+    }
   },
 }))
 import { createElement, isValidElement, type ReactElement, type ReactNode } from 'react'

@@ -73,6 +73,15 @@ const SECTIONS: Record<string, TrailItem> = {
   events: { name: 'Events', path: '/events' },
 }
 
+/**
+ * A site path with its locale prefix applied: `/about` with `/fr` is `/fr/about`,
+ * and the homepage `/` with `/fr` is `/fr`. The default language has no prefix.
+ */
+export function withLocalePrefix(path: string, prefix?: string): string {
+  if (!prefix) return path
+  return path === '/' ? prefix : `${prefix}${path}`
+}
+
 /** Home, then the section or the page's parents, then the item itself. Empty on the homepage. */
 export function breadcrumbTrail(input: {
   collection: string
@@ -80,10 +89,12 @@ export function breadcrumbTrail(input: {
   path: string
   title: string
   pageTrail?: TrailItem[]
+  /** Locale prefix for a non-default language, e.g. '/fr'. Empty or omitted for the default language. */
+  localePrefix?: string
 }): Crumb[] {
   if (input.path === '/' || !input.title) return []
-  const at = (path: string): string => `${input.baseUrl}${path}`
-  const home: Crumb = { name: 'Home', url: `${input.baseUrl}/` }
+  const at = (path: string): string => `${input.baseUrl}${withLocalePrefix(path, input.localePrefix)}`
+  const home: Crumb = { name: 'Home', url: at('/') }
   const self: Crumb = { name: input.title, url: at(input.path) }
   if (input.collection === 'pages') {
     return [home, ...(input.pageTrail ?? []).map((item) => ({ name: item.name, url: at(item.path) })), self]

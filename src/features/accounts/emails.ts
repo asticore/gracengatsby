@@ -12,6 +12,7 @@ import type { SendEmailResult } from '@/features/email'
  */
 const loadSendEmail = async () => (await import('@/features/email')).sendEmail
 const loadTemplates = async () => import('@/features/email/templateLoad')
+const loadLocale = async () => (await import('@/features/email/recipientLocale')).requestLocale()
 
 const escapeHtml = (value: string): string =>
   value.replace(
@@ -25,7 +26,7 @@ export const sendResetEmail = async (
   minutes: number,
 ): Promise<SendEmailResult> => {
   const { renderEmailTemplate } = await loadTemplates()
-  const mail = await renderEmailTemplate('accountReset', { link: resetUrl, minutes: String(minutes) })
+  const mail = await renderEmailTemplate('accountReset', { link: resetUrl, minutes: String(minutes) }, undefined, await loadLocale())
 
   const sendEmail = await loadSendEmail()
   return sendEmail({
@@ -51,7 +52,7 @@ export const sendAlreadyRegisteredEmail = async (
   resetUrl: string,
 ): Promise<SendEmailResult> => {
   const { renderEmailTemplate } = await loadTemplates()
-  const mail = await renderEmailTemplate('accountAlreadyRegistered', { signInLink: signInUrl, resetLink: resetUrl })
+  const mail = await renderEmailTemplate('accountAlreadyRegistered', { signInLink: signInUrl, resetLink: resetUrl }, undefined, await loadLocale())
 
   const sendEmail = await loadSendEmail()
   return sendEmail({ to, template: 'account.exists', subject: mail.subject, text: mail.text, html: mail.html })
@@ -59,7 +60,7 @@ export const sendAlreadyRegisteredEmail = async (
 
 export const sendWelcomeEmail = async (to: string, accountUrl: string): Promise<SendEmailResult> => {
   const { renderEmailTemplate } = await loadTemplates()
-  const mail = await renderEmailTemplate('accountWelcome', { link: accountUrl })
+  const mail = await renderEmailTemplate('accountWelcome', { link: accountUrl }, undefined, await loadLocale())
 
   const sendEmail = await loadSendEmail()
   return sendEmail({ to, template: 'account.welcome', subject: mail.subject, text: mail.text, html: mail.html })
@@ -67,7 +68,7 @@ export const sendWelcomeEmail = async (to: string, accountUrl: string): Promise<
 
 export const sendVerifyEmail = async (to: string, verifyUrl: string, hours: number): Promise<SendEmailResult> => {
   const { renderEmailTemplate } = await loadTemplates()
-  const mail = await renderEmailTemplate('accountVerify', { link: verifyUrl, hours: String(hours) })
+  const mail = await renderEmailTemplate('accountVerify', { link: verifyUrl, hours: String(hours) }, undefined, await loadLocale())
 
   const sendEmail = await loadSendEmail()
   return sendEmail({
@@ -82,7 +83,7 @@ export const sendVerifyEmail = async (to: string, verifyUrl: string, hours: numb
 /** The emailed one-click sign-in link. The button sends the reader to a page that signs them in only when they press it. */
 export const sendMagicLinkEmail = async (to: string, link: string, minutes: number): Promise<SendEmailResult> => {
   const { renderEmailTemplate } = await loadTemplates()
-  const mail = await renderEmailTemplate('accountMagicLink', { link, minutes: String(minutes) })
+  const mail = await renderEmailTemplate('accountMagicLink', { link, minutes: String(minutes) }, undefined, await loadLocale())
 
   const sendEmail = await loadSendEmail()
   return sendEmail({
@@ -97,7 +98,7 @@ export const sendMagicLinkEmail = async (to: string, link: string, minutes: numb
 /** The six-digit sign-in code. Digits only, so nothing in it needs escaping beyond the template itself. */
 export const sendLoginCodeEmail = async (to: string, code: string, minutes: number): Promise<SendEmailResult> => {
   const { renderEmailTemplate } = await loadTemplates()
-  const mail = await renderEmailTemplate('accountLoginCode', { code, minutes: String(minutes) })
+  const mail = await renderEmailTemplate('accountLoginCode', { code, minutes: String(minutes) }, undefined, await loadLocale())
 
   const sendEmail = await loadSendEmail()
   return sendEmail({ to, template: 'account.login-code', subject: mail.subject, text: mail.text, html: mail.html })

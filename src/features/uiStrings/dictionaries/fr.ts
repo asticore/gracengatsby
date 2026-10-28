@@ -1154,6 +1154,20 @@ const fr: UiDictionary = {
   've.lib.forms': "Formulaires",
   've.lib.shop': "Boutique",
   've.translate.hint': "Traduction",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "Vous êtes invité(e) à rejoindre {organization}",
+  "email.organizationInvite.body": "{inviter} vous invite à rejoindre {organization} en tant que {role}.\n\nOuvrez ce lien pour accepter ou refuser l'invitation. Il expire dans {days} jours et ne fonctionne que si vous êtes connecté(e) avec cette adresse e-mail :\n{link}\n\nSi vous n'attendiez pas cet e-mail, ignorez-le. Rien ne se passe tant que vous n'acceptez pas.",
+  "email.membershipRenewal.subject": "Votre adhésion {tier} sera renouvelée dans {days} jour(s)",
+  "email.membershipRenewal.body": "Votre adhésion {tier} doit être renouvelée le {renewsAt}, soit dans {days} jour(s).",
+  "email.rsvpConfirmation.subject": "Votre réservation : {eventTitle}",
+  "email.rsvpConfirmation.body": "Bonjour {name}, votre réservation pour {eventTitle} est confirmée.\n\nQuand : {eventDate}\nInvités : {guestCount}\n\nÀ bientôt.",
+  "email.eventReminder.subject": "Rappel : {eventTitle} a lieu {when}",
+  "email.eventReminder.body": "Bonjour {name}, un rappel : {eventTitle} a lieu {when}.\n\nInvités : {guestCount}\n\nÀ bientôt.",
+  "email.abandonedCart.subject": "Vous avez oublié quelque chose dans votre panier",
+  "email.abandonedCart.body": "Vous avez laissé des articles dans votre panier sur {site_name}. Ils vous attendent toujours.",
+  "email.backInStock.subject": "De retour en stock : {label}",
+  "email.backInStock.body": "Bonne nouvelle. {label} est de nouveau en stock.\n\nVoir l'article : {url}\n\nVous nous avez demandé de vous prévenir, c'est donc le seul e-mail que nous vous enverrons à ce sujet.",
 }
 
 export default fr

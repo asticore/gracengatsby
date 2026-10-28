@@ -1154,6 +1154,20 @@ const it: UiDictionary = {
   've.lib.forms': "Moduli",
   've.lib.shop': "Negozio",
   've.translate.hint': "Traduzione",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "Sei stato invitato a unirti a {organization}",
+  "email.organizationInvite.body": "{inviter} ti ha invitato a unirti a {organization} come {role}.\n\nApri questo link per accettare o rifiutare l'invito. Scade tra {days} giorni e funziona solo se hai effettuato l'accesso con questo indirizzo email:\n{link}\n\nSe non ti aspettavi questa email, ignorala. Non succede nulla finché non accetti.",
+  "email.membershipRenewal.subject": "La tua iscrizione {tier} si rinnova tra {days} giorno/i",
+  "email.membershipRenewal.body": "La tua iscrizione {tier} si rinnoverà il {renewsAt}, cioè tra {days} giorno/i.",
+  "email.rsvpConfirmation.subject": "Prenotazione confermata: {eventTitle}",
+  "email.rsvpConfirmation.body": "Ciao {name}, la tua prenotazione per {eventTitle} è confermata.\n\nQuando: {eventDate}\nOspiti: {guestCount}\n\nCi vediamo lì.",
+  "email.eventReminder.subject": "Promemoria: {eventTitle} è {when}",
+  "email.eventReminder.body": "Ciao {name}, ti ricordiamo che {eventTitle} è {when}.\n\nOspiti: {guestCount}\n\nCi vediamo lì.",
+  "email.abandonedCart.subject": "Hai dimenticato qualcosa nel carrello",
+  "email.abandonedCart.body": "Hai lasciato alcuni articoli nel carrello di {site_name}. Ti stanno ancora aspettando.",
+  "email.backInStock.subject": "Di nuovo disponibile: {label}",
+  "email.backInStock.body": "Buone notizie. {label} è di nuovo disponibile.\n\nGuardalo qui: {url}\n\nHai chiesto di essere avvisato, quindi questa è l'unica email che ti invieremo al riguardo.",
 }
 
 export default it

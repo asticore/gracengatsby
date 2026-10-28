@@ -7,6 +7,8 @@
 import type { CollectionAfterChangeHook } from '@/engine'
 
 import { restockedVariations } from './lib/backInStock'
+import { localeForRecipient } from '@/features/email/recipientLocale'
+import { loadStrings, t } from '@/features/uiStrings'
 import type { VariationRow } from './variations'
 
 type Doc = Record<string, unknown>
@@ -41,11 +43,13 @@ export async function notifyBackInStock(engine: EngineLike, product: { id: numbe
     const row = variation ? product.variations?.find((item) => item.id === variation) : undefined
     const label = `${product.title || 'Product'}${row?.attributeValues ? ` (${row.attributeValues.replace(/\|/g, ', ')})` : ''}`.replace(/[\r\n]+/g, ' ')
     const url = `${baseUrl}/shop/${product.slug ?? ''}`
+    const locale = await localeForRecipient(engine as never, doc.email)
+    if (locale) await loadStrings(locale)
     const result = await sendEmail({
       to: doc.email,
       template: 'stock.back-in-stock',
-      subject: `Back in stock: ${label}`,
-      text: `Good news. ${label} is back in stock.\n\nSee it here: ${url}\n\nYou asked us to let you know, so this is the only email we will send about it.`,
+      subject: t('email.backInStock.subject', locale, { label }),
+      text: t('email.backInStock.body', locale, { label, url }),
     }).catch((): { ok: false } => ({ ok: false }))
     if (!result.ok) continue
     await engine.update({ collection: 'stock-subscriptions', id: doc.id as number, data: { status: 'sent', notifiedAt: new Date().toISOString() }, overrideAccess: true })

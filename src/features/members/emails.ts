@@ -177,7 +177,8 @@ export const sendExpiryReminders = async (
       })
       .catch((): undefined => undefined)
 
-    const mail = await renderEmailTemplate('membershipRenewal', values)
+    const renewalLocale = await (await import('@/features/email/recipientLocale')).localeForRecipient(engine as never, to)
+    const mail = await renderEmailTemplate('membershipRenewal', values, undefined, renewalLocale)
     const result = await sendEmail({ to, template: 'member.renewal', subject: mail.subject, text: mail.text, html: mail.html })
 
     if (result.ok) sweep.sent += 1

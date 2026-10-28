@@ -1154,6 +1154,20 @@ const es: UiDictionary = {
   've.lib.forms': "Formularios",
   've.lib.shop': "Tienda",
   've.translate.hint': "Traducción",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "Te invitan a unirte a {organization}",
+  "email.organizationInvite.body": "{inviter} te ha invitado a unirte a {organization} como {role}.\n\nAbre este enlace para aceptar o rechazar la invitación. Caduca en {days} días y solo funciona si has iniciado sesión con esta dirección de correo:\n{link}\n\nSi no esperabas este correo, ignóralo. No pasa nada a menos que aceptes.",
+  "email.membershipRenewal.subject": "Tu membresía {tier} se renueva en {days} día(s)",
+  "email.membershipRenewal.body": "Tu membresía {tier} está prevista para renovarse el {renewsAt}, es decir, dentro de {days} día(s).",
+  "email.rsvpConfirmation.subject": "Reserva confirmada: {eventTitle}",
+  "email.rsvpConfirmation.body": "Hola {name}, tu reserva para {eventTitle} está confirmada.\n\nCuándo: {eventDate}\nInvitados: {guestCount}\n\nTe esperamos.",
+  "email.eventReminder.subject": "Recordatorio: {eventTitle} es {when}",
+  "email.eventReminder.body": "Hola {name}, te recordamos que {eventTitle} es {when}.\n\nInvitados: {guestCount}\n\nTe esperamos.",
+  "email.abandonedCart.subject": "Dejaste algo en tu carrito",
+  "email.abandonedCart.body": "Dejaste algunos artículos en tu carrito en {site_name}. Todavía te esperan.",
+  "email.backInStock.subject": "De nuevo disponible: {label}",
+  "email.backInStock.body": "Buenas noticias. {label} vuelve a estar disponible.\n\nVerlo aquí: {url}\n\nPediste que te avisáramos, así que este es el único correo que te enviaremos al respecto.",
 }
 
 export default es

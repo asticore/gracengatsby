@@ -1154,6 +1154,20 @@ const nl: UiDictionary = {
   've.lib.forms': "Formulieren",
   've.lib.shop': "Winkel",
   've.translate.hint': "Vertaling",
+
+  // --- emails (templates 2) ---
+  "email.organizationInvite.subject": "Je bent uitgenodigd om lid te worden van {organization}",
+  "email.organizationInvite.body": "{inviter} heeft je uitgenodigd om als {role} lid te worden van {organization}.\n\nOpen deze link om de uitnodiging te accepteren of af te wijzen. Hij verloopt over {days} dagen en werkt alleen als je bent ingelogd met dit e-mailadres:\n{link}\n\nAls je dit niet verwachtte, negeer deze e-mail. Er gebeurt niets tot je accepteert.",
+  "email.membershipRenewal.subject": "Je {tier}-lidmaatschap wordt over {days} dag(en) verlengd",
+  "email.membershipRenewal.body": "Je {tier}-lidmaatschap wordt op {renewsAt} verlengd, dat is over {days} dag(en).",
+  "email.rsvpConfirmation.subject": "Je boeking: {eventTitle}",
+  "email.rsvpConfirmation.body": "Hoi {name}, je boeking voor {eventTitle} is bevestigd.\n\nWanneer: {eventDate}\nGasten: {guestCount}\n\nTot dan.",
+  "email.eventReminder.subject": "Herinnering: {eventTitle} is {when}",
+  "email.eventReminder.body": "Hoi {name}, een herinnering dat {eventTitle} {when} is.\n\nGasten: {guestCount}\n\nTot dan.",
+  "email.abandonedCart.subject": "Je bent iets vergeten in je winkelmandje",
+  "email.abandonedCart.body": "Je hebt nog artikelen in je winkelmandje bij {site_name} staan. Ze wachten nog op je.",
+  "email.backInStock.subject": "Weer op voorraad: {label}",
+  "email.backInStock.body": "Goed nieuws. {label} is weer op voorraad.\n\nBekijk het hier: {url}\n\nJe vroeg om een melding, dus dit is de enige e-mail die we hierover sturen.",
 }
 
 export default nl

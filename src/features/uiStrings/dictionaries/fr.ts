@@ -1443,6 +1443,27 @@ const fr: UiDictionary = {
   'label.field.blocks': "Blocs",
   'label.field.layout': "Mise en page",
   'label.field.sourceUrl': "URL source",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "Taille",
+  've.ie.blocks': "Blocs",
+  've.ie.copyPageJson': "Copier le JSON de la page",
+  've.ie.downloadJson': "Télécharger .json",
+  've.ie.downloadHtml': "Télécharger le HTML",
+  've.ie.jsonFile': "Fichier JSON",
+  've.ie.pasteJson': "Ou collez le JSON",
+  've.ie.validate': "Valider",
+  've.ie.kind': "Type",
+  've.ie.schemaVersion': "Version du schéma",
+  've.ie.sections': "Sections",
+  've.ie.blocksNested': "Blocs (y imbriqués)",
+  've.ie.howToImport': "Comment importer",
+  've.ie.replacePage': "Remplacer la page",
+  've.ie.import': "Importer",
+  've.ie.freshIds': "Les blocs importés reçoivent de nouveaux ids. Annuler annule un import.",
+  've.ie.importExport': "Importer / Exporter",
+  've.ie.close': "Fermer",
+  've.ie.export': "Exporter",
+  've.ie.exportHint': "La page entière sous forme de fichier de modèle Engage, sans les ids de l’éditeur. Chargez-le sur cette page ou une autre depuis l’onglet Importer. Copier place le texte dans le presse-papiers ; Télécharger enregistre un fichier .json.",
 }
 
 export default fr

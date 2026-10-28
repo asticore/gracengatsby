@@ -1443,6 +1443,27 @@ const ru: UiDictionary = {
   'label.field.blocks': "Блоки",
   'label.field.layout': "Макет",
   'label.field.sourceUrl': "URL источника",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "Размер",
+  've.ie.blocks': "Блоки",
+  've.ie.copyPageJson': "Копировать JSON страницы",
+  've.ie.downloadJson': "Скачать .json",
+  've.ie.downloadHtml': "Скачать HTML",
+  've.ie.jsonFile': "Файл JSON",
+  've.ie.pasteJson': "Или вставьте JSON",
+  've.ie.validate': "Проверить",
+  've.ie.kind': "Вид",
+  've.ie.schemaVersion': "Версия схемы",
+  've.ie.sections': "Разделы",
+  've.ie.blocksNested': "Блоки (включая вложенные)",
+  've.ie.howToImport': "Как импортировать",
+  've.ie.replacePage': "Заменить страницу",
+  've.ie.import': "Импорт",
+  've.ie.freshIds': "Импортированным блокам присваиваются новые идентификаторы. Отмена отменяет импорт.",
+  've.ie.importExport': "Импорт / экспорт",
+  've.ie.close': "Закрыть",
+  've.ie.export': "Экспорт",
+  've.ie.exportHint': "Вся страница как один файл шаблона Engage, без идентификаторов редактора. Загрузите его на этой или другой странице во вкладке «Импорт». «Копировать» помещает текст в буфер обмена, «Скачать» сохраняет файл .json.",
 }
 
 export default ru

@@ -1483,6 +1483,27 @@ export const UI_STRING_SOURCE = {
   'label.field.blocks': "Blocks",
   'label.field.layout': "Layout",
   'label.field.sourceUrl': "Source URL",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "Size",
+  've.ie.blocks': "Blocks",
+  've.ie.copyPageJson': "Copy page JSON",
+  've.ie.downloadJson': "Download .json",
+  've.ie.downloadHtml': "Download HTML",
+  've.ie.jsonFile': "JSON file",
+  've.ie.pasteJson': "Or paste the JSON",
+  've.ie.validate': "Validate",
+  've.ie.kind': "Kind",
+  've.ie.schemaVersion': "Schema version",
+  've.ie.sections': "Sections",
+  've.ie.blocksNested': "Blocks (incl. nested)",
+  've.ie.howToImport': "How to import",
+  've.ie.replacePage': "Replace page",
+  've.ie.import': "Import",
+  've.ie.freshIds': "Imported blocks get fresh ids. Undo reverses an import.",
+  've.ie.importExport': "Import / Export",
+  've.ie.close': "Close",
+  've.ie.export': "Export",
+  've.ie.exportHint': "The whole page as one engage-template file, with editor-only ids left out. Load it on this page or another one from the Import tab. Copy puts the text on the clipboard; Download saves a .json file.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

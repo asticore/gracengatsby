@@ -1444,6 +1444,27 @@ const de: UiDictionary = {
   'label.field.blocks': "Blöcke",
   'label.field.layout': "Layout",
   'label.field.sourceUrl': "Quell-URL",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "Größe",
+  've.ie.blocks': "Blöcke",
+  've.ie.copyPageJson': "Seiten-JSON kopieren",
+  've.ie.downloadJson': ".json herunterladen",
+  've.ie.downloadHtml': "HTML herunterladen",
+  've.ie.jsonFile': "JSON-Datei",
+  've.ie.pasteJson': "Oder das JSON einfügen",
+  've.ie.validate': "Prüfen",
+  've.ie.kind': "Art",
+  've.ie.schemaVersion': "Schema-Version",
+  've.ie.sections': "Abschnitte",
+  've.ie.blocksNested': "Blöcke (inkl. verschachtelter)",
+  've.ie.howToImport': "So importieren Sie",
+  've.ie.replacePage': "Seite ersetzen",
+  've.ie.import': "Importieren",
+  've.ie.freshIds': "Importierte Blöcke erhalten neue IDs. Rückgängig macht einen Import rückgängig.",
+  've.ie.importExport': "Importieren / Exportieren",
+  've.ie.close': "Schließen",
+  've.ie.export': "Exportieren",
+  've.ie.exportHint': "Die ganze Seite als eine Engage-Vorlagendatei, ohne Editor-IDs. Laden Sie sie auf dieser oder einer anderen Seite über den Reiter Importieren. Kopieren legt den Text in die Zwischenablage; Herunterladen speichert eine .json-Datei.",
 }
 
 export default de

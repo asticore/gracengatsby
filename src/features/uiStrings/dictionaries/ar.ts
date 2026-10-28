@@ -1443,6 +1443,27 @@ const ar: UiDictionary = {
   'label.field.blocks': "الكتل",
   'label.field.layout': "التخطيط",
   'label.field.sourceUrl': "رابط المصدر",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "الحجم",
+  've.ie.blocks': "الكتل",
+  've.ie.copyPageJson': "نسخ JSON الصفحة",
+  've.ie.downloadJson': "تنزيل .json",
+  've.ie.downloadHtml': "تنزيل HTML",
+  've.ie.jsonFile': "ملف JSON",
+  've.ie.pasteJson': "أو الصق JSON",
+  've.ie.validate': "تحقق",
+  've.ie.kind': "النوع",
+  've.ie.schemaVersion': "إصدار المخطط",
+  've.ie.sections': "الأقسام",
+  've.ie.blocksNested': "الكتل (بما فيها المتداخلة)",
+  've.ie.howToImport': "كيفية الاستيراد",
+  've.ie.replacePage': "استبدال الصفحة",
+  've.ie.import': "استيراد",
+  've.ie.freshIds': "تحصل الكتل المستوردة على معرّفات جديدة. التراجع يلغي عملية الاستيراد.",
+  've.ie.importExport': "استيراد / تصدير",
+  've.ie.close': "إغلاق",
+  've.ie.export': "تصدير",
+  've.ie.exportHint': "الصفحة كاملة كملف قالب واحد من Engage، دون معرّفات المحرر. حمّله في هذه الصفحة أو صفحة أخرى من تبويب الاستيراد. النسخ يضع النص في الحافظة، والتنزيل يحفظ ملف .json.",
 }
 
 export default ar

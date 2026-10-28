@@ -1443,6 +1443,27 @@ const ko: UiDictionary = {
   'label.field.blocks': "블록",
   'label.field.layout': "레이아웃",
   'label.field.sourceUrl': "원본 URL",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "크기",
+  've.ie.blocks': "블록",
+  've.ie.copyPageJson': "페이지 JSON 복사",
+  've.ie.downloadJson': ".json 다운로드",
+  've.ie.downloadHtml': "HTML 다운로드",
+  've.ie.jsonFile': "JSON 파일",
+  've.ie.pasteJson': "또는 JSON 붙여넣기",
+  've.ie.validate': "검증",
+  've.ie.kind': "종류",
+  've.ie.schemaVersion': "스키마 버전",
+  've.ie.sections': "섹션",
+  've.ie.blocksNested': "블록(중첩 포함)",
+  've.ie.howToImport': "가져오는 방법",
+  've.ie.replacePage': "페이지 대체",
+  've.ie.import': "가져오기",
+  've.ie.freshIds': "가져온 블록에는 새 ID가 부여됩니다. 실행 취소로 가져오기를 되돌릴 수 있습니다.",
+  've.ie.importExport': "가져오기 / 내보내기",
+  've.ie.close': "닫기",
+  've.ie.export': "내보내기",
+  've.ie.exportHint': "편집기 전용 ID를 제외한 전체 페이지를 하나의 engage 템플릿 파일로 제공합니다. 이 페이지나 다른 페이지의 가져오기 탭에서 불러올 수 있습니다. 복사는 텍스트를 클립보드에 넣고, 다운로드는 .json 파일을 저장합니다.",
 }
 
 export default ko

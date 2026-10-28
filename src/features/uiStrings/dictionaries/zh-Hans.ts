@@ -1442,6 +1442,27 @@ const zhHans: UiDictionary = {
   'label.field.blocks': "区块",
   'label.field.layout': "布局",
   'label.field.sourceUrl': "来源网址",
+  // --- admin leftovers (visual editor import export) ---
+  've.ie.size': "大小",
+  've.ie.blocks': "区块",
+  've.ie.copyPageJson': "复制页面 JSON",
+  've.ie.downloadJson': "下载 .json",
+  've.ie.downloadHtml': "下载 HTML",
+  've.ie.jsonFile': "JSON 文件",
+  've.ie.pasteJson': "或粘贴 JSON",
+  've.ie.validate': "验证",
+  've.ie.kind': "类型",
+  've.ie.schemaVersion': "架构版本",
+  've.ie.sections': "区段",
+  've.ie.blocksNested': "区块（含嵌套）",
+  've.ie.howToImport': "如何导入",
+  've.ie.replacePage': "替换页面",
+  've.ie.import': "导入",
+  've.ie.freshIds': "导入的区块会获得新的 ID。撤销可以还原一次导入。",
+  've.ie.importExport': "导入 / 导出",
+  've.ie.close': "关闭",
+  've.ie.export': "导出",
+  've.ie.exportHint': "编辑器专用 ID 已去除的整页 Engage 模板文件。可在本页或其他页面的“导入”选项卡中加载。复制会将文本放入剪贴板；下载会保存 .json 文件。",
 }
 
 export default zhHans

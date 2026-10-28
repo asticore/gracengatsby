@@ -8,7 +8,7 @@
 
 export { generateSeoMetadata, generateSeoMetadata as generateMetadata } from './metadata'
 export { resolveSeo, applyTitleTemplate, type SeoInput, type ResolvedSeo } from './resolve'
-export { hreflangAlternates, sitemapVariants, localeSeoFields, ogLocale, type Alternate, type SitemapVariant } from './localeSeo'
+export { hreflangAlternates, localesFor, sitemapVariants, localeSeoFields, ogLocale, type Alternate, type SitemapVariant } from './localeSeo'
 export { buildJsonLd } from './jsonLd'
 export { buildRobotsTxt } from './robots'
 export {

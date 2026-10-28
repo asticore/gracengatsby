@@ -189,6 +189,16 @@ export const LanguageSettings: GlobalConfig = {
           },
         },
         {
+          name: 'machineAutoDraft',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Draft machine translations for the changed fields when a page, post, product, event or FAQ is saved. Off by default: each save then uses the monthly limit, so turn it on knowingly. Existing human work is never replaced.',
+            condition: (_, s) => Boolean(s?.machineEnabled),
+          },
+        },
+        {
           name: 'machineStatus',
           type: 'ui',
           admin: {

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from '@/engine'
+import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { excludeProtectedAccess } from '@/features/visibility/excludeProtected'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
 
@@ -194,7 +195,7 @@ export const Events: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, publishGuard, pageSpeedBeforeChange],
-    afterChange: [pageSpeedAfterChange('events'), indexNowAfterChange('events')],
+    afterChange: [pageSpeedAfterChange('events'), indexNowAfterChange('events'), machineAutoDraftAfterChange('events')],
     afterDelete: [indexNowAfterDelete('events')],
   },
 }

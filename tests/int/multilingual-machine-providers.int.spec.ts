@@ -178,7 +178,7 @@ describe('AI providers (Claude, OpenAI)', () => {
 
 describe('provider selection, settings and budget', () => {
   it('uses the per-language override, else the default, else nothing', () => {
-    const s: MachineSettings = { enabled: true, defaultProvider: 'google', overrides: { de: 'deepl' }, monthlyCharLimit: 0 }
+    const s: MachineSettings = { enabled: true, defaultProvider: 'google', overrides: { de: 'deepl' }, monthlyCharLimit: 0, autoDraft: false }
     expect(providerFor(s, 'de')).toBe('deepl')
     expect(providerFor(s, 'fr')).toBe('google')
     expect(providerFor({ ...s, defaultProvider: null }, 'fr')).toBeNull()

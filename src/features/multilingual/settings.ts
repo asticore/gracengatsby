@@ -134,6 +134,7 @@ export async function getMultilingualSettings(engine: EngineLike): Promise<Multi
       defaultProvider: isMachineProviderId(group.machineDefaultProvider) ? group.machineDefaultProvider : null,
       overrides: parseMachineOverrides(group.machineOverrides),
       monthlyCharLimit: parseMachineCharLimit(group.machineMonthlyCharLimit),
+      autoDraft: asBool(group.machineAutoDraft, base.machine.autoDraft),
     },
   }
 }

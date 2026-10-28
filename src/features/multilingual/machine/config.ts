@@ -17,6 +17,8 @@ export type MachineSettings = {
   overrides: Record<string, MachineProviderId>
   /** Characters per calendar month across all providers. 0 means no limit. */
   monthlyCharLimit: number
+  /** Write machine drafts for changed fields when a source document is saved. */
+  autoDraft: boolean
 }
 
 export const DEFAULT_MACHINE_SETTINGS: MachineSettings = {
@@ -24,6 +26,7 @@ export const DEFAULT_MACHINE_SETTINGS: MachineSettings = {
   defaultProvider: null,
   overrides: {},
   monthlyCharLimit: 0,
+  autoDraft: false,
 }
 
 /**

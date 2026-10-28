@@ -2,11 +2,15 @@ import type { CollectionConfig } from '@/engine'
 
 import { roleAccess } from '../access/ecommerceAccess'
 import { customFieldsField } from '../fields/customFields'
+import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 
 export const Faqs: CollectionConfig = {
   slug: 'faqs',
   dbName: 'eg_faqs',
   labels: { singular: 'FAQ', plural: 'FAQs' },
+  hooks: {
+    afterChange: [machineAutoDraftAfterChange('faqs')],
+  },
   admin: {
     useAsTitle: 'question',
     defaultColumns: ['question', 'category', 'order'],

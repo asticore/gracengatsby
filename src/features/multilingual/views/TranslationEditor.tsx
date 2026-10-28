@@ -67,6 +67,34 @@ export function TranslationEditor(props: TranslationEditorProps) {
     return (initial.get(cellKey(fieldPath, locale))?.value ?? '') !== drafts[key]
   })
 
+  const translateWithMachine = async () => {
+    setBusy(true)
+    setMessage(null)
+    try {
+      const response = await fetch(props.bulkApi, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action: 'translate', items: [props.itemKey], overwrite: false }),
+      })
+      const body = (await response.json().catch((): null => null)) as { updated?: number; refused?: string[]; error?: string } | null
+      if (!response.ok) {
+        setMessage({ tone: 'error', text: body?.error ?? 'Machine translation could not run.' })
+        return
+      }
+      const refused = body?.refused ?? []
+      setMessage({
+        tone: refused.length ? 'error' : 'ok',
+        text: [`${body?.updated ?? 0} machine drafts written.`, ...refused].join(' '),
+      })
+      if ((body?.updated ?? 0) > 0) setTimeout(() => window.location.reload(), 600)
+    } catch {
+      setMessage({ tone: 'error', text: 'Could not reach the server. Try again.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const request = async (url: string, method: string, body: unknown): Promise<{ ok: boolean; json: unknown }> => {
     const response = await fetch(url, {
       method,
@@ -160,6 +188,13 @@ export function TranslationEditor(props: TranslationEditorProps) {
           Close
         </a>
       </header>
+
+      <div className="flex flex-wrap items-center gap-[8px] text-[13px]">
+        <button type="button" className="btn" disabled={busy} onClick={translateWithMachine}>
+          Translate with machine
+        </button>
+        <span className="opacity-70">Writes machine drafts for empty or changed fields. Approved and human text is kept.</span>
+      </div>
 
       {message ? (
         <p role="status" className={`text-[13px] ${message.tone === 'error' ? 'text-[var(--theme-error-500,#dc2626)]' : ''}`}>

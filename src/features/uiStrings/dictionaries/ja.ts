@@ -854,6 +854,24 @@ const ja: UiDictionary = {
   'portal.panel.tfAddIntro': 'サインインに2つ目の手順を追加します。パスワードに加えて、スマートフォンのアプリに表示されるコードを使います。',
   'portal.panel.tfSetupApp': '認証アプリで設定',
   'portal.panel.tfSetupEmail': 'メールのコードで設定',
+
+  // --- admin leftovers (visual editor chrome) ---
+  've.checks.none': '問題は見つかりませんでした。',
+  've.checks.warning': '警告',
+  've.checks.info': '情報',
+  've.dock.tabs': 'エディターパネル',
+  've.dock.navigatorUnavailable': 'ナビゲーターは利用できません。',
+  've.dock.selectBlock': 'キャンバス上のブロックを選択すると設定を編集できます。',
+  've.tab.elements': '要素',
+  've.tab.settings': '設定',
+  've.tab.navigator': 'ナビゲーター',
+  've.tab.form': 'フォーム',
+  've.ai.buildWithAi': 'AIで作成',
+  've.lang.group': '言語',
+  've.lang.editing': '編集中の言語',
+  've.lang.defaultOption': '{label}（デフォルト）',
+  've.lang.chipTitle': '{label}に翻訳（{approved}/{total} 承認済み）',
+  've.lang.chipText': '{code} {approved}/{total} 承認済み',
 }
 
 export default ja

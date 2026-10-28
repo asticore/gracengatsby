@@ -854,6 +854,24 @@ const fr: UiDictionary = {
   'portal.panel.tfAddIntro': 'Ajoutez une deuxième étape à la connexion : un code d\'une application sur votre téléphone, en plus de votre mot de passe.',
   'portal.panel.tfSetupApp': 'Configurer avec une application d\'authentification',
   'portal.panel.tfSetupEmail': 'Configurer avec un code par e-mail',
+
+  // --- admin leftovers (visual editor chrome) ---
+  've.checks.none': 'Aucun problème détecté.',
+  've.checks.warning': 'Avertissement',
+  've.checks.info': 'Info',
+  've.dock.tabs': 'Panneau de l\'éditeur',
+  've.dock.navigatorUnavailable': 'Navigateur indisponible.',
+  've.dock.selectBlock': 'Sélectionnez un bloc sur le canevas pour modifier ses réglages.',
+  've.tab.elements': 'Éléments',
+  've.tab.settings': 'Réglages',
+  've.tab.navigator': 'Navigateur',
+  've.tab.form': 'Formulaire',
+  've.ai.buildWithAi': 'Créer avec l\'IA',
+  've.lang.group': 'Langue',
+  've.lang.editing': 'Langue d\'édition',
+  've.lang.defaultOption': '{label} (par défaut)',
+  've.lang.chipTitle': 'Traduire en {label} ({approved} sur {total} approuvées)',
+  've.lang.chipText': '{code} {approved}/{total} approuvées',
 }
 
 export default fr

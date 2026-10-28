@@ -854,6 +854,24 @@ const ar: UiDictionary = {
   'portal.panel.tfAddIntro': 'أضف خطوة ثانية لتسجيل الدخول: رمز من تطبيق على هاتفك بالإضافة إلى كلمة المرور.',
   'portal.panel.tfSetupApp': 'الإعداد بتطبيق مصادقة',
   'portal.panel.tfSetupEmail': 'الإعداد برمز عبر البريد الإلكتروني',
+
+  // --- admin leftovers (visual editor chrome) ---
+  've.checks.none': 'لم يتم العثور على مشكلات.',
+  've.checks.warning': 'تحذير',
+  've.checks.info': 'معلومات',
+  've.dock.tabs': 'لوحة المحرر',
+  've.dock.navigatorUnavailable': 'المستعرض غير متاح.',
+  've.dock.selectBlock': 'حدد كتلة على اللوحة لتعديل إعداداتها.',
+  've.tab.elements': 'العناصر',
+  've.tab.settings': 'الإعدادات',
+  've.tab.navigator': 'المستعرض',
+  've.tab.form': 'النموذج',
+  've.ai.buildWithAi': 'البناء بالذكاء الاصطناعي',
+  've.lang.group': 'اللغة',
+  've.lang.editing': 'لغة التحرير',
+  've.lang.defaultOption': '{label} (افتراضي)',
+  've.lang.chipTitle': 'ترجمة إلى {label} ({approved} من {total} معتمدة)',
+  've.lang.chipText': '{code} {approved}/{total} معتمدة',
 }
 
 export default ar

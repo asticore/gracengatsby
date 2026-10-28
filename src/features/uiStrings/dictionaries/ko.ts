@@ -854,6 +854,24 @@ const ko: UiDictionary = {
   'portal.panel.tfAddIntro': '로그인에 두 번째 단계를 추가합니다: 비밀번호와 함께 휴대폰 앱의 코드를 사용합니다.',
   'portal.panel.tfSetupApp': '인증 앱으로 설정',
   'portal.panel.tfSetupEmail': '이메일 코드로 설정',
+
+  // --- admin leftovers (visual editor chrome) ---
+  've.checks.none': '발견된 문제가 없습니다.',
+  've.checks.warning': '경고',
+  've.checks.info': '정보',
+  've.dock.tabs': '편집기 패널',
+  've.dock.navigatorUnavailable': '내비게이터를 사용할 수 없습니다.',
+  've.dock.selectBlock': '캔버스에서 블록을 선택하여 설정을 편집하세요.',
+  've.tab.elements': '요소',
+  've.tab.settings': '설정',
+  've.tab.navigator': '내비게이터',
+  've.tab.form': '양식',
+  've.ai.buildWithAi': 'AI로 만들기',
+  've.lang.group': '언어',
+  've.lang.editing': '편집 언어',
+  've.lang.defaultOption': '{label} (기본)',
+  've.lang.chipTitle': '{label}(으)로 번역 ({approved}/{total} 승인됨)',
+  've.lang.chipText': '{code} {approved}/{total} 승인됨',
 }
 
 export default ko

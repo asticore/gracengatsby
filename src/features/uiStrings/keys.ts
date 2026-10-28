@@ -895,6 +895,24 @@ export const UI_STRING_SOURCE = {
   'portal.panel.tfAddIntro': 'Add a second step to signing in: a code from an app on your phone, as well as your password.',
   'portal.panel.tfSetupApp': 'Set up with an authenticator app',
   'portal.panel.tfSetupEmail': 'Set up with a code by email',
+
+  // --- admin leftovers (visual editor chrome) ---
+  've.checks.none': 'No issues found.',
+  've.checks.warning': 'Warning',
+  've.checks.info': 'Info',
+  've.dock.tabs': 'Editor panel',
+  've.dock.navigatorUnavailable': 'Navigator not available.',
+  've.dock.selectBlock': 'Select a block on the canvas to edit its settings.',
+  've.tab.elements': 'Elements',
+  've.tab.settings': 'Settings',
+  've.tab.navigator': 'Navigator',
+  've.tab.form': 'Form',
+  've.ai.buildWithAi': 'Build with AI',
+  've.lang.group': 'Language',
+  've.lang.editing': 'Editing language',
+  've.lang.defaultOption': '{label} (default)',
+  've.lang.chipTitle': 'Translate into {label} ({approved} of {total} approved)',
+  've.lang.chipText': '{code} {approved}/{total} approved',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

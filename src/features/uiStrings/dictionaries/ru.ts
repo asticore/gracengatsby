@@ -854,6 +854,24 @@ const ru: UiDictionary = {
   'portal.panel.tfAddIntro': 'Добавьте второй шаг при входе: код из приложения на телефоне в дополнение к паролю.',
   'portal.panel.tfSetupApp': 'Настроить через приложение-аутентификатор',
   'portal.panel.tfSetupEmail': 'Настроить с кодом по e-mail',
+
+  // --- admin leftovers (visual editor chrome) ---
+  've.checks.none': 'Проблем не найдено.',
+  've.checks.warning': 'Предупреждение',
+  've.checks.info': 'Инфо',
+  've.dock.tabs': 'Панель редактора',
+  've.dock.navigatorUnavailable': 'Навигатор недоступен.',
+  've.dock.selectBlock': 'Выберите блок на холсте, чтобы изменить его настройки.',
+  've.tab.elements': 'Элементы',
+  've.tab.settings': 'Настройки',
+  've.tab.navigator': 'Навигатор',
+  've.tab.form': 'Форма',
+  've.ai.buildWithAi': 'Создать с ИИ',
+  've.lang.group': 'Язык',
+  've.lang.editing': 'Язык редактирования',
+  've.lang.defaultOption': '{label} (по умолчанию)',
+  've.lang.chipTitle': 'Перевести на {label} (одобрено {approved} из {total})',
+  've.lang.chipText': '{code} {approved}/{total} одобрено',
 }
 
 export default ru

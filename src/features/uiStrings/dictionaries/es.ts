@@ -854,6 +854,24 @@ const es: UiDictionary = {
   'portal.panel.tfAddIntro': 'Añada un segundo paso al iniciar sesión: un código de una aplicación de su teléfono, además de su contraseña.',
   'portal.panel.tfSetupApp': 'Configurar con una aplicación de autenticación',
   'portal.panel.tfSetupEmail': 'Configurar con un código por correo electrónico',
+
+  // --- admin leftovers (visual editor chrome) ---
+  've.checks.none': 'No se encontraron problemas.',
+  've.checks.warning': 'Advertencia',
+  've.checks.info': 'Info',
+  've.dock.tabs': 'Panel del editor',
+  've.dock.navigatorUnavailable': 'Navegador no disponible.',
+  've.dock.selectBlock': 'Selecciona un bloque en el lienzo para editar sus ajustes.',
+  've.tab.elements': 'Elementos',
+  've.tab.settings': 'Ajustes',
+  've.tab.navigator': 'Navegador',
+  've.tab.form': 'Formulario',
+  've.ai.buildWithAi': 'Crear con IA',
+  've.lang.group': 'Idioma',
+  've.lang.editing': 'Idioma de edición',
+  've.lang.defaultOption': '{label} (predeterminado)',
+  've.lang.chipTitle': 'Traducir al {label} ({approved} de {total} aprobadas)',
+  've.lang.chipText': '{code} {approved}/{total} aprobadas',
 }
 
 export default es

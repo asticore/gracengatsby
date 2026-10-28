@@ -1168,6 +1168,17 @@ const ko: UiDictionary = {
   "email.abandonedCart.body": "{site_name} 장바구니에 상품이 남아 있습니다. 여전히 기다리고 있어요.",
   "email.backInStock.subject": "재입고되었습니다: {label}",
   "email.backInStock.body": "반가운 소식입니다. {label}이(가) 다시 입고되었습니다.\n\n여기에서 확인하세요: {url}\n\n재입고 알림을 요청하셨기에 이 메일이 이 내용에 대해 보내는 유일한 메일입니다.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "이메일 및 문자 연결",
+  'settings.link.email-and-text-connections.description': "이메일 및 문자 제공업체는 통합 페이지에서 연결합니다. 키는 여기에 표시되지 않습니다.",
+  'settings.link.email-design.label': "이메일 디자인",
+  'settings.link.email-design.description': "로고, 색상, 버튼, 콘텐츠 블록 등 이메일의 모습을 구성합니다.",
+  'settings.link.abandoned-cart-emails.label': "장바구니 이탈 이메일",
+  'settings.link.abandoned-cart-emails.description': "장바구니에 상품을 남긴 고객에게 발송됩니다. 발송 지연은 쇼핑몰 설정 > 이메일에서 설정합니다.",
+  'settings.link.email-testing.label': "이메일 테스트",
+  'settings.link.email-testing.description': "이메일 연결을 확인하고, 각 이메일의 테스트 사본을 보내고, 발송 도메인을 점검합니다.",
+  'settings.link.email-log.label': "이메일 로그",
+  'settings.link.email-log.description': "사이트가 보낸 모든 이메일과 다시 보내기 버튼.",
 }
 
 export default ko

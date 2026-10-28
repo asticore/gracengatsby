@@ -1168,6 +1168,17 @@ const pt: UiDictionary = {
   "email.abandonedCart.body": "Você deixou alguns itens no carrinho em {site_name}. Eles ainda estão esperando por você.",
   "email.backInStock.subject": "De volta ao estoque: {label}",
   "email.backInStock.body": "Boa notícia. {label} voltou ao estoque.\n\nVeja aqui: {url}\n\nVocê pediu para ser avisado(a), então este é o único e-mail que enviaremos sobre isso.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "Conexões de e-mail e SMS",
+  'settings.link.email-and-text-connections.description': "Os provedores de e-mail e SMS são conectados na página Integrações. As chaves nunca são exibidas aqui.",
+  'settings.link.email-design.label': "Design de e-mail",
+  'settings.link.email-design.description': "Defina a aparência dos e-mails: logotipo, cores, botões e blocos de conteúdo.",
+  'settings.link.abandoned-cart-emails.label': "E-mails de carrinho abandonado",
+  'settings.link.abandoned-cart-emails.description': "Enviados a compradores que deixam itens no carrinho. Os atrasos são definidos em Configurações da loja > E-mails.",
+  'settings.link.email-testing.label': "Testes de e-mail",
+  'settings.link.email-testing.description': "Verifique a conexão de e-mail, envie cópias de teste de cada e-mail e confira o domínio de envio.",
+  'settings.link.email-log.label': "Registro de e-mails",
+  'settings.link.email-log.description': "Todos os e-mails enviados pelo site, com botão de reenvio.",
 }
 
 export default pt

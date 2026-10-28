@@ -1169,6 +1169,17 @@ const de: UiDictionary = {
   "email.abandonedCart.body": "Du hast noch Artikel in deinem Warenkorb bei {site_name} liegen. Sie warten noch auf dich.",
   "email.backInStock.subject": "Wieder auf Lager: {label}",
   "email.backInStock.body": "Gute Nachrichten. {label} ist wieder auf Lager.\n\nHier findest du den Artikel: {url}\n\nDu hast darum gebeten, benachrichtigt zu werden, deshalb ist dies die einzige E-Mail dazu.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "E-Mail- und SMS-Verbindungen",
+  'settings.link.email-and-text-connections.description': "E-Mail- und SMS-Anbieter werden auf der Seite Integrationen verbunden. Schlüssel werden hier nie angezeigt.",
+  'settings.link.email-design.label': "E-Mail-Design",
+  'settings.link.email-design.description': "Gestalten Sie das Aussehen der E-Mails: Logo, Farben, Schaltflächen und Inhaltsblöcke.",
+  'settings.link.abandoned-cart-emails.label': "E-Mails für abgebrochene Warenkörbe",
+  'settings.link.abandoned-cart-emails.description': "Werden an Kundschaft gesendet, die Artikel im Warenkorb lassen. Die Verzögerungen werden unter Shop-Einstellungen > E-Mails festgelegt.",
+  'settings.link.email-testing.label': "E-Mail-Tests",
+  'settings.link.email-testing.description': "Prüfen Sie die E-Mail-Verbindung, senden Sie Testkopien jeder E-Mail und prüfen Sie die Absenderdomain.",
+  'settings.link.email-log.label': "E-Mail-Protokoll",
+  'settings.link.email-log.description': "Jede E-Mail, die die Website gesendet hat, mit einer Schaltfläche zum erneuten Senden.",
 }
 
 export default de

@@ -1168,6 +1168,17 @@ const ja: UiDictionary = {
   "email.abandonedCart.body": "{site_name} のカートに商品が残っています。まだお待ちしています。",
   "email.backInStock.subject": "再入荷しました: {label}",
   "email.backInStock.body": "朗報です。{label} が再入荷しました。\n\nこちらからご覧いただけます: {url}\n\nご希望により再入荷のお知らせをお送りしています。このメールはこの件に関する唯一のお知らせです。",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "メールとSMSの接続",
+  'settings.link.email-and-text-connections.description': "メールとSMSのプロバイダーは「連携」ページで接続します。キーはここには表示されません。",
+  'settings.link.email-design.label': "メールデザイン",
+  'settings.link.email-design.description': "ロゴ、色、ボタン、コンテンツブロックなど、メールの見た目を設定します。",
+  'settings.link.abandoned-cart-emails.label': "カゴ落ちメール",
+  'settings.link.abandoned-cart-emails.description': "カートに商品を残したお客様に送信されます。送信までの遅延は「ショップ設定 > メール」で設定します。",
+  'settings.link.email-testing.label': "メールのテスト",
+  'settings.link.email-testing.description': "メールの接続を確認し、各メールのテスト送信と送信ドメインの確認を行います。",
+  'settings.link.email-log.label': "メールログ",
+  'settings.link.email-log.description': "サイトが送信したすべてのメールを、再送信ボタン付きで表示します。",
 }
 
 export default ja

@@ -1168,6 +1168,17 @@ const hi: UiDictionary = {
   "email.abandonedCart.body": "आप {site_name} पर अपनी कार्ट में कुछ सामान छोड़ गए हैं। वे अब भी आपका इंतज़ार कर रहे हैं।",
   "email.backInStock.subject": "फिर से स्टॉक में: {label}",
   "email.backInStock.body": "अच्छी खबर है। {label} फिर से स्टॉक में है।\n\nयहाँ देखें: {url}\n\nआपने सूचित करने के लिए कहा था, इसलिए इस बारे में यही एकमात्र ईमेल है जो हम भेजेंगे।",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "ईमेल और टेक्स्ट कनेक्शन",
+  'settings.link.email-and-text-connections.description': "ईमेल और टेक्स्ट प्रदाता इंटीग्रेशन पेज पर जुड़ते हैं। कुंजियाँ यहाँ कभी नहीं दिखाई जातीं।",
+  'settings.link.email-design.label': "ईमेल डिज़ाइन",
+  'settings.link.email-design.description': "ईमेल का रूप तय करें: लोगो, रंग, बटन और कंटेंट ब्लॉक।",
+  'settings.link.abandoned-cart-emails.label': "छोड़ी गई कार्ट के ईमेल",
+  'settings.link.abandoned-cart-emails.description': "कार्ट में आइटम छोड़ने वाले खरीदारों को भेजे जाते हैं। इनकी देरी स्टोर सेटिंग्स > ईमेल में सेट होती है।",
+  'settings.link.email-testing.label': "ईमेल परीक्षण",
+  'settings.link.email-testing.description': "ईमेल कनेक्शन जाँचें, हर ईमेल की टेस्ट कॉपी भेजें और भेजने वाले डोमेन की जाँच करें।",
+  'settings.link.email-log.label': "ईमेल लॉग",
+  'settings.link.email-log.description': "साइट द्वारा भेजा गया हर ईमेल, साथ में फिर से भेजने का बटन।",
 }
 
 export default hi

@@ -1168,6 +1168,17 @@ const nl: UiDictionary = {
   "email.abandonedCart.body": "Je hebt nog artikelen in je winkelmandje bij {site_name} staan. Ze wachten nog op je.",
   "email.backInStock.subject": "Weer op voorraad: {label}",
   "email.backInStock.body": "Goed nieuws. {label} is weer op voorraad.\n\nBekijk het hier: {url}\n\nJe vroeg om een melding, dus dit is de enige e-mail die we hierover sturen.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "E-mail- en sms-verbindingen",
+  'settings.link.email-and-text-connections.description': "E-mail- en sms-providers worden verbonden op de pagina Integraties. Sleutels worden hier nooit getoond.",
+  'settings.link.email-design.label': "E-maildesign",
+  'settings.link.email-design.description': "Bepaal de look van e-mails: logo, kleuren, knoppen en contentblokken.",
+  'settings.link.abandoned-cart-emails.label': "E-mails voor verlaten winkelwagens",
+  'settings.link.abandoned-cart-emails.description': "Verstuurd naar klanten die artikelen in hun winkelwagen laten staan. De vertragingen stel je in onder Winkelinstellingen > E-mails.",
+  'settings.link.email-testing.label': "E-mailtesten",
+  'settings.link.email-testing.description': "Controleer de e-mailverbinding, stuur testkopieën van elke e-mail en controleer het verzenddomein.",
+  'settings.link.email-log.label': "E-maillogboek",
+  'settings.link.email-log.description': "Elke e-mail die de site heeft verzonden, met een knop om opnieuw te verzenden.",
 }
 
 export default nl

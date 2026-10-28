@@ -1168,6 +1168,17 @@ const ru: UiDictionary = {
   "email.abandonedCart.body": "Вы оставили несколько товаров в корзине магазина {site_name}. Они всё ещё ждут вас.",
   "email.backInStock.subject": "Снова в наличии: {label}",
   "email.backInStock.body": "Хорошие новости. {label} снова в наличии.\n\nПосмотреть: {url}\n\nВы попросили сообщить вам, поэтому это единственное письмо об этом.",
+  // --- admin leftovers (settings link cards) ---
+  'settings.link.email-and-text-connections.label': "Подключения почты и SMS",
+  'settings.link.email-and-text-connections.description': "Почтовые и SMS-провайдеры подключаются на странице «Интеграции». Ключи здесь никогда не показываются.",
+  'settings.link.email-design.label': "Дизайн писем",
+  'settings.link.email-design.description': "Настройте оформление писем: логотип, цвета, кнопки и блоки содержимого.",
+  'settings.link.abandoned-cart-emails.label': "Письма о брошенных корзинах",
+  'settings.link.abandoned-cart-emails.description': "Отправляются покупателям, которые оставили товары в корзине. Задержки настраиваются в разделе «Настройки магазина» > «Письма».",
+  'settings.link.email-testing.label': "Тестирование писем",
+  'settings.link.email-testing.description': "Проверьте подключение почты, отправьте тестовые копии каждого письма и проверьте домен отправки.",
+  'settings.link.email-log.label': "Журнал писем",
+  'settings.link.email-log.description': "Каждое письмо, отправленное сайтом, с кнопкой повторной отправки.",
 }
 
 export default ru

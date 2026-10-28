@@ -1,5 +1,6 @@
 'use client'
 
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 
@@ -68,6 +69,7 @@ const messageOf = (error: unknown, fallback: string): string => (error instanceo
  * prices the order and captures the payment; this component only passes the buyer's choices and the cart ids.
  */
 export const PayPalButton: React.FC<{ cartRef: Cart | null; email: string; extras: CheckoutInput | null }> = ({ cartRef, email, extras }) => {
+  const t = useStoreText()
   const router = useRouter()
   const [cfg, setCfg] = useState<PayPalPublicConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -102,7 +104,7 @@ export const PayPalButton: React.FC<{ cartRef: Cart | null; email: string; extra
               const { cartRef: c, email: e, extras: x } = latest.current
               setError(null)
               if (!c) throw new Error('Your cart is empty.')
-              if (!e) throw new Error('Please enter your email address first.')
+              if (!e) throw new Error(t('store.enterEmailFirst'))
               const res = await fetch('/api/shop-paypal-create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

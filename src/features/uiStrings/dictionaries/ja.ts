@@ -1243,6 +1243,25 @@ const ja: UiDictionary = {
   "store.country": "国（例: AU）",
   "store.couldNotPriceCart": "カートの金額を計算できませんでした。",
   "store.storeCredit": "ストアクレジット",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "あとで見る",
+  "store.savedOnDevice": "この端末に保存した商品です。",
+  "store.loadingSaved": "保存した商品を読み込んでいます...",
+  "store.wishlistError": "保存した商品を読み込めませんでした。ページを再読み込みしてください。",
+  "store.saveForLater": "あとで見るに保存",
+  "store.thankYou": "ありがとうございます！",
+  "store.orderPlaced": "ご注文を受け付けました。",
+  "store.orderReference": "注文番号:",
+  "store.enterEmail": "メールアドレスを入力してください。",
+  "store.enterEmailFirst": "先にメールアドレスを入力してください。",
+  "store.pricesIn": "価格の通貨",
+  "store.pageNotFound": "ページが見つかりません",
+  "store.notFoundHelp": "お探しのページは移動したか、アドレスに誤りがある可能性があります。",
+  "store.helpfulLinks": "役立つリンク",
+  "store.home": "ホーム",
+  "store.blog": "ブログ",
+  "store.shop": "ショップ",
 }
 
 export default ja

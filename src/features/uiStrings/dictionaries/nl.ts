@@ -1243,6 +1243,25 @@ const nl: UiDictionary = {
   "store.country": "Land (bijv. AU)",
   "store.couldNotPriceCart": "We konden je winkelwagen niet prijzen.",
   "store.storeCredit": "Tegoed",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "Voor later bewaard",
+  "store.savedOnDevice": "Artikelen die je op dit apparaat hebt bewaard.",
+  "store.loadingSaved": "Je bewaarde artikelen worden geladen...",
+  "store.wishlistError": "We konden je bewaarde artikelen niet laden. Ververs de pagina.",
+  "store.saveForLater": "Voor later bewaren",
+  "store.thankYou": "Bedankt!",
+  "store.orderPlaced": "Je bestelling is geplaatst.",
+  "store.orderReference": "Ordernummer:",
+  "store.enterEmail": "Vul je e-mailadres in.",
+  "store.enterEmailFirst": "Vul eerst je e-mailadres in.",
+  "store.pricesIn": "Prijzen in",
+  "store.pageNotFound": "Pagina niet gevonden",
+  "store.notFoundHelp": "De pagina die je zocht is misschien verplaatst, of het adres bevat een typfout.",
+  "store.helpfulLinks": "Handige links",
+  "store.home": "Home",
+  "store.blog": "Blog",
+  "store.shop": "Winkel",
 }
 
 export default nl

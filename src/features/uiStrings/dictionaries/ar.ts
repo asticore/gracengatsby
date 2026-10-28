@@ -1243,6 +1243,25 @@ const ar: UiDictionary = {
   "store.country": "الدولة (مثال: AU)",
   "store.couldNotPriceCart": "تعذّر احتساب سعر سلة التسوق.",
   "store.storeCredit": "رصيد المتجر",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "للاطلاع لاحقًا",
+  "store.savedOnDevice": "المنتجات التي حفظتها على هذا الجهاز.",
+  "store.loadingSaved": "جارٍ تحميل المنتجات المحفوظة...",
+  "store.wishlistError": "تعذّر تحميل المنتجات المحفوظة. يُرجى تحديث الصفحة.",
+  "store.saveForLater": "حفظ للاطلاع لاحقًا",
+  "store.thankYou": "شكرًا لك!",
+  "store.orderPlaced": "تم إرسال طلبك.",
+  "store.orderReference": "مرجع الطلب:",
+  "store.enterEmail": "يُرجى إدخال عنوان بريدك الإلكتروني.",
+  "store.enterEmailFirst": "يُرجى إدخال عنوان بريدك الإلكتروني أولًا.",
+  "store.pricesIn": "الأسعار بـ",
+  "store.pageNotFound": "الصفحة غير موجودة",
+  "store.notFoundHelp": "ربما تم نقل الصفحة التي تبحث عنها، أو أن العنوان يحتوي على خطأ مطبعي.",
+  "store.helpfulLinks": "روابط مفيدة",
+  "store.home": "الرئيسية",
+  "store.blog": "المدونة",
+  "store.shop": "المتجر",
 }
 
 export default ar

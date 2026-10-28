@@ -1,5 +1,6 @@
 'use client'
 
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
@@ -12,6 +13,7 @@ type Loaded = { key: string; cards: WishlistCard[] | null }
 
 /** The saved products. Ids come from this browser; the cards come from the public endpoint. */
 export function WishlistList() {
+  const t = useStoreText()
   const { ids, toggle } = useWishlist()
   const key = ids.join(',')
   const [loaded, setLoaded] = useState<Loaded | null>(null)
@@ -46,8 +48,8 @@ export function WishlistList() {
   }
 
   const current = loaded && loaded.key === key ? loaded : null
-  if (!current) return <p>Loading your saved items...</p>
-  if (current.cards === null) return <p>We could not load your saved items. Please refresh the page.</p>
+  if (!current) return <p>{t('store.loadingSaved')}</p>
+  if (current.cards === null) return <p>{t('store.wishlistError')}</p>
 
   const cards = current.cards.filter((card) => ids.includes(card.id))
   return (

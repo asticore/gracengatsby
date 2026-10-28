@@ -1243,6 +1243,25 @@ const it: UiDictionary = {
   "store.country": "Paese (es. AU)",
   "store.couldNotPriceCart": "Impossibile calcolare il tuo carrello.",
   "store.storeCredit": "Credito del negozio",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "Salvato per dopo",
+  "store.savedOnDevice": "Articoli salvati su questo dispositivo.",
+  "store.loadingSaved": "Caricamento dei tuoi articoli salvati...",
+  "store.wishlistError": "Impossibile caricare i tuoi articoli salvati. Aggiorna la pagina.",
+  "store.saveForLater": "Salva per dopo",
+  "store.thankYou": "Grazie!",
+  "store.orderPlaced": "Il tuo ordine è stato effettuato.",
+  "store.orderReference": "Riferimento ordine:",
+  "store.enterEmail": "Inserisci il tuo indirizzo email.",
+  "store.enterEmailFirst": "Inserisci prima il tuo indirizzo email.",
+  "store.pricesIn": "Prezzi in",
+  "store.pageNotFound": "Pagina non trovata",
+  "store.notFoundHelp": "La pagina cercata potrebbe essere stata spostata o l'indirizzo potrebbe contenere un errore.",
+  "store.helpfulLinks": "Link utili",
+  "store.home": "Home",
+  "store.blog": "Blog",
+  "store.shop": "Negozio",
 }
 
 export default it

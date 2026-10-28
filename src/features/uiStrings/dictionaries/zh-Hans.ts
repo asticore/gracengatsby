@@ -1203,6 +1203,26 @@ const zhHans: UiDictionary = {
   "store.shipping": "运费",
   "store.tax": "税费",
   "store.orderConfirmed": "感谢您，您的订单已确认。",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "您的购物车",
+  "store.item": "商品",
+  "store.from": "起价 ",
+  "store.addingProgress": "添加中...",
+  "store.invalidAmount": "请输入有效金额。",
+  "store.giftCardsUnavailable": "礼品卡目前不可用。",
+  "store.productUnavailable": "该商品目前不可用。",
+  "store.noProductsInGroup": "该分组暂时没有商品。",
+  "store.chooseOption": "请选择",
+  "store.firstName": "名字",
+  "store.lastName": "姓氏",
+  "store.address": "地址",
+  "store.suburbCity": "城市",
+  "store.state": "省/州",
+  "store.postcode": "邮政编码",
+  "store.country": "国家（例如 AU）",
+  "store.couldNotPriceCart": "无法为您的购物车计算价格。",
+  "store.storeCredit": "商店余额",
 }
 
 export default zhHans

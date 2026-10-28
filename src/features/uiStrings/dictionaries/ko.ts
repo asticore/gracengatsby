@@ -1204,6 +1204,26 @@ const ko: UiDictionary = {
   "store.shipping": "배송비",
   "store.tax": "세금",
   "store.orderConfirmed": "감사합니다. 주문이 확정되었습니다.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "장바구니",
+  "store.item": "상품",
+  "store.from": "~부터 ",
+  "store.addingProgress": "담는 중...",
+  "store.invalidAmount": "올바른 금액을 입력해 주세요.",
+  "store.giftCardsUnavailable": "선물 카드는 현재 이용할 수 없습니다.",
+  "store.productUnavailable": "이 상품은 현재 이용할 수 없습니다.",
+  "store.noProductsInGroup": "이 그룹에는 아직 상품이 없습니다.",
+  "store.chooseOption": "옵션 선택",
+  "store.firstName": "이름",
+  "store.lastName": "성",
+  "store.address": "주소",
+  "store.suburbCity": "시/구",
+  "store.state": "시/도",
+  "store.postcode": "우편번호",
+  "store.country": "국가(예: AU)",
+  "store.couldNotPriceCart": "장바구니 금액을 계산할 수 없습니다.",
+  "store.storeCredit": "스토어 크레딧",
 }
 
 export default ko

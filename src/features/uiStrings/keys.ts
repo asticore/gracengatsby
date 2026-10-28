@@ -1245,6 +1245,25 @@ export const UI_STRING_SOURCE = {
   "store.shipping": "Shipping",
   "store.tax": "Tax",
   "store.orderConfirmed": "Thank you - your order is confirmed.",
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Your cart",
+  "store.item": "Item",
+  "store.from": "From ",
+  "store.addingProgress": "Adding...",
+  "store.invalidAmount": "Please enter a valid amount.",
+  "store.giftCardsUnavailable": "Gift cards are not available right now.",
+  "store.productUnavailable": "This product is not available right now.",
+  "store.noProductsInGroup": "No products in this group yet.",
+  "store.chooseOption": "Choose an option",
+  "store.firstName": "First name",
+  "store.lastName": "Last name",
+  "store.address": "Address",
+  "store.suburbCity": "Suburb / city",
+  "store.state": "State",
+  "store.postcode": "Postcode",
+  "store.country": "Country (e.g. AU)",
+  "store.couldNotPriceCart": "Could not price your cart.",
+  "store.storeCredit": "Store credit",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

@@ -1204,6 +1204,26 @@ const fr: UiDictionary = {
   "store.shipping": "Livraison",
   "store.tax": "Taxes",
   "store.orderConfirmed": "Merci ! Votre commande est confirmée.",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "Votre panier",
+  "store.item": "Article",
+  "store.from": "À partir de ",
+  "store.addingProgress": "Ajout en cours...",
+  "store.invalidAmount": "Veuillez saisir un montant valide.",
+  "store.giftCardsUnavailable": "Les cartes cadeaux ne sont pas disponibles pour le moment.",
+  "store.productUnavailable": "Ce produit n'est pas disponible pour le moment.",
+  "store.noProductsInGroup": "Aucun produit dans ce groupe pour le moment.",
+  "store.chooseOption": "Choisir une option",
+  "store.firstName": "Prénom",
+  "store.lastName": "Nom",
+  "store.address": "Adresse",
+  "store.suburbCity": "Ville",
+  "store.state": "Région",
+  "store.postcode": "Code postal",
+  "store.country": "Pays (ex. AU)",
+  "store.couldNotPriceCart": "Impossible de calculer votre panier.",
+  "store.storeCredit": "Crédit boutique",
 }
 
 export default fr

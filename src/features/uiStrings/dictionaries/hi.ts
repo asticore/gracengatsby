@@ -1204,6 +1204,26 @@ const hi: UiDictionary = {
   "store.shipping": "शिपिंग",
   "store.tax": "कर",
   "store.orderConfirmed": "धन्यवाद - आपका ऑर्डर पक्का हो गया है।",
+
+  // --- store (cart and checkout) ---
+  "store.yourCart": "आपकी कार्ट",
+  "store.item": "आइटम",
+  "store.from": "से ",
+  "store.addingProgress": "जोड़ा जा रहा है...",
+  "store.invalidAmount": "कृपया मान्य राशि दर्ज करें।",
+  "store.giftCardsUnavailable": "गिफ़्ट कार्ड अभी उपलब्ध नहीं हैं।",
+  "store.productUnavailable": "यह उत्पाद अभी उपलब्ध नहीं है।",
+  "store.noProductsInGroup": "इस समूह में अभी कोई उत्पाद नहीं है।",
+  "store.chooseOption": "एक विकल्प चुनें",
+  "store.firstName": "पहला नाम",
+  "store.lastName": "अंतिम नाम",
+  "store.address": "पता",
+  "store.suburbCity": "शहर",
+  "store.state": "राज्य",
+  "store.postcode": "पिन कोड",
+  "store.country": "देश (जैसे AU)",
+  "store.couldNotPriceCart": "आपकी कार्ट की कीमत की गणना नहीं हो सकी।",
+  "store.storeCredit": "स्टोर क्रेडिट",
 }
 
 export default hi

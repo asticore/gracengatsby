@@ -1302,6 +1302,19 @@ const it: UiDictionary = {
   "store.home": "Home",
   "store.blog": "Blog",
   "store.shop": "Negozio",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Cookie su questo sito",
+  "store.cookieBannerText": "Usiamo i cookie per capire come viene usato questo sito. I tag di analisi e marketing vengono caricati solo dopo il tuo consenso.",
+  "store.acceptAll": "Accetta tutto",
+  "store.rejectAll": "Rifiuta tutto",
+  "store.customise": "Personalizza",
+  "store.saveChoices": "Salva le scelte",
+  "store.cookieSettings": "Impostazioni dei cookie",
+  "store.privacyPolicy": "Informativa sulla privacy",
+  "store.pageOf": "Pagina {page} di {pages}",
+  "store.searchTheSite": "Cerca nel sito",
+  "store.newerProducts": "Prodotti più recenti",
+  "store.olderProducts": "Prodotti meno recenti",
 }
 
 export default it

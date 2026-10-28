@@ -1302,6 +1302,19 @@ const hi: UiDictionary = {
   "store.home": "होम",
   "store.blog": "ब्लॉग",
   "store.shop": "शॉप",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "इस साइट पर कुकीज़",
+  "store.cookieBannerText": "हम यह समझने के लिए कुकीज़ का उपयोग करते हैं कि इस साइट का उपयोग कैसे होता है। आपकी सहमति के बाद ही एनालिटिक्स और मार्केटिंग टैग लोड होते हैं।",
+  "store.acceptAll": "सभी स्वीकार करें",
+  "store.rejectAll": "सभी अस्वीकार करें",
+  "store.customise": "अनुकूलित करें",
+  "store.saveChoices": "पसंद सहेजें",
+  "store.cookieSettings": "कुकी सेटिंग्स",
+  "store.privacyPolicy": "गोपनीयता नीति",
+  "store.pageOf": "पृष्ठ {page} / {pages}",
+  "store.searchTheSite": "साइट पर खोजें",
+  "store.newerProducts": "नए उत्पाद",
+  "store.olderProducts": "पुराने उत्पाद",
 }
 
 export default hi

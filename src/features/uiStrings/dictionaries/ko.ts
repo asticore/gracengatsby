@@ -1302,6 +1302,19 @@ const ko: UiDictionary = {
   "store.home": "홈",
   "store.blog": "블로그",
   "store.shop": "쇼핑몰",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "이 사이트의 쿠키",
+  "store.cookieBannerText": "이 사이트의 이용 방식을 파악하기 위해 쿠키를 사용합니다. 분석 및 마케팅 태그는 동의하신 후에만 로드됩니다.",
+  "store.acceptAll": "모두 허용",
+  "store.rejectAll": "모두 거부",
+  "store.customise": "맞춤 설정",
+  "store.saveChoices": "선택 저장",
+  "store.cookieSettings": "쿠키 설정",
+  "store.privacyPolicy": "개인정보 처리방침",
+  "store.pageOf": "{page} / {pages} 페이지",
+  "store.searchTheSite": "사이트 검색",
+  "store.newerProducts": "최신 상품",
+  "store.olderProducts": "이전 상품",
 }
 
 export default ko

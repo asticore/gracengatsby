@@ -8,6 +8,9 @@ import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { viewerFromRequestContext } from '@/features/visibility/gate'
 import { getFeatureFlags } from '@/utilities/features'
 import { getAllResolvedPages } from '@/utilities/pagePaths'
+import { storeTexts } from '@/features/uiStrings/storeTextsServer'
+import { translateWith } from '@/features/uiStrings/t'
+import type { UiStringKey } from '@/features/uiStrings/keys'
 import type { Event as EventDoc, Post, Product } from '@/engage-types'
 
 /**
@@ -181,31 +184,33 @@ export default async function SearchPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const sp = await searchParams
+  const storeDict = await storeTexts()
+  const tx = (key: UiStringKey) => translateWith(storeDict, key)
   const query = normalizeQuery(first(sp.q)) || normalizeQuery(first(sp.s))
   const found = query ? await runSearch(query) : NONE
 
   const body = (
     <div className="page-shell">
       <div className="section-heading">
-        <h1>Search</h1>
+        <h1>{tx('store.search')}</h1>
       </div>
 
       <form role="search" action="/search" method="get" className="mb-8 flex max-w-[640px] flex-wrap gap-2">
         <label className="flex-1">
-          <span className="sr-only">Search the site</span>
+          <span className="sr-only">{tx('store.searchTheSite')}</span>
           <input
             className="w-full border border-[var(--color-line)] bg-white px-4 py-2"
             type="search"
             name="q"
             defaultValue={query}
             maxLength={MAX_QUERY_LENGTH}
-            placeholder="Search"
+            placeholder={tx('store.search')}
             autoComplete="off"
             enterKeyHint="search"
           />
         </label>
         <button className="px-5 py-2 uppercase tracking-[0.08em]" type="submit">
-          Search
+          {tx('store.search')}
         </button>
       </form>
 

@@ -1301,6 +1301,19 @@ const zhHans: UiDictionary = {
   "store.home": "首页",
   "store.blog": "博客",
   "store.shop": "商店",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "本站的 Cookie",
+  "store.cookieBannerText": "我们使用 Cookie 来了解本站的使用情况。只有在您同意后，分析和营销标签才会加载。",
+  "store.acceptAll": "全部接受",
+  "store.rejectAll": "全部拒绝",
+  "store.customise": "自定义",
+  "store.saveChoices": "保存选择",
+  "store.cookieSettings": "Cookie 设置",
+  "store.privacyPolicy": "隐私政策",
+  "store.pageOf": "第 {page} / {pages} 页",
+  "store.searchTheSite": "搜索本站",
+  "store.newerProducts": "较新的商品",
+  "store.olderProducts": "较早的商品",
 }
 
 export default zhHans

@@ -32,6 +32,9 @@ export const Header: React.FC<{
   showCart?: boolean
   announcementBar?: { enabled?: boolean; text?: string | null; linkUrl?: string | null; dismissible?: boolean | null } | null
   socials?: { show?: boolean; links?: { platform?: string | null; url?: string | null }[] | null } | null
+  /** Locale-aware URLs for the logo and the cart (the layout passes the prefixed ones on a locale page). */
+  homeHref?: string
+  cartHref?: string
 }> = ({
   siteName = 'Grace & Gatsby',
   logoUrl,
@@ -45,6 +48,8 @@ export const Header: React.FC<{
   showCart = true,
   announcementBar,
   socials,
+  homeHref = '/',
+  cartHref = '/cart',
 }) => {
   const [open, setOpen] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -95,13 +100,13 @@ export const Header: React.FC<{
           {desktopLayout === 'logo-right' ? (
             <>
               <HeaderNav links={links} onNavigate={() => setOpen(false)} />
-              <Link href="/" className="font-[family-name:var(--font-display)] text-[1.6rem] font-semibold tracking-[0.02em]">
+              <Link href={homeHref} className="font-[family-name:var(--font-display)] text-[1.6rem] font-semibold tracking-[0.02em]">
                 {logo}
               </Link>
             </>
           ) : (
             <>
-              <Link href="/" className="font-[family-name:var(--font-display)] text-[1.6rem] font-semibold tracking-[0.02em]">
+              <Link href={homeHref} className="font-[family-name:var(--font-display)] text-[1.6rem] font-semibold tracking-[0.02em]">
                 {logo}
               </Link>
               <HeaderNav links={links} onNavigate={() => setOpen(false)} className={open ? 'is-open' : ''} mobileLayout={mobileLayout} />
@@ -121,7 +126,7 @@ export const Header: React.FC<{
             <CurrencySwitcher />
             {showCart && (
               <Link
-                href="/cart"
+                href={cartHref}
                 className="relative text-[0.85rem] uppercase tracking-[0.08em]"
                 aria-label="View cart"
               >

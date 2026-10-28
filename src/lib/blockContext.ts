@@ -1,5 +1,7 @@
 import { cache } from 'react'
 
+import { localizeForRequest } from '@/features/multilingual/requestLinkLocale'
+
 /** Public page data for dynamic-text tags. Never put private data here: pages are cached for all visitors. */
 export type BlockContext = {
   post?: { title?: unknown; date?: unknown; excerpt?: unknown; author?: unknown; featuredImage?: { url?: unknown; alt?: unknown }; categories?: string[] }
@@ -53,8 +55,21 @@ export function setBlockContext(ctx: BlockContext): void {
   holder().ctx = ctx
 }
 
+/**
+ * The page's public data. On a locale page the archive's item links and base path are
+ * localised here, once, so every grid and card that reads the archive links into the locale.
+ */
 export function getBlockContext(): BlockContext {
-  return holder().ctx
+  const ctx = holder().ctx
+  const archive = ctx.archive
+  if (!archive) return ctx
+  const localized = archive.items.map((item) => {
+    const href = localizeForRequest(item.href)
+    return href === item.href ? item : { ...item, href }
+  })
+  const basePath = localizeForRequest(archive.basePath)
+  if (basePath === archive.basePath && localized.every((item, i) => item === archive.items[i])) return ctx
+  return { ...ctx, archive: { ...archive, basePath, items: localized } }
 }
 
 /** The request's query string (the page's searchParams), so a Loop grid can read its own page number. */

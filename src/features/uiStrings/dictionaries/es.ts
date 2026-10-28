@@ -927,6 +927,19 @@ const es: UiDictionary = {
   've.coach.selectText': 'Haz clic en cualquier bloque de la vista previa para seleccionarlo. Sus ajustes se abren en la pestaña Ajustes.',
   've.coach.settingsTitle': 'Pestaña Ajustes',
   've.coach.settingsText': 'Usa la pestaña Ajustes para cambiar el contenido, el estilo y el diseño del bloque seleccionado.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Error al guardar: reintentar',
+  've.save.saving': 'Guardando…',
+  've.save.publishing': 'Publicando…',
+  've.save.unsaved': 'Cambios sin guardar',
+  've.save.justNow': 'Guardado hace un momento',
+  've.save.minutesAgo': 'Guardado hace {minutes} min',
+  've.media.noFiles': 'No se subió ningún archivo.',
+  've.media.uploadFailed': 'Error al subir el archivo.',
+  've.media.title': 'Elige una imagen',
+  've.media.loading': 'Cargando la biblioteca multimedia…',
+  've.media.noPreview': 'Sin vista previa',
 }
 
 export default es

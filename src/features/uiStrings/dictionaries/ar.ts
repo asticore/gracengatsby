@@ -927,6 +927,19 @@ const ar: UiDictionary = {
   've.coach.selectText': 'انقر على أي كتلة في المعاينة لتحديدها. تفتح إعداداتها في علامة التبويب الإعدادات.',
   've.coach.settingsTitle': 'علامة التبويب الإعدادات',
   've.coach.settingsText': 'استخدم علامة التبويب الإعدادات لتغيير محتوى الكتلة المحددة وأسلوبها وتخطيطها.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'فشل الحفظ – أعد المحاولة',
+  've.save.saving': 'جارٍ الحفظ…',
+  've.save.publishing': 'جارٍ النشر…',
+  've.save.unsaved': 'تغييرات غير محفوظة',
+  've.save.justNow': 'تم الحفظ للتو',
+  've.save.minutesAgo': 'تم الحفظ قبل {minutes} د',
+  've.media.noFiles': 'لم يتم رفع أي ملفات.',
+  've.media.uploadFailed': 'فشل الرفع.',
+  've.media.title': 'اختر صورة',
+  've.media.loading': 'جارٍ تحميل مكتبة الوسائط…',
+  've.media.noPreview': 'لا توجد معاينة',
 }
 
 export default ar

@@ -927,6 +927,19 @@ const pt: UiDictionary = {
   've.coach.selectText': 'Clique em qualquer bloco na pré-visualização para o selecionar. As suas definições abrem no separador Definições.',
   've.coach.settingsTitle': 'Separador Definições',
   've.coach.settingsText': 'Use o separador Definições para alterar o conteúdo, o estilo e o layout do bloco selecionado.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Falha ao guardar – tentar novamente',
+  've.save.saving': 'A guardar…',
+  've.save.publishing': 'A publicar…',
+  've.save.unsaved': 'Alterações não guardadas',
+  've.save.justNow': 'Guardado agora mesmo',
+  've.save.minutesAgo': 'Guardado há {minutes} min',
+  've.media.noFiles': 'Nenhum ficheiro foi carregado.',
+  've.media.uploadFailed': 'Falha no carregamento.',
+  've.media.title': 'Escolha uma imagem',
+  've.media.loading': 'A carregar a biblioteca de média…',
+  've.media.noPreview': 'Sem pré-visualização',
 }
 
 export default pt

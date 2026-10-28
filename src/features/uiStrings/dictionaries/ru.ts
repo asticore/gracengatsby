@@ -1281,6 +1281,19 @@ const ru: UiDictionary = {
   "store.home": "Главная",
   "store.blog": "Блог",
   "store.shop": "Магазин",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Файлы cookie на этом сайте",
+  "store.cookieBannerText": "Мы используем файлы cookie, чтобы понимать, как пользуются этим сайтом. Аналитические и маркетинговые метки загружаются только после вашего согласия.",
+  "store.acceptAll": "Принять все",
+  "store.rejectAll": "Отклонить все",
+  "store.customise": "Настроить",
+  "store.saveChoices": "Сохранить выбор",
+  "store.cookieSettings": "Настройки файлов cookie",
+  "store.privacyPolicy": "Политика конфиденциальности",
+  "store.pageOf": "Страница {page} из {pages}",
+  "store.searchTheSite": "Поиск по сайту",
+  "store.newerProducts": "Более новые товары",
+  "store.olderProducts": "Более старые товары",
 }
 
 export default ru

@@ -1281,6 +1281,19 @@ const es: UiDictionary = {
   "store.home": "Inicio",
   "store.blog": "Blog",
   "store.shop": "Tienda",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Cookies en este sitio",
+  "store.cookieBannerText": "Usamos cookies para entender cómo se usa este sitio. Las etiquetas de analítica y marketing solo se cargan cuando aceptas.",
+  "store.acceptAll": "Aceptar todo",
+  "store.rejectAll": "Rechazar todo",
+  "store.customise": "Personalizar",
+  "store.saveChoices": "Guardar selección",
+  "store.cookieSettings": "Configuración de cookies",
+  "store.privacyPolicy": "Política de privacidad",
+  "store.pageOf": "Página {page} de {pages}",
+  "store.searchTheSite": "Buscar en el sitio",
+  "store.newerProducts": "Productos más recientes",
+  "store.olderProducts": "Productos anteriores",
 }
 
 export default es

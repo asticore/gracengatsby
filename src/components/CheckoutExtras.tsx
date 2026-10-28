@@ -166,7 +166,7 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
       )}
       {quote && quote.shippingOptions.length > 0 && (
         <fieldset className="flex flex-col gap-2">
-          <legend className="text-[0.85rem] uppercase">Shipping</legend>
+          <legend className="text-[0.85rem] uppercase">{t('store.shipping')}</legend>
           {quote.shippingOptions.map((o) => (
             <label key={o.id} className="flex gap-2">
               <input type="radio" name="shipping" checked={shipId === o.id} onChange={() => setShipId(o.id)} /> {o.title} - {o.costCents === 0 ? 'Free' : money(o.costCents)}

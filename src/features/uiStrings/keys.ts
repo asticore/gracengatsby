@@ -1321,6 +1321,19 @@ export const UI_STRING_SOURCE = {
   "store.home": "Home",
   "store.blog": "Blog",
   "store.shop": "Shop",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Cookies on this site",
+  "store.cookieBannerText": "We use cookies to understand how this site is used. Analytics and marketing tags only load once you agree.",
+  "store.acceptAll": "Accept all",
+  "store.rejectAll": "Reject all",
+  "store.customise": "Customise",
+  "store.saveChoices": "Save choices",
+  "store.cookieSettings": "Cookie settings",
+  "store.privacyPolicy": "Privacy policy",
+  "store.pageOf": "Page {page} of {pages}",
+  "store.searchTheSite": "Search the site",
+  "store.newerProducts": "Newer products",
+  "store.olderProducts": "Older products",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

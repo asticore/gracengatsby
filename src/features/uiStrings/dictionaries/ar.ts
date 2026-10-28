@@ -1281,6 +1281,19 @@ const ar: UiDictionary = {
   "store.home": "الرئيسية",
   "store.blog": "المدونة",
   "store.shop": "المتجر",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "ملفات تعريف الارتباط على هذا الموقع",
+  "store.cookieBannerText": "نستخدم ملفات تعريف الارتباط لفهم كيفية استخدام هذا الموقع. لا تُحمَّل وسوم التحليلات والتسويق إلا بعد موافقتك.",
+  "store.acceptAll": "قبول الكل",
+  "store.rejectAll": "رفض الكل",
+  "store.customise": "تخصيص",
+  "store.saveChoices": "حفظ الاختيارات",
+  "store.cookieSettings": "إعدادات ملفات تعريف الارتباط",
+  "store.privacyPolicy": "سياسة الخصوصية",
+  "store.pageOf": "الصفحة {page} من {pages}",
+  "store.searchTheSite": "ابحث في الموقع",
+  "store.newerProducts": "المنتجات الأحدث",
+  "store.olderProducts": "المنتجات الأقدم",
 }
 
 export default ar

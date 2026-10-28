@@ -1281,6 +1281,19 @@ const nl: UiDictionary = {
   "store.home": "Home",
   "store.blog": "Blog",
   "store.shop": "Winkel",
+  // --- store (consent, archive) ---
+  "store.cookieBannerTitle": "Cookies op deze site",
+  "store.cookieBannerText": "We gebruiken cookies om te begrijpen hoe deze site wordt gebruikt. Analyse- en marketingtags worden pas geladen als je akkoord gaat.",
+  "store.acceptAll": "Alles accepteren",
+  "store.rejectAll": "Alles weigeren",
+  "store.customise": "Aanpassen",
+  "store.saveChoices": "Keuzes opslaan",
+  "store.cookieSettings": "Cookie-instellingen",
+  "store.privacyPolicy": "Privacybeleid",
+  "store.pageOf": "Pagina {page} van {pages}",
+  "store.searchTheSite": "Doorzoek de site",
+  "store.newerProducts": "Nieuwere producten",
+  "store.olderProducts": "Oudere producten",
 }
 
 export default nl

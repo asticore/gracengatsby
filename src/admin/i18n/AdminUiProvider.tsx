@@ -11,7 +11,7 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
-import { translateWith, type UiDictionary, type UiStringKey } from '@/features/uiStrings'
+import { translateWith, type UiDictionary, type UiStringKey, type UiStringVars } from '@/features/uiStrings'
 
 type AdminUiValue = {
   locale: string
@@ -31,10 +31,13 @@ export function AdminUiProvider({
   return <AdminUiContext.Provider value={value}>{children}</AdminUiContext.Provider>
 }
 
-/** `t('common.save')` for the signed-in admin's language. English when no provider is mounted. */
-export function useAdminT(): (key: UiStringKey) => string {
+/**
+ * `t('common.save')` for the signed-in admin's language, or `t('list.total', { total: 5 })`
+ * to fill `{name}` placeholders. English when no provider is mounted.
+ */
+export function useAdminT(): (key: UiStringKey, vars?: UiStringVars) => string {
   const { dict } = useContext(AdminUiContext)
-  return useMemo(() => (key: UiStringKey) => translateWith(dict, key), [dict])
+  return useMemo(() => (key: UiStringKey, vars?: UiStringVars) => translateWith(dict, key, vars), [dict])
 }
 
 export function useAdminUi(): { locale: string; dir: 'ltr' | 'rtl' } {

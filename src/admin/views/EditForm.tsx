@@ -242,6 +242,7 @@ export const EditForm: React.FC<EditFormProps> = ({
   visualBlocksCount,
   visualBlocksField,
 }) => {
+  const t = useAdminT()
   // Built from ALL fields (including the ones hidden from view) so a save sends them back untouched.
   const initialFields = useMemo(() => (doc ? flattenDoc(doc, fields) : {}), [doc, fields])
   const scoped = useMemo(() => scopeGroupFields(fields, { onlyGroups, excludeGroups, onlyFields }), [fields, onlyGroups, excludeGroups, onlyFields])
@@ -266,7 +267,7 @@ export const EditForm: React.FC<EditFormProps> = ({
               {!hideCollapseBar && <CollapseAllBar />}
               <div className="collection-edit__form">
                 {main.length > 0 && (
-                  <CollapsibleCard id="main-fields" title="Content">
+                  <CollapsibleCard id="main-fields" title={t('edit.contentCard')}>
                     <FieldRenderer fields={main} readOnly={readOnly} />
                   </CollapsibleCard>
                 )}

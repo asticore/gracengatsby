@@ -10,6 +10,6 @@
 
 export * from './keys'
 export * from './locales'
-export { loadStrings, loadRawStrings, t, translateWith, fallbackChain } from './t'
+export { loadStrings, loadRawStrings, t, translateWith, fallbackChain, interpolate, type UiStringVars } from './t'
 export { DICTIONARY_LOADERS } from './loaders'
 export { portalKey, type PortalStringKey } from './portalAdapter'

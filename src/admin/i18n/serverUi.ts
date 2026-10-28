@@ -12,6 +12,7 @@ import {
   type AdminUiLocale,
   type UiDictionary,
   type UiStringKey,
+  type UiStringVars,
 } from '@/features/uiStrings'
 
 export type AdminUiServer = {
@@ -19,7 +20,7 @@ export type AdminUiServer = {
   dir: 'ltr' | 'rtl'
   source: 'user' | 'browser' | 'default'
   dict: UiDictionary
-  t: (key: UiStringKey) => string
+  t: (key: UiStringKey, vars?: UiStringVars) => string
 }
 
 /**
@@ -41,6 +42,6 @@ export const getAdminUi = cache(async (): Promise<AdminUiServer> => {
     dir: directionFor(resolved.locale),
     source: resolved.source,
     dict,
-    t: (key) => translateWith(dict, key),
+    t: (key, vars) => translateWith(dict, key, vars),
   }
 })

@@ -105,10 +105,10 @@ export function ListRowActions({
       }
       const body = (await response.json()) as { doc?: { title?: string; id?: unknown } }
       const newTitle = body.doc?.title || `#${body.doc?.id}`
-      setToast({ message: `Duplicated as ${newTitle}`, url: `${adminCollectionPath(collectionSlug)}/${body.doc?.id}` })
+      setToast({ message: t('toast.duplicated', { title: newTitle }), url: `${adminCollectionPath(collectionSlug)}/${body.doc?.id}` })
       router.refresh()
     } catch {
-      setError('Duplicate failed - check your connection')
+      setError(t('toast.duplicateFailed'))
     } finally {
       setIsDuplicating(false)
     }
@@ -161,7 +161,7 @@ export function ListRowActions({
             className="list-row-action-btn"
             title="Duplicate this document"
           >
-            {isDuplicating ? '...' : 'Duplicate'}
+            {isDuplicating ? '...' : t('common.duplicate')}
           </button>
         )}
         {signInAs && showSignInAsRow({ id: doc.id, roles: doc.roles, email: doc.email }, signInAs.admin) && (

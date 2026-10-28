@@ -2,6 +2,7 @@ import { adminCollectionPath } from '@/admin/adminPaths'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { VersionsList } from './VersionsList'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 
 /**
  * Server component for the versions list view. Fetches the current document
@@ -10,6 +11,7 @@ import { VersionsList } from './VersionsList'
  */
 export async function VersionsView({ collectionSlug, id }: { collectionSlug: string; id: number }) {
   const context = await getAdminContext()
+  const ui = await getAdminUi()
   const hasAdminAccess = hasAdminPanelAccess(context.user)
   if (!hasAdminAccess) redirect('/admin/login')
 
@@ -34,10 +36,10 @@ export async function VersionsView({ collectionSlug, id }: { collectionSlug: str
   return (
     <div className="collection-versions">
       <div className="flex items-center justify-between mb-[calc(var(--base)*0.9)]">
-        <h1>Versions: {titleValue}</h1>
+        <h1>{ui.t('edit.versionsTitle', { title: titleValue })}</h1>
       </div>
       <a href={`${adminCollectionPath(collectionSlug)}/${id}`} className="btn btn--secondary mb-[calc(var(--base)*0.9)]">
-        Back to document
+        {ui.t('edit.backToDocument')}
       </a>
       <VersionsList collectionSlug={collectionSlug} id={id} currentDoc={doc} titleField={useAsTitle || 'id'} />
     </div>

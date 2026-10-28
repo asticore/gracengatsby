@@ -68,21 +68,39 @@ export async function loadStrings(requested: string | null | undefined): Promise
   return { ...UI_STRING_SOURCE, ...own }
 }
 
+/** Values for `{name}` placeholders in a string. Numbers are written as-is. */
+export type UiStringVars = Record<string, string | number>
+
+/**
+ * Fills `{name}` placeholders from `vars`. A placeholder with no value is left
+ * as written, so a missing variable shows up visibly instead of silently
+ * disappearing. Placeholders are the only interpolation: translators move them
+ * within a sentence, and no translated fragment is ever concatenated in code.
+ */
+export function interpolate(text: string, vars?: UiStringVars): string {
+  if (!vars) return text
+  return text.replace(/\{([A-Za-z][A-Za-z0-9_]*)\}/g, (match, name: string) =>
+    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match,
+  )
+}
+
 /** Sync lookup of one key. Reads whatever `loadStrings` has already loaded, then English. */
-export function t(key: UiStringKey, locale?: string | null): string {
+export function t(key: UiStringKey, locale?: string | null, vars?: UiStringVars): string {
   for (const code of fallbackChain(locale)) {
     const dict = raw.get(code)
     const value = dict?.[key]
-    if (typeof value === 'string' && value.length > 0) return value
+    if (typeof value === 'string' && value.length > 0) return interpolate(value, vars)
   }
-  return UI_STRING_SOURCE[key] ?? key
+  return interpolate(UI_STRING_SOURCE[key] ?? key, vars)
 }
 
 /** Resolve one key against an already-loaded dictionary, falling back to English. */
 export function translateWith(
   dict: Partial<UiDictionary> | null | undefined,
   key: UiStringKey,
+  vars?: UiStringVars,
 ): string {
   const value = dict?.[key]
-  return typeof value === 'string' && value.length > 0 ? value : UI_STRING_SOURCE[key]
+  const text = typeof value === 'string' && value.length > 0 ? value : UI_STRING_SOURCE[key]
+  return interpolate(text, vars)
 }

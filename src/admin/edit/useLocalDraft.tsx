@@ -17,6 +17,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useFormFields, useFormModified, useFormSetValues, type FieldsMap } from '@/admin/context'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { AUTOSAVE_MS, draftKey, isNewerThanServer, parseDraft, serialiseDraft, shouldAutosave } from '@/features/editScreens/localDraft'
 import './local-draft.css'
 
@@ -85,6 +86,7 @@ type Props = {
 }
 
 export function LocalDraftRecovery({ collectionSlug, globalSlug, id, serverUpdatedAt }: Props) {
+  const t = useAdminT()
   // Globals are a single document with no create step; the draft is kept for collections only.
   const enabled = Boolean(collectionSlug) && !globalSlug
   const key = useMemo(() => draftKey(collectionSlug ?? '', id, siteOrigin()), [collectionSlug, id])
@@ -161,13 +163,13 @@ export function LocalDraftRecovery({ collectionSlug, globalSlug, id, serverUpdat
 
   return (
     <div className="local-draft-banner" role="status">
-      <span>We found unsaved changes from {formatSavedAt(offer.savedAt)}.</span>
+      <span>{t('draft.foundUnsaved', { when: formatSavedAt(offer.savedAt) })}</span>
       <span className="local-draft-banner__actions">
         <button className="btn btn--primary" onClick={restore} type="button">
-          Restore
+          {t('common.restore')}
         </button>
         <button className="btn" onClick={discard} type="button">
-          Discard
+          {t('draft.discard')}
         </button>
       </span>
     </div>

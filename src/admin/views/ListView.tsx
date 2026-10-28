@@ -349,7 +349,7 @@ export async function ListView({
             />
           )}
           {result.docs.length === 0 ? (
-            <p className="list-empty">{trashView ? 'The trash is empty.' : ui.t('list.empty')}</p>
+            <p className="list-empty">{trashView ? ui.t('list.trashEmpty') : ui.t('list.empty')}</p>
           ) : (
             <div className="list-table-wrapper">
               <table className="list-table">
@@ -504,7 +504,7 @@ export async function ListView({
                 </a>
               )}
               <span className="list-pagination-info">
-                Page {effectiveState.page} of {totalPages}
+                {ui.t('list.pageOf', { page: effectiveState.page, total: totalPages })}
               </span>
               {hasNextPage && (
                 <a
@@ -523,7 +523,7 @@ export async function ListView({
                 </a>
               )}
               <span className="list-pagination-total">
-                Total: {result.totalDocs}
+                {ui.t('list.total', { total: result.totalDocs })}
               </span>
             </div>
           )}

@@ -42,7 +42,9 @@ function initialOf(label: string): string {
 export const AdminNavClient: React.FC<{
   groups: ResolvedNavGroup[]
   openGroups: Record<string, boolean>
-}> = ({ groups, openGroups }) => {
+  /** Count badges by entity slug, e.g. items still needing translation. Zero or missing shows nothing. */
+  badges?: Record<string, number>
+}> = ({ groups, openGroups, badges = {} }) => {
   const pathname = usePathname()
 
   const renderEntity = (entity: ResolvedNavEntity, entityKey: string) => {
@@ -55,6 +57,11 @@ export const AdminNavClient: React.FC<{
           {initialOf(entity.label)}
         </span>
         <span className={`${baseClass}__link-label`}>{entity.label}</span>
+        {badges[entity.slug] ? (
+          <span className={`${baseClass}__link-count`} aria-label={`${badges[entity.slug]} to do`} style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, borderRadius: 999, padding: '0 7px', background: 'var(--theme-warning-500, #d97706)', color: '#fff' }}>
+            {badges[entity.slug]}
+          </span>
+        ) : null}
       </React.Fragment>
     )
 

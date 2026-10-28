@@ -15,6 +15,8 @@ import {
 } from './AdminNavClient'
 import { readFeatureFlags, resolveEntityGroups } from '@/components/admin/shared/resolveEntities'
 import { SettingsRefresh } from '@/components/admin/shared/SettingsRefresh'
+import { getMultilingualSettings } from '@/features/multilingual/settings'
+import { countItemsNeedingTranslation } from '@/features/multilingual/views/translationsData'
 
 const baseClass = 'nav'
 
@@ -116,6 +118,13 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
     can: canFn,
   })
 
+  // The Translations badge: how many items still have a language to finish. Only for people who can open the screen.
+  const badges: Record<string, number> = {}
+  if (canFn('translations', 'read')) {
+    const settings = await getMultilingualSettings(engine as never)
+    badges.translations = await countItemsNeedingTranslation({ engine: engine as never, user, settings })
+  }
+
   const navPreferences = await getNavPreferences(req)
   const openGroups: Record<string, boolean> = {}
   for (const group of groups) {
@@ -127,7 +136,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
       <SettingsRefresh />
       <nav className={`${baseClass}__wrap`}>
         <AdminNavDashboardLink href={formatAdminURL({ adminRoute, path: '' })} />
-        <AdminNavClient groups={groups} openGroups={openGroups} />
+        <AdminNavClient groups={groups} openGroups={openGroups} badges={badges} />
         <AsticoreSaasComingSoon />
         <div className={`${baseClass}__controls`}>
           <Logout />

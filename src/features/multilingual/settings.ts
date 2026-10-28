@@ -1,6 +1,7 @@
 import type { FeatureKey } from '@/features/registry'
 
 import { DEFAULT_LOCALE, isKnownLocale } from './locales'
+import { parseTranslationRules, type TranslationRules } from './translationStatus'
 
 /**
  * The values behind the Languages screen, in the shape the rest of the feature
@@ -30,6 +31,16 @@ export type MultilingualSettings = {
   fallbackToDefault: boolean
   showLanguageSwitcher: boolean
   switcherPosition: SwitcherPosition
+  /**
+   * When on, a translation reaches the public site only once it is approved
+   * (and current). Off, any translation with text in it does. See
+   * isTranslationPublishable in translationStatus.ts.
+   */
+  requireReview: boolean
+  /** Whether admins may approve translations without being named as a reviewer. */
+  adminsBypassReview: boolean
+  /** Translators and reviewers per language. */
+  translationRules: TranslationRules
 }
 
 export const MULTILINGUAL_FEATURE_KEY: FeatureKey = 'multilingual'
@@ -41,6 +52,9 @@ export const DEFAULT_MULTILINGUAL_SETTINGS: MultilingualSettings = {
   fallbackToDefault: true,
   showLanguageSwitcher: true,
   switcherPosition: 'header',
+  requireReview: false,
+  adminsBypassReview: true,
+  translationRules: {},
 }
 
 const SETTINGS_TABLE = 'eg_language_settings'
@@ -107,6 +121,9 @@ export async function getMultilingualSettings(engine: EngineLike): Promise<Multi
     fallbackToDefault: asBool(group.fallbackToDefault, base.fallbackToDefault),
     showLanguageSwitcher: asBool(group.showLanguageSwitcher, base.showLanguageSwitcher),
     switcherPosition: asPosition(group.switcherPosition),
+    requireReview: asBool(group.requireReview, base.requireReview),
+    adminsBypassReview: asBool(group.adminsBypassReview, base.adminsBypassReview),
+    translationRules: parseTranslationRules(group.translationRules),
   }
 }
 
@@ -177,6 +194,9 @@ export async function readMultilingualSettingsFromD1(): Promise<MultilingualSett
         fallbackToDefault: asBool(row.multilingual_fallback_to_default, true),
         showLanguageSwitcher: asBool(row.multilingual_show_language_switcher, true),
         switcherPosition: asPosition(row.multilingual_switcher_position),
+        requireReview: asBool(row.multilingual_require_review, DEFAULT_MULTILINGUAL_SETTINGS.requireReview),
+        adminsBypassReview: asBool(row.multilingual_admins_bypass_review, DEFAULT_MULTILINGUAL_SETTINGS.adminsBypassReview),
+        translationRules: parseTranslationRules(row.multilingual_translation_rules),
       }
     }
   } catch {

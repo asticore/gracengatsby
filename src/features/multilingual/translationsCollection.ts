@@ -1,6 +1,9 @@
-import type { CollectionConfig } from '@/engine'
+import type { CollectionBeforeChangeHook, CollectionConfig } from '@/engine'
 
 import { roleAccess } from '@/access/ecommerceAccess'
+
+import { getMultilingualSettings } from './settings'
+import { evaluateTranslationWrite, TRANSLATION_STATUSES } from './translationStatus'
 
 /**
  * The store behind `eg_translations`: one row per translated string.
@@ -19,6 +22,51 @@ import { roleAccess } from '@/access/ecommerceAccess'
  * The field names here must keep matching the columns the migration creates -
  * the table is built by hand, for the reason given in the migration's header.
  */
+/**
+ * The write rule, applied to every write that reaches this collection - the
+ * Translations screen, the REST API, the bulk route and the local API alike.
+ * That is why it lives here and not in the screen: a rule enforced only in one
+ * of those doors is not enforced.
+ *
+ * System writes (no signed-in user, e.g. an import script) are trusted, as the
+ * approval workflow's validators are.
+ */
+export const enforceTranslationWorkflow: CollectionBeforeChangeHook = async (args: unknown) => {
+  const { data, originalDoc, req, operation } = args as {
+    data: Record<string, unknown>
+    originalDoc?: Record<string, unknown> | null
+    req?: { user?: { id?: unknown; roles?: string[] } | null; engine?: unknown }
+    operation: string
+  }
+  if (!req?.user || !req.engine) return data
+
+  const engine = req.engine as Parameters<typeof getMultilingualSettings>[0]
+  const settings = await getMultilingualSettings(engine)
+  const locale = String((operation === 'update' ? originalDoc?.locale : undefined) ?? data.locale ?? '')
+
+  const id = Number((req.user as { id?: unknown }).id)
+  const result = evaluateTranslationWrite({
+    current: operation === 'update' && originalDoc ? (originalDoc as never) : null,
+    incoming: {
+      value: data.value as string | null | undefined,
+      sourceText: data.sourceText as string | null | undefined,
+      status: data.status,
+      assignedTo: data.assignedTo,
+      machineProvider: data.machineProvider as string | null | undefined,
+    },
+    locale,
+    actor: { id, isAdmin: Array.isArray(req.user.roles) && req.user.roles.includes('admin') },
+    settings,
+    now: new Date().toISOString(),
+  })
+
+  if (result.ok === false) {
+    const { ValidationError } = await import('@/localapi/operations')
+    throw new ValidationError([{ path: 'status', message: result.message }])
+  }
+  return { ...data, ...result.patch }
+}
+
 export const Translations: CollectionConfig = {
   slug: 'translations',
   dbName: 'eg_translations',
@@ -28,6 +76,9 @@ export const Translations: CollectionConfig = {
     useAsTitle: 'fieldPath',
     defaultColumns: ['locale', 'sourceKind', 'sourceId', 'fieldPath', 'updatedAt'],
     description: 'Individual translated strings. Edit these on the Translations screen.',
+  },
+  hooks: {
+    beforeChange: [enforceTranslationWorkflow],
   },
   access: {
     read: roleAccess('translations', 'read'),
@@ -74,6 +125,37 @@ export const Translations: CollectionConfig = {
       name: 'value',
       type: 'textarea',
       admin: { description: 'The translation. Empty means not translated yet.' },
+    },
+    {
+      name: 'status',
+      type: 'select',
+      defaultValue: 'approved',
+      options: TRANSLATION_STATUSES.map((value) => ({ value, label: value })),
+      admin: {
+        description:
+          'Set by the workflow, not typed in: a changed value needs review when review is on, and only a permitted reviewer can approve.',
+      },
+    },
+    {
+      name: 'machineProvider',
+      type: 'text',
+      admin: { description: 'The machine translation provider that wrote this draft, if any.' },
+    },
+    {
+      // JSON array of user ids. Empty means "follow the language's rules".
+      name: 'assignedTo',
+      type: 'textarea',
+      admin: { description: 'Users assigned to this translation, overriding the language rules. JSON list of user ids.' },
+    },
+    {
+      name: 'reviewedBy',
+      type: 'number',
+      admin: { description: 'The user who approved this translation.' },
+    },
+    {
+      name: 'reviewedAt',
+      type: 'text',
+      admin: { description: 'When it was approved (ISO 8601).' },
     },
     {
       // Snapshot of what was translated, not a duplicate of the source. Once

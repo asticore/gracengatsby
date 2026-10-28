@@ -10,6 +10,9 @@ const on: MultilingualSettings = {
   fallbackToDefault: true,
   showLanguageSwitcher: true,
   switcherPosition: 'header',
+  requireReview: false,
+  adminsBypassReview: true,
+  translationRules: {},
 }
 const off: MultilingualSettings = { ...on, enabled: false }
 const single: MultilingualSettings = { ...on, activeLocales: ['en'] }

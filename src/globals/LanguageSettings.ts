@@ -112,6 +112,43 @@ export const LanguageSettings: GlobalConfig = {
             },
           ],
         },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'requireReview',
+              type: 'checkbox',
+              defaultValue: false,
+              admin: {
+                width: '50%',
+                description:
+                  'Only approved translations appear on the public site. A translation someone edits, or whose source text has changed, waits for a reviewer. Off: every translation with text in it is shown.',
+              },
+            },
+            {
+              name: 'adminsBypassReview',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                width: '50%',
+                description: 'Admins can approve any translation without being named as a reviewer.',
+                condition: (_, s) => Boolean(s?.requireReview),
+              },
+            },
+          ],
+        },
+        {
+          name: 'translationRules',
+          type: 'textarea',
+          defaultValue: '{}',
+          admin: {
+            description:
+              'Who translates and who reviews each language. Items are assigned from these rules unless one is assigned directly on the Translations screen.',
+            components: {
+              Field: '@/features/multilingual/components/TranslationRulesField#TranslationRulesField',
+            },
+          },
+        },
       ],
     },
   ],

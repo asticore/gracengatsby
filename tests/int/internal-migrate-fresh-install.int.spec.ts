@@ -1129,7 +1129,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('organizations migration is registered last and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 1].name).toBe('20261124_100000_organizations')
+    expect(migrations[migrations.length - 2].name).toBe('20261124_100000_organizations')
     const mod = await import('@/migrations/20261124_100000_organizations')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1141,5 +1141,28 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(info.filter((c) => c.name === 'organizations_who_may_create')).toHaveLength(1)
     const tableRows = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='eg_organizations'").first()) as { n: number }
     expect(tableRows.n).toBe(1)
+  })
+
+  it('translation workflow migration is registered last, adds its columns, and is safe to run a second time', async () => {
+    const { migrations } = await import('@/migrations/index')
+    expect(migrations[migrations.length - 1].name).toBe('20261125_100000_translation_workflow')
+    const mod = await import('@/migrations/20261125_100000_translation_workflow')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_translations` (locale, source_kind, source_id, field_path, value, source_text) VALUES ('fr', 'collection', 'pages:wf-1', 'title', 'Bonjour', 'Hello'), ('fr', 'collection', 'pages:wf-1', 'excerpt', NULL, 'Hi')",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const colsOf = async (table: string) => ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()).results as { name: string }[]).map((c) => c.name)
+    expect(await colsOf('eg_translations')).toEqual(expect.arrayContaining(['status', 'machine_provider', 'assigned_to', 'reviewed_by', 'reviewed_at']))
+    expect(await colsOf('eg_language_settings')).toEqual(expect.arrayContaining(['multilingual_require_review', 'multilingual_admins_bypass_review', 'multilingual_translation_rules']))
+    const statuses = (await proxy.env.D1.prepare("SELECT field_path AS fieldPath, status FROM `eg_translations` WHERE source_id = 'pages:wf-1' ORDER BY field_path").all()).results as { fieldPath: string; status: string }[]
+    expect(statuses).toEqual([
+      { fieldPath: 'excerpt', status: 'missing' },
+      { fieldPath: 'title', status: 'approved' },
+    ])
+    await proxy.env.D1.prepare("DELETE FROM `eg_translations` WHERE source_id = 'pages:wf-1'").run()
   })
 })

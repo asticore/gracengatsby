@@ -68,3 +68,18 @@ export {
 export { Translations } from './translationsCollection'
 
 export { LanguageSwitcher, type LanguageSwitcherProps } from './components/LanguageSwitcher'
+
+// Translation workflow. `isTranslationPublishable(row, settings, currentSourceText?)` is the
+// rule the public overlay should use to decide whether a stored translation is shown: with
+// review on, only an approved, current one; with review off, any translation with text in it.
+export {
+  computeTranslationStatus,
+  evaluateTranslationWrite,
+  effectiveAssignees,
+  isTranslationPublishable,
+  parseTranslationRules,
+  STATUS_LABELS,
+  TRANSLATION_STATUSES,
+  type TranslationRules,
+  type TranslationStatus,
+} from './translationStatus'

@@ -14,6 +14,13 @@ export type TranslationDoc = {
   fieldPath: string
   value?: string | null
   sourceText?: string | null
+  /** Workflow state; see src/features/multilingual/translationStatus.ts. Absent means derived from the value. */
+  status?: 'missing' | 'machine_draft' | 'needs_review' | 'approved' | null
+  machineProvider?: string | null
+  /** JSON list of user ids, or null to follow the language's rules. */
+  assignedTo?: string | null
+  reviewedBy?: number | null
+  reviewedAt?: string | null
   updatedAt: string
   createdAt: string
 }

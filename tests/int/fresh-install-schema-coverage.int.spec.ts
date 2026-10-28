@@ -832,7 +832,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
   it('password groups migration is registered right before organizations and is safe to run twice, keeping existing rows', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations.map((x) => x.name).slice(-2)).toEqual(['20261123_100000_password_groups', '20261124_100000_organizations'])
+    expect(migrations.map((x) => x.name).slice(-3)).toEqual(['20261123_100000_password_groups', '20261124_100000_organizations', '20261125_100000_translation_workflow'])
     const mod = await import('@/migrations/20261123_100000_password_groups')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -889,5 +889,25 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
     const kept = (await proxy.env.D1.prepare("SELECT COUNT(*) AS n FROM `eg_organizations` WHERE id = 'keep-me-org'").first()) as { n: number }
     expect(kept.n).toBe(1)
     await proxy.env.D1.prepare("DELETE FROM `eg_organizations` WHERE id = 'keep-me-org'").run()
+  })
+
+  it('translation workflow migration is registered last and is safe to run twice, keeping existing translations', async () => {
+    const mod = await import('@/migrations/20261125_100000_translation_workflow')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await proxy.env.D1.prepare(
+      "INSERT INTO `eg_translations` (locale, source_kind, source_id, field_path, value, source_text) VALUES ('de', 'collection', 'pages:keep-1', 'title', 'Hallo', 'Hi')",
+    ).run()
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const count = async (table: string, column: string) =>
+      ((await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('${table}') WHERE name = '${column}'`).first()) as { n: number }).n
+    expect(await count('eg_translations', 'status')).toBe(1)
+    expect(await count('eg_translations', 'assigned_to')).toBe(1)
+    expect(await count('eg_language_settings', 'multilingual_translation_rules')).toBe(1)
+    const kept = (await proxy.env.D1.prepare("SELECT status FROM `eg_translations` WHERE source_id = 'pages:keep-1'").first()) as { status: string }
+    expect(kept.status).toBe('approved')
+    await proxy.env.D1.prepare("DELETE FROM `eg_translations` WHERE source_id = 'pages:keep-1'").run()
   })
 })

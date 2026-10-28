@@ -101,6 +101,7 @@ import * as migration_20261121_100000_auth_slice_2 from './20261121_100000_auth_
 import * as migration_20261122_100000_auth_slice_3 from './20261122_100000_auth_slice_3';
 import * as migration_20261123_100000_password_groups from './20261123_100000_password_groups';
 import * as migration_20261124_100000_organizations from './20261124_100000_organizations';
+import * as migration_20261125_100000_translation_workflow from './20261125_100000_translation_workflow';
 
 export const migrations = [
   {
@@ -617,5 +618,10 @@ export const migrations = [
     up: migration_20261124_100000_organizations.up,
     down: migration_20261124_100000_organizations.down,
     name: '20261124_100000_organizations',
+  },
+  {
+    up: migration_20261125_100000_translation_workflow.up,
+    down: migration_20261125_100000_translation_workflow.down,
+    name: '20261125_100000_translation_workflow',
   },
 ];

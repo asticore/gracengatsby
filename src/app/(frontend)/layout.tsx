@@ -31,6 +31,7 @@ import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
 import { Providers } from '@/components/Providers'
 import { StoreTextsProvider } from '@/features/uiStrings/StoreTextsContext'
+import { publicLocale } from '@/features/uiStrings/storeTextsServer'
 import { storeTexts } from '@/features/uiStrings/storeTextsServer'
 import { ShopCurrencyProvider } from '@/components/ShopCurrencyContext'
 import { DisplayCurrencyProvider } from '@/components/DisplayCurrencyContext'
@@ -271,7 +272,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <ShopCurrencyProvider currency={storeCurrency}>
         <DisplayCurrencyProvider state={displayState}>
         <Providers>
-        <StoreTextsProvider value={storeDict}>
+        <StoreTextsProvider value={storeDict} locale={await publicLocale()}>
           {chrome.header ? (
             <header>{chrome.header}</header>
           ) : (

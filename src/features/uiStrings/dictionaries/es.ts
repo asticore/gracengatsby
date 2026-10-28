@@ -1315,6 +1315,10 @@ const es: UiDictionary = {
   "store.searchTheSite": "Buscar en el sitio",
   "store.newerProducts": "Productos más recientes",
   "store.olderProducts": "Productos anteriores",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Entradas más recientes",
+  "store.olderPosts": "Entradas anteriores",
+  "store.alwaysOn": "Siempre activas.",
 }
 
 export default es

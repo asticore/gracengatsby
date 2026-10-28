@@ -1315,6 +1315,10 @@ const hi: UiDictionary = {
   "store.searchTheSite": "साइट पर खोजें",
   "store.newerProducts": "नए उत्पाद",
   "store.olderProducts": "पुराने उत्पाद",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "नई पोस्ट",
+  "store.olderPosts": "पुरानी पोस्ट",
+  "store.alwaysOn": "हमेशा चालू।",
 }
 
 export default hi

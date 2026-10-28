@@ -1315,6 +1315,10 @@ const it: UiDictionary = {
   "store.searchTheSite": "Cerca nel sito",
   "store.newerProducts": "Prodotti più recenti",
   "store.olderProducts": "Prodotti meno recenti",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Articoli più recenti",
+  "store.olderPosts": "Articoli meno recenti",
+  "store.alwaysOn": "Sempre attivi.",
 }
 
 export default it

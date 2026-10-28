@@ -5,6 +5,8 @@ import React, { createContext, useContext } from 'react'
 import { formatDisplayAmount } from '@/features/ecommerce/lib/displayCurrencyFormat'
 import { type StorefrontCurrencyState } from '@/features/ecommerce/lib/displayCurrency'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { useStoreLocale } from '@/features/uiStrings/StoreTextsContext'
+import { priceLocale } from '@/features/uiStrings/publicFormat'
 
 /**
  * Display-only currency for the storefront. The layout passes the shop currency, the shopper's
@@ -28,6 +30,7 @@ export function useDisplayCurrencyState(): StorefrontCurrencyState {
  */
 export function useDisplayMoney(): (units: number | null | undefined) => string {
   const state = useContext(DisplayCurrencyContext)
+  const locale = priceLocale(useStoreLocale())
   const option = state.selected ? state.options.find((o) => o.code === state.selected) : undefined
-  return (units) => (option ? formatDisplayAmount(units, option.code, option.rate, option.digits) : formatPriceInAUD(units, state.base))
+  return (units) => (option ? formatDisplayAmount(units, option.code, option.rate, option.digits, locale) : formatPriceInAUD(units, state.base, locale))
 }

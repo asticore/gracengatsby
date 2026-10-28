@@ -1315,6 +1315,10 @@ const ar: UiDictionary = {
   "store.searchTheSite": "ابحث في الموقع",
   "store.newerProducts": "المنتجات الأحدث",
   "store.olderProducts": "المنتجات الأقدم",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "المقالات الأحدث",
+  "store.olderPosts": "المقالات الأقدم",
+  "store.alwaysOn": "مفعّل دائمًا.",
 }
 
 export default ar

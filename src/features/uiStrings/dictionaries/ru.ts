@@ -1315,6 +1315,10 @@ const ru: UiDictionary = {
   "store.searchTheSite": "Поиск по сайту",
   "store.newerProducts": "Более новые товары",
   "store.olderProducts": "Более старые товары",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "Более новые записи",
+  "store.olderPosts": "Более старые записи",
+  "store.alwaysOn": "Всегда включены.",
 }
 
 export default ru

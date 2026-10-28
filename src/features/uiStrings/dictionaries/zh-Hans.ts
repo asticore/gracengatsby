@@ -1314,6 +1314,10 @@ const zhHans: UiDictionary = {
   "store.searchTheSite": "搜索本站",
   "store.newerProducts": "较新的商品",
   "store.olderProducts": "较早的商品",
+  // --- store (blog archive, consent) ---
+  "store.newerPosts": "较新的文章",
+  "store.olderPosts": "较早的文章",
+  "store.alwaysOn": "始终开启。",
 }
 
 export default zhHans

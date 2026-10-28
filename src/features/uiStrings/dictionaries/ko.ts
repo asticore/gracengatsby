@@ -1333,6 +1333,18 @@ const ko: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "키는 여기에 표시되지 않습니다. 키를 추가하거나 변경하려면 통합 페이지를 여세요:",
   'integrations.pageLink': "통합",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "주문 필터",
+  'orders.filter.statusTip': "이 상태의 주문만 표시합니다.",
+  'orders.filter.status': "상태",
+  'orders.filter.anyStatus': "모든 상태",
+  'orders.filter.payment': "결제",
+  'orders.filter.placedFrom': "주문 시작일",
+  'orders.filter.placedTo': "주문 종료일",
+  'orders.filter.fromTip': "이 날짜 이후에 접수된 주문을 표시합니다. 날짜는 UTC 기준입니다.",
+  'orders.filter.toTip': "이 날짜 이전에 접수된 주문을 표시합니다. 날짜는 UTC 기준입니다.",
+  'orders.filter.clearTip': "상태, 결제, 날짜 필터를 제거합니다.",
+  'orders.filter.clearLabel': "주문 필터 지우기",
 }
 
 export default ko

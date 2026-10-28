@@ -1333,6 +1333,18 @@ const ja: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "キーはここには表示されません。追加または変更するには、連携ページを開いてください：",
   'integrations.pageLink': "連携",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "注文フィルター",
+  'orders.filter.statusTip': "このステータスの注文のみ表示します。",
+  'orders.filter.status': "ステータス",
+  'orders.filter.anyStatus': "すべてのステータス",
+  'orders.filter.payment': "支払い",
+  'orders.filter.placedFrom': "注文日（開始）",
+  'orders.filter.placedTo': "注文日（終了）",
+  'orders.filter.fromTip': "この日以降に行われた注文を表示します。日付はUTCです。",
+  'orders.filter.toTip': "この日以前に行われた注文を表示します。日付はUTCです。",
+  'orders.filter.clearTip': "ステータス、支払い、日付のフィルターを解除します。",
+  'orders.filter.clearLabel': "注文フィルターをクリア",
 }
 
 export default ja

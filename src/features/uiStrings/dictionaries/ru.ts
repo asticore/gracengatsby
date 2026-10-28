@@ -1333,6 +1333,18 @@ const ru: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "Ключи здесь никогда не показываются. Чтобы добавить или изменить ключ, откройте страницу «Интеграции»:",
   'integrations.pageLink': "Интеграции",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "Фильтры заказов",
+  'orders.filter.statusTip': "Показывать только заказы с этим статусом.",
+  'orders.filter.status': "Статус",
+  'orders.filter.anyStatus': "Любой статус",
+  'orders.filter.payment': "Оплата",
+  'orders.filter.placedFrom': "Оформлено с",
+  'orders.filter.placedTo': "Оформлено по",
+  'orders.filter.fromTip': "Показывать заказы, оформленные в этот день или позже. Дни указаны в UTC.",
+  'orders.filter.toTip': "Показывать заказы, оформленные в этот день или раньше. Дни указаны в UTC.",
+  'orders.filter.clearTip': "Убрать фильтры по статусу, оплате и дате.",
+  'orders.filter.clearLabel': "Сбросить фильтры заказов",
 }
 
 export default ru

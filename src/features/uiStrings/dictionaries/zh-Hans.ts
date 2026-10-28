@@ -1332,6 +1332,18 @@ const zhHans: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "此处从不显示密钥。要添加或更改密钥，请打开“集成”页面：",
   'integrations.pageLink': "集成",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "订单筛选",
+  'orders.filter.statusTip': "仅显示此状态的订单。",
+  'orders.filter.status': "状态",
+  'orders.filter.anyStatus': "任意状态",
+  'orders.filter.payment': "付款",
+  'orders.filter.placedFrom': "下单起始",
+  'orders.filter.placedTo': "下单截止",
+  'orders.filter.fromTip': "显示在此日或之后下单的订单。日期以 UTC 为准。",
+  'orders.filter.toTip': "显示在此日或之前下单的订单。日期以 UTC 为准。",
+  'orders.filter.clearTip': "移除状态、付款和日期筛选。",
+  'orders.filter.clearLabel': "清除订单筛选",
 }
 
 export default zhHans

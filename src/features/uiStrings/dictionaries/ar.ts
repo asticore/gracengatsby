@@ -1333,6 +1333,18 @@ const ar: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "لا تُعرض المفاتيح هنا أبدًا. لإضافة مفتاح أو تغييره، افتح صفحة التكاملات:",
   'integrations.pageLink': "التكاملات",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "مرشحات الطلبات",
+  'orders.filter.statusTip': "إظهار الطلبات ذات هذه الحالة فقط.",
+  'orders.filter.status': "الحالة",
+  'orders.filter.anyStatus': "أي حالة",
+  'orders.filter.payment': "الدفع",
+  'orders.filter.placedFrom': "مُقدَّم منذ",
+  'orders.filter.placedTo': "مُقدَّم حتى",
+  'orders.filter.fromTip': "إظهار الطلبات المُقدَّمة في هذا اليوم أو بعده. الأيام بالتوقيت العالمي UTC.",
+  'orders.filter.toTip': "إظهار الطلبات المُقدَّمة في هذا اليوم أو قبله. الأيام بالتوقيت العالمي UTC.",
+  'orders.filter.clearTip': "إزالة مرشحات الحالة والدفع والتاريخ.",
+  'orders.filter.clearLabel': "مسح مرشحات الطلبات",
 }
 
 export default ar

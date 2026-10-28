@@ -1333,6 +1333,18 @@ const fr: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "Les clés ne sont jamais affichées ici. Pour en ajouter ou en modifier une, ouvrez la page Intégrations :",
   'integrations.pageLink': "Intégrations",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "Filtres de commandes",
+  'orders.filter.statusTip': "Afficher uniquement les commandes ayant ce statut.",
+  'orders.filter.status': "Statut",
+  'orders.filter.anyStatus': "Tous les statuts",
+  'orders.filter.payment': "Paiement",
+  'orders.filter.placedFrom': "Passé à partir du",
+  'orders.filter.placedTo': "Passé jusqu'au",
+  'orders.filter.fromTip': "Afficher les commandes passées à partir de ce jour ou après. Les jours sont en UTC.",
+  'orders.filter.toTip': "Afficher les commandes passées à ce jour ou avant. Les jours sont en UTC.",
+  'orders.filter.clearTip': "Supprimer les filtres de statut, de paiement et de date.",
+  'orders.filter.clearLabel': "Effacer les filtres de commandes",
 }
 
 export default fr

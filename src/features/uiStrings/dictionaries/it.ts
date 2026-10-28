@@ -1333,6 +1333,18 @@ const it: UiDictionary = {
   // --- admin leftovers (email connection note) ---
   'integrations.email.note': "Le chiavi non vengono mai mostrate qui. Per aggiungerne o modificarne una, apri la pagina Integrazioni:",
   'integrations.pageLink': "Integrazioni",
+  // --- admin leftovers (orders filter bar) ---
+  'orders.filter.group': "Filtri ordini",
+  'orders.filter.statusTip': "Mostra solo gli ordini con questo stato.",
+  'orders.filter.status': "Stato",
+  'orders.filter.anyStatus': "Qualsiasi stato",
+  'orders.filter.payment': "Pagamento",
+  'orders.filter.placedFrom': "Effettuati dal",
+  'orders.filter.placedTo': "Effettuati fino al",
+  'orders.filter.fromTip': "Mostra gli ordini effettuati in questo giorno o successivamente. I giorni sono in UTC.",
+  'orders.filter.toTip': "Mostra gli ordini effettuati in questo giorno o prima. I giorni sono in UTC.",
+  'orders.filter.clearTip': "Rimuovi i filtri di stato, pagamento e data.",
+  'orders.filter.clearLabel': "Cancella filtri ordini",
 }
 
 export default it

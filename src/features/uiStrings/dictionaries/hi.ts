@@ -1875,6 +1875,28 @@ const hi: UiDictionary = {
   'dp.lit.z_index': "Z-index",
   'dp.lit.tablet': "टैबलेट",
   'dp.lit.desktop': "डेस्कटॉप",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "सेक्शन में कम से कम एक कॉलम होना चाहिए",
+  'cv.lit.add_column': "कॉलम जोड़ें",
+  'cv.lit.add_column_after_this_one': "इसके बाद कॉलम जोड़ें",
+  'cv.lit.add_tab': "टैब जोड़ें",
+  'cv.lit.carousel_each_column_is_a_slide': "कैरोसेल: हर कॉलम एक स्लाइड है",
+  'cv.lit.close_element_picker': "एलिमेंट पिकर बंद करें",
+  'cv.lit.delete': "हटाएँ",
+  'cv.lit.delete_column': "कॉलम हटाएँ",
+  'cv.lit.drag_to_move': "खींचकर ले जाएँ",
+  'cv.lit.drag_to_resize_these_two_columns': "इन दो कॉलम का आकार बदलने के लिए खींचें",
+  'cv.lit.duplicate': "डुप्लिकेट करें",
+  'cv.lit.duplicate_column': "कॉलम डुप्लिकेट करें",
+  'cv.lit.fully_locked': "पूरी तरह लॉक",
+  'cv.lit.grid_each_column_is_a_cell': "ग्रिड: हर कॉलम एक सेल है",
+  'cv.lit.move_column_left': "कॉलम बाईं ओर ले जाएँ",
+  'cv.lit.move_column_right': "कॉलम दाईं ओर ले जाएँ",
+  'cv.lit.move_down': "नीचे ले जाएँ",
+  'cv.lit.move_up': "ऊपर ले जाएँ",
+  'cv.lit.scroll_story_preview_on_live_page': "लाइव पेज पर स्क्रॉल स्टोरी पूर्वावलोकन",
+  'cv.lit.tab_title': "टैब शीर्षक",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "यह ब्लॉक केवल तभी दिखता है जब लाइव साइट पर इसके दृश्यता नियम पास हों। एडिटर इसे हमेशा दिखाता है।",
 }
 
 export default hi

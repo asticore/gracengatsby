@@ -1875,6 +1875,28 @@ const es: UiDictionary = {
   'dp.lit.z_index': "Índice Z",
   'dp.lit.tablet': "tableta",
   'dp.lit.desktop': "escritorio",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "Una sección necesita al menos una columna",
+  'cv.lit.add_column': "Añadir columna",
+  'cv.lit.add_column_after_this_one': "Añadir columna después de esta",
+  'cv.lit.add_tab': "Añadir pestaña",
+  'cv.lit.carousel_each_column_is_a_slide': "Carrusel: cada columna es una diapositiva",
+  'cv.lit.close_element_picker': "Cerrar selector de elementos",
+  'cv.lit.delete': "Eliminar",
+  'cv.lit.delete_column': "Eliminar columna",
+  'cv.lit.drag_to_move': "Arrastrar para mover",
+  'cv.lit.drag_to_resize_these_two_columns': "Arrastrar para cambiar el tamaño de estas dos columnas",
+  'cv.lit.duplicate': "Duplicar",
+  'cv.lit.duplicate_column': "Duplicar columna",
+  'cv.lit.fully_locked': "Totalmente bloqueado",
+  'cv.lit.grid_each_column_is_a_cell': "Cuadrícula: cada columna es una celda",
+  'cv.lit.move_column_left': "Mover columna a la izquierda",
+  'cv.lit.move_column_right': "Mover columna a la derecha",
+  'cv.lit.move_down': "Bajar",
+  'cv.lit.move_up': "Subir",
+  'cv.lit.scroll_story_preview_on_live_page': "Vista previa de la historia de desplazamiento en la página en vivo",
+  'cv.lit.tab_title': "Título de la pestaña",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "Este bloque solo se muestra cuando sus reglas de visibilidad se cumplen en el sitio en vivo. El editor siempre lo muestra.",
 }
 
 export default es

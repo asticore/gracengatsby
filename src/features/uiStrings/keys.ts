@@ -1915,6 +1915,28 @@ export const UI_STRING_SOURCE = {
   'dp.lit.z_index': "Z-index",
   'dp.lit.tablet': "tablet",
   'dp.lit.desktop': "desktop",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "A section needs at least one column",
+  'cv.lit.add_column': "Add column",
+  'cv.lit.add_column_after_this_one': "Add column after this one",
+  'cv.lit.add_tab': "Add tab",
+  'cv.lit.carousel_each_column_is_a_slide': "Carousel: each column is a slide",
+  'cv.lit.close_element_picker': "Close element picker",
+  'cv.lit.delete': "Delete",
+  'cv.lit.delete_column': "Delete column",
+  'cv.lit.drag_to_move': "Drag to move",
+  'cv.lit.drag_to_resize_these_two_columns': "Drag to resize these two columns",
+  'cv.lit.duplicate': "Duplicate",
+  'cv.lit.duplicate_column': "Duplicate column",
+  'cv.lit.fully_locked': "Fully locked",
+  'cv.lit.grid_each_column_is_a_cell': "Grid: each column is a cell",
+  'cv.lit.move_column_left': "Move column left",
+  'cv.lit.move_column_right': "Move column right",
+  'cv.lit.move_down': "Move down",
+  'cv.lit.move_up': "Move up",
+  'cv.lit.scroll_story_preview_on_live_page': "Scroll story preview on live page",
+  'cv.lit.tab_title': "Tab title",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "This block only shows when its visibility rules pass on the live site. The editor always shows it.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

@@ -1875,6 +1875,28 @@ const it: UiDictionary = {
   'dp.lit.z_index': "Indice Z",
   'dp.lit.tablet': "tablet",
   'dp.lit.desktop': "desktop",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "Una sezione richiede almeno una colonna",
+  'cv.lit.add_column': "Aggiungi colonna",
+  'cv.lit.add_column_after_this_one': "Aggiungi colonna dopo questa",
+  'cv.lit.add_tab': "Aggiungi scheda",
+  'cv.lit.carousel_each_column_is_a_slide': "Carosello: ogni colonna è una diapositiva",
+  'cv.lit.close_element_picker': "Chiudi selettore elementi",
+  'cv.lit.delete': "Elimina",
+  'cv.lit.delete_column': "Elimina colonna",
+  'cv.lit.drag_to_move': "Trascina per spostare",
+  'cv.lit.drag_to_resize_these_two_columns': "Trascina per ridimensionare queste due colonne",
+  'cv.lit.duplicate': "Duplica",
+  'cv.lit.duplicate_column': "Duplica colonna",
+  'cv.lit.fully_locked': "Completamente bloccato",
+  'cv.lit.grid_each_column_is_a_cell': "Griglia: ogni colonna è una cella",
+  'cv.lit.move_column_left': "Sposta colonna a sinistra",
+  'cv.lit.move_column_right': "Sposta colonna a destra",
+  'cv.lit.move_down': "Sposta giù",
+  'cv.lit.move_up': "Sposta su",
+  'cv.lit.scroll_story_preview_on_live_page': "Anteprima della storia di scorrimento sulla pagina live",
+  'cv.lit.tab_title': "Titolo della scheda",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "Questo blocco viene mostrato solo se le sue regole di visibilità sono soddisfatte sul sito live. L’editor lo mostra sempre.",
 }
 
 export default it

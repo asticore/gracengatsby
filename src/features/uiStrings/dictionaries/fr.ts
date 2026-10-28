@@ -1875,6 +1875,28 @@ const fr: UiDictionary = {
   'dp.lit.z_index': "Index Z",
   'dp.lit.tablet': "tablette",
   'dp.lit.desktop': "ordinateur",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "Une section doit comporter au moins une colonne",
+  'cv.lit.add_column': "Ajouter une colonne",
+  'cv.lit.add_column_after_this_one': "Ajouter une colonne après celle-ci",
+  'cv.lit.add_tab': "Ajouter un onglet",
+  'cv.lit.carousel_each_column_is_a_slide': "Carrousel : chaque colonne est une diapositive",
+  'cv.lit.close_element_picker': "Fermer le sélecteur d’éléments",
+  'cv.lit.delete': "Supprimer",
+  'cv.lit.delete_column': "Supprimer la colonne",
+  'cv.lit.drag_to_move': "Glisser pour déplacer",
+  'cv.lit.drag_to_resize_these_two_columns': "Glisser pour redimensionner ces deux colonnes",
+  'cv.lit.duplicate': "Dupliquer",
+  'cv.lit.duplicate_column': "Dupliquer la colonne",
+  'cv.lit.fully_locked': "Entièrement verrouillé",
+  'cv.lit.grid_each_column_is_a_cell': "Grille : chaque colonne est une cellule",
+  'cv.lit.move_column_left': "Déplacer la colonne à gauche",
+  'cv.lit.move_column_right': "Déplacer la colonne à droite",
+  'cv.lit.move_down': "Descendre",
+  'cv.lit.move_up': "Monter",
+  'cv.lit.scroll_story_preview_on_live_page': "Aperçu du récit au défilement sur la page en ligne",
+  'cv.lit.tab_title': "Titre de l’onglet",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "Ce bloc ne s’affiche que si ses règles de visibilité sont respectées sur le site en ligne. L’éditeur l’affiche toujours.",
 }
 
 export default fr

@@ -1875,6 +1875,28 @@ const ru: UiDictionary = {
   'dp.lit.z_index': "Z-index",
   'dp.lit.tablet': "планшета",
   'dp.lit.desktop': "компьютера",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "Раздел должен содержать хотя бы один столбец",
+  'cv.lit.add_column': "Добавить столбец",
+  'cv.lit.add_column_after_this_one': "Добавить столбец после этого",
+  'cv.lit.add_tab': "Добавить вкладку",
+  'cv.lit.carousel_each_column_is_a_slide': "Карусель: каждый столбец — слайд",
+  'cv.lit.close_element_picker': "Закрыть выбор элементов",
+  'cv.lit.delete': "Удалить",
+  'cv.lit.delete_column': "Удалить столбец",
+  'cv.lit.drag_to_move': "Перетащите, чтобы переместить",
+  'cv.lit.drag_to_resize_these_two_columns': "Перетащите, чтобы изменить ширину этих двух столбцов",
+  'cv.lit.duplicate': "Дублировать",
+  'cv.lit.duplicate_column': "Дублировать столбец",
+  'cv.lit.fully_locked': "Полностью заблокировано",
+  'cv.lit.grid_each_column_is_a_cell': "Сетка: каждый столбец — ячейка",
+  'cv.lit.move_column_left': "Переместить столбец влево",
+  'cv.lit.move_column_right': "Переместить столбец вправо",
+  'cv.lit.move_down': "Переместить вниз",
+  'cv.lit.move_up': "Переместить вверх",
+  'cv.lit.scroll_story_preview_on_live_page': "Предпросмотр сценария прокрутки на опубликованной странице",
+  'cv.lit.tab_title': "Заголовок вкладки",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "Этот блок показывается на сайте только при выполнении правил видимости. Редактор показывает его всегда.",
 }
 
 export default ru

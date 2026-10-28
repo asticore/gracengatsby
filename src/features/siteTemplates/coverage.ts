@@ -37,6 +37,8 @@ export const MISSING_MESSAGES: Record<SiteTemplateKind, string> = {
   'archive-category': 'No category archive template: category pages show the default layout',
   'archive-tag': 'No tag archive template: tag pages show the default layout',
   'archive-author': 'No author archive template: author pages show the default layout',
+  // Loop item templates are drawn by a Loop grid, not by the site, so a missing one is not a coverage gap.
+  loop: 'No loop item template',
 }
 
 /** Same rule the resolver uses: enabled (null counts as on), has blocks, conditions understood. */
@@ -120,6 +122,7 @@ const appliesWhen = (t: CoverageTemplate): string => {
 export function computeTemplateCoverage(templates: CoverageTemplate[]): CoverageWarning[] {
   const warnings: CoverageWarning[] = []
   for (const kind of SITE_TEMPLATE_KINDS) {
+    if (kind === 'loop') continue
     const ofKind = templates.filter((t) => t.kind === kind)
     const inUse = ofKind.filter(isInUse)
 

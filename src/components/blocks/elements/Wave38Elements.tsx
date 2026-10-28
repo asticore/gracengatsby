@@ -11,6 +11,8 @@ import { flag, linkHref, mediaOf, num, pick, str } from './elementUtil'
 import { withElementDesign } from './renderElement'
 import { LoopElement } from './Wave50Server'
 import { WAVE63_COMPONENTS } from './Wave63Server'
+import { LoopGridElement } from './LoopGridServer'
+import { ArchiveFilterElement } from './ArchiveFilter'
 import { WAVE65_SERVER_COMPONENTS } from './Wave65Server'
 import { WAVE66_COMPONENTS } from './Wave66Server'
 import { WAVE67_COMPONENTS } from './Wave67Server'
@@ -387,6 +389,8 @@ const SITE_RENDERERS: Record<string, React.ComponentType<P>> = {
   loop: LoopElement,
   'dynamic-text': DynamicTextElement,
   ...WAVE63_COMPONENTS,
+  'loop-grid': LoopGridElement as unknown as React.ComponentType<P>,
+  'archive-filter': ArchiveFilterElement as unknown as React.ComponentType<P>,
   ...WAVE65_SERVER_COMPONENTS,
   ...WAVE66_COMPONENTS,
   ...WAVE67_COMPONENTS,

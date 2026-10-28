@@ -13,6 +13,7 @@ import { WAVE49_ELEMENTS } from './wave49Defs'
 import { WAVE50_ELEMENTS } from './wave50Defs'
 import { WAVE60_ELEMENTS } from './wave60Defs'
 import { WAVE63_ELEMENTS } from './wave63Defs'
+import { LOOP_GRID_ELEMENTS } from './loopDefs'
 import { WAVE64_ELEMENTS } from './wave64Defs'
 import { WAVE65_ELEMENTS } from './wave65Defs'
 import { WAVE66_ELEMENTS } from './wave66Defs'
@@ -217,6 +218,7 @@ ELEMENTS.push(...WAVE49_ELEMENTS)
 ELEMENTS.push(...WAVE50_ELEMENTS)
 ELEMENTS.push(...WAVE60_ELEMENTS)
 ELEMENTS.push(...WAVE63_ELEMENTS)
+ELEMENTS.push(...LOOP_GRID_ELEMENTS)
 ELEMENTS.push(...WAVE64_ELEMENTS)
 ELEMENTS.push(...WAVE65_ELEMENTS)
 ELEMENTS.push(...WAVE66_ELEMENTS)

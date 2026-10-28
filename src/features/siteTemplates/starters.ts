@@ -47,6 +47,20 @@ export const STARTERS: TemplateStarter[] = [
     blocks: () => [section([el('post-title', { level: 'h1' }), el('content-slot')])],
   },
   {
+    id: 'loop-blog-card',
+    kind: 'loop',
+    label: 'Blog card',
+    description: 'For the Loop grid: featured picture, title, meta and excerpt of each post.',
+    blocks: () => [section([el('post-featured-image'), el('post-title', { level: 'h3' }), el('post-meta'), el('post-excerpt')])],
+  },
+  {
+    id: 'loop-product-card',
+    kind: 'loop',
+    label: 'Product card',
+    description: 'For the Loop grid: picture, title and price of each product.',
+    blocks: () => [section([el('post-featured-image'), el('post-title', { level: 'h3' }), el('product-price')])],
+  },
+  {
     id: 'single-product-classic',
     kind: 'single-product',
     label: 'Classic product',

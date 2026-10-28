@@ -15,6 +15,7 @@ export const SITE_TEMPLATE_KINDS = [
   'archive-category',
   'archive-tag',
   'archive-author',
+  'loop',
 ] as const
 
 export type SiteTemplateKind = (typeof SITE_TEMPLATE_KINDS)[number]
@@ -32,6 +33,7 @@ export const KIND_LABELS: Record<SiteTemplateKind, string> = {
   'archive-category': 'Category archive',
   'archive-tag': 'Tag archive',
   'archive-author': 'Author archive',
+  loop: 'Loop item',
 }
 
 /** Tabs of the Templates dashboard, Elementor Theme Builder style. Every kind belongs to exactly one tab. */
@@ -42,6 +44,7 @@ export const TEMPLATE_TYPE_TABS: ReadonlyArray<{ id: string; label: string; kind
   { id: 'archive', label: 'Archive', kinds: ['archive-blog', 'archive-shop', 'archive-category', 'archive-tag', 'archive-author'] },
   { id: 'search', label: 'Search', kinds: ['search-results'] },
   { id: 'not-found', label: '404', kinds: ['not-found'] },
+  { id: 'loop', label: 'Loop item', kinds: ['loop'] },
 ]
 
 /**

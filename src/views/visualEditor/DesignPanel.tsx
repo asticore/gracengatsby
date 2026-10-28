@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { createContext, useContext, useState } from 'react'
 
 import {
@@ -75,6 +76,7 @@ export const DesignPanel: React.FC<{
   /** 'column' hides settings that only make sense for a block (position in column, shape dividers). */
   variant?: 'block' | 'column'
 }> = ({ value, onChange, device = 'desktop', variant = 'block' }) => {
+  const t = useAdminT()
   const resp = makeResponsive(value, onChange, device)
   const [query, setQuery] = useState('')
   const [only, setOnly] = useState(false)
@@ -96,17 +98,17 @@ export const DesignPanel: React.FC<{
         <input
           type="search"
           className="ve-d51-search"
-          placeholder="Search settings"
-          aria-label="Search settings"
+          placeholder={t('dp.search')}
+          aria-label={t('dp.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <label className="ve-d51-only">
           <input type="checkbox" checked={only} onChange={(e) => setOnly(e.target.checked)} />
-          <span>Only changed</span>
+          <span>{t('dp.onlyChanged')}</span>
         </label>
       </div>
-      <div className="ve-d51-devbar" role="group" aria-label="Device overrides">
+      <div className="ve-d51-devbar" role="group" aria-label={t('dp.device.overrides')}>
         {(['tablet', 'mobile'] as const).map((d) => (
           <button
             key={`copy-${d}`}
@@ -119,7 +121,7 @@ export const DesignPanel: React.FC<{
           </button>
         ))}
         {(['tablet', 'mobile'] as const).some((d) => hasDeviceOverrides(value, d)) && (
-          <span className="ve-d51-badge" title="Tablet or mobile values differ from desktop">
+          <span className="ve-d51-badge" title={t('dp.device.differ')}>
             <span className="ve-d51-dot" aria-hidden="true" />
             Overrides{(['tablet', 'mobile'] as const).filter((d) => hasDeviceOverrides(value, d)).map((d) => ` ${d}`).join(',')}
           </span>
@@ -130,7 +132,7 @@ export const DesignPanel: React.FC<{
           </button>
         )}
       </div>
-      <Acc g="background" title="Background" defaultOpen>
+      <Acc g="background" title={t('dp.section.background')} defaultOpen>
         <SelectRow
           label="Type"
           value={value.bgType || 'none'}
@@ -273,11 +275,11 @@ export const DesignPanel: React.FC<{
         )}
       </Acc>
 
-      <Acc g="hover" title="Hover & focus">
+      <Acc g="hover" title={t('dp.section.hover')}>
         <StateTabs value={value} onChange={onChange} />
       </Acc>
 
-      <Acc g="spacing" title="Spacing" defaultOpen={device !== 'desktop'}>
+      <Acc g="spacing" title={t('dp.section.spacing')} defaultOpen={device !== 'desktop'}>
         <UnitRow ctl={resp} k="paddingUnit" label="Padding unit" />
         <LinkedSides ctl={resp} keys={PADDING_SIDE_KEYS} noun="Padding" min={0} />
         <HeightRows ctl={resp} />
@@ -285,7 +287,7 @@ export const DesignPanel: React.FC<{
         <LinkedSides ctl={resp} keys={MARGIN_SIDE_KEYS} noun="Margin" />
       </Acc>
 
-      <Acc g="border" title="Border & shadow">
+      <Acc g="border" title={t('dp.section.border')}>
         <NumberRow
           label="Border width (px)"
           value={value.borderWidth}
@@ -317,7 +319,7 @@ export const DesignPanel: React.FC<{
         />
       </Acc>
 
-      <Acc g="layout" title="Layout & text">
+      <Acc g="layout" title={t('dp.section.layout')}>
         {variant === 'block' && (
           <SelectRow
             label="Width"
@@ -344,12 +346,12 @@ export const DesignPanel: React.FC<{
         <ColorRow label="Text colour" value={value.textColor} onChange={(v) => set('textColor', v)} />
       </Acc>
 
-      <Acc g="typography" title="Typography">
+      <Acc g="typography" title={t('dp.section.typography')}>
         <TypographyControls value={value} onChange={onChange} ctl={resp} />
       </Acc>
 
       {variant === 'block' && (
-        <Acc g="position" title="Position in column">
+        <Acc g="position" title={t('dp.section.position')}>
           <RespSelect
             ctl={resp}
             k="selfAlign"
@@ -382,7 +384,7 @@ export const DesignPanel: React.FC<{
       )}
 
       {variant === 'block' && (
-      <Acc g="dividers" title="Shape dividers">
+      <Acc g="dividers" title={t('dp.section.dividers')}>
         <DividerControls
           label="Top"
           shape={value.dividerTop}
@@ -417,20 +419,20 @@ export const DesignPanel: React.FC<{
       )}
 
       {variant === 'block' && (
-        <Acc g="effects" title="Effects">
+        <Acc g="effects" title={t('dp.section.effects')}>
           <EffectsControls value={value} onChange={onChange} />
         </Acc>
       )}
 
-      <Acc g="advanced" title="Advanced">
+      <Acc g="advanced" title={t('dp.section.advanced')}>
         <AdvancedControls value={value} onChange={onChange} />
       </Acc>
 
-      <Acc g="conditions" title="Visibility rules">
+      <Acc g="conditions" title={t('dp.section.visibilityRules')}>
         <ConditionControls value={value} onChange={onChange} />
       </Acc>
 
-      <Acc g="visibility" title="Visibility & advanced">
+      <Acc g="visibility" title={t('dp.section.visibility')}>
         <CheckRow
           label={`Hide on ${device}`}
           checked={Boolean(resp.own('hide'))}
@@ -497,13 +499,14 @@ export const Accordion: React.FC<{
   onReset,
   children,
 }) => {
+  const t = useAdminT()
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className={`ve-acc ${open ? 've-acc--open' : ''}`}>
       <button type="button" className="ve-acc__head" onClick={() => setOpen(!open)}>
         <span>
           {title}
-          {modified && <span className="ve-d51-dot" title="Changed" aria-label="Changed" />}
+          {modified && <span className="ve-d51-dot" title={t('dp.changed')} aria-label={t('dp.changed')} />}
         </span>
         <span className="ve-acc__chev">{open ? String.fromCodePoint(0x25be) : String.fromCodePoint(0x25b8)}</span>
       </button>
@@ -546,7 +549,9 @@ export const DeviceIcon: React.FC<{ device: EditDevice }> = ({ device }) => (
   </svg>
 )
 
-const Row: React.FC<{ label: string; help?: string; resp?: RowResp; children: React.ReactNode }> = ({ label, help, resp, children }) => (
+const Row: React.FC<{ label: string; help?: string; resp?: RowResp; children: React.ReactNode }> = ({ label, help, resp, children }) => {
+  const t = useAdminT()
+  return (
   <label className="ve-row">
     <span className="ve-row__label">
       {label}
@@ -564,7 +569,7 @@ const Row: React.FC<{ label: string; help?: string; resp?: RowResp; children: Re
             e.preventDefault()
             resp.onReset?.()
           }}
-          title="Reset to the inherited value"
+          title={t('dp.resetInherited')}
           aria-label={`Reset ${label} to inherited`}
         >
           Reset
@@ -574,9 +579,11 @@ const Row: React.FC<{ label: string; help?: string; resp?: RowResp; children: Re
     {children}
     {help && <span className="ve-row__help">{help}</span>}
   </label>
-)
+  )
+}
 
 const ConditionControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const t = useAdminT()
   const set = (patch: Partial<BlockStyle>) => onChange({ ...value, ...patch })
   return (
     <>
@@ -976,6 +983,7 @@ const ColorRow: React.FC<{ label: string; value?: string; onChange: (v: string |
   value,
   onChange,
 }) => {
+  const t = useAdminT()
   // Tokens are read when the button is clicked, never during render.
   const [tokens, setTokens] = useState<ColourToken[] | null>(null)
   const hex = value && /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'
@@ -992,8 +1000,8 @@ const ColorRow: React.FC<{ label: string; value?: string; onChange: (v: string |
         <button
           type="button"
           className="ve-d51-tokbtn"
-          title="Pick a theme colour"
-          aria-label="Theme colours"
+          title={t('dp.theme.pick')}
+          aria-label={t('dp.theme.label')}
           onClick={(e) => {
             e.preventDefault()
             setTokens((cur) => (cur ? null : readColourTokens(document)))
@@ -1002,14 +1010,14 @@ const ColorRow: React.FC<{ label: string; value?: string; onChange: (v: string |
           Theme
         </button>
         {value && (
-          <button type="button" className="ve-color__clear" onClick={() => onChange(undefined)} aria-label="Clear colour">
+          <button type="button" className="ve-color__clear" onClick={() => onChange(undefined)} aria-label={t('dp.color.clear')}>
             &#10005;
           </button>
         )}
       </div>
       {tokens && (
         <div className="ve-d51-tokens">
-          {tokens.length === 0 && <span className="ve-row__help">No theme colours found.</span>}
+          {tokens.length === 0 && <span className="ve-row__help">{t('dp.theme.none')}</span>}
           {tokens.map((t) => (
             <button
               key={t.name}
@@ -1036,6 +1044,7 @@ const ImageRow: React.FC<{
   onPick: (id: number, url: string | null) => void
   onClear: () => void
 }> = ({ label, url, onPick, onClear }) => {
+  const t = useAdminT()
   const [open, setOpen] = useState(false)
   return (
     <Row label={label}>
@@ -1044,7 +1053,7 @@ const ImageRow: React.FC<{
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt="" className="ve-media-field__thumb" />
         ) : (
-          <div className="ve-media-field__empty">No image</div>
+          <div className="ve-media-field__empty">{t('dp.noImage')}</div>
         )}
         <div className="ve-media-field__actions">
           <button type="button" className="ve-btn ve-btn--ghost" onClick={() => setOpen(true)}>
@@ -1124,7 +1133,9 @@ const ToggleRow: React.FC<{
   options: ToggleOption[]
   current: string | undefined
   onPick: (v: string | undefined) => void
-}> = ({ label, options, current, onPick }) => (
+}> = ({ label, options, current, onPick }) => {
+  const t = useAdminT()
+  return (
   <Row label={label}>
     <div className="ve-color">
       {options.map((o) => {
@@ -1147,13 +1158,14 @@ const ToggleRow: React.FC<{
         )
       })}
       {current !== undefined && (
-        <button type="button" className="ve-btn ve-btn--ghost" title="Reset" aria-label={`Reset ${label}`} onClick={(e) => { e.preventDefault(); onPick(undefined) }}>
+        <button type="button" className="ve-btn ve-btn--ghost" title={t('dp.reset')} aria-label={`Reset ${label}`} onClick={(e) => { e.preventDefault(); onPick(undefined) }}>
           {String.fromCharCode(0x21BA)}
         </button>
       )}
     </div>
   </Row>
-)
+  )
+}
 
 /** Slider + number + reset for a responsive numeric key (follows the device toggle). */
 const TypoRange: React.FC<{
@@ -1168,6 +1180,7 @@ const TypoRange: React.FC<{
   /** Extra keys cleared by this control's reset. */
   alsoReset?: RespKey[]
 }> = ({ ctl, k, label, def, min, max, step, unit, alsoReset }) => {
+  const t = useAdminT()
   const own = ctl.own(k)
   const inherited = ctl.inherited(k)
   const current = typeof own === 'number' ? own : typeof inherited === 'number' ? inherited : def
@@ -1190,7 +1203,7 @@ const TypoRange: React.FC<{
           <button
             type="button"
             className="ve-btn ve-btn--ghost"
-            title="Reset to default"
+            title={t('dp.resetDefault')}
             aria-label={`Reset ${label}`}
             onClick={(e) => {
               e.preventDefault()
@@ -1424,6 +1437,7 @@ const RangeRow: React.FC<{
 /** Elementor-style numeric control: label, slider, number box, unit, and a per-control reset. */
 /** Normal / Hover / Focus tabs for the "Hover & focus" accordion. */
 const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const t = useAdminT()
   const [state, setState] = useState<DesignState>('hover')
   const set = <K extends keyof BlockStyle>(k: K, v: BlockStyle[K] | undefined) => {
     const next = { ...value } as Record<string, unknown>
@@ -1433,7 +1447,7 @@ const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => v
   }
   return (
     <>
-      <div role="tablist" aria-label="Element state" style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+      <div role="tablist" aria-label={t('dp.state.label')} style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
         {DESIGN_STATES.map((t) => (
           <button
             key={t.value}
@@ -1448,11 +1462,11 @@ const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => v
         ))}
       </div>
       {state === 'normal' && (
-        <p className="ve-row__help">Normal values are set in the other sections (Background, Border & shadow, Typography). Switch to Hover or Focus to change how the block reacts.</p>
+        <p className="ve-row__help">{t('dp.state.hint')}</p>
       )}
       {state === 'hover' && (
         <>
-          <p className="ve-row__help">Applies on hover with a mouse or trackpad. Unset values stay the same as normal.</p>
+          <p className="ve-row__help">{t('dp.hover.hint')}</p>
           <ColorRow label="Background" value={value.hoverBgColor} onChange={(v) => set('hoverBgColor', v)} />
           <ColorRow label="Text colour" value={value.hoverTextColor} onChange={(v) => set('hoverTextColor', v)} />
           <ColorRow label="Border colour" value={value.hoverBorderColor} onChange={(v) => set('hoverBorderColor', v)} />
@@ -1475,7 +1489,7 @@ const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => v
       )}
       {state === 'focus' && (
         <>
-          <p className="ve-row__help">Outline shown when the block or something inside it is focused with the keyboard.</p>
+          <p className="ve-row__help">{t('dp.focus.hint')}</p>
           <ColorRow label="Focus ring" value={value.focusRing} onChange={(v) => set('focusRing', v)} />
         </>
       )}
@@ -1496,6 +1510,7 @@ const FxRange: React.FC<{
   unit?: string
   help?: string
 }> = ({ k, label, value, onChange, def, min, max, step = 1, unit, help }) => {
+  const t = useAdminT()
   const raw = value[k]
   const current = typeof raw === 'number' ? raw : def
   const write = (n: number | undefined) => {
@@ -1517,7 +1532,7 @@ const FxRange: React.FC<{
           onChange={(e) => write(e.target.value === '' ? undefined : Number(e.target.value))}
         />
         {typeof raw === 'number' && (
-          <button type="button" className="ve-btn ve-btn--ghost" title="Reset to default" aria-label={`Reset ${label}`} onClick={() => write(undefined)}>
+          <button type="button" className="ve-btn ve-btn--ghost" title={t('dp.resetDefault')} aria-label={`Reset ${label}`} onClick={() => write(undefined)}>
             {String.fromCharCode(0x21BA)}
           </button>
         )}
@@ -1774,6 +1789,7 @@ const ADVANCED_KEYS: (keyof BlockStyle)[] = [
 ]
 
 const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const t = useAdminT()
   const { set, resetBtn } = makeFxEditing(value, onChange)
   const positioned = value.position !== undefined
 
@@ -1781,13 +1797,13 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
     <>
       <p className="ve-row__label">Transform</p>
       <div className="ve-divider-group">
-        <p className="ve-row__label">Normal</p>
+        <p className="ve-row__label">{t('dp.state.normal')}</p>
         {TRANSFORM_ROWS.map((r) => (
           <FxRange key={r.suffix} k={tfKey('tf', r.suffix)} label={r.label} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
         ))}
       </div>
       <div className="ve-divider-group">
-        <p className="ve-row__label">Hover</p>
+        <p className="ve-row__label">{t('dp.state.hover')}</p>
         {TRANSFORM_ROWS.map((r) => (
           <FxRange key={r.suffix} k={tfKey('tfh', r.suffix)} label={r.label} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
         ))}

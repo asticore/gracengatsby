@@ -40,6 +40,11 @@ import type { FormConfig } from '@/features/forms/types'
 import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { PageSettingsPanel } from './visualEditor/PageSettingsPanel'
+import { TranslationBar, TRANSLATION_BAR_CSS } from './visualEditor/TranslationBar'
+import { TranslatePanel, TRANSLATE_PANEL_CSS } from './visualEditor/TranslatePanel'
+import type { DocumentTranslations } from '@/features/multilingual/documentTranslations'
+import { translatableSource } from '@/features/multilingual/translatableFields'
+import { localeLabel } from '@/features/multilingual/locales'
 import { pageAvailability, pageSettingsPatch, readPageSettings, validatePageSettings, type PageSettings } from './visualEditor/pageSettings'
 import { SaveAsTemplateDialog } from './visualEditor/SaveAsTemplate'
 import { VISUAL_EDITOR_CSS } from './visualEditor/visualEditor.styles'
@@ -155,6 +160,10 @@ export const VisualEditorView: React.FC = () => {
   const formMode = surface?.formMode === true
   // Page-level settings (title/slug/status/SEO): edited in the Settings tab, saved in the same PATCH.
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null)
+  // Translate mode: the document's translations (null when multilingual is off or the collection has none),
+  // and the language being edited (null = the default language, the normal builder).
+  const [translation, setTranslation] = useState<(DocumentTranslations & { title: string; users: { id: number; label: string }[] }) | null>(null)
+  const [editLocale, setEditLocale] = useState<string | null>(null)
   const [pageInitial, setPageInitial] = useState<PageSettings | null>(null)
   const [pageAvail, setPageAvail] = useState(() => pageAvailability(null))
   const [navigatorExpandedState, setNavigatorExpandedState] = useState<Record<string, boolean>>({})
@@ -232,6 +241,20 @@ export const VisualEditorView: React.FC = () => {
         setLoading(false)
       })
   }, [apiUrl, surface])
+
+  const surfaceSlug = surface?.slug
+  const surfaceKind = surface?.kind
+  const routeId = route?.id
+  const loadTranslations = useCallback(() => {
+    if (surfaceKind !== 'collection' || !surfaceSlug || !routeId || !translatableSource(surfaceSlug)) return
+    fetch(`/api/admin-translations?collection=${encodeURIComponent(surfaceSlug)}&id=${encodeURIComponent(routeId)}`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: any) => setTranslation(data?.enabled ? data : null))
+      .catch(() => setTranslation(null))
+  }, [surfaceKind, surfaceSlug, routeId])
+  useEffect(() => {
+    loadTranslations()
+  }, [loadTranslations])
 
   useEffect(() => {
     fetch('/api/roles?depth=0&limit=100', { credentials: 'include' })
@@ -1148,6 +1171,7 @@ export const VisualEditorView: React.FC = () => {
     <div className="ve-root">
       { }
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: TRANSLATION_BAR_CSS + TRANSLATE_PANEL_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: NAVIGATOR_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: IMPORT_EXPORT_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: AI_BUILDER_CSS }} />
@@ -1182,6 +1206,22 @@ export const VisualEditorView: React.FC = () => {
         <div className="ve-topbar__actions">
           {/* Always in the top bar for site-template docs, whatever is selected. */}
           {surface?.slug === 'site-templates' ? <PreviewAsPicker kind={templateKind} onContext={setPreviewCtx} /> : null}
+          {translation ? (
+            <TranslationBar
+              defaultLocale={translation.defaultLocale}
+              defaultLabel={localeLabel(translation.defaultLocale)}
+              targets={translation.locales.map((group) => ({ code: group.locale, label: localeLabel(group.locale) }))}
+              selected={editLocale ?? translation.defaultLocale}
+              progress={translation.locales.map((group) => ({
+                code: group.locale,
+                label: localeLabel(group.locale),
+                approved: group.approved,
+                total: group.total,
+                href: `/admin/translations?item=${encodeURIComponent(`collection:${translation.sourceId}`)}`,
+              }))}
+              onSelect={(code) => setEditLocale(code === translation.defaultLocale ? null : code)}
+            />
+          ) : null}
           <div className="ve-history" role="group" aria-label="History">
             <button
               type="button"
@@ -1273,6 +1313,19 @@ export const VisualEditorView: React.FC = () => {
         <EditorDock
           collapsed={dockCollapsed}
           tab={dockTab}
+          translatePanel={
+            translation && editLocale ? (
+              <TranslatePanel
+                state={translation}
+                locale={editLocale}
+                localeLabel={localeLabel(editLocale)}
+                title={translation.title}
+                users={translation.users}
+                onSaved={loadTranslations}
+                onExit={() => setEditLocale(null)}
+              />
+            ) : undefined
+          }
           onTabChange={setDockTab}
           targetLabel={insertTarget.containerPath.length === 0 ? 'the page' : 'this column'}
           onPickBlock={addBlock}
@@ -1366,7 +1419,7 @@ export const VisualEditorView: React.FC = () => {
           }
         />
 
-        <div className="ve-canvas-wrap" role="presentation">
+        <div className={`ve-canvas-wrap${translation && editLocale ? ' ve-canvas-wrap--translating' : ''}`} role="presentation">
           {lockNotice && (
             <p className="ve-error" role="status" style={{ padding: 12 }}>
               &#128274; {lockNotice}

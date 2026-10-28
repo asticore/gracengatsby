@@ -5,6 +5,7 @@ import { getSeoContext } from './settings'
 import { getSiteIcons } from './siteFilesData'
 import { currentPageLocale } from './pageLocale'
 import { localeSeoFields, languagesMap } from './localeSeo'
+import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
 import { getPublicIds } from '@/features/integrations/publicIds'
 
 /**
@@ -36,13 +37,15 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
   const seo = resolveSeo(context, input)
   // Language of this request (null while multilingual is off or single-language).
   const pageLocale = await currentPageLocale()
-  const localeSeo = pageLocale
+  const localePath = input.path ?? pageLocale?.pathname
+  const localeSeo = pageLocale && localePath !== undefined
     ? localeSeoFields({
         baseUrl: context.baseUrl,
-        path: input.path ?? pageLocale.pathname,
+        path: localePath,
         locale: pageLocale.locale,
         settings: pageLocale.settings,
         explicitCanonical: Boolean(input.seo?.canonicalUrl),
+        available: await availableLocalesForPath(localePath),
       })
     : null
   const canonical = localeSeo?.canonical ?? seo.canonical

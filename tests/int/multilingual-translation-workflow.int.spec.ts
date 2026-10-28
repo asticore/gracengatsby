@@ -279,7 +279,7 @@ describe('overview aggregation', () => {
       editHref: '/admin/collections/pages/7',
       fields: [
         { fieldPath: 'title', label: 'Title', sourceText: 'About us' },
-        { fieldPath: 'meta.description', label: 'SEO description', sourceText: 'Who we are' },
+        { fieldPath: 'seo.metaDescription', label: 'SEO description', sourceText: 'Who we are' },
       ],
     },
     {
@@ -313,7 +313,7 @@ describe('overview aggregation', () => {
   it('gives an item the least-finished status across its fields, and counts progress', () => {
     const rows = buildOverviewRows({
       items,
-      stored: [row({ fieldPath: 'title' }), row({ id: 2, fieldPath: 'meta.description', value: 'Qui sommes-nous', status: 'needs_review' })],
+      stored: [row({ fieldPath: 'title' }), row({ id: 2, fieldPath: 'seo.metaDescription', value: 'Qui sommes-nous', status: 'needs_review' })],
       targetLocales: ['fr'],
       rules: RULES,
     })

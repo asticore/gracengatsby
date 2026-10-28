@@ -1,13 +1,16 @@
 import { getEngine } from '@/lib/engine'
 import { loadBlogSwitches } from '@/features/blog/switches'
 import { authorIndex, categoryIndex, tagIndex, type ArchivePost } from '@/features/siteTemplates/archiveQueries'
-import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
 import { isNoIndexedPage, readPasswordGate } from './indexable'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 import { getSeoContext, normalisePath, parsePathList, pathMatches } from './settings'
 import { sitemapVariants, type Alternate } from './localeSeo'
+import { isLocaleRoutable } from '@/features/multilingual/routing'
+import { nonDefaultLocales, publishIndex, publishableLocalesForDocument, type PublishIndex } from '@/features/multilingual/availability'
+import { findTranslations } from '@/features/multilingual/store'
+import { getAllResolvedPages, getHomepage } from '@/utilities/pagePaths'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
 
@@ -64,12 +67,29 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   const multilingual = await readMultilingualSettingsFromD1()
   const seen = new Set<string>()
   const entries: SitemapEntry[] = []
-  const add = (path: string, lastModified?: string | null, priority = 0.6) => {
+  // Every translation the non-default locales have, in one query. Each entry
+  // is then judged in memory, so the sitemap costs one query however long it is.
+  const routable = isLocaleRoutable(multilingual)
+  const translationIndex: PublishIndex = routable
+    ? publishIndex(
+        await findTranslations((await getEngine()) as unknown as Parameters<typeof findTranslations>[0], {
+          locales: nonDefaultLocales(multilingual),
+          sourceKind: 'collection',
+        }),
+      )
+    : publishIndex([])
+
+  type DocRef = { collection: string; id: number | string; doc: unknown }
+  const add = (path: string, lastModified?: string | null, priority = 0.6, ref?: DocRef) => {
     const normalised = normalisePath(path)
     if (seen.has(normalised)) return
     if (pathMatches(normalised, excluded) || pathMatches(normalised, noindexed)) return
     seen.add(normalised)
-    for (const variant of sitemapVariants(normalised, baseUrl, multilingual)) {
+    // A page only lists the locales it has a publishable translation in; a route with no document keeps them all.
+    const available = routable && ref
+      ? publishableLocalesForDocument({ ...ref, index: translationIndex, settings: multilingual })
+      : null
+    for (const variant of sitemapVariants(normalised, baseUrl, multilingual, available)) {
       entries.push({
         url: variant.url,
         lastModified: toW3cDate(lastModified),
@@ -101,14 +121,16 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
       const visible = await excludeProtected(collection as 'posts' | 'products' | 'events', docs as (CollectionRow & { id?: number })[])
       visible.forEach((doc) => {
         if (!doc.slug) return
-        add(`${prefix}/${doc.slug}`, doc.updatedAt, priority)
+        const ref = doc.id !== undefined ? { collection, id: doc.id, doc } : undefined
+        add(`${prefix}/${doc.slug}`, doc.updatedAt, priority, ref)
       })
     } catch {
       // A collection that will not read costs its own entries, nothing more.
     }
   }
 
-  add('/', undefined, 1)
+  const home = await getHomepage().catch((): null => null)
+  add('/', undefined, 1, home ? { collection: 'pages', id: home.id, doc: home } : undefined)
 
   const flags = await getFeatureFlags().catch((): null => null)
 
@@ -119,7 +141,7 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
       if (isNoIndexedPage(page)) continue
       // Exclude password-protected pages from sitemap
       if (page.id && (await isPasswordProtected('pages', page.id))) continue
-      add(`/${path.join('/')}`, page.updatedAt, 0.8)
+      add(`/${path.join('/')}`, page.updatedAt, 0.8, { collection: 'pages', id: page.id, doc: page })
     }
   } catch {
     // Same reasoning as addCollection.

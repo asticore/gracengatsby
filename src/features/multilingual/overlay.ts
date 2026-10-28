@@ -1,5 +1,6 @@
-import { type TranslationRow, buildLookup, valueAtPath } from './store'
+import { valueAtPath, type TranslationRow } from './store'
 import { translatableSource, sourceIdFor } from './translatableFields'
+import { publishIndex, publishableText } from './availability'
 import type { MultilingualSettings } from './settings'
 
 /**
@@ -11,39 +12,27 @@ import type { MultilingualSettings } from './settings'
  * Only fields that `translatableFields.ts` names, and that are plain strings in
  * the document, are overlaid. Rich text is left in the default language: its
  * tree is not a string, and substituting flattened text would drop formatting.
+ *
+ * Whether a stored translation may be shown is decided by
+ * `isTranslationPublishable` (translationStatus.ts), with the field's current
+ * source text, so a stale approval is never overlaid.
  */
-
-/**
- * Seam for the publish workflow. Every row a visitor can see passes through
- * here; the default accepts all rows. The approval workflow replaces this
- * decision (for example "approved only") without touching the loader.
- */
-export function isTranslationPublishable(_row: TranslationRow, _settings?: MultilingualSettings): boolean {
-  return true
-}
-
-/** Immutable set along a dot path; creates intermediate objects when they are missing. */
-function withValueAtPath<T>(document: T, path: string, value: unknown): T {
-  const [head, ...rest] = path.split('.')
-  if (head === undefined) return document
-  const base = (document && typeof document === 'object' ? document : {}) as Record<string, unknown>
-  const next = rest.length === 0 ? value : withValueAtPath(base[head], rest.join('.'), value)
-  return { ...base, [head]: next } as T
-}
 
 /**
  * Overlays translated plain-string fields for one document.
  *
- * `lookup` returns the stored translation for a field, or null when none exists.
- * Missing translations fall back to the source text when `fallbackToDefault` is
- * true, and become empty otherwise. A source field that is not a string (for
- * example a missing value or a rich-text tree) is left exactly as it was.
+ * `lookup` returns the publishable translation for a field, or null when there
+ * is none. It is given the field's current source text so staleness is judged
+ * against what the page is about to show. Missing translations fall back to the
+ * source text when `fallbackToDefault` is true, and become empty otherwise. A
+ * source field that is not a string (for example a missing value or a rich-text
+ * tree) is left exactly as it was.
  */
 export function overlayDocument<T>(
   doc: T,
   collection: string,
   documentId: string | number,
-  lookup: (sourceId: string, fieldPath: string) => string | null,
+  lookup: (sourceId: string, fieldPath: string, currentSourceText: string) => string | null,
   fallbackToDefault: boolean,
 ): T {
   const source = translatableSource(collection)
@@ -57,7 +46,7 @@ export function overlayDocument<T>(
     const original = valueAtPath(doc, field.path)
     if (typeof original !== 'string') continue
 
-    const translated = lookup(sourceId, field.path)
+    const translated = lookup(sourceId, field.path, original)
     if (translated !== null && translated.trim().length > 0) {
       out = withValueAtPath(out, field.path, translated)
     } else if (!fallbackToDefault) {
@@ -67,8 +56,26 @@ export function overlayDocument<T>(
   return out
 }
 
-/** Builds the lookup for `overlayDocument` from already-loaded, already-filtered rows. */
-export function lookupFromRows(locale: string, rows: TranslationRow[]): (sourceId: string, fieldPath: string) => string | null {
-  const { get } = buildLookup(locale, rows)
-  return (sourceId, fieldPath) => get('collection', sourceId, fieldPath)
+/** Immutable set along a dot path; creates intermediate objects when they are missing. */
+function withValueAtPath<T>(document: T, path: string, value: unknown): T {
+  const [head, ...rest] = path.split('.')
+  if (head === undefined) return document
+  const base = (document && typeof document === 'object' ? document : {}) as Record<string, unknown>
+  const next = rest.length === 0 ? value : withValueAtPath(base[head], rest.join('.'), value)
+  return { ...base, [head]: next } as T
 }
+
+/**
+ * Builds the lookup for `overlayDocument` from one locale's loaded rows. Rows
+ * the public site may not show come back as null, so they fall back like a
+ * missing translation.
+ */
+export function lookupFromRows(
+  locale: string,
+  rows: TranslationRow[],
+  settings: Pick<MultilingualSettings, 'requireReview'>,
+): (sourceId: string, fieldPath: string, currentSourceText: string) => string | null {
+  const index = publishIndex(rows.filter((row) => row.locale === locale))
+  return (sourceId, fieldPath, currentSourceText) => publishableText(index, settings, locale, sourceId, fieldPath, currentSourceText)
+}
+

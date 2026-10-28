@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 import { CONFLICT_LABELS, CONFLICT_MODES, IMPORT_MAX_BYTES, PREVIEW_ROW_LIMIT, type ConflictMode } from '@/features/importContent/types'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import './import-content.css'
 
 type PreviewRow = { ref: string; title: string; type: 'page' | 'post'; slug: string; status: 'published' | 'draft'; action: string; reason: string; conflict: boolean }
@@ -47,6 +48,7 @@ async function post(form: FormData): Promise<{ ok: boolean; data: unknown; messa
 }
 
 export function ImportContentClient() {
+  const t = useAdminT()
   const [file, setFile] = useState<File | null>(null)
   const [pasted, setPasted] = useState('')
   const [conflicts, setConflicts] = useState<ConflictMode>('skip')
@@ -103,7 +105,7 @@ export function ImportContentClient() {
   return (
     <div className="ic-page">
       <header className="ic-header">
-        <h1 className="ic-title">Import pages and posts</h1>
+        <h1 className="ic-title">{t('importContent.title')}</h1>
         <p className="ic-muted">
           Bring content in from a WordPress export (.xml) or from a spreadsheet saved as CSV. Everything is saved as a draft unless you tick
           the option to keep published status. Nothing goes live by accident.
@@ -121,7 +123,7 @@ export function ImportContentClient() {
             accept=".xml,.csv,.tsv,.txt,text/xml,text/csv"
             onChange={(event) => changeInput(() => setFile(event.target.files?.[0] ?? null))}
           />
-          <p className="ic-muted">Up to 6 MB and 500 items per import.</p>
+          <p className="ic-muted">{t('importContent.limit')}</p>
         </div>
         <div className="ic-field">
           <label className="ic-label" htmlFor="ic-paste">
@@ -137,7 +139,7 @@ export function ImportContentClient() {
           />
         </div>
         <div className="ic-help">
-          <p className="ic-subheading">What the CSV columns mean</p>
+          <p className="ic-subheading">{t('importContent.csvHeading')}</p>
           <ul className="ic-list">
             <li>
               <strong>title</strong> is required. Other columns are optional.
@@ -160,7 +162,7 @@ export function ImportContentClient() {
 
       <CollapsibleCard id="import-content-options" title="2. Choose what to do when an address is already used">
         <fieldset className="ic-fieldset">
-          <legend className="ic-label">When a web address is already in use</legend>
+          <legend className="ic-label">{t('importContent.urlInUse')}</legend>
           {CONFLICT_MODES.map((mode) => (
             <label key={mode} className="ic-radio">
               <input type="radio" name="ic-conflicts" value={mode} checked={conflicts === mode} onChange={() => changeInput(() => setConflicts(mode))} />
@@ -170,7 +172,7 @@ export function ImportContentClient() {
         </fieldset>
         <label className="ic-checkbox">
           <input type="checkbox" checked={keepPublished} onChange={(event) => changeInput(() => setKeepPublished(event.target.checked))} />
-          <span>Keep published status for items marked publish (leave this off to save everything as drafts)</span>
+          <span>{t('importContent.keepPublished')}</span>
         </label>
       </CollapsibleCard>
 
@@ -178,7 +180,7 @@ export function ImportContentClient() {
         <button type="button" className="ic-button ic-button--primary" onClick={() => run('preview')} disabled={busy !== null}>
           {busy === 'preview' ? 'Checking the file...' : 'Preview the import'}
         </button>
-        <p className="ic-muted">The preview saves nothing.</p>
+        <p className="ic-muted">{t('importContent.previewNote')}</p>
       </div>
 
       {error ? (
@@ -207,7 +209,7 @@ export function ImportContentClient() {
           ))}
           {preview.errors.length ? (
             <div className="ic-problems">
-              <p className="ic-subheading">Problems found in the file</p>
+              <p className="ic-subheading">{t('importContent.problems')}</p>
               <ul className="ic-list">
                 {preview.errors.map((line) => (
                   <li key={line}>{line}</li>
@@ -219,11 +221,11 @@ export function ImportContentClient() {
             <table className="ic-table">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Web address</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>What will happen</th>
+                  <th>{t('importContent.colTitle')}</th>
+                  <th>{t('importContent.colUrl')}</th>
+                  <th>{t('importContent.colType')}</th>
+                  <th>{t('importContent.colStatus')}</th>
+                  <th>{t('importContent.colAction')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,12 +244,12 @@ export function ImportContentClient() {
               </tbody>
             </table>
           </div>
-          {preview.rowCount > preview.rows.length ? <p className="ic-muted">Showing the first {PREVIEW_ROW_LIMIT} of {preview.rowCount} items.</p> : null}
+          {preview.rowCount > preview.rows.length ? <p className="ic-muted">{t('importContent.showingFirst', { limit: PREVIEW_ROW_LIMIT, count: preview.rowCount })}</p> : null}
           <div className="ic-actions">
             <button type="button" className="ic-button ic-button--primary" onClick={() => run('import')} disabled={busy !== null || importable === 0}>
               {busy === 'import' ? 'Importing... this can take a minute' : `Import ${importable} item(s)`}
             </button>
-            <p className="ic-muted">Items that are skipped or cannot be imported are left out.</p>
+            <p className="ic-muted">{t('importContent.skipped')}</p>
           </div>
         </CollapsibleCard>
       ) : null}
@@ -269,7 +271,7 @@ export function ImportContentClient() {
           ))}
           {result.errors.length ? (
             <div className="ic-problems">
-              <p className="ic-subheading">Items that failed</p>
+              <p className="ic-subheading">{t('importContent.failed')}</p>
               <ul className="ic-list">
                 {result.errors.map((item) => (
                   <li key={`${item.ref}-${item.message}`}>

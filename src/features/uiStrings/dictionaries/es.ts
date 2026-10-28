@@ -1385,6 +1385,22 @@ const es: UiDictionary = {
   'media.folder': "Carpeta",
   'media.alt': "Alt",
   'media.show': "Mostrar",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "Importar páginas y entradas",
+  'importContent.limit': "Hasta 6 MB y 500 elementos por importación.",
+  'importContent.csvHeading': "Qué significan las columnas del CSV",
+  'importContent.urlInUse': "Cuando una dirección web ya está en uso",
+  'importContent.keepPublished': "Mantener el estado publicado para los elementos marcados como publicar (desactívelo para guardar todo como borradores)",
+  'importContent.previewNote': "La vista previa no guarda nada.",
+  'importContent.problems': "Problemas encontrados en el archivo",
+  'importContent.colTitle': "Título",
+  'importContent.colUrl': "Dirección web",
+  'importContent.colType': "Tipo",
+  'importContent.colStatus': "Estado",
+  'importContent.colAction': "Qué pasará",
+  'importContent.showingFirst': "Se muestran los primeros {limit} de {count} elementos.",
+  'importContent.skipped': "Los elementos omitidos o que no se pueden importar no se incluyen.",
+  'importContent.failed': "Elementos que fallaron",
 }
 
 export default es

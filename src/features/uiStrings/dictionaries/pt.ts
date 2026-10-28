@@ -1385,6 +1385,22 @@ const pt: UiDictionary = {
   'media.folder': "Pasta",
   'media.alt': "Alt",
   'media.show': "Mostrar",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "Importar páginas e posts",
+  'importContent.limit': "Até 6 MB e 500 itens por importação.",
+  'importContent.csvHeading': "O que significam as colunas do CSV",
+  'importContent.urlInUse': "Quando um endereço web já está em uso",
+  'importContent.keepPublished': "Manter o status publicado para itens marcados como publicar (desmarque para salvar tudo como rascunhos)",
+  'importContent.previewNote': "A pré-visualização não salva nada.",
+  'importContent.problems': "Problemas encontrados no arquivo",
+  'importContent.colTitle': "Título",
+  'importContent.colUrl': "Endereço web",
+  'importContent.colType': "Tipo",
+  'importContent.colStatus': "Status",
+  'importContent.colAction': "O que vai acontecer",
+  'importContent.showingFirst': "Mostrando os primeiros {limit} de {count} itens.",
+  'importContent.skipped': "Itens ignorados ou que não podem ser importados ficam de fora.",
+  'importContent.failed': "Itens que falharam",
 }
 
 export default pt

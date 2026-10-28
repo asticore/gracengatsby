@@ -1384,6 +1384,22 @@ const zhHans: UiDictionary = {
   'media.folder': "文件夹",
   'media.alt': "替代文本",
   'media.show': "显示",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "导入页面和文章",
+  'importContent.limit': "每次导入最多 6 MB 和 500 条。",
+  'importContent.csvHeading': "CSV 各列的含义",
+  'importContent.urlInUse': "网址已被占用时",
+  'importContent.keepPublished': "保留标记为“发布”的条目的已发布状态（关闭则全部保存为草稿）",
+  'importContent.previewNote': "预览不会保存任何内容。",
+  'importContent.problems': "文件中发现的问题",
+  'importContent.colTitle': "标题",
+  'importContent.colUrl': "网址",
+  'importContent.colType': "类型",
+  'importContent.colStatus': "状态",
+  'importContent.colAction': "将会发生什么",
+  'importContent.showingFirst': "显示前 {limit} 条，共 {count} 条。",
+  'importContent.skipped': "被跳过或无法导入的条目不会包含在内。",
+  'importContent.failed': "失败的条目",
 }
 
 export default zhHans

@@ -1385,6 +1385,22 @@ const it: UiDictionary = {
   'media.folder': "Cartella",
   'media.alt': "Alt",
   'media.show': "Mostra",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "Importa pagine e post",
+  'importContent.limit': "Fino a 6 MB e 500 elementi per importazione.",
+  'importContent.csvHeading': "Cosa significano le colonne del CSV",
+  'importContent.urlInUse': "Quando un indirizzo web è già in uso",
+  'importContent.keepPublished': "Mantieni lo stato pubblicato per gli elementi contrassegnati come pubblica (disattiva per salvare tutto come bozze)",
+  'importContent.previewNote': "L’anteprima non salva nulla.",
+  'importContent.problems': "Problemi rilevati nel file",
+  'importContent.colTitle': "Titolo",
+  'importContent.colUrl': "Indirizzo web",
+  'importContent.colType': "Tipo",
+  'importContent.colStatus': "Stato",
+  'importContent.colAction': "Cosa succederà",
+  'importContent.showingFirst': "Mostrati i primi {limit} di {count} elementi.",
+  'importContent.skipped': "Gli elementi saltati o non importabili vengono esclusi.",
+  'importContent.failed': "Elementi non riusciti",
 }
 
 export default it

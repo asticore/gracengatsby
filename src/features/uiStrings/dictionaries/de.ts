@@ -1386,6 +1386,22 @@ const de: UiDictionary = {
   'media.folder': "Ordner",
   'media.alt': "Alt",
   'media.show': "Anzeigen",
+  // --- admin leftovers (import content view) ---
+  'importContent.title': "Seiten und Beiträge importieren",
+  'importContent.limit': "Bis zu 6 MB und 500 Einträge pro Import.",
+  'importContent.csvHeading': "Bedeutung der CSV-Spalten",
+  'importContent.urlInUse': "Wenn eine Web-Adresse bereits verwendet wird",
+  'importContent.keepPublished': "Veröffentlichungsstatus für als „veröffentlichen“ markierte Einträge beibehalten (deaktivieren, um alles als Entwürfe zu speichern)",
+  'importContent.previewNote': "Die Vorschau speichert nichts.",
+  'importContent.problems': "Probleme in der Datei gefunden",
+  'importContent.colTitle': "Titel",
+  'importContent.colUrl': "Web-Adresse",
+  'importContent.colType': "Typ",
+  'importContent.colStatus': "Status",
+  'importContent.colAction': "Was passiert",
+  'importContent.showingFirst': "Die ersten {limit} von {count} Einträgen werden angezeigt.",
+  'importContent.skipped': "Übersprungene oder nicht importierbare Einträge werden ausgelassen.",
+  'importContent.failed': "Fehlgeschlagene Einträge",
 }
 
 export default de

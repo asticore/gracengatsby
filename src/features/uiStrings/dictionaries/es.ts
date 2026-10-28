@@ -1992,6 +1992,17 @@ const es: UiDictionary = {
   'tb.lit.striped_row_background': "Fondo de fila alterna",
   'tb.lit.text_alignment': "Alineación del texto",
   'tb.lit.use_as_default': "Usar como predeterminado",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Aplicar",
+  'ps.lit.cancel': "Cancelar",
+  'ps.lit.delete': "Eliminar",
+  'ps.lit.new_name': "Nombre nuevo",
+  'ps.lit.no_saved_presets_yet': "Aún no hay presets guardados.",
+  'ps.lit.preset_name': "Nombre del preset",
+  'ps.lit.rename': "Renombrar",
+  'ps.lit.save_current_design_as_preset': "Guardar diseño actual como preset",
+  'ps.lit.saved_presets': "Presets guardados",
+  'ps.lit.starter_presets': "Presets iniciales",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "Añadir un estilo de texto",
   'ty.lit.add_text_style': "Añadir estilo de texto",

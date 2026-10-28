@@ -1992,6 +1992,17 @@ const fr: UiDictionary = {
   'tb.lit.striped_row_background': "Arrière-plan des lignes alternées",
   'tb.lit.text_alignment': "Alignement du texte",
   'tb.lit.use_as_default': "Utiliser par défaut",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Appliquer",
+  'ps.lit.cancel': "Annuler",
+  'ps.lit.delete': "Supprimer",
+  'ps.lit.new_name': "Nouveau nom",
+  'ps.lit.no_saved_presets_yet': "Aucun préréglage enregistré pour l’instant.",
+  'ps.lit.preset_name': "Nom du préréglage",
+  'ps.lit.rename': "Renommer",
+  'ps.lit.save_current_design_as_preset': "Enregistrer le design actuel comme préréglage",
+  'ps.lit.saved_presets': "Préréglages enregistrés",
+  'ps.lit.starter_presets': "Préréglages de départ",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "Ajouter un style de texte",
   'ty.lit.add_text_style': "Ajouter un style de texte",

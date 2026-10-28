@@ -1992,6 +1992,17 @@ const ko: UiDictionary = {
   'tb.lit.striped_row_background': "줄무늬 행 배경",
   'tb.lit.text_alignment': "텍스트 정렬",
   'tb.lit.use_as_default': "기본값으로 사용",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "적용",
+  'ps.lit.cancel': "취소",
+  'ps.lit.delete': "삭제",
+  'ps.lit.new_name': "새 이름",
+  'ps.lit.no_saved_presets_yet': "저장된 프리셋이 아직 없습니다.",
+  'ps.lit.preset_name': "프리셋 이름",
+  'ps.lit.rename': "이름 바꾸기",
+  'ps.lit.save_current_design_as_preset': "현재 디자인을 프리셋으로 저장",
+  'ps.lit.saved_presets': "저장된 프리셋",
+  'ps.lit.starter_presets': "시작 프리셋",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "텍스트 스타일 추가",
   'ty.lit.add_text_style': "텍스트 스타일 추가",

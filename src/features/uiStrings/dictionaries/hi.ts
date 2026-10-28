@@ -1992,6 +1992,17 @@ const hi: UiDictionary = {
   'tb.lit.striped_row_background': "धारीदार पंक्ति की पृष्ठभूमि",
   'tb.lit.text_alignment': "टेक्स्ट संरेखण",
   'tb.lit.use_as_default': "डिफ़ॉल्ट के रूप में उपयोग करें",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "लागू करें",
+  'ps.lit.cancel': "रद्द करें",
+  'ps.lit.delete': "हटाएँ",
+  'ps.lit.new_name': "नया नाम",
+  'ps.lit.no_saved_presets_yet': "अभी कोई सहेजा गया प्रीसेट नहीं है।",
+  'ps.lit.preset_name': "प्रीसेट का नाम",
+  'ps.lit.rename': "नाम बदलें",
+  'ps.lit.save_current_design_as_preset': "वर्तमान डिज़ाइन को प्रीसेट के रूप में सहेजें",
+  'ps.lit.saved_presets': "सहेजे गए प्रीसेट",
+  'ps.lit.starter_presets': "शुरुआती प्रीसेट",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "टेक्स्ट स्टाइल जोड़ें",
   'ty.lit.add_text_style': "टेक्स्ट स्टाइल जोड़ें",

@@ -1992,6 +1992,17 @@ const ar: UiDictionary = {
   'tb.lit.striped_row_background': "خلفية الصف المخطط",
   'tb.lit.text_alignment': "محاذاة النص",
   'tb.lit.use_as_default': "استخدام كافتراضي",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "تطبيق",
+  'ps.lit.cancel': "إلغاء",
+  'ps.lit.delete': "حذف",
+  'ps.lit.new_name': "الاسم الجديد",
+  'ps.lit.no_saved_presets_yet': "لا توجد إعدادات محفوظة بعد.",
+  'ps.lit.preset_name': "اسم الإعداد المسبق",
+  'ps.lit.rename': "إعادة تسمية",
+  'ps.lit.save_current_design_as_preset': "حفظ التصميم الحالي كإعداد مسبق",
+  'ps.lit.saved_presets': "الإعدادات المحفوظة",
+  'ps.lit.starter_presets': "إعدادات مسبقة للبداية",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "إضافة نمط نص",
   'ty.lit.add_text_style': "إضافة نمط نص",

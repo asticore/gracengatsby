@@ -1993,6 +1993,17 @@ const de: UiDictionary = {
   'tb.lit.striped_row_background': "Hintergrund gestreifter Zeilen",
   'tb.lit.text_alignment': "Textausrichtung",
   'tb.lit.use_as_default': "Als Standard verwenden",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Anwenden",
+  'ps.lit.cancel': "Abbrechen",
+  'ps.lit.delete': "Löschen",
+  'ps.lit.new_name': "Neuer Name",
+  'ps.lit.no_saved_presets_yet': "Noch keine gespeicherten Vorlagen.",
+  'ps.lit.preset_name': "Vorlagenname",
+  'ps.lit.rename': "Umbenennen",
+  'ps.lit.save_current_design_as_preset': "Aktuelles Design als Vorlage speichern",
+  'ps.lit.saved_presets': "Gespeicherte Vorlagen",
+  'ps.lit.starter_presets': "Startvorlagen",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "Textstil hinzufügen",
   'ty.lit.add_text_style': "Textstil hinzufügen",

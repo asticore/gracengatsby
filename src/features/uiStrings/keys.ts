@@ -2032,6 +2032,17 @@ export const UI_STRING_SOURCE = {
   'tb.lit.striped_row_background': "Striped row background",
   'tb.lit.text_alignment': "Text alignment",
   'tb.lit.use_as_default': "Use as default",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Apply",
+  'ps.lit.cancel': "Cancel",
+  'ps.lit.delete': "Delete",
+  'ps.lit.new_name': "New name",
+  'ps.lit.no_saved_presets_yet': "No saved presets yet.",
+  'ps.lit.preset_name': "Preset name",
+  'ps.lit.rename': "Rename",
+  'ps.lit.save_current_design_as_preset': "Save current design as preset",
+  'ps.lit.saved_presets': "Saved presets",
+  'ps.lit.starter_presets': "Starter presets",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "Add a text style",
   'ty.lit.add_text_style': "Add text style",

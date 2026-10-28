@@ -1992,6 +1992,17 @@ const ru: UiDictionary = {
   'tb.lit.striped_row_background': "Фон полосатой строки",
   'tb.lit.text_alignment': "Выравнивание текста",
   'tb.lit.use_as_default': "Использовать по умолчанию",
+  // --- admin leftovers (theme styles preset controls) ---
+  'ps.lit.apply': "Применить",
+  'ps.lit.cancel': "Отмена",
+  'ps.lit.delete': "Удалить",
+  'ps.lit.new_name': "Новое название",
+  'ps.lit.no_saved_presets_yet': "Сохранённых пресетов пока нет.",
+  'ps.lit.preset_name': "Название пресета",
+  'ps.lit.rename': "Переименовать",
+  'ps.lit.save_current_design_as_preset': "Сохранить текущий дизайн как пресет",
+  'ps.lit.saved_presets': "Сохранённые пресеты",
+  'ps.lit.starter_presets': "Стартовые пресеты",
   // --- admin leftovers (theme styles typography controls) ---
   'ty.lit.add_a_text_style': "Добавить стиль текста",
   'ty.lit.add_text_style': "Добавить стиль текста",

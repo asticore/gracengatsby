@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { useField } from '@/admin/context'
 import { OrganizationVisibilitySection } from './OrganizationVisibilitySection'
 
@@ -14,6 +15,7 @@ export const VisibilityPanel: React.FC<{
   id?: number
   readOnly?: boolean
 }> = ({ collectionSlug, id, readOnly = false }) => {
+  const t = useAdminT()
   const { value: membersOnlyValue, setValue: setMembersOnly } = useField<{
     enabled?: boolean
     tier?: unknown
@@ -104,7 +106,7 @@ export const VisibilityPanel: React.FC<{
 
   const handleSaveAccess = async (mode: 'group' | 'accounts') => {
     if (!id) {
-      setAccessError('Save the document first')
+      setAccessError(t('visibility.saveFirst'))
       return
     }
     setAccessBusy(true)
@@ -125,7 +127,7 @@ export const VisibilityPanel: React.FC<{
       })
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string }
-        throw new Error(data.error || 'Failed to save')
+        throw new Error(data.error || t('visibility.errorSave'))
       }
       setHasRule(true)
       setHasPassword(false)
@@ -133,7 +135,7 @@ export const VisibilityPanel: React.FC<{
       setAccessMessage('Saved')
       setTimeout(() => setAccessMessage(''), 3000)
     } catch (error) {
-      setAccessError(error instanceof Error ? error.message : 'Unknown error')
+      setAccessError(error instanceof Error ? error.message : t('visibility.unknownError'))
     } finally {
       setAccessBusy(false)
     }
@@ -200,7 +202,7 @@ export const VisibilityPanel: React.FC<{
 
   const handleSetPassword = async () => {
     if (!passwordInput.trim()) {
-      setPasswordError('Password cannot be empty')
+      setPasswordError(t('visibility.passwordEmpty'))
       return
     }
     if (passwordInput.length < 4) {
@@ -208,7 +210,7 @@ export const VisibilityPanel: React.FC<{
       return
     }
     if (!id) {
-      setPasswordError('Save the document first')
+      setPasswordError(t('visibility.saveFirst'))
       return
     }
 
@@ -228,7 +230,7 @@ export const VisibilityPanel: React.FC<{
 
       if (!response.ok) {
         const data = (await response.json()) as { error?: string }
-        throw new Error(data.error || 'Failed to set password')
+        throw new Error(data.error || t('visibility.errorSetPassword'))
       }
 
       setHasPassword(true)
@@ -244,7 +246,7 @@ export const VisibilityPanel: React.FC<{
 
       setTimeout(() => setPasswordSuccess(false), 3000)
     } catch (error) {
-      setPasswordError(error instanceof Error ? error.message : 'Unknown error')
+      setPasswordError(error instanceof Error ? error.message : t('visibility.unknownError'))
     } finally {
       setPasswordLoading(false)
     }
@@ -252,7 +254,7 @@ export const VisibilityPanel: React.FC<{
 
   const handleRemovePassword = async () => {
     if (!id) return
-    if (!window.confirm('Remove password protection? This content will become public.')) {
+    if (!window.confirm(t('visibility.removeConfirm'))) {
       return
     }
 
@@ -263,7 +265,7 @@ export const VisibilityPanel: React.FC<{
         method: 'DELETE',
       })
 
-      if (!response.ok) throw new Error('Failed to remove password')
+      if (!response.ok) throw new Error(t('visibility.errorRemovePassword'))
 
       setHasPassword(false)
       setPasswordSuccess(true)
@@ -275,7 +277,7 @@ export const VisibilityPanel: React.FC<{
 
       setTimeout(() => setPasswordSuccess(false), 3000)
     } catch (error) {
-      setPasswordError(error instanceof Error ? error.message : 'Unknown error')
+      setPasswordError(error instanceof Error ? error.message : t('visibility.unknownError'))
     } finally {
       setPasswordLoading(false)
     }
@@ -285,7 +287,7 @@ export const VisibilityPanel: React.FC<{
 
   return (
     <div className="doc-visibility">
-      <label className="doc-visibility__label">Visibility</label>
+      <label className="doc-visibility__label">{t('visibility.label')}</label>
 
       <select
         className="doc-visibility__select"
@@ -293,34 +295,33 @@ export const VisibilityPanel: React.FC<{
         onChange={(e) => handleVisibilityChange(e.target.value as VisibilityMode)}
         value={visibilityMode}
       >
-        <option value="public">Public</option>
-        <option value="members-only">Members only</option>
-        <option value="password">Password protected</option>
-        <option value="group">Use a shared password group</option>
-        <option value="accounts">Visible to signed-in accounts</option>
+        <option value="public">{t('visibility.public')}</option>
+        <option value="members-only">{t('visibility.membersOnly')}</option>
+        <option value="password">{t('visibility.password')}</option>
+        <option value="group">{t('visibility.group')}</option>
+        <option value="accounts">{t('visibility.accounts')}</option>
       </select>
 
       {visibilityMode === 'group' && (
         <div className="doc-visibility__access">
           <label className="doc-visibility__access-label">
-            Password group
+            {t('visibility.passwordGroup')}
             <select
               className="doc-visibility__access-input"
               disabled={readOnly || accessBusy}
               onChange={(e) => setGroupId(e.target.value)}
               value={groupId}
             >
-              <option value="">Choose a group</option>
+              <option value="">{t('visibility.chooseGroup')}</option>
               {groups.map((g) => (
                 <option key={g.id} value={String(g.id)}>
-                  {g.name}
-                  {g.expired ? ' (expired)' : ''}
+                  {g.expired ? t('visibility.groupExpired', { name: g.name }) : g.name}
                 </option>
               ))}
             </select>
           </label>
           <p className="doc-visibility__access-hint">
-            One password unlocks every document in the group. Create and rotate groups under Settings, Security, Password groups.
+            {t('visibility.groupHint')}
           </p>
           <button
             className="doc-visibility__access-button"
@@ -328,9 +329,9 @@ export const VisibilityPanel: React.FC<{
             onClick={() => handleSaveAccess('group')}
             type="button"
           >
-            {accessBusy ? 'Saving...' : 'Use this group'}
+            {accessBusy ? t('common.saving') : t('visibility.useGroup')}
           </button>
-          {!id && <p className="doc-visibility__access-hint">Save the document first</p>}
+          {!id && <p className="doc-visibility__access-hint">{t('visibility.saveFirst')}</p>}
           {accessMessage && <div className="doc-visibility__access-ok">{accessMessage}</div>}
           {accessError && <div className="doc-visibility__access-error">{accessError}</div>}
         </div>
@@ -339,7 +340,7 @@ export const VisibilityPanel: React.FC<{
       {visibilityMode === 'accounts' && (
         <div className="doc-visibility__access">
           <label className="doc-visibility__access-label">
-            Allowed roles (optional, comma separated)
+            {t('visibility.rolesLabel')}
             <input
               className="doc-visibility__access-input"
               disabled={readOnly || accessBusy}
@@ -349,7 +350,7 @@ export const VisibilityPanel: React.FC<{
             />
           </label>
           <label className="doc-visibility__access-label">
-            Allowed membership tiers (optional, comma separated tier names)
+            {t('visibility.tiersLabel')}
             <input
               className="doc-visibility__access-input"
               disabled={readOnly || accessBusy}
@@ -359,21 +360,20 @@ export const VisibilityPanel: React.FC<{
             />
           </label>
           <p className="doc-visibility__access-hint">
-            Leave both empty to allow any signed-in account. A role or a tier match is enough. Everyone else sees a gate with a sign-in link.
+            {t('visibility.accountsHint')}
           </p>
           <label className="doc-visibility__access-label">
-            Also allow a password group (optional)
+            {t('visibility.alsoGroup')}
             <select
               className="doc-visibility__access-input"
               disabled={readOnly || accessBusy}
               onChange={(e) => setGroupId(e.target.value)}
               value={groupId}
             >
-              <option value="">No password alternative</option>
+              <option value="">{t('visibility.noAlternative')}</option>
               {groups.map((g) => (
                 <option key={g.id} value={String(g.id)}>
-                  {g.name}
-                  {g.expired ? ' (expired)' : ''}
+                  {g.expired ? t('visibility.groupExpired', { name: g.name }) : g.name}
                 </option>
               ))}
             </select>
@@ -384,9 +384,9 @@ export const VisibilityPanel: React.FC<{
             onClick={() => handleSaveAccess('accounts')}
             type="button"
           >
-            {accessBusy ? 'Saving...' : 'Save'}
+            {accessBusy ? t('common.saving') : t('common.save')}
           </button>
-          {!id && <p className="doc-visibility__access-hint">Save the document first</p>}
+          {!id && <p className="doc-visibility__access-hint">{t('visibility.saveFirst')}</p>}
           {accessMessage && <div className="doc-visibility__access-ok">{accessMessage}</div>}
           {accessError && <div className="doc-visibility__access-error">{accessError}</div>}
         </div>
@@ -406,7 +406,7 @@ export const VisibilityPanel: React.FC<{
                   marginBottom: '8px',
                 }}
               >
-                Password set
+                {t('visibility.passwordSet')}
               </div>
               <button
                 type="button"
@@ -423,14 +423,14 @@ export const VisibilityPanel: React.FC<{
                   opacity: passwordLoading || readOnly ? 0.6 : 1,
                 }}
               >
-                {passwordLoading ? 'Removing...' : 'Remove password'}
+                {passwordLoading ? t('visibility.removing') : t('visibility.removePassword')}
               </button>
             </div>
           ) : (
             <>
               <input
                 type="password"
-                placeholder="Enter new password (min 4 chars)"
+                placeholder={t('visibility.newPasswordPlaceholder')}
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 disabled={passwordLoading || readOnly}
@@ -459,7 +459,7 @@ export const VisibilityPanel: React.FC<{
                   opacity: !passwordInput || passwordLoading || !id || readOnly ? 0.6 : 1,
                 }}
               >
-                {passwordLoading ? 'Setting...' : 'Set password'}
+                {passwordLoading ? t('visibility.setting') : t('visibility.setPassword')}
               </button>
               {!id && (
                 <div
@@ -469,7 +469,7 @@ export const VisibilityPanel: React.FC<{
                     color: '#666',
                   }}
                 >
-                  Save the document first
+                  {t('visibility.saveFirst')}
                 </div>
               )}
             </>
@@ -501,7 +501,7 @@ export const VisibilityPanel: React.FC<{
                 fontSize: '0.9rem',
               }}
             >
-              {hasPassword ? 'Password removed' : 'Password set successfully'}
+              {hasPassword ? t('visibility.passwordRemoved') : t('visibility.passwordSetSuccess')}
             </div>
           )}
         </div>

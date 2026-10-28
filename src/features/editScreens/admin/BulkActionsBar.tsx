@@ -1,6 +1,7 @@
 'use client'
 
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
 
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
@@ -20,20 +21,20 @@ export type BulkBarProps = {
   noun: string
 }
 
-type Choice = { value: BulkAction; label: string }
+type Choice = { value: BulkAction; labelKey: UiStringKey }
 
 /** The actions offered, by view and permission. The server checks them again for the whole request and for every row. */
 export function bulkChoices(props: Pick<BulkBarProps, 'collection' | 'trashView' | 'canPublish' | 'canDelete' | 'canChangeAuthor'>): Choice[] {
   if (props.trashView) {
     const trashChoices: Choice[] = []
-    if (props.canDelete) trashChoices.push({ value: 'restore', label: 'Restore' }, { value: 'delete', label: 'Delete permanently' })
+    if (props.canDelete) trashChoices.push({ value: 'restore', labelKey: 'bulk.action.restore' }, { value: 'delete', labelKey: 'trash.deletePermanently' })
     return trashChoices
   }
   const choices: Choice[] = []
-  if (props.canPublish) choices.push({ value: 'publish', label: 'Publish' }, { value: 'unpublish', label: 'Switch to draft' })
-  if (props.canDelete) choices.push({ value: 'trash', label: 'Move to trash' })
-  if (props.canChangeAuthor) choices.push({ value: 'changeAuthor', label: 'Change author' })
-  if (props.collection === 'posts') choices.push({ value: 'changeCategory', label: 'Change category' })
+  if (props.canPublish) choices.push({ value: 'publish', labelKey: 'common.publish' }, { value: 'unpublish', labelKey: 'edit.switchToDraft' })
+  if (props.canDelete) choices.push({ value: 'trash', labelKey: 'edit.moveToTrash' })
+  if (props.canChangeAuthor) choices.push({ value: 'changeAuthor', labelKey: 'bulk.action.changeAuthor' })
+  if (props.collection === 'posts') choices.push({ value: 'changeCategory', labelKey: 'bulk.action.changeCategory' })
   return choices
 }
 
@@ -90,7 +91,7 @@ export function BulkActionsBar(props: BulkBarProps) {
           return (await response.json()) as { authors: AuthorOption[] }
         })
         .then((body) => setAuthors(body.authors))
-        .catch(() => setError('The list of authors could not be loaded.'))
+        .catch(() => setError(t('bulk.authorsLoadError')))
     }
   }
 
@@ -101,24 +102,33 @@ export function BulkActionsBar(props: BulkBarProps) {
     (action !== 'changeAuthor' || author !== '') &&
     (action !== 'changeCategory' || categoryName.trim() !== '')
 
+  const count = selected.length
   const plural = selected.length === 1 ? props.noun : `${props.noun}s`
   const confirmText = (() => {
-    const what = `${selected.length} ${plural}`
     switch (action) {
       case 'publish':
-        return `Publish ${what}? They go live on the site straight away.`
+        return t('bulk.confirm.publish', { count, noun: plural })
       case 'unpublish':
-        return `Switch ${what} to draft? They disappear from the public site.`
+        return t('bulk.confirm.unpublish', { count, noun: plural })
       case 'trash':
-        return `Move ${what} to the trash? They come off the public site and you can restore them from the trash.`
+        return t('bulk.confirm.trash', { count, noun: plural })
       case 'restore':
-        return `Restore ${what}? They come back as drafts.`
+        return t('bulk.confirm.restore', { count, noun: plural })
       case 'delete':
-        return `Delete ${what} permanently? This cannot be undone.`
+        return t('bulk.confirm.delete', { count, noun: plural })
       case 'changeAuthor':
-        return `Change the author of ${what} to ${authors?.find((a) => String(a.id) === author)?.name ?? 'the chosen person'}?`
+        return t('bulk.confirm.changeAuthor', {
+          count,
+          noun: plural,
+          name: authors?.find((a) => String(a.id) === author)?.name ?? t('bulk.chosenPerson'),
+        })
       case 'changeCategory':
-        return `${categoryMode === 'add' ? 'Add' : categoryMode === 'remove' ? 'Remove' : 'Set only'} the category "${categoryName.trim()}" on ${what}?`
+        return t('bulk.confirm.changeCategory', {
+          verb: t(categoryMode === 'add' ? 'bulk.verb.add' : categoryMode === 'remove' ? 'bulk.verb.remove' : 'bulk.verb.replace'),
+          name: categoryName.trim(),
+          count,
+          noun: plural,
+        })
       default:
         return ''
     }
@@ -140,13 +150,13 @@ export function BulkActionsBar(props: BulkBarProps) {
       })
       const data = (await response.json().catch((): null => null)) as { message?: string; error?: string; results?: BulkRowResult[] } | null
       if (!response.ok || !data) {
-        setError(data?.error ?? 'The change could not be made.')
+        setError(data?.error ?? t('bulk.changeFailed'))
         return
       }
       const labels = new Map(selected.map((row) => [row.id, row.label]))
       setReport({
-        message: data.message ?? 'Done.',
-        failures: (data.results ?? []).filter((row) => !row.ok).map((row) => ({ label: labels.get(row.id) ?? `#${row.id}`, error: row.error ?? 'Refused.' })),
+        message: data.message ?? t('bulk.done'),
+        failures: (data.results ?? []).filter((row) => !row.ok).map((row) => ({ label: labels.get(row.id) ?? `#${row.id}`, error: row.error ?? t('bulk.refused') })),
       })
       for (const box of document.querySelectorAll<HTMLInputElement>('input[data-bulk-row], input[data-bulk-all]')) box.checked = false
       setSelected([])
@@ -154,7 +164,7 @@ export function BulkActionsBar(props: BulkBarProps) {
       setAction('')
       router.refresh()
     } catch {
-      setError('The change could not be made. Check your connection and try again.')
+      setError(t('bulk.changeFailedNetwork'))
     } finally {
       setBusy(false)
     }
@@ -163,24 +173,24 @@ export function BulkActionsBar(props: BulkBarProps) {
   return (
     <div aria-label={t('common.bulkActions')} className="es-bulk" role="region">
       <span className="es-bulk__count" aria-live="polite">
-        {selected.length === 0 ? `Select ${props.noun}s with the boxes` : `${selected.length} selected`}
+        {selected.length === 0 ? t('bulk.selectItems', { nouns: `${props.noun}s` }) : t('bulk.selectedCount', { count: selected.length })}
       </span>
       <label>
-        <span className="es-sr">Action</span>
+        <span className="es-sr">{t('bulk.actionLabel')}</span>
         <select disabled={busy} onChange={(event) => choose(event.target.value as BulkAction | '')} value={action}>
-          <option value="">Choose an action</option>
+          <option value="">{t('bulk.chooseAction')}</option>
           {choices.map((choice) => (
             <option key={choice.value} value={choice.value}>
-              {choice.label}
+              {t(choice.labelKey)}
             </option>
           ))}
         </select>
       </label>
       {action === 'changeAuthor' && (
         <label>
-          <span className="es-sr">New author</span>
+          <span className="es-sr">{t('bulk.newAuthor')}</span>
           <select disabled={busy || authors === null} onChange={(event) => setAuthor(event.target.value)} value={author}>
-            <option value="">{authors === null ? 'Loading...' : 'Choose the new author'}</option>
+            <option value="">{authors === null ? t('bulk.loadingAuthors') : t('bulk.chooseAuthor')}</option>
             {(authors ?? []).map((a) => (
               <option key={a.id} value={String(a.id)}>
                 {a.name}
@@ -192,29 +202,29 @@ export function BulkActionsBar(props: BulkBarProps) {
       {action === 'changeCategory' && (
         <>
           <label>
-            <span className="es-sr">What to do</span>
+            <span className="es-sr">{t('bulk.whatToDo')}</span>
             <select disabled={busy} onChange={(event) => setCategoryMode(event.target.value as CategoryMode)} value={categoryMode}>
-              <option value="add">Add category</option>
-              <option value="replace">Set as the only category</option>
-              <option value="remove">Remove category</option>
+              <option value="add">{t('bulk.addCategory')}</option>
+              <option value="replace">{t('bulk.replaceCategory')}</option>
+              <option value="remove">{t('bulk.removeCategory')}</option>
             </select>
           </label>
           <label>
-            <span className="es-sr">Category name</span>
-            <input disabled={busy} maxLength={80} onChange={(event) => setCategoryName(event.target.value)} placeholder="Category name" type="text" value={categoryName} />
+            <span className="es-sr">{t('bulk.categoryName')}</span>
+            <input disabled={busy} maxLength={80} onChange={(event) => setCategoryName(event.target.value)} placeholder={t('bulk.categoryPlaceholder')} type="text" value={categoryName} />
           </label>
         </>
       )}
       {!confirming && (
         <button className="btn" disabled={!ready || busy} onClick={() => setConfirming(true)} type="button">
-          Apply{chosen ? `: ${chosen.label}` : ''}
+          {chosen ? t('bulk.applyWith', { label: t(chosen.labelKey) }) : t('common.apply')}
         </button>
       )}
       {confirming && ready && (
-        <div className={`es-bulk__confirm${action === 'delete' ? ' es-bulk__confirm--danger' : ''}`} role="alertdialog" aria-label="Confirm bulk action">
+        <div className={`es-bulk__confirm${action === 'delete' ? ' es-bulk__confirm--danger' : ''}`} role="alertdialog" aria-label={t('bulk.confirmAria')}>
           <p style={{ margin: '0 0 8px 0' }}>{confirmText}</p>
           <button className={action === 'delete' ? 'btn btn--primary doc-link--danger' : 'btn btn--primary'} disabled={busy} onClick={run} type="button">
-            {busy ? 'Working...' : 'Yes, do it'}
+            {busy ? t('bulk.working') : t('bulk.confirmDo')}
           </button>{' '}
           <button className="btn" disabled={busy} onClick={() => setConfirming(false)} type="button">
             {t('common.cancel')}

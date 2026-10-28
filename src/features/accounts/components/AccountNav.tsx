@@ -4,6 +4,7 @@ import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 
 import { SignOutButton } from './AccountForms'
+import { usePortalText } from './PortalText'
 
 export type AccountNavLink = { href: string; label: string }
 
@@ -32,6 +33,7 @@ export type AccountNavLink = { href: string; label: string }
  */
 export function AccountNav({ links, current }: { links: AccountNavLink[]; current: string }) {
   const [open, setOpen] = useState(false)
+  const t = usePortalText()
 
   // Close on Escape, and if the viewport is resized past the mobile
   // breakpoint while the drawer happens to be open (avoids a hidden
@@ -65,11 +67,11 @@ export function AccountNav({ links, current }: { links: AccountNavLink[]; curren
         onClick={() => setOpen((o) => !o)}
       >
         <span className="account-nav-toggle__bars" aria-hidden="true" />
-        Menu
+        {t('nav.menu')}
       </button>
       {open && <div className="account-nav-backdrop" onClick={() => setOpen(false)} />}
       <nav
-        aria-label="Your account"
+        aria-label={t('nav.label')}
         id="account-nav-drawer"
         className={`account-nav-drawer${open ? ' account-nav-drawer--open' : ''}`}
       >

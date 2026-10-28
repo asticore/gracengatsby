@@ -10,11 +10,17 @@
  * translated, so output is unchanged. Any other language falls back to English.
  */
 
-import { t } from '@/features/uiStrings/t'
+import { t, type UiStringVars } from '@/features/uiStrings/t'
 import { portalKey, type PortalStringKey } from '@/features/uiStrings/portalAdapter'
 
 export type { PortalStringKey }
 
-export function portalText(key: PortalStringKey, locale: string | null | undefined): string {
-  return t(portalKey(key), locale)
+export function portalText(key: PortalStringKey, locale: string | null | undefined, vars?: UiStringVars): string {
+  return t(portalKey(key), locale, vars)
 }
+
+/** `portalText` bound to one request's language, for screens that translate many strings. */
+export const portalTextFor =
+  (locale: string | null | undefined) =>
+  (key: PortalStringKey, vars?: UiStringVars): string =>
+    portalText(key, locale, vars)

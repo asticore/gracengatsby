@@ -3,12 +3,13 @@
 import React, { useState } from 'react'
 
 import type { SubscriptionStatus } from '../plan'
+import { usePortalText } from '@/features/accounts/components/PortalText'
 
-const OPTIONS: { action: 'pause' | 'resume' | 'cancel' | 'keep'; label: string; from: SubscriptionStatus[] }[] = [
-  { action: 'pause', label: 'Pause', from: ['active', 'trialing'] },
-  { action: 'resume', label: 'Resume', from: ['paused'] },
-  { action: 'cancel', label: 'Cancel', from: ['active', 'trialing', 'past-due', 'paused'] },
-  { action: 'keep', label: 'Keep it', from: ['cancelling'] },
+const OPTIONS: { action: 'pause' | 'resume' | 'cancel' | 'keep'; labelKey: 'subscriptions.pause' | 'subscriptions.resume' | 'subscriptions.cancel' | 'subscriptions.keep'; from: SubscriptionStatus[] }[] = [
+  { action: 'pause', labelKey: 'subscriptions.pause', from: ['active', 'trialing'] },
+  { action: 'resume', labelKey: 'subscriptions.resume', from: ['paused'] },
+  { action: 'cancel', labelKey: 'subscriptions.cancel', from: ['active', 'trialing', 'past-due', 'paused'] },
+  { action: 'keep', labelKey: 'subscriptions.keep', from: ['cancelling'] },
 ]
 
 /** Buttons for one subscription row. Only the changes that apply to its status are shown. */
@@ -16,9 +17,10 @@ export function SubscriptionActions({ id, status }: { id: number; status: Subscr
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const available = OPTIONS.filter((option) => option.from.includes(status))
+  const t = usePortalText()
 
   const change = async (action: (typeof OPTIONS)[number]['action']) => {
-    if (action === 'cancel' && !window.confirm('Cancel this subscription? It ends at the end of the period you have already paid for.')) return
+    if (action === 'cancel' && !window.confirm(t('subscriptions.confirmCancel'))) return
     setBusy(true)
     setError('')
     try {
@@ -29,10 +31,10 @@ export function SubscriptionActions({ id, status }: { id: number; status: Subscr
         body: JSON.stringify({ action, id }),
       })
       const body = (await res.json().catch((): Record<string, unknown> => ({}))) as { error?: string }
-      if (!res.ok) throw new Error(body.error || 'That change was not made.')
+      if (!res.ok) throw new Error(body.error || t('subscriptions.notMade'))
       window.location.reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'That change was not made.')
+      setError(err instanceof Error ? err.message : t('subscriptions.notMade'))
       setBusy(false)
     }
   }
@@ -42,7 +44,7 @@ export function SubscriptionActions({ id, status }: { id: number; status: Subscr
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
       {available.map((option) => (
         <button key={option.action} type="button" className="btn btn--style-secondary" disabled={busy} onClick={() => change(option.action)}>
-          {option.label}
+          {t(option.labelKey)}
         </button>
       ))}
       {error ? (

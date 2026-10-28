@@ -1822,6 +1822,28 @@ const zhHans: UiDictionary = {
   'dp.lit.z_index': "Z-index",
   'dp.lit.tablet': "平板",
   'dp.lit.desktop': "桌面",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "区段至少需要一列",
+  'cv.lit.add_column': "添加列",
+  'cv.lit.add_column_after_this_one': "在此列后添加列",
+  'cv.lit.add_tab': "添加标签",
+  'cv.lit.carousel_each_column_is_a_slide': "轮播：每列即一张幻灯片",
+  'cv.lit.close_element_picker': "关闭元素选择器",
+  'cv.lit.delete': "删除",
+  'cv.lit.delete_column': "删除列",
+  'cv.lit.drag_to_move': "拖动以移动",
+  'cv.lit.drag_to_resize_these_two_columns': "拖动以调整这两列的宽度",
+  'cv.lit.duplicate': "复制",
+  'cv.lit.duplicate_column': "复制列",
+  'cv.lit.fully_locked': "已完全锁定",
+  'cv.lit.grid_each_column_is_a_cell': "网格：每列即一个单元格",
+  'cv.lit.move_column_left': "将列左移",
+  'cv.lit.move_column_right': "将列右移",
+  'cv.lit.move_down': "下移",
+  'cv.lit.move_up': "上移",
+  'cv.lit.scroll_story_preview_on_live_page': "线上页面的滚动故事预览",
+  'cv.lit.tab_title': "标签标题",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "此区块仅在线上网站满足其可见性规则时显示。编辑器始终显示它。",
 }
 
 export default zhHans

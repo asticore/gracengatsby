@@ -1824,6 +1824,28 @@ const de: UiDictionary = {
   'dp.lit.z_index': "Z-Index",
   'dp.lit.tablet': "Tablet",
   'dp.lit.desktop': "Desktop",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "Ein Abschnitt braucht mindestens eine Spalte",
+  'cv.lit.add_column': "Spalte hinzufügen",
+  'cv.lit.add_column_after_this_one': "Spalte nach dieser hinzufügen",
+  'cv.lit.add_tab': "Tab hinzufügen",
+  'cv.lit.carousel_each_column_is_a_slide': "Karussell: jede Spalte ist eine Folie",
+  'cv.lit.close_element_picker': "Elementauswahl schließen",
+  'cv.lit.delete': "Löschen",
+  'cv.lit.delete_column': "Spalte löschen",
+  'cv.lit.drag_to_move': "Zum Verschieben ziehen",
+  'cv.lit.drag_to_resize_these_two_columns': "Zum Ändern der Größe dieser beiden Spalten ziehen",
+  'cv.lit.duplicate': "Duplizieren",
+  'cv.lit.duplicate_column': "Spalte duplizieren",
+  'cv.lit.fully_locked': "Vollständig gesperrt",
+  'cv.lit.grid_each_column_is_a_cell': "Raster: jede Spalte ist eine Zelle",
+  'cv.lit.move_column_left': "Spalte nach links verschieben",
+  'cv.lit.move_column_right': "Spalte nach rechts verschieben",
+  'cv.lit.move_down': "Nach unten",
+  'cv.lit.move_up': "Nach oben",
+  'cv.lit.scroll_story_preview_on_live_page': "Scroll-Story-Vorschau auf der Live-Seite",
+  'cv.lit.tab_title': "Tab-Titel",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "Dieser Block wird nur angezeigt, wenn seine Sichtbarkeitsregeln auf der Live-Seite erfüllt sind. Der Editor zeigt ihn immer an.",
 }
 
 export default de

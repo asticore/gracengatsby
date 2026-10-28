@@ -1823,6 +1823,28 @@ const ja: UiDictionary = {
   'dp.lit.z_index': "Z-index",
   'dp.lit.tablet': "タブレット",
   'dp.lit.desktop': "デスクトップ",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "セクションには少なくとも1つの列が必要です",
+  'cv.lit.add_column': "列を追加",
+  'cv.lit.add_column_after_this_one': "この列の後に列を追加",
+  'cv.lit.add_tab': "タブを追加",
+  'cv.lit.carousel_each_column_is_a_slide': "カルーセル：各列がスライドになります",
+  'cv.lit.close_element_picker': "要素ピッカーを閉じる",
+  'cv.lit.delete': "削除",
+  'cv.lit.delete_column': "列を削除",
+  'cv.lit.drag_to_move': "ドラッグして移動",
+  'cv.lit.drag_to_resize_these_two_columns': "ドラッグしてこの2つの列のサイズを変更",
+  'cv.lit.duplicate': "複製",
+  'cv.lit.duplicate_column': "列を複製",
+  'cv.lit.fully_locked': "完全にロック済み",
+  'cv.lit.grid_each_column_is_a_cell': "グリッド：各列がセルになります",
+  'cv.lit.move_column_left': "列を左に移動",
+  'cv.lit.move_column_right': "列を右に移動",
+  'cv.lit.move_down': "下へ移動",
+  'cv.lit.move_up': "上へ移動",
+  'cv.lit.scroll_story_preview_on_live_page': "公開ページでのスクロールストーリーのプレビュー",
+  'cv.lit.tab_title': "タブのタイトル",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "このブロックは、公開サイトで表示ルールを満たした場合にのみ表示されます。エディターでは常に表示されます。",
 }
 
 export default ja

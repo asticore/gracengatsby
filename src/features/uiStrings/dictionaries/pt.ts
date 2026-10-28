@@ -1823,6 +1823,28 @@ const pt: UiDictionary = {
   'dp.lit.z_index': "Índice Z",
   'dp.lit.tablet': "tablet",
   'dp.lit.desktop': "desktop",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "Uma seção precisa de pelo menos uma coluna",
+  'cv.lit.add_column': "Adicionar coluna",
+  'cv.lit.add_column_after_this_one': "Adicionar coluna após esta",
+  'cv.lit.add_tab': "Adicionar aba",
+  'cv.lit.carousel_each_column_is_a_slide': "Carrossel: cada coluna é um slide",
+  'cv.lit.close_element_picker': "Fechar seletor de elementos",
+  'cv.lit.delete': "Excluir",
+  'cv.lit.delete_column': "Excluir coluna",
+  'cv.lit.drag_to_move': "Arraste para mover",
+  'cv.lit.drag_to_resize_these_two_columns': "Arraste para redimensionar estas duas colunas",
+  'cv.lit.duplicate': "Duplicar",
+  'cv.lit.duplicate_column': "Duplicar coluna",
+  'cv.lit.fully_locked': "Totalmente bloqueado",
+  'cv.lit.grid_each_column_is_a_cell': "Grade: cada coluna é uma célula",
+  'cv.lit.move_column_left': "Mover coluna para a esquerda",
+  'cv.lit.move_column_right': "Mover coluna para a direita",
+  'cv.lit.move_down': "Mover para baixo",
+  'cv.lit.move_up': "Mover para cima",
+  'cv.lit.scroll_story_preview_on_live_page': "Prévia da história de rolagem na página ao vivo",
+  'cv.lit.tab_title': "Título da aba",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "Este bloco só aparece quando suas regras de visibilidade são atendidas no site ao vivo. O editor sempre o mostra.",
 }
 
 export default pt

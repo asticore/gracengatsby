@@ -1823,6 +1823,28 @@ const ar: UiDictionary = {
   'dp.lit.z_index': "ترتيب Z",
   'dp.lit.tablet': "الجهاز اللوحي",
   'dp.lit.desktop': "سطح المكتب",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "يحتاج القسم إلى عمود واحد على الأقل",
+  'cv.lit.add_column': "إضافة عمود",
+  'cv.lit.add_column_after_this_one': "إضافة عمود بعد هذا",
+  'cv.lit.add_tab': "إضافة علامة تبويب",
+  'cv.lit.carousel_each_column_is_a_slide': "عارض دوار: كل عمود شريحة",
+  'cv.lit.close_element_picker': "إغلاق منتقي العناصر",
+  'cv.lit.delete': "حذف",
+  'cv.lit.delete_column': "حذف العمود",
+  'cv.lit.drag_to_move': "اسحب للتحريك",
+  'cv.lit.drag_to_resize_these_two_columns': "اسحب لتغيير حجم هذين العمودين",
+  'cv.lit.duplicate': "تكرار",
+  'cv.lit.duplicate_column': "تكرار العمود",
+  'cv.lit.fully_locked': "مقفل بالكامل",
+  'cv.lit.grid_each_column_is_a_cell': "الشبكة: كل عمود خلية",
+  'cv.lit.move_column_left': "نقل العمود لليسار",
+  'cv.lit.move_column_right': "نقل العمود لليمين",
+  'cv.lit.move_down': "نقل لأسفل",
+  'cv.lit.move_up': "نقل لأعلى",
+  'cv.lit.scroll_story_preview_on_live_page': "معاينة قصة التمرير على الصفحة المباشرة",
+  'cv.lit.tab_title': "عنوان علامة التبويب",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "يظهر هذا الكتلة فقط عندما تنجح قواعد ظهورها على الموقع المباشر. المحرر يعرضها دائماً.",
 }
 
 export default ar

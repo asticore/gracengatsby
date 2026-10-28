@@ -1823,6 +1823,28 @@ const ko: UiDictionary = {
   'dp.lit.z_index': "Z-index",
   'dp.lit.tablet': "태블릿",
   'dp.lit.desktop': "데스크톱",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "섹션에는 최소 한 개의 열이 필요합니다",
+  'cv.lit.add_column': "열 추가",
+  'cv.lit.add_column_after_this_one': "이 열 다음에 열 추가",
+  'cv.lit.add_tab': "탭 추가",
+  'cv.lit.carousel_each_column_is_a_slide': "캐러셀: 각 열이 슬라이드입니다",
+  'cv.lit.close_element_picker': "요소 선택기 닫기",
+  'cv.lit.delete': "삭제",
+  'cv.lit.delete_column': "열 삭제",
+  'cv.lit.drag_to_move': "드래그하여 이동",
+  'cv.lit.drag_to_resize_these_two_columns': "드래그하여 이 두 열의 크기 조절",
+  'cv.lit.duplicate': "복제",
+  'cv.lit.duplicate_column': "열 복제",
+  'cv.lit.fully_locked': "완전히 잠김",
+  'cv.lit.grid_each_column_is_a_cell': "그리드: 각 열이 하나의 셀",
+  'cv.lit.move_column_left': "열을 왼쪽으로 이동",
+  'cv.lit.move_column_right': "열을 오른쪽으로 이동",
+  'cv.lit.move_down': "아래로 이동",
+  'cv.lit.move_up': "위로 이동",
+  'cv.lit.scroll_story_preview_on_live_page': "라이브 페이지의 스크롤 스토리 미리보기",
+  'cv.lit.tab_title': "탭 제목",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "이 블록은 라이브 사이트에서 표시 규칙을 통과할 때만 보입니다. 편집기에서는 항상 표시됩니다.",
 }
 
 export default ko

@@ -1823,6 +1823,28 @@ const nl: UiDictionary = {
   'dp.lit.z_index': "Z-index",
   'dp.lit.tablet': "tablet",
   'dp.lit.desktop': "desktop",
+  // --- admin leftovers (visual editor canvas) ---
+  'cv.lit.a_section_needs_at_least_one_column': "Een sectie heeft minstens één kolom nodig",
+  'cv.lit.add_column': "Kolom toevoegen",
+  'cv.lit.add_column_after_this_one': "Kolom toevoegen na deze",
+  'cv.lit.add_tab': "Tab toevoegen",
+  'cv.lit.carousel_each_column_is_a_slide': "Carrousel: elke kolom is een dia",
+  'cv.lit.close_element_picker': "Elementkiezer sluiten",
+  'cv.lit.delete': "Verwijderen",
+  'cv.lit.delete_column': "Kolom verwijderen",
+  'cv.lit.drag_to_move': "Slepen om te verplaatsen",
+  'cv.lit.drag_to_resize_these_two_columns': "Slepen om deze twee kolommen te verkleinen of vergroten",
+  'cv.lit.duplicate': "Dupliceren",
+  'cv.lit.duplicate_column': "Kolom dupliceren",
+  'cv.lit.fully_locked': "Volledig vergrendeld",
+  'cv.lit.grid_each_column_is_a_cell': "Raster: elke kolom is een cel",
+  'cv.lit.move_column_left': "Kolom naar links verplaatsen",
+  'cv.lit.move_column_right': "Kolom naar rechts verplaatsen",
+  'cv.lit.move_down': "Omlaag",
+  'cv.lit.move_up': "Omhoog",
+  'cv.lit.scroll_story_preview_on_live_page': "Voorbeeld van het scrollverhaal op de live pagina",
+  'cv.lit.tab_title': "Tabbladtitel",
+  'cv.lit.this_block_only_shows_when_its_visibilit': "Dit blok wordt alleen getoond als de zichtbaarheidsregels op de live site kloppen. De editor toont het altijd.",
 }
 
 export default nl

@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 /**
  * "Where is this picture used?" - scans the places a media document can be
  * referenced from and reports each one.
@@ -115,7 +116,7 @@ const titleOf = (doc: Record<string, unknown>, fallback: string): string => {
 
 export function editUrlFor(target: UsageTarget, id: string | number | null, adminRoute: string): string {
   if (target.kind === 'global') return `${adminRoute}/globals/${target.slug}`
-  return `${adminRoute}/collections/${target.slug}/${String(id)}`
+  return `${adminCollectionPath(target.slug, adminRoute)}/${String(id)}`
 }
 
 /** In-memory reports for the default targets, keyed by admin route and media id. Per process only; a cold start simply rescans. */

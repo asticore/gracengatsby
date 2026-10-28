@@ -544,7 +544,7 @@ describe('review handlers', () => {
       }),
     }
     const reviewerRows = await loadReviewQueue({ engine: engine as never, viewer: viewerFor(users[1]), settings: ON })
-    expect(reviewerRows).toEqual([{ collection: 'pages', id: 7, title: 'Summer', requestedBy: 'Ed Editor', requestedAt: NOW, href: '/admin/collections/pages/7' }])
+    expect(reviewerRows).toEqual([{ collection: 'pages', id: 7, title: 'Summer', requestedBy: 'Ed Editor', requestedAt: NOW, href: `/admin/content/pages/7` }])
 
     const editorRows = await loadReviewQueue({ engine: engine as never, viewer: viewerFor(users[0]), settings: ON })
     expect(editorRows).toHaveLength(1)

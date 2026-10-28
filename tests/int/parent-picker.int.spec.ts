@@ -92,8 +92,8 @@ describe('ParentPicker component', () => {
     // Reset URL for tests that don't need special URLs
     Object.defineProperty(window, 'location', {
       value: {
-        pathname: '/admin/collections/pages/create',
-        href: 'http://localhost/admin/collections/pages/create',
+        pathname: `/admin/content/pages/create`,
+        href: 'http://localhost/admin/content/pages/create',
       },
       writable: true,
     })
@@ -283,8 +283,8 @@ describe('ParentPicker component', () => {
   it('excludes current page and descendants from selection', async () => {
     Object.defineProperty(window, 'location', {
       value: {
-        pathname: '/admin/collections/pages/2',
-        href: 'http://localhost/admin/collections/pages/2',
+        pathname: `/admin/content/pages/2`,
+        href: 'http://localhost/admin/content/pages/2',
       },
       writable: true,
     })

@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import Link from 'next/link'
 import type { Engine, EngineRequest } from '@/engine'
 
@@ -251,7 +252,7 @@ export async function EventsCalendarView(props: EventsCalendarViewProps) {
                 {dayEvents.map((ev) => (
                   <Link
                     key={ev.id}
-                    href={`${adminRoute}/collections/${slug}/${ev.id}`}
+                    href={`${adminCollectionPath(slug, adminRoute)}/${ev.id}`}
                     className={`truncate rounded-[3px] px-[calc(var(--base)*0.25)] py-[calc(var(--base)*0.1)] text-[calc(var(--base)*0.65)] no-underline ${
                       ev.status === 'draft'
                         ? 'bg-[var(--theme-elevation-100)] text-[var(--theme-elevation-600)]'
@@ -339,7 +340,7 @@ export async function EventsCalendarView(props: EventsCalendarViewProps) {
             <tbody>
               {docs.map((doc) => {
                 const id = String(doc.id)
-                const editHref = `${adminRoute}/collections/${slug}/${id}`
+                const editHref = `${adminCollectionPath(slug, adminRoute)}/${id}`
                 const status = typeof doc._status === 'string' ? doc._status : ''
                 return (
                   <tr key={id} className="border-b border-[var(--theme-elevation-100)] last:border-b-0 hover:bg-[var(--theme-elevation-50)]">

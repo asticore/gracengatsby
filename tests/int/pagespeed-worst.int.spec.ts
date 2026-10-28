@@ -126,7 +126,7 @@ describe('getWorstPages (real D1)', () => {
       ['posts', 7, 55],
       ['pages', 2, 80],
     ])
-    expect(pages[0]).toMatchObject({ title: 'About us', editHref: '/admin/collections/pages/1', url: 'https://example.com/about', band: 'poor' })
+    expect(pages[0]).toMatchObject({ title: 'About us', editHref: `/admin/content/pages/1`, url: 'https://example.com/about', band: 'poor' })
     expect(pages[0].lastRun).toBe('2026-10-02T10:00:00.000Z')
   })
 

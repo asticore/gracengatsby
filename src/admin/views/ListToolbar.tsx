@@ -1,4 +1,5 @@
 'use client'
+import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
@@ -124,7 +125,7 @@ export function ListToolbar({
       await fetch(`/api/admin-list-prefs?collection=${collectionSlug}`, {
         method: 'DELETE',
       })
-      router.push(`/admin/collections/${collectionSlug}`)
+      router.push(`${adminCollectionPath(collectionSlug)}`)
       router.refresh()
     } catch {
       console.error('Failed to reset preferences')

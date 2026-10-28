@@ -63,7 +63,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                 {data.docs.map((row) => (
                   <tr key={row.id}>
                     <td className="et-clip">
-                      <Link href={`/admin/collections/events/${row.eventId}`}>{row.eventTitle}</Link>
+                      <Link href={`/admin/content/events/${row.eventId}`}>{row.eventTitle}</Link>
                     </td>
                     <td className="et-clip">{row.name}</td>
                     <td className="et-clip">{row.email}</td>
@@ -71,7 +71,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                     <td className="et-clip">{row.ticketTier || '-'}</td>
                     <td className="et-nowrap">{formatWhen(row.createdAt)}</td>
                     <td className="et-nowrap">
-                      <Link href={`/admin/collections/event-rsvps/${row.id}`}>Open</Link>
+                      <Link href={`/admin/other/event-rsvps/${row.id}`}>Open</Link>
                     </td>
                   </tr>
                 ))}

@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import type { Drizzle } from '@/localapi/migrate'
 import { assertDocAccess } from '@/features/roles/docAccess'
 
@@ -105,7 +106,7 @@ export async function getWorstPages(opts: { db: Drizzle; context: WorstContext; 
       score: Math.round(row.performance),
       band: scoreBand(row.performance),
       lastRun: row.fetchedAt,
-      editHref: `/admin/collections/${row.collection}/${row.docId}`,
+      editHref: `${adminCollectionPath(row.collection)}/${row.docId}`,
       failingAudits: failingAuditsFrom(row.suggestions),
     })
   }

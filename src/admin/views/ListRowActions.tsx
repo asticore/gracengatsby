@@ -1,4 +1,5 @@
 'use client'
+import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
@@ -101,7 +102,7 @@ export function ListRowActions({
       }
       const body = (await response.json()) as { doc?: { title?: string; id?: unknown } }
       const newTitle = body.doc?.title || `#${body.doc?.id}`
-      setToast({ message: `Duplicated as ${newTitle}`, url: `/admin/collections/${collectionSlug}/${body.doc?.id}` })
+      setToast({ message: `Duplicated as ${newTitle}`, url: `${adminCollectionPath(collectionSlug)}/${body.doc?.id}` })
       router.refresh()
     } catch {
       setError('Duplicate failed - check your connection')

@@ -1,4 +1,5 @@
 'use client'
+import { adminCollectionPath } from '@/admin/adminPaths'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -1091,7 +1092,7 @@ export const VisualEditorView: React.FC = () => {
   const backHref = surface
     ? surface.kind === 'global'
       ? `/admin/globals/${surface.slug}`
-      : `/admin/collections/${surface.slug}/${route?.id}`
+      : `${adminCollectionPath(surface.slug)}/${route?.id}`
     : '/admin'
 
   const menuItems = (path: NodePath): ContextMenuItem[] => {

@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -249,7 +250,7 @@ export async function ListView({
       <div className="list-header">
         <h1>{label}</h1>
         {canCreate && (
-          <Link className="btn btn--primary" href={`/admin/collections/${collectionSlug}/create`}>
+          <Link className="btn btn--primary" href={`${adminCollectionPath(collectionSlug)}/create`}>
             Create new
           </Link>
         )}
@@ -291,7 +292,7 @@ export async function ListView({
                   {colDef?.label || filter.field} {filter.op} {filter.value}
                 </span>
                 <a
-                  href={`/admin/collections/${collectionSlug}?${serializeListState(effectiveState, {
+                  href={`${adminCollectionPath(collectionSlug)}?${serializeListState(effectiveState, {
                     filters: effectiveState.filters.filter((_, i) => i !== idx),
                   })}`}
                   className="list-filter-chip-remove"
@@ -323,10 +324,10 @@ export async function ListView({
       {/* Trash (pages, posts, events) */}
       {bulkCollection && activeTab.view === 'list' && (
         <nav aria-label="Trash" className="es-trash-links">
-          <a aria-current={!trashView ? 'true' : undefined} href={`/admin/collections/${collectionSlug}`}>
+          <a aria-current={!trashView ? 'true' : undefined} href={`${adminCollectionPath(collectionSlug)}`}>
             All
           </a>
-          <a aria-current={trashView ? 'true' : undefined} href={`/admin/collections/${collectionSlug}?trash=1`}>
+          <a aria-current={trashView ? 'true' : undefined} href={`${adminCollectionPath(collectionSlug)}?trash=1`}>
             Trash ({trashCount})
           </a>
         </nav>
@@ -453,7 +454,7 @@ export async function ListView({
                         return (
                           <td key={column.name} className="list-td">
                             {index === 0 ? (
-                              <Link href={`/admin/collections/${collectionSlug}/${doc.id}`} className="list-link">
+                              <Link href={`${adminCollectionPath(collectionSlug)}/${doc.id}`} className="list-link">
                                 {text || `#${doc.id}`}
                               </Link>
                             ) : (
@@ -533,7 +534,7 @@ export async function ListView({
           collectionConfig={{ slug: collectionSlug }}
           data={{ docs: result.docs, totalDocs: result.totalDocs, page: effectiveState.page }}
           hasCreatePermission={canCreate}
-          newDocumentURL={`/admin/collections/${collectionSlug}/create`}
+          newDocumentURL={`${adminCollectionPath(collectionSlug)}/create`}
           engine={context.engine}
           searchParams={{ ...searchParams, view: 'gallery' }}
           embedded={true}
@@ -546,7 +547,7 @@ export async function ListView({
           collectionConfig={{ slug: collectionSlug }}
           data={{ docs: result.docs, totalDocs: result.totalDocs, page: effectiveState.page }}
           hasCreatePermission={canCreate}
-          newDocumentURL={`/admin/collections/${collectionSlug}/create`}
+          newDocumentURL={`${adminCollectionPath(collectionSlug)}/create`}
           engine={context.engine}
           searchParams={{ ...searchParams, view: 'calendar' }}
           user={context.user}
@@ -559,7 +560,7 @@ export async function ListView({
         <PagesTreeView
           engine={context.engine}
           hasCreatePermission={canCreate}
-          newDocumentURL={`/admin/collections/${collectionSlug}/create`}
+          newDocumentURL={`${adminCollectionPath(collectionSlug)}/create`}
           searchParams={searchParams}
         />
       )}

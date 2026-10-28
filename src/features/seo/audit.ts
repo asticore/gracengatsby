@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 /**
  * The SEO audit: one row per published page, post, product or event with its
  * SEO and readability scores, the problems found and the noindex flag. Pure:
@@ -65,7 +66,7 @@ export function buildAuditRow(doc: Record<string, unknown>, collection: AuditCol
     id: doc.id as number | string,
     title,
     slug,
-    editHref: `/admin/collections/${collection}/${String(doc.id)}`,
+    editHref: `${adminCollectionPath(collection)}/${String(doc.id)}`,
     seoScore: result.seoScore,
     readabilityScore: result.readabilityScore,
     hasKeyphrase: keyphrase.trim().length > 0,

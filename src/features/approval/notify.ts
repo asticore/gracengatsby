@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import { can } from '@/features/roles/permissions'
 import type { ApprovalCollection, ApprovalSettings } from './settings'
 import { APPROVAL_SINGULAR } from './settings'
@@ -125,7 +126,7 @@ export async function notifySubmitted({
     noun: APPROVAL_SINGULAR[collection],
     title,
     waiting,
-    link: `${origin}/admin/collections/${collection}/${id}`,
+    link: `${origin}${adminCollectionPath(collection)}/${id}`,
   }, engine as never)
   const sendEmail = await loadSender()
   await Promise.all([...addresses].map((to) => sendEmail({ to, template: 'approval.submitted', subject: mail.subject, text: mail.text })))
@@ -166,7 +167,7 @@ export async function notifyRequester({
     noun: APPROVAL_SINGULAR[collection],
     title,
     note: note ? `\n\nTheir note:\n${note}` : '',
-    link: `${origin}/admin/collections/${collection}/${id}`,
+    link: `${origin}${adminCollectionPath(collection)}/${id}`,
   }, engine as never)
   const sendEmail = await loadSender()
   await sendEmail({ to: email, template: 'approval.decision', subject: mail.subject, text: mail.text })
@@ -201,7 +202,7 @@ export async function notifyStepReady({
   if (!current) return []
   const addresses = await reviewerAddresses(engine, collection, requesterId, current.approverRoles)
   const subject = `Your approval is needed: ${title}`
-  const text = `${approverName} approved the previous step of this ${APPROVAL_SINGULAR[collection]}: ${title}\n\n${describeAwaiting(workflow, step)}\n\nOpen it to approve or ask for changes:\n${origin}/admin/collections/${collection}/${id}`
+  const text = `${approverName} approved the previous step of this ${APPROVAL_SINGULAR[collection]}: ${title}\n\n${describeAwaiting(workflow, step)}\n\nOpen it to approve or ask for changes:\n${origin}${adminCollectionPath(collection)}/${id}`
   const sendEmail = await loadSender()
   await Promise.all(addresses.map((to) => sendEmail({ to, template: 'approval.step-ready', subject, text })))
   return addresses

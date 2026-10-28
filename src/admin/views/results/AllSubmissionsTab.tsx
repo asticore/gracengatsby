@@ -65,12 +65,12 @@ export function AllSubmissionsTab({ forms }: { forms: OwnerOption[] }) {
                   <tr key={row.id}>
                     <td className="et-nowrap">{formatWhen(row.submittedAt)}</td>
                     <td className="et-clip">
-                      <Link href={`/admin/collections/forms/${row.formId}`}>{row.formTitle}</Link>
+                      <Link href={`/admin/content/forms/${row.formId}`}>{row.formTitle}</Link>
                     </td>
                     <td className="et-clip" title={row.summary}>{row.summary}</td>
                     <td className="et-nowrap">{PAYMENT_LABELS[row.paymentStatus] ?? row.paymentStatus}</td>
                     <td className="et-nowrap">
-                      <Link href={`/admin/collections/form-submissions/${row.id}`}>Open entry</Link>
+                      <Link href={`/admin/other/form-submissions/${row.id}`}>Open entry</Link>
                     </td>
                   </tr>
                 ))}

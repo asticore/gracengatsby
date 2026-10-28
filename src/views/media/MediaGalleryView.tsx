@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import Link from 'next/link'
 import type { Engine } from '@/engine'
 
@@ -200,7 +201,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
     alt: typeof doc.alt === 'string' ? doc.alt : undefined,
     mimeType: typeof doc.mimeType === 'string' ? doc.mimeType : undefined,
     filesize: typeof doc.filesize === 'number' ? doc.filesize : undefined,
-    editHref: `${adminRoute}/collections/${slug}/${String(doc.id)}`,
+    editHref: `${adminCollectionPath(slug, adminRoute)}/${String(doc.id)}`,
     folder: typeof doc.folder === 'string' ? doc.folder : undefined,
     originalSize: typeof doc.originalSize === 'number' ? doc.originalSize : undefined,
     optimizedSize: typeof doc.optimizedSize === 'number' ? doc.optimizedSize : undefined,
@@ -355,7 +356,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
             <tbody>
               {docs.map((doc) => {
                 const id = String(doc.id)
-                const editHref = `${adminRoute}/collections/${slug}/${id}`
+                const editHref = `${adminCollectionPath(slug, adminRoute)}/${id}`
                 const url = typeof doc.url === 'string' ? doc.url : undefined
                 const mimeType = typeof doc.mimeType === 'string' ? doc.mimeType : undefined
                 return (

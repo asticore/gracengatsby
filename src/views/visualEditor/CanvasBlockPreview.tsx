@@ -91,7 +91,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
             <strong>{(data.heading as string) || 'Form'}</strong>
             <p className="ve-form-empty">
               No form yet. Create one in Forms (Settings &gt; Forms) and pick it here.{' '}
-              <a href="/admin/collections/forms" target="_blank" rel="noreferrer">
+              <a href="/admin/content/forms" target="_blank" rel="noreferrer">
                 Open Forms
               </a>
             </p>
@@ -111,7 +111,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
             </strong>
             <p>Shown from one shared section. Editing it changes every page that uses it.</p>
             {id && (
-              <a href={`/admin/collections/reusable-sections/${id}`} target="_blank" rel="noreferrer">
+              <a href={`/admin/content/reusable-sections/${id}`} target="_blank" rel="noreferrer">
                 Edit global
               </a>
             )}

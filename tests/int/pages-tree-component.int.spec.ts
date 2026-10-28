@@ -246,13 +246,13 @@ describe('PagesTreeClient component', () => {
       h(PagesTreeClient, {
         pages: [],
         canEdit: true,
-        newDocumentURL: '/admin/collections/pages/new',
+        newDocumentURL: `/admin/content/pages/new`,
       })
     )
 
     const createLink = screen.getByRole('link', { name: /Create first page/ })
     expect(createLink).toBeTruthy()
-    expect(createLink.getAttribute('href')).toBe('/admin/collections/pages/new')
+    expect(createLink.getAttribute('href')).toBe(`/admin/content/pages/new`)
   })
 
   // Test 11: all pages render with correct href attributes
@@ -261,13 +261,13 @@ describe('PagesTreeClient component', () => {
     render(h(PagesTreeClient, { pages, canEdit: true }))
 
     const homeLink = screen.getByRole('link', { name: /Home/ })
-    expect(homeLink.getAttribute('href')).toBe('/admin/collections/pages/1')
+    expect(homeLink.getAttribute('href')).toBe(`/admin/content/pages/1`)
 
     const aboutLink = screen.getByRole('link', { name: /About/ })
-    expect(aboutLink.getAttribute('href')).toBe('/admin/collections/pages/2')
+    expect(aboutLink.getAttribute('href')).toBe(`/admin/content/pages/2`)
 
     const contactLink = screen.getByRole('link', { name: /Contact/ })
-    expect(contactLink.getAttribute('href')).toBe('/admin/collections/pages/4')
+    expect(contactLink.getAttribute('href')).toBe(`/admin/content/pages/4`)
   })
 
   // Test 12: siblings sorted in correct order

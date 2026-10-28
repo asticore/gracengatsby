@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { VersionsList } from './VersionsList'
@@ -35,7 +36,7 @@ export async function VersionsView({ collectionSlug, id }: { collectionSlug: str
       <div className="flex items-center justify-between mb-[calc(var(--base)*0.9)]">
         <h1>Versions: {titleValue}</h1>
       </div>
-      <a href={`/admin/collections/${collectionSlug}/${id}`} className="btn btn--secondary mb-[calc(var(--base)*0.9)]">
+      <a href={`${adminCollectionPath(collectionSlug)}/${id}`} className="btn btn--secondary mb-[calc(var(--base)*0.9)]">
         Back to document
       </a>
       <VersionsList collectionSlug={collectionSlug} id={id} currentDoc={doc} titleField={useAsTitle || 'id'} />

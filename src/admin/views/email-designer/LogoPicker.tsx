@@ -72,7 +72,7 @@ export function LogoPicker({ logo, onChange }: Props) {
           {!error && items === null && <p className="ed-muted">Loading pictures...</p>}
           {items !== null && items.length === 0 && (
             <p className="ed-muted">
-              No pictures yet. Upload the logo in <Link href="/admin/collections/media">Media</Link>, then come back here.
+              No pictures yet. Upload the logo in <Link href="/admin/content/media">Media</Link>, then come back here.
             </p>
           )}
           <div className="ed-logo__grid">

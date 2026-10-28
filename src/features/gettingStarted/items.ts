@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 /**
  * Getting-started checklist items grouped by category.
  * Pure list definition with no state computation.
@@ -48,7 +49,7 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Content',
     title: 'First page published',
     help: 'Create and publish at least one page to get started.',
-    href: '/admin/collections/pages',
+    href: adminCollectionPath('pages'),
   },
   {
     id: 'seo-basics',

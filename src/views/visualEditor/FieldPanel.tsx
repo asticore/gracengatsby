@@ -1302,7 +1302,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
             {emptyForms ? (
               <span className="ve-field__help ve-form-empty">
                 No form yet. Create one in Forms (Settings &gt; Forms) and pick it here.{' '}
-                <a href="/admin/collections/forms" target="_blank" rel="noreferrer">
+                <a href="/admin/content/forms" target="_blank" rel="noreferrer">
                   Open Forms
                 </a>
               </span>

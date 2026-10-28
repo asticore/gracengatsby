@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ComponentType, ReactNode } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { CUSTOM_ADMIN_VIEWS } from '@/admin/adminViewRegistry'
+import { adminCollectionPath, collectionRoute, isCollectionSegments } from '@/admin/adminPaths'
 import { getAdminContext, hasAdminPanelAccess, getCollectionConfig, getGlobalConfig, type AdminContext } from '@/admin/auth'
 import { getEngine } from '@/lib/engine'
 import type { AdminViewServerProps } from '@/engine'
@@ -43,10 +44,11 @@ const TWO_FACTOR_VIEW_PATH = '/security/two-factor'
  *   - `/admin`                                -> dashboard
  *   - `/admin/login`                          -> LoginView (the only route
  *     reachable without an admin session)
- *   - `/admin/collections/:slug`              -> ListView
- *   - `/admin/collections/:slug/create`       -> EditView (blank)
- *   - `/admin/collections/:slug/:id`          -> EditView (seeded)
- *   - `/admin/collections/:slug/:id/versions` -> VersionsView
+ *   - `/admin/<group>/:slug` (group from NAV_STRUCTURE, see `@/admin/adminPaths`)
+ *     -> ListView
+ *   - `.../:slug/create`                      -> EditView (blank)
+ *   - `.../:slug/:id`                         -> EditView (seeded)
+ *   - `.../:slug/:id/versions`                -> VersionsView
  *   - `/admin/globals/:slug`                  -> GlobalEditView
  *   - any `CUSTOM_ADMIN_VIEWS` path (translations/database/ab-test-results/
  *     visual-editor) -> that view's own registered `Component`
@@ -186,9 +188,9 @@ async function renderRootPage({ params, searchParams }: Args) {
   // password is changed. Nothing is locked out, and the change clears the redirect.
   // A no-op while the setting is off (the default).
   const adminUserId = (context.user as { id?: number | string } | null)?.id
-  if (adminUserId !== undefined && !pathname.startsWith(`/collections/users/${adminUserId}`)) {
+  if (adminUserId !== undefined && !pathname.startsWith(`${collectionRoute('users')}/${adminUserId}`)) {
     const due = await passwordChangeIsDue(context.engine as never, adminUserId).catch((): false => false)
-    if (due) redirect(`/admin/collections/users/${adminUserId}`)
+    if (due) redirect(`${adminCollectionPath('users')}/${adminUserId}`)
   }
 
   const customView = findCustomView(pathname)
@@ -201,7 +203,9 @@ async function renderRootPage({ params, searchParams }: Args) {
     return <Component {...buildViewProps(context, search)} />
   }
 
-  if (segments[0] === 'collections') {
+  // Collections live under their menu group (`/admin/<group>/<slug>`, see
+  // `@/admin/adminPaths`). Views and globals were matched above, so they win.
+  if (isCollectionSegments(segments)) {
     const collectionSlug = segments[1]
     if (!collectionSlug) notFound()
     if (!getCollectionConfig(context.engine, collectionSlug)) notFound()
@@ -250,7 +254,7 @@ export async function generatePageMetadata({ params }: Args): Promise<Metadata> 
 
   if (segments[0] === 'login') return { title: 'Login - Admin' }
 
-  if (segments[0] === 'collections' && segments[1]) {
+  if (isCollectionSegments(segments)) {
     if (segments[3] === 'versions') return { title: 'Versions - Admin' }
 
     const engine = await getEngine()

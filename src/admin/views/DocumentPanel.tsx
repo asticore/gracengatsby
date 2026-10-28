@@ -1,4 +1,5 @@
 'use client'
+import { adminCollectionPath } from '@/admin/adminPaths'
 
 /**
  * Right-hand overview panel on a collection document's edit screen, in the
@@ -204,7 +205,7 @@ const RevisionsBox: React.FC<{ collectionSlug: string; id: number; updatedAt?: s
             <strong>{state.total}</strong> {state.total === 1 ? 'version' : 'versions'}
           </p>
           {state.latest && <p className="doc-muted">Last saved {formatDate(state.latest)} by {resolveName_(state.updatedBy)}</p>}
-          <Link className="doc-link" href={`/admin/collections/${collectionSlug}/${id}/versions`}>
+          <Link className="doc-link" href={`${adminCollectionPath(collectionSlug)}/${id}/versions`}>
             View past drafts
           </Link>
         </>

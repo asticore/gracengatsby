@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
-const { push, replace, pathname } = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), pathname: { value: '/admin/collections/forms' } }))
+const { push, replace, pathname } = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), pathname: { value: '/admin/content/forms' } }))
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace }),
   usePathname: () => pathname.value,
@@ -100,8 +100,8 @@ describe('ListSectionTabs', () => {
   beforeEach(() => {
     push.mockClear()
     replace.mockClear()
-    pathname.value = '/admin/collections/forms'
-    window.history.replaceState(null, '', '/admin/collections/forms')
+    pathname.value = '/admin/content/forms'
+    window.history.replaceState(null, '', '/admin/content/forms')
   })
   afterEach(() => cleanup())
 
@@ -119,8 +119,8 @@ describe('ListSectionTabs', () => {
 
   it('links the first tab to the plain list URL and the others to ?tab=', () => {
     render(createElement(ListSectionTabs, { tabs: open, activeKey: 'forms', label: 'Forms sections' }))
-    expect(screen.getByRole('tab', { name: 'Forms' }).getAttribute('href')).toBe('/admin/collections/forms')
-    expect(screen.getByRole('tab', { name: 'Submissions' }).getAttribute('href')).toBe('/admin/collections/forms?tab=submissions')
+    expect(screen.getByRole('tab', { name: 'Forms' }).getAttribute('href')).toBe('/admin/content/forms')
+    expect(screen.getByRole('tab', { name: 'Submissions' }).getAttribute('href')).toBe('/admin/content/forms?tab=submissions')
     expect(sectionTabHref('/x', { key: 'a', primary: false })).toBe('/x?tab=a')
   })
 
@@ -128,13 +128,13 @@ describe('ListSectionTabs', () => {
     render(createElement(ListSectionTabs, { tabs: open, activeKey: 'forms', label: 'Forms sections' }))
     const first = screen.getByRole('tab', { name: 'Forms' })
     fireEvent.keyDown(first, { key: 'ArrowRight' })
-    expect(push).toHaveBeenLastCalledWith('/admin/collections/forms?tab=submissions')
+    expect(push).toHaveBeenLastCalledWith('/admin/content/forms?tab=submissions')
     fireEvent.keyDown(first, { key: 'ArrowLeft' })
-    expect(push).toHaveBeenLastCalledWith('/admin/collections/forms?tab=submissions')
+    expect(push).toHaveBeenLastCalledWith('/admin/content/forms?tab=submissions')
     fireEvent.keyDown(first, { key: 'End' })
-    expect(push).toHaveBeenLastCalledWith('/admin/collections/forms?tab=submissions')
+    expect(push).toHaveBeenLastCalledWith('/admin/content/forms?tab=submissions')
     fireEvent.keyDown(first, { key: 'Home' })
-    expect(push).toHaveBeenLastCalledWith('/admin/collections/forms')
+    expect(push).toHaveBeenLastCalledWith('/admin/content/forms')
   })
 
   it('shows a tab the user cannot open as unavailable, with its reason', () => {
@@ -146,13 +146,13 @@ describe('ListSectionTabs', () => {
   })
 
   it('opens the tab named in the hash when the URL has no ?tab=', () => {
-    window.history.replaceState(null, '', '/admin/collections/forms#submissions')
+    window.history.replaceState(null, '', '/admin/content/forms#submissions')
     render(createElement(ListSectionTabs, { tabs: open, activeKey: 'forms', label: 'Forms sections' }))
-    expect(replace).toHaveBeenCalledWith('/admin/collections/forms?tab=submissions')
+    expect(replace).toHaveBeenCalledWith('/admin/content/forms?tab=submissions')
   })
 
   it('does not redirect when the hash is unknown', () => {
-    window.history.replaceState(null, '', '/admin/collections/forms#whatever')
+    window.history.replaceState(null, '', '/admin/content/forms#whatever')
     render(createElement(ListSectionTabs, { tabs: open, activeKey: 'forms', label: 'Forms sections' }))
     expect(replace).not.toHaveBeenCalled()
   })

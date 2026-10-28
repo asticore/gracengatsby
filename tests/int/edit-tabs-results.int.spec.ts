@@ -272,7 +272,7 @@ describe('EditTabs', () => {
 
   it('opens on the results tab when the page is loaded at #results', async () => {
     vi.useFakeTimers()
-    window.history.replaceState(null, '', '/admin/collections/events/3#results')
+    window.history.replaceState(null, '', `/admin/content/events/3#results`)
     renderTabs()
     await act(async () => {
       vi.runOnlyPendingTimers()

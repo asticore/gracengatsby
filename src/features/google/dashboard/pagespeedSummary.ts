@@ -1,3 +1,4 @@
+import { adminCollectionPath } from '@/admin/adminPaths'
 import { sql } from 'drizzle-orm'
 
 import type { Drizzle } from '@/localapi/migrate'
@@ -24,7 +25,7 @@ export function summarisePageSpeed(rows: Latest[], limit = 5): SpeedSummary {
       docId: r.docId,
       url: r.url,
       performance: r.performance,
-      editHref: `/admin/collections/${r.collection}/${r.docId}`,
+      editHref: `${adminCollectionPath(r.collection)}/${r.docId}`,
     })),
   }
 }

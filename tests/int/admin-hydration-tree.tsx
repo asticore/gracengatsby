@@ -17,7 +17,7 @@ export async function load() {
           <NavToggler /><ThemeToggler />
           <nav.AdminNavShell>
             <nav><nav.AdminNavDashboardLink href="/admin" />
-            <nav.AdminNavClient groups={[{ label: 'Content', entities: [{ slug: 'pages', label: 'Pages', href: '/admin/collections/pages', id: 'nav-pages' }] } as any]} openGroups={{}} />
+            <nav.AdminNavClient groups={[{ label: 'Content', entities: [{ slug: 'pages', label: 'Pages', href: '/admin/content/pages', id: 'nav-pages' }] } as any]} openGroups={{}} />
             <AsticoreSaasComingSoon /><Logout /></nav>
             <nav.AdminNavHamburger />
           </nav.AdminNavShell>

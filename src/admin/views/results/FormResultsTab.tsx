@@ -62,7 +62,7 @@ export function FormResultsTab({ formId }: { formId: number }) {
                     })}
                     {showPayment && <td className="et-nowrap">{row.paymentStatus}</td>}
                     <td className="et-nowrap">
-                      <Link href={`/admin/collections/form-submissions/${row.id}`}>Open</Link>
+                      <Link href={`/admin/other/form-submissions/${row.id}`}>Open</Link>
                     </td>
                   </tr>
                 ))}

@@ -516,7 +516,7 @@ function TreeNodeItem({
           tabIndex={canEdit ? 0 : -1}
           role="button"
         >
-          <Link href={`/admin/collections/pages/${page.id}`} className="pages-tree__title">
+          <Link href={`/admin/content/pages/${page.id}`} className="pages-tree__title">
             {page.title}
           </Link>
 

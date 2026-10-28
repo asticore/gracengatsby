@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { SHORTCUT_LIST } from './useEditorShortcuts'
 import './saveStatusChip.css'
 
@@ -15,6 +17,7 @@ export const ShortcutsHelp: React.FC<{
   onOpenChange: (open: boolean) => void
   onTour?: () => void
 }> = ({ modLabel, open, onOpenChange, onTour }) => {
+  const t = useAdminT()
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -43,16 +46,16 @@ export const ShortcutsHelp: React.FC<{
         className="ve-btn ve-btn--ghost"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label="Keyboard shortcuts"
-        title="Keyboard shortcuts (press ? to toggle)"
+        aria-label={t('ve.shortcuts.title')}
+        title={t('ve.shortcuts.buttonTitle')}
         onClick={() => onOpenChange(!open)}
       >
-        Shortcuts
+        {t('ve.shortcuts.button')}
       </button>
       {open && (
-        <div className="ve-shortcuts__panel" role="dialog" aria-label="Keyboard shortcuts">
+        <div className="ve-shortcuts__panel" role="dialog" aria-label={t('ve.shortcuts.title')}>
           <div className="ve-shortcuts__head">
-            <p className="ve-shortcuts__title">Keyboard shortcuts</p>
+            <p className="ve-shortcuts__title">{t('ve.shortcuts.title')}</p>
             {onTour && (
               <button
                 type="button"
@@ -61,9 +64,9 @@ export const ShortcutsHelp: React.FC<{
                   onOpenChange(false)
                   onTour()
                 }}
-                title="Replay the editor tips"
+                title={t('ve.shortcuts.tourTitle')}
               >
-                Tour
+                {t('ve.shortcuts.tour')}
               </button>
             )}
           </div>
@@ -71,11 +74,11 @@ export const ShortcutsHelp: React.FC<{
             {SHORTCUT_LIST.map((item) => (
               <React.Fragment key={item.keys}>
                 <dt>{item.keys.replace(/Mod/g, modLabel)}</dt>
-                <dd>{item.label}</dd>
+                <dd>{t(item.labelKey)}</dd>
               </React.Fragment>
             ))}
           </dl>
-          <p className="ve-shortcuts__note">Shortcuts are off while you type in a field.</p>
+          <p className="ve-shortcuts__note">{t('ve.shortcuts.note')}</p>
         </div>
       )}
     </div>

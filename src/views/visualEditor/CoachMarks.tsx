@@ -2,23 +2,26 @@
 
 import React, { useState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
+
 import './saveStatusChip.css'
 
 const SEEN_KEY = 've-coach-marks-seen'
 
 /** Three first-use tips, in the order a new editor user meets the panels. */
-export const COACH_STEPS: { title: string; text: string }[] = [
+export const COACH_STEPS: { titleKey: UiStringKey; textKey: UiStringKey }[] = [
   {
-    title: 'Elements tab',
-    text: 'Open the Elements tab to browse blocks and elements. Click one to add it to the page.',
+    titleKey: 've.coach.elementsTitle',
+    textKey: 've.coach.elementsText',
   },
   {
-    title: 'Select on the canvas',
-    text: 'Click any block in the preview to select it. Its settings open in the Settings tab.',
+    titleKey: 've.coach.selectTitle',
+    textKey: 've.coach.selectText',
   },
   {
-    title: 'Settings tab',
-    text: 'Use the Settings tab to change the selected block content, style and layout.',
+    titleKey: 've.coach.settingsTitle',
+    textKey: 've.coach.settingsText',
   },
 ]
 
@@ -44,6 +47,7 @@ function markCoachMarksSeen(): void {
  * Skip, Don't show again and finishing the last step all remember the choice for this browser.
  */
 export const CoachMarks: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  const t = useAdminT()
   const [index, setIndex] = useState(0)
 
   if (!open) return null
@@ -58,25 +62,25 @@ export const CoachMarks: React.FC<{ open: boolean; onClose: () => void }> = ({ o
   }
 
   return (
-    <div className="ve-coach" role="region" aria-label="Editor tips">
+    <div className="ve-coach" role="region" aria-label={t('ve.coach.region')}>
       <p className="ve-coach__count">
-        Tip {index + 1} of {COACH_STEPS.length}
+        {t('ve.coach.tip', { index: index + 1, total: COACH_STEPS.length })}
       </p>
-      <p className="ve-coach__title">{step.title}</p>
-      <p className="ve-coach__text">{step.text}</p>
+      <p className="ve-coach__title">{t(step.titleKey)}</p>
+      <p className="ve-coach__text">{t(step.textKey)}</p>
       <div className="ve-coach__actions">
         <button type="button" className="ve-btn ve-btn--ghost" onClick={close}>
-          Skip
+          {t('ve.coach.skip')}
         </button>
         <button type="button" className="ve-btn ve-btn--ghost" onClick={close}>
-          Don&apos;t show again
+          {t('ve.coach.dontShow')}
         </button>
         <button
           type="button"
           className="ve-btn ve-btn--primary"
           onClick={() => (last ? close() : setIndex((i) => i + 1))}
         >
-          {last ? 'Finish' : 'Next'}
+          {last ? t('ve.coach.finish') : t('ve.coach.next')}
         </button>
       </div>
     </div>

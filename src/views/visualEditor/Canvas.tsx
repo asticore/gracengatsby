@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
@@ -115,6 +116,7 @@ const CanvasNode: React.FC<{
   index: number
   total: number
 }> = ({ node, path, handlers, depth, index, total }) => {
+  const t = useAdminT()
   const key = pathKey(path)
   const isSelected = handlers.selectedKey === key
   const def = getBlockDef(node.blockType)
@@ -195,12 +197,12 @@ const CanvasNode: React.FC<{
       <BgNoise design={design} />
       {(() => { const o = overlayStyle(design); return o ? <div className="be-fx be-fx--overlay" aria-hidden="true" style={o} /> : null })()}
       <div className="ve-node__toolbar">
-        <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label="Drag to move">
+        <button type="button" className="ve-drag-handle" {...attributes} {...(blocked ? {} : listeners)} disabled={blocked} aria-label={t('cv.lit.drag_to_move')}>
           ⠿
         </button>
         <span className="ve-node__label">
           {lock && (
-            <span className="ve-node__lock" role="img" aria-label={lock.mode === 'full' ? 'Fully locked' : 'Structure locked'} title={lock.mode === 'full' ? 'Fully locked' : 'Structure locked: text only'}>
+            <span className="ve-node__lock" role="img" aria-label={lock.mode === 'full' ? t('cv.lit.fully_locked') : 'Structure locked'} title={lock.mode === 'full' ? t('cv.lit.fully_locked') : 'Structure locked: text only'}>
               🔒{' '}
             </span>
           )}
@@ -215,8 +217,8 @@ const CanvasNode: React.FC<{
             handlers.onMove(path, -1)
           }}
           disabled={blocked || index === 0}
-          aria-label="Move up"
-          title="Move up"
+          aria-label={t('cv.lit.move_up')}
+          title={t('cv.lit.move_up')}
         >
           ↑
         </button>
@@ -228,8 +230,8 @@ const CanvasNode: React.FC<{
             handlers.onMove(path, 1)
           }}
           disabled={blocked || index === total - 1}
-          aria-label="Move down"
-          title="Move down"
+          aria-label={t('cv.lit.move_down')}
+          title={t('cv.lit.move_down')}
         >
           ↓
         </button>
@@ -241,8 +243,8 @@ const CanvasNode: React.FC<{
             e.stopPropagation()
             handlers.onDuplicate(path)
           }}
-          aria-label="Duplicate"
-          title="Duplicate"
+          aria-label={t('cv.lit.duplicate')}
+          title={t('cv.lit.duplicate')}
         >
           ⧉
         </button>
@@ -254,8 +256,8 @@ const CanvasNode: React.FC<{
             e.stopPropagation()
             handlers.onDelete(path)
           }}
-          aria-label="Delete"
-          title="Delete"
+          aria-label={t('cv.lit.delete')}
+          title={t('cv.lit.delete')}
         >
           ✕
         </button>
@@ -278,7 +280,7 @@ const CanvasNode: React.FC<{
       {hasVisibilityRules(design) && (
         <span
           className="ve-node__badge"
-          title="This block only shows when its visibility rules pass on the live site. The editor always shows it."
+          title={t('cv.lit.this_block_only_shows_when_its_visibilit')}
           style={{ position: 'absolute', top: 4, left: 4, zIndex: 5, padding: '1px 6px', borderRadius: 8, fontSize: 10, background: '#4f46e5', color: '#fff', pointerEvents: 'none' }}
         >
           Has visibility rules
@@ -329,6 +331,7 @@ const CanvasNode: React.FC<{
  * follows Enter/Escape unmounting the input.
  */
 const TabLabelInput: React.FC<{ initial: string; placeholder: string; onDone: (value: string | null) => void }> = ({ initial, placeholder, onDone }) => {
+  const t = useAdminT()
   const [draft, setDraft] = React.useState(initial)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const doneRef = React.useRef(false)
@@ -347,7 +350,7 @@ const TabLabelInput: React.FC<{ initial: string; placeholder: string; onDone: (v
       className="ve-tabs-bar__label-input"
       value={draft}
       placeholder={placeholder}
-      aria-label="Tab title"
+      aria-label={t('cv.lit.tab_title')}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => finish(draft)}
       onKeyDown={(e) => {
@@ -411,6 +414,7 @@ const ColumnResizeHandle: React.FC<{
   disabled: boolean
   onCommit: (widths: number[]) => void
 }> = ({ index, left, widths, device, disabled, onCommit }) => {
+  const t = useAdminT()
   const [tip, setTip] = React.useState<[number, number] | null>(null)
   const drag = React.useRef<ResizeDrag | null>(null)
 
@@ -475,7 +479,7 @@ const ColumnResizeHandle: React.FC<{
       aria-orientation="vertical"
       aria-label={`Resize columns ${index + 1} and ${index + 2}`}
       aria-disabled={disabled || undefined}
-      title="Drag to resize these two columns"
+      title={t('cv.lit.drag_to_resize_these_two_columns')}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={(event) => finish(event, true)}
@@ -495,6 +499,7 @@ const SectionColumns: React.FC<{
   handlers: CanvasHandlers
   depth: number
 }> = ({ columns, layout, path, handlers, depth }) => {
+  const t = useAdminT()
   const flow = sectionLayoutProps(layout, 've-section')
   const parsedLayout = parseSectionLayout(layout)
   const display = parsedLayout?.display
@@ -551,8 +556,8 @@ const SectionColumns: React.FC<{
           e.stopPropagation()
           handlers.onColumnOp?.([...path, columns.length - 1], 'add')
         }}
-        aria-label={display === 'tabs' ? 'Add tab' : 'Add panel'}
-        title={display === 'tabs' ? 'Add tab' : 'Add panel'}
+        aria-label={display === 'tabs' ? t('cv.lit.add_tab') : 'Add panel'}
+        title={display === 'tabs' ? t('cv.lit.add_tab') : 'Add panel'}
       >
         +
       </button>
@@ -631,7 +636,7 @@ const SectionColumns: React.FC<{
     const vars = { ...gridStyle(layout), ...(boxedWidth ? { '--be-boxed': boxedWidth } : {}) }
     return (
       <div className="ve-grid">
-        <p className="ve-grid__hint">Grid: each column is a cell</p>
+        <p className="ve-grid__hint">{t('cv.lit.grid_each_column_is_a_cell')}</p>
         <div className={flow.className ? `be-grid ${flow.className}` : 'be-grid'} style={vars as React.CSSProperties}>
           {slides}
         </div>
@@ -654,7 +659,7 @@ const SectionColumns: React.FC<{
     // Same columns, laid out as the live carousel's horizontal scroll-snap track.
     return (
       <div className="ve-carousel">
-        <p className="ve-carousel__hint">Carousel: each column is a slide</p>
+        <p className="ve-carousel__hint">{t('cv.lit.carousel_each_column_is_a_slide')}</p>
         <div className="ve-section ve-carousel__track" style={carouselStyle(layout) as React.CSSProperties}>
           {slides}
         </div>
@@ -693,7 +698,7 @@ const SectionColumns: React.FC<{
   if (scrollStory) {
     return (
       <div className="ve-scroll-story">
-        <span className="ve-scroll-story__badge">Scroll story preview on live page</span>
+        <span className="ve-scroll-story__badge">{t('cv.lit.scroll_story_preview_on_live_page')}</span>
         {row}
       </div>
     )
@@ -715,6 +720,7 @@ const CanvasColumn: React.FC<{
   depth: number
   ownerLocked: boolean
 }> = ({ column, columnPath, index, count, handlers, depth, ownerLocked }) => {
+  const t = useAdminT()
   const selected = handlers.selectedKey === pathKey(columnPath)
   const design = asBlockStyle(column.design)
   const scopeId = `ve-c-${columnPath.join('_')}`
@@ -741,19 +747,19 @@ const CanvasColumn: React.FC<{
       <div className="ve-column__tag">Column {index + 1}</div>
       {selected && (
         <div className="ve-column__toolbar" role="toolbar" aria-label={`Column ${index + 1} actions`}>
-          <button type="button" className="ve-column__act" disabled={ownerLocked || index === 0} onClick={(e) => op(e, 'moveLeft')} aria-label="Move column left" title="Move column left">
+          <button type="button" className="ve-column__act" disabled={ownerLocked || index === 0} onClick={(e) => op(e, 'moveLeft')} aria-label={t('cv.lit.move_column_left')} title={t('cv.lit.move_column_left')}>
             {'←'}
           </button>
-          <button type="button" className="ve-column__act" disabled={ownerLocked || index === count - 1} onClick={(e) => op(e, 'moveRight')} aria-label="Move column right" title="Move column right">
+          <button type="button" className="ve-column__act" disabled={ownerLocked || index === count - 1} onClick={(e) => op(e, 'moveRight')} aria-label={t('cv.lit.move_column_right')} title={t('cv.lit.move_column_right')}>
             {'→'}
           </button>
-          <button type="button" className="ve-column__act" disabled={ownerLocked} onClick={(e) => op(e, 'add')} aria-label="Add column" title="Add column after this one">
+          <button type="button" className="ve-column__act" disabled={ownerLocked} onClick={(e) => op(e, 'add')} aria-label={t('cv.lit.add_column')} title={t('cv.lit.add_column_after_this_one')}>
             +
           </button>
-          <button type="button" className="ve-column__act" disabled={ownerLocked} onClick={(e) => op(e, 'duplicate')} aria-label="Duplicate column" title="Duplicate column">
+          <button type="button" className="ve-column__act" disabled={ownerLocked} onClick={(e) => op(e, 'duplicate')} aria-label={t('cv.lit.duplicate_column')} title={t('cv.lit.duplicate_column')}>
             {'⧉'}
           </button>
-          <button type="button" className="ve-column__act ve-column__act--danger" disabled={ownerLocked || count <= 1} onClick={(e) => op(e, 'delete')} aria-label="Delete column" title={count <= 1 ? 'A section needs at least one column' : 'Delete column'}>
+          <button type="button" className="ve-column__act ve-column__act--danger" disabled={ownerLocked || count <= 1} onClick={(e) => op(e, 'delete')} aria-label={t('cv.lit.delete_column')} title={count <= 1 ? t('cv.lit.a_section_needs_at_least_one_column') : t('cv.lit.delete_column')}>
             {'✕'}
           </button>
         </div>
@@ -790,6 +796,7 @@ const InsertSlot: React.FC<{
   /** The container has no blocks: render as a visible "Drop a block here" zone. */
   empty?: boolean
 }> = ({ containerPath, at, onAdd, dragHoverKey, openInsertKey, dragPath, locks, subtle, empty }) => {
+  const t = useAdminT()
   const key = slotKey(containerPath, at)
 
   // A handle-drag can't land inside the dragged block, next to itself (a no-op), or in a
@@ -828,8 +835,8 @@ const InsertSlot: React.FC<{
           e.stopPropagation()
           onAdd(containerPath, at)
         }}
-        aria-label={isOpen ? 'Close element picker' : 'Add an element here'}
-        title={isOpen ? 'Close element picker' : 'Add an element here'}
+        aria-label={isOpen ? t('cv.lit.close_element_picker') : 'Add an element here'}
+        title={isOpen ? t('cv.lit.close_element_picker') : 'Add an element here'}
       >
         +
       </button>

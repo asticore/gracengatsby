@@ -41,6 +41,20 @@ import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { PageSettingsPanel } from './visualEditor/PageSettingsPanel'
 import { TranslationBar, TRANSLATION_BAR_CSS } from './visualEditor/TranslationBar'
+import { TranslateBanner, TRANSLATE_BANNER_CSS } from './visualEditor/TranslateBanner'
+import { TranslateActions, TRANSLATE_ACTIONS_CSS } from './visualEditor/TranslateActions'
+import {
+  blockMarks,
+  fieldPathForElementText,
+  firstFieldOfBlock,
+  nextUntranslatedField,
+  textCellsFor,
+  translatedBlocks,
+  type CanvasTextCell,
+} from './visualEditor/translateCanvas'
+import { saveCellText } from './visualEditor/translateApi'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { blockKeyFor } from '@/features/multilingual/blockText'
 import { TranslatePanel, TRANSLATE_PANEL_CSS } from './visualEditor/TranslatePanel'
 import { resolveTranslateParams } from './visualEditor/translateParams'
 import type { DocumentTranslations } from '@/features/multilingual/documentTranslations'
@@ -165,6 +179,11 @@ export const VisualEditorView: React.FC = () => {
   // and the language being edited (null = the default language, the normal builder).
   const [translation, setTranslation] = useState<(DocumentTranslations & { title: string; users: { id: number; label: string }[] }) | null>(null)
   const [editLocale, setEditLocale] = useState<string | null>(null)
+  // The canvas's view of the translations while translating: the field the panel should show (a click on the
+  // page), and the text typed but not yet saved, so the canvas reads in it live.
+  const [focusField, setFocusField] = useState<string | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const t = useAdminT()
   const [pageInitial, setPageInitial] = useState<PageSettings | null>(null)
   const [pageAvail, setPageAvail] = useState(() => pageAvailability(null))
   const [navigatorExpandedState, setNavigatorExpandedState] = useState<Record<string, boolean>>({})
@@ -250,7 +269,10 @@ export const VisualEditorView: React.FC = () => {
     if (surfaceKind !== 'collection' || !surfaceSlug || !routeId || !translatableSource(surfaceSlug)) return
     fetch(`/api/admin-translations?collection=${encodeURIComponent(surfaceSlug)}&id=${encodeURIComponent(routeId)}`, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: any) => setTranslation(data?.enabled ? data : null))
+      .then((data: any) => {
+        setDrafts({})
+        setTranslation(data?.enabled ? data : null)
+      })
       .catch(() => setTranslation(null))
   }, [surfaceKind, surfaceSlug, routeId])
   useEffect(() => {
@@ -305,6 +327,81 @@ export const VisualEditorView: React.FC = () => {
     selectedRef.current = selectedPath
   }, [selectedPath])
 
+  // Translate mode: while a non-default language is edited, the canvas shows the page in that language (a display
+  // copy; the saved tree is never changed by it), the structure is locked, and text is edited in the translations.
+  // See translateCanvas.ts for the rules; the refs below let the memoised callbacks read the current state.
+  const blocksField = surface?.blocksField ?? 'blocks'
+  const translating = Boolean(translation && editLocale)
+  const cells = useMemo<CanvasTextCell[]>(
+    () => (translation && editLocale ? textCellsFor(translation, editLocale, drafts) : []),
+    [translation, editLocale, drafts],
+  )
+  const canvasBlocks = useMemo(() => (translating ? translatedBlocks(blocks, cells, blocksField) : blocks), [translating, blocks, cells, blocksField])
+  const canvasMarks = useMemo(() => (translating ? blockMarks(blocks, cells) : {}), [translating, blocks, cells])
+  const lockedText = t('builder.translate.locked')
+  const translateRef = useRef({
+    translating,
+    cells,
+    blocks,
+    blocksField,
+    focusField,
+    lockedText,
+    locale: editLocale ?? '',
+    sourceId: translation?.sourceId ?? '',
+  })
+  useEffect(() => {
+    translateRef.current = { translating, cells, blocks, blocksField, focusField, lockedText, locale: editLocale ?? '', sourceId: translation?.sourceId ?? '' }
+  })
+  /** A short message in the top toast slot. */
+  const notifyTranslate = useCallback((text: string) => {
+    setTemplateToast(text)
+    setTimeout(() => setTemplateToast(null), 4000)
+  }, [])
+  const exitTranslate = useCallback(() => {
+    setEditLocale(null)
+    setFocusField(null)
+  }, [])
+  const navigateUntranslated = useCallback((direction: 1 | -1) => {
+    const ctx = translateRef.current
+    const next = nextUntranslatedField(ctx.cells, ctx.focusField, direction)
+    if (next) setFocusField(next)
+  }, [])
+  /** A text edited on the canvas: saved as that field's translation, with the same rules as the panel. */
+  const saveCanvasText = useCallback(
+    (path: NodePath, field: string, value: string) => {
+      const ctx = translateRef.current
+      const node = getNode(ctx.blocks, path)
+      if (!node) return
+      const fieldPath = fieldPathForElementText(ctx.blocksField, blockKeyFor(node as unknown as Record<string, unknown>, path), field)
+      const cell = ctx.cells.find((entry) => entry.fieldPath === fieldPath)
+      if (!cell) {
+        notifyTranslate(t('builder.translate.inPanel'))
+        return
+      }
+      setDrafts((prev) => ({ ...prev, [fieldPath]: value }))
+      saveCellText({ cell, locale: ctx.locale, sourceId: ctx.sourceId, value })
+        .then(() => loadTranslations())
+        .catch((error: Error) => {
+          notifyTranslate(error.message)
+          loadTranslations()
+        })
+    },
+    // loadTranslations is stable for the document; the rest are refs or setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [notifyTranslate, t],
+  )
+  // Alt+Left / Alt+Right on the parent document step through the untranslated texts (the frame forwards them too).
+  useEffect(() => {
+    if (!translating) return
+    const onKey = (event: KeyboardEvent) => {
+      if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return
+      event.preventDefault()
+      navigateUntranslated(event.key === 'ArrowRight' ? 1 : -1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [translating, navigateUntranslated])
+
   // Latest tree/locks/user for the mutation callbacks below (they are memoised without them).
   const lockCtx = useRef({ blocks, locks, lockUser, formConfig })
   useEffect(() => {
@@ -312,6 +409,11 @@ export const VisualEditorView: React.FC = () => {
   }, [blocks, locks, lockUser, formConfig])
   /** True (and tells the person why) when a locked section stops this edit. */
   const lockedOut = useCallback((path: NodePath): boolean => {
+    if (translateRef.current.translating) {
+      setLockNotice(translateRef.current.lockedText)
+      setTimeout(() => setLockNotice(null), 5000)
+      return true
+    }
     const { blocks: b, locks: l, lockUser: u } = lockCtx.current
     const lock = effectiveLock(b, path, l, u)
     if (lock?.blocked) {
@@ -322,6 +424,11 @@ export const VisualEditorView: React.FC = () => {
     return false
   }, [])
   const insertBlocked = useCallback((containerPath: NodePath): boolean => {
+    if (translateRef.current.translating) {
+      setLockNotice(translateRef.current.lockedText)
+      setTimeout(() => setLockNotice(null), 5000)
+      return true
+    }
     const { blocks: b, locks: l, lockUser: u } = lockCtx.current
     if (canInsertInto(b, containerPath, l, u)) return false
     setLockNotice('This part of the page is locked, so nothing can be added here.')
@@ -349,6 +456,12 @@ export const VisualEditorView: React.FC = () => {
    * `key` merges rapid repeat edits (typing in one field) into a single undo step.
    */
   const applyBlocks = useCallback((change: (prev: SectionNode[]) => SectionNode[], key?: string) => {
+    // Translate mode: the default language's structure and properties are read-only (text is edited in the translations).
+    if (translateRef.current.translating) {
+      setLockNotice(translateRef.current.lockedText)
+      setTimeout(() => setLockNotice(null), 5000)
+      return false
+    }
     const prev = blocksRef.current
     const next = change(prev)
     if (next === prev) return false
@@ -412,6 +525,7 @@ export const VisualEditorView: React.FC = () => {
   }, [syncHistory])
 
   const undo = useCallback(() => {
+    if (translateRef.current.translating) return
     const result = undoHistory(historyRef.current, { blocks: blocksRef.current, selectedPath: selectedRef.current })
     if (!result) return
     historyRef.current = result.history
@@ -419,6 +533,7 @@ export const VisualEditorView: React.FC = () => {
   }, [restoreSnapshot])
 
   const redo = useCallback(() => {
+    if (translateRef.current.translating) return
     const result = redoHistory(historyRef.current, { blocks: blocksRef.current, selectedPath: selectedRef.current })
     if (!result) return
     historyRef.current = result.history
@@ -821,6 +936,11 @@ export const VisualEditorView: React.FC = () => {
           setFrameReady(true)
           break
         case 'select':
+          if (translateRef.current.translating && Array.isArray(msg.path) && msg.path.length % 2 === 1) {
+            // A click on a block in translate mode focuses its first translatable row in the panel.
+            const node = getNode(translateRef.current.blocks, msg.path)
+            if (node) setFocusField(firstFieldOfBlock(translateRef.current.cells, blockKeyFor(node as unknown as Record<string, unknown>, msg.path)))
+          }
           setSelectedPath(msg.path)
           setDockTab(msg.path ? 'settings' : 'elements')
           // A selected column is also where the next element lands (click a column, then pick an element).
@@ -835,6 +955,10 @@ export const VisualEditorView: React.FC = () => {
           break
         case 'editDone': {
           const { path, field, itemIndex, value } = msg
+          if (translateRef.current.translating) {
+            if (Array.isArray(path)) saveCanvasText(path, field, value)
+            break
+          }
           if (Array.isArray(path) && !lockedOut(path)) applyBlocks((prev) => applyInlineEdit(prev, path, { field, itemIndex }, value))
           break
         }
@@ -853,7 +977,18 @@ export const VisualEditorView: React.FC = () => {
         case 'moveTo':
           moveBlockTo(msg.from, msg.containerPath, msg.at)
           break
+        case 'translateHint': {
+          // Double-click on text that is translated in the panel (rich text, a divider): say so and focus its block's row.
+          notifyTranslate(t('builder.translate.inPanel'))
+          const node = getNode(translateRef.current.blocks, msg.path)
+          if (node) setFocusField(firstFieldOfBlock(translateRef.current.cells, blockKeyFor(node as unknown as Record<string, unknown>, msg.path)))
+          break
+        }
         case 'key':
+          if (translateRef.current.translating && msg.alt && (msg.key === 'ArrowLeft' || msg.key === 'ArrowRight')) {
+            navigateUntranslated(msg.key === 'ArrowRight' ? 1 : -1)
+            break
+          }
           handleKeyRef.current({ key: msg.key, ctrl: msg.ctrl, meta: msg.meta, shift: msg.shift, alt: msg.alt })
           break
         case 'contextmenu': {
@@ -869,7 +1004,7 @@ export const VisualEditorView: React.FC = () => {
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp, renameNode, setColumnWidths, lockedOut, applyBlocks, addBlockAt])
+  }, [deleteBlock, duplicateBlock, moveBlock, moveBlockTo, columnOp, renameNode, setColumnWidths, lockedOut, applyBlocks, addBlockAt, saveCanvasText, notifyTranslate, navigateUntranslated, t])
 
   // Keyboard shortcuts: the parent's own key presses and the ones forwarded from the frame share this handler.
   const { handleKey } = useEditorShortcuts({
@@ -904,10 +1039,19 @@ export const VisualEditorView: React.FC = () => {
   useEffect(() => {
     if (!frameReady) return
     iframeRef.current?.contentWindow?.postMessage(
-      { source: 've-canvas', type: 'init', blocks, selectedPath, locks: lockMapForCanvas(blocks, locks, lockUser), device },
+      { source: 've-canvas', type: 'init', blocks: canvasBlocks, selectedPath, locks: lockMapForCanvas(blocks, locks, lockUser), device },
       CANVAS_ORIGIN(),
     )
-  }, [frameReady, blocks, selectedPath, locks, lockUser, device])
+  }, [frameReady, canvasBlocks, blocks, selectedPath, locks, lockUser, device])
+
+  // Translate mode marks for the frame (the language's status per block, the source tooltip, and whether it may be edited).
+  useEffect(() => {
+    if (!frameReady) return
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: 've-canvas', type: 'translate', active: translating, marks: canvasMarks, untranslatedLabel: t('builder.translate.untranslated') },
+      CANVAS_ORIGIN(),
+    )
+  }, [frameReady, translating, canvasMarks, t])
 
   useEffect(() => {
     if (!frameReady) return
@@ -1187,7 +1331,7 @@ export const VisualEditorView: React.FC = () => {
     <div className="ve-root">
       { }
       <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
-      <style dangerouslySetInnerHTML={{ __html: TRANSLATION_BAR_CSS + TRANSLATE_PANEL_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: TRANSLATION_BAR_CSS + TRANSLATE_PANEL_CSS + TRANSLATE_BANNER_CSS + TRANSLATE_ACTIONS_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: NAVIGATOR_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: IMPORT_EXPORT_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: AI_BUILDER_CSS }} />
@@ -1233,9 +1377,11 @@ export const VisualEditorView: React.FC = () => {
                 label: localeLabel(group.locale),
                 approved: group.approved,
                 total: group.total,
-                href: `/admin/translations?item=${encodeURIComponent(`collection:${translation.sourceId}`)}`,
               }))}
-              onSelect={(code) => setEditLocale(code === translation.defaultLocale ? null : code)}
+              onSelect={(code) => {
+                setFocusField(null)
+                setEditLocale(code === translation.defaultLocale ? null : code)
+              }}
             />
           ) : null}
           <div className="ve-history" role="group" aria-label="History">
@@ -1331,15 +1477,20 @@ export const VisualEditorView: React.FC = () => {
           tab={dockTab}
           translatePanel={
             translation && editLocale ? (
-              <TranslatePanel
-                state={translation}
-                locale={editLocale}
-                localeLabel={localeLabel(editLocale)}
-                title={translation.title}
-                users={translation.users}
-                onSaved={loadTranslations}
-                onExit={() => setEditLocale(null)}
-              />
+              <>
+                <TranslateActions state={translation} locale={editLocale} onChanged={loadTranslations} onMessage={notifyTranslate} />
+                <TranslatePanel
+                  state={translation}
+                  locale={editLocale}
+                  localeLabel={localeLabel(editLocale)}
+                  title={translation.title}
+                  users={translation.users}
+                  onSaved={loadTranslations}
+                  onExit={exitTranslate}
+                  focusFieldPath={focusField}
+                  onDraftChange={(fieldPath, value) => setDrafts((prev) => ({ ...prev, [fieldPath]: value }))}
+                />
+              </>
             ) : undefined
           }
           onTabChange={setDockTab}
@@ -1436,6 +1587,7 @@ export const VisualEditorView: React.FC = () => {
         />
 
         <div className={`ve-canvas-wrap${translation && editLocale ? ' ve-canvas-wrap--translating' : ''}`} role="presentation">
+          {translation && editLocale ? <TranslateBanner languageLabel={localeLabel(editLocale)} onExit={exitTranslate} /> : null}
           {lockNotice && (
             <p className="ve-error" role="status" style={{ padding: 12 }}>
               &#128274; {lockNotice}

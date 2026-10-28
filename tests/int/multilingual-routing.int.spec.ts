@@ -8,7 +8,7 @@ const on: MultilingualSettings = {
   defaultLocale: 'en',
   activeLocales: ['en', 'fr'],
   fallbackToDefault: true,
-  machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
+  machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0, autoDraft: false },
   showLanguageSwitcher: true,
   switcherPosition: 'header',
   requireReview: false,

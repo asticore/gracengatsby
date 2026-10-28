@@ -4,6 +4,8 @@ import { notifyAssignees } from './translationNotify'
 import { itemKey } from './translationOverview'
 import { translationKey, type TranslationRow } from './store'
 import { loadOverviewData, type OverviewData } from './views/translationsData'
+import { runMachineDrafts } from './machine/drafts'
+import { isMachineProviderId, type MachineProviderId } from './machine/providers'
 
 /**
  * Bulk actions on the Translations overview: approve, or assign.
@@ -20,7 +22,7 @@ import { loadOverviewData, type OverviewData } from './views/translationsData'
 
 export const MAX_BULK_ITEMS = 100
 
-export type BulkAction = 'approve' | 'assign'
+export type BulkAction = 'approve' | 'assign' | 'translate'
 
 export type BulkBody = {
   action: BulkAction
@@ -29,6 +31,10 @@ export type BulkBody = {
   locales?: string[]
   /** For assign: the people to assign. An empty list clears the item's own assignment, and the language rules apply again. */
   assignees?: number[]
+  /** For translate: replace approved and human-written text too. Off by default. */
+  overwrite?: boolean
+  /** For translate: one provider for every language. Default: the per-language setting. */
+  provider?: MachineProviderId | null
 }
 
 export type BulkResult = {
@@ -52,8 +58,8 @@ type EngineLike = {
 export function parseBulkBody(body: unknown): { ok: true; value: BulkBody } | { ok: false; message: string } {
   if (!body || typeof body !== 'object') return { ok: false, message: 'Send a JSON object.' }
   const record = body as Record<string, unknown>
-  if (record.action !== 'approve' && record.action !== 'assign') {
-    return { ok: false, message: 'action must be "approve" or "assign".' }
+  if (record.action !== 'approve' && record.action !== 'assign' && record.action !== 'translate') {
+    return { ok: false, message: 'action must be "approve", "assign" or "translate".' }
   }
   if (!Array.isArray(record.items) || record.items.length === 0 || !record.items.every((k) => typeof k === 'string')) {
     return { ok: false, message: 'items must be a non-empty list of item keys.' }
@@ -67,6 +73,12 @@ export function parseBulkBody(body: unknown): { ok: true; value: BulkBody } | { 
   if (record.action === 'assign' && (!Array.isArray(record.assignees) || !record.assignees.every((id) => Number.isInteger(Number(id))))) {
     return { ok: false, message: 'assignees must be a list of user ids.' }
   }
+  if (record.overwrite !== undefined && typeof record.overwrite !== 'boolean') {
+    return { ok: false, message: 'overwrite must be true or false.' }
+  }
+  if (record.provider !== undefined && record.provider !== null && !isMachineProviderId(record.provider)) {
+    return { ok: false, message: 'provider must be one of google, deepl, claude or openai.' }
+  }
   return {
     ok: true,
     value: {
@@ -74,6 +86,8 @@ export function parseBulkBody(body: unknown): { ok: true; value: BulkBody } | { 
       items: record.items as string[],
       locales: record.locales as string[] | undefined,
       assignees: record.assignees === undefined ? undefined : (record.assignees as unknown[]).map(Number),
+      overwrite: record.overwrite === true,
+      provider: isMachineProviderId(record.provider) ? record.provider : null,
     },
   }
 }
@@ -110,7 +124,22 @@ export async function runTranslationBulk(args: {
   const result = emptyResult()
   const refused = new Set<string>()
 
-  if (body.action === 'approve') {
+  if (body.action === 'translate') {
+    if (!settings.machine.enabled) return { status: 409, body: { error: 'Machine translation is switched off.' } }
+    const drafts = await runMachineDrafts({
+      engine,
+      user,
+      items,
+      locales,
+      stored: data.stored,
+      overwrite: body.overwrite === true,
+      settings,
+      provider: body.provider ?? null,
+    })
+    result.updated = drafts.updated
+    result.skipped = drafts.skipped
+    for (const message of drafts.refused) refused.add(message)
+  } else if (body.action === 'approve') {
     for (const item of items) {
       for (const locale of locales) {
         for (const field of item.fields) {

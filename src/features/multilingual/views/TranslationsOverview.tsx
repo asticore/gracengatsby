@@ -62,6 +62,7 @@ type Notice = { tone: 'ok' | 'error'; text: string } | null
 export function TranslationsOverview(props: TranslationsOverviewProps) {
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [assignees, setAssignees] = useState<number[]>([])
+  const [overwrite, setOverwrite] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<Notice>(null)
 
@@ -139,6 +140,19 @@ export function TranslationsOverview(props: TranslationsOverviewProps) {
         <button type="button" className="btn" disabled={busy || keys.length === 0} onClick={() => send({ action: 'approve', items: keys }, 'Approved')}>
           Mark approved
         </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={busy || keys.length === 0}
+          title="Writes machine drafts for the empty or changed fields. Up to 100 items at a time."
+          onClick={() => send({ action: 'translate', items: keys, overwrite }, 'Translated with machine')}
+        >
+          Translate with machine
+        </button>
+        <label className="flex items-center gap-[4px]">
+          <input type="checkbox" checked={overwrite} onChange={(event) => setOverwrite(event.target.checked)} />
+          Overwrite approved and human text
+        </label>
         <details>
           <summary className="cursor-pointer">Assign to…</summary>
           <div className="mt-[6px] flex flex-col gap-[4px] rounded-[5px] border border-[var(--theme-elevation-150)] p-[8px]">

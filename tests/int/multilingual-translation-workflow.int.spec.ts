@@ -44,7 +44,7 @@ const settings = (over: Partial<MultilingualSettings> = {}): MultilingualSetting
   requireReview: false,
   adminsBypassReview: true,
   translationRules: RULES,
-  machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
+  machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0, autoDraft: false },
   ...over,
 })
 

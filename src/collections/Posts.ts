@@ -1,4 +1,5 @@
 import { pageAudioField } from '@/features/pageAudio/fields'
+import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { noAdsField } from '@/features/ads/fields'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
@@ -95,7 +96,7 @@ export const Posts: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, readingTimeBeforeChange, contentEditGuard, publishGuard, pageSpeedBeforeChange],
-    afterChange: [pageSpeedAfterChange('posts'), indexNowAfterChange('posts')],
+    afterChange: [pageSpeedAfterChange('posts'), indexNowAfterChange('posts'), machineAutoDraftAfterChange('posts')],
     afterDelete: [indexNowAfterDelete('posts')],
   },
 }

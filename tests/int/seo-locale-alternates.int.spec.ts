@@ -14,7 +14,7 @@ const on: MultilingualSettings = {
   requireReview: false,
   adminsBypassReview: true,
   translationRules: {},
-  machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
+  machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0, autoDraft: false },
   showLanguageSwitcher: true,
   switcherPosition: 'header',
 }

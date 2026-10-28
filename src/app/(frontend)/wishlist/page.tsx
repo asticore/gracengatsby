@@ -1,3 +1,6 @@
+import { storeTexts } from '@/features/uiStrings/storeTextsServer'
+import { translateWith } from '@/features/uiStrings/t'
+import type { UiStringKey } from '@/features/uiStrings/keys'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
@@ -14,6 +17,8 @@ export async function generateMetadata() {
 export const dynamic = 'force-dynamic'
 
 export default async function WishlistPage() {
+  const dict = await storeTexts()
+  const t = (key: UiStringKey) => translateWith(dict, key)
   const flags = await getFeatureFlags()
   if (!flags.ecommerce) notFound()
 
@@ -24,8 +29,8 @@ export default async function WishlistPage() {
   return (
     <div className="page-shell">
       <header className="page-header">
-        <h1>Saved for later</h1>
-        <p>Pieces you have saved on this device.</p>
+        <h1>{t('store.savedForLater')}</h1>
+        <p>{t('store.savedOnDevice')}</p>
       </header>
       <WishlistList />
     </div>

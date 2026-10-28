@@ -1,3 +1,6 @@
+import { storeTexts } from '@/features/uiStrings/storeTextsServer'
+import { translateWith } from '@/features/uiStrings/t'
+import type { UiStringKey } from '@/features/uiStrings/keys'
 import Link from 'next/link'
 import React from 'react'
 
@@ -14,6 +17,8 @@ import { renderWithTemplate } from '@/features/siteTemplates/render'
  * Site pages, its blocks are rendered here; otherwise a short built-in message is shown.
  */
 export default async function NotFound() {
+  const dict = await storeTexts()
+  const t = (key: UiStringKey) => translateWith(dict, key)
   const page = await getNotFoundPage()
 
   if (page) {
@@ -32,15 +37,15 @@ export default async function NotFound() {
   const message = (
     <section className="mx-auto max-w-[var(--max-width)] px-6 py-24 text-center" aria-labelledby="not-found-heading">
       <h1 id="not-found-heading" className="text-4xl text-[var(--color-ink)]" style={{ fontFamily: 'var(--font-display)' }}>
-        Page not found
+        {t('store.pageNotFound')}
       </h1>
       <p className="mx-auto mt-4 max-w-xl text-[var(--color-ink)] opacity-80">
-        The page you were looking for may have moved, or the address may have a typo.
+        {t('store.notFoundHelp')}
       </p>
-      <nav className="mt-8 flex flex-wrap justify-center gap-6 text-[var(--color-ink)] underline underline-offset-4" aria-label="Helpful links">
-        <Link href="/">Home</Link>
-        {flags.blog !== false && <Link href="/blog">Blog</Link>}
-        {flags.ecommerce !== false && <Link href="/shop">Shop</Link>}
+      <nav className="mt-8 flex flex-wrap justify-center gap-6 text-[var(--color-ink)] underline underline-offset-4" aria-label={t('store.helpfulLinks')}>
+        <Link href="/">{t('store.home')}</Link>
+        {flags.blog !== false && <Link href="/blog">{t('store.blog')}</Link>}
+        {flags.ecommerce !== false && <Link href="/shop">{t('store.shop')}</Link>}
       </nav>
     </section>
   )

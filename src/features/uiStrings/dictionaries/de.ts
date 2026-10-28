@@ -1263,6 +1263,25 @@ const de: UiDictionary = {
   "store.country": "Land (z. B. AU)",
   "store.couldNotPriceCart": "Dein Warenkorb konnte nicht berechnet werden.",
   "store.storeCredit": "Guthaben",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "Für später gemerkt",
+  "store.savedOnDevice": "Gegenstände, die du auf diesem Gerät gemerkt hast.",
+  "store.loadingSaved": "Deine gemerkten Artikel werden geladen...",
+  "store.wishlistError": "Deine gemerkten Artikel konnten nicht geladen werden. Bitte lade die Seite neu.",
+  "store.saveForLater": "Für später merken",
+  "store.thankYou": "Vielen Dank!",
+  "store.orderPlaced": "Deine Bestellung wurde aufgegeben.",
+  "store.orderReference": "Bestellnummer:",
+  "store.enterEmail": "Bitte gib deine E-Mail-Adresse ein.",
+  "store.enterEmailFirst": "Bitte gib zuerst deine E-Mail-Adresse ein.",
+  "store.pricesIn": "Preise in",
+  "store.pageNotFound": "Seite nicht gefunden",
+  "store.notFoundHelp": "Die gesuchte Seite wurde möglicherweise verschoben, oder die Adresse enthält einen Tippfehler.",
+  "store.helpfulLinks": "Hilfreiche Links",
+  "store.home": "Startseite",
+  "store.blog": "Blog",
+  "store.shop": "Shop",
 }
 
 export default de

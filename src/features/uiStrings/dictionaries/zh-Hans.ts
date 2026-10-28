@@ -1261,6 +1261,25 @@ const zhHans: UiDictionary = {
   "store.country": "国家（例如 AU）",
   "store.couldNotPriceCart": "无法为您的购物车计算价格。",
   "store.storeCredit": "商店余额",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "稍后再看",
+  "store.savedOnDevice": "您在此设备上保存的商品。",
+  "store.loadingSaved": "正在加载您保存的商品...",
+  "store.wishlistError": "无法加载您保存的商品，请刷新页面。",
+  "store.saveForLater": "稍后再看",
+  "store.thankYou": "谢谢！",
+  "store.orderPlaced": "您的订单已提交。",
+  "store.orderReference": "订单编号：",
+  "store.enterEmail": "请输入您的电子邮箱地址。",
+  "store.enterEmailFirst": "请先输入您的电子邮箱地址。",
+  "store.pricesIn": "价格显示为",
+  "store.pageNotFound": "页面未找到",
+  "store.notFoundHelp": "您要查找的页面可能已被移动，或地址中有拼写错误。",
+  "store.helpfulLinks": "实用链接",
+  "store.home": "首页",
+  "store.blog": "博客",
+  "store.shop": "商店",
 }
 
 export default zhHans

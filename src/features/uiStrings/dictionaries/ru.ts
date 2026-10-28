@@ -1262,6 +1262,25 @@ const ru: UiDictionary = {
   "store.country": "Страна (например, AU)",
   "store.couldNotPriceCart": "Не удалось рассчитать корзину.",
   "store.storeCredit": "Кредит магазина",
+
+  // --- store (storefront pages) ---
+  "store.savedForLater": "Сохранено на потом",
+  "store.savedOnDevice": "Товары, которые вы сохранили на этом устройстве.",
+  "store.loadingSaved": "Загружаем сохранённые товары...",
+  "store.wishlistError": "Не удалось загрузить сохранённые товары. Обновите страницу.",
+  "store.saveForLater": "Сохранить на потом",
+  "store.thankYou": "Спасибо!",
+  "store.orderPlaced": "Ваш заказ оформлен.",
+  "store.orderReference": "Номер заказа:",
+  "store.enterEmail": "Укажите адрес электронной почты.",
+  "store.enterEmailFirst": "Сначала укажите адрес электронной почты.",
+  "store.pricesIn": "Цены в",
+  "store.pageNotFound": "Страница не найдена",
+  "store.notFoundHelp": "Возможно, страница, которую вы искали, была перемещена, или в адресе есть опечатка.",
+  "store.helpfulLinks": "Полезные ссылки",
+  "store.home": "Главная",
+  "store.blog": "Блог",
+  "store.shop": "Магазин",
 }
 
 export default ru

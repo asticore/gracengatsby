@@ -179,11 +179,11 @@ const SaveButton: React.FC<SaveTarget> = (target) => {
     <div style={{ alignItems: 'center', display: 'flex', gap: 12, marginTop: 24 }}>
       {draftsEnabled && (
         <button className="btn" disabled={busy !== null} onClick={() => save('draft')} type="button">
-          {busy === 'draft' ? 'Saving...' : 'Save Draft'}
+          {busy === 'draft' ? t('common.saving') : t('edit.saveDraft')}
         </button>
       )}
       <button className="btn btn--primary" disabled={busy !== null} onClick={() => save('published')} type="button">
-        {busy === 'published' ? 'Saving...' : draftsEnabled ? t('common.publish') : t('common.save')}
+        {busy === 'published' ? t('common.saving') : draftsEnabled ? t('common.publish') : t('common.save')}
       </button>
       {error && <span style={{ color: 'var(--theme-error-500, #b3261e)' }}>{error}</span>}
     </div>
@@ -213,16 +213,19 @@ export function splitFields(fields: Field[], visualBlocksField?: string): { main
   return { main, settings, access, seo, pageType }
 }
 
-const PageContentCard: React.FC<{ count?: number; isNew: boolean; blocksField: string }> = ({ count, isNew, blocksField }) => (
-  <CollapsibleCard id="page-content" title="Page content" className="doc-content-card">
-    <p className="doc-muted">
-      {isNew
-        ? 'Save first, then use "Edit in visual editor" in the panel to build the layout.'
-        : `${count ?? 0} ${count === 1 ? 'section' : 'sections'}. The layout is edited in the visual editor.`}
-    </p>
-    <SectionOutline blocksField={blocksField} />
-  </CollapsibleCard>
-)
+const PageContentCard: React.FC<{ count?: number; isNew: boolean; blocksField: string }> = ({ count, isNew, blocksField }) => {
+  const t = useAdminT()
+  return (
+    <CollapsibleCard id="page-content" title={t('edit.pageContent')} className="doc-content-card">
+      <p className="doc-muted">
+        {isNew
+          ? 'Save first, then use "Edit in visual editor" in the panel to build the layout.'
+          : `${count ?? 0} ${count === 1 ? 'section' : 'sections'}. The layout is edited in the visual editor.`}
+      </p>
+      <SectionOutline blocksField={blocksField} />
+    </CollapsibleCard>
+  )
+}
 
 export const EditForm: React.FC<EditFormProps> = ({
   afterFields,
@@ -272,14 +275,14 @@ export const EditForm: React.FC<EditFormProps> = ({
                   </CollapsibleCard>
                 )}
                 {settings.length > 0 && (
-                  <CollapsibleCard id="settings" title="Settings" className="doc-settings-card">
+                  <CollapsibleCard id="settings" title={t('edit.settingsCard')} className="doc-settings-card">
                     <div className="doc-settings">
                       <FieldRenderer fields={settings} readOnly={readOnly} />
                     </div>
                   </CollapsibleCard>
                 )}
                 {access && (
-                  <CollapsibleCard id="access" title="Access" className="doc-access-card">
+                  <CollapsibleCard id="access" title={t('edit.accessCard')} className="doc-access-card">
                     <div className="doc-access">
                       <FieldRenderer fields={[access]} readOnly={readOnly} />
                     </div>

@@ -2,6 +2,8 @@
 
 import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { UI_STRING_SOURCE, type UiStringKey } from '@/features/uiStrings'
 import { EditForm } from './EditForm'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
 import { WorstPagesCard } from '@/features/pagespeed/ui/WorstPagesCard'
@@ -48,6 +50,13 @@ const readServerHash = () => ''
  * - Link sections as a grid of cards, visible on every tab
  */
 export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, sections }) => {
+  const t = useAdminT()
+  // Page title and description come from the reference table, keyed by page key.
+  // A page with no key in the table keeps the English text from settingsPages.ts.
+  const titleKey = `settings.page.${page.key}.title` as UiStringKey
+  const descriptionKey = `settings.page.${page.key}.description` as UiStringKey
+  const pageTitle = titleKey in UI_STRING_SOURCE ? t(titleKey) : page.title
+  const pageDescription = descriptionKey in UI_STRING_SOURCE ? t(descriptionKey) : page.description
   const globalSections = sections.filter((s) => s.kind === 'global')
   const linkSections = sections.filter((s) => s.kind === 'link')
   const showTabs = globalSections.length >= 2
@@ -92,8 +101,8 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
     <div className="settings-page">
       {/* Header */}
       <div className="settings-page__header">
-        <h1 className="settings-page__title">{page.title}</h1>
-        <p className="settings-page__description">{page.description}</p>
+        <h1 className="settings-page__title">{pageTitle}</h1>
+        <p className="settings-page__description">{pageDescription}</p>
         {/* One bar for every card on the page, above the box (outside it). */}
         {globalSections.length > 0 && (
           <div className="settings-page__actions">
@@ -109,7 +118,7 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
         <div className="settings-page__sections">
           <div className="settings-page__section settings-tabs">
             {showTabs ? (
-              <div role="tablist" aria-label={page.title} className="settings-tabs__list">
+              <div role="tablist" aria-label={pageTitle} className="settings-tabs__list">
                 {globalSections.map((section, index) => {
                   const selected = section.slug === activeSlug
                   return (

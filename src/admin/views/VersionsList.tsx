@@ -266,7 +266,7 @@ export function VersionsList({
                           }
                           disabled={busy !== null}
                         >
-                          {confirmAction === 'delete' ? 'Yes, delete' : 'Yes'}
+                          {confirmAction === 'delete' ? t('versions.confirmDelete') : t('versions.confirmYes')}
                         </button>
                         <button className="btn btn--small btn--secondary" onClick={cancelConfirm} disabled={busy !== null}>
                           Cancel

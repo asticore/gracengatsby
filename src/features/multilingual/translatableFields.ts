@@ -41,8 +41,8 @@ export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
     titleField: 'title',
     fields: [
       { path: 'title', label: 'Title', size: 'text' },
-      { path: 'meta.title', label: 'SEO title', size: 'text' },
-      { path: 'meta.description', label: 'SEO description', size: 'long' },
+      { path: 'seo.metaTitle', label: 'SEO title', size: 'text' },
+      { path: 'seo.metaDescription', label: 'SEO description', size: 'long' },
     ],
   },
   {
@@ -53,8 +53,8 @@ export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
       { path: 'title', label: 'Title', size: 'text' },
       { path: 'excerpt', label: 'Excerpt', size: 'long' },
       { path: 'content', label: 'Body', size: 'long', richText: true },
-      { path: 'meta.title', label: 'SEO title', size: 'text' },
-      { path: 'meta.description', label: 'SEO description', size: 'long' },
+      { path: 'seo.metaTitle', label: 'SEO title', size: 'text' },
+      { path: 'seo.metaDescription', label: 'SEO description', size: 'long' },
     ],
   },
   {
@@ -64,8 +64,8 @@ export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
     fields: [
       { path: 'title', label: 'Title', size: 'text' },
       { path: 'description', label: 'Description', size: 'long', richText: true },
-      { path: 'meta.title', label: 'SEO title', size: 'text' },
-      { path: 'meta.description', label: 'SEO description', size: 'long' },
+      { path: 'seo.metaTitle', label: 'SEO title', size: 'text' },
+      { path: 'seo.metaDescription', label: 'SEO description', size: 'long' },
     ],
   },
   {

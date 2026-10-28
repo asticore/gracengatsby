@@ -7,6 +7,11 @@ const row = (sourceId: string, fieldPath: string, value: string | null, locale =
   id: `${sourceId}:${fieldPath}`,
   locale,
   sourceKind: 'collection',
+  status: null,
+  assignedTo: [],
+  machineProvider: null,
+  reviewedBy: null,
+  reviewedAt: null,
   sourceId,
   fieldPath,
   value,
@@ -18,22 +23,22 @@ const lookupFor = (rows: TranslationRow[], locale = 'fr') => lookupFromRows(loca
 const page = {
   id: 7,
   title: 'About us',
-  meta: { title: 'About | Site', description: 'Who we are' },
+  seo: { metaTitle: 'About | Site', metaDescription: 'Who we are' },
   slug: 'about',
   layout: [{ blockType: 'hero', heading: 'Hello' }],
 }
 
 describe('overlayDocument', () => {
   it('overlays translated plain-string fields and leaves everything else alone', () => {
-    const rows = [row(sourceIdFor('pages', 7), 'title', 'À propos'), row(sourceIdFor('pages', 7), 'meta.title', 'À propos | Site')]
+    const rows = [row(sourceIdFor('pages', 7), 'title', 'À propos'), row(sourceIdFor('pages', 7), 'seo.metaTitle', 'À propos | Site')]
     const translated = overlayDocument(page, 'pages', 7, (s, p) => {
       const hit = rows.find((r) => r.sourceId === s && r.fieldPath === p)
       return hit?.value ?? null
     }, true)
     expect(translated.title).toBe('À propos')
-    expect(translated.meta.title).toBe('À propos | Site')
+    expect(translated.seo.metaTitle).toBe('À propos | Site')
     // Not translated: no row for meta.description, and slug/layout are not in the field list.
-    expect(translated.meta.description).toBe('Who we are')
+    expect(translated.seo.metaDescription).toBe('Who we are')
     expect(translated.slug).toBe('about')
     expect(translated.layout).toBe(page.layout)
     // The source document is not mutated.
@@ -48,8 +53,8 @@ describe('overlayDocument', () => {
   it('leaves a field empty when there is no translation and fallbackToDefault is false', () => {
     const out = overlayDocument(page, 'pages', 7, () => null, false)
     expect(out.title).toBe('')
-    expect(out.meta.title).toBe('')
-    expect(out.meta.description).toBe('')
+    expect(out.seo.metaTitle).toBe('')
+    expect(out.seo.metaDescription).toBe('')
     expect(out.slug).toBe('about')
   })
 
@@ -106,6 +111,9 @@ describe('locale off is identity', () => {
     fallbackToDefault: true,
     showLanguageSwitcher: true,
     switcherPosition: 'header',
+    requireReview: false,
+    adminsBypassReview: true,
+    translationRules: {},
   }
 
   it('does not prefix links while multilingual is off', () => {

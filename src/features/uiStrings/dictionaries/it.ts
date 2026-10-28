@@ -654,6 +654,22 @@ const it: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'Questo invito è stato inviato a un altro indirizzo e-mail. Accedi con quell\'account.',
   'portal.orgs.refusal.role_in_use': 'Questo ruolo è ancora assegnato a un membro o a un invito in sospeso.',
   'portal.orgs.refusal.email_failed': 'L\'invito è stato salvato, ma non è stato possibile inviare l\'e-mail. Prova a reinviarlo.',
+  'portal.panel.unknown': 'Sconosciuto',
+  'portal.panel.unknownAddress': 'indirizzo sconosciuto',
+  'portal.panel.devicesHeading': 'Dispositivi ricordati',
+  'portal.panel.devicesIntro': 'Questi dispositivi saltano il secondo passaggio fino alla scadenza. Un cambio di password li dimentica tutti.',
+  'portal.panel.devicesNone': 'Nessun dispositivo ricordato.',
+  'portal.panel.devicesDetail': 'Vicino a {ip} - aggiunto il {added} - scade il {expires}',
+  'portal.panel.forget': 'Dimentica',
+  'portal.panel.forgetAll': 'Dimentica tutti i dispositivi',
+  'portal.panel.thisDevice': 'Questo dispositivo',
+  'portal.panel.revoke': 'Revoca',
+  'portal.panel.sessionsNone': 'Nessun dispositivo con accesso è elencato.',
+  'portal.panel.sessionDetail': 'Vicino a {ip} - accesso il {signed} - ultima attività {active}',
+  'portal.panel.signOutOthers': 'Disconnetti altri dispositivi',
+  'portal.panel.sessionsLegacy': 'I dispositivi che hanno effettuato l\'accesso prima della creazione di questo elenco non sono mostrati qui. Si disconnettono da soli entro un paio d\'ore.',
+  'portal.panel.done': 'Fatto.',
+  'portal.panel.networkError': 'Qualcosa è andato storto. Controlla la connessione e riprova.',
 }
 
 export default it

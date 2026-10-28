@@ -653,6 +653,22 @@ const zhHans: UiDictionary = {
   'portal.orgs.refusal.wrong_account': '此邀请发送到了另一个电子邮件地址，请使用该账户登录。',
   'portal.orgs.refusal.role_in_use': '该角色仍被成员或待处理的邀请占用。',
   'portal.orgs.refusal.email_failed': '邀请已保存，但无法发送电子邮件，请尝试重新发送。',
+  'portal.panel.unknown': '未知',
+  'portal.panel.unknownAddress': '未知地址',
+  'portal.panel.devicesHeading': '已记住的设备',
+  'portal.panel.devicesIntro': '这些设备在过期前将跳过第二步验证。更改密码会忘记所有设备。',
+  'portal.panel.devicesNone': '没有已记住的设备。',
+  'portal.panel.devicesDetail': '位于 {ip} 附近 - 添加于 {added} - 过期于 {expires}',
+  'portal.panel.forget': '忘记',
+  'portal.panel.forgetAll': '忘记所有设备',
+  'portal.panel.thisDevice': '此设备',
+  'portal.panel.revoke': '撤销',
+  'portal.panel.sessionsNone': '没有列出已登录的设备。',
+  'portal.panel.sessionDetail': '位于 {ip} 附近 - 登录于 {signed} - 最近活动 {active}',
+  'portal.panel.signOutOthers': '退出其他设备',
+  'portal.panel.sessionsLegacy': '在此列表推出前登录的设备不会显示在此处。它们会在几小时内自动退出。',
+  'portal.panel.done': '完成。',
+  'portal.panel.networkError': '出了点问题。请检查连接后重试。',
 }
 
 export default zhHans

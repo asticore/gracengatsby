@@ -654,6 +654,22 @@ const es: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'Esta invitación se envió a otra dirección de correo. Inicie sesión con esa cuenta.',
   'portal.orgs.refusal.role_in_use': 'Ese rol sigue asignado a un miembro o a una invitación pendiente.',
   'portal.orgs.refusal.email_failed': 'La invitación se guardó, pero no se pudo enviar el correo. Pruebe a reenviarla.',
+  'portal.panel.unknown': 'Desconocido',
+  'portal.panel.unknownAddress': 'dirección desconocida',
+  'portal.panel.devicesHeading': 'Dispositivos recordados',
+  'portal.panel.devicesIntro': 'Estos dispositivos omiten el segundo paso hasta que caducan. Un cambio de contraseña olvida todos.',
+  'portal.panel.devicesNone': 'No hay dispositivos recordados.',
+  'portal.panel.devicesDetail': 'Cerca de {ip} - añadido {added} - caduca {expires}',
+  'portal.panel.forget': 'Olvidar',
+  'portal.panel.forgetAll': 'Olvidar todos los dispositivos',
+  'portal.panel.thisDevice': 'Este dispositivo',
+  'portal.panel.revoke': 'Revocar',
+  'portal.panel.sessionsNone': 'No hay dispositivos con sesión iniciada en la lista.',
+  'portal.panel.sessionDetail': 'Cerca de {ip} - sesión iniciada {signed} - última actividad {active}',
+  'portal.panel.signOutOthers': 'Cerrar sesión en otros dispositivos',
+  'portal.panel.sessionsLegacy': 'Los dispositivos que iniciaron sesión antes de que existiera esta lista no aparecen aquí. Cerrarán sesión por sí solos en un par de horas.',
+  'portal.panel.done': 'Listo.',
+  'portal.panel.networkError': 'Algo salió mal. Compruebe su conexión e inténtelo de nuevo.',
 }
 
 export default es

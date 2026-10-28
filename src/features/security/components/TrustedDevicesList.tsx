@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { revokeAllTrustedDevicesAction, revokeTrustedDeviceAction, twoFactorPanelOptionsAction } from '../twoFactorActions'
+import { usePortalText } from '@/features/accounts/components/PortalText'
 import type { TrustedDeviceView } from '../trustedDevices'
 import './twoFactorExtras.css'
 
@@ -12,10 +13,10 @@ import './twoFactorExtras.css'
  * sessions screen; everything that decides anything runs in the server actions.
  */
 
-const when = (iso: string | null): string => {
-  if (!iso) return 'Unknown'
+const when = (iso: string | null, unknown: string): string => {
+  if (!iso) return unknown
   const time = Date.parse(iso)
-  return Number.isFinite(time) ? new Date(time).toLocaleDateString() : 'Unknown'
+  return Number.isFinite(time) ? new Date(time).toLocaleDateString() : unknown
 }
 
 export const TrustedDevicesList: React.FC = () => {
@@ -23,6 +24,7 @@ export const TrustedDevicesList: React.FC = () => {
   const [allowed, setAllowed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const tx = usePortalText()
 
   useEffect(() => {
     let cancelled = false
@@ -46,7 +48,7 @@ export const TrustedDevicesList: React.FC = () => {
       setNote(result.message ?? '')
       if (result.ok && result.devices) setDevices(result.devices)
     } catch {
-      setNote('Something went wrong. Try again.')
+      setNote(tx('common.somethingWrong'))
     } finally {
       setBusy(false)
     }
@@ -56,15 +58,15 @@ export const TrustedDevicesList: React.FC = () => {
 
   return (
     <section className="tf-trusted" aria-labelledby="tf-trusted-heading">
-      <h3 id="tf-trusted-heading">Remembered devices</h3>
-      <p>These devices skip the second step until they expire. A password change forgets all of them.</p>
+      <h3 id="tf-trusted-heading">{tx('panel.devicesHeading')}</h3>
+      <p>{tx('panel.devicesIntro')}</p>
       {note && (
         <p role="status" aria-live="polite">
           {note}
         </p>
       )}
       {devices.length === 0 ? (
-        <p>No devices are remembered.</p>
+        <p>{tx('panel.devicesNone')}</p>
       ) : (
         <>
           <ul className="tf-devices">
@@ -73,17 +75,17 @@ export const TrustedDevicesList: React.FC = () => {
                 <div>
                   <strong>{device.device}</strong>
                   <div>
-                    Near {device.ip ?? 'unknown address'} - added {when(device.createdAt)} - expires {when(device.expiresAt)}
+                    {tx('panel.devicesDetail', { ip: device.ip ?? tx('panel.unknownAddress'), added: when(device.createdAt, tx('panel.unknown')), expires: when(device.expiresAt, tx('panel.unknown')) })}
                   </div>
                 </div>
                 <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void run(() => revokeTrustedDeviceAction(device.id))}>
-                  Forget
+                  {tx('panel.forget')}
                 </button>
               </li>
             ))}
           </ul>
           <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void run(revokeAllTrustedDevicesAction)}>
-            Forget all devices
+            {tx('panel.forgetAll')}
           </button>
         </>
       )}

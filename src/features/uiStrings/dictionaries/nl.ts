@@ -654,6 +654,22 @@ const nl: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'Deze uitnodiging is naar een ander e-mailadres gestuurd. Log in met dat account.',
   'portal.orgs.refusal.role_in_use': 'Deze rol is nog in gebruik door een lid of een openstaande uitnodiging.',
   'portal.orgs.refusal.email_failed': 'De uitnodiging is opgeslagen, maar de e-mail kon niet worden verstuurd. Probeer opnieuw te versturen.',
+  'portal.panel.unknown': 'Onbekend',
+  'portal.panel.unknownAddress': 'onbekend adres',
+  'portal.panel.devicesHeading': 'Onthouden apparaten',
+  'portal.panel.devicesIntro': 'Deze apparaten slaan de tweede stap over tot ze verlopen. Een wachtwoordwijziging vergeet ze allemaal.',
+  'portal.panel.devicesNone': 'Er worden geen apparaten onthouden.',
+  'portal.panel.devicesDetail': 'In de buurt van {ip} - toegevoegd {added} - verloopt {expires}',
+  'portal.panel.forget': 'Vergeten',
+  'portal.panel.forgetAll': 'Alle apparaten vergeten',
+  'portal.panel.thisDevice': 'Dit apparaat',
+  'portal.panel.revoke': 'Intrekken',
+  'portal.panel.sessionsNone': 'Er staan geen ingelogde apparaten vermeld.',
+  'portal.panel.sessionDetail': 'In de buurt van {ip} - ingelogd {signed} - laatst actief {active}',
+  'portal.panel.signOutOthers': 'Andere apparaten uitloggen',
+  'portal.panel.sessionsLegacy': 'Apparaten die zijn ingelogd voordat deze lijst bestond, worden hier niet getoond. Ze loggen zelf binnen een paar uur uit.',
+  'portal.panel.done': 'Klaar.',
+  'portal.panel.networkError': 'Er ging iets mis. Controleer je verbinding en probeer het opnieuw.',
 }
 
 export default nl

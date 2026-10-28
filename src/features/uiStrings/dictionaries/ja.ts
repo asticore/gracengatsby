@@ -654,6 +654,22 @@ const ja: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'この招待は別のメールアドレス宛てに送られたものです。そのアカウントでサインインしてください。',
   'portal.orgs.refusal.role_in_use': 'そのロールは、メンバーまたは保留中の招待でまだ使用されています。',
   'portal.orgs.refusal.email_failed': '招待は保存されましたが、メールを送信できませんでした。再送信をお試しください。',
+  'portal.panel.unknown': '不明',
+  'portal.panel.unknownAddress': '不明なアドレス',
+  'portal.panel.devicesHeading': '記憶されたデバイス',
+  'portal.panel.devicesIntro': 'これらのデバイスは期限切れまで二段階目をスキップします。パスワードを変更すると全て忘れられます。',
+  'portal.panel.devicesNone': '記憶されているデバイスはありません。',
+  'portal.panel.devicesDetail': '{ip} 付近 - {added} に追加 - {expires} に期限切れ',
+  'portal.panel.forget': '忘れる',
+  'portal.panel.forgetAll': 'すべてのデバイスを忘れる',
+  'portal.panel.thisDevice': 'このデバイス',
+  'portal.panel.revoke': '取り消す',
+  'portal.panel.sessionsNone': 'サインイン中のデバイスはありません。',
+  'portal.panel.sessionDetail': '{ip} 付近 - {signed} にサインイン - 最終アクティブ {active}',
+  'portal.panel.signOutOthers': '他のデバイスからサインアウト',
+  'portal.panel.sessionsLegacy': 'このリストができる前にサインインしたデバイスはここには表示されません。数時間以内に自動的にサインアウトします。',
+  'portal.panel.done': '完了しました。',
+  'portal.panel.networkError': '問題が発生しました。接続を確認してもう一度お試しください。',
 }
 
 export default ja

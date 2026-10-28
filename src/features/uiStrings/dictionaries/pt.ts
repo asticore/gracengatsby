@@ -654,6 +654,22 @@ const pt: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'Este convite foi enviado para outro endereço de e-mail. Entre com essa conta.',
   'portal.orgs.refusal.role_in_use': 'Essa função ainda está ocupada por um membro ou por um convite pendente.',
   'portal.orgs.refusal.email_failed': 'O convite foi salvo, mas o e-mail não pôde ser enviado. Tente reenviá-lo.',
+  'portal.panel.unknown': 'Desconhecido',
+  'portal.panel.unknownAddress': 'endereço desconhecido',
+  'portal.panel.devicesHeading': 'Dispositivos lembrados',
+  'portal.panel.devicesIntro': 'Estes dispositivos pulam a segunda etapa até expirarem. Uma troca de senha esquece todos eles.',
+  'portal.panel.devicesNone': 'Nenhum dispositivo lembrado.',
+  'portal.panel.devicesDetail': 'Perto de {ip} - adicionado em {added} - expira em {expires}',
+  'portal.panel.forget': 'Esquecer',
+  'portal.panel.forgetAll': 'Esquecer todos os dispositivos',
+  'portal.panel.thisDevice': 'Este dispositivo',
+  'portal.panel.revoke': 'Revogar',
+  'portal.panel.sessionsNone': 'Nenhum dispositivo com sessão iniciada está listado.',
+  'portal.panel.sessionDetail': 'Perto de {ip} - sessão iniciada em {signed} - última atividade {active}',
+  'portal.panel.signOutOthers': 'Encerrar sessão em outros dispositivos',
+  'portal.panel.sessionsLegacy': 'Dispositivos que entraram antes de esta lista existir não aparecem aqui. Eles encerram a sessão sozinhos em algumas horas.',
+  'portal.panel.done': 'Concluído.',
+  'portal.panel.networkError': 'Algo deu errado. Verifique sua conexão e tente novamente.',
 }
 
 export default pt

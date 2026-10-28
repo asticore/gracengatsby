@@ -654,6 +654,22 @@ const ru: UiDictionary = {
   'portal.orgs.refusal.wrong_account': 'Это приглашение отправлено на другой адрес электронной почты. Войдите в эту учётную запись.',
   'portal.orgs.refusal.role_in_use': 'Эта роль всё ещё занята участником или ожидающим приглашением.',
   'portal.orgs.refusal.email_failed': 'Приглашение сохранено, но письмо отправить не удалось. Попробуйте отправить его ещё раз.',
+  'portal.panel.unknown': 'Неизвестно',
+  'portal.panel.unknownAddress': 'неизвестный адрес',
+  'portal.panel.devicesHeading': 'Запомненные устройства',
+  'portal.panel.devicesIntro': 'Эти устройства пропускают второй шаг до истечения срока. Смена пароля забывает все устройства.',
+  'portal.panel.devicesNone': 'Запомненных устройств нет.',
+  'portal.panel.devicesDetail': 'Рядом с {ip} - добавлено {added} - истекает {expires}',
+  'portal.panel.forget': 'Забыть',
+  'portal.panel.forgetAll': 'Забыть все устройства',
+  'portal.panel.thisDevice': 'Это устройство',
+  'portal.panel.revoke': 'Отозвать',
+  'portal.panel.sessionsNone': 'Устройства с входом в аккаунт не показаны.',
+  'portal.panel.sessionDetail': 'Рядом с {ip} - вход {signed} - последняя активность {active}',
+  'portal.panel.signOutOthers': 'Выйти на других устройствах',
+  'portal.panel.sessionsLegacy': 'Устройства, с которых вход был выполнен до появления этого списка, здесь не показаны. Они выйдут самостоятельно в течение нескольких часов.',
+  'portal.panel.done': 'Готово.',
+  'portal.panel.networkError': 'Что-то пошло не так. Проверьте подключение и попробуйте снова.',
 }
 
 export default ru

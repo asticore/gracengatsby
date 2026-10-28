@@ -14,6 +14,8 @@ import {
   twoFactorPanelOptionsAction,
   type TwoFactorActionResult,
 } from '../twoFactorActions'
+import { usePortalText } from '@/features/accounts/components/PortalText'
+
 import { TrustedDevicesList } from './TrustedDevicesList'
 import './twoFactorExtras.css'
 
@@ -56,6 +58,7 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
   const [resetEmail, setResetEmail] = useState('')
   const [emailEnabled, setEmailEnabled] = useState(false)
   const [emailSetup, setEmailSetup] = useState(false)
+  const tx = usePortalText()
 
   useEffect(() => {
     let cancelled = false
@@ -78,10 +81,10 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
         onOk?.(result)
         if (result.message) setNotice({ tone: 'ok', text: result.message })
       } else {
-        setNotice({ tone: 'error', text: result.message || 'That did not work.' })
+        setNotice({ tone: 'error', text: result.message || tx('msg.didNotWork') })
       }
     } catch {
-      setNotice({ tone: 'error', text: 'Something went wrong. Check your connection and try again.' })
+      setNotice({ tone: 'error', text: tx('panel.networkError') })
     } finally {
       setBusy(false)
     }
@@ -155,8 +158,7 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
     return (
       <div>
         <p>
-          <strong>Save these backup codes now.</strong> Each works once, in place of an authenticator code, if you lose
-          your phone. They will not be shown again.
+          <strong>{tx('panel.tfSaveHeading')}</strong> {tx('panel.tfCodesIntro')}
         </p>
         <ul style={{ fontFamily: 'monospace', fontSize: '1.1rem', columns: 2, listStyle: 'none', padding: 0 }}>
           {shownCodes.map((backup) => (
@@ -165,10 +167,10 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
         </ul>
         <div style={rowStyle}>
           <button type="button" className="btn btn--ghost" onClick={() => navigator.clipboard?.writeText(shownCodes.join('\n')).catch((): void => undefined)}>
-            Copy codes
+            {tx('panel.tfCopyCodes')}
           </button>
           <button type="button" className="btn btn--primary" onClick={doneWithCodes}>
-            I have saved them
+            {tx('panel.tfSaved')}
           </button>
         </div>
       </div>
@@ -178,10 +180,10 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
   if (emailSetup) {
     return (
       <div>
-        <p>We emailed a 6-digit code to the address on your account. Enter it to turn on two-step sign-in by email.</p>
+        <p>{tx('panel.tfEmailSent')}</p>
         <form onSubmit={confirmEmail}>
           <label style={fieldStyle}>
-            Code from your email
+            {tx('panel.tfCodeFromEmail')}
             <input
               name="emailCode"
               inputMode="numeric"
@@ -196,17 +198,17 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
           {banner}
           <div style={rowStyle}>
             <button type="submit" className="btn btn--primary" disabled={busy}>
-              Turn on two-step sign-in
+              {tx('panel.tfTurnOn')}
             </button>
             <button type="button" className="btn btn--ghost" disabled={busy} onClick={beginEmail}>
-              Send a new code
+              {tx('auth.sendNewCode')}
             </button>
             <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => { setEmailSetup(false); setNotice(null) }}>
-              Cancel
+              {tx('panel.cancel')}
             </button>
           </div>
         </form>
-        <p>Nothing changes about how you sign in until you enter a code correctly.</p>
+        <p>{tx('panel.tfNothingChanges')}</p>
       </div>
     )
   }
@@ -214,14 +216,14 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
   if (setup) {
     return (
       <div>
-        <p>1. Scan this code with an authenticator app (Google Authenticator, 1Password, Authy and similar).</p>
+        <p>{tx('panel.tfScanStep')}</p>
         <div style={{ maxWidth: 220 }} dangerouslySetInnerHTML={{ __html: setup.qrSvg }} />
         <p>
-          Cannot scan? Enter this key by hand: <code style={{ wordBreak: 'break-all' }}>{setup.secret}</code>
+          {tx('panel.tfCannotScan')} <code style={{ wordBreak: 'break-all' }}>{setup.secret}</code>
         </p>
         <form onSubmit={confirm}>
           <label style={fieldStyle}>
-            2. Enter the 6-digit code the app shows
+            {tx('panel.tfCodeStep')}
             <input
               name="code"
               inputMode="numeric"
@@ -235,10 +237,10 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
           {banner}
           <div style={rowStyle}>
             <button type="submit" className="btn btn--primary" disabled={busy}>
-              Turn on two-step sign-in
+              {tx('panel.tfTurnOn')}
             </button>
             <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => { setSetup(null); setNotice(null) }}>
-              Cancel
+              {tx('panel.cancel')}
             </button>
           </div>
         </form>
@@ -252,35 +254,36 @@ export const TwoFactorPanel: React.FC<Props> = ({ enrolled, backupCodesLeft, isA
       {enrolled ? (
         <>
           <p>
-            <strong>Two-step sign-in is on.</strong> You have {backupCodesLeft} unused backup code{backupCodesLeft === 1 ? '' : 's'}.
+            <strong>{tx('panel.tfOnHeading')}</strong>{' '}
+            {tx(backupCodesLeft === 1 ? 'panel.tfCodesLeftOne' : 'panel.tfCodesLeftMany', { count: backupCodesLeft })}
           </p>
           <label style={fieldStyle}>
-            Your password or a current code (needed for the buttons below)
+            {tx('panel.tfProofLabel')}
             <input name="proof" type="password" autoComplete="off" value={proof} onChange={(event) => setProof(event.target.value)} disabled={busy} />
           </label>
           {banner}
           <div style={rowStyle}>
             <button type="button" className="btn btn--ghost" disabled={busy || !proof} onClick={regenerate}>
-              Make new backup codes
+              {tx('panel.tfNewCodes')}
             </button>
             <button type="button" className="btn btn--ghost" disabled={busy || !proof} onClick={turnOff}>
-              Turn off two-step sign-in
+              {tx('panel.tfTurnOff')}
             </button>
           </div>
-          <p>Making new backup codes stops the old ones working.</p>
+          <p>{tx('panel.tfNewCodesNote')}</p>
           <TrustedDevicesList />
         </>
       ) : (
         <>
-          <p>Add a second step to signing in: a code from an app on your phone, as well as your password.</p>
+          <p>{tx('panel.tfAddIntro')}</p>
           {banner}
           <div className="tf-methods">
             <button type="button" className="btn btn--primary" disabled={busy} onClick={begin}>
-              Set up with an authenticator app
+              {tx('panel.tfSetupApp')}
             </button>
             {emailEnabled && (
               <button type="button" className="btn btn--ghost" disabled={busy} onClick={beginEmail}>
-                Set up with a code by email
+                {tx('panel.tfSetupEmail')}
               </button>
             )}
           </div>

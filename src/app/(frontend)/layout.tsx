@@ -30,6 +30,8 @@ import { cookies, headers } from 'next/headers'
 import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
 import { Providers } from '@/components/Providers'
+import { StoreTextsProvider } from '@/features/uiStrings/StoreTextsContext'
+import { storeTexts } from '@/features/uiStrings/storeTextsServer'
 import { ShopCurrencyProvider } from '@/components/ShopCurrencyContext'
 import { DisplayCurrencyProvider } from '@/components/DisplayCurrencyContext'
 import { DISPLAY_CURRENCY_COOKIE } from '@/features/ecommerce/lib/displayCurrency'
@@ -236,6 +238,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const chrome = await renderChromeTemplates(requestPathOf(await headers()))
   const siteEffects = siteEffectsFor(settings, requestPathOf(await headers()))
 
+  const storeDict = await storeTexts()
   return (
     <html
       lang={locale ?? 'en'}
@@ -268,6 +271,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <ShopCurrencyProvider currency={storeCurrency}>
         <DisplayCurrencyProvider state={displayState}>
         <Providers>
+        <StoreTextsProvider value={storeDict}>
           {chrome.header ? (
             <header>{chrome.header}</header>
           ) : (
@@ -310,6 +314,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             copyrightText={footer?.copyrightText}
           />
           )}
+        </StoreTextsProvider>
         </Providers>
         </DisplayCurrencyProvider>
         </ShopCurrencyProvider>

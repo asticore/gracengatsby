@@ -1168,6 +1168,31 @@ const ar: UiDictionary = {
   "email.abandonedCart.body": "تركت بعض العناصر في سلة التسوق الخاصة بك في {site_name}. ما زالت في انتظارك.",
   "email.backInStock.subject": "متوفر مجددًا: {label}",
   "email.backInStock.body": "أخبار سارة. {label} متوفر مجددًا.\n\nشاهده هنا: {url}\n\nلقد طلبت منا إخبارك، لذلك فهذه هي الرسالة الوحيدة التي سنرسلها بخصوص ذلك.",
+
+  // --- store ---
+  "store.addToCart": "أضف إلى السلة",
+  "store.adding": "جارٍ الإضافة…",
+  "store.addedToCart": "تمت الإضافة إلى سلة التسوق.",
+  "store.viewCart": "عرض السلة",
+  "store.outOfStock": "غير متوفر",
+  "store.sale": "تخفيض",
+  "store.cart": "السلة",
+  "store.emptyCart": "سلة التسوق فارغة.",
+  "store.continueShopping": "متابعة التسوق",
+  "store.subtotal": "المجموع الفرعي",
+  "store.total": "الإجمالي",
+  "store.quantity": "الكمية",
+  "store.remove": "إزالة",
+  "store.checkout": "الدفع",
+  "store.readMore": "اقرأ المزيد",
+  "store.search": "بحث",
+  "store.previous": "السابق",
+  "store.next": "التالي",
+  "store.wishlist": "قائمة الرغبات",
+  "store.compare": "مقارنة",
+  "store.shipping": "الشحن",
+  "store.tax": "الضريبة",
+  "store.orderConfirmed": "شكرًا لك، تم تأكيد طلبك.",
 }
 
 export default ar

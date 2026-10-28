@@ -1169,6 +1169,31 @@ const de: UiDictionary = {
   "email.abandonedCart.body": "Du hast noch Artikel in deinem Warenkorb bei {site_name} liegen. Sie warten noch auf dich.",
   "email.backInStock.subject": "Wieder auf Lager: {label}",
   "email.backInStock.body": "Gute Nachrichten. {label} ist wieder auf Lager.\n\nHier findest du den Artikel: {url}\n\nDu hast darum gebeten, benachrichtigt zu werden, deshalb ist dies die einzige E-Mail dazu.",
+
+  // --- store ---
+  "store.addToCart": "In den Warenkorb",
+  "store.adding": "Wird hinzugefügt…",
+  "store.addedToCart": "In deinen Warenkorb gelegt.",
+  "store.viewCart": "Warenkorb anzeigen",
+  "store.outOfStock": "Nicht auf Lager",
+  "store.sale": "Angebot",
+  "store.cart": "Warenkorb",
+  "store.emptyCart": "Dein Warenkorb ist leer.",
+  "store.continueShopping": "Weiter einkaufen",
+  "store.subtotal": "Zwischensumme",
+  "store.total": "Gesamt",
+  "store.quantity": "Menge",
+  "store.remove": "Entfernen",
+  "store.checkout": "Zur Kasse",
+  "store.readMore": "Weiterlesen",
+  "store.search": "Suchen",
+  "store.previous": "Zurück",
+  "store.next": "Weiter",
+  "store.wishlist": "Merkliste",
+  "store.compare": "Vergleichen",
+  "store.shipping": "Versand",
+  "store.tax": "MwSt.",
+  "store.orderConfirmed": "Vielen Dank - deine Bestellung ist bestätigt.",
 }
 
 export default de

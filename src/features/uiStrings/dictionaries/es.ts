@@ -1168,6 +1168,31 @@ const es: UiDictionary = {
   "email.abandonedCart.body": "Dejaste algunos artículos en tu carrito en {site_name}. Todavía te esperan.",
   "email.backInStock.subject": "De nuevo disponible: {label}",
   "email.backInStock.body": "Buenas noticias. {label} vuelve a estar disponible.\n\nVerlo aquí: {url}\n\nPediste que te avisáramos, así que este es el único correo que te enviaremos al respecto.",
+
+  // --- store ---
+  "store.addToCart": "Añadir al carrito",
+  "store.adding": "Añadiendo…",
+  "store.addedToCart": "Añadido a tu carrito.",
+  "store.viewCart": "Ver carrito",
+  "store.outOfStock": "Agotado",
+  "store.sale": "Oferta",
+  "store.cart": "Carrito",
+  "store.emptyCart": "Tu carrito está vacío.",
+  "store.continueShopping": "Seguir comprando",
+  "store.subtotal": "Subtotal",
+  "store.total": "Total",
+  "store.quantity": "Cantidad",
+  "store.remove": "Quitar",
+  "store.checkout": "Pagar",
+  "store.readMore": "Leer más",
+  "store.search": "Buscar",
+  "store.previous": "Anterior",
+  "store.next": "Siguiente",
+  "store.wishlist": "Lista de deseos",
+  "store.compare": "Comparar",
+  "store.shipping": "Envío",
+  "store.tax": "Impuestos",
+  "store.orderConfirmed": "¡Gracias! Tu pedido está confirmado.",
 }
 
 export default es

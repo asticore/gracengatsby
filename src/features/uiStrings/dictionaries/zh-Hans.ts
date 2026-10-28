@@ -1167,6 +1167,31 @@ const zhHans: UiDictionary = {
   "email.abandonedCart.body": "您在 {site_name} 的购物车里还有商品，它们仍在等您。",
   "email.backInStock.subject": "已重新到货：{label}",
   "email.backInStock.body": "好消息，{label} 已重新到货。\n\n在此查看：{url}\n\n您曾要求我们通知您，因此这是我们就此发送的唯一一封邮件。",
+
+  // --- store ---
+  "store.addToCart": "加入购物车",
+  "store.adding": "添加中…",
+  "store.addedToCart": "已加入您的购物车。",
+  "store.viewCart": "查看购物车",
+  "store.outOfStock": "缺货",
+  "store.sale": "促销",
+  "store.cart": "购物车",
+  "store.emptyCart": "您的购物车是空的。",
+  "store.continueShopping": "继续购物",
+  "store.subtotal": "小计",
+  "store.total": "合计",
+  "store.quantity": "数量",
+  "store.remove": "移除",
+  "store.checkout": "结算",
+  "store.readMore": "阅读更多",
+  "store.search": "搜索",
+  "store.previous": "上一页",
+  "store.next": "下一页",
+  "store.wishlist": "心愿单",
+  "store.compare": "对比",
+  "store.shipping": "运费",
+  "store.tax": "税费",
+  "store.orderConfirmed": "感谢您，您的订单已确认。",
 }
 
 export default zhHans

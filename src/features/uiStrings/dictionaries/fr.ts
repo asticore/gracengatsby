@@ -1168,6 +1168,31 @@ const fr: UiDictionary = {
   "email.abandonedCart.body": "Vous avez laissé des articles dans votre panier sur {site_name}. Ils vous attendent toujours.",
   "email.backInStock.subject": "De retour en stock : {label}",
   "email.backInStock.body": "Bonne nouvelle. {label} est de nouveau en stock.\n\nVoir l'article : {url}\n\nVous nous avez demandé de vous prévenir, c'est donc le seul e-mail que nous vous enverrons à ce sujet.",
+
+  // --- store ---
+  "store.addToCart": "Ajouter au panier",
+  "store.adding": "Ajout en cours…",
+  "store.addedToCart": "Ajouté à votre panier.",
+  "store.viewCart": "Voir le panier",
+  "store.outOfStock": "Rupture de stock",
+  "store.sale": "Promo",
+  "store.cart": "Panier",
+  "store.emptyCart": "Votre panier est vide.",
+  "store.continueShopping": "Continuer mes achats",
+  "store.subtotal": "Sous-total",
+  "store.total": "Total",
+  "store.quantity": "Quantité",
+  "store.remove": "Retirer",
+  "store.checkout": "Commander",
+  "store.readMore": "Lire la suite",
+  "store.search": "Rechercher",
+  "store.previous": "Précédent",
+  "store.next": "Suivant",
+  "store.wishlist": "Liste de souhaits",
+  "store.compare": "Comparer",
+  "store.shipping": "Livraison",
+  "store.tax": "Taxes",
+  "store.orderConfirmed": "Merci ! Votre commande est confirmée.",
 }
 
 export default fr

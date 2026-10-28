@@ -1331,6 +1331,9 @@ const de: UiDictionary = {
   "store.newerPosts": "Neuere Beiträge",
   "store.olderPosts": "Ältere Beiträge",
   "store.alwaysOn": "Immer aktiv.",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "Schlüssel werden hier nie angezeigt. Um einen Schlüssel hinzuzufügen oder zu ändern, öffnen Sie die Seite Integrationen:",
+  'integrations.pageLink': "Integrationen",
 }
 
 export default de

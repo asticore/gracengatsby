@@ -1330,6 +1330,9 @@ const pt: UiDictionary = {
   "store.newerPosts": "Posts mais recentes",
   "store.olderPosts": "Posts mais antigos",
   "store.alwaysOn": "Sempre ativos.",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "As chaves nunca são exibidas aqui. Para adicionar ou alterar uma, abra a página Integrações:",
+  'integrations.pageLink': "Integrações",
 }
 
 export default pt

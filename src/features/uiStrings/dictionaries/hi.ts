@@ -1330,6 +1330,9 @@ const hi: UiDictionary = {
   "store.newerPosts": "नई पोस्ट",
   "store.olderPosts": "पुरानी पोस्ट",
   "store.alwaysOn": "हमेशा चालू।",
+  // --- admin leftovers (email connection note) ---
+  'integrations.email.note': "कुंजियाँ यहाँ कभी नहीं दिखाई जातीं। कोई कुंजी जोड़ने या बदलने के लिए इंटीग्रेशन पेज खोलें:",
+  'integrations.pageLink': "इंटीग्रेशन",
 }
 
 export default hi

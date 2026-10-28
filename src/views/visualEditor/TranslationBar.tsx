@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 /**
  * The language dropdown and the per-language progress chips in the builder's
  * top bar. A chip switches the canvas to that language (it is not a link). Shown only when multilingual is on with more than one active
@@ -25,17 +27,18 @@ export function TranslationBar({
   progress: TranslationBarProgress[]
   onSelect: (code: string) => void
 }): React.ReactElement {
+  const t = useAdminT()
   return (
-    <div className="ve-translation-bar" role="group" aria-label="Language">
+    <div className="ve-translation-bar" role="group" aria-label={t('ve.lang.group')}>
       <label className="ve-translation-bar__label">
-        <span className="ve-translation-bar__sr">Editing language</span>
+        <span className="ve-translation-bar__sr">{t('ve.lang.editing')}</span>
         <select
           className="ve-translation-bar__select"
           value={selected}
           onChange={(event) => onSelect(event.target.value)}
           data-testid="visual-editor-language"
         >
-          <option value={defaultLocale}>{defaultLabel} (default)</option>
+          <option value={defaultLocale}>{t('ve.lang.defaultOption', { label: defaultLabel })}</option>
           {targets.map((locale) => (
             <option key={locale.code} value={locale.code}>
               {locale.label}
@@ -49,13 +52,13 @@ export function TranslationBar({
           type="button"
           className={`ve-translation-bar__chip${chip.code === selected ? ' ve-translation-bar__chip--active' : ''}`}
           aria-pressed={chip.code === selected}
-          title={`Translate into ${chip.label} (${chip.approved} of ${chip.total} approved)`}
+          title={t('ve.lang.chipTitle', { label: chip.label, approved: chip.approved, total: chip.total })}
           onClick={() => onSelect(chip.code)}
           data-locale={chip.code}
           data-approved={chip.approved}
           data-total={chip.total}
         >
-          {chip.code.split('-')[0].toUpperCase()} {chip.approved}/{chip.total} approved
+          {t('ve.lang.chipText', { code: chip.code.split('-')[0].toUpperCase(), approved: chip.approved, total: chip.total })}
         </button>
       ))}
     </div>

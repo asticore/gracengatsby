@@ -134,7 +134,7 @@ export const DesignPanel: React.FC<{
       </div>
       <Acc g="background" title={t('dp.section.background')} defaultOpen>
         <SelectRow
-          label="Type"
+          label={t('dp.field.type')}
           value={value.bgType || 'none'}
           options={[
             { label: 'None', value: 'none' },
@@ -148,15 +148,15 @@ export const DesignPanel: React.FC<{
         />
 
         {value.bgType === 'color' && (
-          <ColorRow label="Colour" value={value.bgColor} onChange={(v) => set('bgColor', v)} />
+          <ColorRow label={t('dp.field.colour')} value={value.bgColor} onChange={(v) => set('bgColor', v)} />
         )}
 
         {value.bgType === 'gradient' && (
           <>
-            <ColorRow label="From" value={value.bgGradientFrom} onChange={(v) => set('bgGradientFrom', v)} />
-            <ColorRow label="To" value={value.bgGradientTo} onChange={(v) => set('bgGradientTo', v)} />
+            <ColorRow label={t('dp.field.from')} value={value.bgGradientFrom} onChange={(v) => set('bgGradientFrom', v)} />
+            <ColorRow label={t('dp.field.to')} value={value.bgGradientTo} onChange={(v) => set('bgGradientTo', v)} />
             <NumberRow
-              label="Angle (deg)"
+              label={t('dp.field.angle_deg')}
               value={value.bgGradientAngle}
               onChange={(v) => set('bgGradientAngle', v)}
               min={0}
@@ -168,13 +168,13 @@ export const DesignPanel: React.FC<{
         {value.bgType === 'image' && (
           <>
             <ImageRow
-              label="Image"
+              label={t('dp.field.image')}
               url={value.bgImageUrl}
               onPick={(id, url) => onChange({ ...value, bgImage: id, bgImageUrl: url })}
               onClear={() => onChange({ ...value, bgImage: null, bgImageUrl: null })}
             />
             <NumberRow
-              label="Dark overlay (%)"
+              label={t('dp.field.dark_overlay')}
               value={value.bgOverlay}
               onChange={(v) => set('bgOverlay', v)}
               min={0}
@@ -189,7 +189,7 @@ export const DesignPanel: React.FC<{
         {value.bgType === 'video' && (
           <>
             <TextRow
-              label="Video URL"
+              label={t('dp.field.video_url')}
               value={value.bgVideoUrl || undefined}
               placeholder="https://... or /media/clip.mp4"
               help={
@@ -200,13 +200,13 @@ export const DesignPanel: React.FC<{
               onChange={(v) => set('bgVideoUrl', v)}
             />
             <ImageRow
-              label="Poster image"
+              label={t('dp.field.poster_image')}
               url={value.bgVideoPoster}
               onPick={(_id, url) => set('bgVideoPoster', url)}
               onClear={() => set('bgVideoPoster', undefined)}
             />
             <CheckRow
-              label="Loop"
+              label={t('dp.field.loop')}
               checked={value.bgVideoLoop !== false}
               help="Turn off to play once and hold the last frame."
               onChange={(v) => set('bgVideoLoop', v ? undefined : false)}
@@ -218,9 +218,9 @@ export const DesignPanel: React.FC<{
           <p className="ve-row__help">Parallax needs the background type set to Image.</p>
         )}
 
-        <p className="ve-row__label">Overlay</p>
+        <p className="ve-row__label">{t('dp.field.overlay')}</p>
         <SelectRow
-          label="Type"
+          label={t('dp.field.type')}
           value={value.overlayType || 'none'}
           options={[
             { label: 'None', value: 'none' },
@@ -230,14 +230,14 @@ export const DesignPanel: React.FC<{
           onChange={(v) => set('overlayType', v === 'none' ? undefined : (v as BlockStyle['overlayType']))}
         />
         {value.overlayType === 'color' && (
-          <ColorRow label="Colour" value={value.overlayColor} onChange={(v) => set('overlayColor', v)} />
+          <ColorRow label={t('dp.field.colour')} value={value.overlayColor} onChange={(v) => set('overlayColor', v)} />
         )}
         {value.overlayType === 'gradient' && (
           <>
-            <ColorRow label="From" value={value.overlayColor} onChange={(v) => set('overlayColor', v)} />
-            <ColorRow label="To" value={value.overlayColor2} onChange={(v) => set('overlayColor2', v)} />
+            <ColorRow label={t('dp.field.from')} value={value.overlayColor} onChange={(v) => set('overlayColor', v)} />
+            <ColorRow label={t('dp.field.to')} value={value.overlayColor2} onChange={(v) => set('overlayColor2', v)} />
             <NumberRow
-              label="Angle (deg)"
+              label={t('dp.field.angle_deg')}
               value={value.overlayAngle}
               onChange={(v) => set('overlayAngle', v)}
               min={0}
@@ -247,9 +247,9 @@ export const DesignPanel: React.FC<{
         )}
         {value.overlayType && value.overlayType !== 'none' && (
           <>
-            <FxRange k="overlayOpacity" label="Opacity" unit="%" value={value} onChange={onChange} def={50} min={0} max={100} />
+            <FxRange k="overlayOpacity" label={t('dp.field.opacity')} unit="%" value={value} onChange={onChange} def={50} min={0} max={100} />
             <SelectRow
-              label="Blend mode"
+              label={t('dp.field.blend_mode')}
               value={value.overlayBlend || 'normal'}
               options={[
                 { label: 'Normal', value: 'normal' },
@@ -265,11 +265,11 @@ export const DesignPanel: React.FC<{
           </>
         )}
 
-        <FxRange k="noise" label="Noise" unit="%" value={value} onChange={onChange} def={0} min={0} max={100} help="Film grain over the background and gradient. Pure SVG, no image file." />
+        <FxRange k="noise" label={t('dp.field.noise')} unit="%" value={value} onChange={onChange} def={0} min={0} max={100} help="Film grain over the background and gradient. Pure SVG, no image file." />
 
         {variant === 'block' && (
           <>
-            <p className="ve-row__label">Animated background</p>
+            <p className="ve-row__label">{t('dp.field.animated_background')}</p>
             <BackgroundEffectControls value={value} onChange={onChange} />
           </>
         )}
@@ -289,7 +289,7 @@ export const DesignPanel: React.FC<{
 
       <Acc g="border" title={t('dp.section.border')}>
         <NumberRow
-          label="Border width (px)"
+          label={t('dp.field.border_width_px')}
           value={value.borderWidth}
           onChange={(v) => set('borderWidth', v)}
           min={0}
@@ -297,7 +297,7 @@ export const DesignPanel: React.FC<{
         {Boolean(value.borderWidth) && (
           <>
             <SelectRow
-              label="Border style"
+              label={t('dp.field.border_style')}
               value={value.borderStyle || 'solid'}
               options={[
                 { label: 'Solid', value: 'solid' },
@@ -306,13 +306,13 @@ export const DesignPanel: React.FC<{
               ]}
               onChange={(v) => set('borderStyle', v as BlockStyle['borderStyle'])}
             />
-            <ColorRow label="Border colour" value={value.borderColor} onChange={(v) => set('borderColor', v)} />
+            <ColorRow label={t('dp.field.border_colour')} value={value.borderColor} onChange={(v) => set('borderColor', v)} />
           </>
         )}
-        <NumberRow label="Corner radius (px)" value={value.borderRadius} onChange={(v) => set('borderRadius', v)} min={0} />
+        <NumberRow label={t('dp.field.corner_radius_px')} value={value.borderRadius} onChange={(v) => set('borderRadius', v)} min={0} />
         <RadiusCorners ctl={resp} linked={value.radiusLinked === true} onLinked={(b) => set('radiusLinked', b ? true : undefined)} />
         <SelectRow
-          label="Shadow"
+          label={t('dp.field.shadow')}
           value={value.boxShadow || 'none'}
           options={BOX_SHADOW_OPTIONS}
           onChange={(v) => set('boxShadow', v === 'none' ? undefined : (v as BlockStyle['boxShadow']))}
@@ -322,7 +322,7 @@ export const DesignPanel: React.FC<{
       <Acc g="layout" title={t('dp.section.layout')}>
         {variant === 'block' && (
           <SelectRow
-            label="Width"
+            label={t('dp.field.width')}
             value={value.width || 'contained'}
             options={[
               { label: 'Contained', value: 'contained' },
@@ -335,7 +335,7 @@ export const DesignPanel: React.FC<{
         <RespSelect
           ctl={resp}
           k="textAlign"
-          label="Text alignment"
+          label={t('dp.field.text_alignment')}
           options={[
             { label: 'Left', value: 'left' },
             { label: 'Centre', value: 'center' },
@@ -343,7 +343,7 @@ export const DesignPanel: React.FC<{
           ]}
           defaultLabel="Default"
         />
-        <ColorRow label="Text colour" value={value.textColor} onChange={(v) => set('textColor', v)} />
+        <ColorRow label={t('dp.field.text_colour')} value={value.textColor} onChange={(v) => set('textColor', v)} />
       </Acc>
 
       <Acc g="typography" title={t('dp.section.typography')}>
@@ -367,7 +367,7 @@ export const DesignPanel: React.FC<{
           <RespSelect
             ctl={resp}
             k="selfWidth"
-            label="Width"
+            label={t('dp.field.width')}
             options={[
               { label: 'Full width', value: 'full' },
               { label: 'Custom %', value: 'custom' },
@@ -386,7 +386,7 @@ export const DesignPanel: React.FC<{
       {variant === 'block' && (
       <Acc g="dividers" title={t('dp.section.dividers')}>
         <DividerControls
-          label="Top"
+          label={t('dp.field.top')}
           shape={value.dividerTop}
           color={value.dividerTopColor}
           height={value.dividerTopHeight}
@@ -401,7 +401,7 @@ export const DesignPanel: React.FC<{
           onFlip={(v) => set('dividerTopFlip', v)}
         />
         <DividerControls
-          label="Bottom"
+          label={t('dp.field.bottom')}
           shape={value.dividerBottom}
           color={value.dividerBottomColor}
           height={value.dividerBottomHeight}
@@ -1241,6 +1241,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
   onChange,
   ctl,
 }) => {
+  const t = useAdminT()
   const siteFonts = useSiteFonts()
   const patch = (changes: Partial<Record<keyof BlockStyle, unknown>>) => {
     const updated: Record<string, unknown> = { ...value }
@@ -1260,7 +1261,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
   return (
     <>
       <SelectRow
-        label="Family"
+        label={t('dp.field.family')}
         value={value.fontFamily || ''}
         options={[
           { label: 'Site default', value: '' },
@@ -1273,7 +1274,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
       <TypoRange
         ctl={ctl}
         k="fontSize"
-        label="Size"
+        label={t('dp.field.size')}
         def={sizeRange.def}
         min={sizeRange.min}
         max={sizeRange.max}
@@ -1292,13 +1293,13 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         }
       />
       <SelectRow
-        label="Weight"
+        label={t('dp.field.weight')}
         value={value.fontWeight !== undefined ? String(value.fontWeight) : ''}
         options={[{ label: 'Default', value: '' }, ...WEIGHT_OPTIONS]}
         onChange={(v) => patch({ fontWeight: v ? Number(v) : undefined })}
       />
       <ToggleRow
-        label="Transform"
+        label={t('dp.field.transform')}
         current={value.textTransform}
         options={[
           { label: 'None', value: 'none' },
@@ -1309,7 +1310,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         onPick={(v) => patch({ textTransform: v })}
       />
       <ToggleRow
-        label="Style"
+        label={t('dp.field.style')}
         current={value.fontStyle}
         options={[
           { label: 'Normal', value: 'normal' },
@@ -1318,7 +1319,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         onPick={(v) => patch({ fontStyle: v })}
       />
       <ToggleRow
-        label="Decoration"
+        label={t('dp.field.decoration')}
         current={value.textDecoration}
         options={[
           { label: 'None', value: 'none' },
@@ -1327,11 +1328,11 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         ]}
         onPick={(v) => patch({ textDecoration: v })}
       />
-      <TypoRange ctl={ctl} k="lineHeight" label="Line height" def={1.5} min={0.8} max={3} step={0.05} />
+      <TypoRange ctl={ctl} k="lineHeight" label={t('dp.field.line_height')} def={1.5} min={0.8} max={3} step={0.05} />
       <TypoRange
         ctl={ctl}
         k="letterSpacing"
-        label="Letter spacing"
+        label={t('dp.field.letter_spacing')}
         def={0}
         min={lsRange.min}
         max={lsRange.max}
@@ -1347,9 +1348,9 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
           </select>
         }
       />
-      <FxRange k="wordSpacing" label="Word spacing" unit="px" value={value} onChange={onChange} def={0} min={-10} max={50} />
+      <FxRange k="wordSpacing" label={t('dp.field.word_spacing')} unit="px" value={value} onChange={onChange} def={0} min={-10} max={50} />
       <SelectRow
-        label="Text shadow"
+        label={t('dp.field.text_shadow')}
         value={value.textShadow || 'none'}
         options={[
           { label: 'None', value: 'none' },
@@ -1360,7 +1361,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         onChange={(v) => patch({ textShadow: v === 'none' ? undefined : v })}
       />
       <SelectRow
-        label="Text effect"
+        label={t('dp.field.text_effect')}
         help="Applies to the text inside this block"
         value={value.textFx || 'none'}
         options={TEXT_FX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
@@ -1368,20 +1369,20 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
       />
       {value.textFx === 'gradient' && (
         <>
-          <ColorRow label="Colour 1" value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
-          <ColorRow label="Colour 2" value={value.textFxColor2} onChange={(v) => patch({ textFxColor2: v })} />
-          <FxRange k="textFxAngle" label="Gradient angle" unit="deg" value={value} onChange={onChange} def={90} min={0} max={360} />
-          <CheckRow label="Animate gradient" checked={value.textFxAnimated === true} onChange={(v) => patch({ textFxAnimated: v ? true : undefined })} />
+          <ColorRow label={t('dp.field.colour_1')} value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
+          <ColorRow label={t('dp.field.colour_2')} value={value.textFxColor2} onChange={(v) => patch({ textFxColor2: v })} />
+          <FxRange k="textFxAngle" label={t('dp.field.gradient_angle')} unit="deg" value={value} onChange={onChange} def={90} min={0} max={360} />
+          <CheckRow label={t('dp.field.animate_gradient')} checked={value.textFxAnimated === true} onChange={(v) => patch({ textFxAnimated: v ? true : undefined })} />
         </>
       )}
       {value.textFx === 'outline' && (
         <>
-          <ColorRow label="Outline colour" value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
-          <FxRange k="textFxStroke" label="Outline width" unit="px" value={value} onChange={onChange} def={2} min={1} max={6} step={0.5} />
+          <ColorRow label={t('dp.field.outline_colour')} value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
+          <FxRange k="textFxStroke" label={t('dp.field.outline_width')} unit="px" value={value} onChange={onChange} def={2} min={1} max={6} step={0.5} />
         </>
       )}
       {value.textFx === 'shadow-glow' && (
-        <ColorRow label="Glow colour" value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
+        <ColorRow label={t('dp.field.glow_colour')} value={value.textFxColor} onChange={(v) => patch({ textFxColor: v })} />
       )}
       {touched && (
         <button
@@ -1467,30 +1468,30 @@ const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => v
       {state === 'hover' && (
         <>
           <p className="ve-row__help">{t('dp.hover.hint')}</p>
-          <ColorRow label="Background" value={value.hoverBgColor} onChange={(v) => set('hoverBgColor', v)} />
-          <ColorRow label="Text colour" value={value.hoverTextColor} onChange={(v) => set('hoverTextColor', v)} />
-          <ColorRow label="Border colour" value={value.hoverBorderColor} onChange={(v) => set('hoverBorderColor', v)} />
+          <ColorRow label={t('dp.field.background')} value={value.hoverBgColor} onChange={(v) => set('hoverBgColor', v)} />
+          <ColorRow label={t('dp.field.text_colour')} value={value.hoverTextColor} onChange={(v) => set('hoverTextColor', v)} />
+          <ColorRow label={t('dp.field.border_colour')} value={value.hoverBorderColor} onChange={(v) => set('hoverBorderColor', v)} />
           <SelectRow
-            label="Shadow"
+            label={t('dp.field.shadow')}
             value={value.hoverBoxShadow || ''}
             options={[{ label: 'Same as normal', value: '' }, ...BOX_SHADOW_OPTIONS]}
             onChange={(v) => set('hoverBoxShadow', (v || undefined) as BlockStyle['hoverBoxShadow'])}
           />
           <SelectRow
-            label="Transform"
+            label={t('dp.field.transform')}
             value={value.hoverTransform || 'none'}
             options={HOVER_TRANSFORM_OPTIONS}
             onChange={(v) => set('hoverTransform', v === 'none' ? undefined : (v as HoverTransformPreset))}
           />
-          <FxRange k="hoverOpacity" label="Opacity" value={value} onChange={onChange} def={1} min={0} max={1} step={0.05} help="The lift / scale transform is skipped for visitors who prefer reduced motion." />
+          <FxRange k="hoverOpacity" label={t('dp.field.opacity')} value={value} onChange={onChange} def={1} min={0} max={1} step={0.05} help="The lift / scale transform is skipped for visitors who prefer reduced motion." />
           <FxRange k="hoverBorderRadius" label="Corner radius" unit="px" value={value} onChange={onChange} def={0} min={0} max={200} />
-          <FxRange k="hoverTransitionMs" label="Transition" unit="ms" value={value} onChange={onChange} def={150} min={0} max={2000} step={10} />
+          <FxRange k="hoverTransitionMs" label={t('dp.field.transition')} unit="ms" value={value} onChange={onChange} def={150} min={0} max={2000} step={10} />
         </>
       )}
       {state === 'focus' && (
         <>
           <p className="ve-row__help">{t('dp.focus.hint')}</p>
-          <ColorRow label="Focus ring" value={value.focusRing} onChange={(v) => set('focusRing', v)} />
+          <ColorRow label={t('dp.field.focus_ring')} value={value.focusRing} onChange={(v) => set('focusRing', v)} />
         </>
       )}
       {makeFxEditing(value, onChange).resetBtn([...STATE_KEYS.hover, ...STATE_KEYS.focus])}
@@ -1569,6 +1570,7 @@ function makeFxEditing(value: BlockStyle, onChange: (next: BlockStyle) => void) 
 /** Background parallax: lives with the Image controls because it only works on a background image. */
 /** Slideshow background: up to 6 images (picked like the single background image), timing and transition. */
 const SlideshowControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const t = useAdminT()
   const { set, resetBtn } = makeFxEditing(value, onChange)
   const urls = value.bgSlides ?? []
   const ids = value.bgSlideIds ?? []
@@ -1611,7 +1613,7 @@ const SlideshowControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSty
       <p className="ve-row__help">Up to {MAX_SLIDES} images. The first image is the still picture for visitors who ask for reduced motion. Live page only: the editor shows the first image.</p>
       <FxRange k="slideInterval" label="Time per slide" unit="s" value={value} onChange={onChange} def={5} min={2} max={30} />
       <SelectRow
-        label="Transition"
+        label={t('dp.field.transition')}
         value={value.slideTransition || 'fade'}
         options={SLIDE_TRANSITION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
         onChange={(v) => set('slideTransition', v === 'fade' ? undefined : (v as BlockStyle['slideTransition']))}
@@ -1662,6 +1664,7 @@ const ParallaxBgControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
 }
 
 const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const t = useAdminT()
   const { set, resetBtn } = makeFxEditing(value, onChange)
   const fx = value.bgEffect || 'none'
   const withColors = ['aurora', 'mesh', 'gradient-shift', 'dots', 'grid', 'particles'].includes(fx)
@@ -1702,7 +1705,7 @@ const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: B
           <FxRange k="particlesSizeMin" label="Size min" unit="px" def={1} min={0.5} max={10} step={0.5} {...r} />
           <FxRange k="particlesSizeMax" label="Size max" unit="px" def={2.8} min={0.5} max={12} step={0.5} {...r} />
           <FxRange k="particlesSpeed" label="Speed" unit="%" def={100} min={0} max={300} {...r} />
-          <FxRange k="particlesOpacity" label="Opacity" unit="%" def={100} min={5} max={100} {...r} />
+          <FxRange k="particlesOpacity" label={t('dp.field.opacity')} unit="%" def={100} min={5} max={100} {...r} />
           <SelectRow
             label="Shape"
             value={value.particlesShape || 'circle'}
@@ -1795,7 +1798,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
 
   return (
     <>
-      <p className="ve-row__label">Transform</p>
+      <p className="ve-row__label">{t('dp.field.transform')}</p>
       <div className="ve-divider-group">
         <p className="ve-row__label">{t('dp.state.normal')}</p>
         {TRANSFORM_ROWS.map((r) => (
@@ -1808,32 +1811,32 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
           <FxRange key={r.suffix} k={tfKey('tfh', r.suffix)} label={r.label} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
         ))}
       </div>
-      <FxRange k="tfDuration" label="Transition" unit="ms" value={value} onChange={onChange} def={250} min={0} max={2000} step={10} help="How long transform changes take." />
+      <FxRange k="tfDuration" label={t('dp.field.transition')} unit="ms" value={value} onChange={onChange} def={250} min={0} max={2000} step={10} help="How long transform changes take." />
 
-      <p className="ve-row__label">Position</p>
+      <p className="ve-row__label">{t('dp.field.position')}</p>
       <div className="ve-divider-group">
         <SelectRow
-          label="Position"
+          label={t('dp.field.position')}
           value={value.position ?? 'default'}
           options={[{ label: 'Default', value: 'default' }, ...POSITION_OPTIONS]}
           onChange={(v) => set('position', v === 'default' ? undefined : (v as BlockPosition))}
         />
         {positioned && (
           <>
-            <FxRange k="posTop" label="Top" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
+            <FxRange k="posTop" label={t('dp.field.top')} unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
             <FxRange k="posRight" label="Right" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
-            <FxRange k="posBottom" label="Bottom" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
+            <FxRange k="posBottom" label={t('dp.field.bottom')} unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
             <FxRange k="posLeft" label="Left" unit="px" value={value} onChange={onChange} def={0} min={-2000} max={2000} />
           </>
         )}
         <NumberRow label="Z-index" value={value.zIndex} min={-10} max={9999} onChange={(v) => set('zIndex', v)} />
       </div>
 
-      <p className="ve-row__label">Appearance</p>
+      <p className="ve-row__label">{t('dp.field.appearance')}</p>
       <div className="ve-divider-group">
-        <FxRange k="opacity" label="Opacity" unit="%" value={value} onChange={onChange} def={100} min={0} max={100} />
+        <FxRange k="opacity" label={t('dp.field.opacity')} unit="%" value={value} onChange={onChange} def={100} min={0} max={100} />
         <SelectRow
-          label="Blend mode"
+          label={t('dp.field.blend_mode')}
           value={value.blendMode ?? 'normal'}
           options={BLEND_MODE_OPTIONS}
           onChange={(v) => set('blendMode', v === 'normal' ? undefined : (v as BlendMode))}
@@ -1843,7 +1846,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
         ))}
       </div>
 
-      <p className="ve-row__label">Mask</p>
+      <p className="ve-row__label">{t('dp.field.mask')}</p>
       <div className="ve-divider-group">
         <SelectRow
           label="Shape"
@@ -1866,7 +1869,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
         {resetBtn(['maskShape', 'blobMorphSpeed'])}
       </div>
 
-      <p className="ve-row__label">Custom</p>
+      <p className="ve-row__label">{t('dp.field.custom')}</p>
       <div className="ve-divider-group">
         <TextRow
           label="CSS classes"
@@ -1903,6 +1906,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
 }
 
 const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => void }> = ({ value, onChange }) => {
+  const t = useAdminT()
   const { set, resetBtn } = makeFxEditing(value, onChange)
   const scroll = value.parallax === 'float-up' || value.parallax === 'float-down' ? value.parallax : 'none'
 
@@ -2028,9 +2032,9 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           <>
             <ColorRow label={value.borderFx === 'conic-spin' ? 'Colour 1' : 'Colour'} value={value.borderFxColor} onChange={(v) => set('borderFxColor', v)} />
             {value.borderFx === 'conic-spin' && (
-              <ColorRow label="Colour 2" value={value.borderFxColor2} onChange={(v) => set('borderFxColor2', v)} />
+              <ColorRow label={t('dp.field.colour_2')} value={value.borderFxColor2} onChange={(v) => set('borderFxColor2', v)} />
             )}
-            <FxRange k="borderFxWidth" label="Width" unit="px" value={value} onChange={onChange} def={2} min={1} max={8} />
+            <FxRange k="borderFxWidth" label={t('dp.field.width')} unit="px" value={value} onChange={onChange} def={2} min={1} max={8} />
             <FxRange k="borderFxSpeed" label="Speed" unit="s" value={value} onChange={onChange} def={8} min={2} max={20} help="Seconds per turn or pulse. Lower is faster." />
           </>
         )}

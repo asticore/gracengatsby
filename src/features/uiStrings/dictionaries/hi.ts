@@ -2127,6 +2127,24 @@ const hi: UiDictionary = {
   'se.lit.title': "शीर्षक",
   'se.lit.title_a_to_z': "शीर्षक A से Z",
   'se.lit.type': "प्रकार",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "कार्रवाई",
+  'st.lit.item': "आइटम",
+  'st.lit.job': "कार्य",
+  'st.lit.jobs': "कार्य",
+  'st.lit.last_20_runs': "पिछले 20 रन",
+  'st.lit.last_run': "पिछला रन",
+  'st.lit.no_runs_recorded_yet': "अभी तक कोई रन दर्ज नहीं हुआ।",
+  'st.lit.not_finished': "पूरा नहीं हुआ",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "प्रकाशित या अप्रकाशित करने के लिए कुछ निर्धारित नहीं है।",
+  'st.lit.open': "खोलें",
+  'st.lit.result': "परिणाम",
+  'st.lit.runs': "रन",
+  'st.lit.scheduled_tasks': "निर्धारित कार्य",
+  'st.lit.took': "लगा समय",
+  'st.lit.waiting_to_go_live': "लाइव होने की प्रतीक्षा",
+  'st.lit.when': "कब",
+  'st.lit.worked': "सफल",
 }
 
 export default hi

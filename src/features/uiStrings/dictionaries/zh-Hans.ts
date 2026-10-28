@@ -2126,6 +2126,24 @@ const zhHans: UiDictionary = {
   'se.lit.title': "标题",
   'se.lit.title_a_to_z': "标题 A 到 Z",
   'se.lit.type': "类型",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "操作",
+  'st.lit.item': "项目",
+  'st.lit.job': "任务",
+  'st.lit.jobs': "任务",
+  'st.lit.last_20_runs': "最近 20 次运行",
+  'st.lit.last_run': "上次运行",
+  'st.lit.no_runs_recorded_yet': "尚无运行记录。",
+  'st.lit.not_finished': "未完成",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "没有计划发布或取消发布的内容。",
+  'st.lit.open': "打开",
+  'st.lit.result': "结果",
+  'st.lit.runs': "运行次数",
+  'st.lit.scheduled_tasks': "计划任务",
+  'st.lit.took': "耗时",
+  'st.lit.waiting_to_go_live': "等待上线",
+  'st.lit.when': "时间",
+  'st.lit.worked': "成功",
 }
 
 export default zhHans

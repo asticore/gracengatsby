@@ -2127,6 +2127,24 @@ const ja: UiDictionary = {
   'se.lit.title': "タイトル",
   'se.lit.title_a_to_z': "タイトル A から Z",
   'se.lit.type': "種類",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "操作",
+  'st.lit.item': "項目",
+  'st.lit.job': "ジョブ",
+  'st.lit.jobs': "ジョブ",
+  'st.lit.last_20_runs': "直近20回の実行",
+  'st.lit.last_run': "最終実行",
+  'st.lit.no_runs_recorded_yet': "まだ実行の記録がありません。",
+  'st.lit.not_finished': "未完了",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "公開または非公開に予定されているものはありません。",
+  'st.lit.open': "開く",
+  'st.lit.result': "結果",
+  'st.lit.runs': "実行回数",
+  'st.lit.scheduled_tasks': "スケジュールされたタスク",
+  'st.lit.took': "所要時間",
+  'st.lit.waiting_to_go_live': "公開待ち",
+  'st.lit.when': "いつ",
+  'st.lit.worked': "成功",
 }
 
 export default ja

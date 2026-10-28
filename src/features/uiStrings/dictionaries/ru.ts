@@ -2127,6 +2127,24 @@ const ru: UiDictionary = {
   'se.lit.title': "Заголовок",
   'se.lit.title_a_to_z': "Заголовок от А до Я",
   'se.lit.type': "Тип",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "Действие",
+  'st.lit.item': "Элемент",
+  'st.lit.job': "Задание",
+  'st.lit.jobs': "Задания",
+  'st.lit.last_20_runs': "Последние 20 запусков",
+  'st.lit.last_run': "Последний запуск",
+  'st.lit.no_runs_recorded_yet': "Запусков пока не зафиксировано.",
+  'st.lit.not_finished': "Не завершено",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "Ничего не запланировано к публикации или снятию с публикации.",
+  'st.lit.open': "Открыть",
+  'st.lit.result': "Результат",
+  'st.lit.runs': "Запуски",
+  'st.lit.scheduled_tasks': "Запланированные задачи",
+  'st.lit.took': "Длительность",
+  'st.lit.waiting_to_go_live': "Ожидает публикации",
+  'st.lit.when': "Когда",
+  'st.lit.worked': "Успешно",
 }
 
 export default ru

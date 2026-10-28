@@ -2127,6 +2127,24 @@ const es: UiDictionary = {
   'se.lit.title': "Título",
   'se.lit.title_a_to_z': "Título de la A a la Z",
   'se.lit.type': "Tipo",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "Acción",
+  'st.lit.item': "Elemento",
+  'st.lit.job': "Tarea",
+  'st.lit.jobs': "Trabajos",
+  'st.lit.last_20_runs': "Últimas 20 ejecuciones",
+  'st.lit.last_run': "Última ejecución",
+  'st.lit.no_runs_recorded_yet': "Aún no hay ejecuciones registradas.",
+  'st.lit.not_finished': "No terminado",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "No hay nada programado para publicarse ni despublicarse.",
+  'st.lit.open': "Abrir",
+  'st.lit.result': "Resultado",
+  'st.lit.runs': "Ejecuciones",
+  'st.lit.scheduled_tasks': "Tareas programadas",
+  'st.lit.took': "Duración",
+  'st.lit.waiting_to_go_live': "Esperando para publicarse",
+  'st.lit.when': "Cuándo",
+  'st.lit.worked': "Correcto",
 }
 
 export default es

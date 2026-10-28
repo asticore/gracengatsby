@@ -2127,6 +2127,24 @@ const ar: UiDictionary = {
   'se.lit.title': "العنوان",
   'se.lit.title_a_to_z': "العنوان من A إلى Z",
   'se.lit.type': "النوع",
+  // --- admin leftovers (scheduled tasks view) ---
+  'st.lit.action': "الإجراء",
+  'st.lit.item': "العنصر",
+  'st.lit.job': "المهمة",
+  'st.lit.jobs': "المهام",
+  'st.lit.last_20_runs': "آخر 20 تشغيلاً",
+  'st.lit.last_run': "آخر تشغيل",
+  'st.lit.no_runs_recorded_yet': "لم تُسجَّل أي عمليات تشغيل بعد.",
+  'st.lit.not_finished': "لم يكتمل",
+  'st.lit.nothing_is_scheduled_to_publish_or_unpub': "لا يوجد شيء مجدول للنشر أو إلغاء النشر.",
+  'st.lit.open': "فتح",
+  'st.lit.result': "النتيجة",
+  'st.lit.runs': "عدد التشغيلات",
+  'st.lit.scheduled_tasks': "المهام المجدولة",
+  'st.lit.took': "المدة",
+  'st.lit.waiting_to_go_live': "بانتظار النشر",
+  'st.lit.when': "متى",
+  'st.lit.worked': "نجح",
 }
 
 export default ar

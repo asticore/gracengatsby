@@ -5,7 +5,9 @@ import { getAllResolvedPages } from '@/utilities/pagePaths'
 import { getFeatureFlags } from '@/utilities/features'
 import { isNoIndexedPage, readPasswordGate } from './indexable'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
+import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 import { getSeoContext, normalisePath, parsePathList, pathMatches } from './settings'
+import { sitemapVariants, type Alternate } from './localeSeo'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
 
@@ -14,6 +16,8 @@ export type SitemapEntry = {
   lastModified?: string
   changeFrequency: ChangeFrequency
   priority: number
+  /** One per active locale when multilingual is on; omitted otherwise. */
+  alternates?: Alternate[]
 }
 
 type CollectionRow = { slug?: string | null; updatedAt?: string | null }
@@ -57,6 +61,7 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   if (siteBlocked) return []
 
   const baseUrl = context.baseUrl
+  const multilingual = await readMultilingualSettingsFromD1()
   const seen = new Set<string>()
   const entries: SitemapEntry[] = []
   const add = (path: string, lastModified?: string | null, priority = 0.6) => {
@@ -64,12 +69,15 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     if (seen.has(normalised)) return
     if (pathMatches(normalised, excluded) || pathMatches(normalised, noindexed)) return
     seen.add(normalised)
-    entries.push({
-      url: normalised === '/' ? `${baseUrl}/` : `${baseUrl}${normalised}`,
-      lastModified: toW3cDate(lastModified),
-      changeFrequency,
-      priority,
-    })
+    for (const variant of sitemapVariants(normalised, baseUrl, multilingual)) {
+      entries.push({
+        url: variant.url,
+        lastModified: toW3cDate(lastModified),
+        changeFrequency,
+        priority,
+        ...(variant.alternates ? { alternates: variant.alternates } : {}),
+      })
+    }
   }
 
   // A failed lookup hides the document (fail closed), like llms.txt.
@@ -148,15 +156,20 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
 }
 
 export const renderSitemapXml = (entries: SitemapEntry[]): string => {
+  const hasAlternates = entries.some((entry) => entry.alternates && entry.alternates.length > 0)
   const urls = entries
     .map((entry) => {
       const parts = [`    <loc>${escapeXml(entry.url)}</loc>`]
       if (entry.lastModified) parts.push(`    <lastmod>${entry.lastModified}</lastmod>`)
       parts.push(`    <changefreq>${entry.changeFrequency}</changefreq>`)
       parts.push(`    <priority>${entry.priority.toFixed(1)}</priority>`)
+      for (const alt of entry.alternates ?? []) {
+        parts.push(`    <xhtml:link rel="alternate" hreflang="${escapeXml(alt.hreflang)}" href="${escapeXml(alt.href)}" />`)
+      }
       return `  <url>\n${parts.join('\n')}\n  </url>`
     })
     .join('\n')
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
+  const namespaces = `xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${hasAlternates ? ' xmlns:xhtml="http://www.w3.org/1999/xhtml"' : ''}`
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset ${namespaces}>\n${urls}\n</urlset>\n`
 }

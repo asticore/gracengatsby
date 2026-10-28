@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { resolveSeo, type SeoInput } from './resolve'
 import { getSeoContext } from './settings'
 import { getSiteIcons } from './siteFilesData'
+import { currentPageLocale } from './pageLocale'
+import { localeSeoFields, languagesMap } from './localeSeo'
 import { getPublicIds } from '@/features/integrations/publicIds'
 
 /**
@@ -32,6 +34,18 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
   if (!context.enabled) return icons ? { icons } : {}
 
   const seo = resolveSeo(context, input)
+  // Language of this request (null while multilingual is off or single-language).
+  const pageLocale = await currentPageLocale()
+  const localeSeo = pageLocale
+    ? localeSeoFields({
+        baseUrl: context.baseUrl,
+        path: input.path ?? pageLocale.pathname,
+        locale: pageLocale.locale,
+        settings: pageLocale.settings,
+        explicitCanonical: Boolean(input.seo?.canonicalUrl),
+      })
+    : null
+  const canonical = localeSeo?.canonical ?? seo.canonical
   const verification = context.settings?.verification
   // Google's code now lives in Site settings > Integrations (falls back to the old field).
   const googleVerification = (await getPublicIds()).searchConsoleVerification
@@ -46,7 +60,9 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
     ...(icons ? { icons } : {}),
     title: seo.title,
     description: seo.description,
-    alternates: { canonical: seo.canonical },
+    alternates: localeSeo
+      ? { canonical, languages: languagesMap(localeSeo.alternates) }
+      : { canonical: seo.canonical },
     robots: {
       index: !seo.noIndex,
       follow: !seo.noFollow,
@@ -54,11 +70,12 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
     },
     openGraph: {
       type: seo.kind,
-      url: seo.canonical,
+      url: canonical,
       title: seo.socialTitle ? seo.socialTitle : seo.title,
       description: seo.socialDescription || seo.description,
       siteName: seo.siteName || undefined,
       images,
+      ...(localeSeo ? { locale: localeSeo.ogLocale, alternateLocale: localeSeo.ogAlternateLocales } : {}),
       ...(seo.kind === 'article'
         ? { publishedTime: seo.publishedAt, modifiedTime: seo.updatedAt }
         : {}),

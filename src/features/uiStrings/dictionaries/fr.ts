@@ -1302,6 +1302,11 @@ const fr: UiDictionary = {
   "store.home": "Accueil",
   "store.blog": "Blog",
   "store.shop": "Boutique",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "Choisissez la propriété et les sites que lisent les tableaux de bord. Choisir une propriété Analytics remplit l'ID de mesure, et choisir un conteneur Tag Manager remplit l'ID du conteneur sur la page Intégrations, mais uniquement si ce champ est vide.",
+  'integrations.google.gtmHelp': "Le conteneur dont l'ID est ajouté au site lorsque Intégrations le laisse vide.",
+  'integrations.openLink': "Ouvrir Intégrations",
+  'integrations.seeIds': "pour voir l'ID de mesure et l'ID du conteneur qui ont été renseignés.",
 }
 
 export default fr

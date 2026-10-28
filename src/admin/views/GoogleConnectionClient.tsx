@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { Suspense, useState } from 'react'
 
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
@@ -22,6 +23,7 @@ type Notice = { tone: 'ok' | 'error'; text: string }
  * cards: the Google Cloud client, the sign-in, and the choices the dashboards read.
  */
 export function GoogleConnectionClient({ status, redirectUri }: Props) {
+  const t = useAdminT()
   const [clientId, setClientId] = useState(status.clientId)
   const [clientSecret, setClientSecret] = useState('')
   const [busy, setBusy] = useState<'client' | 'disconnect' | null>(null)
@@ -187,8 +189,7 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
 
       <CollapsibleCard id="google-connection-choices" title="Choices for the dashboards">
         <p className="google-connection__text">
-          Pick the property and sites the dashboards read. Choosing an Analytics property fills the measurement ID, and choosing a Tag
-          Manager container fills the container ID on the Integrations page, but only where that field is blank.
+          {t('integrations.google.choices')}
         </p>
         <PickerRow
           kind="ga4"
@@ -209,7 +210,7 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
         <PickerRow
           kind="gtm"
           label="Tag Manager container"
-          help="The container whose ID is added to the site when Integrations leaves it blank."
+          help={t('integrations.google.gtmHelp')}
           current={status.gtmAccountId && status.gtmContainerId ? `${status.gtmAccountId}/${status.gtmContainerId}` : ''}
           currentLabel={status.gtmContainerId ? `Container ${status.gtmContainerId}` : ''}
           disabled={!connected}
@@ -223,7 +224,7 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
           disabled={!connected}
         />
         <p className="google-connection__help">
-          <Link href="/admin/settings/site#integrations">Open Integrations</Link> to see the measurement ID and container ID that were filled in.
+          <Link href="/admin/settings/site#integrations">{t('integrations.openLink')}</Link> {t('integrations.seeIds')}
         </p>
       </CollapsibleCard>
     </div>

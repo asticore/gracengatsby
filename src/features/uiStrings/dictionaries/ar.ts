@@ -1302,6 +1302,11 @@ const ar: UiDictionary = {
   "store.home": "الرئيسية",
   "store.blog": "المدونة",
   "store.shop": "المتجر",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "اختر الخاصية والمواقع التي تقرأها لوحات المعلومات. اختيار خاصية Analytics يملأ معرّف القياس، واختيار حاوية Tag Manager يملأ معرّف الحاوية في صفحة التكاملات، ولكن فقط حيث يكون هذا الحقل فارغًا.",
+  'integrations.google.gtmHelp': "الحاوية التي يُضاف معرّفها إلى الموقع عندما تترك صفحة التكاملات هذا الحقل فارغًا.",
+  'integrations.openLink': "فتح التكاملات",
+  'integrations.seeIds': "لعرض معرّف القياس ومعرّف الحاوية اللذين تمت تعبئتهما.",
 }
 
 export default ar

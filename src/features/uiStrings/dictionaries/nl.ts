@@ -1302,6 +1302,11 @@ const nl: UiDictionary = {
   "store.home": "Home",
   "store.blog": "Blog",
   "store.shop": "Winkel",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "Kies de property en de sites die de dashboards gebruiken. Een Analytics-property kiezen vult de meet-ID in, en een Tag Manager-container kiezen vult de container-ID in op de pagina Integraties, maar alleen waar dat veld leeg is.",
+  'integrations.google.gtmHelp': "De container waarvan de ID aan de site wordt toegevoegd als Integraties het leeg laat.",
+  'integrations.openLink': "Integraties openen",
+  'integrations.seeIds': "om de ingevulde meet-ID en container-ID te bekijken.",
 }
 
 export default nl

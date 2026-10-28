@@ -1302,6 +1302,11 @@ const hi: UiDictionary = {
   "store.home": "होम",
   "store.blog": "ब्लॉग",
   "store.shop": "शॉप",
+  // --- admin leftovers (integrations) ---
+  'integrations.google.choices': "वह प्रॉपर्टी और साइटें चुनें जिन्हें डैशबोर्ड पढ़ते हैं। Analytics प्रॉपर्टी चुनने पर मेज़रमेंट ID भर जाती है, और Tag Manager कंटेनर चुनने पर इंटीग्रेशन पेज पर कंटेनर ID भर जाती है, लेकिन केवल तब जब वह फ़ील्ड खाली हो।",
+  'integrations.google.gtmHelp': "वह कंटेनर जिसका ID इंटीग्रेशन में खाली छोड़े जाने पर साइट में जोड़ा जाता है।",
+  'integrations.openLink': "इंटीग्रेशन खोलें",
+  'integrations.seeIds': "भरे गए मेज़रमेंट ID और कंटेनर ID देखने के लिए।",
 }
 
 export default hi

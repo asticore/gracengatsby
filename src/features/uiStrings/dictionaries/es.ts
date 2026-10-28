@@ -1375,6 +1375,16 @@ const es: UiDictionary = {
   'customers.credit.errLookup': "No se pudo buscar.",
   'customers.credit.errRequest': "La solicitud falló.",
   'customers.credit.errFailed': "Falló.",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "Medios",
+  'media.countOne': "{count} archivo",
+  'media.countOther': "{count} archivos",
+  'media.allFolders': "Todas las carpetas",
+  'media.searchPlaceholder': "Buscar nombre de archivo...",
+  'media.preview': "Vista previa",
+  'media.folder': "Carpeta",
+  'media.alt': "Alt",
+  'media.show': "Mostrar",
 }
 
 export default es

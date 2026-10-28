@@ -1375,6 +1375,16 @@ const ru: UiDictionary = {
   'customers.credit.errLookup': "Не удалось выполнить поиск.",
   'customers.credit.errRequest': "Запрос не выполнен.",
   'customers.credit.errFailed': "Не удалось.",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "Медиа",
+  'media.countOne': "{count} файл",
+  'media.countOther': "{count} файлов",
+  'media.allFolders': "Все папки",
+  'media.searchPlaceholder': "Поиск по имени файла...",
+  'media.preview': "Предпросмотр",
+  'media.folder': "Папка",
+  'media.alt': "Alt",
+  'media.show': "Показать",
 }
 
 export default ru

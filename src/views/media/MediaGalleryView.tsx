@@ -1,4 +1,5 @@
 import { adminCollectionPath } from '@/admin/adminPaths'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import Link from 'next/link'
 import type { Engine } from '@/engine'
 
@@ -114,6 +115,7 @@ function formatDate(value: unknown): string {
  * RenderServerComponent for that isRSC branch.
  */
 export async function MediaGalleryView(props: MediaGalleryViewProps) {
+  const ui = await getAdminUi()
   const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams, embedded } = props
   const adminRoute = engine?.config?.routes?.admin ?? '/admin'
   const slug = collectionConfig?.slug ?? 'media'
@@ -234,9 +236,9 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
       {!embedded && (
         <header className="flex flex-wrap items-end justify-between gap-[var(--base)] border-b border-[var(--theme-elevation-150)] pb-[calc(var(--base)*0.75)]">
           <div>
-            <h1 className="m-0 text-[calc(var(--base)*1.5)] leading-[1.2] font-semibold">Media</h1>
+            <h1 className="m-0 text-[calc(var(--base)*1.5)] leading-[1.2] font-semibold">{ui.t('media.title')}</h1>
             <p className="mx-0 mb-0 mt-[calc(var(--base)*0.25)] text-[calc(var(--base)*0.8)] text-[var(--theme-elevation-600)]">
-              {totalDocs} file{totalDocs === 1 ? '' : 's'}
+              {ui.t(totalDocs === 1 ? 'media.countOne' : 'media.countOther', { count: totalDocs })}
             </p>
           </div>
           {hasCreatePermission && newDocumentURL ? (
@@ -270,13 +272,13 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
                 {currentSort ? <input type="hidden" name="sort" value={currentSort} /> : null}
                 {currentSearch ? <input type="hidden" name="search" value={currentSearch} /> : null}
                 <label className="text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-600)]">
-                  Folder
+                  {ui.t('media.folder')}
                   <select
                     name="folder"
                     defaultValue={currentFolder}
                     className="ml-[calc(var(--base)*0.4)] rounded-[4px] border border-[var(--theme-elevation-200)] bg-transparent px-[calc(var(--base)*0.5)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-900)]"
                   >
-                    <option value="">All folders</option>
+                    <option value="">{ui.t('media.allFolders')}</option>
                     {folders.map((folder) => (
                       <option key={folder} value={folder}>
                         {folder}
@@ -288,7 +290,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
                   type="submit"
                   className="rounded-[4px] border border-[var(--theme-elevation-200)] px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.78)] text-[var(--theme-elevation-700)] hover:border-[var(--ac-gold)] hover:text-[var(--ac-gold)]"
                 >
-                  Show
+                  {ui.t('media.show')}
                 </button>
               </form>
             ) : null}
@@ -302,7 +304,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
                 type="search"
                 name="search"
                 defaultValue={currentSearch}
-                placeholder="Search filename..."
+                placeholder={ui.t('media.searchPlaceholder')}
                 className="rounded-[4px] border border-[var(--theme-elevation-200)] bg-transparent px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.35)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-900)] outline-none focus:border-[var(--ac-gold)]"
               />
               <button
@@ -340,7 +342,7 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
           <table className="w-full border-collapse text-[calc(var(--base)*0.8)]">
             <thead>
               <tr className="border-b border-[var(--theme-elevation-150)] bg-[var(--theme-elevation-50)] text-left">
-                <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">Preview</th>
+                <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">{ui.t('media.preview')}</th>
                 {SORTABLE_COLUMNS.map(({ field, label }) => (
                   <th key={field} className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">
                     <Link href={sortHref(field)} className="no-underline hover:text-[var(--ac-gold)]">
@@ -349,8 +351,8 @@ export async function MediaGalleryView(props: MediaGalleryViewProps) {
                     </Link>
                   </th>
                 ))}
-                <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">Folder</th>
-                <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">Alt</th>
+                <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">{ui.t('media.folder')}</th>
+                <th className="px-[calc(var(--base)*0.6)] py-[calc(var(--base)*0.5)] font-medium text-[var(--theme-elevation-600)]">{ui.t('media.alt')}</th>
               </tr>
             </thead>
             <tbody>

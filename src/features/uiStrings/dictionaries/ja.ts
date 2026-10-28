@@ -1375,6 +1375,16 @@ const ja: UiDictionary = {
   'customers.credit.errLookup': "検索に失敗しました。",
   'customers.credit.errRequest': "リクエストに失敗しました。",
   'customers.credit.errFailed': "失敗しました。",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "メディア",
+  'media.countOne': "{count} ファイル",
+  'media.countOther': "{count} ファイル",
+  'media.allFolders': "すべてのフォルダー",
+  'media.searchPlaceholder': "ファイル名を検索...",
+  'media.preview': "プレビュー",
+  'media.folder': "フォルダー",
+  'media.alt': "代替テキスト",
+  'media.show': "表示",
 }
 
 export default ja

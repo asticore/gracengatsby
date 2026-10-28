@@ -1375,6 +1375,16 @@ const ko: UiDictionary = {
   'customers.credit.errLookup': "조회에 실패했습니다.",
   'customers.credit.errRequest': "요청에 실패했습니다.",
   'customers.credit.errFailed': "실패했습니다.",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "미디어",
+  'media.countOne': "파일 {count}개",
+  'media.countOther': "파일 {count}개",
+  'media.allFolders': "모든 폴더",
+  'media.searchPlaceholder': "파일 이름 검색...",
+  'media.preview': "미리보기",
+  'media.folder': "폴더",
+  'media.alt': "대체 텍스트",
+  'media.show': "표시",
 }
 
 export default ko

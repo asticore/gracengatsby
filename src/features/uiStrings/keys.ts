@@ -1415,6 +1415,16 @@ export const UI_STRING_SOURCE = {
   'customers.credit.errLookup': "Lookup failed.",
   'customers.credit.errRequest': "Request failed.",
   'customers.credit.errFailed': "Failed.",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "Media",
+  'media.countOne': "{count} file",
+  'media.countOther': "{count} files",
+  'media.allFolders': "All folders",
+  'media.searchPlaceholder': "Search filename...",
+  'media.preview': "Preview",
+  'media.folder': "Folder",
+  'media.alt': "Alt",
+  'media.show': "Show",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

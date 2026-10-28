@@ -1375,6 +1375,16 @@ const hi: UiDictionary = {
   'customers.credit.errLookup': "खोज विफल रही।",
   'customers.credit.errRequest': "अनुरोध विफल रहा।",
   'customers.credit.errFailed': "विफल।",
+  // --- admin leftovers (media gallery) ---
+  'media.title': "मीडिया",
+  'media.countOne': "{count} फ़ाइल",
+  'media.countOther': "{count} फ़ाइलें",
+  'media.allFolders': "सभी फ़ोल्डर",
+  'media.searchPlaceholder': "फ़ाइल नाम खोजें...",
+  'media.preview': "पूर्वावलोकन",
+  'media.folder': "फ़ोल्डर",
+  'media.alt': "वैकल्पिक पाठ",
+  'media.show': "दिखाएँ",
 }
 
 export default hi

@@ -5,6 +5,7 @@ import { EventCard } from '@/components/EventCard'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
 import { getSeoContext } from '@/features/seo/settings'
@@ -44,8 +45,9 @@ export default async function EventsPage() {
       limit: 12,
     }),
   ])) as unknown as [{ docs: Event[] }, { docs: Event[] }]
-  const upcoming = await excludeProtected('events', upcomingAll)
-  const past = await excludeProtected('events', pastAll)
+  const locale = await currentRequestLocale()
+  const upcoming = await applyTranslationsToDocs(await excludeProtected('events', upcomingAll), 'events', locale)
+  const past = await applyTranslationsToDocs(await excludeProtected('events', pastAll), 'events', locale)
 
   const jsonLd = context.enabled
     ? buildPageJsonLd({

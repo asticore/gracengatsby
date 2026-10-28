@@ -35,6 +35,7 @@ import { getPasswordGateState } from '@/features/visibility/gate'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
@@ -58,7 +59,7 @@ async function getProduct(slug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const product = await getProduct(slug)
+  const product = await applyTranslations(await getProduct(slug), 'products', await currentRequestLocale())
   if (!product) return {}
 
   // When password protected and locked, use generic metadata and keep it out of the index.
@@ -90,7 +91,7 @@ export default async function ProductPage({
 
   const { slug } = await params
   const engine = await getEngine()
-  const product = await getProduct(slug)
+  const product = await applyTranslations(await getProduct(slug), 'products', await currentRequestLocale())
 
   if (!product) {
     notFound()

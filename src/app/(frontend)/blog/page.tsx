@@ -8,6 +8,7 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { getEngine } from '@/lib/engine'
 import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
 import { orderBlogPosts } from '@/features/editScreens/blogOrder'
@@ -45,7 +46,7 @@ export default async function BlogArchivePage({ searchParams }: { searchParams: 
     limit: 0,
     depth: 1,
   })) as unknown as { docs: (Post & { sticky?: boolean | null; readingTime?: number | null })[] }
-  const docs = await excludeProtected('posts', allDocs)
+  const docs = await applyTranslationsToDocs(await excludeProtected('posts', allDocs), 'posts', await currentRequestLocale())
   // Filter params (?category=&tag=&q=&sort=) narrow the list before paging. With none, the order and pages are unchanged.
   const params = await searchParams
   setRequestQuery(params)

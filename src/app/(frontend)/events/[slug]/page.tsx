@@ -18,6 +18,7 @@ import { PasswordGate } from '@/components/PasswordGate'
 import { getPasswordGateState } from '@/features/visibility/gate'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { loadSiteDetails } from '@/features/site/details'
@@ -40,7 +41,7 @@ async function getEvent(slug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const event = await getEvent(slug)
+  const event = await applyTranslations(await getEvent(slug), 'events', await currentRequestLocale())
   if (!event) return {}
 
   // When password protected and locked, use generic metadata and keep it out of the index.
@@ -80,7 +81,7 @@ export default async function EventPage({
   if (!flags.events) notFound()
 
   const { slug } = await params
-  const event = await getEvent(slug)
+  const event = await applyTranslations(await getEvent(slug), 'events', await currentRequestLocale())
   const details = await loadSiteDetails()
 
   if (!event) {

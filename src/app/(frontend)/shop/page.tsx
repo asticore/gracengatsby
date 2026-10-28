@@ -10,6 +10,7 @@ import { availableFilterOptions, filterHref, matchesAttributeFilters, parseAttri
 import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import { buildPageJsonLd } from '@/features/seo/pageSchema'
 import { getSeoContext } from '@/features/seo/settings'
@@ -57,7 +58,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       limit: 300,
     }),
   ])) as unknown as [ShopSetting | null, { docs: Product[] }]
-  const open = await excludeProtected('products', scanned)
+  const open = await applyTranslationsToDocs(await excludeProtected('products', scanned), 'products', await currentRequestLocale())
   const matching = open.filter((product) => matchesAttributeFilters(product as never, filters))
   // Price, search and sort params (?min=&max=&q=&sort=) narrow the list before paging. The category is already applied by the query above.
   const archiveFilters = parseArchiveFilters(params)

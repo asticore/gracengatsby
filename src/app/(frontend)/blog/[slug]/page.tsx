@@ -14,6 +14,7 @@ import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 import { annotatePage } from '@/features/editScreens/toc'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
+import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { PasswordGate } from '@/components/PasswordGate'
@@ -46,7 +47,7 @@ async function getPost(slug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const post = await getPost(slug)
+  const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
   if (!post) return {}
 
   // When password-protected, use generic metadata and mark as noindex
@@ -96,7 +97,7 @@ export default async function BlogPostPage({
   if (!flags.blog) notFound()
 
   const { slug } = await params
-  const post = await getPost(slug)
+  const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
   if (!post) notFound()
 
   // Check password gate

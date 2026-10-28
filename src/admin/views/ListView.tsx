@@ -1,3 +1,4 @@
+import { adminLabel } from '@/features/uiStrings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
@@ -98,7 +99,8 @@ export async function ListView({
   })
   const requestedTab = typeof searchParams.tab === 'string' ? searchParams.tab : null
   const activeSection = sectionTabs.length > 0 ? resolveSectionTab(sectionTabs, requestedTab) : null
-  const sectionLabel = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
+  const ui = await getAdminUi()
+  const sectionLabel = adminLabel('collection', collectionSlug, typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug, ui)
   const tabBar = activeSection ? (
     <ListSectionTabs
       activeKey={activeSection.key}
@@ -135,7 +137,6 @@ export async function ListView({
   }
 
   // Parse URL search params
-  const ui = await getAdminUi()
   const urlState = parseListSearchParams(searchParams)
 
   // Load saved user preferences
@@ -232,7 +233,7 @@ export async function ListView({
       ? await getSecuritySettings(context.engine).then((s) => (s.impersonation.enabled ? s.impersonation.maxMinutes : null))
       : null
   const showActionsCell = showRowActions || signInAsMaxMinutes !== null
-  const label = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
+  const label = adminLabel('collection', collectionSlug, typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug, ui)
 
   const bulkPerms = bulkCollection ? bulkPermissions(context as never, bulkCollection) : null
   const showBulk = bulkPerms !== null && (bulkPerms.update || bulkPerms.publish || bulkPerms.delete)
@@ -379,7 +380,7 @@ export async function ListView({
                           })}`}
                           className="list-sort-link"
                         >
-                          {column.label}
+                          {adminLabel('field', column.name, column.label, ui)}
                         </a>
                       </th>
                     ))}

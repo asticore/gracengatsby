@@ -1,3 +1,4 @@
+import { adminLabel } from '@/features/uiStrings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -113,7 +114,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const rawStatus = (doc as { _status?: unknown } | null)?._status
   const status = typeof rawStatus === 'string' ? rawStatus : undefined
 
-  const pluralLabel = typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug
+  const pluralLabel = adminLabel('collection', collectionSlug, typeof collection.labels?.plural === 'string' ? collection.labels.plural : collectionSlug, ui)
   const useAsTitle = (collection.admin as { useAsTitle?: string } | undefined)?.useAsTitle
   const rawTitle = useAsTitle ? (doc as Record<string, unknown> | null)?.[useAsTitle] : undefined
   const docTitle = typeof rawTitle === 'string' && rawTitle ? rawTitle : undefined

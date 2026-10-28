@@ -58,7 +58,7 @@ export function SiteFilesField({ field }: SiteFilesFieldProps) {
 
   return (
     <div className="site-files">
-      <FieldLabel label={fieldLabel(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} />
       <p className="site-files__intro">
         These files are generated from the settings below. Each address opens the live file. Save first to see the
         result on the live site.

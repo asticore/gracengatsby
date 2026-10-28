@@ -67,7 +67,7 @@ export function FontPickerField({ field, path, readOnly }: FontPickerFieldProps)
 
   return (
     <div className="field-type fm-picker">
-      <FieldLabel label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
 
       <select
         id={`field-${path}`}

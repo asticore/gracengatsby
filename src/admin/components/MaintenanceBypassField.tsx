@@ -22,7 +22,7 @@ export function MaintenanceBypassField({ field, path }: { field: Field; path: st
 
   return (
     <div className="field-type">
-      <FieldLabel label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
       {token ? (
         <>
           <input type="text" readOnly value={link} onFocus={(event) => event.currentTarget.select()} aria-label="Preview link" style={{ width: '100%' }} />

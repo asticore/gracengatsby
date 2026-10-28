@@ -8,7 +8,9 @@ import {
   directionFor,
   loadStrings,
   resolveAdminUiLocale,
+  adminLabel,
   translateWith,
+  type AdminLabelKind,
   type AdminUiLocale,
   type UiDictionary,
   type UiStringKey,
@@ -21,6 +23,8 @@ export type AdminUiServer = {
   source: 'user' | 'browser' | 'default'
   dict: UiDictionary
   t: (key: UiStringKey, vars?: UiStringVars) => string
+  /** A collection, global or field label, translated when the language has one. */
+  label: (kind: AdminLabelKind, slug: string, fallbackEnglish: string) => string
 }
 
 /**
@@ -43,5 +47,6 @@ export const getAdminUi = cache(async (): Promise<AdminUiServer> => {
     source: resolved.source,
     dict,
     t: (key, vars) => translateWith(dict, key, vars),
+    label: (kind, slug, fallbackEnglish) => adminLabel(kind, slug, fallbackEnglish, { locale: resolved.locale, dict }),
   }
 })

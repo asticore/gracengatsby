@@ -61,7 +61,7 @@ function UnitNumberInput({ field, path, readOnly, kind }: UnitFieldProps & { kin
 
   return (
     <div className="field-type number">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
       <div style={{ alignItems: 'center', display: 'flex', gap: 4 }}>
         <input
           id={`field-${path}`}

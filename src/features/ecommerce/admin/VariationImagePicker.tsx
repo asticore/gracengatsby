@@ -26,7 +26,7 @@ export function VariationImagePicker({ field, path, readOnly }: { field: Field; 
 
   return (
     <div className="field-type select">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
       {choices.length === 0 ? (
         <p style={{ opacity: 0.7 }}>Add images to this product (the Images field) first. They appear here to choose from.</p>
       ) : (

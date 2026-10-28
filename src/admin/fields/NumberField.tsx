@@ -18,7 +18,7 @@ export const NumberFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field,
 
   return (
     <div className="field-type number">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
       <input
         id={`field-${path}`}
         name={path}

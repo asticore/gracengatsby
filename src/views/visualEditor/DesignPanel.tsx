@@ -137,9 +137,9 @@ export const DesignPanel: React.FC<{
           label={t('dp.field.type')}
           value={value.bgType || 'none'}
           options={[
-            { label: 'None', value: 'none' },
+            { label: t('dp.opt.none'), value: 'none' },
             { label: 'Solid colour', value: 'color' },
-            { label: 'Gradient', value: 'gradient' },
+            { label: t('dp.opt.gradient'), value: 'gradient' },
             { label: 'Image', value: 'image' },
             { label: 'Video', value: 'video' },
             { label: 'Slideshow', value: 'slideshow' },
@@ -223,9 +223,9 @@ export const DesignPanel: React.FC<{
           label={t('dp.field.type')}
           value={value.overlayType || 'none'}
           options={[
-            { label: 'None', value: 'none' },
+            { label: t('dp.opt.none'), value: 'none' },
             { label: 'Colour', value: 'color' },
-            { label: 'Gradient', value: 'gradient' },
+            { label: t('dp.opt.gradient'), value: 'gradient' },
           ]}
           onChange={(v) => set('overlayType', v === 'none' ? undefined : (v as BlockStyle['overlayType']))}
         />
@@ -252,7 +252,7 @@ export const DesignPanel: React.FC<{
               label={t('dp.field.blend_mode')}
               value={value.overlayBlend || 'normal'}
               options={[
-                { label: 'Normal', value: 'normal' },
+                { label: t('dp.opt.normal'), value: 'normal' },
                 { label: 'Multiply', value: 'multiply' },
                 { label: 'Screen', value: 'screen' },
                 { label: 'Overlay', value: 'overlay' },
@@ -327,7 +327,7 @@ export const DesignPanel: React.FC<{
             options={[
               { label: 'Contained', value: 'contained' },
               { label: 'Wide', value: 'wide' },
-              { label: 'Full width', value: 'full' },
+              { label: t('dp.opt.fullWidth'), value: 'full' },
             ]}
             onChange={(v) => set('width', v as BlockStyle['width'])}
           />
@@ -338,7 +338,7 @@ export const DesignPanel: React.FC<{
           label={t('dp.field.text_alignment')}
           options={[
             { label: 'Left', value: 'left' },
-            { label: 'Centre', value: 'center' },
+            { label: t('dp.opt.centre'), value: 'center' },
             { label: 'Right', value: 'right' },
           ]}
           defaultLabel="Default"
@@ -359,7 +359,7 @@ export const DesignPanel: React.FC<{
             options={[
               { label: 'Stretch (fill the column)', value: 'stretch' },
               { label: 'Left / start', value: 'start' },
-              { label: 'Centre', value: 'center' },
+              { label: t('dp.opt.centre'), value: 'center' },
               { label: 'Right / end', value: 'end' },
             ]}
             defaultLabel="Default"
@@ -369,7 +369,7 @@ export const DesignPanel: React.FC<{
             k="selfWidth"
             label={t('dp.field.width')}
             options={[
-              { label: 'Full width', value: 'full' },
+              { label: t('dp.opt.fullWidth'), value: 'full' },
               { label: 'Custom %', value: 'custom' },
             ]}
             defaultLabel="Automatic"
@@ -928,6 +928,7 @@ export const RespSelect: React.FC<{
 
 /** Height: default, a minimum height, or "fit the screen" (100vh). Responsive. */
 export const HeightRows: React.FC<{ ctl: ResponsiveCtl }> = ({ ctl }) => {
+  const t = useAdminT()
   const minHeight = ctl.own('minHeight')
   const unit = ctl.own('minHeightUnit')
   const inheritedHeight = ctl.inherited('minHeight')
@@ -935,14 +936,14 @@ export const HeightRows: React.FC<{ ctl: ResponsiveCtl }> = ({ ctl }) => {
   const effectiveUnit = ctl.effective('minHeightUnit')
   const mode = (h: unknown, u: unknown) => (typeof h !== 'number' || h <= 0 ? 'default' : u === 'vh' && h === 100 ? 'screen' : 'min')
   const current = ctl.device === 'desktop' ? mode(minHeight, unit) : typeof minHeight === 'number' ? mode(minHeight, unit) : 'inherit'
-  const label = (m: string) => (m === 'screen' ? 'Fit to screen' : m === 'min' ? 'Minimum height' : 'Default')
+  const label = (m: string) => (m === 'screen' ? t('dp.opt.fitScreen') : m === 'min' ? t('dp.opt.minHeight') : t('dp.opt.default'))
   const options = [
     ...(ctl.device === 'desktop'
       ? []
       : [{ label: `Inherited from ${inheritNote(ctl.device)} (${label(mode(inheritedHeight, ctl.inherited('minHeightUnit')))})`, value: 'inherit' }]),
-    { label: 'Default', value: 'default' },
-    { label: 'Minimum height', value: 'min' },
-    { label: 'Fit to screen', value: 'screen' },
+    { label: t('dp.opt.default'), value: 'default' },
+    { label: t('dp.opt.minHeight'), value: 'min' },
+    { label: t('dp.opt.fitScreen'), value: 'screen' },
   ]
   return (
     <>
@@ -1282,7 +1283,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         alsoReset={['fontSizeUnit']}
         unit={
           <select
-            aria-label="Size unit"
+            aria-label={t('dp.sizeUnit')}
             value={sizeUnit}
             onChange={(e) => ctl.set('fontSizeUnit', e.target.value === 'px' && ctl.device === 'desktop' ? undefined : e.target.value)}
           >
@@ -1295,14 +1296,14 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
       <SelectRow
         label={t('dp.field.weight')}
         value={value.fontWeight !== undefined ? String(value.fontWeight) : ''}
-        options={[{ label: 'Default', value: '' }, ...WEIGHT_OPTIONS]}
+        options={[{ label: t('dp.opt.default'), value: '' }, ...WEIGHT_OPTIONS]}
         onChange={(v) => patch({ fontWeight: v ? Number(v) : undefined })}
       />
       <ToggleRow
         label={t('dp.field.transform')}
         current={value.textTransform}
         options={[
-          { label: 'None', value: 'none' },
+          { label: t('dp.opt.none'), value: 'none' },
           { label: 'AA', value: 'uppercase', title: 'Uppercase' },
           { label: 'aa', value: 'lowercase', title: 'Lowercase' },
           { label: 'Aa', value: 'capitalize', title: 'Capitalize' },
@@ -1313,7 +1314,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         label={t('dp.field.style')}
         current={value.fontStyle}
         options={[
-          { label: 'Normal', value: 'normal' },
+          { label: t('dp.opt.normal'), value: 'normal' },
           { label: 'Italic', value: 'italic' },
         ]}
         onPick={(v) => patch({ fontStyle: v })}
@@ -1322,7 +1323,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         label={t('dp.field.decoration')}
         current={value.textDecoration}
         options={[
-          { label: 'None', value: 'none' },
+          { label: t('dp.opt.none'), value: 'none' },
           { label: 'Underline', value: 'underline' },
           { label: 'Strike', value: 'line-through', title: 'Line through' },
         ]}
@@ -1339,7 +1340,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         step={lsRange.step}
         unit={
           <select
-            aria-label="Letter spacing unit"
+            aria-label={t('dp.letterSpacingUnit')}
             value={lsUnit}
             onChange={(e) => patch({ letterSpacingUnit: e.target.value === 'em' ? 'em' : undefined })}
           >
@@ -1353,7 +1354,7 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         label={t('dp.field.text_shadow')}
         value={value.textShadow || 'none'}
         options={[
-          { label: 'None', value: 'none' },
+          { label: t('dp.opt.none'), value: 'none' },
           { label: 'Small', value: 'sm' },
           { label: 'Medium', value: 'md' },
           { label: 'Large', value: 'lg' },
@@ -1818,7 +1819,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
         <SelectRow
           label={t('dp.field.position')}
           value={value.position ?? 'default'}
-          options={[{ label: 'Default', value: 'default' }, ...POSITION_OPTIONS]}
+          options={[{ label: t('dp.opt.default'), value: 'default' }, ...POSITION_OPTIONS]}
           onChange={(v) => set('position', v === 'default' ? undefined : (v as BlockPosition))}
         />
         {positioned && (
@@ -1917,7 +1918,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           label="Scroll motion"
           value={scroll}
           options={[
-            { label: 'None', value: 'none' },
+            { label: t('dp.opt.none'), value: 'none' },
             { label: 'Float up', value: 'float-up' },
             { label: 'Float down', value: 'float-down' },
           ]}

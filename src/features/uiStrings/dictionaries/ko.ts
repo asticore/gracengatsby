@@ -1401,6 +1401,17 @@ const ko: UiDictionary = {
   'importContent.showingFirst': "전체 {count}개 중 처음 {limit}개를 표시합니다.",
   'importContent.skipped': "건너뛰었거나 가져올 수 없는 항목은 제외됩니다.",
   'importContent.failed': "실패한 항목",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "없음",
+  'dp.opt.default': "기본값",
+  'dp.opt.normal': "보통",
+  'dp.opt.gradient': "그라데이션",
+  'dp.opt.fullWidth': "전체 너비",
+  'dp.opt.centre': "가운데",
+  'dp.opt.fitScreen': "화면에 맞춤",
+  'dp.opt.minHeight': "최소 높이",
+  'dp.sizeUnit': "크기 단위",
+  'dp.letterSpacingUnit': "자간 단위",
   // --- admin leftovers (collection field labels) ---
   'label.field.category': "카테고리",
   'label.field.parent': "상위",

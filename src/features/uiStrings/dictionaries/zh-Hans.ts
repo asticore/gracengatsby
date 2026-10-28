@@ -1400,6 +1400,17 @@ const zhHans: UiDictionary = {
   'importContent.showingFirst': "显示前 {limit} 条，共 {count} 条。",
   'importContent.skipped': "被跳过或无法导入的条目不会包含在内。",
   'importContent.failed': "失败的条目",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "无",
+  'dp.opt.default': "默认",
+  'dp.opt.normal': "正常",
+  'dp.opt.gradient': "渐变",
+  'dp.opt.fullWidth': "全宽",
+  'dp.opt.centre': "居中",
+  'dp.opt.fitScreen': "适应屏幕",
+  'dp.opt.minHeight': "最小高度",
+  'dp.sizeUnit': "大小单位",
+  'dp.letterSpacingUnit': "字间距单位",
   // --- admin leftovers (collection field labels) ---
   'label.field.category': "分类",
   'label.field.parent': "父级",

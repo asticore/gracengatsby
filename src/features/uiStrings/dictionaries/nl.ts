@@ -1401,6 +1401,17 @@ const nl: UiDictionary = {
   'importContent.showingFirst': "De eerste {limit} van {count} items worden getoond.",
   'importContent.skipped': "Overgeslagen items of items die niet kunnen worden geïmporteerd, worden niet meegenomen.",
   'importContent.failed': "Items die mislukten",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "Geen",
+  'dp.opt.default': "Standaard",
+  'dp.opt.normal': "Normaal",
+  'dp.opt.gradient': "Verloop",
+  'dp.opt.fullWidth': "Volle breedte",
+  'dp.opt.centre': "Midden",
+  'dp.opt.fitScreen': "Passend op scherm",
+  'dp.opt.minHeight': "Minimale hoogte",
+  'dp.sizeUnit': "Maateenheid",
+  'dp.letterSpacingUnit': "Eenheid voor letterafstand",
   // --- admin leftovers (collection field labels) ---
   'label.field.category': "Categorie",
   'label.field.parent': "Bovenliggend",

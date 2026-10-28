@@ -1441,6 +1441,17 @@ export const UI_STRING_SOURCE = {
   'importContent.showingFirst': "Showing the first {limit} of {count} items.",
   'importContent.skipped': "Items that are skipped or cannot be imported are left out.",
   'importContent.failed': "Items that failed",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "None",
+  'dp.opt.default': "Default",
+  'dp.opt.normal': "Normal",
+  'dp.opt.gradient': "Gradient",
+  'dp.opt.fullWidth': "Full width",
+  'dp.opt.centre': "Centre",
+  'dp.opt.fitScreen': "Fit to screen",
+  'dp.opt.minHeight': "Minimum height",
+  'dp.sizeUnit': "Size unit",
+  'dp.letterSpacingUnit': "Letter spacing unit",
   // --- admin leftovers (collection field labels) ---
   'label.field.category': "Category",
   'label.field.parent': "Parent",

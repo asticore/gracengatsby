@@ -1401,6 +1401,17 @@ const it: UiDictionary = {
   'importContent.showingFirst': "Mostrati i primi {limit} di {count} elementi.",
   'importContent.skipped': "Gli elementi saltati o non importabili vengono esclusi.",
   'importContent.failed': "Elementi non riusciti",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "Nessuno",
+  'dp.opt.default': "Predefinito",
+  'dp.opt.normal': "Normale",
+  'dp.opt.gradient': "Sfumatura",
+  'dp.opt.fullWidth': "Larghezza piena",
+  'dp.opt.centre': "Centro",
+  'dp.opt.fitScreen': "Adatta allo schermo",
+  'dp.opt.minHeight': "Altezza minima",
+  'dp.sizeUnit': "Unità di dimensione",
+  'dp.letterSpacingUnit': "Unità della spaziatura lettere",
   // --- admin leftovers (collection field labels) ---
   'label.field.category': "Categoria",
   'label.field.parent': "Padre",

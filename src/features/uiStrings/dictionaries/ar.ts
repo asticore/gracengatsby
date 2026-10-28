@@ -1401,6 +1401,17 @@ const ar: UiDictionary = {
   'importContent.showingFirst': "عرض أول {limit} من {count} عنصرًا.",
   'importContent.skipped': "يتم استبعاد العناصر المتخطاة أو التي لا يمكن استيرادها.",
   'importContent.failed': "العناصر التي فشلت",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "بدون",
+  'dp.opt.default': "افتراضي",
+  'dp.opt.normal': "عادي",
+  'dp.opt.gradient': "تدرج",
+  'dp.opt.fullWidth': "عرض كامل",
+  'dp.opt.centre': "وسط",
+  'dp.opt.fitScreen': "ملاءمة الشاشة",
+  'dp.opt.minHeight': "الارتفاع الأدنى",
+  'dp.sizeUnit': "وحدة الحجم",
+  'dp.letterSpacingUnit': "وحدة تباعد الأحرف",
   // --- admin leftovers (collection field labels) ---
   'label.field.category': "الفئة",
   'label.field.parent': "الأصل",

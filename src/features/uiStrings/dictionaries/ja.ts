@@ -1401,6 +1401,17 @@ const ja: UiDictionary = {
   'importContent.showingFirst': "{count} 件中、最初の {limit} 件を表示しています。",
   'importContent.skipped': "スキップされた項目やインポートできない項目は含まれません。",
   'importContent.failed': "失敗した項目",
+  // --- admin leftovers (design panel options) ---
+  'dp.opt.none': "なし",
+  'dp.opt.default': "既定",
+  'dp.opt.normal': "標準",
+  'dp.opt.gradient': "グラデーション",
+  'dp.opt.fullWidth': "全幅",
+  'dp.opt.centre': "中央",
+  'dp.opt.fitScreen': "画面に合わせる",
+  'dp.opt.minHeight': "最小の高さ",
+  'dp.sizeUnit': "サイズの単位",
+  'dp.letterSpacingUnit': "文字間隔の単位",
   // --- admin leftovers (collection field labels) ---
   'label.field.category': "カテゴリー",
   'label.field.parent': "親",

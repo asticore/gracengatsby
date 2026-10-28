@@ -24,10 +24,10 @@ describe('site-templates collection config', () => {
     expect(SiteTemplates.admin?.useAsTitle).toBe('name')
   })
 
-  it('offers the twelve kinds, default single-post', () => {
+  it('offers the thirteen kinds, default single-post', () => {
     expect([...SITE_TEMPLATE_KINDS]).toEqual([
       'header', 'footer', 'single-post', 'single-product', 'single-event', 'archive-blog', 'archive-shop', 'not-found',
-      'search-results', 'archive-category', 'archive-tag', 'archive-author',
+      'search-results', 'archive-category', 'archive-tag', 'archive-author', 'loop',
     ])
     const kind = field('kind')
     expect(kind.type).toBe('select')

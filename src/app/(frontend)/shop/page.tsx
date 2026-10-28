@@ -16,6 +16,7 @@ import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
+import { archiveQueryString, filterArchiveItems, parseArchiveFilters, sortArchiveItems } from '@/features/siteTemplates/archiveFilter'
 import { archivePageHref } from '@/lib/templateWidgets'
 import { setBlockContext } from '@/lib/blockContext'
 import { productArchiveItems } from '@/lib/blockContextFrom'
@@ -57,9 +58,17 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   ])) as unknown as [ShopSetting | null, { docs: Product[] }]
   const open = await excludeProtected('products', scanned)
   const matching = open.filter((product) => matchesAttributeFilters(product as never, filters))
-  const paged = paginate(matching, parsePage(params.page), 100)
+  // Price, search and sort params (?min=&max=&q=&sort=) narrow the list before paging. The category is already applied by the query above.
+  const archiveFilters = parseArchiveFilters(params)
+  const pool = matching.map((product) => {
+    const p = product as unknown as { title?: unknown; shortDescription?: unknown; priceInAUD?: unknown; createdAt?: unknown }
+    return { product, title: String(p.title ?? ''), excerpt: typeof p.shortDescription === 'string' ? p.shortDescription : '', price: p.priceInAUD, date: p.createdAt, categories: [] as string[], tags: [] as string[] }
+  })
+  const kept = filterArchiveItems(pool, { ...archiveFilters, category: '', tag: '' })
+  const ordered = archiveFilters.sort === 'newest' ? kept.map((k) => k.product) : sortArchiveItems(kept, archiveFilters.sort).map((k) => k.product)
+  const paged = paginate(ordered, parsePage(params.page), 100)
   const products = paged.items
-  const archiveBase = category ? `/shop?category=${encodeURIComponent(category)}` : '/shop'
+  const archiveBase = `/shop${archiveQueryString({ ...archiveFilters, category: category ?? '' })}`
   const pageHref = (n: number) => archivePageHref(archiveBase, n)
   const filterOptions = availableFilterOptions(open as never[])
 
@@ -155,6 +164,18 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       )}
     </div>
   )
-  setBlockContext({ path: '/shop', archive: { basePath: archiveBase, page: paged.page, pages: paged.pages, items: productArchiveItems(products) } })
+  const shopCategories = CATEGORIES.map((c) => ({ slug: c.value, name: c.label }))
+  setBlockContext({
+    path: '/shop',
+    archive: {
+      basePath: archiveBase,
+      page: paged.page,
+      pages: paged.pages,
+      items: productArchiveItems(products),
+      kind: 'products',
+      filters: { ...archiveFilters, category: category ?? '' },
+      facets: { categories: shopCategories, tags: [] },
+    },
+  })
   return renderWithTemplate({ kind: 'archive-shop', ctx: { path: '/shop', productCategory: category ?? null }, content: body })
 }

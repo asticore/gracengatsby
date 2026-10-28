@@ -4,6 +4,7 @@ import React from 'react'
 import { getBlockContext } from '@/lib/blockContext'
 import { formatTagDate, formatTagPrice } from '@/lib/dynamicTags'
 import { archivePageHref, buildBreadcrumbs, formatPostMeta } from '@/lib/templateWidgets'
+import { loopItemOf } from '@/features/siteTemplates/loopGrid'
 
 /** Wave 63 template widgets. Async server components reading the per-request block context (public data only). */
 
@@ -17,29 +18,32 @@ const currentTitle = (): string => {
 }
 
 export async function PostTitleElement(props: P): Promise<React.ReactElement | null> {
-  const title = currentTitle()
+  // Inside a loop grid the item is the card's own; elsewhere it is the page being viewed.
+  const title = loopItemOf(props)?.title ?? currentTitle()
   if (!title) return null
   const tag = HEADINGS.has(str(props.level)) ? str(props.level) : 'h1'
   return React.createElement(tag, { className: 'post-title' }, title)
 }
 
-export async function PostFeaturedImageElement(): Promise<React.ReactElement | null> {
+export async function PostFeaturedImageElement(props: P): Promise<React.ReactElement | null> {
+  const item = loopItemOf(props)
   const c = getBlockContext()
   // Posts use their featured image; product templates use the product's first image.
-  const img = c.post?.featuredImage ?? c.product?.featuredImage
+  const img = item ? item.image : (c.post?.featuredImage ?? c.product?.featuredImage)
   const url = str(img?.url)
   if (!url) return null
   // eslint-disable-next-line @next/next/no-img-element
   return <img className="post-featured-image" src={url} alt={str(img?.alt)} style={{ width: '100%', height: 'auto' }} />
 }
 
-export async function PostExcerptElement(): Promise<React.ReactElement | null> {
-  const excerpt = str(getBlockContext().post?.excerpt)
+export async function PostExcerptElement(props: P): Promise<React.ReactElement | null> {
+  const excerpt = str(loopItemOf(props)?.excerpt ?? getBlockContext().post?.excerpt)
   return excerpt ? <p className="post-excerpt">{excerpt}</p> : null
 }
 
 export async function PostMetaElement(props: P): Promise<React.ReactElement | null> {
-  const post = getBlockContext().post
+  const item = loopItemOf(props)
+  const post = item ? { author: item.author, date: item.date, categories: item.categories } : getBlockContext().post
   if (!post) return null
   const parts = formatPostMeta(post, {
     author: props.showAuthor !== false,
@@ -50,8 +54,9 @@ export async function PostMetaElement(props: P): Promise<React.ReactElement | nu
   return parts.length ? <p className="post-meta">{parts.join(' · ')}</p> : null
 }
 
-export async function ProductPriceElement(): Promise<React.ReactElement | null> {
-  const price = getBlockContext().product?.price
+export async function ProductPriceElement(props: P): Promise<React.ReactElement | null> {
+  const item = loopItemOf(props)
+  const price = item ? item.price : getBlockContext().product?.price
   if (price === undefined || price === null || price === '') return null
   const text = formatTagPrice(price)
   return text ? <p className="product-price">{text}</p> : null

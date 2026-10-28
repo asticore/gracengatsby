@@ -16,6 +16,7 @@ import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
+import { archiveFacets, archiveQueryString, filterArchiveItems, parseArchiveFilters, sortArchiveItems } from '@/features/siteTemplates/archiveFilter'
 import { archivePageHref } from '@/lib/templateWidgets'
 import { setBlockContext } from '@/lib/blockContext'
 import { postArchiveItems } from '@/lib/blockContextFrom'
@@ -45,9 +46,26 @@ export default async function BlogArchivePage({ searchParams }: { searchParams: 
     depth: 1,
   })) as unknown as { docs: (Post & { sticky?: boolean | null; readingTime?: number | null })[] }
   const docs = await excludeProtected('posts', allDocs)
-  const paged = paginate(orderBlogPosts(docs), parsePage((await searchParams).page), settings?.postsPerPage || 9)
+  // Filter params (?category=&tag=&q=&sort=) narrow the list before paging. With none, the order and pages are unchanged.
+  const params = await searchParams
+  const filters = parseArchiveFilters(params)
+  const pool = docs.map((post) => ({
+    post,
+    title: post.title,
+    excerpt: post.excerpt,
+    date: post.publishedDate,
+    categories: (post.categories ?? []).map((c) => c?.name ?? ''),
+    tags: ((post as { tags?: { name?: string | null }[] | null }).tags ?? []).map((t) => t?.name ?? ''),
+  }))
+  const kept = filterArchiveItems(pool, filters)
+  const ordered = filters.sort === 'newest' ? orderBlogPosts(kept.map((k) => k.post)) : sortArchiveItems(kept, filters.sort).map((k) => k.post)
+  const paged = paginate(ordered, parsePage(params.page), settings?.postsPerPage || 9)
   const posts = paged.items
-  setBlockContext({ path: '/blog', archive: { basePath: '/blog', page: paged.page, pages: paged.pages, items: postArchiveItems(posts) } })
+  const basePath = `/blog${archiveQueryString(filters)}`
+  setBlockContext({
+    path: '/blog',
+    archive: { basePath, page: paged.page, pages: paged.pages, items: postArchiveItems(posts), kind: 'posts', filters, facets: archiveFacets(pool) },
+  })
 
   const layout = settings?.archiveLayout || 'grid'
 
@@ -123,9 +141,9 @@ export default async function BlogArchivePage({ searchParams }: { searchParams: 
   )
   const pager = paged.pages > 1 ? (
     <nav className="mt-8 flex items-center justify-between" aria-label="Pagination">
-      {paged.page > 1 ? <Link href={archivePageHref('/blog', paged.page - 1)} rel="prev">Newer posts</Link> : <span />}
+      {paged.page > 1 ? <Link href={archivePageHref(basePath, paged.page - 1)} rel="prev">Newer posts</Link> : <span />}
       <span className="opacity-60">Page {paged.page} of {paged.pages}</span>
-      {paged.page < paged.pages ? <Link href={archivePageHref('/blog', paged.page + 1)} rel="next">Older posts</Link> : <span />}
+      {paged.page < paged.pages ? <Link href={archivePageHref(basePath, paged.page + 1)} rel="next">Older posts</Link> : <span />}
     </nav>
   ) : null
   return renderWithTemplate({ kind: 'archive-blog', ctx: { path: '/blog' }, content: <>{body}{pager}</> })

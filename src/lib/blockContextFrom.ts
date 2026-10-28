@@ -108,6 +108,10 @@ export function previewTextFor(elementType: string, props: Record<string, unknow
       const p = ctx.product?.price
       return p === undefined || p === null || p === '' ? null : formatTagPrice(p) || null
     }
+    case 'archive-filter':
+      return 'Archive filter: search, category, tag, price and sort'
+    case 'loop-grid':
+      return props.source ? `Loop grid: ${str(props.source)}` : 'Loop grid: items of the current archive'
     case 'auto-breadcrumbs': {
       if (!ctx.path) return null
       const crumbs = buildBreadcrumbs(ctx.path, title, str(props.homeLabel) || 'Home')
@@ -122,7 +126,10 @@ export function previewTextFor(elementType: string, props: Record<string, unknow
   }
 }
 
-/** Archive cards for posts (public title, link, excerpt, date and featured image only). */
+/** Names of a list of { name } rows (categories, tags). */
+const namesOf = (list: unknown): string[] => (Array.isArray(list) ? list : []).map((x) => str(rec(x).name).trim()).filter(Boolean)
+
+/** Archive cards for posts (public title, link, excerpt, date, featured image, author and category and tag names only). */
 export function postArchiveItems(posts: unknown[]): ArchiveItem[] {
   return posts.map((raw) => {
     const post = rec(raw)
@@ -133,6 +140,9 @@ export function postArchiveItems(posts: unknown[]): ArchiveItem[] {
       excerpt: str(post.excerpt) || undefined,
       date: post.publishedDate,
       image: str(image.url) ? { url: str(image.url), alt: str(image.alt) } : undefined,
+      author: str(rec(post.author).displayName).trim() || undefined,
+      categories: namesOf(post.categories),
+      tags: namesOf(post.tags),
     }
   })
 }
@@ -147,6 +157,7 @@ export function productArchiveItems(products: unknown[]): ArchiveItem[] {
       href: `/shop/${str(product.slug)}`,
       price: product.priceInAUD ?? undefined,
       image: image && str(image.url) ? { url: str(image.url), alt: str(image.alt) } : undefined,
+      type: str(product.productType) || undefined,
     }
   })
 }

@@ -910,7 +910,8 @@ export const footerSocialsLinks = footerTopLevelGroupTables.arrayTables.socialsL
  * to a plain top-level hasMany select field's own shape (Users' `roles`),
  * just with the group's prefix folded into the table name.
  */
-export const languageSettingsGenerated = generateTable(LanguageSettings)
+const languageSettingsSchemaConfig: GlobalConfig = { ...LanguageSettings, fields: stripUiFields(LanguageSettings.fields) }
+export const languageSettingsGenerated = generateTable(languageSettingsSchemaConfig)
 export const languageSettings = languageSettingsGenerated.table
 export const languageSettingsGroupFields = languageSettingsGenerated.groupFields
 

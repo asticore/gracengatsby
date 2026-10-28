@@ -89,6 +89,45 @@ export const Integrations: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'translation',
+      label: 'Machine translation (Google Cloud, DeepL)',
+      admin: {
+        description:
+          'Keys for the machine translation providers. Choose the provider, the monthly limit and per-language overrides on Settings > Languages. The AI providers use the Claude and OpenAI keys above. Keys are encrypted at rest and visible only to admins.',
+      },
+      fields: [
+        {
+          name: 'googleApiKey',
+          type: 'text',
+          label: 'Google Cloud Translation API key',
+          access: { read: adminOnlyFieldAccess, update: adminOnlyFieldAccess },
+          hooks: { beforeChange: [encryptSecretHook], afterRead: [decryptSecretHook] },
+          admin: { description: 'A Cloud Translation API key from the Google Cloud console. Stored encrypted at rest.' },
+        },
+        {
+          name: 'deeplApiKey',
+          type: 'text',
+          label: 'DeepL API key',
+          access: { read: adminOnlyFieldAccess, update: adminOnlyFieldAccess },
+          hooks: { beforeChange: [encryptSecretHook], afterRead: [decryptSecretHook] },
+          admin: { description: 'Found in your DeepL account. Free keys end in ":fx". Stored encrypted at rest.' },
+        },
+        {
+          name: 'deeplPlan',
+          type: 'select',
+          label: 'DeepL plan',
+          defaultValue: 'auto',
+          options: [
+            { label: 'Detect from the key (recommended)', value: 'auto' },
+            { label: 'Free', value: 'free' },
+            { label: 'Pro', value: 'pro' },
+          ],
+          admin: { description: 'Free and Pro keys use different DeepL servers.' },
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'google',
       label: 'Google (Analytics, Tag Manager, Maps)',
       admin: { description: 'Measurement IDs and keys for Google services. Tags only load once the visitor agrees, see Cookie consent.' },

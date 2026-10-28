@@ -1129,7 +1129,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('organizations migration is registered last and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 2].name).toBe('20261124_100000_organizations')
+    expect(migrations[migrations.length - 3].name).toBe('20261124_100000_organizations')
     const mod = await import('@/migrations/20261124_100000_organizations')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1143,9 +1143,9 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(tableRows.n).toBe(1)
   })
 
-  it('translation workflow migration is registered last, adds its columns, and is safe to run a second time', async () => {
+  it('translation workflow migration is registered before machine translation, adds its columns, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 1].name).toBe('20261125_100000_translation_workflow')
+    expect(migrations[migrations.length - 2].name).toBe('20261125_100000_translation_workflow')
     const mod = await import('@/migrations/20261125_100000_translation_workflow')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1164,5 +1164,22 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
       { fieldPath: 'title', status: 'approved' },
     ])
     await proxy.env.D1.prepare("DELETE FROM `eg_translations` WHERE source_id = 'pages:wf-1'").run()
+  })
+
+  it('machine translation migration is registered last, adds its keys, settings and usage table, and is safe to run a second time', async () => {
+    const { migrations } = await import('@/migrations/index')
+    expect(migrations[migrations.length - 1].name).toBe('20261126_100000_machine_translation')
+    const mod = await import('@/migrations/20261126_100000_machine_translation')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const colsOf = async (table: string) => ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()).results as { name: string }[]).map((c) => c.name)
+    expect(await colsOf('eg_integrations')).toEqual(expect.arrayContaining(['translation_google_api_key', 'translation_deepl_api_key', 'translation_deepl_plan']))
+    expect(await colsOf('eg_language_settings')).toEqual(
+      expect.arrayContaining(['multilingual_machine_enabled', 'multilingual_machine_default_provider', 'multilingual_machine_overrides', 'multilingual_machine_monthly_char_limit']),
+    )
+    expect(await colsOf('eg_machine_translation_usage')).toEqual(expect.arrayContaining(['created_at', 'provider', 'locale', 'chars', 'ok']))
   })
 })

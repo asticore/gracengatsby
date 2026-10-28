@@ -166,6 +166,7 @@ describe('publishable locales for a document', () => {
     requireReview: false,
     adminsBypassReview: true,
     translationRules: {},
+    machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
   }
   const pageId = sourceIdFor('pages', 7)
 
@@ -203,6 +204,7 @@ describe('locale off is identity', () => {
     requireReview: false,
     adminsBypassReview: true,
     translationRules: {},
+    machine: { enabled: false, defaultProvider: null, overrides: {}, monthlyCharLimit: 0 },
   }
 
   it('does not prefix links while multilingual is off', () => {

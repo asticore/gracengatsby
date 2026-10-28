@@ -8,6 +8,7 @@ import { isAdminUser } from '@/admin/auth'
 import { localeLabel } from '../locales'
 import { getMultilingualSettings } from '../settings'
 import { TRANSLATABLE_COLLECTIONS } from '../translatableFields'
+import { buildDocumentRows, documentColumns, DOCUMENT_DEFAULT_COLUMNS } from '../documentRows'
 import {
   canApproveTranslation,
   computeTranslationStatus,
@@ -16,12 +17,9 @@ import {
   type TranslationStatus,
 } from '../translationStatus'
 import {
-  buildOverviewRows,
   filterOverviewRows,
   itemKey,
-  OVERVIEW_DEFAULT_COLUMNS,
   OVERVIEW_DEFAULT_SORT,
-  overviewColumns,
   pageOverviewRows,
   sortOverviewRows,
 } from '../translationOverview'
@@ -105,15 +103,24 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   ])
   const userLabel = new Map(users.map((entry) => [entry.id, entry.label]))
 
-  const typeOptions = [
-    { value: 'interface', label: 'Interface string' },
-    ...TRANSLATABLE_COLLECTIONS.map((entry) => ({ value: entry.slug, label: entry.label })),
-  ]
-  const columns = overviewColumns({ targetLocales: targets, typeOptions, localeLabel })
-  const defaults = OVERVIEW_DEFAULT_COLUMNS(targets)
+  const columns = documentColumns({ targetLocales: targets, localeLabel })
+  const defaults = DOCUMENT_DEFAULT_COLUMNS(targets)
   const { visibleNames } = resolveVisibleColumns(columns, state.cols, savedPrefs.cols, defaults)
 
-  const rows = buildOverviewRows({ items: data.items, stored: data.stored, targetLocales: targets, rules: settings.translationRules })
+  // One row per document. The document's own editor link is the fallback target for builder-less types.
+  const documentHref = (collection: string, documentId: string) =>
+    `?${serializeListState(state, { page: state.page })}&item=${encodeURIComponent(`collection:${collection}:${documentId}`)}`
+  const rows = buildDocumentRows({
+    items: data.items,
+    stored: data.stored,
+    targetLocales: targets,
+    rules: settings.translationRules,
+    catalogue: {
+      documents: new Map(data.documents.map((doc) => [doc.sourceId, doc])),
+      confirmedMissing: new Set(),
+    },
+    documentHref,
+  })
   const matching = sortOverviewRows(filterOverviewRows(rows, state.filters, state.q, viewer), state.sort)
   const paged = pageOverviewRows(matching, state.page, state.limit)
 
@@ -188,14 +195,27 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
     title: row.title,
     typeLabel: row.typeLabel,
     progress: row.progress,
-    updatedAt: row.updatedAt,
-    editHref: `?${serializeListState(state, { page: state.page })}&item=${encodeURIComponent(row.key)}`,
+    updatedAt: row.lastSourceChange,
+    url: row.url,
+    editHref: row.href,
+    mode: row.mode,
+    inactiveCount: row.counts.inactive,
+    outdatedCount: row.counts.outdated,
+    inactive: row.inactive.map((entry) => ({
+      locale: entry.locale,
+      localeLabel: localeLabel(entry.locale),
+      fieldPath: entry.fieldPath,
+      reason: entry.reason,
+      value: entry.value.length > 80 ? `${entry.value.slice(0, 80)}...` : entry.value,
+    })),
     cells: row.cells.map((cell) => ({
       locale: cell.locale,
       status: cell.status,
       statusLabel: STATUS_LABELS[cell.status],
       approved: cell.approved,
       total: cell.total,
+      href: cell.href,
+      mode: cell.mode,
     })),
     assignees: row.assignees.map((id) => ({ id, label: userLabel.get(id) ?? `User ${id}` })),
   }))
@@ -231,6 +251,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
             targetLocales={targets}
             localeLabels={Object.fromEntries(targets.map((code) => [code, localeLabel(code)]))}
             users={users}
+            clearApi={bulkApi}
             sortState={state.sort}
             bulkApi={bulkApi}
             hasRows={rows.length > 0}
@@ -242,7 +263,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
             prevHref={paged.page > 1 ? `?${serializeListState(state, { page: paged.page - 1 })}` : null}
             nextHref={paged.page < paged.totalPages ? `?${serializeListState(state, { page: paged.page + 1 })}` : null}
             sortLinks={Object.fromEntries(
-              ['title', 'type', 'progress', 'updatedAt'].map((column) => [
+              ['title', 'type', 'updatedAt'].map((column) => [
                 column,
                 `?${serializeListState(state, { sort: nextSort(state.sort, column), page: 1 })}`,
               ]),

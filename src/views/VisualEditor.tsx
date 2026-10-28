@@ -42,6 +42,7 @@ import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
 import { PageSettingsPanel } from './visualEditor/PageSettingsPanel'
 import { TranslationBar, TRANSLATION_BAR_CSS } from './visualEditor/TranslationBar'
 import { TranslatePanel, TRANSLATE_PANEL_CSS } from './visualEditor/TranslatePanel'
+import { resolveTranslateParams } from './visualEditor/translateParams'
 import type { DocumentTranslations } from '@/features/multilingual/documentTranslations'
 import { translatableSource } from '@/features/multilingual/translatableFields'
 import { localeLabel } from '@/features/multilingual/locales'
@@ -255,6 +256,21 @@ export const VisualEditorView: React.FC = () => {
   useEffect(() => {
     loadTranslations()
   }, [loadTranslations])
+
+  // Deep link from the Translations table: ?lang=<locale>&translate=1 opens the page in that language.
+  // Applied once, when the document's translations first load, so a later reload does not reset the choice.
+  const appliedTranslateParams = useRef(false)
+  useEffect(() => {
+    if (!translation || appliedTranslateParams.current) return
+    appliedTranslateParams.current = true
+    const deepLink = resolveTranslateParams(
+      window.location.search,
+      translation.locales.map((group) => group.locale),
+      translation.defaultLocale,
+    )
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync with the deep link once translations load
+    if (deepLink.locale) setEditLocale(deepLink.locale)
+  }, [translation])
 
   useEffect(() => {
     fetch('/api/roles?depth=0&limit=100', { credentials: 'include' })

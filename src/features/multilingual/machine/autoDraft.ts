@@ -14,7 +14,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 import { getMultilingualSettings, type MultilingualSettings } from '../settings'
 import { findTranslations, sourceTextOf, valueAtPath } from '../store'
-import { sourceIdFor, translatableSource } from '../translatableFields'
+import { fieldsForDocument, sourceIdFor, translatableSource } from '../translatableFields'
 import { runMachineDrafts, type DraftItem } from './drafts'
 import type { MachineDeps } from './providers'
 import type { UsageD1 } from './usage'
@@ -43,7 +43,7 @@ const after = (work: Promise<unknown>): void => {
 export function draftItemsForDocument(slug: string, doc: Record<string, unknown>): DraftItem[] {
   const source = translatableSource(slug)
   if (!source || doc.id === undefined || doc.id === null) return []
-  const fields = source.fields
+  const fields = fieldsForDocument(slug, doc)
     .map((field) => ({ fieldPath: field.path, sourceText: sourceTextOf(valueAtPath(doc, field.path)) }))
     .filter((field) => field.sourceText.length > 0)
   if (fields.length === 0) return []

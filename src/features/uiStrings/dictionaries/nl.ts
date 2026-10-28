@@ -604,6 +604,31 @@ const nl: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Metatitel',
   'label.field.metaDescription': 'Metabeschrijving',
+
+  // --- admin leftovers ---
+  'edit.createTitle': '{label} maken',
+  'edit.editTitle': '{label} bewerken',
+  'edit.saveFirstHint': 'Sla eerst op en gebruik daarna "{button}" in het paneel om de indeling te maken.',
+  'edit.sectionsOne': '{count} sectie',
+  'edit.sectionsOther': '{count} secties',
+  'edit.layoutHint': 'De indeling wordt bewerkt in de visuele editor.',
+  'editor.editInVisual': 'Bewerken in visuele editor',
+  'list.saveDefaultHint': 'Huidige kolommen, sortering en paginagrootte als standaard opslaan',
+  'list.resetting': 'Herstellen...',
+  'list.resetDefaultHint': 'Herstellen naar de standaardwaarden van de verzameling',
+  'list.findOrdersHint': 'Zoek bestellingen op bestelnummer, e-mailadres of klantnaam.',
+  'label.singular.pages': 'Pagina',
+  'label.singular.posts': 'Bericht',
+  'label.singular.products': 'Product',
+  'label.singular.orders': 'Bestelling',
+  'label.singular.customers': 'Klant',
+  'label.singular.users': 'Gebruiker',
+  'label.singular.media': 'Media',
+  'label.singular.categories': 'Categorie',
+  'label.singular.menus': 'Menu',
+  'label.singular.forms': 'Formulier',
+  'label.singular.events': 'Evenement',
+  'label.singular.courses': 'Cursus',
 }
 
 export default nl

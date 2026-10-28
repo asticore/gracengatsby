@@ -104,7 +104,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const doc = id === undefined ? null : await context.engine.findByID({ collection: collectionSlug, id, user: context.user })
   if (id !== undefined && !doc) notFound()
 
-  const label = typeof collection.labels?.singular === 'string' ? collection.labels.singular : collectionSlug
+  const label = ui.label('singular', collectionSlug, typeof collection.labels?.singular === 'string' ? collection.labels.singular : collectionSlug)
 
   // Stage 11 Phase 2: the reference engine's `versions` is `boolean | {drafts?: boolean | object}` -
   // a bare `false` (the 33 non-drafts collections' real, sanitized shape) carries no `.drafts`
@@ -206,7 +206,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
         <span aria-hidden="true">/</span>
         <span>{id === undefined ? ui.t('edit.create') : docTitle || `#${id}`}</span>
       </nav>
-      <h1 className="doc-title">{id === undefined ? `Create ${label}` : docTitle || `Edit ${label}`}</h1>
+      <h1 className="doc-title">{id === undefined ? ui.t('edit.createTitle', { label }) : docTitle || ui.t('edit.editTitle', { label })}</h1>
       {signInAs ? <SignInAsCustomerButton email={signInAs.email} maxMinutes={signInAs.maxMinutes} /> : null}
       {resultsTab ? (
         <EditTabs

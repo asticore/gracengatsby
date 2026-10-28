@@ -604,6 +604,31 @@ const ja: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'メタタイトル',
   'label.field.metaDescription': 'メタディスクリプション',
+
+  // --- admin leftovers ---
+  'edit.createTitle': '{label}を作成',
+  'edit.editTitle': '{label}を編集',
+  'edit.saveFirstHint': 'まず保存してから、パネルの「{button}」を使ってレイアウトを作成してください。',
+  'edit.sectionsOne': '{count} セクション',
+  'edit.sectionsOther': '{count} セクション',
+  'edit.layoutHint': 'レイアウトはビジュアルエディターで編集します。',
+  'editor.editInVisual': 'ビジュアルエディターで編集',
+  'list.saveDefaultHint': '現在の列、並び順、ページサイズを既定として保存',
+  'list.resetting': 'リセット中...',
+  'list.resetDefaultHint': 'コレクションの既定に戻す',
+  'list.findOrdersHint': '注文番号、顧客のメールアドレス、顧客名で注文を検索します。',
+  'label.singular.pages': 'ページ',
+  'label.singular.posts': '投稿',
+  'label.singular.products': '商品',
+  'label.singular.orders': '注文',
+  'label.singular.customers': '顧客',
+  'label.singular.users': 'ユーザー',
+  'label.singular.media': 'メディア',
+  'label.singular.categories': 'カテゴリー',
+  'label.singular.menus': 'メニュー',
+  'label.singular.forms': 'フォーム',
+  'label.singular.events': 'イベント',
+  'label.singular.courses': 'コース',
 }
 
 export default ja

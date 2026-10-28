@@ -603,6 +603,31 @@ const zhHans: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta 标题',
   'label.field.metaDescription': 'Meta 描述',
+
+  // --- admin leftovers ---
+  'edit.createTitle': '创建{label}',
+  'edit.editTitle': '编辑{label}',
+  'edit.saveFirstHint': '请先保存，然后在面板中使用"{button}"来构建布局。',
+  'edit.sectionsOne': '{count} 个区块',
+  'edit.sectionsOther': '{count} 个区块',
+  'edit.layoutHint': '布局在可视化编辑器中编辑。',
+  'editor.editInVisual': '在可视化编辑器中编辑',
+  'list.saveDefaultHint': '将当前列、排序和每页数量保存为默认设置',
+  'list.resetting': '正在恢复...',
+  'list.resetDefaultHint': '恢复为集合的默认设置',
+  'list.findOrdersHint': '按订单号、客户邮箱或客户姓名查找订单。',
+  'label.singular.pages': '页面',
+  'label.singular.posts': '文章',
+  'label.singular.products': '产品',
+  'label.singular.orders': '订单',
+  'label.singular.customers': '客户',
+  'label.singular.users': '用户',
+  'label.singular.media': '媒体',
+  'label.singular.categories': '分类',
+  'label.singular.menus': '菜单',
+  'label.singular.forms': '表单',
+  'label.singular.events': '活动',
+  'label.singular.courses': '课程',
 }
 
 export default zhHans

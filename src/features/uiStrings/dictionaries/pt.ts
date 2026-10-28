@@ -604,6 +604,31 @@ const pt: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta título',
   'label.field.metaDescription': 'Meta descrição',
+
+  // --- admin leftovers ---
+  'edit.createTitle': 'Criar {label}',
+  'edit.editTitle': 'Editar {label}',
+  'edit.saveFirstHint': 'Salve primeiro e depois use "{button}" no painel para criar o layout.',
+  'edit.sectionsOne': '{count} seção',
+  'edit.sectionsOther': '{count} seções',
+  'edit.layoutHint': 'O layout é editado no editor visual.',
+  'editor.editInVisual': 'Editar no editor visual',
+  'list.saveDefaultHint': 'Salvar as colunas, a ordenação e o tamanho da página atuais como padrão',
+  'list.resetting': 'Redefinindo...',
+  'list.resetDefaultHint': 'Redefinir para os padrões da coleção',
+  'list.findOrdersHint': 'Pesquise pedidos pelo número do pedido, e-mail ou nome do cliente.',
+  'label.singular.pages': 'Página',
+  'label.singular.posts': 'Post',
+  'label.singular.products': 'Produto',
+  'label.singular.orders': 'Pedido',
+  'label.singular.customers': 'Cliente',
+  'label.singular.users': 'Usuário',
+  'label.singular.media': 'Mídia',
+  'label.singular.categories': 'Categoria',
+  'label.singular.menus': 'Menu',
+  'label.singular.forms': 'Formulário',
+  'label.singular.events': 'Evento',
+  'label.singular.courses': 'Curso',
 }
 
 export default pt

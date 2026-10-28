@@ -645,6 +645,31 @@ export const UI_STRING_SOURCE = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta title',
   'label.field.metaDescription': 'Meta description',
+
+  // --- admin leftovers ---
+  'edit.createTitle': 'Create {label}',
+  'edit.editTitle': 'Edit {label}',
+  'edit.saveFirstHint': 'Save first, then use "{button}" in the panel to build the layout.',
+  'edit.sectionsOne': '{count} section',
+  'edit.sectionsOther': '{count} sections',
+  'edit.layoutHint': 'The layout is edited in the visual editor.',
+  'editor.editInVisual': 'Edit in visual editor',
+  'list.saveDefaultHint': 'Save current columns, sort, and page size as your default',
+  'list.resetting': 'Resetting...',
+  'list.resetDefaultHint': 'Reset to collection defaults',
+  'list.findOrdersHint': 'Find orders by order number, customer email or customer name.',
+  'label.singular.pages': 'Page',
+  'label.singular.posts': 'Post',
+  'label.singular.products': 'Product',
+  'label.singular.orders': 'Order',
+  'label.singular.customers': 'Customer',
+  'label.singular.users': 'User',
+  'label.singular.media': 'Media',
+  'label.singular.categories': 'Category',
+  'label.singular.menus': 'Menu',
+  'label.singular.forms': 'Form',
+  'label.singular.events': 'Event',
+  'label.singular.courses': 'Course',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

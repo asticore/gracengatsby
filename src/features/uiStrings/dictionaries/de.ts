@@ -605,6 +605,31 @@ const de: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta-Titel',
   'label.field.metaDescription': 'Meta-Beschreibung',
+
+  // --- admin leftovers ---
+  'edit.createTitle': '{label} erstellen',
+  'edit.editTitle': '{label} bearbeiten',
+  'edit.saveFirstHint': 'Speichern Sie zuerst und nutzen Sie dann "{button}" im Bedienfeld, um das Layout zu gestalten.',
+  'edit.sectionsOne': '{count} Abschnitt',
+  'edit.sectionsOther': '{count} Abschnitte',
+  'edit.layoutHint': 'Das Layout wird im visuellen Editor bearbeitet.',
+  'editor.editInVisual': 'Im visuellen Editor bearbeiten',
+  'list.saveDefaultHint': 'Aktuelle Spalten, Sortierung und Seitengröße als Standard speichern',
+  'list.resetting': 'Wird zurückgesetzt...',
+  'list.resetDefaultHint': 'Auf die Standardwerte der Sammlung zurücksetzen',
+  'list.findOrdersHint': 'Bestellungen nach Bestellnummer, E-Mail-Adresse oder Kundenname suchen.',
+  'label.singular.pages': 'Seite',
+  'label.singular.posts': 'Beitrag',
+  'label.singular.products': 'Produkt',
+  'label.singular.orders': 'Bestellung',
+  'label.singular.customers': 'Kunde',
+  'label.singular.users': 'Benutzer',
+  'label.singular.media': 'Medium',
+  'label.singular.categories': 'Kategorie',
+  'label.singular.menus': 'Menü',
+  'label.singular.forms': 'Formular',
+  'label.singular.events': 'Veranstaltung',
+  'label.singular.courses': 'Kurs',
 }
 
 export default de

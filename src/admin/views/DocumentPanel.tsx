@@ -303,7 +303,7 @@ export const DocumentPanel: React.FC<{
 
         {info.visualEditorHref ? (
           <a className="btn btn--primary doc-ve-button" href={info.visualEditorHref}>
-            Edit in visual editor
+            {t('editor.editInVisual')}
           </a>
         ) : null}
 

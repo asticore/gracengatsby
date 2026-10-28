@@ -604,6 +604,31 @@ const ko: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': '메타 제목',
   'label.field.metaDescription': '메타 설명',
+
+  // --- admin leftovers ---
+  'edit.createTitle': '{label} 만들기',
+  'edit.editTitle': '{label} 편집',
+  'edit.saveFirstHint': '먼저 저장한 다음 패널의 "{button}"을(를) 사용하여 레이아웃을 구성하세요.',
+  'edit.sectionsOne': '{count}개 섹션',
+  'edit.sectionsOther': '{count}개 섹션',
+  'edit.layoutHint': '레이아웃은 비주얼 편집기에서 편집합니다.',
+  'editor.editInVisual': '비주얼 편집기에서 편집',
+  'list.saveDefaultHint': '현재 열, 정렬, 페이지 크기를 기본값으로 저장',
+  'list.resetting': '재설정 중...',
+  'list.resetDefaultHint': '컬렉션 기본값으로 재설정',
+  'list.findOrdersHint': '주문 번호, 고객 이메일 또는 고객 이름으로 주문을 찾으세요.',
+  'label.singular.pages': '페이지',
+  'label.singular.posts': '게시물',
+  'label.singular.products': '상품',
+  'label.singular.orders': '주문',
+  'label.singular.customers': '고객',
+  'label.singular.users': '사용자',
+  'label.singular.media': '미디어',
+  'label.singular.categories': '카테고리',
+  'label.singular.menus': '메뉴',
+  'label.singular.forms': '양식',
+  'label.singular.events': '이벤트',
+  'label.singular.courses': '강좌',
 }
 
 export default ko

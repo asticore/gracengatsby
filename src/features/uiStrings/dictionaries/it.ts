@@ -604,6 +604,31 @@ const it: UiDictionary = {
   'label.field.seo': 'SEO',
   'label.field.metaTitle': 'Meta titolo',
   'label.field.metaDescription': 'Meta descrizione',
+
+  // --- admin leftovers ---
+  'edit.createTitle': 'Crea {label}',
+  'edit.editTitle': 'Modifica {label}',
+  'edit.saveFirstHint': 'Salva prima, poi usa "{button}" nel pannello per costruire il layout.',
+  'edit.sectionsOne': '{count} sezione',
+  'edit.sectionsOther': '{count} sezioni',
+  'edit.layoutHint': 'Il layout si modifica nell\'editor visivo.',
+  'editor.editInVisual': 'Modifica nell\'editor visivo',
+  'list.saveDefaultHint': 'Salva colonne, ordinamento e dimensione pagina correnti come predefiniti',
+  'list.resetting': 'Ripristino...',
+  'list.resetDefaultHint': 'Ripristina i predefiniti della raccolta',
+  'list.findOrdersHint': 'Cerca ordini per numero d\'ordine, email o nome del cliente.',
+  'label.singular.pages': 'Pagina',
+  'label.singular.posts': 'Post',
+  'label.singular.products': 'Prodotto',
+  'label.singular.orders': 'Ordine',
+  'label.singular.customers': 'Cliente',
+  'label.singular.users': 'Utente',
+  'label.singular.media': 'Media',
+  'label.singular.categories': 'Categoria',
+  'label.singular.menus': 'Menu',
+  'label.singular.forms': 'Modulo',
+  'label.singular.events': 'Evento',
+  'label.singular.courses': 'Corso',
 }
 
 export default it

@@ -927,6 +927,19 @@ const ru: UiDictionary = {
   've.coach.selectText': 'Нажмите на любой блок в предпросмотре, чтобы выбрать его. Его настройки откроются на вкладке «Настройки».',
   've.coach.settingsTitle': 'Вкладка «Настройки»',
   've.coach.settingsText': 'Используйте вкладку «Настройки», чтобы изменить содержимое, стиль и макет выбранного блока.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Не удалось сохранить — повторить',
+  've.save.saving': 'Сохранение…',
+  've.save.publishing': 'Публикация…',
+  've.save.unsaved': 'Несохранённые изменения',
+  've.save.justNow': 'Сохранено только что',
+  've.save.minutesAgo': 'Сохранено {minutes} мин назад',
+  've.media.noFiles': 'Файлы не были загружены.',
+  've.media.uploadFailed': 'Не удалось загрузить.',
+  've.media.title': 'Выберите изображение',
+  've.media.loading': 'Загрузка медиатеки…',
+  've.media.noPreview': 'Нет предпросмотра',
 }
 
 export default ru

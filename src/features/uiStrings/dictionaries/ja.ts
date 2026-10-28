@@ -927,6 +927,19 @@ const ja: UiDictionary = {
   've.coach.selectText': 'プレビュー内のブロックをクリックすると選択できます。その設定は「設定」タブで開きます。',
   've.coach.settingsTitle': '設定タブ',
   've.coach.settingsText': '設定タブで、選択したブロックの内容、スタイル、レイアウトを変更できます。',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': '保存に失敗しました。再試行してください',
+  've.save.saving': '保存中…',
+  've.save.publishing': '公開中…',
+  've.save.unsaved': '未保存の変更',
+  've.save.justNow': 'たった今保存しました',
+  've.save.minutesAgo': '{minutes}分前に保存',
+  've.media.noFiles': 'ファイルはアップロードされませんでした。',
+  've.media.uploadFailed': 'アップロードに失敗しました。',
+  've.media.title': '画像を選択',
+  've.media.loading': 'メディアライブラリを読み込み中…',
+  've.media.noPreview': 'プレビューなし',
 }
 
 export default ja

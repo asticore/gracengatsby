@@ -926,6 +926,19 @@ const zhHans: UiDictionary = {
   've.coach.selectText': '点击预览中的任意区块即可选中，其设置会在“设置”标签页中打开。',
   've.coach.settingsTitle': '“设置”标签页',
   've.coach.settingsText': '使用“设置”标签页修改所选区块的内容、样式和布局。',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': '保存失败，请重试',
+  've.save.saving': '保存中…',
+  've.save.publishing': '发布中…',
+  've.save.unsaved': '未保存的更改',
+  've.save.justNow': '刚刚保存',
+  've.save.minutesAgo': '{minutes} 分钟前保存',
+  've.media.noFiles': '没有上传任何文件。',
+  've.media.uploadFailed': '上传失败。',
+  've.media.title': '选择图片',
+  've.media.loading': '正在加载媒体库…',
+  've.media.noPreview': '无预览',
 }
 
 export default zhHans

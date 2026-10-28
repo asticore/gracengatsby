@@ -927,6 +927,19 @@ const nl: UiDictionary = {
   've.coach.selectText': 'Klik op een blok in het voorbeeld om het te selecteren. De instellingen openen in het tabblad Instellingen.',
   've.coach.settingsTitle': 'Tabblad Instellingen',
   've.coach.settingsText': 'Gebruik het tabblad Instellingen om de inhoud, stijl en indeling van het geselecteerde blok te wijzigen.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Opslaan mislukt – opnieuw proberen',
+  've.save.saving': 'Opslaan…',
+  've.save.publishing': 'Publiceren…',
+  've.save.unsaved': 'Niet-opgeslagen wijzigingen',
+  've.save.justNow': 'Zojuist opgeslagen',
+  've.save.minutesAgo': '{minutes} min geleden opgeslagen',
+  've.media.noFiles': 'Er zijn geen bestanden geüpload.',
+  've.media.uploadFailed': 'Uploaden mislukt.',
+  've.media.title': 'Kies een afbeelding',
+  've.media.loading': 'Mediabibliotheek laden…',
+  've.media.noPreview': 'Geen voorbeeld',
 }
 
 export default nl

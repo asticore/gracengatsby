@@ -927,6 +927,19 @@ const it: UiDictionary = {
   've.coach.selectText': 'Fai clic su un blocco nell\'anteprima per selezionarlo. Le sue impostazioni si aprono nella scheda Impostazioni.',
   've.coach.settingsTitle': 'Scheda Impostazioni',
   've.coach.settingsText': 'Usa la scheda Impostazioni per modificare contenuto, stile e layout del blocco selezionato.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Salvataggio non riuscito – riprova',
+  've.save.saving': 'Salvataggio in corso…',
+  've.save.publishing': 'Pubblicazione in corso…',
+  've.save.unsaved': 'Modifiche non salvate',
+  've.save.justNow': 'Salvato poco fa',
+  've.save.minutesAgo': 'Salvato {minutes} min fa',
+  've.media.noFiles': 'Nessun file è stato caricato.',
+  've.media.uploadFailed': 'Caricamento non riuscito.',
+  've.media.title': 'Scegli un\'immagine',
+  've.media.loading': 'Caricamento della libreria multimediale…',
+  've.media.noPreview': 'Nessuna anteprima',
 }
 
 export default it

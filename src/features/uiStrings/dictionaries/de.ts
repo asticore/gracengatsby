@@ -928,6 +928,19 @@ const de: UiDictionary = {
   've.coach.selectText': 'Klicken Sie in der Vorschau auf einen Block, um ihn auszuwählen. Seine Einstellungen öffnen sich im Tab „Einstellungen“.',
   've.coach.settingsTitle': 'Tab „Einstellungen“',
   've.coach.settingsText': 'Verwenden Sie den Tab „Einstellungen“, um Inhalt, Stil und Layout des ausgewählten Blocks zu ändern.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Speichern fehlgeschlagen – erneut versuchen',
+  've.save.saving': 'Wird gespeichert…',
+  've.save.publishing': 'Wird veröffentlicht…',
+  've.save.unsaved': 'Nicht gespeicherte Änderungen',
+  've.save.justNow': 'Gerade gespeichert',
+  've.save.minutesAgo': 'Vor {minutes} Min. gespeichert',
+  've.media.noFiles': 'Es wurden keine Dateien hochgeladen.',
+  've.media.uploadFailed': 'Hochladen fehlgeschlagen.',
+  've.media.title': 'Bild auswählen',
+  've.media.loading': 'Medienbibliothek wird geladen…',
+  've.media.noPreview': 'Keine Vorschau',
 }
 
 export default de

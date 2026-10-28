@@ -927,6 +927,19 @@ const hi: UiDictionary = {
   've.coach.selectText': 'पूर्वावलोकन में किसी भी ब्लॉक पर क्लिक करके उसे चुनें। उसकी सेटिंग्स सेटिंग्स टैब में खुलती हैं।',
   've.coach.settingsTitle': 'सेटिंग्स टैब',
   've.coach.settingsText': 'चयनित ब्लॉक की सामग्री, स्टाइल और लेआउट बदलने के लिए सेटिंग्स टैब का उपयोग करें।',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'सहेजना विफल – पुनः प्रयास करें',
+  've.save.saving': 'सहेजा जा रहा है…',
+  've.save.publishing': 'प्रकाशित किया जा रहा है…',
+  've.save.unsaved': 'असहेजे बदलाव',
+  've.save.justNow': 'अभी-अभी सहेजा गया',
+  've.save.minutesAgo': '{minutes} मिनट पहले सहेजा गया',
+  've.media.noFiles': 'कोई फ़ाइल अपलोड नहीं हुई।',
+  've.media.uploadFailed': 'अपलोड विफल रहा।',
+  've.media.title': 'एक छवि चुनें',
+  've.media.loading': 'मीडिया लाइब्रेरी लोड हो रही है…',
+  've.media.noPreview': 'कोई पूर्वावलोकन नहीं',
 }
 
 export default hi

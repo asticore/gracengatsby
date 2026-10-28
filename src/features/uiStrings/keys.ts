@@ -968,6 +968,19 @@ export const UI_STRING_SOURCE = {
   've.coach.selectText': 'Click any block in the preview to select it. Its settings open in the Settings tab.',
   've.coach.settingsTitle': 'Settings tab',
   've.coach.settingsText': 'Use the Settings tab to change the selected block content, style and layout.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Save failed - retry',
+  've.save.saving': 'Saving...',
+  've.save.publishing': 'Publishing...',
+  've.save.unsaved': 'Unsaved changes',
+  've.save.justNow': 'Saved just now',
+  've.save.minutesAgo': 'Saved {minutes} min ago',
+  've.media.noFiles': 'No files were uploaded.',
+  've.media.uploadFailed': 'Upload failed.',
+  've.media.title': 'Choose an image',
+  've.media.loading': 'Loading media library…',
+  've.media.noPreview': 'No preview',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

@@ -927,6 +927,19 @@ const fr: UiDictionary = {
   've.coach.selectText': 'Cliquez sur n\'importe quel bloc de l\'aperçu pour le sélectionner. Ses réglages s\'ouvrent dans l\'onglet Réglages.',
   've.coach.settingsTitle': 'Onglet Réglages',
   've.coach.settingsText': 'Utilisez l\'onglet Réglages pour modifier le contenu, le style et la mise en page du bloc sélectionné.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': 'Échec de l\'enregistrement, réessayer',
+  've.save.saving': 'Enregistrement…',
+  've.save.publishing': 'Publication…',
+  've.save.unsaved': 'Modifications non enregistrées',
+  've.save.justNow': 'Enregistré à l\'instant',
+  've.save.minutesAgo': 'Enregistré il y a {minutes} min',
+  've.media.noFiles': 'Aucun fichier n\'a été importé.',
+  've.media.uploadFailed': 'Échec de l\'importation.',
+  've.media.title': 'Choisir une image',
+  've.media.loading': 'Chargement de la médiathèque…',
+  've.media.noPreview': 'Aucun aperçu',
 }
 
 export default fr

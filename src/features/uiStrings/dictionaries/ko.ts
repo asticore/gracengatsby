@@ -927,6 +927,19 @@ const ko: UiDictionary = {
   've.coach.selectText': '미리보기에서 블록을 클릭하여 선택하세요. 설정은 설정 탭에서 열립니다.',
   've.coach.settingsTitle': '설정 탭',
   've.coach.settingsText': '설정 탭에서 선택한 블록의 내용, 스타일, 레이아웃을 변경하세요.',
+
+  // --- admin leftovers (visual editor chrome 3) ---
+  've.save.failedRetry': '저장 실패 – 다시 시도',
+  've.save.saving': '저장 중…',
+  've.save.publishing': '게시 중…',
+  've.save.unsaved': '저장되지 않은 변경 사항',
+  've.save.justNow': '방금 저장됨',
+  've.save.minutesAgo': '{minutes}분 전에 저장됨',
+  've.media.noFiles': '업로드된 파일이 없습니다.',
+  've.media.uploadFailed': '업로드에 실패했습니다.',
+  've.media.title': '이미지 선택',
+  've.media.loading': '미디어 라이브러리 불러오는 중…',
+  've.media.noPreview': '미리보기 없음',
 }
 
 export default ko

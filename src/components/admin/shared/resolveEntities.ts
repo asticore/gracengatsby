@@ -178,6 +178,11 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
       // nothing to look up and no read permission to check - reaching the
       // admin at all is the permission. Its label and path come from the nav
       // structure itself.
+      if (ref.hidden) {
+        // Listed in its group only so its URLs resolve (see NavEntityRef.hidden); it is not in the sidebar.
+        claimed.add(`${ref.type}:${ref.slug}`)
+        continue
+      }
       if (ref.type === 'view') {
         if (!ref.href) continue
 

@@ -210,6 +210,8 @@ async function renderRootPage({ params, searchParams }: Args) {
     if (!collectionSlug) notFound()
     if (!getCollectionConfig(context.engine, collectionSlug)) notFound()
 
+    // The site-templates list is now the Templates hub (admin/templates). Its edit screens still work.
+    if (segments.length === 2 && collectionSlug === 'site-templates') redirect('/admin/templates')
     if (segments.length === 2) return <ListView collectionSlug={collectionSlug} searchParams={search} />
     if (segments.length === 3 && segments[2] === 'create') return <EditView collectionSlug={collectionSlug} />
     if (segments.length === 4 && segments[3] === 'versions') {

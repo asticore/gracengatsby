@@ -24,6 +24,11 @@ export type NavEntityRef = {
    * documents, so they have no collection to hang off.
    */
   type: 'collections' | 'globals' | 'view'
+  /**
+   * Collections only: keep the collection in its group (so its URLs stay /admin/<group>/<slug>) but do not list it
+   * in the sidebar, because a Templates view links to it instead.
+   */
+  hidden?: boolean
   /** Required for type 'view': the path under /admin. */
   href?: string
   /** Required for type 'view': there is no config entity to read a label from. */
@@ -44,9 +49,10 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'header-footer', type: 'view', href: '/header-footer', label: 'Header and footer' },
       { slug: 'faqs', type: 'collections' },
       { slug: 'events', type: 'collections' },
-      { slug: 'page-templates', type: 'collections' },
-      { slug: 'site-templates', type: 'collections' },
-      { slug: 'reusable-sections', type: 'collections' },
+      { slug: 'templates', type: 'view', href: '/templates', label: 'Templates' },
+      { slug: 'page-templates', type: 'collections', hidden: true },
+      { slug: 'site-templates', type: 'collections', hidden: true },
+      { slug: 'reusable-sections', type: 'collections', hidden: true },
       { slug: 'forms', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
@@ -141,6 +147,9 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
  * "Other" group. Their routes still work for deep links.
  */
 export const HIDDEN_FROM_NAV = new Set<string>([
+  'page-templates',
+  'site-templates',
+  'reusable-sections',
   'event-rsvps',
   'form-submissions',
   'roles',

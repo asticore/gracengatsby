@@ -281,10 +281,7 @@ describe('admin kinds and tabs', () => {
     expect(PUBLIC_PREVIEW_PATH['single-post']).toBeUndefined()
   })
 
-  it('mounts the dashboard above the starters panel on the list screen', () => {
-    expect(SiteTemplates.admin?.components?.beforeList).toEqual([
-      '@/features/siteTemplates/admin/TemplatesDashboard#TemplatesDashboard',
-      '@/features/siteTemplates/admin/StartersPanel#StartersPanel',
-    ])
+  it('no longer mounts a list-screen panel: the Templates hub replaces the old dashboard', () => {
+    expect(SiteTemplates.admin?.components?.beforeList).toBeUndefined()
   })
 })

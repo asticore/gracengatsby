@@ -27,7 +27,8 @@ export const emailOtpLimiter: SharedLimiter = async (key, limit) => {
 /** Sends the code through the Email feature. Loaded at call time: the Email feature reaches for the engine. */
 export async function sendTwoFactorCodeEmail(to: string, code: string, minutes: number): Promise<unknown> {
   const { renderEmailTemplate } = await import('@/features/email/templateLoad')
-  const mail = await renderEmailTemplate('accountTwoFactorCode', { code, minutes: String(minutes) })
+  const { requestLocale } = await import('@/features/email/recipientLocale')
+  const mail = await renderEmailTemplate('accountTwoFactorCode', { code, minutes: String(minutes) }, undefined, await requestLocale())
   const { sendEmail } = await import('@/features/email')
   return sendEmail({ to, template: 'account.two-factor-code', subject: mail.subject, text: mail.text, html: mail.html })
 }

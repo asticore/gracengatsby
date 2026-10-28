@@ -27,7 +27,7 @@ export function authorNameOf(author: unknown): string | undefined {
 }
 
 /** Article facts: word count, first category, focus keyphrase as keywords, and language. */
-export function articleFacts(doc: Raw): { wordCount?: number; articleSection?: string; keywords?: string; inLanguage: string } {
+export function articleFacts(doc: Raw, locale = 'en'): { wordCount?: number; articleSection?: string; keywords?: string; inLanguage: string } {
   const categories = listOf(doc.categories).filter(isRecord)
   const seo = isRecord(doc.seo) ? doc.seo : {}
   const words = countWords(doc.content, doc.layout)
@@ -35,8 +35,8 @@ export function articleFacts(doc: Raw): { wordCount?: number; articleSection?: s
     wordCount: words || undefined,
     articleSection: trimmed(categories[0]?.name) || undefined,
     keywords: trimmed(seo.focusKeyphrase) || undefined,
-    // The root layout declares lang="en", so the content language matches it.
-    inLanguage: 'en',
+    // The page's language: the request locale when multilingual is on, else the root layout's "en".
+    inLanguage: locale,
   }
 }
 

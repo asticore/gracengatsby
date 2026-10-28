@@ -3,6 +3,7 @@ import React from 'react'
 import { buildPageJsonLd } from './pageSchema'
 import { getSeoContext, mediaUrl, absoluteUrl, type DocumentSeo } from './settings'
 import { articleFacts, authorNameOf, eventExtraFor, loadFaqItems } from './pageSchemaData'
+import { currentPageLocale } from './pageLocale'
 import { breadcrumbTrail, type TrailItem } from './schemaNodes'
 import type { Media } from '@/engage-types'
 
@@ -83,7 +84,7 @@ export const PageJsonLd = async ({
 
   const organizerName = context.settings?.schema?.organisationName?.trim() || context.siteName
   const record = doc as Record<string, unknown>
-  const article = articleFacts(record)
+  const article = articleFacts(record, (await currentPageLocale())?.locale)
   const faqs = await loadFaqItems(record)
   const eventFields = collection === 'events' ? eventExtraFor(record, url, organizerName) : {}
 

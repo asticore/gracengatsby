@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { resolveSeo, type SeoInput } from '@/features/seo/resolve'
 import { contentTemplatesFor, type ContentType } from '@/features/seo/templates'
 import { getSeoContext } from '@/features/seo/settings'
+import { currentPageLocale } from '@/features/seo/pageLocale'
+import { localeSeoFields, languagesMap } from '@/features/seo/localeSeo'
 import { getEngine } from '@/lib/engine'
 import type { Media, SiteSetting } from '@/engage-types'
 
@@ -144,10 +146,22 @@ export const buildMetadata = async (opts: {
 
   // An explicit canonical always wins; otherwise the path-based one when the route told us its path.
   const baseUrl = (resolved ? context.baseUrl : process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
+  // Multilingual: a self-referencing canonical for this request's language, plus hreflang alternates.
+  const pageLocale = resolved && opts.path ? await currentPageLocale() : null
+  const localeSeo = pageLocale && opts.path
+    ? localeSeoFields({
+        baseUrl: context.baseUrl,
+        path: opts.path,
+        locale: pageLocale.locale,
+        settings: pageLocale.settings,
+        explicitCanonical: Boolean(opts.seo?.canonicalUrl),
+      })
+    : null
+
   const canonical = opts.seo?.canonicalUrl
     ? resolveCanonical(baseUrl, opts.path, opts.seo.canonicalUrl)
     : resolved && opts.path
-      ? resolved.canonical
+      ? (localeSeo?.canonical ?? resolved.canonical)
       : undefined
 
   const metadata: Metadata = {
@@ -159,6 +173,7 @@ export const buildMetadata = async (opts: {
     openGraph: {
       ...(resolved ? { type: resolved.kind, siteName: resolved.siteName || undefined } : {}),
       ...(resolved && canonical ? { url: canonical } : {}),
+      ...(localeSeo ? { locale: localeSeo.ogLocale, alternateLocale: localeSeo.ogAlternateLocales } : {}),
       title: socialTitle || title,
       description: socialDescription || description,
       images: ogImageUrl ? [{ url: ogImageUrl, ...imageSize }] : undefined,
@@ -171,7 +186,11 @@ export const buildMetadata = async (opts: {
       images: xImageUrl ? [xImageUrl] : undefined,
       ...(resolved?.twitterHandle ? { site: resolved.twitterHandle, creator: resolved.twitterHandle } : {}),
     },
-    alternates: canonical ? { canonical } : undefined,
+    alternates: localeSeo
+      ? { canonical, languages: languagesMap(localeSeo.alternates) }
+      : canonical
+        ? { canonical }
+        : undefined,
   }
   if (resolved) metadata.metadataBase = new URL(context.baseUrl)
   return metadata

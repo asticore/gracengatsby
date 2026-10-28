@@ -1179,6 +1179,31 @@ const ru: UiDictionary = {
   'settings.link.email-testing.description': "Проверьте подключение почты, отправьте тестовые копии каждого письма и проверьте домен отправки.",
   'settings.link.email-log.label': "Журнал писем",
   'settings.link.email-log.description': "Каждое письмо, отправленное сайтом, с кнопкой повторной отправки.",
+
+  // --- store ---
+  "store.addToCart": "В корзину",
+  "store.adding": "Добавляем…",
+  "store.addedToCart": "Добавлено в корзину.",
+  "store.viewCart": "Открыть корзину",
+  "store.outOfStock": "Нет в наличии",
+  "store.sale": "Скидка",
+  "store.cart": "Корзина",
+  "store.emptyCart": "Ваша корзина пуста.",
+  "store.continueShopping": "Продолжить покупки",
+  "store.subtotal": "Промежуточный итог",
+  "store.total": "Итого",
+  "store.quantity": "Количество",
+  "store.remove": "Удалить",
+  "store.checkout": "Оформить заказ",
+  "store.readMore": "Читать далее",
+  "store.search": "Поиск",
+  "store.previous": "Назад",
+  "store.next": "Далее",
+  "store.wishlist": "Список желаний",
+  "store.compare": "Сравнить",
+  "store.shipping": "Доставка",
+  "store.tax": "Налог",
+  "store.orderConfirmed": "Спасибо! Ваш заказ подтверждён.",
 }
 
 export default ru

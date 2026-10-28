@@ -1179,6 +1179,31 @@ const es: UiDictionary = {
   'settings.link.email-testing.description': "Compruebe la conexión de correo, envíe copias de prueba de cada correo y revise el dominio de envío.",
   'settings.link.email-log.label': "Registro de correos",
   'settings.link.email-log.description': "Todos los correos enviados por el sitio, con un botón para reenviar.",
+
+  // --- store ---
+  "store.addToCart": "Añadir al carrito",
+  "store.adding": "Añadiendo…",
+  "store.addedToCart": "Añadido a tu carrito.",
+  "store.viewCart": "Ver carrito",
+  "store.outOfStock": "Agotado",
+  "store.sale": "Oferta",
+  "store.cart": "Carrito",
+  "store.emptyCart": "Tu carrito está vacío.",
+  "store.continueShopping": "Seguir comprando",
+  "store.subtotal": "Subtotal",
+  "store.total": "Total",
+  "store.quantity": "Cantidad",
+  "store.remove": "Quitar",
+  "store.checkout": "Pagar",
+  "store.readMore": "Leer más",
+  "store.search": "Buscar",
+  "store.previous": "Anterior",
+  "store.next": "Siguiente",
+  "store.wishlist": "Lista de deseos",
+  "store.compare": "Comparar",
+  "store.shipping": "Envío",
+  "store.tax": "Impuestos",
+  "store.orderConfirmed": "¡Gracias! Tu pedido está confirmado.",
 }
 
 export default es

@@ -1179,6 +1179,31 @@ const ar: UiDictionary = {
   'settings.link.email-testing.description': "تحقق من اتصال البريد، وأرسل نسخًا تجريبية من كل رسالة، وتحقق من نطاق الإرسال.",
   'settings.link.email-log.label': "سجل البريد الإلكتروني",
   'settings.link.email-log.description': "كل رسالة أرسلها الموقع، مع زر لإعادة الإرسال.",
+
+  // --- store ---
+  "store.addToCart": "أضف إلى السلة",
+  "store.adding": "جارٍ الإضافة…",
+  "store.addedToCart": "تمت الإضافة إلى سلة التسوق.",
+  "store.viewCart": "عرض السلة",
+  "store.outOfStock": "غير متوفر",
+  "store.sale": "تخفيض",
+  "store.cart": "السلة",
+  "store.emptyCart": "سلة التسوق فارغة.",
+  "store.continueShopping": "متابعة التسوق",
+  "store.subtotal": "المجموع الفرعي",
+  "store.total": "الإجمالي",
+  "store.quantity": "الكمية",
+  "store.remove": "إزالة",
+  "store.checkout": "الدفع",
+  "store.readMore": "اقرأ المزيد",
+  "store.search": "بحث",
+  "store.previous": "السابق",
+  "store.next": "التالي",
+  "store.wishlist": "قائمة الرغبات",
+  "store.compare": "مقارنة",
+  "store.shipping": "الشحن",
+  "store.tax": "الضريبة",
+  "store.orderConfirmed": "شكرًا لك، تم تأكيد طلبك.",
 }
 
 export default ar

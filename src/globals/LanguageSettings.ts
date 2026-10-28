@@ -221,5 +221,13 @@ export const LanguageSettings: GlobalConfig = {
         },
       ],
     },
+    {
+      name: 'interfaceOverrides',
+      type: 'json',
+      admin: {
+        description:
+          'Your own wording for storefront interface text (buttons, cart, checkout). Entries are {key, locale, value}; they win over the built-in translations. Leave empty to use the built-in text.',
+      },
+    },
   ],
 }

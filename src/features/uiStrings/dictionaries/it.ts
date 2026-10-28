@@ -1179,6 +1179,31 @@ const it: UiDictionary = {
   'settings.link.email-testing.description': "Verifica la connessione e-mail, invia copie di prova di ogni e-mail e controlla il dominio di invio.",
   'settings.link.email-log.label': "Registro e-mail",
   'settings.link.email-log.description': "Ogni e-mail inviato dal sito, con un pulsante per reinviarlo.",
+
+  // --- store ---
+  "store.addToCart": "Aggiungi al carrello",
+  "store.adding": "Aggiunta in corso…",
+  "store.addedToCart": "Aggiunto al carrello.",
+  "store.viewCart": "Vedi carrello",
+  "store.outOfStock": "Esaurito",
+  "store.sale": "Offerta",
+  "store.cart": "Carrello",
+  "store.emptyCart": "Il tuo carrello è vuoto.",
+  "store.continueShopping": "Continua lo shopping",
+  "store.subtotal": "Subtotale",
+  "store.total": "Totale",
+  "store.quantity": "Quantità",
+  "store.remove": "Rimuovi",
+  "store.checkout": "Acquista",
+  "store.readMore": "Leggi di più",
+  "store.search": "Cerca",
+  "store.previous": "Precedente",
+  "store.next": "Successivo",
+  "store.wishlist": "Lista dei desideri",
+  "store.compare": "Confronta",
+  "store.shipping": "Spedizione",
+  "store.tax": "Imposte",
+  "store.orderConfirmed": "Grazie, il tuo ordine è confermato.",
 }
 
 export default it

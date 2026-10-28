@@ -1179,6 +1179,31 @@ const ko: UiDictionary = {
   'settings.link.email-testing.description': "이메일 연결을 확인하고, 각 이메일의 테스트 사본을 보내고, 발송 도메인을 점검합니다.",
   'settings.link.email-log.label': "이메일 로그",
   'settings.link.email-log.description': "사이트가 보낸 모든 이메일과 다시 보내기 버튼.",
+
+  // --- store ---
+  "store.addToCart": "장바구니에 담기",
+  "store.adding": "담는 중…",
+  "store.addedToCart": "장바구니에 담았습니다.",
+  "store.viewCart": "장바구니 보기",
+  "store.outOfStock": "품절",
+  "store.sale": "세일",
+  "store.cart": "장바구니",
+  "store.emptyCart": "장바구니가 비어 있습니다.",
+  "store.continueShopping": "쇼핑 계속하기",
+  "store.subtotal": "소계",
+  "store.total": "합계",
+  "store.quantity": "수량",
+  "store.remove": "삭제",
+  "store.checkout": "결제하기",
+  "store.readMore": "더 읽기",
+  "store.search": "검색",
+  "store.previous": "이전",
+  "store.next": "다음",
+  "store.wishlist": "위시리스트",
+  "store.compare": "비교",
+  "store.shipping": "배송비",
+  "store.tax": "세금",
+  "store.orderConfirmed": "감사합니다. 주문이 확정되었습니다.",
 }
 
 export default ko

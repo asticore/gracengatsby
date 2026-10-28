@@ -1180,6 +1180,31 @@ const de: UiDictionary = {
   'settings.link.email-testing.description': "Prüfen Sie die E-Mail-Verbindung, senden Sie Testkopien jeder E-Mail und prüfen Sie die Absenderdomain.",
   'settings.link.email-log.label': "E-Mail-Protokoll",
   'settings.link.email-log.description': "Jede E-Mail, die die Website gesendet hat, mit einer Schaltfläche zum erneuten Senden.",
+
+  // --- store ---
+  "store.addToCart": "In den Warenkorb",
+  "store.adding": "Wird hinzugefügt…",
+  "store.addedToCart": "In deinen Warenkorb gelegt.",
+  "store.viewCart": "Warenkorb anzeigen",
+  "store.outOfStock": "Nicht auf Lager",
+  "store.sale": "Angebot",
+  "store.cart": "Warenkorb",
+  "store.emptyCart": "Dein Warenkorb ist leer.",
+  "store.continueShopping": "Weiter einkaufen",
+  "store.subtotal": "Zwischensumme",
+  "store.total": "Gesamt",
+  "store.quantity": "Menge",
+  "store.remove": "Entfernen",
+  "store.checkout": "Zur Kasse",
+  "store.readMore": "Weiterlesen",
+  "store.search": "Suchen",
+  "store.previous": "Zurück",
+  "store.next": "Weiter",
+  "store.wishlist": "Merkliste",
+  "store.compare": "Vergleichen",
+  "store.shipping": "Versand",
+  "store.tax": "MwSt.",
+  "store.orderConfirmed": "Vielen Dank - deine Bestellung ist bestätigt.",
 }
 
 export default de

@@ -1179,6 +1179,31 @@ const nl: UiDictionary = {
   'settings.link.email-testing.description': "Controleer de e-mailverbinding, stuur testkopieën van elke e-mail en controleer het verzenddomein.",
   'settings.link.email-log.label': "E-maillogboek",
   'settings.link.email-log.description': "Elke e-mail die de site heeft verzonden, met een knop om opnieuw te verzenden.",
+
+  // --- store ---
+  "store.addToCart": "In winkelwagen",
+  "store.adding": "Bezig met toevoegen…",
+  "store.addedToCart": "Toegevoegd aan je winkelwagen.",
+  "store.viewCart": "Bekijk winkelwagen",
+  "store.outOfStock": "Uitverkocht",
+  "store.sale": "Actie",
+  "store.cart": "Winkelwagen",
+  "store.emptyCart": "Je winkelwagen is leeg.",
+  "store.continueShopping": "Verder winkelen",
+  "store.subtotal": "Subtotaal",
+  "store.total": "Totaal",
+  "store.quantity": "Aantal",
+  "store.remove": "Verwijderen",
+  "store.checkout": "Afrekenen",
+  "store.readMore": "Lees verder",
+  "store.search": "Zoeken",
+  "store.previous": "Vorige",
+  "store.next": "Volgende",
+  "store.wishlist": "Verlanglijst",
+  "store.compare": "Vergelijken",
+  "store.shipping": "Verzending",
+  "store.tax": "Btw",
+  "store.orderConfirmed": "Bedankt - je bestelling is bevestigd.",
 }
 
 export default nl

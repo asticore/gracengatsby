@@ -1179,6 +1179,31 @@ const ja: UiDictionary = {
   'settings.link.email-testing.description': "メールの接続を確認し、各メールのテスト送信と送信ドメインの確認を行います。",
   'settings.link.email-log.label': "メールログ",
   'settings.link.email-log.description': "サイトが送信したすべてのメールを、再送信ボタン付きで表示します。",
+
+  // --- store ---
+  "store.addToCart": "カートに入れる",
+  "store.adding": "追加中…",
+  "store.addedToCart": "カートに追加しました。",
+  "store.viewCart": "カートを見る",
+  "store.outOfStock": "在庫切れ",
+  "store.sale": "セール",
+  "store.cart": "カート",
+  "store.emptyCart": "カートは空です。",
+  "store.continueShopping": "買い物を続ける",
+  "store.subtotal": "小計",
+  "store.total": "合計",
+  "store.quantity": "数量",
+  "store.remove": "削除",
+  "store.checkout": "レジに進む",
+  "store.readMore": "続きを読む",
+  "store.search": "検索",
+  "store.previous": "前へ",
+  "store.next": "次へ",
+  "store.wishlist": "お気に入り",
+  "store.compare": "比較",
+  "store.shipping": "配送料",
+  "store.tax": "税",
+  "store.orderConfirmed": "ありがとうございます。ご注文が確定しました。",
 }
 
 export default ja

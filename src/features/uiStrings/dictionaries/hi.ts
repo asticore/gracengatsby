@@ -1179,6 +1179,31 @@ const hi: UiDictionary = {
   'settings.link.email-testing.description': "ईमेल कनेक्शन जाँचें, हर ईमेल की टेस्ट कॉपी भेजें और भेजने वाले डोमेन की जाँच करें।",
   'settings.link.email-log.label': "ईमेल लॉग",
   'settings.link.email-log.description': "साइट द्वारा भेजा गया हर ईमेल, साथ में फिर से भेजने का बटन।",
+
+  // --- store ---
+  "store.addToCart": "कार्ट में डालें",
+  "store.adding": "जोड़ा जा रहा है…",
+  "store.addedToCart": "आपकी कार्ट में जोड़ दिया गया है।",
+  "store.viewCart": "कार्ट देखें",
+  "store.outOfStock": "स्टॉक में नहीं",
+  "store.sale": "सेल",
+  "store.cart": "कार्ट",
+  "store.emptyCart": "आपकी कार्ट खाली है।",
+  "store.continueShopping": "खरीदारी जारी रखें",
+  "store.subtotal": "उप-योग",
+  "store.total": "कुल",
+  "store.quantity": "मात्रा",
+  "store.remove": "हटाएँ",
+  "store.checkout": "चेकआउट",
+  "store.readMore": "और पढ़ें",
+  "store.search": "खोजें",
+  "store.previous": "पिछला",
+  "store.next": "अगला",
+  "store.wishlist": "विशलिस्ट",
+  "store.compare": "तुलना करें",
+  "store.shipping": "शिपिंग",
+  "store.tax": "कर",
+  "store.orderConfirmed": "धन्यवाद - आपका ऑर्डर पक्का हो गया है।",
 }
 
 export default hi

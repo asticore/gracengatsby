@@ -808,6 +808,31 @@ const ja: UiDictionary = {
   'portal.panel.akColCreated': '作成日',
   'portal.panel.akColLastUsed': '最終使用',
   'portal.panel.akColExpiry': '有効期限',
+
+  // --- admin leftovers (translations 2) ---
+  'translations.assignedToMe': '自分に割り当て',
+  'translations.colLanguage': '言語',
+  'translations.colStatus': 'ステータス',
+  'translations.editor.title': '翻訳エディター',
+  'translations.editor.machineFailed': '機械翻訳を実行できませんでした。',
+  'translations.editor.couldNotApprove': '承認できませんでした。',
+  'translations.editor.couldNotAssign': '割り当てできませんでした。',
+  'translations.editor.assignedEmailed': '割り当てました。通知メールを送信しました。',
+  'translations.editor.assignmentCleared': '担当を解除しました。言語ルールが適用されます。',
+  'translations.editor.savedOne': '{count}件の翻訳を保存しました。レビューが有効な場合、編集したテキストはレビューが必要です。',
+  'translations.editor.savedOther': '{count}件の翻訳を保存しました。レビューが有効な場合、編集したテキストはレビューが必要です。',
+  'translations.editor.savedPartial': '{count}件保存。',
+  'translations.editor.approvedIn': '{locale}で{count}件を承認しました。',
+  'translations.editor.fieldLabel': '{locale}の{field}',
+  'translations.editor.saveChangesOne': '{count}件の変更を保存',
+  'translations.editor.saveChangesOther': '{count}件の変更を保存',
+  'translations.editor.approve': '{locale}を承認',
+  'translations.editor.onlyReviewer': 'この言語のレビュー担当者のみ承認できます。',
+  'translations.editor.machineHint': '空欄または変更されたフィールドに機械翻訳の下書きを書き込みます。承認済みと人が翻訳した文章は残ります。',
+  'translations.editor.assignThis': 'この項目を割り当て',
+  'translations.editor.saveAssignment': '担当を保存',
+  'translations.editor.reviewOn': 'レビューが有効です。編集されたテキストは、公開サイトで使用される前にレビュー担当者の確認を待ちます。',
+  'translations.editor.notSaved': '未保存',
 }
 
 export default ja

@@ -808,6 +808,31 @@ const it: UiDictionary = {
   'portal.panel.akColCreated': 'Creata',
   'portal.panel.akColLastUsed': 'Ultimo uso',
   'portal.panel.akColExpiry': 'Scadenza',
+
+  // --- admin leftovers (translations 2) ---
+  'translations.assignedToMe': 'Assegnato a me',
+  'translations.colLanguage': 'Lingua',
+  'translations.colStatus': 'Stato',
+  'translations.editor.title': 'Editor di traduzione',
+  'translations.editor.machineFailed': 'La traduzione automatica non è stata eseguita.',
+  'translations.editor.couldNotApprove': 'Impossibile approvare.',
+  'translations.editor.couldNotAssign': 'Impossibile assegnare.',
+  'translations.editor.assignedEmailed': 'Assegnato. È stata inviata un\'email.',
+  'translations.editor.assignmentCleared': 'Assegnazione rimossa; si applicano le regole della lingua.',
+  'translations.editor.savedOne': '{count} traduzione salvata. Il testo modificato richiede revisione quando la revisione è attiva.',
+  'translations.editor.savedOther': '{count} traduzioni salvate. Il testo modificato richiede revisione quando la revisione è attiva.',
+  'translations.editor.savedPartial': 'Salvate {count}.',
+  'translations.editor.approvedIn': 'Approvate {count} in {locale}.',
+  'translations.editor.fieldLabel': '{field} in {locale}',
+  'translations.editor.saveChangesOne': 'Salva {count} modifica',
+  'translations.editor.saveChangesOther': 'Salva {count} modifiche',
+  'translations.editor.approve': 'Approva {locale}',
+  'translations.editor.onlyReviewer': 'Solo un revisore per questa lingua può approvarlo.',
+  'translations.editor.machineHint': 'Scrive bozze automatiche nei campi vuoti o modificati. Il testo approvato e quello umano vengono mantenuti.',
+  'translations.editor.assignThis': 'Assegna questo elemento',
+  'translations.editor.saveAssignment': 'Salva assegnazione',
+  'translations.editor.reviewOn': 'La revisione è attiva: il testo modificato attende un revisore prima di essere usato dal sito pubblico.',
+  'translations.editor.notSaved': 'non salvato',
 }
 
 export default it

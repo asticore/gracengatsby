@@ -809,6 +809,31 @@ const de: UiDictionary = {
   'portal.panel.akColCreated': 'Erstellt',
   'portal.panel.akColLastUsed': 'Zuletzt verwendet',
   'portal.panel.akColExpiry': 'Ablauf',
+
+  // --- admin leftovers (translations 2) ---
+  'translations.assignedToMe': 'Mir zugewiesen',
+  'translations.colLanguage': 'Sprache',
+  'translations.colStatus': 'Status',
+  'translations.editor.title': 'Übersetzungseditor',
+  'translations.editor.machineFailed': 'Die maschinelle Übersetzung konnte nicht ausgeführt werden.',
+  'translations.editor.couldNotApprove': 'Konnte nicht genehmigt werden.',
+  'translations.editor.couldNotAssign': 'Konnte nicht zugewiesen werden.',
+  'translations.editor.assignedEmailed': 'Zugewiesen. Sie wurden per E-Mail benachrichtigt.',
+  'translations.editor.assignmentCleared': 'Zuweisung entfernt; es gelten die Sprachregeln.',
+  'translations.editor.savedOne': '{count} Übersetzung gespeichert. Geänderter Text muss geprüft werden, wenn die Prüfung aktiv ist.',
+  'translations.editor.savedOther': '{count} Übersetzungen gespeichert. Geänderter Text muss geprüft werden, wenn die Prüfung aktiv ist.',
+  'translations.editor.savedPartial': 'Gespeichert: {count}.',
+  'translations.editor.approvedIn': '{count} in {locale} genehmigt.',
+  'translations.editor.fieldLabel': '{field} ({locale})',
+  'translations.editor.saveChangesOne': '{count} Änderung speichern',
+  'translations.editor.saveChangesOther': '{count} Änderungen speichern',
+  'translations.editor.approve': '{locale} genehmigen',
+  'translations.editor.onlyReviewer': 'Nur ein Prüfer für diese Sprache kann das genehmigen.',
+  'translations.editor.machineHint': 'Schreibt maschinelle Entwürfe in leere oder geänderte Felder. Genehmigter und menschlicher Text bleibt erhalten.',
+  'translations.editor.assignThis': 'Diesen Eintrag zuweisen',
+  'translations.editor.saveAssignment': 'Zuweisung speichern',
+  'translations.editor.reviewOn': 'Die Prüfung ist aktiv: Geänderter Text wartet auf eine Prüfung, bevor die öffentliche Website ihn verwendet.',
+  'translations.editor.notSaved': 'nicht gespeichert',
 }
 
 export default de

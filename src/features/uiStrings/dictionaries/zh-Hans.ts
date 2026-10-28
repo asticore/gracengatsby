@@ -807,6 +807,31 @@ const zhHans: UiDictionary = {
   'portal.panel.akColCreated': '创建时间',
   'portal.panel.akColLastUsed': '最近使用',
   'portal.panel.akColExpiry': '有效期',
+
+  // --- admin leftovers (translations 2) ---
+  'translations.assignedToMe': '分配给我',
+  'translations.colLanguage': '语言',
+  'translations.colStatus': '状态',
+  'translations.editor.title': '翻译编辑器',
+  'translations.editor.machineFailed': '无法运行机器翻译。',
+  'translations.editor.couldNotApprove': '无法批准。',
+  'translations.editor.couldNotAssign': '无法分配。',
+  'translations.editor.assignedEmailed': '已分配，并已向对方发送邮件。',
+  'translations.editor.assignmentCleared': '已清除分配；将应用语言规则。',
+  'translations.editor.savedOne': '已保存 {count} 条翻译。开启审核后，编辑过的文本需要审核。',
+  'translations.editor.savedOther': '已保存 {count} 条翻译。开启审核后，编辑过的文本需要审核。',
+  'translations.editor.savedPartial': '已保存 {count} 条。',
+  'translations.editor.approvedIn': '已在 {locale} 中批准 {count} 条。',
+  'translations.editor.fieldLabel': '{locale}的{field}',
+  'translations.editor.saveChangesOne': '保存 {count} 处更改',
+  'translations.editor.saveChangesOther': '保存 {count} 处更改',
+  'translations.editor.approve': '批准{locale}',
+  'translations.editor.onlyReviewer': '只有该语言的审核人员可以批准。',
+  'translations.editor.machineHint': '为空白或已修改的字段写入机器草稿。已批准和人工翻译的文本会保留。',
+  'translations.editor.assignThis': '分配此项',
+  'translations.editor.saveAssignment': '保存分配',
+  'translations.editor.reviewOn': '已开启审核：编辑过的文本需等待审核人员确认后才会在公开网站上使用。',
+  'translations.editor.notSaved': '未保存',
 }
 
 export default zhHans

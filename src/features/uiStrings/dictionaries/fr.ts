@@ -808,6 +808,31 @@ const fr: UiDictionary = {
   'portal.panel.akColCreated': 'Créée',
   'portal.panel.akColLastUsed': 'Dernière utilisation',
   'portal.panel.akColExpiry': 'Expiration',
+
+  // --- admin leftovers (translations 2) ---
+  'translations.assignedToMe': 'Attribué à moi',
+  'translations.colLanguage': 'Langue',
+  'translations.colStatus': 'Statut',
+  'translations.editor.title': 'Éditeur de traduction',
+  'translations.editor.machineFailed': 'La traduction automatique n\'a pas pu être lancée.',
+  'translations.editor.couldNotApprove': 'Impossible d\'approuver.',
+  'translations.editor.couldNotAssign': 'Impossible d\'attribuer.',
+  'translations.editor.assignedEmailed': 'Attribué. Un e-mail leur a été envoyé.',
+  'translations.editor.assignmentCleared': 'Attribution retirée ; les règles de langue s\'appliquent.',
+  'translations.editor.savedOne': '{count} traduction enregistrée. Le texte modifié doit être relu lorsque la relecture est activée.',
+  'translations.editor.savedOther': '{count} traductions enregistrées. Le texte modifié doit être relu lorsque la relecture est activée.',
+  'translations.editor.savedPartial': 'Enregistrées : {count}.',
+  'translations.editor.approvedIn': '{count} approuvée(s) en {locale}.',
+  'translations.editor.fieldLabel': '{field} en {locale}',
+  'translations.editor.saveChangesOne': 'Enregistrer {count} modification',
+  'translations.editor.saveChangesOther': 'Enregistrer {count} modifications',
+  'translations.editor.approve': 'Approuver {locale}',
+  'translations.editor.onlyReviewer': 'Seul un relecteur de cette langue peut l\'approuver.',
+  'translations.editor.machineHint': 'Rédige des brouillons automatiques pour les champs vides ou modifiés. Le texte approuvé et le texte humain sont conservés.',
+  'translations.editor.assignThis': 'Attribuer cet élément',
+  'translations.editor.saveAssignment': 'Enregistrer l\'attribution',
+  'translations.editor.reviewOn': 'La relecture est activée : le texte modifié attend un relecteur avant d\'être utilisé sur le site public.',
+  'translations.editor.notSaved': 'non enregistré',
 }
 
 export default fr

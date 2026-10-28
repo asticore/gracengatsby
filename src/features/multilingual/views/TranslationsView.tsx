@@ -3,14 +3,13 @@ import type { AdminViewServerProps } from '@/engine'
 
 import { loadListPrefs } from '@/admin/list/listPrefs'
 import { getAdminUi } from '@/admin/i18n/serverUi'
-import type { UiStringKey } from '@/features/uiStrings'
 import { parseListSearchParams, resolveVisibleColumns, serializeListState, type ListState } from '@/admin/list/listQuery'
 import { isAdminUser } from '@/admin/auth'
 
 import { localeLabel } from '../locales'
 import { getMultilingualSettings } from '../settings'
 import { TRANSLATABLE_COLLECTIONS } from '../translatableFields'
-import { buildDocumentRows, documentColumns, DOCUMENT_DEFAULT_COLUMNS } from '../documentRows'
+import { buildDocumentRows, documentColumns, DOCUMENT_DEFAULT_COLUMNS, STATUS_TEXT_KEYS } from '../documentRows'
 import {
   canApproveTranslation,
   computeTranslationStatus,
@@ -50,14 +49,6 @@ const noticeClassName =
   'flex flex-col gap-[calc(var(--base)*1.25)] px-[var(--gutter-h)] pt-[calc(var(--base)*1.5)] pb-[calc(var(--base)*3)]'
 const noticeTextClassName = 'max-w-[60ch] text-[var(--theme-elevation-600)]'
 const LIST_LIMIT = 25
-
-/** Admin-language text for each translation status (the English is the status's own label). */
-const STATUS_TEXT_KEYS: Record<TranslationStatus, UiStringKey> = {
-  missing: 'translations.statusMissing',
-  machine_draft: 'translations.statusMachineDraft',
-  needs_review: 'translations.statusNeedsReview',
-  approved: 'translations.statusApproved',
-}
 
 export const TranslationsView: React.FC<AdminViewServerProps> = async (props) => {
   const engine = props.engine
@@ -108,7 +99,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   ])
   const userLabel = new Map(users.map((entry) => [entry.id, entry.label]))
 
-  const columns = documentColumns({ targetLocales: targets, localeLabel })
+  const columns = documentColumns({ targetLocales: targets, localeLabel, t: ui.t })
   const defaults = DOCUMENT_DEFAULT_COLUMNS(targets)
   const { visibleNames } = resolveVisibleColumns(columns, state.cols, savedPrefs.cols, defaults)
 

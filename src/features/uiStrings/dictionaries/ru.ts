@@ -808,6 +808,31 @@ const ru: UiDictionary = {
   'portal.panel.akColCreated': 'Создан',
   'portal.panel.akColLastUsed': 'Последний вход',
   'portal.panel.akColExpiry': 'Срок действия',
+
+  // --- admin leftovers (translations 2) ---
+  'translations.assignedToMe': 'Назначено мне',
+  'translations.colLanguage': 'Язык',
+  'translations.colStatus': 'Статус',
+  'translations.editor.title': 'Редактор перевода',
+  'translations.editor.machineFailed': 'Не удалось выполнить машинный перевод.',
+  'translations.editor.couldNotApprove': 'Не удалось одобрить.',
+  'translations.editor.couldNotAssign': 'Не удалось назначить.',
+  'translations.editor.assignedEmailed': 'Назначено. Им отправлено письмо.',
+  'translations.editor.assignmentCleared': 'Назначение снято; действуют языковые правила.',
+  'translations.editor.savedOne': 'Сохранён {count} перевод. Изменённый текст требует проверки, если проверка включена.',
+  'translations.editor.savedOther': 'Сохранено переводов: {count}. Изменённый текст требует проверки, если проверка включена.',
+  'translations.editor.savedPartial': 'Сохранено: {count}.',
+  'translations.editor.approvedIn': 'Одобрено {count} на языке {locale}.',
+  'translations.editor.fieldLabel': '{field} ({locale})',
+  'translations.editor.saveChangesOne': 'Сохранить изменений: {count}',
+  'translations.editor.saveChangesOther': 'Сохранить изменений: {count}',
+  'translations.editor.approve': 'Одобрить {locale}',
+  'translations.editor.onlyReviewer': 'Утвердить может только проверяющий этого языка.',
+  'translations.editor.machineHint': 'Записывает машинные черновики в пустые или изменённые поля. Одобренный и человеческий текст сохраняется.',
+  'translations.editor.assignThis': 'Назначить этот элемент',
+  'translations.editor.saveAssignment': 'Сохранить назначение',
+  'translations.editor.reviewOn': 'Проверка включена: изменённый текст ждёт проверяющего, прежде чем его начнёт использовать публичный сайт.',
+  'translations.editor.notSaved': 'не сохранено',
 }
 
 export default ru

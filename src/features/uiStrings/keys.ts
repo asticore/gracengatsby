@@ -849,6 +849,31 @@ export const UI_STRING_SOURCE = {
   'portal.panel.akColCreated': 'Created',
   'portal.panel.akColLastUsed': 'Last used',
   'portal.panel.akColExpiry': 'Expiry',
+
+  // --- admin leftovers (translations 2) ---
+  'translations.assignedToMe': 'Assigned to me',
+  'translations.colLanguage': 'Language',
+  'translations.colStatus': 'Status',
+  'translations.editor.title': 'Translation editor',
+  'translations.editor.machineFailed': 'Machine translation could not run.',
+  'translations.editor.couldNotApprove': 'Could not approve.',
+  'translations.editor.couldNotAssign': 'Could not assign.',
+  'translations.editor.assignedEmailed': 'Assigned. They have been emailed.',
+  'translations.editor.assignmentCleared': 'Assignment cleared; language rules apply.',
+  'translations.editor.savedOne': 'Saved {count} translation. Edited text needs review when review is on.',
+  'translations.editor.savedOther': 'Saved {count} translations. Edited text needs review when review is on.',
+  'translations.editor.savedPartial': 'Saved {count}.',
+  'translations.editor.approvedIn': 'Approved {count} in {locale}.',
+  'translations.editor.fieldLabel': '{field} in {locale}',
+  'translations.editor.saveChangesOne': 'Save {count} change',
+  'translations.editor.saveChangesOther': 'Save {count} changes',
+  'translations.editor.approve': 'Approve {locale}',
+  'translations.editor.onlyReviewer': 'Only a reviewer for this language can approve it.',
+  'translations.editor.machineHint': 'Writes machine drafts for empty or changed fields. Approved and human text is kept.',
+  'translations.editor.assignThis': 'Assign this item',
+  'translations.editor.saveAssignment': 'Save assignment',
+  'translations.editor.reviewOn': 'Review is on: edited text waits for a reviewer before the public site uses it.',
+  'translations.editor.notSaved': 'not saved',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

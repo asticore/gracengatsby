@@ -4,14 +4,16 @@ import React, { useState } from 'react'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 import type { CheckLevel, CheckLine } from '@/features/email/dnsCheck'
 import { postEmailTest, type DnsResponse } from './emailTestingApi'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
 
 /** "Is the From domain set up?" - SPF and DMARC looked up live, DKIM as provider instructions. */
 
-const LEVEL_LABEL: Record<CheckLevel, string> = {
-  good: 'Good',
-  'needs-work': 'Needs work',
-  missing: 'Missing',
-  info: 'For information',
+const LEVEL_KEY: Record<CheckLevel, UiStringKey> = {
+  good: 'ig.lit.lvl_good',
+  'needs-work': 'ig.lit.lvl_needs_work',
+  missing: 'ig.lit.lvl_missing',
+  info: 'ig.lit.lvl_info',
 }
 
 const LEVEL_CLASS: Record<CheckLevel, string> = {
@@ -22,11 +24,12 @@ const LEVEL_CLASS: Record<CheckLevel, string> = {
 }
 
 function CheckRow({ check }: { check: CheckLine }) {
+  const t = useAdminT()
   return (
     <tr>
       <td>{check.label}</td>
       <td>
-        <span className={LEVEL_CLASS[check.level]}>{LEVEL_LABEL[check.level]}</span>
+        <span className={LEVEL_CLASS[check.level]}>{t(LEVEL_KEY[check.level])}</span>
       </td>
       <td>{check.message}</td>
     </tr>
@@ -34,6 +37,7 @@ function CheckRow({ check }: { check: CheckLine }) {
 }
 
 export function EmailDomainCard({ fromEmail }: { fromEmail: string | null }) {
+  const t = useAdminT()
   const [busy, setBusy] = useState(false)
   const [report, setReport] = useState<DnsResponse['report'] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -53,13 +57,13 @@ export function EmailDomainCard({ fromEmail }: { fromEmail: string | null }) {
   }
 
   return (
-    <CollapsibleCard id="email-testing-domain" title="Is the sending domain set up?">
+    <CollapsibleCard id="email-testing-domain" title={t('ig.lit.dom_title')}>
       <p className="et-muted">
-        {fromEmail ? `Checking the domain of ${fromEmail}.` : 'No From address is set yet. Add one under Sender and testing.'}
+        {fromEmail ? t('ig.lit.dom_checking', { email: fromEmail }) : t('ig.lit.dom_no_from')}
       </p>
       <div className="et-actions">
         <button type="button" className="et-button" onClick={check} disabled={busy || !fromEmail}>
-          {busy ? 'Checking...' : 'Check domain'}
+          {busy ? t('ig.lit.dom_check_busy') : t('ig.lit.dom_check')}
         </button>
       </div>
       {error && (
@@ -71,17 +75,17 @@ export function EmailDomainCard({ fromEmail }: { fromEmail: string | null }) {
         <>
           <p className="et-headline">
             {report.lookupError
-              ? `The check for ${report.domain} did not finish.`
+              ? t('ig.lit.dom_failed', { domain: report.domain })
               : report.overall === 'good'
-                ? `${report.domain} has SPF and DMARC records.`
-                : `${report.domain} needs attention before mail is reliably delivered.`}
+                ? t('ig.lit.dom_ok', { domain: report.domain })
+                : t('ig.lit.dom_attention', { domain: report.domain })}
           </p>
           <table className="et-table">
             <thead>
               <tr>
-                <th scope="col">Record</th>
-                <th scope="col">Result</th>
-                <th scope="col">What to do</th>
+                <th scope="col">{t('ig.lit.col_record')}</th>
+                <th scope="col">{t('ig.lit.col_result')}</th>
+                <th scope="col">{t('ig.lit.col_what')}</th>
               </tr>
             </thead>
             <tbody>
@@ -90,7 +94,7 @@ export function EmailDomainCard({ fromEmail }: { fromEmail: string | null }) {
               <CheckRow check={report.dkim} />
             </tbody>
           </table>
-          <p className="et-muted">MX records are not needed for sending, so they are not checked.</p>
+          <p className="et-muted">{t('ig.lit.dom_mx_note')}</p>
         </>
       )}
     </CollapsibleCard>

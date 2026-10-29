@@ -1,7 +1,7 @@
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import { adminHref } from '@/features/security/adminPath'
 import { getAdminRoot } from '@/features/security/settings'
 import React from 'react'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -21,7 +21,7 @@ export async function GoogleDashboardView() {
       <h1>Google dashboard</h1>
       <p>
         Search, visitors and earnings from the Google account you connected. Numbers are read from Google each time you open this page and kept for five minutes. To connect or change the account, open{' '}
-        <Link href="/admin/google-connection">Google connection</Link>.
+        <AdminLink path="/google-connection">Google connection</AdminLink>.
       </p>
       <GoogleDashboardClient />
     </div>

@@ -1,3 +1,4 @@
+import { adminHref } from '@/features/security/adminPath'
 import type { TemplateValues } from './renderTemplate'
 
 /**
@@ -24,7 +25,7 @@ export const TEST_SAMPLE_VALUES: Record<string, TemplateValues> = {
     noun: 'page',
     title: 'Spring menu',
     waiting: ' (2 others are waiting)',
-    link: `${SITE}/admin/approvals`,
+    link: `${SITE}${adminHref('/approvals')}`,
   },
   approvalDecision: {
     reviewerName: 'Alex Reviewer',
@@ -32,7 +33,7 @@ export const TEST_SAMPLE_VALUES: Record<string, TemplateValues> = {
     noun: 'page',
     title: 'Spring menu',
     note: ' Looks good.',
-    link: `${SITE}/admin/approvals`,
+    link: `${SITE}${adminHref('/approvals')}`,
   },
   rsvpConfirmation: {
     name: 'Sam',

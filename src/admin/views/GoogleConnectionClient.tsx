@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { Suspense, useState } from 'react'
 
@@ -226,7 +226,7 @@ export function GoogleConnectionClient({ status, redirectUri }: Props) {
           disabled={!connected}
         />
         <p className="google-connection__help">
-          <Link href="/admin/settings/site#integrations">{t('integrations.openLink')}</Link> {t('integrations.seeIds')}
+          <AdminLink path="/settings/site#integrations">{t('integrations.openLink')}</AdminLink> {t('integrations.seeIds')}
         </p>
       </CollapsibleCard>
     </div>

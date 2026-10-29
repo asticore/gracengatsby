@@ -1,4 +1,6 @@
 'use client'
+import { useAdminHref, useAdminRoot } from '@/admin/adminRoute/AdminRouteProvider'
+import { rebaseAdminPath } from '@/features/security/adminPath'
 import { adminCollectionPath } from '@/admin/adminPaths'
 
 import { useEffect, useState, type FormEvent } from 'react'
@@ -51,6 +53,8 @@ export function MediaEditPanel() {
  */
 function MediaCreatePanel() {
   const t = useAdminT()
+  const adminHref = useAdminHref()
+  const adminRoot = useAdminRoot()
   return (
     <section aria-label={t('md.lit.upload_files_aria')} className="mb-[16px] flex flex-col gap-[8px] rounded-[6px] border border-[var(--theme-elevation-150)] p-[14px]">
       <p className="m-0 text-[12px] text-[var(--theme-elevation-600)]">
@@ -59,7 +63,7 @@ function MediaCreatePanel() {
       <MediaUploader
         scope="inline"
         onUploaded={(docs) => {
-          window.location.assign(docs.length === 1 ? `/admin/content/media/${docs[0].id}` : adminCollectionPath('media'))
+          window.location.assign(docs.length === 1 ? adminHref(`/content/media/${docs[0].id}`) : rebaseAdminPath(adminCollectionPath('media'), adminRoot))
         }}
       />
     </section>

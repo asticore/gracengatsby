@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 /** Points to the Integrations page where email and text keys are entered. */
@@ -9,7 +9,7 @@ export function EmailConnectionNote() {
   return (
     <p className="et-muted">
       {t('integrations.email.note')}{' '}
-      <Link href="/admin/settings/site#integrations">{t('integrations.pageLink')}</Link>.
+      <AdminLink path="/settings/site#integrations">{t('integrations.pageLink')}</AdminLink>.
     </p>
   )
 }

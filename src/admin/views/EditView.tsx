@@ -1,8 +1,8 @@
-import { adminHref } from '@/features/security/adminPath'
 import { getAdminRoot } from '@/features/security/settings'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
+import { adminHref } from '@/features/security/adminPath'
 import { adminLabel } from '@/features/uiStrings'
 import { adminCollectionPath } from '@/admin/adminPaths'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
@@ -164,7 +164,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
     trackAuthorship,
     updatedAt: typeof docRecord?.updatedAt === 'string' ? docRecord.updatedAt : undefined,
     updatedByName,
-    visualEditorHref: surface?.kind === 'collection' && id !== undefined ? `/admin/visual-editor/collection/${collectionSlug}/${id}` : undefined,
+    visualEditorHref: surface?.kind === 'collection' && id !== undefined ? adminHref(`/visual-editor/collection/${collectionSlug}/${id}`, await getAdminRoot()) : undefined,
   }
 
   // Extract pageType field if it exists
@@ -202,9 +202,9 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   return (
     <div className="collection-edit">
       <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
-        <Link href="/admin">{ui.t('nav.dashboard')}</Link>
+        <AdminLink path="/">{ui.t('nav.dashboard')}</AdminLink>
         <span aria-hidden="true">/</span>
-        <Link href={`${adminCollectionPath(collectionSlug)}`}>{pluralLabel}</Link>
+        <AdminLink href={`${adminCollectionPath(collectionSlug)}`}>{pluralLabel}</AdminLink>
         <span aria-hidden="true">/</span>
         <span>{id === undefined ? ui.t('edit.create') : docTitle || `#${id}`}</span>
       </nav>

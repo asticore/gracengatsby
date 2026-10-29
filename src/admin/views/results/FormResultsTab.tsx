@@ -1,7 +1,7 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
-import Link from 'next/link'
 import React, { useState } from 'react'
 import { ResultsMessage, ResultsPager, ResultsStat } from './ResultsChrome'
 import { cellText, formatWhen, type PageInfo, type SubmissionColumn, type SubmissionRow } from './rows'
@@ -64,7 +64,7 @@ export function FormResultsTab({ formId }: { formId: number }) {
                     })}
                     {showPayment && <td className="et-nowrap">{row.paymentStatus}</td>}
                     <td className="et-nowrap">
-                      <Link href={`/admin/other/form-submissions/${row.id}`}>{t('frm.lit.open')}</Link>
+                      <AdminLink path={`/other/form-submissions/${row.id}`}>{t('frm.lit.open')}</AdminLink>
                     </td>
                   </tr>
                 ))}

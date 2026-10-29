@@ -1,5 +1,6 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React from 'react'
 
 /**
@@ -53,19 +54,19 @@ export function DataTable<T>({ rows, columns, empty, rowKey }: { rows: T[]; colu
  * Renders the message for a widget state that has no data. Returns null for "ok" so the caller can show
  * its own content. `connectHref` is where the "Connect Google first" link goes.
  */
-export function StateNotice({ result, connectHref = '/admin/google-connection' }: { result: { state: string; message?: string }; connectHref?: string }) {
+export function StateNotice({ result, connectHref = '/google-connection' }: { result: { state: string; message?: string }; connectHref?: string }) {
   if (result.state === 'ok') return null
   if (result.state === 'not-connected') {
     return (
       <p className="gd-muted">
-        Connect Google first. <a href={connectHref}>Open Google connection</a>
+        Connect Google first. <AdminLink path={connectHref}>Open Google connection</AdminLink>
       </p>
     )
   }
   if (result.state === 'not-set-up') {
     return (
       <p className="gd-muted">
-        {result.message} <a href={connectHref}>Open Google connection</a>
+        {result.message} <AdminLink path={connectHref}>Open Google connection</AdminLink>
       </p>
     )
   }

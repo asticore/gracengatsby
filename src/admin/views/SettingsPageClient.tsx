@@ -1,5 +1,6 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
 import { useAdminLabel, useAdminT } from '@/admin/i18n/AdminUiProvider'
@@ -181,9 +182,9 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
       {linkSections.length > 0 && (
         <div className="settings-page__links">
           {linkSections.map((section) => (
-            <a
+            <AdminLink
               key={`${section.type}:${section.href}`}
-              href={`/admin${section.href}`}
+              path={section.href}
               className="settings-page__link-card"
             >
               <div className="settings-page__link-card-content">
@@ -191,7 +192,7 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
                 <p className="settings-page__link-card-description">{linkText(section.label, 'description', section.description)}</p>
               </div>
               <div className="settings-page__link-card-icon">→</div>
-            </a>
+            </AdminLink>
           ))}
         </div>
       )}

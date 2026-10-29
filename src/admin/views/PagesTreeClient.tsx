@@ -1,7 +1,7 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   DndContext,
@@ -315,9 +315,9 @@ export function PagesTreeClient({ pages, canEdit, newDocumentURL }: PagesTreeCli
       <div className="pages-tree pages-tree--empty">
         <p className="pages-tree__empty-message">No pages yet</p>
         {newDocumentURL && (
-          <Link href={newDocumentURL} className="pages-tree__create-link">
+          <AdminLink href={newDocumentURL} className="pages-tree__create-link">
             Create first page
-          </Link>
+          </AdminLink>
         )}
       </div>
     )
@@ -516,9 +516,9 @@ function TreeNodeItem({
           tabIndex={canEdit ? 0 : -1}
           role="button"
         >
-          <Link href={`/admin/content/pages/${page.id}`} className="pages-tree__title">
+          <AdminLink path={`/content/pages/${page.id}`} className="pages-tree__title">
             {page.title}
-          </Link>
+          </AdminLink>
 
           <span className="pages-tree__path">{pagePathStr}</span>
 

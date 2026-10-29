@@ -33,7 +33,7 @@ export async function SocialView({ searchParams }: { searchParams?: Record<strin
       ) : (
         <p>Social sign-in for staff is switched off on this site (Settings &gt; Security &gt; Social login).</p>
       )}
-      <ConnectedAccountsPanel view={view} area="admin" returnTo="/admin/security/social" notice={error} />
+      <ConnectedAccountsPanel view={view} area="admin" returnTo={adminHref('/security/social', await getAdminRoot())} notice={error} />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess, isAdminUser } from '@/admin/auth'
@@ -13,6 +14,7 @@ import { getEngine } from '@/lib/engine'
  */
 export async function ImpersonationView() {
   const context = await getAdminContext()
+  const ui = await getAdminUi()
   if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
   const admin = isAdminUser(context.user)
   const engine = await getEngine()
@@ -21,7 +23,7 @@ export async function ImpersonationView() {
   if (!admin) {
     return (
       <div style={{ maxWidth: 820, padding: '1.5rem' }}>
-        <p>Only an administrator can sign in as a customer or see this history.</p>
+        <p>{ui.t('us.lit.only_admin')}</p>
       </div>
     )
   }

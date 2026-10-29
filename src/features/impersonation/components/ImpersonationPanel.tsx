@@ -2,6 +2,9 @@
 
 import { useState, type FormEvent } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
+
 import { startImpersonationAction } from '../actions'
 import type { HistoryEntry } from '../service'
 
@@ -18,11 +21,12 @@ type Props = {
   entries: HistoryEntry[]
 }
 
-const STATUS_LABEL: Record<HistoryEntry['status'], string> = { active: 'Active', ended: 'Ended', expired: 'Expired' }
+const STATUS_KEYS: Record<HistoryEntry['status'], UiStringKey> = { active: 'us.lit.status_active', ended: 'us.lit.status_ended', expired: 'us.lit.status_expired' }
 
 const when = (iso: string | null): string => (iso ? new Date(iso).toLocaleString() : '-')
 
 export function ImpersonationPanel({ enabled, maxMinutes, requireTwoFactor, entries }: Props) {
+  const t = useAdminT()
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -48,36 +52,40 @@ export function ImpersonationPanel({ enabled, maxMinutes, requireTwoFactor, entr
   return (
     <div style={{ display: 'grid', gap: '2rem' }}>
       <section aria-labelledby="imp-start">
-        <h2 id="imp-start">Sign in as a customer</h2>
+        <h2 id="imp-start">{t('us.lit.sign_in_as_a_customer')}</h2>
         {!enabled ? (
-          <p>Signing in as a customer is switched off. The site owner can turn it on under Security settings.</p>
+          <p>{t('us.lit.signing_in_switched_off')}</p>
         ) : (
           <>
             <p>
-              You will see the site as this customer, for up to {maxMinutes} minutes. You cannot change their password, email, two-step sign-in,
-              passkeys, API keys or sessions, and you cannot place or pay for an order. Everything is recorded.
-              {requireTwoFactor ? ' Your own account must have two-step sign-in or a passkey.' : ''}
+              {t('us.lit.imp_intro', { minutes: maxMinutes })}
+              {requireTwoFactor ? (
+                <>
+                  {' '}
+                  {t('us.lit.imp_requires_2fa')}
+                </>
+              ) : null}
             </p>
             <form onSubmit={submit} style={{ display: 'grid', gap: '0.75rem', maxWidth: 480 }}>
               <label style={{ display: 'grid', gap: 4 }}>
-                Customer email
+                {t('us.lit.customer_email')}
                 <input name="email" type="email" required autoComplete="off" />
               </label>
               <label style={{ display: 'grid', gap: 4 }}>
-                Reason (at least 5 characters)
+                {t('us.lit.reason_min_5')}
                 <textarea name="reason" required minLength={5} maxLength={300} rows={2} />
               </label>
               <label style={{ display: 'grid', gap: 4 }}>
-                Your password
+                {t('us.lit.your_password')}
                 <input name="password" type="password" autoComplete="current-password" />
               </label>
               <label style={{ display: 'grid', gap: 4 }}>
-                Or your authenticator code
+                {t('us.lit.or_authenticator_code')}
                 <input name="code" inputMode="numeric" autoComplete="one-time-code" />
               </label>
               <div>
                 <button type="submit" disabled={busy}>
-                  {busy ? 'Starting...' : 'Sign in as customer'}
+                  {busy ? t('us.lit.starting') : t('us.lit.sign_in_as_customer')}
                 </button>
               </div>
               {message ? <p role="alert">{message}</p> : null}
@@ -87,20 +95,20 @@ export function ImpersonationPanel({ enabled, maxMinutes, requireTwoFactor, entr
       </section>
 
       <section aria-labelledby="imp-history">
-        <h2 id="imp-history">History</h2>
+        <h2 id="imp-history">{t('us.lit.history')}</h2>
         {entries.length === 0 ? (
-          <p>No one has signed in as a customer yet.</p>
+          <p>{t('us.lit.no_one_signed_in_yet')}</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Started</th>
-                  <th scope="col">Admin</th>
-                  <th scope="col">Customer</th>
-                  <th scope="col">Reason</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Ended</th>
+                  <th scope="col">{t('us.lit.started')}</th>
+                  <th scope="col">{t('us.lit.admin')}</th>
+                  <th scope="col">{t('us.lit.customer')}</th>
+                  <th scope="col">{t('us.lit.reason')}</th>
+                  <th scope="col">{t('us.lit.status')}</th>
+                  <th scope="col">{t('us.lit.ended')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,7 +118,7 @@ export function ImpersonationPanel({ enabled, maxMinutes, requireTwoFactor, entr
                     <td>{entry.adminEmail}</td>
                     <td>{entry.targetEmail}</td>
                     <td>{entry.reason}</td>
-                    <td>{STATUS_LABEL[entry.status]}</td>
+                    <td>{t(STATUS_KEYS[entry.status])}</td>
                     <td>{when(entry.endedAt)}</td>
                   </tr>
                 ))}

@@ -3,6 +3,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 
 import { startImpersonationAction } from '../actions'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 /**
  * The "Sign in as" button on an admin user's edit screen. It opens a confirm
@@ -15,6 +16,7 @@ import { startImpersonationAction } from '../actions'
 type Props = { email: string; maxMinutes: number }
 
 export function SignInAsCustomerButton({ email, maxMinutes }: Props) {
+  const t = useAdminT()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -51,34 +53,31 @@ export function SignInAsCustomerButton({ email, maxMinutes }: Props) {
   return (
     <>
       <button type="button" onClick={open}>
-        Sign in as
+        {t('us.lit.sign_in_as')}
       </button>
       <dialog ref={dialogRef} aria-labelledby={titleId} style={{ maxWidth: 480, width: '90vw' }}>
         <form onSubmit={submit} style={{ display: 'grid', gap: '0.75rem' }}>
-          <h2 id={titleId}>Sign in as {email}?</h2>
-          <p>
-            You will see the site as this customer for up to {maxMinutes} minutes. Changes you make are made on their account. Every start and stop is
-            recorded.
-          </p>
+          <h2 id={titleId}>{t('us.lit.sign_in_as_email_q', { email })}</h2>
+          <p>{t('us.lit.button_intro', { minutes: maxMinutes })}</p>
           <label style={{ display: 'grid', gap: 4 }}>
-            Reason (at least 5 characters)
+            {t('us.lit.reason_min_5')}
             <textarea name="reason" required minLength={5} maxLength={300} rows={2} />
           </label>
           <label style={{ display: 'grid', gap: 4 }}>
-            Your password
+            {t('us.lit.your_password')}
             <input name="password" type="password" autoComplete="current-password" />
           </label>
           <label style={{ display: 'grid', gap: 4 }}>
-            Or your authenticator code
+            {t('us.lit.or_authenticator_code')}
             <input name="code" inputMode="numeric" autoComplete="one-time-code" />
           </label>
           {message ? <p role="alert">{message}</p> : null}
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
             <button type="button" onClick={close} disabled={busy}>
-              Cancel
+              {t('us.lit.cancel')}
             </button>
             <button type="submit" disabled={busy}>
-              {busy ? 'Starting...' : 'Sign in as customer'}
+              {busy ? t('us.lit.starting') : t('us.lit.sign_in_as_customer')}
             </button>
           </div>
         </form>

@@ -12,6 +12,8 @@ import { getPrivacyPolicyPath } from '@/features/site/pages'
 import { getSeoContext } from '../settings'
 import { getPublicTrackingEvents } from '@/features/tracking/server'
 import { pickConsentCategories } from '@/features/integrations/publicIds'
+import { TrackingPicker } from '@/features/tracking/picker/TrackingPicker'
+import { collectionRoute } from '@/admin/adminPaths'
 import { TrackingRuntime } from '@/features/tracking/TrackingRuntime'
 import type { TrackingPlatform } from '@/features/tracking/events'
 import { getAdminRoot } from '@/features/security/settings'
@@ -139,6 +141,7 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
         policyVersion={consent.policyVersion}
         consentModeV2={consent.consentModeV2}
       />
+      {adminSignedIn ? <TrackingPicker adminSignedIn={adminSignedIn} adminPath={adminPath} eventsRoute={collectionRoute('tracking-events')} /> : null}
       {trackingEvents.length && platforms.length ? (
         <TrackingRuntime events={trackingEvents} platforms={platforms} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} suppressed={adminSignedIn} categories={{ meta: categories.meta, tiktok: categories.tiktok, ga4: 'analytics', gtm: 'analytics' }} />
       ) : null}

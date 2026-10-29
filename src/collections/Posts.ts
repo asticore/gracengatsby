@@ -1,4 +1,5 @@
 import { pageAudioField } from '@/features/pageAudio/fields'
+import { availableDomainsField } from '@/features/domains/field'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { noAdsField } from '@/features/ads/fields'
@@ -45,6 +46,7 @@ export const Posts: CollectionConfig = {
   },
   versions: { drafts: true },
   fields: [
+    availableDomainsField,
     { name: 'title', type: 'text', required: true },
     {
       name: 'slug',

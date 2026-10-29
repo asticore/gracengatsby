@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { contentAvailableHere } from '@/features/domains/request'
 import { cookies } from 'next/headers'
 import React from 'react'
 import type { Metadata } from 'next'
@@ -73,6 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return buildMetadata({
     title: product.title,
     seo: product.seo,
+    availableDomains: (product as { availableDomains?: unknown }).availableDomains,
     path: `/shop/${slug}`,
     contentType: 'product',
     tokens: { price: formatPriceInAUD(product.priceInAUD, 'AUD', priceLocale(await publicLocale())), excerpt: product.shortDescription },
@@ -98,6 +100,7 @@ export default async function ProductPage({
   if (!product) {
     notFound()
   }
+  if (!(await contentAvailableHere((product as { availableDomains?: unknown }).availableDomains))) notFound()
 
   const gateState = await getPasswordGateState({ collection: 'products', id: product.id, cookies: await cookies() })
   if (gateState === 'locked') {

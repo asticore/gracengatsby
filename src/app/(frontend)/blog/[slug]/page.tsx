@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { contentAvailableHere } from '@/features/domains/request'
 import { publicLocale } from '@/features/uiStrings/storeTextsServer'
 import { formatDateFor } from '@/features/uiStrings/publicFormat'
 import Link from 'next/link'
@@ -71,6 +72,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return buildMetadata({
     title: post.title,
     seo: post.seo,
+    availableDomains: (post as { availableDomains?: unknown }).availableDomains,
     featuredImage: post.featuredImage,
     path: `/blog/${slug}`,
     kind: 'article',
@@ -103,6 +105,7 @@ export default async function BlogPostPage({
   const locale = await publicLocale()
   const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
   if (!post) notFound()
+  if (!(await contentAvailableHere((post as { availableDomains?: unknown }).availableDomains))) notFound()
 
   // Check password gate
   const cookieStore = await cookies()

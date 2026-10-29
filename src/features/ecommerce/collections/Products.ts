@@ -1,4 +1,5 @@
 import { noAdsField } from '@/features/ads/fields'
+import { availableDomainsField } from '@/features/domains/field'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
@@ -128,6 +129,7 @@ export const Products: CollectionConfig = {
   timestamps: true,
   trash: true,
   fields: [
+    availableDomainsField,
     { name: 'title', type: 'text', required: true, unique: true },
     { name: 'slug', type: 'text', unique: true, index: true },
     productTypeField,

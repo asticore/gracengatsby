@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 
 import { DOMAIN_HEADER, DOMAIN_LOCALE_HEADER, type SiteDomain } from './model'
+import { availableOnHost } from './scope'
 import { readDomainsFromD1 } from './store'
 
 /**
@@ -36,4 +37,13 @@ export async function requestDomainLocale(): Promise<string | null> {
  */
 export function originFor(domain: SiteDomain | null, fallbackBaseUrl: string): string {
   return domain ? `https://${domain.host}` : fallbackBaseUrl
+}
+
+/**
+ * True when a document with this stored `availableDomains` list is shown on the domain this request arrived on.
+ * Used by the public loaders to answer not found on a domain the content is not available on.
+ */
+export async function contentAvailableHere(availableDomains: unknown): Promise<boolean> {
+  const domain = await requestDomain()
+  return availableOnHost(availableDomains, domain?.host ?? null)
 }

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
-import { contentAvailableHere } from '@/features/domains/request'
+import { contentAvailableHere, requestHost } from '@/features/domains/request'
+import { pickForHost } from '@/features/domains/scope'
 import { cookies } from 'next/headers'
 import React from 'react'
 import type { Metadata } from 'next'
@@ -54,10 +55,11 @@ async function getProduct(slug: string) {
   const { docs } = (await engine.find({
     collection: 'products',
     where: { slug: { equals: slug } },
-    limit: 1,
+    limit: 0,
     depth: 1,
   })) as unknown as { docs: Product[] }
-  return docs[0] || null
+  // The same slug can exist on several domains: this domain's own product, else the shared one (features/domains/scope.ts).
+  return pickForHost(docs, await requestHost(), (product) => (product as { availableDomains?: unknown }).availableDomains)
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

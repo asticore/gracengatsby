@@ -14,7 +14,7 @@ import { getAllResolvedPages, getHomepage } from '@/utilities/pagePaths'
 import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
 import { readDomainsFromD1 } from '@/features/domains/store'
 import { requestDomain } from '@/features/domains/request'
-import { availableOnHost } from '@/features/domains/scope'
+import { availableOnHost, parseHostList } from '@/features/domains/scope'
 import { isNoindexPath } from '@/features/security/noindex'
 import { getAdminRoot } from '@/features/security/settings'
 
@@ -91,7 +91,13 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     : publishIndex([])
 
   type DocRef = { collection: string; id: number | string; doc: unknown }
+  // Entries are collected first and emitted together, so a document scoped to this domain is seen before the shared one
+  // that has the same address, and so hreflang knows where another domain serves its own document.
+  const candidates: { path: string; lastModified?: string | null; priority: number; ref?: DocRef }[] = []
   const add = (path: string, lastModified?: string | null, priority = 0.6, ref?: DocRef) => {
+    candidates.push({ path, lastModified, priority, ref })
+  }
+  const emit = (path: string, lastModified?: string | null, priority = 0.6, ref?: DocRef) => {
     const normalised = normalisePath(path)
     if (seen.has(normalised)) return
     // The admin, the API and the preview never belong in a sitemap, whatever the content says.
@@ -104,7 +110,13 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     const available = routable && ref
       ? publishableLocalesForDocument({ ...ref, index: translationIndex, settings: multilingual })
       : null
-    const cross = domainAlternates(normalised, domains.filter((d) => availableOnHost(docAvailable, d.host)), multilingual)
+    // A domain that serves its own document at this address is not an alternate of a shared one: that is a different page.
+    const ownHosts = parseHostList(docAvailable)
+    const cross = domainAlternates(
+      normalised,
+      domains.filter((d) => availableOnHost(docAvailable, d.host) && (ownHosts.includes(d.host) || !scopedAt.get(normalised)?.has(d.host))),
+      multilingual,
+    )
     for (const variant of sitemapVariants(normalised, baseUrl, multilingual, available)) {
       const alternates = mergeAlternates(variant.alternates, cross)
       entries.push({
@@ -190,6 +202,17 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   if (flags?.faq) {
     add('/faq', undefined, 0.5)
   }
+
+  const scopedAt = new Map<string, Set<string>>()
+  for (const candidate of candidates) {
+    const hosts = parseHostList((candidate.ref?.doc as { availableDomains?: unknown } | undefined)?.availableDomains)
+    if (hosts.length === 0) continue
+    const key = normalisePath(candidate.path)
+    scopedAt.set(key, new Set([...(scopedAt.get(key) ?? []), ...hosts]))
+  }
+  const hereFirst = (ref?: DocRef) => (requestHost && parseHostList((ref?.doc as { availableDomains?: unknown } | undefined)?.availableDomains).includes(requestHost) ? 1 : 0)
+  candidates.sort((a, b) => hereFirst(b.ref) - hereFirst(a.ref))
+  for (const candidate of candidates) emit(candidate.path, candidate.lastModified, candidate.priority, candidate.ref)
 
   return entries
 }

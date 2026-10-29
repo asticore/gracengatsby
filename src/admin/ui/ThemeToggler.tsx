@@ -7,6 +7,7 @@
  * top-left placement - the two never overlap.
  */
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useCallback, useRef, useState } from 'react'
 import { type ThemePref, useTheme } from '@/admin/context/ThemeContext'
 
@@ -37,6 +38,7 @@ const AutoIcon: React.FC = () => (
 )
 
 export const ThemeToggler: React.FC = () => {
+  const t = useAdminT()
   const { setTheme, theme } = useTheme()
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -50,7 +52,7 @@ export const ThemeToggler: React.FC = () => {
 
   return (
     <div className="theme-toggler" onBlur={handleBlur} ref={wrapRef}>
-      <button aria-label="Color scheme" className="theme-toggler__trigger" onClick={() => setOpen((prev) => !prev)} title="Color scheme" type="button">
+      <button aria-label={t('al.colorScheme')} className="theme-toggler__trigger" onClick={() => setOpen((prev) => !prev)} title={t('al.colorScheme')} type="button">
         <Icon />
       </button>
       {open && (

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useMemo, useState } from 'react'
 
 import { Icon, ICON_NAMES } from '@/components/blocks/elements/icons'
@@ -321,6 +322,7 @@ const BuiltinIconPicker: React.FC<{
   label: string
   helpText?: string
 }> = ({ value, onChange, label, helpText }) => {
+  const t = useAdminT()
   const raw = typeof value === 'string' ? value : value && typeof value === 'object' ? (value as IconValue).icon : undefined
   const selected = typeof raw === 'string' && ICON_NAMES.includes(raw) ? raw : ''
   const [search, setSearch] = useState('')
@@ -382,7 +384,7 @@ const BuiltinIconPicker: React.FC<{
           <div style={{ marginTop: '0.5rem', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', padding: '0.5rem' }}>
             <input
               type="search"
-              aria-label="Search icons"
+              aria-label={t('al.searchIcons')}
               placeholder="Search icons (e.g., arrow, heart)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}

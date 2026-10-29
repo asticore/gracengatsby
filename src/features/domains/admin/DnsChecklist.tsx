@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { dnsChecklistFor, dnsHintFor, type ChecklistDomain } from '@/features/domains/checklist'
 
 /**
@@ -10,6 +11,7 @@ import { dnsChecklistFor, dnsHintFor, type ChecklistDomain } from '@/features/do
  */
 export function DnsChecklist() {
   const [domains, setDomains] = useState<ChecklistDomain[] | null>(null)
+  const t = useAdminT()
 
   useEffect(() => {
     let alive = true
@@ -27,14 +29,14 @@ export function DnsChecklist() {
   }, [])
 
   const list = domains ?? []
-  const text = dnsChecklistFor(list)
+  const text = dnsChecklistFor(list, t)
 
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       {list.map((domain) => (
         <div key={domain.host} style={{ display: 'grid', gap: 2 }}>
           <strong>{domain.host}</strong>
-          <span style={{ opacity: 0.8 }}>{dnsHintFor(domain)}</span>
+          <span style={{ opacity: 0.8 }}>{dnsHintFor(domain, t)}</span>
         </div>
       ))}
       <textarea readOnly rows={Math.min(16, text.split('\n').length + 1)} value={text} onFocus={(event) => event.target.select()} style={{ width: '100%', fontFamily: 'monospace' }} />

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { createContext, useContext, useState } from 'react'
 import { useField } from '@/engine/ui'
 
@@ -79,6 +80,7 @@ function siblingNames(list: CustomFieldDef[], self: CustomFieldDef): string[] {
 }
 
 function ConditionEditor({ def, list, onChange }: { def: CustomFieldDef; list: CustomFieldDef[]; onChange: (groups: ConditionRule[][] | null) => void }) {
+  const t = useAdminT()
   const groups = def.conditions ?? []
   const names = siblingNames(list, def)
   const update = (next: ConditionRule[][]) => onChange(next.length ? next : null)
@@ -95,7 +97,7 @@ function ConditionEditor({ def, list, onChange }: { def: CustomFieldDef; list: C
               {ri > 0 && <span className="text-[11px] uppercase opacity-60">and</span>}
               <select
                 className={inputClass}
-                aria-label="Condition field"
+                aria-label={t('al.conditionField')}
                 value={rule.field}
                 onChange={(e) => update(groups.map((g, i) => (i === gi ? g.map((r, j) => (j === ri ? { ...r, field: e.target.value } : r)) : g)))}
               >
@@ -108,7 +110,7 @@ function ConditionEditor({ def, list, onChange }: { def: CustomFieldDef; list: C
               </select>
               <select
                 className={inputClass}
-                aria-label="Condition operator"
+                aria-label={t('al.conditionOperator')}
                 value={rule.operator}
                 onChange={(e) =>
                   update(groups.map((g, i) => (i === gi ? g.map((r, j) => (j === ri ? { ...r, operator: e.target.value as ConditionRule['operator'] } : r)) : g)))
@@ -123,7 +125,7 @@ function ConditionEditor({ def, list, onChange }: { def: CustomFieldDef; list: C
               {rule.operator !== 'isEmpty' && rule.operator !== 'notEmpty' && (
                 <input
                   className={inputClass}
-                  aria-label="Condition value"
+                  aria-label={t('al.conditionValue')}
                   placeholder="value"
                   value={rule.value ?? ''}
                   onChange={(e) => update(groups.map((g, i) => (i === gi ? g.map((r, j) => (j === ri ? { ...r, value: e.target.value } : r)) : g)))}
@@ -183,6 +185,7 @@ function FieldEditor({
   canUp: boolean
   canDown: boolean
 }) {
+  const t = useAdminT()
   const [open, setOpen] = useState(false)
   const tagMode = useContext(TagModeContext)
   const set = (patch: Partial<CustomFieldDef>) => onChange({ ...def, ...patch })
@@ -202,10 +205,10 @@ function FieldEditor({
           {def.required ? ' · required' : ''}
         </span>
         <span className="ml-auto flex gap-[4px]">
-          <button type="button" className={buttonClass} disabled={!canUp} onClick={() => onMove(-1)} aria-label="Move up">
+          <button type="button" className={buttonClass} disabled={!canUp} onClick={() => onMove(-1)} aria-label={t('list.moveUp')}>
             ↑
           </button>
-          <button type="button" className={buttonClass} disabled={!canDown} onClick={() => onMove(1)} aria-label="Move down">
+          <button type="button" className={buttonClass} disabled={!canDown} onClick={() => onMove(1)} aria-label={t('list.moveDown')}>
             ↓
           </button>
           <button type="button" className={buttonClass} onClick={onRemove}>
@@ -397,6 +400,7 @@ function NumberInput({ label, value, onChange }: { label: string; value: number 
 }
 
 function OptionsEditor({ def, onChange }: { def: CustomFieldDef; onChange: (patch: Partial<CustomFieldDef>) => void }) {
+  const t = useAdminT()
   const options = def.options ?? []
   const setOptions = (next: { label: string; value: string }[]) => onChange({ options: next })
   return (
@@ -406,13 +410,13 @@ function OptionsEditor({ def, onChange }: { def: CustomFieldDef; onChange: (patc
         <div key={index} className="flex gap-[4px]">
           <input
             className={inputClass}
-            aria-label="Choice label"
+            aria-label={t('al.choiceLabel')}
             value={option.label}
             onChange={(e) => setOptions(options.map((o, i) => (i === index ? { ...o, label: e.target.value } : o)))}
           />
           <input
             className={inputClass}
-            aria-label="Choice value"
+            aria-label={t('al.choiceValue')}
             value={option.value}
             onChange={(e) => setOptions(options.map((o, i) => (i === index ? { ...o, value: toFieldName(e.target.value) } : o)))}
           />
@@ -482,6 +486,7 @@ function LayoutsEditor({
   parents: MergeTagParent[]
   onChange: (next: FlexibleLayout[]) => void
 }) {
+  const t = useAdminT()
   return (
     <div className="flex flex-col gap-[8px] rounded-[6px] bg-[rgba(0,0,0,0.02)] p-[8px]">
       <span className="text-[12px] font-semibold">Layouts</span>
@@ -490,13 +495,13 @@ function LayoutsEditor({
           <div className="flex gap-[6px]">
             <input
               className={inputClass}
-              aria-label="Layout label"
+              aria-label={t('al.layoutLabel')}
               value={layout.label}
               onChange={(e) => onChange(layouts.map((l, i) => (i === index ? { ...l, label: e.target.value } : l)))}
             />
             <input
               className={inputClass}
-              aria-label="Layout name"
+              aria-label={t('al.layoutName')}
               value={layout.name}
               onChange={(e) => onChange(layouts.map((l, i) => (i === index ? { ...l, name: toFieldName(e.target.value) } : l)))}
             />

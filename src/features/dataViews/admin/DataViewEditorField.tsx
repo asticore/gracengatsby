@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useMemo, useState } from 'react'
 
 import { FieldLabel, useDocumentInfo, useField, useFormFields } from '@/engine/ui'
@@ -41,6 +42,7 @@ const CHART_KINDS: ViewKind[] = ['bar', 'line', 'area', 'pie', 'doughnut', 'scat
 
 /** The editor for one table or chart: where the data comes from, which columns, how it looks, with a live preview and the embed links. */
 export function DataViewEditorField({ path = 'config', readOnly }: { path?: string; readOnly?: boolean }) {
+  const t = useAdminT()
   const { value, setValue } = useField<unknown>({ path })
   const { id } = useDocumentInfo()
   const { kindValue, sourceValue, titleValue, slugValue, publicValue } = useFormFields(([fields]) => ({
@@ -115,7 +117,7 @@ export function DataViewEditorField({ path = 'config', readOnly }: { path?: stri
     <div className="dve">
       <FieldLabel label="Data and display" />
 
-      <div className="dve-tabs" role="tablist" aria-label="Table or chart settings">
+      <div className="dve-tabs" role="tablist" aria-label={t('al.dataViewSettings')}>
         {(['data', 'columns', 'display'] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? 'dve-tab dve-tab--on' : 'dve-tab'} onClick={() => setTab(t)}>
             {t === 'data' ? 'Data' : t === 'columns' ? 'Columns' : isChart ? 'Chart' : 'Table'}
@@ -159,6 +161,7 @@ type PanelProps = { cfg: StoredConfig; update: (patch: Partial<StoredConfig>) =>
 /* ----------------------------------------------------------------------------------------------- */
 
 function DataTab({ source, cfg, update, readOnly, collections, fields }: PanelProps & { source: ViewSource; collections: CollectionInfo[]; fields: FieldInfo[] }) {
+  const t = useAdminT()
   if (source === 'manual') return <GridEditor grid={cfg.grid} readOnly={readOnly} onChange={(grid) => update({ grid })} />
   if (source === 'csv') return <CsvImport cfg={cfg} update={update} readOnly={readOnly} />
 
@@ -193,7 +196,7 @@ function DataTab({ source, cfg, update, readOnly, collections, fields }: PanelPr
         {data.filters.length === 0 ? <span className="dve-help">No filters: every item is used.</span> : null}
         {data.filters.map((rule, i) => (
           <div key={i} className="dve-row">
-            <select aria-label="Field" value={rule.field} disabled={readOnly} onChange={(e) => patchFilter(i, { field: e.target.value })}>
+            <select aria-label={t('al.field')} value={rule.field} disabled={readOnly} onChange={(e) => patchFilter(i, { field: e.target.value })}>
               {!fields.some((f) => f.key === rule.field) ? <option value={rule.field}>{rule.field} (not available)</option> : null}
               {fields.map((f) => (
                 <option key={f.key} value={f.key}>
@@ -201,14 +204,14 @@ function DataTab({ source, cfg, update, readOnly, collections, fields }: PanelPr
                 </option>
               ))}
             </select>
-            <select aria-label="Condition" value={rule.operator} disabled={readOnly} onChange={(e) => patchFilter(i, { operator: e.target.value as FilterRule['operator'] })}>
+            <select aria-label={t('al.condition')} value={rule.operator} disabled={readOnly} onChange={(e) => patchFilter(i, { operator: e.target.value as FilterRule['operator'] })}>
               {FILTER_OPERATORS.map((op) => (
                 <option key={op} value={op}>
                   {OPERATOR_LABELS[op]}
                 </option>
               ))}
             </select>
-            {rule.operator === 'isEmpty' || rule.operator === 'notEmpty' ? null : <input type="text" aria-label="Value" value={rule.value} disabled={readOnly} onChange={(e) => patchFilter(i, { value: e.target.value })} />}
+            {rule.operator === 'isEmpty' || rule.operator === 'notEmpty' ? null : <input type="text" aria-label={t('al.value')} value={rule.value} disabled={readOnly} onChange={(e) => patchFilter(i, { value: e.target.value })} />}
             <button type="button" className="dve-btn" disabled={readOnly} onClick={() => patchData({ filters: data.filters.filter((_, j) => j !== i) })}>
               Remove
             </button>
@@ -298,6 +301,7 @@ function CsvImport({ cfg, update, readOnly }: PanelProps) {
 /* ----------------------------------------------------------------------------------------------- */
 
 function ColumnsTab({ cfg, update, readOnly, available, source }: PanelProps & { available: { key: string; label: string; hint?: string; format: ColumnSpec['format'] }[]; source: ViewSource }) {
+  const t = useAdminT()
   const columns = cfg.columns
   const setColumns = (next: ColumnSpec[]): void => update({ columns: next.slice(0, LIMITS.maxColumns) })
   const patch = (index: number, change: Partial<ColumnSpec>): void => setColumns(columns.map((c, i) => (i === index ? { ...c, ...change } : c)))
@@ -359,10 +363,10 @@ function ColumnsTab({ cfg, update, readOnly, available, source }: PanelProps & {
                 </label>
               ) : null}
               <div className="dve-row">
-                <button type="button" className="dve-btn" disabled={readOnly || i === 0} onClick={() => move(i, -1)} aria-label="Move up">
+                <button type="button" className="dve-btn" disabled={readOnly || i === 0} onClick={() => move(i, -1)} aria-label={t('list.moveUp')}>
                   Up
                 </button>
-                <button type="button" className="dve-btn" disabled={readOnly || i === columns.length - 1} onClick={() => move(i, 1)} aria-label="Move down">
+                <button type="button" className="dve-btn" disabled={readOnly || i === columns.length - 1} onClick={() => move(i, 1)} aria-label={t('list.moveDown')}>
                   Down
                 </button>
                 <button type="button" className="dve-btn" disabled={readOnly} onClick={() => setColumns(columns.filter((_, j) => j !== i))}>

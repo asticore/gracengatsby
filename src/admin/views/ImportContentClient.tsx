@@ -107,15 +107,14 @@ export function ImportContentClient() {
       <header className="ic-header">
         <h1 className="ic-title">{t('importContent.title')}</h1>
         <p className="ic-muted">
-          Bring content in from a WordPress export (.xml) or from a spreadsheet saved as CSV. Everything is saved as a draft unless you tick
-          the option to keep published status. Nothing goes live by accident.
+          {t('importContent.csvIntro')}
         </p>
       </header>
 
       <CollapsibleCard id="import-content-source" title="1. Choose your file">
         <div className="ic-field">
           <label className="ic-label" htmlFor="ic-file">
-            File to import (.xml from WordPress, or .csv)
+            {t('importContent.fileLabel')}
           </label>
           <input
             id="ic-file"
@@ -127,7 +126,7 @@ export function ImportContentClient() {
         </div>
         <div className="ic-field">
           <label className="ic-label" htmlFor="ic-paste">
-            Or paste CSV text here (used only when no file is chosen)
+            {t('importContent.pasteLabel')}
           </label>
           <textarea
             id="ic-paste"
@@ -192,7 +191,7 @@ export function ImportContentClient() {
       {preview ? (
         <CollapsibleCard id="import-content-preview" title={`3. Preview: ${preview.counts.create} to create, ${preview.counts.update} to replace, ${preview.counts.skip} to skip`}>
           <p>
-            {preview.counts.pages} page(s) and {preview.counts.posts} post(s) found in this {preview.format === 'wxr' ? 'WordPress export' : 'CSV file'}.
+            {t('importContent.foundIn', { pages: preview.counts.pages, posts: preview.counts.posts, source: t(preview.format === 'wxr' ? 'importContent.sourceWxr' : 'importContent.sourceCsv') })}
             {preview.skippedEntries ? ` ${preview.skippedEntries} entr${preview.skippedEntries === 1 ? 'y was' : 'ies were'} left out (attachments, menus, revisions or trashed items).` : ''}
           </p>
           {preview.totals.imagesNotCopied ? (

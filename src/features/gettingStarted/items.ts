@@ -19,28 +19,28 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Site basics',
     title: 'Site name and logo',
     help: 'Add your site name and logo in General settings.',
-    href: '/admin/settings/site',
+    href: '/settings/site',
   },
   {
     id: 'header',
     category: 'Site basics',
     title: 'Header',
     help: 'Customize the navigation header in Header/Footer settings.',
-    href: '/admin/header-footer',
+    href: '/header-footer',
   },
   {
     id: 'footer',
     category: 'Site basics',
     title: 'Footer',
     help: 'Set up links and content in the footer in Header/Footer settings.',
-    href: '/admin/header-footer',
+    href: '/header-footer',
   },
   {
     id: 'social-links',
     category: 'Site basics',
     title: 'Social links',
     help: 'Add your social media profiles in General settings.',
-    href: '/admin/settings/site',
+    href: '/settings/site',
   },
 
   // Content
@@ -49,14 +49,14 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Content',
     title: 'First page published',
     help: 'Create and publish at least one page to get started.',
-    href: adminCollectionPath('pages'),
+    href: adminCollectionPath('pages', ''),
   },
   {
     id: 'seo-basics',
     category: 'Content',
     title: 'SEO basics',
     help: 'Add page titles and descriptions in the SEO tab when editing pages.',
-    href: '/admin/settings/marketing-seo',
+    href: '/settings/marketing-seo',
   },
 
   // Connect services
@@ -65,7 +65,7 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Connect services',
     title: 'Connect Google',
     help: 'Add GA4, GTM, or Search Console codes in Marketing & SEO settings.',
-    href: '/admin/settings/marketing-seo',
+    href: '/settings/marketing-seo',
   },
 
   {
@@ -73,7 +73,7 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Connect services',
     title: 'Set up social login (optional)',
     help: 'Let customers sign in with Google, GitHub, Apple, Facebook, Microsoft or Discord. Each one has a step-by-step guide under Security > Social login. Skip it if you do not need it.',
-    href: '/admin/settings/security',
+    href: '/settings/security',
   },
 
   // Communication
@@ -82,7 +82,7 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Communication',
     title: 'Email provider',
     help: 'Configure your email service for forms and notifications.',
-    href: '/admin/settings/communication',
+    href: '/settings/communication',
   },
 
   // Shop
@@ -91,7 +91,7 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Shop',
     title: 'Payments',
     help: 'Set up Stripe or PayPal in Commerce settings.',
-    href: '/admin/settings/commerce',
+    href: '/settings/commerce',
   },
 
   // Security
@@ -100,14 +100,14 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Security',
     title: 'Security hardening',
     help: 'Enable 2FA and review access controls in Security settings.',
-    href: '/admin/settings/security',
+    href: '/settings/security',
   },
   {
     id: 'backups-enabled',
     category: 'Security',
     title: 'Backups enabled',
     help: 'Enable automatic backups in Data & System settings.',
-    href: '/admin/settings/data-system',
+    href: '/settings/data-system',
   },
 
   // Go live
@@ -116,13 +116,13 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Go live',
     title: 'Custom domain on HTTPS',
     help: 'Configure your custom domain and enable HTTPS.',
-    href: '/admin/settings/site',
+    href: '/settings/site',
   },
   {
     id: 'redirects',
     category: 'Go live',
     title: 'Redirects set up',
     help: 'Create redirects for old URLs in Content settings.',
-    href: '/admin/settings/content',
+    href: '/settings/content',
   },
 ]

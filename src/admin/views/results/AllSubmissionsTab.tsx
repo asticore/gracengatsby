@@ -1,7 +1,7 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
-import Link from 'next/link'
 import React, { useState } from 'react'
 import { AllResultsFilters, EMPTY_FILTERS, filtersToQuery, type OwnerOption, type ResultsFilterValues } from './AllResultsFilters'
 import { ResultsMessage, ResultsPager, ResultsStat } from './ResultsChrome'
@@ -74,12 +74,12 @@ export function AllSubmissionsTab({ forms }: { forms: OwnerOption[] }) {
                   <tr key={row.id}>
                     <td className="et-nowrap">{formatWhen(row.submittedAt)}</td>
                     <td className="et-clip">
-                      <Link href={`/admin/content/forms/${row.formId}`}>{row.formTitle}</Link>
+                      <AdminLink path={`/content/forms/${row.formId}`}>{row.formTitle}</AdminLink>
                     </td>
                     <td className="et-clip" title={row.summary}>{row.summary}</td>
                     <td className="et-nowrap">{paymentLabel(t, row.paymentStatus)}</td>
                     <td className="et-nowrap">
-                      <Link href={`/admin/other/form-submissions/${row.id}`}>{t('frm.lit.open_entry')}</Link>
+                      <AdminLink path={`/other/form-submissions/${row.id}`}>{t('frm.lit.open_entry')}</AdminLink>
                     </td>
                   </tr>
                 ))}

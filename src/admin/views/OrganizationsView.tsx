@@ -1,7 +1,7 @@
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import { adminHref } from '@/features/security/adminPath'
 import { getAdminRoot } from '@/features/security/settings'
 import { getAdminUi } from '@/admin/i18n/serverUi'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess, isAdminUser } from '@/admin/auth'
@@ -35,7 +35,7 @@ export async function OrganizationsView() {
       <h1>{ui.t('cu.lit.organizations')}</h1>
       <p>
         {ui.t('cu.lit.orgs_intro', { state: deps.settings.enabled ? ui.t('cu.lit.switched_on') : ui.t('cu.lit.switched_off') })}{' '}
-        <Link href="/admin/security/audit">{ui.t('cu.lit.see_audit_log')}</Link>.
+        <AdminLink path="/security/audit">{ui.t('cu.lit.see_audit_log')}</AdminLink>.
       </p>
       {result.ok ? null : <p role="alert">{result.message}</p>}
       {orgs.length === 0 ? (

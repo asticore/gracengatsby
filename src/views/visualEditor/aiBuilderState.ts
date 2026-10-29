@@ -9,7 +9,8 @@ import { createSseParser, parseBuilderEvent, type SseMessage } from '@/features/
  */
 
 export const AI_BUILDER_ENDPOINT = '/api/admin-ai-builder'
-export const INTEGRATIONS_HREF = '/admin/globals/integrations'
+/** Admin path (relative to the admin root) of the Integrations global. */
+export const INTEGRATIONS_PATH = '/globals/integrations'
 
 export const AI_LIMITS = {
   brief: 4000,

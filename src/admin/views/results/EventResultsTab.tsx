@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useState } from 'react'
 import { EventCheckInButton } from './EventCheckIn'
 import { ResultsMessage, ResultsPager, ResultsStat } from './ResultsChrome'
@@ -65,7 +65,7 @@ export function EventResultsTab({ eventId, capacity }: { eventId: number; capaci
                     <td className="et-clip">{row.ticketTier || '-'}</td>
                     <td className="et-nowrap">{formatWhen(row.createdAt)}</td>
                     <td className="et-nowrap">
-                      <Link href={`/admin/other/event-rsvps/${row.id}`}>Open</Link>
+                      <AdminLink path={`/other/event-rsvps/${row.id}`}>Open</AdminLink>
                     </td>
                   </tr>
                 ))}

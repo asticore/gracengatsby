@@ -1,7 +1,7 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React from 'react'
-import Link from 'next/link'
 import type { ProviderStateSummary } from '@/features/email/providerState'
 import { EmailConnectionCard } from './EmailConnectionCard'
 import { EmailDomainCard } from './EmailDomainCard'
@@ -28,7 +28,7 @@ export function EmailTestingClient({ summary, smsConnected, smsLabel, fromEmail,
           set up. Tests only go to your own address or the test recipient.
         </p>
         <p className="et-muted">
-          <Link href="/admin/settings/communication">Back to Communication</Link>
+          <AdminLink path="/settings/communication">Back to Communication</AdminLink>
         </p>
       </header>
       <EmailConnectionCard summary={summary} />

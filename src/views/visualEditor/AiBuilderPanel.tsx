@@ -1,5 +1,6 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import type { UiStringKey } from '@/features/uiStrings'
 import React, { useEffect, useId, useRef, useState } from 'react'
@@ -30,7 +31,7 @@ import {
   buildAiRequest,
   connectedProviders,
   effectiveMode,
-  INTEGRATIONS_HREF,
+  INTEGRATIONS_PATH,
   moveOutlineItem,
   normaliseBuild,
   normalisePlan,
@@ -751,9 +752,9 @@ export const AiBuilderPanel: React.FC<AiBuilderPanelProps> = ({ pageTitle, selec
         <div className="ve-ai__empty" role="status">
           <p>{t('ai.lit.no_ai_model_is_connected_yet')}</p>
           <p>
-            <a href={INTEGRATIONS_HREF} target="_blank" rel="noopener noreferrer">
+            <AdminLink path={INTEGRATIONS_PATH} target="_blank" rel="noopener noreferrer">
               {t('ai.lit.connect_claude_or_openai_in_integrations')}
-            </a>
+            </AdminLink>
           </p>
           <p className="ve-ai__note">{t('ai.lit.opens_in_a_new_tab_so_your_unsaved_edits')}</p>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useState } from 'react'
 import { AllResultsFilters, EMPTY_FILTERS, filtersToQuery, type OwnerOption, type ResultsFilterValues } from './AllResultsFilters'
 import { ResultsMessage, ResultsPager, ResultsStat } from './ResultsChrome'
@@ -63,7 +63,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                 {data.docs.map((row) => (
                   <tr key={row.id}>
                     <td className="et-clip">
-                      <Link href={`/admin/content/events/${row.eventId}`}>{row.eventTitle}</Link>
+                      <AdminLink path={`/content/events/${row.eventId}`}>{row.eventTitle}</AdminLink>
                     </td>
                     <td className="et-clip">{row.name}</td>
                     <td className="et-clip">{row.email}</td>
@@ -71,7 +71,7 @@ export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
                     <td className="et-clip">{row.ticketTier || '-'}</td>
                     <td className="et-nowrap">{formatWhen(row.createdAt)}</td>
                     <td className="et-nowrap">
-                      <Link href={`/admin/other/event-rsvps/${row.id}`}>Open</Link>
+                      <AdminLink path={`/other/event-rsvps/${row.id}`}>Open</AdminLink>
                     </td>
                   </tr>
                 ))}

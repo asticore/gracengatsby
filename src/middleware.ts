@@ -24,10 +24,12 @@ import {
  * it is the worst place for logic to accumulate quietly.
  */
 export async function middleware(request: NextRequest) {
-  const response = await domainMiddleware(request, (routed) => serveAdminAware(routed))
+  const served = await domainMiddleware(request, (routed) => serveAdminAware(routed))
   // The locale strip rewrites the path, so the stripped path (x-pathname) is checked as well as the request path.
   const { pathname } = request.nextUrl
   const root = await adminRootFor()
+  // Any redirect a route handler sends into /admin (social sign-in, passkeys, Google) lands on the configured path.
+  const response = root === DEFAULT_ADMIN_PATH ? served : relocate(served, request, root)
   const stripped = response.headers.get('x-pathname') ?? pathname
   if (isNoindexPath(pathname, root) || isNoindexPath(stripped, root)) {
     response.headers.set('X-Robots-Tag', NOINDEX_HEADER_VALUE)

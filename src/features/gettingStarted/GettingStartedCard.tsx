@@ -5,8 +5,8 @@
 
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useState } from 'react'
-import Link from 'next/link'
 import type { ComputedProgress } from './compute'
 import { GETTING_STARTED_ITEMS } from './items'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
@@ -77,9 +77,9 @@ function ChecklistItem({
         <p className={styles.itemHelp}>{help}</p>
       </div>
       {!isDone && (
-        <Link href={href} className={styles.itemLink}>
+        <AdminLink path={href} className={styles.itemLink}>
           Set up
-        </Link>
+        </AdminLink>
       )}
     </div>
   )

@@ -22,6 +22,18 @@ export async function requestDomain(): Promise<SiteDomain | null> {
   }
 }
 
+/**
+ * The registered host this request arrived on, or null. Reads only the header the middleware set (no registry query), for
+ * the loaders that choose between a domain's own content and the shared content (scope.ts pickForHost).
+ */
+export async function requestHost(): Promise<string | null> {
+  try {
+    return (await headers()).get(DOMAIN_HEADER) || null
+  } catch {
+    return null
+  }
+}
+
 /** The language the domain serves unprefixed for this request, when it differs from the site default. */
 export async function requestDomainLocale(): Promise<string | null> {
   try {

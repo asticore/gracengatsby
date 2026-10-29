@@ -1,5 +1,6 @@
 import Image from 'next/image'
-import { contentAvailableHere } from '@/features/domains/request'
+import { contentAvailableHere, requestHost } from '@/features/domains/request'
+import { pickForHost } from '@/features/domains/scope'
 import { publicLocale } from '@/features/uiStrings/storeTextsServer'
 import { formatDateFor } from '@/features/uiStrings/publicFormat'
 import Link from 'next/link'
@@ -42,10 +43,11 @@ async function getPost(slug: string) {
   const { docs } = (await engine.find({
     collection: 'posts',
     where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
-    limit: 1,
+    limit: 0,
     depth: 1,
   })) as unknown as { docs: Post[] }
-  return docs[0] || null
+  // The same slug can exist on several domains: this domain's own post, else the shared one (features/domains/scope.ts).
+  return pickForHost(docs, await requestHost(), (post) => (post as { availableDomains?: unknown }).availableDomains)
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

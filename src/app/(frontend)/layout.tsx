@@ -41,7 +41,9 @@ import { DISPLAY_CURRENCY_COOKIE } from '@/features/ecommerce/lib/displayCurrenc
 import { loadDisplayState } from '@/features/ecommerce/server/displayState'
 import { shopCurrency } from '@/features/ecommerce/server/pricing'
 import { getEngine } from '@/lib/engine'
-import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
+import { getAllResolvedPages, getAllResolvedPagesAnyDomain, type ResolvedPage } from '@/utilities/pagePaths'
+import { requestHost } from '@/features/domains/request'
+import { menuPageEntry } from '@/features/domains/menu'
 import type { Footer as FooterGlobal, Header as HeaderGlobal, Media, SiteSetting } from '@/engage-types'
 
 import { SeoBodyScripts, SeoJsonLd, SeoScripts } from '@/features/seo'
@@ -127,13 +129,15 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     getAllResolvedPages().catch((): ResolvedPage[] => []),
   ])) as [SiteSetting | null, HeaderGlobal | null, FooterGlobal | null, ResolvedPage[]]
 
-  const pathById = new Map(resolvedPages.map((entry) => [String(entry.page.id), entry]))
+  // Menu links store a page id; see features/domains/menu.ts for a page scoped to another domain.
+  const host = await requestHost()
+  const anyDomainPages = await getAllResolvedPagesAnyDomain().catch((): ResolvedPage[] => [])
 
   const resolveHref = (item: LinkSource): string | null => {
     if (item.linkType === 'page') {
       const pageId = item.page && typeof item.page === 'object' ? (item.page as { id?: unknown }).id : item.page
       if (!pageId) return null
-      const entry = pathById.get(String(pageId))
+      const entry = menuPageEntry(pageId as number | string, host, resolvedPages, anyDomainPages)
       if (!entry) return null
       return entry.page.isHomepage ? '/' : `/${entry.path.join('/')}`
     }

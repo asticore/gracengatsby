@@ -26,8 +26,16 @@ export type ResolvedPage = { page: Page; path: string[]; ancestors: Page[] }
  * three full scans of the pages table, and on Workers each one is its own D1
  * round trip.
  */
-export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
-  const host = await requestHost()
+export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => loadResolvedPages(await requestHost(), true))
+
+/**
+ * Every published page with its path, whatever domain it is scoped to, one entry per document. Menus use it to find the
+ * page a link points at when that page is not on this domain (layout.tsx), and the metadata builder uses it to see which
+ * domains serve their own version of an address.
+ */
+export const getAllResolvedPagesAnyDomain = cache(async (): Promise<ResolvedPage[]> => loadResolvedPages(null, false))
+
+async function loadResolvedPages(host: string | null, narrow: boolean): Promise<ResolvedPage[]> {
   const engine = await getEngine()
   const { docs } = await engine.find({
     collection: 'pages',
@@ -38,7 +46,7 @@ export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
 
   const byId = new Map<string, Page>()
   docs.forEach((doc) => byId.set(String(doc.id), doc as unknown as Page))
-  const onThisDomain = (page: Page) => availableOnHost((page as { availableDomains?: unknown }).availableDomains, host)
+  const onThisDomain = (page: Page) => !narrow || availableOnHost((page as { availableDomains?: unknown }).availableDomains, host)
 
   const resolve = (page: Page): ResolvedPage | null => {
     const path: string[] = []
@@ -69,13 +77,14 @@ export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
     byAddress.set(key, [...(byAddress.get(key) ?? []), entry])
   }
 
+  if (!narrow) return [...byAddress.values()].flat()
   const out: ResolvedPage[] = []
   for (const group of byAddress.values()) {
     const picked = pickForHost(group, host, (entry) => (entry.page as { availableDomains?: unknown }).availableDomains)
     if (picked) out.push(picked)
   }
   return out
-})
+}
 
 export const findPageByPath = async (segments: string[]): Promise<ResolvedPage | null> => {
   const all = await getAllResolvedPages()

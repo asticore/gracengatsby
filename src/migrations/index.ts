@@ -109,6 +109,7 @@ import * as migration_20261129_100000_interface_overrides from './20261129_10000
 import * as migration_20261130_100000_domain_settings from './20261130_100000_domain_settings';
 import * as migration_20261130_110000_admin_path from './20261130_110000_admin_path';
 import * as migration_20261201_100000_content_domains from './20261201_100000_content_domains';
+import * as migration_20261208_100000_user_domains from './20261208_100000_user_domains';
 
 export const migrations = [
   {
@@ -665,5 +666,10 @@ export const migrations = [
     up: migration_20261201_100000_content_domains.up,
     down: migration_20261201_100000_content_domains.down,
     name: '20261201_100000_content_domains',
+  },
+  {
+    up: migration_20261208_100000_user_domains.up,
+    down: migration_20261208_100000_user_domains.down,
+    name: '20261208_100000_user_domains',
   },
 ];

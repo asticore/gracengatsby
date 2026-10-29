@@ -78,6 +78,7 @@ export const RESOURCES = [
   'settings:seo-settings',
   'settings:language-settings',
   'settings:domain-settings',
+  'domains',
   'settings:backup-settings',
   'settings:speed-settings',
   'settings:security-settings',
@@ -669,6 +670,7 @@ export const PERMISSION_CATEGORIES: Array<{
     label: 'Users and access',
     rows: [
       { resource: 'users', label: 'Users', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'domains', label: 'Domain access (Allowed domains on users)', description: 'Change which domains an account may work on.', actions: ['read', 'update'] },
       { resource: 'roles', label: 'Roles', actions: ['read', 'create', 'update', 'delete'] },
     ],
   },

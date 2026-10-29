@@ -2187,6 +2187,13 @@ const pt: UiDictionary = {
   'frm.lit.pages': 'Páginas',
   'frm.lit.page_of': 'Página {page} de {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'Cabeçalho e rodapé',
+  'mn.lit.header': 'Cabeçalho',
+  'mn.lit.footer': 'Rodapé',
+  'mn.lit.no_access_header_footer': 'Você não tem acesso às configurações de cabeçalho e rodapé.',
+  'mn.lit.no_access_header': 'Você não tem acesso ao cabeçalho.',
+  'mn.lit.no_access_footer': 'Você não tem acesso ao rodapé.',
 }
 
 export default pt

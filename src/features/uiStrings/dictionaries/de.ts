@@ -2188,6 +2188,13 @@ const de: UiDictionary = {
   'frm.lit.pages': 'Seiten',
   'frm.lit.page_of': 'Seite {page} von {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'Kopf- und Fußzeile',
+  'mn.lit.header': 'Kopfzeile',
+  'mn.lit.footer': 'Fußzeile',
+  'mn.lit.no_access_header_footer': 'Du hast keinen Zugriff auf die Einstellungen für Kopf- und Fußzeile.',
+  'mn.lit.no_access_header': 'Du hast keinen Zugriff auf die Kopfzeile.',
+  'mn.lit.no_access_footer': 'Du hast keinen Zugriff auf die Fußzeile.',
 }
 
 export default de

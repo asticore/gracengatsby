@@ -2187,6 +2187,13 @@ const fr: UiDictionary = {
   'frm.lit.pages': 'Pages',
   'frm.lit.page_of': 'Page {page} sur {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'En-tête et pied de page',
+  'mn.lit.header': 'En-tête',
+  'mn.lit.footer': 'Pied de page',
+  'mn.lit.no_access_header_footer': 'Vous n’avez pas accès aux réglages de l’en-tête et du pied de page.',
+  'mn.lit.no_access_header': 'Vous n’avez pas accès à l’en-tête.',
+  'mn.lit.no_access_footer': 'Vous n’avez pas accès au pied de page.',
 }
 
 export default fr

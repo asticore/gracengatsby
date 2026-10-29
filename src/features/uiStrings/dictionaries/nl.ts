@@ -2187,6 +2187,13 @@ const nl: UiDictionary = {
   'frm.lit.pages': "Pagina's",
   'frm.lit.page_of': 'Pagina {page} van {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'Koptekst en voettekst',
+  'mn.lit.header': 'Koptekst',
+  'mn.lit.footer': 'Voettekst',
+  'mn.lit.no_access_header_footer': 'Je hebt geen toegang tot de instellingen voor koptekst en voettekst.',
+  'mn.lit.no_access_header': 'Je hebt geen toegang tot de koptekst.',
+  'mn.lit.no_access_footer': 'Je hebt geen toegang tot de voettekst.',
 }
 
 export default nl

@@ -2187,6 +2187,13 @@ const ru: UiDictionary = {
   'frm.lit.pages': 'Страницы',
   'frm.lit.page_of': 'Страница {page} из {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'Шапка и подвал',
+  'mn.lit.header': 'Шапка',
+  'mn.lit.footer': 'Подвал',
+  'mn.lit.no_access_header_footer': 'У вас нет доступа к настройкам шапки и подвала.',
+  'mn.lit.no_access_header': 'У вас нет доступа к шапке.',
+  'mn.lit.no_access_footer': 'У вас нет доступа к подвалу.',
 }
 
 export default ru

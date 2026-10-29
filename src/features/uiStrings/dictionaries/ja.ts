@@ -2187,6 +2187,13 @@ const ja: UiDictionary = {
   'frm.lit.pages': 'ページ',
   'frm.lit.page_of': '{page} / {total} ページ',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'ヘッダーとフッター',
+  'mn.lit.header': 'ヘッダー',
+  'mn.lit.footer': 'フッター',
+  'mn.lit.no_access_header_footer': 'ヘッダーとフッターの設定へのアクセス権がありません。',
+  'mn.lit.no_access_header': 'ヘッダーへのアクセス権がありません。',
+  'mn.lit.no_access_footer': 'フッターへのアクセス権がありません。',
 }
 
 export default ja

@@ -2187,6 +2187,13 @@ const it: UiDictionary = {
   'frm.lit.pages': 'Pagine',
   'frm.lit.page_of': 'Pagina {page} di {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'Intestazione e piè di pagina',
+  'mn.lit.header': 'Intestazione',
+  'mn.lit.footer': 'Piè di pagina',
+  'mn.lit.no_access_header_footer': 'Non hai accesso alle impostazioni di intestazione e piè di pagina.',
+  'mn.lit.no_access_header': 'Non hai accesso all’intestazione.',
+  'mn.lit.no_access_footer': 'Non hai accesso al piè di pagina.',
 }
 
 export default it

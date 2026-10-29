@@ -2187,6 +2187,13 @@ const ko: UiDictionary = {
   'frm.lit.pages': '페이지',
   'frm.lit.page_of': '{page} / {total} 페이지',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': '머리글 및 바닥글',
+  'mn.lit.header': '머리글',
+  'mn.lit.footer': '바닥글',
+  'mn.lit.no_access_header_footer': '머리글 및 바닥글 설정에 접근할 권한이 없습니다.',
+  'mn.lit.no_access_header': '머리글에 접근할 권한이 없습니다.',
+  'mn.lit.no_access_footer': '바닥글에 접근할 권한이 없습니다.',
 }
 
 export default ko

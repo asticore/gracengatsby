@@ -2220,6 +2220,23 @@ const zhHans: UiDictionary = {
   'us.lit.sign_in_as_email_q': '以 {email} 身份登录？',
   'us.lit.button_intro': '您将以该客户的身份查看网站，最长 {minutes} 分钟。您所做的更改会作用于其账户。每次开始和结束都会被记录。',
   'us.lit.cancel': '取消',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': '您无权访问商店积分。',
+  'cu.lit.add_or_deduct_store_credit': '增加或扣减商店积分',
+  'cu.lit.store_credit_description': '通过邮箱查找客户，然后更改其余额。每次更改都需要填写原因，并记录在积分账本中。',
+  'cu.lit.only_admin_orgs': '只有管理员可以查看组织。',
+  'cu.lit.organizations': '组织',
+  'cu.lit.orgs_intro': '客户组织在“设置 > 安全”中{state}。删除某个组织会移除其成员、团队、邀请以及引用它的内容限制。',
+  'cu.lit.switched_on': '开启',
+  'cu.lit.switched_off': '关闭',
+  'cu.lit.see_audit_log': '查看审计日志',
+  'cu.lit.no_orgs_yet': '还没有组织。',
+  'cu.lit.col_name': '名称',
+  'cu.lit.col_address_name': '地址名称',
+  'cu.lit.col_members': '成员',
+  'cu.lit.col_created': '创建时间',
+  'cu.lit.delete': '删除',
+  'cu.lit.confirm_delete_org': '删除 {name} 并移除其所有成员、团队和邀请？此操作无法撤销。',
 }
 
 export default zhHans

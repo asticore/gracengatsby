@@ -1,3 +1,4 @@
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -13,11 +14,12 @@ import { adminRuntime } from '@/features/organizations/wiring'
  */
 export async function OrganizationsView() {
   const context = await getAdminContext()
+  const ui = await getAdminUi()
   if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
   if (!isAdminUser(context.user)) {
     return (
       <div style={{ maxWidth: 820, padding: '1.5rem' }}>
-        <p>Only an administrator can see organizations.</p>
+        <p>{ui.t('cu.lit.only_admin_orgs')}</p>
       </div>
     )
   }
@@ -28,22 +30,22 @@ export async function OrganizationsView() {
 
   return (
     <div style={{ maxWidth: 1040, padding: '1.5rem' }}>
-      <h1>Organizations</h1>
+      <h1>{ui.t('cu.lit.organizations')}</h1>
       <p>
-        Customer organizations are {deps.settings.enabled ? 'switched on' : 'switched off'} in Settings &gt; Security. Deleting one removes its members, teams, invitations and any content limits that name it.{' '}
-        <Link href="/admin/security/audit">See the audit log</Link>.
+        {ui.t('cu.lit.orgs_intro', { state: deps.settings.enabled ? ui.t('cu.lit.switched_on') : ui.t('cu.lit.switched_off') })}{' '}
+        <Link href="/admin/security/audit">{ui.t('cu.lit.see_audit_log')}</Link>.
       </p>
       {result.ok ? null : <p role="alert">{result.message}</p>}
       {orgs.length === 0 ? (
-        <p>No organizations yet.</p>
+        <p>{ui.t('cu.lit.no_orgs_yet')}</p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th align="left">Name</th>
-              <th align="left">Address name</th>
-              <th align="right">Members</th>
-              <th align="left">Created</th>
+              <th align="left">{ui.t('cu.lit.col_name')}</th>
+              <th align="left">{ui.t('cu.lit.col_address_name')}</th>
+              <th align="right">{ui.t('cu.lit.col_members')}</th>
+              <th align="left">{ui.t('cu.lit.col_created')}</th>
               <th />
             </tr>
           </thead>

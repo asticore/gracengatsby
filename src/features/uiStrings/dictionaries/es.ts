@@ -2221,6 +2221,23 @@ const es: UiDictionary = {
   'us.lit.sign_in_as_email_q': '¿Iniciar sesión como {email}?',
   'us.lit.button_intro': 'Verás el sitio como este cliente durante hasta {minutes} minutos. Los cambios que hagas se aplican a su cuenta. Cada inicio y cierre queda registrado.',
   'us.lit.cancel': 'Cancelar',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'No tienes acceso al crédito de tienda.',
+  'cu.lit.add_or_deduct_store_credit': 'Añadir o restar crédito de tienda',
+  'cu.lit.store_credit_description': 'Busca un cliente por correo y luego cambia su saldo. Cada cambio necesita un motivo y se registra en el libro de créditos.',
+  'cu.lit.only_admin_orgs': 'Solo un administrador puede ver las organizaciones.',
+  'cu.lit.organizations': 'Organizaciones',
+  'cu.lit.orgs_intro': 'Las organizaciones de clientes están {state} en Ajustes > Seguridad. Al eliminar una, se borran sus miembros, equipos, invitaciones y los límites de contenido que la mencionen.',
+  'cu.lit.switched_on': 'activadas',
+  'cu.lit.switched_off': 'desactivadas',
+  'cu.lit.see_audit_log': 'Ver el registro de auditoría',
+  'cu.lit.no_orgs_yet': 'Aún no hay organizaciones.',
+  'cu.lit.col_name': 'Nombre',
+  'cu.lit.col_address_name': 'Nombre de dirección',
+  'cu.lit.col_members': 'Miembros',
+  'cu.lit.col_created': 'Creado',
+  'cu.lit.delete': 'Eliminar',
+  'cu.lit.confirm_delete_org': '¿Eliminar {name} y quitar todos sus miembros, equipos e invitaciones? No se puede deshacer.',
 }
 
 export default es

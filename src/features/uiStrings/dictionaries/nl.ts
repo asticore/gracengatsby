@@ -2221,6 +2221,23 @@ const nl: UiDictionary = {
   'us.lit.sign_in_as_email_q': 'Inloggen als {email}?',
   'us.lit.button_intro': 'Je ziet de site zoals deze klant, tot {minutes} minuten. Wijzigingen die je maakt, gelden voor zijn of haar account. Elke start en elk einde wordt vastgelegd.',
   'us.lit.cancel': 'Annuleren',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'Je hebt geen toegang tot het winkeltegoed.',
+  'cu.lit.add_or_deduct_store_credit': 'Winkeltegoed toevoegen of aftrekken',
+  'cu.lit.store_credit_description': 'Zoek een klant op e-mail en wijzig daarna het saldo. Elke wijziging heeft een reden nodig en wordt vastgelegd in het tegoedenoverzicht.',
+  'cu.lit.only_admin_orgs': 'Alleen een beheerder kan organisaties bekijken.',
+  'cu.lit.organizations': 'Organisaties',
+  'cu.lit.orgs_intro': 'Klantorganisaties staan {state} onder Instellingen > Beveiliging. Als je er een verwijdert, worden de leden, teams, uitnodigingen en contentlimieten die ernaar verwijzen ook verwijderd.',
+  'cu.lit.switched_on': 'ingeschakeld',
+  'cu.lit.switched_off': 'uitgeschakeld',
+  'cu.lit.see_audit_log': 'Het auditlogboek bekijken',
+  'cu.lit.no_orgs_yet': 'Nog geen organisaties.',
+  'cu.lit.col_name': 'Naam',
+  'cu.lit.col_address_name': 'Adresnaam',
+  'cu.lit.col_members': 'Leden',
+  'cu.lit.col_created': 'Aangemaakt',
+  'cu.lit.delete': 'Verwijderen',
+  'cu.lit.confirm_delete_org': '{name} verwijderen en alle leden, teams en uitnodigingen verwijderen? Dit kan niet ongedaan worden gemaakt.',
 }
 
 export default nl

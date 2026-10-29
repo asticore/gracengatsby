@@ -2221,6 +2221,23 @@ const fr: UiDictionary = {
   'us.lit.sign_in_as_email_q': 'Se connecter en tant que {email} ?',
   'us.lit.button_intro': 'Vous verrez le site comme ce client, pendant {minutes} minutes au maximum. Les modifications que vous faites concernent son compte. Chaque début et fin de session est enregistré.',
   'us.lit.cancel': 'Annuler',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'Vous n’avez pas accès aux avoirs boutique.',
+  'cu.lit.add_or_deduct_store_credit': 'Ajouter ou retirer un avoir boutique',
+  'cu.lit.store_credit_description': 'Recherchez un client par e-mail, puis modifiez son solde. Chaque modification nécessite un motif et est enregistrée dans le journal des avoirs.',
+  'cu.lit.only_admin_orgs': 'Seul un administrateur peut voir les organisations.',
+  'cu.lit.organizations': 'Organisations',
+  'cu.lit.orgs_intro': 'Les organisations clients sont {state} dans Paramètres > Sécurité. Supprimer une organisation supprime ses membres, équipes, invitations et les limites de contenu qui la mentionnent.',
+  'cu.lit.switched_on': 'activées',
+  'cu.lit.switched_off': 'désactivées',
+  'cu.lit.see_audit_log': 'Voir le journal d’audit',
+  'cu.lit.no_orgs_yet': 'Aucune organisation pour le moment.',
+  'cu.lit.col_name': 'Nom',
+  'cu.lit.col_address_name': 'Nom d’adresse',
+  'cu.lit.col_members': 'Membres',
+  'cu.lit.col_created': 'Créé',
+  'cu.lit.delete': 'Supprimer',
+  'cu.lit.confirm_delete_org': 'Supprimer {name} et retirer tous ses membres, équipes et invitations ? Cette action est irréversible.',
 }
 
 export default fr

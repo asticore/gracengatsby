@@ -2221,6 +2221,23 @@ const pt: UiDictionary = {
   'us.lit.sign_in_as_email_q': 'Entrar como {email}?',
   'us.lit.button_intro': 'Você verá o site como este cliente, por até {minutes} minutos. As alterações feitas valem para a conta dele. Cada início e fim é registrado.',
   'us.lit.cancel': 'Cancelar',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'Você não tem acesso ao crédito da loja.',
+  'cu.lit.add_or_deduct_store_credit': 'Adicionar ou deduzir crédito da loja',
+  'cu.lit.store_credit_description': 'Busque um cliente pelo e-mail e depois altere o saldo. Cada alteração precisa de um motivo e é registrada no livro de créditos.',
+  'cu.lit.only_admin_orgs': 'Somente um administrador pode ver as organizações.',
+  'cu.lit.organizations': 'Organizações',
+  'cu.lit.orgs_intro': 'As organizações de clientes estão {state} em Configurações > Segurança. Excluir uma remove seus membros, equipes, convites e os limites de conteúdo que a citem.',
+  'cu.lit.switched_on': 'ativadas',
+  'cu.lit.switched_off': 'desativadas',
+  'cu.lit.see_audit_log': 'Ver o registro de auditoria',
+  'cu.lit.no_orgs_yet': 'Ainda não há organizações.',
+  'cu.lit.col_name': 'Nome',
+  'cu.lit.col_address_name': 'Nome do endereço',
+  'cu.lit.col_members': 'Membros',
+  'cu.lit.col_created': 'Criado',
+  'cu.lit.delete': 'Excluir',
+  'cu.lit.confirm_delete_org': 'Excluir {name} e remover todos os seus membros, equipes e convites? Isso não pode ser desfeito.',
 }
 
 export default pt

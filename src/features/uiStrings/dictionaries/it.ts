@@ -2221,6 +2221,23 @@ const it: UiDictionary = {
   'us.lit.sign_in_as_email_q': 'Accedere come {email}?',
   'us.lit.button_intro': 'Vedrai il sito come questo cliente, per un massimo di {minutes} minuti. Le modifiche che fai riguardano il suo account. Ogni avvio e ogni chiusura vengono registrati.',
   'us.lit.cancel': 'Annulla',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'Non hai accesso al credito del negozio.',
+  'cu.lit.add_or_deduct_store_credit': 'Aggiungi o detrai credito del negozio',
+  'cu.lit.store_credit_description': 'Cerca un cliente tramite e-mail, poi modifica il suo saldo. Ogni modifica richiede un motivo ed è registrata nel registro dei crediti.',
+  'cu.lit.only_admin_orgs': 'Solo un amministratore può vedere le organizzazioni.',
+  'cu.lit.organizations': 'Organizzazioni',
+  'cu.lit.orgs_intro': 'Le organizzazioni dei clienti sono {state} in Impostazioni > Sicurezza. Eliminarne una rimuove i suoi membri, team, inviti e i limiti di contenuto che la citano.',
+  'cu.lit.switched_on': 'attivate',
+  'cu.lit.switched_off': 'disattivate',
+  'cu.lit.see_audit_log': 'Vedi il registro di controllo',
+  'cu.lit.no_orgs_yet': 'Nessuna organizzazione per ora.',
+  'cu.lit.col_name': 'Nome',
+  'cu.lit.col_address_name': 'Nome dell’indirizzo',
+  'cu.lit.col_members': 'Membri',
+  'cu.lit.col_created': 'Creato',
+  'cu.lit.delete': 'Elimina',
+  'cu.lit.confirm_delete_org': 'Eliminare {name} e rimuovere tutti i suoi membri, team e inviti? Non è reversibile.',
 }
 
 export default it

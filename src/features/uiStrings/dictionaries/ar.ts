@@ -2221,6 +2221,23 @@ const ar: UiDictionary = {
   'us.lit.sign_in_as_email_q': 'تسجيل الدخول باسم {email}؟',
   'us.lit.button_intro': 'سترى الموقع كما يراه هذا العميل لمدة تصل إلى {minutes} دقيقة. التغييرات التي تجريها تُطبَّق على حسابه. يتم تسجيل كل بدء وإنهاء.',
   'us.lit.cancel': 'إلغاء',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'ليست لديك صلاحية الوصول إلى رصيد المتجر.',
+  'cu.lit.add_or_deduct_store_credit': 'إضافة رصيد المتجر أو خصمه',
+  'cu.lit.store_credit_description': 'ابحث عن عميل بالبريد الإلكتروني، ثم غيّر رصيده. يتطلب كل تغيير سببًا ويُسجَّل في دفتر الرصيد.',
+  'cu.lit.only_admin_orgs': 'لا يمكن إلا للمسؤول عرض المؤسسات.',
+  'cu.lit.organizations': 'المؤسسات',
+  'cu.lit.orgs_intro': 'المؤسسات الخاصة بالعملاء {state} في الإعدادات > الأمان. حذف مؤسسة يزيل أعضاءها وفرقها ودعواتها وأي قيود على المحتوى تشير إليها.',
+  'cu.lit.switched_on': 'مُفعّلة',
+  'cu.lit.switched_off': 'مُعطّلة',
+  'cu.lit.see_audit_log': 'عرض سجل التدقيق',
+  'cu.lit.no_orgs_yet': 'لا توجد مؤسسات بعد.',
+  'cu.lit.col_name': 'الاسم',
+  'cu.lit.col_address_name': 'اسم العنوان',
+  'cu.lit.col_members': 'الأعضاء',
+  'cu.lit.col_created': 'تاريخ الإنشاء',
+  'cu.lit.delete': 'حذف',
+  'cu.lit.confirm_delete_org': 'هل تريد حذف {name} وإزالة جميع أعضائه وفرقه ودعواته؟ لا يمكن التراجع عن هذا.',
 }
 
 export default ar

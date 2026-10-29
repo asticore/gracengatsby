@@ -2221,6 +2221,23 @@ const ja: UiDictionary = {
   'us.lit.sign_in_as_email_q': '{email} としてサインインしますか？',
   'us.lit.button_intro': '最大{minutes}分間、この顧客の表示でサイトを確認できます。行った変更はこの顧客のアカウントに適用されます。開始と終了はすべて記録されます。',
   'us.lit.cancel': 'キャンセル',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'ストアクレジットへのアクセス権がありません。',
+  'cu.lit.add_or_deduct_store_credit': 'ストアクレジットを追加または差し引く',
+  'cu.lit.store_credit_description': 'メールアドレスで顧客を探し、残高を変更します。変更のたびに理由が必要で、クレジット台帳に記録されます。',
+  'cu.lit.only_admin_orgs': '組織を表示できるのは管理者のみです。',
+  'cu.lit.organizations': '組織',
+  'cu.lit.orgs_intro': '顧客組織は設定 > セキュリティで{state}になっています。組織を削除すると、そのメンバー、チーム、招待、およびそれを指定しているコンテンツ制限も削除されます。',
+  'cu.lit.switched_on': '有効',
+  'cu.lit.switched_off': '無効',
+  'cu.lit.see_audit_log': '監査ログを見る',
+  'cu.lit.no_orgs_yet': 'まだ組織はありません。',
+  'cu.lit.col_name': '名前',
+  'cu.lit.col_address_name': 'アドレス名',
+  'cu.lit.col_members': 'メンバー数',
+  'cu.lit.col_created': '作成日',
+  'cu.lit.delete': '削除',
+  'cu.lit.confirm_delete_org': '{name} を削除し、すべてのメンバー、チーム、招待を削除しますか？この操作は元に戻せません。',
 }
 
 export default ja

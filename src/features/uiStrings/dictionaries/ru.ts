@@ -2221,6 +2221,23 @@ const ru: UiDictionary = {
   'us.lit.sign_in_as_email_q': 'Войти как {email}?',
   'us.lit.button_intro': 'Вы увидите сайт глазами этого клиента, не дольше {minutes} минут. Изменения, которые вы вносите, касаются его аккаунта. Каждый вход и выход фиксируется.',
   'us.lit.cancel': 'Отмена',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'У вас нет доступа к бонусам магазина.',
+  'cu.lit.add_or_deduct_store_credit': 'Начисление или списание бонусов магазина',
+  'cu.lit.store_credit_description': 'Найдите клиента по e-mail, затем измените его баланс. Каждое изменение требует причины и записывается в журнал бонусов.',
+  'cu.lit.only_admin_orgs': 'Только администратор может просматривать организации.',
+  'cu.lit.organizations': 'Организации',
+  'cu.lit.orgs_intro': 'Организации клиентов {state} в разделе Настройки > Безопасность. При удалении организации удаляются её участники, команды, приглашения и ограничения контента, которые на неё ссылаются.',
+  'cu.lit.switched_on': 'включены',
+  'cu.lit.switched_off': 'выключены',
+  'cu.lit.see_audit_log': 'Журнал аудита',
+  'cu.lit.no_orgs_yet': 'Пока нет организаций.',
+  'cu.lit.col_name': 'Название',
+  'cu.lit.col_address_name': 'Имя в адресе',
+  'cu.lit.col_members': 'Участники',
+  'cu.lit.col_created': 'Создано',
+  'cu.lit.delete': 'Удалить',
+  'cu.lit.confirm_delete_org': 'Удалить {name} и убрать всех его участников, команды и приглашения? Это нельзя отменить.',
 }
 
 export default ru

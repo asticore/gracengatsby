@@ -2261,6 +2261,23 @@ export const UI_STRING_SOURCE = {
   'us.lit.sign_in_as_email_q': 'Sign in as {email}?',
   'us.lit.button_intro': 'You will see the site as this customer for up to {minutes} minutes. Changes you make are made on their account. Every start and stop is recorded.',
   'us.lit.cancel': 'Cancel',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'You do not have access to store credit.',
+  'cu.lit.add_or_deduct_store_credit': 'Add or deduct store credit',
+  'cu.lit.store_credit_description': 'Find a customer by email, then change their balance. Every change needs a reason and is recorded in the credit ledger.',
+  'cu.lit.only_admin_orgs': 'Only an administrator can see organizations.',
+  'cu.lit.organizations': 'Organizations',
+  'cu.lit.orgs_intro': 'Customer organizations are {state} in Settings > Security. Deleting one removes its members, teams, invitations and any content limits that name it.',
+  'cu.lit.switched_on': 'switched on',
+  'cu.lit.switched_off': 'switched off',
+  'cu.lit.see_audit_log': 'See the audit log',
+  'cu.lit.no_orgs_yet': 'No organizations yet.',
+  'cu.lit.col_name': 'Name',
+  'cu.lit.col_address_name': 'Address name',
+  'cu.lit.col_members': 'Members',
+  'cu.lit.col_created': 'Created',
+  'cu.lit.delete': 'Delete',
+  'cu.lit.confirm_delete_org': 'Delete {name} and remove all its members, teams and invitations? This cannot be undone.',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

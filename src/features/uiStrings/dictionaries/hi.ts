@@ -2221,6 +2221,23 @@ const hi: UiDictionary = {
   'us.lit.sign_in_as_email_q': '{email} के रूप में साइन इन करें?',
   'us.lit.button_intro': 'आप इस ग्राहक के रूप में साइट देखेंगे, अधिकतम {minutes} मिनट तक। आपके किए बदलाव उनके खाते पर लागू होंगे। हर शुरुआत और समाप्ति दर्ज की जाती है।',
   'us.lit.cancel': 'रद्द करें',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'आपके पास स्टोर क्रेडिट तक पहुँच नहीं है।',
+  'cu.lit.add_or_deduct_store_credit': 'स्टोर क्रेडिट जोड़ें या घटाएँ',
+  'cu.lit.store_credit_description': 'ईमेल से ग्राहक खोजें, फिर उनका बैलेंस बदलें। हर बदलाव के लिए कारण ज़रूरी है और क्रेडिट लेजर में दर्ज होता है।',
+  'cu.lit.only_admin_orgs': 'केवल एक प्रशासक ही संगठन देख सकता है।',
+  'cu.lit.organizations': 'संगठन',
+  'cu.lit.orgs_intro': 'ग्राहक संगठन सेटिंग्स > सुरक्षा में {state} हैं। किसी संगठन को हटाने पर उसके सदस्य, टीमें, आमंत्रण और उसका उल्लेख करने वाली सामग्री सीमाएँ भी हट जाती हैं।',
+  'cu.lit.switched_on': 'चालू',
+  'cu.lit.switched_off': 'बंद',
+  'cu.lit.see_audit_log': 'ऑडिट लॉग देखें',
+  'cu.lit.no_orgs_yet': 'अभी कोई संगठन नहीं है।',
+  'cu.lit.col_name': 'नाम',
+  'cu.lit.col_address_name': 'पता नाम',
+  'cu.lit.col_members': 'सदस्य',
+  'cu.lit.col_created': 'बनाया गया',
+  'cu.lit.delete': 'हटाएँ',
+  'cu.lit.confirm_delete_org': '{name} को हटाएँ और उसके सभी सदस्य, टीमें और आमंत्रण हटा दें? इसे पूर्ववत नहीं किया जा सकता।',
 }
 
 export default hi

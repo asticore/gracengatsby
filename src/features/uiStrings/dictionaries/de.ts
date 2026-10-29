@@ -2222,6 +2222,23 @@ const de: UiDictionary = {
   'us.lit.sign_in_as_email_q': 'Als {email} anmelden?',
   'us.lit.button_intro': 'Du siehst die Seite wie dieser Kunde, für höchstens {minutes} Minuten. Änderungen wirken sich auf sein Konto aus. Jeder Start und jedes Ende wird protokolliert.',
   'us.lit.cancel': 'Abbrechen',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': 'Du hast keinen Zugriff auf das Shop-Guthaben.',
+  'cu.lit.add_or_deduct_store_credit': 'Shop-Guthaben hinzufügen oder abziehen',
+  'cu.lit.store_credit_description': 'Suche einen Kunden über seine E-Mail-Adresse und ändere dann sein Guthaben. Jede Änderung braucht einen Grund und wird im Guthabenprotokoll gespeichert.',
+  'cu.lit.only_admin_orgs': 'Nur ein Administrator kann Organisationen einsehen.',
+  'cu.lit.organizations': 'Organisationen',
+  'cu.lit.orgs_intro': 'Kundenorganisationen sind unter Einstellungen > Sicherheit {state}. Beim Löschen einer Organisation werden ihre Mitglieder, Teams, Einladungen und alle Inhaltsbeschränkungen entfernt, die sie nennen.',
+  'cu.lit.switched_on': 'aktiviert',
+  'cu.lit.switched_off': 'deaktiviert',
+  'cu.lit.see_audit_log': 'Zum Prüfprotokoll',
+  'cu.lit.no_orgs_yet': 'Noch keine Organisationen.',
+  'cu.lit.col_name': 'Name',
+  'cu.lit.col_address_name': 'Adressname',
+  'cu.lit.col_members': 'Mitglieder',
+  'cu.lit.col_created': 'Erstellt',
+  'cu.lit.delete': 'Löschen',
+  'cu.lit.confirm_delete_org': '{name} löschen und alle Mitglieder, Teams und Einladungen entfernen? Dies kann nicht rückgängig gemacht werden.',
 }
 
 export default de

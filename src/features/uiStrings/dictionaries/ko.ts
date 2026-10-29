@@ -2221,6 +2221,23 @@ const ko: UiDictionary = {
   'us.lit.sign_in_as_email_q': '{email}(으)로 로그인하시겠습니까?',
   'us.lit.button_intro': '최대 {minutes}분 동안 이 고객의 화면으로 사이트를 볼 수 있습니다. 변경 사항은 이 고객의 계정에 적용됩니다. 시작과 종료는 모두 기록됩니다.',
   'us.lit.cancel': '취소',
+  // --- admin leftovers (customer organizations) ---
+  'cu.lit.no_access_store_credit': '스토어 크레딧에 접근할 권한이 없습니다.',
+  'cu.lit.add_or_deduct_store_credit': '스토어 크레딧 추가 또는 차감',
+  'cu.lit.store_credit_description': '이메일로 고객을 찾은 다음 잔액을 변경하세요. 변경할 때마다 사유가 필요하며 크레딧 원장에 기록됩니다.',
+  'cu.lit.only_admin_orgs': '관리자만 조직을 볼 수 있습니다.',
+  'cu.lit.organizations': '조직',
+  'cu.lit.orgs_intro': '고객 조직은 설정 > 보안에서 {state} 상태입니다. 조직을 삭제하면 해당 조직의 구성원, 팀, 초대 및 이를 참조하는 콘텐츠 제한이 함께 제거됩니다.',
+  'cu.lit.switched_on': '켜짐',
+  'cu.lit.switched_off': '꺼짐',
+  'cu.lit.see_audit_log': '감사 로그 보기',
+  'cu.lit.no_orgs_yet': '아직 조직이 없습니다.',
+  'cu.lit.col_name': '이름',
+  'cu.lit.col_address_name': '주소 이름',
+  'cu.lit.col_members': '구성원',
+  'cu.lit.col_created': '생성일',
+  'cu.lit.delete': '삭제',
+  'cu.lit.confirm_delete_org': '{name}을(를) 삭제하고 모든 구성원, 팀, 초대를 제거할까요? 이 작업은 되돌릴 수 없습니다.',
 }
 
 export default ko

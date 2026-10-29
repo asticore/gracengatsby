@@ -32,7 +32,7 @@ describe('availableDomains field hook', () => {
   const hook = (availableDomainsField.hooks as unknown as { beforeChange: Array<(args: { value?: unknown }) => unknown> }).beforeChange[0]
 
   it('stores a normalised comma list, or null when empty', () => {
-    expect(hook({ value: ' Example.com ,example.com.au' })).toBe('example.com, example.com.au')
+    expect(hook({ value: ' Example.com ,example.com.au' })).toBe(',example.com,example.com.au,')
     expect(hook({ value: '   ' })).toBeNull()
   })
 

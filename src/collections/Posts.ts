@@ -1,4 +1,5 @@
 import { pageAudioField } from '@/features/pageAudio/fields'
+import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
 import { availableDomainsField } from '@/features/domains/field'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { outdatedAfterChange } from '@/features/multilingual/outdated'
@@ -40,9 +41,9 @@ export const Posts: CollectionConfig = {
   },
   access: {
     create: roleAccess('posts', 'create'),
-    delete: roleAccess('posts', 'delete'),
-    read: excludeProtectedAccess('posts', roleOrPublished('posts')),
-    update: roleAccess('posts', 'update'),
+    delete: domainScopedAccess(roleAccess('posts', 'delete')),
+    read: domainScopedAccess(excludeProtectedAccess('posts', roleOrPublished('posts'))),
+    update: domainScopedAccess(roleAccess('posts', 'update')),
   },
   versions: { drafts: true },
   fields: [
@@ -98,7 +99,7 @@ export const Posts: CollectionConfig = {
     trashedAtField,
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange, trashGuard, seoEditGuard, readingTimeBeforeChange, contentEditGuard, publishGuard, pageSpeedBeforeChange],
+    beforeChange: [domainWriteGuard, authorshipBeforeChange, trashGuard, seoEditGuard, readingTimeBeforeChange, contentEditGuard, publishGuard, pageSpeedBeforeChange],
     afterChange: [pageSpeedAfterChange('posts'), indexNowAfterChange('posts'), machineAutoDraftAfterChange('posts'), outdatedAfterChange('posts')],
     afterDelete: [indexNowAfterDelete('posts')],
   },

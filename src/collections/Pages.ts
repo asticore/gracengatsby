@@ -1,4 +1,5 @@
 import { noAdsField } from '@/features/ads/fields'
+import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
 import { availableDomainsField } from '@/features/domains/field'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { outdatedAfterChange } from '@/features/multilingual/outdated'
@@ -42,9 +43,9 @@ export const Pages: CollectionConfig = {
   },
   access: {
     create: roleAccess('pages', 'create'),
-    delete: roleAccess('pages', 'delete'),
-    read: excludeProtectedAccess('pages', roleOrPublished('pages')),
-    update: roleAccess('pages', 'update'),
+    delete: domainScopedAccess(roleAccess('pages', 'delete')),
+    read: domainScopedAccess(excludeProtectedAccess('pages', roleOrPublished('pages'))),
+    update: domainScopedAccess(roleAccess('pages', 'update')),
   },
   versions: {
     drafts: true,
@@ -179,6 +180,7 @@ export const Pages: CollectionConfig = {
     afterChange: [pageSpeedAfterChange('pages'), indexNowAfterChange('pages'), machineAutoDraftAfterChange('pages'), outdatedAfterChange('pages')],
     afterDelete: [indexNowAfterDelete('pages')],
     beforeChange: [
+      domainWriteGuard,
       authorshipBeforeChange,
       trashGuard,
       seoEditGuard,

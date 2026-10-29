@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { localizeHref } from '@/features/multilingual/localizeHref'
 
 const settings = {
+  enabled: true,
   defaultLocale: 'en',
-  locales: ['en', 'fr'],
+  activeLocales: ['en', 'fr'],
 } as unknown as Parameters<typeof localizeHref>[2]
 
 describe('rich-text link localisation helper', () => {

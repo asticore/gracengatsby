@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminHref } from '@/admin/adminRoute/AdminRouteProvider'
 import React from 'react'
 import { useDocumentInfo } from '@/engine/ui'
 
@@ -11,11 +12,12 @@ import { useDocumentInfo } from '@/engine/ui'
  */
 export const OpenVisualEditorButton: React.FC = () => {
   const { id, collectionSlug, globalSlug } = useDocumentInfo()
+  const adminHref = useAdminHref()
 
   const href = globalSlug
-    ? `/admin/visual-editor/global/${globalSlug}`
+    ? adminHref(`/visual-editor/global/${globalSlug}`)
     : collectionSlug && id
-      ? `/admin/visual-editor/collection/${collectionSlug}/${id}`
+      ? adminHref(`/visual-editor/collection/${collectionSlug}/${id}`)
       : null
 
   if (!href) return null

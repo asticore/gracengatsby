@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -10,7 +12,7 @@ import { PasswordGroupsClient } from '@/admin/views/PasswordGroupsClient'
  */
 export async function PasswordGroupsView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   if (!(context.isAdmin || context.can('admin-visibility-password', 'update'))) {
     return (
       <div style={{ maxWidth: 820, padding: '1.5rem' }}>

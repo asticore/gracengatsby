@@ -1,3 +1,4 @@
+import { getAdminRoot } from '@/features/security/settings'
 import { adminLabel } from '@/features/uiStrings'
 import React from 'react'
 import { Logout } from '@/engine/ui'
@@ -100,7 +101,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
 
   if (!engine?.config) return null
 
-  const adminRoute = engine.config.routes.admin
+  const adminRoute = await getAdminRoot()
 
   // Which entities exist, are permitted and are switched on is decided in one
   // place, shared with the dashboard - see components/admin/shared.
@@ -112,6 +113,7 @@ export const AdminNav: React.FC<AdminNavProps> = async (props) => {
   }
 
   const resolvedGroups = resolveEntityGroups({
+    adminRoute,
     engine,
     flags,
     i18n,

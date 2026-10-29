@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { getAdminUi } from '@/admin/i18n/serverUi'
 import { redirect } from 'next/navigation'
 
@@ -15,7 +17,7 @@ import { getEngine } from '@/lib/engine'
 export async function ImpersonationView() {
   const context = await getAdminContext()
   const ui = await getAdminUi()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   const admin = isAdminUser(context.user)
   const engine = await getEngine()
   const settings = await getSecuritySettings(engine as never)

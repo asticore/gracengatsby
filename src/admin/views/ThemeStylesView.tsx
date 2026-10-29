@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -11,8 +13,8 @@ import { ThemeStylesClient } from './ThemeStylesClient'
  */
 export async function ThemeStylesView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
-  if (!context.isAdmin) redirect('/admin')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
 
   const { styles, saved } = await loadThemeStyles()
   const settings = (await (context.engine as unknown as { findGlobal: (args: Record<string, unknown>) => Promise<{ theme?: { customFonts?: unknown } } | null> })

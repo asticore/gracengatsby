@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
@@ -13,7 +15,7 @@ export async function VersionsView({ collectionSlug, id }: { collectionSlug: str
   const context = await getAdminContext()
   const ui = await getAdminUi()
   const hasAdminAccess = hasAdminPanelAccess(context.user)
-  if (!hasAdminAccess) redirect('/admin/login')
+  if (!hasAdminAccess) redirect(adminHref('/login', await getAdminRoot()))
 
   const collection = getCollectionConfig(context.engine, collectionSlug)
   if (!collection) notFound()

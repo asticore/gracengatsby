@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { getAdminUi } from '@/admin/i18n/serverUi'
 import { redirect } from 'next/navigation'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
@@ -19,7 +21,7 @@ import './site-health.css'
 export async function ScheduledTasksView() {
   const { t } = await getAdminUi()
   const context = await getAdminContext()
-  if (!context.isAdmin) redirect('/admin')
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
 
   const { env } = await getCloudflareContext({ async: true })
   const db = env.D1

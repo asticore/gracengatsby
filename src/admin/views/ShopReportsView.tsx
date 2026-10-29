@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -6,7 +8,7 @@ import { ShopReportsPanel } from '@/features/shopReports/ShopReportsPanel'
 /** /admin/shop-reports: sales, customers, products, coupons, payments, locations, low stock and abandoned carts. */
 export async function ShopReportsView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   if (!(context.isAdmin || context.can('orders', 'read'))) return <p>You do not have access to the shop reports.</p>
   return (
     <div className="settings-page">

@@ -17,6 +17,7 @@ vi.mock('@/features/multilingual/middleware', () => ({
 }))
 vi.mock('@/features/security', () => ({
   securityMiddleware: async () => NextResponse.next(),
+  readSecuritySettingsFromD1: async () => ({ adminPath: '/admin' }),
 }))
 
 import { middleware } from '@/middleware'

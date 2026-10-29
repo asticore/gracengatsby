@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 
@@ -16,7 +18,7 @@ import { sessionIdFromToken } from '@/features/security/userSessions'
  */
 export async function SessionsView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const actor = context.user as unknown as SessionActor
   const currentId = sessionIdFromToken((await cookies()).get(SESSION_COOKIE)?.value ?? null)

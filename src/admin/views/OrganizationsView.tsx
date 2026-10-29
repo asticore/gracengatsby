@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { getAdminUi } from '@/admin/i18n/serverUi'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -15,7 +17,7 @@ import { adminRuntime } from '@/features/organizations/wiring'
 export async function OrganizationsView() {
   const context = await getAdminContext()
   const ui = await getAdminUi()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   if (!isAdminUser(context.user)) {
     return (
       <div style={{ maxWidth: 820, padding: '1.5rem' }}>

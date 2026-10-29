@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { adminLabel } from '@/features/uiStrings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import Link from 'next/link'
@@ -88,7 +90,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const ui = await getAdminUi()
   const context = await getAdminContext()
   const hasAdminAccess = hasAdminPanelAccess(context.user)
-  if (!hasAdminAccess) redirect('/admin/login')
+  if (!hasAdminAccess) redirect(adminHref('/login', await getAdminRoot()))
 
   const collection = getCollectionConfig(context.engine, collectionSlug)
   if (!collection) notFound()

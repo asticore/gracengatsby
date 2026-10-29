@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -14,7 +16,7 @@ import { getEngine } from '@/lib/engine'
  */
 export async function PasskeysView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const engine = await getEngine()
   const deps = await passkeyDepsFor(engine, await requestClient(), '')

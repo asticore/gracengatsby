@@ -1,4 +1,5 @@
 import { buildRobotsTxt } from '@/features/seo'
+import { getAdminRoot } from '@/features/security/settings'
 
 // Settings are read from the database on every request, so this can never be
 // prerendered at build time.
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic'
  * convention returns cannot represent arbitrary directives.
  */
 export async function GET(): Promise<Response> {
-  const body = await buildRobotsTxt()
+  const body = await buildRobotsTxt(await getAdminRoot())
 
   if (body === null) {
     return new Response('Not found', { status: 404 })

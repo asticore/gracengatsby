@@ -1,4 +1,5 @@
 'use client'
+import { useAdminRoot } from '@/admin/adminRoute/AdminRouteProvider'
 import { adminCollectionPath } from '@/admin/adminPaths'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -82,7 +83,7 @@ const nextId = () => `ve-${Date.now()}-${idCounter++}`
 
 function parsePath(): { mode: 'collection' | 'global'; slug: string; id?: string } | null {
   if (typeof window === 'undefined') return null
-  const match = window.location.pathname.match(/\/admin\/visual-editor\/(collection|global)\/([^\/]+)(?:\/([^\/]+))?/)
+  const match = window.location.pathname.match(/\/visual-editor\/(collection|global)\/([^\/]+)(?:\/([^\/]+))?/)
   if (!match) return null
   return { mode: match[1] as 'collection' | 'global', slug: match[2], id: match[3] }
 }
@@ -1272,11 +1273,12 @@ export const VisualEditorView: React.FC = () => {
   const formUnpublished = formMode ? formHasUnpublishedChanges({ layout: stripEditorIds(blocks, lockedKeySet(locks)), publishedLayout } as never) : false
   const isAdmin = Boolean(lockUser?.roles?.includes('admin'))
 
+  const adminRoot = useAdminRoot()
   const backHref = surface
     ? surface.kind === 'global'
-      ? `/admin/globals/${surface.slug}`
-      : `${adminCollectionPath(surface.slug)}/${route?.id}`
-    : '/admin'
+      ? `${adminRoot}/globals/${surface.slug}`
+      : `${adminCollectionPath(surface.slug, adminRoot)}/${route?.id}`
+    : adminRoot
 
   const menuItems = (path: NodePath): ContextMenuItem[] => {
     const { containerPath, index } = splitPath(path)

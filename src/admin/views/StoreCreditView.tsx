@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { getAdminUi } from '@/admin/i18n/serverUi'
 import { redirect } from 'next/navigation'
 
@@ -8,7 +10,7 @@ import { StoreCreditPanel } from '@/features/ecommerce/admin/StoreCreditPanel'
 export async function StoreCreditView() {
   const context = await getAdminContext()
   const ui = await getAdminUi()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   if (!(context.isAdmin || context.can('store-credits', 'read'))) return <p>{ui.t('cu.lit.no_access_store_credit')}</p>
   return (
     <div className="settings-page">

@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { notFound, redirect } from 'next/navigation'
 import type { Field } from '@/engine'
 import { getAdminContext, hasAdminPanelAccess, getGlobalConfig } from '@/admin/auth'
@@ -21,7 +23,7 @@ import { SettingsPageClient, type SettingsPageSection } from './SettingsPageClie
 
 export async function SettingsPageView({ pageKey }: { pageKey: string }) {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const page = SETTINGS_PAGES.find((p) => p.key === pageKey)
   if (!page) notFound()

@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { CacheToolsClient } from './CacheToolsClient'
@@ -9,8 +11,8 @@ import { CacheToolsClient } from './CacheToolsClient'
  */
 export async function CacheToolsView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
-  if (!context.isAdmin && !context.can('settings:speed-settings', 'update')) redirect('/admin')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
+  if (!context.isAdmin && !context.can('settings:speed-settings', 'update')) redirect(adminHref('', await getAdminRoot()))
 
   return <CacheToolsClient />
 }

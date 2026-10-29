@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { brandFromStored, designedBlocks, storedLogo } from '@/features/email/designRender'
@@ -21,7 +23,7 @@ const textOf = (value: unknown, fallback: string): string => (typeof value === '
  */
 export async function EmailDesignerView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   if (!context.isAdmin) return <p>You do not have access to the email designer.</p>
 
   const engine = context.engine as unknown as { findGlobal: (args: Record<string, unknown>) => Promise<Stored | null> }

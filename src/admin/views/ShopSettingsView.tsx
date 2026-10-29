@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getGlobalConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
@@ -6,7 +8,7 @@ import { ShopSettingsClient } from './ShopSettingsClient'
 /** Server wrapper for /admin/shop-settings: the shop-settings and payment-settings globals in one tabbed screen. */
 export async function ShopSettingsView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   if (!context.isAdmin || !context.permissions.globals?.['shop-settings']?.read) {
     return <p>You do not have access to the shop settings.</p>
   }

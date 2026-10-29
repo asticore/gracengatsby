@@ -16,6 +16,7 @@ import { readDomainsFromD1 } from '@/features/domains/store'
 import { requestDomain } from '@/features/domains/request'
 import { availableOnHost } from '@/features/domains/scope'
 import { isNoindexPath } from '@/features/security/noindex'
+import { getAdminRoot } from '@/features/security/settings'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
 
@@ -69,6 +70,7 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   if (siteBlocked) return []
 
   const baseUrl = context.baseUrl
+  const adminRoot = await getAdminRoot()
   const multilingual = await readMultilingualSettingsFromD1()
   const seen = new Set<string>()
   const entries: SitemapEntry[] = []
@@ -93,7 +95,7 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     const normalised = normalisePath(path)
     if (seen.has(normalised)) return
     // The admin, the API and the preview never belong in a sitemap, whatever the content says.
-    if (isNoindexPath(normalised)) return
+    if (isNoindexPath(normalised, adminRoot)) return
     if (pathMatches(normalised, excluded) || pathMatches(normalised, noindexed)) return
     const docAvailable = (ref?.doc as { availableDomains?: unknown } | undefined)?.availableDomains
     if (ref && !availableOnHost(docAvailable, requestHost)) return

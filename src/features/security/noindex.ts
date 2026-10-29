@@ -6,8 +6,10 @@
 
 export const NOINDEX_HEADER_VALUE = 'noindex, nofollow, noarchive'
 
+import { DEFAULT_ADMIN_PATH as DEFAULT_ADMIN_ROOT } from './adminPath'
+
 /** Admin root used when no custom admin path is configured. */
-export const DEFAULT_ADMIN_ROOT = '/admin'
+export { DEFAULT_ADMIN_ROOT }
 
 const NON_PUBLIC_PREFIXES = ['/api', '/login', '/preview']
 

@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { redirect } from 'next/navigation'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
@@ -14,7 +16,7 @@ import './site-health.css'
  */
 export async function SiteHealthView() {
   const context = await getAdminContext()
-  if (!context.isAdmin) redirect('/admin')
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
 
   const { env } = await getCloudflareContext({ async: true })
   const report = await gatherSiteHealth(context.engine, env.D1, env.R2)

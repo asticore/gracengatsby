@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { getAdminUi } from '@/admin/i18n/serverUi'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, hasAdminPanelAccess, getGlobalConfig } from '@/admin/auth'
@@ -14,7 +16,7 @@ import { HeaderFooterTabs } from './HeaderFooterTabs'
 export async function HeaderFooterView() {
   const context = await getAdminContext()
   const ui = await getAdminUi()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const headerGlobal = getGlobalConfig(context.engine, 'header')
   const footerGlobal = getGlobalConfig(context.engine, 'footer')

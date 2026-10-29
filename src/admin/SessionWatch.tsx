@@ -8,6 +8,7 @@
 
 import { useEffect, useRef } from 'react'
 import { shouldRedirectOn401, buildLoginRedirect } from './sessionWatchLogic'
+import { useAdminRoot } from './adminRoute/AdminRouteProvider'
 
 const POLL_INTERVAL = 60000 // 60 seconds
 
@@ -18,6 +19,7 @@ const POLL_INTERVAL = 60000 // 60 seconds
  * - Cleans up on unmount
  */
 export function SessionWatch(): null {
+  const root = useAdminRoot()
   const fetchWrappedRef = useRef(false)
   const redirectedRef = useRef(false)
   const originalFetchRef = useRef<typeof fetch | null>(null)
@@ -38,7 +40,7 @@ export function SessionWatch(): null {
         const url = typeof args[0] === 'string' ? args[0] : args[0]?.toString() ?? ''
         if (shouldRedirectOn401(url, response.status, origin) && !redirectedRef.current) {
           redirectedRef.current = true
-          const redirectUrl = buildLoginRedirect(window.location.pathname, window.location.search)
+          const redirectUrl = buildLoginRedirect(window.location.pathname, window.location.search, root)
           window.location.assign(redirectUrl)
         }
 
@@ -56,7 +58,7 @@ export function SessionWatch(): null {
 
         if (response.status === 401 && !redirectedRef.current) {
           redirectedRef.current = true
-          window.location.assign(buildLoginRedirect(window.location.pathname, window.location.search))
+          window.location.assign(buildLoginRedirect(window.location.pathname, window.location.search, root))
           return
         }
         if (!response.ok) return
@@ -67,7 +69,7 @@ export function SessionWatch(): null {
         // If no user or user is null, session has expired
         if (!user && !redirectedRef.current) {
           redirectedRef.current = true
-          const redirectUrl = buildLoginRedirect(window.location.pathname, window.location.search)
+          const redirectUrl = buildLoginRedirect(window.location.pathname, window.location.search, root)
           window.location.assign(redirectUrl)
         }
       } catch {

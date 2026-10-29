@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
@@ -74,7 +76,7 @@ function cellFor(column: string, row: HubRow): ReactNode {
  */
 export async function TemplatesHubView({ searchParams = {} }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const [siteDocs, pageDocs, sectionDocs] = await Promise.all([
     readCollection(context, 'site-templates'),

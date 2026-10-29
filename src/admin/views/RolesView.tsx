@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { getAdminContext } from '@/admin/auth'
 import { loadApprovalSettings } from '@/features/approval/settings'
@@ -13,7 +15,7 @@ export async function RolesView() {
 
   // Check if user can read roles (admin-only via SECRET_RESOURCES)
   if (!context.isAdmin) {
-    redirect('/admin/login')
+    redirect(adminHref('/login', await getAdminRoot()))
   }
 
   // Load all roles

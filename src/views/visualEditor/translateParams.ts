@@ -28,7 +28,7 @@ export function resolveTranslateParams(search: string, targets: readonly string[
 }
 
 /** The builder URL for one document in one language. */
-export function translateEditorPath(collection: string, documentId: string, locale: string): string {
+export function translateEditorPath(collection: string, documentId: string, locale: string, root = '/admin'): string {
   const params = new URLSearchParams({ lang: locale, translate: '1' })
-  return `/admin/visual-editor/collection/${encodeURIComponent(collection)}/${encodeURIComponent(documentId)}?${params.toString()}`
+  return `${root}/visual-editor/collection/${encodeURIComponent(collection)}/${encodeURIComponent(documentId)}?${params.toString()}`
 }

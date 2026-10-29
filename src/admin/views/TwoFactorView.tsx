@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -13,7 +15,7 @@ import { defaultTwoFactorStore } from '@/features/security/twoFactorStore'
  */
 export async function TwoFactorView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const id = Number((context.user as { id?: number | string } | null)?.id)
   const row = Number.isInteger(id) && id > 0 ? await defaultTwoFactorStore.findByID(id) : null

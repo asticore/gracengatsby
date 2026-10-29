@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { getAdminContext } from '@/admin/auth'
 import { SettingsTransferClient } from './SettingsTransferClient'
@@ -9,7 +11,7 @@ import { SettingsTransferClient } from './SettingsTransferClient'
 export async function SettingsTransferView() {
   const context = await getAdminContext()
   if (!context.isAdmin) {
-    redirect('/admin/login')
+    redirect(adminHref('/login', await getAdminRoot()))
   }
   return <SettingsTransferClient />
 }

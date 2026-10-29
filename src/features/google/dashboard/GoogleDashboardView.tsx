@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import React from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -12,8 +14,8 @@ import { GoogleDashboardClient } from './GoogleDashboardClient'
  */
 export async function GoogleDashboardView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
-  if (!context.isAdmin) redirect('/admin')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
   return (
     <div style={{ padding: 24, maxWidth: 960 }}>
       <h1>Google dashboard</h1>

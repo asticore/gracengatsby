@@ -107,6 +107,7 @@ import * as migration_20261127_100000_machine_autodraft from './20261127_100000_
 import * as migration_20261128_100000_admin_ui_language from './20261128_100000_admin_ui_language';
 import * as migration_20261129_100000_interface_overrides from './20261129_100000_interface_overrides';
 import * as migration_20261130_100000_domain_settings from './20261130_100000_domain_settings';
+import * as migration_20261130_110000_admin_path from './20261130_110000_admin_path';
 
 export const migrations = [
   {
@@ -653,5 +654,10 @@ export const migrations = [
     up: migration_20261130_100000_domain_settings.up,
     down: migration_20261130_100000_domain_settings.down,
     name: '20261130_100000_domain_settings',
+  },
+  {
+    up: migration_20261130_110000_admin_path.up,
+    down: migration_20261130_110000_admin_path.down,
+    name: '20261130_110000_admin_path',
   },
 ];

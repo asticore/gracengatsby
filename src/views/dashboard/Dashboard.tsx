@@ -1,3 +1,4 @@
+import { getAdminRoot } from '@/features/security/settings'
 import React from 'react'
 import Link from 'next/link'
 import type { AdminViewServerProps, Engine } from '@/engine'
@@ -77,6 +78,7 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
   const flags = await readFeatureFlags(engine)
 
   const groups = resolveEntityGroups({
+    adminRoute: await getAdminRoot(),
     engine,
     flags,
     i18n,

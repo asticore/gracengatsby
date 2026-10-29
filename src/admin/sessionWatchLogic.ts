@@ -1,3 +1,5 @@
+import { DEFAULT_ADMIN_PATH, adminHref } from '@/features/security/adminPath'
+
 /**
  * Pure functions for session expiry detection and redirect building.
  * Testable logic separated from browser APIs and React hooks.
@@ -42,7 +44,7 @@ export function shouldRedirectOn401(url: string, status: number, origin: string)
  * Builds a login redirect URL with session expired notice and redirect target.
  * Returns a path-relative URL with encoded query parameters.
  */
-export function buildLoginRedirect(pathname: string, search: string): string {
+export function buildLoginRedirect(pathname: string, search: string, root: string = DEFAULT_ADMIN_PATH): string {
   const params = new URLSearchParams()
   params.set('expired', '1')
 
@@ -50,5 +52,5 @@ export function buildLoginRedirect(pathname: string, search: string): string {
   const fullPath = pathname + search
   params.set('redirect', fullPath)
 
-  return `/admin/login?${params.toString()}`
+  return `${adminHref('/login', root)}?${params.toString()}`
 }

@@ -12,6 +12,8 @@ import { isEnrolled, verifySecondFactor } from '@/features/security/twoFactor'
 import { getSecuritySettings, type ImpersonationSettings } from '@/features/security/settings'
 import { defaultUserSessionStore } from '@/features/security/userSessionStore'
 
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { defaultImpersonationStore } from './store'
 import { IMPERSONATION_COOKIE, headersForCustomerView, isImpersonating, REFUSAL_MESSAGES, unverifiedClaims, type Refusal } from './policy'
 import { impersonationHistory, startImpersonation, stopImpersonation, type HistoryEntry, type ImpersonationDeps, type TargetAccount } from './service'
@@ -159,7 +161,7 @@ export async function stopImpersonationAction(): Promise<void> {
   } catch {
     // The cookie is already cleared; a failed log line must not leave the customer view up.
   }
-  redirect('/admin/security/impersonation')
+  redirect(adminHref('/security/impersonation', await getAdminRoot()))
 }
 
 /** Admin only: every impersonation, newest first. */

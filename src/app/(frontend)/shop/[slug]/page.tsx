@@ -40,6 +40,7 @@ import { excludeProtected } from '@/features/visibility/excludeProtected'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
+import { sourceSlugFor } from '@/features/multilingual/slugIndex'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
@@ -63,8 +64,11 @@ async function getProduct(slug: string) {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  const product = await applyTranslations(await getProduct(slug), 'products', await currentRequestLocale())
+  const { slug: requested } = await params
+  const requestLocale = await currentRequestLocale()
+  // A translated slug answers for its source product (localizedSlugs.ts).
+  const slug = await sourceSlugFor(requestLocale, 'shop', requested, { redirect: false })
+  const product = await applyTranslations(await getProduct(slug), 'products', requestLocale)
   if (!product) return {}
 
   // When password protected and locked, use generic metadata and keep it out of the index.
@@ -95,9 +99,12 @@ export default async function ProductPage({
   const flags = await getFeatureFlags()
   if (!flags.ecommerce) notFound()
 
-  const { slug } = await params
+  const { slug: requested } = await params
   const engine = await getEngine()
-  const product = await applyTranslations(await getProduct(slug), 'products', await currentRequestLocale())
+  const requestLocale = await currentRequestLocale()
+  // A source slug with a translation is redirected to the translated URL; a translated slug answers for its product.
+  const slug = await sourceSlugFor(requestLocale, 'shop', requested, { redirect: true })
+  const product = await applyTranslations(await getProduct(slug), 'products', requestLocale)
 
   if (!product) {
     notFound()

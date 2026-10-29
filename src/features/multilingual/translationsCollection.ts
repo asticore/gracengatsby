@@ -4,6 +4,9 @@ import { roleAccess } from '@/access/ecommerceAccess'
 
 import { getMultilingualSettings } from './settings'
 import { evaluateTranslationWrite, TRANSLATION_STATUSES } from './translationStatus'
+import { isTranslatableSlugCollection, isValidTranslatedSlug, slugSuggestion } from './localizedSlugs'
+import { checkTranslatedSlug } from './slugClaims'
+import { SLUG_FIELD } from './translatableFields'
 
 /**
  * The store behind `eg_translations`: one row per translated string.
@@ -22,6 +25,49 @@ import { evaluateTranslationWrite, TRANSLATION_STATUSES } from './translationSta
  * The field names here must keep matching the columns the migration creates -
  * the table is built by hand, for the reason given in the migration's header.
  */
+/**
+ * A translated slug is normalised (slugSuggestion) and must be unique in its
+ * language on the domains it answers (slugClaims.ts). Runs before the workflow
+ * rule. Other fields pass through untouched.
+ */
+export const enforceTranslatedSlug: CollectionBeforeChangeHook = async (args: unknown) => {
+  const { data, originalDoc, req, operation } = args as {
+    data: Record<string, unknown>
+    originalDoc?: Record<string, unknown> | null
+    req?: { engine?: unknown } | null
+    operation: string
+  }
+  const pick = (key: string) => (operation === 'update' && originalDoc ? originalDoc[key] : undefined) ?? data[key]
+  if (String(pick('sourceKind') ?? 'collection') !== 'collection' || String(pick('fieldPath') ?? '') !== SLUG_FIELD) return data
+  if (typeof data.value !== 'string' || data.value.trim().length === 0) return data
+
+  const sourceId = String(pick('sourceId') ?? '')
+  const separator = sourceId.indexOf(':')
+  const collection = separator > 0 ? sourceId.slice(0, separator) : ''
+  const documentId = separator > 0 ? sourceId.slice(separator + 1) : ''
+  const { ValidationError } = await import('@/localapi/operations')
+  if (!isTranslatableSlugCollection(collection) || !documentId) {
+    throw new ValidationError([{ path: 'fieldPath', message: 'Only pages, posts and products have translated slugs.' }])
+  }
+
+  const slug = slugSuggestion(data.value)
+  if (!isValidTranslatedSlug(slug)) {
+    throw new ValidationError([{ path: 'value', message: 'A slug may use letters, digits and single hyphens only.' }])
+  }
+  if (req?.engine) {
+    const locale = String(pick('locale') ?? '')
+    const claim = await checkTranslatedSlug({
+      engine: req.engine as Parameters<typeof checkTranslatedSlug>[0]['engine'],
+      collection,
+      documentId,
+      locale,
+      slug,
+    })
+    if (claim.ok === false) throw new ValidationError([{ path: 'value', message: claim.message }])
+  }
+  return { ...data, value: slug }
+}
+
 /**
  * The write rule, applied to every write that reaches this collection - the
  * Translations screen, the REST API, the bulk route and the local API alike.
@@ -78,7 +124,7 @@ export const Translations: CollectionConfig = {
     description: 'Individual translated strings. Edit these on the Translations screen.',
   },
   hooks: {
-    beforeChange: [enforceTranslationWorkflow],
+    beforeChange: [enforceTranslatedSlug, enforceTranslationWorkflow],
   },
   access: {
     read: roleAccess('translations', 'read'),

@@ -2497,6 +2497,8 @@ const ar: UiDictionary = {
   'al.breadcrumb': 'مسار التنقل',
   'al.dataViewSettings': 'إعدادات الجدول أو الرسم البياني',
   'al.trash': 'سلة المهملات',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'أحرف صغيرة وأرقام وشرطات. يجب أن يكون فريدًا في هذه اللغة على كل نطاق.',
 }
 
 export default ar

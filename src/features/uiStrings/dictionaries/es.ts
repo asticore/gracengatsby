@@ -2497,6 +2497,8 @@ const es: UiDictionary = {
   'al.breadcrumb': 'Ruta de navegación',
   'al.dataViewSettings': 'Ajustes de tabla o gráfico',
   'al.trash': 'Papelera',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Letras minúsculas, números y guiones. Único en este idioma en cada dominio.',
 }
 
 export default es

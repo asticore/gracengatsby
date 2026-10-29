@@ -2497,6 +2497,8 @@ const ja: UiDictionary = {
   'al.breadcrumb': 'パンくずリスト',
   'al.dataViewSettings': '表またはグラフの設定',
   'al.trash': 'ゴミ箱',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': '小文字、数字、ハイフンを使用します。各ドメインで、この言語内で一意である必要があります。',
 }
 
 export default ja

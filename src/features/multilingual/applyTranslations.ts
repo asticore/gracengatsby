@@ -10,6 +10,8 @@ import { findPageByPath, getHomepage } from '@/utilities/pagePaths'
 import { readMultilingualSettingsFromD1, type MultilingualSettings } from './settings'
 import { lookupFromRows, overlayDocument } from './overlay'
 import { findTranslations, type TranslationRow } from './store'
+import { loadLocaleRows } from './localeRows'
+import { sourcePathFromAnyLocale } from './slugIndex'
 
 /**
  * Server side of the overlay: loads the locale's rows once per request and
@@ -18,15 +20,6 @@ import { findTranslations, type TranslationRow } from './store'
  * Off, single-language and default-locale requests return the input object
  * unchanged, so a site without translations renders exactly as before.
  */
-
-/** One bulk read of a locale's collection rows, memoised for the request. */
-const loadLocaleRows = cache(async (locale: string): Promise<TranslationRow[]> => {
-  const engine = await getEngine()
-  return findTranslations(engine as unknown as Parameters<typeof findTranslations>[0], {
-    locale,
-    sourceKind: 'collection',
-  })
-})
 
 /** The locale the current request is served in, or null when multilingual is off. */
 export async function currentRequestLocale(): Promise<string | null> {
@@ -116,7 +109,8 @@ export async function availableLocalesForPath(path: string | null | undefined): 
   try {
     const settings = await readMultilingualSettingsFromD1()
     if (!isLocaleRoutable(settings)) return null
-    const target = await documentForPath(path ?? '/')
+    // A translated URL answers for the same document, so the lookup goes by the source path.
+    const target = await documentForPath(await sourcePathFromAnyLocale(path ?? '/'))
     if (!target) return null
     const locales = nonDefaultLocales(settings)
     if (locales.length === 0) return null

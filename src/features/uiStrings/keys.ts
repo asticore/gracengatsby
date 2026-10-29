@@ -2537,6 +2537,8 @@ export const UI_STRING_SOURCE = {
   'al.breadcrumb': 'Breadcrumb',
   'al.dataViewSettings': 'Table or chart settings',
   'al.trash': 'Trash',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Lowercase letters, digits and hyphens. Must be unique in this language on each domain.',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

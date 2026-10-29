@@ -19,6 +19,7 @@ import { annotatePage } from '@/features/editScreens/toc'
 import { getEngine } from '@/lib/engine'
 import { getFeatureFlags } from '@/utilities/features'
 import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
+import { sourceSlugFor } from '@/features/multilingual/slugIndex'
 import { buildMetadata } from '@/utilities/seo'
 import { PageJsonLd } from '@/features/seo'
 import { PasswordGate } from '@/components/PasswordGate'
@@ -51,9 +52,12 @@ async function getPost(slug: string) {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
+  const { slug: requested } = await params
   const locale = await publicLocale()
-  const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
+  const requestLocale = await currentRequestLocale()
+  // A translated slug answers for its source post (localizedSlugs.ts).
+  const slug = await sourceSlugFor(requestLocale, 'blog', requested, { redirect: false })
+  const post = await applyTranslations(await getPost(slug), 'posts', requestLocale)
   if (!post) return {}
 
   // When password-protected, use generic metadata and mark as noindex
@@ -103,9 +107,12 @@ export default async function BlogPostPage({
   const flags = await getFeatureFlags()
   if (!flags.blog) notFound()
 
-  const { slug } = await params
+  const { slug: requested } = await params
   const locale = await publicLocale()
-  const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
+  const requestLocale = await currentRequestLocale()
+  // A source slug with a translation is redirected to the translated URL; a translated slug answers for its post.
+  const slug = await sourceSlugFor(requestLocale, 'blog', requested, { redirect: true })
+  const post = await applyTranslations(await getPost(slug), 'posts', requestLocale)
   if (!post) notFound()
   if (!(await contentAvailableHere((post as { availableDomains?: unknown }).availableDomains))) notFound()
 

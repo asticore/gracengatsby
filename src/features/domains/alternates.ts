@@ -10,7 +10,12 @@ import { primaryOf, type SiteDomain } from './model'
  *
  * Nothing is added with fewer than two active domains: a single-domain site keeps its markup unchanged.
  */
-export function domainAlternates(path: string, domains: readonly SiteDomain[], settings: MultilingualSettings): Alternate[] {
+export function domainAlternates(
+  path: string,
+  domains: readonly SiteDomain[],
+  settings: MultilingualSettings,
+  localizedPaths?: Readonly<Record<string, string>> | null,
+): Alternate[] {
   const active = domains.filter((domain) => domain.status === 'active')
   if (active.length < 2) return []
 
@@ -18,7 +23,8 @@ export function domainAlternates(path: string, domains: readonly SiteDomain[], s
   const entries: Alternate[] = active.map((domain) => {
     const locale = domain.defaultLocale ?? settings.defaultLocale
     // On this domain the domain's own language is the unprefixed one, so its URL is built with it as the default.
-    const local = localisedHref(normalised, locale, { ...settings, defaultLocale: locale })
+    // A translated slug in that language replaces the source path (localizedSlugs.ts).
+    const local = localisedHref(localizedPaths?.[locale] ?? normalised, locale, { ...settings, defaultLocale: locale })
     return { hreflang: locale, href: `https://${domain.host}${local}` }
   })
 

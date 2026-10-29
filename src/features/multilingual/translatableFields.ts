@@ -2,8 +2,8 @@
  * Which fields on which collections are worth translating.
  *
  * Deliberately a hand-written list rather than a walk of each collection's
- * field config. Most fields on a document should not be translated - slugs,
- * dates, prices, relationships, image references, booleans - and a generic
+ * field config. Most fields on a document should not be translated - dates,
+ * prices, relationships, image references, booleans - and a generic
  * walker that offers all of them buries the six fields that matter under sixty
  * that do not. Naming them is a minute's work per collection and produces a
  * screen somebody can actually finish.
@@ -19,6 +19,9 @@
 import { blockTextAddresses, type BlockGroup } from './blockText'
 import { richTextSubFields } from './richText'
 import { parseTiers, tierPath } from '@/features/editScreens/tiers'
+
+/** The field path of a document's slug, when it is translatable (see localizedSlugs.ts). */
+export const SLUG_FIELD = 'slug'
 
 export type TranslatableFieldDef = {
   path: string
@@ -53,6 +56,8 @@ export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
     blocksField: 'blocks',
     fields: [
       { path: 'title', label: 'Title', size: 'text' },
+      // A translated slug is the URL segment in that language (see localizedSlugs.ts).
+      { path: 'slug', label: 'Slug', size: 'text' },
       { path: 'seo.metaTitle', label: 'SEO title', size: 'text' },
       { path: 'seo.metaDescription', label: 'SEO description', size: 'long' },
     ],
@@ -64,6 +69,7 @@ export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
     blocksField: 'layout',
     fields: [
       { path: 'title', label: 'Title', size: 'text' },
+      { path: 'slug', label: 'Slug', size: 'text' },
       { path: 'excerpt', label: 'Excerpt', size: 'long' },
       { path: 'content', label: 'Body', size: 'long', richText: true },
       { path: 'seo.metaTitle', label: 'SEO title', size: 'text' },
@@ -77,6 +83,7 @@ export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
     blocksField: 'layout',
     fields: [
       { path: 'title', label: 'Title', size: 'text' },
+      { path: 'slug', label: 'Slug', size: 'text' },
       { path: 'description', label: 'Description', size: 'long', richText: true },
       { path: 'seo.metaTitle', label: 'SEO title', size: 'text' },
       { path: 'seo.metaDescription', label: 'SEO description', size: 'long' },

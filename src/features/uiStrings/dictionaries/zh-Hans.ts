@@ -2496,6 +2496,8 @@ const zhHans: UiDictionary = {
   'al.breadcrumb': '面包屑导航',
   'al.dataViewSettings': '表格或图表设置',
   'al.trash': '回收站',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': '小写字母、数字和连字符。在每个域名上，此语言中必须唯一。',
 }
 
 export default zhHans

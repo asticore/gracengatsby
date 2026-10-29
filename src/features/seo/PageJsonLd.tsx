@@ -6,6 +6,7 @@ import { articleFacts, authorNameOf, eventExtraFor, loadFaqItems } from './pageS
 import { currentPageLocale } from './pageLocale'
 import { breadcrumbTrail, type TrailItem } from './schemaNodes'
 import { localisedHref } from '@/features/multilingual/detect'
+import { localizedPathsFor } from '@/features/multilingual/slugIndex'
 import type { Media } from '@/engage-types'
 
 /**
@@ -72,9 +73,11 @@ export const PageJsonLd = async ({
   // describes the page the reader is on. Off, or the default language, the path is unchanged.
   const page = await currentPageLocale()
   const sitePath = path.startsWith('/') ? path : `/${path}`
-  const localePath = page ? localisedHref(sitePath, page.locale, page.settings) : sitePath
+  // A translated slug changes the path in that language too (localizedSlugs.ts).
+  const localizedSite = page ? ((await localizedPathsFor(sitePath))?.[page.locale] ?? sitePath) : sitePath
+  const localePath = page ? localisedHref(localizedSite, page.locale, page.settings) : sitePath
   // The prefix alone (e.g. '/fr'), recovered from the localised path.
-  const localePrefix = localePath === sitePath ? '' : sitePath === '/' ? localePath : localePath.slice(0, localePath.length - sitePath.length)
+  const localePrefix = localePath === localizedSite ? '' : localizedSite === '/' ? localePath : localePath.slice(0, localePath.length - localizedSite.length)
   const url = context.baseUrl + localePath
 
   // Derive image: prefer social image, fall back to featured image, convert to absolute URL

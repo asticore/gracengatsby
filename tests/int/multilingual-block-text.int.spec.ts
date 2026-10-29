@@ -187,7 +187,7 @@ describe('block text addresses', () => {
 
   it('lists block text in fieldsForDocument after the fixed fields, and only for collections with blocks', () => {
     const fields = fieldsForDocument('pages', page)
-    expect(fields.slice(0, 3).map((f) => f.path)).toEqual(['title', 'seo.metaTitle', 'seo.metaDescription'])
+    expect(fields.slice(0, 4).map((f) => f.path)).toEqual(['title', 'slug', 'seo.metaTitle', 'seo.metaDescription'])
     expect(fields.some((f) => f.path === 'blocks.h1.heading' && f.group?.key === 'h1')).toBe(true)
     expect(fieldsForDocument('faqs', { question: 'Q', answer: 'A' }).every((f) => !f.group)).toBe(true)
   })

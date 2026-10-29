@@ -208,6 +208,7 @@ export function TranslationEditor(props: TranslationEditorProps) {
       {props.fields.map((field) => (
         <section key={field.fieldPath} className="flex flex-col gap-[8px] border-t border-[var(--theme-elevation-100)] pt-[10px]">
           <h3 className="text-[14px] font-semibold">{field.label}</h3>
+          {field.fieldPath === 'slug' ? <p className="text-[12px] opacity-70">{t('translations.slug.hint')}</p> : null}
           <div className="text-[13px] whitespace-pre-wrap rounded-[5px] bg-[var(--theme-elevation-100)] p-[8px]">
             <span className="block text-[11px] opacity-70">{props.sourceLabel} (source)</span>
             {field.sourceText}

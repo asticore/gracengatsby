@@ -9,20 +9,40 @@ import type { MultilingualSettings } from './settings'
  * the block renderer, the navigation and the archive cards. Null means "do not
  * rewrite": the default locale, multilingual off, or the logged-in portal.
  */
-type LinkState = { locale: string | null; settings: MultilingualSettings | null }
+type LinkState = {
+  locale: string | null
+  settings: MultilingualSettings | null
+  /** Source path to its translated slug path in `locale` (localizedSlugs.ts). Null when there are none. */
+  paths: ReadonlyMap<string, string> | null
+}
 
-const holder = cache((): LinkState => ({ locale: null, settings: null }))
+const holder = cache((): LinkState => ({ locale: null, settings: null, paths: null }))
 
-export function setRequestLinkLocale(locale: string | null, settings: MultilingualSettings | null): void {
+export function setRequestLinkLocale(
+  locale: string | null,
+  settings: MultilingualSettings | null,
+  paths: ReadonlyMap<string, string> | null = null,
+): void {
   const state = holder()
   state.locale = locale
   state.settings = settings
+  state.paths = paths
 }
 
-/** Localises one href for the current request. Identity outside a non-default locale. */
+/**
+ * Localises one href for the current request. Identity outside a non-default locale.
+ * An internal page with a translated slug links to that slug; any other internal
+ * link gets the locale prefix.
+ */
 export function localizeForRequest(href: string): string {
-  const { locale, settings } = holder()
+  const { locale, settings, paths } = holder()
   if (!locale || !settings) return href
+  if (paths && paths.size > 0 && href.startsWith('/') && !href.startsWith('//')) {
+    const cut = href.search(/[?#]/)
+    const pathname = cut === -1 ? href : href.slice(0, cut)
+    const translated = paths.get(pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname)
+    if (translated !== undefined) return localizeHref(`${translated}${cut === -1 ? '' : href.slice(cut)}`, locale, settings)
+  }
   return localizeHref(href, locale, settings)
 }
 

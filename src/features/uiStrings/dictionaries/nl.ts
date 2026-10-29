@@ -2497,6 +2497,8 @@ const nl: UiDictionary = {
   'al.breadcrumb': 'Broodkruimels',
   'al.dataViewSettings': 'Instellingen voor tabel of grafiek',
   'al.trash': 'Prullenbak',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Kleine letters, cijfers en koppeltekens. Uniek in deze taal op elk domein.',
 }
 
 export default nl

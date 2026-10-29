@@ -11,6 +11,7 @@ import { getSeoContext } from '@/features/seo/settings'
 import { currentPageLocale } from '@/features/seo/pageLocale'
 import { localeSeoFields, languagesMap } from '@/features/seo/localeSeo'
 import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
+import { localizedPathsFor } from '@/features/multilingual/slugIndex'
 import { getEngine } from '@/lib/engine'
 import type { Media, SiteSetting } from '@/engage-types'
 
@@ -156,6 +157,8 @@ export const buildMetadata = async (opts: {
   const baseUrl = (resolved ? context.baseUrl : process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
   // Multilingual: a self-referencing canonical for this request's language, plus hreflang alternates.
   const pageLocale = resolved && opts.path ? await currentPageLocale() : null
+  // Translated slugs: this document's URL in each locale (localizedSlugs.ts); undefined keeps the source URLs.
+  const localizedPaths = resolved && opts.path ? await localizedPathsFor(opts.path) : undefined
   const localeSeo = pageLocale && opts.path
     ? localeSeoFields({
         baseUrl: context.baseUrl,
@@ -164,6 +167,7 @@ export const buildMetadata = async (opts: {
         settings: pageLocale.settings,
         explicitCanonical: Boolean(opts.seo?.canonicalUrl),
         available: await availableLocalesForPath(opts.path),
+        localizedPaths,
       })
     : null
   // hreflang across registered domains, limited to the domains this document is available on.
@@ -174,7 +178,7 @@ export const buildMetadata = async (opts: {
     ? (await readDomainsFromD1()).filter((d) => availableOnHost(opts.availableDomains, d.host) && (ownHosts.includes(d.host) || !overridden.has(d.host)))
     : []
   const crossDomain = opts.path
-    ? domainAlternates(opts.path, domainList, pageLocale?.settings ?? (await readMultilingualSettingsFromD1()))
+    ? domainAlternates(opts.path, domainList, pageLocale?.settings ?? (await readMultilingualSettingsFromD1()), localizedPaths)
     : []
   const alternates = mergeAlternates(localeSeo?.alternates, crossDomain)
 

@@ -6,6 +6,7 @@ import { getSiteIcons } from './siteFilesData'
 import { currentPageLocale } from './pageLocale'
 import { localeSeoFields, languagesMap } from './localeSeo'
 import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
+import { localizedPathsFor, sourcePathFor } from '@/features/multilingual/slugIndex'
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
 import { readDomainsFromD1 } from '@/features/domains/store'
@@ -40,7 +41,9 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
   const seo = resolveSeo(context, input)
   // Language of this request (null while multilingual is off or single-language).
   const pageLocale = await currentPageLocale()
-  const localePath = input.path ?? pageLocale?.pathname
+  // Source path of the page: a translated URL in the request is still the same document (localizedSlugs.ts).
+  const localePath = input.path ?? (pageLocale?.pathname !== undefined ? await sourcePathFor(pageLocale.locale, pageLocale.pathname) : undefined)
+  const localizedPaths = localePath !== undefined ? await localizedPathsFor(localePath) : undefined
   const localeSeo = pageLocale && localePath !== undefined
     ? localeSeoFields({
         baseUrl: context.baseUrl,
@@ -49,12 +52,13 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
         settings: pageLocale.settings,
         explicitCanonical: Boolean(input.seo?.canonicalUrl),
         available: await availableLocalesForPath(localePath),
+        localizedPaths,
       })
     : null
   const canonical = localeSeo?.canonical ?? seo.canonical
   // hreflang across registered domains: the same page on each active domain (empty with fewer than two).
   const crossDomain = localePath !== undefined
-    ? domainAlternates(localePath, await readDomainsFromD1(), pageLocale?.settings ?? (await readMultilingualSettingsFromD1()))
+    ? domainAlternates(localePath, await readDomainsFromD1(), pageLocale?.settings ?? (await readMultilingualSettingsFromD1()), localizedPaths)
     : []
   const alternates = mergeAlternates(localeSeo?.alternates, crossDomain)
   const verification = context.settings?.verification

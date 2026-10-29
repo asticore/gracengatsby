@@ -1,4 +1,4 @@
-import { fieldsForDocument, sourceIdFor, translatableSource } from './translatableFields'
+import { fieldsForDocument, sourceIdFor, translatableSource, SLUG_FIELD } from './translatableFields'
 import type { MultilingualSettings } from './settings'
 import { valueAtPath, type TranslationRow } from './store'
 import { isTranslationPublishable } from './translationStatus'
@@ -64,7 +64,8 @@ export function publishableLocalesForDocument(args: {
   const source = translatableSource(collection)
   if (!source || !doc || typeof doc !== 'object') return null
   const sourceId = sourceIdFor(collection, id)
-  const fields = fieldsForDocument(collection, doc).filter((field) => !field.richText)
+  // A slug is not content: a translated URL alone does not make a page available in that language.
+  const fields = fieldsForDocument(collection, doc).filter((field) => !field.richText && field.path !== SLUG_FIELD)
 
   return nonDefaultLocales(settings).filter((locale) =>
     fields.some((field) => {

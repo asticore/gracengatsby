@@ -66,6 +66,7 @@ import { directionFor } from '@/features/multilingual/detect'
 import { LOCALE_HEADER, requestLocale } from '@/features/multilingual/routing'
 import { isPortalPath } from '@/features/multilingual/portal'
 import { localizeForRequest, setRequestLinkLocale } from '@/features/multilingual/requestLinkLocale'
+import { localeLinkPaths } from '@/features/multilingual/slugIndex'
 import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 
@@ -248,7 +249,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     ? await currentPortalLocale()
     : requestLocale((await headers()).get(LOCALE_HEADER), multilingual)
   // Internal links on this page (blocks, menus, cards) carry the locale prefix. The portal never does.
-  setRequestLinkLocale(portal ? null : locale, multilingual)
+  // Internal links point at a translated slug where the page has one (localizedSlugs.ts).
+  setRequestLinkLocale(portal ? null : locale, multilingual, portal ? null : await localeLinkPaths(locale))
 
   // Header / footer templates (Site templates). Null for each when none matches, and the built-in ones draw.
   const chrome = await renderChromeTemplates(requestPathOf(await headers()))

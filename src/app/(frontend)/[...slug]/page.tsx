@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { contentAvailableHere } from '@/features/domains/request'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
@@ -19,14 +19,25 @@ import { normalisePageAudio } from '@/features/pageAudio/config'
 import { PageAudio } from '@/features/pageAudio/PageAudio'
 import { getEngine } from '@/lib/engine'
 import { currentRequestLocale, applyTranslations, applyTranslationsToDocs } from '@/features/multilingual/applyTranslations'
+import { routeLocalizedRequest } from '@/features/multilingual/slugIndex'
+
+/** The source document for a request: a translated slug answers for its source page, and a source slug with a translation is redirected. */
+async function resolveRequest(slug: string[], locale: string | null, { redirect }: { redirect: boolean }) {
+  const requestPath = `/${slug.join('/')}`
+  const route = await routeLocalizedRequest(locale, requestPath)
+  if (redirect && route?.kind === 'redirect') permanentRedirect(route.location)
+  const sourcePath = route?.kind === 'translated' ? route.sourcePath : requestPath
+  return { requestPath, sourcePath, resolved: await findPageByPath(sourcePath.split('/').filter(Boolean)) }
+}
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
   const { slug } = await params
-  const resolved = await findPageByPath(slug)
+  const locale = await currentRequestLocale()
+  const { sourcePath, resolved } = await resolveRequest(slug, locale, { redirect: false })
   if (!resolved) return {}
-  const page = await applyTranslations(resolved.page, 'pages', await currentRequestLocale())
+  const page = await applyTranslations(resolved.page, 'pages', locale)
 
   // When password-protected, use generic metadata and mark as noindex
   const cookieStore = await cookies()
@@ -46,7 +57,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return buildMetadata({
     title: page.title,
     seo: page.seo,
-    path: `/${slug.join('/')}`,
+    path: sourcePath,
     availableDomains: (page as { availableDomains?: unknown }).availableDomains,
     contentType: 'page',
     tokens: { excerpt: (page as { excerpt?: string | null }).excerpt },
@@ -63,7 +74,8 @@ export default async function BuiltPage({
   const sp = await searchParams
   setRequestQuery(sp)
   const { slug } = await params
-  const resolved = await findPageByPath(slug)
+  const locale = await currentRequestLocale()
+  const { requestPath, sourcePath, resolved } = await resolveRequest(slug, locale, { redirect: true })
 
   if (!resolved) {
     notFound()
@@ -71,7 +83,6 @@ export default async function BuiltPage({
   // Content can be limited to some domains (features/domains): other domains answer not found.
   if (!(await contentAvailableHere((resolved.page as { availableDomains?: unknown }).availableDomains))) notFound()
 
-  const locale = await currentRequestLocale()
   const page = await applyTranslations(resolved.page, 'pages', locale)
   const ancestors = await applyTranslationsToDocs(resolved.ancestors, 'pages', locale)
 
@@ -83,10 +94,11 @@ export default async function BuiltPage({
     cookies: cookieStore,
   })
 
-  const currentPath = `/${slug.join('/')}`
+  // The source path names the document for blocks, SEO and JSON-LD; the gate sends the visitor back to the URL they asked for.
+  const currentPath = sourcePath
 
   if (gateState === 'locked') {
-    return <PasswordGate collection="pages" currentPath={currentPath} id={page.id} wrongPassword={sp.pw === 'wrong'} />
+    return <PasswordGate collection="pages" currentPath={requestPath} id={page.id} wrongPassword={sp.pw === 'wrong'} />
   }
 
   // Merge tags ({{field:...}}, {{title}}, ...) are resolved here; unknown braces stay as typed.

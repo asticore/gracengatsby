@@ -16,8 +16,31 @@ export const DOMAIN_LOCALE_HEADER = 'x-eg-domain-locale'
 
 export type DomainStatus = 'active' | 'disabled'
 
+/**
+ * Per-domain overrides. Each is null when the domain uses the site-wide value. The public header, footer,
+ * site title and SEO read these when the request arrived on this domain (features/domains/request.ts).
+ */
+export type DomainOverrides = {
+  siteName: string | null
+  tagline: string | null
+  logoUrl: string | null
+  contactEmail: string | null
+  contactPhone: string | null
+  socials: { instagram: string | null; facebook: string | null; linkedin: string | null; x: string | null }
+}
+
+export const NO_OVERRIDES: DomainOverrides = {
+  siteName: null,
+  tagline: null,
+  logoUrl: null,
+  contactEmail: null,
+  contactPhone: null,
+  socials: { instagram: null, facebook: null, linkedin: null, x: null },
+}
+
 /** One configured domain, after normalisation. */
 export type SiteDomain = {
+  overrides: DomainOverrides
   host: string
   label: string
   /** Language served unprefixed on this domain. Null inherits the site's primary language. */
@@ -31,7 +54,9 @@ export type SiteDomain = {
 }
 
 /** The stored row shape (the global's array items), before normalisation. Values are untrusted. */
-export type DomainRow = Partial<Record<keyof Omit<SiteDomain, 'status'> | 'status', unknown>>
+export type DomainRow = Partial<Record<keyof Omit<SiteDomain, 'status' | 'overrides'> | 'status' | OverrideKey, unknown>>
+
+type OverrideKey = 'siteName' | 'tagline' | 'logoUrl' | 'contactEmail' | 'contactPhone' | 'instagramUrl' | 'facebookUrl' | 'linkedinUrl' | 'xUrl'
 
 export type NormalisedDomains = { domains: SiteDomain[]; errors: string[] }
 
@@ -44,6 +69,23 @@ const asFlag = (value: unknown, fallback: boolean): boolean => {
 }
 
 const asText = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Reads one override. Empty is null. Returns an error message as well when the value cannot be used. */
+function override(value: unknown, max: number): { value: string | null; error?: string } {
+  const text = asText(value)
+  if (!text) return { value: null }
+  return text.length > max ? { value: null, error: `An override is longer than ${max} characters.` } : { value: text }
+}
+
+function secureUrl(value: unknown, label: string, allowPath: boolean): { value: string | null; error?: string } {
+  const text = asText(value)
+  if (!text) return { value: null }
+  const https = /^https:\/\/[^\s]+$/i.test(text)
+  const path = allowPath && /^\/[^\s/][^\s]*$/.test(text)
+  return https || path ? { value: text } : { value: null, error: `${label} must start with https:// ${allowPath ? 'or be a path such as /logo.svg' : ''}`.trim() }
+}
 
 /**
  * Validates and normalises the rows of the domain registry.
@@ -88,7 +130,30 @@ export function normaliseDomains(rows: unknown, activeLocales?: readonly string[
     const currency = asText(raw.currencyHint).toUpperCase()
     if (currency && !CURRENCY.test(currency)) errors.push(`${parsed.host}: the currency must be a three-letter code such as AUD.`)
 
+    const errorsHere: string[] = []
+    const take = (r: { value: string | null; error?: string }) => {
+      if (r.error) errorsHere.push(`${parsed.host}: ${r.error}`)
+      return r.value
+    }
+    const email = take(override(raw.contactEmail, 200))
+    if (email && !EMAIL.test(email)) errorsHere.push(`${parsed.host}: the contact email is not a valid address.`)
+    const overrides: DomainOverrides = {
+      siteName: take(override(raw.siteName, 120)),
+      tagline: take(override(raw.tagline, 200)),
+      logoUrl: take(secureUrl(raw.logoUrl, 'The logo URL', true)),
+      contactEmail: email,
+      contactPhone: take(override(raw.contactPhone, 40)),
+      socials: {
+        instagram: take(secureUrl(raw.instagramUrl, 'The Instagram URL', false)),
+        facebook: take(secureUrl(raw.facebookUrl, 'The Facebook URL', false)),
+        linkedin: take(secureUrl(raw.linkedinUrl, 'The LinkedIn URL', false)),
+        x: take(secureUrl(raw.xUrl, 'The X URL', false)),
+      },
+    }
+    errors.push(...errorsHere)
+
     domains.push({
+      overrides,
       host: parsed.host,
       label: label || parsed.host,
       defaultLocale,

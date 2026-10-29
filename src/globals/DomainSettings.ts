@@ -129,6 +129,38 @@ export const DomainSettings: GlobalConfig = {
             },
           ],
         },
+        {
+          type: 'row',
+          fields: [
+            { name: 'siteName', type: 'text', label: 'Site name', admin: { width: '50%', description: 'Optional. Leave blank to use the site name.' } },
+            { name: 'tagline', type: 'text', label: 'Tagline', admin: { width: '50%', description: 'Optional. Shown by the site title block on this domain.' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'logoUrl', type: 'text', label: 'Logo URL', admin: { width: '50%', description: 'Optional. A full https address or a path such as /logo-au.svg. Blank uses the site logo.' } },
+            { name: 'contactEmail', type: 'text', label: 'Contact email', admin: { width: '50%', description: 'Optional. Shown in the footer on this domain.' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'contactPhone', type: 'text', label: 'Contact phone', admin: { width: '50%', description: 'Optional. Shown in the footer on this domain.' } },
+            { name: 'instagramUrl', type: 'text', label: 'Instagram URL', admin: { width: '50%', description: 'Optional social link for this domain (https).' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'facebookUrl', type: 'text', label: 'Facebook URL', admin: { width: '50%', description: 'Optional social link for this domain (https).' } },
+            { name: 'linkedinUrl', type: 'text', label: 'LinkedIn URL', admin: { width: '50%', description: 'Optional social link for this domain (https).' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [{ name: 'xUrl', type: 'text', label: 'X URL', admin: { width: '50%', description: 'Optional social link for this domain (https).' } }],
+        },
       ],
     },
   ],

@@ -20,6 +20,15 @@ export const domainSettingsBeforeChange = ({ data }: { data?: { domains?: unknow
     status: domain.status,
     redirectToPrimary: domain.redirectToPrimary,
     allowAdmin: domain.allowAdmin,
+    siteName: domain.overrides.siteName,
+    tagline: domain.overrides.tagline,
+    logoUrl: domain.overrides.logoUrl,
+    contactEmail: domain.overrides.contactEmail,
+    contactPhone: domain.overrides.contactPhone,
+    instagramUrl: domain.overrides.socials.instagram,
+    facebookUrl: domain.overrides.socials.facebook,
+    linkedinUrl: domain.overrides.socials.linkedin,
+    xUrl: domain.overrides.socials.x,
   }))
   return data
 }

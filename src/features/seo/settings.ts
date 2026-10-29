@@ -61,7 +61,8 @@ export const getBaseUrl = (): string =>
  */
 export const getSeoContext = cache(async (): Promise<SeoContext> => {
   // The origin of the host this request arrived on when it is a registered domain (features/domains); SITE_URL otherwise.
-  const baseUrl = originFor(await requestDomain(), getBaseUrl())
+  const domain = await requestDomain()
+  const baseUrl = originFor(domain, getBaseUrl())
 
   try {
     const flags = await getFeatureFlags()
@@ -79,7 +80,8 @@ export const getSeoContext = cache(async (): Promise<SeoContext> => {
     return {
       enabled: true,
       settings,
-      siteName: site?.siteName || '',
+      // A domain's own name (features/domains) wins over the site-wide one.
+      siteName: domain?.overrides.siteName || site?.siteName || '',
       baseUrl,
       details,
     }

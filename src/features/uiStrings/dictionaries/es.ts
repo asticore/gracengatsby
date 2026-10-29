@@ -2187,6 +2187,13 @@ const es: UiDictionary = {
   'frm.lit.pages': 'Páginas',
   'frm.lit.page_of': 'Página {page} de {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'Encabezado y pie de página',
+  'mn.lit.header': 'Encabezado',
+  'mn.lit.footer': 'Pie de página',
+  'mn.lit.no_access_header_footer': 'No tienes acceso a la configuración de encabezado y pie de página.',
+  'mn.lit.no_access_header': 'No tienes acceso al encabezado.',
+  'mn.lit.no_access_footer': 'No tienes acceso al pie de página.',
 }
 
 export default es

@@ -2186,6 +2186,13 @@ const zhHans: UiDictionary = {
   'frm.lit.pages': '页面',
   'frm.lit.page_of': '第 {page} 页，共 {total} 页',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': '页眉和页脚',
+  'mn.lit.header': '页眉',
+  'mn.lit.footer': '页脚',
+  'mn.lit.no_access_header_footer': '您无权访问页眉和页脚设置。',
+  'mn.lit.no_access_header': '您无权访问页眉。',
+  'mn.lit.no_access_footer': '您无权访问页脚。',
 }
 
 export default zhHans

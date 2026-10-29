@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 type Tab = 'header' | 'footer'
 
@@ -15,7 +16,8 @@ export const HeaderFooterTabs: React.FC<{
   footer: React.ReactNode
   headerLabel?: string
   footerLabel?: string
-}> = ({ header, footer, headerLabel = 'Header', footerLabel = 'Footer' }) => {
+}> = ({ header, footer, headerLabel, footerLabel }) => {
+  const t = useAdminT()
   const [active, setActive] = useState<Tab>('header')
 
   useEffect(() => {
@@ -32,14 +34,14 @@ export const HeaderFooterTabs: React.FC<{
   }
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: 'header', label: headerLabel },
-    { key: 'footer', label: footerLabel },
+    { key: 'header', label: headerLabel ?? t('mn.lit.header') },
+    { key: 'footer', label: footerLabel ?? t('mn.lit.footer') },
   ]
 
   return (
     <div className="header-footer-view">
       <div className="header-footer-view__header">
-        <h1>Header and footer</h1>
+        <h1>{t('mn.lit.header_and_footer')}</h1>
       </div>
       <div className="header-footer-tabs">
         <div className="header-footer-tabs__list" role="tablist">

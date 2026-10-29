@@ -2227,6 +2227,13 @@ export const UI_STRING_SOURCE = {
   'frm.lit.pages': "Pages",
   'frm.lit.page_of': "Page {page} of {total}",
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'Header and footer',
+  'mn.lit.header': 'Header',
+  'mn.lit.footer': 'Footer',
+  'mn.lit.no_access_header_footer': "You don't have access to header and footer settings.",
+  'mn.lit.no_access_header': "You don't have access to the header.",
+  'mn.lit.no_access_footer': "You don't have access to the footer.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

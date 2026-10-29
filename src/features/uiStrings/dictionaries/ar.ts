@@ -2187,6 +2187,13 @@ const ar: UiDictionary = {
   'frm.lit.pages': 'الصفحات',
   'frm.lit.page_of': 'الصفحة {page} من {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'الرأس والتذييل',
+  'mn.lit.header': 'الرأس',
+  'mn.lit.footer': 'التذييل',
+  'mn.lit.no_access_header_footer': 'ليست لديك صلاحية الوصول إلى إعدادات الرأس والتذييل.',
+  'mn.lit.no_access_header': 'ليست لديك صلاحية الوصول إلى الرأس.',
+  'mn.lit.no_access_footer': 'ليست لديك صلاحية الوصول إلى التذييل.',
 }
 
 export default ar

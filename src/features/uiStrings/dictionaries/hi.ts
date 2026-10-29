@@ -2187,6 +2187,13 @@ const hi: UiDictionary = {
   'frm.lit.pages': 'पेज',
   'frm.lit.page_of': 'पेज {page} / {total}',
 
+  // --- admin leftovers (menus header footer) ---
+  'mn.lit.header_and_footer': 'हेडर और फ़ुटर',
+  'mn.lit.header': 'हेडर',
+  'mn.lit.footer': 'फ़ुटर',
+  'mn.lit.no_access_header_footer': 'आपके पास हेडर और फ़ुटर सेटिंग्स तक पहुँच नहीं है।',
+  'mn.lit.no_access_header': 'आपके पास हेडर तक पहुँच नहीं है।',
+  'mn.lit.no_access_footer': 'आपके पास फ़ुटर तक पहुँच नहीं है।',
 }
 
 export default hi

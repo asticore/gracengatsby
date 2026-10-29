@@ -34,6 +34,14 @@ export const DomainSettings: GlobalConfig = {
     update: isAdmin,
   },
   fields: [
+    // Display only: a virtual field has no column, and the component reads the registry itself (see admin/DnsChecklist.tsx).
+    {
+      name: 'dnsChecklist',
+      type: 'text',
+      virtual: true,
+      label: 'DNS and Worker checklist',
+      admin: { components: { Field: '@/features/domains/admin/DnsChecklist#DnsChecklist' } },
+    },
     {
       name: 'domains',
       type: 'array',

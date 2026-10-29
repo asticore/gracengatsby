@@ -12,7 +12,11 @@ function domainListField(name: string, label: string, description: string): Fiel
     name,
     type: 'text',
     label,
-    admin: { position: 'sidebar', description },
+    admin: {
+      position: 'sidebar',
+      description,
+      components: { Field: '@/features/domains/admin/DomainPicker#DomainPicker' },
+    },
     hooks: {
       beforeChange: [
         ({ value }: { value?: unknown }) => {

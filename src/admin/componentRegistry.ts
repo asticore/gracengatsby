@@ -40,6 +40,8 @@ import { WeightInput, DimensionInput } from '@/features/ecommerce/admin/UnitInpu
 import { GenerateVariationsField } from '@/features/ecommerce/admin/GenerateVariationsField'
 import { CloudflarePurgeOnPublishField } from '@/admin/components/CloudflarePurgeOnPublishField'
 import { ColorPickerField } from '@/admin/components/ColorPickerField'
+import { DomainPicker } from '@/features/domains/admin/DomainPicker'
+import { DnsChecklist } from '@/features/domains/admin/DnsChecklist'
 import { UserPermissionOverridesField } from '@/admin/components/UserPermissionOverridesField'
 import { FontPickerField } from '@/admin/components/FontPickerField'
 import { FontsManagerField } from '@/admin/components/FontsManagerField'
@@ -72,6 +74,8 @@ export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/ecommerce/admin/UnitInput#WeightInput': WeightInput,
   '@/features/ecommerce/admin/UnitInput#DimensionInput': DimensionInput,
   '@/features/ecommerce/admin/GenerateVariationsField#GenerateVariationsField': GenerateVariationsField,
+  '@/features/domains/admin/DomainPicker#DomainPicker': DomainPicker,
+  '@/features/domains/admin/DnsChecklist#DnsChecklist': DnsChecklist,
   '@/features/ecommerce/admin/StoreCreditPanel#StoreCreditPanel': StoreCreditPanel,
   '@/features/ecommerce/admin/OrderPanels#OrderNotesPanel': OrderNotesPanel,
   '@/features/ecommerce/admin/OrderPanels#OrderRefundsPanel': OrderRefundsPanel,

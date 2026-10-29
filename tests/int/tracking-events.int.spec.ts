@@ -103,6 +103,13 @@ describe('platform calls and consent gating', () => {
     expect(allowedPlatforms(['meta', 'ga4'], makeChoices({ analytics: true, marketing: true }))).toEqual(['meta', 'ga4'])
   })
 
+  it('sendCall reports a missing global so the call can be queued, and sends once it exists', () => {
+    const calls: unknown[] = []
+    expect(sendCall({} as never, { platform: 'meta', method: 'track', args: ['Lead'] })).toBe(false)
+    expect(sendCall({ fbq: (...a: unknown[]) => calls.push(a) } as never, { platform: 'meta', method: 'track', args: ['Lead'] })).toBe(true)
+    expect(calls).toEqual([['track', 'Lead']])
+  })
+
   it('sendCall never throws and skips missing globals', () => {
     const win = {} as Record<string, unknown>
     expect(() => sendCall(win as unknown as Window & Record<string, any>, { platform: 'meta', method: 'track', args: ['Lead'] })).not.toThrow()

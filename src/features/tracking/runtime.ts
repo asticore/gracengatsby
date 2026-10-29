@@ -33,17 +33,35 @@ export function allowedPlatforms(platforms: TrackingPlatform[], choices: Consent
   return platforms.filter((platform) => choices[PLATFORM_CATEGORY[platform]])
 }
 
-/** Sends one platform call to the matching global, if the global exists. */
-export function sendCall(win: Win, call: PlatformCall): void {
+/**
+ * Sends one platform call to the matching global. Returns false when the
+ * global is not there yet (the platform script has not been injected), so the
+ * caller can queue the call and retry it. A throwing platform counts as sent:
+ * retrying would only repeat the error.
+ */
+export function sendCall(win: Win, call: PlatformCall): boolean {
   try {
-    if (call.platform === 'meta' && typeof win.fbq === 'function') win.fbq(call.method, ...call.args)
-    else if (call.platform === 'ga4' && typeof win.gtag === 'function') win.gtag(call.method, ...call.args)
-    else if (call.platform === 'gtm' && Array.isArray(win.dataLayer)) win.dataLayer.push(...call.args)
-    else if (call.platform === 'tiktok' && win.ttq && typeof win.ttq[call.method] === 'function') win.ttq[call.method](...call.args)
+    if (call.platform === 'meta') {
+      if (typeof win.fbq !== 'function') return false
+      win.fbq(call.method, ...call.args)
+    } else if (call.platform === 'ga4') {
+      if (typeof win.gtag !== 'function') return false
+      win.gtag(call.method, ...call.args)
+    } else if (call.platform === 'gtm') {
+      if (!Array.isArray(win.dataLayer)) return false
+      win.dataLayer.push(...call.args)
+    } else if (call.platform === 'tiktok') {
+      if (!win.ttq || typeof win.ttq[call.method] !== 'function') return false
+      win.ttq[call.method](...call.args)
+    }
   } catch {
     // A platform that throws must not break the page or the other platforms.
   }
+  return true
 }
+
+const RETRY_MS = 250
+const RETRY_ATTEMPTS = 20
 
 /** Finds the element an event's selector names, or null if the selector is not usable on this page. */
 export function matchSelector(selector: string, target: Element | null): Element | null {
@@ -65,6 +83,27 @@ export function startTracking(win: Win, options: TrackingRuntimeOptions): () => 
   const lastClick = new Map<string, number>()
   const randomId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 
+  // Calls whose platform script is not in place yet (for example, consent was just given and the tag is still
+  // injecting). They are retried for a few seconds, then dropped, so an event is never lost to a slow script.
+  const queue: Array<{ call: PlatformCall; attempts: number }> = []
+  let retryTimer = 0
+  const flushQueue = () => {
+    retryTimer = 0
+    for (let i = queue.length - 1; i >= 0; i--) {
+      const item = queue[i]
+      if (sendCall(win, item.call)) {
+        queue.splice(i, 1)
+        continue
+      }
+      item.attempts += 1
+      if (item.attempts >= RETRY_ATTEMPTS) queue.splice(i, 1)
+    }
+    if (queue.length) scheduleRetry()
+  }
+  const scheduleRetry = () => {
+    if (!retryTimer && queue.length) retryTimer = win.setTimeout(flushQueue, RETRY_MS)
+  }
+
   const fire = (event: PublicTrackingEvent, trigger: string) => {
     const choices = effectiveChoices(getConsentState().record, options.policyVersion, !options.optIn)
     let platforms = allowedPlatforms(options.platforms, choices)
@@ -81,7 +120,10 @@ export function startTracking(win: Win, options: TrackingRuntimeOptions): () => 
       if (firedOncePerPage.has(key)) return false
       firedOncePerPage.add(key)
     }
-    for (const call of platformCalls(event, platforms, randomId())) sendCall(win, call)
+    for (const call of platformCalls(event, platforms, randomId())) {
+      if (!sendCall(win, call)) queue.push({ call, attempts: 0 })
+    }
+    scheduleRetry()
     return true
   }
 
@@ -126,9 +168,15 @@ export function startTracking(win: Win, options: TrackingRuntimeOptions): () => 
   }
   flushPageviews()
   // Consent can arrive after the page loads: retry the page views once it does.
-  const onConsent = () => flushPageviews()
+  const onConsent = () => {
+    flushPageviews()
+    scheduleRetry()
+  }
   win.addEventListener(CONSENT_EVENT, onConsent)
-  const unsubscribe = () => win.removeEventListener(CONSENT_EVENT, onConsent)
+  const unsubscribe = () => {
+    win.removeEventListener(CONSENT_EVENT, onConsent)
+    if (retryTimer) win.clearTimeout(retryTimer)
+  }
 
   return () => {
     for (const timer of timers) win.clearTimeout(timer)

@@ -133,6 +133,20 @@ export const Integrations: GlobalConfig = {
       admin: { description: 'Measurement IDs and keys for Google services. Tags only load once the visitor agrees, see Cookie consent.' },
       fields: [
         {
+          name: 'ga4Enabled',
+          type: 'checkbox',
+          label: 'Send events to Google Analytics 4',
+          defaultValue: true,
+          admin: { description: 'Untick to pause GA4 without deleting the measurement ID.' },
+        },
+        {
+          name: 'gtmEnabled',
+          type: 'checkbox',
+          label: 'Load Google Tag Manager',
+          defaultValue: true,
+          admin: { description: 'Untick to pause GTM without deleting the container ID.' },
+        },
+        {
           name: 'ga4MeasurementId',
           type: 'text',
           label: 'Google Analytics 4 measurement ID (G-...)',

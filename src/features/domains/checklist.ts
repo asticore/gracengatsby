@@ -3,34 +3,38 @@
  *
  * The CMS cannot create DNS or Worker routes, and it does not check them (no Cloudflare credentials are stored), so the
  * checklist describes what to do in Cloudflare and each row says the status is not checked here.
+ *
+ * Text comes from the admin UI strings. The default translator reads English, so callers without a locale (tests,
+ * server-side copies) keep the same output; the admin passes its own translator.
  */
+import { t as englishT, type UiStringKey, type UiStringVars } from '@/features/uiStrings'
+
+export type ChecklistTranslate = (key: UiStringKey, vars?: UiStringVars) => string
+
+const englishTranslate: ChecklistTranslate = (key, vars) => englishT(key, 'en', vars)
 
 export type ChecklistDomain = { host: string; status?: string; isPrimary?: boolean }
 
-export function dnsChecklistFor(domains: readonly ChecklistDomain[]): string {
-  const lines: string[] = [
-    'Domain checklist (Cloudflare, same account as this site):',
-    '',
-  ]
+export function dnsChecklistFor(domains: readonly ChecklistDomain[], tr: ChecklistTranslate = englishTranslate): string {
+  const lines: string[] = [tr('dns.heading'), '']
   if (domains.length === 0) {
-    lines.push('No domains are registered yet. Add a row above, save, then come back here.')
+    lines.push(tr('dns.none'))
     return lines.join('\n')
   }
   for (const domain of domains) {
-    const tags = [domain.isPrimary ? 'primary' : null, domain.status === 'disabled' ? 'disabled, not served' : null].filter(Boolean)
-    lines.push(`[ ] ${domain.host}${tags.length ? ` (${tags.join(', ')})` : ''}`)
-    lines.push('    1. Workers & Pages > this site\'s Worker > Settings > Domains & Routes > Add > Custom domain')
-    lines.push(`    2. Enter ${domain.host} and save`)
-    lines.push(`    3. DNS: Cloudflare creates the record when the custom domain is added (same account); check it under DNS`)
-    lines.push(`    4. Open https://${domain.host}/ and confirm the site loads`)
+    const tags = [domain.isPrimary ? tr('dns.tagPrimary') : null, domain.status === 'disabled' ? tr('dns.tagDisabled') : null].filter(Boolean)
+    lines.push(tags.length ? tr('dns.rowTagged', { host: domain.host, tags: tags.join(', ') }) : tr('dns.row', { host: domain.host }))
+    lines.push(`    1. ${tr('dns.step1')}`)
+    lines.push(`    2. ${tr('dns.step2', { host: domain.host })}`)
+    lines.push(`    3. ${tr('dns.step3')}`)
+    lines.push(`    4. ${tr('dns.step4', { host: domain.host })}`)
     lines.push('')
   }
-  lines.push('Status is not checked automatically; tick each step once it is done in Cloudflare.')
+  lines.push(tr('dns.footer'))
   return lines.join('\n')
 }
 
 /** The per-row hint shown next to a domain on the Domains screen. */
-export function dnsHintFor(domain: ChecklistDomain): string {
-  if (domain.status === 'disabled') return 'Disabled: not served, so no Worker step is needed until it is enabled.'
-  return 'Not checked here. Attach this host to the Worker under Domains & Routes in Cloudflare.'
+export function dnsHintFor(domain: ChecklistDomain, tr: ChecklistTranslate = englishTranslate): string {
+  return domain.status === 'disabled' ? tr('dns.hintDisabled') : tr('dns.hintDefault')
 }

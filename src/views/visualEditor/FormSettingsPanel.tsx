@@ -169,7 +169,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
         </Section>
 
         <Section title={t('ve.form.sectionNotifications')}>
-          <p className="ve-panel__hint">Each rule sends an email when an entry arrives. Add conditions to send only for some entries. Merge tags: {'{{field name}}'}.</p>
+          <p className="ve-panel__hint">{t('ve.fsp.notifyHint', { tags: '{{field name}}' })}</p>
           {rules.map((rule, index) => (
             <div className="ve-form-card" key={rule.id || index}>
               <label className="ve-field ve-field--checkbox">
@@ -230,9 +230,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
 
         {isAdmin && (
           <Section title={t('ve.form.sectionWebhooks')}>
-            <p className="ve-panel__hint">
-              Each new entry is sent as JSON to the address, signed with HMAC-SHA256 in the <code>X-Engage-Signature</code> header. Failed deliveries are retried with a growing delay.
-            </p>
+            <p className="ve-panel__hint">{t('ve.fsp.webhookHint', { header: 'X-Engage-Signature' })}</p>
             {hooks.map((hook, index) => (
               <div className="ve-form-card" key={hook.id || index}>
                 <label className="ve-field ve-field--checkbox">
@@ -297,7 +295,7 @@ export const FormSettingsPanel: React.FC<Props> = ({ config, onChange, formId, e
                 </button>
               </label>
               <p className="ve-panel__hint">
-                To place it on a page of this site, use a Form block, or type <code>[form id=&quot;{key}&quot;]</code> in rich text.
+                {t('ve.form.embedPlace', { shortcode: `[form id="${key}"]` })}
               </p>
             </>
           ) : (

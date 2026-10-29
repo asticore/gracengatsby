@@ -13,6 +13,7 @@ import { findTranslations } from '@/features/multilingual/store'
 import { getAllResolvedPages, getHomepage } from '@/utilities/pagePaths'
 import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
 import { readDomainsFromD1 } from '@/features/domains/store'
+import { isNoindexPath } from '@/features/security/noindex'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
 
@@ -87,6 +88,8 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   const add = (path: string, lastModified?: string | null, priority = 0.6, ref?: DocRef) => {
     const normalised = normalisePath(path)
     if (seen.has(normalised)) return
+    // The admin, the API and the preview never belong in a sitemap, whatever the content says.
+    if (isNoindexPath(normalised)) return
     if (pathMatches(normalised, excluded) || pathMatches(normalised, noindexed)) return
     seen.add(normalised)
     // A page only lists the locales it has a publishable translation in; a route with no document keeps them all.

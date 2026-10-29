@@ -1,5 +1,5 @@
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import Image from 'next/image'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
@@ -28,9 +28,9 @@ const Gate: React.FC<{ entitlement: Entitlement; course: CourseDoc }> = ({ entit
         <div className="course-gate">
           <h2>Sign in to continue</h2>
           <p>This course is not open to the public. Sign in with the account you enrolled with.</p>
-          <Link className="btn btn--primary" href="/admin">
+          <AdminLink className="btn btn--primary" path="/">
             Sign in
-          </Link>
+          </AdminLink>
         </div>
       )
     case 'payment-required':
@@ -39,9 +39,9 @@ const Gate: React.FC<{ entitlement: Entitlement; course: CourseDoc }> = ({ entit
           <h2>Buy this course</h2>
           <p>Lessons unlock as soon as your order is paid.</p>
           {product?.slug ? (
-            <Link className="btn btn--primary" href={`/shop/${product.slug}`}>
+            <AdminLink className="btn btn--primary" href={`/shop/${product.slug}`}>
               View in the shop
-            </Link>
+            </AdminLink>
           ) : (
             <p className="empty-state">This course has no product attached yet.</p>
           )}
@@ -147,9 +147,9 @@ export const CourseScreen: React.FC<{ slug: string }> = async ({ slug }) => {
             return (
               <li key={entry.id} className="curriculum__item">
                 {open && entry.slug ? (
-                  <Link className="curriculum__link" href={`/courses/${course.slug}/${entry.slug}`}>
+                  <AdminLink className="curriculum__link" href={`/courses/${course.slug}/${entry.slug}`}>
                     {body}
-                  </Link>
+                  </AdminLink>
                 ) : (
                   <span className="curriculum__locked">{body}</span>
                 )}

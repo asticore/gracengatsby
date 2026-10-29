@@ -105,17 +105,19 @@ describe('buildDocumentTranslations', () => {
     expect(translatorTitle.canApprove).toBe(false)
   })
 
-  it('shows rich text but never offers to edit or approve it', () => {
+  it('lists rich text per text node, grouped under the field, and editable like any text', () => {
     const out = buildDocumentTranslations({
       collection: 'posts',
       documentId: 2,
-      doc: { id: 2, title: 'Post', content: { root: { children: [{ type: 'paragraph', children: [{ text: 'Body' }] }] } } },
+      doc: { id: 2, title: 'Post', content: { root: { children: [{ type: 'paragraph', children: [{ type: 'text', text: 'Body' }] }] } } },
       settings,
       rows: [],
       viewer: { id: 9, isAdmin: true },
     })
-    const body = out!.locales[0].fields.find((field) => field.fieldPath === 'content')!
-    expect(body).toMatchObject({ richText: true, canApprove: false, assignees: [] })
-    expect(out!.locales[0].total).toBe(1)
+    const body = out!.locales[0].fields.find((field) => field.fieldPath === 'content#0.0')!
+    expect(body).toMatchObject({ richText: false, sourceText: 'Body', group: { key: 'content', blockLabel: 'Body' } })
+    expect(body.canApprove).toBe(true)
+    // Title and the one text node.
+    expect(out!.locales[0].total).toBe(2)
   })
 })

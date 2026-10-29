@@ -1,3 +1,6 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, hasAdminPanelAccess, getGlobalConfig } from '@/admin/auth'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
@@ -12,7 +15,8 @@ import { HeaderFooterTabs } from './HeaderFooterTabs'
  */
 export async function HeaderFooterView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  const ui = await getAdminUi()
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const headerGlobal = getGlobalConfig(context.engine, 'header')
   const footerGlobal = getGlobalConfig(context.engine, 'footer')
@@ -20,7 +24,7 @@ export async function HeaderFooterView() {
 
   const canRead = (slug: string) => Boolean(context.permissions.globals?.[slug]?.read)
   if (!canRead('header') && !canRead('footer')) {
-    return <p>You don&apos;t have access to header and footer settings.</p>
+    return <p>{ui.t('mn.lit.no_access_header_footer')}</p>
   }
 
   const [headerDoc, footerDoc] = await Promise.all([
@@ -36,18 +40,18 @@ export async function HeaderFooterView() {
         footerDoc ? (
           <EditForm doc={footerDoc} fields={sanitizeFieldsForClient(footerGlobal.fields)} globalSlug="footer" />
         ) : (
-          <p>You don&apos;t have access to the footer.</p>
+          <p>{ui.t('mn.lit.no_access_footer')}</p>
         )
       }
-      footerLabel={label(footerGlobal, 'Footer')}
+      footerLabel={label(footerGlobal, ui.t('mn.lit.footer'))}
       header={
         headerDoc ? (
           <EditForm doc={headerDoc} fields={sanitizeFieldsForClient(headerGlobal.fields)} globalSlug="header" />
         ) : (
-          <p>You don&apos;t have access to the header.</p>
+          <p>{ui.t('mn.lit.no_access_header')}</p>
         )
       }
-      headerLabel={label(headerGlobal, 'Header')}
+      headerLabel={label(headerGlobal, ui.t('mn.lit.header'))}
     />
   )
 }

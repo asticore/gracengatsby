@@ -1,6 +1,7 @@
 'use client'
 
-import Link from 'next/link'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useState } from 'react'
 import { ResultsMessage, ResultsPager, ResultsStat } from './ResultsChrome'
 import { cellText, formatWhen, type PageInfo, type SubmissionColumn, type SubmissionRow } from './rows'
@@ -14,25 +15,26 @@ type SubmissionPage = PageInfo & { columns: SubmissionColumn[]; docs: Submission
  * this form, so the file matches the one the Form Submissions screen offers.
  */
 export function FormResultsTab({ formId }: { formId: number }) {
+  const t = useAdminT()
   const [page, setPage] = useState(1)
   const { data, error, loading } = useResultsPage<SubmissionPage>(`/api/admin-form-submissions?form=${formId}&page=${page}`)
 
   const showPayment = data !== null && data.docs.some((row) => row.paymentStatus !== 'none')
 
   return (
-    <section aria-label="Submissions" className="et-results">
+    <section aria-label={t('frm.lit.submissions')} className="et-results">
       <div className="et-toolbar">
         <div className="et-stats">
-          <ResultsStat label="Entries" value={data ? data.totalDocs.toLocaleString() : '-'} />
+          <ResultsStat label={t('frm.lit.entries')} value={data ? data.totalDocs.toLocaleString() : '-'} />
         </div>
         <a className="et-button" download href={`/api/form-submissions/export?form=${formId}`}>
-          Export CSV
+          {t('frm.lit.export_csv')}
         </a>
       </div>
 
-      {error && <ResultsMessage kind="error">The entries could not be loaded. Reload the page to try again.</ResultsMessage>}
-      {!error && loading && <ResultsMessage kind="muted">Loading entries...</ResultsMessage>}
-      {data && !error && data.docs.length === 0 && <ResultsMessage kind="muted">No one has sent this form yet.</ResultsMessage>}
+      {error && <ResultsMessage kind="error">{t('frm.lit.entries_load_error')}</ResultsMessage>}
+      {!error && loading && <ResultsMessage kind="muted">{t('frm.lit.loading_entries')}</ResultsMessage>}
+      {data && !error && data.docs.length === 0 && <ResultsMessage kind="muted">{t('frm.lit.no_one_has_sent_this_form_yet')}</ResultsMessage>}
 
       {data && !error && data.docs.length > 0 && (
         <>
@@ -40,12 +42,12 @@ export function FormResultsTab({ formId }: { formId: number }) {
             <table className="et-table">
               <thead>
                 <tr>
-                  <th scope="col" className="et-nowrap">Submitted</th>
+                  <th scope="col" className="et-nowrap">{t('frm.lit.submitted')}</th>
                   {data.columns.map((column) => (
                     <th key={column.name} scope="col">{column.label}</th>
                   ))}
-                  {showPayment && <th scope="col">Payment</th>}
-                  <th scope="col"><span className="et-sr">Open</span></th>
+                  {showPayment && <th scope="col">{t('frm.lit.payment')}</th>}
+                  <th scope="col"><span className="et-sr">{t('frm.lit.open')}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -62,7 +64,7 @@ export function FormResultsTab({ formId }: { formId: number }) {
                     })}
                     {showPayment && <td className="et-nowrap">{row.paymentStatus}</td>}
                     <td className="et-nowrap">
-                      <Link href={`/admin/other/form-submissions/${row.id}`}>Open</Link>
+                      <AdminLink path={`/other/form-submissions/${row.id}`}>{t('frm.lit.open')}</AdminLink>
                     </td>
                   </tr>
                 ))}

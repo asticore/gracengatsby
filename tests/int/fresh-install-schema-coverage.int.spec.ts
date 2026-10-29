@@ -183,7 +183,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         'footer', 'footerColumns', 'footerColumnsLinks', 'footerSocialsLinks',
         'languageSettings', 'languageSettingsMultilingualActiveLocales',
         'seoSettings', 'seoSettingsSchemaSameAs', 'speedSettings', 'speedSettingsAdvancedPreconnectOrigins', 'speedSettingsAdvancedPrefetchDns',
-        'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings', 'shopExtraSettings', 'siteDetails', 'sitePages', 'emailTemplates', 'emailBrand', 'emailSchedule', 'googleConnection',
+        'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings', 'shopExtraSettings', 'siteDetails', 'sitePages', 'domainSettings', 'domainSettingsDomains', 'emailTemplates', 'emailBrand', 'emailSchedule', 'googleConnection',
         'addresses', 'carts', 'cartsItems', 'orders', 'ordersItems', 'ordersRels', 'transactions', 'transactionsItems', 'products', 'productsRels', 'productsVersions', 'productsVersionsRels', 'productsAttributes', 'productsVariations', 'productsVersionsAttributes', 'productsVersionsVariations', 'productsBundleItems', 'productsVersionsBundleItems', 'cartsItems',
         'productsAddOns', 'productsVersionsAddOns', 'shopExtraSettingsPricingRules',
         'preferences', 'preferencesRels', 'lockedDocuments', 'lockedDocumentsRels',
@@ -475,6 +475,12 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       expect.arrayContaining(['email_verified_at', 'email_verify_token_hash', 'email_verify_expires_at']),
     )
     expect(await names('eg_site_settings')).toContain('account_settings_require_email_verification')
+  })
+
+  it('adds the storefront interface overrides column to language settings', async () => {
+    const names = async (t: string) =>
+      ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
+    expect(await names('eg_language_settings')).toContain('interface_overrides')
   })
 
   it('adds the per-user admin interface language column to users', async () => {
@@ -838,13 +844,20 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
   it('password groups migration is registered before organizations and is safe to run twice, keeping existing rows', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations.map((x) => x.name).slice(-6)).toEqual([
+    expect(migrations.map((x) => x.name).slice(-13)).toEqual([
       '20261123_100000_password_groups',
       '20261124_100000_organizations',
       '20261125_100000_translation_workflow',
       '20261126_100000_machine_translation',
       '20261127_100000_machine_autodraft',
       '20261128_100000_admin_ui_language',
+      '20261129_100000_interface_overrides',
+      '20261130_100000_domain_settings',
+      '20261130_110000_admin_path',
+      '20261201_100000_content_domains',
+      '20261208_100000_user_domains',
+      '20261215_100000_domain_overrides',
+      '20261220_100000_site_scoped_slugs',
     ])
     const mod = await import('@/migrations/20261123_100000_password_groups')
     const { drizzle } = await import('drizzle-orm/d1')

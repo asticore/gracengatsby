@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
 
+import { availableOnHost, parseHostList } from '@/features/domains/scope'
+import { domainOverridesAt } from '@/features/domains/served'
+import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
+import { readDomainsFromD1 } from '@/features/domains/store'
+import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 import { resolveSeo, type SeoInput } from '@/features/seo/resolve'
 import { contentTemplatesFor, type ContentType } from '@/features/seo/templates'
 import { getSeoContext } from '@/features/seo/settings'
@@ -98,6 +103,8 @@ export const buildMetadata = async (opts: {
   /** Picks the content-type title and description templates. See resolveSeo. */
   contentType?: ContentType
   tokens?: SeoInput['tokens']
+  /** The document's "Available on domains" list. Its hreflang alternates skip the domains it is not on. */
+  availableDomains?: unknown
 }): Promise<Metadata> => {
   const engine = await getEngine()
   const settings = (await engine.findGlobal({ slug: 'site-settings', depth: 1 }).catch((): null => null)) as SiteSetting | null
@@ -159,6 +166,17 @@ export const buildMetadata = async (opts: {
         available: await availableLocalesForPath(opts.path),
       })
     : null
+  // hreflang across registered domains, limited to the domains this document is available on.
+  // A domain that serves its own version of this address is not an alternate of a shared page (served.ts, as in sitemap.ts).
+  const overridden = resolved && opts.path ? await domainOverridesAt(opts.path) : new Set<string>()
+  const ownHosts = parseHostList(opts.availableDomains)
+  const domainList = resolved && opts.path
+    ? (await readDomainsFromD1()).filter((d) => availableOnHost(opts.availableDomains, d.host) && (ownHosts.includes(d.host) || !overridden.has(d.host)))
+    : []
+  const crossDomain = opts.path
+    ? domainAlternates(opts.path, domainList, pageLocale?.settings ?? (await readMultilingualSettingsFromD1()))
+    : []
+  const alternates = mergeAlternates(localeSeo?.alternates, crossDomain)
 
   const canonical = opts.seo?.canonicalUrl
     ? resolveCanonical(baseUrl, opts.path, opts.seo.canonicalUrl)
@@ -188,8 +206,8 @@ export const buildMetadata = async (opts: {
       images: xImageUrl ? [xImageUrl] : undefined,
       ...(resolved?.twitterHandle ? { site: resolved.twitterHandle, creator: resolved.twitterHandle } : {}),
     },
-    alternates: localeSeo
-      ? { canonical, languages: languagesMap(localeSeo.alternates) }
+    alternates: localeSeo || alternates.length > 0
+      ? { canonical, languages: languagesMap(alternates) }
       : canonical
         ? { canonical }
         : undefined,

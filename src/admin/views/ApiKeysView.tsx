@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess, isAdminUser } from '@/admin/auth'
@@ -13,7 +15,7 @@ import { getEngine } from '@/lib/engine'
  */
 export async function ApiKeysView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   const engine = await getEngine()
   const settings = await getSecuritySettings(engine as never)
   const admin = isAdminUser(context.user)

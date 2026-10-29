@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useMemo, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
@@ -37,6 +38,7 @@ function downloadText(text: string, fileName: string, type = 'application/json')
 const formatSize = (bytes: number): string => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`)
 
 const ExportPanel: React.FC<{ blocks: SectionNode[]; title: string }> = ({ blocks, title }) => {
+  const t = useAdminT()
   const exported = useMemo(() => exportPage(blocks), [blocks])
   const bytes = useMemo(() => new Blob([exported.text]).size, [exported.text])
   const [note, setNote] = useState<string | null>(null)
@@ -45,13 +47,12 @@ const ExportPanel: React.FC<{ blocks: SectionNode[]; title: string }> = ({ block
   return (
     <div className="ve-ie__panel">
       <p className="ve-ie__hint">
-        The whole page as one engage-template file, with editor-only ids left out. Load it on this page or another one from the Import
-        tab. Copy puts the text on the clipboard; Download saves a .json file.
+        {t('ve.ie.exportHint')}
       </p>
       <dl className="ve-ie__summary">
-        <dt>Size</dt>
+        <dt>{t('ve.ie.size')}</dt>
         <dd>{formatSize(bytes)}</dd>
-        <dt>Blocks</dt>
+        <dt>{t('ve.ie.blocks')}</dt>
         <dd>
           {exported.count} (including nested blocks), {exported.sections} top-level sections
         </dd>
@@ -69,10 +70,10 @@ const ExportPanel: React.FC<{ blocks: SectionNode[]; title: string }> = ({ block
             )
           }}
         >
-          Copy page JSON
+          {t('ve.ie.copyPageJson')}
         </button>
         <button type="button" className="ve-btn" onClick={() => downloadText(exported.text, fileName)}>
-          Download .json
+          {t('ve.ie.downloadJson')}
         </button>
         <button
           type="button"
@@ -91,7 +92,7 @@ const ExportPanel: React.FC<{ blocks: SectionNode[]; title: string }> = ({ block
             }
           }}
         >
-          Download HTML
+          {t('ve.ie.downloadHtml')}
         </button>
       </div>
       <p className="ve-ie__note" role="status">
@@ -106,6 +107,7 @@ const ImportPanel: React.FC<{
   onReplace: (nodes: SectionNode[]) => boolean
   onClose: () => void
 }> = ({ onAppend, onReplace, onClose }) => {
+  const t = useAdminT()
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
   const [result, setResult] = useState<ImportParseResult | null>(null)
@@ -141,11 +143,11 @@ const ImportPanel: React.FC<{
   return (
     <div className="ve-ie__panel">
       <label className="ve-ie__field">
-        <span>JSON file</span>
+        <span>{t('ve.ie.jsonFile')}</span>
         <input type="file" accept=".json,application/json" onChange={handleFile} />
       </label>
       <label className="ve-ie__field">
-        <span>Or paste the JSON</span>
+        <span>{t('ve.ie.pasteJson')}</span>
         <textarea
           className="ve-ie__textarea"
           value={text}
@@ -161,7 +163,7 @@ const ImportPanel: React.FC<{
       </label>
       <div className="ve-ie__actions">
         <button type="button" className="ve-btn" onClick={() => setResult(parsePageImport(text))} disabled={!text.trim()}>
-          Validate
+          {t('ve.ie.validate')}
         </button>
         {fileName && <span className="ve-ie__note">Loaded {fileName}</span>}
       </div>
@@ -175,13 +177,13 @@ const ImportPanel: React.FC<{
       {summary && (
         <div className="ve-ie__summary-box">
           <dl className="ve-ie__summary">
-            <dt>Kind</dt>
+            <dt>{t('ve.ie.kind')}</dt>
             <dd>{summary.kind}</dd>
-            <dt>Schema version</dt>
+            <dt>{t('ve.ie.schemaVersion')}</dt>
             <dd>{summary.schemaVersion}</dd>
-            <dt>Sections</dt>
+            <dt>{t('ve.ie.sections')}</dt>
             <dd>{summary.sections}</dd>
-            <dt>Blocks (incl. nested)</dt>
+            <dt>{t('ve.ie.blocksNested')}</dt>
             <dd>{summary.elementCount}</dd>
           </dl>
           {summary.unknownTypes.length > 0 && (
@@ -203,7 +205,7 @@ const ImportPanel: React.FC<{
       )}
 
       <fieldset className="ve-ie__modes">
-        <legend>How to import</legend>
+        <legend>{t('ve.ie.howToImport')}</legend>
         <label>
           <input type="radio" name="ve-ie-mode" checked={mode === 'append'} onChange={() => setMode('append')} /> Append to page
         </label>
@@ -214,7 +216,7 @@ const ImportPanel: React.FC<{
             checked={mode === 'replace'}
             onChange={() => setMode('replace')}
           />{' '}
-          Replace page
+          {t('ve.ie.replacePage')}
         </label>
       </fieldset>
       {mode === 'replace' && (
@@ -226,15 +228,16 @@ const ImportPanel: React.FC<{
 
       <div className="ve-ie__actions">
         <button type="button" className="ve-btn ve-btn--primary" disabled={!canImport} onClick={handleImport}>
-          Import
+          {t('ve.ie.import')}
         </button>
       </div>
-      <p className="ve-ie__hint">Imported blocks get fresh ids. Undo reverses an import.</p>
+      <p className="ve-ie__hint">{t('ve.ie.freshIds')}</p>
     </div>
   )
 }
 
 export const ImportExportModal: React.FC<ImportExportModalProps> = ({ blocks, title, onClose, onAppend, onReplace }) => {
+  const t = useAdminT()
   const [tab, setTab] = useState<Tab>('export')
 
   useEffect(() => {
@@ -250,10 +253,10 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({ blocks, ti
       <div className="ve-modal ve-ie" role="dialog" aria-modal="true" aria-labelledby="ve-ie-title" onClick={(event) => event.stopPropagation()}>
         <div className="ve-modal__header">
           <h2 id="ve-ie-title" className="ve-ie__title">
-            Import / Export
+            {t('ve.ie.importExport')}
           </h2>
-          <button type="button" className="ve-btn ve-btn--ghost" aria-label="Close" onClick={onClose}>
-            Close
+          <button type="button" className="ve-btn ve-btn--ghost" aria-label={t('ve.ie.close')} onClick={onClose}>
+            {t('ve.ie.close')}
           </button>
         </div>
         <div className="ve-modal__body">
@@ -265,7 +268,7 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({ blocks, ti
               className={`ve-btn ve-btn--ghost ${tab === 'export' ? 've-ie__tab--active' : ''}`}
               onClick={() => setTab('export')}
             >
-              Export
+              {t('ve.ie.export')}
             </button>
             <button
               type="button"
@@ -274,7 +277,7 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({ blocks, ti
               className={`ve-btn ve-btn--ghost ${tab === 'import' ? 've-ie__tab--active' : ''}`}
               onClick={() => setTab('import')}
             >
-              Import
+              {t('ve.ie.import')}
             </button>
           </div>
           {tab === 'export' ? (

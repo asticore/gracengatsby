@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { adminLabel } from '@/features/uiStrings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import type { ReactNode } from 'react'
@@ -83,7 +85,7 @@ export async function ListView({
   searchParams?: Record<string, string | string[] | undefined>
 }) {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const collection = getCollectionConfig(context.engine, collectionSlug)
   if (!collection) notFound()

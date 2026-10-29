@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getAdminContext } from '@/admin/auth'
 import { getEngine } from '@/lib/engine'
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { AUTH_URL, ADMIN_PAGE_PATH, GOOGLE_SCOPES, OAUTH_STATE_COOKIE, redirectUriFor } from '@/features/google/constants'
 import { readGoogleClient } from '@/features/google/auth'
 import { publicOrigin } from '@/features/google/origin'
@@ -9,7 +11,8 @@ import { createOauthState, STATE_MAX_AGE_MS } from '@/features/google/state'
 
 export const dynamic = 'force-dynamic'
 
-const back = (origin: string, flag: string): Response => NextResponse.redirect(`${origin}${ADMIN_PAGE_PATH}?google=${flag}`, 303)
+const back = async (origin: string, flag: string): Promise<Response> =>
+  NextResponse.redirect(`${origin}${adminHref(ADMIN_PAGE_PATH, await getAdminRoot())}?google=${flag}`, 303)
 
 /**
  * GET /api/google/connect: an admin starts the Google sign-in. Sets a short-lived

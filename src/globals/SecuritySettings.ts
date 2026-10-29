@@ -3,6 +3,7 @@ import type { GlobalConfig } from '@/engine'
 import { adminOnlyFieldAccess, isAdmin } from '../access/ecommerceAccess'
 import { refuseSocialSwitchWithoutCredentials } from '../features/socialLogin/validate'
 import { socialLoginFields } from './socialLoginFields'
+import { validateAdminPathField } from '../features/security/adminPathValidate'
 
 /**
  * Login protection, response headers, rate limiting and the audit log.
@@ -30,6 +31,13 @@ export const SecuritySettings: GlobalConfig = {
   hooks: {
     // Server-side: a social sign-in provider cannot be switched on until its credentials are saved.
     beforeChange: [refuseSocialSwitchWithoutCredentials],
+    // A saved admin URL takes effect in this isolate at once, not after the 60-second settings cache.
+    afterChange: [
+      async () => {
+        const { invalidateSecuritySettingsCache } = await import('../features/security/settings')
+        invalidateSecuritySettingsCache()
+      },
+    ],
   },
   access: {
     read: () => true,
@@ -265,6 +273,20 @@ export const SecuritySettings: GlobalConfig = {
       max: 3600,
       admin: {
         description: 'The least time between two verification emails to the same account, so the resend button cannot be used to flood a mailbox. 0 turns the gap off.',
+      },
+    },
+    // The admin URL (src/features/security/adminPath.ts). Column admin_path, see
+    // src/migrations/20261130_100000_admin_path.ts. Empty means /admin.
+    {
+      name: 'adminPath',
+      type: 'text',
+      defaultValue: '/admin',
+      label: 'Admin URL',
+      validate: validateAdminPathField,
+      admin: {
+        components: { Field: '@/admin/components/AdminUrlField#AdminUrlField' },
+        description:
+          'The address of the admin, one segment such as /studio-7f3 (lowercase letters, digits and hyphens, 3 to 40 characters). Leave it as /admin to keep the default. The old /admin address stops working once you change this. Recovery: set the ENGAGE_ADMIN_PATH environment variable in Cloudflare to a path, and it overrides this field. Bookmark the new address as soon as you save it, because the admin cannot be found without it.',
       },
     },
     // Admin "sign in as customer" (src/features/impersonation). Flat, like the fields above. Column

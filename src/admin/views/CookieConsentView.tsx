@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getGlobalConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
@@ -11,7 +13,7 @@ import { revealConsentGroup } from './cookieConsentFields'
  */
 export async function CookieConsentView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   if (!context.isAdmin || !context.permissions.globals?.integrations?.read) {
     return <p>You do not have access to the cookie consent settings.</p>
   }

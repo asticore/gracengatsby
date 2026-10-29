@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { getEngine } from '@/lib/engine'
+import { applyTranslations, currentRequestLocale } from '@/features/multilingual/applyTranslations'
 import { canExpandReusableSection, reusableSectionIdOf, tagReusableSections } from '@/lib/reusableSection'
 import type { SectionNode } from '@/lib/sectionTree'
 
@@ -29,7 +30,9 @@ export async function ReusableSectionBlock({
   const engine = await getEngine()
   let blocks: SectionNode[] = []
   try {
-    const doc = await engine.findByID({ collection: 'reusable-sections' as never, id: sectionId, depth: 1, overrideAccess: true })
+    const found = await engine.findByID({ collection: 'reusable-sections' as never, id: sectionId, depth: 1, overrideAccess: true })
+    // Translated text of this section, in the page's language. Unchanged when there is none.
+    const doc = found ? await applyTranslations(found, 'reusable-sections', await currentRequestLocale()) : found
     blocks = (doc?.blocks as SectionNode[] | undefined) || []
   } catch {
     // A deleted section should leave a gap, not break the whole page.

@@ -1,6 +1,8 @@
+import { getAdminRoot } from '@/features/security/settings'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
+import { adminHref } from '@/features/security/adminPath'
 import { adminLabel } from '@/features/uiStrings'
 import { adminCollectionPath } from '@/admin/adminPaths'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminContext, getCollectionConfig, hasAdminPanelAccess } from '@/admin/auth'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
@@ -88,7 +90,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const ui = await getAdminUi()
   const context = await getAdminContext()
   const hasAdminAccess = hasAdminPanelAccess(context.user)
-  if (!hasAdminAccess) redirect('/admin/login')
+  if (!hasAdminAccess) redirect(adminHref('/login', await getAdminRoot()))
 
   const collection = getCollectionConfig(context.engine, collectionSlug)
   if (!collection) notFound()
@@ -104,7 +106,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   const doc = id === undefined ? null : await context.engine.findByID({ collection: collectionSlug, id, user: context.user })
   if (id !== undefined && !doc) notFound()
 
-  const label = typeof collection.labels?.singular === 'string' ? collection.labels.singular : collectionSlug
+  const label = ui.label('singular', collectionSlug, typeof collection.labels?.singular === 'string' ? collection.labels.singular : collectionSlug)
 
   // Stage 11 Phase 2: the reference engine's `versions` is `boolean | {drafts?: boolean | object}` -
   // a bare `false` (the 33 non-drafts collections' real, sanitized shape) carries no `.drafts`
@@ -162,7 +164,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
     trackAuthorship,
     updatedAt: typeof docRecord?.updatedAt === 'string' ? docRecord.updatedAt : undefined,
     updatedByName,
-    visualEditorHref: surface?.kind === 'collection' && id !== undefined ? `/admin/visual-editor/collection/${collectionSlug}/${id}` : undefined,
+    visualEditorHref: surface?.kind === 'collection' && id !== undefined ? adminHref(`/visual-editor/collection/${collectionSlug}/${id}`, await getAdminRoot()) : undefined,
   }
 
   // Extract pageType field if it exists
@@ -200,13 +202,13 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
   return (
     <div className="collection-edit">
       <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
-        <Link href="/admin">{ui.t('nav.dashboard')}</Link>
+        <AdminLink path="/">{ui.t('nav.dashboard')}</AdminLink>
         <span aria-hidden="true">/</span>
-        <Link href={`${adminCollectionPath(collectionSlug)}`}>{pluralLabel}</Link>
+        <AdminLink href={`${adminCollectionPath(collectionSlug)}`}>{pluralLabel}</AdminLink>
         <span aria-hidden="true">/</span>
         <span>{id === undefined ? ui.t('edit.create') : docTitle || `#${id}`}</span>
       </nav>
-      <h1 className="doc-title">{id === undefined ? `Create ${label}` : docTitle || `Edit ${label}`}</h1>
+      <h1 className="doc-title">{id === undefined ? ui.t('edit.createTitle', { label }) : docTitle || ui.t('edit.editTitle', { label })}</h1>
       {signInAs ? <SignInAsCustomerButton email={signInAs.email} maxMinutes={signInAs.maxMinutes} /> : null}
       {resultsTab ? (
         <EditTabs

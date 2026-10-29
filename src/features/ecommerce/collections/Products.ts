@@ -1,4 +1,7 @@
+import { domainSlugValidate } from '@/features/domains/slugs'
 import { noAdsField } from '@/features/ads/fields'
+import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
+import { availableDomainsField } from '@/features/domains/field'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
@@ -120,7 +123,7 @@ export const Products: CollectionConfig = {
   },
   access: {
     create: isAdmin,
-    read: excludeProtectedAccess('products', adminOrPublishedStatus),
+    read: domainScopedAccess(excludeProtectedAccess('products', adminOrPublishedStatus)),
     update: isAdmin,
     delete: isAdmin,
   },
@@ -128,8 +131,9 @@ export const Products: CollectionConfig = {
   timestamps: true,
   trash: true,
   fields: [
+    availableDomainsField,
     { name: 'title', type: 'text', required: true, unique: true },
-    { name: 'slug', type: 'text', unique: true, index: true },
+    { name: 'slug', type: 'text', index: true, validate: domainSlugValidate('products', 'product') },
     productTypeField,
     {
       name: 'category',
@@ -175,7 +179,7 @@ export const Products: CollectionConfig = {
     ...pageSpeedFields,
   ],
   hooks: {
-    beforeChange: [authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
+    beforeChange: [domainWriteGuard, authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
     afterChange: [stockAlertAfterChange, backInStockAfterChange, subscriptionAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products'), machineAutoDraftAfterChange('products'), outdatedAfterChange('products')],
     afterDelete: [indexNowAfterDelete('products')],
   },

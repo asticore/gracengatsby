@@ -1,6 +1,8 @@
 'use client'
 
 import type { Field } from '@/engine'
+
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { useField } from '@/engine/ui'
 
 import { CROP_RATIOS } from '../url'
@@ -23,11 +25,12 @@ const LABELS: Record<(typeof CROP_RATIOS)[number], string> = {
  * how the delivery address asks for the picture; the stored file is untouched.
  */
 export function MediaCropField({ path, readOnly }: CropFieldProps) {
+  const t = useAdminT()
   const { value, setValue } = useField<{ ratio?: string | null } | null>({ path })
   const current = value?.ratio && value.ratio !== 'free' ? value.ratio : 'free'
 
   return (
-    <div role="radiogroup" aria-label="Crop preset" className="flex flex-wrap gap-[8px]">
+    <div role="radiogroup" aria-label={t('md.lit.crop_preset_aria')} className="flex flex-wrap gap-[8px]">
       {CROP_RATIOS.map((ratio) => {
         const active = current === ratio
         return (

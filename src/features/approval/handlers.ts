@@ -1,3 +1,4 @@
+import { getAdminRoot } from '@/features/security/settings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import { purgeCache } from '@/features/speed/purge'
 import {
@@ -451,6 +452,7 @@ export async function loadReviewQueue({
   settings?: ApprovalSettings
   limit?: number
 }): Promise<ReviewQueueRow[]> {
+  const adminRoot = await getAdminRoot()
   const active = settings ?? (await loadApprovalSettings(engine))
   if (!active.enabled) return []
   const collections: ApprovalCollection[] = ['pages', 'posts', 'events', 'courses', 'products']
@@ -496,7 +498,7 @@ export async function loadReviewQueue({
         title: titleOf(doc, id),
         requestedBy,
         requestedAt: typeof doc.reviewRequestedAt === 'string' ? doc.reviewRequestedAt : null,
-        href: `${adminCollectionPath(collection)}/${id}`,
+        href: `${adminCollectionPath(collection, adminRoot)}/${id}`,
         ...(awaiting ? { awaiting } : {}),
       })
     }

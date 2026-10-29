@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { readEmailTestingSettings } from '@/features/email/connectionRead'
@@ -9,8 +11,8 @@ import { EmailTestingClient } from './EmailTestingClient'
  */
 export async function EmailTestingView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
-  if (!context.isAdmin) redirect('/admin')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
 
   const settings = await readEmailTestingSettings(
     context.engine as unknown as Parameters<typeof readEmailTestingSettings>[0],

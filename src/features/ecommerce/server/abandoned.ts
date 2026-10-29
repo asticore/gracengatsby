@@ -1,10 +1,15 @@
 import { sendEmail } from '@/features/email'
+import { localeForRecipient } from '@/features/email/recipientLocale'
+import { loadStrings, t } from '@/features/uiStrings'
 import { dueReminder, signCartToken, type AbandonedSettings } from '../lib/abandonedCart'
 import { escapeHtml } from '../lib/invoice'
 import { rawD1, runChanges, SQL } from './db'
 
 type Engine = { findGlobal: (a: unknown) => Promise<Record<string, unknown>> }
 type Row = { id: number; email: string; updated_at: string; reminders_sent: number | null; last_reminder_at: string | null; item_count: number }
+
+/** The built-in subject. Compared by value, so an owner who typed the same words still gets the translated one only when they left the default. */
+export const ABANDONED_DEFAULT_SUBJECT = 'You left something in your cart'
 
 export function readAbandonedSettings(settings: Record<string, unknown>): AbandonedSettings & { subject: string; bodyTemplate: string } {
   const a = (settings.abandonedCart ?? {}) as Record<string, unknown>
@@ -14,7 +19,7 @@ export function readAbandonedSettings(settings: Record<string, unknown>): Abando
     firstDelayHours: num(a.firstDelayHours, 1),
     secondDelayHours: num(a.secondDelayHours, 24),
     maxReminders: num(a.maxReminders, 2),
-    subject: typeof a.subject === 'string' && a.subject ? a.subject : 'You left something in your cart',
+    subject: typeof a.subject === 'string' && a.subject ? a.subject : ABANDONED_DEFAULT_SUBJECT,
     bodyTemplate: typeof a.bodyTemplate === 'string' ? a.bodyTemplate : '',
   }
 }
@@ -72,10 +77,12 @@ export async function runAbandonedCartReminders(engine: Engine, now = new Date()
     const recover = `${baseUrl}/api/shop-cart-recover?t=${encodeURIComponent(await signCartToken(secret, row.id, 'recover'))}`
     const unsub = `${baseUrl}/api/shop-cart-unsubscribe?t=${encodeURIComponent(await signCartToken(secret, row.id, 'unsub'))}`
     const name = site.siteName || 'our shop'
-    const intro = (cfg.bodyTemplate || 'You left some items in your cart at {{site_name}}. They are still waiting for you.').replace(/\{\{\s*site_name\s*\}\}/g, name)
+    const locale = await localeForRecipient(engine as never, row.email)
+    if (locale) await loadStrings(locale)
+    const intro = cfg.bodyTemplate ? cfg.bodyTemplate.replace(/\{\{\s*site_name\s*\}\}/g, name) : t('email.abandonedCart.body', locale, { site_name: name })
     const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5"><p>${escapeHtml(intro).replace(/\n/g, '<br>')}</p><p><a href="${escapeHtml(recover)}">Return to your cart</a></p><p style="font-size:12px;color:#666"><a href="${escapeHtml(unsub)}">Unsubscribe from cart reminders</a></p></div>`
     const text = `${intro}\n\nReturn to your cart: ${recover}\n\nUnsubscribe: ${unsub}`
-    const result = await sendEmail({ to: row.email, template: 'cart.abandoned', subject: cfg.subject.replace(/[\r\n]+/g, ' '), html, text })
+    const result = await sendEmail({ to: row.email, template: 'cart.abandoned', subject: (cfg.subject === ABANDONED_DEFAULT_SUBJECT ? t('email.abandonedCart.subject', locale) : cfg.subject).replace(/[\r\n]+/g, ' '), html, text })
     if (result.ok) sent += 1
     else await runChanges(d1, SQL.cartReminded, row.id, due - 1, row.last_reminder_at) // release so a later run retries
   }

@@ -1,10 +1,14 @@
 import { notFound } from 'next/navigation'
+import { contentAvailableHere, requestHost } from '@/features/domains/request'
+import { pickForHost } from '@/features/domains/scope'
 import { cookies } from 'next/headers'
 import React from 'react'
 import type { Metadata } from 'next'
 import { RichText } from '@/engine/editor/react'
 
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { priceLocale } from '@/features/uiStrings/publicFormat'
+import { publicLocale } from '@/features/uiStrings/storeTextsServer'
 import { ProductPurchase, type GroupedChild } from '@/components/ProductPurchase'
 import { BackInStockForm } from '@/components/BackInStockForm'
 import { SubscriptionOffer } from '@/features/ecommerce/subscriptions/components/SubscriptionOffer'
@@ -51,10 +55,11 @@ async function getProduct(slug: string) {
   const { docs } = (await engine.find({
     collection: 'products',
     where: { slug: { equals: slug } },
-    limit: 1,
+    limit: 0,
     depth: 1,
   })) as unknown as { docs: Product[] }
-  return docs[0] || null
+  // The same slug can exist on several domains: this domain's own product, else the shared one (features/domains/scope.ts).
+  return pickForHost(docs, await requestHost(), (product) => (product as { availableDomains?: unknown }).availableDomains)
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -71,9 +76,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return buildMetadata({
     title: product.title,
     seo: product.seo,
+    availableDomains: (product as { availableDomains?: unknown }).availableDomains,
     path: `/shop/${slug}`,
     contentType: 'product',
-    tokens: { price: formatPriceInAUD(product.priceInAUD), excerpt: product.shortDescription },
+    tokens: { price: formatPriceInAUD(product.priceInAUD, 'AUD', priceLocale(await publicLocale())), excerpt: product.shortDescription },
   })
 }
 
@@ -96,6 +102,7 @@ export default async function ProductPage({
   if (!product) {
     notFound()
   }
+  if (!(await contentAvailableHere((product as { availableDomains?: unknown }).availableDomains))) notFound()
 
   const gateState = await getPasswordGateState({ collection: 'products', id: product.id, cookies: await cookies() })
   if (gateState === 'locked') {

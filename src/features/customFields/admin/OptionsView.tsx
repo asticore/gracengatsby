@@ -1,3 +1,4 @@
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React from 'react'
 
 import { loadFieldGroups, fetchMediaUrls } from '../server'
@@ -52,14 +53,14 @@ export async function OptionsView({ searchParams }: { searchParams?: Record<stri
         <h1 className="m-0 text-[22px]">Options pages</h1>
         <nav className="flex flex-wrap gap-[8px]" aria-label="Options pages">
           {slugs.map((slug) => (
-            <a
+            <AdminLink
               key={slug}
-              href={`/admin/options?page=${encodeURIComponent(slug)}`}
+              path={`/options?page=${encodeURIComponent(slug)}`}
               aria-current={slug === current ? 'page' : undefined}
               className={`rounded-[5px] border px-[10px] py-[5px] text-[13px] ${slug === current ? 'border-[#2e3192] font-semibold' : 'border-[var(--theme-elevation-150,#cac7d1)]'}`}
             >
               {slug}
-            </a>
+            </AdminLink>
           ))}
         </nav>
       </header>

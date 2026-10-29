@@ -3,6 +3,7 @@ import { getEngine } from '@/lib/engine'
 import { type EmailBrand, brandFrom } from './design/brand'
 import { brandFromStored, designedBlocks, renderWithDesign } from './designRender'
 import { type RenderedEmail, type StoredTemplates, type TemplateValues, templateFrom } from './renderTemplate'
+import { builtInEmailTemplates } from './builtInTemplates'
 import type { EmailTemplateKey } from './templateDefaults'
 
 type Reader = { findGlobal: (args: never) => Promise<unknown> }
@@ -25,7 +26,12 @@ const readBrand = async (reader: Reader): Promise<EmailBrand> => {
  * Never throws: if a global cannot be read the built-in wording is used, so
  * the email still goes out.
  */
-export const renderEmailTemplate = async (key: EmailTemplateKey, values: TemplateValues, givenEngine?: Reader): Promise<RenderedEmail> => {
+export const renderEmailTemplate = async (
+  key: EmailTemplateKey,
+  values: TemplateValues,
+  givenEngine?: Reader,
+  locale?: string | null,
+): Promise<RenderedEmail> => {
   let stored: StoredTemplates = null
   let brand: EmailBrand = brandFrom(null)
   try {
@@ -37,5 +43,6 @@ export const renderEmailTemplate = async (key: EmailTemplateKey, values: Templat
     stored = null
   }
   const design = designedBlocks((stored as Record<string, unknown> | null | undefined)?.[`${key}Design`])
-  return renderWithDesign(templateFrom(stored, key), values, design, brand)
+  const builtIn = await builtInEmailTemplates(locale)
+  return renderWithDesign(templateFrom(stored, key, builtIn), values, design, brand)
 }

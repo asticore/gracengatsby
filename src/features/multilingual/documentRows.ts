@@ -25,7 +25,16 @@ import { translateEditorPath } from '@/views/visualEditor/translateParams'
 import type { TranslationRow } from './store'
 import { sourceIdFor, translatableSource, TRANSLATABLE_COLLECTIONS } from './translatableFields'
 import { buildOverviewRows, type OverviewItemInput, type OverviewRow } from './translationOverview'
-import { STATUS_LABELS, TRANSLATION_STATUSES, type TranslationRules } from './translationStatus'
+import { TRANSLATION_STATUSES, type TranslationRules, type TranslationStatus } from './translationStatus'
+import { UI_STRING_SOURCE, type UiStringKey } from '@/features/uiStrings'
+
+/** Admin-language key for each translation status's name. */
+export const STATUS_TEXT_KEYS: Record<TranslationStatus, UiStringKey> = {
+  missing: 'translations.statusMissing',
+  machine_draft: 'translations.statusMachineDraft',
+  needs_review: 'translations.statusNeedsReview',
+  approved: 'translations.statusApproved',
+}
 
 export type TranslationActivity = 'active' | 'outdated' | 'inactive' | 'unknown'
 
@@ -152,12 +161,12 @@ export const builderTranslateHref = translateEditorPath
  * Translate mode for that language; one without falls back to the document
  * translation editor on this screen (`editorHref`).
  */
-export function translateTarget(args: { collection: string; documentId: string; locale: string; editorHref: string }): {
+export function translateTarget(args: { collection: string; documentId: string; locale: string; editorHref: string; adminRoot?: string }): {
   href: string
   mode: 'builder' | 'editor'
 } {
   if (builderHasSurface(args.collection)) {
-    return { href: builderTranslateHref(args.collection, args.documentId, args.locale), mode: 'builder' }
+    return { href: builderTranslateHref(args.collection, args.documentId, args.locale, args.adminRoot), mode: 'builder' }
   }
   return { href: args.editorHref, mode: 'editor' }
 }
@@ -193,6 +202,8 @@ export function buildDocumentRows(args: {
   rules: TranslationRules
   catalogue: TranslationCatalogue
   documentHref: (collection: string, documentId: string) => string
+  /** The configured admin root for builder links. Defaults to /admin. */
+  adminRoot?: string
 }): DocumentRow[] {
   const base = buildOverviewRows({ items: args.items, stored: args.stored, targetLocales: args.targetLocales, rules: args.rules })
   const itemBySource = new Map(args.items.map((item) => [item.sourceId, item]))
@@ -242,7 +253,7 @@ export function buildDocumentRows(args: {
     const cells: DocumentCell[] = row.cells.map((cell) => ({
       ...cell,
       counts: countsByLocale.get(cell.locale) ?? { active: 0, outdated: 0, inactive: 0 },
-      ...translateTarget({ collection, documentId, locale: cell.locale, editorHref }),
+      ...translateTarget({ collection, documentId, locale: cell.locale, editorHref, adminRoot: args.adminRoot }),
     }))
     const first = cells[0]
 
@@ -266,24 +277,27 @@ export function buildDocumentRows(args: {
 export function documentColumns(args: {
   targetLocales: string[]
   localeLabel: (code: string) => string
+  /** Admin-language lookup. Defaults to the English source, so callers outside the admin are unchanged. */
+  t?: (key: UiStringKey) => string
 }): ColumnDef[] {
+  const t = args.t ?? ((key: UiStringKey): string => UI_STRING_SOURCE[key])
   return [
-    { name: 'title', label: 'Title', type: 'text', sortable: true, filterable: false },
+    { name: 'title', label: t('translations.colTitle'), type: 'text', sortable: true, filterable: false },
     {
       name: 'type',
-      label: 'Type',
+      label: t('translations.colType'),
       type: 'select',
       sortable: true,
       filterable: true,
       options: TRANSLATABLE_COLLECTIONS.map((entry) => ({ value: entry.slug, label: entry.label })),
     },
-    { name: 'url', label: 'URL', type: 'text', sortable: false, filterable: false },
+    { name: 'url', label: t('translations.colUrl'), type: 'text', sortable: false, filterable: false },
     ...args.targetLocales.map((code): ColumnDef => ({ name: `lang:${code}`, label: args.localeLabel(code), type: 'status', sortable: false, filterable: false })),
-    { name: 'inactive', label: 'Inactive', type: 'number', sortable: false, filterable: false },
-    { name: 'updatedAt', label: 'Last source change', type: 'date', sortable: true, filterable: false },
-    { name: 'assignee', label: 'Assigned to', type: 'select', sortable: false, filterable: true, options: [{ value: 'me', label: 'Assigned to me' }] },
-    { name: 'locale', label: 'Language', type: 'select', sortable: false, filterable: true, options: args.targetLocales.map((code) => ({ value: code, label: args.localeLabel(code) })) },
-    { name: 'status', label: 'Status', type: 'select', sortable: false, filterable: true, options: TRANSLATION_STATUSES.map((value) => ({ value, label: STATUS_LABELS[value] })) },
+    { name: 'inactive', label: t('translations.colInactive'), type: 'number', sortable: false, filterable: false },
+    { name: 'updatedAt', label: t('translations.colUpdatedAt'), type: 'date', sortable: true, filterable: false },
+    { name: 'assignee', label: t('translations.colAssignee'), type: 'select', sortable: false, filterable: true, options: [{ value: 'me', label: t('translations.assignedToMe') }] },
+    { name: 'locale', label: t('translations.colLanguage'), type: 'select', sortable: false, filterable: true, options: args.targetLocales.map((code) => ({ value: code, label: args.localeLabel(code) })) },
+    { name: 'status', label: t('translations.colStatus'), type: 'select', sortable: false, filterable: true, options: TRANSLATION_STATUSES.map((value) => ({ value, label: t(STATUS_TEXT_KEYS[value]) })) },
   ]
 }
 

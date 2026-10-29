@@ -1,5 +1,7 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
 import React, { useEffect, useMemo, useState } from 'react'
 import type { ConsentLogRecord, ConsentSummary } from '@/features/consent/logStats'
 
@@ -15,13 +17,13 @@ type Filters = { from: string; to: string; category: string; state: string }
 const NO_FILTERS: Filters = { from: '', to: '', category: '', state: 'granted' }
 const PAGE_SIZE = 25
 
-const CATEGORY_LABELS: Record<string, string> = {
-  necessary: 'Necessary',
-  preferences: 'Preferences',
-  analytics: 'Analytics',
-  marketing: 'Marketing',
+const CATEGORY_KEYS: Record<string, UiStringKey> = {
+  necessary: 'cc.lit.necessary',
+  preferences: 'cc.lit.preferences',
+  analytics: 'cc.lit.analytics',
+  marketing: 'cc.lit.marketing',
 }
-const OUTCOME_LABELS: Record<string, string> = { accepted: 'Accepted all', rejected: 'Rejected all', custom: 'Custom' }
+const OUTCOME_KEYS: Record<string, UiStringKey | 'Custom'> = { accepted: 'cc.lit.accepted_all', rejected: 'cc.lit.rejected_all', custom: 'Custom' }
 
 const queryFor = (filters: Filters, extra: Record<string, string>): string => {
   const params = new URLSearchParams(extra)
@@ -99,9 +101,10 @@ const Tile: React.FC<{ label: string; value: number; hint?: string }> = ({ label
   </div>
 )
 
-const yesNo = (value: boolean) => (value ? 'Yes' : 'No')
+const yesNo = (value: boolean, yes: string, no: string) => (value ? yes : no)
 
 export const CookieConsentLog: React.FC<{ logEnabled: boolean }> = ({ logEnabled }) => {
+  const t = useAdminT()
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [applied, setApplied] = useState<Filters>(NO_FILTERS)
   const [page, setPage] = useState(1)
@@ -119,7 +122,7 @@ export const CookieConsentLog: React.FC<{ logEnabled: boolean }> = ({ logEnabled
       signal,
     })
       .then((response) => {
-        if (!response.ok) throw new Error(response.status === 403 ? 'Only administrators can read the consent log.' : 'The consent log could not be loaded.')
+        if (!response.ok) throw new Error(response.status === 403 ? t('cc.lit.only_administrators_can_read_the_consent') : 'The consent log could not be loaded.')
         return response.json() as Promise<ApiResponse>
       })
       .then((next) => {
@@ -133,7 +136,7 @@ export const CookieConsentLog: React.FC<{ logEnabled: boolean }> = ({ logEnabled
         if (!signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [applied, page])
+  }, [applied, page, t])
 
   const csvHref = useMemo(() => `/api/admin-consent-log?${queryFor(applied, { format: 'csv' })}`, [applied])
   const pages = data ? Math.max(Math.ceil(data.total / data.limit), 1) : 1
@@ -169,41 +172,41 @@ export const CookieConsentLog: React.FC<{ logEnabled: boolean }> = ({ logEnabled
 
       <h2 className="cc-heading">Last {summary?.days ?? 30} days</h2>
       <div className="cc-tiles">
-        <Tile label="Accepted all" value={summary?.accepted ?? 0} />
-        <Tile label="Rejected all" value={summary?.rejected ?? 0} />
-        <Tile label="Custom choices" value={summary?.custom ?? 0} />
-        <Tile label="Total decisions" value={summary?.total ?? 0} />
+        <Tile label={t('cc.lit.accepted_all')} value={summary?.accepted ?? 0} />
+        <Tile label={t('cc.lit.rejected_all')} value={summary?.rejected ?? 0} />
+        <Tile label={t('cc.lit.custom_choices')} value={summary?.custom ?? 0} />
+        <Tile label={t('cc.lit.total_decisions')} value={summary?.total ?? 0} />
       </div>
-      {summary?.truncated ? <p className="cc-note">There are more than 5,000 decisions in this period. The totals use the most recent 5,000.</p> : null}
+      {summary?.truncated ? <p className="cc-note">{t('cc.lit.there_are_more_than_5_000_decisions_in_t')}</p> : null}
 
-      <h3 className="cc-subheading">Acceptance rate by day</h3>
-      <p className="cc-note">Share of each day&rsquo;s decisions that accepted every category. Days without a decision are left empty.</p>
+      <h3 className="cc-subheading">{t('cc.lit.acceptance_rate_by_day')}</h3>
+      <p className="cc-note">{t('cc.lit.share_of_each_day_rsquo_s_decisions_that')}</p>
       {summary ? <AcceptanceChart daily={summary.daily} /> : <div className="cc-chart cc-chart--loading" />}
 
-      <h2 className="cc-heading">Recent decisions</h2>
+      <h2 className="cc-heading">{t('cc.lit.recent_decisions')}</h2>
       <form className="cc-filters" onSubmit={apply}>
         <label className="cc-field">
-          <span>From</span>
+          <span>{t('cc.lit.from')}</span>
           <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
         </label>
         <label className="cc-field">
-          <span>To</span>
+          <span>{t('cc.lit.to')}</span>
           <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
         </label>
         <label className="cc-field">
-          <span>Category</span>
+          <span>{t('cc.lit.category')}</span>
           <select value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
-            <option value="">Any</option>
-            <option value="preferences">Preferences</option>
-            <option value="analytics">Analytics</option>
-            <option value="marketing">Marketing</option>
+            <option value="">{t('cc.lit.any')}</option>
+            <option value="preferences">{t('cc.lit.preferences')}</option>
+            <option value="analytics">{t('cc.lit.analytics')}</option>
+            <option value="marketing">{t('cc.lit.marketing')}</option>
           </select>
         </label>
         <label className="cc-field">
-          <span>Choice</span>
+          <span>{t('cc.lit.choice')}</span>
           <select value={filters.state} disabled={!filters.category} onChange={(e) => setFilters({ ...filters, state: e.target.value })}>
-            <option value="granted">Allowed</option>
-            <option value="refused">Refused</option>
+            <option value="granted">{t('cc.lit.allowed')}</option>
+            <option value="refused">{t('cc.lit.refused')}</option>
           </select>
         </label>
         <div className="cc-filters__actions">
@@ -239,24 +242,24 @@ export const CookieConsentLog: React.FC<{ logEnabled: boolean }> = ({ logEnabled
 
       <div className="cc-table-wrap" aria-busy={loading}>
         <table className="cc-table">
-          <caption className="cc-sr">Recent cookie consent decisions</caption>
+          <caption className="cc-sr">{t('cc.lit.recent_cookie_consent_decisions')}</caption>
           <thead>
             <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Country</th>
-              <th scope="col">Policy version</th>
-              <th scope="col">Necessary</th>
-              <th scope="col">Preferences</th>
-              <th scope="col">Analytics</th>
-              <th scope="col">Marketing</th>
-              <th scope="col">Result</th>
+              <th scope="col">{t('cc.lit.date')}</th>
+              <th scope="col">{t('cc.lit.country')}</th>
+              <th scope="col">{t('cc.lit.policy_version')}</th>
+              <th scope="col">{t('cc.lit.necessary')}</th>
+              <th scope="col">{t('cc.lit.preferences')}</th>
+              <th scope="col">{t('cc.lit.analytics')}</th>
+              <th scope="col">{t('cc.lit.marketing')}</th>
+              <th scope="col">{t('cc.lit.result')}</th>
             </tr>
           </thead>
           <tbody>
             {data && data.rows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="cc-table__empty">
-                  {loading ? 'Loading' : 'No decisions match.'}
+                  {loading ? t('cc.lit.loading') : t('cc.lit.no_decisions_match')}
                 </td>
               </tr>
             ) : null}
@@ -267,11 +270,11 @@ export const CookieConsentLog: React.FC<{ logEnabled: boolean }> = ({ logEnabled
                 </td>
                 <td>{row.region ?? 'Not recorded'}</td>
                 <td>{row.policyVersion}</td>
-                <td>{yesNo(row.choices.necessary)}</td>
-                <td>{yesNo(row.choices.preferences)}</td>
-                <td>{yesNo(row.choices.analytics)}</td>
-                <td>{yesNo(row.choices.marketing)}</td>
-                <td>{OUTCOME_LABELS[row.outcome]}</td>
+                <td>{yesNo(row.choices.necessary, t('cc.lit.yes'), t('cc.lit.no'))}</td>
+                <td>{yesNo(row.choices.preferences, t('cc.lit.yes'), t('cc.lit.no'))}</td>
+                <td>{yesNo(row.choices.analytics, t('cc.lit.yes'), t('cc.lit.no'))}</td>
+                <td>{yesNo(row.choices.marketing, t('cc.lit.yes'), t('cc.lit.no'))}</td>
+                <td>{OUTCOME_KEYS[row.outcome] === 'Custom' || !OUTCOME_KEYS[row.outcome] ? (OUTCOME_KEYS[row.outcome] ?? '') : t(OUTCOME_KEYS[row.outcome] as UiStringKey)}</td>
               </tr>
             ))}
           </tbody>
@@ -281,7 +284,7 @@ export const CookieConsentLog: React.FC<{ logEnabled: boolean }> = ({ logEnabled
       <div className="cc-pager">
         <span>
           {data ? `${data.total.toLocaleString()} decision${data.total === 1 ? '' : 's'}` : ''}
-          {applied.category ? ` where ${CATEGORY_LABELS[applied.category]} was ${applied.state === 'granted' ? 'allowed' : 'refused'}` : ''}
+          {applied.category ? ` where ${CATEGORY_KEYS[applied.category] ? t(CATEGORY_KEYS[applied.category]) : applied.category} was ${applied.state === 'granted' ? 'allowed' : 'refused'}` : ''}
         </span>
         <div className="cc-pager__buttons">
           <button type="button" className="cc-button" disabled={page <= 1 || loading} onClick={() => startRequest(applied, page - 1)}>

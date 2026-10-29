@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { LOCALE_COOKIE } from './detect'
 import { isPortalPath } from './portal'
 import { LOCALE_COOKIE_MAX_AGE, LOCALE_HEADER, isLocaleRoutable, routeLocale } from './routing'
-import { readMultilingualSettingsFromD1 } from './settings'
+import { readMultilingualSettingsFromD1, type MultilingualSettings } from './settings'
+
+/** Set by src/features/domains/middleware.ts: the language a registered domain serves without a prefix. */
+const DOMAIN_LOCALE_HEADER = 'x-eg-domain-locale'
 
 type Handler = (request: NextRequest) => Promise<NextResponse>
 
@@ -41,7 +44,13 @@ export async function multilingualMiddleware(request: NextRequest, handle: Handl
     return out
   }
 
-  const route = routeLocale(request.nextUrl.pathname, settings)
+  // On a domain with its own language, that language is the unprefixed one: `/fr/about` redirects to `/about`
+  // there, and the site's own language is then reached by its prefix (`/en/about`).
+  const domainLocale = request.headers.get(DOMAIN_LOCALE_HEADER)
+  const effective: MultilingualSettings =
+    domainLocale && settings.activeLocales.includes(domainLocale) ? { ...settings, defaultLocale: domainLocale } : settings
+
+  const route = routeLocale(request.nextUrl.pathname, effective)
 
   if (route.kind === 'default') {
     const url = new URL(request.url)
@@ -50,12 +59,15 @@ export async function multilingualMiddleware(request: NextRequest, handle: Handl
   }
 
   // Nothing to strip and nothing spoofed: the request is exactly as it arrived.
-  if (route.kind === 'none' && !request.headers.has(LOCALE_HEADER)) return handle(request)
+  if (route.kind === 'none' && !request.headers.has(LOCALE_HEADER) && !domainLocale) return handle(request)
 
   const headers = new Headers(request.headers)
   headers.delete(LOCALE_HEADER)
   let target = request
-  if (route.kind === 'strip') {
+  if (route.kind === 'none' && domainLocale && effective !== settings) {
+    headers.set(LOCALE_HEADER, domainLocale)
+    target = new NextRequest(request.url, { headers, method: request.method })
+  } else if (route.kind === 'strip') {
     const url = new URL(request.url)
     url.pathname = route.rest
     headers.set(LOCALE_HEADER, route.locale)

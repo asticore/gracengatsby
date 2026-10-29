@@ -1,3 +1,6 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess, isAdminUser } from '@/admin/auth'
@@ -13,7 +16,8 @@ import { getEngine } from '@/lib/engine'
  */
 export async function ImpersonationView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  const ui = await getAdminUi()
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   const admin = isAdminUser(context.user)
   const engine = await getEngine()
   const settings = await getSecuritySettings(engine as never)
@@ -21,7 +25,7 @@ export async function ImpersonationView() {
   if (!admin) {
     return (
       <div style={{ maxWidth: 820, padding: '1.5rem' }}>
-        <p>Only an administrator can sign in as a customer or see this history.</p>
+        <p>{ui.t('us.lit.only_admin')}</p>
       </div>
     )
   }

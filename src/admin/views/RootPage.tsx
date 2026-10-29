@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import type { Metadata } from 'next'
 import type { ComponentType, ReactNode } from 'react'
 import { notFound, redirect } from 'next/navigation'
@@ -165,12 +167,12 @@ async function renderRootPage({ params, searchParams }: Args) {
 
   if (segments[0] === 'login') {
     const context = await getAdminContext()
-    if (context.isAdmin) redirect('/admin')
+    if (context.isAdmin) redirect(adminHref('', await getAdminRoot()))
     return <LoginView />
   }
 
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const pathname = `/${segments.join('/')}`
 

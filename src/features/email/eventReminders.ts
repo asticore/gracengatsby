@@ -1,4 +1,5 @@
 import { eventsDueForReminder, formatWhen, rsvpNeedsReminder, type EventLike, type RsvpLike } from './schedule'
+import { localeForRecipient } from './recipientLocale'
 
 /**
  * Sends the event reminder to each guest of an event that starts soon.
@@ -90,13 +91,14 @@ export async function sendEventReminders(
       }
 
       const when = formatWhen(event.startDate, options.timeZone)
+      const reminderLocale = await localeForRecipient(engine as never, String(rsvp.email).trim())
       const mail = await renderEmailTemplate('eventReminder', {
         name: typeof rsvp.name === 'string' ? rsvp.name : '',
         eventTitle: typeof event.title === 'string' ? event.title : '',
         when,
         eventDate: when,
         guestCount: typeof rsvp.guestCount === 'number' ? rsvp.guestCount : 1,
-      })
+      }, undefined, reminderLocale)
 
       const result = await sendEmail({
         to: String(rsvp.email).trim(),

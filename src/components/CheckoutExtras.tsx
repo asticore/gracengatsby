@@ -1,5 +1,7 @@
 'use client'
 
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
+import type { UiStringKey } from '@/features/uiStrings/keys'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useShopCurrency } from '@/components/ShopCurrencyContext'
@@ -40,13 +42,13 @@ export type CheckoutInput = {
 }
 
 const ADDRESS_FIELDS: [string, string][] = [
-  ['firstName', 'First name'],
-  ['lastName', 'Last name'],
-  ['addressLine1', 'Address'],
-  ['city', 'Suburb / city'],
-  ['state', 'State'],
-  ['postalCode', 'Postcode'],
-  ['country', 'Country (e.g. AU)'],
+  ['firstName', 'store.firstName'],
+  ['lastName', 'store.lastName'],
+  ['addressLine1', 'store.address'],
+  ['city', 'store.suburbCity'],
+  ['state', 'store.state'],
+  ['postalCode', 'store.postcode'],
+  ['country', 'store.country'],
 ]
 
 /**
@@ -55,6 +57,7 @@ const ADDRESS_FIELDS: [string, string][] = [
  * again when payment starts, so nothing here is trusted.
  */
 export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: number; secret: string } | null; email: string; onChange: (v: CheckoutInput, ready: boolean) => void }) {
+  const t = useStoreText()
   const currency = useShopCurrency()
   const money = (c: number) => formatMoney(c, currency)
   const [address, setAddress] = useState<Record<string, string>>({ country: 'AU' })
@@ -79,14 +82,14 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
       })
       const body = (await res.json()) as Quote & { error?: string }
       if (!res.ok) {
-        setError(body.error || 'Could not price your cart.')
+        setError(body.error || t('store.couldNotPriceCart'))
         return
       }
       setError('')
       setQuote(body)
       if (body.shippingOptions.length > 0 && !body.shippingOptions.some((o) => o.id === shipId)) setShipId(body.shippingOptions[0].id)
     } catch {
-      setError('Could not price your cart.')
+      setError(t('store.couldNotPriceCart'))
     }
   }, [cartRef, address, email, appliedCoupon, shipId, giftCodes, useCredit])
 
@@ -110,7 +113,7 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {ADDRESS_FIELDS.map(([key, label]) => (
           <label key={key} className="flex flex-col gap-1 text-[0.85rem]">
-            {label}
+            {t(label as UiStringKey)}
             <input className={input} value={address[key] ?? ''} required onChange={(e) => setAddress({ ...address, [key]: e.target.value })} />
           </label>
         ))}
@@ -163,7 +166,7 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
       )}
       {quote && quote.shippingOptions.length > 0 && (
         <fieldset className="flex flex-col gap-2">
-          <legend className="text-[0.85rem] uppercase">Shipping</legend>
+          <legend className="text-[0.85rem] uppercase">{t('store.shipping')}</legend>
           {quote.shippingOptions.map((o) => (
             <label key={o.id} className="flex gap-2">
               <input type="radio" name="shipping" checked={shipId === o.id} onChange={() => setShipId(o.id)} /> {o.title} - {o.costCents === 0 ? 'Free' : money(o.costCents)}
@@ -173,15 +176,15 @@ export function CheckoutExtras({ cartRef, email, onChange }: { cartRef: { id: nu
       )}
       {quote && (
         <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1">
-          <dt>Subtotal</dt><dd>{money(quote.subtotalCents)}</dd>
+          <dt>{t('store.subtotal')}</dt><dd>{money(quote.subtotalCents)}</dd>
           {quote.discountCents > 0 && (<><dt>Discount ({quote.coupon?.code})</dt><dd>-{money(quote.discountCents)}</dd></>)}
-          {quote.shippingOptions.length > 0 && (<><dt>Shipping</dt><dd>{money(quote.shippingCents)}</dd></>)}
+          {quote.shippingOptions.length > 0 && (<><dt>{t('store.shipping')}</dt><dd>{money(quote.shippingCents)}</dd></>)}
           {quote.taxLines.map((t) => (<React.Fragment key={t.name + t.ratePct}><dt>{t.name} ({t.ratePct}%){quote.pricesIncludeTax ? ' included' : ''}</dt><dd>{money(t.taxCents)}</dd></React.Fragment>))}
           <dt className="font-bold">Total</dt><dd className="font-bold">{money(quote.totalCents)}</dd>
           {quote.storedValue && quote.storedValue.coveredCents > 0 && (
             <>
               {quote.storedValue.cards.map((c) => (<React.Fragment key={c.code}><dt>Gift card {c.code}</dt><dd>-{money(c.cents)}</dd></React.Fragment>))}
-              {quote.storedValue.creditCents > 0 && (<><dt>Store credit</dt><dd>-{money(quote.storedValue.creditCents)}</dd></>)}
+              {quote.storedValue.creditCents > 0 && (<><dt>{t('store.storeCredit')}</dt><dd>-{money(quote.storedValue.creditCents)}</dd></>)}
               <dt className="font-bold">To pay by card</dt><dd className="font-bold">{money(quote.storedValue.payableCents)}</dd>
             </>
           )}

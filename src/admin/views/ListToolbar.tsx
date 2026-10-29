@@ -182,7 +182,7 @@ export function ListToolbar({
           type="text"
           name="q"
           placeholder={collectionSlug === 'orders' ? t('list.ordersSearchPlaceholder') : t('list.searchPlaceholder')}
-          title={collectionSlug === 'orders' ? 'Find orders by order number, customer email or customer name.' : undefined}
+          title={collectionSlug === 'orders' ? t('list.findOrdersHint') : undefined}
           defaultValue={state.q || ''}
           className="list-search-input"
         />
@@ -328,7 +328,7 @@ export function ListToolbar({
         onClick={handleSavePrefs}
         disabled={isSaving}
         className="list-toolbar-btn"
-        title="Save current columns, sort, and page size as your default"
+        title={t('list.saveDefaultHint')}
       >
         {isSaving ? t('common.saving') : t('list.saveDefault')}
       </button>
@@ -342,9 +342,9 @@ export function ListToolbar({
           onClick={handleResetPrefs}
           disabled={isSaving}
           className="list-toolbar-btn"
-          title="Reset to collection defaults"
+          title={t('list.resetDefaultHint')}
         >
-          {isSaving ? 'Resetting...' : 'Reset to default'}
+          {isSaving ? t('list.resetting') : t('list.resetDefault')}
         </button>
       )}
 

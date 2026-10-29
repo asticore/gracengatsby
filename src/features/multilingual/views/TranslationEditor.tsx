@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { errorMessageFrom, TranslationStatusBadge } from './TranslationStatusBadge'
 import type { TranslationStatus } from '../translationStatus'
 import type { OverviewUser } from './TranslationsOverview'
@@ -52,6 +54,7 @@ export type TranslationEditorProps = {
 const cellKey = (fieldPath: string, locale: string) => `${fieldPath}::${locale}`
 
 export function TranslationEditor(props: TranslationEditorProps) {
+  const t = useAdminT()
   const initial = useMemo(() => new Map(props.cells.map((cell) => [cellKey(cell.fieldPath, cell.locale), cell])), [props.cells])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
@@ -79,7 +82,7 @@ export function TranslationEditor(props: TranslationEditorProps) {
       })
       const body = (await response.json().catch((): null => null)) as { updated?: number; refused?: string[]; error?: string } | null
       if (!response.ok) {
-        setMessage({ tone: 'error', text: body?.error ?? 'Machine translation could not run.' })
+        setMessage({ tone: 'error', text: body?.error ?? t('translations.editor.machineFailed') })
         return
       }
       const refused = body?.refused ?? []
@@ -89,7 +92,7 @@ export function TranslationEditor(props: TranslationEditorProps) {
       })
       if ((body?.updated ?? 0) > 0) setTimeout(() => window.location.reload(), 600)
     } catch {
-      setMessage({ tone: 'error', text: 'Could not reach the server. Try again.' })
+      setMessage({ tone: 'error', text: t('translations.errReach') })
     } finally {
       setBusy(false)
     }
@@ -122,17 +125,17 @@ export function TranslationEditor(props: TranslationEditorProps) {
           ? await request(`${props.apiBase}/${existing.id}`, 'PATCH', payload)
           : await request(props.apiBase, 'POST', { ...payload, locale, sourceKind: props.sourceKind, sourceId: props.sourceId, fieldPath })
         if (result.ok) saved += 1
-        else problems.push(`${props.localeLabels[locale] ?? locale}, ${field?.label ?? fieldPath}: ${errorMessageFrom(result.json, 'not saved')}`)
+        else problems.push(`${props.localeLabels[locale] ?? locale}, ${field?.label ?? fieldPath}: ${errorMessageFrom(result.json, t('translations.editor.notSaved'))}`)
       }
       if (saved > 0 && problems.length === 0) {
         setDrafts({})
-        setMessage({ tone: 'ok', text: `Saved ${saved} ${saved === 1 ? 'translation' : 'translations'}. Edited text needs review when review is on.` })
+        setMessage({ tone: 'ok', text: saved === 1 ? t('translations.editor.savedOne', { count: saved }) : t('translations.editor.savedOther', { count: saved }) })
         setTimeout(() => window.location.reload(), 500)
       } else {
-        setMessage({ tone: 'error', text: [...(saved ? [`Saved ${saved}.`] : []), ...problems].join(' ') })
+        setMessage({ tone: 'error', text: [...(saved ? [t('translations.editor.savedPartial', { count: saved })] : []), ...problems].join(' ') })
       }
     } catch {
-      setMessage({ tone: 'error', text: 'Could not reach the server. Try again.' })
+      setMessage({ tone: 'error', text: t('translations.errReach') })
     } finally {
       setBusy(false)
     }
@@ -144,14 +147,14 @@ export function TranslationEditor(props: TranslationEditorProps) {
     try {
       const result = await request(props.bulkApi, 'POST', { action: 'approve', items: [props.itemKey], locales: [locale] })
       const body = result.json as { updated?: number; refused?: string[] } | null
-      if (!result.ok) setMessage({ tone: 'error', text: errorMessageFrom(result.json, 'Could not approve.') })
+      if (!result.ok) setMessage({ tone: 'error', text: errorMessageFrom(result.json, t('translations.editor.couldNotApprove')) })
       else if ((body?.refused ?? []).length) setMessage({ tone: 'error', text: body?.refused?.join(' ') ?? '' })
       else {
-        setMessage({ tone: 'ok', text: `Approved ${body?.updated ?? 0} in ${props.localeLabels[locale] ?? locale}.` })
+        setMessage({ tone: 'ok', text: t('translations.editor.approvedIn', { count: body?.updated ?? 0, locale: props.localeLabels[locale] ?? locale }) })
         setTimeout(() => window.location.reload(), 500)
       }
     } catch {
-      setMessage({ tone: 'error', text: 'Could not reach the server. Try again.' })
+      setMessage({ tone: 'error', text: t('translations.errReach') })
     } finally {
       setBusy(false)
     }
@@ -162,9 +165,9 @@ export function TranslationEditor(props: TranslationEditorProps) {
     setMessage(null)
     const result = await request(props.bulkApi, 'POST', { action: 'assign', items: [props.itemKey], assignees })
     setBusy(false)
-    if (!result.ok) setMessage({ tone: 'error', text: errorMessageFrom(result.json, 'Could not assign.') })
+    if (!result.ok) setMessage({ tone: 'error', text: errorMessageFrom(result.json, t('translations.editor.couldNotAssign')) })
     else {
-      setMessage({ tone: 'ok', text: assignees.length ? 'Assigned. They have been emailed.' : 'Assignment cleared; language rules apply.' })
+      setMessage({ tone: 'ok', text: assignees.length ? t('translations.editor.assignedEmailed') : t('translations.editor.assignmentCleared') })
       setTimeout(() => window.location.reload(), 500)
     }
   }
@@ -173,7 +176,7 @@ export function TranslationEditor(props: TranslationEditorProps) {
     'w-full min-w-[160px] rounded-[5px] border border-[var(--theme-elevation-150)] bg-[var(--theme-input-bg,#fff)] p-[6px] text-[13px] text-inherit [font:inherit]'
 
   return (
-    <aside className="flex flex-col gap-[12px] rounded-[8px] border border-[var(--theme-elevation-150)] bg-[var(--theme-elevation-50)] p-[16px]" aria-label="Translation editor">
+    <aside className="flex flex-col gap-[12px] rounded-[8px] border border-[var(--theme-elevation-150)] bg-[var(--theme-elevation-50)] p-[16px]" aria-label={t('translations.editor.title')}>
       <header className="flex items-start justify-between gap-[8px]">
         <div>
           <p className="text-[12px] opacity-70">{props.typeLabel}</p>
@@ -185,15 +188,15 @@ export function TranslationEditor(props: TranslationEditorProps) {
           ) : null}
         </div>
         <a className="text-[13px] underline" href={props.closeHref}>
-          Close
+          {t('common.close')}
         </a>
       </header>
 
       <div className="flex flex-wrap items-center gap-[8px] text-[13px]">
         <button type="button" className="btn" disabled={busy} onClick={translateWithMachine}>
-          Translate with machine
+          {t('translations.translateMachine')}
         </button>
-        <span className="opacity-70">Writes machine drafts for empty or changed fields. Approved and human text is kept.</span>
+        <span className="opacity-70">{t('translations.editor.machineHint')}</span>
       </div>
 
       {message ? (
@@ -222,7 +225,7 @@ export function TranslationEditor(props: TranslationEditorProps) {
                   rows={field.sourceText.length > 60 ? 4 : 2}
                   value={valueOf(field.fieldPath, locale)}
                   onChange={(event) => setDrafts((current) => ({ ...current, [cellKey(field.fieldPath, locale)]: event.target.value }))}
-                  aria-label={`${field.label} in ${props.localeLabels[locale] ?? locale}`}
+                  aria-label={t('translations.editor.fieldLabel', { field: field.label, locale: props.localeLabels[locale] ?? locale })}
                 />
               </label>
             )
@@ -232,7 +235,7 @@ export function TranslationEditor(props: TranslationEditorProps) {
 
       <div className="flex flex-wrap gap-[8px]">
         <button type="button" className="btn" disabled={busy || changed.length === 0} onClick={save}>
-          Save {changed.length ? `${changed.length} change${changed.length === 1 ? '' : 's'}` : ''}
+          {t('common.save')}{changed.length ? ' ' + (changed.length === 1 ? t('translations.editor.saveChangesOne', { count: changed.length }) : t('translations.editor.saveChangesOther', { count: changed.length })) : ''}
         </button>
         {props.targetLocales.map((locale) => (
           <button
@@ -240,16 +243,16 @@ export function TranslationEditor(props: TranslationEditorProps) {
             type="button"
             className="btn"
             disabled={busy || !props.approvable[locale]}
-            title={props.approvable[locale] ? undefined : 'Only a reviewer for this language can approve it.'}
+            title={props.approvable[locale] ? undefined : t('translations.editor.onlyReviewer')}
             onClick={() => approve(locale)}
           >
-            Approve {props.localeLabels[locale] ?? locale}
+            {t('translations.editor.approve', { locale: props.localeLabels[locale] ?? locale })}
           </button>
         ))}
       </div>
 
       <details className="text-[13px]">
-        <summary className="cursor-pointer">Assign this item</summary>
+        <summary className="cursor-pointer">{t('translations.editor.assignThis')}</summary>
         <div className="mt-[6px] flex flex-col gap-[4px] rounded-[5px] border border-[var(--theme-elevation-150)] p-[8px]">
           {props.users.map((user) => (
             <label key={user.id} className="flex items-center gap-[6px]">
@@ -264,12 +267,12 @@ export function TranslationEditor(props: TranslationEditorProps) {
             </label>
           ))}
           <button type="button" className="btn" disabled={busy} onClick={assign}>
-            Save assignment
+            {t('translations.editor.saveAssignment')}
           </button>
         </div>
       </details>
       {props.requireReview ? (
-        <p className="text-[12px] opacity-70">Review is on: edited text waits for a reviewer before the public site uses it.</p>
+        <p className="text-[12px] opacity-70">{t('translations.editor.reviewOn')}</p>
       ) : null}
     </aside>
   )

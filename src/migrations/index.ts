@@ -105,6 +105,13 @@ import * as migration_20261125_100000_translation_workflow from './20261125_1000
 import * as migration_20261126_100000_machine_translation from './20261126_100000_machine_translation'
 import * as migration_20261127_100000_machine_autodraft from './20261127_100000_machine_autodraft';
 import * as migration_20261128_100000_admin_ui_language from './20261128_100000_admin_ui_language';
+import * as migration_20261129_100000_interface_overrides from './20261129_100000_interface_overrides';
+import * as migration_20261130_100000_domain_settings from './20261130_100000_domain_settings';
+import * as migration_20261130_110000_admin_path from './20261130_110000_admin_path';
+import * as migration_20261201_100000_content_domains from './20261201_100000_content_domains';
+import * as migration_20261208_100000_user_domains from './20261208_100000_user_domains';
+import * as migration_20261215_100000_domain_overrides from './20261215_100000_domain_overrides';
+import * as migration_20261220_100000_site_scoped_slugs from './20261220_100000_site_scoped_slugs';
 
 export const migrations = [
   {
@@ -641,5 +648,40 @@ export const migrations = [
     up: migration_20261128_100000_admin_ui_language.up,
     down: migration_20261128_100000_admin_ui_language.down,
     name: '20261128_100000_admin_ui_language',
+  },
+  {
+    up: migration_20261129_100000_interface_overrides.up,
+    down: migration_20261129_100000_interface_overrides.down,
+    name: '20261129_100000_interface_overrides',
+  },
+  {
+    up: migration_20261130_100000_domain_settings.up,
+    down: migration_20261130_100000_domain_settings.down,
+    name: '20261130_100000_domain_settings',
+  },
+  {
+    up: migration_20261130_110000_admin_path.up,
+    down: migration_20261130_110000_admin_path.down,
+    name: '20261130_110000_admin_path',
+  },
+  {
+    up: migration_20261201_100000_content_domains.up,
+    down: migration_20261201_100000_content_domains.down,
+    name: '20261201_100000_content_domains',
+  },
+  {
+    up: migration_20261208_100000_user_domains.up,
+    down: migration_20261208_100000_user_domains.down,
+    name: '20261208_100000_user_domains',
+  },
+  {
+    up: migration_20261215_100000_domain_overrides.up,
+    down: migration_20261215_100000_domain_overrides.down,
+    name: '20261215_100000_domain_overrides',
+  },
+  {
+    up: migration_20261220_100000_site_scoped_slugs.up,
+    down: migration_20261220_100000_site_scoped_slugs.down,
+    name: '20261220_100000_site_scoped_slugs',
   },
 ];

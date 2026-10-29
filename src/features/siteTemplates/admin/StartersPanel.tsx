@@ -1,5 +1,6 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useEffect, useState } from 'react'
 
 import { useDocumentInfo } from '@/admin/context/DocumentInfoContext'
@@ -91,7 +92,7 @@ export const StartersPanel: React.FC = () => {
       {created ? (
         <p style={{ marginTop: 6, fontSize: 13 }}>
           Draft &quot;{created.label}&quot; created (switched off).{' '}
-          <a href={`/admin/visual-editor/collection/site-templates/${created.id}`}>Open in the visual editor</a>
+          <AdminLink path={`/visual-editor/collection/site-templates/${created.id}`}>Open in the visual editor</AdminLink>
         </p>
       ) : null}
       {error ? <p role="alert" style={{ marginTop: 6, fontSize: 13, color: '#b91c1c' }}>{error}</p> : null}

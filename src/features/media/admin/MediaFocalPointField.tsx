@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type MouseEvent } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import type { Field } from '@/engine'
 import { useDocumentInfo, useField } from '@/engine/ui'
 
@@ -21,6 +23,7 @@ const clamp = (value: number): number => Math.min(100, Math.max(0, Math.round(va
  * pair. Shows the picture once the document has been saved (it needs an id).
  */
 export function MediaFocalPointField({ path, readOnly }: FocalPointFieldProps) {
+  const t = useAdminT()
   const focalX = useField<number>({ path })
   const focalY = useField<number>({ path: 'focalY' })
   const { id } = useDocumentInfo()
@@ -70,7 +73,7 @@ export function MediaFocalPointField({ path, readOnly }: FocalPointFieldProps) {
         </div>
       ) : (
         <p className="m-0 text-[12px] text-[var(--theme-elevation-500)]">
-          {id === undefined || id === null ? 'Save the picture to see its preview here.' : 'Loading the preview...'}
+          {id === undefined || id === null ? t('md.lit.save_to_see_preview') : t('md.lit.loading_preview')}
         </p>
       )}
       <div className="flex items-center gap-[12px]">

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect } from 'react'
 
+import type { UiStringKey } from '@/features/uiStrings'
+
 export type KeyInfo = { key: string; ctrl: boolean; meta: boolean; shift: boolean; alt: boolean }
 
 export type ShortcutAction =
@@ -57,20 +59,20 @@ export function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 /** Shortcut reference shown in the top bar. `mod` is Ctrl or Cmd. */
-export const SHORTCUT_LIST: { keys: string; label: string }[] = [
-  { keys: 'Mod+Z', label: 'Undo' },
-  { keys: 'Mod+Shift+Z or Mod+Y', label: 'Redo' },
-  { keys: 'Mod+C', label: 'Copy the selected block' },
-  { keys: 'Mod+X', label: 'Cut the selected block' },
-  { keys: 'Mod+V', label: 'Paste after the selected block (or into a selected column)' },
-  { keys: 'Mod+D', label: 'Duplicate the selected block' },
-  { keys: 'Delete or Backspace', label: 'Delete the selected block (undo brings it back)' },
-  { keys: 'Escape', label: 'Clear the selection' },
-  { keys: 'Alt+Up / Alt+Down', label: 'Move the selected block up or down in its list' },
-  { keys: '/', label: 'Quick insert: search elements and add one next to the selection (canvas)' },
-  { keys: 'Double-click text', label: 'Edit headings, buttons, quotes and list items in place (Enter saves, Esc cancels, Tab moves on)' },
-  { keys: 'Right-click a block', label: 'Open the block menu' },
-  { keys: '?', label: 'Show or hide this list of shortcuts' },
+export const SHORTCUT_LIST: { keys: string; labelKey: UiStringKey }[] = [
+  { keys: 'Mod+Z', labelKey: 've.shortcut.undo' },
+  { keys: 'Mod+Shift+Z or Mod+Y', labelKey: 've.shortcut.redo' },
+  { keys: 'Mod+C', labelKey: 've.shortcut.copy' },
+  { keys: 'Mod+X', labelKey: 've.shortcut.cut' },
+  { keys: 'Mod+V', labelKey: 've.shortcut.paste' },
+  { keys: 'Mod+D', labelKey: 've.shortcut.duplicate' },
+  { keys: 'Delete or Backspace', labelKey: 've.shortcut.delete' },
+  { keys: 'Escape', labelKey: 've.shortcut.escape' },
+  { keys: 'Alt+Up / Alt+Down', labelKey: 've.shortcut.move' },
+  { keys: '/', labelKey: 've.shortcut.quickInsert' },
+  { keys: 'Double-click text', labelKey: 've.shortcut.inlineEdit' },
+  { keys: 'Right-click a block', labelKey: 've.shortcut.blockMenu' },
+  { keys: '?', labelKey: 've.shortcut.help' },
 ]
 
 export type ShortcutHandlers = Partial<Record<ShortcutAction, () => void>>

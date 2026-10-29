@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useState } from 'react'
 
 import { asBlockStyle, type BlockStyle } from '@/lib/blockStyle'
@@ -59,10 +60,11 @@ export const ColumnPanel: React.FC<{
   canEditLayout?: boolean
   canEditStyle?: boolean
 }> = ({ section, index, device, onChange, onOp, onSelectSection, onClose, canEditLayout = true, canEditStyle = true }) => {
+  const t = useAdminT()
   const [tab, setTab] = useState<Tab>('layout')
   const columns = section.columns || []
   const column = columns[index]
-  if (!column) return <p className="ve-dock__empty">This column no longer exists.</p>
+  if (!column) return <p className="ve-dock__empty">{t('ve.col.gone')}</p>
 
   const { design, layout } = normalizeColumn(column)
   const flow = parseSectionLayout(asBlockStyle(section.design).layout)
@@ -118,22 +120,22 @@ export const ColumnPanel: React.FC<{
       <div className="ve-panel__header">
         <div>
           <span className="ve-panel__icon">{'▫'}</span>
-          <strong>Column</strong>{' '}
+          <strong>{t('ve.col.column')}</strong>{' '}
           <span className="ve-panel__sub">
             {index + 1} of {columns.length}
           </span>
         </div>
-        <button type="button" className="ve-icon-btn" onClick={onClose} aria-label="Close panel">
+        <button type="button" className="ve-icon-btn" onClick={onClose} aria-label={t('ve.col.closePanel')}>
           &#10005;
         </button>
       </div>
 
       <div className="ve-panel__tabs">
         <button type="button" className={`ve-panel__tab ${tab === 'layout' ? 've-panel__tab--active' : ''}`} onClick={() => setTab('layout')}>
-          Layout
+          {t('ve.col.layout')}
         </button>
         <button type="button" className={`ve-panel__tab ${tab === 'design' ? 've-panel__tab--active' : ''}`} onClick={() => setTab('design')}>
-          Design
+          {t('ve.col.design')}
         </button>
       </div>
 
@@ -153,12 +155,12 @@ export const ColumnPanel: React.FC<{
                 </div>
               )}
               <p className="ve-panel__hint">
-                A column is one stack of blocks inside a section. Select a column by clicking an empty part of it on the canvas.
+                {t('ve.col.hint')}
                 {device !== 'desktop' && ` You are editing the ${ORDER_NAME[device]} layout; anything left unset follows ${INHERIT_FROM[device]}.`}
               </p>
 
               <SelectRow
-                label="Width"
+                label={t('ve.col.width')}
                 help={
                   stacked
                     ? `This section is stacked on ${device}, so the column is this share of the full width (50% = half). Use "Align column" to place it left, centre or right.`
@@ -195,9 +197,9 @@ export const ColumnPanel: React.FC<{
                     min={0}
                     value={ownWidth.value}
                     onChange={(e) => setWidth({ ...ownWidth, value: Number(e.target.value) })}
-                    aria-label="Custom width value"
+                    aria-label={t('ve.col.customWidthValue')}
                   />
-                  <select value={ownWidth.unit} onChange={(e) => setWidth({ ...ownWidth, unit: e.target.value as ColumnWidthUnit })} aria-label="Custom width unit">
+                  <select value={ownWidth.unit} onChange={(e) => setWidth({ ...ownWidth, unit: e.target.value as ColumnWidthUnit })} aria-label={t('ve.col.customWidthUnit')}>
                     <option value="percent">%</option>
                     <option value="px">px</option>
                   </select>
@@ -205,14 +207,14 @@ export const ColumnPanel: React.FC<{
               )}
 
               <CheckRow
-                label="Stretch to fill the row"
+                label={t('ve.col.stretch')}
                 help="Lets this column take any space left over in its row."
                 checked={(layout.grow ?? 0) > 0}
                 onChange={(on) => setLayout({ grow: on ? 1 : undefined })}
               />
 
               <SelectRow
-                label="Align column"
+                label={t('ve.col.alignColumn')}
                 help="Where the column sits when its row has spare room - or, in a stacked section, left, centre or right."
                 value={layout.alignSelf || ''}
                 options={[
@@ -226,7 +228,7 @@ export const ColumnPanel: React.FC<{
               />
 
               <SelectRow
-                label="Vertical alignment of content"
+                label={t('ve.col.verticalAlign')}
                 help="Where the blocks sit inside the column when it is taller than they are."
                 value={layout.vAlign || ''}
                 options={[
@@ -240,7 +242,7 @@ export const ColumnPanel: React.FC<{
               />
 
               <NumberRow
-                label="Order on this device"
+                label={t('ve.col.orderOnDevice')}
                 help="Lower numbers come first. Use it to put a column first on mobile without changing the desktop order."
                 value={orderValue}
                 resp={{ device, overridden: device !== 'desktop' && orderValue !== undefined, onReset: () => setOrder(undefined) }}
@@ -248,20 +250,20 @@ export const ColumnPanel: React.FC<{
               />
 
               <NumberRow
-                label="Space between blocks (px)"
+                label={t('ve.col.spaceBetween')}
                 help="The gap between the blocks stacked in this column."
                 value={layout.gap}
                 min={0}
                 onChange={(v) => setLayout({ gap: v })}
               />
 
-              <RespNumber ctl={ctl} k="paddingTop" label="Padding top (px)" min={0} />
-              <RespNumber ctl={ctl} k="paddingRight" label="Padding right (px)" min={0} />
-              <RespNumber ctl={ctl} k="paddingBottom" label="Padding bottom (px)" min={0} />
-              <RespNumber ctl={ctl} k="paddingLeft" label="Padding left (px)" min={0} />
+              <RespNumber ctl={ctl} k="paddingTop" label={t('ve.col.padTop')} min={0} />
+              <RespNumber ctl={ctl} k="paddingRight" label={t('ve.col.padRight')} min={0} />
+              <RespNumber ctl={ctl} k="paddingBottom" label={t('ve.col.padBottom')} min={0} />
+              <RespNumber ctl={ctl} k="paddingLeft" label={t('ve.col.padLeft')} min={0} />
 
               <NumberRow
-                label="Minimum width (px)"
+                label={t('ve.col.minWidth')}
                 help="The column wraps to the next row instead of getting narrower than this."
                 value={layout.minWidth}
                 min={0}
@@ -274,29 +276,29 @@ export const ColumnPanel: React.FC<{
         {tab === 'design' &&
           (canEditStyle ? <DesignPanel value={design} onChange={setDesign} device={device} variant="column" /> : (
             <div className="ve-panel__hint" style={{ padding: '1rem' }}>
-              Your role can edit text only. Styling is locked.
+              {t('ve.col.roleTextOnly')}
             </div>
           ))}
       </div>
 
       <div className="ve-panel__footer ve-panel__footer--wrap">
-        <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onOp('moveLeft')} disabled={!canEditLayout || index === 0} title="Move column left">
+        <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onOp('moveLeft')} disabled={!canEditLayout || index === 0} title={t('ve.col.moveLeft')}>
           {'←'} Left
         </button>
-        <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onOp('moveRight')} disabled={!canEditLayout || index === columns.length - 1} title="Move column right">
+        <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onOp('moveRight')} disabled={!canEditLayout || index === columns.length - 1} title={t('ve.col.moveRight')}>
           Right {'→'}
         </button>
         <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onOp('add')} disabled={!canEditLayout}>
-          Add column
+          {t('ve.col.addColumn')}
         </button>
         <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onOp('duplicate')} disabled={!canEditLayout}>
-          Duplicate
+          {t('ve.col.duplicate')}
         </button>
         <button type="button" className="ve-btn ve-btn--danger" onClick={() => onOp('delete')} disabled={!canEditLayout || columns.length <= 1}>
-          Delete
+          {t('ve.col.delete')}
         </button>
         <button type="button" className="ve-btn ve-btn--ghost" onClick={onSelectSection}>
-          Edit section
+          {t('ve.col.editSection')}
         </button>
       </div>
     </div>

@@ -35,6 +35,8 @@ import { SessionWatch } from '@/admin/SessionWatch'
 import { THEME_SCRIPT } from '@/admin/context/themeScript'
 import { ImpersonationBanner } from '@/features/impersonation/components/ImpersonationBanner'
 import { AdminUiProvider } from './i18n/AdminUiProvider'
+import { AdminRouteProvider } from './adminRoute/AdminRouteProvider'
+import { getAdminRoot } from '@/features/security/settings'
 import { getAdminUi } from './i18n/serverUi'
 
 export async function RootLayout({ children }: { children: ReactNode; config?: unknown; importMap?: unknown; serverFunction?: unknown }) {
@@ -42,6 +44,7 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
   const hasAdminAccess = hasAdminPanelAccess(context.user)
   // The admin's own language (user choice, else browser, else English). Sets <html lang/dir>.
   const ui = await getAdminUi()
+  const adminRoot = await getAdminRoot()
 
   return (
     <html lang={ui.locale} dir={ui.dir} suppressHydrationWarning>
@@ -50,6 +53,7 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>
+        <AdminRouteProvider root={adminRoot}>
         <AdminUiProvider locale={ui.locale} dir={ui.dir} dict={ui.dict}>
         <DocumentEventsProvider>
           <NavProvider>
@@ -79,6 +83,7 @@ export async function RootLayout({ children }: { children: ReactNode; config?: u
           </NavProvider>
         </DocumentEventsProvider>
         </AdminUiProvider>
+        </AdminRouteProvider>
       </body>
     </html>
   )

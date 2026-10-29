@@ -1,5 +1,6 @@
 'use client'
 
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 import { useAddresses, useCart, usePayments } from '@/engine/commerce/react'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { loadStripe, type Stripe } from '@stripe/stripe-js'
@@ -28,6 +29,7 @@ function readStoredCart(): { id: number; secret: string } | null {
 }
 
 const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
+  const t = useStoreText()
   const { cart } = useCart()
   const { addresses } = useAddresses()
   const { initiatePayment, confirmOrder, isLoading } = usePayments()
@@ -53,7 +55,7 @@ const CheckoutInner: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ st
     setError(null)
 
     if (!email) {
-      setError('Please enter your email address.')
+      setError(t('store.enterEmail'))
       return
     }
 

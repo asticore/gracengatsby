@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { contentAvailableHere } from '@/features/domains/request'
 import { notFound } from 'next/navigation'
 import React from 'react'
 import type { Metadata } from 'next'
@@ -46,6 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: page.title,
     seo: page.seo,
     path: `/${slug.join('/')}`,
+    availableDomains: (page as { availableDomains?: unknown }).availableDomains,
     contentType: 'page',
     tokens: { excerpt: (page as { excerpt?: string | null }).excerpt },
   })
@@ -66,6 +68,8 @@ export default async function BuiltPage({
   if (!resolved) {
     notFound()
   }
+  // Content can be limited to some domains (features/domains): other domains answer not found.
+  if (!(await contentAvailableHere((resolved.page as { availableDomains?: unknown }).availableDomains))) notFound()
 
   const locale = await currentRequestLocale()
   const page = await applyTranslations(resolved.page, 'pages', locale)

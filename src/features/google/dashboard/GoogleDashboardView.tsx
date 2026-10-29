@@ -1,5 +1,7 @@
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import React from 'react'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -12,14 +14,14 @@ import { GoogleDashboardClient } from './GoogleDashboardClient'
  */
 export async function GoogleDashboardView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
-  if (!context.isAdmin) redirect('/admin')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
   return (
     <div style={{ padding: 24, maxWidth: 960 }}>
       <h1>Google dashboard</h1>
       <p>
         Search, visitors and earnings from the Google account you connected. Numbers are read from Google each time you open this page and kept for five minutes. To connect or change the account, open{' '}
-        <Link href="/admin/google-connection">Google connection</Link>.
+        <AdminLink path="/google-connection">Google connection</AdminLink>.
       </p>
       <GoogleDashboardClient />
     </div>

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import type { SectionNode } from '@/lib/sectionTree'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import { AiBuilderPanel, type AiBuilderPanelProps } from './AiBuilderPanel'
 import type { BlockDef } from './blockSchemas'
@@ -46,6 +47,7 @@ const AiBuildDialog: React.FC<{
   returnFocusTo: React.RefObject<HTMLButtonElement | null>
   panel: AiBuilderPanelProps
 }> = ({ open, onClose, returnFocusTo, panel }) => {
+  const t = useAdminT()
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
 
@@ -90,10 +92,10 @@ const AiBuildDialog: React.FC<{
       <div ref={dialogRef} className="ve-ai-modal__dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <div className="ve-ai-modal__header">
           <h2 id={titleId} className="ve-ai-modal__title">
-            Build with AI
+            {t('ve.ai.buildWithAi')}
           </h2>
           <button type="button" className="ve-btn ve-btn--ghost" onClick={onClose}>
-            Close
+            {t('common.close')}
           </button>
         </div>
         <div className="ve-ai-modal__body">
@@ -109,6 +111,7 @@ const AiBuildDialog: React.FC<{
  * node. Closed by default, with a badge that shows how many there are.
  */
 const ChecksList: React.FC<{ warnings: DesignWarning[]; onSelect: (nodeId: string) => void }> = ({ warnings, onSelect }) => {
+  const t = useAdminT()
   const count = warnings.length
   return (
     <details className="ve-checks">
@@ -120,7 +123,7 @@ const ChecksList: React.FC<{ warnings: DesignWarning[]; onSelect: (nodeId: strin
         </span>
       </summary>
       {count === 0 ? (
-        <p className="ve-checks__none">No issues found.</p>
+        <p className="ve-checks__none">{t('ve.checks.none')}</p>
       ) : (
         <ul className="ve-checks__list">
           {warnings.map((warning) => (
@@ -130,7 +133,7 @@ const ChecksList: React.FC<{ warnings: DesignWarning[]; onSelect: (nodeId: strin
                 className={`ve-checks__item ve-checks__item--${warning.level}`}
                 onClick={() => onSelect(warning.nodeId)}
               >
-                <span className="ve-checks__level">{warning.level === 'warn' ? 'Warning' : 'Info'}</span>
+                <span className="ve-checks__level">{warning.level === 'warn' ? t('ve.checks.warning') : t('ve.checks.info')}</span>
                 <span>{warning.message}</span>
               </button>
             </li>
@@ -220,6 +223,7 @@ export const EditorDock: React.FC<{
   selectedPath = null,
   onSelectPath,
 }) => {
+  const t = useAdminT()
   const [aiOpen, setAiOpen] = useState(false)
   const buildButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -258,7 +262,7 @@ export const EditorDock: React.FC<{
   const dock = collapsed ? null : (
     <div className="ve-dock">
       {tree && onSelectPath && <SelectionPath tree={tree} selectedPath={selectedPath} onSelectPath={onSelectPath} />}
-      <div className="ve-dock__tabs" role="tablist" aria-label="Editor panel">
+      <div className="ve-dock__tabs" role="tablist" aria-label={t('ve.dock.tabs')}>
         <button
           type="button"
           role="tab"
@@ -266,7 +270,7 @@ export const EditorDock: React.FC<{
           className={`ve-dock__tab ${tab === 'elements' ? 've-dock__tab--active' : ''}`}
           onClick={() => onTabChange('elements')}
         >
-          + Elements
+          + {t('ve.tab.elements')}
         </button>
         <button
           type="button"
@@ -275,7 +279,7 @@ export const EditorDock: React.FC<{
           className={`ve-dock__tab ${tab === 'settings' ? 've-dock__tab--active' : ''}`}
           onClick={() => onTabChange('settings')}
         >
-          {GEAR} Settings
+          {GEAR} {t('ve.tab.settings')}
         </button>
         <button
           type="button"
@@ -284,7 +288,7 @@ export const EditorDock: React.FC<{
           className={`ve-dock__tab ${tab === 'navigator' ? 've-dock__tab--active' : ''}`}
           onClick={() => onTabChange('navigator')}
         >
-          {PAGE_ICON} Navigator
+          {PAGE_ICON} {t('ve.tab.navigator')}
         </button>
         {formPanel && (
           <button
@@ -294,7 +298,7 @@ export const EditorDock: React.FC<{
             className={`ve-dock__tab ${tab === 'form' ? 've-dock__tab--active' : ''}`}
             onClick={() => onTabChange('form')}
           >
-            Form
+            {t('ve.tab.form')}
           </button>
         )}
       </div>
@@ -306,7 +310,7 @@ export const EditorDock: React.FC<{
           formPanel
         ) : tab === 'navigator' ? (
           <>
-            {navigatorPanel || <p className="ve-dock__empty">Navigator not available.</p>}
+            {navigatorPanel || <p className="ve-dock__empty">{t('ve.dock.navigatorUnavailable')}</p>}
             {tree && onSelectPath && <ChecksList warnings={warnings} onSelect={selectWarningNode} />}
           </>
         ) : tab === 'elements' ? (
@@ -323,7 +327,7 @@ export const EditorDock: React.FC<{
                   <span className="ve-dock__ai-glyph" aria-hidden="true">
                     {SPARKLE}
                   </span>
-                  Build with AI
+                  {t('ve.ai.buildWithAi')}
                 </button>
               </div>
             )}
@@ -348,7 +352,7 @@ export const EditorDock: React.FC<{
         ) : (
           <>
             {pagePanel}
-            <p className="ve-dock__empty">Select a block on the canvas to edit its settings.</p>
+            <p className="ve-dock__empty">{t('ve.dock.selectBlock')}</p>
           </>
         )}
       </div>

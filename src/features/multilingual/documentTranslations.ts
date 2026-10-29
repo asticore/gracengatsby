@@ -17,9 +17,8 @@ import {
  * approval rules as the Translations screen are used, so the builder cannot
  * disagree with it about what "approved" or "assigned" means.
  *
- * Rich text (`richText` fields) is listed so the translator sees it exists, but
- * it is not counted in progress and is not editable here: it stays in the
- * default language, as the overlay does.
+ * Rich text is expanded into one sub-field per text node (richText.ts), so each
+ * paragraph, heading or list item is listed, counted and editable like any text.
  */
 
 export type DocumentTranslationField = {

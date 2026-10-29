@@ -1,4 +1,7 @@
 import { noAdsField } from '@/features/ads/fields'
+import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
+import { availableDomainsField } from '@/features/domains/field'
+import { slugClaimsConflict } from '@/features/domains/scope'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { pageAudioField } from '@/features/pageAudio/fields'
@@ -41,14 +44,15 @@ export const Pages: CollectionConfig = {
   },
   access: {
     create: roleAccess('pages', 'create'),
-    delete: roleAccess('pages', 'delete'),
-    read: excludeProtectedAccess('pages', roleOrPublished('pages')),
-    update: roleAccess('pages', 'update'),
+    delete: domainScopedAccess(roleAccess('pages', 'delete')),
+    read: domainScopedAccess(excludeProtectedAccess('pages', roleOrPublished('pages'))),
+    update: domainScopedAccess(roleAccess('pages', 'update')),
   },
   versions: {
     drafts: true,
   },
   fields: [
+    availableDomainsField,
     {
       type: 'row',
       fields: [
@@ -92,12 +96,16 @@ export const Pages: CollectionConfig = {
               ...(id ? [{ id: { not_equals: id } }] : []),
             ],
           },
-          limit: 1,
+          limit: 0,
           depth: 0,
         })
 
-        if (docs.length > 0) {
-          return 'Another page with this slug already exists under the same parent. Choose a different slug or parent.'
+        // Same slug under the same parent is fine on a different domain (features/domains/scope.ts slugClaimsConflict).
+        const storedDomains = data?.availableDomains === undefined && id ? ((await req.engine.findByID({ collection: 'pages', id: id as number, depth: 0 }).catch((): null => null)) as { availableDomains?: unknown } | null)?.availableDomains : undefined
+        const incomingDomains = data?.availableDomains !== undefined ? data.availableDomains : storedDomains
+        const clash = docs.some((doc) => slugClaimsConflict((doc as { availableDomains?: unknown }).availableDomains, incomingDomains))
+        if (clash) {
+          return 'Another page with this slug already exists under the same parent on one of these domains. Choose a different slug or parent, or a different domain.'
         }
 
         return true
@@ -177,14 +185,17 @@ export const Pages: CollectionConfig = {
     afterChange: [pageSpeedAfterChange('pages'), indexNowAfterChange('pages'), machineAutoDraftAfterChange('pages'), outdatedAfterChange('pages')],
     afterDelete: [indexNowAfterDelete('pages')],
     beforeChange: [
+      domainWriteGuard,
       authorshipBeforeChange,
       trashGuard,
       seoEditGuard,
       pageSpeedBeforeChange,
       async ({ data, req, originalDoc }) => {
         // Only one page can be the homepage - unset any previous holder.
+        // One homepage per domain: only a homepage on an overlapping domain (or the shared one) is unset.
         if (data?.isHomepage) {
-          const { docs } = await req.engine.find({
+          const incomingDomains = data.availableDomains !== undefined ? data.availableDomains : originalDoc?.availableDomains
+          const { docs: holders } = await req.engine.find({
             collection: 'pages',
             where: {
               and: [{ isHomepage: { equals: true } }, ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : [])],
@@ -196,6 +207,7 @@ export const Pages: CollectionConfig = {
             // published/draft state (an update without _status would turn it back into a draft).
             overrideAccess: true,
           })
+          const docs = holders.filter((doc) => slugClaimsConflict((doc as { availableDomains?: unknown }).availableDomains, incomingDomains))
           await Promise.all(
             docs.map((doc) =>
               req.engine.update({

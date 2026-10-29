@@ -17,6 +17,10 @@ import { getSeoContext } from '@/features/seo/settings'
 import { listBreadcrumbs } from '@/features/seo/schemaNodes'
 import { renderWithTemplate } from '@/features/siteTemplates/render'
 import { paginate, parsePage } from '@/features/siteTemplates/archiveQueries'
+import { publicLocale, storeTexts } from '@/features/uiStrings/storeTextsServer'
+import { translateWith } from '@/features/uiStrings/t'
+import { formatDateFor } from '@/features/uiStrings/publicFormat'
+import type { UiStringKey } from '@/features/uiStrings/keys'
 import { archiveFacets, archiveQueryString, filterArchiveItems, parseArchiveFilters, sortArchiveItems } from '@/features/siteTemplates/archiveFilter'
 import { archivePageHref } from '@/lib/templateWidgets'
 import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
@@ -49,6 +53,9 @@ export default async function BlogArchivePage({ searchParams }: { searchParams: 
   const docs = await applyTranslationsToDocs(await excludeProtected('posts', allDocs), 'posts', await currentRequestLocale())
   // Filter params (?category=&tag=&q=&sort=) narrow the list before paging. With none, the order and pages are unchanged.
   const params = await searchParams
+  const storeDict = await storeTexts()
+  const tx = (key: UiStringKey, vars?: Record<string, string | number>) => translateWith(storeDict, key, vars)
+  const locale = await publicLocale()
   setRequestQuery(params)
   const filters = parseArchiveFilters(params)
   const pool = docs.map((post) => ({
@@ -129,7 +136,7 @@ export default async function BlogArchivePage({ searchParams }: { searchParams: 
                   {post.excerpt && <p>{post.excerpt}</p>}
                   {settings?.showDate !== false && post.publishedDate && (
                     <time dateTime={post.publishedDate} className="mt-2 block text-[0.75rem] opacity-60">
-                      {new Date(post.publishedDate).toLocaleDateString()}
+                      {formatDateFor(post.publishedDate, locale)}
                     </time>
                   )}
                   {readTime && <span className="mt-1 block text-[0.75rem] opacity-60">{readTime}</span>}
@@ -143,9 +150,9 @@ export default async function BlogArchivePage({ searchParams }: { searchParams: 
   )
   const pager = paged.pages > 1 ? (
     <nav className="mt-8 flex items-center justify-between" aria-label="Pagination">
-      {paged.page > 1 ? <Link href={archivePageHref(basePath, paged.page - 1)} rel="prev">Newer posts</Link> : <span />}
-      <span className="opacity-60">Page {paged.page} of {paged.pages}</span>
-      {paged.page < paged.pages ? <Link href={archivePageHref(basePath, paged.page + 1)} rel="next">Older posts</Link> : <span />}
+      {paged.page > 1 ? <Link href={archivePageHref(basePath, paged.page - 1)} rel="prev">{tx('store.newerPosts')}</Link> : <span />}
+      <span className="opacity-60">{tx('store.pageOf', { page: paged.page, pages: paged.pages })}</span>
+      {paged.page < paged.pages ? <Link href={archivePageHref(basePath, paged.page + 1)} rel="next">{tx('store.olderPosts')}</Link> : <span />}
     </nav>
   ) : null
   return renderWithTemplate({ kind: 'archive-blog', ctx: { path: '/blog' }, content: <>{body}{pager}</> })

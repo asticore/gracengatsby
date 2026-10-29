@@ -12,7 +12,8 @@ export const OAUTH_STATE_COOKIE = 'eg_google_oauth'
 
 export const CALLBACK_PATH = '/api/google/callback'
 
-export const ADMIN_PAGE_PATH = '/admin/google-connection'
+/** Admin path (relative to the admin root) of the Google connection screen. */
+export const ADMIN_PAGE_PATH = '/google-connection'
 
 export const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 

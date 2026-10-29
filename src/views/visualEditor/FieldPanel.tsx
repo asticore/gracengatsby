@@ -1,4 +1,5 @@
 'use client'
+import { useAdminHref } from '@/admin/adminRoute/AdminRouteProvider'
 
 import type { UiStringKey } from '@/features/uiStrings'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
@@ -1026,6 +1027,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
   onChange,
 }) => {
   const t = useAdminT()
+  const adminHref = useAdminHref()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [fetchedThumb, setFetchedThumb] = useState<MediaThumb | null>(null)
   const [relOptions, setRelOptions] = useState<{ id: number; label: string }[]>([])
@@ -1308,7 +1310,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
             {emptyForms ? (
               <span className="ve-field__help ve-form-empty">
                 No form yet. Create one in Forms (Settings &gt; Forms) and pick it here.{' '}
-                <a href="/admin/content/forms" target="_blank" rel="noreferrer">
+                <a href={adminHref('/content/forms')} target="_blank" rel="noreferrer">
                   Open Forms
                 </a>
               </span>

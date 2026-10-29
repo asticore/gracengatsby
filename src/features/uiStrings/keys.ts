@@ -2389,6 +2389,16 @@ export const UI_STRING_SOURCE = {
   'ig.lit.pp_step3': 'Tick the events Payment capture completed, Payment capture denied, Payment capture declined and Payment capture refunded.',
   'ig.lit.pp_step4': 'PayPal then shows a Webhook ID. Paste it into the Webhook ID box in the PayPal section above, then save.',
   'ig.lit.pp_env': 'Use the sandbox dashboard with sandbox keys, and the live dashboard with live keys. Each environment has its own webhook and ID.',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': 'Admin URL',
+  'adminurl.hint': 'Where the admin is served. Current address: {url}',
+  'adminurl.bookmark': 'Bookmark this address. The admin is only reachable here after you save.',
+  'adminurl.env_note': 'If ENGAGE_ADMIN_PATH is set in Cloudflare, that address is used instead of this field.',
+  'adminurl.err_format': 'Use lowercase letters, digits and hyphens, in one part, for example /studio-7f3.',
+  'adminurl.err_length': 'The admin URL must be between 3 and 40 characters.',
+  'adminurl.err_reserved': 'That word is used by the site itself. Choose another admin URL.',
+  'adminurl.active_notice': 'Your admin is at {url}. Bookmark it now.',
+  'adminurl.old_gone': 'The old /admin address now shows Not found.',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

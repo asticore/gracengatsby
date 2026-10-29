@@ -2349,6 +2349,16 @@ const ar: UiDictionary = {
   'ig.lit.pp_step3': 'حدِّد الأحداث Payment capture completed وPayment capture denied وPayment capture declined وPayment capture refunded.',
   'ig.lit.pp_step4': 'ثم يعرض PayPal معرّف Webhook. الصقه في خانة Webhook ID في قسم PayPal أعلاه، ثم احفظ.',
   'ig.lit.pp_env': 'استخدم لوحة sandbox مع مفاتيح sandbox، ولوحة الإنتاج مع مفاتيح الإنتاج. لكل بيئة webhook وID خاصان بها.',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': 'رابط لوحة الإدارة',
+  'adminurl.hint': 'المكان الذي تُقدَّم فيه لوحة الإدارة. العنوان الحالي: {url}',
+  'adminurl.bookmark': 'أضف هذا العنوان إلى المفضلة. لا يمكن الوصول إلى لوحة الإدارة عبره إلا بعد الحفظ.',
+  'adminurl.env_note': 'إذا كان ENGAGE_ADMIN_PATH مضبوطًا في Cloudflare، فسيُستخدم بدلًا من هذا الحقل.',
+  'adminurl.err_format': 'استخدم أحرفًا إنجليزية صغيرة وأرقامًا وشرطات في جزء واحد فقط، مثل /studio-7f3.',
+  'adminurl.err_length': 'يجب أن يكون رابط لوحة الإدارة بين 3 و40 حرفًا.',
+  'adminurl.err_reserved': 'هذه الكلمة يستخدمها الموقع نفسه. اختر رابطًا آخر للوحة الإدارة.',
+  'adminurl.active_notice': 'لوحة الإدارة على {url}. أضفها إلى المفضلة الآن.',
+  'adminurl.old_gone': 'يعرض العنوان القديم /admin الآن صفحة غير موجود.',
 }
 
 export default ar

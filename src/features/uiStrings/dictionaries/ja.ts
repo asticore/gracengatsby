@@ -2349,6 +2349,16 @@ const ja: UiDictionary = {
   'ig.lit.pp_step3': 'Payment capture completed、Payment capture denied、Payment capture declined、Payment capture refunded のイベントにチェックを入れます。',
   'ig.lit.pp_step4': 'PayPal に Webhook ID が表示されます。上の PayPal セクションの Webhook ID 欄に貼り付けて保存します。',
   'ig.lit.pp_env': 'サンドボックスのキーはサンドボックスのダッシュボードで、本番のキーは本番のダッシュボードで使用してください。環境ごとに個別のウェブフックと ID があります。',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': '管理画面のURL',
+  'adminurl.hint': '管理画面の場所です。現在のアドレス: {url}',
+  'adminurl.bookmark': 'このアドレスをブックマークしてください。保存後にのみ、このアドレスで管理画面にアクセスできます。',
+  'adminurl.env_note': 'Cloudflare で ENGAGE_ADMIN_PATH が設定されている場合は、この欄よりそちらが優先されます。',
+  'adminurl.err_format': '小文字の英字、数字、ハイフンだけを1つの階層で使ってください。例: /studio-7f3',
+  'adminurl.err_length': '管理画面のURLは3文字以上40文字以内にしてください。',
+  'adminurl.err_reserved': 'その語はサイト自体が使用しています。別の管理画面URLを選んでください。',
+  'adminurl.active_notice': '管理画面は {url} にあります。今すぐブックマークしてください。',
+  'adminurl.old_gone': '以前の /admin アドレスは「見つかりません」と表示されるようになります。',
 }
 
 export default ja

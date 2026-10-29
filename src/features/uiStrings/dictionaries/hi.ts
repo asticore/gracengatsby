@@ -2349,6 +2349,16 @@ const hi: UiDictionary = {
   'ig.lit.pp_step3': 'Payment capture completed, Payment capture denied, Payment capture declined और Payment capture refunded इवेंट चुनें।',
   'ig.lit.pp_step4': 'फिर PayPal एक Webhook ID दिखाता है। उसे ऊपर PayPal अनुभाग के Webhook ID बॉक्स में चिपकाएँ, फिर सहेजें।',
   'ig.lit.pp_env': 'sandbox कुंजियों के साथ sandbox डैशबोर्ड और live कुंजियों के साथ live डैशबोर्ड का उपयोग करें। हर वातावरण का अपना webhook और ID होता है।',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': 'एडमिन URL',
+  'adminurl.hint': 'एडमिन कहाँ दिखाया जाता है। वर्तमान पता: {url}',
+  'adminurl.bookmark': 'इस पते को बुकमार्क करें। सेव करने के बाद ही इस पते से एडमिन खुलेगा।',
+  'adminurl.env_note': 'अगर Cloudflare में ENGAGE_ADMIN_PATH सेट है, तो यही पता इस फ़ील्ड की जगह इस्तेमाल होगा।',
+  'adminurl.err_format': 'केवल छोटे अक्षर, अंक और हाइफ़न एक ही हिस्से में लिखें, जैसे /studio-7f3।',
+  'adminurl.err_length': 'एडमिन URL 3 से 40 अक्षरों का होना चाहिए।',
+  'adminurl.err_reserved': 'यह शब्द साइट खुद इस्तेमाल करती है। कोई दूसरा एडमिन URL चुनें।',
+  'adminurl.active_notice': 'आपका एडमिन {url} पर है। अभी बुकमार्क करें।',
+  'adminurl.old_gone': 'पुराना पता /admin अब "नहीं मिला" दिखाएगा।',
 }
 
 export default hi

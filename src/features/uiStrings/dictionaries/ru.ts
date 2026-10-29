@@ -2349,6 +2349,16 @@ const ru: UiDictionary = {
   'ig.lit.pp_step3': 'Отметьте события Payment capture completed, Payment capture denied, Payment capture declined и Payment capture refunded.',
   'ig.lit.pp_step4': 'PayPal покажет Webhook ID. Вставьте его в поле Webhook ID в разделе PayPal выше и сохраните.',
   'ig.lit.pp_env': 'Используйте панель sandbox с ключами sandbox, а панель live с ключами live. У каждой среды свой webhook и ID.',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': 'URL админки',
+  'adminurl.hint': 'Где открывается админка. Текущий адрес: {url}',
+  'adminurl.bookmark': 'Добавьте этот адрес в закладки. Админка открывается по нему только после сохранения.',
+  'adminurl.env_note': 'Если в Cloudflare задана переменная ENGAGE_ADMIN_PATH, используется её адрес вместо этого поля.',
+  'adminurl.err_format': 'Используйте строчные латинские буквы, цифры и дефисы, одним сегментом, например /studio-7f3.',
+  'adminurl.err_length': 'URL админки должен быть длиной от 3 до 40 символов.',
+  'adminurl.err_reserved': 'Это слово используется самим сайтом. Выберите другой URL админки.',
+  'adminurl.active_notice': 'Ваша админка по адресу {url}. Добавьте её в закладки сейчас.',
+  'adminurl.old_gone': 'Прежний адрес /admin теперь показывает «Не найдено».',
 }
 
 export default ru

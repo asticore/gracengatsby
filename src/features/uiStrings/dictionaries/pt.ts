@@ -2349,6 +2349,16 @@ const pt: UiDictionary = {
   'ig.lit.pp_step3': 'Marque os eventos Payment capture completed, Payment capture denied, Payment capture declined e Payment capture refunded.',
   'ig.lit.pp_step4': 'Em seguida, o PayPal mostra um ID de webhook. Cole-o na caixa ID do webhook na seção PayPal acima e salve.',
   'ig.lit.pp_env': 'Use o painel sandbox com chaves sandbox e o painel ao vivo com chaves ao vivo. Cada ambiente tem seu próprio webhook e ID.',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': 'URL do admin',
+  'adminurl.hint': 'Onde o admin é servido. Endereço atual: {url}',
+  'adminurl.bookmark': 'Guarde este endereço nos favoritos. O admin só fica acessível aqui depois de salvar.',
+  'adminurl.env_note': 'Se ENGAGE_ADMIN_PATH estiver definida na Cloudflare, esse endereço é usado no lugar deste campo.',
+  'adminurl.err_format': 'Use letras minúsculas, dígitos e hífens, em um único segmento, por exemplo /studio-7f3.',
+  'adminurl.err_length': 'A URL do admin deve ter entre 3 e 40 caracteres.',
+  'adminurl.err_reserved': 'Essa palavra é usada pelo próprio site. Escolha outra URL para o admin.',
+  'adminurl.active_notice': 'Seu admin está em {url}. Adicione aos favoritos agora.',
+  'adminurl.old_gone': 'O antigo endereço /admin agora mostra Não encontrado.',
 }
 
 export default pt

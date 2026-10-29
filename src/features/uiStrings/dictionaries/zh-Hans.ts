@@ -2348,6 +2348,16 @@ const zhHans: UiDictionary = {
   'ig.lit.pp_step3': '勾选事件 Payment capture completed、Payment capture denied、Payment capture declined 和 Payment capture refunded。',
   'ig.lit.pp_step4': 'PayPal 随后会显示 Webhook ID。将其粘贴到上方 PayPal 部分的 Webhook ID 框中，然后保存。',
   'ig.lit.pp_env': '沙盒密钥请使用沙盒面板，正式密钥请使用正式面板。每个环境都有自己的 Webhook 和 ID。',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': '管理后台网址',
+  'adminurl.hint': '管理后台的访问位置。当前地址：{url}',
+  'adminurl.bookmark': '请将此地址加入书签。保存后，只能通过此地址访问管理后台。',
+  'adminurl.env_note': '如果在 Cloudflare 中设置了 ENGAGE_ADMIN_PATH，则以它为准，而不是此字段。',
+  'adminurl.err_format': '只能使用小写字母、数字和连字符，且为一段，例如 /studio-7f3。',
+  'adminurl.err_length': '管理后台网址长度须为 3 到 40 个字符。',
+  'adminurl.err_reserved': '该词已被网站本身使用，请选择其他网址。',
+  'adminurl.active_notice': '您的管理后台位于 {url}，请立即加入书签。',
+  'adminurl.old_gone': '旧地址 /admin 现在会显示未找到。',
 }
 
 export default zhHans

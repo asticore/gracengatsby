@@ -284,6 +284,7 @@ export const SecuritySettings: GlobalConfig = {
       label: 'Admin URL',
       validate: validateAdminPathField,
       admin: {
+        components: { Field: '@/admin/components/AdminUrlField#AdminUrlField' },
         description:
           'The address of the admin, one segment such as /studio-7f3 (lowercase letters, digits and hyphens, 3 to 40 characters). Leave it as /admin to keep the default. The old /admin address stops working once you change this. Recovery: set the ENGAGE_ADMIN_PATH environment variable in Cloudflare to a path, and it overrides this field. Bookmark the new address as soon as you save it, because the admin cannot be found without it.',
       },

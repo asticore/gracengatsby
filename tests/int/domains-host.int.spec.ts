@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 import { hostFromHeader, normaliseHost } from '@/features/domains/host'
-import { matchDomain, normaliseDomains, primaryOf, type SiteDomain } from '@/features/domains/model'
+import { matchDomain, NO_OVERRIDES, normaliseDomains, primaryOf, type SiteDomain } from '@/features/domains/model'
 import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
 import { DEFAULT_MULTILINGUAL_SETTINGS } from '@/features/multilingual/settings'
 
@@ -24,6 +24,7 @@ vi.mock('@/features/multilingual/settings', async (importOriginal) => ({
 }))
 
 const site = (overrides: Partial<SiteDomain> & { host: string }): SiteDomain => ({
+  overrides: NO_OVERRIDES,
   label: overrides.host,
   defaultLocale: null,
   currencyHint: null,

@@ -36,7 +36,7 @@ export async function readDomainsFromD1(): Promise<SiteDomain[]> {
     if (db) {
       const result = await db
         .prepare(
-          `SELECT host, label, default_locale AS defaultLocale, currency_hint AS currencyHint, is_primary AS isPrimary, status, redirect_to_primary AS redirectToPrimary, allow_admin AS allowAdmin FROM \`${TABLE}\` ORDER BY \`_order\``,
+          `SELECT host, label, default_locale AS defaultLocale, currency_hint AS currencyHint, is_primary AS isPrimary, status, redirect_to_primary AS redirectToPrimary, allow_admin AS allowAdmin, site_name AS siteName, tagline, logo_url AS logoUrl, contact_email AS contactEmail, contact_phone AS contactPhone, instagram_url AS instagramUrl, facebook_url AS facebookUrl, linkedin_url AS linkedinUrl, x_url AS xUrl FROM \`${TABLE}\` ORDER BY \`_order\``,
         )
         .all()
       const multilingual = await readMultilingualSettingsFromD1()

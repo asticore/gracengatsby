@@ -5,6 +5,8 @@
 // with `TypeError: Cannot read properties of null (reading '1')` inside
 // next/font's google loader. @fontsource ships the actual woff2/woff files in
 // the package, so there's no network fetch at build time at all.
+import { requestDomain } from '@/features/domains/request'
+import { domainBrand, domainSocials } from '@/features/domains/brand'
 import '@fontsource/cormorant-garamond/400.css'
 import '@fontsource/cormorant-garamond/500.css'
 import '@fontsource/cormorant-garamond/600.css'
@@ -170,7 +172,10 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     links: buildLinks(column.links).map((l) => ({ href: l.href, label: l.label })),
   }))
 
-  const logo = settings?.logo && typeof settings.logo === 'object' ? (settings.logo as Media) : null
+  // The domain this request arrived on can override the name, logo, contact and social links (features/domains).
+  const domain = await requestDomain()
+  const brand = domainBrand(settings, domain)
+  const logo = brand?.logo && typeof brand.logo === 'object' ? (brand.logo as Media) : null
   const theme = settings?.theme
 
   // Only the installed fonts actually picked for heading or body get CSS,
@@ -277,7 +282,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <header>{chrome.header}</header>
           ) : (
           <Header
-            siteName={settings?.siteName || undefined}
+            siteName={brand?.siteName || undefined}
             logoUrl={logo?.url || undefined}
             logoWidth={logo?.width || undefined}
             logoHeight={logo?.height || undefined}
@@ -288,7 +293,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             mobileLayout={(header?.mobileLayout as 'slide-in' | 'fullscreen') || 'slide-in'}
             showCart={features?.ecommerce !== false && header?.showCart !== false}
             announcementBar={header?.announcementBar}
-            socials={header?.socials}
+            socials={domainSocials(header?.socials, domain)}
           />
           )}
           <AdPlacements position="header" />
@@ -300,17 +305,17 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <footer>{chrome.footer}</footer>
           ) : (
           <Footer
-            siteName={settings?.siteName || undefined}
+            siteName={brand?.siteName || undefined}
             logoUrl={logo?.url || undefined}
             logoWidth={logo?.width || undefined}
             logoHeight={logo?.height || undefined}
             showLogo={footer?.showLogo !== false}
             bottomText={footer?.bottomText || undefined}
             columns={footerColumns}
-            contactEmail={footer?.contact?.email}
-            contactPhone={footer?.contact?.phone}
+            contactEmail={domain?.overrides.contactEmail || footer?.contact?.email}
+            contactPhone={domain?.overrides.contactPhone || footer?.contact?.phone}
             address={footer?.contact?.address || undefined}
-            socials={footer?.socials}
+            socials={domainSocials(footer?.socials, domain)}
             layout={(footer?.layout as 'columns-3' | 'columns-4' | 'stacked') || 'columns-3'}
             copyrightText={footer?.copyrightText}
           />

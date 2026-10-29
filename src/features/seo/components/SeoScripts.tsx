@@ -14,6 +14,7 @@ import { getPublicTrackingEvents } from '@/features/tracking/server'
 import { TrackingRuntime } from '@/features/tracking/TrackingRuntime'
 import type { TrackingPlatform } from '@/features/tracking/events'
 import { getAdminRoot } from '@/features/security/settings'
+import { ADMIN_SESSION_COOKIE } from '@/features/impersonation/policy'
 import { AnalyticsLoader } from './AnalyticsLoader'
 
 export type SeoScriptsProps = {
@@ -117,6 +118,8 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
   if (gtmContainerId) platforms.push('gtm')
   if (tiktokPixelId) platforms.push('tiktok')
   const adminPath = await getAdminRoot().catch((): string => '/admin')
+  // A signed-in admin's visits are not tracked: the cookie is present whenever an admin session is open.
+  const adminSignedIn = Boolean((await cookies()).get(ADMIN_SESSION_COOKIE)?.value)
 
   return (
     <>
@@ -133,7 +136,7 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
         consentModeV2={consent.consentModeV2}
       />
       {trackingEvents.length && platforms.length ? (
-        <TrackingRuntime events={trackingEvents} platforms={platforms} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} />
+        <TrackingRuntime events={trackingEvents} platforms={platforms} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} suppressed={adminSignedIn} />
       ) : null}
     </>
   )

@@ -36,8 +36,9 @@ export function pickPublicIds(integrations: Loose, seo: Loose): PublicIds {
   const analytics = group(seo, 'analytics')
   const verification = group(seo, 'verification')
   const picked: PublicIds = {
-    ga4MeasurementId: text(google?.ga4MeasurementId) ?? text(analytics?.ga4MeasurementId),
-    gtmContainerId: text(google?.gtmContainerId) ?? text(analytics?.gtmContainerId),
+    // A switch set to off stops the tag; a blank ID stops it too. Both are checked here so the loader never sees a paused ID.
+    ga4MeasurementId: google?.ga4Enabled === false ? undefined : text(google?.ga4MeasurementId) ?? text(analytics?.ga4MeasurementId),
+    gtmContainerId: google?.gtmEnabled === false ? undefined : text(google?.gtmContainerId) ?? text(analytics?.gtmContainerId),
     // Switching a pixel off in Integrations stops it everywhere, including the old SEO & Analytics fallback.
     metaPixelId: switchedOn(integrations, 'metaPixel') ? text(group(integrations, 'metaPixel')?.pixelId) ?? text(analytics?.metaPixelId) : undefined,
     tiktokPixelId: switchedOn(integrations, 'tiktokPixel') ? text(group(integrations, 'tiktokPixel')?.pixelId) : undefined,

@@ -91,6 +91,16 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     ],
   },
   {
+    key: 'tracking',
+    path: '/settings/tracking',
+    title: 'Tracking',
+    description: 'Connect ad and analytics platforms, and choose which actions send events. A tag loads only after the visitor accepts its cookie category.',
+    sections: [
+      { kind: 'global', slug: 'integrations' },
+      { kind: 'link', label: 'Tracking events', href: collectionRoute('tracking-events'), description: 'Clicks, form submits, page views, scroll depth and time on page that send events to your platforms.', type: 'collection' },
+    ],
+  },
+  {
     key: 'content',
     path: '/settings/content',
     title: 'Content',

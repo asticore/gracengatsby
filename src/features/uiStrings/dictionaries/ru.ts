@@ -2359,6 +2359,9 @@ const ru: UiDictionary = {
   'adminurl.err_reserved': 'Это слово используется самим сайтом. Выберите другой URL админки.',
   'adminurl.active_notice': 'Ваша админка по адресу {url}. Добавьте её в закладки сейчас.',
   'adminurl.old_gone': 'Прежний адрес /admin теперь показывает «Не найдено».',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': 'Все домены (общий)',
+  'domains.site.scoped': 'Для отдельного сайта: показывается только на {domains}. Другой домен может использовать тот же slug со своим содержимым.',
 }
 
 export default ru

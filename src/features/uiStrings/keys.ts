@@ -2399,6 +2399,9 @@ export const UI_STRING_SOURCE = {
   'adminurl.err_reserved': 'That word is used by the site itself. Choose another admin URL.',
   'adminurl.active_notice': 'Your admin is at {url}. Bookmark it now.',
   'adminurl.old_gone': 'The old /admin address now shows Not found.',
+  // --- site-scoped content (Available on domains picker, src/features/domains/admin/DomainPicker.tsx) ---
+  'domains.site.shared': 'All domains (shared)',
+  'domains.site.scoped': 'Site-specific: shown only on {domains}. Another domain can use the same slug with its own content.',
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

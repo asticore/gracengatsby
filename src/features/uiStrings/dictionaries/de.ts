@@ -2360,6 +2360,9 @@ const de: UiDictionary = {
   'adminurl.err_reserved': 'Dieses Wort verwendet die Website selbst. Wähle eine andere Admin-URL.',
   'adminurl.active_notice': 'Dein Admin ist unter {url} erreichbar. Setze jetzt ein Lesezeichen.',
   'adminurl.old_gone': 'Die alte Adresse /admin zeigt jetzt Nicht gefunden.',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': 'Alle Domains (gemeinsam)',
+  'domains.site.scoped': 'Seitenspezifisch: nur auf {domains} angezeigt. Eine andere Domain kann denselben Slug mit eigenem Inhalt verwenden.',
 }
 
 export default de

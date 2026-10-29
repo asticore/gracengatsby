@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { useField } from '@/engine/ui'
 import { parseHostList } from '@/features/domains/scope'
 
@@ -14,6 +15,7 @@ type Listed = { host: string; status?: string; isPrimary?: boolean }
  */
 export function DomainPicker({ path }: { path: string }) {
   const field = useField<string | null>({ path })
+  const t = useAdminT()
   const [domains, setDomains] = useState<Listed[] | null>(null)
 
   useEffect(() => {
@@ -38,8 +40,13 @@ export function DomainPicker({ path }: { path: string }) {
     field.setValue(next.length > 0 ? `,${next.join(',')},` : null)
   }
 
+  // On "Available on domains" (not "Allowed domains") a single host makes the content site-specific: the same slug
+  // can then live on another domain. Nothing ticked is the shared default, shown on every domain.
+  const siteLine = path === 'allowedDomains' ? null : selected.length === 0 ? t('domains.site.shared') : t('domains.site.scoped', { domains: selected.join(', ') })
+
   return (
     <div style={{ display: 'grid', gap: 6 }}>
+      {siteLine && <p style={{ margin: 0, fontSize: '0.85em', opacity: 0.8 }}>{siteLine}</p>}
       {(domains ?? []).map((domain) => (
         <label key={domain.host} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={selected.includes(domain.host)} onChange={(event) => toggle(domain.host, event.target.checked)} />

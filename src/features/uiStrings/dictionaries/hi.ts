@@ -2359,6 +2359,9 @@ const hi: UiDictionary = {
   'adminurl.err_reserved': 'यह शब्द साइट खुद इस्तेमाल करती है। कोई दूसरा एडमिन URL चुनें।',
   'adminurl.active_notice': 'आपका एडमिन {url} पर है। अभी बुकमार्क करें।',
   'adminurl.old_gone': 'पुराना पता /admin अब "नहीं मिला" दिखाएगा।',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': 'सभी डोमेन (साझा)',
+  'domains.site.scoped': 'साइट-विशिष्ट: केवल {domains} पर दिखाया जाता है। कोई अन्य डोमेन वही स्लग अपनी सामग्री के साथ उपयोग कर सकता है।',
 }
 
 export default hi

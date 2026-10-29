@@ -2358,6 +2358,9 @@ const zhHans: UiDictionary = {
   'adminurl.err_reserved': '该词已被网站本身使用，请选择其他网址。',
   'adminurl.active_notice': '您的管理后台位于 {url}，请立即加入书签。',
   'adminurl.old_gone': '旧地址 /admin 现在会显示未找到。',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': '所有域名（共享）',
+  'domains.site.scoped': '站点专用：仅在 {domains} 上显示。其他域名可以使用相同的 slug 并放置各自的内容。',
 }
 
 export default zhHans

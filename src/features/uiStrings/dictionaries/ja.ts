@@ -2359,6 +2359,9 @@ const ja: UiDictionary = {
   'adminurl.err_reserved': 'その語はサイト自体が使用しています。別の管理画面URLを選んでください。',
   'adminurl.active_notice': '管理画面は {url} にあります。今すぐブックマークしてください。',
   'adminurl.old_gone': '以前の /admin アドレスは「見つかりません」と表示されるようになります。',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': 'すべてのドメイン（共有）',
+  'domains.site.scoped': 'サイト固有: {domains} でのみ表示されます。別のドメインでも同じスラッグを、それぞれ異なる内容で使えます。',
 }
 
 export default ja

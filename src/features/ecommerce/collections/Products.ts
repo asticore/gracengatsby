@@ -1,3 +1,4 @@
+import { domainSlugValidate } from '@/features/domains/slugs'
 import { noAdsField } from '@/features/ads/fields'
 import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
 import { availableDomainsField } from '@/features/domains/field'
@@ -132,7 +133,7 @@ export const Products: CollectionConfig = {
   fields: [
     availableDomainsField,
     { name: 'title', type: 'text', required: true, unique: true },
-    { name: 'slug', type: 'text', unique: true, index: true },
+    { name: 'slug', type: 'text', index: true, validate: domainSlugValidate('products', 'product') },
     productTypeField,
     {
       name: 'category',

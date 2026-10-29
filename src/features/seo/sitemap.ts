@@ -13,6 +13,8 @@ import { findTranslations } from '@/features/multilingual/store'
 import { getAllResolvedPages, getHomepage } from '@/utilities/pagePaths'
 import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
 import { readDomainsFromD1 } from '@/features/domains/store'
+import { requestDomain } from '@/features/domains/request'
+import { availableOnHost } from '@/features/domains/scope'
 import { isNoindexPath } from '@/features/security/noindex'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
@@ -75,6 +77,8 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   const routable = isLocaleRoutable(multilingual)
   // Registered domains: each entry also lists the same page on every other active domain (empty with fewer than two).
   const domains = await readDomainsFromD1()
+  // Content limited to other domains is left out of this domain's sitemap.
+  const requestHost = (await requestDomain())?.host ?? null
   const translationIndex: PublishIndex = routable
     ? publishIndex(
         await findTranslations((await getEngine()) as unknown as Parameters<typeof findTranslations>[0], {
@@ -91,12 +95,14 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     // The admin, the API and the preview never belong in a sitemap, whatever the content says.
     if (isNoindexPath(normalised)) return
     if (pathMatches(normalised, excluded) || pathMatches(normalised, noindexed)) return
+    const docAvailable = (ref?.doc as { availableDomains?: unknown } | undefined)?.availableDomains
+    if (ref && !availableOnHost(docAvailable, requestHost)) return
     seen.add(normalised)
     // A page only lists the locales it has a publishable translation in; a route with no document keeps them all.
     const available = routable && ref
       ? publishableLocalesForDocument({ ...ref, index: translationIndex, settings: multilingual })
       : null
-    const cross = domainAlternates(normalised, domains, multilingual)
+    const cross = domainAlternates(normalised, domains.filter((d) => availableOnHost(docAvailable, d.host)), multilingual)
     for (const variant of sitemapVariants(normalised, baseUrl, multilingual, available)) {
       const alternates = mergeAlternates(variant.alternates, cross)
       entries.push({

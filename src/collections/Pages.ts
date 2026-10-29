@@ -1,4 +1,5 @@
 import { noAdsField } from '@/features/ads/fields'
+import { availableDomainsField } from '@/features/domains/field'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
 import { outdatedAfterChange } from '@/features/multilingual/outdated'
 import { pageAudioField } from '@/features/pageAudio/fields'
@@ -49,6 +50,7 @@ export const Pages: CollectionConfig = {
     drafts: true,
   },
   fields: [
+    availableDomainsField,
     {
       type: 'row',
       fields: [

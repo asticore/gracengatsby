@@ -4,6 +4,7 @@ export type PublicIds = {
   ga4MeasurementId?: string
   gtmContainerId?: string
   metaPixelId?: string
+  tiktokPixelId?: string
   searchConsoleVerification?: string
   clarityProjectId?: string
 }
@@ -15,6 +16,9 @@ const text = (value: unknown): string | undefined => {
   const trimmed = value.trim()
   return trimmed ? trimmed : undefined
 }
+
+/** A connection is on unless its switch is explicitly unticked (a missing switch counts as on, so older rows keep working). */
+const switchedOn = (doc: Loose, key: string): boolean => group(doc, key)?.enabled !== false
 
 const group = (doc: Loose, key: string): Loose => {
   const value = doc?.[key]
@@ -34,7 +38,9 @@ export function pickPublicIds(integrations: Loose, seo: Loose): PublicIds {
   const picked: PublicIds = {
     ga4MeasurementId: text(google?.ga4MeasurementId) ?? text(analytics?.ga4MeasurementId),
     gtmContainerId: text(google?.gtmContainerId) ?? text(analytics?.gtmContainerId),
-    metaPixelId: text(group(integrations, 'metaPixel')?.pixelId) ?? text(analytics?.metaPixelId),
+    // Switching a pixel off in Integrations stops it everywhere, including the old SEO & Analytics fallback.
+    metaPixelId: switchedOn(integrations, 'metaPixel') ? text(group(integrations, 'metaPixel')?.pixelId) ?? text(analytics?.metaPixelId) : undefined,
+    tiktokPixelId: switchedOn(integrations, 'tiktokPixel') ? text(group(integrations, 'tiktokPixel')?.pixelId) : undefined,
     searchConsoleVerification: text(google?.searchConsoleVerification) ?? text(verification?.google),
     clarityProjectId: text(group(integrations, 'clarity')?.projectId),
   }

@@ -207,6 +207,8 @@ import {
 } from '@/cms/db'
 import { AdPlacements } from '@/features/ads/collections/AdPlacements'
 import { AdUnits } from '@/features/ads/collections/AdUnits'
+import { TrackingEvents } from '@/features/tracking/collections/TrackingEvents'
+import { countTrackingEvents, createTrackingEvent, deleteTrackingEvent, findTrackingEventByID, findTrackingEventsPaginated, updateTrackingEvent } from '@/cms/db/collections/tracking'
 import { AdSettings } from '@/features/ads/settings'
 import { countAdPlacements, countAdUnits, createAdPlacement, createAdUnit, deleteAdPlacement, deleteAdUnit, findAdPlacementByID, findAdPlacementsPaginated, findAdSettings, findAdUnitByID, findAdUnitsPaginated, updateAdPlacement, updateAdSettings, updateAdUnit } from '@/cms/db/collections/ads'
 import { ReviewEvents } from '@/features/approval/collection'
@@ -605,6 +607,7 @@ export const writeRegistry: {
     'store-credits': collectionOps(createStoreCredit, updateStoreCredit, deleteStoreCredit, findStoreCreditByID),
     'credit-ledger': collectionOps(createCreditLedgerEntry, updateCreditLedgerEntry, deleteCreditLedgerEntry, findCreditLedgerEntryByID),
     'ad-units': collectionOps(createAdUnit as never, updateAdUnit as never, deleteAdUnit, findAdUnitByID as never),
+    'tracking-events': collectionOps(createTrackingEvent as never, updateTrackingEvent as never, deleteTrackingEvent, findTrackingEventByID as never),
     'ad-placements': collectionOps(createAdPlacement as never, updateAdPlacement as never, deleteAdPlacement, findAdPlacementByID as never),
     'review-events': collectionOps(createReviewEvent, updateReviewEvent, deleteReviewEvent, findReviewEventByID),
     'approval-workflows': collectionOps(createApprovalWorkflow, updateApprovalWorkflow, deleteApprovalWorkflow, findApprovalWorkflowByID),
@@ -701,6 +704,7 @@ export const readRegistry: ReadRegistry = {
     'store-credits': readEntry(StoreCredits, findStoreCreditsPaginated, findStoreCreditByID, countStoreCredits),
     'credit-ledger': readEntry(CreditLedger, findCreditLedgerEntriesPaginated, findCreditLedgerEntryByID, countCreditLedgerEntries),
     'ad-units': readEntry(AdUnits, findAdUnitsPaginated as never, findAdUnitByID as never, countAdUnits),
+    'tracking-events': readEntry(TrackingEvents, findTrackingEventsPaginated as never, findTrackingEventByID as never, countTrackingEvents),
     'ad-placements': readEntry(AdPlacements, findAdPlacementsPaginated as never, findAdPlacementByID as never, countAdPlacements),
     'review-events': readEntry(ReviewEvents, findReviewEventsPaginated, findReviewEventByID, countReviewEvents),
     'approval-workflows': readEntry(ApprovalWorkflows, findApprovalWorkflowsPaginated, findApprovalWorkflowByID, countApprovalWorkflows),
@@ -769,6 +773,6 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
   products: { findAll: findProductVersions as unknown as VersionsRegistryEntry['findAll'], findByID: findProductVersionByID as unknown as VersionsRegistryEntry['findByID'] },
 }
 
-export const collectionConfigs = [ProductSubscriptions, Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, SiteTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
+export const collectionConfigs = [TrackingEvents, ProductSubscriptions, Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, SiteTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
 export const globalConfigs = [DomainSettings, FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

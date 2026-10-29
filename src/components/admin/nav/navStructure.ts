@@ -55,6 +55,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'reusable-sections', type: 'collections', hidden: true },
       { slug: 'forms', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },
+      { slug: 'tracking-events', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'data-views', type: 'collections' },
       { slug: 'review-queue', type: 'view', href: '/review-queue', label: 'Review queue' },

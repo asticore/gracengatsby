@@ -6,6 +6,9 @@ import { getSiteIcons } from './siteFilesData'
 import { currentPageLocale } from './pageLocale'
 import { localeSeoFields, languagesMap } from './localeSeo'
 import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
+import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
+import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
+import { readDomainsFromD1 } from '@/features/domains/store'
 import { getPublicIds } from '@/features/integrations/publicIds'
 
 /**
@@ -49,6 +52,11 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
       })
     : null
   const canonical = localeSeo?.canonical ?? seo.canonical
+  // hreflang across registered domains: the same page on each active domain (empty with fewer than two).
+  const crossDomain = localePath !== undefined
+    ? domainAlternates(localePath, await readDomainsFromD1(), pageLocale?.settings ?? (await readMultilingualSettingsFromD1()))
+    : []
+  const alternates = mergeAlternates(localeSeo?.alternates, crossDomain)
   const verification = context.settings?.verification
   // Google's code now lives in Site settings > Integrations (falls back to the old field).
   const googleVerification = (await getPublicIds()).searchConsoleVerification
@@ -63,8 +71,8 @@ export const generateSeoMetadata = async (input: SeoInput = {}): Promise<Metadat
     ...(icons ? { icons } : {}),
     title: seo.title,
     description: seo.description,
-    alternates: localeSeo
-      ? { canonical, languages: languagesMap(localeSeo.alternates) }
+    alternates: localeSeo || alternates.length > 0
+      ? { canonical, languages: languagesMap(alternates) }
       : { canonical: seo.canonical },
     robots: {
       index: !seo.noIndex,

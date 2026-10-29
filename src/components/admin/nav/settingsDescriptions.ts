@@ -18,6 +18,8 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'header': 'Navigation menu and header layout configuration.',
   'footer': 'Footer content and navigation menu.',
   'language-settings': 'Language and locale defaults, multilingual content setup.',
+  'domain-settings': 'Regional domains, their languages and which one is primary.',
+  'settings-domains': 'Serve the site on several regional domains, each with its own language.',
   'translations': 'Manage every translation in one table across all languages.',
   'seo-settings': 'Meta tags, schema, verification codes and SEO defaults.',
   'redirects': 'Create and manage URL redirects (301, 302, 307, 308).',

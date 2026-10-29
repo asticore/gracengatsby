@@ -31,6 +31,7 @@ describe('navStructure', () => {
 
     const expectedSlugs = [
       'settings-site',
+      'settings-domains',
       'settings-content',
       'settings-commerce',
       'settings-communication',
@@ -62,6 +63,7 @@ describe('navStructure', () => {
 
     const expectedMapping: Record<string, { href: string; label: string }> = {
       'settings-site': { href: '/settings/site', label: 'General' },
+      'settings-domains': { href: '/settings/domains', label: 'Domains' },
       'settings-content': { href: '/settings/content', label: 'Content' },
       'settings-commerce': { href: '/settings/commerce', label: 'Commerce' },
       'settings-communication': { href: '/settings/communication', label: 'Communication' },

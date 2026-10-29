@@ -74,6 +74,13 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     ],
   },
   {
+    key: 'domains',
+    path: '/settings/domains',
+    title: 'Domains',
+    description: 'Regional domains (for example example.com and example.com.au), the language of each, and the primary domain.',
+    sections: [{ kind: 'global', slug: 'domain-settings' }],
+  },
+  {
     key: 'marketing-seo',
     path: '/settings/marketing-seo',
     title: 'Marketing and SEO',

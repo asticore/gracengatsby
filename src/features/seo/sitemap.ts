@@ -11,6 +11,8 @@ import { isLocaleRoutable } from '@/features/multilingual/routing'
 import { nonDefaultLocales, publishIndex, publishableLocalesForDocument, type PublishIndex } from '@/features/multilingual/availability'
 import { findTranslations } from '@/features/multilingual/store'
 import { getAllResolvedPages, getHomepage } from '@/utilities/pagePaths'
+import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
+import { readDomainsFromD1 } from '@/features/domains/store'
 import { isNoindexPath } from '@/features/security/noindex'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
@@ -71,6 +73,8 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   // Every translation the non-default locales have, in one query. Each entry
   // is then judged in memory, so the sitemap costs one query however long it is.
   const routable = isLocaleRoutable(multilingual)
+  // Registered domains: each entry also lists the same page on every other active domain (empty with fewer than two).
+  const domains = await readDomainsFromD1()
   const translationIndex: PublishIndex = routable
     ? publishIndex(
         await findTranslations((await getEngine()) as unknown as Parameters<typeof findTranslations>[0], {
@@ -92,13 +96,15 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     const available = routable && ref
       ? publishableLocalesForDocument({ ...ref, index: translationIndex, settings: multilingual })
       : null
+    const cross = domainAlternates(normalised, domains, multilingual)
     for (const variant of sitemapVariants(normalised, baseUrl, multilingual, available)) {
+      const alternates = mergeAlternates(variant.alternates, cross)
       entries.push({
         url: variant.url,
         lastModified: toW3cDate(lastModified),
         changeFrequency,
         priority,
-        ...(variant.alternates ? { alternates: variant.alternates } : {}),
+        ...(alternates.length > 0 ? { alternates } : {}),
       })
     }
   }

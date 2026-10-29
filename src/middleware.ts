@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { domainMiddleware } from '@/features/domains/middleware'
 import { multilingualMiddleware } from '@/features/multilingual/middleware'
 import { securityMiddleware, readSecuritySettingsFromD1 } from '@/features/security'
 import { NOINDEX_HEADER_VALUE, isNoindexPath } from '@/features/security/noindex'
@@ -11,37 +12,42 @@ import {
 } from '@/features/security/adminPath'
 
 /**
- * Locale routing (features/multilingual) wraps the security pipeline in
- * features/security. Both live in their features; this file only composes them.
+ * Host routing (features/domains) wraps locale routing (features/multilingual), which wraps the
+ * security pipeline in features/security. Each lives in its feature; this file only composes them.
  *
- * The admin URL is configurable. When it is not /admin, requests under the
- * configured path are served by the admin at /admin (the rewrite runs the whole
- * pipeline on the /admin path), and /admin itself answers 404. Redirects that
- * point at /admin are sent to the configured path instead.
+ * The admin URL is configurable. When it is not /admin, requests under the configured path are
+ * served by the admin at /admin (the rewrite runs the whole pipeline on the /admin path), and /admin
+ * itself answers 404. Redirects that point at /admin are sent to the configured path instead.
  *
  * Kept as a one-liner on purpose. Middleware runs on every single request, so
  * it is the worst place for logic to accumulate quietly.
  */
 export async function middleware(request: NextRequest) {
-  const settings = await readSecuritySettingsFromD1()
-  const root = resolveAdminRoot(settings.adminPath, process.env[ADMIN_PATH_ENV])
-  const { pathname } = request.nextUrl
-
-  let response: NextResponse
-  if (root !== DEFAULT_ADMIN_PATH && isUnderAdminRoot(pathname, root)) {
-    response = await serveCustomAdmin(request, root)
-  } else if (root !== DEFAULT_ADMIN_PATH && isUnderAdminRoot(pathname, DEFAULT_ADMIN_PATH)) {
-    response = new NextResponse('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } })
-  } else {
-    response = await multilingualMiddleware(request, securityMiddleware)
-  }
-
+  const response = await domainMiddleware(request, (routed) => serveAdminAware(routed))
   // The locale strip rewrites the path, so the stripped path (x-pathname) is checked as well as the request path.
+  const { pathname } = request.nextUrl
+  const root = await adminRootFor()
   const stripped = response.headers.get('x-pathname') ?? pathname
   if (isNoindexPath(pathname, root) || isNoindexPath(stripped, root)) {
     response.headers.set('X-Robots-Tag', NOINDEX_HEADER_VALUE)
   }
   return response
+}
+
+async function adminRootFor(): Promise<string> {
+  const settings = await readSecuritySettingsFromD1()
+  return resolveAdminRoot(settings.adminPath, process.env[ADMIN_PATH_ENV])
+}
+
+/** Routes one request: the configured admin path, the retired /admin, or the normal locale and security pipeline. */
+async function serveAdminAware(request: NextRequest): Promise<NextResponse> {
+  const root = await adminRootFor()
+  const { pathname } = request.nextUrl
+  if (root !== DEFAULT_ADMIN_PATH && isUnderAdminRoot(pathname, root)) return serveCustomAdmin(request, root)
+  if (root !== DEFAULT_ADMIN_PATH && isUnderAdminRoot(pathname, DEFAULT_ADMIN_PATH)) {
+    return new NextResponse('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } })
+  }
+  return multilingualMiddleware(request, securityMiddleware)
 }
 
 /** Runs the pipeline on the /admin path that a configured admin URL stands for, then rewrites to it. */

@@ -236,6 +236,7 @@ import { SecuritySettings } from '@/globals/SecuritySettings'
 import { SeoSettings } from '@/globals/SeoSettings'
 import { ShopSettings } from '@/globals/ShopSettings'
 import { ShopExtraSettings } from '@/globals/ShopExtraSettings'
+import { DomainSettings } from '@/globals/DomainSettings'
 import { SitePages } from '@/globals/SitePages'
 import { SiteDetails } from '@/globals/SiteDetails'
 import { SiteSettings } from '@/globals/SiteSettings'
@@ -443,6 +444,7 @@ import {
   findSitePages,
   findSeoSettings,
   findShopExtraSettings,
+  findDomainSettings,
   findShopSettings,
   findSiteDetails,
   findSiteSettings,
@@ -507,6 +509,7 @@ import {
   updateSitePages,
   updateSeoSettings,
   updateShopExtraSettings,
+  updateDomainSettings,
   updateShopSettings,
   updateSiteDetails,
   updateSiteSettings,
@@ -627,6 +630,7 @@ export const writeRegistry: {
     'google-connection': globalOps(findGoogleConnection, updateGoogleConnection),
     'shop-settings': globalOps(findShopSettings, updateShopSettings),
     'shop-extra-settings': globalOps(findShopExtraSettings, updateShopExtraSettings),
+    'domain-settings': globalOps(findDomainSettings, updateDomainSettings),
     'security-settings': globalOps(findSecuritySettings, updateSecuritySettings),
     header: globalOps(findHeader, updateHeader),
     footer: globalOps(findFooter, updateFooter),
@@ -722,6 +726,7 @@ export const readRegistry: ReadRegistry = {
     'google-connection': globalReadEntry(GoogleConnection, findGoogleConnection),
     'shop-settings': globalReadEntry(ShopSettings, findShopSettings),
     'shop-extra-settings': globalReadEntry(ShopExtraSettings, findShopExtraSettings),
+    'domain-settings': globalReadEntry(DomainSettings, findDomainSettings),
     'security-settings': globalReadEntry(SecuritySettings, findSecuritySettings),
     header: globalReadEntry(Header, findHeader),
     footer: globalReadEntry(Footer, findFooter),
@@ -766,4 +771,4 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
 
 export const collectionConfigs = [ProductSubscriptions, Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, SiteTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
-export const globalConfigs = [FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]
+export const globalConfigs = [DomainSettings, FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]

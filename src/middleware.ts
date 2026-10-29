@@ -4,6 +4,7 @@ import { domainMiddleware } from '@/features/domains/middleware'
 import { multilingualMiddleware } from '@/features/multilingual/middleware'
 import { securityMiddleware, readSecuritySettingsFromD1 } from '@/features/security'
 import { NOINDEX_HEADER_VALUE, isNoindexPath } from '@/features/security/noindex'
+import { SESSION_COOKIE, tokenIssuedAt } from '@/features/security/loginProtection'
 import {
   ADMIN_PATH_ENV,
   DEFAULT_ADMIN_PATH,
@@ -45,9 +46,22 @@ async function serveAdminAware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   if (root !== DEFAULT_ADMIN_PATH && isUnderAdminRoot(pathname, root)) return serveCustomAdmin(request, root)
   if (root !== DEFAULT_ADMIN_PATH && isUnderAdminRoot(pathname, DEFAULT_ADMIN_PATH)) {
+    // A signed-in admin who follows an old /admin link (a bookmark, a link in a saved page) is sent to the same
+    // place on the configured path. Anyone else gets a plain 404, which does not reveal the new path.
+    if (hasAdminSessionCookie(request)) {
+      const target = new URL(request.url)
+      target.pathname = `${root}${pathname.slice(DEFAULT_ADMIN_PATH.length)}`
+      return NextResponse.redirect(target, { status: 307, headers: { 'cache-control': 'private, no-store' } })
+    }
     return new NextResponse('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } })
   }
   return multilingualMiddleware(request, securityMiddleware)
+}
+
+/** True when the request carries a session cookie shaped like one this site issues (a three-part token with an issue time). */
+function hasAdminSessionCookie(request: NextRequest): boolean {
+  const token = request.cookies.get(SESSION_COOKIE)?.value
+  return Boolean(token && token.split('.').length === 3 && tokenIssuedAt(token) !== null)
 }
 
 /** Runs the pipeline on the /admin path that a configured admin URL stands for, then rewrites to it. */

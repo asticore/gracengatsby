@@ -2350,6 +2350,16 @@ const de: UiDictionary = {
   'ig.lit.pp_step3': 'Aktiviere die Ereignisse Payment capture completed, Payment capture denied, Payment capture declined und Payment capture refunded.',
   'ig.lit.pp_step4': 'PayPal zeigt dann eine Webhook-ID an. Füge sie im Feld Webhook-ID im PayPal-Abschnitt oben ein und speichere.',
   'ig.lit.pp_env': 'Nutze das Sandbox-Dashboard mit Sandbox-Schlüsseln und das Live-Dashboard mit Live-Schlüsseln. Jede Umgebung hat ihren eigenen Webhook und eigene ID.',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': 'Admin-URL',
+  'adminurl.hint': 'Wo der Admin erreichbar ist. Aktuelle Adresse: {url}',
+  'adminurl.bookmark': 'Setze diese Adresse als Lesezeichen. Der Admin ist erst nach dem Speichern unter ihr erreichbar.',
+  'adminurl.env_note': 'Ist ENGAGE_ADMIN_PATH in Cloudflare gesetzt, gilt diese Adresse statt dieses Feldes.',
+  'adminurl.err_format': 'Verwende Kleinbuchstaben, Ziffern und Bindestriche, in einem einzigen Abschnitt, z. B. /studio-7f3.',
+  'adminurl.err_length': 'Die Admin-URL muss 3 bis 40 Zeichen lang sein.',
+  'adminurl.err_reserved': 'Dieses Wort verwendet die Website selbst. Wähle eine andere Admin-URL.',
+  'adminurl.active_notice': 'Dein Admin ist unter {url} erreichbar. Setze jetzt ein Lesezeichen.',
+  'adminurl.old_gone': 'Die alte Adresse /admin zeigt jetzt Nicht gefunden.',
 }
 
 export default de

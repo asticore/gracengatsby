@@ -2349,6 +2349,16 @@ const ko: UiDictionary = {
   'ig.lit.pp_step3': 'Payment capture completed, Payment capture denied, Payment capture declined, Payment capture refunded 이벤트를 선택하세요.',
   'ig.lit.pp_step4': '그다음 PayPal이 웹훅 ID를 표시합니다. 위 PayPal 섹션의 웹훅 ID 상자에 붙여넣고 저장하세요.',
   'ig.lit.pp_env': '샌드박스 키는 샌드박스 대시보드에서, 실제 키는 라이브 대시보드에서 사용하세요. 각 환경마다 웹훅과 ID가 따로 있습니다.',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': '관리자 URL',
+  'adminurl.hint': '관리자가 제공되는 위치입니다. 현재 주소: {url}',
+  'adminurl.bookmark': '이 주소를 북마크하세요. 저장한 후에만 이 주소로 관리자에 접속할 수 있습니다.',
+  'adminurl.env_note': 'Cloudflare에 ENGAGE_ADMIN_PATH가 설정되어 있으면 이 필드 대신 그 값이 사용됩니다.',
+  'adminurl.err_format': '소문자, 숫자, 하이픈만 한 단계로 사용하세요. 예: /studio-7f3',
+  'adminurl.err_length': '관리자 URL은 3~40자여야 합니다.',
+  'adminurl.err_reserved': '이 단어는 사이트 자체가 사용합니다. 다른 관리자 URL을 선택하세요.',
+  'adminurl.active_notice': '관리자는 {url}에 있습니다. 지금 북마크하세요.',
+  'adminurl.old_gone': '이전 /admin 주소는 이제 찾을 수 없음으로 표시됩니다.',
 }
 
 export default ko

@@ -1,4 +1,5 @@
 'use client'
+import { useAdminHref } from '@/admin/adminRoute/AdminRouteProvider'
 
 import React from 'react'
 
@@ -53,6 +54,7 @@ const FormFieldPreview: React.FC<{ node: LayoutNode }> = ({ node }) => {
  * the blocks inside stay individually selectable.
  */
 export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
+  const adminHref = useAdminHref()
   const blockType = data.blockType as string
   const previewCtx = React.useContext(PreviewContext)
 
@@ -91,7 +93,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
             <strong>{(data.heading as string) || 'Form'}</strong>
             <p className="ve-form-empty">
               No form yet. Create one in Forms (Settings &gt; Forms) and pick it here.{' '}
-              <a href="/admin/content/forms" target="_blank" rel="noreferrer">
+              <a href={adminHref('/content/forms')} target="_blank" rel="noreferrer">
                 Open Forms
               </a>
             </p>
@@ -111,7 +113,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
             </strong>
             <p>Shown from one shared section. Editing it changes every page that uses it.</p>
             {id && (
-              <a href={`/admin/content/reusable-sections/${id}`} target="_blank" rel="noreferrer">
+              <a href={adminHref(`/content/reusable-sections/${id}`)} target="_blank" rel="noreferrer">
                 Edit global
               </a>
             )}

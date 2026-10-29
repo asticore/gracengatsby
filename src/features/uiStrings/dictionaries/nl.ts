@@ -2349,6 +2349,16 @@ const nl: UiDictionary = {
   'ig.lit.pp_step3': 'Vink de gebeurtenissen Payment capture completed, Payment capture denied, Payment capture declined en Payment capture refunded aan.',
   'ig.lit.pp_step4': 'PayPal toont daarna een webhook-ID. Plak die in het veld Webhook-ID in het PayPal-gedeelte hierboven en sla op.',
   'ig.lit.pp_env': 'Gebruik het sandbox-dashboard met sandbox-sleutels en het live-dashboard met live-sleutels. Elke omgeving heeft een eigen webhook en ID.',
+  // Admin URL setting (src/admin/components/AdminUrlField.tsx)
+  'adminurl.label': 'Admin-URL',
+  'adminurl.hint': 'Waar de admin wordt aangeboden. Huidig adres: {url}',
+  'adminurl.bookmark': 'Bewaar dit adres als bladwijzer. De admin is hier pas bereikbaar na opslaan.',
+  'adminurl.env_note': 'Als ENGAGE_ADMIN_PATH in Cloudflare is ingesteld, geldt dat adres in plaats van dit veld.',
+  'adminurl.err_format': 'Gebruik kleine letters, cijfers en koppeltekens, in één deel, bijvoorbeeld /studio-7f3.',
+  'adminurl.err_length': 'De admin-URL moet tussen 3 en 40 tekens lang zijn.',
+  'adminurl.err_reserved': 'Dit woord wordt door de site zelf gebruikt. Kies een andere admin-URL.',
+  'adminurl.active_notice': 'Je admin staat op {url}. Bewaar dit nu als bladwijzer.',
+  'adminurl.old_gone': 'Het oude adres /admin toont nu Niet gevonden.',
 }
 
 export default nl

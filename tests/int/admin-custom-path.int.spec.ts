@@ -129,6 +129,21 @@ describe('middleware serves the configured admin URL', () => {
     expect(state.seen).toEqual([])
   })
 
+  it('sends a signed-in admin from the old /admin to the same place on the configured path', async () => {
+    const claims = Buffer.from(JSON.stringify({ iat: 1_700_000_000 })).toString('base64url')
+    const req = new NextRequest('https://site.test/admin/content/pages?x=1', {
+      headers: { cookie: `engage-token=aGVhZGVy.${claims}.c2ln` },
+    })
+    const response = await middleware(req)
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe('https://site.test/studio-7f3/content/pages?x=1')
+  })
+
+  it('keeps the old /admin a plain 404 for a request with a malformed cookie', async () => {
+    const req = new NextRequest('https://site.test/admin/login', { headers: { cookie: 'engage-token=not-a-token' } })
+    expect((await middleware(req)).status).toBe(404)
+  })
+
   it('moves a redirect into /admin onto the custom path', async () => {
     state.redirectTo = '/admin/login'
     const response = await get('/studio-7f3/content')

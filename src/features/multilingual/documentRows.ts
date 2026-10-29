@@ -161,12 +161,12 @@ export const builderTranslateHref = translateEditorPath
  * Translate mode for that language; one without falls back to the document
  * translation editor on this screen (`editorHref`).
  */
-export function translateTarget(args: { collection: string; documentId: string; locale: string; editorHref: string }): {
+export function translateTarget(args: { collection: string; documentId: string; locale: string; editorHref: string; adminRoot?: string }): {
   href: string
   mode: 'builder' | 'editor'
 } {
   if (builderHasSurface(args.collection)) {
-    return { href: builderTranslateHref(args.collection, args.documentId, args.locale), mode: 'builder' }
+    return { href: builderTranslateHref(args.collection, args.documentId, args.locale, args.adminRoot), mode: 'builder' }
   }
   return { href: args.editorHref, mode: 'editor' }
 }
@@ -202,6 +202,8 @@ export function buildDocumentRows(args: {
   rules: TranslationRules
   catalogue: TranslationCatalogue
   documentHref: (collection: string, documentId: string) => string
+  /** The configured admin root for builder links. Defaults to /admin. */
+  adminRoot?: string
 }): DocumentRow[] {
   const base = buildOverviewRows({ items: args.items, stored: args.stored, targetLocales: args.targetLocales, rules: args.rules })
   const itemBySource = new Map(args.items.map((item) => [item.sourceId, item]))
@@ -251,7 +253,7 @@ export function buildDocumentRows(args: {
     const cells: DocumentCell[] = row.cells.map((cell) => ({
       ...cell,
       counts: countsByLocale.get(cell.locale) ?? { active: 0, outdated: 0, inactive: 0 },
-      ...translateTarget({ collection, documentId, locale: cell.locale, editorHref }),
+      ...translateTarget({ collection, documentId, locale: cell.locale, editorHref, adminRoot: args.adminRoot }),
     }))
     const first = cells[0]
 

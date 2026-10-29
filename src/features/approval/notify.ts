@@ -1,3 +1,4 @@
+import { getAdminRoot } from '@/features/security/settings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import { can } from '@/features/roles/permissions'
 import type { ApprovalCollection, ApprovalSettings } from './settings'
@@ -115,6 +116,7 @@ export async function notifySubmitted({
   /** The active workflow: only the first step's approvers are emailed. */
   workflow?: ApprovalWorkflow | null
 }): Promise<string[]> {
+  const adminRoot = await getAdminRoot()
   const addresses = new Set<string>(settings.notifyEmails)
   if (settings.notifyReviewers) {
     for (const address of await reviewerAddresses(engine, collection, requesterId, workflow ? workflow.steps[0].approverRoles : null)) addresses.add(address)
@@ -126,7 +128,7 @@ export async function notifySubmitted({
     noun: APPROVAL_SINGULAR[collection],
     title,
     waiting,
-    link: `${origin}${adminCollectionPath(collection)}/${id}`,
+    link: `${origin}${adminCollectionPath(collection, adminRoot)}/${id}`,
   }, engine as never)
   const sendEmail = await loadSender()
   await Promise.all([...addresses].map((to) => sendEmail({ to, template: 'approval.submitted', subject: mail.subject, text: mail.text })))
@@ -154,6 +156,7 @@ export async function notifyRequester({
   note: string | null
   origin: string
 }): Promise<void> {
+  const adminRoot = await getAdminRoot()
   if (requesterId === null) return
   const user = await engine.findByID({ collection: 'users', id: requesterId, depth: 0, overrideAccess: true }).catch((): null => null)
   const email = typeof user?.email === 'string' ? user.email : ''
@@ -167,7 +170,7 @@ export async function notifyRequester({
     noun: APPROVAL_SINGULAR[collection],
     title,
     note: note ? `\n\nTheir note:\n${note}` : '',
-    link: `${origin}${adminCollectionPath(collection)}/${id}`,
+    link: `${origin}${adminCollectionPath(collection, adminRoot)}/${id}`,
   }, engine as never)
   const sendEmail = await loadSender()
   await sendEmail({ to: email, template: 'approval.decision', subject: mail.subject, text: mail.text })
@@ -197,12 +200,13 @@ export async function notifyStepReady({
   requesterId: number | null
   origin: string
 }): Promise<string[]> {
+  const adminRoot = await getAdminRoot()
   if (!settings.notifyReviewers) return []
   const current = workflow.steps[step]
   if (!current) return []
   const addresses = await reviewerAddresses(engine, collection, requesterId, current.approverRoles)
   const subject = `Your approval is needed: ${title}`
-  const text = `${approverName} approved the previous step of this ${APPROVAL_SINGULAR[collection]}: ${title}\n\n${describeAwaiting(workflow, step)}\n\nOpen it to approve or ask for changes:\n${origin}${adminCollectionPath(collection)}/${id}`
+  const text = `${approverName} approved the previous step of this ${APPROVAL_SINGULAR[collection]}: ${title}\n\n${describeAwaiting(workflow, step)}\n\nOpen it to approve or ask for changes:\n${origin}${adminCollectionPath(collection, adminRoot)}/${id}`
   const sendEmail = await loadSender()
   await Promise.all(addresses.map((to) => sendEmail({ to, template: 'approval.step-ready', subject, text })))
   return addresses

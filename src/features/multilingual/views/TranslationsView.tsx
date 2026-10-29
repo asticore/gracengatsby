@@ -1,3 +1,4 @@
+import { getAdminRoot } from '@/features/security/settings'
 import React from 'react'
 import type { AdminViewServerProps } from '@/engine'
 
@@ -107,6 +108,7 @@ export const TranslationsView: React.FC<AdminViewServerProps> = async (props) =>
   const documentHref = (collection: string, documentId: string) =>
     `?${serializeListState(state, { page: state.page })}&item=${encodeURIComponent(`collection:${collection}:${documentId}`)}`
   const rows = buildDocumentRows({
+    adminRoot: await getAdminRoot(),
     items: data.items,
     stored: data.stored,
     targetLocales: targets,

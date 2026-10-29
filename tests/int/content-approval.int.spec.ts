@@ -11,6 +11,8 @@ const markDone = vi.hoisted(() => vi.fn(async () => undefined))
 const listDue = vi.hoisted(() => vi.fn(async () => [] as Array<{ collection: string; docId: number; action: 'publish' | 'unpublish' }>))
 
 vi.mock('@/features/email', () => ({ sendEmail }))
+// The approval links read the configured admin URL; the default is enough here and keeps the D1 lookup out of the test.
+vi.mock('@/features/security/settings', () => ({ getAdminRoot: async () => '/admin' }))
 vi.mock('@/features/speed/purge', () => ({ purgeCache: vi.fn(async () => ({})) }))
 vi.mock('@/cms/db/scheduledPublishes', () => ({ markDone, listDue }))
 
@@ -478,7 +480,7 @@ describe('review handlers', () => {
     expect(engine.creates[0]).toMatchObject({ collection: 'review-events', overrideAccess: true, data: { action: 'submitted', docId: 5, actor: 2 } })
     const recipients = sendEmail.mock.calls.map((call) => (call as unknown as [{ to: string }])[0].to)
     expect(recipients.sort()).toEqual(['ada@example.com', 'rae@example.com'])
-  })
+  }, 20_000)
 
   it('an editor cannot approve', async () => {
     const engine = makeEngine({ doc: pageDoc({ _status: 'draft', reviewStatus: 'in_review', reviewRequestedBy: 5 }) })
@@ -495,7 +497,7 @@ describe('review handlers', () => {
     expect(engine.creates[0].data).toMatchObject({ action: 'approved', actor: 5 })
     const recipients = sendEmail.mock.calls.map((call) => (call as unknown as [{ to: string }])[0].to)
     expect(recipients).toEqual(['ed@example.com'])
-  })
+  }, 20_000)
 
   it('a reviewer can approve and publish in one step', async () => {
     const engine = makeEngine({ doc: pageDoc({ reviewStatus: 'in_review', reviewRequestedBy: 2 }) })

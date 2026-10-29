@@ -1,3 +1,4 @@
+import { domainSlugValidate } from '@/features/domains/slugs'
 import { pageAudioField } from '@/features/pageAudio/fields'
 import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
 import { availableDomainsField } from '@/features/domains/field'
@@ -52,15 +53,16 @@ export const Posts: CollectionConfig = {
     {
       name: 'slug',
       type: 'text',
-      unique: true,
+      index: true,
       admin: {
         position: 'sidebar',
-        description: 'Auto-fills from the title as you type - edit it here to override. -> /blog/<slug>',
+        description: 'Auto-fills from the title as you type - edit it here to override. -> /blog/<slug>. The same slug can be used on another domain (Available on domains).',
         components: {
           Field: '@/fields/slug/SlugComponent#SlugComponent',
         },
       },
       hooks: { beforeValidate: [formatSlugHook('title')] },
+      validate: domainSlugValidate('posts', 'post'),
     },
     { name: 'publishedDate', type: 'date', defaultValue: () => new Date().toISOString(), admin: { position: 'sidebar' } },
     {

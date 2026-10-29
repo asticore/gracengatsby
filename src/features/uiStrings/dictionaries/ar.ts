@@ -2359,6 +2359,9 @@ const ar: UiDictionary = {
   'adminurl.err_reserved': 'هذه الكلمة يستخدمها الموقع نفسه. اختر رابطًا آخر للوحة الإدارة.',
   'adminurl.active_notice': 'لوحة الإدارة على {url}. أضفها إلى المفضلة الآن.',
   'adminurl.old_gone': 'يعرض العنوان القديم /admin الآن صفحة غير موجود.',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': 'جميع النطاقات (مشترك)',
+  'domains.site.scoped': 'خاص بالموقع: يظهر فقط على {domains}. يمكن لنطاق آخر استخدام المعرّف نفسه بمحتوى خاص به.',
 }
 
 export default ar

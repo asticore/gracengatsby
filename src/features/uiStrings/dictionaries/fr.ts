@@ -2359,6 +2359,9 @@ const fr: UiDictionary = {
   'adminurl.err_reserved': 'Ce mot est utilisé par le site lui-même. Choisissez une autre URL pour l\'admin.',
   'adminurl.active_notice': 'Votre admin est à {url}. Ajoutez-la à vos favoris maintenant.',
   'adminurl.old_gone': 'L\'ancienne adresse /admin affiche désormais Introuvable.',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': 'Tous les domaines (partagé)',
+  'domains.site.scoped': 'Propre au site : affiché uniquement sur {domains}. Un autre domaine peut utiliser le même slug avec son propre contenu.',
 }
 
 export default fr

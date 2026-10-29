@@ -2359,6 +2359,9 @@ const nl: UiDictionary = {
   'adminurl.err_reserved': 'Dit woord wordt door de site zelf gebruikt. Kies een andere admin-URL.',
   'adminurl.active_notice': 'Je admin staat op {url}. Bewaar dit nu als bladwijzer.',
   'adminurl.old_gone': 'Het oude adres /admin toont nu Niet gevonden.',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': 'Alle domeinen (gedeeld)',
+  'domains.site.scoped': 'Sitespecifiek: alleen zichtbaar op {domains}. Een ander domein kan dezelfde slug gebruiken met eigen inhoud.',
 }
 
 export default nl

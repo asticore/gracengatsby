@@ -34,11 +34,16 @@ function domainListField(name: string, label: string, description: string): Fiel
   } as Field
 }
 
-/** "Available on domains" for pages, posts and products. Empty = every domain. Column: available_domains (version_available_domains on versions). */
+/**
+ * "Available on domains" for pages, posts and products, the "Site (domain)" choice. Empty = All domains (shared). One host = a
+ * site-specific document: the same slug on another domain is a separate document (slug uniqueness, scope.ts). Several hosts =
+ * shared between those hosts. The earlier multi-domain list needs no migration: a single host is the single-domain case of it.
+ * Column: available_domains (version_available_domains on versions).
+ */
 export const availableDomainsField: Field = domainListField(
   'availableDomains',
   'Available on domains',
-  'Domains this content is shown on, separated by commas, e.g. example.com, example.com.au. Leave empty to show it on every domain. Other domains answer with not found.',
+  'Site (domain). Leave empty for All domains (shared): shown on every domain. Pick one domain to make this content specific to it, so the same slug can be used on another domain with different content. Pick several to share it between those domains. Other domains answer with not found.',
 )
 
 /** "Allowed domains" for users and roles. Empty = every domain. Column: allowed_domains. Limits what the account can read and publish; see access.ts. */

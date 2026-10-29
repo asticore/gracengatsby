@@ -2359,6 +2359,9 @@ const ko: UiDictionary = {
   'adminurl.err_reserved': '이 단어는 사이트 자체가 사용합니다. 다른 관리자 URL을 선택하세요.',
   'adminurl.active_notice': '관리자는 {url}에 있습니다. 지금 북마크하세요.',
   'adminurl.old_gone': '이전 /admin 주소는 이제 찾을 수 없음으로 표시됩니다.',
+  // --- site-scoped content (Available on domains picker) ---
+  'domains.site.shared': '모든 도메인 (공유)',
+  'domains.site.scoped': '사이트 전용: {domains}에서만 표시됩니다. 다른 도메인은 같은 슬러그를 자체 콘텐츠와 함께 사용할 수 있습니다.',
 }
 
 export default ko

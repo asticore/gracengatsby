@@ -111,6 +111,7 @@ import * as migration_20261130_110000_admin_path from './20261130_110000_admin_p
 import * as migration_20261201_100000_content_domains from './20261201_100000_content_domains';
 import * as migration_20261208_100000_user_domains from './20261208_100000_user_domains';
 import * as migration_20261215_100000_domain_overrides from './20261215_100000_domain_overrides';
+import * as migration_20261220_100000_site_scoped_slugs from './20261220_100000_site_scoped_slugs';
 
 export const migrations = [
   {
@@ -677,5 +678,10 @@ export const migrations = [
     up: migration_20261215_100000_domain_overrides.up,
     down: migration_20261215_100000_domain_overrides.down,
     name: '20261215_100000_domain_overrides',
+  },
+  {
+    up: migration_20261220_100000_site_scoped_slugs.up,
+    down: migration_20261220_100000_site_scoped_slugs.down,
+    name: '20261220_100000_site_scoped_slugs',
   },
 ];

@@ -39,6 +39,7 @@ export type FeatureKey =
   | 'lms'
   | 'approval'
   | 'ads'
+  | 'tracking'
 
 export type FeatureDef = {
   key: FeatureKey
@@ -240,6 +241,16 @@ export const FEATURES: FeatureDef[] = [
     collections: ['ad-units', 'ad-placements'],
     globals: ['ad-settings'],
     tables: ['ad_units', 'ad_placements', 'ad_settings', 'ad_stats'],
+    implemented: true,
+  },
+  {
+    key: 'tracking',
+    label: 'Tracking events',
+    description: 'Fire events (clicks, form submits, page views, scroll depth, time on page) to the Meta, Google, TikTok and custom tag platforms set under Integrations. Nothing fires until the visitor accepts the matching cookie category.',
+    defaultEnabled: true,
+    collections: ['tracking-events'],
+    globals: [],
+    tables: ['tracking_events'],
     implemented: true,
   },
 ]

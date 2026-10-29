@@ -248,10 +248,38 @@ export const Integrations: GlobalConfig = {
       admin: { description: 'Ad conversion tracking. Loads only after marketing consent.' },
       fields: [
         {
+          name: 'enabled',
+          type: 'checkbox',
+          label: 'Send events to Meta',
+          defaultValue: true,
+          admin: { description: 'Untick to pause the pixel and its tracking events without deleting the ID.' },
+        },
+        {
           name: 'pixelId',
           type: 'text',
           label: 'Meta pixel ID',
           admin: { description: 'Found in Meta Business Suite > Events Manager > Pixels.' },
+        },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'tiktokPixel',
+      label: 'TikTok pixel (TikTok Ads)',
+      admin: { description: 'Ad conversion tracking for TikTok. Loads only after marketing consent.' },
+      fields: [
+        {
+          name: 'enabled',
+          type: 'checkbox',
+          label: 'Send events to TikTok',
+          defaultValue: true,
+          admin: { description: 'Untick to pause the pixel and its tracking events without deleting the ID.' },
+        },
+        {
+          name: 'pixelId',
+          type: 'text',
+          label: 'TikTok pixel ID',
+          admin: { description: 'Found in TikTok Ads Manager > Assets > Events > Web events.' },
         },
       ],
     },

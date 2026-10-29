@@ -11,6 +11,7 @@ export type AnalyticsIds = {
   ga4MeasurementId?: string
   metaPixelId?: string
   clarityProjectId?: string
+  tiktokPixelId?: string
 }
 
 export type AnalyticsLoaderProps = AnalyticsIds & {
@@ -45,6 +46,7 @@ const tagState = {
   gtm: false,
   analytics: false,
   marketing: false,
+  tiktok: false,
 }
 
 const loadGtm = (gtmContainerId?: string) => {
@@ -86,7 +88,23 @@ const loadAnalyticsTags = ({ ga4MeasurementId, clarityProjectId }: AnalyticsIds)
   }
 }
 
-const loadMarketingTags = ({ metaPixelId }: AnalyticsIds) => {
+const loadTikTokPixel = (tiktokPixelId?: string) => {
+  if (tagState.tiktok || !tiktokPixelId) return
+  tagState.tiktok = true
+  appendScript(
+    {},
+    `!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],` +
+      `ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};` +
+      `for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);` +
+      `ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};` +
+      `ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=r;ttq._t=ttq._t||{};ttq._t[e]=+new Date;ttq._o=ttq._o||{};ttq._o[e]=n||{};` +
+      `var o=d.createElement("script");o.type="text/javascript";o.async=!0;o.src=r+"?sdkid="+e+"&lib="+t;var a=d.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};` +
+      `ttq.load(${JSON.stringify(tiktokPixelId)});ttq.page()}(window,document,'ttq');`,
+  )
+}
+
+const loadMarketingTags = ({ metaPixelId, tiktokPixelId }: AnalyticsIds) => {
+  loadTikTokPixel(tiktokPixelId)
   if (tagState.marketing || !metaPixelId) return
   tagState.marketing = true
   appendScript(
@@ -108,7 +126,7 @@ const loadMarketingTags = ({ metaPixelId }: AnalyticsIds) => {
  * tags for a category load only once that category is granted.
  */
 export function syncAnalyticsTags(ids: AnalyticsIds, consentModeV2: boolean, choices: ConsentChoices): void {
-  const hasTags = Boolean(ids.gtmContainerId || ids.ga4MeasurementId || ids.metaPixelId || ids.clarityProjectId)
+  const hasTags = Boolean(ids.gtmContainerId || ids.ga4MeasurementId || ids.metaPixelId || ids.tiktokPixelId || ids.clarityProjectId)
   if (!hasTags) return
 
   const signalKey = JSON.stringify(choices)
@@ -147,7 +165,7 @@ export const AnalyticsLoader = ({ optIn, policyVersion, consentModeV2, ...ids }:
     syncAnalyticsTags(ids, consentModeV2, JSON.parse(signalKey) as ConsentChoices)
     // The ids are primitives; the choice is passed as its key, so this runs once per real change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signalKey, consentModeV2, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId, ids.clarityProjectId])
+  }, [signalKey, consentModeV2, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId, ids.tiktokPixelId, ids.clarityProjectId])
 
   return null
 }

@@ -10,6 +10,10 @@ import { requireOptIn } from '@/features/consent/regions'
 import { getPrivacyPolicyPath } from '@/features/site/pages'
 
 import { getSeoContext } from '../settings'
+import { getPublicTrackingEvents } from '@/features/tracking/server'
+import { TrackingRuntime } from '@/features/tracking/TrackingRuntime'
+import type { TrackingPlatform } from '@/features/tracking/events'
+import { getAdminRoot } from '@/features/security/settings'
 import { AnalyticsLoader } from './AnalyticsLoader'
 
 export type SeoScriptsProps = {
@@ -101,9 +105,18 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
 
   // Public IDs: Integrations first, falling back field by field to the old
   // SEO & Analytics values (see pickPublicIds).
-  const { gtmContainerId, ga4MeasurementId, metaPixelId, clarityProjectId } = pickPublicIds(integrations, { analytics })
+  const { gtmContainerId, ga4MeasurementId, metaPixelId, tiktokPixelId, clarityProjectId } = pickPublicIds(integrations, { analytics })
 
   const { initialDecided, optIn } = await readConsentState(consent, country)
+
+  // Tracking events fire only where a platform is connected and an enabled event exists.
+  const trackingEvents = await getPublicTrackingEvents()
+  const platforms: TrackingPlatform[] = []
+  if (metaPixelId) platforms.push('meta')
+  if (ga4MeasurementId) platforms.push('ga4')
+  if (gtmContainerId) platforms.push('gtm')
+  if (tiktokPixelId) platforms.push('tiktok')
+  const adminPath = await getAdminRoot().catch((): string => '/admin')
 
   return (
     <>
@@ -113,11 +126,15 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
         gtmContainerId={gtmContainerId}
         ga4MeasurementId={ga4MeasurementId}
         metaPixelId={metaPixelId}
+        tiktokPixelId={tiktokPixelId}
         clarityProjectId={clarityProjectId}
         optIn={optIn}
         policyVersion={consent.policyVersion}
         consentModeV2={consent.consentModeV2}
       />
+      {trackingEvents.length && platforms.length ? (
+        <TrackingRuntime events={trackingEvents} platforms={platforms} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} />
+      ) : null}
     </>
   )
 }

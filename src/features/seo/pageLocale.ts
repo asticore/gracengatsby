@@ -4,6 +4,7 @@ import { splitLocalePath } from '@/features/multilingual/detect'
 import { isLocaleRoutable } from '@/features/multilingual/routing'
 import { requestContentLocale } from '@/features/multilingual/portalLocaleServer'
 import { readMultilingualSettingsFromD1, type MultilingualSettings } from '@/features/multilingual/settings'
+import { requestDomainLocale } from '@/features/domains/request'
 
 export type PageLocale = {
   settings: MultilingualSettings
@@ -20,10 +21,13 @@ export type PageLocale = {
  */
 export async function currentPageLocale(): Promise<PageLocale | null> {
   try {
-    const settings = await readMultilingualSettingsFromD1()
-    if (!isLocaleRoutable(settings)) return null
+    const site = await readMultilingualSettingsFromD1()
+    if (!isLocaleRoutable(site)) return null
+    // A registered domain with its own language: its URLs and canonicals are built with that language unprefixed.
+    const domainLocale = await requestDomainLocale()
+    const settings = domainLocale && site.activeLocales.includes(domainLocale) ? { ...site, defaultLocale: domainLocale } : site
     const reader = await headers()
-    const locale = await requestContentLocale(settings)
+    const locale = await requestContentLocale(site)
     if (!locale) return null
     const raw = reader.get('x-pathname') || reader.get('next-url') || ''
     const cut = raw.search(/[?#]/)

@@ -2497,6 +2497,10 @@ const es: UiDictionary = {
   'al.breadcrumb': 'Ruta de navegación',
   'al.dataViewSettings': 'Ajustes de tabla o gráfico',
   'al.trash': 'Papelera',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Eventos de seguimiento",
+  "label.singular.tracking-events": "Evento de seguimiento",
+  "desc.tracking-events": "Eventos del sitio público (clic, envío de formulario, vista de página, desplazamiento o tiempo en la página). Solo se disparan tras aceptar la categoría de cookies correspondiente.",
 }
 
 export default es

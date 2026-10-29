@@ -2497,6 +2497,10 @@ const ko: UiDictionary = {
   'al.breadcrumb': '경로 탐색',
   'al.dataViewSettings': '표 또는 차트 설정',
   'al.trash': '휴지통',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "추적 이벤트",
+  "label.singular.tracking-events": "추적 이벤트",
+  "desc.tracking-events": "공개 사이트에서 발생하는 이벤트(클릭, 양식 제출, 페이지 보기, 스크롤 깊이 또는 페이지 체류 시간). 해당 쿠키 범주에 동의한 후에만 전송됩니다.",
 }
 
 export default ko

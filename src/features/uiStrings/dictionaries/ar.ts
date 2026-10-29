@@ -2497,6 +2497,10 @@ const ar: UiDictionary = {
   'al.breadcrumb': 'مسار التنقل',
   'al.dataViewSettings': 'إعدادات الجدول أو الرسم البياني',
   'al.trash': 'سلة المهملات',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "أحداث التتبع",
+  "label.singular.tracking-events": "حدث تتبع",
+  "desc.tracking-events": "أحداث على الموقع العام (النقر، وإرسال النماذج، وعرض الصفحة، وعمق التمرير، أو الوقت على الصفحة). لا تُرسل إلا بعد قبول فئة ملفات تعريف الارتباط المناسبة.",
 }
 
 export default ar

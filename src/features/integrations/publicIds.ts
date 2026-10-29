@@ -61,3 +61,17 @@ export async function getPublicIds(): Promise<PublicIds> {
     return {}
   }
 }
+
+export type PlatformCategory = 'analytics' | 'marketing'
+
+/**
+ * The consent category each pixel waits for, from Integrations. Meta and
+ * TikTok default to marketing (their ads use). GA4 and GTM stay on analytics.
+ */
+export function pickConsentCategories(integrations: Loose): Record<'meta' | 'tiktok', PlatformCategory> {
+  const pick = (value: unknown): PlatformCategory => (value === 'analytics' ? 'analytics' : 'marketing')
+  return {
+    meta: pick(group(integrations, 'metaPixel')?.consentCategory),
+    tiktok: pick(group(integrations, 'tiktokPixel')?.consentCategory),
+  }
+}

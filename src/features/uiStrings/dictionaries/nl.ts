@@ -2497,6 +2497,10 @@ const nl: UiDictionary = {
   'al.breadcrumb': 'Broodkruimels',
   'al.dataViewSettings': 'Instellingen voor tabel of grafiek',
   'al.trash': 'Prullenbak',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Trackinggebeurtenissen",
+  "label.singular.tracking-events": "Trackinggebeurtenis",
+  "desc.tracking-events": "Gebeurtenissen op de openbare site (klik, formulierverzending, paginaweergave, scrolldiepte of tijd op pagina). Ze worden pas verzonden nadat de bijbehorende cookiecategorie is geaccepteerd.",
 }
 
 export default nl

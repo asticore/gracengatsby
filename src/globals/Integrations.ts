@@ -269,6 +269,17 @@ export const Integrations: GlobalConfig = {
           admin: { description: 'Untick to pause the pixel and its tracking events without deleting the ID.' },
         },
         {
+          name: 'consentCategory',
+          type: 'select',
+          label: 'Consent category',
+          defaultValue: 'marketing',
+          options: [
+            { label: 'Marketing', value: 'marketing' },
+            { label: 'Analytics', value: 'analytics' },
+          ],
+          admin: { description: 'The cookie category the visitor must accept before the Meta pixel loads.' },
+        },
+        {
           name: 'pixelId',
           type: 'text',
           label: 'Meta pixel ID',
@@ -288,6 +299,17 @@ export const Integrations: GlobalConfig = {
           label: 'Send events to TikTok',
           defaultValue: true,
           admin: { description: 'Untick to pause the pixel and its tracking events without deleting the ID.' },
+        },
+        {
+          name: 'consentCategory',
+          type: 'select',
+          label: 'Consent category',
+          defaultValue: 'marketing',
+          options: [
+            { label: 'Marketing', value: 'marketing' },
+            { label: 'Analytics', value: 'analytics' },
+          ],
+          admin: { description: 'The cookie category the visitor must accept before the TikTok pixel loads.' },
         },
         {
           name: 'pixelId',

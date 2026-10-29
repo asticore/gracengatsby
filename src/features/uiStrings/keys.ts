@@ -2537,6 +2537,10 @@ export const UI_STRING_SOURCE = {
   'al.breadcrumb': 'Breadcrumb',
   'al.dataViewSettings': 'Table or chart settings',
   'al.trash': 'Trash',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Tracking events",
+  "label.singular.tracking-events": "Tracking event",
+  "desc.tracking-events": "Events fired on the public site (click, form submit, page view, scroll depth or time on page). Each one fires only after its cookie category is accepted.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

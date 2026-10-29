@@ -12,6 +12,9 @@ export type AnalyticsIds = {
   metaPixelId?: string
   clarityProjectId?: string
   tiktokPixelId?: string
+  /** Consent category the Meta and TikTok pixels wait for. Defaults to marketing. */
+  metaCategory?: 'analytics' | 'marketing'
+  tiktokCategory?: 'analytics' | 'marketing'
 }
 
 export type AnalyticsLoaderProps = AnalyticsIds & {
@@ -103,8 +106,7 @@ const loadTikTokPixel = (tiktokPixelId?: string) => {
   )
 }
 
-const loadMarketingTags = ({ metaPixelId, tiktokPixelId }: AnalyticsIds) => {
-  loadTikTokPixel(tiktokPixelId)
+const loadMetaPixel = ({ metaPixelId }: AnalyticsIds) => {
   if (tagState.marketing || !metaPixelId) return
   tagState.marketing = true
   appendScript(
@@ -146,7 +148,8 @@ export function syncAnalyticsTags(ids: AnalyticsIds, consentModeV2: boolean, cho
   const gtmGranted = consentModeV2 ? choices.analytics : choices.analytics && choices.marketing
   if (gtmGranted) loadGtm(ids.gtmContainerId)
   if (choices.analytics) loadAnalyticsTags(ids)
-  if (choices.marketing) loadMarketingTags(ids)
+  if (choices[ids.metaCategory ?? 'marketing']) loadMetaPixel(ids)
+  if (choices[ids.tiktokCategory ?? 'marketing']) loadTikTokPixel(ids.tiktokPixelId)
 }
 
 /**
@@ -165,7 +168,7 @@ export const AnalyticsLoader = ({ optIn, policyVersion, consentModeV2, ...ids }:
     syncAnalyticsTags(ids, consentModeV2, JSON.parse(signalKey) as ConsentChoices)
     // The ids are primitives; the choice is passed as its key, so this runs once per real change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signalKey, consentModeV2, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId, ids.tiktokPixelId, ids.clarityProjectId])
+  }, [signalKey, consentModeV2, ids.gtmContainerId, ids.ga4MeasurementId, ids.metaPixelId, ids.tiktokPixelId, ids.metaCategory, ids.tiktokCategory, ids.clarityProjectId])
 
   return null
 }

@@ -2497,6 +2497,10 @@ const hi: UiDictionary = {
   'al.breadcrumb': 'ब्रेडक्रम्ब',
   'al.dataViewSettings': 'तालिका या चार्ट सेटिंग्स',
   'al.trash': 'ट्रैश',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "ट्रैकिंग इवेंट",
+  "label.singular.tracking-events": "ट्रैकिंग इवेंट",
+  "desc.tracking-events": "सार्वजनिक साइट पर होने वाले इवेंट (क्लिक, फ़ॉर्म सबमिट, पेज व्यू, स्क्रॉल गहराई या पेज पर बिताया समय)। संबंधित कुकी श्रेणी स्वीकार होने के बाद ही ये भेजे जाते हैं।",
 }
 
 export default hi

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useState } from 'react'
 import '../edit-tabs.css'
 import '../list-section-tabs.css'
@@ -47,13 +48,14 @@ export function AllResultsFilters({
   owners: OwnerOption[]
   showStatus: boolean
 }) {
+  const t = useAdminT()
   const [draft, setDraft] = useState<ResultsFilterValues>(applied)
   const set = (patch: Partial<ResultsFilterValues>) => setDraft((current) => ({ ...current, ...patch }))
   const dirty = JSON.stringify(draft) !== JSON.stringify(applied)
 
   return (
     <form
-      aria-label="Filters"
+      aria-label={t('frm.lit.filters')}
       className="lst-filters"
       onSubmit={(event) => {
         event.preventDefault()
@@ -73,34 +75,34 @@ export function AllResultsFilters({
       </label>
       {showStatus && (
         <label className="lst-filter">
-          Payment
+          {t('frm.lit.payment')}
           <select onChange={(event) => set({ status: event.target.value })} value={draft.status}>
-            <option value="">Any</option>
-            <option value="none">Not a paid form</option>
-            <option value="unpaid">Awaiting payment</option>
-            <option value="paid">Paid</option>
+            <option value="">{t('frm.lit.any')}</option>
+            <option value="none">{t('frm.lit.not_a_paid_form')}</option>
+            <option value="unpaid">{t('frm.lit.awaiting_payment')}</option>
+            <option value="paid">{t('frm.lit.paid')}</option>
           </select>
         </label>
       )}
       <label className="lst-filter">
-        Search
+        {t('frm.lit.search')}
         <input
           onChange={(event) => set({ q: event.target.value })}
-          placeholder={showStatus ? 'Words in the answers' : 'Name or email'}
+          placeholder={showStatus ? t('frm.lit.words_in_the_answers') : t('frm.lit.name_or_email')}
           type="search"
           value={draft.q}
         />
       </label>
       <label className="lst-filter">
-        From
+        {t('frm.lit.from')}
         <input onChange={(event) => set({ from: event.target.value })} type="date" value={draft.from} />
       </label>
       <label className="lst-filter">
-        To
+        {t('frm.lit.to')}
         <input onChange={(event) => set({ to: event.target.value })} type="date" value={draft.to} />
       </label>
       <button className="et-button" disabled={!dirty} type="submit">
-        Apply
+        {t('frm.lit.apply')}
       </button>
       <button
         className="et-button"
@@ -111,7 +113,7 @@ export function AllResultsFilters({
         }}
         type="button"
       >
-        Clear
+        {t('frm.lit.clear')}
       </button>
     </form>
   )

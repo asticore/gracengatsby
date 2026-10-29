@@ -17,6 +17,8 @@
  */
 
 import { blockTextAddresses, type BlockGroup } from './blockText'
+import { richTextSubFields } from './richText'
+import { parseTiers, tierPath } from '@/features/editScreens/tiers'
 
 export type TranslatableFieldDef = {
   path: string
@@ -39,6 +41,8 @@ export type TranslatableSourceDef = {
   blocksField?: string
   /** Hand-written fields that are always translatable (block text is added per document). */
   fields: TranslatableFieldDef[]
+  /** A JSON array of tiers whose `name` and `description` are translatable, keyed by tier id. */
+  tiersField?: string
 }
 
 export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
@@ -89,6 +93,18 @@ export const TRANSLATABLE_COLLECTIONS: TranslatableSourceDef[] = [
       { path: 'location.venueName', label: 'Venue name', size: 'text' },
       { path: 'location.address', label: 'Address', size: 'long' },
     ],
+    tiersField: 'ticketTiers',
+  },
+  {
+    // A reusable section is translated once, here, and applied wherever it is embedded.
+    slug: 'reusable-sections',
+    label: 'Reusable section',
+    titleField: 'name',
+    blocksField: 'blocks',
+    fields: [
+      { path: 'name', label: 'Name', size: 'text' },
+      { path: 'description', label: 'Description', size: 'long' },
+    ],
   },
   {
     slug: 'faqs',
@@ -116,14 +132,53 @@ export const translatableSource = (slug: string): TranslatableSourceDef | undefi
 export function fieldsForDocument(slug: string, doc: unknown): TranslatableFieldDef[] {
   const source = translatableSource(slug)
   if (!source) return []
-  if (!source.blocksField) return source.fields
+  const fixed = source.fields.flatMap((field) => (field.richText ? richTextFieldsFor(field, doc) : [field]))
+  if (source.tiersField) fixed.push(...tierFieldsFor(doc, source.tiersField))
+  if (!source.blocksField) return fixed
   const blockFields: TranslatableFieldDef[] = blockTextAddresses(doc, source.blocksField).map((address) => ({
     path: address.fieldPath,
     label: address.label,
     size: address.size,
     group: address.group,
   }))
-  return [...source.fields, ...blockFields]
+  return [...fixed, ...blockFields]
+}
+
+/**
+ * Name and description of each saved tier, keyed by its stable id. A tier without
+ * an id (saved before ids were assigned) is not listed until it is saved again.
+ */
+function tierFieldsFor(doc: unknown, tiersField: string): TranslatableFieldDef[] {
+  const value = doc && typeof doc === 'object' ? (doc as Record<string, unknown>)[tiersField] : undefined
+  const out: TranslatableFieldDef[] = []
+  for (const tier of parseTiers(value)) {
+    if (!tier.id) continue
+    const group = { key: tiersField, blockType: 'ticketTier', blockLabel: 'Ticket tiers', preview: tier.name.slice(0, 60) }
+    out.push({ path: tierPath(tier.id, 'name'), label: `${tier.name} · Name`, size: 'text', group })
+    if (tier.description.trim()) {
+      out.push({ path: tierPath(tier.id, 'description'), label: `${tier.name} · Description`, size: 'long', group })
+    }
+  }
+  return out
+}
+
+/**
+ * A rich text field becomes one plain sub-field per text node (see richText.ts),
+ * grouped under the field so the translate panel shows them together.
+ */
+function richTextFieldsFor(field: TranslatableFieldDef, doc: unknown): TranslatableFieldDef[] {
+  const value = doc && typeof doc === 'object' ? (doc as Record<string, unknown>)[field.path] : undefined
+  return richTextSubFields({ field: field.path, label: field.label, value }).map((sub) => ({
+    path: sub.path,
+    label: sub.label,
+    size: sub.size,
+    group: {
+      key: field.path,
+      blockType: 'richText',
+      blockLabel: field.label,
+      preview: sub.text.trim().replace(/\s+/g, ' ').slice(0, 60),
+    },
+  }))
 }
 
 /** `<collection>:<document id>` - the value stored in `eg_translations.source_id`. */

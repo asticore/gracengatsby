@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getAdminContext } from '@/admin/auth'
@@ -15,8 +17,8 @@ export const dynamic = 'force-dynamic'
 const NO_STORE = { 'Cache-Control': 'no-store' }
 
 /** Sends the admin back to the screen with a short flag, and clears the state cookie. */
-function back(origin: string, flag: string): Response {
-  const response = NextResponse.redirect(`${origin}${ADMIN_PAGE_PATH}?google=${flag}`, 303)
+async function back(origin: string, flag: string): Promise<Response> {
+  const response = NextResponse.redirect(`${origin}${adminHref(ADMIN_PAGE_PATH, await getAdminRoot())}?google=${flag}`, 303)
   response.cookies.set(OAUTH_STATE_COOKIE, '', { path: '/api/google', maxAge: 0, httpOnly: true, sameSite: 'lax' })
   response.headers.set('Cache-Control', NO_STORE['Cache-Control'])
   return response

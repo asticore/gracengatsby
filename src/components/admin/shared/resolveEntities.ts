@@ -114,6 +114,8 @@ export type ResolveArgs = {
   visibleEntities: VisibleEntitiesLike
   isAdmin?: boolean
   can?: (resource: string, action: 'read' | 'create' | 'update' | 'delete') => boolean
+  /** The configured admin root (see getAdminRoot). Defaults to the engine's /admin route. */
+  adminRoute?: string
 }
 
 /**
@@ -126,7 +128,7 @@ export function resolveEntityGroups(args: ResolveArgs): ResolvedGroup[] {
 
   if (!engine?.config) return []
 
-  const adminRoute = engine.config.routes.admin
+  const adminRoute = args.adminRoute ?? engine.config.routes.admin
   const available = new Map<string, ResolvedEntity>()
 
   for (const collection of engine.config.collections as unknown as SanitizedCollectionConfig[]) {

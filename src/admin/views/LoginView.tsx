@@ -1,6 +1,7 @@
 'use client'
 
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { useAdminRoot } from '@/admin/adminRoute/AdminRouteProvider'
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -17,7 +18,9 @@ import { SecondFactorChoice, type SecondFactorMethod } from '@/features/security
  * - expired=1: Shows "Your session expired. Please log in again." notice
  * - redirect=<path>: Redirects to this path after successful login (must be relative, start with /admin)
  */
-export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {}) {
+export function LoginView({ redirectTo: redirectToProp }: { redirectTo?: string } = {}) {
+  const root = useAdminRoot()
+  const redirectTo = redirectToProp ?? root
   const t = useAdminT()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -67,11 +70,11 @@ export function LoginView({ redirectTo = '/admin' }: { redirectTo?: string } = {
   const finalRedirectTo = useMemo(() => {
     const redirectParam = searchParams.get('redirect')
     // Only use redirect if it's a relative path starting with /admin
-    if (redirectParam && typeof redirectParam === 'string' && redirectParam.startsWith('/admin') && !redirectParam.startsWith('//')) {
+    if (redirectParam && typeof redirectParam === 'string' && redirectParam.startsWith(root) && !redirectParam.startsWith('//')) {
       return redirectParam
     }
     return redirectTo
-  }, [searchParams, redirectTo])
+  }, [searchParams, redirectTo, root])
 
   useEffect(() => {
     fetch('/api/passkeys/availability?area=admin', { credentials: 'include' })

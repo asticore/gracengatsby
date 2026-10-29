@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -14,8 +16,8 @@ import { GoogleConnectionClient } from './GoogleConnectionClient'
  */
 export async function GoogleConnectionView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
-  if (!context.isAdmin) redirect('/admin')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
 
   const status = await readGoogleConnection(context.engine)
   const incoming = await headers()

@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -15,7 +17,7 @@ import { readSocialConfig } from '@/features/socialLogin/settings'
  */
 export async function SocialView({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> } = {}) {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const engine = await getEngine()
   const config = await readSocialConfig(engine)
@@ -31,7 +33,7 @@ export async function SocialView({ searchParams }: { searchParams?: Record<strin
       ) : (
         <p>Social sign-in for staff is switched off on this site (Settings &gt; Security &gt; Social login).</p>
       )}
-      <ConnectedAccountsPanel view={view} area="admin" returnTo="/admin/security/social" notice={error} />
+      <ConnectedAccountsPanel view={view} area="admin" returnTo={adminHref('/security/social', await getAdminRoot())} notice={error} />
     </div>
   )
 }

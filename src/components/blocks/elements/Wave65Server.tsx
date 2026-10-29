@@ -1,5 +1,4 @@
 import React from 'react'
-import { headers } from 'next/headers'
 
 import { getBlockContext } from '@/lib/blockContext'
 import { getEngine } from '@/lib/engine'
@@ -7,7 +6,7 @@ import { getEngine } from '@/lib/engine'
 import { getMultilingualSettings, localisedHref, localeNativeName } from '@/features/multilingual'
 import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
 import { localesFor } from '@/features/seo/localeSeo'
-import { LOCALE_HEADER, requestLocale } from '@/features/multilingual/routing'
+import { requestContentLocale } from '@/features/multilingual/portalLocaleServer'
 
 import { mediaOf, str } from './elementUtil'
 import './wave65.css'
@@ -78,7 +77,7 @@ async function languageData() {
     const settings = await getMultilingualSettings((await getEngine()) as never)
     if (!settings.enabled || settings.activeLocales.length < 2) return null
     // The middleware strips the locale prefix, so the path is the page and the header carries the language.
-    const current = requestLocale((await headers()).get(LOCALE_HEADER), settings) ?? settings.defaultLocale
+    const current = (await requestContentLocale(settings)) ?? settings.defaultLocale
     const rest = getBlockContext().path || '/'
     // Languages this page has no publishable translation in are left out, the default always stays.
     const offered = localesFor(settings, await availableLocalesForPath(rest))

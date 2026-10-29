@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { FIND_REPLACE_COLLECTIONS, type FindReplaceCollection } from '@/features/editScreens/findReplace'
@@ -17,11 +19,11 @@ const LABELS: Record<FindReplaceCollection, string> = {
  */
 export async function FindReplaceView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const can = context.can as unknown as (resource: string, action: string) => boolean
   const allowed = FIND_REPLACE_COLLECTIONS.filter((collection) => context.isAdmin || can(collection, 'update'))
-  if (allowed.length === 0) redirect('/admin')
+  if (allowed.length === 0) redirect(adminHref('', await getAdminRoot()))
 
   return <FindReplaceClient collections={allowed.map((key) => ({ key, label: LABELS[key] }))} />
 }

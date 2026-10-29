@@ -34,6 +34,7 @@ import { EmailLog } from '@/collections/EmailLog'
 import { ErrorLog } from '@/collections/ErrorLog'
 import { BackupSettings } from '@/globals/BackupSettings'
 import { BlogSettings } from '@/globals/BlogSettings'
+import { DomainSettings } from '@/globals/DomainSettings'
 import { EmailSettings } from '@/globals/EmailSettings'
 import { EmailTemplates } from '@/globals/EmailTemplates'
 import { EmailSchedule } from '@/globals/EmailSchedule'
@@ -695,6 +696,13 @@ export const blogSettingsRelsTargetColumns = blogSettingsRelsGenerated.targetCol
 
 export const shopSettingsGenerated = generateTable(ShopSettings)
 export const shopSettings = shopSettingsGenerated.table
+
+/** Regional domains (src/globals/DomainSettings.ts): one row, and the `domains` array in its child table (edge reads in features/domains/store.ts). */
+export const domainSettingsGenerated = generateTable(DomainSettings)
+export const domainSettings = domainSettingsGenerated.table
+const domainSettingsDomainsField = domainSettingsGenerated.arrayFields.find((f) => f.name === 'domains')
+if (!domainSettingsDomainsField) throw new Error('domain-settings: the domains array is missing.')
+export const domainSettingsDomains = generateArrayTable(DomainSettings.slug, domainSettingsGenerated.tableName, domainSettingsDomainsField).table
 
 /** Shop-wide switches (src/globals/ShopExtraSettings.ts): flat scalar fields only. */
 export const shopExtraSettingsGenerated = generateTable(ShopExtraSettings)

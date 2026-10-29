@@ -1,3 +1,6 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { redirect } from 'next/navigation'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { getAdminContext } from '@/admin/auth'
@@ -16,8 +19,9 @@ import './site-health.css'
  * publishes still waiting. Admin only. Read-only: nothing here runs a job.
  */
 export async function ScheduledTasksView() {
+  const { t } = await getAdminUi()
   const context = await getAdminContext()
-  if (!context.isAdmin) redirect('/admin')
+  if (!context.isAdmin) redirect(adminHref('', await getAdminRoot()))
 
   const { env } = await getCloudflareContext({ async: true })
   const db = env.D1
@@ -42,7 +46,7 @@ export async function ScheduledTasksView() {
   return (
     <div className="st">
       <header className="sh-head">
-        <h1 className="sh-title">Scheduled tasks</h1>
+        <h1 className="sh-title">{t('st.lit.scheduled_tasks')}</h1>
         <p className="sh-muted">
           The jobs the site runs on a timer, what each one last did, and the changes still waiting to go live.
         </p>
@@ -53,14 +57,14 @@ export async function ScheduledTasksView() {
         </p>
       </header>
 
-      <CollapsibleCard id="scheduled-tasks-jobs" title="Jobs">
+      <CollapsibleCard id="scheduled-tasks-jobs" title={t('st.lit.jobs')}>
         <table className="sh-table">
           <thead>
             <tr>
-              <th scope="col">Job</th>
-              <th scope="col">Runs</th>
-              <th scope="col">Last run</th>
-              <th scope="col">Result</th>
+              <th scope="col">{t('st.lit.job')}</th>
+              <th scope="col">{t('st.lit.runs')}</th>
+              <th scope="col">{t('st.lit.last_run')}</th>
+              <th scope="col">{t('st.lit.result')}</th>
             </tr>
           </thead>
           <tbody>
@@ -81,7 +85,7 @@ export async function ScheduledTasksView() {
                     {duration ? ` (${duration})` : ''}
                   </td>
                   <td>
-                    {!last ? '-' : last.ok === null ? 'Not finished' : last.ok ? 'Worked' : <span className="sh-error">{`Failed: ${last.error ?? 'unknown error'}`}</span>}
+                    {!last ? '-' : last.ok === null ? t('st.lit.not_finished') : last.ok ? t('st.lit.worked') : <span className="sh-error">{`Failed: ${last.error ?? 'unknown error'}`}</span>}
                   </td>
                 </tr>
               )
@@ -90,17 +94,17 @@ export async function ScheduledTasksView() {
         </table>
       </CollapsibleCard>
 
-      <CollapsibleCard id="scheduled-tasks-pending" title="Waiting to go live">
+      <CollapsibleCard id="scheduled-tasks-pending" title={t('st.lit.waiting_to_go_live')}>
         {pending.length === 0 ? (
-          <p className="sh-muted">Nothing is scheduled to publish or unpublish.</p>
+          <p className="sh-muted">{t('st.lit.nothing_is_scheduled_to_publish_or_unpub')}</p>
         ) : (
           <table className="sh-table">
             <thead>
               <tr>
-                <th scope="col">When</th>
-                <th scope="col">Action</th>
-                <th scope="col">Item</th>
-                <th scope="col">Open</th>
+                <th scope="col">{t('st.lit.when')}</th>
+                <th scope="col">{t('st.lit.action')}</th>
+                <th scope="col">{t('st.lit.item')}</th>
+                <th scope="col">{t('st.lit.open')}</th>
               </tr>
             </thead>
             <tbody>
@@ -110,7 +114,7 @@ export async function ScheduledTasksView() {
                   <td>{item.action}</td>
                   <td>{item.title ?? `${item.collection} #${item.docId}`}</td>
                   <td>
-                    <a href={item.href}>Open</a>
+                    <a href={item.href}>{t('st.lit.open')}</a>
                   </td>
                 </tr>
               ))}
@@ -119,17 +123,17 @@ export async function ScheduledTasksView() {
         )}
       </CollapsibleCard>
 
-      <CollapsibleCard id="scheduled-tasks-history" title="Last 20 runs">
+      <CollapsibleCard id="scheduled-tasks-history" title={t('st.lit.last_20_runs')}>
         {history.length === 0 ? (
-          <p className="sh-muted">No runs recorded yet.</p>
+          <p className="sh-muted">{t('st.lit.no_runs_recorded_yet')}</p>
         ) : (
           <table className="sh-table">
             <thead>
               <tr>
-                <th scope="col">When</th>
-                <th scope="col">Job</th>
-                <th scope="col">Result</th>
-                <th scope="col">Took</th>
+                <th scope="col">{t('st.lit.when')}</th>
+                <th scope="col">{t('st.lit.job')}</th>
+                <th scope="col">{t('st.lit.result')}</th>
+                <th scope="col">{t('st.lit.took')}</th>
               </tr>
             </thead>
             <tbody>
@@ -138,7 +142,7 @@ export async function ScheduledTasksView() {
                   <td>{formatWhen(run.startedAt, timeZone)}</td>
                   <td>{CRON_JOBS.find((job) => job.name === run.job)?.label ?? run.job}</td>
                   <td>
-                    {run.ok === null ? 'Not finished' : run.ok ? 'Worked' : <span className="sh-error">{`Failed: ${run.error ?? 'unknown error'}`}</span>}
+                    {run.ok === null ? t('st.lit.not_finished') : run.ok ? t('st.lit.worked') : <span className="sh-error">{`Failed: ${run.error ?? 'unknown error'}`}</span>}
                   </td>
                   <td>{formatDuration(run.durationMs) ?? '-'}</td>
                 </tr>

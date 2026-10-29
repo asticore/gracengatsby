@@ -1,5 +1,6 @@
 import type { CollectionConfig } from '@/engine'
 
+import { allowedDomainsField } from '@/features/domains/field'
 import { invalidateCustomRole, sanitizeRolePermissions } from '@/features/roles/customRoleCache'
 
 export const Roles: CollectionConfig = {
@@ -20,6 +21,7 @@ export const Roles: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
   },
   fields: [
+    allowedDomainsField,
     {
       name: 'name',
       type: 'text',

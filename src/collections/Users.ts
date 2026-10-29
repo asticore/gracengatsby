@@ -1,5 +1,7 @@
 import type { CollectionConfig, CollectionBeforeChangeHook } from '@/engine'
 
+import { allowedDomainsGuard } from '@/features/domains/access'
+import { allowedDomainsField } from '@/features/domains/field'
 import { isAdmin, isAdminOrSelf, adminOnlyFieldAccess } from '../access/ecommerceAccess'
 import { validateRoleChange, sanitizeOverrides } from '@/features/roles/permissions'
 import { slugify } from '@/utilities/formatSlug'
@@ -80,8 +82,9 @@ export const Users: CollectionConfig = {
   },
   auth: true,
   hooks: { afterChange: [revokeSessionsOnPasswordChange, recordPasswordAfterChange] },
-  beforeChange: [validateUserRoleChange, sanitizePermissionOverrides, authorshipBeforeChange, enforcePasswordPolicyBeforeChange],
+  beforeChange: [allowedDomainsGuard, validateUserRoleChange, sanitizePermissionOverrides, authorshipBeforeChange, enforcePasswordPolicyBeforeChange],
   fields: [
+    allowedDomainsField,
     ...authorshipFields,
     {
       name: 'displayName',

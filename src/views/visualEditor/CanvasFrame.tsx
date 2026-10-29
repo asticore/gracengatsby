@@ -21,6 +21,8 @@ import { getNode, pathKey, type NodePath } from './treeOps'
 import { isEditableTarget, resolveShortcut } from './useEditorShortcuts'
 import { VISUAL_EDITOR_CSS } from './visualEditor.styles'
 import { inlineCandidate, listInlineTargets, neighbourTarget } from './inlineEdit'
+import { TRANSLATE_BANNER_CSS } from './TranslateBanner'
+import type { CanvasBlockMark } from './translateCanvas'
 import { QuickInsertPalette } from './QuickInsertPalette'
 import { quickInsertTarget } from './quickInsert'
 import { libraryCards } from './blockSchemas'
@@ -75,6 +77,8 @@ export const CanvasFrame: React.FC = () => {
   // The device preview the parent is showing; column widths are read and written for it.
   const [device, setDevice] = useState<CanvasDevice>('desktop')
   const [previewCtx, setPreviewCtx] = useState<BlockContext | null>(null)
+  // Translate mode (null otherwise): the marks for the language on screen, and the 'Untranslated' badge text.
+  const [translate, setTranslate] = useState<{ marks: Record<string, CanvasBlockMark>; untranslatedLabel: string } | null>(null)
   useInjectSiteFonts()
   const [dragHoverKey, setDragHoverKey] = useState<string | null>(null)
   // Which "+" is currently open (Elementor-style: it stays lit, not just a hover flash, until
@@ -92,9 +96,9 @@ export const CanvasFrame: React.FC = () => {
   const [editing, setEditing] = useState<{ path: NodePath; itemIndex?: number } | null>(null)
   // "/" quick insert palette: viewport position + where the block will land.
   const [palette, setPalette] = useState<{ top: number; left: number; containerPath: NodePath; at: number; recents: string[] } | null>(null)
-  const live = useRef({ blocks, selectedPath, locks, editing, palette })
+  const live = useRef({ blocks, selectedPath, locks, editing, palette, translate })
   useEffect(() => {
-    live.current = { blocks, selectedPath, locks, editing, palette }
+    live.current = { blocks, selectedPath, locks, editing, palette, translate }
   })
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
@@ -117,6 +121,8 @@ export const CanvasFrame: React.FC = () => {
         setPreviewCtx(msg.context)
       } else if (msg.type === 'dragHover') {
         setDragHoverKey(msg.key)
+      } else if (msg.type === 'translate') {
+        setTranslate(msg.active ? { marks: msg.marks, untranslatedLabel: msg.untranslatedLabel } : null)
       }
     }
     window.addEventListener('message', onMessage)
@@ -141,6 +147,12 @@ export const CanvasFrame: React.FC = () => {
         return
       }
       const info = { key: event.key, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, alt: event.altKey }
+      // Translate mode: Alt+Left/Right step through the untranslated texts in the parent.
+      if (live.current.translate && info.alt && (info.key === 'ArrowLeft' || info.key === 'ArrowRight')) {
+        event.preventDefault()
+        post({ source: 've-canvas', type: 'key', ...info })
+        return
+      }
       if (!resolveShortcut(info)) return
       // Keep the browser from acting too (bookmark on Ctrl+D, history on Backspace, page scroll on Alt+Arrow).
       if (info.key !== 'Escape') event.preventDefault()
@@ -178,6 +190,18 @@ export const CanvasFrame: React.FC = () => {
 
   const openEditor = (path: NodePath, itemIndex?: number) => {
     const node = getNode(blocks, path)
+    if (translate) {
+      // Translate mode: only text that has a translation row can be edited here; the rest is named in the panel.
+      const editable = Boolean(translate.marks[pathKey(path)]?.editable) && Boolean(node && inlineCandidate(node, itemIndex ?? 0))
+      if (!editable) {
+        post({ source: 've-canvas', type: 'translateHint', path })
+        return
+      }
+      setEditing({ path, itemIndex })
+      setSelectedPath(path)
+      post({ source: 've-canvas', type: 'select', path })
+      return
+    }
     if (!node || locks[pathKey(path)]?.blocked || !inlineCandidate(node, itemIndex ?? 0)) return
     setEditing({ path, itemIndex })
     setSelectedPath(path)
@@ -214,6 +238,7 @@ export const CanvasFrame: React.FC = () => {
 
   const handlers: CanvasHandlers = {
     onEditText: openEditor,
+    translate: translate ?? undefined,
     inlineEdit,
     selectedKey: selectedPath ? pathKey(selectedPath) : null,
     locks,
@@ -277,7 +302,7 @@ export const CanvasFrame: React.FC = () => {
       role="presentation"
     >
       {/* eslint-disable-next-line react/no-danger -- static string constant, no user input */}
-      <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: VISUAL_EDITOR_CSS + TRANSLATE_BANNER_CSS }} />
 
       {blocks.length === 0 && (
         <div className="ve-empty-canvas">

@@ -11,13 +11,38 @@ import {
   type ConsentChoices,
   type CookieCategory,
 } from './consent'
-import { readableTextOn, type ConsentConfig } from './config'
+import { DEFAULT_CONSENT_TEXT, readableTextOn, type ConsentConfig } from './config'
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
+import type { UiStringKey } from '@/features/uiStrings/keys'
 import { activateGatedMarkup } from './gate'
 import { configureConsent, type ConsentState, getConsentState, saveConsent, SERVER_CONSENT_STATE, subscribeConsent } from './store'
 
 import './consent.css'
 
 /** Fired on window to open the Customise dialog from any script. */
+type ConsentTextKey = keyof typeof DEFAULT_CONSENT_TEXT
+
+const CONSENT_TEXT_KEYS: Record<ConsentTextKey, UiStringKey> = {
+  bannerTitle: 'store.cookieBannerTitle',
+  bannerText: 'store.cookieBannerText',
+  acceptLabel: 'store.acceptAll',
+  rejectLabel: 'store.rejectAll',
+  customiseLabel: 'store.customise',
+  saveLabel: 'store.saveChoices',
+  cookieSettingsLabel: 'store.cookieSettings',
+  privacyPolicyLabel: 'store.privacyPolicy',
+}
+
+/** Owner-set wording wins verbatim. Empty or the built-in English default falls back to the store translation. */
+const consentCopy = (config: ConsentConfig, t: (key: UiStringKey) => string): Record<ConsentTextKey, string> => {
+  const out = {} as Record<ConsentTextKey, string>
+  for (const key of Object.keys(CONSENT_TEXT_KEYS) as ConsentTextKey[]) {
+    const value = config[key]
+    out[key] = value && value !== DEFAULT_CONSENT_TEXT[key] ? value : t(CONSENT_TEXT_KEYS[key])
+  }
+  return out
+}
+
 export const COOKIE_SETTINGS_EVENT = 'engage:open-cookie-settings'
 
 /** Opens the cookie settings dialog. Safe to call from any client component. */
@@ -77,6 +102,8 @@ export const consentStyleVariables = (config: ConsentConfig): CSSProperties => {
  * is activated as normal.
  */
 export const ConsentManager = ({ config, optIn, initialDecided, previewMode, previewView = 'banner', previewTheme = 'light', previewNarrow }: ConsentManagerProps) => {
+  const storeText = useStoreText()
+  const copy = consentCopy(config, storeText)
   const preview = previewMode === true
   const consent = useSyncExternalStore(subscribeConsent, getConsentState, (): ConsentState => SERVER_CONSENT_STATE)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -196,7 +223,7 @@ export const ConsentManager = ({ config, optIn, initialDecided, previewMode, pre
         className="engage-consent__link"
         {...(preview ? { onClick: (event: React.MouseEvent) => event.preventDefault() } : {})}
       >
-        {config.privacyPolicyLabel}
+        {copy.privacyPolicyLabel}
       </a>
     </>
   ) : null
@@ -208,29 +235,29 @@ export const ConsentManager = ({ config, optIn, initialDecided, previewMode, pre
       style={consentStyleVariables(config)}
     >
       {!decided ? (
-        <section className={`engage-consent engage-consent--${config.position}`} role="region" aria-label={config.bannerTitle}>
+        <section className={`engage-consent engage-consent--${config.position}`} role="region" aria-label={copy.bannerTitle}>
           {config.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img className="engage-consent__logo" src={config.logoUrl} alt="" width={40} height={40} />
           ) : null}
           <div className="engage-consent__text">
-            <p className="engage-consent__title">{config.bannerTitle}</p>
+            <p className="engage-consent__title">{copy.bannerTitle}</p>
             <p className="engage-consent__body">
-              {config.bannerText}
+              {copy.bannerText}
               {privacy}
             </p>
           </div>
           <div className="engage-consent__actions">
             {config.showRejectButton ? (
               <button type="button" className="engage-consent__button" onClick={() => decide(allChoices(false))}>
-                {config.rejectLabel}
+                {copy.rejectLabel}
               </button>
             ) : null}
             <button type="button" className="engage-consent__button" onClick={openSettings}>
-              {config.customiseLabel}
+              {copy.customiseLabel}
             </button>
             <button type="button" className="engage-consent__button engage-consent__button--primary" onClick={() => decide(allChoices(true))}>
-              {config.acceptLabel}
+              {copy.acceptLabel}
             </button>
           </div>
         </section>
@@ -240,7 +267,7 @@ export const ConsentManager = ({ config, optIn, initialDecided, previewMode, pre
           className="engage-consent__settings"
           {...(preview ? { onClick: openSettings } : { 'data-cookie-settings': true })}
         >
-          {config.cookieSettingsLabel}
+          {copy.cookieSettingsLabel}
         </button>
       )}
 
@@ -255,10 +282,10 @@ export const ConsentManager = ({ config, optIn, initialDecided, previewMode, pre
             onKeyDown={onDialogKeyDown}
           >
             <h2 id="engage-consent-title" className="engage-consent__heading">
-              {config.cookieSettingsLabel}
+              {copy.cookieSettingsLabel}
             </h2>
             <p className="engage-consent__body">
-              {config.bannerText}
+              {copy.bannerText}
               {privacy}
             </p>
             <ul className="engage-consent__categories">
@@ -276,14 +303,14 @@ export const ConsentManager = ({ config, optIn, initialDecided, previewMode, pre
             <div className="engage-consent__actions">
               {config.showRejectButton ? (
                 <button type="button" className="engage-consent__button" onClick={() => decide(allChoices(false))}>
-                  {config.rejectLabel}
+                  {copy.rejectLabel}
                 </button>
               ) : null}
               <button type="button" className="engage-consent__button" onClick={() => decide(draft)}>
-                {config.saveLabel}
+                {copy.saveLabel}
               </button>
               <button type="button" className="engage-consent__button engage-consent__button--primary" onClick={() => decide(allChoices(true))}>
-                {config.acceptLabel}
+                {copy.acceptLabel}
               </button>
             </div>
           </div>
@@ -302,6 +329,7 @@ type CategoryRowProps = {
 }
 
 const CategoryRow = ({ category, copy, checked, cookies, onToggle }: CategoryRowProps) => {
+  const storeText = useStoreText()
   const id = `engage-consent-${category}`
   const necessary = category === 'necessary'
   return (
@@ -316,7 +344,7 @@ const CategoryRow = ({ category, copy, checked, cookies, onToggle }: CategoryRow
           onChange={(event) => onToggle(event.target.checked)}
         />
       </label>
-      <p className="engage-consent__category-text">{necessary && !/always on/i.test(copy.description) ? `${copy.description} Always on.` : copy.description}</p>
+      <p className="engage-consent__category-text">{necessary && !/always on/i.test(copy.description) ? `${copy.description} ${storeText('store.alwaysOn')}` : copy.description}</p>
       {cookies.length > 0 ? (
         <ul className="engage-consent__cookies">
           {cookies.map((cookie) => (

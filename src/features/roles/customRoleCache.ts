@@ -15,7 +15,7 @@ import { OWNABLE_RESOURCES, RESOURCES, ALL_ACTIONS, SCOPED_ACTIONS, parseCustomM
 
 export const CUSTOM_ROLE_TTL_MS = 10_000
 
-export type ResolvedCustomRole = { slug: string; permissions: Partial<PermissionMatrix> }
+export type ResolvedCustomRole = { slug: string; permissions: Partial<PermissionMatrix>; allowedDomains?: unknown }
 
 type CacheEntry = { at: number; role: ResolvedCustomRole | null }
 
@@ -74,7 +74,9 @@ export async function loadCustomRoleCached(engine: EngineLike, roleId: number, n
   const row = await engine.findByID({ collection: 'roles', id: roleId, depth: 0, overrideAccess: true })
   const permissions = row ? parseCustomMatrix((row as { permissions?: unknown }).permissions) : undefined
   const role: ResolvedCustomRole | null =
-    row && typeof row.slug === 'string' ? { slug: row.slug, permissions: permissions ?? {} } : null
+    row && typeof row.slug === 'string'
+      ? { slug: row.slug, permissions: permissions ?? {}, allowedDomains: row.allowedDomains ?? null }
+      : null
   cache.set(roleId, { at: now, role })
   return role
 }
@@ -92,7 +94,7 @@ export async function attachCustomRole<T extends SessionUserLike | null>(engine:
   try {
     const role = await loadCustomRoleCached(engine, roleId)
     if (!role) return { ...user, customRolePermissions: {} }
-    return { ...user, customRolePermissions: role.permissions, customRoleSlug: role.slug }
+    return { ...user, customRolePermissions: role.permissions, customRoleSlug: role.slug, customRoleAllowedDomains: role.allowedDomains ?? null }
   } catch {
     return { ...user, customRolePermissions: {} }
   }

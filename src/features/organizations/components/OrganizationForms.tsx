@@ -2,6 +2,8 @@
 
 import React, { useActionState } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+
 import { Note, SubmitButton } from '@/features/accounts/components/FormBits'
 import { usePortalText } from '@/features/accounts/components/PortalText'
 import { IDLE, type ActionState } from '@/features/accounts/types'
@@ -254,16 +256,19 @@ export const InviteDecisionForm: React.FC<{ token: string }> = ({ token }) => {
 }
 
 /** The admin screen's delete button. A plain form: the action re-checks the administrator on the server. */
-export const AdminDeleteOrganizationForm: React.FC<{ organizationId: string; name: string }> = ({ organizationId, name }) => (
-  <form
-    action={adminDeleteOrganizationAction}
-    onSubmit={(event) => {
-      if (!window.confirm(`Delete ${name} and remove all its members, teams and invitations? This cannot be undone.`)) event.preventDefault()
-    }}
-  >
-    <input type="hidden" name="organizationId" value={organizationId} />
-    <button type="submit" className="btn btn--ghost">
-      Delete
-    </button>
-  </form>
-)
+export const AdminDeleteOrganizationForm: React.FC<{ organizationId: string; name: string }> = ({ organizationId, name }) => {
+  const t = useAdminT()
+  return (
+    <form
+      action={adminDeleteOrganizationAction}
+      onSubmit={(event) => {
+        if (!window.confirm(t('cu.lit.confirm_delete_org', { name }))) event.preventDefault()
+      }}
+    >
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <button type="submit" className="btn btn--ghost">
+        {t('cu.lit.delete')}
+      </button>
+    </form>
+  )
+}

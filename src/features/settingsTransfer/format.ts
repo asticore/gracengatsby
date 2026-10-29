@@ -49,6 +49,7 @@ export const SETTINGS_GLOBALS = [
   'site-pages',
   'security-settings',
   'language-settings',
+  'domain-settings',
   'seo-settings',
   'speed-settings',
   'media-settings',

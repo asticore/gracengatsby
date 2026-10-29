@@ -1,5 +1,6 @@
 'use client'
 
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 import React from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -11,6 +12,7 @@ const YEAR_SECONDS = 31_536_000
 
 /** Lets the shopper pick the currency prices are shown in. Renders nothing until extra currencies are set up. */
 export function CurrencySwitcher() {
+  const t = useStoreText()
   const state = useDisplayCurrencyState()
   const router = useRouter()
   if (state.options.length === 0) return null
@@ -27,7 +29,7 @@ export function CurrencySwitcher() {
   return (
     <div className="currency-switcher">
       <label className="currency-switcher__label" title="Prices in other currencies are approximate. You always pay in the shop currency.">
-        <span>Prices in</span>
+        <span>{t('store.pricesIn')}</span>
         <select value={state.selected ?? ''} onChange={(e) => choose(e.target.value)} aria-label="Show prices in">
           <option value="">{state.base} (shop currency)</option>
           {state.options.map((o) => (

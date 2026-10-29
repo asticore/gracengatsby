@@ -1,5 +1,6 @@
 'use client'
 
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 import Link from 'next/link'
 import React from 'react'
 
@@ -7,6 +8,7 @@ import { useWishlist } from '@/features/ecommerce/lib/useWishlist'
 
 /** Heart toggle for "Save for later". Saved state lives in the visitor's browser only. */
 export function WishlistHeart({ productId, showLink = false }: { productId: number; showLink?: boolean }) {
+  const t = useStoreText()
   const { ids, toggle } = useWishlist()
   const saved = ids.includes(productId)
 
@@ -15,8 +17,8 @@ export function WishlistHeart({ productId, showLink = false }: { productId: numb
       <button
         type="button"
         aria-pressed={saved}
-        aria-label="Save for later"
-        title="Save for later"
+        aria-label={t('store.saveForLater')}
+        title={t('store.saveForLater')}
         onClick={() => toggle(productId)}
         className="inline-grid h-10 w-10 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[var(--color-gold)] hover:border-[var(--color-gold)]"
       >

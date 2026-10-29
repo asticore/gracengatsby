@@ -1,3 +1,4 @@
+import { getAdminRoot } from '@/features/security/settings'
 import { cache } from 'react'
 import { headers } from 'next/headers'
 import type { Engine, SanitizedCollectionConfig, SanitizedGlobalConfig, TypedUser } from '@/engine'
@@ -224,6 +225,7 @@ export function getGlobalConfig(engine: Engine, slug: string): SanitizedGlobalCo
 export async function resolveNavGroups(context: AdminContext): Promise<ResolvedGroup[]> {
   const flags = await readFeatureFlags(context.engine)
   return resolveEntityGroups({
+    adminRoute: await getAdminRoot(),
     engine: context.engine,
     flags,
     i18n: context.i18n,

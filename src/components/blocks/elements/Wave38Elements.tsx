@@ -1,4 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
+import { requestDomain } from '@/features/domains/request'
+import { domainTagline } from '@/features/domains/brand'
 import Link from 'next/link'
 import React from 'react'
 
@@ -50,10 +52,16 @@ async function readSite(): Promise<SiteRead> {
     if (!doc) return empty
     const media = mediaOf(doc.logo)
     const raw = doc.logo && typeof doc.logo === 'object' ? (doc.logo as { width?: unknown; height?: unknown }) : {}
+    // On a registered domain its own name, tagline and logo replace the site-wide ones where it sets them.
+    const domain = await requestDomain()
+    const tagline = domainTagline(str(doc.tagline).trim(), domain)
+    const domainLogo = domain?.overrides.logoUrl
     return {
-      siteName: str(doc.siteName).trim(),
-      tagline: str(doc.tagline).trim(),
-      logo: media?.url ? { url: media.url, width: positive(raw.width), height: positive(raw.height) } : null,
+      siteName: domain?.overrides.siteName || str(doc.siteName).trim(),
+      tagline,
+      logo: domainLogo
+        ? { url: domainLogo, width: 0, height: 0 }
+        : media?.url ? { url: media.url, width: positive(raw.width), height: positive(raw.height) } : null,
     }
   } catch {
     return empty

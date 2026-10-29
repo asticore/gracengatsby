@@ -1,5 +1,7 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -14,22 +16,24 @@ type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 
 const COLLECTION_LABEL: Record<AuditCollection, string> = { pages: 'Pages', posts: 'Blog', products: 'Products', events: 'Events' }
 const TYPE_LABEL: Record<AuditCollection, string> = { pages: 'Page', posts: 'Post', products: 'Product', events: 'Event' }
-const STATUS_LABEL: Record<Status, string> = { good: 'Good', ok: 'Could be better', bad: 'Needs work', info: 'For information' }
-const SCORE_OPTIONS: { value: ScoreFilter; label: string }[] = [
-  { value: 'all', label: 'Any score' },
-  { value: 'bad', label: 'Needs work' },
-  { value: 'ok', label: 'Could be better' },
-  { value: 'good', label: 'Good' },
+const STATUS_KEY: Record<Status, UiStringKey | null> = { good: 'se.lit.good', ok: 'se.lit.could_be_better', bad: 'se.lit.needs_work', info: null }
+const SCORE_OPTIONS: { value: ScoreFilter; labelKey: UiStringKey }[] = [
+  { value: 'all', labelKey: 'se.lit.any_score' },
+  { value: 'bad', labelKey: 'se.lit.needs_work' },
+  { value: 'ok', labelKey: 'se.lit.could_be_better' },
+  { value: 'good', labelKey: 'se.lit.good' },
 ]
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: 'worst', label: 'Needs work first' },
-  { value: 'best', label: 'Good first' },
-  { value: 'title', label: 'Title A to Z' },
+const SORT_OPTIONS: { value: SortKey; labelKey: UiStringKey }[] = [
+  { value: 'worst', labelKey: 'se.lit.needs_work_first' },
+  { value: 'best', labelKey: 'se.lit.good_first' },
+  { value: 'title', labelKey: 'se.lit.title_a_to_z' },
 ]
 const PROBLEMS_SHOWN = 3
 
 function StatusDot({ status }: { status: Status }) {
-  return <span className={`sa-dot sa-dot--${status}`} role="img" aria-label={STATUS_LABEL[status]} title={STATUS_LABEL[status]} />
+  const t = useAdminT()
+  const text = STATUS_KEY[status] ? t(STATUS_KEY[status]) : 'For information'
+  return <span className={`sa-dot sa-dot--${status}`} role="img" aria-label={text} title={text} />
 }
 
 function SummaryTile({ value, label }: { value: number; label: string }) {
@@ -42,21 +46,23 @@ function SummaryTile({ value, label }: { value: number; label: string }) {
 }
 
 function SummaryCards({ summary }: { summary: AuditSummary }) {
+  const t = useAdminT()
   return (
     <div className="sa-tiles">
-      <SummaryTile value={summary.total} label="Items checked" />
-      <SummaryTile value={summary.good} label="Good" />
-      <SummaryTile value={summary.ok} label="Could be better" />
-      <SummaryTile value={summary.bad} label="Needs work" />
-      <SummaryTile value={summary.missingKeyphrase} label="No focus keyphrase" />
-      <SummaryTile value={summary.missingMetaDescription} label="No meta description" />
-      <SummaryTile value={summary.noIndex} label="Hidden from search engines" />
+      <SummaryTile value={summary.total} label={t('se.lit.items_checked')} />
+      <SummaryTile value={summary.good} label={t('se.lit.good')} />
+      <SummaryTile value={summary.ok} label={t('se.lit.could_be_better')} />
+      <SummaryTile value={summary.bad} label={t('se.lit.needs_work')} />
+      <SummaryTile value={summary.missingKeyphrase} label={t('se.lit.no_focus_keyphrase')} />
+      <SummaryTile value={summary.missingMetaDescription} label={t('se.lit.no_meta_description')} />
+      <SummaryTile value={summary.noIndex} label={t('se.lit.hidden_from_search_engines')} />
     </div>
   )
 }
 
 function ProblemList({ problems }: { problems: string[] }) {
-  if (problems.length === 0) return <span className="sa-muted">None</span>
+  const t = useAdminT()
+  if (problems.length === 0) return <span className="sa-muted">{t('se.lit.none')}</span>
   const shown = problems.slice(0, PROBLEMS_SHOWN)
   const extra = problems.length - shown.length
   return (
@@ -70,19 +76,20 @@ function ProblemList({ problems }: { problems: string[] }) {
 }
 
 function AuditTable({ rows }: { rows: AuditRow[] }) {
+  const t = useAdminT()
   const router = useRouter()
   return (
     <div className="sa-table-wrap">
       <table className="sa-table">
         <thead>
           <tr>
-            <th scope="col">Score</th>
-            <th scope="col">Readability</th>
-            <th scope="col">Title</th>
-            <th scope="col">Type</th>
-            <th scope="col">Focus keyphrase</th>
-            <th scope="col">Problems</th>
-            <th scope="col">Search engines</th>
+            <th scope="col">{t('se.lit.score')}</th>
+            <th scope="col">{t('se.lit.readability')}</th>
+            <th scope="col">{t('se.lit.title')}</th>
+            <th scope="col">{t('se.lit.type')}</th>
+            <th scope="col">{t('se.lit.focus_keyphrase')}</th>
+            <th scope="col">{t('se.lit.problems')}</th>
+            <th scope="col">{t('se.lit.search_engines')}</th>
           </tr>
         </thead>
         <tbody>
@@ -108,11 +115,11 @@ function AuditTable({ rows }: { rows: AuditRow[] }) {
                 {row.slug && <div className="sa-slug">/{row.slug}</div>}
               </td>
               <td>{TYPE_LABEL[row.collection]}</td>
-              <td>{row.hasKeyphrase ? 'Set' : <span className="sa-missing">Missing</span>}</td>
+              <td>{row.hasKeyphrase ? t('se.lit.set') : <span className="sa-missing">{t('se.lit.missing')}</span>}</td>
               <td>
                 <ProblemList problems={row.problems} />
               </td>
-              <td>{row.noIndex ? <span className="sa-missing">Hidden</span> : 'Shown'}</td>
+              <td>{row.noIndex ? <span className="sa-missing">{t('se.lit.hidden')}</span> : 'Shown'}</td>
             </tr>
           ))}
         </tbody>
@@ -122,12 +129,13 @@ function AuditTable({ rows }: { rows: AuditRow[] }) {
 }
 
 function FilterControls({ filters, collections, onChange }: { filters: AuditFilters; collections: AuditCollection[]; onChange: (patch: Partial<AuditFilters>) => void }) {
+  const t = useAdminT()
   return (
     <div className="sa-filters">
       <label className="sa-field">
-        <span className="sa-field__label">Place</span>
+        <span className="sa-field__label">{t('se.lit.place')}</span>
         <select value={filters.collection} onChange={(e) => onChange({ collection: e.target.value as AuditFilters['collection'] })}>
-          <option value="all">All places</option>
+          <option value="all">{t('se.lit.all_places')}</option>
           {collections.map((key) => (
             <option key={key} value={key}>
               {COLLECTION_LABEL[key]}
@@ -136,32 +144,32 @@ function FilterControls({ filters, collections, onChange }: { filters: AuditFilt
         </select>
       </label>
       <label className="sa-field">
-        <span className="sa-field__label">Score</span>
+        <span className="sa-field__label">{t('se.lit.score')}</span>
         <select value={filters.score} onChange={(e) => onChange({ score: e.target.value as ScoreFilter })}>
           {SCORE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(option.labelKey)}
             </option>
           ))}
         </select>
       </label>
       <label className="sa-field">
-        <span className="sa-field__label">Problem contains</span>
-        <input type="text" value={filters.problemText} placeholder="for example: meta description" onChange={(e) => onChange({ problemText: e.target.value })} />
+        <span className="sa-field__label">{t('se.lit.problem_contains')}</span>
+        <input type="text" value={filters.problemText} placeholder={t('se.lit.for_example_meta_description')} onChange={(e) => onChange({ problemText: e.target.value })} />
       </label>
       <label className="sa-field">
-        <span className="sa-field__label">Sort by</span>
+        <span className="sa-field__label">{t('se.lit.sort_by')}</span>
         <select value={filters.sort} onChange={(e) => onChange({ sort: e.target.value as SortKey })}>
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(option.labelKey)}
             </option>
           ))}
         </select>
       </label>
       <label className="sa-check">
         <input type="checkbox" checked={filters.missingKeyphrase} onChange={(e) => onChange({ missingKeyphrase: e.target.checked })} />
-        <span>Missing focus keyphrase only</span>
+        <span>{t('se.lit.missing_focus_keyphrase_only')}</span>
       </label>
     </div>
   )
@@ -190,6 +198,7 @@ function useAuditData(): LoadState {
 }
 
 export function SeoAuditClient({ collections }: { collections: AuditCollection[] }) {
+  const t = useAdminT()
   const state = useAuditData()
   const [filters, setFilters] = useState<AuditFilters>(DEFAULT_AUDIT_FILTERS)
   const onChange = (patch: Partial<AuditFilters>) => setFilters((current) => ({ ...current, ...patch }))
@@ -202,28 +211,28 @@ export function SeoAuditClient({ collections }: { collections: AuditCollection[]
   return (
     <div className="sa-page">
       <header className="sa-header">
-        <h1 className="sa-title-main">SEO audit</h1>
+        <h1 className="sa-title-main">{t('se.lit.seo_audit')}</h1>
         <p className="sa-intro">
           Checks every published page, post, product and event for search engine and readability problems. Click a row to edit it.
           {AUDIT_COLLECTIONS.length === collections.length ? '' : ' Only the places you can edit or read are shown.'}
         </p>
       </header>
 
-      {state.status === 'loading' && <p className="sa-muted">Checking content...</p>}
-      {state.status === 'error' && <p className="sa-alert" role="alert">The audit could not load. Refresh the page to try again.</p>}
+      {state.status === 'loading' && <p className="sa-muted">{t('se.lit.checking_content')}</p>}
+      {state.status === 'error' && <p className="sa-alert" role="alert">{t('se.lit.the_audit_could_not_load_refresh_the_pag')}</p>}
 
       {state.status === 'ready' && (
         <>
           <SummaryCards summary={state.data.summary} />
 
-          <CollapsibleCard id="seo-audit-filters" title="Filters">
+          <CollapsibleCard id="seo-audit-filters" title={t('se.lit.filters')}>
             <FilterControls filters={filters} collections={collections} onChange={onChange} />
           </CollapsibleCard>
 
-          <section className="sa-results" aria-label="Audit results">
+          <section className="sa-results" aria-label={t('se.lit.audit_results')}>
             <h2 className="sa-results__heading">Results ({visible.length})</h2>
-            {state.data.rows.length === 0 && <p className="sa-muted">Nothing to check yet. Publish a page, post, product or event.</p>}
-            {state.data.rows.length > 0 && visible.length === 0 && <p className="sa-muted">No items match these filters.</p>}
+            {state.data.rows.length === 0 && <p className="sa-muted">{t('se.lit.nothing_to_check_yet_publish_a_page_post')}</p>}
+            {state.data.rows.length > 0 && visible.length === 0 && <p className="sa-muted">{t('se.lit.no_items_match_these_filters')}</p>}
             {visible.length > 0 && <AuditTable rows={visible} />}
           </section>
         </>

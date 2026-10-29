@@ -3,30 +3,46 @@
 import React, { useState } from 'react'
 import styles from '@/admin/admin.module.css'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import type { UiStringKey } from '@/features/uiStrings'
 import './settings-transfer.css'
 import {
   IMPORT_SECTIONS,
   MIN_EXPORT_PASSWORD_LENGTH,
-  SECTION_LABELS,
   type ImportReport,
   type ImportSection,
 } from '@/features/settingsTransfer/format'
 
 type Choices = Record<ImportSection, boolean>
 
-const EXPORT_CHOICES: Array<{ key: ImportSection; label: string; hint: string }> = [
-  { key: 'settings', label: 'Settings', hint: 'The settings pages: site, SEO, payments, email, security, backups and the rest.' },
-  { key: 'headerFooter', label: 'Header and footer', hint: 'Menus and footer content.' },
-  { key: 'roles', label: 'Roles', hint: 'Role names and their permission grids.' },
-  { key: 'users', label: 'Admin users', hint: 'Names, emails and roles. Never passwords or 2FA secrets. Shop customers are not included.' },
-  { key: 'redirects', label: 'Redirects', hint: 'Every redirect rule.' },
-  { key: 'pageTemplates', label: 'Page templates', hint: 'Templates and their blocks.' },
-  { key: 'fieldGroups', label: 'Field groups', hint: 'Custom field groups.' },
-  { key: 'pages', label: 'Pages', hint: 'Page content. Parent links are not kept.' },
-  { key: 'posts', label: 'Blog', hint: 'Blog post content. Featured image links are not kept.' },
-  { key: 'products', label: 'Products', hint: 'Product content. Image links are not kept.' },
-  { key: 'mediaMetadata', label: 'Media details', hint: 'File names and alt text. Image files are not included.' },
+/** Export choices. Labels and hints are UI string keys, read through the admin translator. */
+const EXPORT_CHOICES: Array<{ key: ImportSection; label: UiStringKey; hint: UiStringKey }> = [
+  { key: 'settings', label: 'st.label.settings', hint: 'st.hint.settings' },
+  { key: 'headerFooter', label: 'st.label.headerFooter', hint: 'st.hint.headerFooter' },
+  { key: 'roles', label: 'st.label.roles', hint: 'st.hint.roles' },
+  { key: 'users', label: 'st.label.users', hint: 'st.hint.users' },
+  { key: 'redirects', label: 'st.label.redirects', hint: 'st.hint.redirects' },
+  { key: 'pageTemplates', label: 'st.label.pageTemplates', hint: 'st.hint.pageTemplates' },
+  { key: 'fieldGroups', label: 'st.label.fieldGroups', hint: 'st.hint.fieldGroups' },
+  { key: 'pages', label: 'st.label.pages', hint: 'st.hint.pages' },
+  { key: 'posts', label: 'st.label.posts', hint: 'st.hint.posts' },
+  { key: 'products', label: 'st.label.products', hint: 'st.hint.products' },
+  { key: 'mediaMetadata', label: 'st.label.mediaMetadata', hint: 'st.hint.mediaMetadata' },
 ]
+
+const IMPORT_LABEL_KEYS: Record<ImportSection, UiStringKey> = {
+  settings: 'st.label.settings',
+  headerFooter: 'st.label.headerFooter',
+  roles: 'st.label.roles',
+  users: 'st.label.users',
+  redirects: 'st.label.redirects',
+  pageTemplates: 'st.label.pageTemplates',
+  fieldGroups: 'st.label.fieldGroups',
+  pages: 'st.label.pages',
+  posts: 'st.label.posts',
+  products: 'st.label.products',
+  mediaMetadata: 'st.label.mediaMetadata',
+}
 
 const NO_CHOICES: Choices = Object.fromEntries(IMPORT_SECTIONS.map((key) => [key, false])) as Choices
 
@@ -40,6 +56,7 @@ type Plan = {
   allowAdmins: boolean
 }
 
+/** Throws the server's message, or an empty message when there is none (callers then show a translated fallback). */
 async function postImport(body: Record<string, unknown>): Promise<ImportReport> {
   const res = await fetch('/api/admin-settings-import', {
     method: 'POST',
@@ -47,7 +64,7 @@ async function postImport(body: Record<string, unknown>): Promise<ImportReport> 
     body: JSON.stringify(body),
   })
   const data = (await res.json().catch((): null => null)) as { error?: string; report?: ImportReport } | null
-  if (!res.ok || !data?.report) throw new Error(data?.error ?? 'The import failed.')
+  if (!res.ok || !data?.report) throw new Error(data?.error ?? '')
   return data.report
 }
 
@@ -57,16 +74,17 @@ function filenameFrom(disposition: string | null): string | null {
 }
 
 function ReportTable({ report }: { report: ImportReport }) {
+  const t = useAdminT()
   return (
     <div className="st-table-wrap">
       <table className="st-table">
         <thead>
           <tr>
-            <th scope="col">Section</th>
-            <th scope="col">Created</th>
-            <th scope="col">Updated</th>
-            <th scope="col">Skipped</th>
-            <th scope="col">Errors</th>
+            <th scope="col">{t('st.colSection')}</th>
+            <th scope="col">{t('st.colCreated')}</th>
+            <th scope="col">{t('st.colUpdated')}</th>
+            <th scope="col">{t('st.colSkipped')}</th>
+            <th scope="col">{t('st.colErrors')}</th>
           </tr>
         </thead>
         <tbody>
@@ -86,6 +104,7 @@ function ReportTable({ report }: { report: ImportReport }) {
 }
 
 function IssueList({ report }: { report: ImportReport }) {
+  const t = useAdminT()
   const issues = report.sections.flatMap((section) =>
     section.items
       .filter((item) => item.action === 'error' || item.action === 'skipped' || item.message)
@@ -97,21 +116,22 @@ function IssueList({ report }: { report: ImportReport }) {
 
   return (
     <details className="st-issues">
-      <summary>{total} item{total === 1 ? '' : 's'} to review</summary>
+      <summary>{total === 1 ? t('st.reviewOne') : t('st.reviewMany', { count: total })}</summary>
       <ul>
         {warnings.map((warning, index) => (
           <li key={`warning-${warning.label}-${index}`}>
-            <strong>{warning.label}</strong> warning: {warning.text}
+            {t('st.warning', { label: warning.label, text: warning.text })}
           </li>
         ))}
         {issues.slice(0, 200).map((issue, index) => (
           <li key={`${issue.label}-${issue.key}-${index}`}>
-            <strong>{issue.label}</strong> {issue.key}: {issue.action}
-            {issue.message ? ` - ${issue.message}` : ''}
+            {issue.message
+              ? t('st.issueMessage', { label: issue.label, key: issue.key, action: issue.action, message: issue.message })
+              : t('st.issue', { label: issue.label, key: issue.key, action: issue.action })}
           </li>
         ))}
       </ul>
-      {issues.length > 200 ? <p className="st-muted">Showing the first 200.</p> : null}
+      {issues.length > 200 ? <p className="st-muted">{t('st.showingFirst')}</p> : null}
     </details>
   )
 }
@@ -123,6 +143,7 @@ function IssueList({ report }: { report: ImportReport }) {
  * once that dry run is clean.
  */
 export function SettingsTransferClient() {
+  const t = useAdminT()
   const [choices, setChoices] = useState<Choices>({ ...NO_CHOICES, settings: true })
   const [includeSecrets, setIncludeSecrets] = useState(false)
   const [exportPassword, setExportPassword] = useState('')
@@ -188,7 +209,7 @@ export function SettingsTransferClient() {
       })
       if (!res.ok) {
         const data = (await res.json().catch((): null => null)) as { error?: string } | null
-        setExportError(data?.error ?? 'The export failed.')
+        setExportError(data?.error ?? t('st.exportFailed'))
         return
       }
 
@@ -203,7 +224,7 @@ export function SettingsTransferClient() {
       link.remove()
       setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch {
-      setExportError('Network error. The export did not download.')
+      setExportError(t('st.exportNetwork'))
     } finally {
       setExportBusy(false)
     }
@@ -223,7 +244,7 @@ export function SettingsTransferClient() {
       setImportFile({ name: picked.name, data, encrypted })
       setImportSections([...IMPORT_SECTIONS])
     } catch {
-      setImportError('That file is not valid JSON. Choose a file exported from this admin.')
+      setImportError(t('st.notJson'))
     }
   }
 
@@ -243,7 +264,7 @@ export function SettingsTransferClient() {
       setPlan({ report, file: importFile.data, password: importPassword, sectionsKey, allowAdmins })
     } catch (error) {
       setPlan(null)
-      setImportError(error instanceof Error ? error.message : 'The check failed.')
+      setImportError(error instanceof Error && error.message ? error.message : t('st.checkFailed'))
     } finally {
       setImportBusy(false)
     }
@@ -251,7 +272,7 @@ export function SettingsTransferClient() {
 
   async function handleApply() {
     if (!importFile || !planClean) return
-    if (!window.confirm('Apply this import? Matching settings and content will be overwritten with the file.')) return
+    if (!window.confirm(t('st.confirmApply'))) return
     setImportBusy(true)
     setImportError(null)
     try {
@@ -265,7 +286,7 @@ export function SettingsTransferClient() {
       setApplied(report)
       setPlan(null)
     } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'The import failed.')
+      setImportError(error instanceof Error && error.message ? error.message : t('st.importFailed'))
     } finally {
       setImportBusy(false)
     }
@@ -274,15 +295,13 @@ export function SettingsTransferClient() {
   return (
     <div className="st-page">
       <header className="st-header">
-        <h1 className="st-title">Export and import</h1>
-        <p className="st-muted">
-          Move settings, content and users between sites, or keep a copy. Only admins can use this page.
-        </p>
+        <h1 className="st-title">{t('st.title')}</h1>
+        <p className="st-muted">{t('st.intro')}</p>
       </header>
 
-      <CollapsibleCard id="st:export" title="Export" className="st-card">
+      <CollapsibleCard id="st:export" title={t('st.exportTitle')} className="st-card">
         <fieldset className="st-fieldset" disabled={exportBusy}>
-          <legend className="st-legend">What to include</legend>
+          <legend className="st-legend">{t('st.whatInclude')}</legend>
           <ul className="st-checks">
             {EXPORT_CHOICES.map((choice) => (
               <li key={choice.key}>
@@ -294,8 +313,8 @@ export function SettingsTransferClient() {
                     onChange={() => toggleChoice(choice.key)}
                   />
                   <span>
-                    <span className="st-check-label">{choice.label}</span>
-                    <span className="st-muted st-check-hint">{choice.hint}</span>
+                    <span className="st-check-label">{t(choice.label)}</span>
+                    <span className="st-muted st-check-hint">{t(choice.hint)}</span>
                   </span>
                 </label>
               </li>
@@ -313,17 +332,14 @@ export function SettingsTransferClient() {
               disabled={exportBusy}
             />
             <span>
-              <span className="st-check-label">Include secrets</span>
-              <span className="st-muted st-check-hint">
-                API keys, payment and email secrets, and backup credentials. The whole file is then encrypted with the
-                password below, and you will need it to import.
-              </span>
+              <span className="st-check-label">{t('st.secretsLabel')}</span>
+              <span className="st-muted st-check-hint">{t('st.secretsHint')}</span>
             </span>
           </label>
           {includeSecrets ? (
             <div className="st-field">
               <label htmlFor="st-export-password" className="st-label">
-                Encryption password (at least {MIN_EXPORT_PASSWORD_LENGTH} characters)
+                {t('st.encryptPassword', { min: MIN_EXPORT_PASSWORD_LENGTH })}
               </label>
               <input
                 id="st-export-password"
@@ -342,19 +358,18 @@ export function SettingsTransferClient() {
 
         <div className="st-actions">
           <button type="button" className={styles.btnPrimary} onClick={handleExport} disabled={exportDisabled}>
-            {exportBusy ? 'Preparing...' : 'Download export'}
+            {exportBusy ? t('st.preparing') : t('st.download')}
           </button>
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard id="st:import" title="Import" className="st-card">
+      <CollapsibleCard id="st:import" title={t('st.importTitle')} className="st-card">
         <p className="st-muted">
-          Choose a file exported from this admin. Run the check first. Apply becomes available only when the check finds
-          no errors. Secrets missing from the file keep their current values, and existing users are left unchanged.
+          {t('st.importIntro')}
         </p>
 
         <div className="st-field">
-          <label htmlFor="st-import-file" className="st-label">Export file</label>
+          <label htmlFor="st-import-file" className="st-label">{t('st.exportFile')}</label>
           <input
             id="st-import-file"
             type="file"
@@ -363,12 +378,12 @@ export function SettingsTransferClient() {
             onChange={handleFile}
             disabled={importBusy}
           />
-          {importFile ? <p className="st-muted">Loaded {importFile.name}.</p> : null}
+          {importFile ? <p className="st-muted">{t('st.loaded', { name: importFile.name })}</p> : null}
         </div>
 
         {importFile?.encrypted ? (
           <div className="st-field">
-            <label htmlFor="st-import-password" className="st-label">Password for this export</label>
+            <label htmlFor="st-import-password" className="st-label">{t('st.importPassword')}</label>
             <input
               id="st-import-password"
               type="password"
@@ -383,7 +398,7 @@ export function SettingsTransferClient() {
 
         {importFile ? (
           <fieldset className="st-fieldset" disabled={importBusy}>
-            <legend className="st-legend">What to import</legend>
+            <legend className="st-legend">{t('st.whatImport')}</legend>
             <ul className="st-checks">
               {IMPORT_SECTIONS.map((section) => (
                 <li key={section}>
@@ -394,7 +409,7 @@ export function SettingsTransferClient() {
                       checked={importSections.includes(section)}
                       onChange={() => toggleImportSection(section)}
                     />
-                    <span className="st-check-label">{SECTION_LABELS[section]}</span>
+                    <span className="st-check-label">{t(IMPORT_LABEL_KEYS[section])}</span>
                   </label>
                 </li>
               ))}
@@ -407,10 +422,8 @@ export function SettingsTransferClient() {
                 onChange={(event) => setAllowAdmins(event.target.checked)}
               />
               <span>
-                <span className="st-check-label">Allow admin accounts</span>
-                <span className="st-muted st-check-hint">
-                  Imported users with the admin role stay admins. Off, they are imported as editors.
-                </span>
+                <span className="st-check-label">{t('st.allowAdmins')}</span>
+                <span className="st-muted st-check-hint">{t('st.allowAdminsHint')}</span>
               </span>
             </label>
           </fieldset>
@@ -425,21 +438,21 @@ export function SettingsTransferClient() {
             onClick={handleDryRun}
             disabled={!importFile || importBusy || importSections.length === 0 || (importFile.encrypted && !importPassword)}
           >
-            Check (dry run)
+            {t('st.dryRun')}
           </button>
           <button type="button" className={styles.btnPrimary} onClick={handleApply} disabled={!planClean || importBusy}>
-            Apply import
+            {t('st.apply')}
           </button>
         </div>
 
         {plan && !planCurrent ? (
-          <p className="st-muted">The file, password or sections changed. Run the check again before applying.</p>
+          <p className="st-muted">{t('st.planChanged')}</p>
         ) : null}
 
         {planCurrent ? (
           <div className="st-result">
             <h3 className="st-subheading">
-              {planClean ? 'Check passed. Review the counts, then apply.' : 'The check found errors. Fix the file and check again.'}
+              {planClean ? t('st.checkPassed') : t('st.checkErrors')}
             </h3>
             <ReportTable report={plan.report} />
             <IssueList report={plan.report} />
@@ -448,7 +461,7 @@ export function SettingsTransferClient() {
 
         {applied ? (
           <div className="st-result">
-            <h3 className="st-subheading">Import applied.</h3>
+            <h3 className="st-subheading">{t('st.applied')}</h3>
             <ReportTable report={applied} />
             <IssueList report={applied} />
           </div>

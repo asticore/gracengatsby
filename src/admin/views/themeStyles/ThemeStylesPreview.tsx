@@ -2,11 +2,17 @@
 
 import { useMemo } from 'react'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { t as englishT, type UiStringKey, type UiStringVars } from '@/features/uiStrings'
 import { buildThemeStylesCss } from '@/features/themeStyles/css'
 import type { ThemeStyles } from '@/features/themeStyles/types'
 
 import type { InstalledFontOption } from './TypographyControls'
 import type { TabKey } from './editorLogic'
+
+/** Translates a preview label. Defaults to English so the document can be built without a locale. */
+type PreviewT = (key: UiStringKey, vars?: UiStringVars) => string
+const englishPreviewT: PreviewT = (key, vars) => englishT(key, 'en', vars)
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -29,11 +35,11 @@ label{display:block;margin-bottom:4px}
 input,select,textarea{width:100%}
 `
 
-function swatches(styles: ThemeStyles): string {
-  return `<div class="group"><h6 class="label">Colours</h6><div class="swatches">${styles.colours
+function swatches(styles: ThemeStyles, tr: PreviewT): string {
+  return `<div class="group"><h6 class="label">${tr('tsp.colours')}</h6><div class="swatches">${styles.colours
     .map((c) => `<div class="sw"><i style="background:var(--eg-c-${esc(c.id)})"></i><b>${esc(c.name)}</b><span>${esc(c.value)}</span></div>`)
     .join('')}</div></div>
-<div class="group"><h6 class="label">Sample card</h6><div class="sw" style="padding:12px;font-size:14px"><h3 style="margin:0 0 6px">Heading on surface</h3><p style="margin:0 0 8px">Body text on the surface colour with a <a href="#">link</a>.</p><a class="btn btn--primary" href="#">Primary</a></div></div>`
+<div class="group"><h6 class="label">${tr('tsp.sampleCard')}</h6><div class="sw" style="padding:12px;font-size:14px"><h3 style="margin:0 0 6px">${tr('tsp.headingOnSurface')}</h3><p style="margin:0 0 8px">${tr('tsp.bodyOnSurface', { link: `<a href="#">${tr('tsp.linkWord')}</a>` })}</p><a class="btn btn--primary" href="#">${tr('tsp.primary')}</a></div></div>`
 }
 
 function typography(styles: ThemeStyles): string {
@@ -51,22 +57,22 @@ function typography(styles: ThemeStyles): string {
     .join('')}</div>`
 }
 
-function buttons(styles: ThemeStyles): string {
+function buttons(styles: ThemeStyles, tr: PreviewT): string {
   return styles.buttons
     .map(
       (b) => `<div class="group"><h6 class="label">${esc(b.name)}</h6>
-<div class="row"><a class="btn btn--${esc(b.id)}" href="#">Normal</a><a class="btn btn--${esc(b.id)} is-hover" href="#">Hover</a></div>
-<div class="row" style="margin-top:10px"><a class="btn btn--${esc(b.id)} btn--sm" href="#">Small</a><a class="btn btn--${esc(b.id)}" href="#">Medium</a><a class="btn btn--${esc(b.id)} btn--lg" href="#">Large</a></div></div>`,
+<div class="row"><a class="btn btn--${esc(b.id)}" href="#">${tr('dp.state.normal')}</a><a class="btn btn--${esc(b.id)} is-hover" href="#">${tr('dp.state.hover')}</a></div>
+<div class="row" style="margin-top:10px"><a class="btn btn--${esc(b.id)} btn--sm" href="#">${tr('tsp.small')}</a><a class="btn btn--${esc(b.id)}" href="#">${tr('tsp.medium')}</a><a class="btn btn--${esc(b.id)} btn--lg" href="#">${tr('tsp.large')}</a></div></div>`,
     )
     .join('')
 }
 
-function tables(styles: ThemeStyles): string {
+function tables(styles: ThemeStyles, tr: PreviewT): string {
   return styles.tables
     .map(
-      (t) => `<div class="group"><h6 class="label">${esc(t.name)}${t.id === styles.defaultTableId ? ' (default)' : ''}</h6>
-<table class="eg-table eg-table--${esc(t.id)}"><caption>Caption: opening hours this week</caption>
-<thead><tr><th>Item</th><th>Detail</th><th>Price</th></tr></thead><tbody>
+      (t) => `<div class="group"><h6 class="label">${esc(t.name)}${t.id === styles.defaultTableId ? ` ${tr('tsp.defaultSuffix')}` : ''}</h6>
+<table class="eg-table eg-table--${esc(t.id)}"><caption>${tr('tsp.tableCaption')}</caption>
+<thead><tr><th>${tr('tsp.colItem')}</th><th>${tr('tsp.colDetail')}</th><th>${tr('tsp.colPrice')}</th></tr></thead><tbody>
 <tr><td>Afternoon tea</td><td>Scones and sandwiches</td><td>25.00</td></tr>
 <tr><td>Cocktail class</td><td>Two hours</td><td>40.00</td></tr>
 <tr><td>Private hire</td><td>Up to 30 guests</td><td>300.00</td></tr>
@@ -79,20 +85,20 @@ const IMAGE_SVG = encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="160" viewBox="0 0 320 160"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8aa4d6"/><stop offset="1" stop-color="#e3b7c8"/></linearGradient></defs><rect width="320" height="160" fill="url(#g)"/><circle cx="240" cy="50" r="22" fill="#ffffff" fill-opacity=".7"/><path d="M0 160 L110 70 L190 130 L240 95 L320 160 Z" fill="#ffffff" fill-opacity=".45"/></svg>',
 )
 
-function layout(): string {
-  return `<div class="group"><h6 class="label">Form</h6>
+function layout(tr: PreviewT): string {
+  return `<div class="group"><h6 class="label">${tr('tsp.form')}</h6>
 <form style="display:grid;gap:12px;max-width:360px">
-<div><label for="pv-name">Name</label><input id="pv-name" type="text" placeholder="Your name"></div>
-<div><label for="pv-topic">Topic</label><select id="pv-topic"><option>General question</option><option>Booking</option></select></div>
-<div><label for="pv-msg">Message</label><textarea id="pv-msg" rows="3" placeholder="How can we help?"></textarea></div>
-<p class="form-error" role="alert" style="margin:0">Please enter a valid email address.</p>
-<div><a class="btn btn--primary" href="#">Send</a></div></form></div>
-<div class="group"><h6 class="label">Link</h6><div class="rich-text"><p>Read the <a href="#">full story</a> or <a class="is-hover" href="#">hover link</a>.</p></div></div>
-<div class="group"><h6 class="label">Image</h6><div class="rich-text"><img src="data:image/svg+xml,${IMAGE_SVG}" alt="Placeholder landscape" width="320" height="160" style="max-width:100%;height:auto"></div></div>
-<div class="group"><h6 class="label">Section</h6><section class="eg-preview-section" style="background:var(--eg-c-surface);border:1px dashed var(--eg-c-border);padding:var(--eg-section-padding, 40px) 16px"><div style="display:grid;gap:var(--eg-gap, 16px);max-width:var(--max-width,1180px);margin:0 auto"><div class="sw" style="padding:8px">Block one</div><div class="sw" style="padding:8px">Block two</div></div></section></div>`
+<div><label for="pv-name">${tr('ve.form.name')}</label><input id="pv-name" type="text" placeholder="${tr('tsp.yourName')}"></div>
+<div><label for="pv-topic">${tr('tsp.topic')}</label><select id="pv-topic"><option>${tr('tsp.generalQuestion')}</option><option>${tr('tsp.booking')}</option></select></div>
+<div><label for="pv-msg">${tr('ve.form.message')}</label><textarea id="pv-msg" rows="3" placeholder="${tr('tsp.howCanWeHelp')}"></textarea></div>
+<p class="form-error" role="alert" style="margin:0">${tr('tsp.invalidEmail')}</p>
+<div><a class="btn btn--primary" href="#">${tr('tsp.send')}</a></div></form></div>
+<div class="group"><h6 class="label">${tr('tsp.link')}</h6><div class="rich-text"><p>${tr('tsp.readStory', { fullStory: tr('tsp.fullStory'), hoverLink: tr('tsp.hoverLink') })}</p></div></div>
+<div class="group"><h6 class="label">${tr('ve.nav.image')}</h6><div class="rich-text"><img src="data:image/svg+xml,${IMAGE_SVG}" alt="${tr('tsp.imageAlt')}" width="320" height="160" style="max-width:100%;height:auto"></div></div>
+<div class="group"><h6 class="label">${tr('ve.nav.section')}</h6><section class="eg-preview-section" style="background:var(--eg-c-surface);border:1px dashed var(--eg-c-border);padding:var(--eg-section-padding, 40px) 16px"><div style="display:grid;gap:var(--eg-gap, 16px);max-width:var(--max-width,1180px);margin:0 auto"><div class="sw" style="padding:8px">${tr('tsp.blockOne')}</div><div class="sw" style="padding:8px">${tr('tsp.blockTwo')}</div></div></section></div>`
 }
 
-export function buildPreviewDoc(styles: ThemeStyles, tab: TabKey, fonts: InstalledFontOption[] = []): string {
+export function buildPreviewDoc(styles: ThemeStyles, tab: TabKey, fonts: InstalledFontOption[] = [], tr: PreviewT = englishPreviewT): string {
   let css = ''
   try {
     // Force-hover: the class .is-hover behaves like :hover in the preview only.
@@ -101,11 +107,12 @@ export function buildPreviewDoc(styles: ThemeStyles, tab: TabKey, fonts: Install
   } catch {
     css = ''
   }
-  const body = tab === 'colours' ? swatches(styles) : tab === 'typography' ? typography(styles) : tab === 'buttons' ? buttons(styles) : tab === 'tables' ? tables(styles) : tab === 'layout' ? layout() : swatches(styles) + layout()
+  const body = tab === 'colours' ? swatches(styles, tr) : tab === 'typography' ? typography(styles) : tab === 'buttons' ? buttons(styles, tr) : tab === 'tables' ? tables(styles, tr) : tab === 'layout' ? layout(tr) : swatches(styles, tr) + layout(tr)
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${BASE_CSS}${css.replace(/<\/style/gi, '')}</style></head><body>${body}</body></html>`
 }
 
 export function ThemeStylesPreview({ styles, tab, fonts = [] }: { styles: ThemeStyles; tab: TabKey; fonts?: InstalledFontOption[] }) {
-  const doc = useMemo(() => buildPreviewDoc(styles, tab, fonts), [styles, tab, fonts])
-  return <iframe className="ts-preview" title="Live preview of theme styles" sandbox="" srcDoc={doc} />
+  const t = useAdminT()
+  const doc = useMemo(() => buildPreviewDoc(styles, tab, fonts, t), [styles, tab, fonts, t])
+  return <iframe className="ts-preview" title={t('tsp.iframeTitle')} sandbox="" srcDoc={doc} />
 }

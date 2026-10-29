@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import React, { useEffect, useRef, useState } from 'react'
 
 import { errorMessageFrom, TranslationStatusBadge } from '@/features/multilingual/views/TranslationStatusBadge'
 import type { DocumentTranslationField, DocumentTranslations } from '@/features/multilingual/documentTranslations'
@@ -23,6 +24,10 @@ type Props = {
   users: { id: number; label: string }[]
   onSaved: () => void
   onExit: () => void
+  /** The field path the canvas focused (a click on the page), or null. */
+  focusFieldPath?: string | null
+  /** Each keystroke in a translation, so the canvas can show it live. */
+  onDraftChange?: (fieldPath: string, value: string) => void
 }
 
 const API = '/api/translations'
@@ -46,13 +51,23 @@ function FieldEditor({
   sourceId,
   users,
   onSaved,
+  focused,
+  onDraftChange,
 }: {
   field: DocumentTranslationField
   locale: string
   sourceId: string
   users: Props['users']
   onSaved: () => void
+  /** Set when the canvas focused this row: it is scrolled into view and highlighted. */
+  focused: boolean
+  onDraftChange?: (fieldPath: string, value: string) => void
 }): React.ReactElement {
+  const t = useAdminT()
+  const sectionRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (focused) sectionRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [focused])
   const [draft, setDraft] = useState(field.value)
   const [busy, setBusy] = useState<'idle' | 'saving' | 'approving'>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -89,11 +104,17 @@ function FieldEditor({
     }
   }
 
+  // Typing is mirrored up to the canvas, so the page reads in the new text before it is saved.
+  const changeDraft = (value: string) => {
+    setDraft(value)
+    onDraftChange?.(field.fieldPath, value)
+  }
+
   const assigned = field.assignees.map((id) => users.find((user) => user.id === id)?.label ?? `User ${id}`)
   const dirty = draft !== field.value
 
   return (
-    <section className="ve-translate__field" data-field={field.fieldPath}>
+    <section ref={sectionRef} className={`ve-translate__field${focused ? ' ve-translate__field--focus' : ''}`} data-field={field.fieldPath}>
       <header className="ve-translate__field-head">
         <strong>{field.label}</strong>
         <TranslationStatusBadge status={field.status} label={STATUS_LABELS[field.status]} />
@@ -111,11 +132,11 @@ function FieldEditor({
       ) : (
         <>
           <label className="ve-translate__label">
-            <span className="ve-translate__hint">Translation</span>
+            <span className="ve-translate__hint">{t('ve.translate.hint')}</span>
             {field.size === 'long' ? (
-              <textarea rows={3} value={draft} onChange={(event) => setDraft(event.target.value)} disabled={busy !== 'idle'} />
+              <textarea rows={3} value={draft} onChange={(event) => changeDraft(event.target.value)} disabled={busy !== 'idle'} />
             ) : (
-              <input type="text" value={draft} onChange={(event) => setDraft(event.target.value)} disabled={busy !== 'idle'} />
+              <input type="text" value={draft} onChange={(event) => changeDraft(event.target.value)} disabled={busy !== 'idle'} />
             )}
           </label>
 
@@ -167,7 +188,7 @@ function fieldSections(fields: DocumentTranslationField[]): Array<{ key: string;
   return sections
 }
 
-export function TranslatePanel({ state, locale, localeLabel, title, users, onSaved, onExit }: Props): React.ReactElement {
+export function TranslatePanel({ state, locale, localeLabel, title, users, onSaved, onExit, focusFieldPath = null, onDraftChange }: Props): React.ReactElement {
   const group = state.locales.find((entry) => entry.locale === locale)
   return (
     <div className="ve-translate" data-locale={locale}>
@@ -192,12 +213,12 @@ export function TranslatePanel({ state, locale, localeLabel, title, users, onSav
               {section.block.preview ? <span className="ve-translate__hint">{section.block.preview}</span> : null}
             </header>
             {section.fields.map((field) => (
-              <FieldEditor key={field.fieldPath} field={field} locale={locale} sourceId={state.sourceId} users={users} onSaved={onSaved} />
+              <FieldEditor key={field.fieldPath} field={field} locale={locale} sourceId={state.sourceId} users={users} onSaved={onSaved} focused={field.fieldPath === focusFieldPath} onDraftChange={onDraftChange} />
             ))}
           </div>
         ) : (
           section.fields.map((field) => (
-            <FieldEditor key={field.fieldPath} field={field} locale={locale} sourceId={state.sourceId} users={users} onSaved={onSaved} />
+            <FieldEditor key={field.fieldPath} field={field} locale={locale} sourceId={state.sourceId} users={users} onSaved={onSaved} focused={field.fieldPath === focusFieldPath} onDraftChange={onDraftChange} />
           ))
         ),
       )}
@@ -219,6 +240,5 @@ export const TRANSLATE_PANEL_CSS = `
 .ve-translate__error { font-size: 12px; margin: 0; color: var(--theme-error-500, #dc2626); }
 .ve-translate__block { display: flex; flex-direction: column; gap: 8px; border-left: 3px solid var(--theme-elevation-200, #d4d4d8); padding-left: 10px; }
 .ve-translate__block-head { display: flex; flex-direction: column; gap: 2px; }
-.ve-canvas-wrap--translating { position: relative; }
-.ve-canvas-wrap--translating .ve-canvas { pointer-events: none; opacity: 0.85; }
+.ve-translate__field--focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25); }
 `

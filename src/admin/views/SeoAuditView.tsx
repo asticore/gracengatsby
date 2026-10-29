@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { AUDIT_COLLECTIONS, type AuditCollection } from '@/features/seo/audit'
@@ -10,11 +12,11 @@ import { SeoAuditClient } from './SeoAuditClient'
  */
 export async function SeoAuditView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   const can = context.can as unknown as (resource: string, action: string) => boolean
   const allowed: AuditCollection[] = AUDIT_COLLECTIONS.filter((collection) => context.isAdmin || can(collection, 'read'))
-  if (allowed.length === 0) redirect('/admin')
+  if (allowed.length === 0) redirect(adminHref('', await getAdminRoot()))
 
   return <SeoAuditClient collections={allowed} />
 }

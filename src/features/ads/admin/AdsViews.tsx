@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import React from 'react'
 import { redirect } from 'next/navigation'
 
@@ -14,7 +16,7 @@ const td: React.CSSProperties = { padding: '6px 10px', borderBottom: '1px solid 
 
 const guard = async () => {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
   return context
 }
 

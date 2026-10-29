@@ -11,7 +11,8 @@ import { portalTextFor } from '@/features/multilingual/portalStrings'
 import { switchOrganizationAction } from '../actions'
 import { ORG_ACTIONS, BUILT_IN_ROLES, isBuiltInRole } from '../permissions'
 import { parseMetadata } from '../policy'
-import { getOrganization, listMyOrganizations, previewInvite, REFUSAL_MESSAGES } from '../service'
+import { getOrganization, listMyOrganizations, previewInvite } from '../service'
+import { refusalText } from '../refusalText'
 import { activeOrganization, memberEmails, orgRuntime } from '../wiring'
 import {
   CancelInviteForm,
@@ -285,7 +286,7 @@ export const AcceptInviteScreen: React.FC<{ token: string }> = async ({ token })
     return (
       <AuthShell title={tx('orgs.inviteTitle')}>
         <OrganizationStyles />
-        <p role="alert">{preview.message ?? REFUSAL_MESSAGES.invite_invalid}</p>
+        <p role="alert">{refusalText(preview.code ?? 'invite_invalid', tx)}</p>
         <p>
           <Link href="/account">{tx('orgs.backToAccount')}</Link>
         </p>
@@ -300,8 +301,8 @@ export const AcceptInviteScreen: React.FC<{ token: string }> = async ({ token })
       <div className="account-card">
         <h3>{invite.organizationName}</h3>
         <p>{tx('orgs.invitedAs', { role: invite.role, email: invite.email, date: formatDate(invite.expiresAt, dateLocale) })}</p>
-        {!invite.usable ? <p role="alert">{REFUSAL_MESSAGES[invite.problem ?? 'invite_used']}</p> : null}
-        {invite.usable && !mine ? <p role="alert">{REFUSAL_MESSAGES.wrong_account}</p> : null}
+        {!invite.usable ? <p role="alert">{refusalText(invite.problem ?? 'invite_used', tx)}</p> : null}
+        {invite.usable && !mine ? <p role="alert">{refusalText('wrong_account', tx)}</p> : null}
         {invite.usable && mine ? <InviteDecisionForm token={token} /> : null}
       </div>
     </AuthShell>

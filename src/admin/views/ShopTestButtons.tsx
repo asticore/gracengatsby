@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useState } from 'react'
 
 import { CARRIERS } from '@/features/ecommerce/shipping/catalogue'
@@ -71,7 +71,7 @@ export const CarrierTestPanel: React.FC = () => (
       </div>
     ))}
     <p>
-      <Link href="/admin/shop/shipping-zones">Shipping zones and rates</Link> are the fall-back when a carrier cannot quote. <Link href="/admin/shop/shipping-manifests">Manifests</Link> are listed here too.
+      <AdminLink path="/shop/shipping-zones">Shipping zones and rates</AdminLink> are the fall-back when a carrier cannot quote. <AdminLink path="/shop/shipping-manifests">Manifests</AdminLink> are listed here too.
     </p>
   </div>
 )

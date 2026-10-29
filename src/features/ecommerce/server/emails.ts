@@ -1,4 +1,7 @@
 import { sendEmail } from '@/features/email'
+import { localeForRecipient } from '@/features/email/recipientLocale'
+import { toRenderTokens } from '@/features/email/builtInTemplates'
+import { fallbackChain, loadStrings, t as uiT, type UiStringKey } from '@/features/uiStrings'
 import { escapeHtml } from '../lib/invoice'
 import { formatCents } from '../lib/money'
 import { ORDER_STATUS_LABELS, isOrderStatus } from '../lib/orderStatus'
@@ -49,7 +52,21 @@ export function templateFor(templates: unknown, kind: EmailKind): EmailTemplateO
   return { subject: clean(t[`${kind}Subject`], 300), body: clean(t[`${kind}Body`], 5000) }
 }
 
-export function renderOrderEmail(kind: EmailKind, order: Record<string, unknown>, opts: { note?: string; siteName?: string; bodyOverride?: string; template?: EmailTemplateOverride }) {
+/**
+ * The built-in wording for one order email in the reader's language. English, or
+ * no locale, returns the original text. Keys are `email.order.<kind>.subject|body`.
+ * Translations are read from the dictionary `sendOrderEmail` has already loaded.
+ */
+const orderTemplateFor = (kind: EmailKind, locale: string | null | undefined): { subject: string; body: string } => {
+  const [primary] = fallbackChain(locale)
+  if (!locale || primary === 'en') return DEFAULTS[kind]
+  return {
+    subject: toRenderTokens(uiT(`email.order.${kind}.subject` as UiStringKey, locale)),
+    body: toRenderTokens(uiT(`email.order.${kind}.body` as UiStringKey, locale)),
+  }
+}
+
+export function renderOrderEmail(kind: EmailKind, order: Record<string, unknown>, opts: { note?: string; siteName?: string; bodyOverride?: string; template?: EmailTemplateOverride; locale?: string | null }) {
   const addr = (order.shippingAddress ?? {}) as Record<string, unknown>
   const name = [addr.firstName, addr.lastName].filter((x) => typeof x === 'string' && x).join(' ') || 'there'
   const status = String(order.status ?? '')
@@ -65,7 +82,7 @@ export function renderOrderEmail(kind: EmailKind, order: Record<string, unknown>
     tracking_number: String(order.trackingNumber ?? ''),
     tracking_url: String(order.trackingUrl ?? ''),
   }
-  const tpl = DEFAULTS[kind]
+  const tpl = orderTemplateFor(kind, opts.locale)
   const subject = mergeFields(opts.template?.subject ?? tpl.subject, values, false).replace(/[\r\n]+/g, ' ')
   // A per-status template wins over the shared body, which wins over the built-in text.
   const bodyTpl = opts.template?.body ?? (opts.bodyOverride && kind !== 'customerNote' ? opts.bodyOverride : tpl.body)
@@ -86,7 +103,10 @@ export async function sendOrderEmail(engine: Engine, order: Record<string, unkno
     const defaultOn = kind !== 'failed'
     if ((emails[kind] ?? defaultOn) === false || emails[kind] === 0) return false
     const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch(() => ({}))) as { siteName?: string }
-    const msg = renderOrderEmail(kind, order, { note, siteName: site.siteName, template: templateFor(settings.templates, kind), bodyOverride: typeof emails.bodyTemplate === 'string' && emails.bodyTemplate.trim() ? emails.bodyTemplate : undefined })
+    // The customer's own language, when they have chosen one. Otherwise English.
+    const locale = await localeForRecipient(engine as never, to)
+    if (locale) await loadStrings(locale)
+    const msg = renderOrderEmail(kind, order, { note, siteName: site.siteName, locale, template: templateFor(settings.templates, kind), bodyOverride: typeof emails.bodyTemplate === 'string' && emails.bodyTemplate.trim() ? emails.bodyTemplate : undefined })
     const result = await sendEmail({ to, template: `order.${kind}`, ...msg })
     return result.ok
   } catch {

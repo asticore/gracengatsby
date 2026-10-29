@@ -1,4 +1,5 @@
 'use client'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -35,6 +36,7 @@ export const ElementLibrary: React.FC<{
   /** Form builder: only layout and form fields are offered, and page templates are hidden. */
   formMode?: boolean
 }> = ({ targetLabel, onPickBlock, onPickTemplate, formMode }) => {
+  const t = useAdminT()
   const [source, setSource] = useState<Source>('blocks')
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('all')
@@ -202,7 +204,7 @@ export const ElementLibrary: React.FC<{
   return (
     <div className={`ve-library ve-library--${density}`} data-density={density}>
       <div className="ve-library__controls">
-        <div className="ve-library__source-tabs" role="tablist" aria-label="Element source">
+        <div className="ve-library__source-tabs" role="tablist" aria-label={t('ve.lib.sourceTabs')}>
           <button
             type="button"
             role="tab"
@@ -231,13 +233,13 @@ export const ElementLibrary: React.FC<{
             <input
               type="search"
               className="ve-library__search"
-              placeholder="Search elements…"
+              placeholder={t('ve.lib.search')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
             <select
               className="ve-library__filter"
-              aria-label="Filter elements"
+              aria-label={t('ve.lib.filter')}
               data-testid="ve-lib-filter"
               value={category}
               onChange={(e) => changeCategory(e.target.value)}
@@ -272,20 +274,20 @@ export const ElementLibrary: React.FC<{
 
             {!query.trim() && category === 'all' && favBlocks.length > 0 && (
               <div className="ve-library__group ve-lib-recent" data-testid="ve-lib-favs">
-                <h4 className="ve-library__group-title">Favourites</h4>
+                <h4 className="ve-library__group-title">{t('ve.lib.favourites')}</h4>
                 <div className="ve-library__grid">{favBlocks.map((b) => renderCard(b))}</div>
               </div>
             )}
             {!query.trim() && category === 'all' && recentBlocks.length > 0 && (
               <div className="ve-library__group ve-lib-recent" data-testid="ve-lib-recent">
-                <h4 className="ve-library__group-title">Recently used</h4>
+                <h4 className="ve-library__group-title">{t('ve.lib.recent')}</h4>
                 <div className="ve-library__grid">{recentBlocks.map((b) => renderCard(b))}</div>
               </div>
             )}
 
             {category === 'all' && globalMatches.length > 0 && (
               <div className="ve-library__group" data-testid="ve-lib-globals">
-                <h4 className="ve-library__group-title">Global</h4>
+                <h4 className="ve-library__group-title">{t('ve.lib.global')}</h4>
                 <div className="ve-library__grid">
                   {globalMatches.map((g) => (
                     <div
@@ -313,7 +315,7 @@ export const ElementLibrary: React.FC<{
 
             {FORM_PRESET_INSERT_READY && !formMode && category === 'all' && formCards.length > 0 && (
               <div className="ve-library__group" data-testid="ve-lib-forms">
-                <h4 className="ve-library__group-title">Forms</h4>
+                <h4 className="ve-library__group-title">{t('ve.lib.forms')}</h4>
                 {formNotice && (
                   <p className="ve-library__empty" role="alert">
                     {formNotice}
@@ -357,7 +359,7 @@ export const ElementLibrary: React.FC<{
 
             {!formMode && category === 'all' && shopCards.length > 0 && (
               <div className="ve-library__group" data-testid="ve-lib-shop">
-                <h4 className="ve-library__group-title">Shop</h4>
+                <h4 className="ve-library__group-title">{t('ve.lib.shop')}</h4>
                 <div className="ve-library__grid">
                   {shopCards.map((c) => (
                     <div

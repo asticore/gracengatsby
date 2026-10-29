@@ -12,6 +12,8 @@ import { RsvpForm, type RsvpTierOption } from '@/components/RsvpForm'
 import { loadTierViews } from '@/features/editScreens/tierLoad'
 import { tierOptionLabel } from '@/features/editScreens/tierSales'
 import { formatPriceInAUD } from '@/lib/formatCurrency'
+import { priceLocale } from '@/features/uiStrings/publicFormat'
+import { publicLocale } from '@/features/uiStrings/storeTextsServer'
 import { setBlockContext, setRequestQuery } from '@/lib/blockContext'
 import { eventBlockContext } from '@/lib/blockContextFrom'
 import { PasswordGate } from '@/components/PasswordGate'
@@ -77,6 +79,7 @@ export default async function EventPage({
 }) {
   const sp = await searchParams
   setRequestQuery(sp)
+  const locale = await publicLocale()
   const flags = await getFeatureFlags()
   if (!flags.events) notFound()
 
@@ -154,7 +157,7 @@ export default async function EventPage({
             ticket ? (
               <div>
                 <p className="mb-4 font-[family-name:var(--font-display)] text-[1.5rem]">
-                  {formatPriceInAUD(ticket.priceInAUD)}
+                  {formatPriceInAUD(ticket.priceInAUD, 'AUD', priceLocale(locale))}
                 </p>
                 <AddToCartButton productID={ticket.id} label="Buy ticket" />
               </div>

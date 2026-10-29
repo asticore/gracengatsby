@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React from 'react'
 import { useField } from '@/engine/ui'
 
@@ -33,9 +34,10 @@ const buttonClass =
   'cursor-pointer rounded-[5px] border border-[var(--theme-elevation-150,#cac7d1)] bg-transparent px-[9px] py-[4px] text-[12px] text-inherit hover:border-[#2e3192]'
 
 function ValueInput({ rule, onChange }: { rule: LocationRule; onChange: (value: string) => void }) {
+  const t = useAdminT()
   if (rule.param === 'collection') {
     return (
-      <select className={inputClass} aria-label="Value" value={rule.value} onChange={(e) => onChange(e.target.value)}>
+      <select className={inputClass} aria-label={t('al.value')} value={rule.value} onChange={(e) => onChange(e.target.value)}>
         {COLLECTIONS.map((c) => (
           <option key={c} value={c}>
             {c}
@@ -46,7 +48,7 @@ function ValueInput({ rule, onChange }: { rule: LocationRule; onChange: (value: 
   }
   if (rule.param === 'userRole') {
     return (
-      <select className={inputClass} aria-label="Value" value={rule.value} onChange={(e) => onChange(e.target.value)}>
+      <select className={inputClass} aria-label={t('al.value')} value={rule.value} onChange={(e) => onChange(e.target.value)}>
         {ROLES.map((r) => (
           <option key={r} value={r}>
             {r}
@@ -57,7 +59,7 @@ function ValueInput({ rule, onChange }: { rule: LocationRule; onChange: (value: 
   }
   if (rule.param === 'status') {
     return (
-      <select className={inputClass} aria-label="Value" value={rule.value} onChange={(e) => onChange(e.target.value)}>
+      <select className={inputClass} aria-label={t('al.value')} value={rule.value} onChange={(e) => onChange(e.target.value)}>
         {STATUSES.map((s) => (
           <option key={s} value={s}>
             {s}
@@ -66,10 +68,11 @@ function ValueInput({ rule, onChange }: { rule: LocationRule; onChange: (value: 
       </select>
     )
   }
-  return <input className={inputClass} aria-label="Value" value={rule.value} onChange={(e) => onChange(e.target.value)} />
+  return <input className={inputClass} aria-label={t('al.value')} value={rule.value} onChange={(e) => onChange(e.target.value)} />
 }
 
 export const FieldGroupLocationField: React.FC<{ path?: string }> = ({ path = 'location' }) => {
+  const t = useAdminT()
   const { value, setValue } = useField<unknown>({ path })
   // Raw, so a rule being filled in is not dropped while it is still blank.
   const groups: LocationGroups = rawLocationGroups(value)
@@ -93,7 +96,7 @@ export const FieldGroupLocationField: React.FC<{ path?: string }> = ({ path = 'l
               {ri > 0 && <span className="text-[11px] uppercase opacity-60">and</span>}
               <select
                 className={inputClass}
-                aria-label="Rule"
+                aria-label={t('al.rule')}
                 value={rule.param}
                 onChange={(e) => update(groups.map((g, i) => (i === gi ? g.map((r, j) => (j === ri ? { ...r, param: e.target.value as LocationParam, value: '' } : r)) : g)))}
               >
@@ -105,7 +108,7 @@ export const FieldGroupLocationField: React.FC<{ path?: string }> = ({ path = 'l
               </select>
               <select
                 className={inputClass}
-                aria-label="Operator"
+                aria-label={t('al.operator')}
                 value={rule.operator}
                 onChange={(e) => update(groups.map((g, i) => (i === gi ? g.map((r, j) => (j === ri ? { ...r, operator: e.target.value as 'equals' | 'notEquals' } : r)) : g)))}
               >

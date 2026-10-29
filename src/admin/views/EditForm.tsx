@@ -219,8 +219,8 @@ const PageContentCard: React.FC<{ count?: number; isNew: boolean; blocksField: s
     <CollapsibleCard id="page-content" title={t('edit.pageContent')} className="doc-content-card">
       <p className="doc-muted">
         {isNew
-          ? 'Save first, then use "Edit in visual editor" in the panel to build the layout.'
-          : `${count ?? 0} ${count === 1 ? 'section' : 'sections'}. The layout is edited in the visual editor.`}
+          ? t('edit.saveFirstHint', { button: t('editor.editInVisual') })
+          : `${t(count === 1 ? 'edit.sectionsOne' : 'edit.sectionsOther', { count: count ?? 0 })}. ${t('edit.layoutHint')}`}
       </p>
       <SectionOutline blocksField={blocksField} />
     </CollapsibleCard>

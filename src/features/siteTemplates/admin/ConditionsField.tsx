@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useState } from 'react'
 import { useField } from '@/engine/ui'
 
@@ -16,6 +17,7 @@ const blank = (): LocationRule => ({ param: 'templateKind', operator: 'equals', 
 
 /** Friendly editor for a site template's `conditions` JSON (OR of AND-rules). Falls back to raw JSON when the stored shape is unknown. */
 export const ConditionsField: React.FC<{ path?: string }> = ({ path = 'conditions' }) => {
+  const t = useAdminT()
   const { value, setValue } = useField<unknown>({ path })
   const [raw, setRaw] = useState<string | null>(null)
   const understood = fromStoredConditions(value)
@@ -64,11 +66,11 @@ export const ConditionsField: React.FC<{ path?: string }> = ({ path = 'condition
           {rules.map((rule, ri) => (
             <div key={ri} className="flex flex-wrap items-center gap-[6px]">
               {ri > 0 && <span className="text-[11px] uppercase opacity-60">and</span>}
-              <select className={inputClass} aria-label="Operator" value={rule.operator} onChange={(e) => patch(gi, ri, { operator: e.target.value as LocationRule['operator'] })}>
+              <select className={inputClass} aria-label={t('al.operator')} value={rule.operator} onChange={(e) => patch(gi, ri, { operator: e.target.value as LocationRule['operator'] })}>
                 <option value="equals">Include</option>
                 <option value="notEquals">Exclude</option>
               </select>
-              <select className={inputClass} aria-label="Condition" value={rule.param} onChange={(e) => patch(gi, ri, { param: e.target.value as LocationParam, value: '' })}>
+              <select className={inputClass} aria-label={t('al.condition')} value={rule.param} onChange={(e) => patch(gi, ri, { param: e.target.value as LocationParam, value: '' })}>
                 {CONDITION_KINDS.map((k) => (
                   <option key={k.param} value={k.param}>
                     {k.label}
@@ -77,13 +79,13 @@ export const ConditionsField: React.FC<{ path?: string }> = ({ path = 'condition
               </select>
               <input
                 className={inputClass}
-                aria-label="Value"
+                aria-label={t('al.value')}
                 maxLength={200}
                 placeholder={CONDITION_KINDS.find((k) => k.param === rule.param)?.hint}
                 value={rule.value}
                 onChange={(e) => patch(gi, ri, { value: e.target.value })}
               />
-              <button type="button" className={buttonClass} aria-label="Remove rule" onClick={() => update(groups.map((g, i) => (i === gi ? g.filter((_, j) => j !== ri) : g)).filter((g) => g.length))}>
+              <button type="button" className={buttonClass} aria-label={t('al.removeRule')} onClick={() => update(groups.map((g, i) => (i === gi ? g.filter((_, j) => j !== ri) : g)).filter((g) => g.length))}>
                 {String.fromCharCode(0x2715)}
               </button>
             </div>

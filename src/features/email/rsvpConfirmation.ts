@@ -1,4 +1,5 @@
 import type { CollectionAfterChangeHook } from '@/engine'
+import { localeForRecipient } from './recipientLocale'
 import { EVENT_TIME_ZONE } from '@/features/editScreens/timeZone'
 
 /**
@@ -49,12 +50,13 @@ export const rsvpConfirmationAfterChange: CollectionAfterChangeHook = async ({ d
     if (!event) return doc
 
     const { renderEmailTemplate } = await import('@/features/email/templateLoad')
+    const locale = await localeForRecipient(req.engine as never, to)
     const mail = await renderEmailTemplate('rsvpConfirmation', {
       name: typeof rsvp.name === 'string' ? rsvp.name : '',
       eventTitle: typeof event.title === 'string' ? event.title : '',
       eventDate: whenText(event.startDate),
       guestCount: typeof rsvp.guestCount === 'number' ? rsvp.guestCount : 1,
-    })
+    }, undefined, locale)
 
     const { sendEmail } = await import('@/features/email')
     await sendEmail({ to, template: 'rsvp.confirmation', subject: mail.subject, text: mail.text, html: mail.html })

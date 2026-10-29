@@ -2,6 +2,8 @@ import { cache } from 'react'
 
 import type { Page } from '@/engage-types'
 import { getEngine } from '@/lib/engine'
+import { requestHost } from '@/features/domains/request'
+import { availableOnHost, pickForHost } from '@/features/domains/scope'
 
 const MAX_DEPTH = 8
 
@@ -14,13 +16,26 @@ export type ResolvedPage = { page: Page; path: string[]; ancestors: Page[] }
  * every published page once per request and walk each one's parent chain in
  * memory - simple and correct for a site of this size.
  *
+ * Domains (features/domains): only the pages this request's domain can show take part. Of pages that share an address,
+ * the one scoped to this domain wins over the shared one (pickForHost), and a page whose parent is scoped to another
+ * domain has no address here. With no registered host nothing is narrowed.
+ *
  * Memoised per request because a single page render asks for this three times
  * over - the root layout builds the nav from it, generateMetadata resolves the
  * path, then the page itself resolves the same path again. Uncached that is
  * three full scans of the pages table, and on Workers each one is its own D1
  * round trip.
  */
-export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
+export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => loadResolvedPages(await requestHost(), true))
+
+/**
+ * Every published page with its path, whatever domain it is scoped to, one entry per document. Menus use it to find the
+ * page a link points at when that page is not on this domain (layout.tsx), and the metadata builder uses it to see which
+ * domains serve their own version of an address.
+ */
+export const getAllResolvedPagesAnyDomain = cache(async (): Promise<ResolvedPage[]> => loadResolvedPages(null, false))
+
+async function loadResolvedPages(host: string | null, narrow: boolean): Promise<ResolvedPage[]> {
   const engine = await getEngine()
   const { docs } = await engine.find({
     collection: 'pages',
@@ -31,8 +46,9 @@ export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
 
   const byId = new Map<string, Page>()
   docs.forEach((doc) => byId.set(String(doc.id), doc as unknown as Page))
+  const onThisDomain = (page: Page) => !narrow || availableOnHost((page as { availableDomains?: unknown }).availableDomains, host)
 
-  const resolve = (page: Page): ResolvedPage => {
+  const resolve = (page: Page): ResolvedPage | null => {
     const path: string[] = []
     const ancestors: Page[] = []
     let current: Page | undefined = page
@@ -42,15 +58,33 @@ export const getAllResolvedPages = cache(async (): Promise<ResolvedPage[]> => {
       path.unshift(current.slug)
       if (current.id !== page.id) ancestors.unshift(current)
       const parentId = current.parent ? (typeof current.parent === 'object' ? current.parent.id : current.parent) : null
-      current = parentId ? byId.get(String(parentId)) : undefined
+      const next: Page | undefined = parentId ? byId.get(String(parentId)) : undefined
+      // A parent that exists but is not on this domain leaves the page without an address here.
+      if (next && !onThisDomain(next)) return null
+      current = next
       guard += 1
     }
 
     return { page, path, ancestors }
   }
 
-  return docs.map((doc) => resolve(doc as unknown as Page))
-})
+  const byAddress = new Map<string, ResolvedPage[]>()
+  for (const doc of docs as unknown as Page[]) {
+    if (!onThisDomain(doc)) continue
+    const entry = resolve(doc)
+    if (!entry) continue
+    const key = entry.path.join('/')
+    byAddress.set(key, [...(byAddress.get(key) ?? []), entry])
+  }
+
+  if (!narrow) return [...byAddress.values()].flat()
+  const out: ResolvedPage[] = []
+  for (const group of byAddress.values()) {
+    const picked = pickForHost(group, host, (entry) => (entry.page as { availableDomains?: unknown }).availableDomains)
+    if (picked) out.push(picked)
+  }
+  return out
+}
 
 export const findPageByPath = async (segments: string[]): Promise<ResolvedPage | null> => {
   const all = await getAllResolvedPages()
@@ -58,13 +92,15 @@ export const findPageByPath = async (segments: string[]): Promise<ResolvedPage |
   return all.find((entry) => entry.path.join('/') === wanted) || null
 }
 
+/** The homepage this request's domain serves: its own homepage, else the shared one. Null when none is on this domain. */
 export const getHomepage = async (): Promise<Page | null> => {
+  const host = await requestHost()
   const engine = await getEngine()
   const { docs } = await engine.find({
     collection: 'pages',
     where: { and: [{ isHomepage: { equals: true } }, { _status: { equals: 'published' } }] },
-    limit: 1,
+    limit: 0,
     depth: 2,
   })
-  return (docs[0] as unknown as Page) || null
+  return pickForHost(docs as unknown as Page[], host, (page) => (page as { availableDomains?: unknown }).availableDomains)
 }

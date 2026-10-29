@@ -1,13 +1,12 @@
 'use client'
 
 import { useCart } from '@/engine/commerce/react'
+import { useStoreText } from '@/features/uiStrings/StoreTextsContext'
 import Link from 'next/link'
 import React, { useState } from 'react'
 
-export const AddToCartButton: React.FC<{ productID: number; label?: string }> = ({
-  productID,
-  label = 'Add to cart',
-}) => {
+export const AddToCartButton: React.FC<{ productID: number; label?: string }> = ({ productID, label }) => {
+  const t = useStoreText()
   const { addItem, isLoading } = useCart()
   const [added, setAdded] = useState(false)
 
@@ -19,9 +18,9 @@ export const AddToCartButton: React.FC<{ productID: number; label?: string }> = 
   if (added) {
     return (
       <div>
-        <p className="mb-3">Added to your cart.</p>
+        <p className="mb-3">{t('store.addedToCart')}</p>
         <Link href="/cart" className="btn btn--primary">
-          View cart
+          {t('store.viewCart')}
         </Link>
       </div>
     )
@@ -29,7 +28,7 @@ export const AddToCartButton: React.FC<{ productID: number; label?: string }> = 
 
   return (
     <button type="button" className="btn btn--primary" onClick={handleClick} disabled={isLoading}>
-      {isLoading ? 'Adding…' : label}
+      {isLoading ? t('store.adding') : (label ?? t('store.addToCart'))}
     </button>
   )
 }

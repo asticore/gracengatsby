@@ -1,5 +1,8 @@
 'use client'
+import { useAdminHref } from '@/admin/adminRoute/AdminRouteProvider'
 
+import type { UiStringKey } from '@/features/uiStrings'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useRef, useState } from 'react'
 
 import { asBlockStyle, parseOldFormat, type BlockStyle } from '@/lib/blockStyle'
@@ -59,6 +62,7 @@ export const FieldPanel: React.FC<{
   /** Replaces a legacy block (hero, CTA banner, image + text, gallery) with editable sections. */
   onConvertLegacy?: () => void
 }> = ({ blockDef, data, onChange, onClose, onDelete, onDuplicate, userPermissions, lockUi, device = 'desktop', onSelectColumn, onConvertLegacy }) => {
+  const t = useAdminT()
   const blocked = Boolean(lockUi?.lock?.blocked)
   const fieldDisabled = (name: string) => blocked && (lockUi?.lock?.mode === 'full' || !lockUi?.lock?.editableProps.includes(name))
   const [tab, setTab] = useState<PanelTab>('content')
@@ -79,14 +83,14 @@ export const FieldPanel: React.FC<{
           <span className="ve-panel__icon">{blockDef.icon}</span>
           <strong>{blockDef.label}</strong>
         </div>
-        <button type="button" className="ve-icon-btn" onClick={onClose} aria-label="Close panel">
+        <button type="button" className="ve-icon-btn" onClick={onClose} aria-label={t('ve.col.closePanel')}>
           &#10005;
         </button>
       </div>
 
       {onConvertLegacy && canConvertLegacy(blockDef.slug) && (
         <div className="ve-panel__hint" style={{ padding: '0.75rem 1rem', display: 'grid', gap: '0.5rem' }}>
-          <span>This is a legacy block. Convert it to editable sections for full control.</span>
+          <span>{t('ve.fp.legacy')}</span>
           <button type="button" className="ve-btn ve-btn--primary" onClick={onConvertLegacy} disabled={blocked}>
             Convert to sections
           </button>
@@ -143,7 +147,7 @@ export const FieldPanel: React.FC<{
               </fieldset>
             ))
           ) : (
-            <p className="ve-panel__empty">This element has no content settings - use the Design tab.</p>
+            <p className="ve-panel__empty">{t('ve.fp.noContent')}</p>
           ))}
 
         {tab === 'design' && (
@@ -196,17 +200,17 @@ function cleanDeep<T>(value: T): T | undefined {
 const GAP_PRESETS: Record<string, number> = { none: 0, narrow: 10, wide: 40 }
 
 /** One-line help under "Display as", per mode. */
-const DISPLAY_HELP: Record<string, string> = {
-  columns: 'Columns sit side by side and wrap onto a new line when space runs out.',
-  tabs: 'Each column becomes a tab. Name a tab in its column settings.',
-  accordion: 'Each column becomes a collapsible panel. Name it in its column settings.',
-  carousel: 'Each column is a slide the reader swipes or scrolls through.',
-  grid: 'Columns become equal cells in rows.',
-  flex: 'Columns flow as a flexible row or stack: set direction, wrap, alignment and gap below.',
-  modal: 'A button opens the columns in a popup dialog.',
-  stack: 'Each column is a full-width card that piles up as the page scrolls.',
-  hscroll: 'The columns slide sideways as the reader scrolls down the page.',
-  'sticky-steps': 'The first column stays in place while the others scroll past it as steps.',
+const DISPLAY_HELP: Record<string, UiStringKey> = {
+  columns: 'fp.help.columns_sit_side_by_side_and_wrap_onto_a',
+  tabs: 'fp.help.each_column_becomes_a_tab_name_a_tab_in',
+  accordion: 'fp.help.each_column_becomes_a_collapsible_panel',
+  carousel: 'fp.help.each_column_is_a_slide_the_reader_swipes',
+  grid: 'fp.help.columns_become_equal_cells_in_rows',
+  flex: 'fp.help.columns_flow_as_a_flexible_row_or_stack',
+  modal: 'fp.help.a_button_opens_the_columns_in_a_popup_di',
+  stack: 'fp.help.each_column_is_a_full_width_card_that_pi',
+  hscroll: 'fp.help.the_columns_slide_sideways_as_the_reader',
+  'sticky-steps': 'fp.help.the_first_column_stays_in_place_while_th',
 }
 
 /** Clamps a typed number into [min, max] for a layout field; an empty box clears the field. */
@@ -228,6 +232,7 @@ const SectionLayoutFields: React.FC<{
   device: EditDevice
   onSelectColumn?: (index: number) => void
 }> = ({ columns, onChange, design = {}, onDesignChange, canEditLayout = true, device, onSelectColumn }) => {
+  const t = useAdminT()
   const widthKey = WIDTH_KEY[device]
   const layout = parseSectionLayout(design.layout) || {}
   const ctl = makeResponsive(design, (next) => onDesignChange?.(next), device)
@@ -312,8 +317,8 @@ const SectionLayoutFields: React.FC<{
         {device !== 'desktop' && ` You are editing the ${device} layout: settings you leave unset follow ${from}.`}
       </p>
 
-      <Accordion title="Structure" defaultOpen>
-        <div className="ve-structure__mini" role="group" aria-label="Column structure">
+      <Accordion title={t('ve.fp.structure')} defaultOpen>
+        <div className="ve-structure__mini" role="group" aria-label={t('ve.fp.colStructure')}>
           {STRUCTURES.map((structure) => (
             <button
               key={structure.id}
@@ -329,7 +334,7 @@ const SectionLayoutFields: React.FC<{
           ))}
         </div>
 
-        {columns.length === 0 && <p className="ve-panel__empty">No columns yet - add one below.</p>}
+        {columns.length === 0 && <p className="ve-panel__empty">{t('ve.fp.noColumns')}</p>}
 
         {columns.map((column, index) => {
           const width = currentWidth(column)
@@ -356,15 +361,15 @@ const SectionLayoutFields: React.FC<{
                 }}
                 aria-label={`Column ${index + 1} width (${device})`}
               >
-                {device !== 'desktop' && <option value="inherit">Inherited from {from}</option>}
+                {device !== 'desktop' && <option value="inherit">{t('ve.fp.inherit', { from })}</option>}
                 {COLUMN_WIDTH_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-                <option value="auto">Fit content (auto)</option>
-                <option value="fill">Fill the leftover space</option>
-                <option value="custom">Custom size&#8230;</option>
+                <option value="auto">{t('ve.fp.fitAuto')}</option>
+                <option value="fill">{t('ve.fp.fillSpace')}</option>
+                <option value="custom">{t('ve.fp.customSize')}</option>
               </select>
               {isCustom && width && (
                 <span className="ve-col-row__custom">
@@ -386,7 +391,7 @@ const SectionLayoutFields: React.FC<{
                 </span>
               )}
               {onSelectColumn && (
-                <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onSelectColumn(index)} title="Open this column's settings">
+                <button type="button" className="ve-btn ve-btn--ghost" onClick={() => onSelectColumn(index)} title={t('ve.fp.openColumn')}>
                   Edit
                 </button>
               )}
@@ -409,34 +414,34 @@ const SectionLayoutFields: React.FC<{
         </button>
       </Accordion>
 
-      <Accordion title="Section" defaultOpen>
+      <Accordion title={t('ve.fp.section')} defaultOpen>
         <SelectRow
-          label="Display as"
-          help={DISPLAY_HELP[layout.display || 'columns']}
+          label={t('ve.fp.displayAs')}
+          help={t(DISPLAY_HELP[layout.display || 'columns'])}
           value={layout.display || 'columns'}
           options={[
-            { label: 'Columns', value: 'columns' },
-            { label: 'Tabs', value: 'tabs' },
-            { label: 'Accordion', value: 'accordion' },
-            { label: 'Carousel', value: 'carousel' },
-            { label: 'Grid', value: 'grid' },
-            { label: 'Flex', value: 'flex' },
-            { label: 'Popup', value: 'modal' },
-            { label: 'Stacked cards (scroll)', value: 'stack' },
-            { label: 'Horizontal scroll', value: 'hscroll' },
-            { label: 'Sticky steps (scroll)', value: 'sticky-steps' },
+            { label: t('ve.fp.mode.columns'), value: 'columns' },
+            { label: t('ve.fp.mode.tabs'), value: 'tabs' },
+            { label: t('ve.fp.mode.accordion'), value: 'accordion' },
+            { label: t('ve.fp.mode.carousel'), value: 'carousel' },
+            { label: t('ve.fp.mode.grid'), value: 'grid' },
+            { label: t('ve.fp.mode.flex'), value: 'flex' },
+            { label: t('ve.fp.mode.popup'), value: 'modal' },
+            { label: t('ve.fp.mode.stack'), value: 'stack' },
+            { label: t('ve.fp.mode.hscroll'), value: 'hscroll' },
+            { label: t('ve.fp.mode.stickySteps'), value: 'sticky-steps' },
           ]}
           onChange={(v) => setLayout({ display: v === 'columns' ? undefined : (v as SectionLayout['display']) })}
         />
         {layout.display === 'tabs' && (
           <SelectRow
-            label="Tab alignment"
+            label={t('ve.fp.tabAlign')}
             value={layout.tabsAlign || 'start'}
             options={[
-              { label: 'Left', value: 'start' },
-              { label: 'Centre', value: 'center' },
-              { label: 'Right', value: 'end' },
-              { label: 'Stretch', value: 'stretch' },
+              { label: t('ve.fp.left'), value: 'start' },
+              { label: t('ve.fp.centre'), value: 'center' },
+              { label: t('ve.fp.right'), value: 'end' },
+              { label: t('ve.fp.stretch'), value: 'stretch' },
             ]}
             onChange={(v) => setLayout({ tabsAlign: v === 'start' ? undefined : (v as SectionLayout['tabsAlign']) })}
           />
@@ -444,13 +449,13 @@ const SectionLayoutFields: React.FC<{
         {layout.display === 'carousel' && (
           <>
             <SelectRow
-              label="Slides per view"
+              label={t('ve.fp.slidesPerView')}
               value={String(layout.carouselPerView ?? 1)}
               options={[1, 2, 3, 4].map((n) => ({ label: String(n), value: String(n) }))}
               onChange={(v) => setLayout({ carouselPerView: Number(v) === 1 ? undefined : (Number(v) as 2 | 3 | 4) })}
             />
             <NumberRow
-              label="Slide gap (px)"
+              label={t('ve.fp.slideGap')}
               value={layout.carouselGap}
               min={0}
               max={64}
@@ -458,8 +463,8 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ carouselGap: v === undefined ? undefined : Math.min(64, Math.max(0, v)) })}
             />
             <CheckRow
-              label="Show arrows"
-              help="Previous and next arrows on each slide. Swiping or scrolling works either way."
+              label={t('ve.fp.showArrows')}
+              help={t('ve.fp.arrowsHelp')}
               checked={layout.carouselArrows === true}
               onChange={(on) => setLayout({ carouselArrows: on ? true : undefined })}
             />
@@ -468,7 +473,7 @@ const SectionLayoutFields: React.FC<{
         {layout.display === 'grid' && (
           <>
             <NumberRow
-              label="Columns per row"
+              label={t('ve.fp.colsPerRow')}
               value={layout.gridColumns}
               min={1}
               max={6}
@@ -476,8 +481,8 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridColumns: v === undefined ? undefined : Math.min(6, Math.max(1, Math.round(v))) })}
             />
             <NumberRow
-              label="Columns per row on tablet"
-              help="Leave empty to keep the desktop count."
+              label={t('ve.fp.colsTablet')}
+              help={t('ve.fp.colsTabletHelp')}
               value={layout.gridColumnsTablet}
               min={1}
               max={6}
@@ -485,7 +490,7 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridColumnsTablet: v === undefined ? undefined : Math.min(6, Math.max(1, Math.round(v))) })}
             />
             <NumberRow
-              label="Columns per row on mobile"
+              label={t('ve.fp.colsMobile')}
               value={layout.gridColumnsMobile}
               min={1}
               max={6}
@@ -493,7 +498,7 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridColumnsMobile: v === undefined ? undefined : Math.min(6, Math.max(1, Math.round(v))) })}
             />
             <NumberRow
-              label="Cell gap"
+              label={t('ve.fp.cellGap')}
               value={layout.gridGap}
               min={0}
               max={64}
@@ -501,8 +506,8 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridGap: v === undefined ? undefined : Math.min(64, Math.max(0, v)) })}
             />
             <NumberRow
-              label="Cell gap on tablet"
-              help="Leave empty to keep the desktop gap."
+              label={t('ve.fp.cellGapTablet')}
+              help={t('ve.fp.cellGapTabletHelp')}
               value={layout.gridGapTablet}
               min={0}
               max={64}
@@ -510,8 +515,8 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridGapTablet: clampField(v, 0, 64) })}
             />
             <NumberRow
-              label="Cell gap on mobile"
-              help="Leave empty to keep the tablet gap."
+              label={t('ve.fp.cellGapMobile')}
+              help={t('ve.fp.cellGapMobileHelp')}
               value={layout.gridGapMobile}
               min={0}
               max={64}
@@ -519,40 +524,40 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ gridGapMobile: clampField(v, 0, 64) })}
             />
             <NumberRow
-              label="Auto-fit min width (px)"
-              help="Fits as many columns per row as the width allows, each at least this wide. Replaces the column counts above."
+              label={t('ve.fp.autoFit')}
+              help={t('ve.fp.autoFitHelp')}
               value={layout.gridMinWidth}
               min={80}
               max={800}
-              placeholder="Off"
+              placeholder={t('ve.fp.off')}
               onChange={(v) => setLayout({ gridMinWidth: clampField(v, 80, 800) })}
             />
             <CheckRow
-              label="Dense packing"
-              help="Lets later cells fill earlier gaps in the grid."
+              label={t('ve.fp.dense')}
+              help={t('ve.fp.denseHelp')}
               checked={layout.gridFlow === 'dense'}
               onChange={(on) => setLayout({ gridFlow: on ? 'dense' : undefined })}
             />
             <SelectRow
-              label="Cell horizontal alignment"
+              label={t('ve.fp.cellHAlign')}
               value={layout.gridJustify || 'stretch'}
               options={[
-                { label: 'Stretch', value: 'stretch' },
-                { label: 'Left', value: 'start' },
-                { label: 'Centre', value: 'center' },
-                { label: 'Right', value: 'end' },
+                { label: t('ve.fp.stretch'), value: 'stretch' },
+                { label: t('ve.fp.left'), value: 'start' },
+                { label: t('ve.fp.centre'), value: 'center' },
+                { label: t('ve.fp.right'), value: 'end' },
               ]}
               onChange={(v) => setLayout({ gridJustify: v === 'stretch' ? undefined : (v as SectionLayout['gridJustify']) })}
             />
             <SelectRow
-              label="Cell alignment"
-              help="Stretch makes cards in a row the same height."
+              label={t('ve.fp.cellAlign')}
+              help={t('ve.fp.cellAlignHelp')}
               value={layout.gridAlign || 'stretch'}
               options={[
-                { label: 'Stretch (equal height)', value: 'stretch' },
-                { label: 'Top', value: 'start' },
-                { label: 'Centre', value: 'center' },
-                { label: 'Bottom', value: 'end' },
+                { label: t('ve.fp.stretchEqual'), value: 'stretch' },
+                { label: t('ve.fp.top'), value: 'start' },
+                { label: t('ve.fp.centre'), value: 'center' },
+                { label: t('ve.fp.vBottom'), value: 'end' },
               ]}
               onChange={(v) => setLayout({ gridAlign: v === 'stretch' ? undefined : (v as SectionLayout['gridAlign']) })}
             />
@@ -560,7 +565,7 @@ const SectionLayoutFields: React.FC<{
         )}
         {(layout.display === 'flex' || layout.display === 'grid') && (
           <SelectRow
-            label="Gap unit"
+            label={t('ve.fp.gapUnit')}
             value={layout.gapUnit || 'px'}
             options={[
               { label: 'px', value: 'px' },
@@ -572,18 +577,18 @@ const SectionLayoutFields: React.FC<{
         {layout.display === 'modal' && (
           <>
             <div className="ve-row">
-              <label className="ve-row__label">Button text</label>
+              <label className="ve-row__label">{t('ve.fp.buttonText')}</label>
               <input
                 type="text"
                 maxLength={60}
-                placeholder="Open"
+                placeholder={t('ve.fp.open')}
                 value={layout.modalLabel || ''}
                 onChange={(e) => setLayout({ modalLabel: e.target.value === '' ? undefined : e.target.value })}
-                aria-label="Button text"
+                aria-label={t('ve.fp.buttonText')}
               />
             </div>
             <NumberRow
-              label="Dialog width (px)"
+              label={t('ve.fp.dialogWidth')}
               value={layout.modalWidth}
               min={320}
               max={1200}
@@ -591,11 +596,11 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ modalWidth: v === undefined ? undefined : Math.min(1200, Math.max(320, v)) })}
             />
             <SelectRow
-              label="Trigger style"
+              label={t('ve.fp.triggerStyle')}
               value={layout.modalStyle || 'button'}
               options={[
-                { label: 'Button', value: 'button' },
-                { label: 'Text link', value: 'link' },
+                { label: t('ve.fp.button'), value: 'button' },
+                { label: t('ve.fp.textLink'), value: 'link' },
               ]}
               onChange={(v) => setLayout({ modalStyle: v === 'link' ? 'link' : undefined })}
             />
@@ -603,43 +608,43 @@ const SectionLayoutFields: React.FC<{
               Link trigger: point any link or button at <code>#popup-</code> plus this section&apos;s Anchor ID (Design &gt; Advanced).
             </p>
             <NumberRow
-              label="Open after (seconds)"
-              help="Opens by itself on page load after this delay. Leave empty for no timer."
+              label={t('ve.fp.openAfter')}
+              help={t('ve.fp.openAfterHelp')}
               value={layout.popupDelay}
               min={0}
               max={600}
-              placeholder="Off"
+              placeholder={t('ve.fp.off')}
               onChange={(v) => setLayout({ popupDelay: v === undefined ? undefined : Math.min(600, Math.max(0, Math.round(v))) })}
             />
             <NumberRow
-              label="Open on scroll (%)"
-              help="Opens once the visitor has scrolled this far down the page."
+              label={t('ve.fp.openScroll')}
+              help={t('ve.fp.openScrollHelp')}
               value={layout.popupScroll}
               min={1}
               max={100}
-              placeholder="Off"
+              placeholder={t('ve.fp.off')}
               onChange={(v) => setLayout({ popupScroll: v === undefined ? undefined : Math.min(100, Math.max(1, Math.round(v))) })}
             />
             <CheckRow
-              label="Open on exit intent"
-              help="Desktop only: when the pointer leaves through the top of the window."
+              label={t('ve.fp.exitIntent')}
+              help={t('ve.fp.exitIntentHelp')}
               checked={layout.popupExit === true}
               onChange={(v) => setLayout({ popupExit: v ? true : undefined })}
             />
             <SelectRow
-              label="Repeat"
-              help="Applies to automatic opens only. At most one automatic popup opens per page view."
+              label={t('ve.fp.repeat')}
+              help={t('ve.fp.repeatHelp')}
               value={layout.popupFrequency || 'always'}
               options={[
-                { label: 'Every visit', value: 'always' },
-                { label: 'Once per session', value: 'session' },
-                { label: 'Once every N days', value: 'days' },
+                { label: t('ve.fp.everyVisit'), value: 'always' },
+                { label: t('ve.fp.oncePerSession'), value: 'session' },
+                { label: t('ve.fp.everyNDays'), value: 'days' },
               ]}
               onChange={(v) => setLayout({ popupFrequency: v === 'always' ? undefined : (v as SectionLayout['popupFrequency']) })}
             />
             {layout.popupFrequency === 'days' && (
               <NumberRow
-                label="Days between opens"
+                label={t('ve.fp.daysBetween')}
                 value={layout.popupDays}
                 min={1}
                 max={365}
@@ -652,8 +657,8 @@ const SectionLayoutFields: React.FC<{
         {layout.display === 'stack' && (
           <>
             <NumberRow
-              label="Top offset (px)"
-              help="Distance of the first card from the top of the screen while it sticks."
+              label={t('ve.fp.topOffset')}
+              help={t('ve.fp.topOffsetHelp')}
               value={layout.stackTop}
               min={0}
               max={200}
@@ -661,8 +666,8 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ stackTop: clampField(v, 0, 200) })}
             />
             <NumberRow
-              label="Step offset (px)"
-              help="Extra space between each card and the one before, so the cards peek out as they pile up."
+              label={t('ve.fp.stepOffset')}
+              help={t('ve.fp.stepOffsetHelp')}
               value={layout.stackOffset}
               min={0}
               max={60}
@@ -670,7 +675,7 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ stackOffset: clampField(v, 0, 60) })}
             />
             <NumberRow
-              label="Card min height (vh)"
+              label={t('ve.fp.cardMinHeight')}
               value={layout.stackMinHeight}
               min={30}
               max={100}
@@ -682,8 +687,8 @@ const SectionLayoutFields: React.FC<{
         {layout.display === 'hscroll' && (
           <>
             <NumberRow
-              label="Scroll length (vh)"
-              help="How far the page scrolls while the columns slide across. Longer is slower."
+              label={t('ve.fp.scrollLength')}
+              help={t('ve.fp.scrollLengthHelp')}
               value={layout.hscrollLength}
               min={200}
               max={600}
@@ -691,7 +696,7 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ hscrollLength: clampField(v, 200, 600) })}
             />
             <NumberRow
-              label="Column width (vw)"
+              label={t('ve.fp.colWidthVw')}
               value={layout.hscrollColumnWidth}
               min={40}
               max={100}
@@ -703,16 +708,16 @@ const SectionLayoutFields: React.FC<{
         {layout.display === 'sticky-steps' && (
           <>
             <SelectRow
-              label="Sticky side"
+              label={t('ve.fp.stickySide')}
               value={layout.stickyStepsSide || 'left'}
               options={[
-                { label: 'Left', value: 'left' },
-                { label: 'Right', value: 'right' },
+                { label: t('ve.fp.left'), value: 'left' },
+                { label: t('ve.fp.right'), value: 'right' },
               ]}
               onChange={(v) => setLayout({ stickyStepsSide: v === 'right' ? 'right' : undefined })}
             />
             <NumberRow
-              label="Sticky top offset (px)"
+              label={t('ve.fp.stickyTop')}
               value={layout.stickyStepsTop}
               min={0}
               max={200}
@@ -720,7 +725,7 @@ const SectionLayoutFields: React.FC<{
               onChange={(v) => setLayout({ stickyStepsTop: clampField(v, 0, 200) })}
             />
             <NumberRow
-              label="Step gap (px)"
+              label={t('ve.fp.stepGap')}
               value={layout.stickyStepsGap}
               min={0}
               max={160}
@@ -731,26 +736,26 @@ const SectionLayoutFields: React.FC<{
         )}
         {layout.display && (
           <div className="ve-row">
-            <label className="ve-row__label">Active colour</label>
-            <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(layout.tabsColor || '') ? (layout.tabsColor as string) : '#2563eb'} onChange={(e) => setLayout({ tabsColor: e.target.value })} aria-label="Active colour" />
+            <label className="ve-row__label">{t('ve.fp.activeColour')}</label>
+            <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(layout.tabsColor || '') ? (layout.tabsColor as string) : '#2563eb'} onChange={(e) => setLayout({ tabsColor: e.target.value })} aria-label={t('ve.fp.activeColour')} />
           </div>
         )}
         <SelectRow
-          label="Content width"
-          help="Boxed keeps the columns in a centred column of the page; full lets them use the whole width."
+          label={t('ve.fp.contentWidth')}
+          help={t('ve.fp.contentWidthHelp')}
           value={layout.contentWidth || 'full'}
           options={[
-            { label: 'Full (fill the page area)', value: 'full' },
-            { label: 'Boxed', value: 'boxed' },
+            { label: t('ve.fp.contentFull'), value: 'full' },
+            { label: t('ve.fp.boxed'), value: 'boxed' },
           ]}
           onChange={(v) => setLayout({ contentWidth: v === 'boxed' ? 'boxed' : undefined, boxedWidth: v === 'boxed' ? layout.boxedWidth : undefined })}
         />
         {layout.contentWidth === 'boxed' && (
-          <NumberRow label="Boxed width (px)" value={layout.boxedWidth} min={200} onChange={(v) => setLayout({ boxedWidth: v })} />
+          <NumberRow label={t('ve.fp.boxedWidth')} value={layout.boxedWidth} min={200} onChange={(v) => setLayout({ boxedWidth: v })} />
         )}
         <CheckRow
-          label="Stretch section"
-          help="Lets the section's background run edge to edge of the page, even when the content above is boxed."
+          label={t('ve.fp.stretchSection')}
+          help={t('ve.fp.stretchHelp')}
           checked={design.width === 'full'}
           onChange={(on) => {
             const updated: BlockStyle = { ...design }
@@ -760,16 +765,16 @@ const SectionLayoutFields: React.FC<{
           }}
         />
         <SelectRow
-          label="Columns gap"
-          help="The space between columns (and between rows once they wrap)."
+          label={t('ve.fp.columnsGap')}
+          help={t('ve.fp.columnsGapHelp')}
           resp={{ device, overridden: device !== 'desktop' && gapNow !== undefined, onReset: () => setForDevice('gap', undefined) }}
           value={gapMode}
           options={[
             { label: inheritedFirst('Default (24px)'), value: '' },
-            { label: 'No gap', value: 'none' },
-            { label: 'Narrow (10px)', value: 'narrow' },
-            { label: 'Wide (40px)', value: 'wide' },
-            { label: 'Custom', value: 'custom' },
+            { label: t('ve.fp.gapNone'), value: 'none' },
+            { label: t('ve.fp.gapNarrow'), value: 'narrow' },
+            { label: t('ve.fp.gapWide'), value: 'wide' },
+            { label: t('ve.fp.gapCustom'), value: 'custom' },
           ]}
           onChange={(v) => {
             if (v === '') setForDevice('gap', undefined)
@@ -778,40 +783,40 @@ const SectionLayoutFields: React.FC<{
           }}
         />
         {gapMode === 'custom' && (
-          <NumberRow label="Gap (px)" value={gapNow} min={0} onChange={(v) => setForDevice('gap', v)} />
+          <NumberRow label={t('ve.fp.gapPx')} value={gapNow} min={0} onChange={(v) => setForDevice('gap', v)} />
         )}
         <HeightRows ctl={ctl} />
         <SelectRow
-          label="Vertical align"
-          help="Where the columns sit when the section is taller than they are (set a Height above)."
+          label={t('ve.fp.vAlign')}
+          help={t('ve.fp.vAlignHelp')}
           value={layout.verticalAlign || ''}
           options={[
-            { label: 'Top (default)', value: '' },
-            { label: 'Middle', value: 'middle' },
-            { label: 'Bottom', value: 'bottom' },
+            { label: t('ve.fp.vTop'), value: '' },
+            { label: t('ve.fp.vMiddle'), value: 'middle' },
+            { label: t('ve.fp.vBottom'), value: 'bottom' },
           ]}
           onChange={(v) => setLayout({ verticalAlign: (v || undefined) as SectionLayout['verticalAlign'] })}
         />
       </Accordion>
 
-      <Accordion title="Flow" defaultOpen={device !== 'desktop'}>
+      <Accordion title={t('ve.fp.flow')} defaultOpen={device !== 'desktop'}>
         <SelectRow
-          label="Columns flow"
-          help="Stacked puts the columns one under another instead of side by side."
+          label={t('ve.fp.columnsFlow')}
+          help={t('ve.fp.columnsFlowHelp')}
           resp={{ device, overridden: device !== 'desktop' && directionNow !== '', onReset: () => setForDevice('direction', undefined) }}
           value={directionNow}
           options={[
             { label: device === 'desktop' ? 'Side by side (default)' : `Inherited from ${from} (${directionLabels[device === 'tablet' ? (layout.direction?.desktop || 'row') : (layout.direction?.tablet || layout.direction?.desktop || 'row')]})`, value: '' },
-            { label: 'Side by side', value: 'row' },
-            { label: 'Side by side, reversed', value: 'row-reverse' },
-            { label: 'Stacked (top to bottom)', value: 'column' },
-            { label: 'Stacked, bottom to top', value: 'column-reverse' },
+            { label: t('ve.fp.sideBySide'), value: 'row' },
+            { label: t('ve.fp.sideBySideReversed'), value: 'row-reverse' },
+            { label: t('ve.fp.stackedTop'), value: 'column' },
+            { label: t('ve.fp.stackedBottom'), value: 'column-reverse' },
           ]}
           onChange={(v) => setForDevice('direction', v || undefined)}
         />
         <CheckRow
-          label="Stack on mobile"
-          help="Quick switch: put the columns one under another on phones."
+          label={t('ve.fp.stackMobile')}
+          help={t('ve.fp.stackMobileHelp')}
           checked={layout.direction?.mobile === 'column'}
           onChange={(on) => {
             const direction = { ...(layout.direction || {}) }
@@ -821,39 +826,39 @@ const SectionLayoutFields: React.FC<{
           }}
         />
         <SelectRow
-          label="Wrap columns onto new rows"
+          label={t('ve.fp.wrap')}
           resp={flowResp('wrap')}
           value={wrapNow === undefined ? '' : wrapNow === false ? 'nowrap' : 'wrap'}
           options={[
             { label: inheritedFirst('Wrap (default)'), value: '' },
-            { label: 'Wrap', value: 'wrap' },
-            { label: 'Keep on one line', value: 'nowrap' },
+            { label: t('ve.fp.wrapOpt'), value: 'wrap' },
+            { label: t('ve.fp.noWrap'), value: 'nowrap' },
           ]}
           onChange={(v) => flowSet('wrap', v === '' ? undefined : v === 'wrap')}
         />
         <SelectRow
-          label="Justify (along the row)"
+          label={t('ve.fp.justify')}
           resp={flowResp('justify')}
           value={flowGet('justify') || ''}
           options={[
             { label: inheritedFirst('Start (default)'), value: '' },
-            { label: 'Centre', value: 'center' },
-            { label: 'End', value: 'end' },
-            { label: 'Space between', value: 'between' },
-            { label: 'Space around', value: 'around' },
-            { label: 'Space evenly', value: 'evenly' },
+            { label: t('ve.fp.centre'), value: 'center' },
+            { label: t('ve.fp.end'), value: 'end' },
+            { label: t('ve.fp.spaceBetween'), value: 'between' },
+            { label: t('ve.fp.spaceAround'), value: 'around' },
+            { label: t('ve.fp.spaceEvenly'), value: 'evenly' },
           ]}
           onChange={(v) => flowSet('justify', (v || undefined) as DeviceFlow['justify'])}
         />
         <SelectRow
-          label="Align items"
+          label={t('ve.fp.alignItems')}
           resp={flowResp('alignItems')}
           value={flowGet('alignItems') || ''}
           options={[
             { label: inheritedFirst('Top (default)'), value: '' },
-            { label: 'Centre', value: 'center' },
-            { label: 'Bottom', value: 'end' },
-            { label: 'Stretch (equal height)', value: 'stretch' },
+            { label: t('ve.fp.centre'), value: 'center' },
+            { label: t('ve.fp.vBottom'), value: 'end' },
+            { label: t('ve.fp.stretchEqual'), value: 'stretch' },
           ]}
           onChange={(v) => flowSet('alignItems', (v || undefined) as DeviceFlow['alignItems'])}
         />
@@ -871,6 +876,7 @@ const RepeaterCards: React.FC<{ field: EditorField; value: unknown; onChange: (v
   value,
   onChange,
 }) => {
+  const t = useAdminT()
   const defFields: RepeaterField[] = ((field.repeater as any)?.fields as RepeaterField[]) || []
   const rows: Record<string, unknown>[] = Array.isArray(value)
     ? (value as Record<string, unknown>[])
@@ -969,7 +975,7 @@ const RepeaterCards: React.FC<{ field: EditorField; value: unknown; onChange: (v
   return (
     <div className="ve-field ve-field--full ve-repeater">
       <span className="ve-repeater__label">{field.label}</span>
-      {rows.length === 0 && <p className="ve-repeater__empty">No items yet</p>}
+      {rows.length === 0 && <p className="ve-repeater__empty">{t('ve.fp.noItems')}</p>}
       {rows.map((row, i) => (
         <details
           key={i}
@@ -983,16 +989,16 @@ const RepeaterCards: React.FC<{ field: EditorField; value: unknown; onChange: (v
           <summary className="ve-repeater__head">
             <span className="ve-repeater__num">{i + 1}</span>
             <span className="ve-repeater__preview">{preview(row, i)}</span>
-            <button type="button" className="ve-repeater__btn" title="Move up" aria-label="Move up" disabled={i === 0} onClick={(e) => stop(e, () => moveRow(i, -1))}>
+            <button type="button" className="ve-repeater__btn" title={t('ve.fp.moveUp')} aria-label={t('ve.fp.moveUp')} disabled={i === 0} onClick={(e) => stop(e, () => moveRow(i, -1))}>
               &#8593;
             </button>
-            <button type="button" className="ve-repeater__btn" title="Move down" aria-label="Move down" disabled={i === rows.length - 1} onClick={(e) => stop(e, () => moveRow(i, 1))}>
+            <button type="button" className="ve-repeater__btn" title={t('ve.fp.moveDown')} aria-label={t('ve.fp.moveDown')} disabled={i === rows.length - 1} onClick={(e) => stop(e, () => moveRow(i, 1))}>
               &#8595;
             </button>
-            <button type="button" className="ve-repeater__btn" title="Duplicate" aria-label="Duplicate" onClick={(e) => stop(e, () => duplicateRow(i))}>
+            <button type="button" className="ve-repeater__btn" title={t('ve.fp.duplicate')} aria-label={t('ve.fp.duplicate')} onClick={(e) => stop(e, () => duplicateRow(i))}>
               &#10064;
             </button>
-            <button type="button" className="ve-repeater__btn ve-repeater__btn--danger" title="Delete" aria-label="Delete" onClick={(e) => stop(e, () => deleteRow(i))}>
+            <button type="button" className="ve-repeater__btn ve-repeater__btn--danger" title={t('ve.fp.delete')} aria-label={t('ve.fp.delete')} onClick={(e) => stop(e, () => deleteRow(i))}>
               &times;
             </button>
           </summary>
@@ -1020,6 +1026,8 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
   value,
   onChange,
 }) => {
+  const t = useAdminT()
+  const adminHref = useAdminHref()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [fetchedThumb, setFetchedThumb] = useState<MediaThumb | null>(null)
   const [relOptions, setRelOptions] = useState<{ id: number; label: string }[]>([])
@@ -1196,7 +1204,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
           <span>{field.label}</span>
           <textarea
             rows={6}
-            placeholder="Separate paragraphs with a blank line."
+            placeholder={t('ve.fp.paragraphsPlaceholder')}
             defaultValue={lexicalToPlainText(value)}
             onBlur={(e) => {
               // Only a real change is written, so focusing and leaving the box does not mark the page dirty.
@@ -1214,7 +1222,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
               // eslint-disable-next-line @next/next/no-img-element
               <img src={thumb.url} alt={thumb.alt || ''} className="ve-media-field__thumb" />
             ) : (
-              <div className="ve-media-field__empty">No image</div>
+              <div className="ve-media-field__empty">{t('ve.fp.noImage')}</div>
             )}
             <div className="ve-media-field__actions">
               <button type="button" className="ve-btn ve-btn--ghost" onClick={() => setPickerOpen(true)}>
@@ -1302,7 +1310,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
             {emptyForms ? (
               <span className="ve-field__help ve-form-empty">
                 No form yet. Create one in Forms (Settings &gt; Forms) and pick it here.{' '}
-                <a href="/admin/content/forms" target="_blank" rel="noreferrer">
+                <a href={adminHref('/content/forms')} target="_blank" rel="noreferrer">
                   Open Forms
                 </a>
               </span>
@@ -1394,6 +1402,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
 }
 
 const MultiThumb: React.FC<{ id: number; onRemove: () => void }> = ({ id, onRemove }) => {
+  const t = useAdminT()
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
     fetch(`/api/media/${id}?depth=0`, { credentials: 'include' })
@@ -1409,7 +1418,7 @@ const MultiThumb: React.FC<{ id: number; onRemove: () => void }> = ({ id, onRemo
       ) : (
         <span>&#8230;</span>
       )}
-      <button type="button" onClick={onRemove} aria-label="Remove image">
+      <button type="button" onClick={onRemove} aria-label={t('ve.fp.removeImage')}>
         &#10005;
       </button>
     </div>

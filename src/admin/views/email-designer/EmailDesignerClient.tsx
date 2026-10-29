@@ -1,7 +1,7 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
 import { lintEmail, renderEmailHtml, type EmailBlock, type EmailBrand } from '@/features/email/design'
 import { EMAIL_TEMPLATE_DEFAULTS } from '@/features/email/templateDefaults'
@@ -126,7 +126,7 @@ export function EmailDesignerClient({ templates, brand: initialBrand, logo: init
         <h1 className="ed-title">Email designer</h1>
         <p className="ed-intro">
           Design the look of each automatic email. The preview updates as you type. Save to use the design on the site.{' '}
-          <Link href="/admin/settings/communication">Back to Communication settings</Link>
+          <AdminLink path="/settings/communication">Back to Communication settings</AdminLink>
         </p>
       </header>
 

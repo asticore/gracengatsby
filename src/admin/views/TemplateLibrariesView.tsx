@@ -1,4 +1,6 @@
-import Link from 'next/link'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
@@ -9,13 +11,13 @@ import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
  */
 export async function TemplateLibrariesView() {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   return (
     <div className="list-view">
       <div className="list-header">
         <h1>Template libraries</h1>
-        <Link className="btn" href="/admin/templates">Back to Templates</Link>
+        <AdminLink className="btn" path="/templates">Back to Templates</AdminLink>
       </div>
       <p>Add libraries of ready-made templates. Coming next.</p>
       <ul aria-label="Template libraries" style={{ listStyle: 'none', padding: 0, margin: '12px 0 0' }} />

@@ -1,5 +1,7 @@
 import { INTERFACE_SOURCE_ID, interfaceSourceText } from './interfaceStrings'
 import { isBlockFieldPath, readBlockField } from './blockText'
+import { parseRichTextPath, readRichTextNode } from './richText'
+import { parseTierPath, readTierText } from '@/features/editScreens/tiers'
 import { sourceIdFor } from './translatableFields'
 import { parseAssignedTo, parseStatus, type TranslationStatus } from './translationStatus'
 
@@ -202,6 +204,16 @@ export const sourceLookup = (locale: string): TranslationLookup => buildLookup(l
  */
 export function valueAtPath(document: unknown, path: string): unknown {
   if (isBlockFieldPath(path)) return readBlockField(document, path)
+  const rich = parseRichTextPath(path)
+  if (rich) {
+    const tree = document && typeof document === 'object' ? (document as Record<string, unknown>)[rich.field] : undefined
+    return readRichTextNode(tree, rich.indexPath)
+  }
+  const tier = parseTierPath(path)
+  if (tier) {
+    const tiers = document && typeof document === 'object' ? (document as Record<string, unknown>).ticketTiers : undefined
+    return readTierText(tiers, tier.id, tier.field)
+  }
   return path.split('.').reduce<unknown>((current, part) => {
     if (current === null || typeof current !== 'object') return undefined
     return (current as Record<string, unknown>)[part]

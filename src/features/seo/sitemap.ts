@@ -11,6 +11,12 @@ import { isLocaleRoutable } from '@/features/multilingual/routing'
 import { nonDefaultLocales, publishIndex, publishableLocalesForDocument, type PublishIndex } from '@/features/multilingual/availability'
 import { findTranslations } from '@/features/multilingual/store'
 import { getAllResolvedPages, getHomepage } from '@/utilities/pagePaths'
+import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
+import { readDomainsFromD1 } from '@/features/domains/store'
+import { requestDomain } from '@/features/domains/request'
+import { availableOnHost, parseHostList } from '@/features/domains/scope'
+import { isNoindexPath } from '@/features/security/noindex'
+import { getAdminRoot } from '@/features/security/settings'
 
 export type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
 
@@ -64,12 +70,17 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   if (siteBlocked) return []
 
   const baseUrl = context.baseUrl
+  const adminRoot = await getAdminRoot()
   const multilingual = await readMultilingualSettingsFromD1()
   const seen = new Set<string>()
   const entries: SitemapEntry[] = []
   // Every translation the non-default locales have, in one query. Each entry
   // is then judged in memory, so the sitemap costs one query however long it is.
   const routable = isLocaleRoutable(multilingual)
+  // Registered domains: each entry also lists the same page on every other active domain (empty with fewer than two).
+  const domains = await readDomainsFromD1()
+  // Content limited to other domains is left out of this domain's sitemap.
+  const requestHost = (await requestDomain())?.host ?? null
   const translationIndex: PublishIndex = routable
     ? publishIndex(
         await findTranslations((await getEngine()) as unknown as Parameters<typeof findTranslations>[0], {
@@ -80,22 +91,40 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     : publishIndex([])
 
   type DocRef = { collection: string; id: number | string; doc: unknown }
+  // Entries are collected first and emitted together, so a document scoped to this domain is seen before the shared one
+  // that has the same address, and so hreflang knows where another domain serves its own document.
+  const candidates: { path: string; lastModified?: string | null; priority: number; ref?: DocRef }[] = []
   const add = (path: string, lastModified?: string | null, priority = 0.6, ref?: DocRef) => {
+    candidates.push({ path, lastModified, priority, ref })
+  }
+  const emit = (path: string, lastModified?: string | null, priority = 0.6, ref?: DocRef) => {
     const normalised = normalisePath(path)
     if (seen.has(normalised)) return
+    // The admin, the API and the preview never belong in a sitemap, whatever the content says.
+    if (isNoindexPath(normalised, adminRoot)) return
     if (pathMatches(normalised, excluded) || pathMatches(normalised, noindexed)) return
+    const docAvailable = (ref?.doc as { availableDomains?: unknown } | undefined)?.availableDomains
+    if (ref && !availableOnHost(docAvailable, requestHost)) return
     seen.add(normalised)
     // A page only lists the locales it has a publishable translation in; a route with no document keeps them all.
     const available = routable && ref
       ? publishableLocalesForDocument({ ...ref, index: translationIndex, settings: multilingual })
       : null
+    // A domain that serves its own document at this address is not an alternate of a shared one: that is a different page.
+    const ownHosts = parseHostList(docAvailable)
+    const cross = domainAlternates(
+      normalised,
+      domains.filter((d) => availableOnHost(docAvailable, d.host) && (ownHosts.includes(d.host) || !scopedAt.get(normalised)?.has(d.host))),
+      multilingual,
+    )
     for (const variant of sitemapVariants(normalised, baseUrl, multilingual, available)) {
+      const alternates = mergeAlternates(variant.alternates, cross)
       entries.push({
         url: variant.url,
         lastModified: toW3cDate(lastModified),
         changeFrequency,
         priority,
-        ...(variant.alternates ? { alternates: variant.alternates } : {}),
+        ...(alternates.length > 0 ? { alternates } : {}),
       })
     }
   }
@@ -173,6 +202,17 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   if (flags?.faq) {
     add('/faq', undefined, 0.5)
   }
+
+  const scopedAt = new Map<string, Set<string>>()
+  for (const candidate of candidates) {
+    const hosts = parseHostList((candidate.ref?.doc as { availableDomains?: unknown } | undefined)?.availableDomains)
+    if (hosts.length === 0) continue
+    const key = normalisePath(candidate.path)
+    scopedAt.set(key, new Set([...(scopedAt.get(key) ?? []), ...hosts]))
+  }
+  const hereFirst = (ref?: DocRef) => (requestHost && parseHostList((ref?.doc as { availableDomains?: unknown } | undefined)?.availableDomains).includes(requestHost) ? 1 : 0)
+  candidates.sort((a, b) => hereFirst(b.ref) - hereFirst(a.ref))
+  for (const candidate of candidates) emit(candidate.path, candidate.lastModified, candidate.priority, candidate.ref)
 
   return entries
 }

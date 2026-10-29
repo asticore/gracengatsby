@@ -1,7 +1,7 @@
 'use client'
 
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
 
 /** The logo as the brand stores it: the media id, and an absolute address for the preview. */
 export type LogoChoice = { id: number; url: string }
@@ -72,7 +72,7 @@ export function LogoPicker({ logo, onChange }: Props) {
           {!error && items === null && <p className="ed-muted">Loading pictures...</p>}
           {items !== null && items.length === 0 && (
             <p className="ed-muted">
-              No pictures yet. Upload the logo in <Link href="/admin/content/media">Media</Link>, then come back here.
+              No pictures yet. Upload the logo in <AdminLink path="/content/media">Media</AdminLink>, then come back here.
             </p>
           )}
           <div className="ed-logo__grid">

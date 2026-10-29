@@ -118,6 +118,7 @@ describe('Settings Pages Configuration', () => {
       'speed-settings',
       'security-settings',
       'language-settings',
+      'domain-settings',
       'payment-settings',
       'shipping-settings',
       'form-settings',

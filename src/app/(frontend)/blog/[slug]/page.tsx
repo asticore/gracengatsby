@@ -1,4 +1,8 @@
 import Image from 'next/image'
+import { contentAvailableHere, requestHost } from '@/features/domains/request'
+import { pickForHost } from '@/features/domains/scope'
+import { publicLocale } from '@/features/uiStrings/storeTextsServer'
+import { formatDateFor } from '@/features/uiStrings/publicFormat'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import React from 'react'
@@ -39,14 +43,16 @@ async function getPost(slug: string) {
   const { docs } = (await engine.find({
     collection: 'posts',
     where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
-    limit: 1,
+    limit: 0,
     depth: 1,
   })) as unknown as { docs: Post[] }
-  return docs[0] || null
+  // The same slug can exist on several domains: this domain's own post, else the shared one (features/domains/scope.ts).
+  return pickForHost(docs, await requestHost(), (post) => (post as { availableDomains?: unknown }).availableDomains)
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
+  const locale = await publicLocale()
   const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
   if (!post) return {}
 
@@ -68,6 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return buildMetadata({
     title: post.title,
     seo: post.seo,
+    availableDomains: (post as { availableDomains?: unknown }).availableDomains,
     featuredImage: post.featuredImage,
     path: `/blog/${slug}`,
     kind: 'article',
@@ -78,7 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       excerpt: post.excerpt,
       category: post.categories?.[0]?.name,
       date: post.publishedDate
-        ? new Date(post.publishedDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+        ? formatDateFor(post.publishedDate, await publicLocale(), { day: 'numeric', month: 'long', year: 'numeric' })
         : undefined,
     },
   })
@@ -97,8 +104,10 @@ export default async function BlogPostPage({
   if (!flags.blog) notFound()
 
   const { slug } = await params
+  const locale = await publicLocale()
   const post = await applyTranslations(await getPost(slug), 'posts', await currentRequestLocale())
   if (!post) notFound()
+  if (!(await contentAvailableHere((post as { availableDomains?: unknown }).availableDomains))) notFound()
 
   // Check password gate
   const cookieStore = await cookies()
@@ -146,7 +155,7 @@ export default async function BlogPostPage({
         <h1>{post.title}</h1>
         <p className="flex justify-center gap-3 text-[0.8rem] opacity-65">
           {author ? (sw.authorArchives ? <Link href={authorPath(author.slug)}>{author.name}</Link> : <span>{author.name}</span>) : null}
-          {post.publishedDate && <time dateTime={post.publishedDate}>{new Date(post.publishedDate).toLocaleDateString()}</time>}
+          {post.publishedDate && <time dateTime={post.publishedDate}>{formatDateFor(post.publishedDate, locale)}</time>}
         </p>
       </header>
 

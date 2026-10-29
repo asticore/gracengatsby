@@ -1,3 +1,4 @@
+import { getAdminRoot } from '@/features/security/settings'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import Link from 'next/link'
 import type { Engine, EngineRequest } from '@/engine'
@@ -86,7 +87,7 @@ function parseMonthParam(value: string | undefined): { year: number; month: numb
  */
 export async function EventsCalendarView(props: EventsCalendarViewProps) {
   const { collectionConfig, data, hasCreatePermission, newDocumentURL, engine, searchParams, user, embedded } = props
-  const adminRoute = engine?.config?.routes?.admin ?? '/admin'
+  const adminRoute = await getAdminRoot()
   const slug = collectionConfig?.slug ?? 'events'
 
   const sp = searchParams ?? {}

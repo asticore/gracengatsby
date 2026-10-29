@@ -1,3 +1,5 @@
+import { adminHref } from '@/features/security/adminPath'
+import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess, isAdminUser } from '@/admin/auth'
@@ -12,7 +14,7 @@ import { listAuthAuditPage } from '@/features/security/auditStore'
  */
 export async function SecurityAuditView({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const context = await getAdminContext()
-  if (!hasAdminPanelAccess(context.user)) redirect('/admin/login')
+  if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
   if (!isAdminUser(context.user)) {
     return (

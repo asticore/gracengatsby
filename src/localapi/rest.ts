@@ -716,7 +716,8 @@ function applyBeforeDuplicate(fields: FieldConfigLike[], data: Record<string, un
       continue
     }
 
-    if (field.unique) {
+    // A slug is unique per domain now (features/domains/slugs.ts), not by a unique index, so a copy still gets " - Copy".
+    if (field.unique || (name === 'slug' && field.type === 'text')) {
       const value = data[name]
       if (UNIQUE_STRING_TYPES.has(field.type) && typeof value === 'string' && value.trim() !== '') {
         data[name] = `${value} - Copy`

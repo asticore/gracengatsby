@@ -1,6 +1,8 @@
 import { valueAtPath, type TranslationRow } from './store'
 import { fieldsForDocument, sourceIdFor, translatableSource } from './translatableFields'
 import { isBlockFieldPath, writeBlockField } from './blockText'
+import { parseRichTextPath, writeRichTextNode } from './richText'
+import { parseTierPath, writeTierText } from '@/features/editScreens/tiers'
 import { publishIndex, publishableText } from './availability'
 import type { MultilingualSettings } from './settings'
 
@@ -43,7 +45,7 @@ export function overlayDocument<T>(
   const sourceId = sourceIdFor(collection, documentId)
 
   for (const field of fieldsForDocument(collection, doc)) {
-    if (field.richText) continue
+    if (field.richText) continue // Lexical trees are expanded to text-node sub-fields; a whole tree is never overlaid.
     const original = valueAtPath(doc, field.path)
     if (typeof original !== 'string') continue
 
@@ -61,6 +63,17 @@ export function overlayDocument<T>(
 /** Immutable set along a dot path; creates intermediate objects when they are missing. */
 function withValueAtPath<T>(document: T, path: string, value: unknown): T {
   if (isBlockFieldPath(path)) return writeBlockField(document, path, value) as T
+  const rich = parseRichTextPath(path)
+  if (rich && document && typeof document === 'object') {
+    const base = document as Record<string, unknown>
+    const tree = writeRichTextNode(base[rich.field], rich.indexPath, String(value))
+    return { ...base, [rich.field]: tree } as T
+  }
+  const tier = parseTierPath(path)
+  if (tier && document && typeof document === 'object') {
+    const base = document as Record<string, unknown>
+    return { ...base, ticketTiers: writeTierText(base.ticketTiers, tier.id, tier.field, String(value)) } as T
+  }
   const [head, ...rest] = path.split('.')
   if (head === undefined) return document
   const base = (document && typeof document === 'object' ? document : {}) as Record<string, unknown>

@@ -17,6 +17,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { useAdminHref } from '@/admin/adminRoute/AdminRouteProvider'
 
 const LogoutIcon: React.FC = () => (
   <svg aria-hidden="true" height="15" viewBox="0 0 16 16" width="15">
@@ -34,6 +35,8 @@ const LogoutIcon: React.FC = () => (
 export const Logout: React.FC = () => {
   const router = useRouter()
   const t = useAdminT()
+  const adminHref = useAdminHref()
+  const loginHref = () => adminHref('/login')
   const [loggingOut, setLoggingOut] = useState(false)
 
   const onClick = async () => {
@@ -41,7 +44,7 @@ export const Logout: React.FC = () => {
     try {
       await fetch('/api/users/logout', { credentials: 'include', method: 'POST' })
     } finally {
-      router.push('/admin/login')
+      router.push(loginHref())
       router.refresh()
     }
   }

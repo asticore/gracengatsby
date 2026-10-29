@@ -5,6 +5,8 @@
 // with `TypeError: Cannot read properties of null (reading '1')` inside
 // next/font's google loader. @fontsource ships the actual woff2/woff files in
 // the package, so there's no network fetch at build time at all.
+import { requestDomain } from '@/features/domains/request'
+import { domainBrand, domainSocials } from '@/features/domains/brand'
 import '@fontsource/cormorant-garamond/400.css'
 import '@fontsource/cormorant-garamond/500.css'
 import '@fontsource/cormorant-garamond/600.css'
@@ -30,13 +32,18 @@ import { cookies, headers } from 'next/headers'
 import { Footer } from '@/components/Footer'
 import { Header, type NavLink } from '@/components/Header'
 import { Providers } from '@/components/Providers'
+import { StoreTextsProvider } from '@/features/uiStrings/StoreTextsContext'
+import { publicLocale } from '@/features/uiStrings/storeTextsServer'
+import { storeTexts } from '@/features/uiStrings/storeTextsServer'
 import { ShopCurrencyProvider } from '@/components/ShopCurrencyContext'
 import { DisplayCurrencyProvider } from '@/components/DisplayCurrencyContext'
 import { DISPLAY_CURRENCY_COOKIE } from '@/features/ecommerce/lib/displayCurrency'
 import { loadDisplayState } from '@/features/ecommerce/server/displayState'
 import { shopCurrency } from '@/features/ecommerce/server/pricing'
 import { getEngine } from '@/lib/engine'
-import { getAllResolvedPages, type ResolvedPage } from '@/utilities/pagePaths'
+import { getAllResolvedPages, getAllResolvedPagesAnyDomain, type ResolvedPage } from '@/utilities/pagePaths'
+import { requestHost } from '@/features/domains/request'
+import { menuPageEntry } from '@/features/domains/menu'
 import type { Footer as FooterGlobal, Header as HeaderGlobal, Media, SiteSetting } from '@/engage-types'
 
 import { SeoBodyScripts, SeoJsonLd, SeoScripts } from '@/features/seo'
@@ -123,13 +130,15 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     getAllResolvedPages().catch((): ResolvedPage[] => []),
   ])) as [SiteSetting | null, HeaderGlobal | null, FooterGlobal | null, ResolvedPage[]]
 
-  const pathById = new Map(resolvedPages.map((entry) => [String(entry.page.id), entry]))
+  // Menu links store a page id; see features/domains/menu.ts for a page scoped to another domain.
+  const host = await requestHost()
+  const anyDomainPages = await getAllResolvedPagesAnyDomain().catch((): ResolvedPage[] => [])
 
   const resolveHref = (item: LinkSource): string | null => {
     if (item.linkType === 'page') {
       const pageId = item.page && typeof item.page === 'object' ? (item.page as { id?: unknown }).id : item.page
       if (!pageId) return null
-      const entry = pathById.get(String(pageId))
+      const entry = menuPageEntry(pageId as number | string, host, resolvedPages, anyDomainPages)
       if (!entry) return null
       return entry.page.isHomepage ? '/' : `/${entry.path.join('/')}`
     }
@@ -171,7 +180,10 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const localNav = (links: NavLink[]): NavLink[] =>
     links.map((link) => ({ ...link, href: localizeForRequest(link.href), children: link.children && localNav(link.children) }))
 
-  const logo = settings?.logo && typeof settings.logo === 'object' ? (settings.logo as Media) : null
+  // The domain this request arrived on can override the name, logo, contact and social links (features/domains).
+  const domain = await requestDomain()
+  const brand = domainBrand(settings, domain)
+  const logo = brand?.logo && typeof brand.logo === 'object' ? (brand.logo as Media) : null
   const theme = settings?.theme
 
   // Only the installed fonts actually picked for heading or body get CSS,
@@ -242,6 +254,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const chrome = await renderChromeTemplates(requestPathOf(await headers()))
   const siteEffects = siteEffectsFor(settings, requestPathOf(await headers()))
 
+  const storeDict = await storeTexts()
   return (
     <html
       lang={locale ?? 'en'}
@@ -274,11 +287,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <ShopCurrencyProvider currency={storeCurrency}>
         <DisplayCurrencyProvider state={displayState}>
         <Providers>
+        <StoreTextsProvider value={storeDict} locale={await publicLocale()}>
           {chrome.header ? (
             <header>{chrome.header}</header>
           ) : (
           <Header
-            siteName={settings?.siteName || undefined}
+            siteName={brand?.siteName || undefined}
             logoUrl={logo?.url || undefined}
             logoWidth={logo?.width || undefined}
             logoHeight={logo?.height || undefined}
@@ -289,7 +303,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             mobileLayout={(header?.mobileLayout as 'slide-in' | 'fullscreen') || 'slide-in'}
             showCart={features?.ecommerce !== false && header?.showCart !== false}
             announcementBar={header?.announcementBar}
-            socials={header?.socials}
+            socials={domainSocials(header?.socials, domain)}
             homeHref={localizeForRequest('/')}
             cartHref={localizeForRequest('/cart')}
           />
@@ -303,21 +317,22 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <footer>{chrome.footer}</footer>
           ) : (
           <Footer
-            siteName={settings?.siteName || undefined}
+            siteName={brand?.siteName || undefined}
             logoUrl={logo?.url || undefined}
             logoWidth={logo?.width || undefined}
             logoHeight={logo?.height || undefined}
             showLogo={footer?.showLogo !== false}
             bottomText={footer?.bottomText || undefined}
             columns={footerColumns.map((column) => ({ ...column, links: column.links.map((l) => ({ ...l, href: localizeForRequest(l.href) })) }))}
-            contactEmail={footer?.contact?.email}
-            contactPhone={footer?.contact?.phone}
+            contactEmail={domain?.overrides.contactEmail || footer?.contact?.email}
+            contactPhone={domain?.overrides.contactPhone || footer?.contact?.phone}
             address={footer?.contact?.address || undefined}
-            socials={footer?.socials}
+            socials={domainSocials(footer?.socials, domain)}
             layout={(footer?.layout as 'columns-3' | 'columns-4' | 'stacked') || 'columns-3'}
             copyrightText={footer?.copyrightText}
           />
           )}
+        </StoreTextsProvider>
         </Providers>
         </DisplayCurrencyProvider>
         </ShopCurrencyProvider>

@@ -126,6 +126,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     label: 'Settings',
     entities: [
       { slug: 'settings-site', type: 'view', href: '/settings/site', label: 'General' },
+      { slug: 'settings-domains', type: 'view', href: '/settings/domains', label: 'Domains' },
       { slug: 'settings-content', type: 'view', href: '/settings/content', label: 'Content' },
       { slug: 'settings-commerce', type: 'view', href: '/settings/commerce', label: 'Commerce' },
       { slug: 'settings-communication', type: 'view', href: '/settings/communication', label: 'Communication' },
@@ -162,6 +163,7 @@ export const HIDDEN_FROM_NAV = new Set<string>([
   'site-settings',
   'site-details',
   'language-settings',
+  'domain-settings',
   'seo-settings',
   'blog-settings',
   'faq-settings',

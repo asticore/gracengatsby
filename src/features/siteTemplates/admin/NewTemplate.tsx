@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminHref } from '@/admin/adminRoute/AdminRouteProvider'
 import React, { useEffect, useState } from 'react'
 
 import { KIND_LABELS, SITE_TEMPLATE_KINDS, type SiteTemplateKind } from '../kinds'
@@ -11,7 +12,8 @@ export const templateButtonClass =
 const panel = 'rounded-[6px] border border-[var(--theme-elevation-150,#cac7d1)] p-[12px]'
 
 /** The visual builder entry for a site template. */
-export const siteTemplateEditorHref = (id: number | string) => `/admin/visual-editor/collection/site-templates/${id}`
+/** Admin path (relative to the admin root) of a site template in the visual editor. */
+export const siteTemplateEditorPath = (id: number | string) => `/visual-editor/collection/site-templates/${id}`
 
 /**
  * New site template: type, starter (or Blank), then create the draft and open it in the visual builder.
@@ -42,6 +44,7 @@ export const NewTemplate: React.FC<{ initialKind: SiteTemplateKind; onClose: () 
     }
   }, [])
 
+  const adminHref = useAdminHref()
   const create = async () => {
     setSaving(true)
     setError('')
@@ -55,7 +58,7 @@ export const NewTemplate: React.FC<{ initialKind: SiteTemplateKind; onClose: () 
       })
       const data = (await res.json().catch(() => ({}))) as { id?: number | string; editorUrl?: string; error?: string }
       if (!res.ok || data.id === undefined) throw new Error(data.error || 'Could not create the template.')
-      window.location.assign(data.editorUrl ?? siteTemplateEditorHref(data.id))
+      window.location.assign(data.editorUrl ?? adminHref(siteTemplateEditorPath(data.id)))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create the template.')
       setSaving(false)

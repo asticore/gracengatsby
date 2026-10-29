@@ -1,5 +1,6 @@
 import type { FeatureKey } from '@/features/registry'
 
+import { DEFAULT_ADMIN_PATH, resolveAdminRoot } from './adminPath'
 import { DEFAULT_PASSWORD_POLICY, HISTORY_LIMIT, MAX_POLICY_LENGTH, type PasswordPolicy } from './passwordPolicyDefaults'
 
 /**
@@ -25,6 +26,8 @@ export type XFrameOption = 'DENY' | 'SAMEORIGIN'
 export type SecuritySettings = {
   /** False when the Security feature is switched off in Site Settings. */
   featureEnabled: boolean
+  /** The saved admin URL (`/admin` by default). The env override is applied by resolveAdminRoot, not here. */
+  adminPath: string
   loginProtection: {
     maxLoginAttempts: number
     lockoutMinutes: number
@@ -190,6 +193,7 @@ export const DEFAULT_PASSWORDLESS_SETTINGS: PasswordlessSettings = {
 /** Mirrors the `defaultValue` of every field on the Security screen. */
 export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   featureEnabled: false,
+  adminPath: DEFAULT_ADMIN_PATH,
   loginProtection: {
     maxLoginAttempts: 5,
     lockoutMinutes: 15,
@@ -392,11 +396,13 @@ type SettingsRow = Record<string, unknown>
 export function rowToSettings(row: SettingsRow | null, featureEnabled: boolean): SecuritySettings {
   const base = DEFAULT_SECURITY_SETTINGS
   if (!row) return { ...base, featureEnabled }
+  const adminPath = resolveAdminRoot(row.admin_path, null)
 
   const frame = asText(row.headers_x_frame_options, base.headers.xFrameOptions)
 
   return {
     featureEnabled,
+    adminPath,
     loginProtection: {
       maxLoginAttempts: asNum(row.login_protection_max_login_attempts, base.loginProtection.maxLoginAttempts),
       lockoutMinutes: asNum(row.login_protection_lockout_minutes, base.loginProtection.lockoutMinutes),
@@ -500,6 +506,15 @@ export async function readSecuritySettingsFromD1(): Promise<SecuritySettings> {
   return value
 }
 
+/**
+ * The admin root for this request: ENGAGE_ADMIN_PATH when valid, else the saved
+ * setting, else /admin. Reads the same cached row as the middleware.
+ */
+export async function getAdminRoot(): Promise<string> {
+  const settings = await readSecuritySettingsFromD1()
+  return resolveAdminRoot(settings.adminPath, process.env.ENGAGE_ADMIN_PATH)
+}
+
 /** Drops the isolate's copy so the next request re-reads. Called after a save. */
 export function invalidateSecuritySettingsCache(): void {
   cached = null
@@ -538,6 +553,7 @@ export async function getSecuritySettings(engine: EngineLike): Promise<SecurityS
 
   return {
     featureEnabled: features[SECURITY_FEATURE_KEY] ?? base.featureEnabled,
+    adminPath: resolveAdminRoot(settings.adminPath, null),
     loginProtection: {
       maxLoginAttempts: asNum(login.maxLoginAttempts, base.loginProtection.maxLoginAttempts),
       lockoutMinutes: asNum(login.lockoutMinutes, base.loginProtection.lockoutMinutes),

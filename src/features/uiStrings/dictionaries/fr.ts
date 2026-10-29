@@ -2497,6 +2497,10 @@ const fr: UiDictionary = {
   'al.breadcrumb': 'Fil d\'Ariane',
   'al.dataViewSettings': 'Réglages du tableau ou du graphique',
   'al.trash': 'Corbeille',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Événements de suivi",
+  "label.singular.tracking-events": "Événement de suivi",
+  "desc.tracking-events": "Événements du site public (clic, envoi de formulaire, vue de page, défilement ou temps passé). Ils ne se déclenchent qu’après l’acceptation de la catégorie de cookies correspondante.",
 }
 
 export default fr

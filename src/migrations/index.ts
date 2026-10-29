@@ -114,6 +114,7 @@ import * as migration_20261215_100000_domain_overrides from './20261215_100000_d
 import * as migration_20261220_100000_site_scoped_slugs from './20261220_100000_site_scoped_slugs';
 import * as migration_20261229_100000_tracking_events from './20261229_100000_tracking_events';
 import * as migration_20261230_100000_tracking_switches from './20261230_100000_tracking_switches';
+import * as migration_20261231_100000_tracking_categories from './20261231_100000_tracking_categories';
 
 export const migrations = [
   {
@@ -695,5 +696,10 @@ export const migrations = [
     up: migration_20261230_100000_tracking_switches.up,
     down: migration_20261230_100000_tracking_switches.down,
     name: '20261230_100000_tracking_switches',
+  },
+  {
+    up: migration_20261231_100000_tracking_categories.up,
+    down: migration_20261231_100000_tracking_categories.down,
+    name: '20261231_100000_tracking_categories',
   },
 ];

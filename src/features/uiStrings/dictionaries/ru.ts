@@ -2497,6 +2497,10 @@ const ru: UiDictionary = {
   'al.breadcrumb': 'Хлебные крошки',
   'al.dataViewSettings': 'Настройки таблицы или диаграммы',
   'al.trash': 'Корзина',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "События отслеживания",
+  "label.singular.tracking-events": "Событие отслеживания",
+  "desc.tracking-events": "События на публичном сайте (клик, отправка формы, просмотр страницы, глубина прокрутки или время на странице). Отправляются только после принятия соответствующей категории cookie.",
 }
 
 export default ru

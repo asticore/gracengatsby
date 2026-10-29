@@ -103,6 +103,12 @@ describe('platform calls and consent gating', () => {
     expect(allowedPlatforms(['meta', 'ga4'], makeChoices({ analytics: true, marketing: true }))).toEqual(['meta', 'ga4'])
   })
 
+  it('uses a per-connection consent category when one is set', () => {
+    const analyticsOnly = makeChoices({ analytics: true })
+    expect(allowedPlatforms(['meta'], analyticsOnly, { meta: 'analytics' })).toEqual(['meta'])
+    expect(allowedPlatforms(['meta'], analyticsOnly)).toEqual([])
+  })
+
   it('sendCall reports a missing global so the call can be queued, and sends once it exists', () => {
     const calls: unknown[] = []
     expect(sendCall({} as never, { platform: 'meta', method: 'track', args: ['Lead'] })).toBe(false)

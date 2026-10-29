@@ -18,6 +18,8 @@ export type TrackingRuntimeOptions = {
   platforms: TrackingPlatform[]
   policyVersion: number
   optIn: boolean
+  /** Per-platform consent category, from Integrations. Missing entries use the platform default. */
+  categories?: Partial<Record<TrackingPlatform, 'analytics' | 'marketing'>>
 }
 
 /** Pages where tags never fire: the preview screens and any admin path. */
@@ -29,8 +31,12 @@ export function trackingSuppressed(pathname: string, adminPath: string): boolean
 
 const CLICK_DEBOUNCE_MS = 1000
 
-export function allowedPlatforms(platforms: TrackingPlatform[], choices: ConsentChoices): TrackingPlatform[] {
-  return platforms.filter((platform) => choices[PLATFORM_CATEGORY[platform]])
+export function allowedPlatforms(
+  platforms: TrackingPlatform[],
+  choices: ConsentChoices,
+  categories: Partial<Record<TrackingPlatform, 'analytics' | 'marketing'>> = {},
+): TrackingPlatform[] {
+  return platforms.filter((platform) => choices[categories[platform] ?? PLATFORM_CATEGORY[platform]])
 }
 
 /**
@@ -106,7 +112,7 @@ export function startTracking(win: Win, options: TrackingRuntimeOptions): () => 
 
   const fire = (event: PublicTrackingEvent, trigger: string) => {
     const choices = effectiveChoices(getConsentState().record, options.policyVersion, !options.optIn)
-    let platforms = allowedPlatforms(options.platforms, choices)
+    let platforms = allowedPlatforms(options.platforms, choices, options.categories)
     // A standard PageView is already sent by the base tags on every page (fbq PageView, ttq.page, GA4 page_view),
     // so only the dataLayer receives it here. This keeps a page view from being counted twice.
     if (trigger === 'pageview' && event.platformEvent === 'PageView') platforms = platforms.filter((p) => p === 'gtm')

@@ -2498,6 +2498,10 @@ const de: UiDictionary = {
   'al.breadcrumb': 'Navigationspfad',
   'al.dataViewSettings': 'Einstellungen für Tabelle oder Diagramm',
   'al.trash': 'Papierkorb',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Tracking-Ereignisse",
+  "label.singular.tracking-events": "Tracking-Ereignis",
+  "desc.tracking-events": "Ereignisse auf der öffentlichen Website (Klick, Formularversand, Seitenaufruf, Scrolltiefe oder Verweildauer). Sie werden erst nach Zustimmung der passenden Cookie-Kategorie gesendet.",
 }
 
 export default de

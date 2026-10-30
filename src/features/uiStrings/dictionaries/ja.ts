@@ -2503,6 +2503,26 @@ const ja: UiDictionary = {
   "label.collection.tracking-events": "トラッキングイベント",
   "label.singular.tracking-events": "トラッキングイベント",
   "desc.tracking-events": "公開サイトで発生するイベント（クリック、フォーム送信、ページ表示、スクロール量、滞在時間）。対応する Cookie カテゴリーに同意した後にのみ送信されます。",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "イベントピッカー",
+  "tracking.picker.hint": "要素にカーソルを合わせてクリックすると選択できます。",
+  "tracking.picker.selector": "セレクター",
+  "tracking.picker.matches": "このページでの一致数",
+  "tracking.picker.notUnique": "一意ではありません",
+  "tracking.picker.name": "名前",
+  "tracking.picker.standardEvent": "標準イベント",
+  "tracking.picker.trigger": "トリガー",
+  "tracking.picker.urlRule": "URL ルール：完全一致のパス",
+  "tracking.picker.save": "イベントを保存",
+  "tracking.picker.saving": "保存中…",
+  "tracking.picker.saved": "保存しました。イベントがトラッキングイベントに追加されました。",
+  "tracking.picker.saveFailed": "イベントを保存できませんでした。",
+  "tracking.picker.testMode": "テストモード：選択した要素をクリックするとお知らせを表示",
+  "tracking.picker.testFired": "イベントが発火されます",
+  "tracking.picker.openEvents": "トラッキングイベントを開く",
+  "tracking.picker.close": "ピッカーを閉じる",
+  "tracking.picker.copy": "定義をコピー",
+  "tracking.picker.copied": "コピーしました",
 }
 
 export default ja

@@ -2503,6 +2503,26 @@ const es: UiDictionary = {
   "label.collection.tracking-events": "Eventos de seguimiento",
   "label.singular.tracking-events": "Evento de seguimiento",
   "desc.tracking-events": "Eventos del sitio público (clic, envío de formulario, vista de página, desplazamiento o tiempo en la página). Solo se disparan tras aceptar la categoría de cookies correspondiente.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "Selector de eventos",
+  "tracking.picker.hint": "Pasa el cursor sobre un elemento y haz clic para elegirlo.",
+  "tracking.picker.selector": "Selector",
+  "tracking.picker.matches": "Coincidencias en esta página",
+  "tracking.picker.notUnique": "no es único",
+  "tracking.picker.name": "Nombre",
+  "tracking.picker.standardEvent": "Evento estándar",
+  "tracking.picker.trigger": "Disparador",
+  "tracking.picker.urlRule": "Regla de URL: ruta exacta",
+  "tracking.picker.save": "Guardar evento",
+  "tracking.picker.saving": "Guardando…",
+  "tracking.picker.saved": "Guardado. El evento ya está en eventos de seguimiento.",
+  "tracking.picker.saveFailed": "No se pudo guardar el evento.",
+  "tracking.picker.testMode": "Modo de prueba: muestra un aviso al hacer clic en el elemento elegido",
+  "tracking.picker.testFired": "El evento se dispararía",
+  "tracking.picker.openEvents": "Abrir eventos de seguimiento",
+  "tracking.picker.close": "Cerrar selector",
+  "tracking.picker.copy": "Copiar definición",
+  "tracking.picker.copied": "Copiado",
 }
 
 export default es

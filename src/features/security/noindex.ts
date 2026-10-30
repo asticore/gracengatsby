@@ -24,3 +24,10 @@ export function isNoindexPath(pathname: string, adminRoot: string = DEFAULT_ADMI
   if (underPrefix(pathname, DEFAULT_ADMIN_ROOT) || underPrefix(pathname, adminRoot)) return true
   return NON_PUBLIC_PREFIXES.some((prefix) => underPrefix(pathname, prefix))
 }
+
+/** The visual event picker is marked with ?eg-event-picker=1. Such a response is never indexed, whatever the path. */
+export const PICKER_QUERY = 'eg-event-picker'
+
+export function isPickerRequest(url: { searchParams: URLSearchParams }): boolean {
+  return url.searchParams.get(PICKER_QUERY) === '1'
+}

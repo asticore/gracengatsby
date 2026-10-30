@@ -178,9 +178,14 @@ export const BlockRenderer: React.FC<{ block: unknown; index?: number }> = ({ bl
   const node = block as SectionNode
   if (!node || typeof node.blockType !== 'string') return null
 
+  // A stable hook for the tracking picker and tracking events: the builder's block id when the page has one,
+  // else the block type and position. display: contents keeps the wrapper out of the layout.
+  const blockId = typeof (node as { id?: unknown }).id === 'string' ? String((node as { id?: unknown }).id) : `${node.blockType}-${index}`
   return (
-    <StyledBlock style={node.design} index={index}>
-      {renderBlockBody(node, String(index))}
-    </StyledBlock>
+    <div data-eg-block={blockId} style={{ display: 'contents' }}>
+      <StyledBlock style={node.design} index={index}>
+        {renderBlockBody(node, String(index))}
+      </StyledBlock>
+    </div>
   )
 }

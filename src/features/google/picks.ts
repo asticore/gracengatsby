@@ -7,11 +7,12 @@ import { ADSENSE_NAME, listFor, measurementIdFrom, parseTagManagerValue, publish
 /**
  * Saves one dropdown choice. Each value is checked against what Google lists
  * for this account before it is stored. When a choice gives a GA4 measurement
- * ID or a GTM container ID, those are written to Integrations only if that
- * field is blank. Existing values are never overwritten.
+ * ID or a GTM container ID, those are written to Integrations: only into a blank
+ * field by default, or over the old value when the caller asks for "replace".
  */
 
-export type PickResult = { ok: true; message: string; notes: string[] } | { ok: false; error: string; status: number }
+/** `value` is the ID now stored on Integrations (GA4 measurement ID or GTM container ID), '' when there is none. */
+export type PickResult = { ok: true; message: string; notes: string[]; value?: string } | { ok: false; error: string; status: number }
 
 export type PickInput = { kind: PickerKind; value: string }
 
@@ -25,26 +26,36 @@ export function parsePickBody(body: unknown): PickInput | null {
   return { kind: raw.kind, value }
 }
 
-/** Fills one blank field on Integrations and reports what happened, in plain English. */
-async function fillIfBlank(
+/**
+ * How a chosen GA4 or GTM ID reaches Integrations. "blank" (the Google connection
+ * screen) fills the field only when it is empty. "replace" (the Tracking screen)
+ * is an explicit choice by the owner, so it overwrites the old value.
+ */
+export type FillMode = 'blank' | 'replace'
+
+/** Fills one Integrations field under the given mode and reports what happened, in plain English. */
+async function fillField(
   engine: GoogleEngine,
   group: 'ga4MeasurementId' | 'gtmContainerId',
   value: string,
   label: string,
+  mode: FillMode,
 ): Promise<string> {
   const integrations = (await engine.findGlobal({ slug: INTEGRATIONS_SLUG, depth: 0, overrideAccess: true }).catch((): null => null)) as
     | { google?: Record<string, unknown> | null }
     | null
   const google = { ...(integrations?.google ?? {}) }
   const existing = typeof google[group] === 'string' ? (google[group] as string).trim() : ''
-  if (existing) return `${label} on Integrations is already ${existing}, so it was left as it is.`
+  if (existing === value) return `${label} on Integrations is already ${value}.`
+  if (existing && mode === 'blank') return `${label} on Integrations is already ${existing}, so it was left as it is.`
   google[group] = value
   await engine.updateGlobal({ slug: INTEGRATIONS_SLUG, data: { google }, overrideAccess: true })
+  if (existing) return `${label} on Integrations was ${existing}, and is now ${value}.`
   return `${label} on Integrations was empty, so it is now ${value}.`
 }
 
 /** Checks the choice against Google, saves it, and fills the matching Integrations field if blank. */
-export async function applyPick(engine: GoogleEngine, input: PickInput): Promise<PickResult> {
+export async function applyPick(engine: GoogleEngine, input: PickInput, options: { fill?: FillMode } = {}): Promise<PickResult> {
   const doc = await readGoogleDoc(engine)
   if (!doc?.refreshTokenEnc) return { ok: false, error: 'Connect Google first.', status: 409 }
 
@@ -84,8 +95,8 @@ export async function applyPick(engine: GoogleEngine, input: PickInput): Promise
         data: { gtmAccountId: parsed.accountId, gtmContainerId: parsed.containerId },
         overrideAccess: true,
       })
-      const note = await fillIfBlank(engine, 'gtmContainerId', publicId, 'Tag Manager container ID')
-      return { ok: true, message: `Tag Manager container saved (${publicId}).`, notes: [note] }
+      const note = await fillField(engine, 'gtmContainerId', publicId, 'Tag Manager container ID', options.fill ?? 'blank')
+      return { ok: true, message: `Tag Manager container saved (${publicId}).`, notes: [note], value: publicId }
     }
 
     // GA4: the value is the bare property number.
@@ -99,10 +110,10 @@ export async function applyPick(engine: GoogleEngine, input: PickInput): Promise
       overrideAccess: true,
     })
     if (!measurementId) {
-      return { ok: true, message: `Analytics property saved (${input.value}).`, notes: ['This property has no website data stream, so no measurement ID was found.'] }
+      return { ok: true, message: `Analytics property saved (${input.value}).`, notes: ['This property has no website data stream, so no measurement ID was found.'], value: '' }
     }
-    const note = await fillIfBlank(engine, 'ga4MeasurementId', measurementId, 'Analytics measurement ID')
-    return { ok: true, message: `Analytics property saved (${input.value}).`, notes: [note] }
+    const note = await fillField(engine, 'ga4MeasurementId', measurementId, 'Analytics measurement ID', options.fill ?? 'blank')
+    return { ok: true, message: `Analytics property saved (${input.value}).`, notes: [note], value: measurementId }
   } catch (error) {
     const status = typeof (error as { status?: unknown })?.status === 'number' ? (error as { status: number }).status : 502
     return { ok: false, error: error instanceof Error ? error.message : 'Google could not be reached.', status }

@@ -54,6 +54,7 @@ import { SocialView } from '@/admin/views/SocialView'
 import { TemplatesHubView } from '@/admin/views/TemplatesHubView'
 import { TemplateLibrariesView } from '@/admin/views/TemplateLibrariesView'
 import { GoogleDashboardView } from '@/features/google/dashboard/GoogleDashboardView'
+import { TrackingConnectionsView } from './views/TrackingConnectionsView'
 
 // Kept for parity with what `engage.config.ts`'s `admin.components` block
 // still declares (Nav/providers/graphics overrides) even though nothing yet
@@ -203,6 +204,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: GoogleConnectionView,
     path: '/google-connection',
     meta: { title: 'Google connection', description: 'Connect Google Analytics, Search Console, Tag Manager and AdSense with your own Google Cloud client.' },
+  },
+  {
+    key: 'trackingConnections',
+    Component: TrackingConnectionsView,
+    path: '/tracking-connections',
+    meta: { title: 'Tracking connections', description: 'Sign in with Google, Facebook or TikTok and pick your pixel or property, so the IDs fill in for you.' },
   },
   {
     key: 'themeStyles',

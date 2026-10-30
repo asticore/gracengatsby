@@ -224,6 +224,7 @@ import { EmailTemplates } from '@/globals/EmailTemplates'
 import { EmailBrand } from '@/globals/EmailBrand'
 import { EmailSchedule } from '@/globals/EmailSchedule'
 import { GoogleConnection } from '@/globals/GoogleConnection'
+import { TrackingConnections } from '@/globals/TrackingConnections'
 import { FaqSettings } from '@/globals/FaqSettings'
 import { Footer } from '@/globals/Footer'
 import { FormSettings } from '@/globals/FormSettings'
@@ -379,6 +380,7 @@ import {
   findEmailBrand,
   findEmailSchedule,
   findGoogleConnection,
+  findTrackingConnections,
   findEnrolmentByID,
   findEnrolmentsPaginated,
   findEventByID,
@@ -472,6 +474,7 @@ import {
   updateEmailBrand,
   updateEmailSchedule,
   updateGoogleConnection,
+  updateTrackingConnections,
   updateEnrolment,
   updateEvent,
   updateEventRSVP,
@@ -631,6 +634,7 @@ export const writeRegistry: {
     'email-brand': globalOps(findEmailBrand, updateEmailBrand),
     'email-schedule': globalOps(findEmailSchedule, updateEmailSchedule),
     'google-connection': globalOps(findGoogleConnection, updateGoogleConnection),
+    'tracking-connections': globalOps(findTrackingConnections, updateTrackingConnections),
     'shop-settings': globalOps(findShopSettings, updateShopSettings),
     'shop-extra-settings': globalOps(findShopExtraSettings, updateShopExtraSettings),
     'domain-settings': globalOps(findDomainSettings, updateDomainSettings),
@@ -728,6 +732,7 @@ export const readRegistry: ReadRegistry = {
     'email-brand': globalReadEntry(EmailBrand, findEmailBrand),
     'email-schedule': globalReadEntry(EmailSchedule, findEmailSchedule),
     'google-connection': globalReadEntry(GoogleConnection, findGoogleConnection),
+    'tracking-connections': globalReadEntry(TrackingConnections, findTrackingConnections),
     'shop-settings': globalReadEntry(ShopSettings, findShopSettings),
     'shop-extra-settings': globalReadEntry(ShopExtraSettings, findShopExtraSettings),
     'domain-settings': globalReadEntry(DomainSettings, findDomainSettings),

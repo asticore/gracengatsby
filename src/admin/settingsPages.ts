@@ -68,6 +68,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
       { kind: 'global', slug: 'integrations' },
       { kind: 'link', label: 'Cookie consent', href: '/cookie-consent', description: 'Banner text, colours, preview and consent log', type: 'view' },
       { kind: 'link', label: 'Google connection', href: '/google-connection', description: 'Connect Google Analytics, Search Console, Tag Manager and AdSense with your own Google Cloud client.', type: 'view' },
+      { kind: 'link', label: 'Tracking connections', href: '/tracking-connections', description: 'Sign in with Facebook or TikTok to pick your pixel, so the ID fills in here without typing it.', type: 'view' },
       { kind: 'link', label: 'Theming', href: '/theme-styles', description: 'Colours, text, buttons, tables, forms, layout and presets, set once for the whole site.', type: 'view' },
       { kind: 'global', slug: 'language-settings' },
       { kind: 'link', label: 'Translations', href: '/translations', description: 'Manage every translation in one table.', type: 'view' },
@@ -97,6 +98,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     topCard: 'tracking-tags',
     description: 'Connect ad and analytics platforms, and choose which actions send events. A tag loads only after the visitor accepts its cookie category.',
     sections: [
+      { kind: 'link', label: 'Tracking connections', href: '/tracking-connections', description: 'Sign in with Google, Facebook or TikTok and pick your Analytics property, Tag Manager container or pixel. The IDs fill in on Integrations.', type: 'view' },
       { kind: 'global', slug: 'integrations' },
       { kind: 'link', label: 'Tracking events', href: collectionRoute('tracking-events'), description: 'Clicks, form submits, page views, scroll depth and time on page that send events to your platforms.', type: 'collection' },
     ],

@@ -4,7 +4,7 @@ import { getAdminContext } from '@/admin/auth'
 import { getEngine } from '@/lib/engine'
 import { adminHref } from '@/features/security/adminPath'
 import { getAdminRoot } from '@/features/security/settings'
-import { AUTH_URL, ADMIN_PAGE_PATH, GOOGLE_SCOPES, OAUTH_STATE_COOKIE, redirectUriFor } from '@/features/google/constants'
+import { AUTH_URL, ADMIN_PAGE_PATH, GOOGLE_SCOPES, OAUTH_RETURN_COOKIE, OAUTH_STATE_COOKIE, redirectUriFor } from '@/features/google/constants'
 import { readGoogleClient } from '@/features/google/auth'
 import { publicOrigin } from '@/features/google/origin'
 import { createOauthState, STATE_MAX_AGE_MS } from '@/features/google/state'
@@ -43,13 +43,18 @@ export async function GET(request: NextRequest): Promise<Response> {
     })
 
     const response = NextResponse.redirect(`${AUTH_URL}?${params.toString()}`, 303)
+    const maxAge = Math.floor(STATE_MAX_AGE_MS / 1000)
     response.cookies.set(OAUTH_STATE_COOKIE, nonce, {
       httpOnly: true,
       secure: origin.startsWith('https://'),
       sameSite: 'lax',
       path: '/api/google',
-      maxAge: Math.floor(STATE_MAX_AGE_MS / 1000),
+      maxAge,
     })
+    // Started from the Tracking connections screen? Remember to come back there.
+    if (request.nextUrl.searchParams.get('return') === 'tracking') {
+      response.cookies.set(OAUTH_RETURN_COOKIE, 'tracking', { httpOnly: true, secure: origin.startsWith('https://'), sameSite: 'lax', path: '/api/google', maxAge })
+    }
     return response
   } catch (error) {
     console.error('google connect error:', error instanceof Error ? error.name : 'unknown')

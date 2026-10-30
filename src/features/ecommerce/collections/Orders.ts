@@ -1,5 +1,6 @@
 import type { CollectionConfig, CollectionSlug } from '@/engine'
 
+import { webhookOrderAfterChange } from '@/features/webhooks/hooks'
 import { adminOnlyFieldAccess } from '@/access/ecommerceAccess'
 
 import { ordersAccess, staffFieldAccess } from '../access'
@@ -60,6 +61,7 @@ export const Orders: CollectionConfig = {
         const { runOrderAfterChange } = await import('../server/orderHooks')
         return runOrderAfterChange(args as never)
       },
+      webhookOrderAfterChange,
     ],
   },
   timestamps: true,

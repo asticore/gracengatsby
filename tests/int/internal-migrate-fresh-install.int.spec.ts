@@ -707,6 +707,35 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     expect(await store.findById(id)).toBeNull()
   })
 
+  it('creates the webhook tables and indexes, is safe to run twice, and the store round-trips a webhook and its delivery', async () => {
+    const indexesOf = async (table: string): Promise<string[]> => {
+      const result = await proxy.env.D1.prepare(`PRAGMA index_list(\`${table}\`)`).all()
+      return (result.results as { name: string }[]).map((i) => i.name)
+    }
+    expect(await indexesOf('eg_webhook_deliveries')).toEqual(expect.arrayContaining(['eg_webhook_deliveries_due_idx', 'eg_webhook_deliveries_webhook_idx']))
+    const mod = await import('@/migrations/20270117_100000_webhooks')
+    const { drizzle } = await import('drizzle-orm/d1')
+    const db = drizzle(proxy.env.D1) as never
+    const engine = { logger: consoleLogger } as never
+    await mod.up({ db, engine } as never)
+    await mod.up({ db, engine } as never)
+    const { createD1WebhookStore } = await import('@/features/webhooks/store')
+    const store = createD1WebhookStore(async () => proxy.env.D1 as never)
+    const at = '2026-10-30T00:00:00.000Z'
+    const config = { name: 'Orders', description: '', url: 'https://hooks.example.com/in', events: ['order.paid'] as ('order.paid')[], template: null, enabled: true, ratePerMinute: 60 }
+    const id = await store.insert(config, 'enc:v1:00:00:00', at)
+    expect(await store.findById(id)).toMatchObject({ id, name: 'Orders', events: ['order.paid'], enabled: true, ratePerMinute: 60 })
+    expect((await store.activeFor('order.paid')).map((w) => w.id)).toEqual([id])
+    expect(await store.activeFor('form.submitted')).toEqual([])
+    const row = await store.insertDelivery({ webhookId: id, deliveryId: 'dlv_fresh', event: 'order.paid', body: '{}', status: 'pending', attempts: 0, nextAttemptAt: at, lastStatusCode: null, lastError: null }, at)
+    expect((await store.due(at, 10)).map((d) => d.id)).toEqual([row])
+    await store.updateDelivery(row, { status: 'ok', attempts: 1, nextAttemptAt: null, lastStatusCode: 200 }, at)
+    expect(await store.findDelivery(row)).toMatchObject({ status: 'ok', attempts: 1, lastStatusCode: 200 })
+    await store.remove(id)
+    expect(await store.findById(id)).toBeNull()
+    expect(await store.findDelivery(row)).toBeNull()
+  })
+
   it('creates the email design columns and the email design brand table', async () => {
     const designColumnsOf = async (table: string): Promise<string[]> => {
       const result = await proxy.env.D1.prepare(`PRAGMA table_info(\`${table}\`)`).all()
@@ -1186,7 +1215,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('organizations migration is registered before the later migrations and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 18].name).toBe('20261124_100000_organizations')
+    expect(migrations[migrations.length - 19].name).toBe('20261124_100000_organizations')
     const mod = await import('@/migrations/20261124_100000_organizations')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1202,7 +1231,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('translation workflow migration is registered before machine translation, adds its columns, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 17].name).toBe('20261125_100000_translation_workflow')
+    expect(migrations[migrations.length - 18].name).toBe('20261125_100000_translation_workflow')
     const mod = await import('@/migrations/20261125_100000_translation_workflow')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1225,7 +1254,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('machine translation migration is registered before auto-draft, adds its keys, settings and usage table, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 16].name).toBe('20261126_100000_machine_translation')
+    expect(migrations[migrations.length - 17].name).toBe('20261126_100000_machine_translation')
     const mod = await import('@/migrations/20261126_100000_machine_translation')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1242,7 +1271,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('admin UI language migration is registered before the interface overrides, adds the user column, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 14].name).toBe('20261128_100000_admin_ui_language')
+    expect(migrations[migrations.length - 15].name).toBe('20261128_100000_admin_ui_language')
     const mod = await import('@/migrations/20261128_100000_admin_ui_language')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1255,7 +1284,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('storefront interface overrides migration is registered before the domain settings, adds its column, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 13].name).toBe('20261129_100000_interface_overrides')
+    expect(migrations[migrations.length - 14].name).toBe('20261129_100000_interface_overrides')
     const mod = await import('@/migrations/20261129_100000_interface_overrides')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1268,7 +1297,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('domain settings migration is registered before the admin URL and content domains migrations, creates the registry tables, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 12].name).toBe('20261130_100000_domain_settings')
+    expect(migrations[migrations.length - 13].name).toBe('20261130_100000_domain_settings')
     const mod = await import('@/migrations/20261130_100000_domain_settings')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1283,7 +1312,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('admin URL migration is registered before the tracking migration, adds its column, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 11].name).toBe('20261130_110000_admin_path')
+    expect(migrations[migrations.length - 12].name).toBe('20261130_110000_admin_path')
     const mod = await import('@/migrations/20261130_110000_admin_path')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1296,7 +1325,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('machine auto-draft migration is registered before the admin language migration, adds its switch, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 15].name).toBe('20261127_100000_machine_autodraft')
+    expect(migrations[migrations.length - 16].name).toBe('20261127_100000_machine_autodraft')
     const mod = await import('@/migrations/20261127_100000_machine_autodraft')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never

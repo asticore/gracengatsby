@@ -8,6 +8,7 @@ import { pageAudioField } from '@/features/pageAudio/fields'
 import { pageSpeedFields } from '@/features/pagespeed/fields'
 import { pageSpeedAfterChange, pageSpeedBeforeChange } from '@/features/pagespeed/hooks'
 import { indexNowAfterChange, indexNowAfterDelete } from '@/features/seo/indexNowHook'
+import { webhookContentAfterChange } from '@/features/webhooks/hooks'
 import type { CollectionConfig, EngineRequest } from '@/engine'
 import { excludeProtectedAccess } from '@/features/visibility/excludeProtected'
 
@@ -182,7 +183,7 @@ export const Pages: CollectionConfig = {
         return data
       },
     ],
-    afterChange: [pageSpeedAfterChange('pages'), indexNowAfterChange('pages'), machineAutoDraftAfterChange('pages'), outdatedAfterChange('pages')],
+    afterChange: [pageSpeedAfterChange('pages'), indexNowAfterChange('pages'), machineAutoDraftAfterChange('pages'), outdatedAfterChange('pages'), webhookContentAfterChange('pages')],
     afterDelete: [indexNowAfterDelete('pages')],
     beforeChange: [
       domainWriteGuard,

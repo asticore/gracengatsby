@@ -1,5 +1,6 @@
 import { SOURCE_COLLECTIONS, type FieldInfo } from '@/features/dataViews/catalogue'
 import { ENGINE_OPERATOR, endpointParamNames, endpointPath, isSecretLikeField, type ApiEndpoint, type FilterOperator } from './core'
+import { markdownSectionToHtml, webhookSectionMarkdown } from '@/features/webhooks/docs'
 
 /**
  * The developer guide, generated from the builder: OpenAPI 3.1 (JSON and YAML), a Markdown guide,
@@ -233,7 +234,7 @@ const filterLines = (e: ApiEndpoint): string[] => {
 }
 
 /** The Markdown guide. Every value from the builder is written as text, never as markup. */
-export function buildMarkdownGuide(endpoints: readonly ApiEndpoint[], options: GuideOptions): string {
+function buildApiGuideMarkdown(endpoints: readonly ApiEndpoint[], options: GuideOptions): string {
   const enabled = enabledOnly(endpoints).map(filterFields)
   const base = options.baseUrl.replace(/\/$/, '')
   const out: string[] = []
@@ -270,11 +271,16 @@ export function buildMarkdownGuide(endpoints: readonly ApiEndpoint[], options: G
   return out.join('\n')
 }
 
+/** The developer guide in Markdown: the endpoints, then the webhooks section (signing and verification examples). */
+export function buildMarkdownGuide(endpoints: readonly ApiEndpoint[], options: GuideOptions): string {
+  return `${buildApiGuideMarkdown(endpoints, options)}\n${webhookSectionMarkdown()}`
+}
+
 const esc = (value: string): string => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
 /** The HTML guide: the Markdown content as a self-contained page, every value escaped. */
 export function buildHtmlGuide(endpoints: readonly ApiEndpoint[], options: GuideOptions, robots = 'noindex, nofollow, noarchive'): string {
-  const md = buildMarkdownGuide(endpoints, options)
+  const md = buildApiGuideMarkdown(endpoints, options)
   const body = md
     .split('\n')
     .map((line) => {
@@ -288,6 +294,7 @@ export function buildHtmlGuide(endpoints: readonly ApiEndpoint[], options: Guide
       return `<p>${esc(line.replace(/`/g, ''))}</p>`
     })
     .join('\n')
+    .concat('\n', markdownSectionToHtml(webhookSectionMarkdown()))
   return `<!doctype html>
 <html lang="en">
 <head>

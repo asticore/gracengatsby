@@ -46,6 +46,7 @@ import { TwoFactorView } from '@/admin/views/TwoFactorView'
 import { SessionsView } from '@/admin/views/SessionsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
+import { ApiBuilderView } from '@/admin/views/ApiBuilderView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
 import { OrganizationsView } from '@/admin/views/OrganizationsView'
 import { PasswordGroupsView } from '@/admin/views/PasswordGroupsView'
@@ -270,6 +271,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: PasskeysView,
     path: '/security/passkeys',
     meta: { title: 'Passkeys', description: 'Sign in with a passkey on this device, if the site owner allows it.' },
+  },
+  {
+    key: 'apiBuilder',
+    Component: ApiBuilderView,
+    path: '/api-builder',
+    meta: { title: 'API builder', description: 'Build custom endpoints on the site API, choose their fields and keys, try them, and download the developer guide.' },
   },
   {
     key: 'apiKeys',

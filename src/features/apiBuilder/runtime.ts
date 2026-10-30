@@ -2,6 +2,7 @@ import { forbiddenFieldIn, presentedApiKey, scopesAllow, ApiKeyRefused, type Api
 import { isStaffRoles } from '@/features/apiKeys/core'
 import { hitShared } from '@/features/security/rateLimit'
 import { CALL_LOG_RETENTION_MS, createD1EndpointStore, type EndpointStore } from './store'
+import { isGuideFormat, renderGuide, sameToken, siteNameFor } from './guideResponse'
 import {
   ENDPOINT_BASE,
   firstUnwritableKey,
@@ -22,6 +23,7 @@ import {
  */
 
 export type EndpointEngine = {
+  findGlobal?: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null>
   auth: (args: { headers: Headers; apiKeys?: boolean }) => Promise<{ user: unknown; apiKey?: ApiKeyContext }>
   find: (args: Record<string, unknown>) => Promise<{ docs: Record<string, unknown>[]; totalDocs?: number; hasNextPage?: boolean; page?: number; totalPages?: number }>
   findByID: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null>
@@ -203,10 +205,31 @@ export async function serveCustomEndpoint(request: Request, slug: readonly strin
   }
 }
 
+/**
+ * The public developer guide: /api/x/docs/<token>. Served only while the admin has switched the public
+ * link on, and only with the current token. Anything else is the same 404 as an unknown endpoint.
+ * Every response is noindex (also set by the middleware for /api).
+ */
+export async function serveDocs(request: Request, slug: readonly string[], store: EndpointStore, siteName: () => Promise<string>): Promise<Response> {
+  const notFound = Response.json({ errors: [{ name: 'NotFound', message: 'Route not found.' }] }, { status: 404, headers: { 'X-Robots-Tag': 'noindex, nofollow, noarchive' } })
+  if (slug.length !== 3) return notFound
+  const docs = await store.docsSettings()
+  if (!docs.docsPublic || !sameToken(slug[2], docs.docsToken)) return notFound
+  const format = new URL(request.url).searchParams.get('format')
+  const endpoints = await store.list()
+  return renderGuide(
+    isGuideFormat(format) ? format : 'guide.html',
+    endpoints,
+    { baseUrl: new URL(request.url).origin, siteName: await siteName(), generatedAt: new Date().toISOString().slice(0, 10) },
+    'page',
+  )
+}
+
 /** The production wiring: D1 store, shared rate limit, the engine from the REST dispatcher. */
 export async function handleCustomApiEndpoint(request: Request, slug: readonly string[], engine: EndpointEngine, resolveDb: () => Promise<unknown>): Promise<Response | null> {
   if (slug[0] !== ENDPOINT_BASE) return null
   const store = createD1EndpointStore(async () => (await resolveDb()) as never)
+  if (slug[1] === 'docs') return serveDocs(request, slug, store, () => siteNameFor(engine))
   return serveCustomEndpoint(request, slug, {
     engine,
     store,

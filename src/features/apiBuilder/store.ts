@@ -17,6 +17,18 @@ export type EndpointStore = {
   count(): Promise<number>
   logCall(entry: CallLogEntry): Promise<void>
   pruneLog(beforeIso: string): Promise<void>
+  recentCalls(endpointId: number, limit: number): Promise<CallLogEntry[]>
+  /** The public docs switch and its token. Creates the one row, with a fresh token, on first read. */
+  docsSettings(): Promise<{ docsPublic: boolean; docsToken: string }>
+  setDocsPublic(enabled: boolean, at: string): Promise<void>
+  regenerateDocsToken(at: string): Promise<string>
+}
+
+/** A random 32-character lower-case hex token for the public docs link. */
+export function newDocsToken(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 export type CallLogEntry = {
@@ -113,6 +125,40 @@ export function createD1EndpointStore(getDb: () => Promise<D1Like>): EndpointSto
     async pruneLog(beforeIso) {
       const db = await getDb()
       await db.prepare(`DELETE FROM ${LOG} WHERE created_at < ?`).bind(beforeIso).run()
+    },
+    async recentCalls(endpointId, limit) {
+      const rows = await all(
+        `SELECT endpoint_id, key_id, user_id, method, status, created_at FROM ${LOG} WHERE endpoint_id = ? ORDER BY id DESC LIMIT ?`,
+        endpointId,
+        Math.max(1, Math.min(200, limit)),
+      )
+      return (rows as unknown as Array<{ endpoint_id: number; key_id: number | null; user_id: number | null; method: string; status: number; created_at: string }>).map((r) => ({
+        endpointId: Number(r.endpoint_id),
+        keyId: r.key_id === null ? null : Number(r.key_id),
+        userId: r.user_id === null ? null : Number(r.user_id),
+        method: r.method,
+        status: Number(r.status),
+        createdAt: r.created_at,
+      }))
+    },
+    async docsSettings() {
+      const row = (await first('SELECT docs_public, docs_token FROM `eg_api_builder_settings` WHERE id = 1')) as unknown as { docs_public: number; docs_token: string } | null
+      if (row) return { docsPublic: Boolean(row.docs_public), docsToken: row.docs_token }
+      const token = newDocsToken()
+      const db = await getDb()
+      await db.prepare('INSERT OR IGNORE INTO `eg_api_builder_settings` (id, docs_public, docs_token, updated_at) VALUES (1, 0, ?, ?)').bind(token, new Date().toISOString()).run()
+      const again = (await first('SELECT docs_public, docs_token FROM `eg_api_builder_settings` WHERE id = 1')) as unknown as { docs_public: number; docs_token: string } | null
+      return { docsPublic: Boolean(again?.docs_public), docsToken: again?.docs_token ?? token }
+    },
+    async setDocsPublic(enabled, at) {
+      const db = await getDb()
+      await db.prepare('UPDATE `eg_api_builder_settings` SET docs_public = ?, updated_at = ? WHERE id = 1').bind(enabled ? 1 : 0, at).run()
+    },
+    async regenerateDocsToken(at) {
+      const db = await getDb()
+      const token = newDocsToken()
+      await db.prepare('UPDATE `eg_api_builder_settings` SET docs_token = ?, updated_at = ? WHERE id = 1').bind(token, at).run()
+      return token
     },
   }
 }

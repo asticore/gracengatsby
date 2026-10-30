@@ -35,6 +35,10 @@ function memoryStore(seed: ApiEndpoint[] = []) {
     count: async () => rows.size,
     logCall: async (e) => { logs.push(e) },
     pruneLog: async () => undefined,
+    recentCalls: async () => logs,
+    docsSettings: async () => ({ docsPublic: false, docsToken: 'token' }),
+    setDocsPublic: async () => undefined,
+    regenerateDocsToken: async () => 'token',
   }
   return { store, rows, logs }
 }

@@ -2498,6 +2498,10 @@ const zhHans: UiDictionary = {
   'al.trash': '回收站',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': '小写字母、数字和连字符。在每个域名上，此语言中必须唯一。',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "跟踪事件",
+  "label.singular.tracking-events": "跟踪事件",
+  "desc.tracking-events": "公开网站上的事件（点击、表单提交、页面浏览、滚动深度或页面停留时间）。只有在访客接受相应的 Cookie 类别后才会触发。",
 }
 
 export default zhHans

@@ -2499,6 +2499,10 @@ const ja: UiDictionary = {
   'al.trash': 'ゴミ箱',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': '小文字、数字、ハイフンを使用します。各ドメインで、この言語内で一意である必要があります。',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "トラッキングイベント",
+  "label.singular.tracking-events": "トラッキングイベント",
+  "desc.tracking-events": "公開サイトで発生するイベント（クリック、フォーム送信、ページ表示、スクロール量、滞在時間）。対応する Cookie カテゴリーに同意した後にのみ送信されます。",
 }
 
 export default ja

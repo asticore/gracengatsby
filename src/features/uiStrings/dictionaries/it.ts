@@ -2499,6 +2499,10 @@ const it: UiDictionary = {
   'al.trash': 'Cestino',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'Lettere minuscole, numeri e trattini. Unico in questa lingua su ogni dominio.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Eventi di tracciamento",
+  "label.singular.tracking-events": "Evento di tracciamento",
+  "desc.tracking-events": "Eventi sul sito pubblico (clic, invio di moduli, visualizzazione di pagina, scorrimento o tempo sulla pagina). Si attivano solo dopo l’accettazione della categoria di cookie corrispondente.",
 }
 
 export default it

@@ -2500,6 +2500,10 @@ const de: UiDictionary = {
   'al.trash': 'Papierkorb',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'Kleinbuchstaben, Ziffern und Bindestriche. In dieser Sprache auf jeder Domain eindeutig.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Tracking-Ereignisse",
+  "label.singular.tracking-events": "Tracking-Ereignis",
+  "desc.tracking-events": "Ereignisse auf der öffentlichen Website (Klick, Formularversand, Seitenaufruf, Scrolltiefe oder Verweildauer). Sie werden erst nach Zustimmung der passenden Cookie-Kategorie gesendet.",
 }
 
 export default de

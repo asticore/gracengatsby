@@ -2499,6 +2499,10 @@ const ar: UiDictionary = {
   'al.trash': 'سلة المهملات',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'أحرف صغيرة وأرقام وشرطات. يجب أن يكون فريدًا في هذه اللغة على كل نطاق.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "أحداث التتبع",
+  "label.singular.tracking-events": "حدث تتبع",
+  "desc.tracking-events": "أحداث على الموقع العام (النقر، وإرسال النماذج، وعرض الصفحة، وعمق التمرير، أو الوقت على الصفحة). لا تُرسل إلا بعد قبول فئة ملفات تعريف الارتباط المناسبة.",
 }
 
 export default ar

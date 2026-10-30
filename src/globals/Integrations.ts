@@ -133,6 +133,20 @@ export const Integrations: GlobalConfig = {
       admin: { description: 'Measurement IDs and keys for Google services. Tags only load once the visitor agrees, see Cookie consent.' },
       fields: [
         {
+          name: 'ga4Enabled',
+          type: 'checkbox',
+          label: 'Send events to Google Analytics 4',
+          defaultValue: true,
+          admin: { description: 'Untick to pause GA4 without deleting the measurement ID.' },
+        },
+        {
+          name: 'gtmEnabled',
+          type: 'checkbox',
+          label: 'Load Google Tag Manager',
+          defaultValue: true,
+          admin: { description: 'Untick to pause GTM without deleting the container ID.' },
+        },
+        {
           name: 'ga4MeasurementId',
           type: 'text',
           label: 'Google Analytics 4 measurement ID (G-...)',
@@ -248,10 +262,60 @@ export const Integrations: GlobalConfig = {
       admin: { description: 'Ad conversion tracking. Loads only after marketing consent.' },
       fields: [
         {
+          name: 'enabled',
+          type: 'checkbox',
+          label: 'Send events to Meta',
+          defaultValue: true,
+          admin: { description: 'Untick to pause the pixel and its tracking events without deleting the ID.' },
+        },
+        {
+          name: 'consentCategory',
+          type: 'select',
+          label: 'Consent category',
+          defaultValue: 'marketing',
+          options: [
+            { label: 'Marketing', value: 'marketing' },
+            { label: 'Analytics', value: 'analytics' },
+          ],
+          admin: { description: 'The cookie category the visitor must accept before the Meta pixel loads.' },
+        },
+        {
           name: 'pixelId',
           type: 'text',
           label: 'Meta pixel ID',
           admin: { description: 'Found in Meta Business Suite > Events Manager > Pixels.' },
+        },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'tiktokPixel',
+      label: 'TikTok pixel (TikTok Ads)',
+      admin: { description: 'Ad conversion tracking for TikTok. Loads only after marketing consent.' },
+      fields: [
+        {
+          name: 'enabled',
+          type: 'checkbox',
+          label: 'Send events to TikTok',
+          defaultValue: true,
+          admin: { description: 'Untick to pause the pixel and its tracking events without deleting the ID.' },
+        },
+        {
+          name: 'consentCategory',
+          type: 'select',
+          label: 'Consent category',
+          defaultValue: 'marketing',
+          options: [
+            { label: 'Marketing', value: 'marketing' },
+            { label: 'Analytics', value: 'analytics' },
+          ],
+          admin: { description: 'The cookie category the visitor must accept before the TikTok pixel loads.' },
+        },
+        {
+          name: 'pixelId',
+          type: 'text',
+          label: 'TikTok pixel ID',
+          admin: { description: 'Found in TikTok Ads Manager > Assets > Events > Web events.' },
         },
       ],
     },

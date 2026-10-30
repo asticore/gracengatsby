@@ -2539,6 +2539,10 @@ export const UI_STRING_SOURCE = {
   'al.trash': 'Trash',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'Lowercase letters, digits and hyphens. Must be unique in this language on each domain.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Tracking events",
+  "label.singular.tracking-events": "Tracking event",
+  "desc.tracking-events": "Events fired on the public site (click, form submit, page view, scroll depth or time on page). Each one fires only after its cookie category is accepted.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

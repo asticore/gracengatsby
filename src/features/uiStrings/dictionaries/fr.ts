@@ -2499,6 +2499,10 @@ const fr: UiDictionary = {
   'al.trash': 'Corbeille',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'Lettres minuscules, chiffres et tirets. Unique dans cette langue sur chaque domaine.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Événements de suivi",
+  "label.singular.tracking-events": "Événement de suivi",
+  "desc.tracking-events": "Événements du site public (clic, envoi de formulaire, vue de page, défilement ou temps passé). Ils ne se déclenchent qu’après l’acceptation de la catégorie de cookies correspondante.",
 }
 
 export default fr

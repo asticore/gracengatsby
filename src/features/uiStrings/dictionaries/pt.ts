@@ -2499,6 +2499,10 @@ const pt: UiDictionary = {
   'al.trash': 'Lixeira',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'Letras minúsculas, números e hífens. Único neste idioma em cada domínio.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Eventos de rastreamento",
+  "label.singular.tracking-events": "Evento de rastreamento",
+  "desc.tracking-events": "Eventos no site público (clique, envio de formulário, visualização de página, rolagem ou tempo na página). Só disparam depois que a categoria de cookies correspondente é aceita.",
 }
 
 export default pt

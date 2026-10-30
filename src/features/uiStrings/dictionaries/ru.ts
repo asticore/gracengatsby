@@ -2499,6 +2499,10 @@ const ru: UiDictionary = {
   'al.trash': 'Корзина',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'Строчные буквы, цифры и дефисы. Должен быть уникальным в этом языке на каждом домене.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "События отслеживания",
+  "label.singular.tracking-events": "Событие отслеживания",
+  "desc.tracking-events": "События на публичном сайте (клик, отправка формы, просмотр страницы, глубина прокрутки или время на странице). Отправляются только после принятия соответствующей категории cookie.",
 }
 
 export default ru

@@ -55,6 +55,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
       { slug: 'reusable-sections', type: 'collections', hidden: true },
       { slug: 'forms', type: 'collections' },
       { slug: 'ab-tests', type: 'collections' },
+      { slug: 'tracking-events', type: 'collections' },
       { slug: 'field-groups', type: 'collections' },
       { slug: 'data-views', type: 'collections' },
       { slug: 'review-queue', type: 'view', href: '/review-queue', label: 'Review queue' },
@@ -125,6 +126,7 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
   {
     label: 'Settings',
     entities: [
+      { slug: 'settings-tracking', type: 'view', href: '/settings/tracking', label: 'Tracking' },
       { slug: 'settings-site', type: 'view', href: '/settings/site', label: 'General' },
       { slug: 'settings-domains', type: 'view', href: '/settings/domains', label: 'Domains' },
       { slug: 'settings-content', type: 'view', href: '/settings/content', label: 'Content' },

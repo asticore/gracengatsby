@@ -2499,6 +2499,10 @@ const nl: UiDictionary = {
   'al.trash': 'Prullenbak',
   // Translated slugs (localizedSlugs.ts)
   'translations.slug.hint': 'Kleine letters, cijfers en koppeltekens. Uniek in deze taal op elk domein.',
+  // --- tracking events (phase A2 collection labels, src/features/tracking) ---
+  "label.collection.tracking-events": "Trackinggebeurtenissen",
+  "label.singular.tracking-events": "Trackinggebeurtenis",
+  "desc.tracking-events": "Gebeurtenissen op de openbare site (klik, formulierverzending, paginaweergave, scrolldiepte of tijd op pagina). Ze worden pas verzonden nadat de bijbehorende cookiecategorie is geaccepteerd.",
 }
 
 export default nl

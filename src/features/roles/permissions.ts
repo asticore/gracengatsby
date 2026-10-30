@@ -30,6 +30,7 @@ export const RESOURCES = [
   'users',
   'roles',
   'faqs',
+  'tracking',
   'field-groups',
   'data-views',
   'event-rsvps',
@@ -532,6 +533,7 @@ export const PERMISSION_CATEGORIES: Array<{
       { resource: 'forms.export', label: 'Form entries: download CSV', actions: ['read'] },
       { resource: 'forms.integrations', label: 'Form webhooks and embed websites', description: 'Always administrators only.', actions: ['update'] },
       { resource: 'form-submissions', label: 'Form submissions', description: 'Update: change status, assignee and notes.', actions: ['read', 'update', 'delete'] },
+      { resource: 'tracking', label: 'Tracking events', description: 'Create and update the tracking events and the Integrations tracking IDs. Admins only should edit tag IDs and custom scripts.', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'redirects', label: 'Redirects', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'translations', label: 'Translations', actions: ['read', 'create', 'update', 'delete'] },
       {

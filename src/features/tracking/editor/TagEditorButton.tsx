@@ -12,13 +12,14 @@ export type TagEditorButtonProps = {
   domains: TrackingDomainInfo[]
   currentHost: string | null
   adminRoot: string
+  siteCurrency?: string | null
 }
 
 /**
  * The prominent "Add tags" button on Settings > Tracking. Opens the full-screen visual tag editor. The tracking events
  * table links here as `?tags=open&event=<id>`: the editor then opens on that event's page with the event selected.
  */
-export function TagEditorButton({ domains, currentHost, adminRoot }: TagEditorButtonProps): React.ReactElement {
+export function TagEditorButton({ domains, currentHost, adminRoot, siteCurrency = null }: TagEditorButtonProps): React.ReactElement {
   const t = useAdminT()
   // The URL is read from the browser: `?tags=open&event=<id>` opens the editor, on the event when one is named.
   const search = useSyncExternalStore(() => () => {}, () => window.location.search, () => '')
@@ -49,7 +50,7 @@ export function TagEditorButton({ domains, currentHost, adminRoot }: TagEditorBu
         </button>
       </div>
       <DomainNotice domains={domains} currentHost={currentHost} adminRoot={adminRoot} />
-      {open ? <TagEditor onClose={() => { setManual(null); setClosed(true) }} initialEventId={initialEventId} domains={domains} currentHost={currentHost} adminRoot={adminRoot} /> : null}
+      {open ? <TagEditor onClose={() => { setManual(null); setClosed(true) }} initialEventId={initialEventId} domains={domains} currentHost={currentHost} adminRoot={adminRoot} siteCurrency={siteCurrency} /> : null}
     </div>
   )
 }

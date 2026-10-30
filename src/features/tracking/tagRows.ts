@@ -15,6 +15,9 @@ export type TagRow = {
   urlMatch: string | null
   value: number | null
   currency: string | null
+  valueSource?: string | null
+  valueRef?: string | null
+  valueSelector?: string | null
   enabled: boolean
 }
 

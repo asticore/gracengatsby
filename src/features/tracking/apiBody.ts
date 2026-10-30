@@ -19,6 +19,9 @@ export const TRACKING_EVENT_FIELDS = [
   'value',
   'currency',
   'contentName',
+  'valueSource',
+  'valueRef',
+  'valueSelector',
   'enabled',
 ] as const
 
@@ -47,6 +50,9 @@ export function readTrackingEventBody(body: Record<string, unknown>, base: Parti
     value: field('value', number) ?? null,
     currency: field('currency', text) ?? null,
     contentName: field('contentName', text) ?? null,
+    valueSource: (field('valueSource', text) ?? 'none') as TrackingEventDef['valueSource'],
+    valueRef: field('valueRef', text) ?? null,
+    valueSelector: field('valueSelector', text) ?? null,
     enabled: 'enabled' in body ? body.enabled !== false : base.enabled !== false,
   }
   // A rule is stored in its canonical form, so "/fr/shop/" and "/shop" are the same rule.
@@ -72,6 +78,9 @@ export function trackingEventSummary(row: Record<string, unknown>): Record<strin
     urlMatch: row.urlMatch ?? null,
     value: row.value ?? null,
     currency: row.currency ?? null,
+    valueSource: row.valueSource ?? 'none',
+    valueRef: row.valueRef ?? null,
+    valueSelector: row.valueSelector ?? null,
     enabled: row.enabled !== false,
   }
 }

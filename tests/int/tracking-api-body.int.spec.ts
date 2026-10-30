@@ -59,6 +59,6 @@ describe('tracking event request body', () => {
 
   it('summarises a stored row without the internal fields', () => {
     const row = trackingEventSummary({ id: 7, name: 'Buy', platformEvent: 'Purchase', selector: '#buy', urlMatchMode: 'exact', urlMatch: '/shop', secret: 'x' })
-    expect(row).toEqual({ id: 7, name: 'Buy', platformEvent: 'Purchase', triggerType: 'click', selector: '#buy', urlMatchMode: 'exact', urlMatch: '/shop', value: null, currency: null, enabled: true })
+    expect(row).toEqual({ id: 7, name: 'Buy', platformEvent: 'Purchase', triggerType: 'click', selector: '#buy', urlMatchMode: 'exact', urlMatch: '/shop', value: null, currency: null, enabled: true, valueSource: 'none', valueRef: null, valueSelector: null })
   })
 })

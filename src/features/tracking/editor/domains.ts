@@ -42,4 +42,11 @@ export type TrackingPageContext = {
   domains: TrackingDomainInfo[]
   currentHost: string | null
   adminRoot: string
+  siteCurrency: string | null
+  destinations: TrackingDestination[]
 }
+
+export type TrackingDestinationId = 'meta' | 'ga4' | 'gtm' | 'tiktok'
+
+/** A place the events are sent: whether it is connected on Integrations, and how many enabled events it receives. */
+export type TrackingDestination = { id: TrackingDestinationId; on: boolean; events: number }

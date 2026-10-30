@@ -1,4 +1,4 @@
-import { validateTrackingEvent, type StandardEvent, type TrackingEventDef, type TriggerType, type UrlMatchMode } from './events'
+import { validateTrackingEvent, type StandardEvent, type TrackingEventDef, type TriggerType, type UrlMatchMode, type ValueSource } from './events'
 
 /** What the browser needs for one event. No internal fields, no ids beyond the event's own name. */
 export type PublicTrackingEvent = Omit<TrackingEventDef, 'platformEvent' | 'triggerType' | 'urlMatchMode' | 'enabled'> & {
@@ -25,6 +25,9 @@ export function toPublicEvent(row: Record<string, unknown>): PublicTrackingEvent
     timeSeconds: num(row.timeSeconds),
     value: num(row.value),
     currency: str(row.currency),
+    valueSource: (str(row.valueSource) ?? 'none') as ValueSource,
+    valueRef: str(row.valueRef),
+    valueSelector: str(row.valueSelector),
     contentName: str(row.contentName),
     enabled: row.enabled !== false,
   }
@@ -42,6 +45,9 @@ export function toPublicEvent(row: Record<string, unknown>): PublicTrackingEvent
     timeSeconds: def.timeSeconds,
     value: def.value,
     currency: def.currency,
+    valueSource: def.valueSource ?? 'none',
+    valueRef: def.valueRef ?? null,
+    valueSelector: def.valueSelector ?? null,
     contentName: def.contentName,
   }
 }

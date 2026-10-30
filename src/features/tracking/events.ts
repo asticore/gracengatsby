@@ -29,6 +29,14 @@ export type TriggerType = (typeof TRIGGER_TYPES)[number]
 export const URL_MATCH_MODES = ['any', 'exact', 'contains', 'starts'] as const
 export type UrlMatchMode = (typeof URL_MATCH_MODES)[number]
 
+/**
+ * Where an event's value comes from, read when the event fires. `none` sends no value. `fixed` uses the value field.
+ * The rest are resolved on the page: the cart, the product or order price, the quantity, or text and attributes of an
+ * element (the clicked one, or `valueSelector`), or a data layer variable (`valueRef`). See valueResolve.ts.
+ */
+export const VALUE_SOURCES = ['none', 'fixed', 'cartTotal', 'productPrice', 'orderTotal', 'quantity', 'elementText', 'elementAttr', 'dataLayer'] as const
+export type ValueSource = (typeof VALUE_SOURCES)[number]
+
 export const TRACKING_PLATFORMS = ['meta', 'ga4', 'gtm', 'tiktok', 'dataLayer'] as const
 export type TrackingPlatform = (typeof TRACKING_PLATFORMS)[number]
 
@@ -76,6 +84,11 @@ export type TrackingEventDef = {
   domain?: string | null
   value?: number | null
   currency?: string | null
+  valueSource?: ValueSource | null
+  /** For elementAttr: the attribute name (data-price). For dataLayer: the variable name (cartValue). */
+  valueRef?: string | null
+  /** For elementText and elementAttr: a CSS selector for the element to read. Blank reads the clicked element. */
+  valueSelector?: string | null
   contentName?: string | null
   scrollDepth?: number | null
   timeSeconds?: number | null
@@ -85,7 +98,7 @@ export type TrackingEventDef = {
 const NAME_RE = /^[A-Za-z][A-Za-z0-9_ -]{0,79}$/
 const SELECTOR_MAX = 300
 // A selector is typed by an admin into a CSS engine. Refuse anything that is not a plain selector shape.
-const SELECTOR_RE = /^[^<>{};\\"'`]+$/
+const SELECTOR_RE = /^[^<>{};`]+$/
 
 export function validateTrackingEvent(input: TrackingEventDef): string[] {
   const errors: string[] = []
@@ -108,6 +121,12 @@ export function validateTrackingEvent(input: TrackingEventDef): string[] {
   if (input.urlMatchMode && input.urlMatchMode !== 'any' && !(input.urlMatch ?? '').trim()) errors.push('A URL rule needs a value.')
   if (input.urlMatchMode && !URL_MATCH_MODES.includes(input.urlMatchMode)) errors.push('Choose a URL match type.')
   if (input.value != null && (!Number.isFinite(input.value) || input.value < 0)) errors.push('Value must be zero or more.')
+  const source = input.valueSource ?? 'none'
+  if (!VALUE_SOURCES.includes(source)) errors.push('Choose a value source.')
+  if (source === 'fixed' && input.value == null) errors.push('A fixed value needs an amount.')
+  if (source === 'elementAttr' && !(input.valueRef ?? '').trim()) errors.push('Name the attribute to read, e.g. data-price.')
+  if (source === 'dataLayer' && !/^[A-Za-z_][\w.]{0,79}$/.test((input.valueRef ?? '').trim())) errors.push('Name the data layer variable, e.g. cartValue.')
+  if (input.valueSelector && (input.valueSelector.length > SELECTOR_MAX || !SELECTOR_RE.test(input.valueSelector))) errors.push('The value selector is not valid.')
   if (input.currency && !/^[A-Z]{3}$/.test(input.currency)) errors.push('Currency must be a three-letter code, e.g. USD.')
   return errors
 }

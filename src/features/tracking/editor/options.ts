@@ -26,6 +26,8 @@ export const TAG_OPTIONS: readonly TagOptionDef[] = [
   { option: 'download', platformEvent: 'Custom', trigger: 'click', defaultName: 'Download', labelKey: 'tracking.tags.option.download' },
   { option: 'phone', platformEvent: 'Contact', trigger: 'click', defaultName: 'Phone click', labelKey: 'tracking.tags.option.phone' },
   { option: 'email', platformEvent: 'Contact', trigger: 'click', defaultName: 'Email click', labelKey: 'tracking.tags.option.email' },
+  { option: 'newsletter', platformEvent: 'Lead', trigger: 'submit', defaultName: 'Newsletter signup', labelKey: 'tracking.tags.option.newsletter' },
+  { option: 'viewCart', platformEvent: 'Custom', trigger: 'click', defaultName: 'View cart', labelKey: 'tracking.tags.option.viewCart' },
   { option: 'custom', platformEvent: 'Custom', trigger: 'click', defaultName: 'Custom event', labelKey: 'tracking.tags.option.custom' },
 ]
 

@@ -10,6 +10,8 @@ export type TagOption =
   | 'checkoutStarted'
   | 'signUp'
   | 'lead'
+  | 'newsletter'
+  | 'viewCart'
   | 'bookNow'
   | 'search'
   | 'viewProduct'
@@ -55,6 +57,7 @@ const HREF_RULES: Array<[RegExp, TagOption]> = [
   [/\/book(ing)?(\/|$|\?|#)/, 'bookNow'],
   [/\/(sign-?up|register)(\/|$|\?|#)/, 'signUp'],
   [/\/contact(\/|$|\?|#)/, 'lead'],
+  [/\/cart(\/|$|\?|#)/, 'viewCart'],
 ]
 
 /** The likely standard event for a selected element, or null when nothing matches. */
@@ -67,6 +70,7 @@ export function suggestEvent(input: SuggestInput): Suggestion | null {
     if (input.hasPasswordField) return { option: 'signUp', reason: 'form' }
     if (input.hasSearchField || /\/search(\/|$|\?)/.test(action)) return { option: 'search', reason: 'form' }
     if (/\/checkout(\/|$|\?|#)/.test(action)) return { option: 'checkoutStarted', reason: 'form' }
+    if (/newsletter|subscribe/.test(`${text} ${action.toLowerCase()}`)) return { option: 'newsletter', reason: 'form' }
     if (input.hasEmailField || input.kind === 'form') return { option: 'lead', reason: 'form' }
   }
 

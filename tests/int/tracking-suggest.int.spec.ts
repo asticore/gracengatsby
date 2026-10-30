@@ -72,3 +72,14 @@ describe('tag editor suggestions', () => {
     expect(optionForRow('Custom', 'Something else')).toBe('custom')
   })
 })
+
+describe('tag editor newsletter and cart suggestions', () => {
+  it('suggests Newsletter signup for a subscribe form, and not Lead', () => {
+    expect(suggestEvent({ kind: 'form', formAction: '/subscribe', hasEmailField: true })?.option).toBe('newsletter')
+    expect(suggestEvent({ kind: 'form', text: 'Subscribe to our newsletter', hasEmailField: true })?.option).toBe('newsletter')
+  })
+
+  it('suggests View cart for a cart link', () => {
+    expect(suggestEvent({ kind: 'link', text: 'Cart', href: '/cart' })?.option).toBe('viewCart')
+  })
+})

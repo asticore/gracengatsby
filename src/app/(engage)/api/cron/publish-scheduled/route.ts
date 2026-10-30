@@ -85,6 +85,13 @@ async function handleCronRequest(request: Request): Promise<Response> {
       const { retryDueWebhooks } = await import('@/features/forms/maintenance')
       await retryDueWebhooks(engine as never)
     })
+    // Webhooks builder: due deliveries (first tries and retries) and the 30-day log clean-up.
+    await runJob('webhook-deliveries', async () => {
+      const { createD1WebhookStore } = await import('@/features/webhooks/store')
+      const { processDue } = await import('@/features/webhooks/delivery')
+      const store = createD1WebhookStore(async () => env.D1 as never)
+      await processDue({ store })
+    })
     await runJob(
       'prune-submissions',
       async () => {

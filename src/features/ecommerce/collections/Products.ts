@@ -1,4 +1,5 @@
 import { domainSlugValidate } from '@/features/domains/slugs'
+import { webhookContentAfterChange } from '@/features/webhooks/hooks'
 import { noAdsField } from '@/features/ads/fields'
 import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
 import { availableDomainsField } from '@/features/domains/field'
@@ -180,7 +181,7 @@ export const Products: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [domainWriteGuard, authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
-    afterChange: [stockAlertAfterChange, backInStockAfterChange, subscriptionAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products'), machineAutoDraftAfterChange('products'), outdatedAfterChange('products')],
+    afterChange: [stockAlertAfterChange, backInStockAfterChange, subscriptionAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products'), machineAutoDraftAfterChange('products'), outdatedAfterChange('products'), webhookContentAfterChange('products')],
     afterDelete: [indexNowAfterDelete('products')],
   },
 }

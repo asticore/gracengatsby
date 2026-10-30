@@ -32,6 +32,8 @@ import * as formDraftsSchema from '@/cms/db/schema/formDrafts'
 import * as reusableSectionsSchema from '@/cms/db/schema/reusableSections'
 import * as siteTemplatesSchema from '@/cms/db/schema/siteTemplates'
 import * as passwordGroupsSchema from '@/cms/db/schema/passwordGroups'
+import * as webhooksSchema from '@/cms/db/schema/webhooks'
+import * as apiEndpointsSchema from '@/cms/db/schema/apiEndpoints'
 
 // Intentionally unmigrated tables/columns - add here ONLY if confirmed that migrations
 // deliberately do not create them, with a reason for each.
@@ -205,6 +207,11 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       for (const [exportName, exportValue] of Object.entries(adsSchema)) {
         if (exportName === 'adSettingsGenerated') continue
         drizzleTables.push({ name: exportName, table: exportValue })
+      }
+
+      // Webhooks builder and API builder tables live in their own schema files
+      for (const schemaFile of [webhooksSchema, apiEndpointsSchema]) {
+        for (const [exportName, exportValue] of Object.entries(schemaFile)) drizzleTables.push({ name: exportName, table: exportValue })
       }
 
       // Catalogue tables (attributes, shipping classes, reviews) live in their own schema file
@@ -845,7 +852,6 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
   it('password groups migration is registered before organizations and is safe to run twice, keeping existing rows', async () => {
     const { migrations } = await import('@/migrations/index')
     expect(migrations.map((x) => x.name).slice(-15)).toEqual([
-      '20261127_100000_machine_autodraft',
       '20261128_100000_admin_ui_language',
       '20261129_100000_interface_overrides',
       '20261130_100000_domain_settings',
@@ -860,6 +866,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       '20270102_100000_tracking_connections',
       '20270103_100000_tracking_value_source',
       '20270110_100000_api_endpoints',
+      '20270117_100000_webhooks',
     ])
     const mod = await import('@/migrations/20261123_100000_password_groups')
     const { drizzle } = await import('drizzle-orm/d1')

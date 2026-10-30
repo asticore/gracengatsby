@@ -1,5 +1,6 @@
 import type { FormDoc, FormFieldDef, SubmissionValues } from './types'
 
+import { emitWebhookEvent } from '@/features/webhooks/emit'
 import { clientKey, getSecuritySettings, hit, limitFor } from '@/features/security'
 import { resolveUploadPolicy } from '@/features/media/fileTypes'
 
@@ -250,6 +251,7 @@ export async function handleSubmission(engine: SubmitEngine, input: SubmitInput)
   }
 
   const emails = await sendSubmissionEmails(form, values, settings, pricing, { entryId: submissionID, submittedAt })
+  if (submissionID) void emitWebhookEvent('form.submitted', { id: submissionID, formId: form.id, formTitle: form.title, submittedAt, values })
 
   // In parallel so one slow endpoint does not hold the visitor up for the sum
   // of them all. A failed delivery is recorded and retried by the cron.

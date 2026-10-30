@@ -101,6 +101,7 @@ export const RESOURCES = [
   'review',
   'locks',
   'api',
+  'webhooks',
 ] as const
 
 export type Resource = (typeof RESOURCES)[number]
@@ -688,6 +689,7 @@ export const PERMISSION_CATEGORIES: Array<{
       { resource: 'locked-documents', label: 'Locked documents', actions: ['read', 'create', 'update', 'delete'] },
       { resource: 'preferences', label: 'Preferences', actions: ['read', 'update'] },
       { resource: 'api', label: 'API builder', description: 'Build custom API endpoints, their keys and the developer guide.', actions: ['read', 'create', 'update', 'delete'] },
+      { resource: 'webhooks', label: 'Webhooks', description: 'Build signed webhooks for site events, test them, and replay deliveries.', actions: ['read', 'create', 'update', 'delete'] },
     ],
   },
 ]

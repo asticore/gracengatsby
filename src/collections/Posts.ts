@@ -1,4 +1,5 @@
 import { domainSlugValidate } from '@/features/domains/slugs'
+import { webhookContentAfterChange } from '@/features/webhooks/hooks'
 import { pageAudioField } from '@/features/pageAudio/fields'
 import { domainScopedAccess, domainWriteGuard } from '@/features/domains/access'
 import { availableDomainsField } from '@/features/domains/field'
@@ -102,7 +103,7 @@ export const Posts: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [domainWriteGuard, authorshipBeforeChange, trashGuard, seoEditGuard, readingTimeBeforeChange, contentEditGuard, publishGuard, pageSpeedBeforeChange],
-    afterChange: [pageSpeedAfterChange('posts'), indexNowAfterChange('posts'), machineAutoDraftAfterChange('posts'), outdatedAfterChange('posts')],
+    afterChange: [pageSpeedAfterChange('posts'), indexNowAfterChange('posts'), machineAutoDraftAfterChange('posts'), outdatedAfterChange('posts'), webhookContentAfterChange('posts')],
     afterDelete: [indexNowAfterDelete('posts')],
   },
 }

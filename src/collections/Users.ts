@@ -1,5 +1,6 @@
 import type { CollectionConfig, CollectionBeforeChangeHook } from '@/engine'
 
+import { webhookUserAfterChange } from '@/features/webhooks/hooks'
 import { allowedDomainsGuard } from '@/features/domains/access'
 import { allowedDomainsField } from '@/features/domains/field'
 import { isAdmin, isAdminOrSelf, adminOnlyFieldAccess } from '../access/ecommerceAccess'
@@ -81,7 +82,7 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   auth: true,
-  hooks: { afterChange: [revokeSessionsOnPasswordChange, recordPasswordAfterChange] },
+  hooks: { afterChange: [revokeSessionsOnPasswordChange, recordPasswordAfterChange, webhookUserAfterChange] },
   beforeChange: [allowedDomainsGuard, validateUserRoleChange, sanitizePermissionOverrides, authorshipBeforeChange, enforcePasswordPolicyBeforeChange],
   fields: [
     allowedDomainsField,

@@ -1,4 +1,5 @@
 import type { StockFields } from '../stock'
+import { emitWebhookEvent } from '@/features/webhooks/emit'
 import { rawD1, runChanges, SQL } from './db'
 import { stockAlerts, sendStockAlerts, type StockAlert } from '../stockAlerts'
 import { consumeStoredValue, issueGiftCards } from './storedValue'
@@ -279,6 +280,7 @@ export async function markOrderPaid(engine: Engine, orderId: number, info: { pay
   const fresh = { ...order, status: oversold ? 'on-hold' : 'processing' }
   await sendOrderEmail(engine, fresh, oversold ? 'onHold' : 'processing')
   await sendAdminNewOrderEmail(engine, fresh)
+  void emitWebhookEvent('order.paid', { ...fresh, id: orderId })
   return { firstTime: true, order: fresh }
 }
 

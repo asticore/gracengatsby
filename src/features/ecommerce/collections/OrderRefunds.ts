@@ -1,5 +1,6 @@
 import type { CollectionConfig, CollectionSlug } from '@/engine'
 
+import { webhookRefundAfterChange } from '@/features/webhooks/hooks'
 import { shopAccess } from '../access'
 
 /**
@@ -38,6 +39,7 @@ export const OrderRefunds: CollectionConfig = {
         const { runRefundAfterChange } = await import('../server/refunds')
         return runRefundAfterChange(args as never)
       },
+      webhookRefundAfterChange,
     ],
   },
   fields: [

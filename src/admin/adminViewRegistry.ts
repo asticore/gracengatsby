@@ -47,6 +47,7 @@ import { SessionsView } from '@/admin/views/SessionsView'
 import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ApiBuilderView } from '@/admin/views/ApiBuilderView'
+import { WebhooksView } from '@/admin/views/WebhooksView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
 import { OrganizationsView } from '@/admin/views/OrganizationsView'
 import { PasswordGroupsView } from '@/admin/views/PasswordGroupsView'
@@ -277,6 +278,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: ApiBuilderView,
     path: '/api-builder',
     meta: { title: 'API builder', description: 'Build custom endpoints on the site API, choose their fields and keys, try them, and download the developer guide.' },
+  },
+  {
+    key: 'webhooks',
+    Component: WebhooksView,
+    path: '/webhooks',
+    meta: { title: 'Webhooks', description: 'Send signed webhooks to other systems when content, orders, forms or accounts change, and check every delivery.' },
   },
   {
     key: 'apiKeys',

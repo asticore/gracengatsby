@@ -7,7 +7,8 @@
 import { CONSENT_EVENT, effectiveChoices, type ConsentChoices } from '@/features/consent/consent'
 import { getConsentState } from '@/features/consent/store'
 
-import { domainMatches, PLATFORM_CATEGORY, platformCalls, dedupeKey, urlMatches, normalisePath, type PlatformCall, type TrackingPlatform } from './events'
+import { domainMatches, PLATFORM_CATEGORY, platformCalls, dedupeKey, urlMatches, normalisePath, type PlatformCall, type TrackingEventDef, type TrackingPlatform } from './events'
+import { valueForFiring } from './valueSources'
 import type { PublicTrackingEvent } from './publicEvent'
 
 type Win = Window & Record<string, any>
@@ -20,6 +21,8 @@ export type TrackingRuntimeOptions = {
   optIn: boolean
   /** Per-platform consent category, from Integrations. Missing entries use the platform default. */
   categories?: Partial<Record<TrackingPlatform, 'analytics' | 'marketing'>>
+  /** The site's default currency (payment settings), used when an event's value has none of its own. */
+  siteCurrency?: string | null
 }
 
 /** Pages where tags never fire: the preview screens and any admin path. */
@@ -110,7 +113,21 @@ export function startTracking(win: Win, options: TrackingRuntimeOptions): () => 
     if (!retryTimer && queue.length) retryTimer = win.setTimeout(flushQueue, RETRY_MS)
   }
 
-  const fire = (event: PublicTrackingEvent, trigger: string) => {
+  // Resolves the event's value at fire time (the cart, the page price, an attribute...) and sends the calls. A value
+  // that cannot be read is sent as none, never as a guess.
+  const sendWithValue = async (event: PublicTrackingEvent, platforms: TrackingPlatform[], el: Element | null) => {
+    let sent: TrackingEventDef = event
+    if (event.valueSource && event.valueSource !== 'none') {
+      const resolved = await valueForFiring(win, event, el, options.siteCurrency ?? null).catch((): null => null)
+      sent = { ...event, value: resolved?.value ?? null, currency: resolved?.currency ?? null }
+    }
+    for (const call of platformCalls(sent, platforms, randomId())) {
+      if (!sendCall(win, call)) queue.push({ call, attempts: 0 })
+    }
+    scheduleRetry()
+  }
+
+  const fire = (event: PublicTrackingEvent, trigger: string, el: Element | null = null) => {
     const choices = effectiveChoices(getConsentState().record, options.policyVersion, !options.optIn)
     let platforms = allowedPlatforms(options.platforms, choices, options.categories)
     // A standard PageView is already sent by the base tags on every page (fbq PageView, ttq.page, GA4 page_view),
@@ -126,10 +143,7 @@ export function startTracking(win: Win, options: TrackingRuntimeOptions): () => 
       if (firedOncePerPage.has(key)) return false
       firedOncePerPage.add(key)
     }
-    for (const call of platformCalls(event, platforms, randomId())) {
-      if (!sendCall(win, call)) queue.push({ call, attempts: 0 })
-    }
-    scheduleRetry()
+    void sendWithValue(event, platforms, el)
     return true
   }
 
@@ -145,8 +159,9 @@ export function startTracking(win: Win, options: TrackingRuntimeOptions): () => 
       const onEvent = (ev: Event) => {
         const selector = event.selector ?? ''
         if (!selector) return
-        if (!matchSelector(selector, ev.target as Element | null)) return
-        fire(event, type)
+        const el = matchSelector(selector, ev.target as Element | null)
+        if (!el) return
+        fire(event, type, el)
       }
       doc.addEventListener(type, onEvent, { capture: true, passive: true })
       cleanups.push(() => doc.removeEventListener(type, onEvent, { capture: true }))

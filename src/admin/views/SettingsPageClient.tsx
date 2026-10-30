@@ -9,6 +9,7 @@ import { EditForm } from './EditForm'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
 import { WorstPagesCard } from '@/features/pagespeed/ui/WorstPagesCard'
 import { TagEditorButton } from '@/features/tracking/editor/TagEditorButton'
+import { TrackingDestinations } from '@/features/tracking/editor/TrackingDestinations'
 import type { TrackingPageContext } from '@/features/tracking/editor/domains'
 import { resolveActiveTab, type SettingsPage, type LinkSection } from '@/admin/settingsPages'
 import '@/app/(engage)/settings-tabs.css'
@@ -128,9 +129,10 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
 
       {page.topCard === 'tracking-tags' && (
         <div className="settings-page__actions">
-          <TagEditorButton domains={trackingContext?.domains ?? []} currentHost={trackingContext?.currentHost ?? null} adminRoot={trackingContext?.adminRoot ?? '/admin'} />
+          <TagEditorButton domains={trackingContext?.domains ?? []} currentHost={trackingContext?.currentHost ?? null} adminRoot={trackingContext?.adminRoot ?? '/admin'} siteCurrency={trackingContext?.siteCurrency ?? null} />
         </div>
       )}
+      {page.topCard === 'tracking-tags' && <TrackingDestinations destinations={trackingContext?.destinations ?? []} />}
 
       {/* Global sections: one box, tabs on top (when 2+), the active panel below */}
       {globalSections.length > 0 && (

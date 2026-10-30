@@ -7,7 +7,9 @@ import { collectionRoute } from '@/admin/adminPaths'
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import type { UiStringKey } from '@/features/uiStrings'
 
-import { validateTrackingEvent, type TrackingEventDef, type UrlMatchMode } from '../events'
+import { validateTrackingEvent, VALUE_SOURCES, type TrackingEventDef, type UrlMatchMode, type ValueSource } from '../events'
+import { addEach } from '../bulk'
+import { valueForFiring } from '../valueSources'
 import { normaliseRulePath, pathOnly } from '../urlRule'
 import { bestSelector } from '../picker/selector'
 import { onThisPage, tagsOnPageStatus, type TagRow } from '../tagRows'
@@ -30,6 +32,7 @@ import type { Suggestion, TagOption } from './suggest'
 type Mode = 'browse' | 'select'
 type FinderPage = { kind: 'page' | 'post' | 'product' | 'shop' | 'cart' | 'checkout'; title: string; path: string }
 type Picked = { element: Element; selector: string; matches: number; suggestion: Suggestion | null }
+type BulkState = { total: number; done: number }
 type FormState = {
   option: TagOption
   name: string
@@ -39,6 +42,9 @@ type FormState = {
   enabled: boolean
   ruleMode: UrlMatchMode
   rulePath: string
+  valueSource: ValueSource
+  valueRef: string
+  valueSelector: string
 }
 type Box = { left: number; top: number; width: number; height: number }
 type Badge = Box & { key: string; tag: TagRow }
@@ -74,6 +80,24 @@ function formForTag(tag: TagRow): FormState {
     enabled: tag.enabled,
     ruleMode: (tag.urlMatchMode as UrlMatchMode | null) ?? 'exact',
     rulePath: tag.urlMatch ?? '',
+    valueSource: (VALUE_SOURCES.includes((tag.valueSource ?? 'none') as ValueSource) ? tag.valueSource : 'none') as ValueSource,
+    valueRef: tag.valueRef ?? '',
+    valueSelector: tag.valueSelector ?? '',
+  }
+}
+
+/** The value source a new tag of this option starts with: the cart or product price for adds, the order total for buys. */
+export function defaultValueSource(option: TagOption): ValueSource {
+  switch (option) {
+    case 'addToCart':
+    case 'viewProduct':
+      return 'productPrice'
+    case 'buyNow':
+      return 'orderTotal'
+    case 'checkoutStarted':
+      return 'cartTotal'
+    default:
+      return 'none'
   }
 }
 
@@ -90,6 +114,9 @@ function definitionFrom(form: FormState, selector: string, currentPath: string):
     urlMatch,
     value: form.value.trim() === '' ? null : Number(form.value),
     currency: form.currency.trim().toUpperCase() || null,
+    valueSource: form.valueSource,
+    valueRef: form.valueRef.trim() || null,
+    valueSelector: form.valueSelector.trim() || null,
     enabled: form.enabled,
   }
 }
@@ -101,9 +128,12 @@ export type TagEditorProps = {
   domains: TrackingDomainInfo[]
   currentHost: string | null
   adminRoot: string
+  /** The shop's default currency, for the test preview of a value. */
+  siteCurrency?: string | null
 }
 
-export function TagEditor({ onClose, initialEventId = null, domains, currentHost, adminRoot }: TagEditorProps): React.ReactElement {
+export function TagEditor({ onClose, initialEventId = null, domains, currentHost, adminRoot, siteCurrency = null }: TagEditorProps): React.ReactElement {
+  const siteCurrencyRef = useRef<string | null>(siteCurrency)
   const t = useAdminT()
   const frameRef = useRef<HTMLIFrameElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -141,6 +171,9 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
   const [panel, setPanel] = useState<Panel>(null)
   const [scanRows, setScanRows] = useState<ScanRow[]>([])
   const [confirmAll, setConfirmAll] = useState(false)
+  const [bulk, setBulk] = useState<BulkState | null>(null)
+  const [rowError, setRowError] = useState<Record<number, string>>({})
+  const [rowDone, setRowDone] = useState<Record<number, true>>({})
   const [hintOpen, setHintOpen] = useState<boolean>(() => {
     try {
       return !window.localStorage.getItem(HINT_KEY)
@@ -299,6 +332,9 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
       enabled: true,
       ruleMode: 'exact',
       rulePath: normaliseRulePath(pathRef.current),
+      valueSource: defaultValueSource(option),
+      valueRef: '',
+      valueSelector: '',
     })
     setStatus({ kind: 'idle' })
   }
@@ -359,7 +395,14 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
       if (testRef.current && hit) {
         ev.preventDefault()
         ev.stopPropagation()
-        flashRef.current(t('tracking.tags.testFired', { name: hit.name }))
+        // The preview resolves the value the event would send from this click, without sending anything.
+        void valueForFiring(win, hit as unknown as TrackingEventDef, el, siteCurrencyRef.current).then((resolved) =>
+          flashRef.current(
+            resolved.value == null
+              ? t('tracking.tags.testFired', { name: hit.name })
+              : t('tracking.tags.testFiredValue', { name: hit.name, value: String(resolved.value), currency: resolved.currency ?? '' }),
+          ),
+        )
         return
       }
       if (linkOf(el)) return
@@ -489,33 +532,47 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
       selector: row.selector,
       urlMatchMode: 'exact',
       urlMatch: normaliseRulePath(pathRef.current),
+      valueSource: defaultValueSource(row.suggestion.option),
       enabled: true,
     }
     return postDefinition(def, null)
   }
 
   const addOne = async (row: ScanRow) => {
-    setStatus({ kind: 'saving' })
-    const error = await addSuggestion(row).catch(() => t('tracking.tags.saveFailed'))
+    setRowError((prev) => ({ ...prev, [row.key]: '' }))
+    const error = await addSuggestion(row).catch((): string => t('tracking.tags.saveFailed'))
     if (error) {
-      setStatus({ kind: 'error', message: error })
+      setRowError((prev) => ({ ...prev, [row.key]: error }))
       return
     }
+    setRowDone((prev) => ({ ...prev, [row.key]: true }))
     await reloadTags()
     setStatus({ kind: 'saved', message: t('tracking.tags.added') })
   }
 
+  /** Adds every row that is not yet a tag, one save at a time, showing progress per row and a result count. */
   const addAll = async () => {
     const pending = scanRows.filter((row) => !row.added)
     setConfirmAll(false)
-    setStatus({ kind: 'saving' })
-    let added = 0
-    for (const row of pending) {
-      const error = await addSuggestion(row).catch(() => 'error')
-      if (!error) added += 1
-    }
+    setRowError({})
+    setBulk({ total: pending.length, done: 0 })
+    const result = await addEach(
+      pending,
+      (row) => addSuggestion(row).catch((): string => t('tracking.tags.saveFailed')),
+      (index, outcome, message) => {
+        const row = pending[index]
+        if (row && outcome === 'ok') setRowDone((prev) => ({ ...prev, [row.key]: true }))
+        if (row && outcome === 'error') setRowError((prev) => ({ ...prev, [row.key]: message ?? t('tracking.tags.saveFailed') }))
+        setBulk((prev) => (prev ? { ...prev, done: prev.done + 1 } : prev))
+      },
+    )
+    setBulk(null)
     await reloadTags()
-    setStatus({ kind: 'saved', message: t('tracking.tags.addedCount', { count: added }) })
+    setStatus(
+      result.failed
+        ? { kind: 'error', message: t('tracking.tags.bulkResult', { added: result.added, failed: result.failed }) }
+        : { kind: 'saved', message: t('tracking.tags.addedCount', { count: result.added }) },
+    )
   }
 
   const suggestion = picked?.suggestion ?? null
@@ -657,7 +714,12 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
                 const option = e.target.value as TagOption
                 const next = tagOptionDef(option)
                 const previous = tagOptionDef(form.option)
-                setForm({ ...form, option, name: form.name === previous.defaultName ? next.defaultName : form.name })
+                setForm({
+                  ...form,
+                  option,
+                  name: form.name === previous.defaultName ? next.defaultName : form.name,
+                  valueSource: defaultValueSource(option),
+                })
               }} style={{ width: '100%' }}>
                 {TAG_OPTIONS.map((o) => (
                   <option key={o.option} value={o.option}>{t(o.labelKey)}</option>
@@ -675,16 +737,37 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
                 <option value="submit">{t('tracking.tags.triggerSubmit')}</option>
               </select>
             </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <label style={{ display: 'block', margin: '8px 0', flex: 1 }}>
+            <label style={{ display: 'block', margin: '8px 0' }}>
+              {t('tracking.value.source')}
+              <select value={form.valueSource} onChange={(e) => setForm({ ...form, valueSource: e.target.value as ValueSource })} style={{ width: '100%' }}>
+                {VALUE_SOURCES.map((source) => (
+                  <option key={source} value={source}>{t(VALUE_LABEL[source])}</option>
+                ))}
+              </select>
+            </label>
+            {form.valueSource === 'fixed' ? (
+              <label style={{ display: 'block', margin: '8px 0' }}>
                 {t('tracking.tags.value')}
                 <input inputMode="decimal" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} style={{ width: '100%' }} />
               </label>
-              <label style={{ display: 'block', margin: '8px 0', flex: 1 }}>
-                {t('tracking.tags.currency')}
-                <input maxLength={3} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} style={{ width: '100%' }} />
+            ) : null}
+            {form.valueSource === 'elementAttr' || form.valueSource === 'dataLayer' ? (
+              <label style={{ display: 'block', margin: '8px 0' }}>
+                {form.valueSource === 'elementAttr' ? t('tracking.value.attr') : t('tracking.value.dataLayerName')}
+                <input value={form.valueRef} onChange={(e) => setForm({ ...form, valueRef: e.target.value })} placeholder={form.valueSource === 'elementAttr' ? 'data-price' : 'cartValue'} style={{ width: '100%' }} />
               </label>
-            </div>
+            ) : null}
+            {form.valueSource === 'elementText' || form.valueSource === 'elementAttr' ? (
+              <label style={{ display: 'block', margin: '8px 0' }}>
+                {t('tracking.value.selector')}
+                <input value={form.valueSelector} onChange={(e) => setForm({ ...form, valueSelector: e.target.value })} placeholder={t('tracking.value.selectorHint')} style={{ width: '100%' }} />
+              </label>
+            ) : null}
+            <label style={{ display: 'block', margin: '8px 0' }}>
+              {t('tracking.tags.currency')}
+              <input maxLength={3} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} style={{ width: '100%' }} />
+            </label>
+            <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 8 }}>{t('tracking.value.help')}</div>
             <label style={{ display: 'block', margin: '8px 0' }}>
               {t('tracking.tags.ruleMode')}
               <select value={form.ruleMode} onChange={(e) => setForm({ ...form, ruleMode: e.target.value as UrlMatchMode })} style={{ width: '100%' }}>
@@ -747,6 +830,8 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
           <aside aria-label={t('tracking.tags.suggestionsTitle')} style={{ width: 380, overflowY: 'auto', padding: 16, background: '#fff', borderLeft: '1px solid #e5e7eb' }}>
             <h2 style={{ fontSize: 15, margin: '0 0 4px' }}>{t('tracking.tags.suggestionsTitle')}</h2>
             <p style={{ color: '#6b7280', margin: '0 0 8px', fontSize: 13 }}>{t('tracking.tags.suggestionsHelp')}</p>
+            {bulk ? <p style={{ color: '#1d4ed8', fontSize: 13 }} role="status">{t('tracking.tags.bulkProgress', { done: bulk.done, total: bulk.total })}</p> : null}
+            {!bulk && status.kind === 'error' ? <p style={{ color: '#b91c1c', fontSize: 13 }} role="alert">{status.message}</p> : null}
             {scanRows.length === 0 ? <p style={{ color: '#6b7280' }}>{t('tracking.tags.suggestionsEmpty')}</p> : null}
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
               {scanRows.map((row) => (
@@ -760,17 +845,20 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
                     <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{row.text || row.selector}</strong>
                     <span style={{ color: '#6b7280', fontSize: 12 }}>{t(tagOptionDef(row.suggestion.option).labelKey)}</span>
                   </span>
-                  {row.added ? (
+                  {row.added || rowDone[row.key] ? (
                     <span style={{ color: '#15803d', fontSize: 13 }}>{t('tracking.tags.suggestionsAdded')}</span>
                   ) : (
-                    <button type="button" className="btn btn--style-secondary" onClick={() => void addOne(row)}>{t('tracking.tags.suggestionsAdd')}</button>
+                    <span style={{ display: 'grid', gap: 2, justifyItems: 'end' }}>
+                      <button type="button" className="btn btn--style-secondary" disabled={bulk !== null} onClick={() => void addOne(row)}>{t('tracking.tags.suggestionsAdd')}</button>
+                      {rowError[row.key] ? <span style={{ color: '#b91c1c', fontSize: 12, maxWidth: 220, textAlign: 'right' }}>{rowError[row.key]}</span> : null}
+                    </span>
                   )}
                 </li>
               ))}
             </ul>
             {unaddedCount > 0 ? (
               <div style={{ marginTop: 12 }}>
-                <button type="button" className="btn btn--style-primary" onClick={() => (confirmAll ? void addAll() : setConfirmAll(true))}>
+                <button type="button" className="btn btn--style-primary" disabled={bulk !== null} onClick={() => (confirmAll ? void addAll() : setConfirmAll(true))}>
                   {confirmAll ? t('tracking.tags.suggestionsConfirmAll', { count: unaddedCount }) : t('tracking.tags.suggestionsAddAll')}
                 </button>
               </div>
@@ -780,6 +868,18 @@ export function TagEditor({ onClose, initialEventId = null, domains, currentHost
       </div>
     </div>
   )
+}
+
+const VALUE_LABEL: Record<ValueSource, UiStringKey> = {
+  none: 'tracking.value.none',
+  fixed: 'tracking.value.fixed',
+  cartTotal: 'tracking.value.cartTotal',
+  productPrice: 'tracking.value.productPrice',
+  orderTotal: 'tracking.value.orderTotal',
+  quantity: 'tracking.value.quantity',
+  elementText: 'tracking.value.elementText',
+  elementAttr: 'tracking.value.elementAttr',
+  dataLayer: 'tracking.value.dataLayer',
 }
 
 const segment = (active: boolean): React.CSSProperties => ({

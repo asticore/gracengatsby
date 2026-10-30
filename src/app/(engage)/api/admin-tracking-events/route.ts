@@ -35,7 +35,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (errors.length) return NextResponse.json({ error: errors.join(' ') }, { status: 422 })
 
   const row: Record<string, unknown> = {}
-  for (const key of ['name', 'platformEvent', 'triggerType', 'selector', 'selectorText', 'urlMatchMode', 'urlMatch', 'domain', 'scrollDepth', 'timeSeconds', 'value', 'currency', 'contentName', 'enabled'] as const) {
+  for (const key of ['name', 'platformEvent', 'triggerType', 'selector', 'selectorText', 'urlMatchMode', 'urlMatch', 'domain', 'scrollDepth', 'timeSeconds', 'value', 'currency', 'contentName', 'valueSource', 'valueRef', 'valueSelector', 'enabled'] as const) {
     row[key] = def[key] ?? null
   }
   const created = await createTrackingEvent(row)

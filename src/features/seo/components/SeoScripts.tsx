@@ -46,6 +46,18 @@ const loadIntegrations = async (): Promise<Record<string, unknown> | null> => {
   }
 }
 
+/** The shop's default currency (payment settings), for tracking values that carry none of their own. Never throws. */
+const loadSiteCurrency = async (): Promise<string | null> => {
+  try {
+    const { getEngine } = await import('@/lib/engine')
+    const engine = await getEngine()
+    const row = (await engine.findGlobal({ slug: 'payment-settings', depth: 0, overrideAccess: true }).catch((): null => null)) as { currency?: unknown } | null
+    return typeof row?.currency === 'string' && /^[A-Z]{3}$/.test(row.currency) ? row.currency : null
+  } catch {
+    return null
+  }
+}
+
 const decodeCookie = (raw: string | undefined): string | null => {
   if (!raw) return null
   try {
@@ -117,6 +129,7 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
 
   // Tracking events fire only where a platform is connected and an enabled event exists.
   const trackingEvents = await getPublicTrackingEvents()
+  const siteCurrency = trackingEvents.length ? await loadSiteCurrency() : null
   const platforms: TrackingPlatform[] = []
   if (metaPixelId) platforms.push('meta')
   if (ga4MeasurementId) platforms.push('ga4')
@@ -145,7 +158,7 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
       />
       {adminSignedIn ? <TrackingPicker adminSignedIn={adminSignedIn} adminPath={adminPath} eventsRoute={collectionRoute('tracking-events')} saveEndpoint="/api/admin-tracking-events" labels={await pickerLabels()} /> : null}
       {trackingEvents.length && platforms.length ? (
-        <TrackingRuntime events={trackingEvents} platforms={platforms} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} suppressed={adminSignedIn} categories={{ meta: categories.meta, tiktok: categories.tiktok, ga4: 'analytics', gtm: 'analytics' }} />
+        <TrackingRuntime events={trackingEvents} platforms={platforms} siteCurrency={siteCurrency} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} suppressed={adminSignedIn} categories={{ meta: categories.meta, tiktok: categories.tiktok, ga4: 'analytics', gtm: 'analytics' }} />
       ) : null}
     </>
   )

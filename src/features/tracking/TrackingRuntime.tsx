@@ -13,19 +13,21 @@ export type TrackingRuntimeProps = Omit<TrackingRuntimeOptions, 'events'> & {
   categories?: Partial<Record<TrackingPlatform, 'analytics' | 'marketing'>>
   /** The admin path (e.g. /admin or a custom one). Tracking never runs under it. */
   adminPath?: string
+  /** The shop's default currency, for values with none of their own. */
+  siteCurrency?: string | null
 }
 
 /**
  * Renders nothing. Mounted only when there is at least one enabled event and
  * one connected platform. Tracking is suppressed on preview and admin paths.
  */
-export function TrackingRuntime({ events, platforms, policyVersion, optIn, adminPath = '/admin', suppressed = false, categories }: TrackingRuntimeProps): null {
+export function TrackingRuntime({ events, platforms, policyVersion, optIn, adminPath = '/admin', suppressed = false, categories, siteCurrency = null }: TrackingRuntimeProps): null {
   useEffect(() => {
     if (suppressed || !events.length || !platforms.length) return
     if (trackingSuppressed(window.location.pathname, adminPath)) return
-    return startTracking(window as unknown as Window & Record<string, unknown>, { events, platforms: platforms as TrackingPlatform[], policyVersion, optIn, categories })
+    return startTracking(window as unknown as Window & Record<string, unknown>, { events, platforms: platforms as TrackingPlatform[], policyVersion, optIn, categories, siteCurrency })
     // The categories object is built per render; its values are primitives, so compare them as a key.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, platforms, policyVersion, optIn, adminPath, suppressed, JSON.stringify(categories ?? {})])
+  }, [events, platforms, policyVersion, optIn, adminPath, suppressed, siteCurrency, JSON.stringify(categories ?? {})])
   return null
 }

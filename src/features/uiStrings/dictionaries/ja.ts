@@ -2920,6 +2920,16 @@ const ja: UiDictionary = {
   "webhooks.event.form.submitted": "フォーム送信",
   "webhooks.event.user.registered": "アカウント作成",
   "webhooks.event.tracking-event.saved": "トラッキングイベントを保存",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "アカウントとサイトを検索",
+  "portal.search.placeholder": "画面、ページ、商品を探す",
+  "portal.search.accountHeading": "マイアカウント",
+  "portal.search.siteHeading": "サイト内",
+  "portal.search.none": "「{query}」の結果はありません。",
+  "portal.search.hint": "2文字以上入力して検索してください。",
+  "portal.search.siteUnavailable": "サイト検索は現在利用できません。アカウントの画面は引き続き表示されます。",
+  "portal.search.clear": "検索をクリア",
+  "portal.search.status": "{count} 件見つかりました。",
 }
 
 export default ja

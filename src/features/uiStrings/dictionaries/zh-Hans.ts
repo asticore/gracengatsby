@@ -2919,6 +2919,16 @@ const zhHans: UiDictionary = {
   "webhooks.event.form.submitted": "表单已提交",
   "webhooks.event.user.registered": "账户已创建",
   "webhooks.event.tracking-event.saved": "已保存的跟踪事件",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "搜索账户和网站",
+  "portal.search.placeholder": "查找页面或商品",
+  "portal.search.accountHeading": "我的账户",
+  "portal.search.siteHeading": "网站内",
+  "portal.search.none": "没有找到与“{query}”相关的内容。",
+  "portal.search.hint": "至少输入 2 个字符进行搜索。",
+  "portal.search.siteUnavailable": "网站搜索暂时不可用。账户页面仍会列出。",
+  "portal.search.clear": "清除搜索",
+  "portal.search.status": "找到 {count} 项。",
 }
 
 export default zhHans

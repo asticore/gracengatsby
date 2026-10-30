@@ -2920,6 +2920,16 @@ const ko: UiDictionary = {
   "webhooks.event.form.submitted": "양식 제출",
   "webhooks.event.user.registered": "계정 생성",
   "webhooks.event.tracking-event.saved": "추적 이벤트 저장됨",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "내 계정과 사이트에서 검색",
+  "portal.search.placeholder": "화면, 페이지 또는 상품 찾기",
+  "portal.search.accountHeading": "내 계정",
+  "portal.search.siteHeading": "사이트 내",
+  "portal.search.none": "\"{query}\"에 대한 결과가 없습니다.",
+  "portal.search.hint": "검색하려면 두 글자 이상 입력하세요.",
+  "portal.search.siteUnavailable": "지금은 사이트 검색을 사용할 수 없습니다. 내 계정 화면은 계속 표시됩니다.",
+  "portal.search.clear": "검색 지우기",
+  "portal.search.status": "{count}개를 찾았습니다.",
 }
 
 export default ko

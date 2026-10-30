@@ -2920,6 +2920,16 @@ const it: UiDictionary = {
   "webhooks.event.form.submitted": "Modulo inviato",
   "webhooks.event.user.registered": "Account creato",
   "webhooks.event.tracking-event.saved": "Evento di tracciamento salvato",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "Cerca nel tuo account e nel sito",
+  "portal.search.placeholder": "Trova una schermata, una pagina o un prodotto",
+  "portal.search.accountHeading": "Il tuo account",
+  "portal.search.siteHeading": "Nel sito",
+  "portal.search.none": "Nessun risultato per «{query}».",
+  "portal.search.hint": "Scrivi almeno 2 lettere per cercare.",
+  "portal.search.siteUnavailable": "La ricerca nel sito non è disponibile al momento. Le schermate del tuo account restano elencate.",
+  "portal.search.clear": "Cancella ricerca",
+  "portal.search.status": "{count} trovati.",
 }
 
 export default it

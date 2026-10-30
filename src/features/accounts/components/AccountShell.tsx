@@ -4,6 +4,7 @@ import type { PortalStringKey } from '@/features/multilingual/portalStrings'
 
 import { accountTexts } from '../portalCopy'
 import { AccountNav } from './AccountNav'
+import { PortalSearch } from './PortalSearch'
 import { PortalTextProvider } from './PortalText'
 import { AccountStyles } from './styles'
 
@@ -61,6 +62,7 @@ export const AccountShell = async ({
       <div className="page-shell">
         <AccountStyles />
         <h1>{title}</h1>
+        <PortalSearch links={links} />
         <div className="account">
           <AccountNav links={links} current={current} />
           <div className="account-panel">{children}</div>

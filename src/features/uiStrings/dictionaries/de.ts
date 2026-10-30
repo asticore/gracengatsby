@@ -2921,6 +2921,16 @@ const de: UiDictionary = {
   "webhooks.event.form.submitted": "Formular gesendet",
   "webhooks.event.user.registered": "Konto erstellt",
   "webhooks.event.tracking-event.saved": "Tracking-Ereignis gespeichert",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "Konto und Website durchsuchen",
+  "portal.search.placeholder": "Bereich, Seite oder Produkt finden",
+  "portal.search.accountHeading": "Ihr Konto",
+  "portal.search.siteHeading": "Auf der Website",
+  "portal.search.none": "Nichts gefunden für „{query}“.",
+  "portal.search.hint": "Gib mindestens 2 Buchstaben ein.",
+  "portal.search.siteUnavailable": "Die Website-Suche ist gerade nicht verfügbar. Deine Kontobereiche werden trotzdem angezeigt.",
+  "portal.search.clear": "Suche leeren",
+  "portal.search.status": "{count} gefunden.",
 }
 
 export default de

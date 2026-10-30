@@ -2962,6 +2962,16 @@ export const UI_STRING_SOURCE = {
   "webhooks.event.user.registered": "Account created",
   // Webhooks: tracking event saved (added 30 Oct 2026)
   "webhooks.event.tracking-event.saved": "Tracking event saved",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "Search your account and the site",
+  "portal.search.placeholder": "Find a screen, page or product",
+  "portal.search.accountHeading": "Your account",
+  "portal.search.siteHeading": "On the site",
+  "portal.search.none": "Nothing found for \"{query}\".",
+  "portal.search.hint": "Type at least 2 letters to search.",
+  "portal.search.siteUnavailable": "Site search is unavailable right now. Your account screens are still listed.",
+  "portal.search.clear": "Clear search",
+  "portal.search.status": "{count} found.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

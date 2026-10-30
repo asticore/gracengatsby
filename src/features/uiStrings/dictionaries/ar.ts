@@ -2920,6 +2920,16 @@ const ar: UiDictionary = {
   "webhooks.event.form.submitted": "تم إرسال نموذج",
   "webhooks.event.user.registered": "تم إنشاء حساب",
   "webhooks.event.tracking-event.saved": "تم حفظ حدث التتبع",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "ابحث في حسابك والموقع",
+  "portal.search.placeholder": "ابحث عن شاشة أو صفحة أو منتج",
+  "portal.search.accountHeading": "حسابك",
+  "portal.search.siteHeading": "في الموقع",
+  "portal.search.none": "لم يُعثر على نتائج لـ \"{query}\".",
+  "portal.search.hint": "اكتب حرفين على الأقل للبحث.",
+  "portal.search.siteUnavailable": "بحث الموقع غير متاح حاليًا. ما زالت شاشات حسابك معروضة.",
+  "portal.search.clear": "مسح البحث",
+  "portal.search.status": "تم العثور على {count}.",
 }
 
 export default ar

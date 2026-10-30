@@ -2584,6 +2584,17 @@ const nl: UiDictionary = {
   "settings.page.tracking.description": "Koppel advertentie- en analyseplatforms en kies welke acties gebeurtenissen versturen. Een tag laadt pas nadat de bezoeker de cookiecategorie heeft geaccepteerd.",
   "settings.link.tracking-events.label": "Trackinggebeurtenissen",
   "settings.link.tracking-events.description": "Klikken, formulierverzendingen, paginaweergaven, scrolldiepte en verblijftijd op de pagina die gebeurtenissen naar je platforms sturen.",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "Openen in editor",
+  "tracking.tags.backToSettings": "Terug naar trackinginstellingen",
+  "tracking.tags.opening": "Editor wordt geopend…",
+  "tracking.tags.multiDomain.note": "Deze editor toont {host}, het domein waarop je zit. Elk domein heeft een eigen editor.",
+  "tracking.tags.multiDomain.open": "Editor openen op {domain}",
+  "tracking.tags.multiDomain.blocked": "Beheertoegang staat uit voor {domain}, dus de editor daarvan kan hier niet openen. Zet “Admin toestaan” voor dat domein aan onder Domeinen en open hem daar.",
+  "label.field.ga4Enabled": "Gebeurtenissen naar Google Analytics 4 sturen",
+  "label.field.gtmEnabled": "Google Tag Manager laden",
+  "label.field.ga4MeasurementId": "Meetnummer Google Analytics 4 (G-...)",
+  "label.field.gtmContainerId": "Container-ID Google Tag Manager (GTM-...)",
 }
 
 export default nl

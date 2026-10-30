@@ -9,6 +9,7 @@ import { EditForm } from './EditForm'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
 import { WorstPagesCard } from '@/features/pagespeed/ui/WorstPagesCard'
 import { TagEditorButton } from '@/features/tracking/editor/TagEditorButton'
+import type { TrackingPageContext } from '@/features/tracking/editor/domains'
 import { resolveActiveTab, type SettingsPage, type LinkSection } from '@/admin/settingsPages'
 import '@/app/(engage)/settings-tabs.css'
 
@@ -25,6 +26,8 @@ export type SettingsPageSection =
 interface SettingsPageClientProps {
   page: SettingsPage
   sections: SettingsPageSection[]
+  /** Domain facts for the tag editor on the Tracking page. */
+  trackingContext?: TrackingPageContext
 }
 
 /** Fired after a tab click so the hash subscription re-reads the URL (replaceState does not fire hashchange). */
@@ -51,7 +54,7 @@ const readServerHash = () => ''
  * - One box with tabs (2+ global sections) or a single titled section, each global section's EditForm in its panel
  * - Link sections as a grid of cards, visible on every tab
  */
-export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, sections }) => {
+export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, sections, trackingContext }) => {
   const t = useAdminT()
   const labelFor = useAdminLabel()
   // Page title and description come from the reference table, keyed by page key.
@@ -125,7 +128,7 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
 
       {page.topCard === 'tracking-tags' && (
         <div className="settings-page__actions">
-          <TagEditorButton />
+          <TagEditorButton domains={trackingContext?.domains ?? []} currentHost={trackingContext?.currentHost ?? null} adminRoot={trackingContext?.adminRoot ?? '/admin'} />
         </div>
       )}
 

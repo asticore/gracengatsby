@@ -2584,6 +2584,17 @@ const ja: UiDictionary = {
   "settings.page.tracking.description": "広告・分析プラットフォームを接続し、どの操作でイベントを送信するかを選びます。タグは、訪問者がそのCookieカテゴリに同意した後にのみ読み込まれます。",
   "settings.link.tracking-events.label": "トラッキングイベント",
   "settings.link.tracking-events.description": "プラットフォームへイベントを送信する、クリック、フォーム送信、ページビュー、スクロール深度、ページ滞在時間。",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "エディターで開く",
+  "tracking.tags.backToSettings": "トラッキング設定に戻る",
+  "tracking.tags.opening": "エディターを開いています…",
+  "tracking.tags.multiDomain.note": "このエディターは現在のドメイン {host} を表示します。ドメインごとに個別のエディターがあります。",
+  "tracking.tags.multiDomain.open": "{domain} でエディターを開く",
+  "tracking.tags.multiDomain.blocked": "{domain} では管理画面へのアクセスが無効のため、ここからエディターを開けません。ドメインの設定で「管理画面を許可」を有効にしてから、そのドメインで開いてください。",
+  "label.field.ga4Enabled": "Google Analytics 4 にイベントを送信",
+  "label.field.gtmEnabled": "Google Tag Manager を読み込む",
+  "label.field.ga4MeasurementId": "Google Analytics 4 測定 ID (G-...)",
+  "label.field.gtmContainerId": "Google Tag Manager コンテナー ID (GTM-...)",
 }
 
 export default ja

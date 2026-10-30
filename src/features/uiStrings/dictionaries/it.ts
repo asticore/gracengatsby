@@ -2584,6 +2584,17 @@ const it: UiDictionary = {
   "settings.page.tracking.description": "Collega le piattaforme pubblicitarie e di analisi e scegli quali azioni inviano eventi. Un tag si carica solo dopo che il visitatore accetta la sua categoria di cookie.",
   "settings.link.tracking-events.label": "Eventi di tracciamento",
   "settings.link.tracking-events.description": "Clic, invii di moduli, visualizzazioni di pagina, profondità di scorrimento e tempo sulla pagina che inviano eventi alle tue piattaforme.",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "Apri nell'editor",
+  "tracking.tags.backToSettings": "Torna alle impostazioni di tracciamento",
+  "tracking.tags.opening": "Apertura dell'editor…",
+  "tracking.tags.multiDomain.note": "Questo editor mostra {host}, il dominio su cui sei. Ogni dominio ha il suo editor.",
+  "tracking.tags.multiDomain.open": "Apri l'editor su {domain}",
+  "tracking.tags.multiDomain.blocked": "L'accesso amministratore è disattivato per {domain}, quindi il suo editor non può aprirsi da qui. Attiva «Consenti admin» per quel dominio in Domini, poi aprilo lì.",
+  "label.field.ga4Enabled": "Invia eventi a Google Analytics 4",
+  "label.field.gtmEnabled": "Carica Google Tag Manager",
+  "label.field.ga4MeasurementId": "ID di misurazione Google Analytics 4 (G-...)",
+  "label.field.gtmContainerId": "ID contenitore Google Tag Manager (GTM-...)",
 }
 
 export default it

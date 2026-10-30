@@ -12,6 +12,9 @@ import { normaliseRulePath, pathOnly } from '../urlRule'
 import { bestSelector } from '../picker/selector'
 import { defaultTrigger, elementMatches, isActionElement, linkOf, matchingElements, suggestFor } from './frameDom'
 import { TAG_OPTIONS, optionForRow, tagOptionDef } from './options'
+import { DomainNotice } from './DomainNotice'
+import { isMultiDomain, type TrackingDomainInfo } from './domains'
+import { tagPagePath } from './tagPage'
 import type { Suggestion, TagOption } from './suggest'
 
 /**
@@ -53,7 +56,27 @@ const SUGGEST_REASON: Record<Suggestion['reason'], UiStringKey> = {
   form: 'tracking.tags.reason.form',
 }
 
-export function TagEditor({ onClose }: { onClose: () => void }): React.ReactElement {
+export type TagEditorProps = {
+  onClose: () => void
+  /** An event to open on arrival: the editor loads its page and selects it. */
+  initialEventId?: number | null
+  domains: TrackingDomainInfo[]
+  currentHost: string | null
+  adminRoot: string
+}
+
+/** The edit form for a saved tag. */
+function formForTag(tag: TagRow): FormState {
+  return {
+    option: optionForRow(tag.platformEvent, tag.name),
+    name: tag.name,
+    trigger: tag.triggerType === 'submit' ? 'submit' : 'click',
+    value: tag.value == null ? '' : String(tag.value),
+    currency: tag.currency ?? '',
+  }
+}
+
+export function TagEditor({ onClose, initialEventId = null, domains, currentHost, adminRoot }: TagEditorProps): React.ReactElement {
   const t = useAdminT()
   const frameRef = useRef<HTMLIFrameElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -67,7 +90,8 @@ export function TagEditor({ onClose }: { onClose: () => void }): React.ReactElem
   const tagHitRef = useRef<(el: Element) => TagRow | null>(() => null)
   const flashRef = useRef<(message: string) => void>(() => undefined)
 
-  const [nav, setNav] = useState<{ path: string; n: number }>({ path: HOME, n: 0 })
+  // The frame loads once the page to show is known: the home page, or the page of the event being opened.
+  const [nav, setNav] = useState<{ path: string | null; n: number }>({ path: initialEventId ? null : HOME, n: 0 })
   const [currentPath, setCurrentPath] = useState(HOME)
   const [loadError, setLoadError] = useState(false)
   const [mode, setMode] = useState<Mode>('browse')
@@ -123,7 +147,18 @@ export function TagEditor({ onClose }: { onClose: () => void }): React.ReactElem
           fetch('/api/admin-tracking-pages', { credentials: 'same-origin' }),
         ])
         if (!alive) return
-        if (eventsRes.ok) setTags(((await eventsRes.json()) as { events: TagRow[] }).events)
+        if (eventsRes.ok) {
+          const events = ((await eventsRes.json()) as { events: TagRow[] }).events
+          setTags(events)
+          const target = initialEventId ? events.find((tag) => tag.id === initialEventId) : undefined
+          if (target) {
+            setNav((prev) => ({ path: tagPagePath(target), n: prev.n + 1 }))
+            setEditing(target)
+            setForm(formForTag(target))
+          } else {
+            setNav((prev) => (prev.path === null ? { path: HOME, n: prev.n + 1 } : prev))
+          }
+        }
         if (pagesRes.ok) setPages(((await pagesRes.json()) as { pages: FinderPage[] }).pages)
       } catch {
         if (alive) setStatus({ kind: 'error', message: t('tracking.tags.loadFailed') })
@@ -199,13 +234,7 @@ export function TagEditor({ onClose }: { onClose: () => void }): React.ReactElem
     setPicked(null)
     setConfirmDelete(false)
     setEditing(tag)
-    setForm({
-      option: optionForRow(tag.platformEvent, tag.name),
-      name: tag.name,
-      trigger: tag.triggerType === 'submit' ? 'submit' : 'click',
-      value: tag.value == null ? '' : String(tag.value),
-      currency: tag.currency ?? '',
-    })
+    setForm(formForTag(tag))
     setStatus({ kind: 'idle' })
   }
 
@@ -416,25 +445,28 @@ export function TagEditor({ onClose }: { onClose: () => void }): React.ReactElem
         </span>
         {status.kind === 'saved' ? <span style={{ color: '#15803d' }}>{status.message}</span> : null}
       </div>
-      <div style={{ padding: '4px 16px', color: '#6b7280', fontSize: 12, background: '#fff', borderBottom: '1px solid #e5e7eb' }}>{t('tracking.tags.domainNote')}</div>
+      <div style={{ padding: '4px 16px', color: '#6b7280', fontSize: 12, background: '#fff', borderBottom: '1px solid #e5e7eb' }}>
+        {isMultiDomain(domains) ? <DomainNotice domains={domains} currentHost={currentHost} adminRoot={adminRoot} /> : t('tracking.tags.domainNote')}
+      </div>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <div ref={containerRef} style={{ position: 'relative', flex: 1, minWidth: 0, overflow: 'hidden', background: '#fff' }}>
-          <iframe
+          {nav.path === null ? <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: '#6b7280' }}>{t('tracking.tags.opening')}</div> : null}
+          {nav.path !== null ? <iframe
             key={nav.n}
             ref={frameRef}
             src={nav.path}
             title={t('tracking.tags.title')}
             onLoad={handleLoad}
             style={{ width: '100%', height: '100%', border: 0, background: '#fff' }}
-          />
+          /> : null}
           {loadError ? (
             <div role="alert" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center', background: '#fff' }}>
               <p>{t('tracking.tags.loadFailed')}</p>
             </div>
           ) : null}
           {badges.map((b) => (
-            <div key={b.key} aria-hidden="true" style={{ position: 'absolute', left: b.left, top: b.top, width: b.width, height: b.height, outline: `2px solid ${b.tag.enabled ? '#16a34a' : '#9ca3af'}`, pointerEvents: 'none' }} />
+            <div key={b.key} aria-hidden="true" style={{ position: 'absolute', left: b.left, top: b.top, width: b.width, height: b.height, outline: `${b.tag.id === initialEventId ? 4 : 2}px solid ${b.tag.enabled ? '#16a34a' : '#9ca3af'}`, pointerEvents: 'none' }} />
           ))}
           {badges.map((b) => (
             <button

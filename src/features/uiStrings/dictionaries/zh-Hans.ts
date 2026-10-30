@@ -2583,6 +2583,17 @@ const zhHans: UiDictionary = {
   "settings.page.tracking.description": "连接广告和分析平台，并选择哪些操作发送事件。标签只有在访客接受其 Cookie 类别后才会加载。",
   "settings.link.tracking-events.label": "跟踪事件",
   "settings.link.tracking-events.description": "点击、表单提交、页面浏览、滚动深度以及页面停留时间等，会向您的平台发送事件。",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "在编辑器中打开",
+  "tracking.tags.backToSettings": "返回跟踪设置",
+  "tracking.tags.opening": "正在打开编辑器…",
+  "tracking.tags.multiDomain.note": "此编辑器显示 {host}，即您当前所在的域名。每个域名都有各自的编辑器。",
+  "tracking.tags.multiDomain.open": "在 {domain} 上打开编辑器",
+  "tracking.tags.multiDomain.blocked": "{domain} 已关闭管理后台访问，因此无法从此处打开其编辑器。请在域名设置中为该域名开启“允许管理后台”，然后在该域名下打开。",
+  "label.field.ga4Enabled": "向 Google Analytics 4 发送事件",
+  "label.field.gtmEnabled": "加载 Google Tag Manager",
+  "label.field.ga4MeasurementId": "Google Analytics 4 衡量 ID (G-...)",
+  "label.field.gtmContainerId": "Google Tag Manager 容器 ID (GTM-...)",
 }
 
 export default zhHans

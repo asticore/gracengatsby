@@ -2584,6 +2584,17 @@ const ru: UiDictionary = {
   "settings.page.tracking.description": "Подключите рекламные и аналитические платформы и выберите действия, которые отправляют события. Тег загружается только после того, как посетитель принимает его категорию cookie.",
   "settings.link.tracking-events.label": "События отслеживания",
   "settings.link.tracking-events.description": "Клики, отправки форм, просмотры страниц, глубина прокрутки и время на странице, которые отправляют события в ваши платформы.",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "Открыть в редакторе",
+  "tracking.tags.backToSettings": "Назад к настройкам отслеживания",
+  "tracking.tags.opening": "Открываем редактор…",
+  "tracking.tags.multiDomain.note": "Этот редактор показывает {host}, домен, на котором вы сейчас находитесь. У каждого домена свой редактор.",
+  "tracking.tags.multiDomain.open": "Открыть редактор на {domain}",
+  "tracking.tags.multiDomain.blocked": "Доступ к админке для {domain} отключён, поэтому его редактор отсюда не открывается. Включите «Разрешить админку» для этого домена в разделе Домены и откройте его там.",
+  "label.field.ga4Enabled": "Отправлять события в Google Analytics 4",
+  "label.field.gtmEnabled": "Загружать Google Tag Manager",
+  "label.field.ga4MeasurementId": "Идентификатор измерения Google Analytics 4 (G-...)",
+  "label.field.gtmContainerId": "Идентификатор контейнера Google Tag Manager (GTM-...)",
 }
 
 export default ru

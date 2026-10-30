@@ -2920,6 +2920,16 @@ const hi: UiDictionary = {
   "webhooks.event.form.submitted": "फ़ॉर्म सबमिट हुआ",
   "webhooks.event.user.registered": "खाता बनाया गया",
   "webhooks.event.tracking-event.saved": "ट्रैकिंग इवेंट सहेजा गया",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "अपने खाते और साइट में खोजें",
+  "portal.search.placeholder": "कोई स्क्रीन, पेज या उत्पाद खोजें",
+  "portal.search.accountHeading": "आपका खाता",
+  "portal.search.siteHeading": "साइट पर",
+  "portal.search.none": "\"{query}\" के लिए कुछ नहीं मिला।",
+  "portal.search.hint": "खोजने के लिए कम से कम 2 अक्षर लिखें।",
+  "portal.search.siteUnavailable": "साइट खोज अभी उपलब्ध नहीं है। आपके खाते की स्क्रीन फिर भी दिख रही हैं।",
+  "portal.search.clear": "खोज साफ़ करें",
+  "portal.search.status": "{count} मिले।",
 }
 
 export default hi

@@ -2920,6 +2920,16 @@ const ru: UiDictionary = {
   "webhooks.event.form.submitted": "Форма отправлена",
   "webhooks.event.user.registered": "Учётная запись создана",
   "webhooks.event.tracking-event.saved": "Событие отслеживания сохранено",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "Поиск по аккаунту и сайту",
+  "portal.search.placeholder": "Найдите раздел, страницу или товар",
+  "portal.search.accountHeading": "Ваш аккаунт",
+  "portal.search.siteHeading": "На сайте",
+  "portal.search.none": "По запросу «{query}» ничего не найдено.",
+  "portal.search.hint": "Введите хотя бы 2 буквы для поиска.",
+  "portal.search.siteUnavailable": "Поиск по сайту сейчас недоступен. Разделы аккаунта по-прежнему показаны.",
+  "portal.search.clear": "Очистить поиск",
+  "portal.search.status": "Найдено: {count}.",
 }
 
 export default ru

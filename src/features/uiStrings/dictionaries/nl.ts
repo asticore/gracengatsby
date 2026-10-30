@@ -2920,6 +2920,16 @@ const nl: UiDictionary = {
   "webhooks.event.form.submitted": "Formulier verzonden",
   "webhooks.event.user.registered": "Account aangemaakt",
   "webhooks.event.tracking-event.saved": "Trackinggebeurtenis opgeslagen",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "Zoek in je account en op de site",
+  "portal.search.placeholder": "Zoek een scherm, pagina of product",
+  "portal.search.accountHeading": "Je account",
+  "portal.search.siteHeading": "Op de site",
+  "portal.search.none": "Niets gevonden voor \"{query}\".",
+  "portal.search.hint": "Typ minstens 2 letters om te zoeken.",
+  "portal.search.siteUnavailable": "Zoeken op de site is nu niet beschikbaar. Je accountschermen staan nog wel vermeld.",
+  "portal.search.clear": "Zoekopdracht wissen",
+  "portal.search.status": "{count} gevonden.",
 }
 
 export default nl

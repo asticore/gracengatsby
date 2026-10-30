@@ -2920,6 +2920,16 @@ const es: UiDictionary = {
   "webhooks.event.form.submitted": "Formulario enviado",
   "webhooks.event.user.registered": "Cuenta creada",
   "webhooks.event.tracking-event.saved": "Evento de seguimiento guardado",
+  // Portal search (task 6, added 30 Oct 2026)
+  "portal.search.label": "Buscar en tu cuenta y en el sitio",
+  "portal.search.placeholder": "Busca una pantalla, página o producto",
+  "portal.search.accountHeading": "Tu cuenta",
+  "portal.search.siteHeading": "En el sitio",
+  "portal.search.none": "No se encontró nada para «{query}».",
+  "portal.search.hint": "Escribe al menos 2 letras para buscar.",
+  "portal.search.siteUnavailable": "La búsqueda del sitio no está disponible ahora. Las pantallas de tu cuenta siguen listadas.",
+  "portal.search.clear": "Borrar búsqueda",
+  "portal.search.status": "{count} encontrados.",
 }
 
 export default es

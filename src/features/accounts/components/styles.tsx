@@ -36,7 +36,20 @@ export const AccountStyles: React.FC = () => (
       .account-nav-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 16rem; max-width: 82vw; background: #fff; z-index: 100; padding: 1.5rem 1.25rem; overflow-y: auto; box-shadow: 2px 0 16px rgba(0,0,0,.18); transform: translateX(-100%); transition: transform .25s ease; }
       .account-nav-drawer--open { transform: translateX(0); }
     }
-    .account-form { display: grid; gap: .9rem; max-width: 30rem; }
+.portal-search { margin: 0 0 1.5rem; max-width: 40rem; }
+    .portal-search__label { display: block; font-weight: 600; margin-bottom: .35rem; }
+    .portal-search__field { display: flex; gap: .5rem; align-items: center; }
+    .portal-search__field input { flex: 1; min-width: 0; padding: .6rem .8rem; border: 1px solid rgba(0,0,0,.2); border-radius: 8px; font: inherit; }
+    .portal-search__field button { padding: .4rem .7rem; border: 1px solid rgba(0,0,0,.2); border-radius: 8px; background: #fff; font: inherit; cursor: pointer; }
+    .portal-search__hint { margin: .5rem 0 0; color: rgba(0,0,0,.65); font-size: .9em; }
+    .portal-search__results { margin-top: .75rem; border: 1px solid rgba(0,0,0,.12); border-radius: 8px; padding: .75rem 1rem; }
+    .portal-search__results ul { list-style: none; margin: 0 0 .75rem; padding: 0; }
+    .portal-search__results li { padding: .2rem 0; }
+    .portal-search__results p { margin: .25rem 0; }
+    .portal-search__heading { font-size: .95rem; margin: .25rem 0; }
+    .portal-search__type { color: rgba(0,0,0,.6); font-size: .85em; }
+    .portal-search__status { color: rgba(0,0,0,.6); font-size: .85em; }
+        .account-form { display: grid; gap: .9rem; max-width: 30rem; }
     .account-form label { display: grid; gap: .3rem; font-size: .9rem; }
     .account-form input, .account-form select { padding: .55rem .7rem; border: 1px solid rgba(0,0,0,.25); border-radius: 6px; font: inherit; }
     .account-form .account-form__row { display: grid; gap: .9rem; grid-template-columns: 1fr 1fr; }

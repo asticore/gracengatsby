@@ -231,6 +231,16 @@ Notes:
 
 ---
 
+## Tracking and where tags go
+
+Tracking has three parts, all under Settings > Tracking.
+
+1. **Connections** (Settings > Tracking connections, or the ID fields on Integrations): Meta pixel, Google Analytics 4, Google Tag Manager and TikTok pixel. Each has an on/off switch. Meta and TikTok also have a consent category. You can type an ID, or use "Connect with Google / Facebook / TikTok" and pick from a list. Tokens are stored encrypted and never sent to the browser.
+2. **Tracking events** (the Tracking events table and the **Add tags** visual editor): each event is a rule saved in the database (table `eg_tracking_events`): a CSS selector, a trigger (click, form submit, page view, scroll, time on page), an optional URL rule (language prefixes are ignored), a standard event name (Add to cart, Purchase, Lead and so on) and an optional value source (fixed amount, cart total, product price, order total, quantity, element text or attribute, or a data layer variable). Create them in the table, or use **Add tags** to open the live site, click an element and pick an event. The editor can also suggest tags for the page you are on and lists every tag already on it.
+3. **Runtime**: public pages load a small script only when at least one enabled event exists. When a visitor triggers an event and has given the matching cookie consent, the script sends it straight from the visitor's browser to every connected destination: `fbq` for Meta, `gtag` for GA4, `ttq` for TikTok, and `dataLayer.push` for Tag Manager. A standard page view goes only to the data layer so it is not counted twice with the base tags. Nothing fires before consent, for signed-in admins, in the editor's Navigate mode, or under the admin and preview paths. Test mode in the editor shows a toast instead of sending.
+
+So the tags end up in each platform's own tools (Meta Events Manager, GA4 reports and DebugView, TikTok Events Manager, or your Tag Manager container). The site itself does not keep a log of each time an event fires, and it does not send events from the server (Meta Conversions API and the GA4 Measurement Protocol are not built).
+
 ## Portal theming
 
 `src/app/(engage)/custom.css` carries the whole portal theme. Read its header comment before touching it — the colour system is easy to get wrong.

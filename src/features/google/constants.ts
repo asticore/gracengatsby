@@ -10,10 +10,16 @@ export const INTEGRATIONS_SLUG = 'integrations'
 
 export const OAUTH_STATE_COOKIE = 'eg_google_oauth'
 
+/** Set when the sign-in was started from the Tracking connections screen, so the callback returns there. */
+export const OAUTH_RETURN_COOKIE = 'eg_google_return'
+
 export const CALLBACK_PATH = '/api/google/callback'
 
 /** Admin path (relative to the admin root) of the Google connection screen. */
 export const ADMIN_PAGE_PATH = '/google-connection'
+
+/** Admin path of the Tracking connections screen, where a Google sign-in started there returns. */
+export const TRACKING_PAGE_PATH = '/tracking-connections'
 
 export const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 

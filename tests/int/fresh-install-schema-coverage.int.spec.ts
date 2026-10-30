@@ -183,7 +183,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
         'footer', 'footerColumns', 'footerColumnsLinks', 'footerSocialsLinks',
         'languageSettings', 'languageSettingsMultilingualActiveLocales',
         'seoSettings', 'seoSettingsSchemaSameAs', 'speedSettings', 'speedSettingsAdvancedPreconnectOrigins', 'speedSettingsAdvancedPrefetchDns',
-        'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings', 'shopExtraSettings', 'siteDetails', 'sitePages', 'domainSettings', 'domainSettingsDomains', 'emailTemplates', 'emailBrand', 'emailSchedule', 'googleConnection',
+        'mediaSettings', 'mediaSettingsResizingResponsiveWidths', 'backupSettings', 'shopExtraSettings', 'siteDetails', 'sitePages', 'domainSettings', 'domainSettingsDomains', 'emailTemplates', 'emailBrand', 'emailSchedule', 'googleConnection', 'trackingConnections',
         'addresses', 'carts', 'cartsItems', 'orders', 'ordersItems', 'ordersRels', 'transactions', 'transactionsItems', 'products', 'productsRels', 'productsVersions', 'productsVersionsRels', 'productsAttributes', 'productsVariations', 'productsVersionsAttributes', 'productsVersionsVariations', 'productsBundleItems', 'productsVersionsBundleItems', 'cartsItems',
         'productsAddOns', 'productsVersionsAddOns', 'shopExtraSettingsPricingRules',
         'preferences', 'preferencesRels', 'lockedDocuments', 'lockedDocumentsRels',
@@ -844,7 +844,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
   it('password groups migration is registered before organizations and is safe to run twice, keeping existing rows', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations.map((x) => x.name).slice(-13)).toEqual([
+    expect(migrations.map((x) => x.name).slice(-14)).toEqual([
       '20261126_100000_machine_translation',
       '20261127_100000_machine_autodraft',
       '20261128_100000_admin_ui_language',
@@ -858,6 +858,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       '20261229_100000_tracking_events',
       '20261230_100000_tracking_switches',
       '20261231_100000_tracking_categories',
+      '20270102_100000_tracking_connections',
     ])
     const mod = await import('@/migrations/20261123_100000_password_groups')
     const { drizzle } = await import('drizzle-orm/d1')

@@ -115,6 +115,7 @@ import * as migration_20261220_100000_site_scoped_slugs from './20261220_100000_
 import * as migration_20261229_100000_tracking_events from './20261229_100000_tracking_events';
 import * as migration_20261230_100000_tracking_switches from './20261230_100000_tracking_switches';
 import * as migration_20261231_100000_tracking_categories from './20261231_100000_tracking_categories';
+import * as migration_20270102_100000_tracking_connections from './20270102_100000_tracking_connections';
 
 export const migrations = [
   {
@@ -701,5 +702,10 @@ export const migrations = [
     up: migration_20261231_100000_tracking_categories.up,
     down: migration_20261231_100000_tracking_categories.down,
     name: '20261231_100000_tracking_categories',
+  },
+  {
+    up: migration_20270102_100000_tracking_connections.up,
+    down: migration_20270102_100000_tracking_connections.down,
+    name: '20270102_100000_tracking_connections',
   },
 ];

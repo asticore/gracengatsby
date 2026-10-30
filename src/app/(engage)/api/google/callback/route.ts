@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getAdminContext } from '@/admin/auth'
 import { getEngine } from '@/lib/engine'
-import { ADMIN_PAGE_PATH, OAUTH_STATE_COOKIE, TOKEN_URL, redirectUriFor } from '@/features/google/constants'
+import { ADMIN_PAGE_PATH, OAUTH_RETURN_COOKIE, OAUTH_STATE_COOKIE, TOKEN_URL, TRACKING_PAGE_PATH, redirectUriFor } from '@/features/google/constants'
 import { readGoogleClient } from '@/features/google/auth'
 import { publicOrigin } from '@/features/google/origin'
 import { requestJson } from '@/features/google/http'
@@ -16,10 +16,19 @@ export const dynamic = 'force-dynamic'
 
 const NO_STORE = { 'Cache-Control': 'no-store' }
 
-/** Sends the admin back to the screen with a short flag, and clears the state cookie. */
-async function back(origin: string, flag: string): Promise<Response> {
-  const response = NextResponse.redirect(`${origin}${adminHref(ADMIN_PAGE_PATH, await getAdminRoot())}?google=${flag}`, 303)
+/**
+ * Sends the admin back to the screen with a short flag, and clears the state
+ * cookies. A sign-in started from the Tracking screen returns there, with the
+ * flag as `notice=google-<flag>`.
+ */
+async function back(origin: string, flag: string, fromTracking = false): Promise<Response> {
+  const root = await getAdminRoot()
+  const target = fromTracking
+    ? `${origin}${adminHref(TRACKING_PAGE_PATH, root)}?notice=google-${flag}`
+    : `${origin}${adminHref(ADMIN_PAGE_PATH, root)}?google=${flag}`
+  const response = NextResponse.redirect(target, 303)
   response.cookies.set(OAUTH_STATE_COOKIE, '', { path: '/api/google', maxAge: 0, httpOnly: true, sameSite: 'lax' })
+  response.cookies.set(OAUTH_RETURN_COOKIE, '', { path: '/api/google', maxAge: 0, httpOnly: true, sameSite: 'lax' })
   response.headers.set('Cache-Control', NO_STORE['Cache-Control'])
   return response
 }
@@ -31,23 +40,24 @@ async function back(origin: string, flag: string): Promise<Response> {
  */
 export async function GET(request: NextRequest): Promise<Response> {
   const origin = publicOrigin(request.url)
+  const fromTracking = request.cookies.get(OAUTH_RETURN_COOKIE)?.value === 'tracking'
   try {
     const params = request.nextUrl.searchParams
-    if (params.get('error')) return back(origin, 'denied')
+    if (params.get('error')) return back(origin, 'denied', fromTracking)
 
     const context = await getAdminContext()
-    if (!context.user || !context.isAdmin) return back(origin, 'forbidden')
+    if (!context.user || !context.isAdmin) return back(origin, 'forbidden', fromTracking)
 
     const secret = process.env.ENGAGE_SECRET || ''
     const cookie = request.cookies.get(OAUTH_STATE_COOKIE)?.value ?? null
-    if (!verifyOauthState(params.get('state'), cookie, secret)) return back(origin, 'state')
+    if (!verifyOauthState(params.get('state'), cookie, secret)) return back(origin, 'state', fromTracking)
 
     const code = params.get('code') ?? ''
-    if (!code || code.length > 2000) return back(origin, 'error')
+    if (!code || code.length > 2000) return back(origin, 'error', fromTracking)
 
     const engine = await getEngine()
     const { clientId, clientSecret } = await readGoogleClient(engine)
-    if (!clientId || !clientSecret) return back(origin, 'no-client')
+    if (!clientId || !clientSecret) return back(origin, 'no-client', fromTracking)
 
     const exchange = await requestJson(TOKEN_URL, {
       method: 'POST',
@@ -61,17 +71,17 @@ export async function GET(request: NextRequest): Promise<Response> {
       }).toString(),
     })
     const body = (exchange.body ?? {}) as { refresh_token?: unknown; id_token?: unknown; scope?: unknown; error?: unknown }
-    if (!exchange.ok) return back(origin, 'exchange')
-    if (typeof body.refresh_token !== 'string' || !body.refresh_token) return back(origin, 'no-refresh')
+    if (!exchange.ok) return back(origin, 'exchange', fromTracking)
+    if (typeof body.refresh_token !== 'string' || !body.refresh_token) return back(origin, 'no-refresh', fromTracking)
 
     await saveSignIn(engine, {
       refreshToken: body.refresh_token,
       email: emailFromIdToken(body.id_token),
       scopes: typeof body.scope === 'string' ? body.scope.slice(0, 1000) : '',
     })
-    return back(origin, 'connected')
+    return back(origin, 'connected', fromTracking)
   } catch (error) {
     console.error('google callback error:', error instanceof Error ? error.name : 'unknown')
-    return back(origin, 'error')
+    return back(origin, 'error', fromTracking)
   }
 }

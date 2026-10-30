@@ -39,6 +39,7 @@ import { EmailSettings } from '@/globals/EmailSettings'
 import { EmailTemplates } from '@/globals/EmailTemplates'
 import { EmailSchedule } from '@/globals/EmailSchedule'
 import { GoogleConnection } from '@/globals/GoogleConnection'
+import { TrackingConnections } from '@/globals/TrackingConnections'
 import { EmailBrand } from '@/globals/EmailBrand'
 import { FaqSettings } from '@/globals/FaqSettings'
 import { Footer } from '@/globals/Footer'
@@ -731,6 +732,10 @@ export const emailSchedule = emailScheduleGenerated.table
 /** Google connection (src/globals/GoogleConnection.ts): OAuth client, the signed-in account and the chosen Google properties. */
 export const googleConnectionGenerated = generateTable(GoogleConnection)
 export const googleConnection = googleConnectionGenerated.table
+
+/** Tracking connections (src/globals/TrackingConnections.ts): Meta and TikTok app credentials and sign-in tokens. */
+export const trackingConnectionsGenerated = generateTable(TrackingConnections)
+export const trackingConnections = trackingConnectionsGenerated.table
 
 /** Site details (src/globals/SiteDetails.ts): scalars plus one `business` group, rebuilt by groupFields. */
 export const siteDetailsGenerated = generateTable(SiteDetails)

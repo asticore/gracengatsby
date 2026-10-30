@@ -35,7 +35,7 @@ export interface SettingsPage {
   /** Sections to render (globals and/or links) */
   sections: (GlobalSection | LinkSection)[]
   /** Extra card shown above the sections (a named card rendered by the settings client). */
-  topCard?: 'pagespeed-worst'
+  topCard?: 'pagespeed-worst' | 'tracking-tags'
 }
 
 /**
@@ -94,6 +94,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     key: 'tracking',
     path: '/settings/tracking',
     title: 'Tracking',
+    topCard: 'tracking-tags',
     description: 'Connect ad and analytics platforms, and choose which actions send events. A tag loads only after the visitor accepts its cookie category.',
     sections: [
       { kind: 'global', slug: 'integrations' },

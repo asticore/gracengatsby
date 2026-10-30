@@ -12,12 +12,14 @@ import { getPrivacyPolicyPath } from '@/features/site/pages'
 import { getSeoContext } from '../settings'
 import { getPublicTrackingEvents } from '@/features/tracking/server'
 import { pickConsentCategories } from '@/features/integrations/publicIds'
-import { TrackingPicker } from '@/features/tracking/picker/TrackingPicker'
+import { TrackingPicker, type PickerLabels } from '@/features/tracking/picker/TrackingPicker'
 import { collectionRoute } from '@/admin/adminPaths'
 import { TrackingRuntime } from '@/features/tracking/TrackingRuntime'
 import type { TrackingPlatform } from '@/features/tracking/events'
 import { getAdminRoot } from '@/features/security/settings'
-import { ADMIN_SESSION_COOKIE } from '@/features/impersonation/policy'
+import { isSignedInTrackingAdmin } from '@/features/tracking/adminAccess'
+import { getAdminUi } from '@/admin/i18n/serverUi'
+import type { UiStringKey } from '@/features/uiStrings'
 import { AnalyticsLoader } from './AnalyticsLoader'
 
 export type SeoScriptsProps = {
@@ -122,7 +124,7 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
   if (tiktokPixelId) platforms.push('tiktok')
   const adminPath = await getAdminRoot().catch((): string => '/admin')
   // A signed-in admin's visits are not tracked: the cookie is present whenever an admin session is open.
-  const adminSignedIn = Boolean((await cookies()).get(ADMIN_SESSION_COOKIE)?.value)
+  const adminSignedIn = await isSignedInTrackingAdmin('read')
   const categories = pickConsentCategories(integrations)
 
   return (
@@ -141,12 +143,39 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
         policyVersion={consent.policyVersion}
         consentModeV2={consent.consentModeV2}
       />
-      {adminSignedIn ? <TrackingPicker adminSignedIn={adminSignedIn} adminPath={adminPath} eventsRoute={collectionRoute('tracking-events')} /> : null}
+      {adminSignedIn ? <TrackingPicker adminSignedIn={adminSignedIn} adminPath={adminPath} eventsRoute={collectionRoute('tracking-events')} saveEndpoint="/api/admin-tracking-events" labels={await pickerLabels()} /> : null}
       {trackingEvents.length && platforms.length ? (
         <TrackingRuntime events={trackingEvents} platforms={platforms} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} suppressed={adminSignedIn} categories={{ meta: categories.meta, tiktok: categories.tiktok, ga4: 'analytics', gtm: 'analytics' }} />
       ) : null}
     </>
   )
+}
+
+/** The picker's strings, in the admin's language (uiStrings `tracking.picker.*`). */
+async function pickerLabels(): Promise<PickerLabels> {
+  const ui = await getAdminUi().catch((): null => null)
+  const t = (key: UiStringKey): string => (ui ? ui.t(key) : key)
+  return {
+    title: t('tracking.picker.title'),
+    hint: t('tracking.picker.hint'),
+    selector: t('tracking.picker.selector'),
+    matches: t('tracking.picker.matches'),
+    notUnique: t('tracking.picker.notUnique'),
+    name: t('tracking.picker.name'),
+    standardEvent: t('tracking.picker.standardEvent'),
+    trigger: t('tracking.picker.trigger'),
+    urlRule: t('tracking.picker.urlRule'),
+    save: t('tracking.picker.save'),
+    saving: t('tracking.picker.saving'),
+    saved: t('tracking.picker.saved'),
+    saveFailed: t('tracking.picker.saveFailed'),
+    testMode: t('tracking.picker.testMode'),
+    testFired: t('tracking.picker.testFired'),
+    openEvents: t('tracking.picker.openEvents'),
+    close: t('tracking.picker.close'),
+    copy: t('tracking.picker.copy'),
+    copied: t('tracking.picker.copied'),
+  }
 }
 
 /** Convenience wrapper for the last child of <body>. */

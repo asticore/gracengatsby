@@ -2501,6 +2501,26 @@ const fr: UiDictionary = {
   "label.collection.tracking-events": "Événements de suivi",
   "label.singular.tracking-events": "Événement de suivi",
   "desc.tracking-events": "Événements du site public (clic, envoi de formulaire, vue de page, défilement ou temps passé). Ils ne se déclenchent qu’après l’acceptation de la catégorie de cookies correspondante.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "Sélecteur d’événements",
+  "tracking.picker.hint": "Survolez un élément et cliquez pour le choisir.",
+  "tracking.picker.selector": "Sélecteur",
+  "tracking.picker.matches": "Correspondances sur cette page",
+  "tracking.picker.notUnique": "non unique",
+  "tracking.picker.name": "Nom",
+  "tracking.picker.standardEvent": "Événement standard",
+  "tracking.picker.trigger": "Déclencheur",
+  "tracking.picker.urlRule": "Règle d’URL : chemin exact",
+  "tracking.picker.save": "Enregistrer l’événement",
+  "tracking.picker.saving": "Enregistrement…",
+  "tracking.picker.saved": "Enregistré. L’événement figure désormais dans les événements de suivi.",
+  "tracking.picker.saveFailed": "Impossible d’enregistrer l’événement.",
+  "tracking.picker.testMode": "Mode test : affiche un message lors d’un clic sur l’élément choisi",
+  "tracking.picker.testFired": "L’événement se déclencherait",
+  "tracking.picker.openEvents": "Ouvrir les événements de suivi",
+  "tracking.picker.close": "Fermer le sélecteur",
+  "tracking.picker.copy": "Copier la définition",
+  "tracking.picker.copied": "Copié",
 }
 
 export default fr

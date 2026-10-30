@@ -2541,6 +2541,26 @@ export const UI_STRING_SOURCE = {
   "label.collection.tracking-events": "Tracking events",
   "label.singular.tracking-events": "Tracking event",
   "desc.tracking-events": "Events fired on the public site (click, form submit, page view, scroll depth or time on page). Each one fires only after its cookie category is accepted.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "Event picker",
+  "tracking.picker.hint": "Hover an element and click it to pick it.",
+  "tracking.picker.selector": "Selector",
+  "tracking.picker.matches": "Matches on this page",
+  "tracking.picker.notUnique": "not unique",
+  "tracking.picker.name": "Name",
+  "tracking.picker.standardEvent": "Standard event",
+  "tracking.picker.trigger": "Trigger",
+  "tracking.picker.urlRule": "URL rule: exact path",
+  "tracking.picker.save": "Save event",
+  "tracking.picker.saving": "Saving…",
+  "tracking.picker.saved": "Saved. The event is now in tracking events.",
+  "tracking.picker.saveFailed": "Could not save the event.",
+  "tracking.picker.testMode": "Test mode: show a toast when the picked element is clicked",
+  "tracking.picker.testFired": "Event would fire",
+  "tracking.picker.openEvents": "Open tracking events",
+  "tracking.picker.close": "Close picker",
+  "tracking.picker.copy": "Copy definition",
+  "tracking.picker.copied": "Copied",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

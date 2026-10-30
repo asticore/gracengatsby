@@ -2500,6 +2500,26 @@ const zhHans: UiDictionary = {
   "label.collection.tracking-events": "跟踪事件",
   "label.singular.tracking-events": "跟踪事件",
   "desc.tracking-events": "公开网站上的事件（点击、表单提交、页面浏览、滚动深度或页面停留时间）。只有在访客接受相应的 Cookie 类别后才会触发。",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "事件选择器",
+  "tracking.picker.hint": "将鼠标悬停在元素上并点击即可选择。",
+  "tracking.picker.selector": "选择器",
+  "tracking.picker.matches": "本页匹配数",
+  "tracking.picker.notUnique": "不唯一",
+  "tracking.picker.name": "名称",
+  "tracking.picker.standardEvent": "标准事件",
+  "tracking.picker.trigger": "触发器",
+  "tracking.picker.urlRule": "URL 规则：精确路径",
+  "tracking.picker.save": "保存事件",
+  "tracking.picker.saving": "正在保存…",
+  "tracking.picker.saved": "已保存。该事件已加入跟踪事件。",
+  "tracking.picker.saveFailed": "无法保存事件。",
+  "tracking.picker.testMode": "测试模式：点击所选元素时显示提示",
+  "tracking.picker.testFired": "事件将会触发",
+  "tracking.picker.openEvents": "打开跟踪事件",
+  "tracking.picker.close": "关闭选择器",
+  "tracking.picker.copy": "复制定义",
+  "tracking.picker.copied": "已复制",
 }
 
 export default zhHans

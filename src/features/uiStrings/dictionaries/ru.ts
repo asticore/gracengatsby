@@ -2501,6 +2501,26 @@ const ru: UiDictionary = {
   "label.collection.tracking-events": "События отслеживания",
   "label.singular.tracking-events": "Событие отслеживания",
   "desc.tracking-events": "События на публичном сайте (клик, отправка формы, просмотр страницы, глубина прокрутки или время на странице). Отправляются только после принятия соответствующей категории cookie.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "Выбор события",
+  "tracking.picker.hint": "Наведите на элемент и нажмите, чтобы выбрать его.",
+  "tracking.picker.selector": "Селектор",
+  "tracking.picker.matches": "Совпадений на этой странице",
+  "tracking.picker.notUnique": "не уникален",
+  "tracking.picker.name": "Название",
+  "tracking.picker.standardEvent": "Стандартное событие",
+  "tracking.picker.trigger": "Триггер",
+  "tracking.picker.urlRule": "Правило URL: точный путь",
+  "tracking.picker.save": "Сохранить событие",
+  "tracking.picker.saving": "Сохранение…",
+  "tracking.picker.saved": "Сохранено. Событие добавлено в события отслеживания.",
+  "tracking.picker.saveFailed": "Не удалось сохранить событие.",
+  "tracking.picker.testMode": "Тестовый режим: показывать уведомление при нажатии на выбранный элемент",
+  "tracking.picker.testFired": "Событие сработало бы",
+  "tracking.picker.openEvents": "Открыть события отслеживания",
+  "tracking.picker.close": "Закрыть выбор",
+  "tracking.picker.copy": "Копировать определение",
+  "tracking.picker.copied": "Скопировано",
 }
 
 export default ru

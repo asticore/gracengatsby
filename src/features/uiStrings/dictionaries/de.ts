@@ -2502,6 +2502,26 @@ const de: UiDictionary = {
   "label.collection.tracking-events": "Tracking-Ereignisse",
   "label.singular.tracking-events": "Tracking-Ereignis",
   "desc.tracking-events": "Ereignisse auf der öffentlichen Website (Klick, Formularversand, Seitenaufruf, Scrolltiefe oder Verweildauer). Sie werden erst nach Zustimmung der passenden Cookie-Kategorie gesendet.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "Ereignis-Auswahl",
+  "tracking.picker.hint": "Element überfahren und anklicken, um es auszuwählen.",
+  "tracking.picker.selector": "Selektor",
+  "tracking.picker.matches": "Treffer auf dieser Seite",
+  "tracking.picker.notUnique": "nicht eindeutig",
+  "tracking.picker.name": "Name",
+  "tracking.picker.standardEvent": "Standardereignis",
+  "tracking.picker.trigger": "Auslöser",
+  "tracking.picker.urlRule": "URL-Regel: exakter Pfad",
+  "tracking.picker.save": "Ereignis speichern",
+  "tracking.picker.saving": "Wird gespeichert…",
+  "tracking.picker.saved": "Gespeichert. Das Ereignis steht jetzt in den Tracking-Ereignissen.",
+  "tracking.picker.saveFailed": "Das Ereignis konnte nicht gespeichert werden.",
+  "tracking.picker.testMode": "Testmodus: Hinweis anzeigen, wenn das gewählte Element angeklickt wird",
+  "tracking.picker.testFired": "Das Ereignis würde ausgelöst",
+  "tracking.picker.openEvents": "Tracking-Ereignisse öffnen",
+  "tracking.picker.close": "Auswahl schließen",
+  "tracking.picker.copy": "Definition kopieren",
+  "tracking.picker.copied": "Kopiert",
 }
 
 export default de

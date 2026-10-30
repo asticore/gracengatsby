@@ -2501,6 +2501,26 @@ const ko: UiDictionary = {
   "label.collection.tracking-events": "추적 이벤트",
   "label.singular.tracking-events": "추적 이벤트",
   "desc.tracking-events": "공개 사이트에서 발생하는 이벤트(클릭, 양식 제출, 페이지 보기, 스크롤 깊이 또는 페이지 체류 시간). 해당 쿠키 범주에 동의한 후에만 전송됩니다.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "이벤트 선택기",
+  "tracking.picker.hint": "요소 위에 마우스를 올리고 클릭해 선택합니다.",
+  "tracking.picker.selector": "선택자",
+  "tracking.picker.matches": "이 페이지의 일치 항목",
+  "tracking.picker.notUnique": "고유하지 않음",
+  "tracking.picker.name": "이름",
+  "tracking.picker.standardEvent": "표준 이벤트",
+  "tracking.picker.trigger": "트리거",
+  "tracking.picker.urlRule": "URL 규칙: 정확한 경로",
+  "tracking.picker.save": "이벤트 저장",
+  "tracking.picker.saving": "저장 중…",
+  "tracking.picker.saved": "저장되었습니다. 이벤트가 추적 이벤트에 추가되었습니다.",
+  "tracking.picker.saveFailed": "이벤트를 저장할 수 없습니다.",
+  "tracking.picker.testMode": "테스트 모드: 선택한 요소를 클릭하면 알림 표시",
+  "tracking.picker.testFired": "이벤트가 발생합니다",
+  "tracking.picker.openEvents": "추적 이벤트 열기",
+  "tracking.picker.close": "선택기 닫기",
+  "tracking.picker.copy": "정의 복사",
+  "tracking.picker.copied": "복사됨",
 }
 
 export default ko

@@ -2584,6 +2584,17 @@ const hi: UiDictionary = {
   "settings.page.tracking.description": "विज्ञापन और एनालिटिक्स प्लेटफ़ॉर्म जोड़ें और चुनें कि कौन-सी क्रियाएँ इवेंट भेजें। टैग तभी लोड होता है जब विज़िटर उसकी कुकी श्रेणी स्वीकार करता है।",
   "settings.link.tracking-events.label": "ट्रैकिंग इवेंट",
   "settings.link.tracking-events.description": "क्लिक, फ़ॉर्म सबमिट, पेज व्यू, स्क्रॉल गहराई और पेज पर बिताया समय, जो आपके प्लेटफ़ॉर्म पर इवेंट भेजते हैं।",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "संपादक में खोलें",
+  "tracking.tags.backToSettings": "ट्रैकिंग सेटिंग्स पर वापस जाएँ",
+  "tracking.tags.opening": "संपादक खुल रहा है…",
+  "tracking.tags.multiDomain.note": "यह संपादक {host} दिखाता है, वह डोमेन जिस पर आप हैं। हर डोमेन का अपना संपादक है।",
+  "tracking.tags.multiDomain.open": "{domain} पर संपादक खोलें",
+  "tracking.tags.multiDomain.blocked": "{domain} के लिए एडमिन एक्सेस बंद है, इसलिए उसका संपादक यहाँ से नहीं खुल सकता। डोमेन में उसके लिए “एडमिन की अनुमति दें” चालू करें, फिर वहाँ खोलें।",
+  "label.field.ga4Enabled": "Google Analytics 4 को इवेंट भेजें",
+  "label.field.gtmEnabled": "Google Tag Manager लोड करें",
+  "label.field.ga4MeasurementId": "Google Analytics 4 मापन ID (G-...)",
+  "label.field.gtmContainerId": "Google Tag Manager कंटेनर ID (GTM-...)",
 }
 
 export default hi

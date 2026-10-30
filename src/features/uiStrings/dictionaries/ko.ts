@@ -2584,6 +2584,17 @@ const ko: UiDictionary = {
   "settings.page.tracking.description": "광고 및 분석 플랫폼을 연결하고 어떤 동작이 이벤트를 보낼지 선택하세요. 태그는 방문자가 해당 쿠키 범주에 동의한 후에만 로드됩니다.",
   "settings.link.tracking-events.label": "추적 이벤트",
   "settings.link.tracking-events.description": "플랫폼으로 이벤트를 보내는 클릭, 양식 제출, 페이지 조회, 스크롤 깊이, 페이지 체류 시간.",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "편집기에서 열기",
+  "tracking.tags.backToSettings": "추적 설정으로 돌아가기",
+  "tracking.tags.opening": "편집기를 여는 중…",
+  "tracking.tags.multiDomain.note": "이 편집기는 현재 도메인 {host}을(를) 표시합니다. 각 도메인은 자체 편집기를 가집니다.",
+  "tracking.tags.multiDomain.open": "{domain}에서 편집기 열기",
+  "tracking.tags.multiDomain.blocked": "{domain}의 관리자 접근이 꺼져 있어 여기서 편집기를 열 수 없습니다. 도메인에서 '관리자 허용'을 켠 뒤 그곳에서 여세요.",
+  "label.field.ga4Enabled": "Google Analytics 4로 이벤트 보내기",
+  "label.field.gtmEnabled": "Google Tag Manager 로드",
+  "label.field.ga4MeasurementId": "Google Analytics 4 측정 ID (G-...)",
+  "label.field.gtmContainerId": "Google Tag Manager 컨테이너 ID (GTM-...)",
 }
 
 export default ko

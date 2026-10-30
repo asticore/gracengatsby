@@ -8,6 +8,7 @@ import { isGlobalEnabled } from '@/features/registry'
 import { sanitizeFieldsForClient } from '@/admin/fields/shared'
 import { SETTINGS_PAGES, type SettingsPage, type GlobalSection, type LinkSection } from '@/admin/settingsPages'
 import { SettingsPageClient, type SettingsPageSection } from './SettingsPageClient'
+import { trackingDomainContext } from '@/features/tracking/editor/domainContext'
 
 /**
  * Settings page view factory. Creates server components for each page in
@@ -95,7 +96,9 @@ export async function SettingsPageView({ pageKey }: { pageKey: string }) {
     return <p>You do not have access to these settings.</p>
   }
 
-  return <SettingsPageClient page={page} sections={visibleSections} />
+  const trackingContext = page.topCard === 'tracking-tags' ? await trackingDomainContext() : undefined
+
+  return <SettingsPageClient page={page} sections={visibleSections} trackingContext={trackingContext} />
 }
 
 export default SettingsPageView

@@ -2584,6 +2584,17 @@ const ar: UiDictionary = {
   "settings.page.tracking.description": "اربط منصات الإعلانات والتحليلات واختر الإجراءات التي ترسل أحداثًا. لا يُحمَّل الوسم إلا بعد أن يقبل الزائر فئة ملفات تعريف الارتباط الخاصة به.",
   "settings.link.tracking-events.label": "أحداث التتبع",
   "settings.link.tracking-events.description": "النقرات وإرسال النماذج ومشاهدات الصفحات وعمق التمرير والوقت على الصفحة التي ترسل أحداثًا إلى منصاتك.",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "فتح في المحرر",
+  "tracking.tags.backToSettings": "العودة إلى إعدادات التتبع",
+  "tracking.tags.opening": "جارٍ فتح المحرر…",
+  "tracking.tags.multiDomain.note": "يعرض هذا المحرر {host}، وهو النطاق الذي تتصفحه. لكل نطاق محرره الخاص.",
+  "tracking.tags.multiDomain.open": "فتح المحرر على {domain}",
+  "tracking.tags.multiDomain.blocked": "الوصول إلى الإدارة معطّل لـ {domain}، لذلك لا يمكن فتح محرره من هنا. فعّل «السماح بالإدارة» لهذا النطاق من النطاقات، ثم افتحه هناك.",
+  "label.field.ga4Enabled": "إرسال الأحداث إلى Google Analytics 4",
+  "label.field.gtmEnabled": "تحميل Google Tag Manager",
+  "label.field.ga4MeasurementId": "معرّف قياس Google Analytics 4 (G-...)",
+  "label.field.gtmContainerId": "معرّف حاوية Google Tag Manager (GTM-...)",
 }
 
 export default ar

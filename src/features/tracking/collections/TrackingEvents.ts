@@ -17,6 +17,9 @@ export const TrackingEvents: CollectionConfig = {
     defaultColumns: ['name', 'platformEvent', 'triggerType', 'enabled'],
     group: 'Content',
     description: 'Events fired on the public site: a click, form submit, page view, scroll depth or time on page. Platforms are set under Integrations. Nothing fires until the visitor accepts the matching cookie category.',
+    components: {
+      beforeList: ['@/features/tracking/editor/TrackingEventsListActions#TrackingEventsListActions'],
+    },
   },
   access: {
     create: roleAccess('tracking', 'create'),

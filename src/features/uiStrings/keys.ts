@@ -2624,6 +2624,17 @@ export const UI_STRING_SOURCE = {
   "settings.page.tracking.description": "Connect ad and analytics platforms, and choose which actions send events. A tag loads only after the visitor accepts its cookie category.",
   "settings.link.tracking-events.label": "Tracking events",
   "settings.link.tracking-events.description": "Clicks, form submits, page views, scroll depth and time on page that send events to your platforms.",
+  // --- tag editor follow-up: events table links, multi-domain, Integrations labels (add-tags follow-up) ---
+  "tracking.tags.openInEditor": "Open in editor",
+  "tracking.tags.backToSettings": "Back to Tracking settings",
+  "tracking.tags.opening": "Opening the editor…",
+  "tracking.tags.multiDomain.note": "This editor shows {host}, the domain you are on. Each domain has its own editor.",
+  "tracking.tags.multiDomain.open": "Open the editor on {domain}",
+  "tracking.tags.multiDomain.blocked": "Admin access is off for {domain}, so its editor cannot open from here. Turn on Allow admin for that domain in Domains, then open it there.",
+  "label.field.ga4Enabled": "Send events to Google Analytics 4",
+  "label.field.gtmEnabled": "Load Google Tag Manager",
+  "label.field.ga4MeasurementId": "Google Analytics 4 measurement ID (G-...)",
+  "label.field.gtmContainerId": "Google Tag Manager container ID (GTM-...)",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

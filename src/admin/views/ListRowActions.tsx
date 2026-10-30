@@ -2,6 +2,8 @@
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import { adminCollectionPath } from '@/admin/adminPaths'
+import { AdminLink } from '@/admin/adminRoute/AdminLink'
+import { TRACKING_EVENTS_SLUG } from '@/features/tracking/slugs'
 
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
@@ -166,6 +168,11 @@ export function ListRowActions({
         )}
         {signInAs && showSignInAsRow({ id: doc.id, roles: doc.roles, email: doc.email }, signInAs.admin) && (
           <SignInAsCustomerButton email={String(doc.email)} maxMinutes={signInAs.maxMinutes} />
+        )}
+        {collectionSlug === TRACKING_EVENTS_SLUG && (
+          <AdminLink path={`/settings/tracking?tags=open&event=${String(doc.id)}`} className="list-row-action-btn">
+            {t('tracking.tags.openInEditor')}
+          </AdminLink>
         )}
         {canUpdate && (
           <button

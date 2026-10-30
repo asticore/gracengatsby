@@ -142,11 +142,11 @@ export function syncAnalyticsTags(ids: AnalyticsIds, consentModeV2: boolean, cho
   }
   tagState.lastSignalKey = signalKey
 
-  // Without Consent Mode, GTM also carries marketing tags, so it waits for both
-  // categories. With Consent Mode, Google's signals cover a refusal and GTM
-  // loads on analytics alone, as before.
-  const gtmGranted = consentModeV2 ? choices.analytics : choices.analytics && choices.marketing
-  if (gtmGranted) loadGtm(ids.gtmContainerId)
+  // GTM and GA4 are Analytics tags, with or without Consent Mode. Meta and
+  // TikTok wait for their own category (Marketing by default). Consent Mode's
+  // analytics_storage signal follows the same Analytics choice, so the two
+  // never disagree about whether Google may store analytics data.
+  if (choices.analytics) loadGtm(ids.gtmContainerId)
   if (choices.analytics) loadAnalyticsTags(ids)
   if (choices[ids.metaCategory ?? 'marketing']) loadMetaPixel(ids)
   if (choices[ids.tiktokCategory ?? 'marketing']) loadTikTokPixel(ids.tiktokPixelId)

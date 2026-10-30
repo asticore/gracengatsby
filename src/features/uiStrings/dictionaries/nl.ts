@@ -2501,6 +2501,26 @@ const nl: UiDictionary = {
   "label.collection.tracking-events": "Trackinggebeurtenissen",
   "label.singular.tracking-events": "Trackinggebeurtenis",
   "desc.tracking-events": "Gebeurtenissen op de openbare site (klik, formulierverzending, paginaweergave, scrolldiepte of tijd op pagina). Ze worden pas verzonden nadat de bijbehorende cookiecategorie is geaccepteerd.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "Gebeurtenissenkiezer",
+  "tracking.picker.hint": "Beweeg over een element en klik om het te kiezen.",
+  "tracking.picker.selector": "Selector",
+  "tracking.picker.matches": "Overeenkomsten op deze pagina",
+  "tracking.picker.notUnique": "niet uniek",
+  "tracking.picker.name": "Naam",
+  "tracking.picker.standardEvent": "Standaardgebeurtenis",
+  "tracking.picker.trigger": "Trigger",
+  "tracking.picker.urlRule": "URL-regel: exact pad",
+  "tracking.picker.save": "Gebeurtenis opslaan",
+  "tracking.picker.saving": "Opslaan…",
+  "tracking.picker.saved": "Opgeslagen. De gebeurtenis staat nu bij de trackinggebeurtenissen.",
+  "tracking.picker.saveFailed": "De gebeurtenis kon niet worden opgeslagen.",
+  "tracking.picker.testMode": "Testmodus: toon een melding wanneer het gekozen element wordt aangeklikt",
+  "tracking.picker.testFired": "De gebeurtenis zou worden geactiveerd",
+  "tracking.picker.openEvents": "Trackinggebeurtenissen openen",
+  "tracking.picker.close": "Kiezer sluiten",
+  "tracking.picker.copy": "Definitie kopiëren",
+  "tracking.picker.copied": "Gekopieerd",
 }
 
 export default nl

@@ -2501,6 +2501,26 @@ const ar: UiDictionary = {
   "label.collection.tracking-events": "أحداث التتبع",
   "label.singular.tracking-events": "حدث تتبع",
   "desc.tracking-events": "أحداث على الموقع العام (النقر، وإرسال النماذج، وعرض الصفحة، وعمق التمرير، أو الوقت على الصفحة). لا تُرسل إلا بعد قبول فئة ملفات تعريف الارتباط المناسبة.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "منتقي الأحداث",
+  "tracking.picker.hint": "مرّر المؤشر فوق عنصر ثم انقر لاختياره.",
+  "tracking.picker.selector": "المحدد",
+  "tracking.picker.matches": "التطابقات في هذه الصفحة",
+  "tracking.picker.notUnique": "غير فريد",
+  "tracking.picker.name": "الاسم",
+  "tracking.picker.standardEvent": "الحدث القياسي",
+  "tracking.picker.trigger": "المُشغِّل",
+  "tracking.picker.urlRule": "قاعدة الرابط: مسار مطابق تمامًا",
+  "tracking.picker.save": "حفظ الحدث",
+  "tracking.picker.saving": "جارٍ الحفظ…",
+  "tracking.picker.saved": "تم الحفظ. أصبح الحدث الآن ضمن أحداث التتبع.",
+  "tracking.picker.saveFailed": "تعذّر حفظ الحدث.",
+  "tracking.picker.testMode": "وضع الاختبار: إظهار تنبيه عند النقر على العنصر المختار",
+  "tracking.picker.testFired": "سيُطلق الحدث",
+  "tracking.picker.openEvents": "فتح أحداث التتبع",
+  "tracking.picker.close": "إغلاق المنتقي",
+  "tracking.picker.copy": "نسخ التعريف",
+  "tracking.picker.copied": "تم النسخ",
 }
 
 export default ar

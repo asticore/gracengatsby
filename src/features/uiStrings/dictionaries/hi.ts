@@ -2501,6 +2501,26 @@ const hi: UiDictionary = {
   "label.collection.tracking-events": "ट्रैकिंग इवेंट",
   "label.singular.tracking-events": "ट्रैकिंग इवेंट",
   "desc.tracking-events": "सार्वजनिक साइट पर होने वाले इवेंट (क्लिक, फ़ॉर्म सबमिट, पेज व्यू, स्क्रॉल गहराई या पेज पर बिताया समय)। संबंधित कुकी श्रेणी स्वीकार होने के बाद ही ये भेजे जाते हैं।",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "इवेंट पिकर",
+  "tracking.picker.hint": "किसी तत्व पर होवर करें और चुनने के लिए क्लिक करें।",
+  "tracking.picker.selector": "सेलेक्टर",
+  "tracking.picker.matches": "इस पेज पर मिलान",
+  "tracking.picker.notUnique": "अद्वितीय नहीं",
+  "tracking.picker.name": "नाम",
+  "tracking.picker.standardEvent": "मानक इवेंट",
+  "tracking.picker.trigger": "ट्रिगर",
+  "tracking.picker.urlRule": "URL नियम: सटीक पथ",
+  "tracking.picker.save": "इवेंट सहेजें",
+  "tracking.picker.saving": "सहेजा जा रहा है…",
+  "tracking.picker.saved": "सहेजा गया। इवेंट अब ट्रैकिंग इवेंट में है।",
+  "tracking.picker.saveFailed": "इवेंट सहेजा नहीं जा सका।",
+  "tracking.picker.testMode": "टेस्ट मोड: चुने गए तत्व पर क्लिक होने पर सूचना दिखाएं",
+  "tracking.picker.testFired": "इवेंट ट्रिगर होगा",
+  "tracking.picker.openEvents": "ट्रैकिंग इवेंट खोलें",
+  "tracking.picker.close": "पिकर बंद करें",
+  "tracking.picker.copy": "परिभाषा कॉपी करें",
+  "tracking.picker.copied": "कॉपी हो गया",
 }
 
 export default hi

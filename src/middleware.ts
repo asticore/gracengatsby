@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { domainMiddleware } from '@/features/domains/middleware'
 import { multilingualMiddleware } from '@/features/multilingual/middleware'
 import { securityMiddleware, readSecuritySettingsFromD1 } from '@/features/security'
-import { NOINDEX_HEADER_VALUE, isNoindexPath } from '@/features/security/noindex'
+import { NOINDEX_HEADER_VALUE, isPickerRequest, isNoindexPath } from '@/features/security/noindex'
 import { SESSION_COOKIE, tokenIssuedAt } from '@/features/security/loginProtection'
 import {
   ADMIN_PATH_ENV,
@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   // Any redirect a route handler sends into /admin (social sign-in, passkeys, Google) lands on the configured path.
   const response = root === DEFAULT_ADMIN_PATH ? served : relocate(served, request, root)
   const stripped = response.headers.get('x-pathname') ?? pathname
-  if (isNoindexPath(pathname, root) || isNoindexPath(stripped, root)) {
+  if (isNoindexPath(pathname, root) || isNoindexPath(stripped, root) || isPickerRequest(request.nextUrl)) {
     response.headers.set('X-Robots-Tag', NOINDEX_HEADER_VALUE)
   }
   return response

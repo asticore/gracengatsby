@@ -2501,6 +2501,26 @@ const it: UiDictionary = {
   "label.collection.tracking-events": "Eventi di tracciamento",
   "label.singular.tracking-events": "Evento di tracciamento",
   "desc.tracking-events": "Eventi sul sito pubblico (clic, invio di moduli, visualizzazione di pagina, scorrimento o tempo sulla pagina). Si attivano solo dopo l’accettazione della categoria di cookie corrispondente.",
+  // --- tracking picker panel (phase B2 uiStrings, src/features/tracking/picker) ---
+  "tracking.picker.title": "Selettore eventi",
+  "tracking.picker.hint": "Passa sopra un elemento e fai clic per sceglierlo.",
+  "tracking.picker.selector": "Selettore",
+  "tracking.picker.matches": "Corrispondenze in questa pagina",
+  "tracking.picker.notUnique": "non univoco",
+  "tracking.picker.name": "Nome",
+  "tracking.picker.standardEvent": "Evento standard",
+  "tracking.picker.trigger": "Trigger",
+  "tracking.picker.urlRule": "Regola URL: percorso esatto",
+  "tracking.picker.save": "Salva evento",
+  "tracking.picker.saving": "Salvataggio…",
+  "tracking.picker.saved": "Salvato. L’evento è ora nei eventi di tracciamento.",
+  "tracking.picker.saveFailed": "Impossibile salvare l’evento.",
+  "tracking.picker.testMode": "Modalità test: mostra un avviso quando si fa clic sull’elemento scelto",
+  "tracking.picker.testFired": "L’evento verrebbe attivato",
+  "tracking.picker.openEvents": "Apri eventi di tracciamento",
+  "tracking.picker.close": "Chiudi selettore",
+  "tracking.picker.copy": "Copia definizione",
+  "tracking.picker.copied": "Copiato",
 }
 
 export default it

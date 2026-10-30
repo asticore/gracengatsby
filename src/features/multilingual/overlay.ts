@@ -1,5 +1,5 @@
 import { valueAtPath, type TranslationRow } from './store'
-import { fieldsForDocument, sourceIdFor, translatableSource } from './translatableFields'
+import { fieldsForDocument, sourceIdFor, translatableSource, SLUG_FIELD } from './translatableFields'
 import { isBlockFieldPath, writeBlockField } from './blockText'
 import { parseRichTextPath, writeRichTextNode } from './richText'
 import { parseTierPath, writeTierText } from '@/features/editScreens/tiers'
@@ -52,8 +52,9 @@ export function overlayDocument<T>(
     const translated = lookup(sourceId, field.path, original)
     if (translated !== null && translated.trim().length > 0) {
       out = withValueAtPath(out, field.path, translated)
-    } else if (!fallbackToDefault && !field.group) {
+    } else if (!fallbackToDefault && !field.group && field.path !== SLUG_FIELD) {
       // Block text is never blanked: a button or heading with no translation shows the source line.
+      // A slug is never blanked either: an empty one would drop the document's URL.
       out = withValueAtPath(out, field.path, '')
     }
   }

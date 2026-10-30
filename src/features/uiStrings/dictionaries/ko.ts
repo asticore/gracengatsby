@@ -2497,6 +2497,8 @@ const ko: UiDictionary = {
   'al.breadcrumb': '경로 탐색',
   'al.dataViewSettings': '표 또는 차트 설정',
   'al.trash': '휴지통',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': '소문자, 숫자, 하이픈을 사용합니다. 각 도메인에서 이 언어 안에서 고유해야 합니다.',
   // --- tracking events (phase A2 collection labels, src/features/tracking) ---
   "label.collection.tracking-events": "추적 이벤트",
   "label.singular.tracking-events": "추적 이벤트",

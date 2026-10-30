@@ -4,6 +4,7 @@ import React from 'react'
 import { getBlockContext } from '@/lib/blockContext'
 import { formatTagDate, formatTagPrice } from '@/lib/dynamicTags'
 import { archivePageHref, buildBreadcrumbs, formatPostMeta } from '@/lib/templateWidgets'
+import { localizeForRequest } from '@/features/multilingual/requestLinkLocale'
 import { loopItemOf } from '@/features/siteTemplates/loopGrid'
 
 /** Wave 63 template widgets. Async server components reading the per-request block context (public data only). */
@@ -65,7 +66,7 @@ export async function ProductPriceElement(props: P): Promise<React.ReactElement 
 export async function BreadcrumbsElement(props: P): Promise<React.ReactElement | null> {
   const ctx = getBlockContext()
   if (!ctx.path) return null
-  const crumbs = buildBreadcrumbs(ctx.path, currentTitle(), str(props.homeLabel) || 'Home')
+  const crumbs = buildBreadcrumbs(ctx.path, currentTitle(), str(props.homeLabel) || 'Home').map((c) => ({ ...c, href: localizeForRequest(c.href) }))
   if (crumbs.length < 2) return null
   return (
     <nav className="breadcrumbs" aria-label="Breadcrumb">

@@ -2497,6 +2497,8 @@ const fr: UiDictionary = {
   'al.breadcrumb': 'Fil d\'Ariane',
   'al.dataViewSettings': 'Réglages du tableau ou du graphique',
   'al.trash': 'Corbeille',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Lettres minuscules, chiffres et tirets. Unique dans cette langue sur chaque domaine.',
   // --- tracking events (phase A2 collection labels, src/features/tracking) ---
   "label.collection.tracking-events": "Événements de suivi",
   "label.singular.tracking-events": "Événement de suivi",

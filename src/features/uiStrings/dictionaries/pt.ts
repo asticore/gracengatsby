@@ -2497,6 +2497,8 @@ const pt: UiDictionary = {
   'al.breadcrumb': 'Trilha de navegação',
   'al.dataViewSettings': 'Configurações de tabela ou gráfico',
   'al.trash': 'Lixeira',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Letras minúsculas, números e hífens. Único neste idioma em cada domínio.',
   // --- tracking events (phase A2 collection labels, src/features/tracking) ---
   "label.collection.tracking-events": "Eventos de rastreamento",
   "label.singular.tracking-events": "Evento de rastreamento",

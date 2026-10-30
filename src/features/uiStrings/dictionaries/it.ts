@@ -2497,6 +2497,8 @@ const it: UiDictionary = {
   'al.breadcrumb': 'Percorso di navigazione',
   'al.dataViewSettings': 'Impostazioni di tabella o grafico',
   'al.trash': 'Cestino',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Lettere minuscole, numeri e trattini. Unico in questa lingua su ogni dominio.',
   // --- tracking events (phase A2 collection labels, src/features/tracking) ---
   "label.collection.tracking-events": "Eventi di tracciamento",
   "label.singular.tracking-events": "Evento di tracciamento",

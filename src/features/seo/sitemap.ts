@@ -10,6 +10,7 @@ import { sitemapVariants, type Alternate } from './localeSeo'
 import { isLocaleRoutable } from '@/features/multilingual/routing'
 import { nonDefaultLocales, publishIndex, publishableLocalesForDocument, type PublishIndex } from '@/features/multilingual/availability'
 import { findTranslations } from '@/features/multilingual/store'
+import { docIdOf, isTranslatableSlugCollection, localizedPath, slugMapFor } from '@/features/multilingual/localizedSlugs'
 import { getAllResolvedPages, getHomepage } from '@/utilities/pagePaths'
 import { domainAlternates, mergeAlternates } from '@/features/domains/alternates'
 import { readDomainsFromD1 } from '@/features/domains/store'
@@ -110,14 +111,16 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
     const available = routable && ref
       ? publishableLocalesForDocument({ ...ref, index: translationIndex, settings: multilingual })
       : null
+    const localizedPaths = localizedPathsOf(normalised)
     // A domain that serves its own document at this address is not an alternate of a shared one: that is a different page.
     const ownHosts = parseHostList(docAvailable)
     const cross = domainAlternates(
       normalised,
       domains.filter((d) => availableOnHost(docAvailable, d.host) && (ownHosts.includes(d.host) || !scopedAt.get(normalised)?.has(d.host))),
       multilingual,
+      localizedPaths,
     )
-    for (const variant of sitemapVariants(normalised, baseUrl, multilingual, available)) {
+    for (const variant of sitemapVariants(normalised, baseUrl, multilingual, available, localizedPaths)) {
       const alternates = mergeAlternates(variant.alternates, cross)
       entries.push({
         url: variant.url,
@@ -201,6 +204,33 @@ export const buildSitemapEntries = async (): Promise<SitemapEntry[] | null> => {
   }
   if (flags?.faq) {
     add('/faq', undefined, 0.5)
+  }
+
+  // Translated slugs (localizedSlugs.ts): each entry's URL in every locale, worked out from the rows loaded above.
+  const docIdByPath = new Map<string, string>()
+  for (const candidate of candidates) {
+    if (candidate.ref) docIdByPath.set(normalisePath(candidate.path), docIdOf(candidate.ref.collection, candidate.ref.id))
+  }
+  const slugDocs = candidates.flatMap((candidate) => {
+    const ref = candidate.ref
+    if (!ref || !isTranslatableSlugCollection(ref.collection)) return []
+    const slug = (ref.doc as { slug?: unknown }).slug
+    return typeof slug === 'string' ? [{ sourceId: docIdOf(ref.collection, ref.id), slug }] : []
+  })
+  const slugMaps = routable
+    ? nonDefaultLocales(multilingual).map((locale) => ({
+        locale,
+        slugs: slugMapFor({ locale, index: translationIndex, settings: multilingual, docs: slugDocs }),
+      }))
+    : []
+  const localizedPathsOf = (path: string): Record<string, string> | undefined => {
+    const out: Record<string, string> = {}
+    for (const { locale, slugs } of slugMaps) {
+      if (slugs.size === 0) continue
+      const translated = localizedPath(path, docIdByPath, slugs)
+      if (translated !== path) out[locale] = translated
+    }
+    return Object.keys(out).length > 0 ? out : undefined
   }
 
   const scopedAt = new Map<string, Set<string>>()

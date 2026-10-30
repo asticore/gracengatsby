@@ -42,7 +42,7 @@ const row = (overrides: Partial<TranslationRow>): TranslationRow => ({
 describe('translatable fields', () => {
   it('names the SEO fields where the Pages collection stores them', () => {
     const pages = TRANSLATABLE_COLLECTIONS.find((entry) => entry.slug === 'pages')
-    expect(pages?.fields.map((field) => field.path)).toEqual(['title', 'seo.metaTitle', 'seo.metaDescription'])
+    expect(pages?.fields.map((field) => field.path)).toEqual(['title', 'slug', 'seo.metaTitle', 'seo.metaDescription'])
   })
 })
 

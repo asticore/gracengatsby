@@ -2498,6 +2498,8 @@ const de: UiDictionary = {
   'al.breadcrumb': 'Navigationspfad',
   'al.dataViewSettings': 'Einstellungen für Tabelle oder Diagramm',
   'al.trash': 'Papierkorb',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Kleinbuchstaben, Ziffern und Bindestriche. In dieser Sprache auf jeder Domain eindeutig.',
   // --- tracking events (phase A2 collection labels, src/features/tracking) ---
   "label.collection.tracking-events": "Tracking-Ereignisse",
   "label.singular.tracking-events": "Tracking-Ereignis",

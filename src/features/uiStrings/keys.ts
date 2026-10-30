@@ -2537,6 +2537,8 @@ export const UI_STRING_SOURCE = {
   'al.breadcrumb': 'Breadcrumb',
   'al.dataViewSettings': 'Table or chart settings',
   'al.trash': 'Trash',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'Lowercase letters, digits and hyphens. Must be unique in this language on each domain.',
   // --- tracking events (phase A2 collection labels, src/features/tracking) ---
   "label.collection.tracking-events": "Tracking events",
   "label.singular.tracking-events": "Tracking event",

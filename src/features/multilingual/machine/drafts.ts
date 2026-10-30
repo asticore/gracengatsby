@@ -21,6 +21,9 @@
 import { evaluateTranslationWrite } from '../translationStatus'
 import type { MultilingualSettings } from '../settings'
 import { translationKey, type TranslationRow } from '../store'
+import { slugSuggestion } from '../localizedSlugs'
+import { SLUG_FIELD } from '../translatableFields'
+import { checkTranslatedSlug } from '../slugClaims'
 import type { MachineProviderId } from './providers'
 import { translateTexts, type MachineOutcome } from './service'
 import type { MachineContext } from './service'
@@ -120,9 +123,31 @@ export async function runMachineDrafts(
     const now = (args.now ?? new Date()).toISOString()
     for (let i = 0; i < planned.length; i += 1) {
       const { key, sourceText, row } = planned[i]
+      let value = outcome.translations[i]
+      if (key.fieldPath === SLUG_FIELD) {
+        // A machine slug is a suggestion: normalised like a typed one, unique like one, and reviewed like any draft.
+        value = slugSuggestion(value ?? '')
+        if (value.length === 0) {
+          result.skipped += 1
+          continue
+        }
+        const separator = key.sourceId.indexOf(':')
+        const claim = await checkTranslatedSlug({
+          engine: engine as unknown as Parameters<typeof checkTranslatedSlug>[0]['engine'],
+          collection: key.sourceId.slice(0, separator),
+          documentId: key.sourceId.slice(separator + 1),
+          locale,
+          slug: value,
+        })
+        if (claim.ok === false) {
+          result.refused.push(`${locale}: ${claim.message}`)
+          result.skipped += 1
+          continue
+        }
+      }
       const decision = evaluateTranslationWrite({
         current: row,
-        incoming: { value: outcome.translations[i], sourceText, status: 'machine_draft', machineProvider: outcome.provider },
+        incoming: { value, sourceText, status: 'machine_draft', machineProvider: outcome.provider },
         locale,
         actor: { id: user?.id ?? 0, isAdmin: false },
         settings,

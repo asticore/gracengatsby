@@ -28,9 +28,19 @@ export function ogLocale(code: string): string {
   return territory ? `${lang}_${territory}` : lang
 }
 
-/** Absolute URL of a site path in one locale. The default locale stays unprefixed. */
-export function localeUrl(baseUrl: string, path: string, locale: string, settings: MultilingualSettings): string {
-  return `${baseUrl}${localisedHref(normalisePath(path), locale, settings)}`
+/**
+ * Absolute URL of a site path in one locale. The default locale stays unprefixed.
+ * `localizedPaths` gives the translated path of this document per locale (see
+ * localizedSlugs.ts); a locale without one uses the source path.
+ */
+export function localeUrl(
+  baseUrl: string,
+  path: string,
+  locale: string,
+  settings: MultilingualSettings,
+  localizedPaths?: Readonly<Record<string, string>> | null,
+): string {
+  return `${baseUrl}${localisedHref(normalisePath(localizedPaths?.[locale] ?? path), locale, settings)}`
 }
 
 const normalisePath = (path: string): string => (!path ? '/' : path.startsWith('/') ? path : `/${path}`)
@@ -54,11 +64,12 @@ export function hreflangAlternates(
   baseUrl: string,
   settings: MultilingualSettings,
   available?: readonly string[] | null,
+  localizedPaths?: Readonly<Record<string, string>> | null,
 ): Alternate[] | null {
   if (!isLocaleRoutable(settings)) return null
   const alternates = localesFor(settings, available).map((locale) => ({
     hreflang: locale,
-    href: localeUrl(baseUrl, path, locale, settings),
+    href: localeUrl(baseUrl, path, locale, settings, localizedPaths),
   }))
   const fallback = alternates.find((alt) => alt.hreflang === settings.defaultLocale)
   if (fallback) alternates.push({ hreflang: 'x-default', href: fallback.href })
@@ -82,12 +93,14 @@ export function localeSeoFields(input: {
   explicitCanonical: boolean
   /** Non-default locales with a publishable translation of this page; null keeps all. */
   available?: readonly string[] | null
+  /** Translated path of this page per locale (localizedSlugs.ts). */
+  localizedPaths?: Readonly<Record<string, string>> | null
 }): { canonical?: string; alternates: Alternate[]; ogLocale: string; ogAlternateLocales: string[] } | null {
-  const { baseUrl, path, locale, settings, explicitCanonical, available } = input
-  const alternates = hreflangAlternates(path, baseUrl, settings, available)
+  const { baseUrl, path, locale, settings, explicitCanonical, available, localizedPaths } = input
+  const alternates = hreflangAlternates(path, baseUrl, settings, available, localizedPaths)
   if (!alternates) return null
   return {
-    canonical: explicitCanonical ? undefined : localeUrl(baseUrl, path, locale, settings),
+    canonical: explicitCanonical ? undefined : localeUrl(baseUrl, path, locale, settings, localizedPaths),
     alternates,
     ogLocale: ogLocale(locale),
     ogAlternateLocales: localesFor(settings, available).filter((code) => code !== locale).map(ogLocale),
@@ -105,11 +118,12 @@ export function sitemapVariants(
   baseUrl: string,
   settings: MultilingualSettings,
   available?: readonly string[] | null,
+  localizedPaths?: Readonly<Record<string, string>> | null,
 ): SitemapVariant[] {
-  const alternates = hreflangAlternates(path, baseUrl, settings, available)
-  if (!alternates) return [{ url: localeUrl(baseUrl, path, settings.defaultLocale, settings) }]
+  const alternates = hreflangAlternates(path, baseUrl, settings, available, localizedPaths)
+  if (!alternates) return [{ url: localeUrl(baseUrl, path, settings.defaultLocale, settings, localizedPaths) }]
   return localesFor(settings, available).map((locale) => ({
-    url: localeUrl(baseUrl, path, locale, settings),
+    url: localeUrl(baseUrl, path, locale, settings, localizedPaths),
     alternates,
   }))
 }

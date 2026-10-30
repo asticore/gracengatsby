@@ -65,6 +65,8 @@ import { ImpersonationBanner } from '@/features/impersonation/components/Imperso
 import { directionFor } from '@/features/multilingual/detect'
 import { LOCALE_HEADER, requestLocale } from '@/features/multilingual/routing'
 import { isPortalPath } from '@/features/multilingual/portal'
+import { localizeForRequest, setRequestLinkLocale } from '@/features/multilingual/requestLinkLocale'
+import { localeLinkPaths } from '@/features/multilingual/slugIndex'
 import { currentPortalLocale } from '@/features/multilingual/portalLocaleServer'
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 
@@ -175,6 +177,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     title: column.title,
     links: buildLinks(column.links).map((l) => ({ href: l.href, label: l.label })),
   }))
+  // Menus are built from stored hrefs; on a locale page their internal links get the locale prefix.
+  const localNav = (links: NavLink[]): NavLink[] =>
+    links.map((link) => ({ ...link, href: localizeForRequest(link.href), children: link.children && localNav(link.children) }))
 
   // The domain this request arrived on can override the name, logo, contact and social links (features/domains).
   const domain = await requestDomain()
@@ -243,6 +248,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const locale = portal
     ? await currentPortalLocale()
     : requestLocale((await headers()).get(LOCALE_HEADER), multilingual)
+  // Internal links on this page (blocks, menus, cards) carry the locale prefix. The portal never does.
+  // Internal links point at a translated slug where the page has one (localizedSlugs.ts).
+  setRequestLinkLocale(portal ? null : locale, multilingual, portal ? null : await localeLinkPaths(locale))
 
   // Header / footer templates (Site templates). Null for each when none matches, and the built-in ones draw.
   const chrome = await renderChromeTemplates(requestPathOf(await headers()))
@@ -291,13 +299,15 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             logoWidth={logo?.width || undefined}
             logoHeight={logo?.height || undefined}
             showLogo={header?.showLogo !== false}
-            navLinks={navLinks}
+            navLinks={localNav(navLinks)}
             sticky={header?.sticky !== false}
             desktopLayout={(header?.desktopLayout as 'logo-left' | 'logo-center' | 'logo-right') || 'logo-left'}
             mobileLayout={(header?.mobileLayout as 'slide-in' | 'fullscreen') || 'slide-in'}
             showCart={features?.ecommerce !== false && header?.showCart !== false}
             announcementBar={header?.announcementBar}
             socials={domainSocials(header?.socials, domain)}
+            homeHref={localizeForRequest('/')}
+            cartHref={localizeForRequest('/cart')}
           />
           )}
           <AdPlacements position="header" />
@@ -315,7 +325,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             logoHeight={logo?.height || undefined}
             showLogo={footer?.showLogo !== false}
             bottomText={footer?.bottomText || undefined}
-            columns={footerColumns}
+            columns={footerColumns.map((column) => ({ ...column, links: column.links.map((l) => ({ ...l, href: localizeForRequest(l.href) })) }))}
             contactEmail={domain?.overrides.contactEmail || footer?.contact?.email}
             contactPhone={domain?.overrides.contactPhone || footer?.contact?.phone}
             address={footer?.contact?.address || undefined}

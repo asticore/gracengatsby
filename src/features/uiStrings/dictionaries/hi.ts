@@ -2497,6 +2497,8 @@ const hi: UiDictionary = {
   'al.breadcrumb': 'ब्रेडक्रम्ब',
   'al.dataViewSettings': 'तालिका या चार्ट सेटिंग्स',
   'al.trash': 'ट्रैश',
+  // Translated slugs (localizedSlugs.ts)
+  'translations.slug.hint': 'छोटे अक्षर, अंक और हाइफ़न। हर डोमेन पर इस भाषा में अद्वितीय होना चाहिए।',
   // --- tracking events (phase A2 collection labels, src/features/tracking) ---
   "label.collection.tracking-events": "ट्रैकिंग इवेंट",
   "label.singular.tracking-events": "ट्रैकिंग इवेंट",

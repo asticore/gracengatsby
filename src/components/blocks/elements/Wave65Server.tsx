@@ -5,6 +5,7 @@ import { getEngine } from '@/lib/engine'
 
 import { getMultilingualSettings, localisedHref, localeNativeName } from '@/features/multilingual'
 import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
+import { localizedPathsFor } from '@/features/multilingual/slugIndex'
 import { localesFor } from '@/features/seo/localeSeo'
 import { requestContentLocale } from '@/features/multilingual/portalLocaleServer'
 
@@ -81,7 +82,9 @@ async function languageData() {
     const rest = getBlockContext().path || '/'
     // Languages this page has no publishable translation in are left out, the default always stays.
     const offered = localesFor(settings, await availableLocalesForPath(rest))
-    return { settings, rest, current, offered }
+    // Each language's own URL for this page: a translated slug where there is one (localizedSlugs.ts).
+    const paths = (await localizedPathsFor(rest)) ?? {}
+    return { settings, rest, current, offered, paths }
   } catch {
     return null
   }
@@ -95,7 +98,7 @@ export async function LanguageSwitcherElement(props: P): Promise<React.ReactElem
       <ul className="be-el-65-lang">
         {d.offered.map((code) => (
           <li key={code}>
-            <a href={localisedHref(d.rest, code, d.settings)} hrefLang={code} lang={code} aria-current={code === d.current ? 'true' : undefined}>{localeNativeName(code)}</a>
+            <a href={localisedHref(d.paths[code] ?? d.rest, code, d.settings)} hrefLang={code} lang={code} aria-current={code === d.current ? 'true' : undefined}>{localeNativeName(code)}</a>
           </li>
         ))}
       </ul>

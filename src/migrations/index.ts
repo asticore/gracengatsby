@@ -117,6 +117,7 @@ import * as migration_20261230_100000_tracking_switches from './20261230_100000_
 import * as migration_20261231_100000_tracking_categories from './20261231_100000_tracking_categories';
 import * as migration_20270102_100000_tracking_connections from './20270102_100000_tracking_connections';
 import * as migration_20270103_100000_tracking_value_source from './20270103_100000_tracking_value_source';
+import * as migration_20270110_100000_api_endpoints from './20270110_100000_api_endpoints';
 
 export const migrations = [
   {
@@ -713,5 +714,10 @@ export const migrations = [
     up: migration_20270103_100000_tracking_value_source.up,
     down: migration_20270103_100000_tracking_value_source.down,
     name: '20270103_100000_tracking_value_source',
+  },
+  {
+    up: migration_20270110_100000_api_endpoints.up,
+    down: migration_20270110_100000_api_endpoints.down,
+    name: '20270110_100000_api_endpoints',
   },
 ];

@@ -18,6 +18,8 @@ import { createEngine } from '@/localapi/engine'
 import { handleCustomCollectionEndpoint } from '@/localapi/endpoints'
 import { handleRestRequest } from '@/localapi/rest'
 import { withErrorLog } from '@/features/errors/withErrorLog'
+import { handleCustomApiEndpoint, type EndpointEngine } from '@/features/apiBuilder/runtime'
+import { resolveD1Binding } from '@/cms/db/connect'
 
 type RouteArgs = { params: Promise<{ slug: string[] }> }
 
@@ -28,8 +30,12 @@ const dispatch = async (request: Request, args: RouteArgs): Promise<Response> =>
   const { slug } = await args.params
   const engine = createEngine()
   // Custom collection `endpoints` go first, like the reference engine: otherwise `GET /form-submissions/export` would be read as findByID('export').
+  // The API builder's endpoints (/api/x/<version>/<name>) run first and carry their own key rules, so the
+  // collection key gate in handleRestRequest never sees them. `x` is a reserved word, so no collection can clash.
   const response =
-    (await handleCustomCollectionEndpoint(request, slug, engine)) ?? (await handleRestRequest(request, slug, engine))
+    (await handleCustomApiEndpoint(request, slug, engine as unknown as EndpointEngine, resolveD1Binding)) ??
+    (await handleCustomCollectionEndpoint(request, slug, engine)) ??
+    (await handleRestRequest(request, slug, engine))
   return response ?? notFound(request)
 }
 

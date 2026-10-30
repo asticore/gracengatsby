@@ -60,6 +60,17 @@ export const webhookRefundAfterChange: CollectionAfterChangeHook = async (args) 
   return args.doc
 }
 
+/** Tracking events: `tracking-event.saved` on each create or update. */
+export const webhookTrackingEventAfterChange: CollectionAfterChangeHook = async (args) => {
+  try {
+    const { doc, operation } = args as unknown as { doc: Doc | null; operation: string }
+    if (doc && (operation === 'create' || operation === 'update')) void emitWebhookEvent('tracking-event.saved', { ...doc })
+  } catch {
+    // Events are best effort.
+  }
+  return args.doc
+}
+
 /** New customer or admin accounts: `user.registered`. */
 export const webhookUserAfterChange: CollectionAfterChangeHook = async (args) => {
   try {

@@ -2919,6 +2919,7 @@ const hi: UiDictionary = {
   "webhooks.event.order.refunded": "ऑर्डर का रिफंड हुआ",
   "webhooks.event.form.submitted": "फ़ॉर्म सबमिट हुआ",
   "webhooks.event.user.registered": "खाता बनाया गया",
+  "webhooks.event.tracking-event.saved": "ट्रैकिंग इवेंट सहेजा गया",
 }
 
 export default hi

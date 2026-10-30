@@ -45,6 +45,7 @@ export type WebhookStore = {
   insert(config: WebhookConfig, secret: string, at: string): Promise<number>
   update(id: number, config: WebhookConfig, at: string): Promise<void>
   setSecret(id: number, secret: string, at: string): Promise<void>
+  setEnabled(id: number, enabled: boolean, at: string): Promise<void>
   remove(id: number): Promise<void>
   insertDelivery(row: NewDelivery, at: string): Promise<number>
   updateDelivery(id: number, patch: DeliveryPatch, at: string): Promise<void>
@@ -55,6 +56,8 @@ export type WebhookStore = {
   due(nowIso: string, limit: number): Promise<DeliveryRecord[]>
   /** Deliveries queued for one webhook since a time (skipped ones not counted). Feeds the rate limit. */
   queuedSince(webhookId: number, sinceIso: string): Promise<number>
+  /** Statuses of the newest finished deliveries (ok or failed), newest first. Feeds the failure alert. */
+  recentOutcomes(webhookId: number, limit: number): Promise<string[]>
   pruneDeliveries(beforeIso: string): Promise<void>
 }
 
@@ -163,6 +166,9 @@ export function createD1WebhookStore(getDb: () => Promise<D1Like>): WebhookStore
     async setSecret(id, secret, at) {
       await run(`UPDATE ${WEBHOOKS} SET secret = ?, updated_at = ? WHERE id = ?`, secret, at, id)
     },
+    async setEnabled(id, enabled, at) {
+      await run(`UPDATE ${WEBHOOKS} SET enabled = ?, updated_at = ? WHERE id = ?`, enabled ? 1 : 0, at, id)
+    },
     async remove(id) {
       await run(`DELETE FROM ${DELIVERIES} WHERE webhook_id = ?`, id)
       await run(`DELETE FROM ${WEBHOOKS} WHERE id = ?`, id)
@@ -213,6 +219,10 @@ export function createD1WebhookStore(getDb: () => Promise<D1Like>): WebhookStore
     async queuedSince(webhookId, sinceIso) {
       const row = await first<{ n: number }>(`SELECT COUNT(*) AS n FROM ${DELIVERIES} WHERE webhook_id = ? AND status != 'skipped' AND created_at >= ?`, webhookId, sinceIso)
       return row ? Number(row.n) : 0
+    },
+    async recentOutcomes(webhookId, limit) {
+      const rows = await all<{ status: string }>(`SELECT status FROM ${DELIVERIES} WHERE webhook_id = ? AND status IN ('ok', 'failed') ORDER BY id DESC LIMIT ?`, webhookId, Math.max(1, Math.min(100, limit)))
+      return rows.map((r) => r.status)
     },
     async pruneDeliveries(beforeIso) {
       await run(`DELETE FROM ${DELIVERIES} WHERE created_at < ?`, beforeIso)

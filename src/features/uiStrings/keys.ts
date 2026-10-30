@@ -2960,6 +2960,8 @@ export const UI_STRING_SOURCE = {
   "webhooks.event.order.refunded": "Order refunded",
   "webhooks.event.form.submitted": "Form submitted",
   "webhooks.event.user.registered": "Account created",
+  // Webhooks: tracking event saved (added 30 Oct 2026)
+  "webhooks.event.tracking-event.saved": "Tracking event saved",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

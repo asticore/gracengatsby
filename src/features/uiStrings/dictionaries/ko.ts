@@ -2919,6 +2919,7 @@ const ko: UiDictionary = {
   "webhooks.event.order.refunded": "주문 환불",
   "webhooks.event.form.submitted": "양식 제출",
   "webhooks.event.user.registered": "계정 생성",
+  "webhooks.event.tracking-event.saved": "추적 이벤트 저장됨",
 }
 
 export default ko

@@ -188,3 +188,13 @@ describe('developer guide section', () => {
     expect(html).toContain('&lt;unix seconds&gt;')
   })
 })
+
+describe('webhook failure streak', () => {
+  it('is true only when the newest finished deliveries all failed', async () => {
+    const { isFailingStreak } = await import('@/features/webhooks/core')
+    expect(isFailingStreak(['failed', 'failed', 'failed', 'failed', 'failed'])).toBe(true)
+    expect(isFailingStreak(['failed', 'failed', 'failed', 'failed'])).toBe(false)
+    expect(isFailingStreak(['failed', 'ok', 'failed', 'failed', 'failed', 'failed'])).toBe(false)
+    expect(isFailingStreak(['failed', 'failed', 'failed', 'failed', 'failed', 'ok'])).toBe(true)
+  })
+})

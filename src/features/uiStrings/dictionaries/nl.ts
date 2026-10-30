@@ -2919,6 +2919,7 @@ const nl: UiDictionary = {
   "webhooks.event.order.refunded": "Bestelling terugbetaald",
   "webhooks.event.form.submitted": "Formulier verzonden",
   "webhooks.event.user.registered": "Account aangemaakt",
+  "webhooks.event.tracking-event.saved": "Trackinggebeurtenis opgeslagen",
 }
 
 export default nl

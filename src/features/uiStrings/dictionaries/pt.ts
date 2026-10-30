@@ -2919,6 +2919,7 @@ const pt: UiDictionary = {
   "webhooks.event.order.refunded": "Pedido reembolsado",
   "webhooks.event.form.submitted": "Formulário enviado",
   "webhooks.event.user.registered": "Conta criada",
+  "webhooks.event.tracking-event.saved": "Evento de rastreamento salvo",
 }
 
 export default pt

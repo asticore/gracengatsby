@@ -1,6 +1,7 @@
 import type { CollectionConfig } from '@/engine'
 
 import { roleAccess } from '@/access/ecommerceAccess'
+import { webhookTrackingEventAfterChange } from '@/features/webhooks/hooks'
 
 import { STANDARD_EVENTS, TRIGGER_TYPES, URL_MATCH_MODES, validateTrackingEvent, type TrackingEventDef } from '../events'
 import { TRACKING_EVENTS_SLUG, TRACKING_EVENTS_TABLE } from '../slugs'
@@ -102,5 +103,6 @@ export const TrackingEvents: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [webhookTrackingEventAfterChange],
   },
 }

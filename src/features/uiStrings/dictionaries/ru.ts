@@ -2919,6 +2919,7 @@ const ru: UiDictionary = {
   "webhooks.event.order.refunded": "Заказ возвращён",
   "webhooks.event.form.submitted": "Форма отправлена",
   "webhooks.event.user.registered": "Учётная запись создана",
+  "webhooks.event.tracking-event.saved": "Событие отслеживания сохранено",
 }
 
 export default ru

@@ -2920,6 +2920,7 @@ const de: UiDictionary = {
   "webhooks.event.order.refunded": "Bestellung erstattet",
   "webhooks.event.form.submitted": "Formular gesendet",
   "webhooks.event.user.registered": "Konto erstellt",
+  "webhooks.event.tracking-event.saved": "Tracking-Ereignis gespeichert",
 }
 
 export default de

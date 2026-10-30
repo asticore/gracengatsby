@@ -1,4 +1,4 @@
-import { checkWebhookUrl, DELIVERY_RETENTION_DAYS, isOverRate, nextAttemptAt, REQUEST_TIMEOUT_MS, renderBody, signatureHeader, SIGNATURE_HEADER, type DeliveryStatus } from './core'
+import { checkWebhookUrl, DELIVERY_RETENTION_DAYS, FAILURE_ALERT_THRESHOLD, isFailingStreak, isOverRate, nextAttemptAt, REQUEST_TIMEOUT_MS, renderBody, signatureHeader, SIGNATURE_HEADER, type DeliveryStatus } from './core'
 import { pickEventFields, TEST_EVENT, type WebhookEvent } from './events'
 import { openSecret } from './secret'
 import type { DeliveryRecord, WebhookRecord, WebhookStore } from './store'
@@ -19,6 +19,8 @@ export type DeliveryDeps = {
   fetcher?: typeof fetch
   now?: () => number
   newId?: () => string
+  /** Tells the site's admins that a webhook was switched off. Never throws; the emit layer supplies it. */
+  notifyAdmins?: (subject: string, text: string) => Promise<void>
 }
 
 export type AttemptOutcome = { status: DeliveryStatus; statusCode: number | null; error: string | null }
@@ -77,6 +79,25 @@ export async function queueEvent(deps: DeliveryDeps, event: WebhookEvent, data: 
   return ids
 }
 
+/**
+ * After a delivery ends in failure: if the newest finished deliveries all failed, switch the webhook
+ * off and tell the admins once. An admin turns it back on from the webhook screen. Never throws.
+ */
+export async function alertIfFailing(deps: DeliveryDeps, hook: WebhookRecord, at: string): Promise<void> {
+  try {
+    const outcomes = await deps.store.recentOutcomes(hook.id, FAILURE_ALERT_THRESHOLD)
+    if (!isFailingStreak(outcomes, FAILURE_ALERT_THRESHOLD)) return
+    if (!hook.enabled) return
+    await deps.store.setEnabled(hook.id, false, at)
+    await deps.notifyAdmins?.(
+      `Webhook "${hook.name}" was switched off`,
+      `The webhook "${hook.name}" failed ${FAILURE_ALERT_THRESHOLD} deliveries in a row and has been switched off, so no more events are sent to it. Check the receiving address, then switch it back on from the webhooks screen.`,
+    )
+  } catch {
+    // The alert is best effort.
+  }
+}
+
 const DONE = (row: DeliveryRecord): AttemptOutcome => ({ status: row.status, statusCode: row.lastStatusCode, error: row.lastError })
 
 /** Sends one pending row now, or records why it cannot be sent. Never throws. */
@@ -98,6 +119,7 @@ export async function attemptDelivery(deps: DeliveryDeps, rowId: number): Promis
 
     const permanent = async (error: string): Promise<AttemptOutcome> => {
       await store.updateDelivery(rowId, { status: 'failed', nextAttemptAt: null, lastError: error }, at)
+      await alertIfFailing(deps, hook, at)
       return { status: 'failed', statusCode: null, error }
     }
     // The address is checked again on every try, in case it was changed or the rules tightened.
@@ -145,6 +167,7 @@ export async function attemptDelivery(deps: DeliveryDeps, rowId: number): Promis
     const retryAt = nextAttemptAt(attempts, nowMs)
     const status: DeliveryStatus = retryAt ? 'pending' : 'failed'
     await store.updateDelivery(rowId, { status, attempts, nextAttemptAt: retryAt, lastStatusCode: statusCode, lastError: error }, at)
+    if (status === 'failed') await alertIfFailing(deps, hook, at)
     return { status, statusCode, error }
   } catch {
     return { status: 'failed', statusCode: null, error: 'The delivery could not be recorded.' }

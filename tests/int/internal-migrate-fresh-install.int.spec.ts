@@ -722,7 +722,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
     const { createD1WebhookStore } = await import('@/features/webhooks/store')
     const store = createD1WebhookStore(async () => proxy.env.D1 as never)
     const at = '2026-10-30T00:00:00.000Z'
-    const config = { name: 'Orders', description: '', url: 'https://hooks.example.com/in', events: ['order.paid'] as ('order.paid')[], template: null, enabled: true, ratePerMinute: 60 }
+    const config = { name: 'Orders', description: '', url: 'https://hooks.example.com/in', events: ['order.paid'] as ('order.paid')[], template: null as string | null, enabled: true, ratePerMinute: 60 }
     const id = await store.insert(config, 'enc:v1:00:00:00', at)
     expect(await store.findById(id)).toMatchObject({ id, name: 'Orders', events: ['order.paid'], enabled: true, ratePerMinute: 60 })
     expect((await store.activeFor('order.paid')).map((w) => w.id)).toEqual([id])

@@ -2919,6 +2919,7 @@ const ja: UiDictionary = {
   "webhooks.event.order.refunded": "注文の返金",
   "webhooks.event.form.submitted": "フォーム送信",
   "webhooks.event.user.registered": "アカウント作成",
+  "webhooks.event.tracking-event.saved": "トラッキングイベントを保存",
 }
 
 export default ja

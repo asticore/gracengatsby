@@ -2919,6 +2919,7 @@ const ar: UiDictionary = {
   "webhooks.event.order.refunded": "تم استرداد الطلب",
   "webhooks.event.form.submitted": "تم إرسال نموذج",
   "webhooks.event.user.registered": "تم إنشاء حساب",
+  "webhooks.event.tracking-event.saved": "تم حفظ حدث التتبع",
 }
 
 export default ar

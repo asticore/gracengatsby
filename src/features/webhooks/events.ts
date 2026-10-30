@@ -14,6 +14,7 @@ export const WEBHOOK_EVENTS = [
   'order.refunded',
   'form.submitted',
   'user.registered',
+  'tracking-event.saved',
 ] as const
 
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number]
@@ -34,6 +35,7 @@ export const EVENT_LABEL_KEYS: Record<WebhookEvent, string> = {
   'order.refunded': 'webhooks.event.order.refunded',
   'form.submitted': 'webhooks.event.form.submitted',
   'user.registered': 'webhooks.event.user.registered',
+  'tracking-event.saved': 'webhooks.event.tracking-event.saved',
 }
 
 /** The fields each event may send. `values` on form.submitted is the entry's answers, as the form webhook sends them. */
@@ -47,6 +49,7 @@ export const EVENT_FIELDS: Record<WebhookEvent, readonly string[]> = {
   'order.refunded': ['id', 'orderId', 'amount', 'reason', 'createdAt'],
   'form.submitted': ['id', 'formId', 'formTitle', 'submittedAt', 'values'],
   'user.registered': ['id', 'createdAt'],
+  'tracking-event.saved': ['id', 'name', 'platformEvent', 'triggerType', 'enabled', 'createdAt', 'updatedAt'],
 }
 
 /** Keeps only the fields an event allows. Missing fields are left out; `undefined` never reaches the body. */

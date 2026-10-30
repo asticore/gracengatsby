@@ -2918,6 +2918,7 @@ const zhHans: UiDictionary = {
   "webhooks.event.order.refunded": "订单已退款",
   "webhooks.event.form.submitted": "表单已提交",
   "webhooks.event.user.registered": "账户已创建",
+  "webhooks.event.tracking-event.saved": "已保存的跟踪事件",
 }
 
 export default zhHans

@@ -29,6 +29,8 @@ export const RETRY_DELAYS_SECONDS = [60, 300, 1800, 7200, 21600] as const
 export const REQUEST_TIMEOUT_MS = 8000
 /** Delivery rows older than this are removed by the cron job. */
 export const DELIVERY_RETENTION_DAYS = 30
+/** This many finished deliveries in a row that failed switch the webhook off and tell the admin. */
+export const FAILURE_ALERT_THRESHOLD = 5
 export const SIGNATURE_HEADER = 'X-Engage-Signature'
 export const SIGNATURE_TOLERANCE_SECONDS = 300
 
@@ -290,4 +292,9 @@ export function validateWebhook(input: unknown): ValidationResult<WebhookConfig>
     ok: true,
     value: { name, description, url: url.value, events, template: template.value, enabled: raw.enabled !== false, ratePerMinute },
   }
+}
+
+/** True when the newest `threshold` finished deliveries (newest first) all failed. Pending and skipped rows are not counted. */
+export function isFailingStreak(outcomes: readonly string[], threshold: number = FAILURE_ALERT_THRESHOLD): boolean {
+  return outcomes.length >= threshold && outcomes.slice(0, threshold).every((status) => status === 'failed')
 }

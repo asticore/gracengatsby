@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { createWebhookRecord, deleteWebhookRecord, setWebhookEnabledRecord, updateWebhookRecord } from '@/features/webhooks/admin'
 import { REQUEST_TIMEOUT_MS, verifySignature, type WebhookConfig } from '@/features/webhooks/core'
-import { attemptDelivery, processDue, queueEvent, replayDelivery, sendTest, TEST_DATA, type DeliveryDeps } from '@/features/webhooks/delivery'
+import { alertIfFailing, attemptDelivery, processDue, queueEvent, replayDelivery, sendTest, TEST_DATA, type DeliveryDeps } from '@/features/webhooks/delivery'
 import { dispatchEvent } from '@/features/webhooks/emit'
 import { sealSecret } from '@/features/webhooks/secret'
 import type { DeliveryPatch, DeliveryRecord, NewDelivery, WebhookRecord, WebhookStore } from '@/features/webhooks/store'
@@ -51,6 +51,16 @@ function memoryStore() {
     due: async (nowIso, limit) =>
       [...rows.values()].filter((r) => r.status === 'pending' && r.nextAttemptAt !== null && r.nextAttemptAt <= nowIso).sort((a, b) => String(a.nextAttemptAt).localeCompare(String(b.nextAttemptAt))).slice(0, limit),
     queuedSince: async (webhookId, sinceIso) => [...rows.values()].filter((r) => r.webhookId === webhookId && r.status !== 'skipped' && r.createdAt >= sinceIso).length,
+    setEnabled: async (id, enabled, at) => {
+      const old = hooks.get(id)!
+      hooks.set(id, { ...old, enabled, updatedAt: at })
+    },
+    recentOutcomes: async (webhookId, limit) =>
+      [...rows.values()]
+        .filter((r) => r.webhookId === webhookId && (r.status === 'ok' || r.status === 'failed'))
+        .sort((a, b) => b.id - a.id)
+        .slice(0, limit)
+        .map((r) => r.status),
     pruneDeliveries: async (beforeIso) => {
       for (const [rid, r] of rows) if (r.createdAt < beforeIso) rows.delete(rid)
     },
@@ -144,6 +154,32 @@ describe('webhook delivery', () => {
     row = await f.store.findDelivery(id)
     expect(row).toMatchObject({ status: 'failed', attempts: 6, nextAttemptAt: null })
     expect(failing).toHaveBeenCalledTimes(6)
+  })
+
+  it('switches a webhook off after five failed deliveries in a row and tells the admins', async () => {
+    const start = Date.UTC(2026, 9, 30, 12, 0, 0)
+    const failing = vi.fn(async () => new Response(null, { status: 500 })) as unknown as typeof fetch
+    const notifyAdmins = vi.fn(async (_subject: string, _text: string) => undefined)
+    const f = fixture(start, failing)
+    const hook = await addHook(f.deps, f.store)
+    const deps = { ...f.deps, notifyAdmins }
+    for (let i = 0; i < 5; i += 1) await dispatchEvent(deps, 'order.paid', { id: i })
+    for (let day = 0; day < 6; day += 1) {
+      f.advance(24 * 60 * 60 * 1000)
+      await processDue(deps)
+    }
+    expect(f.hooks.get(hook.id)?.enabled).toBe(false)
+    expect(notifyAdmins).toHaveBeenCalled()
+    expect(String(notifyAdmins.mock.calls[0][0])).toContain('Orders')
+  })
+
+  it('a webhook with fewer than five failures, or with a success in the streak, stays on', async () => {
+    const f = fixture()
+    const hook = await addHook(f.deps, f.store)
+    await f.store.insertDelivery({ webhookId: hook.id, deliveryId: 'a', event: 'order.paid', body: '{}', status: 'failed', attempts: 6, nextAttemptAt: null, lastStatusCode: 500, lastError: 'x' }, new Date().toISOString())
+    await f.store.insertDelivery({ webhookId: hook.id, deliveryId: 'b', event: 'order.paid', body: '{}', status: 'ok', attempts: 1, nextAttemptAt: null, lastStatusCode: 200, lastError: null }, new Date().toISOString())
+    await alertIfFailing(f.deps, hook, new Date().toISOString())
+    expect(f.hooks.get(hook.id)?.enabled).toBe(true)
   })
 
   it('treats a redirect as a failure and does not follow it', async () => {

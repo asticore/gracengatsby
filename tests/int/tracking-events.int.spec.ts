@@ -100,6 +100,8 @@ describe('platform calls and consent gating', () => {
     const analyticsOnly = makeChoices({ analytics: true, marketing: false })
     expect(allowedPlatforms(['meta', 'ga4', 'gtm', 'tiktok'], analyticsOnly)).toEqual(['ga4', 'gtm'])
     expect(allowedPlatforms(['meta', 'tiktok'], makeChoices({}))).toEqual([])
+    // GA4 and GTM never fire on Marketing alone, with or without Consent Mode.
+    expect(allowedPlatforms(['ga4', 'gtm'], makeChoices({ marketing: true }))).toEqual([])
     expect(allowedPlatforms(['meta', 'ga4'], makeChoices({ analytics: true, marketing: true }))).toEqual(['meta', 'ga4'])
   })
 

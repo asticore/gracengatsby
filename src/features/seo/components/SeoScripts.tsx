@@ -15,7 +15,7 @@ import { pickConsentCategories } from '@/features/integrations/publicIds'
 import { TrackingPicker, type PickerLabels } from '@/features/tracking/picker/TrackingPicker'
 import { collectionRoute } from '@/admin/adminPaths'
 import { TrackingRuntime } from '@/features/tracking/TrackingRuntime'
-import type { TrackingPlatform } from '@/features/tracking/events'
+import { PLATFORM_CATEGORY, type TrackingPlatform } from '@/features/tracking/events'
 import { getAdminRoot } from '@/features/security/settings'
 import { isSignedInTrackingAdmin } from '@/features/tracking/adminAccess'
 import { getAdminUi } from '@/admin/i18n/serverUi'
@@ -158,7 +158,7 @@ export const SeoScripts = async ({ position = 'head', country = null }: SeoScrip
       />
       {adminSignedIn ? <TrackingPicker adminSignedIn={adminSignedIn} adminPath={adminPath} eventsRoute={collectionRoute('tracking-events')} saveEndpoint="/api/admin-tracking-events" labels={await pickerLabels()} /> : null}
       {trackingEvents.length && platforms.length ? (
-        <TrackingRuntime events={trackingEvents} platforms={platforms} siteCurrency={siteCurrency} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} suppressed={adminSignedIn} categories={{ meta: categories.meta, tiktok: categories.tiktok, ga4: 'analytics', gtm: 'analytics' }} />
+        <TrackingRuntime events={trackingEvents} platforms={platforms} siteCurrency={siteCurrency} policyVersion={consent.policyVersion} optIn={optIn} adminPath={adminPath} suppressed={adminSignedIn} categories={{ meta: categories.meta, tiktok: categories.tiktok, ga4: PLATFORM_CATEGORY.ga4, gtm: PLATFORM_CATEGORY.gtm }} />
       ) : null}
     </>
   )

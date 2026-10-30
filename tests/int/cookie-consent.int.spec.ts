@@ -533,19 +533,45 @@ describe('withdrawal reloads the page', () => {
   })
 })
 
-describe('GTM without Consent Mode', () => {
-  it('loads GTM only once both analytics and marketing are granted', async () => {
-    vi.resetModules()
+describe('GTM and GA4 follow the Analytics category', () => {
+  const gtmLoaded = () => Array.from(document.head.querySelectorAll('script')).some((s) => s.src.includes('googletagmanager.com/gtm.js'))
+  const ga4Loaded = () => Array.from(document.head.querySelectorAll('script')).some((s) => s.src.includes('googletagmanager.com/gtag/js'))
+
+  beforeEach(() => {
     document.head.innerHTML = ''
+  })
+
+  for (const consentModeV2 of [false, true]) {
+    it(`loads GTM and GA4 on analytics alone (Consent Mode v2 ${consentModeV2 ? 'on' : 'off'})`, async () => {
+      vi.resetModules()
+      const { syncAnalyticsTags } = await import('@/features/seo/components/AnalyticsLoader')
+      const ids = { gtmContainerId: 'GTM-TEST2', ga4MeasurementId: 'G-TEST2' }
+
+      syncAnalyticsTags(ids, consentModeV2, makeChoices({ marketing: true }))
+      expect(gtmLoaded()).toBe(false)
+      expect(ga4Loaded()).toBe(false)
+
+      syncAnalyticsTags(ids, consentModeV2, makeChoices({ analytics: true }))
+      expect(gtmLoaded()).toBe(true)
+      expect(ga4Loaded()).toBe(true)
+    })
+  }
+
+  it('keeps Meta on marketing and TikTok on marketing unless their category is set to analytics', async () => {
+    vi.resetModules()
     const { syncAnalyticsTags } = await import('@/features/seo/components/AnalyticsLoader')
-    const ids = { gtmContainerId: 'GTM-TEST2' }
-    const gtmLoaded = () => Array.from(document.head.querySelectorAll('script')).some((s) => s.src.includes('googletagmanager.com/gtm.js'))
+    const metaLoaded = () => Array.from(document.head.querySelectorAll('script')).some((s) => s.textContent?.includes('connect.facebook.net'))
+    syncAnalyticsTags({ metaPixelId: '123' }, false, makeChoices({ analytics: true }))
+    expect(metaLoaded()).toBe(false)
+    syncAnalyticsTags({ metaPixelId: '123' }, false, makeChoices({ marketing: true }))
+    expect(metaLoaded()).toBe(true)
+  })
 
-    syncAnalyticsTags(ids, false, makeChoices({ analytics: true }))
-    expect(gtmLoaded()).toBe(false)
-
-    syncAnalyticsTags(ids, false, makeChoices({ analytics: true, marketing: true }))
-    expect(gtmLoaded()).toBe(true)
+  it('sends analytics_storage with the same choice that loads GTM', () => {
+    const analyticsOnly = makeChoices({ analytics: true })
+    const marketingOnly = makeChoices({ marketing: true })
+    expect(consentModeSignals(analyticsOnly).analytics_storage).toBe('granted')
+    expect(consentModeSignals(marketingOnly).analytics_storage).toBe('denied')
   })
 })
 

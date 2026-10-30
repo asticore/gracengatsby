@@ -7,7 +7,7 @@ import { getAdminContext } from '@/admin/auth'
  * asks the engine for the session on every call (getAdminContext is cached per request), so a leftover cookie
  * on its own never counts. Never throws: any failure means "not an admin".
  */
-export async function isSignedInTrackingAdmin(action: 'read' | 'create' = 'read'): Promise<boolean> {
+export async function isSignedInTrackingAdmin(action: 'read' | 'create' | 'update' | 'delete' = 'read'): Promise<boolean> {
   try {
     const context = await getAdminContext()
     if (!context.user) return false

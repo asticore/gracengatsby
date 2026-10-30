@@ -8,6 +8,7 @@ import { UI_STRING_SOURCE, type UiStringKey } from '@/features/uiStrings'
 import { EditForm } from './EditForm'
 import { CollapseAllBar } from '@/admin/components/CollapseAllBar'
 import { WorstPagesCard } from '@/features/pagespeed/ui/WorstPagesCard'
+import { TagEditorButton } from '@/features/tracking/editor/TagEditorButton'
 import { resolveActiveTab, type SettingsPage, type LinkSection } from '@/admin/settingsPages'
 import '@/app/(engage)/settings-tabs.css'
 
@@ -121,6 +122,12 @@ export const SettingsPageClient: React.FC<SettingsPageClientProps> = ({ page, se
       </div>
 
       {page.topCard === 'pagespeed-worst' && <WorstPagesCard />}
+
+      {page.topCard === 'tracking-tags' && (
+        <div className="settings-page__actions">
+          <TagEditorButton />
+        </div>
+      )}
 
       {/* Global sections: one box, tabs on top (when 2+), the active panel below */}
       {globalSections.length > 0 && (

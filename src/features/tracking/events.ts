@@ -8,6 +8,8 @@
  * is sent to every connected platform that has its consent category granted.
  */
 
+import { stripLocalePrefix } from './urlRule'
+
 export const STANDARD_EVENTS = [
   'PageView',
   'ViewContent',
@@ -110,16 +112,19 @@ export function validateTrackingEvent(input: TrackingEventDef): string[] {
   return errors
 }
 
-/** Path-level URL match. `pathname` is the page path with no query string. */
+/**
+ * Path-level URL match. `pathname` is the page path with no query string. A language prefix on the page ("/fr/shop")
+ * is ignored, so a rule for "/shop" covers every language (see urlRule.ts).
+ */
 export function urlMatches(def: Pick<TrackingEventDef, 'urlMatchMode' | 'urlMatch'>, pathname: string): boolean {
   const mode = def.urlMatchMode ?? 'any'
   if (mode === 'any') return true
   const rule = (def.urlMatch ?? '').trim()
   if (!rule) return false
-  const path = normalisePath(pathname)
-  const target = normalisePath(rule)
+  const path = normalisePath(stripLocalePrefix(pathname))
+  const target = normalisePath(stripLocalePrefix(rule))
   if (mode === 'exact') return path === target
-  if (mode === 'contains') return path.includes(rule)
+  if (mode === 'contains') return stripLocalePrefix(pathname).includes(rule)
   if (mode === 'starts') return path.startsWith(rule.startsWith('/') ? rule : `/${rule}`)
   return false
 }

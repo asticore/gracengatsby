@@ -2,6 +2,7 @@ import type { CollectionConfig } from '@/engine'
 
 import { roleAccess } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 import { locksField } from '../fields/locks'
 import { lockGuard } from '@/features/roles/lockGuard'
 import { machineAutoDraftAfterChange } from '@/features/multilingual/machine/autoDraft'
@@ -46,7 +47,7 @@ export const ReusableSections: CollectionConfig = {
     locksField,
   ],
   hooks: {
-    beforeChange: [lockGuard],
+    beforeChange: [lockGuard, embedShortLinksFor('blocks')],
     afterChange: [machineAutoDraftAfterChange('reusable-sections'), outdatedAfterChange('reusable-sections')],
   },
 }

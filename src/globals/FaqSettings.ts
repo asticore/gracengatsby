@@ -2,6 +2,7 @@ import type { GlobalConfig } from '@/engine'
 
 import { isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 
 export const FaqSettings: GlobalConfig = {
   slug: 'faq-settings',
@@ -51,4 +52,7 @@ export const FaqSettings: GlobalConfig = {
       ],
     },
   ],
+  hooks: {
+    beforeChange: [embedShortLinksFor('introBlocks')],
+  },
 }

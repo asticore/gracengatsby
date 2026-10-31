@@ -2,6 +2,7 @@ import type { CollectionConfig } from '@/engine'
 
 import { roleAccess } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 import { locksField } from '../fields/locks'
 import { lockGuard } from '@/features/roles/lockGuard'
 import { KIND_LABELS, SITE_TEMPLATE_KINDS, type SiteTemplateKind } from '@/features/siteTemplates/kinds'
@@ -75,7 +76,7 @@ export const SiteTemplates: CollectionConfig = {
     locksField,
   ],
   hooks: {
-    beforeChange: [lockGuard],
+    beforeChange: [lockGuard, embedShortLinksFor('blocks')],
     afterChange: [
       async () => {
         // The public layout is dynamic (read on every request), so this is best-effort: it only clears any edge/route cache in front of it.

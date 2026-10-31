@@ -1,8 +1,9 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { embedShortLinksBeforeChange } from '@/features/embeds/hooks'
+import { embedShortLinksBeforeChange, embedShortLinksFor } from '@/features/embeds/hooks'
 import { isForbiddenHost, MAX_HOPS, resolveEmbedShortLinks, resolveShortEmbedUrl, shortLinkProvider } from '@/features/embeds/shortLinks'
+import { isShortLinkForProvider, resolveEmbedUrlForEditor } from '@/views/visualEditor/embedUrlResolve'
 
 const redirect = (location: string, status = 301) => new Response(null, { status, headers: { location } })
 const page = (status = 200) => new Response('<html></html>', { status, headers: { 'content-type': 'text/html' } })
@@ -211,3 +212,67 @@ describe('embedShortLinksBeforeChange', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
+
+describe('embedShortLinksFor', () => {
+  const tiktokBlock = (url: string) => ({ blockType: 'element', elementType: 'embed', props: { provider: 'tiktok', url } })
+  const canonical = 'https://www.tiktok.com/@c/video/7234567890123456789'
+
+  it.each(['introBlocks', 'layout', 'content'])('resolves short links in the %s field', async (field) => {
+    const data = { title: 'Doc', [field]: [tiktokBlock('https://vm.tiktok.com/ZSabc123/')] }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(redirect(canonical))
+    const out = (await embedShortLinksFor(field)({ data })) as Record<string, unknown>
+    expect(((out[field] as Array<{ props: { url: string } }>)[0]!.props).url).toBe(canonical)
+    expect(out.title).toBe('Doc')
+  })
+
+  it('leaves other block fields alone', async () => {
+    const other = [tiktokBlock('https://vm.tiktok.com/ZSabc123/')]
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const out = (await embedShortLinksFor('introBlocks')({ data: { blocks: other } })) as { blocks: unknown }
+    expect(out.blocks).toBe(other)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('keeps the link as typed when resolution fails', async () => {
+    const link = 'https://vm.tiktok.com/ZSabc123/'
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('offline'))
+    const out = (await embedShortLinksFor('layout')({ data: { layout: [tiktokBlock(link)] } })) as { layout: Array<{ props: { url: string } }> }
+    expect(out.layout[0]!.props.url).toBe(link)
+  })
+})
+
+describe('isShortLinkForProvider', () => {
+  it('matches a short link only for its own provider', () => {
+    expect(isShortLinkForProvider('https://vm.tiktok.com/ZSabc123/', 'tiktok')).toBe(true)
+    expect(isShortLinkForProvider('https://pin.it/abc', 'pinterest')).toBe(true)
+    expect(isShortLinkForProvider('https://vm.tiktok.com/ZSabc123/', 'pinterest')).toBe(false)
+    expect(isShortLinkForProvider('https://www.tiktok.com/@c/video/1', 'tiktok')).toBe(false)
+    expect(isShortLinkForProvider(undefined, 'tiktok')).toBe(false)
+  })
+})
+
+describe('resolveEmbedUrlForEditor', () => {
+  const link = 'https://vm.tiktok.com/ZSabc123/'
+  const canonical = 'https://www.tiktok.com/@c/video/7234567890123456789'
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+
+  it('returns the canonical address the server resolved', async () => {
+    const fetchImpl = vi.fn(async () => json({ ok: true, url: canonical, changed: true }))
+    expect(await resolveEmbedUrlForEditor(link, fetchImpl as unknown as typeof fetch)).toBe(canonical)
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/admin-embed-resolve')
+    expect(JSON.parse(String(init.body))).toEqual({ url: link })
+  })
+
+  it('returns null when the server did not change the address', async () => {
+    const fetchImpl = vi.fn(async () => json({ ok: true, url: canonical, changed: false }))
+    expect(await resolveEmbedUrlForEditor(canonical, fetchImpl as unknown as typeof fetch)).toBeNull()
+  })
+
+  it('stays silent on refusal, failure or network error', async () => {
+    expect(await resolveEmbedUrlForEditor(link, vi.fn(async () => json({ ok: false, error: 'x' }, 422)) as unknown as typeof fetch)).toBeNull()
+    expect(await resolveEmbedUrlForEditor(link, vi.fn(async () => json({ ok: false }, 403)) as unknown as typeof fetch)).toBeNull()
+    expect(await resolveEmbedUrlForEditor(link, vi.fn(async () => { throw new TypeError('network') }) as unknown as typeof fetch)).toBeNull()
+  })
+})
+

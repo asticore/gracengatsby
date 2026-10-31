@@ -2,6 +2,7 @@ import type { Access, CollectionConfig, Engine, Where } from '@/engine'
 
 import { isAdmin } from '@/access/ecommerceAccess'
 import { pageBuilderBlocks } from '@/blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 import { formatSlugHook } from '@/utilities/formatSlug'
 import { accessibleCourseIds, isAdminUser } from '../entitlement'
 import { flagsFrom } from '../settings'
@@ -155,6 +156,6 @@ export const Lessons: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeChange: [contentEditGuard],
+    beforeChange: [contentEditGuard, embedShortLinksFor('content')],
   },
 }

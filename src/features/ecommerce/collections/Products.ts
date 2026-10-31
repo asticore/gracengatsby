@@ -14,6 +14,7 @@ import { excludeProtectedAccess } from '@/features/visibility/excludeProtected'
 import { adminOrPublishedStatus, isAdmin } from '@/access/ecommerceAccess'
 
 import { pageBuilderBlocks } from '@/blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 import { richTextEditor } from '@/engine/editor'
 import { seoFields } from '@/fields/seo'
 import { schemaTypeField } from '@/fields/schemaType'
@@ -180,7 +181,7 @@ export const Products: CollectionConfig = {
     ...pageSpeedFields,
   ],
   hooks: {
-    beforeChange: [domainWriteGuard, authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange],
+    beforeChange: [domainWriteGuard, authorshipBeforeChange, contentEditGuard, publishGuard, catalogueBeforeChange, pageSpeedBeforeChange, embedShortLinksFor('layout')],
     afterChange: [stockAlertAfterChange, backInStockAfterChange, subscriptionAfterChange, pageSpeedAfterChange('products'), indexNowAfterChange('products'), machineAutoDraftAfterChange('products'), outdatedAfterChange('products'), webhookContentAfterChange('products')],
     afterDelete: [indexNowAfterDelete('products')],
   },

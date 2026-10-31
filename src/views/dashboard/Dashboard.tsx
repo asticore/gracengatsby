@@ -23,6 +23,7 @@ import { loadApprovalSettings } from '@/features/approval/settings'
 import { loadReviewQueue, type ReviewEngine } from '@/features/approval/handlers'
 import { viewerFromContext } from '@/features/approval/viewer'
 import { ReviewQueueTable } from '@/features/approval/views/ReviewQueueTable'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { GettingStartedCard } from '@/features/gettingStarted/GettingStartedCard'
 
 /**
@@ -60,6 +61,7 @@ const findEntity = (groups: ResolvedGroup[], slug: string): ResolvedEntity | und
 }
 
 export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
+  const ui = await getAdminUi()
   const { i18n, engine: realEngine, permissions, user, visibleEntities } = props
   const req = props.initPageResult?.req
 
@@ -144,8 +146,8 @@ export const Dashboard: React.FC<AdminViewServerProps> = async (props) => {
 
       {reviewRows !== null && (
         <section>
-          <h2 className={sectionTitleClassName}>Awaiting review</h2>
-          <ReviewQueueTable now={now.getTime()} rows={reviewRows} />
+          <h2 className={sectionTitleClassName}>{ui.t('approval.awaitingTitle')}</h2>
+          <ReviewQueueTable now={now.getTime()} rows={reviewRows} t={ui.t} />
         </section>
       )}
 

@@ -3,6 +3,7 @@ import { getAdminRoot } from '@/features/security/settings'
 import { redirect } from 'next/navigation'
 
 import { getAdminContext, hasAdminPanelAccess, isAdminUser } from '@/admin/auth'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { AUTH_AUDIT_ACTIONS } from '@/features/security/auditLog'
 import { auditPageHref, parseAuditFilter } from '@/features/security/auditQuery'
 import { listAuthAuditPage } from '@/features/security/auditStore'
@@ -15,6 +16,7 @@ import { listAuthAuditPage } from '@/features/security/auditStore'
 export async function SecurityAuditView({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const context = await getAdminContext()
   if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
+  const ui = await getAdminUi()
 
   if (!isAdminUser(context.user)) {
     return (
@@ -50,9 +52,9 @@ export async function SecurityAuditView({ searchParams }: { searchParams?: Recor
       </form>
 
       {page === null ? (
-        <p role="alert">The audit log could not be loaded just now.</p>
+        <p role="alert">{ui.t('audit.loadFailed')}</p>
       ) : page.rows.length === 0 ? (
-        <p>No events match.</p>
+        <p>{ui.t('audit.noMatch')}</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table>

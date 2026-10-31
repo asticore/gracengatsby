@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import type { WorstPage } from '../worst'
 import type { Strategy } from '../types'
@@ -24,6 +25,7 @@ const dateText = (value: string): string => {
 }
 
 export function WorstPagesCard() {
+  const t = useAdminT()
   const [strategy, setStrategy] = useState<Strategy>('mobile')
   const [loaded, setLoaded] = useState<Loaded | null>(null)
 
@@ -68,7 +70,7 @@ export function WorstPagesCard() {
         {!current && <p className="ps__muted">Loading...</p>}
         {current && 'error' in current && <p className="ps__muted">{current.error}</p>}
         {current && 'pages' in current && current.pages.length === 0 && (
-          <p className="ps__muted">No pages have been tested yet. Open a page and use the PageSpeed card to run a test.</p>
+          <p className="ps__muted">{t('pagespeed.worstNone')}</p>
         )}
         {current && 'pages' in current && current.pages.length > 0 && (
           <table className="ps__table ps-worst__table">

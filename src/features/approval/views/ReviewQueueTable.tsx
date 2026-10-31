@@ -4,6 +4,7 @@ import type { ReviewQueueRow } from '@/features/approval/handlers'
 import { formatRelativeTime } from '@/views/dashboard/dashboardData'
 import { APPROVAL_SINGULAR } from '@/features/approval/settings'
 import { UI_STRING_SOURCE, type UiStringKey } from '@/features/uiStrings/keys'
+import { SortableTable, type SortableColumn, type SortableRow } from '@/admin/table/SortableTable'
 
 /** English unless the caller passes its translator (server views use getAdminUi().t). */
 const englishT = (key: UiStringKey): string => UI_STRING_SOURCE[key]
@@ -30,34 +31,41 @@ export const ReviewQueueTable: React.FC<{ rows: ReviewQueueRow[]; now?: number; 
     )
   }
 
+  const columns: SortableColumn[] = [
+    { key: 'title', label: t('approval.col.title') },
+    { key: 'type', label: t('approval.col.type') },
+    { key: 'sentBy', label: t('approval.col.sentBy') },
+    { key: 'waiting', label: t('approval.col.waiting') },
+  ]
+  const tableRows: SortableRow[] = rows.map((row) => ({
+    id: `${row.collection}-${row.id}`,
+    sortValues: {
+      title: row.title,
+      type: APPROVAL_SINGULAR[row.collection],
+      sentBy: row.requestedBy,
+      waiting: row.requestedAt ? new Date(row.requestedAt).getTime() : null,
+    },
+    cells: {
+      title: (
+        <Link className="font-medium text-[var(--ac-gold)] no-underline hover:underline" href={row.href}>
+          {row.title}
+        </Link>
+      ),
+      type: APPROVAL_SINGULAR[row.collection],
+      sentBy: row.requestedBy,
+      waiting: now === undefined ? formatDate(row.requestedAt) : formatRelativeTime(row.requestedAt, now),
+    },
+  }))
+
   return (
     <div className="overflow-x-auto rounded-[4px] border border-[var(--theme-elevation-150)] bg-[var(--ac-surface)]">
-      <table className="w-full border-collapse text-[calc(var(--base)*0.8)]">
-        <thead>
-          <tr>
-            <th className={headerClass} scope="col">{t('approval.col.title')}</th>
-            <th className={headerClass} scope="col">{t('approval.col.type')}</th>
-            <th className={headerClass} scope="col">{t('approval.col.sentBy')}</th>
-            <th className={headerClass} scope="col">{t('approval.col.waiting')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.collection}-${row.id}`}>
-              <td className={cellClass}>
-                <Link className="font-medium text-[var(--ac-gold)] no-underline hover:underline" href={row.href}>
-                  {row.title}
-                </Link>
-              </td>
-              <td className={cellClass}>{APPROVAL_SINGULAR[row.collection]}</td>
-              <td className={cellClass}>{row.requestedBy}</td>
-              <td className={`${cellClass} whitespace-nowrap text-[var(--theme-elevation-600)]`}>
-                {now === undefined ? formatDate(row.requestedAt) : formatRelativeTime(row.requestedAt, now)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SortableTable
+        columns={columns}
+        rows={tableRows}
+        tableClassName="w-full border-collapse text-[calc(var(--base)*0.8)]"
+        headerClassName={headerClass}
+        cellClassName={cellClass}
+      />
     </div>
   )
 }

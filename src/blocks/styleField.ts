@@ -1,5 +1,7 @@
 import type { Field } from '@/engine'
 
+import { convertDesignColumn, type ConvertCount } from '@/lib/design/storedGrouped'
+
 /**
  * The per-block "Design" settings, stored as one JSON column.
  *
@@ -20,6 +22,11 @@ export const blockStyleField: Field = {
   admin: {
     description:
       'Background, spacing, alignment, shape dividers and responsive visibility for this section. Set these on the drag-and-drop canvas via "Edit visually" - this raw view is here as an escape hatch.',
+  },
+  hooks: {
+    // Every write stores the unified grouped design (see src/lib/design/storedGrouped.ts). A flat v1
+    // value from any writer (raw view, import, AI builder, presets) is grouped here; readers accept both.
+    beforeChange: [({ value }) => convertDesignColumn(value, { converted: 0 } satisfies ConvertCount)],
   },
 }
 

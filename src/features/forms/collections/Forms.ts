@@ -1,9 +1,14 @@
+import type { FieldHook } from '@/engine'
+import { convertDesignsInTree, type ConvertCount } from '@/lib/design/storedGrouped'
 import type { CollectionConfig, Field, FieldAccess } from '@/engine'
 
 import { roleAccess } from '@/access/ecommerceAccess'
 
 import { formConfigAfterRead, formsBeforeChange } from '../configHooks'
 import { submitEndpoint } from '../submitEndpoint'
+
+/** Form layouts store their designs grouped, like block designs (see src/lib/design/storedGrouped.ts). */
+const groupLayoutDesigns: FieldHook = ({ value }) => convertDesignsInTree(value, { converted: 0 } satisfies ConvertCount)
 
 /** Field-level access that follows a role permission on the Forms resource. */
 const forAction =
@@ -426,12 +431,14 @@ export const Forms: CollectionConfig = {
       type: 'json',
       access: { read: canEditForms },
       admin: { hidden: true, description: 'The working copy the visual editor saves.' },
+      hooks: { beforeChange: [groupLayoutDesigns] },
     },
     {
       name: 'publishedLayout',
       type: 'json',
       access: { update: canPublishForms },
       admin: { hidden: true, description: 'What visitors see: a snapshot of the layout taken at Publish.' },
+      hooks: { beforeChange: [groupLayoutDesigns] },
     },
     {
       name: 'formConfig',

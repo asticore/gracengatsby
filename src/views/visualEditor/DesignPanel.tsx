@@ -211,6 +211,8 @@ export const DesignPanel: React.FC<{
             <CheckRow
               label={t('dp.field.loop')}
               checked={value.bgVideoLoop !== false}
+              applied={value.bgVideoLoop === false}
+              onReset={() => set('bgVideoLoop', undefined)}
               help={t('dp.lit.turn_off_to_play_once_and_hold_the_last')}
               onChange={(v) => set('bgVideoLoop', v ? undefined : false)}
             />
@@ -655,7 +657,7 @@ const ConditionControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSty
           { label: t('dp.lit.logged_in_only'), value: 'in' },
           { label: t('dp.lit.logged_out_only'), value: 'out' },
         ]}
-        onChange={(v) => set({ showAuth: v === 'in' || v === 'out' ? v : undefined })}
+        applied={value.showAuth !== undefined} onReset={() => set({ showAuth: undefined })} onChange={(v) => set({ showAuth: v === 'in' || v === 'out' ? v : undefined })}
       />
       <TextRow
         label={t('dp.lit.roles')}
@@ -680,9 +682,12 @@ const TextRow: React.FC<{
   value?: string
   placeholder?: string
   help?: string
+  /** Shows the applied dot and a per-setting reset. Defaults to "set when not empty". */
+  applied?: boolean
+  onReset?: () => void
   onChange: (v: string | undefined) => void
-}> = ({ label, value, placeholder, help, onChange }) => (
-  <Row label={label} help={help}>
+}> = ({ label, value, placeholder, help, applied, onReset, onChange }) => (
+  <Row label={label} help={help} applied={applied ?? (value !== undefined && value !== '')} onReset={onReset ?? (() => onChange(undefined))}>
     <input
       type="text"
       value={value || ''}
@@ -706,7 +711,7 @@ export const NumberRow: React.FC<{
   onReset?: () => void
   onChange: (v: number | undefined) => void
 }> = ({ label, value, min, max, help, placeholder, resp, applied, onReset, onChange }) => (
-  <Row label={label} help={help} resp={resp} applied={applied ?? typeof value === 'number'} onReset={onReset}>
+  <Row label={label} help={help} resp={resp} applied={applied ?? typeof value === 'number'} onReset={onReset ?? (() => onChange(undefined))}>
     <input
       type="number"
       min={min}
@@ -745,12 +750,24 @@ export const CheckRow: React.FC<{
   checked: boolean
   help?: string
   resp?: RowResp
+  /** Shows the applied dot (defaults to checked) and, with onReset, a per-setting reset. */
+  applied?: boolean
+  onReset?: () => void
   onChange: (v: boolean) => void
-}> = ({ label, checked, help, resp, onChange }) => (
+}> = ({ label, checked, help, resp, applied, onReset, onChange }) => {
+  const t = useAdminT()
+  const showApplied = applied ?? checked
+  return (
   <label className="ve-row ve-row--check">
     <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
     <span className="ve-row__label">
       {label}
+      {showApplied && <span className="ve-d51-dot" title={t('dp.changed')} aria-label={t('dp.changed')} role="img" />}
+      {showApplied && onReset && (
+        <button type="button" className="ve-dev__reset" onClick={(e) => { e.preventDefault(); onReset() }} title={t('dp.resetDefault')} aria-label={`${t('dp.resetDefault')}: ${label}`}>
+          {t('dp.reset')}
+        </button>
+      )}
       {resp && (
         <span className={`ve-dev ${resp.device !== 'desktop' ? 've-dev--on' : ''}`} title={`Applies to ${DEVICE_LABEL[resp.device].toLowerCase()}`}>
           <DeviceIcon device={resp.device} />
@@ -759,7 +776,8 @@ export const CheckRow: React.FC<{
     </span>
     {help && <span className="ve-row__help">{help}</span>}
   </label>
-)
+  )
+}
 
 /* -------------------------------------------------------------------------- */
 /* Responsive editing: the top bar's device decides which value a control edits */
@@ -908,7 +926,7 @@ const LinkedSides: React.FC<{
   const sides = ['top', 'bottom', 'left', 'right']
   return (
     <>
-      <CheckRow label={`Link all sides (${noun.toLowerCase()})`} checked={linked} onChange={setLinked} />
+      <CheckRow label={`Link all sides (${noun.toLowerCase()})`} checked={linked} applied={false} onChange={setLinked} />
       {linked ? (
         <NumberRow
           label={`${noun}, all sides`}
@@ -1102,7 +1120,7 @@ const ImageRow: React.FC<{
   const t = useAdminT()
   const [open, setOpen] = useState(false)
   return (
-    <Row label={label}>
+    <Row label={label} applied={Boolean(url)}>
       <div className="ve-media-field">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1156,22 +1174,26 @@ const DividerControls: React.FC<{
       label={`${label} shape`}
       value={shape || 'none'}
       options={DIVIDER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+      applied={shape !== undefined}
+      onReset={() => onShape(undefined)}
       onChange={(v) => onShape(v === 'none' ? undefined : (v as DividerShape))}
     />
     {shape && shape !== 'none' && (
       <>
         <ColorRow label={`${label} colour`} value={color} onChange={onColor} />
         <NumberRow label={`${label} height (px)`} value={height} onChange={onHeight} min={10} max={400} />
-        <CheckRow label={`Flip ${label.toLowerCase()}`} checked={Boolean(flip)} onChange={(v) => onFlip(v || undefined)} />
+        <CheckRow label={`Flip ${label.toLowerCase()}`} checked={Boolean(flip)} applied={flip !== undefined} onReset={() => onFlip(undefined)} onChange={(v) => onFlip(v || undefined)} />
         <SelectRow
           label={`${label} animation`}
           value={anim || 'none'}
           options={DIVIDER_ANIM_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
           help={t('dp.lit.gently_moves_the_divider_pure_css')}
+          applied={anim !== undefined}
+          onReset={() => onAnim(undefined)}
           onChange={(v) => onAnim(v === 'none' ? undefined : (v as DividerAnim))}
         />
         {anim && anim !== 'none' && (
-          <RangeRow label={t('dp.lit.speed_seconds')} value={speed ?? 20} min={4} max={60} help={t('dp.lit.time_for_one_full_cycle_higher_is_slower')} onChange={(v) => onSpeed(v)} />
+          <RangeRow label={t('dp.lit.speed_seconds')} value={speed ?? 20} min={4} max={60} help={t('dp.lit.time_for_one_full_cycle_higher_is_slower')} applied={speed !== undefined} onChange={(v) => onSpeed(v)} />
         )}
       </>
     )}
@@ -1192,9 +1214,8 @@ const ToggleRow: React.FC<{
   current: string | undefined
   onPick: (v: string | undefined) => void
 }> = ({ label, options, current, onPick }) => {
-  const t = useAdminT()
   return (
-  <Row label={label}>
+  <Row label={label} applied={current !== undefined} onReset={() => onPick(undefined)}>
     <div className="ve-color">
       {options.map((o) => {
         const on = current === o.value
@@ -1215,11 +1236,6 @@ const ToggleRow: React.FC<{
           </button>
         )
       })}
-      {current !== undefined && (
-        <button type="button" className="ve-btn ve-btn--ghost" title={t('dp.reset')} aria-label={`Reset ${label}`} onClick={(e) => { e.preventDefault(); onPick(undefined) }}>
-          {String.fromCharCode(0x21BA)}
-        </button>
-      )}
     </div>
   </Row>
   )
@@ -1244,7 +1260,7 @@ const TypoRange: React.FC<{
   const current = typeof own === 'number' ? own : typeof inherited === 'number' ? inherited : def
   const write = (n: number | undefined) => ctl.set(k, n === undefined || !Number.isFinite(n) ? undefined : n)
   return (
-    <Row label={label} resp={{ device: ctl.device, overridden: ctl.overridden(k), onReset: () => ctl.reset(k) }}>
+    <Row label={label} applied={typeof own === 'number'} resp={{ device: ctl.device, overridden: ctl.overridden(k), onReset: () => ctl.reset(k) }}>
       <div className="ve-color">
         <input type="range" min={min} max={max} step={step} value={current} onChange={(e) => write(Number(e.target.value))} />
         <input
@@ -1485,9 +1501,11 @@ const RangeRow: React.FC<{
   min: number
   max: number
   help?: string
+  /** True when the setting is stored (the dot and reset show). The shown value is the default otherwise. */
+  applied?: boolean
   onChange: (v: number | undefined) => void
-}> = ({ label, value, min, max, help, onChange }) => (
-  <Row label={label} help={help}>
+}> = ({ label, value, min, max, help, applied, onChange }) => (
+  <Row label={label} help={help} applied={applied} onReset={() => onChange(undefined)}>
     <div className="ve-color">
       <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} />
       <input
@@ -1541,13 +1559,13 @@ const StateTabs: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle) => v
             label={t('dp.field.shadow')}
             value={value.hoverBoxShadow || ''}
             options={[{ label: t('dp.lit.same_as_normal'), value: '' }, ...BOX_SHADOW_OPTIONS]}
-            onChange={(v) => set('hoverBoxShadow', (v || undefined) as BlockStyle['hoverBoxShadow'])}
+            applied={value.hoverBoxShadow !== undefined} onReset={() => set('hoverBoxShadow', undefined)} onChange={(v) => set('hoverBoxShadow', (v || undefined) as BlockStyle['hoverBoxShadow'])}
           />
           <SelectRow
             label={t('dp.field.transform')}
             value={value.hoverTransform || 'none'}
             options={HOVER_TRANSFORM_OPTIONS}
-            onChange={(v) => set('hoverTransform', v === 'none' ? undefined : (v as HoverTransformPreset))}
+            applied={value.hoverTransform !== undefined} onReset={() => set('hoverTransform', undefined)} onChange={(v) => set('hoverTransform', v === 'none' ? undefined : (v as HoverTransformPreset))}
           />
           <FxRange k="hoverOpacity" label={t('dp.field.opacity')} value={value} onChange={onChange} def={1} min={0} max={1} step={0.05} help={t('dp.lit.the_lift_scale_transform_is_skipped_for')} />
           <FxRange k="hoverBorderRadius" label={t('dp.lit.corner_radius')} unit="px" value={value} onChange={onChange} def={0} min={0} max={200} />
@@ -1577,7 +1595,6 @@ const FxRange: React.FC<{
   unit?: string
   help?: string
 }> = ({ k, label, value, onChange, def, min, max, step = 1, unit, help }) => {
-  const t = useAdminT()
   const raw = value[k]
   const current = typeof raw === 'number' ? raw : def
   const write = (n: number | undefined) => {
@@ -1587,7 +1604,7 @@ const FxRange: React.FC<{
     onChange(updated as BlockStyle)
   }
   return (
-    <Row label={unit ? `${label} (${unit})` : label} help={help}>
+    <Row label={unit ? `${label} (${unit})` : label} help={help} applied={typeof raw === 'number'} onReset={() => write(undefined)}>
       <div className="ve-color">
         <input type="range" min={min} max={max} step={step} value={current} onChange={(e) => write(Number(e.target.value))} />
         <input
@@ -1598,11 +1615,6 @@ const FxRange: React.FC<{
           value={current}
           onChange={(e) => write(e.target.value === '' ? undefined : Number(e.target.value))}
         />
-        {typeof raw === 'number' && (
-          <button type="button" className="ve-btn ve-btn--ghost" title={t('dp.resetDefault')} aria-label={`Reset ${label}`} onClick={() => write(undefined)}>
-            {String.fromCharCode(0x21BA)}
-          </button>
-        )}
       </div>
     </Row>
   )
@@ -1682,7 +1694,7 @@ const SlideshowControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSty
         label={t('dp.field.transition')}
         value={value.slideTransition || 'fade'}
         options={SLIDE_TRANSITION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-        onChange={(v) => set('slideTransition', v === 'fade' ? undefined : (v as BlockStyle['slideTransition']))}
+        applied={value.slideTransition !== undefined} onReset={() => set('slideTransition', undefined)} onChange={(v) => set('slideTransition', v === 'fade' ? undefined : (v as BlockStyle['slideTransition']))}
       />
       {resetBtn(['slideInterval', 'slideTransition'])}
     </>
@@ -1708,7 +1720,7 @@ const ParallaxBgControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
           min={0}
           max={100}
           help={t('dp.lit.how_far_the_image_drifts_as_you_scroll')}
-          onChange={(v) => set('parallaxStrength', v)}
+          applied={value.parallaxStrength !== undefined} onChange={(v) => set('parallaxStrength', v)}
         />
       )}
       {on && (
@@ -1721,7 +1733,7 @@ const ParallaxBgControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
               { label: t('dp.lit.up_slower_than_page'), value: 'up' },
               { label: t('dp.lit.down_reversed'), value: 'down' },
             ]}
-            onChange={(v) => set('parallaxDirection', v === 'down' ? 'down' : undefined)}
+            applied={value.parallaxDirection !== undefined} onReset={() => set('parallaxDirection', undefined)} onChange={(v) => set('parallaxDirection', v === 'down' ? 'down' : undefined)}
           />
           {resetBtn(['parallax', 'parallaxStrength', 'parallaxDistance', 'parallaxDirection'])}
         </>
@@ -1747,10 +1759,12 @@ const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: B
         value={fx}
         options={BG_EFFECT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
         help={t('dp.lit.animated_or_textured_layer_behind_the_co')}
+        applied={value.bgEffect !== undefined}
+        onReset={() => set('bgEffect', undefined)}
         onChange={(v) => set('bgEffect', v === 'none' ? undefined : (v as BlockStyle['bgEffect']))}
       />
       {fx !== 'none' && (
-        <RangeRow label={t('dp.lit.intensity')} value={value.bgEffectIntensity ?? 50} min={0} max={100} help={t('dp.lit.how_strong_the_effect_looks')} onChange={(v) => set('bgEffectIntensity', v)} />
+        <RangeRow label={t('dp.lit.intensity')} value={value.bgEffectIntensity ?? 50} min={0} max={100} help={t('dp.lit.how_strong_the_effect_looks')} applied={value.bgEffectIntensity !== undefined} onChange={(v) => set('bgEffectIntensity', v)} />
       )}
       {withColors && (
         <ColorRow label={twoColors ? t('dp.lit.effect_colour_1') : t('dp.lit.effect_colour')} value={value.bgEffectColor} onChange={(v) => set('bgEffectColor', v)} />
@@ -1758,13 +1772,13 @@ const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: B
       {twoColors && <ColorRow label={t('dp.lit.effect_colour_2')} value={value.bgEffectColor2} onChange={(v) => set('bgEffectColor2', v)} />}
       {fx === 'particles' && (
         <>
-          <RangeRow label={t('dp.lit.particle_count')} value={value.particlesCount ?? 50} min={10} max={120} onChange={(v) => set('particlesCount', v)} />
+          <RangeRow label={t('dp.lit.particle_count')} value={value.particlesCount ?? 50} min={10} max={120} applied={value.particlesCount !== undefined} onChange={(v) => set('particlesCount', v)} />
           <SelectRow
             label={t('dp.lit.mouse_interaction')}
             value={value.particlesInteract || 'repel'}
             options={PARTICLE_INTERACT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
             help={t('dp.lit.how_particles_react_to_the_pointer')}
-            onChange={(v) => set('particlesInteract', v as BlockStyle['particlesInteract'])}
+            applied={value.particlesInteract !== undefined} onReset={() => set('particlesInteract', undefined)} onChange={(v) => set('particlesInteract', v as BlockStyle['particlesInteract'])}
           />
           {(value.particlesInteract || 'repel') !== 'none' && (
             <FxRange k="particlesInteractRadius" label={t('dp.lit.interaction_radius')} unit="px" def={120} min={40} max={400} {...r} />
@@ -1780,7 +1794,7 @@ const BackgroundEffectControls: React.FC<{ value: BlockStyle; onChange: (next: B
               { label: t('dp.lit.circle'), value: 'circle' },
               { label: t('dp.lit.square'), value: 'square' },
             ]}
-            onChange={(v) => set('particlesShape', v === 'square' ? 'square' : undefined)}
+            applied={value.particlesShape !== undefined} onReset={() => set('particlesShape', undefined)} onChange={(v) => set('particlesShape', v === 'square' ? 'square' : undefined)}
           />
           <CheckRow label={t('dp.lit.link_nearby_particles')} checked={Boolean(value.particlesLinks) || value.particlesInteract === 'connect'} onChange={(v) => set('particlesLinks', v || undefined)} />
           {(value.particlesLinks || value.particlesInteract === 'connect') && (
@@ -1886,7 +1900,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
           label={t('dp.field.position')}
           value={value.position ?? 'default'}
           options={[{ label: t('dp.opt.default'), value: 'default' }, ...POSITION_OPTIONS]}
-          onChange={(v) => set('position', v === 'default' ? undefined : (v as BlockPosition))}
+          applied={value.position !== undefined} onReset={() => set('position', undefined)} onChange={(v) => set('position', v === 'default' ? undefined : (v as BlockPosition))}
         />
         {positioned && (
           <>
@@ -1906,7 +1920,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
           label={t('dp.field.blend_mode')}
           value={value.blendMode ?? 'normal'}
           options={BLEND_MODE_OPTIONS}
-          onChange={(v) => set('blendMode', v === 'normal' ? undefined : (v as BlendMode))}
+          applied={value.blendMode !== undefined} onReset={() => set('blendMode', undefined)} onChange={(v) => set('blendMode', v === 'normal' ? undefined : (v as BlendMode))}
         />
         {FILTER_ROWS.map((r) => (
           <FxRange key={String(r.k)} k={r.k} label={t(r.labelKey)} unit={r.unit} value={value} onChange={onChange} def={r.def} min={r.min} max={r.max} />
@@ -1920,7 +1934,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
           value={value.maskShape ?? 'none'}
           options={MASK_SHAPE_OPTIONS}
           help={t('dp.lit.clips_the_whole_block_background_and_con')}
-          onChange={(v) => set('maskShape', v === 'none' ? undefined : (v as MaskShape))}
+          applied={value.maskShape !== undefined} onReset={() => set('maskShape', undefined)} onChange={(v) => set('maskShape', v === 'none' ? undefined : (v as MaskShape))}
         />
         {value.maskShape === 'blob-morph' && (
           <>
@@ -1929,7 +1943,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
               value={value.blobMorphSpeed || 'medium'}
               options={BLOB_SPEED_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
               help={t('dp.lit.live_page_only_the_editor_shows_the_rest')}
-              onChange={(v) => set('blobMorphSpeed', v === 'medium' ? undefined : (v as BlockStyle['blobMorphSpeed']))}
+              applied={value.blobMorphSpeed !== undefined} onReset={() => set('blobMorphSpeed', undefined)} onChange={(v) => set('blobMorphSpeed', v === 'medium' ? undefined : (v as BlockStyle['blobMorphSpeed']))}
             />
           </>
         )}
@@ -1945,7 +1959,7 @@ const AdvancedControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyl
           help={t('dp.lit.up_to_8_class_names_separated_by_spaces')}
           onChange={(v) => set('cssClasses', v)}
         />
-        <Row label={t('dp.lit.custom_css')} help="Use selector to target this element, e.g. selector:hover { opacity: .8 }">
+        <Row label={t('dp.lit.custom_css')} applied={Boolean(value.customCss)} onReset={() => set('customCss', undefined)} help="Use selector to target this element, e.g. selector:hover { opacity: .8 }">
           <textarea
             rows={6}
             maxLength={4000}
@@ -1995,7 +2009,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
         />
         {scroll !== 'none' && (
           <>
-            <RangeRow label={t('dp.lit.strength')} value={value.parallaxStrength ?? 40} min={0} max={100} help={t('dp.lit.how_far_it_moves_as_you_scroll')} onChange={(v) => set('parallaxStrength', v)} />
+            <RangeRow label={t('dp.lit.strength')} value={value.parallaxStrength ?? 40} min={0} max={100} help={t('dp.lit.how_far_it_moves_as_you_scroll')} applied={value.parallaxStrength !== undefined} onChange={(v) => set('parallaxStrength', v)} />
             <FxRange k="parallaxDistance" label={t('dp.lit.travel')} unit="px" value={value} onChange={onChange} def={Math.round((value.parallaxStrength ?? 40) * 1.6)} min={0} max={400} help={t('dp.lit.overrides_strength_with_an_exact_distanc')} />
           </>
         )}
@@ -2008,7 +2022,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           value={value.reveal || 'none'}
           options={REVEAL_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
           help={t('dp.lit.plays_as_the_section_scrolls_into_view_p')}
-          onChange={(v) => set('reveal', v === 'none' ? undefined : (v as BlockStyle['reveal']))}
+          applied={value.reveal !== undefined} onReset={() => set('reveal', undefined)} onChange={(v) => set('reveal', v === 'none' ? undefined : (v as BlockStyle['reveal']))}
         />
         {value.reveal && value.reveal !== 'none' && (
           <>
@@ -2019,7 +2033,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
               label={t('dp.lit.easing')}
               value={value.revealEasing || 'linear'}
               options={REVEAL_EASING_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-              onChange={(v) => set('revealEasing', v === 'linear' ? undefined : (v as BlockStyle['revealEasing']))}
+              applied={value.revealEasing !== undefined} onReset={() => set('revealEasing', undefined)} onChange={(v) => set('revealEasing', v === 'linear' ? undefined : (v as BlockStyle['revealEasing']))}
             />
           </>
         )}
@@ -2032,7 +2046,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           value={value.hover || 'none'}
           options={HOVER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
           help={t('dp.lit.how_the_section_reacts_when_the_pointer')}
-          onChange={(v) => set('hover', v === 'none' ? undefined : (v as BlockStyle['hover']))}
+          applied={value.hover !== undefined} onReset={() => set('hover', undefined)} onChange={(v) => set('hover', v === 'none' ? undefined : (v as BlockStyle['hover']))}
         />
         {value.hover === 'lift' && <FxRange k="hoverLift" label={t('dp.lit.lift')} unit="px" value={value} onChange={onChange} def={4} min={0} max={40} />}
         {(value.hover === 'lift' || value.hover === 'zoom') && (
@@ -2050,7 +2064,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
         />
         {value.glass && (
           <>
-            <RangeRow label={t('dp.lit.blur_px')} value={value.glassBlur ?? 12} min={0} max={40} onChange={(v) => set('glassBlur', v)} />
+            <RangeRow label={t('dp.lit.blur_px')} value={value.glassBlur ?? 12} min={0} max={40} applied={value.glassBlur !== undefined} onChange={(v) => set('glassBlur', v)} />
             <FxRange k="glassOpacity" label={t('dp.lit.tint')} unit="%" value={value} onChange={onChange} def={18} min={0} max={100} />
             <FxRange k="glassBorder" label={t('dp.lit.border')} unit="%" value={value} onChange={onChange} def={30} min={0} max={100} />
           </>
@@ -2064,7 +2078,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           value={value.pointerFx || 'none'}
           options={POINTER_FX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
           help={t('dp.lit.reacts_to_the_mouse_over_the_block_deskt')}
-          onChange={(v) => set('pointerFx', v === 'none' ? undefined : (v as BlockStyle['pointerFx']))}
+          applied={value.pointerFx !== undefined} onReset={() => set('pointerFx', undefined)} onChange={(v) => set('pointerFx', v === 'none' ? undefined : (v as BlockStyle['pointerFx']))}
         />
         {value.pointerFx && value.pointerFx !== 'none' && (
           <FxRange k="pointerFxStrength" label={t('dp.lit.strength')} unit="%" value={value} onChange={onChange} def={50} min={0} max={100} help={t('dp.lit.tilt_angle_magnetic_pull_and_spotlight_s')} />
@@ -2081,7 +2095,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           value={value.kenBurns || 'none'}
           options={KEN_BURNS_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
           help={value.bgType === 'image' ? t('dp.lit.slowly_zooms_or_pans_the_background_imag') : t('dp.lit.needs_an_image_background_background_ima')}
-          onChange={(v) => set('kenBurns', v === 'none' ? undefined : (v as BlockStyle['kenBurns']))}
+          applied={value.kenBurns !== undefined} onReset={() => set('kenBurns', undefined)} onChange={(v) => set('kenBurns', v === 'none' ? undefined : (v as BlockStyle['kenBurns']))}
         />
         {value.kenBurns && value.kenBurns !== 'none' && (
           <FxRange k="kenBurnsDuration" label={t('dp.lit.cycle')} unit="s" value={value} onChange={onChange} def={20} min={5} max={60} help={t('dp.lit.seconds_for_one_full_cycle_higher_is_slo')} />
@@ -2095,7 +2109,7 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
           value={value.borderFx || 'none'}
           options={BORDER_FX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
           help={t('dp.lit.a_ring_around_the_block_it_is_drawn_over')}
-          onChange={(v) => set('borderFx', v === 'none' ? undefined : (v as BlockStyle['borderFx']))}
+          applied={value.borderFx !== undefined} onReset={() => set('borderFx', undefined)} onChange={(v) => set('borderFx', v === 'none' ? undefined : (v as BlockStyle['borderFx']))}
         />
         {value.borderFx && value.borderFx !== 'none' && (
           <>

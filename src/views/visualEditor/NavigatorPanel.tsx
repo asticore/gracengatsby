@@ -9,12 +9,13 @@ import type { UiStringKey, UiStringVars } from '@/features/uiStrings'
 import type { SectionColumn, SectionNode } from '@/lib/sectionTree'
 import { getElementDef } from '@/lib/elements/registry'
 
-import { asBlockStyle } from '@/lib/blockStyle'
+import { asBlockStyle, type BlockStyle } from '@/lib/blockStyle'
 import { parseSectionLayout } from '@/lib/sectionLayout'
 
 import { getBlockDef } from './blockSchemas'
 import { pathKey, type NodePath } from './treeOps'
 import { isHiddenEverywhere, planKeyMove, planNavDrop, toggleHideEverywhere, zoneFromOffset, type DropZone } from './navigatorOps'
+import { toStoredDesign } from '@/lib/design/storeDesign'
 import './navLibraryPresets.css'
 
 interface NavigatorPanelProps {
@@ -406,7 +407,7 @@ const NavRow: React.FC<{
                 title={hidden ? t('ve.nav.showOnAll') : t('ve.nav.hideOnAll')}
                 aria-label={hidden ? t('ve.nav.showNamed', { name: row.name }) : t('ve.nav.hideNamed', { name: row.name })}
                 aria-pressed={hidden}
-                onClick={() => dnd.onDesignChange?.(row.path, toggleHideEverywhere(row.design))}
+                onClick={() => dnd.onDesignChange?.(row.path, toStoredDesign(toggleHideEverywhere(row.design) as unknown as BlockStyle))}
               >
                 {hidden ? String.fromCharCode(0x1f576) : String.fromCharCode(0x1f441)}
               </button>

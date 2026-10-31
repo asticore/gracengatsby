@@ -859,7 +859,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
 
   it('password groups migration is registered before organizations and is safe to run twice, keeping existing rows', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations.map((x) => x.name).slice(-16)).toEqual([
+    expect(migrations.map((x) => x.name).slice(-17)).toEqual([
       '20261130_100000_domain_settings',
       '20261130_110000_admin_path',
       '20261201_100000_content_domains',
@@ -876,6 +876,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       '20270118_100000_ai_usage_estimated',
       '20270124_100000_privacy_requests',
       '20270125_100000_template_libraries',
+      '20270126_100000_design_grouped',
     ])
     const mod = await import('@/migrations/20261123_100000_password_groups')
     const { drizzle } = await import('drizzle-orm/d1')

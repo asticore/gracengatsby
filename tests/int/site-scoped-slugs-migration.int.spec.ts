@@ -47,8 +47,11 @@ describe('site-scoped slugs migration', () => {
     }
   })
 
-  it('the migration recorded itself last', async () => {
+  it('the last recorded migration is the last one registered, and this migration is recorded', async () => {
+    const { migrations } = await import('@/migrations/index')
     const rows = await proxy.env.D1.prepare(`SELECT name FROM eg_migrations ORDER BY id DESC LIMIT 1`).all()
-    expect((rows.results as { name: string }[])[0]?.name).toBe('20261220_100000_site_scoped_slugs')
+    expect((rows.results as { name: string }[])[0]?.name).toBe(migrations.at(-1)?.name)
+    const mine = await proxy.env.D1.prepare(`SELECT COUNT(*) AS n FROM eg_migrations WHERE name = '20261220_100000_site_scoped_slugs'`).first<{ n: number }>()
+    expect(mine?.n).toBe(1)
   })
 })

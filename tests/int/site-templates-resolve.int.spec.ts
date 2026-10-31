@@ -62,9 +62,10 @@ const importModules = async () => ({
   render: await import('@/features/siteTemplates/render'),
   cond: await import('@/features/siteTemplates/conditions'),
 })
-let modules: Awaited<ReturnType<typeof importModules>> | undefined
-const load = async () => {
-  modules ??= await importModules()
+// Cache the promise, not the result: beforeAll and the first test both call load() while the cold import is still running.
+let modules: Promise<Awaited<ReturnType<typeof importModules>>> | undefined
+const load = () => {
+  modules ??= importModules()
   return modules
 }
 const COLD_IMPORT_TIMEOUT_MS = 120_000
@@ -88,7 +89,7 @@ describe('resolveSiteTemplate', () => {
     state.docs = [tpl(5, { priority: 20 }), tpl(3, { priority: 20 }), tpl(1, { priority: 5 })]
     const { resolve } = await load()
     expect((await resolve.resolveSiteTemplate('single-post', {}))?.id).toBe(3)
-  })
+  }, COLD_IMPORT_TIMEOUT_MS)
 
   it('ignores disabled templates and other kinds', async () => {
     state.docs = [tpl(1, { enabled: false, priority: 99 }), tpl(2, { kind: 'footer', priority: 99 }), tpl(3)]

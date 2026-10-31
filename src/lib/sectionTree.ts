@@ -12,6 +12,7 @@
  */
 
 import { asBlockStyle, type BlockStyle } from './blockStyle'
+import { isGroupedDesign } from './design/upgrade'
 import { columnLayoutStyle, parseColumnLayout, percentBasisWithGap, type ColumnLayout } from './sectionLayout'
 
 /** Column widths as a 12-based grid span, matching common builder conventions. */
@@ -141,7 +142,7 @@ function normalizeColumn(column: SectionColumn): SectionColumn {
     widthDesktop: normalizeResponsiveWidth(column.widthDesktop),
     widthTablet: normalizeResponsiveWidth(column.widthTablet),
     widthMobile: normalizeResponsiveWidth(column.widthMobile),
-    design: asBlockStyle(column.design),
+    design: keepStoredDesign(column.design),
     layout: parseColumnLayout(column.layout),
     blocks: Array.isArray(column.blocks)
       ? column.blocks
@@ -151,8 +152,17 @@ function normalizeColumn(column: SectionColumn): SectionColumn {
   }
 }
 
+/**
+ * A grouped (unified) design is kept as stored, so a column or block edited through the tree
+ * writes back the same shape it read. Flattening it here used to drop the grouped write on the
+ * next section save. Readers always go through asBlockStyle, which reads both shapes.
+ */
+function keepStoredDesign(raw: unknown): BlockStyle {
+  return isGroupedDesign(raw) ? (raw as BlockStyle) : asBlockStyle(raw)
+}
+
 function normalizeNode(node: SectionNode): SectionNode {
-  const normalized: SectionNode = { ...node, design: asBlockStyle(node.design) }
+  const normalized: SectionNode = { ...node, design: keepStoredDesign(node.design) }
   if (node.blockType === 'section') {
     normalized.columns = parseColumns(node.columns)
   }

@@ -145,6 +145,8 @@ export const DesignPanel: React.FC<{
             { label: t('dp.lit.video'), value: 'video' },
             { label: t('dp.lit.slideshow'), value: 'slideshow' },
           ]}
+          applied={value.bgType !== undefined}
+          onReset={() => set('bgType', undefined)}
           onChange={(v) => set('bgType', v === 'none' ? undefined : (v as BlockStyle['bgType']))}
         />
 
@@ -228,6 +230,8 @@ export const DesignPanel: React.FC<{
             { label: t('dp.lit.colour'), value: 'color' },
             { label: t('dp.opt.gradient'), value: 'gradient' },
           ]}
+          applied={value.overlayType !== undefined}
+          onReset={() => set('overlayType', undefined)}
           onChange={(v) => set('overlayType', v === 'none' ? undefined : (v as BlockStyle['overlayType']))}
         />
         {value.overlayType === 'color' && (
@@ -261,6 +265,8 @@ export const DesignPanel: React.FC<{
                 { label: t('dp.lit.colour'), value: 'color' },
                 { label: t('dp.lit.luminosity'), value: 'luminosity' },
               ]}
+              applied={value.overlayBlend !== undefined}
+              onReset={() => set('overlayBlend', undefined)}
               onChange={(v) => set('overlayBlend', v === 'normal' ? undefined : (v as BlockStyle['overlayBlend']))}
             />
           </>
@@ -341,6 +347,8 @@ export const DesignPanel: React.FC<{
               { label: t('dp.lit.wide'), value: 'wide' },
               { label: t('dp.opt.fullWidth'), value: 'full' },
             ]}
+            applied={value.width !== undefined}
+            onReset={() => set('width', undefined)}
             onChange={(v) => set('width', v as BlockStyle['width'])}
           />
         )}
@@ -1029,12 +1037,13 @@ const ColorRow: React.FC<{ label: string; value?: string; onChange: (v: string |
   value,
   onChange,
 }) => {
+  const isSet = value !== undefined && value !== ''
   const t = useAdminT()
   // Tokens are read when the button is clicked, never during render.
   const [tokens, setTokens] = useState<ColourToken[] | null>(null)
   const hex = value && /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'
   return (
-    <Row label={label}>
+    <Row label={label} applied={isSet} onReset={() => onChange(undefined)}>
       <div className="ve-color">
         <input type="color" value={hex} onChange={(e) => onChange(e.target.value)} />
         <input
@@ -1318,6 +1327,8 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
           ...BUILT_IN_FONTS.map((font) => ({ label: font.label, value: font.value })),
           ...siteFonts.map((font) => ({ label: `${font.family} (installed)`, value: `family:${font.family}` })),
         ]}
+        applied={value.fontFamily !== undefined}
+        onReset={() => patch({ fontFamily: undefined })}
         onChange={(v) => patch({ fontFamily: v || undefined })}
       />
       <TypoRange
@@ -1345,6 +1356,8 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         label={t('dp.field.weight')}
         value={value.fontWeight !== undefined ? String(value.fontWeight) : ''}
         options={[{ label: t('dp.opt.default'), value: '' }, ...WEIGHT_OPTIONS]}
+        applied={value.fontWeight !== undefined}
+        onReset={() => patch({ fontWeight: undefined })}
         onChange={(v) => patch({ fontWeight: v ? Number(v) : undefined })}
       />
       <ToggleRow
@@ -1407,6 +1420,8 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
           { label: t('dp.lit.medium'), value: 'md' },
           { label: t('dp.lit.large'), value: 'lg' },
         ]}
+        applied={value.textShadow !== undefined}
+        onReset={() => patch({ textShadow: undefined })}
         onChange={(v) => patch({ textShadow: v === 'none' ? undefined : v })}
       />
       <SelectRow
@@ -1414,6 +1429,8 @@ const TypographyControls: React.FC<{ value: BlockStyle; onChange: (next: BlockSt
         help={t('dp.lit.applies_to_the_text_inside_this_block')}
         value={value.textFx || 'none'}
         options={TEXT_FX_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+        applied={value.textFx !== undefined}
+        onReset={() => patch({ textFx: undefined })}
         onChange={(v) => patch({ textFx: v === 'none' ? undefined : v })}
       />
       {value.textFx === 'gradient' && (
@@ -1972,6 +1989,8 @@ const EffectsControls: React.FC<{ value: BlockStyle; onChange: (next: BlockStyle
             { label: t('dp.lit.float_down'), value: 'float-down' },
           ]}
           help={t('dp.lit.moves_the_section_content_slightly_as_it')}
+          applied={value.parallax !== undefined}
+          onReset={() => set('parallax', undefined)}
           onChange={(v) => set('parallax', v === 'none' ? undefined : (v as BlockStyle['parallax']))}
         />
         {scroll !== 'none' && (

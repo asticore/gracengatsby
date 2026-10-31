@@ -50,7 +50,7 @@ describe('site-templates collection config', () => {
     for (const op of ['create', 'delete', 'read', 'update'] as const) {
       expect(typeof SiteTemplates.access?.[op]).toBe('function')
     }
-    expect(SiteTemplates.hooks?.beforeChange?.length).toBe(1)
+    expect(SiteTemplates.hooks?.beforeChange?.length).toBe(2)
     expect(SiteTemplates.hooks?.afterChange?.length).toBe(1)
   })
 

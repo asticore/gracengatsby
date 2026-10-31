@@ -73,8 +73,6 @@ const KNOWN_UNMAPPED = [
   'hoverTransitionMs',
   'layout',
   'overlayType',
-  'paddingLeft',
-  'paddingRight',
   'pointerFx',
   'pointerFxStrength',
   'reveal',
@@ -107,6 +105,30 @@ describe('v1 corpus from the template presets', () => {
       }
     }
     expect([...lost].sort()).toEqual([...KNOWN_UNMAPPED].sort())
+  })
+
+  it('mapped spacing renders the same declarations as v1 (corpus and unit variants)', () => {
+    const SIDES = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom'] as const
+    const KEBAB: Record<string, string> = { paddingTop: 'padding-top', paddingBottom: 'padding-bottom', paddingLeft: 'padding-left', paddingRight: 'padding-right', marginTop: 'margin-top', marginBottom: 'margin-bottom' }
+    const synthetic: BlockStyle[] = [
+      { paddingTop: 2, paddingLeft: 3, paddingRight: 4, paddingUnit: 'em' },
+      { paddingBottom: 10, paddingUnit: 'vh', marginTop: 5, marginUnit: '%' },
+      { paddingLeft: 1, paddingUnit: 'nonsense' as never },
+      { marginBottom: 7, paddingRight: 0 },
+    ]
+    for (const design of [...corpus.map((c) => c.design), ...synthetic]) {
+      const v1 = blockStyleToCss(design) as Rec
+      const v1Sides: Rec = {}
+      for (const key of SIDES) if (v1[key] !== undefined) v1Sides[KEBAB[key]] = v1[key]
+      const rules = designToCss(upgradeV1(design as Rec) as never, 'eq').match(/^\[data-eid="eq"\]\{([^}]*)\}/)
+      const v2Sides: Rec = {}
+      for (const decl of (rules?.[1] ?? '').split(';')) {
+        const i = decl.indexOf(':')
+        const prop = decl.slice(0, i)
+        if (Object.values(KEBAB).includes(prop)) v2Sides[prop] = decl.slice(i + 1)
+      }
+      expect(v2Sides).toEqual(v1Sides)
+    }
   })
 
   it('upgrade-on-read is not yet render-safe for the corpus (gate for the read-path change)', () => {

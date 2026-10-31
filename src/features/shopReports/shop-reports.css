@@ -95,6 +95,11 @@
   font-size: 10px;
 }
 
+.shop-reports__grid {
+  stroke: var(--shop-reports-line);
+  stroke-width: 1;
+}
+
 .shop-reports__table-wrap {
   overflow-x: auto;
   display: grid;

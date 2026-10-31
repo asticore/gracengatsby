@@ -3077,6 +3077,9 @@ const ko: UiDictionary = {
   "formEl.createFailed": "폼을 만들 수 없습니다. 연결을 확인하고 다시 시도하세요.",
   "formEl.editFields": "필드 디자인 (폼 편집기 열기)",
   "formEl.noFormYet": "아직 폼이 없습니다. 여기서 새 폼을 만들고 필드를 디자인하세요.",
+  "audit.noMatch": "일치하는 이벤트가 없습니다.",
+  "audit.loadFailed": "지금은 감사 로그를 불러올 수 없습니다.",
+  "pagespeed.worstNone": "아직 테스트된 페이지가 없습니다. 페이지를 열고 PageSpeed 카드에서 테스트를 실행하세요.",
 }
 
 export default ko

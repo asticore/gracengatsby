@@ -3077,6 +3077,9 @@ const ja: UiDictionary = {
   "formEl.createFailed": "フォームを作成できませんでした。接続を確認して、もう一度お試しください。",
   "formEl.editFields": "項目をデザイン（フォームエディタを開きます）",
   "formEl.noFormYet": "フォームはまだありません。ここで新しく作成して項目をデザインしてください。",
+  "audit.noMatch": "一致するイベントはありません。",
+  "audit.loadFailed": "監査ログを今は読み込めませんでした。",
+  "pagespeed.worstNone": "まだテストされたページはありません。ページを開き、PageSpeed カードでテストを実行してください。",
 }
 
 export default ja

@@ -3076,6 +3076,9 @@ const zhHans: UiDictionary = {
   "formEl.createFailed": "无法创建表单。请检查网络连接后重试。",
   "formEl.editFields": "设计字段（打开表单编辑器）",
   "formEl.noFormYet": "还没有表单。在这里新建一个并设计其字段。",
+  "audit.noMatch": "没有匹配的事件。",
+  "audit.loadFailed": "现在无法加载审计日志。",
+  "pagespeed.worstNone": "还没有测试过的页面。打开一个页面，并使用 PageSpeed 卡片运行测试。",
 }
 
 export default zhHans

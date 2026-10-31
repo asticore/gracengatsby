@@ -3077,6 +3077,9 @@ const ar: UiDictionary = {
   "formEl.createFailed": "تعذّر إنشاء النموذج. تحقّق من الاتصال وحاول مرة أخرى.",
   "formEl.editFields": "تصميم الحقول (يفتح محرر النموذج)",
   "formEl.noFormYet": "لا توجد نماذج بعد. أنشئ نموذجًا جديدًا هنا وصمّم حقوله.",
+  "audit.noMatch": "لا تطابق أي أحداث.",
+  "audit.loadFailed": "تعذّر تحميل سجل التدقيق الآن.",
+  "pagespeed.worstNone": "لم تُختبر أي صفحات بعد. افتح صفحة واستخدم بطاقة PageSpeed لإجراء اختبار.",
 }
 
 export default ar

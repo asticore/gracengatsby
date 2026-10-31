@@ -3124,6 +3124,10 @@ export const UI_STRING_SOURCE = {
   "formEl.createFailed": "The form could not be created. Check your connection and try again.",
   "formEl.editFields": "Design the fields (opens the form editor)",
   "formEl.noFormYet": "No forms yet. Create a new one here and design its fields.",
+  // Admin tables and charts: empty and error states that were hard-coded in English.
+  "audit.noMatch": "No events match.",
+  "audit.loadFailed": "The audit log could not be loaded just now.",
+  "pagespeed.worstNone": "No pages have been tested yet. Open a page and use the PageSpeed card to run a test.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

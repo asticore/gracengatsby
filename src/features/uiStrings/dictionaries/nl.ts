@@ -3077,6 +3077,9 @@ const nl: UiDictionary = {
   "formEl.createFailed": "Het formulier kon niet worden aangemaakt. Controleer de verbinding en probeer het opnieuw.",
   "formEl.editFields": "Velden ontwerpen (opent de formuliereditor)",
   "formEl.noFormYet": "Nog geen formulieren. Maak hier een nieuw formulier aan en ontwerp de velden.",
+  "audit.noMatch": "Geen gebeurtenissen gevonden.",
+  "audit.loadFailed": "Het auditlogboek kon nu niet worden geladen.",
+  "pagespeed.worstNone": "Er zijn nog geen pagina's getest. Open een pagina en gebruik de PageSpeed-kaart om een test uit te voeren.",
 }
 
 export default nl

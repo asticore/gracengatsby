@@ -3077,6 +3077,9 @@ const hi: UiDictionary = {
   "formEl.createFailed": "फ़ॉर्म नहीं बन सका। कनेक्शन जाँचें और फिर से प्रयास करें।",
   "formEl.editFields": "फ़ील्ड डिज़ाइन करें (फ़ॉर्म एडिटर खुलता है)",
   "formEl.noFormYet": "अभी कोई फ़ॉर्म नहीं है। यहाँ नया बनाएँ और उसके फ़ील्ड डिज़ाइन करें।",
+  "audit.noMatch": "कोई घटना मेल नहीं खाती।",
+  "audit.loadFailed": "ऑडिट लॉग अभी लोड नहीं हो सका।",
+  "pagespeed.worstNone": "अभी तक कोई पेज परखा नहीं गया है। कोई पेज खोलें और जाँच चलाने के लिए PageSpeed कार्ड का उपयोग करें।",
 }
 
 export default hi

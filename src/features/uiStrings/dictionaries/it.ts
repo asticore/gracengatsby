@@ -3077,6 +3077,9 @@ const it: UiDictionary = {
   "formEl.createFailed": "Impossibile creare il modulo. Controlla la connessione e riprova.",
   "formEl.editFields": "Progetta i campi (apre l'editor del modulo)",
   "formEl.noFormYet": "Nessun modulo ancora. Creane uno nuovo qui e progetta i suoi campi.",
+  "audit.noMatch": "Nessun evento corrisponde.",
+  "audit.loadFailed": "Impossibile caricare il registro di controllo in questo momento.",
+  "pagespeed.worstNone": "Nessuna pagina è ancora stata testata. Apri una pagina e usa la scheda PageSpeed per eseguire un test.",
 }
 
 export default it

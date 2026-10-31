@@ -3077,6 +3077,9 @@ const es: UiDictionary = {
   "formEl.createFailed": "No se pudo crear el formulario. Revisa la conexión e inténtalo de nuevo.",
   "formEl.editFields": "Diseñar los campos (abre el editor del formulario)",
   "formEl.noFormYet": "Todavía no hay formularios. Crea uno nuevo aquí y diseña sus campos.",
+  "audit.noMatch": "Ningún evento coincide.",
+  "audit.loadFailed": "No se pudo cargar el registro de auditoría en este momento.",
+  "pagespeed.worstNone": "Todavía no se han probado páginas. Abre una página y usa la tarjeta de PageSpeed para ejecutar una prueba.",
 }
 
 export default es

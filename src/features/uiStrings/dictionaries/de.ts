@@ -3078,6 +3078,9 @@ const de: UiDictionary = {
   "formEl.createFailed": "Das Formular konnte nicht erstellt werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
   "formEl.editFields": "Felder gestalten (öffnet den Formular-Editor)",
   "formEl.noFormYet": "Noch keine Formulare. Erstellen Sie hier ein neues und gestalten Sie dessen Felder.",
+  "audit.noMatch": "Keine Ereignisse gefunden.",
+  "audit.loadFailed": "Das Prüfprotokoll konnte gerade nicht geladen werden.",
+  "pagespeed.worstNone": "Noch keine Seiten getestet. Öffnen Sie eine Seite und nutzen Sie die PageSpeed-Karte, um einen Test zu starten.",
 }
 
 export default de

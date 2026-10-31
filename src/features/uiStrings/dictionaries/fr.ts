@@ -3077,6 +3077,9 @@ const fr: UiDictionary = {
   "formEl.createFailed": "Le formulaire n'a pas pu être créé. Vérifiez la connexion et réessayez.",
   "formEl.editFields": "Concevoir les champs (ouvre l'éditeur du formulaire)",
   "formEl.noFormYet": "Aucun formulaire pour l'instant. Créez-en un ici et concevez ses champs.",
+  "audit.noMatch": "Aucun événement ne correspond.",
+  "audit.loadFailed": "Le journal d'audit n'a pas pu être chargé pour le moment.",
+  "pagespeed.worstNone": "Aucune page n'a encore été testée. Ouvrez une page et utilisez la carte PageSpeed pour lancer un test.",
 }
 
 export default fr

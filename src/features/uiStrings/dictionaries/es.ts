@@ -3088,6 +3088,13 @@ const es: UiDictionary = {
   "formEl.createFailed": "No se pudo crear el formulario. Revisa la conexión e inténtalo de nuevo.",
   "formEl.editFields": "Diseñar los campos (abre el editor del formulario)",
   "formEl.noFormYet": "Todavía no hay formularios. Crea uno nuevo aquí y diseña sus campos.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Diseño del formulario',
+  'formSummary.counts': 'Campos: {fields}. Pasos: {steps}. Obligatorios: {required}.',
+  'formSummary.none': 'Aún no hay campos. Diseñe el formulario en el editor visual.',
+  'formSummary.readOnly': 'Solo lectura aquí. Los campos, pasos y diseño se cambian en el editor visual.',
+  'formSummary.unpublished': 'La copia de trabajo tiene cambios que aún no están publicados.',
+  'formSummary.listTitle': 'Campos en orden',
 }
 
 export default es

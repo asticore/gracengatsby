@@ -3088,6 +3088,13 @@ const nl: UiDictionary = {
   "formEl.createFailed": "Het formulier kon niet worden aangemaakt. Controleer de verbinding en probeer het opnieuw.",
   "formEl.editFields": "Velden ontwerpen (opent de formuliereditor)",
   "formEl.noFormYet": "Nog geen formulieren. Maak hier een nieuw formulier aan en ontwerp de velden.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Formulierindeling',
+  'formSummary.counts': 'Velden: {fields}. Stappen: {steps}. Verplicht: {required}.',
+  'formSummary.none': 'Nog geen velden. Ontwerp het formulier in de visuele editor.',
+  'formSummary.readOnly': 'Alleen-lezen hier. Velden, stappen en indeling wijzig je in de visuele editor.',
+  'formSummary.unpublished': 'De werkversie heeft wijzigingen die nog niet gepubliceerd zijn.',
+  'formSummary.listTitle': 'Velden in volgorde',
 }
 
 export default nl

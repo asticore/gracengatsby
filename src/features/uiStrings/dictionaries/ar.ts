@@ -3088,6 +3088,13 @@ const ar: UiDictionary = {
   "formEl.createFailed": "تعذّر إنشاء النموذج. تحقّق من الاتصال وحاول مرة أخرى.",
   "formEl.editFields": "تصميم الحقول (يفتح محرر النموذج)",
   "formEl.noFormYet": "لا توجد نماذج بعد. أنشئ نموذجًا جديدًا هنا وصمّم حقوله.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'تخطيط النموذج',
+  'formSummary.counts': 'الحقول: {fields}. الخطوات: {steps}. المطلوب: {required}.',
+  'formSummary.none': 'لا توجد حقول بعد. صمّم النموذج في المحرر المرئي.',
+  'formSummary.readOnly': 'للقراءة فقط هنا. تُعدَّل الحقول والخطوات والتخطيط في المحرر المرئي.',
+  'formSummary.unpublished': 'النسخة قيد العمل بها تغييرات لم تُنشر بعد.',
+  'formSummary.listTitle': 'الحقول بالترتيب',
 }
 
 export default ar

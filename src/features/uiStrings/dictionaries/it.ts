@@ -3088,6 +3088,13 @@ const it: UiDictionary = {
   "formEl.createFailed": "Impossibile creare il modulo. Controlla la connessione e riprova.",
   "formEl.editFields": "Progetta i campi (apre l'editor del modulo)",
   "formEl.noFormYet": "Nessun modulo ancora. Creane uno nuovo qui e progetta i suoi campi.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Struttura del modulo',
+  'formSummary.counts': 'Campi: {fields}. Passaggi: {steps}. Obbligatori: {required}.',
+  'formSummary.none': 'Nessun campo ancora. Progetta il modulo nell\'editor visuale.',
+  'formSummary.readOnly': 'Sola lettura qui. Campi, passaggi e struttura si modificano nell\'editor visuale.',
+  'formSummary.unpublished': 'La bozza di lavoro ha modifiche non ancora pubblicate.',
+  'formSummary.listTitle': 'Campi in ordine',
 }
 
 export default it

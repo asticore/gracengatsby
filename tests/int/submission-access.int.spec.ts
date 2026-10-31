@@ -21,9 +21,10 @@ import { BUILT_IN_ROLES, resolveAccess } from '@/features/roles/permissions'
 const ANA = 'ana@example.com'
 const BEN = 'ben@example.com'
 
-const customer = { id: 7, email: ANA, roles: ['customer'] }
+const VERIFIED = '2026-10-01T00:00:00.000Z'
+const customer = { id: 7, email: ANA, roles: ['customer'], emailVerifiedAt: VERIFIED }
 const admin = { id: 1, email: 'boss@example.com', roles: ['admin'] }
-const editor = { id: 2, email: 'editor@example.com', roles: ['editor'] }
+const editor = { id: 2, email: 'editor@example.com', roles: ['editor'], emailVerifiedAt: VERIFIED }
 const viewer = { id: 3, email: 'viewer@example.com', roles: ['viewer'] }
 
 /** Runs a collection access rule the way the engine does: { req: { user } }. */
@@ -99,14 +100,19 @@ describe('who can read event RSVPs (bookings)', () => {
     expect(rsvpRead({ id: 4, roles: ['customer'] })).toBe(false)
   })
 
+  it('a customer whose address is not verified reads no guest bookings, even with verification off', () => {
+    expect(rsvpRead({ id: 7, email: ANA, roles: ['customer'], emailVerifiedAt: null })).toBe(false)
+    expect(rsvpRead({ id: 7, email: ANA, roles: ['customer'] })).toBe(false)
+  })
+
   it('a custom role limited to own items reads only its own address, never everyone', () => {
-    const own = { id: 9, email: ANA, roles: ['customer'], customRolePermissions: { 'event-rsvps': { read: true, scope: 'own' } } }
+    const own = { id: 9, email: ANA, roles: ['customer'], emailVerifiedAt: VERIFIED, customRolePermissions: { 'event-rsvps': { read: true, scope: 'own' } } }
     expect(resolveAccess(own, 'event-rsvps', 'read')).toBe('own')
     expect(isAdminOrRsvpOwner({ req: { user: own } } as never)).toEqual({ email: { equals: ANA } })
   })
 
   it('a custom role with event-rsvps read sees every booking', () => {
-    const grant = { id: 9, email: 'x@example.com', roles: ['customer'], customRolePermissions: { 'event-rsvps': { read: true } } }
+    const grant = { id: 9, email: 'x@example.com', roles: ['customer'], emailVerifiedAt: VERIFIED, customRolePermissions: { 'event-rsvps': { read: true } } }
     expect(rsvpRead(grant)).toBe(true)
   })
 })

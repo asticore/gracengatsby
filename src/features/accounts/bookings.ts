@@ -2,6 +2,7 @@ import type { Engine } from '@/engine'
 import type { EventRsvp } from '@/engage-types'
 
 import type { AccountUser } from './session'
+import { canSeeBookingsByEmail } from './access'
 import { RSVPS_SLUG } from './types'
 
 /**
@@ -27,7 +28,8 @@ export const bookingsForCustomer = async (
   user: AccountUser,
 ): Promise<Booking[]> => {
   const email = typeof user.email === 'string' ? user.email : ''
-  if (!email) return []
+  // Guest bookings are matched by address, so only a verified address may see them (see canSeeBookingsByEmail).
+  if (!email || !canSeeBookingsByEmail(user as never)) return []
 
   const { docs } = await engine
     .find({

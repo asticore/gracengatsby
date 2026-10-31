@@ -3088,6 +3088,13 @@ const hi: UiDictionary = {
   "formEl.createFailed": "फ़ॉर्म नहीं बन सका। कनेक्शन जाँचें और फिर से प्रयास करें।",
   "formEl.editFields": "फ़ील्ड डिज़ाइन करें (फ़ॉर्म एडिटर खुलता है)",
   "formEl.noFormYet": "अभी कोई फ़ॉर्म नहीं है। यहाँ नया बनाएँ और उसके फ़ील्ड डिज़ाइन करें।",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'फ़ॉर्म की संरचना',
+  'formSummary.counts': 'फ़ील्ड: {fields}। चरण: {steps}। आवश्यक: {required}।',
+  'formSummary.none': 'अभी कोई फ़ील्ड नहीं है। विज़ुअल एडिटर में फ़ॉर्म बनाएँ।',
+  'formSummary.readOnly': 'यहाँ केवल पढ़ने के लिए। फ़ील्ड, चरण और संरचना विज़ुअल एडिटर में बदलें।',
+  'formSummary.unpublished': 'कार्यशील प्रति में ऐसे बदलाव हैं जो अभी प्रकाशित नहीं हुए हैं।',
+  'formSummary.listTitle': 'क्रम में फ़ील्ड',
 }
 
 export default hi

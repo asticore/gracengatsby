@@ -3089,6 +3089,13 @@ const de: UiDictionary = {
   "formEl.createFailed": "Das Formular konnte nicht erstellt werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
   "formEl.editFields": "Felder gestalten (öffnet den Formular-Editor)",
   "formEl.noFormYet": "Noch keine Formulare. Erstellen Sie hier ein neues und gestalten Sie dessen Felder.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Formularaufbau',
+  'formSummary.counts': 'Felder: {fields}. Schritte: {steps}. Pflichtfelder: {required}.',
+  'formSummary.none': 'Noch keine Felder. Gestalten Sie das Formular im visuellen Editor.',
+  'formSummary.readOnly': 'Hier nur lesbar. Felder, Schritte und Aufbau werden im visuellen Editor geändert.',
+  'formSummary.unpublished': 'Der Arbeitsstand hat Änderungen, die noch nicht veröffentlicht sind.',
+  'formSummary.listTitle': 'Felder in Reihenfolge',
 }
 
 export default de

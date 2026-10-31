@@ -18,7 +18,7 @@ export const SitePages: GlobalConfig = {
   },
   admin: {
     group: 'Settings',
-    description: 'Pick the pages used for 404 errors, the privacy policy and terms, and switch on the maintenance screen.',
+    description: 'Pick the privacy policy and terms pages, and switch on the maintenance screen. Build the 404 page in the visual editor under Templates.',
   },
   access: {
     read: () => true,
@@ -30,7 +30,10 @@ export const SitePages: GlobalConfig = {
       type: 'relationship',
       relationTo: 'pages',
       label: 'Page not found (404) page',
+      // Hidden: the 404 page is built as the "404 page" site template in the visual editor. A page
+      // already picked here keeps working (the value is kept and still read), but it cannot be changed here.
       admin: {
+        hidden: true,
         description: 'Shown when a visitor opens an address that does not exist. Leave blank for the built-in message.',
       },
     },

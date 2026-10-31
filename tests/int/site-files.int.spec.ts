@@ -97,6 +97,9 @@ vi.mock('@/features/redirects', () => ({
 
 // --- Text helpers -----------------------------------------------------------
 
+// Site file URLs are absolute only when an origin is known; this spec sets one (no request scope here).
+process.env.SITE_URL = 'https://gracengatsby.com'
+
 describe('htmlToText', () => {
   it('drops tags and script bodies, and decodes entities once', () => {
     const text = htmlToText('<p>Hello &amp; <b>world</b></p><script>alert(1)</script><style>p{}</style>')

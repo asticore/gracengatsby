@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 
 import { NewTemplate, templateButtonClass } from '@/features/siteTemplates/admin/NewTemplate'
+import { TemplateImport } from '@/features/siteTemplates/admin/TemplateImport'
 import { KIND_LABELS, type SiteTemplateKind } from '@/features/siteTemplates/kinds'
 
 export type SuggestionWarning = {
@@ -27,9 +28,12 @@ export const SuggestedTemplates: React.FC<{ warnings: SuggestionWarning[]; showC
     <section aria-label="Suggested missing" className={panel} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <strong>Suggested missing</strong>
-        <button type="button" className={templateButtonClass} onClick={() => setCreating(creating ?? 'header')}>
-          New site template
-        </button>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <button type="button" className={templateButtonClass} onClick={() => setCreating(creating ?? 'header')}>
+            New site template
+          </button>
+          <TemplateImport />
+        </div>
       </div>
 
       {creating ? <NewTemplate key={creating} initialKind={creating} onClose={() => setCreating(null)} /> : null}

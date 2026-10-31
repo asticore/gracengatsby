@@ -66,3 +66,33 @@ export function safeLoopLink(value: string): string {
   const v = value.replace(/[\u0000-\u001F\u007F]/g, '').trim()
   return /^(\/(?!\/)|#|https?:\/\/|mailto:|tel:)/i.test(v) ? v : ''
 }
+
+const nameOf = (value: unknown): string => {
+  if (typeof value === 'string') return value.trim()
+  if (value && typeof value === 'object') {
+    const named = value as { displayName?: unknown; name?: unknown; title?: unknown }
+    for (const candidate of [named.displayName, named.name, named.title]) {
+      if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
+    }
+  }
+  return ''
+}
+
+/**
+ * The loop tags the old page-template Loop (LoopBlock) also gets, for the item types that have no value for them in
+ * its base merge context: {{date}}, {{author}} and {{category}} (the first category or taxonomy name). Only empty
+ * values are filled, so a value the base context already has is never replaced. Pure.
+ */
+export function fillLoopItemTagFallbacks(context: Record<string, string>, item: Record<string, unknown>): Record<string, string> {
+  const categories = Array.isArray(item.categories) ? item.categories : []
+  const fallbacks: Record<string, string> = {
+    date: formatTagDate(item.publishedDate ?? item.startDate ?? item.createdAt, 'short'),
+    author: nameOf(item.author),
+    category: nameOf(item.category) || nameOf(categories[0]),
+  }
+  const out = { ...context }
+  for (const [key, value] of Object.entries(fallbacks)) {
+    if (!out[key] && value) out[key] = value
+  }
+  return out
+}

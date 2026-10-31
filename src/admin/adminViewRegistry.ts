@@ -48,6 +48,7 @@ import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ApiBuilderView } from '@/admin/views/ApiBuilderView'
 import { WebhooksView } from '@/admin/views/WebhooksView'
+import { ExternalEmbedsView } from '@/admin/views/ExternalEmbedsView'
 import { PrivacyView } from '@/admin/views/PrivacyView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
 import { OrganizationsView } from '@/admin/views/OrganizationsView'
@@ -279,6 +280,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: ApiBuilderView,
     path: '/api-builder',
     meta: { title: 'API builder', description: 'Build custom endpoints on the site API, choose their fields and keys, try them, and download the developer guide.' },
+  },
+  {
+    key: 'externalEmbeds',
+    Component: ExternalEmbedsView,
+    path: '/external-embeds',
+    meta: { title: 'External embeds', description: 'Forms shown on other websites: turn embedding on, choose the websites allowed, and copy the snippet.' },
   },
   {
     key: 'webhooks',

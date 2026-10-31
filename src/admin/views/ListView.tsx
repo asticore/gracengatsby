@@ -226,7 +226,9 @@ export async function ListView({
     }
   }
 
-  const canCreate = context.permissions.collections?.[collectionSlug]?.create
+  // Forms are designed in the visual editor (the Form element's "New form" button). The Forms list is outputs-first,
+  // so it offers no Create; existing forms stay editable and their id, embed and submit URL never change.
+  const canCreate = collectionSlug !== 'forms' && context.permissions.collections?.[collectionSlug]?.create
   const canUpdate = context.permissions.collections?.[collectionSlug]?.update
   const showRowActions = shouldShowRowActions(collectionSlug, hasDrafts)
   // "Sign in as" on customer rows of the Users list, for admins, when the feature is switched on.

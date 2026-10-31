@@ -3072,6 +3072,12 @@ const de: UiDictionary = {
   "privacy.admin.eraseConfirm": "Konto und persönliche Daten dieses Kunden jetzt löschen? Bestellsummen bleiben für Steuerunterlagen erhalten. Das kann nicht rückgängig gemacht werden.",
   "templates.whereUsed.none": "In keiner Seite oder Vorlage platziert",
   "templates.whereUsed.placedIn": "Platziert in {places}",
+  "formEl.newForm": "Neues Formular",
+  "formEl.chooseExisting": "Vorhandenes Formular auswählen",
+  "formEl.creating": "Formular wird erstellt ...",
+  "formEl.createFailed": "Das Formular konnte nicht erstellt werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+  "formEl.editFields": "Felder gestalten (öffnet den Formular-Editor)",
+  "formEl.noFormYet": "Noch keine Formulare. Erstellen Sie hier ein neues und gestalten Sie dessen Felder.",
 }
 
 export default de

@@ -3071,6 +3071,12 @@ const ar: UiDictionary = {
   "privacy.admin.eraseConfirm": "هل تريد مسح حساب هذا العميل وبياناته الشخصية الآن؟ تبقى إجماليات الطلبات لأغراض السجلات الضريبية. لا يمكن التراجع عن ذلك.",
   "templates.whereUsed.none": "غير موضوع في أي صفحة أو قالب",
   "templates.whereUsed.placedIn": "موضوع في {places}",
+  "formEl.newForm": "نموذج جديد",
+  "formEl.chooseExisting": "اختيار نموذج موجود",
+  "formEl.creating": "جارٍ إنشاء النموذج...",
+  "formEl.createFailed": "تعذّر إنشاء النموذج. تحقّق من الاتصال وحاول مرة أخرى.",
+  "formEl.editFields": "تصميم الحقول (يفتح محرر النموذج)",
+  "formEl.noFormYet": "لا توجد نماذج بعد. أنشئ نموذجًا جديدًا هنا وصمّم حقوله.",
 }
 
 export default ar

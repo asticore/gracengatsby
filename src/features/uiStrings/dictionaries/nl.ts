@@ -3071,6 +3071,12 @@ const nl: UiDictionary = {
   "privacy.admin.eraseConfirm": "Het account en de persoonsgegevens van deze klant nu wissen? Bestelbedragen blijven bewaard voor de belastingadministratie. Dit kan niet ongedaan worden gemaakt.",
   "templates.whereUsed.none": "Niet geplaatst op een pagina of in een sjabloon",
   "templates.whereUsed.placedIn": "Geplaatst in {places}",
+  "formEl.newForm": "Nieuw formulier",
+  "formEl.chooseExisting": "Bestaand formulier kiezen",
+  "formEl.creating": "Formulier wordt aangemaakt...",
+  "formEl.createFailed": "Het formulier kon niet worden aangemaakt. Controleer de verbinding en probeer het opnieuw.",
+  "formEl.editFields": "Velden ontwerpen (opent de formuliereditor)",
+  "formEl.noFormYet": "Nog geen formulieren. Maak hier een nieuw formulier aan en ontwerp de velden.",
 }
 
 export default nl

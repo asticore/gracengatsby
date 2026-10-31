@@ -3071,6 +3071,12 @@ const es: UiDictionary = {
   "privacy.admin.eraseConfirm": "¿Borrar ahora la cuenta y los datos personales de este cliente? Los totales de los pedidos se conservan para los registros fiscales. No se puede deshacer.",
   "templates.whereUsed.none": "No está colocada en ninguna página ni plantilla",
   "templates.whereUsed.placedIn": "Colocada en {places}",
+  "formEl.newForm": "Nuevo formulario",
+  "formEl.chooseExisting": "Elegir un formulario existente",
+  "formEl.creating": "Creando formulario...",
+  "formEl.createFailed": "No se pudo crear el formulario. Revisa la conexión e inténtalo de nuevo.",
+  "formEl.editFields": "Diseñar los campos (abre el editor del formulario)",
+  "formEl.noFormYet": "Todavía no hay formularios. Crea uno nuevo aquí y diseña sus campos.",
 }
 
 export default es

@@ -3071,6 +3071,12 @@ const ru: UiDictionary = {
   "privacy.admin.eraseConfirm": "Удалить сейчас аккаунт и персональные данные этого клиента? Суммы заказов сохранятся для налоговой отчётности. Это нельзя отменить.",
   "templates.whereUsed.none": "Не размещён ни на одной странице или в шаблоне",
   "templates.whereUsed.placedIn": "Размещён в: {places}",
+  "formEl.newForm": "Новая форма",
+  "formEl.chooseExisting": "Выбрать существующую форму",
+  "formEl.creating": "Создаём форму...",
+  "formEl.createFailed": "Не удалось создать форму. Проверьте соединение и попробуйте снова.",
+  "formEl.editFields": "Настроить поля (откроется редактор формы)",
+  "formEl.noFormYet": "Форм пока нет. Создайте новую здесь и настройте её поля.",
 }
 
 export default ru

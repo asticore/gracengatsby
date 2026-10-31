@@ -3071,6 +3071,12 @@ const it: UiDictionary = {
   "privacy.admin.eraseConfirm": "Cancellare ora l'account e i dati personali di questo cliente? I totali degli ordini restano per i registri fiscali. Non è reversibile.",
   "templates.whereUsed.none": "Non inserita in nessuna pagina o modello",
   "templates.whereUsed.placedIn": "Inserita in {places}",
+  "formEl.newForm": "Nuovo modulo",
+  "formEl.chooseExisting": "Scegli un modulo esistente",
+  "formEl.creating": "Creazione del modulo...",
+  "formEl.createFailed": "Impossibile creare il modulo. Controlla la connessione e riprova.",
+  "formEl.editFields": "Progetta i campi (apre l'editor del modulo)",
+  "formEl.noFormYet": "Nessun modulo ancora. Creane uno nuovo qui e progetta i suoi campi.",
 }
 
 export default it

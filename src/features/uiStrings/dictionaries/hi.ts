@@ -3071,6 +3071,12 @@ const hi: UiDictionary = {
   "privacy.admin.eraseConfirm": "इस ग्राहक का खाता और व्यक्तिगत विवरण अभी मिटाएँ? ऑर्डर का कुल योग कर-रिकॉर्ड के लिए रहेगा। यह वापस नहीं हो सकता।",
   "templates.whereUsed.none": "किसी पेज या टेम्पलेट में नहीं लगा है",
   "templates.whereUsed.placedIn": "{places} में लगा है",
+  "formEl.newForm": "नया फ़ॉर्म",
+  "formEl.chooseExisting": "मौजूदा फ़ॉर्म चुनें",
+  "formEl.creating": "फ़ॉर्म बनाया जा रहा है...",
+  "formEl.createFailed": "फ़ॉर्म नहीं बन सका। कनेक्शन जाँचें और फिर से प्रयास करें।",
+  "formEl.editFields": "फ़ील्ड डिज़ाइन करें (फ़ॉर्म एडिटर खुलता है)",
+  "formEl.noFormYet": "अभी कोई फ़ॉर्म नहीं है। यहाँ नया बनाएँ और उसके फ़ील्ड डिज़ाइन करें।",
 }
 
 export default hi

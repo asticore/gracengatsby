@@ -3071,6 +3071,12 @@ const fr: UiDictionary = {
   "privacy.admin.eraseConfirm": "Effacer maintenant le compte et les données personnelles de ce client ? Les totaux des commandes sont conservés pour les obligations fiscales. Action irréversible.",
   "templates.whereUsed.none": "Non placée dans aucune page ni aucun modèle",
   "templates.whereUsed.placedIn": "Placée dans {places}",
+  "formEl.newForm": "Nouveau formulaire",
+  "formEl.chooseExisting": "Choisir un formulaire existant",
+  "formEl.creating": "Création du formulaire...",
+  "formEl.createFailed": "Le formulaire n'a pas pu être créé. Vérifiez la connexion et réessayez.",
+  "formEl.editFields": "Concevoir les champs (ouvre l'éditeur du formulaire)",
+  "formEl.noFormYet": "Aucun formulaire pour l'instant. Créez-en un ici et concevez ses champs.",
 }
 
 export default fr

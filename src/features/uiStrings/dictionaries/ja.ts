@@ -3071,6 +3071,12 @@ const ja: UiDictionary = {
   "privacy.admin.eraseConfirm": "このお客様のアカウントと個人情報を今すぐ消去しますか？ 注文の合計金額は税務記録のため残ります。元に戻せません。",
   "templates.whereUsed.none": "どのページやテンプレートにも配置されていません",
   "templates.whereUsed.placedIn": "配置先: {places}",
+  "formEl.newForm": "新しいフォーム",
+  "formEl.chooseExisting": "既存のフォームを選択",
+  "formEl.creating": "フォームを作成しています...",
+  "formEl.createFailed": "フォームを作成できませんでした。接続を確認して、もう一度お試しください。",
+  "formEl.editFields": "項目をデザイン（フォームエディタを開きます）",
+  "formEl.noFormYet": "フォームはまだありません。ここで新しく作成して項目をデザインしてください。",
 }
 
 export default ja

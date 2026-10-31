@@ -3070,6 +3070,12 @@ const zhHans: UiDictionary = {
   "privacy.admin.eraseConfirm": "现在清除该客户的账户和个人信息吗？订单总额会为税务记录而保留。此操作无法撤销。",
   "templates.whereUsed.none": "未放置在任何页面或模板中",
   "templates.whereUsed.placedIn": "放置于：{places}",
+  "formEl.newForm": "新建表单",
+  "formEl.chooseExisting": "选择已有表单",
+  "formEl.creating": "正在创建表单...",
+  "formEl.createFailed": "无法创建表单。请检查网络连接后重试。",
+  "formEl.editFields": "设计字段（打开表单编辑器）",
+  "formEl.noFormYet": "还没有表单。在这里新建一个并设计其字段。",
 }
 
 export default zhHans

@@ -24,6 +24,7 @@ import { columnsForStructure, STRUCTURES } from './columnOps'
 import { StructureIcon } from './StructurePicker'
 import { canEditAsPlainText, lexicalToPlainText, plainTextToLexical, RICH_TEXT_NOTICE } from './richTextUtil'
 import { MediaPicker } from './MediaPicker'
+import { createBlankForm, formEditorPath } from './formRelation'
 import { appendMediaIds } from './mediaPickerUpload'
 import { MergeTagPicker } from './MergeTagPicker'
 import { LockControls, type LockUi } from './LockControls'
@@ -1033,6 +1034,8 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
   const [relOptions, setRelOptions] = useState<{ id: number; label: string }[]>([])
   const [remoteOptions, setRemoteOptions] = useState<{ label: string; value: string }[]>([])
   const [relLoaded, setRelLoaded] = useState(false)
+  const [formCreating, setFormCreating] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
@@ -1290,6 +1293,56 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
       // relationships on the canvas are multi-select lists.
       const single = field.relationTo === 'page-templates' || field.relationTo === 'data-views' || field.relationTo === 'forms'
       const emptyForms = field.relationTo === 'forms' && relLoaded && relOptions.length === 0
+
+      if (field.relationTo === 'forms') {
+        // The Form element: pick a saved form, create a blank one here, or open the form's editor to design its fields.
+        // Kept outside the <label> so the buttons and link are not nested inside it.
+        const current = typeof value === 'number' ? value : (value as { id?: number })?.id
+        const createForm = async (): Promise<void> => {
+          setFormCreating(true)
+          setFormError(null)
+          const result = await createBlankForm(t('formEl.newForm'))
+          setFormCreating(false)
+          if (!result.ok) {
+            setFormError(t('formEl.createFailed'))
+            return
+          }
+          setRelOptions((prev) => [{ id: Number(result.id), label: t('formEl.newForm') }, ...prev])
+          onChange(result.id)
+        }
+        return (
+          <div className="ve-field ve-field--full">
+            <span>{field.label}</span>
+            <select value={current ? String(current) : ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}>
+              <option value="">{t('formEl.chooseExisting')}</option>
+              {relOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <span className="ve-form-relation-actions">
+              <button type="button" className="ve-button" disabled={formCreating} onClick={() => void createForm()}>
+                {formCreating ? t('formEl.creating') : t('formEl.newForm')}
+              </button>
+              {current ? (
+                <a href={adminHref(formEditorPath(current))} target="_blank" rel="noreferrer">
+                  {t('formEl.editFields')}
+                </a>
+              ) : null}
+            </span>
+            {formError ? (
+              <span className="ve-field__help ve-form-empty" role="alert">
+                {formError}
+              </span>
+            ) : emptyForms ? (
+              <span className="ve-field__help ve-form-empty">{t('formEl.noFormYet')}</span>
+            ) : (
+              field.helpText && <span className="ve-field__help">{field.helpText}</span>
+            )}
+          </div>
+        )
+      }
 
       if (single) {
         const current = typeof value === 'number' ? value : (value as { id?: number })?.id

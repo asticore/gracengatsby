@@ -25,6 +25,7 @@ import { reviewFields } from '@/features/approval/fields'
 import { readingTimeField, stickyField, trashedAtField } from '@/features/editScreens/fields'
 import { seoEditGuard, trashGuard } from '@/features/editScreens/guards'
 import { readingTimeBeforeChange } from '@/features/editScreens/readingTime'
+import { embedShortLinksBeforeChange } from '@/features/embeds/hooks'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -103,7 +104,7 @@ export const Posts: CollectionConfig = {
     trashedAtField,
   ],
   hooks: {
-    beforeChange: [domainWriteGuard, authorshipBeforeChange, trashGuard, seoEditGuard, readingTimeBeforeChange, contentEditGuard, publishGuard, pageSpeedBeforeChange],
+    beforeChange: [domainWriteGuard, authorshipBeforeChange, trashGuard, seoEditGuard, readingTimeBeforeChange, contentEditGuard, publishGuard, pageSpeedBeforeChange, embedShortLinksBeforeChange],
     afterChange: [pageSpeedAfterChange('posts'), indexNowAfterChange('posts'), machineAutoDraftAfterChange('posts'), outdatedAfterChange('posts'), webhookContentAfterChange('posts')],
     afterDelete: [indexNowAfterDelete('posts')],
   },

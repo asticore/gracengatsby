@@ -111,3 +111,105 @@ describe('upgradeDesign on read', () => {
     expect(twice).toEqual(once)
   })
 })
+
+/**
+ * Property test: the rules emitCascade writes, read the way a browser cascade
+ * reads them, give the same value as resolveValue for every width and state.
+ * Hover rules outrank normal rules (higher specificity); media rules apply at
+ * their widths (tablet rules up to 1024px, mobile rules up to 767px).
+ */
+import { emitCascade, MEDIA_MOBILE as M_MOBILE, MEDIA_TABLET as M_TABLET } from '@/lib/design/cssEmit'
+import { leaf, type Leaf } from '@/lib/design/cssGetters'
+import type { Rs as RsT } from '@/lib/design/types'
+
+type ParsedRule = { media: string | null; hover: boolean; decls: Record<string, string> }
+
+function parseCascade(css: string): ParsedRule[] {
+  const rules: ParsedRule[] = []
+  const block = (text: string, media: string | null) => {
+    for (const m of text.matchAll(/(\[[^\]]+\])(:hover)?\{([^}]*)\}/g)) {
+      const decls: Record<string, string> = {}
+      for (const d of m[3].split(';').filter(Boolean)) {
+        const i = d.indexOf(':')
+        decls[d.slice(0, i)] = d.slice(i + 1)
+      }
+      rules.push({ media, hover: m[2] === ':hover', decls })
+    }
+  }
+  let rest = css
+  while (rest.length > 0) {
+    if (rest.startsWith('@media ')) {
+      const open = rest.indexOf('{')
+      const close = rest.indexOf('}}', open)
+      const query = rest.slice(7, open)
+      block(rest.slice(open + 1, close + 1), query)
+      rest = rest.slice(close + 2)
+    } else {
+      const close = rest.indexOf('}')
+      block(rest.slice(0, close + 1), null)
+      rest = rest.slice(close + 1)
+    }
+  }
+  return rules
+}
+
+const WIDTH = { desktop: 1200, tablet: 900, mobile: 400 } as const
+const applies = (media: string | null, width: number): boolean => {
+  if (media === null) return true
+  if (media === M_TABLET) return width <= 1024
+  if (media === M_MOBILE) return width <= 767
+  throw new Error(`unexpected media ${media}`)
+}
+
+function effective(rules: ParsedRule[], prop: string, width: number, hovering: boolean): string | undefined {
+  const live = rules.filter((r) => r.decls[prop] !== undefined && applies(r.media, width))
+  if (hovering) {
+    const hoverRules = live.filter((r) => r.hover)
+    if (hoverRules.length > 0) return hoverRules[hoverRules.length - 1].decls[prop]
+  }
+  const normal = live.filter((r) => !r.hover)
+  return normal.length > 0 ? normal[normal.length - 1].decls[prop] : undefined
+}
+
+function seeded(seed: number): () => number {
+  let s = seed
+  return () => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff
+    return s / 0x7fffffff
+  }
+}
+
+describe('emitCascade matches resolveValue at every width and state', () => {
+  const VALUES = ['#111', '#222', '#333']
+  const randomRs = (rnd: () => number): RsT<string> => {
+    const out: RsT<string> = {}
+    for (const device of ['desktop', 'tablet', 'mobile'] as const) {
+      if (rnd() < 0.5) continue
+      const stated: { normal?: string; hover?: string } = {}
+      if (rnd() < 0.6) stated.normal = VALUES[Math.floor(rnd() * 3)]
+      if (rnd() < 0.5) stated.hover = VALUES[Math.floor(rnd() * 3)]
+      out[device] = stated
+    }
+    return out
+  }
+
+  it('agrees with resolveValue for 400 random designs', () => {
+    const rnd = seeded(42)
+    const id = (v: unknown) => (typeof v === 'string' ? v : undefined)
+    for (let n = 0; n < 400; n++) {
+      const rs = randomRs(rnd)
+      const leaves: Leaf[] = [leaf('color', rs, id)]
+      const css = emitCascade(leaves, '[data-eid="p"]')
+      const rules = parseCascade(css)
+      for (const device of ['desktop', 'tablet', 'mobile'] as const) {
+        for (const state of ['normal', 'hover'] as const) {
+          const expected = resolveValue(rs, device, state)
+          const actual = effective(rules, 'color', WIDTH[device], state === 'hover')
+          if (actual !== expected) {
+            throw new Error(`case ${n} ${device}/${state}: rs=${JSON.stringify(rs)} css=${css} expected=${expected} actual=${actual}`)
+          }
+        }
+      }
+    }
+  })
+})

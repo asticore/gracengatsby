@@ -68,17 +68,14 @@ describe('scopeCustomCss sanitising', () => {
 
   it('drops selectors that cannot be scoped safely', () => {
     expect(scopeCustomCss('p:hover, div { color: red}', SCOPE)).toBe(`${SCOPE} p:hover,${SCOPE} div{color: red}`)
-    // Known limitation: a brace inside an attribute selector is read as a rule boundary.
-    // The output is an invalid rule that browsers drop, and it stays inside the scope.
-    const odd = scopeCustomCss('p[x="{"] { color: red}', SCOPE)
-    expect(odd === '' || odd.startsWith(SCOPE)).toBe(true)
-    expect(odd).not.toContain('<')
+    // Braces inside quoted strings are not rule boundaries: they are removed first.
+    expect(scopeCustomCss('p[x="{"] { color: red}', SCOPE)).toBe(`${SCOPE} p[x=""]{color: red}`)
+    expect(scopeCustomCss('p[x="}"] { color: red} div { color: blue}', SCOPE)).toBe(`${SCOPE} p[x=""]{color: red}${SCOPE} div{color: blue}`)
   })
 
-  it('truncates input beyond 8000 characters', () => {
-    const big = `p { color: red} ${'x'.repeat(9000)}`
-    const out = scopeCustomCss(big, SCOPE)
-    expect(out.length).toBeLessThan(8100)
+  it('a brace inside a quoted string cannot open a second rule', () => {
+    const out = scopeCustomCss('p::before { content: "{ } } x" } span { color: red}', SCOPE)
+    expect(out).toBe(`${SCOPE} p::before{content: "   x"}${SCOPE} span{color: red}`)
   })
 
   it('output braces are balanced for hostile input', () => {

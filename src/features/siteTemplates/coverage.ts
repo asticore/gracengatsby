@@ -61,7 +61,7 @@ const idOrder = (a: CoverageTemplate, b: CoverageTemplate): number => {
 
 /** Winner order used by the resolver: highest priority, then most specific conditions, then lowest id. */
 const winnerOrder = (a: CoverageTemplate, b: CoverageTemplate): number =>
-  priorityOf(b) - priorityOf(a) || specificityOf(b) - specificityOf(a) || idOrder(a, b)
+  priorityOf(b) - priorityOf(a) || specificityOf(b.conditions) - specificityOf(a.conditions) || idOrder(a, b)
 
 const nameOf = (t: CoverageTemplate): string => (t.name && t.name.trim() !== '' ? t.name.trim() : `Untitled ${t.id}`)
 
@@ -70,11 +70,15 @@ const nameOf = (t: CoverageTemplate): string => (t.name && t.name.trim() !== '' 
  * shapes the editor produces:
  * - a group that is empty after dropping always-true `templateKind` rules matches everywhere;
  * - single-rule groups on the same param cover everything when two different values are "is not"ed, or the
- *   same value is both "is" and "is not"ed.
+ *   same value is both "is" and "is not"ed;
+ * - audience: the single-rule audience groups together reach both members and guests (`everyone` reaches both).
  * Multi-rule groups only narrow the match, so they are not counted towards full coverage.
  */
 export function coversEverywhere(groupSets: LocationGroups[], kind: SiteTemplateKind): boolean {
   const singles = new Map<LocationRule['param'], { is: Set<string>; isNot: Set<string> }>()
+  // The audiences (members, guests) the single-rule audience groups reach between them.
+  const audiences = new Set<string>()
+  const AUDIENCE_NAMES = ['members', 'guests']
   // A templateKind rule is always true for this kind ("is" the kind, or "is not" another kind) or never true.
   const templateKindIsTrue = (rule: LocationRule): boolean =>
     (rule.operator === 'equals' && rule.value === kind) || (rule.operator === 'notEquals' && rule.value !== kind)
@@ -83,6 +87,14 @@ export function coversEverywhere(groupSets: LocationGroups[], kind: SiteTemplate
       if (group.some((rule) => rule.param === 'templateKind' && !templateKindIsTrue(rule))) continue
       const rules = group.filter((rule) => rule.param !== 'templateKind')
       if (rules.length === 0) return true
+      if (rules.length === 1 && rules[0].param === 'audience') {
+        const [rule] = rules
+        for (const name of AUDIENCE_NAMES) {
+          const reached = rule.operator === 'equals' ? rule.value === 'everyone' || rule.value === name : rule.value !== name && rule.value !== 'everyone'
+          if (reached) audiences.add(name)
+        }
+        continue
+      }
       if (rules.length === 1) {
         const [rule] = rules
         const entry = singles.get(rule.param) ?? { is: new Set<string>(), isNot: new Set<string>() }
@@ -92,6 +104,7 @@ export function coversEverywhere(groupSets: LocationGroups[], kind: SiteTemplate
       }
     }
   }
+  if (audiences.size === AUDIENCE_NAMES.length) return true
   for (const { is, isNot } of singles.values()) {
     if (isNot.size >= 2) return true
     for (const value of isNot) if (is.has(value)) return true

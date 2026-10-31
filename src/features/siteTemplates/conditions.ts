@@ -1,10 +1,13 @@
-import { TEMPLATE_LOCATION_PARAMS, type LocationGroups, type LocationRule } from '@/fields/customFields/types'
+import { TEMPLATE_AUDIENCES, TEMPLATE_LOCATION_PARAMS, type LocationGroups, type LocationRule } from '@/fields/customFields/types'
 
 /** Params a template condition may use: the template ones plus the post ones that already exist. */
 const ALLOWED_PARAMS = new Set<string>([...TEMPLATE_LOCATION_PARAMS, 'postCategory', 'postTag'])
 const MAX_GROUPS = 10
 const MAX_RULES = 10
 const MAX_VALUE = 200
+/** A `page` rule holds a comma separated list of page ids, so it can be longer. */
+const MAX_PAGE_VALUE = 1000
+const PAGE_IDS = /^\d+(,\d+)*$/
 
 /** Parses a stored value that may be a JSON string or already-decoded data. Never throws. */
 const decode = (input: unknown): unknown => {
@@ -23,7 +26,9 @@ const decode = (input: unknown): unknown => {
 export function specificityOf(input: unknown): number {
   const { groups, valid } = sanitizeConditions(input)
   if (!valid) return 0
-  return groups.reduce((most, group) => Math.max(most, group.length), 0)
+  // "Audience is everyone" restricts nothing, so it does not make a template more specific than one without it.
+  const counted = (rule: LocationRule) => !(rule.param === 'audience' && rule.value === 'everyone' && rule.operator === 'equals')
+  return groups.reduce((most, group) => Math.max(most, group.filter(counted).length), 0)
 }
 
 export type SanitizedConditions = {
@@ -54,7 +59,11 @@ export function sanitizeConditions(input: unknown): SanitizedConditions {
       const { param, operator, value } = rule as Record<string, unknown>
       if (typeof param !== 'string' || !ALLOWED_PARAMS.has(param)) return { groups: [], valid: false }
       if (operator !== 'equals' && operator !== 'notEquals') return { groups: [], valid: false }
-      if (typeof value !== 'string' || value.length > MAX_VALUE) return { groups: [], valid: false }
+      if (typeof value !== 'string') return { groups: [], valid: false }
+      if (param === 'audience' && !(TEMPLATE_AUDIENCES as readonly string[]).includes(value)) return { groups: [], valid: false }
+      if (param === 'page') {
+        if (value.length > MAX_PAGE_VALUE || !PAGE_IDS.test(value)) return { groups: [], valid: false }
+      } else if (value.length > MAX_VALUE) return { groups: [], valid: false }
       rules.push({ param: param as LocationRule['param'], operator, value })
     }
     groups.push(rules)

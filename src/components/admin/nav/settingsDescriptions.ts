@@ -11,7 +11,6 @@ export const SETTINGS_DESCRIPTIONS: Record<string, string> = {
   'settings-speed': 'Caching and performance.',
   'settings-security': 'Security hardening and logs.',
   'settings-data-system': 'Backups, database tools, users and audit log.',
-  'header-footer': 'Site header, navigation and footer content.',
   'site-settings': 'Site name, logo, colours, fonts and basic brand settings.',
   'site-pages': 'Special pages (404, privacy policy, terms) and maintenance mode.',
   'site-details': 'Business details, time zone and how dates and times are shown.',

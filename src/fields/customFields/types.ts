@@ -106,7 +106,10 @@ export const LOCATION_PARAMS = [
 export type FieldGroupLocationParam = (typeof LOCATION_PARAMS)[number]
 
 /** Extra params used by Site Templates (src/features/siteTemplates). Not offered by the Field Group builder. */
-export const TEMPLATE_LOCATION_PARAMS = ['templateKind', 'path', 'productCategory', 'productType', 'eventType', 'domain', 'language'] as const
+export const TEMPLATE_LOCATION_PARAMS = ['templateKind', 'path', 'page', 'audience', 'productCategory', 'productType', 'eventType', 'domain', 'language'] as const
+/** Audiences a template can be limited to. `everyone` matches every visitor. */
+export const TEMPLATE_AUDIENCES = ['members', 'guests', 'everyone'] as const
+export type TemplateAudience = (typeof TEMPLATE_AUDIENCES)[number]
 export type TemplateLocationParam = (typeof TEMPLATE_LOCATION_PARAMS)[number]
 
 export type LocationParam = FieldGroupLocationParam | TemplateLocationParam

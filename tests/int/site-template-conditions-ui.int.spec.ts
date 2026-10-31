@@ -27,6 +27,7 @@ describe('site template conditions helpers', () => {
     expect(fromStoredConditions('junk')).toBeNull()
   })
   it('every offered kind is accepted by the sanitizer', () => {
-    for (const k of CONDITION_KINDS) expect(sanitizeConditions([[{ param: k.param, operator: 'equals', value: 'x' }]]).valid).toBe(true)
+    const sample: Record<string, string> = { audience: 'members', page: '12,15' }
+    for (const k of CONDITION_KINDS) expect(sanitizeConditions([[{ param: k.param, operator: 'equals', value: sample[k.param] ?? 'x' }]]).valid).toBe(true)
   })
 })

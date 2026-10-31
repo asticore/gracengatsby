@@ -4,6 +4,7 @@ import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useState } from 'react'
 
 import { asBlockStyle, type BlockStyle } from '@/lib/blockStyle'
+import { toStoredDesign } from '@/lib/design/storeDesign'
 import { parseColumnLayout, parseSectionLayout, resolveDirections, type ColumnLayout } from '@/lib/sectionLayout'
 import {
   COLUMN_WIDTH_OPTIONS,
@@ -81,7 +82,8 @@ export const ColumnPanel: React.FC<{
   /** Writes the design (padding moved out of the older layout.padding at the same time). */
   const setDesign = (next: BlockStyle) => {
     const { padding: _padding, ...restLayout } = layout
-    onChange({ ...column, design: next, layout: Object.keys(restLayout).length > 0 ? restLayout : undefined })
+    // Stored in the unified grouped model; read back through asBlockStyle, so the column type keeps BlockStyle.
+    onChange({ ...column, design: toStoredDesign(next) as unknown as BlockStyle, layout: Object.keys(restLayout).length > 0 ? restLayout : undefined })
   }
   const ctl = makeResponsive(design, setDesign, device)
 

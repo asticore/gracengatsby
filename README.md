@@ -112,6 +112,24 @@ Steps 3 and 4 are `curl -sf ... || echo` — a failure is reported but does not 
 
 Both endpoints are guarded by an `x-seed-key` header, checked against `INTERNAL_ROUTE_KEY` (falling back to a retired default if that's unset). That is **not** a security boundary — neither endpoint can drop or modify data, so the header only keeps crawlers and stray requests out.
 
+### Fresh Cloudflare account, or restoring a deploy
+
+`wrangler.jsonc` declares the bindings the Worker needs. A new account or a restored Worker needs all of them before the first deploy:
+
+- **D1 database** (`d1_databases`, binding `D1`). The `database_id` must exist in the target account. Create it or point the config at the restored one, then run `deploy:database` so every migration and the hand-built SQL reach it.
+- **Images binding** (`images`, binding `IMAGES`). It is used by media optimisation (`src/features/media/optimise.ts`), so it needs Images transformations enabled on the account.
+- **Cron trigger** (`triggers.crons`, `*/5 * * * *`). The Worker runs its scheduled handler from this. Check it under the Worker's Triggers tab after the first deploy.
+- **Secrets and variables**: `INTERNAL_ROUTE_KEY` (used by the internal endpoints) and any integration keys. Set them before `deploy:migrate` so the endpoints can be reached.
+
+Restore or first-deploy checklist:
+
+1. Confirm the D1 database and the Images binding exist in the target account, and the `database_id` in `wrangler.jsonc` matches.
+2. Set `INTERNAL_ROUTE_KEY` and the other secrets.
+3. Run `pnpm run deploy`, or run the four steps by hand in the order above.
+4. Check that `/api/internal-migrate` reported success and that the Home page exists (`deploy:seed`).
+5. Confirm the cron trigger is listed on the Worker.
+6. Open the admin, save one page, and load it on the public site.
+
 ---
 
 ## How migrations work here

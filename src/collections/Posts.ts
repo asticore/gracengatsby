@@ -38,6 +38,7 @@ export const Posts: CollectionConfig = {
     components: {
       edit: {
         beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
+        beforeList: ['@/features/blogBuilder/admin/WriteWithAiPanel#WriteWithAiPanel'],
       },
     },
   },

@@ -56,9 +56,11 @@ import { TrackingEventsListActions } from '@/features/tracking/editor/TrackingEv
 import { ConditionsField } from '@/features/siteTemplates/admin/ConditionsField'
 import { TestConnectionField } from '@/features/socialFeeds/admin/TestConnectionField'
 import { DataViewEditorField } from '@/features/dataViews/admin/DataViewEditorField'
+import { WriteWithAiPanel } from '@/features/blogBuilder/admin/WriteWithAiPanel'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
   '@/features/siteTemplates/admin/StartersPanel#StartersPanel': StartersPanel,
+  '@/features/blogBuilder/admin/WriteWithAiPanel#WriteWithAiPanel': WriteWithAiPanel,
   '@/features/tracking/editor/TrackingEventsListActions#TrackingEventsListActions': TrackingEventsListActions,
   '@/features/siteTemplates/admin/ConditionsField#ConditionsField': ConditionsField,
   '@/features/socialFeeds/admin/TestConnectionField#TestConnectionField': TestConnectionField,

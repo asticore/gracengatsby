@@ -132,8 +132,8 @@ export default async function BlogPostPage({
 
   const image = post.featuredImage && typeof post.featuredImage === 'object' ? (post.featuredImage as Media) : null
   const sw = await loadBlogSwitches()
-  const author = sw.authors && !(post as unknown as { hideAuthor?: boolean | null }).hideAuthor ? publicAuthor(post as unknown as { author?: unknown }) : null
-  const tags = (sw.tags ? (post as unknown as { tags?: Array<{ name?: string | null }> | null }).tags || [] : [])
+  const author = sw.authors && !(post as unknown as { hideAuthor?: boolean | null }).hideAuthor ? publicAuthor(post) : null
+  const tags = (sw.tags ? post.tags || [] : [])
     .map((t) => (t?.name ?? '').trim())
     .filter((n) => slugify(n))
 

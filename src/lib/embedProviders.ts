@@ -40,20 +40,26 @@ export const EMBED_NAME: Record<EmbedProvider, string> = {
 
 export type EmbedTarget = { kind: 'iframe'; src: string } | { kind: 'link'; href: string } | { kind: 'error'; message: string }
 
+/**
+ * Short links (vm.tiktok.com, pin.it, on.soundcloud.com) only redirect to the full address, and the embed
+ * needs the ID from that address. Resolving them would mean a server-side fetch, so they become link cards.
+ */
+const SHORT_LINK_HOSTS = new Set(['vm.tiktok.com', 'vt.tiktok.com', 'pin.it', 'on.soundcloud.com'])
+
 /** Hosts an address may come from, per provider. */
 const HOSTS: Record<EmbedProvider, string[]> = {
   youtube: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'www.youtube-nocookie.com'],
   vimeo: ['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'],
-  tiktok: ['tiktok.com', 'www.tiktok.com'],
+  tiktok: ['tiktok.com', 'www.tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com'],
   instagram: ['instagram.com', 'www.instagram.com'],
   x: ['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com', 'mobile.twitter.com'],
   'facebook-post': ['facebook.com', 'www.facebook.com', 'm.facebook.com'],
   'facebook-video': ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.watch'],
   'facebook-page': ['facebook.com', 'www.facebook.com', 'm.facebook.com'],
-  pinterest: ['pinterest.com', 'www.pinterest.com'],
+  pinterest: ['pinterest.com', 'www.pinterest.com', 'pin.it'],
   linkedin: ['linkedin.com', 'www.linkedin.com'],
   spotify: ['open.spotify.com'],
-  soundcloud: ['soundcloud.com', 'www.soundcloud.com'],
+  soundcloud: ['soundcloud.com', 'www.soundcloud.com', 'on.soundcloud.com'],
   'google-calendar': ['calendar.google.com'],
   typeform: ['form.typeform.com'],
   lottie: ['lottie.host', 'lottiefiles.com', 'www.lottiefiles.com', 'app.lottiefiles.com'],
@@ -115,6 +121,10 @@ export function resolveEmbed(provider: EmbedProvider, raw: string): EmbedTarget 
   const noId: EmbedTarget = { kind: 'error', message: 'No video or page ID was found in this address.' }
   const iframe = (src: string): EmbedTarget => ({ kind: 'iframe', src })
   const seg = segments(u.pathname)
+
+  if (SHORT_LINK_HOSTS.has(host)) {
+    return seg.length === 1 && SLUG.test(seg[0]!) ? { kind: 'link', href: `https://${host}/${seg[0]}` } : noId
+  }
 
   switch (provider) {
     case 'youtube': {

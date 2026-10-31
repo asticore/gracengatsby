@@ -76,6 +76,7 @@ import { ContextMenu, type ContextMenuItem } from './visualEditor/ContextMenu'
 import { ShortcutsHelp } from './visualEditor/ShortcutsHelp'
 import { SaveStatusChip } from './visualEditor/SaveStatusChip'
 import { CoachMarks, coachMarksSeen } from './visualEditor/CoachMarks'
+import { blockDraftKey, clearBlockDraft, comparableTree, draftNeedsOffer, readBlockDraft, writeBlockDraft, type BlockDraft } from './visualEditor/blockDraft'
 import { clientToFrame, isLibraryDragTypes, resolveDropSlotInDoc, VE_BLOCK_MIME, VE_TEMPLATE_MIME } from './visualEditor/dropSlot'
 
 let idCounter = 0
@@ -159,6 +160,12 @@ export const VisualEditorView: React.FC = () => {
   /** Where a "Select your structure" pick will insert the new section; null while the picker is closed. */
   const [structureTarget, setStructureTarget] = useState<{ containerPath: NodePath; at: number } | null>(null)
   const [dirty, setDirty] = useState(false)
+  // Local draft recovery: an unsaved copy of the tree kept in this browser. Offered back on the next open, never applied on its own.
+  const [draftOffer, setDraftOffer] = useState<BlockDraft | null>(null)
+  const draftKeyRef = useRef<string | null>(null)
+  /** The saved tree as comparableTree() sees it, or null before the document has loaded. */
+  const savedTreeRef = useRef<string | null>(null)
+  const offerPendingRef = useRef(false)
   const [locks, setLocks] = useState<Locks>({ nodes: {} })
   const [locksDirty, setLocksDirty] = useState(false)
   const [lockUser, setLockUser] = useState<(LockUser & { canManageLocks?: boolean }) | null>(null)
@@ -212,6 +219,32 @@ export const VisualEditorView: React.FC = () => {
     return surface.kind === 'global' ? `/api/globals/${surface.slug}` : `/api/${surface.slug}/${route.id}`
   }, [route, surface])
 
+  // Local draft recovery: the storage key follows the document; autosave every few seconds while the tree differs from the saved one.
+  useEffect(() => {
+    draftKeyRef.current = surface && route ? blockDraftKey(surface.slug, route.id, window.location.origin) : null
+  }, [surface, route])
+  useEffect(() => {
+    offerPendingRef.current = draftOffer !== null
+  }, [draftOffer])
+  useEffect(() => {
+    let lastWritten: string | null = null
+    const timer = window.setInterval(() => {
+      const key = draftKeyRef.current
+      const saved = savedTreeRef.current
+      // Do not overwrite the draft that is waiting for an answer, and do nothing before the document has loaded.
+      if (!key || saved === null || offerPendingRef.current) return
+      const current = blocksRef.current
+      const tree = comparableTree(current)
+      if (tree === saved) {
+        if (lastWritten !== null) clearBlockDraft(key)
+        lastWritten = null
+      } else if (tree !== lastWritten) {
+        if (writeBlockDraft(key, current, Date.now())) lastWritten = tree
+      }
+    }, 2500)
+    return () => window.clearInterval(timer)
+  }, [])
+
   // Fetch document and user permissions
   useEffect(() => {
     if (!apiUrl || !surface) return
@@ -236,6 +269,11 @@ export const VisualEditorView: React.FC = () => {
           historyRef.current = createHistory()
           setHistoryFlags({ undo: false, redo: false })
           setBlocks(withStableIds)
+          savedTreeRef.current = comparableTree(withStableIds)
+          const key = draftKeyRef.current
+          const stored = key ? readBlockDraft(key) : null
+          if (key && stored && draftNeedsOffer(stored, withStableIds, doc.updatedAt as string | undefined)) setDraftOffer(stored)
+          else if (key && stored) clearBlockDraft(key)
           setInsertTarget({ containerPath: [], at: withStableIds.length })
           setDocTitle(surface.titleField ? String(doc[surface.titleField] || 'Untitled') : surface.label)
           setStatus(surface.formMode ? (doc.formStatus === 'draft' ? 'draft' : 'published') : (doc._status as string) || null)
@@ -1230,6 +1268,9 @@ export const VisualEditorView: React.FC = () => {
         setDirty(false)
         setLocksDirty(false)
       }
+      // The server now holds the tree that was sent. Edits made while the request was in flight keep a draft.
+      savedTreeRef.current = comparableTree(sent.blocks)
+      if (draftKeyRef.current && comparableTree(blocksRef.current) === savedTreeRef.current) clearBlockDraft(draftKeyRef.current)
       setTimeout(() => setSaving('idle'), 2000)
     } catch (err) {
       setSaving('error')
@@ -1590,6 +1631,32 @@ export const VisualEditorView: React.FC = () => {
 
         <div className={`ve-canvas-wrap${translation && editLocale ? ' ve-canvas-wrap--translating' : ''}`} role="presentation">
           {translation && editLocale ? <TranslateBanner languageLabel={localeLabel(editLocale)} onExit={exitTranslate} /> : null}
+          {draftOffer && (
+            <div className="ve-error" role="status" style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span>{t('draft.foundUnsaved', { when: new Date(draftOffer.savedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) })}</span>
+              <button
+                type="button"
+                className="ve-btn"
+                onClick={() => {
+                  const restored = withIds(draftOffer.blocks)
+                  setDraftOffer(null)
+                  applyBlocks(() => restored)
+                }}
+              >
+                {t('common.restore')}
+              </button>
+              <button
+                type="button"
+                className="ve-btn ve-btn--ghost"
+                onClick={() => {
+                  if (draftKeyRef.current) clearBlockDraft(draftKeyRef.current)
+                  setDraftOffer(null)
+                }}
+              >
+                {t('draft.discard')}
+              </button>
+            </div>
+          )}
           {lockNotice && (
             <p className="ve-error" role="status" style={{ padding: 12 }}>
               &#128274; {lockNotice}

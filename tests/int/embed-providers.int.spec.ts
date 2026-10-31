@@ -97,3 +97,25 @@ describe('embed providers: malicious or wrong addresses', () => {
     expect(resolveEmbed('spotify', '  ')).toBeNull()
   })
 })
+
+describe('embed providers: short links and boards', () => {
+  it.each<[EmbedProvider, string, string]>([
+    ['tiktok', 'https://vm.tiktok.com/ZMabc123/', 'https://vm.tiktok.com/ZMabc123'],
+    ['pinterest', 'https://pin.it/4xYzAb', 'https://pin.it/4xYzAb'],
+    ['soundcloud', 'https://on.soundcloud.com/AbCdEf', 'https://on.soundcloud.com/AbCdEf'],
+  ])('turns the %s short link %s into a link card', (provider, url, href) => {
+    expect(resolveEmbed(provider, url)).toEqual({ kind: 'link', href })
+  })
+
+  it('refuses a short link on the wrong provider', () => {
+    expect(resolveEmbed('pinterest', 'https://vm.tiktok.com/ZMabc123/')?.kind).toBe('error')
+  })
+
+  it('refuses a short link with no path', () => {
+    expect(resolveEmbed('pinterest', 'https://pin.it/')?.kind).toBe('error')
+  })
+
+  it('still embeds full addresses on the same hosts', () => {
+    expect(src('tiktok', 'https://www.tiktok.com/@user/video/7234567890123456789')).toBe('https://www.tiktok.com/embed/v2/7234567890123456789')
+  })
+})

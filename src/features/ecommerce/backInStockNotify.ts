@@ -8,6 +8,7 @@ import type { CollectionAfterChangeHook } from '@/engine'
 
 import { restockedVariations } from './lib/backInStock'
 import { localeForRecipient } from '@/features/email/recipientLocale'
+import { configuredSiteOrigin } from '@/utilities/siteOrigin'
 import { loadStrings, t } from '@/features/uiStrings'
 import type { VariationRow } from './variations'
 
@@ -35,7 +36,9 @@ export async function notifyBackInStock(engine: EngineLike, product: { id: numbe
   })
   const wanted = new Set(back)
   const { sendEmail } = await import('@/features/email')
-  const baseUrl = (process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
+  // Product links must be absolute; with no SITE_URL the alerts wait (subscriptions stay pending) until it is set.
+  const baseUrl = configuredSiteOrigin()
+  if (!baseUrl) return 0
   let sent = 0
   for (const doc of docs) {
     const variation = (doc.variation as string | null) ?? ''

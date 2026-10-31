@@ -1,3 +1,5 @@
+import { configuredSiteOrigin } from '@/utilities/siteOrigin'
+
 import type { PageSpeedCollection } from './types'
 
 /**
@@ -22,7 +24,7 @@ const validSlug = (value: unknown): value is string => typeof value === 'string'
 
 /** The configured public origin, without a trailing slash. */
 export function siteOrigin(): string {
-  return (process.env.SITE_URL || 'https://gracengatsby.com').trim().replace(/\/+$/, '')
+  return configuredSiteOrigin()
 }
 
 /** True for a plain https origin on a public host name. Rejects localhost, IP literals and internal names. */

@@ -40,6 +40,9 @@ const contextFor = (opts: { isAdmin?: boolean; can?: boolean; update?: boolean; 
 
 const post = (body: unknown) => new Request('http://x/api/admin-pagespeed', { method: 'POST', body: JSON.stringify(body) })
 
+// The public origin comes from SITE_URL; this spec sets one rather than relying on a hard-coded fallback.
+process.env.SITE_URL = 'https://example.test'
+
 describe('admin-pagespeed route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -89,7 +92,7 @@ describe('admin-pagespeed route', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const called = new URL(String(fetchMock.mock.calls[0][0]))
     expect(called.origin + called.pathname).toBe('https://www.googleapis.com/pagespeedonline/v5/runPagespeed')
-    expect(called.searchParams.get('url')).toBe('https://gracengatsby.com/blog/hello')
+    expect(called.searchParams.get('url')).toBe('https://example.test/blog/hello')
     expect(called.searchParams.get('strategy')).toBe('desktop')
     const body = (await response.json()) as { result: { scores: { performance: number } } }
     expect(body.result.scores.performance).toBe(90)
@@ -109,7 +112,7 @@ describe('admin-pagespeed route', () => {
     expect(response.status).toBe(200)
     const json = (await response.json()) as { testable: boolean; url: string; hasKey: boolean; results: { mobile: unknown[]; desktop: unknown[] } }
     expect(json.testable).toBe(true)
-    expect(json.url).toBe('https://gracengatsby.com/blog/hello')
+    expect(json.url).toBe('https://example.test/blog/hello')
     expect(json.hasKey).toBe(false)
     expect(json.results).toEqual({ mobile: [], desktop: [] })
   })

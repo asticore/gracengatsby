@@ -24,7 +24,7 @@ describe('shop revenue chart value axis', () => {
         bucketLabel: 'day',
       }),
     )
-    expect(html).toContain('shop-reports__grid')
+    expect(html).toContain('admin-chart__grid')
     expect(html).toContain('$40.00')
     expect(html).toContain('$20.00')
     expect(html).toContain('2026-10-02 (day): 1 orders, $40.00')

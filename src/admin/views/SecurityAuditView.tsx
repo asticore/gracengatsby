@@ -7,6 +7,7 @@ import { getAdminUi } from '@/admin/i18n/serverUi'
 import { AUTH_AUDIT_ACTIONS } from '@/features/security/auditLog'
 import { auditPageHref, parseAuditFilter } from '@/features/security/auditQuery'
 import { listAuthAuditPage } from '@/features/security/auditStore'
+import { SortableTable } from '@/admin/table/SortableTable'
 
 /**
  * /admin/security/audit. Every account-security event, newest first, filtered
@@ -57,32 +58,43 @@ export async function SecurityAuditView({ searchParams }: { searchParams?: Recor
         <p>{ui.t('audit.noMatch')}</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">When (UTC)</th>
-                <th scope="col">Event</th>
-                <th scope="col">Account</th>
-                <th scope="col">Item</th>
-                <th scope="col">Detail</th>
-                <th scope="col">Address</th>
-                <th scope="col">Browser</th>
-              </tr>
-            </thead>
-            <tbody>
-              {page.rows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.createdAt.replace('T', ' ').slice(0, 19)}</td>
-                  <td><code>{row.action}</code></td>
-                  <td>{row.actorEmail ?? (row.actorId !== null ? `#${row.actorId}` : '-')}</td>
-                  <td>{[row.collectionSlug, row.documentId].filter(Boolean).join(' ') || '-'}</td>
-                  <td>{row.detail ?? '-'}</td>
-                  <td>{row.ip ?? '-'}</td>
-                  <td>{row.userAgent ?? '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <SortableTable
+            columns={[
+              { key: 'when', label: 'When (UTC)' },
+              { key: 'event', label: 'Event' },
+              { key: 'account', label: 'Account' },
+              { key: 'item', label: 'Item' },
+              { key: 'detail', label: 'Detail' },
+              { key: 'address', label: 'Address' },
+              { key: 'browser', label: 'Browser' },
+            ]}
+            caption={ui.t('table.sortPageOnly')}
+            rows={page.rows.map((row) => {
+              const account = row.actorEmail ?? (row.actorId !== null ? `#${row.actorId}` : '-')
+              const item = [row.collectionSlug, row.documentId].filter(Boolean).join(' ') || '-'
+              return {
+                id: String(row.id),
+                sortValues: {
+                  when: row.createdAt,
+                  event: row.action,
+                  account,
+                  item,
+                  detail: row.detail ?? '-',
+                  address: row.ip ?? '-',
+                  browser: row.userAgent ?? '-',
+                },
+                cells: {
+                  when: row.createdAt.replace('T', ' ').slice(0, 19),
+                  event: <code>{row.action}</code>,
+                  account,
+                  item,
+                  detail: row.detail ?? '-',
+                  address: row.ip ?? '-',
+                  browser: row.userAgent ?? '-',
+                },
+              }
+            })}
+          />
         </div>
       )}
 

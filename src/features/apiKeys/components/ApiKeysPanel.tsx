@@ -7,6 +7,7 @@ import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import { apiKeyScopeChoicesAction, createMyApiKey, revokeApiKeyAction, type ApiKeyView } from '../actions'
 import { buildScopes, type ScopeMode } from '../scopePicker'
+import { SortableTable } from '@/admin/table/SortableTable'
 import type { ScopeCollection } from '../core'
 import './apiKeysScopes.css'
 
@@ -195,42 +196,44 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
       {keys.length === 0 ? (
         <p>{tx('panel.akNone')}</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              {showOwner && <th>{adminT('apiKeys.owner')}</th>}
-              <th>{tx('panel.akName')}</th>
-              <th>{tx('panel.akKey')}</th>
-              <th>{tx('panel.akScopes')}</th>
-              <th>{tx('panel.akColCreated')}</th>
-              <th>{tx('panel.akColLastUsed')}</th>
-              <th>{tx('panel.akColExpiry')}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {keys.map((k) => (
-              <tr key={k.id}>
-                {showOwner && <td>{k.ownerEmail ?? `User ${k.userId}`}</td>}
-                <td>{k.name}</td>
-                <td>
-                  <code>{k.prefix}...</code>
-                </td>
-                <td>{k.scopes.join(', ')}</td>
-                <td>{dateText(k.createdAt)}</td>
-                <td>{dateText(k.lastUsedAt)}</td>
-                <td>{status(k)}</td>
-                <td>
-                  {k.active && (
-                    <button type="button" disabled={busy} onClick={() => void revoke(k.id)}>
-                      {tx('panel.revoke')}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <SortableTable
+          columns={[
+            ...(showOwner ? [{ key: 'owner', label: adminT('apiKeys.owner') }] : []),
+            { key: 'name', label: tx('panel.akName') },
+            { key: 'key', label: tx('panel.akKey') },
+            { key: 'scopes', label: tx('panel.akScopes') },
+            { key: 'created', label: tx('panel.akColCreated') },
+            { key: 'lastUsed', label: tx('panel.akColLastUsed') },
+            { key: 'expiry', label: tx('panel.akColExpiry') },
+            { key: 'actions', label: '', sortable: false },
+          ]}
+          rows={keys.map((k) => ({
+            id: String(k.id),
+            sortValues: {
+              owner: k.ownerEmail ?? `User ${k.userId}`,
+              name: k.name,
+              key: k.prefix,
+              scopes: k.scopes.join(', '),
+              created: Date.parse(k.createdAt) || null,
+              lastUsed: k.lastUsedAt ? Date.parse(k.lastUsedAt) || null : null,
+              expiry: k.expiresAt ? Date.parse(k.expiresAt) || null : null,
+            },
+            cells: {
+              owner: k.ownerEmail ?? `User ${k.userId}`,
+              name: k.name,
+              key: <code>{k.prefix}...</code>,
+              scopes: k.scopes.join(', '),
+              created: dateText(k.createdAt),
+              lastUsed: dateText(k.lastUsedAt),
+              expiry: status(k),
+              actions: k.active ? (
+                <button type="button" disabled={busy} onClick={() => void revoke(k.id)}>
+                  {tx('panel.revoke')}
+                </button>
+              ) : null,
+            },
+          }))}
+        />
       )}
     </div>
   )

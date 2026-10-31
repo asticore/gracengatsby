@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react'
 
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
+import { SortableTable } from '@/admin/table/SortableTable'
 import type { UiStringKey } from '@/features/uiStrings'
 
 import { startImpersonationAction } from '../actions'
@@ -100,30 +101,35 @@ export function ImpersonationPanel({ enabled, maxMinutes, requireTwoFactor, entr
           <p>{t('us.lit.no_one_signed_in_yet')}</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">{t('us.lit.started')}</th>
-                  <th scope="col">{t('us.lit.admin')}</th>
-                  <th scope="col">{t('us.lit.customer')}</th>
-                  <th scope="col">{t('us.lit.reason')}</th>
-                  <th scope="col">{t('us.lit.status')}</th>
-                  <th scope="col">{t('us.lit.ended')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.id}>
-                    <td>{when(entry.startedAt)}</td>
-                    <td>{entry.adminEmail}</td>
-                    <td>{entry.targetEmail}</td>
-                    <td>{entry.reason}</td>
-                    <td>{t(STATUS_KEYS[entry.status])}</td>
-                    <td>{when(entry.endedAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <SortableTable
+              columns={[
+                { key: 'started', label: t('us.lit.started') },
+                { key: 'admin', label: t('us.lit.admin') },
+                { key: 'customer', label: t('us.lit.customer') },
+                { key: 'reason', label: t('us.lit.reason') },
+                { key: 'status', label: t('us.lit.status') },
+                { key: 'ended', label: t('us.lit.ended') },
+              ]}
+              rows={entries.map((entry) => ({
+                id: String(entry.id),
+                sortValues: {
+                  started: new Date(entry.startedAt).getTime(),
+                  admin: entry.adminEmail,
+                  customer: entry.targetEmail,
+                  reason: entry.reason,
+                  status: t(STATUS_KEYS[entry.status]),
+                  ended: entry.endedAt ? new Date(entry.endedAt).getTime() : null,
+                },
+                cells: {
+                  started: when(entry.startedAt),
+                  admin: entry.adminEmail,
+                  customer: entry.targetEmail,
+                  reason: entry.reason,
+                  status: t(STATUS_KEYS[entry.status]),
+                  ended: when(entry.endedAt),
+                },
+              }))}
+            />
           </div>
         )}
       </section>

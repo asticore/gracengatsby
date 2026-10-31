@@ -1,10 +1,9 @@
 import { cache } from 'react'
 
-import { matchesLocation } from '@/features/customFields/location'
 import { resolveDocumentContent } from '@/features/customFields/server'
 import { getEngine } from '@/lib/engine'
 
-import { sanitizeConditions } from './conditions'
+import { pickSiteTemplate } from './pick'
 import type { SiteTemplate, SiteTemplateKind, TemplateContext } from './types'
 
 /**
@@ -40,34 +39,14 @@ export const loadSiteTemplate = cache(async (id: number | string): Promise<SiteT
   }
 })
 
-const priorityOf = (template: SiteTemplate): number => (typeof template.priority === 'number' && Number.isFinite(template.priority) ? template.priority : 0)
-
-const idOrder = (a: SiteTemplate, b: SiteTemplate): number => {
-  const x = Number(a.id)
-  const y = Number(b.id)
-  if (Number.isFinite(x) && Number.isFinite(y)) return x - y
-  return String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0
-}
-
 /**
- * The best enabled template of this kind whose conditions match, or null. Highest priority wins, ties go to
- * the lowest id. Templates with no blocks and templates with invalid conditions are skipped before picking.
- * Only the winner is loaded in full.
+ * The best enabled template of this kind whose conditions match, or null. Only the winner is loaded in full.
+ * Never throws: a problem reading the templates means no template (the site draws its defaults).
  */
 export async function resolveSiteTemplate(kind: SiteTemplateKind, ctx: TemplateContext = {}): Promise<SiteTemplate | null> {
   try {
-    const all = await loadSiteTemplateIndex()
-    const full = { ...ctx, templateKind: kind }
-    const matching = all.filter((template) => {
-      if (template.kind !== kind || template.enabled === false) return false
-      if (!Array.isArray(template.blocks) || template.blocks.length === 0) return false
-      const { groups, valid } = sanitizeConditions(template.conditions)
-      if (!valid) return false
-      return groups.length === 0 || matchesLocation(groups, full)
-    })
-    if (matching.length === 0) return null
-    matching.sort((a, b) => priorityOf(b) - priorityOf(a) || idOrder(a, b))
-    return await loadSiteTemplate(matching[0].id)
+    const winner = pickSiteTemplate(await loadSiteTemplateIndex(), kind, ctx)
+    return winner ? await loadSiteTemplate(winner.id) : null
   } catch {
     return null
   }

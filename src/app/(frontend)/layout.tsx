@@ -60,7 +60,8 @@ import { buildThemeStylesCss } from '@/features/themeStyles/css'
 import { loadThemeStyles } from '@/features/themeStyles/store'
 import { SiteEffects } from '@/components/site/SiteEffects'
 import { siteEffectsFor } from '@/components/site/siteEffectsConfig'
-import { renderChromeTemplates, requestPathOf } from '@/features/siteTemplates/chrome'
+import { renderChromeTemplates, renderSidebarTemplates, requestPathOf, type ChromeScope } from '@/features/siteTemplates/chrome'
+import { SidebarLayout } from '@/features/siteTemplates/SidebarLayout'
 import { ImpersonationBanner } from '@/features/impersonation/components/ImpersonationBanner'
 import { directionFor } from '@/features/multilingual/detect'
 import { LOCALE_HEADER, requestLocale } from '@/features/multilingual/routing'
@@ -253,7 +254,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   setRequestLinkLocale(portal ? null : locale, multilingual, portal ? null : await localeLinkPaths(locale))
 
   // Header / footer templates (Site templates). Null for each when none matches, and the built-in ones draw.
-  const chrome = await renderChromeTemplates(requestPathOf(await headers()))
+  // Conditions can scope a template by host and language too: the host without its port, and the page's language (the default one when the site is not multilingual).
+  const hostName = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase() || null
+  const chromeScope: ChromeScope = { domain: hostName, language: locale ?? multilingual.defaultLocale ?? null }
+  const chrome = await renderChromeTemplates(requestPathOf(await headers()), chromeScope)
+  // Sidebars are for the public site: not the maintenance screen and not the customer portal.
+  const sidebars = showMaintenance || portal ? { left: null, right: null } : await renderSidebarTemplates(requestPathOf(await headers()), chromeScope)
   const siteEffects = siteEffectsFor(settings, requestPathOf(await headers()))
 
   const storeDict = await storeTexts()
@@ -312,7 +318,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           )}
           <AdPlacements position="header" />
           <main>
-            {showMaintenance ? <MaintenanceScreen headline={maintenance.headline} message={maintenance.message} /> : children}
+            {showMaintenance ? <MaintenanceScreen headline={maintenance.headline} message={maintenance.message} /> : <SidebarLayout left={sidebars.left} right={sidebars.right}>{children}</SidebarLayout>}
           </main>
           <AdPlacements position="footer" />
           {chrome.footer ? (

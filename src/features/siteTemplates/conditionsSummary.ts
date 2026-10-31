@@ -10,6 +10,8 @@ export const CONDITION_KINDS = [
   { param: 'eventType', label: 'Event type', hint: 'eg paid' },
   { param: 'postCategory', label: 'Post category', hint: 'category name' },
   { param: 'postTag', label: 'Post tag', hint: 'tag name' },
+  { param: 'domain', label: 'Domain', hint: 'eg shop.example.com' },
+  { param: 'language', label: 'Language', hint: 'eg fr, or the default language code' },
 ] as const satisfies ReadonlyArray<{ param: LocationRule['param']; label: string; hint: string }>
 
 const LABELS: Record<string, string> = Object.fromEntries(CONDITION_KINDS.map((k) => [k.param, k.label.toLowerCase()]))

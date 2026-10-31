@@ -3037,6 +3037,10 @@ export const UI_STRING_SOURCE = {
   "blog.ai.topicRequired": "Add a topic first.",
   "blog.ai.titleRequired": "Pick or write a title first.",
   "blog.ai.busy": "Working...",
+
+  // Template parts (Task 2 d): the Templates hub's Where used column.
+  "templates.whereUsed.none": "Not placed in any page or template",
+  "templates.whereUsed.placedIn": "Placed in {places}",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

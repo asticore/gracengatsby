@@ -46,7 +46,7 @@ export const STATIC_HTML_NOTE =
   'Theme fonts, colours and shared site stylesheets are not included, so spacing and typography can differ from the live page.'
 
 const SERVER_BLOCKS = new Set(['productGrid', 'eventGrid', 'faq', 'form', 'loop', 'reusableSection', 'toc'])
-const SERVER_ELEMENTS = new Set(['ad', 'data-view', 'content-slot'])
+const SERVER_ELEMENTS = new Set(['ad', 'data-view', 'content-slot', 'template-part'])
 
 const BASE_CSS =
   '*,*::before,*::after{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;color:#111}img,video{max-width:100%;height:auto}'

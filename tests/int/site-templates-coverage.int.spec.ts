@@ -36,8 +36,8 @@ const allKindsCovered = (extra: CoverageTemplate[] = []): CoverageTemplate[] => 
 describe('computeTemplateCoverage: missing kinds', () => {
   it('warns for every kind when there are no templates, in kind order', () => {
     const warnings = computeTemplateCoverage([])
-    // Loop item templates are drawn by a Loop grid, so they never warn.
-    expect(warnings.map((w) => w.kind)).toEqual(SITE_TEMPLATE_KINDS.filter((k) => k !== 'loop'))
+    // Loop item templates are drawn by a Loop grid, and sidebars are optional, so neither warns.
+    expect(warnings.map((w) => w.kind)).toEqual(SITE_TEMPLATE_KINDS.filter((k) => k !== 'loop' && k !== 'sidebar-left' && k !== 'sidebar-right'))
     expect(warnings.every((w) => w.code === 'missing')).toBe(true)
   })
 

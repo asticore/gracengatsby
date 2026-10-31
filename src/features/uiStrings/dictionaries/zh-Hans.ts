@@ -2994,6 +2994,8 @@ const zhHans: UiDictionary = {
   "blog.ai.topicRequired": "请先填写主题。",
   "blog.ai.titleRequired": "请先选择或输入标题。",
   "blog.ai.busy": "处理中…",
+  "templates.whereUsed.none": "未放置在任何页面或模板中",
+  "templates.whereUsed.placedIn": "放置于：{places}",
 }
 
 export default zhHans

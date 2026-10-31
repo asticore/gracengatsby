@@ -2995,6 +2995,8 @@ const ja: UiDictionary = {
   "blog.ai.topicRequired": "先にテーマを入力してください。",
   "blog.ai.titleRequired": "先にタイトルを選ぶか入力してください。",
   "blog.ai.busy": "処理中…",
+  "templates.whereUsed.none": "どのページやテンプレートにも配置されていません",
+  "templates.whereUsed.placedIn": "配置先: {places}",
 }
 
 export default ja

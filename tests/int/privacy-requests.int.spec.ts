@@ -18,6 +18,8 @@ import { exportCustomerData } from '@/features/privacy/export'
 import { hashVerifyToken, newVerifyToken } from '@/features/privacy/tokens'
 import { eraseCustomerData } from '@/features/privacy/erase'
 import { createD1PrivacyStore } from '@/features/privacy/store'
+import { UI_STRING_SOURCE } from '@/features/uiStrings/keys'
+import { DICTIONARY_LOADERS } from '@/features/uiStrings/loaders'
 import { confirmDeletionByToken, decideRequest, executeErasure, openDeletionRequest } from '@/features/privacy/service'
 
 // The email feature loads the whole engine; the tests only need to see that a mail was attempted.
@@ -219,6 +221,41 @@ describe('erasure', () => {
     expect(writes).toContainEqual({ op: 'delete', collection: 'users', id: 7 })
   })
 
+  it('keeps form submissions and booking entries: they are never deleted or anonymised', async () => {
+    const booking = { id: 5, name: 'Ana', email: 'ana@example.com', guestCount: 2, notes: 'Vegetarian' }
+    const { engine, writes } = fakeEngine({ orders: [order], addresses: [{ id: 3 }], 'event-rsvps': [booking] })
+    const { d1, calls } = fakeD1([{ id: 1, form_id: 4, values: JSON.stringify({ email: 'ana@example.com', message: 'Hi' }), submitted_at: '2026-04-01' }])
+    const counts = await eraseCustomerData(engine, d1 as never, 7, 'ana@example.com')
+
+    expect(writes.filter((w) => w.collection === 'event-rsvps')).toEqual([])
+    expect(writes.filter((w) => w.collection === 'form-submissions')).toEqual([])
+    expect(calls.some((c) => /DELETE\s+FROM\s+eg_form_submissions/i.test(c.sql))).toBe(false)
+    expect(calls.some((c) => /UPDATE\s+eg_form_submissions/i.test(c.sql))).toBe(false)
+    expect(counts).not.toHaveProperty('bookings')
+    expect(counts).not.toHaveProperty('formEntries')
+    // The account, sessions and keys still go.
+    expect(writes).toContainEqual({ op: 'delete', collection: 'users', id: 7 })
+  })
+
+  it('still anonymises orders and removes addresses while the bookings stay', async () => {
+    const { engine, writes } = fakeEngine({ orders: [order], addresses: [{ id: 3 }], 'event-rsvps': [{ id: 5, email: 'ana@example.com' }] })
+    const counts = await eraseCustomerData(engine, fakeD1().d1 as never, 7, 'ana@example.com')
+    expect(writes).toContainEqual({ op: 'delete', collection: 'addresses', id: 3 })
+    expect(writes.some((w) => w.collection === 'event-rsvps')).toBe(false)
+    expect(counts).toMatchObject({ orders: 1, addresses: 1, accountRecords: 1 })
+  })
+
+  it('keeps the customer own form and booking entries in the export, which the erasure leaves alone', async () => {
+    const { engine } = fakeEngine({ orders: [], addresses: [], 'event-rsvps': [{ id: 5, name: 'Ana', email: 'ana@example.com', guestCount: 1 }] })
+    const { d1 } = fakeD1([{ id: 1, form_id: 4, values: JSON.stringify({ email: 'ana@example.com' }), submitted_at: '2026-04-01' }])
+    const doc = (await exportCustomerData(engine, d1 as never, user as never, new Date('2026-10-31T00:00:00.000Z'))) as {
+      bookings: unknown[]
+      formSubmissions: unknown[]
+    }
+    expect(doc.bookings).toHaveLength(1)
+    expect(doc.formSubmissions).toHaveLength(1)
+  })
+
   it('strips secret-looking keys at every depth', () => {
     expect(stripSecrets({ a: 1, nested: { passwordHash: 'x', keep: [{ salt: 's', name: 'n' }] } })).toEqual({ a: 1, nested: { keep: [{ name: 'n' }] } })
   })
@@ -294,3 +331,25 @@ describe('privacy request storage and the 30-day clock (fresh D1)', () => {
     expect(JSON.stringify(after)).not.toContain('ben@example.com')
   })
 })
+
+describe('privacy copy in every language', () => {
+  const COPY_KEYS = ['privacy.delete.body', 'privacy.admin.eraseConfirm'] as const
+
+  it('English says that form and booking submissions are kept and visible only to staff with permission', () => {
+    for (const key of COPY_KEYS) expect(UI_STRING_SOURCE[key], key).toMatch(/Form and booking/)
+    expect(UI_STRING_SOURCE['privacy.delete.body']).toMatch(/only staff with permission/)
+    expect(UI_STRING_SOURCE['privacy.admin.eraseConfirm']).toMatch(/visible only to staff with permission/)
+  })
+
+  it('every dictionary carries its own translation of the erase copy and the result line', async () => {
+    for (const locale of Object.keys(DICTIONARY_LOADERS) as (keyof typeof DICTIONARY_LOADERS)[]) {
+      const dictionary = (await DICTIONARY_LOADERS[locale]()).default
+      for (const key of COPY_KEYS) {
+        expect(dictionary[key], `${locale} ${key}`).toBeTruthy()
+        expect(dictionary[key], `${locale} ${key}`).not.toBe(UI_STRING_SOURCE[key])
+      }
+      expect(dictionary['privacy.admin.result'], `${locale} result`).not.toMatch(/\{(bookings|formEntries)\}/)
+    }
+  })
+})
+

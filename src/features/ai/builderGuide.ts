@@ -157,7 +157,7 @@ export function themeContextLines(ctx: GuideContext): string[] {
   const lines: string[] = []
   if (colours.length > 0) {
     lines.push('THEME COLOURS: ' + colours.map((c) => `${c.id}=${c.value.trim()}`).join(', '))
-    lines.push('Prefer these over raw hex: write a colour as var(--eg-c-<id>), for example var(--eg-c-primary). Use a raw hex only when no theme colour fits.')
+    lines.push('Prefer these: write a colour as var(--eg-c-<id>), e.g. var(--eg-c-primary). Raw hex only if none fits.')
   }
   const heading = FONT_NAME.test(ctx.headingFont ?? '') ? ctx.headingFont : undefined
   const body = FONT_NAME.test(ctx.bodyFont ?? '') ? ctx.bodyFont : undefined
@@ -170,7 +170,7 @@ export function themeContextLines(ctx: GuideContext): string[] {
 function modeLine(mode: BuilderMode): string {
   if (mode === 'page') return 'Task scope: a whole page. Return 3 to 8 sections, never more than 12.'
   if (mode === 'edit') {
-    return 'Task scope: edit one existing section, given as JSON in the user message. Return the full replacement section(s), in the same format, keeping its structure and any content the brief does not change. Return at most 3 sections.'
+    return 'Task scope: edit one existing section, given as JSON in the user message. Return the full replacement section(s) in the same format, keeping structure and content the brief does not change. At most 3 sections.'
   }
   return 'Task scope: one section. Return 1 section, or 2 when the brief needs two bands.'
 }
@@ -188,7 +188,7 @@ export function buildGuide(ctx: GuideContext): string {
     'SectionNode: {"blockType":"section","design":{...optional},"columns":[Column...]}',
     'Column: {"width":1..12 (widths in a section add up to 12),"label":"optional","design":{...},"layout":{...},"blocks":[Block...]}',
     'Block: {"blockType":"element","elementType":"<type from the catalogue>","props":{...}}, or a nested SectionNode inside a column.',
-    'Example (a hero band; copy the shape, not the words):',
+    'Example (hero band; copy shape, not words):',
     workedExample(),
     '',
     'SECTION DISPLAY (design.layout.display): ' + BUILDER_SECTION_DISPLAYS.join('; '),
@@ -202,8 +202,8 @@ export function buildGuide(ctx: GuideContext): string {
     'ELEMENT CATALOGUE: type|label|props as name:kind=default. Kinds: text, rich (plain text is fine), num:min..max, bool, colour, link (path or https string), icon, list{...} for repeated items, a|b|c one-of.',
     elementCatalogue(),
     '',
-    'LINKS: the site has pages, blog, shop, events, FAQs, forms and courses. Link only to real internal paths (/shop, /blog, /events, /faq, /courses, /cart, /) or to paths and URLs the brief gives. Never invent a domain.',
-    'MEDIA: never set picture, video or file ids, record links or web addresses for pictures. For a picture field you may write a placeholder object {"mediaQuery":"2 to 5 plain words to find a photo in the media library","alt":"short alt text"}; the server matches it to an existing library picture or leaves it empty for the admin. Give image alt text when the element has an alt field.',
+    'LINKS: link only to real internal paths (/shop, /blog, /events, /faq, /courses, /cart, /) or to paths and URLs the brief gives. Never invent a domain.',
+    'MEDIA: never set picture, video or file ids, record links or picture URLs. For a picture field write a placeholder {"mediaQuery":"2 to 5 plain words to find a photo in the media library","alt":"short alt text"}; the server matches it to a library picture or leaves it empty for the admin. Give alt text when the element has an alt field.',
     '',
     'USAGE HINTS (props as in the catalogue)',
     'card: media icon|image; hoverEffect none|lift|zoom-image|flip (flip needs backTitle, backText); layout top|left|right. Three or four cards across a section.',

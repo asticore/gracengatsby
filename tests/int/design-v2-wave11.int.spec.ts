@@ -85,69 +85,60 @@ describe('upgradeDesign: reading any stored value', () => {
     expect(upgradeDesign([1, 2])).toEqual({ schemaVersion: 2 })
   })
 
-  it('maps v1 paddings to desktop and mobile sides', () => {
+  it('stores v1 paddings verbatim in the spacing group, desktop and mobile', () => {
     const out = upgradeDesign({ paddingTop: 12, paddingTopMobile: 4 }) as DesignV2
     expect(out.schemaVersion).toBe(2)
-    expect(out.spacing?.padding?.top).toEqual({ desktop: { normal: { value: 12, unit: 'px' } }, mobile: { normal: { value: 4, unit: 'px' } } })
+    expect(out.groups?.spacing).toEqual({ paddingTop: 12, paddingTopMobile: 4 })
   })
 
-  it('maps v1 colours, alignment and minimum height', () => {
+  it('stores v1 colours, alignment and minimum height in their groups', () => {
     const out = upgradeDesign({ bgType: 'color', bgColor: '#123456', textColor: '#fff', textAlign: 'center', minHeight: 300 }) as DesignV2
-    expect(out.background?.type).toBe('color')
-    expect(out.background?.color?.desktop?.normal).toBe('#123456')
-    expect(out.color?.text?.desktop?.normal).toBe('#fff')
-    expect(out.typography?.align?.desktop?.normal).toBe('center')
-    expect(out.size?.minHeight?.desktop?.normal).toEqual({ value: 300, unit: 'px' })
+    expect(out.groups?.background).toEqual({ bgType: 'color', bgColor: '#123456' })
+    expect(out.groups?.typography).toEqual({ textColor: '#fff', textAlign: 'center' })
+    expect(out.groups?.size).toEqual({ minHeight: 300 })
   })
 
-  it('keeps v1 fields with no v2 equivalent under legacy, never dropping them', () => {
+  it('keeps every v1 key, unknown keys under legacy', () => {
     const out = upgradeDesign({ width: 'wide', dividerTop: 'wave', bgImage: 7, futureField: { a: 1 } }) as DesignV2
-    expect(out.legacy).toEqual({ width: 'wide', dividerTop: 'wave', bgImage: 7, futureField: { a: 1 } })
+    expect(out.groups?.size).toEqual({ width: 'wide' })
+    expect(out.groups?.divider).toEqual({ dividerTop: 'wave' })
+    expect(out.groups?.background).toEqual({ bgImage: 7 })
+    expect(out.legacy).toEqual({ futureField: { a: 1 } })
   })
 
-  it('keeps a v1 field with the wrong type under legacy', () => {
+  it('stores a v1 field with the wrong type unchanged (the renderer sanitises it)', () => {
     const out = upgradeDesign({ paddingTop: 'big' }) as DesignV2
-    expect(out.spacing).toBeUndefined()
-    expect(out.legacy).toEqual({ paddingTop: 'big' })
+    expect(out.groups?.spacing).toEqual({ paddingTop: 'big' })
   })
 
-  it('maps v1 border only when the width is above zero, with the v1 defaults', () => {
+  it('stores border fields exactly as v1 wrote them, with no defaults added', () => {
     const on = upgradeDesign({ borderWidth: 2, borderRadius: 6 }) as DesignV2
-    expect(on.border?.style?.desktop?.normal).toBe('solid')
-    expect(on.border?.color?.desktop?.normal).toBe('currentColor')
-    expect(on.border?.radius?.desktop?.normal).toEqual({ value: 6, unit: 'px' })
+    expect(on.groups?.border).toEqual({ borderWidth: 2, borderRadius: 6 })
+    expect(on.groups?.border?.borderStyle).toBeUndefined()
     const off = upgradeDesign({ borderWidth: 0, borderStyle: 'dashed' }) as DesignV2
-    expect(off.border).toBeUndefined()
-    expect(off.legacy).toEqual({ borderWidth: 0, borderStyle: 'dashed' })
+    expect(off.groups?.border).toEqual({ borderWidth: 0, borderStyle: 'dashed' })
   })
 
-  it('maps the v1 shadow presets to structured shadows, and none to no shadow', () => {
-    const sm = upgradeDesign({ boxShadow: 'sm' }) as DesignV2
-    expect(sm.boxShadow?.blur?.desktop?.normal).toEqual({ value: 3, unit: 'px' })
-    expect(sm.boxShadow?.y?.desktop?.normal).toEqual({ value: 1, unit: 'px' })
-    expect(sm.boxShadow?.color?.desktop?.normal).toBe('rgba(0, 0, 0, 0.12)')
-    expect((upgradeDesign({ boxShadow: 'none' }) as DesignV2).boxShadow).toBeUndefined()
-    expect((upgradeDesign({ boxShadow: 'none' }) as DesignV2).legacy).toBeUndefined()
+  it('stores shadow presets as v1 names', () => {
+    expect((upgradeDesign({ boxShadow: 'sm' }) as DesignV2).groups?.border).toEqual({ boxShadow: 'sm' })
+    expect((upgradeDesign({ boxShadow: 'none' }) as DesignV2).groups?.border).toEqual({ boxShadow: 'none' })
   })
 
-  it('v1 image backgrounds are cover-sized and centred, as v1 always drew them', () => {
+  it('stores image background fields verbatim (no cover or centre added)', () => {
     const out = upgradeDesign({ bgType: 'image', bgImageUrl: '/img/a.jpg', bgOverlay: 40 }) as DesignV2
-    expect(out.background?.size?.desktop?.normal).toBe('cover')
-    expect(out.background?.position?.desktop?.normal).toBe('center')
-    expect(out.background?.overlay?.desktop?.normal).toBe(40)
+    expect(out.groups?.background).toEqual({ bgType: 'image', bgImageUrl: '/img/a.jpg', bgOverlay: 40 })
   })
 
-  it('maps v1 hide flags to visibility and the anchor to cssId', () => {
+  it('stores hide flags and the anchor in their groups', () => {
     const out = upgradeDesign({ hideOnMobile: true, hideOnDesktop: false, anchorId: 'pricing' }) as DesignV2
-    expect(out.visibility).toEqual({ hideMobile: true })
-    expect(out.cssId).toBe('pricing')
+    expect(out.groups?.visibility).toEqual({ hideOnMobile: true, hideOnDesktop: false })
+    expect(out.groups?.meta).toEqual({ anchorId: 'pricing' })
   })
 
-  it('an unsafe custom class string stays under legacy in full', () => {
+  it('stores a custom class string verbatim, so no class is ever dropped', () => {
     const out = upgradeDesign({ customClass: 'hero good"bad' }) as DesignV2
-    expect(out.cssClasses).toBeUndefined()
-    expect(out.legacy).toEqual({ customClass: 'hero good"bad' })
-    expect((upgradeDesign({ customClass: 'hero  promo' }) as DesignV2).cssClasses).toEqual(['hero', 'promo'])
+    expect(out.groups?.meta).toEqual({ customClass: 'hero good"bad' })
+    expect(out.legacy).toBeUndefined()
   })
 
   it('upgrading twice gives the same result as upgrading once', () => {
@@ -229,7 +220,7 @@ describe('value guards used by the upgrade and the emitter', () => {
 })
 
 describe('upgrade results are the right shape for the emitter', () => {
-  it('a v1 design upgrades to a design with no legacy keys when every field maps', () => {
+  it('a v1 design with only known keys has no legacy group', () => {
     const out = upgradeDesign({ paddingTop: 8, bgColor: '#000', bgType: 'color' }) as DesignV2
     expect(out.legacy).toBeUndefined()
   })

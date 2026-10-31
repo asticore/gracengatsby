@@ -1,3 +1,4 @@
+import { readFlatDesign } from '@/lib/design/upgrade'
 /**
  * Pure design checks for the visual editor's page tree. The Checks list in EditorDock shows the
  * results; clicking one selects the node it points at (see indexNodePaths for the id-to-path map).
@@ -98,7 +99,7 @@ function headingLevel(node: SectionNode): number | null {
 }
 
 function contrastWarning(node: SectionNode): string | null {
-  const design = asRec(node.design)
+  const design = readFlatDesign(node.design)
   if (design.bgType !== undefined && design.bgType !== 'color') return null
   const text = parseHex(design.textColor)
   const background = parseHex(design.bgColor)
@@ -109,7 +110,7 @@ function contrastWarning(node: SectionNode): string | null {
 }
 
 function heavyEffects(node: SectionNode): string[] {
-  const design = asRec(node.design)
+  const design = readFlatDesign(node.design)
   const effects: string[] = []
   if (design.bgEffect === 'particles') effects.push('particles')
   if (typeof design.parallax === 'string' && design.parallax !== 'none') effects.push('parallax')

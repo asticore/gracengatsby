@@ -1,11 +1,9 @@
-// Wave 11: design model v2 safety. Injection attempts, custom CSS scoping, and the v1 equivalence
-// check against the old blockStyle path (declarations compared per device and state).
+// Wave 11: design model v2 safety. Injection attempts and custom CSS scoping.
+// The v1 render equivalence now lives in design-v1-render-path.int.spec.ts.
 import { describe, expect, it } from 'vitest'
 
 import { designToCss } from '@/lib/design/css'
 import { scopeCustomCss } from '@/lib/design/customCss'
-import { upgradeDesign } from '@/lib/design/upgrade'
-import { blockStyleCss, blockStyleToCss, type BlockStyle } from '@/lib/blockStyle'
 import type { DesignV2 } from '@/lib/design/types'
 
 const SEL = '[data-eid="a"]'
@@ -89,108 +87,5 @@ describe('custom CSS scoping', () => {
     expect(scopeCustomCss(undefined, SEL)).toBe('')
     expect(scopeCustomCss(42, SEL)).toBe('')
     expect(scopeCustomCss('   ', SEL)).toBe('')
-  })
-})
-
-/**
- * Equivalence with the old v1 path. The old path emits an inline style object
- * (blockStyleToCss) and media rules (blockStyleCss). The new path upgrades v1
- * and emits v2 CSS. Both are parsed to declarations per context and compared.
- *
- * Known breakpoint differences, asserted below rather than hidden: v1 used
- * 768px for mobile and 769px for hide-on-desktop; v2 uses 767px and 1025px.
- * The two match except for widths in those 1px and 769 to 1024px bands.
- */
-const mediaContext = (query: string): string => {
-  if (/max-width:(768|767)px/.test(query)) return 'mobile'
-  if (/min-width:(769|1025)px/.test(query)) return 'hideDesktop'
-  if (/max-width:1024px/.test(query)) return 'tablet'
-  return query
-}
-
-const parseDecls = (css: string): Record<string, string[]> => {
-  const out: Record<string, string[]> = {}
-  const addRules = (ctx: string, text: string) => {
-    for (const match of text.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
-      const context = match[1].includes(':hover') ? `${ctx}:hover` : ctx
-      for (const part of match[2].split(';')) {
-        const idx = part.indexOf(':')
-        if (idx < 0) continue
-        const prop = part.slice(0, idx).trim()
-        const value = part.slice(idx + 1).trim().replace(/"/g, '').replace(/\b0px\b/g, '0')
-        ;(out[context] ??= []).push(`${prop}:${value}`)
-      }
-    }
-  }
-  const mediaRe = /@media ([^{]+)\{((?:[^{}]*\{[^{}]*\})*)\}/g
-  for (const match of css.matchAll(mediaRe)) addRules(mediaContext(match[1]), match[2])
-  addRules('base', css.replace(mediaRe, ''))
-  return out
-}
-
-describe('v1 equivalence: old blockStyle path against upgrade + designToCss', () => {
-  const oldPath = (style: BlockStyle): Record<string, string[]> => {
-    const inline = blockStyleToCss(style) as Record<string, string | number>
-    const base = Object.entries(inline)
-      .map(([k, v]) => `${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}:${v}`)
-      .join(';')
-    const media = blockStyleCss(style, 'a')
-    return parseDecls(`${base ? `#a{${base}}` : ''}${media}`)
-  }
-  const newPath = (style: BlockStyle): Record<string, string[]> => parseDecls(designToCss(upgradeDesign(style) as DesignV2, 'a'))
-
-  const sort = (m: Record<string, string[]>): Record<string, string[]> => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, [...v].sort()]))
-
-  it('design 1: spacing, mobile padding, colours, border and shadow', () => {
-    const style: BlockStyle = {
-      paddingTop: 48,
-      paddingBottom: 48,
-      paddingTopMobile: 24,
-      marginTop: 0,
-      textColor: '#1d2b3a',
-      textAlign: 'center',
-      minHeight: 320,
-      borderWidth: 2,
-      borderStyle: 'dashed',
-      borderColor: '#ccc',
-      borderRadius: 12,
-      boxShadow: 'md',
-      bgType: 'color',
-      bgColor: '#f5f7fa',
-    }
-    expect(sort(newPath(style))).toEqual(sort(oldPath(style)))
-  })
-
-  it('design 2: image background (cover, centred) with radius and a hidden-on-mobile flag', () => {
-    const style: BlockStyle = {
-      bgType: 'image',
-      bgImageUrl: 'https://cdn.example.com/hero.jpg',
-      paddingTop: 96,
-      paddingBottom: 96,
-      borderRadius: 0,
-      hideOnMobile: true,
-    }
-    expect(sort(newPath(style))).toEqual(sort(oldPath(style)))
-  })
-
-  it('design 3: gradient background, large shadow, and a v1 width (legacy) with no visible effect', () => {
-    const style: BlockStyle = {
-      bgType: 'gradient',
-      bgGradientFrom: '#0b1f3a',
-      bgGradientTo: '#2a6fdb',
-      bgGradientAngle: 135,
-      boxShadow: 'lg',
-      width: 'full',
-      dividerTop: 'wave',
-      paddingBottom: 16,
-    }
-    expect(sort(newPath(style))).toEqual(sort(oldPath(style)))
-  })
-
-  it('states the known breakpoint difference explicitly: v2 mobile is max 767px, v1 is 768px', () => {
-    const oldMobile = blockStyleCss({ paddingTopMobile: 8 }, 'a')
-    const newMobile = designToCss(upgradeDesign({ paddingTopMobile: 8 }) as DesignV2, 'a')
-    expect(oldMobile).toContain('max-width:768px')
-    expect(newMobile).toContain('max-width:767px')
   })
 })

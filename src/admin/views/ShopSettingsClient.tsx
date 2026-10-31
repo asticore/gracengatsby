@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
@@ -108,6 +109,7 @@ const SCOPED = new Set<string>([...SHOP_TABS.general, ...SHOP_TABS.giftCards, ..
  * that would be written back on its own save. Payments is the payment-settings global.
  */
 export const ShopSettingsClient: React.FC<Props> = ({ shopDoc, shopFields, paymentDoc, paymentFields, shippingDoc, shippingFields, extraDoc, extraFields }) => {
+  const t = useAdminT()
   const hash = useSyncExternalStore(subscribeToHash, readHash, readServerHash)
   const active = resolveActiveTab(hash, TAB_SLUGS)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -162,7 +164,7 @@ export const ShopSettingsClient: React.FC<Props> = ({ shopDoc, shopFields, payme
       </div>
       <div className="settings-page__sections">
         <div className="settings-page__section settings-tabs">
-          <div role="tablist" aria-label="Shop settings" className="settings-tabs__list">
+          <div role="tablist" aria-label={t('aria.shopSettings')} className="settings-tabs__list">
             {SHOP_SETTINGS_TABS.map((tab, index) => (
               <button
                 key={tab.slug}

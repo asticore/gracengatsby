@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useRef, useState } from 'react'
 import type { EditorField } from '@/lib/elements/fieldTypes'
 import { readColourTokens, type ColourToken } from '@/views/visualEditor/designHelpers'
@@ -31,6 +32,7 @@ export const ColorPickerField: React.FC<{
   value: unknown
   onChange: (value: unknown) => void
 }> = ({ field, value, onChange }) => {
+  const t = useAdminT()
   const [globalColors, setGlobalColors] = useState<{ id: string; label: string; value: string }[]>([])
   const [showColorGrid, setShowColorGrid] = useState(false)
   const [inputValue, setInputValue] = useState('')
@@ -177,7 +179,7 @@ export const ColorPickerField: React.FC<{
           <span className="ve-colour-chip" title={linked}>
             <span className="ve-colour-chip__dot" style={{ background: linkedTokenValue || `var(${linked})` }} />
             <span>{linked}</span>
-            <button type="button" className="ve-colour-chip__clear" onClick={clearToken} aria-label="Clear theme colour link">
+            <button type="button" className="ve-colour-chip__clear" onClick={clearToken} aria-label={t('aria.clearThemeColourLink')}>
               clear
             </button>
           </span>

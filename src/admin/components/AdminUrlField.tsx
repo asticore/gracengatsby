@@ -41,7 +41,7 @@ export function AdminUrlField({ field, path, readOnly }: AdminUrlFieldProps) {
 
   return (
     <div className="field-type">
-      <FieldLabel label={t('adminurl.label')} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel label={t('adminurl.label')} name={field.name} path={path} required={fieldRequired(field)} />
       <input
         id={`field-${path}`}
         type="text"

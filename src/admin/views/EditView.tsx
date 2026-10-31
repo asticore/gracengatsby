@@ -243,7 +243,7 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
 
   return (
     <div className="collection-edit">
-      <nav aria-label="Breadcrumb" className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
+      <nav aria-label={ui.t('aria.breadcrumb')} className="doc-breadcrumb" style={{ paddingLeft: 'calc(var(--base) * 2.2)' }}>
         <AdminLink path="/">{ui.t('nav.dashboard')}</AdminLink>
         <span aria-hidden="true">/</span>
         <AdminLink href={`${adminCollectionPath(collectionSlug)}`}>{pluralLabel}</AdminLink>

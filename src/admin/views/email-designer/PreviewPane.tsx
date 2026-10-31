@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useMemo } from 'react'
 
 export type PreviewDevice = 'desktop' | 'mobile'
@@ -22,10 +23,11 @@ const withTheme = (html: string, theme: PreviewTheme): string =>
 
 /** The live preview of one email, in a sandboxed frame so nothing in it can run. */
 export function PreviewPane({ html, device, theme, onDevice, onTheme }: Props) {
+  const t = useAdminT()
   const srcDoc = useMemo(() => withTheme(html, theme), [html, theme])
   return (
     <div className="ed-preview">
-      <div className="ed-preview__toolbar" role="group" aria-label="Preview options">
+      <div className="ed-preview__toolbar" role="group" aria-label={t('aria.email.previewOptions')}>
         <div className="ed-segment">
           <button type="button" className="ed-button ed-button--quiet" aria-pressed={device === 'desktop'} onClick={() => onDevice('desktop')}>
             Computer

@@ -53,7 +53,7 @@ export function InterfaceOverridesField({ field, path, readOnly }: Props) {
 
   return (
     <div className="field-type">
-      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <p className="text-sm text-muted" style={{ margin: '4px 0 12px' }}>
         Wording for storefront buttons and messages in one language. Leave the text empty to use the built-in translation.
       </p>

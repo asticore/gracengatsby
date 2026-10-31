@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useState } from 'react'
 import {
   countByTier,
@@ -30,6 +31,7 @@ export function EventCheckInButton({ eventId }: { eventId: number }) {
 
 /** Full-screen check-in list. Loads when opened, updates the list as the user taps, and rolls a tap back if the save fails. */
 function EventCheckInView({ eventId, onClose }: { eventId: number; onClose: () => void }) {
+  const t = useAdminT()
   const { data, error, loading } = useResultsPage<CheckInPayload>(`/api/admin-event-checkin?event=${eventId}`)
   // Local edits sit on top of the loaded list; null means nothing has been changed yet.
   const [local, setLocal] = useState<CheckInAttendee[] | null>(null)
@@ -83,7 +85,7 @@ function EventCheckInView({ eventId, onClose }: { eventId: number; onClose: () =
   }
 
   return (
-    <div aria-label="Check-in" aria-modal="true" className="eci-screen" role="dialog">
+    <div aria-label={t('aria.checkIn')} aria-modal="true" className="eci-screen" role="dialog">
       <header className="eci-head">
         <div>
           <h2 className="eci-title">Check-in</h2>

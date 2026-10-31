@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useRef, useState } from 'react'
 import { FieldLabel, useField } from '@/engine/ui'
 import type { Field } from '@/engine'
@@ -59,6 +60,7 @@ async function readFontResponse(response: Response): Promise<FontResponse> {
  * saved until the page itself is saved.
  */
 export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldProps) {
+  const t = useAdminT()
   const { value, setValue } = useField<unknown>({ path })
   const installed = sanitizeInstalledFonts(value)
 
@@ -210,9 +212,9 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
 
   return (
     <div className="field-type fm-root">
-      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
 
-      <section className="fm-panel" aria-label="Find a font">
+      <section className="fm-panel" aria-label={t('aria.fonts.find')}>
         <div className="fm-row">
           <input
             className="fm-input"
@@ -220,7 +222,7 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
             placeholder="Search for a font family, e.g. Lora"
             value={query}
             disabled={readOnly}
-            aria-label="Search font families"
+            aria-label={t('aria.fonts.search')}
             onChange={(event) => {
               const text = event.target.value
               setQuery(text)
@@ -231,7 +233,7 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
             className="fm-select"
             value={source}
             disabled={readOnly}
-            aria-label="Catalog"
+            aria-label={t('aria.fonts.catalog')}
             onChange={(event) => {
               const next = event.target.value as SourceFilter
               setSource(next)
@@ -274,11 +276,11 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
         )}
 
         {selection && (
-          <div className="fm-panel" aria-label="Install options">
+          <div className="fm-panel" aria-label={t('aria.fonts.installOptions')}>
             <p className="fm-sample" style={{ fontFamily: fontStack(selection.font.family, selection.font.category) }}>
               {SAMPLE}
             </p>
-            <div className="fm-checks" role="group" aria-label="Weights">
+            <div className="fm-checks" role="group" aria-label={t('aria.fonts.weights')}>
               {selection.font.weights.map((weight) => (
                 <label key={weight}>
                   <input
@@ -336,14 +338,14 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
         )}
       </section>
 
-      <section className="fm-panel" aria-label="Upload a font">
+      <section className="fm-panel" aria-label={t('aria.fonts.upload')}>
         <p className="fm-meta">Upload a WOFF2, WOFF or TTF file, 2 MB at most. Each file is one weight and style of a family.</p>
         <div className="fm-row">
           <input
             type="file"
             accept=".woff2,.woff,.ttf,font/woff2,font/woff,font/ttf"
             disabled={readOnly || busy}
-            aria-label="Font file"
+            aria-label={t('aria.fonts.file')}
             onChange={(event) => chooseUploadFile(event.target.files?.[0] ?? null)}
           />
           <input
@@ -353,14 +355,14 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
             maxLength={60}
             value={uploadFamily}
             disabled={readOnly || busy}
-            aria-label="Family name"
+            aria-label={t('aria.fonts.family')}
             onChange={(event) => setUploadFamily(event.target.value)}
           />
           <select
             className="fm-select"
             value={uploadWeight}
             disabled={readOnly || busy}
-            aria-label="Weight"
+            aria-label={t('aria.fonts.weight')}
             onChange={(event) => setUploadWeight(Number(event.target.value))}
           >
             {ALLOWED_WEIGHTS.map((weight) => (
@@ -373,7 +375,7 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
             className="fm-select"
             value={uploadStyle}
             disabled={readOnly || busy}
-            aria-label="Style"
+            aria-label={t('aria.fonts.style')}
             onChange={(event) => setUploadStyle(event.target.value === 'italic' ? 'italic' : 'normal')}
           >
             <option value="normal">Normal</option>
@@ -385,7 +387,7 @@ export function FontsManagerField({ field, path, readOnly }: FontsManagerFieldPr
         </div>
       </section>
 
-      <section className="fm-panel" aria-label="Installed fonts">
+      <section className="fm-panel" aria-label={t('aria.fonts.installed')}>
         <p className="fm-meta">
           {installed.length === 0 ? 'No custom fonts installed.' : `${installed.length} installed. Choose one for the heading or body font above.`}
         </p>

@@ -95,7 +95,7 @@ export const ConditionsField: React.FC<{ path?: string }> = ({ path = 'condition
         <p className="m-0 text-[12px] text-red-700">{validateConditions(value)} Edit the JSON below.</p>
         <textarea
           className={`${inputClass} min-h-[120px] font-mono`}
-          aria-label="Conditions JSON"
+          aria-label={t('aria.conditionsJson')}
           value={text}
           onChange={(e) => {
             setRaw(e.target.value)

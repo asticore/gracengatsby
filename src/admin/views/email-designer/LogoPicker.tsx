@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useEffect, useState } from 'react'
 
@@ -17,6 +18,7 @@ const absoluteAddress = (url: string): string => (/^https?:\/\//i.test(url) ? ur
 
 /** Shows the chosen logo and lets the admin pick another from the Media library. */
 export function LogoPicker({ logo, onChange }: Props) {
+  const t = useAdminT()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<MediaItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -67,7 +69,7 @@ export function LogoPicker({ logo, onChange }: Props) {
         )}
       </div>
       {open && (
-        <div className="ed-logo__library" role="group" aria-label="Pictures in the Media library">
+        <div className="ed-logo__library" role="group" aria-label={t('aria.email.logoLibrary')}>
           {error && <p className="ed-notice ed-notice--error">{error}</p>}
           {!error && items === null && <p className="ed-muted">Loading pictures...</p>}
           {items !== null && items.length === 0 && (

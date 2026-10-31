@@ -99,7 +99,7 @@ export async function SecurityAuditView({ searchParams }: { searchParams?: Recor
       )}
 
       {page ? (
-        <nav aria-label="Pages" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+        <nav aria-label={ui.t('aria.pages')} style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
           {filter.page > 1 ? <a href={auditPageHref(filter, filter.page - 1)}>Newer</a> : null}
           <span>Page {filter.page}</span>
           {page.hasNext ? <a href={auditPageHref(filter, filter.page + 1)}>Older</a> : null}

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect } from 'react'
 import { FieldLabel, useField, useFormFields } from '@/engine/ui'
 import type { Field } from '@/engine'
@@ -22,6 +23,7 @@ const SAMPLE = 'The quick brown fox jumps over the lazy dog'
  * (a built-in key or an installed font id) as plain text.
  */
 export function FontPickerField({ field, path, readOnly }: FontPickerFieldProps) {
+  const t = useAdminT()
   const { value, setValue } = useField<string | null | undefined>({ path })
   const role = (field.admin as { fontRole?: string } | undefined)?.fontRole === 'body' ? 'body' : 'heading'
 
@@ -67,7 +69,7 @@ export function FontPickerField({ field, path, readOnly }: FontPickerFieldProps)
 
   return (
     <div className="field-type fm-picker">
-      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
 
       <select
         id={`field-${path}`}
@@ -94,7 +96,7 @@ export function FontPickerField({ field, path, readOnly }: FontPickerFieldProps)
         )}
       </select>
 
-      <p className="fm-sample" style={{ fontFamily: stackFor() }} aria-label="Font preview">
+      <p className="fm-sample" style={{ fontFamily: stackFor() }} aria-label={t('aria.fontPreview')}>
         {SAMPLE}
       </p>
 

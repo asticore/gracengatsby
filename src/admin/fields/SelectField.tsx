@@ -19,7 +19,7 @@ const SingleSelect: React.FC<{ field: Field; path: string; readOnly?: boolean; o
 
   return (
     <div className="field-type select">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <select
         id={`field-${path}`}
         name={path}
@@ -41,7 +41,7 @@ const MultiSelect: React.FC<{ field: Field; path: string; readOnly?: boolean; op
 
   return (
     <div className="field-type select">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <select
         id={`field-${path}`}
         name={path}

@@ -97,7 +97,7 @@ export function UserPermissionOverridesField({ field, path, readOnly }: UserPerm
   if (isAdmin) {
     return (
       <div className="field-type">
-        <FieldLabel label={fieldLabel(field)} name={field.name} />
+        <FieldLabel label={fieldLabel(field)} name={field.name} path={path} />
         <div style={{
           padding: '1rem',
           background: 'var(--color-bg-secondary, #f5f5f5)',
@@ -113,7 +113,7 @@ export function UserPermissionOverridesField({ field, path, readOnly }: UserPerm
 
   return (
     <div className="field-type">
-      <FieldLabel label={fieldLabel(field)} name={field.name} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} path={path} />
 
       {isLoading && (
         <div style={{ padding: '1rem', color: 'var(--color-text-secondary, #666)' }}>

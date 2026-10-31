@@ -32,7 +32,7 @@ export function LayoutControls({ styles, onChange }: Props) {
 
   return (
     <div className="ts-list">
-      <section className="ts-item" aria-label="Forms">
+      <section className="ts-item" aria-label={t('aria.layout.forms')}>
         <h3 className="ts-item__title">Forms</h3>
         <div className="ts-grid">
           <ColourRefInput label={t('ly.lit.field_background')} value={g.forms.fieldBg} colours={colours} allowTransparent onChange={(v) => set('forms.fieldBg', v)} />
@@ -52,7 +52,7 @@ export function LayoutControls({ styles, onChange }: Props) {
         </div>
       </section>
 
-      <section className="ts-item" aria-label="Links">
+      <section className="ts-item" aria-label={t('aria.layout.links')}>
         <h3 className="ts-item__title">Links</h3>
         <div className="ts-grid">
           <ColourRefInput label={t('ly.lit.hover_colour')} value={g.links.hoverColour} colours={colours} onChange={(v) => set('links.hoverColour', v)} />
@@ -65,7 +65,7 @@ export function LayoutControls({ styles, onChange }: Props) {
         </div>
       </section>
 
-      <section className="ts-item" aria-label="Images">
+      <section className="ts-item" aria-label={t('aria.layout.images')}>
         <h3 className="ts-item__title">Images</h3>
         <div className="ts-grid">
           <NumberField label={t('ly.lit.corner_radius_px')} value={g.images.radius} min={0} max={999} onChange={(v) => set('images.radius', v)} />
@@ -75,7 +75,7 @@ export function LayoutControls({ styles, onChange }: Props) {
         </div>
       </section>
 
-      <section className="ts-item" aria-label="Containers">
+      <section className="ts-item" aria-label={t('aria.layout.containers')}>
         <h3 className="ts-item__title">Containers</h3>
         <div className="ts-grid">
           <NumberField label={t('ly.lit.maximum_width_px')} value={g.containers.maxWidth} min={640} max={1920} step={10} onChange={(v) => set('containers.maxWidth', v)} />
@@ -94,7 +94,7 @@ export function LayoutControls({ styles, onChange }: Props) {
         </div>
       </section>
 
-      <section className="ts-item" aria-label="Scales">
+      <section className="ts-item" aria-label={t('aria.layout.scales')}>
         <h3 className="ts-item__title">Scales</h3>
         <div className="ts-grid">
           <NumberField label={t('ly.lit.small_radius_px')} value={g.scales.radiusSm} min={0} max={999} onChange={(v) => set('scales.radiusSm', v)} />
@@ -103,14 +103,14 @@ export function LayoutControls({ styles, onChange }: Props) {
           <NumberField label={t('ly.lit.spacing_base_px')} value={g.scales.spaceBase} min={2} max={16} onChange={(v) => set('scales.spaceBase', v)} help="Spacing steps are this value times 1, 2, 3, 4, 6, 8, 12 and 16." />
         </div>
         <h4 className="ts-section">Resulting spacing scale</h4>
-        <ul className="ts-scale" aria-label="Resulting spacing values">
+        <ul className="ts-scale" aria-label={t('aria.layout.spacingValues')}>
           {spaceScalePreview(g.scales.spaceBase).map((step) => (
             <li key={step.name}><code>{step.name}</code> <span>{step.px}px</span></li>
           ))}
         </ul>
       </section>
 
-      <section className="ts-item" aria-label="Breakpoints">
+      <section className="ts-item" aria-label={t('aria.layout.breakpoints')}>
         <h3 className="ts-item__title">Breakpoints</h3>
         <div className="ts-grid">
           <NumberField label={t('ly.lit.tablet_up_to_px')} value={g.breakpoints.tablet} min={600} max={1280} onChange={(v) => set('breakpoints.tablet', v)} />
@@ -119,7 +119,7 @@ export function LayoutControls({ styles, onChange }: Props) {
         {breakpointError ? <p role="alert" className="ts-notice ts-notice--error">{breakpointError}</p> : <p className="ts-help">Screens up to the tablet width use tablet rules; up to the mobile width use mobile rules.</p>}
       </section>
 
-      <section className="ts-item" aria-label="Custom CSS">
+      <section className="ts-item" aria-label={t('aria.layout.customCss')}>
         <h3 className="ts-item__title">Custom CSS</h3>
         <div className="ts-field">
           <label htmlFor={cssId} className="ts-label">Custom CSS</label>

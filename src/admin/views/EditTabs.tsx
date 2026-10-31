@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { RESULTS_HASH, tabFromHash } from './results/resultsTabs'
 import './edit-tabs.css'
@@ -31,6 +32,7 @@ export function EditTabs({
   /** Set when the user may not open the results tab: the tab stays, marked unavailable, and its panel explains why. */
   deniedReason?: string
 }) {
+  const t = useAdminT()
   const [active, setActive] = useState<TabKey>('edit')
   const [resultsMounted, setResultsMounted] = useState(false)
   const editTab = useRef<HTMLButtonElement>(null)
@@ -77,7 +79,7 @@ export function EditTabs({
 
   return (
     <div className="et-root">
-      <div aria-label="Document views" className="et-tablist" role="tablist">
+      <div aria-label={t('aria.docViews')} className="et-tablist" role="tablist">
         <button
           aria-controls="et-panel-edit"
           aria-selected={active === 'edit'}

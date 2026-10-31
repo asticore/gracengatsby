@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useMemo, useState } from 'react'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
@@ -53,6 +54,7 @@ const draftFor = (template: DesignerTemplate): Draft => ({ subject: template.sub
 
 /** The Email designer screen: pick an email, edit its subject and blocks, see the preview, save. */
 export function EmailDesignerClient({ templates, brand: initialBrand, logo: initialLogo }: Props) {
+  const t = useAdminT()
   const [key, setKey] = useState(templates[0]?.key ?? '')
   const [saved, setSaved] = useState<Record<string, Draft>>(() => Object.fromEntries(templates.map((t) => [t.key, draftFor(t)])))
   const [drafts, setDrafts] = useState<Record<string, Draft>>(saved)
@@ -132,7 +134,7 @@ export function EmailDesignerClient({ templates, brand: initialBrand, logo: init
 
       <div className="ed-layout">
         <div className="ed-main">
-          <section className="ed-section" aria-label="Choose an email">
+          <section className="ed-section" aria-label={t('aria.email.chooseEmail')}>
             <label className="ed-field">
               <span className="ed-field__label">Email to design</span>
               <select className="ed-input" value={key} onChange={(event) => pickTemplate(event.target.value)}>
@@ -151,7 +153,7 @@ export function EmailDesignerClient({ templates, brand: initialBrand, logo: init
               <span className="ed-field__hint">Tags are filled in when the email is sent.</span>
             </label>
 
-            <div className="ed-tags" aria-label="Tags you can use">
+            <div className="ed-tags" aria-label={t('aria.email.tags')}>
               <span className="ed-field__label">Tags you can use</span>
               {tags.length === 0 && <span className="ed-muted">This email has no tags.</span>}
               {tags.map((tag) => (

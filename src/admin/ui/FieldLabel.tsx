@@ -10,7 +10,7 @@
 
 import React from 'react'
 
-import { useAdminLabel } from '@/admin/i18n/AdminUiProvider'
+import { useAdminFieldLabel } from '@/admin/i18n/AdminUiProvider'
 
 export type StaticLabel = Record<string, string> | string
 
@@ -25,11 +25,13 @@ export const FieldLabel: React.FC<{
   label?: StaticLabel
   /** The field's name in the config. Its label is translated when the reference table has one. */
   name?: string
+  /** The field's path in the config (`metaPixel.enabled`). A label keyed by this path wins over `name`. */
+  path?: string
   required?: boolean
-}> = ({ htmlFor, label, name, required }) => {
-  const labelFor = useAdminLabel()
+}> = ({ htmlFor, label, name, path, required }) => {
+  const fieldLabelFor = useAdminFieldLabel()
   const configLabel = resolveLabel(label)
-  const resolved = configLabel && name ? labelFor('field', name, configLabel) : configLabel
+  const resolved = configLabel && name ? fieldLabelFor(path, name, configLabel) : configLabel
   if (!resolved) return null
 
   return (

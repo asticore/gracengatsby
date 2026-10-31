@@ -48,7 +48,7 @@ export function ColorPickerField({ field, path, readOnly }: ColorPickerFieldProp
 
   return (
     <div className="field-type">
-      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
 
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
         <input

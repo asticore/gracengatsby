@@ -16,7 +16,7 @@ export const TextFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, p
 
   return (
     <div className="field-type text">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <TextInput
         path={path}
         value={value || ''}

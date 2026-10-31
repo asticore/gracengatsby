@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useRef, useSyncExternalStore } from 'react'
 import type { Field } from '@/engine'
 import type { ConsentConfig } from '@/features/consent/config'
@@ -51,6 +52,7 @@ type Props = {
  * global back with those values unchanged.
  */
 export const CookieConsentClient: React.FC<Props> = ({ doc, fields, config }) => {
+  const t = useAdminT()
   const hash = useSyncExternalStore(subscribeToHash, readHash, readServerHash)
   const active = resolveActiveTab(hash, TAB_SLUGS)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -93,7 +95,7 @@ export const CookieConsentClient: React.FC<Props> = ({ doc, fields, config }) =>
 
       <div className="settings-page__sections">
         <div className="settings-page__section settings-tabs">
-          <div role="tablist" aria-label="Cookie consent" className="settings-tabs__list">
+          <div role="tablist" aria-label={t('aria.cookieConsent')} className="settings-tabs__list">
             {COOKIE_CONSENT_TABS.map((tab, index) => {
               const selected = tab.slug === active
               return (

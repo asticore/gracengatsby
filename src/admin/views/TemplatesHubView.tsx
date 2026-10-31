@@ -195,7 +195,7 @@ export async function TemplatesHubView({ searchParams = {} }: { searchParams?: R
                 <a
                   href={`?${serializeListState(state, { filters: state.filters.filter((_, i) => i !== idx), page: 1 })}`}
                   className="list-filter-chip-remove"
-                  aria-label="Remove filter"
+                  aria-label={ui.t('aria.removeFilter')}
                 >
                   ×
                 </a>

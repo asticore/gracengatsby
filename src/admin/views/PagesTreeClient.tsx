@@ -1,6 +1,7 @@
 'use client'
 
 import { AdminLink } from '@/admin/adminRoute/AdminLink'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -451,6 +452,7 @@ function TreeNodeItem({
   onKeyDown,
   canEdit,
 }: TreeNodeItemProps) {
+  const t = useAdminT()
   const { page, children, depth } = node
   const isExpanded = expandedIds.has(page.id)
   const isDragging = draggedId === page.id
@@ -503,7 +505,7 @@ function TreeNodeItem({
             className="pages-tree__handle"
             {...attributes}
             {...listeners}
-            aria-label={`Drag ${page.title}`}
+            aria-label={t('aria.drag', { name: page.title })}
             type="button"
           >
             ⠿

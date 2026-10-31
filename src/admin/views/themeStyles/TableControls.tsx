@@ -31,7 +31,7 @@ export function TableControls({ styles, colours, onChange }: Props) {
                   {tt('tb.lit.use_as_default')}
                 </label>
                 <button type="button" className="ts-btn" disabled={tables.length >= LIMITS.tables} onClick={() => setTables(duplicateTable(tables, t.id))}>{tt('tb.lit.duplicate')}</button>
-                {!t.system && <button type="button" className="ts-btn ts-btn--danger" aria-label={`Delete ${t.name}`} onClick={() => onChange(removeTable(styles, t.id))}>{tt('tb.lit.delete')}</button>}
+                {!t.system && <button type="button" className="ts-btn ts-btn--danger" aria-label={tt('aria.delete', { name: t.name })} onClick={() => onChange(removeTable(styles, t.id))}>{tt('tb.lit.delete')}</button>}
               </div>
             </div>
             <div className="ts-grid">

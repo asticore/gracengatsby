@@ -14,8 +14,9 @@ type Props = { styles: ThemeStyles; onChange: (next: ThemeStyles) => void; onNot
 const STRIP_IDS = ['primary', 'secondary', 'accent', 'background', 'surface', 'text'] as const
 
 function ColourStrip({ preset }: { preset: ThemePreset }) {
+  const tt = useAdminT()
   return (
-    <div className="ts-strip" role="img" aria-label={`Colours in ${preset.name}`}>
+    <div className="ts-strip" role="img" aria-label={tt('aria.coloursIn', { name: preset.name })}>
       {STRIP_IDS.map((id) => (
         <span key={id} style={{ background: resolveColour(`@${id}`, preset.data.colours) || 'transparent' }} />
       ))}
@@ -48,7 +49,7 @@ export function PresetControls({ styles, onChange, onNotice }: Props) {
             <div key={preset.id} className="ts-item">
               <h4 className="ts-item__title">{preset.name}</h4>
               <ColourStrip preset={preset} />
-              <div><button type="button" className="ts-btn" aria-label={`Apply ${preset.name}`} onClick={() => apply(preset)}>{tt('ps.lit.apply')}</button></div>
+              <div><button type="button" className="ts-btn" aria-label={tt('aria.apply', { name: preset.name })} onClick={() => apply(preset)}>{tt('ps.lit.apply')}</button></div>
             </div>
           ))}
         </div>
@@ -88,12 +89,12 @@ export function PresetControls({ styles, onChange, onNotice }: Props) {
                 )}
                 <ColourStrip preset={preset} />
                 <div className="ts-inline">
-                  <button type="button" className="ts-btn" aria-label={`Apply ${preset.name}`} onClick={() => apply(preset)}>{tt('ps.lit.apply')}</button>
-                  <button type="button" className="ts-btn" aria-label={`Rename ${preset.name}`} onClick={() => { setRenamingId(preset.id); setDraft(preset.name) }}>{tt('ps.lit.rename')}</button>
+                  <button type="button" className="ts-btn" aria-label={tt('aria.apply', { name: preset.name })} onClick={() => apply(preset)}>{tt('ps.lit.apply')}</button>
+                  <button type="button" className="ts-btn" aria-label={tt('aria.rename', { name: preset.name })} onClick={() => { setRenamingId(preset.id); setDraft(preset.name) }}>{tt('ps.lit.rename')}</button>
                   <button
                     type="button"
                     className="ts-btn ts-btn--danger"
-                    aria-label={`Delete ${preset.name}`}
+                    aria-label={tt('aria.delete', { name: preset.name })}
                     onClick={() => { if (window.confirm(`Delete the preset "${preset.name}"?`)) onChange(deletePreset(styles, preset.id)) }}
                   >
                     {tt('ps.lit.delete')}

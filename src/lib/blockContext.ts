@@ -4,6 +4,8 @@ import { localizeForRequest } from '@/features/multilingual/requestLinkLocale'
 
 /** Public page data for dynamic-text tags. Never put private data here: pages are cached for all visitors. */
 export type BlockContext = {
+  /** Preview as: the visitor type the preview assumes (never set on a live page). */
+  audience?: 'members' | 'guests'
   post?: { title?: unknown; date?: unknown; excerpt?: unknown; author?: unknown; featuredImage?: { url?: unknown; alt?: unknown }; categories?: string[] }
   page?: { title?: unknown }
   product?: { id?: number; title?: unknown; price?: unknown; inventory?: number | null; ratingAverage?: number | null; ratingCount?: number | null; featuredImage?: { url?: unknown; alt?: unknown } }

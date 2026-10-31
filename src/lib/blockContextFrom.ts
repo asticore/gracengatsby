@@ -2,11 +2,18 @@ import type { ArchiveItem, BlockContext } from '@/lib/blockContext'
 import { formatTagDate, formatTagPrice, resolveTags } from '@/lib/dynamicTags'
 import { buildBreadcrumbs } from '@/lib/templateWidgets'
 
-/** The collection a site-template kind previews with, or null when it has no single item (header, footer, archives, 404). */
+/**
+ * The collection a site-template kind previews with, or null when it has no sample item (header, footer, 404,
+ * search). Single kinds preview one item; archives and sidebars preview a sample post (shop archive: a product) so
+ * their widgets show real text.
+ */
 export function sampleCollectionFor(kind: unknown): 'posts' | 'products' | 'events' | null {
   if (kind === 'single-post') return 'posts'
   if (kind === 'single-product') return 'products'
   if (kind === 'single-event') return 'events'
+  if (kind === 'archive-shop') return 'products'
+  if (kind === 'archive-blog' || kind === 'archive-category' || kind === 'archive-tag' || kind === 'archive-author') return 'posts'
+  if (kind === 'sidebar-left' || kind === 'sidebar-right') return 'posts'
   return null
 }
 

@@ -155,6 +155,11 @@ html[data-theme='dark'] .ve-root {
   font: inherit;
 }
 
+.ve-preview-as-group {
+  display: inline-flex;
+  align-items: center;
+}
+
 .ve-preview-as__error {
   color: #b42318;
 }

@@ -10,9 +10,9 @@ vi.mock('@/lib/engine', () => ({
 
 // Mock getSeoContext
 vi.mock('@/features/seo/settings', async (orig) => {
-  const module = await orig() as any
+  const actual = await orig() as any
   return {
-    ...module,
+    ...actual,
     getSeoContext: vi.fn(),
   }
 })

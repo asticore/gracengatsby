@@ -8,6 +8,7 @@ import { getAdminContext, hasAdminPanelAccess, isAdminUser } from '@/admin/auth'
 import { AdminDeleteOrganizationForm } from '@/features/organizations/components/OrganizationForms'
 import { adminListOrganizations } from '@/features/organizations/service'
 import { adminRuntime } from '@/features/organizations/wiring'
+import { SortableTable } from '@/admin/table/SortableTable'
 
 /**
  * /admin/security/organizations. Every customer organisation with its member
@@ -41,30 +42,32 @@ export async function OrganizationsView() {
       {orgs.length === 0 ? (
         <p>{ui.t('cu.lit.no_orgs_yet')}</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th align="left">{ui.t('cu.lit.col_name')}</th>
-              <th align="left">{ui.t('cu.lit.col_address_name')}</th>
-              <th align="right">{ui.t('cu.lit.col_members')}</th>
-              <th align="left">{ui.t('cu.lit.col_created')}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {orgs.map((org) => (
-              <tr key={org.id}>
-                <td>{org.name}</td>
-                <td>{org.slug}</td>
-                <td align="right">{org.memberCount}</td>
-                <td>{org.createdAt.slice(0, 10)}</td>
-                <td align="right">
-                  <AdminDeleteOrganizationForm organizationId={org.id} name={org.name} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <SortableTable
+          tableStyle={{ width: '100%', borderCollapse: 'collapse' }}
+          columns={[
+            { key: 'name', label: ui.t('cu.lit.col_name') },
+            { key: 'slug', label: ui.t('cu.lit.col_address_name') },
+            { key: 'members', label: ui.t('cu.lit.col_members'), align: 'right' },
+            { key: 'created', label: ui.t('cu.lit.col_created') },
+            { key: 'actions', label: '', sortable: false, align: 'right' },
+          ]}
+          rows={orgs.map((org) => ({
+            id: String(org.id),
+            sortValues: {
+              name: org.name,
+              slug: org.slug,
+              members: org.memberCount,
+              created: org.createdAt,
+            },
+            cells: {
+              name: org.name,
+              slug: org.slug,
+              members: org.memberCount,
+              created: org.createdAt.slice(0, 10),
+              actions: <AdminDeleteOrganizationForm organizationId={org.id} name={org.name} />,
+            },
+          }))}
+        />
       )}
     </div>
   )

@@ -120,8 +120,9 @@ import * as migration_20270103_100000_tracking_value_source from './20270103_100
 import * as migration_20270110_100000_api_endpoints from './20270110_100000_api_endpoints';
 import * as migration_20270117_100000_webhooks from './20270117_100000_webhooks';
 import * as migration_20270118_100000_ai_usage_estimated from './20270118_100000_ai_usage_estimated';
-import * as migration_20270119_100000_template_libraries from './20270119_100000_template_libraries';
+import * as migration_20270125_100000_template_libraries from './20270125_100000_template_libraries';
 
+import * as migration_20270124_100000_privacy_requests from './20270124_100000_privacy_requests';
 export const migrations = [
   {
     up: migration_20250929_111647.up,
@@ -734,8 +735,13 @@ export const migrations = [
     name: '20270118_100000_ai_usage_estimated',
   },
   {
-    up: migration_20270119_100000_template_libraries.up,
-    down: migration_20270119_100000_template_libraries.down,
-    name: '20270119_100000_template_libraries',
+    up: migration_20270124_100000_privacy_requests.up,
+    down: migration_20270124_100000_privacy_requests.down,
+    name: '20270124_100000_privacy_requests',
+  },
+  {
+    up: migration_20270125_100000_template_libraries.up,
+    down: migration_20270125_100000_template_libraries.down,
+    name: '20270125_100000_template_libraries',
   },
 ];

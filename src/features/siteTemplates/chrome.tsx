@@ -2,8 +2,10 @@ import React from 'react'
 
 import { prepareTemplateBlocks, resolveSiteTemplate } from './resolve'
 import { renderTemplateBlocks } from './render'
-import { parseColumns, type SectionNode } from '@/lib/sectionTree'
-import type { SiteTemplateKind } from './types'
+import { stripContentSlots } from './nodes'
+import type { SiteTemplateKind, TemplateContext } from './types'
+
+export { stripContentSlots }
 
 /** The request path without any query string. Reads x-pathname first, then next-url, then ''. */
 export const requestPathOf = (reader: { get(name: string): string | null }): string => {
@@ -12,36 +14,12 @@ export const requestPathOf = (reader: { get(name: string): string | null }): str
   return cut === -1 ? raw : raw.slice(0, cut)
 }
 
-const isSlot = (node: SectionNode): boolean => node.blockType === 'element' && node.elementType === 'content-slot'
+/** Where a request is, beyond its path: the host it arrived on and its language. Both feed the conditions. */
+export type ChromeScope = { domain?: string | null; language?: string | null }
 
-/**
- * Header and footer are drawn in the layout, outside the page's render, so there is no page content to
- * place: any Template content element is removed (top level and inside sections).
- */
-export function stripContentSlots(blocks: unknown[]): unknown[] {
-  const out: unknown[] = []
-  for (const raw of blocks) {
-    if (!raw || typeof raw !== 'object') continue
-    const node = raw as SectionNode
-    if (isSlot(node)) continue
-    if (node.blockType === 'section') {
-      out.push({ ...node, columns: stripNested(parseColumns(node.columns)) })
-    } else out.push(node)
-  }
-  return out
-}
-
-const stripNested = (columns: ReturnType<typeof parseColumns>): ReturnType<typeof parseColumns> =>
-  columns.map((column) => ({
-    ...column,
-    blocks: (column.blocks || [])
-      .filter((n) => !isSlot(n))
-      .map((n) => (n.blockType === 'section' ? { ...n, columns: stripNested(parseColumns(n.columns)) } : n)),
-  }))
-
-const render = async (kind: SiteTemplateKind, path: string): Promise<React.ReactNode | null> => {
+const render = async (kind: SiteTemplateKind, path: string, scope: ChromeScope): Promise<React.ReactNode | null> => {
   try {
-    const template = await resolveSiteTemplate(kind, { path })
+    const template = await resolveSiteTemplate(kind, contextOf(path, scope))
     if (!template) return null
     const blocks = stripContentSlots(await prepareTemplateBlocks(template))
     return blocks.length > 0 ? renderTemplateBlocks(blocks) : null
@@ -50,11 +28,26 @@ const render = async (kind: SiteTemplateKind, path: string): Promise<React.React
   }
 }
 
+const contextOf = (path: string, scope: ChromeScope): TemplateContext => ({
+  path,
+  ...(scope.domain !== undefined ? { domain: scope.domain } : {}),
+  ...(scope.language !== undefined ? { language: scope.language } : {}),
+})
+
 /**
  * The site header and footer from templates, or null for each when none matches (the layout then draws its
  * own). Both share one query through loadSiteTemplates.
  */
-export async function renderChromeTemplates(path: string): Promise<{ header: React.ReactNode | null; footer: React.ReactNode | null }> {
-  const [header, footer] = await Promise.all([render('header', path), render('footer', path)])
+export async function renderChromeTemplates(path: string, scope: ChromeScope = {}): Promise<{ header: React.ReactNode | null; footer: React.ReactNode | null }> {
+  const [header, footer] = await Promise.all([render('header', path, scope), render('footer', path, scope)])
   return { header, footer }
+}
+
+/**
+ * The left and right sidebars that apply to this request, or null for each. The layout places them beside the
+ * page's main content (see SidebarLayout).
+ */
+export async function renderSidebarTemplates(path: string, scope: ChromeScope = {}): Promise<{ left: React.ReactNode | null; right: React.ReactNode | null }> {
+  const [left, right] = await Promise.all([render('sidebar-left', path, scope), render('sidebar-right', path, scope)])
+  return { left, right }
 }

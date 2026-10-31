@@ -1,8 +1,8 @@
 import type { LocationGroups, LocationRule } from '@/fields/customFields/types'
 
-import { sanitizeConditions } from './conditions'
+import { sanitizeConditions, specificityOf } from './conditions'
 import { summariseConditions } from './conditionsSummary'
-import { KIND_LABELS, SITE_TEMPLATE_KINDS, type SiteTemplateKind } from './kinds'
+import { KIND_LABELS, OPTIONAL_KINDS, SITE_TEMPLATE_KINDS, type SiteTemplateKind } from './kinds'
 
 /** The part of a site-templates row the coverage check reads. Matches the resolver's rules for "in use". */
 export type CoverageTemplate = {
@@ -37,8 +37,10 @@ export const MISSING_MESSAGES: Record<SiteTemplateKind, string> = {
   'archive-category': 'No category archive template: category pages show the default layout',
   'archive-tag': 'No tag archive template: tag pages show the default layout',
   'archive-author': 'No author archive template: author pages show the default layout',
-  // Loop item templates are drawn by a Loop grid, not by the site, so a missing one is not a coverage gap.
+  // Loop item templates are drawn by a Loop grid, and sidebars are optional, so a missing one is not a coverage gap.
   loop: 'No loop item template',
+  'sidebar-left': 'No left sidebar: pages have no left sidebar',
+  'sidebar-right': 'No right sidebar: pages have no right sidebar',
 }
 
 /** Same rule the resolver uses: enabled (null counts as on), has blocks, conditions understood. */
@@ -57,8 +59,9 @@ const idOrder = (a: CoverageTemplate, b: CoverageTemplate): number => {
   return String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0
 }
 
-/** Winner order used by the resolver: highest priority, then lowest id. */
-const winnerOrder = (a: CoverageTemplate, b: CoverageTemplate): number => priorityOf(b) - priorityOf(a) || idOrder(a, b)
+/** Winner order used by the resolver: highest priority, then most specific conditions, then lowest id. */
+const winnerOrder = (a: CoverageTemplate, b: CoverageTemplate): number =>
+  priorityOf(b) - priorityOf(a) || specificityOf(b) - specificityOf(a) || idOrder(a, b)
 
 const nameOf = (t: CoverageTemplate): string => (t.name && t.name.trim() !== '' ? t.name.trim() : `Untitled ${t.id}`)
 
@@ -127,6 +130,8 @@ export function computeTemplateCoverage(templates: CoverageTemplate[]): Coverage
     const inUse = ofKind.filter(isInUse)
 
     if (inUse.length === 0) {
+      // Sidebars are optional: no template means no sidebar, which is not a gap. Overlaps are still reported below.
+      if (OPTIONAL_KINDS.includes(kind)) continue
       const note = ofKind.length > 0 ? ` A ${KIND_LABELS[kind].toLowerCase()} template exists but is switched off, empty or has invalid conditions, so it is not used.` : ''
       warnings.push({ code: 'missing', kind, templateIds: ofKind.map((t) => t.id), message: `${MISSING_MESSAGES[kind]}.${note}` })
       continue

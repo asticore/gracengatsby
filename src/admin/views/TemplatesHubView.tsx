@@ -10,6 +10,7 @@ import { getAdminContext, hasAdminPanelAccess } from '@/admin/auth'
 import { formatDateCell } from '@/admin/list/dateFormatter'
 import { loadListPrefs } from '@/admin/list/listPrefs'
 import { parseListSearchParams, resolveVisibleColumns, serializeListState, type ListState } from '@/admin/list/listQuery'
+import { getAdminUi, type AdminUiServer } from '@/admin/i18n/serverUi'
 import { computeTemplateCoverage, type CoverageTemplate } from '@/features/siteTemplates/coverage'
 import { StatusSwitch } from '@/features/templatesHub/admin/StatusSwitch'
 import { TemplateLibraryPanel } from '@/features/templateLibraries/admin/TemplateLibraryPanel'
@@ -35,7 +36,7 @@ const libraryLink = '/settings/template-libraries'
 /** Reads one collection for the hub at depth 0, or null when the admin cannot read it. */
 async function readCollection(
   context: Awaited<ReturnType<typeof getAdminContext>>,
-  collection: HubCollection,
+  collection: HubCollection | 'pages',
 ): Promise<HubSourceDoc[] | null> {
   if (!context.permissions.collections?.[collection]?.read) return null
   const result = await context.engine.find({ collection, depth: 0, limit: HUB_READ_LIMIT, user: context.user })
@@ -49,7 +50,17 @@ function nextSort(state: ListState, column: string): string {
   return column
 }
 
-function cellFor(column: string, row: HubRow): ReactNode {
+/** The "Where used" cell: the pages and templates that place this template part, or a plain note when none do. */
+function usedInCell(row: HubRow, ui: AdminUiServer): ReactNode {
+  if (row.usedIn.length === 0) return ui.t('templates.whereUsed.none')
+  return (
+    <>
+      {ui.t('templates.whereUsed.placedIn', { places: row.usedIn.map((place) => place.name).join(', ') })}
+    </>
+  )
+}
+
+function cellFor(column: string, row: HubRow, ui: AdminUiServer): ReactNode {
   switch (column) {
     case 'name':
       return (
@@ -63,6 +74,8 @@ function cellFor(column: string, row: HubRow): ReactNode {
       return row.toggleable ? <StatusSwitch id={row.id} name={row.name} on={row.status === 'on'} /> : row.statusLabel
     case 'where':
       return row.where
+    case 'whereUsed':
+      return row.type === 'page-template' || row.type === 'reusable-section' ? '-' : usedInCell(row, ui)
     case 'priority':
       return row.priority === null ? '-' : String(row.priority)
     case 'updatedAt':
@@ -81,10 +94,13 @@ export async function TemplatesHubView({ searchParams = {} }: { searchParams?: R
   const context = await getAdminContext()
   if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
-  const [siteDocs, pageDocs, sectionDocs] = await Promise.all([
+  const ui = await getAdminUi()
+  const [siteDocs, pageDocs, sectionDocs, pageRows] = await Promise.all([
     readCollection(context, 'site-templates'),
     readCollection(context, 'page-templates'),
     readCollection(context, 'reusable-sections'),
+    // Pages are read only to find which of them place a template part (Where used). Missing without access.
+    readCollection(context, 'pages'),
   ])
 
   // Prefs are saved under the site-templates key: the hub is that collection's home now (its list URL redirects here).
@@ -99,7 +115,7 @@ export async function TemplatesHubView({ searchParams = {} }: { searchParams?: R
   }
 
   const { visibleColumns, visibleNames } = resolveVisibleColumns(HUB_COLUMNS, state.cols, savedPrefs.cols, HUB_DEFAULT_COLUMNS)
-  const allRows = buildHubRows({ siteTemplates: siteDocs ?? [], pageTemplates: pageDocs ?? [], reusableSections: sectionDocs ?? [] })
+  const allRows = buildHubRows({ siteTemplates: siteDocs ?? [], pageTemplates: pageDocs ?? [], reusableSections: sectionDocs ?? [], pages: pageRows ?? [] })
   const matching = sortHubRows(filterHubRows(allRows, state.filters, state.q), state.sort)
   const paged = pageHubRows(matching, state.page, state.limit)
 
@@ -203,7 +219,7 @@ export async function TemplatesHubView({ searchParams = {} }: { searchParams?: R
                   <tr key={row.key} className="list-row">
                     {visibleColumns.map((column) => (
                       <td key={column.name} className="list-td">
-                        {cellFor(column.name, row)}
+                        {cellFor(column.name, row, ui)}
                       </td>
                     ))}
                     <td className="list-td" style={{ whiteSpace: 'nowrap' }}>

@@ -3,6 +3,7 @@ import { localeForRecipient } from '@/features/email/recipientLocale'
 import { loadStrings, t } from '@/features/uiStrings'
 import { dueReminder, signCartToken, type AbandonedSettings } from '../lib/abandonedCart'
 import { escapeHtml } from '../lib/invoice'
+import { configuredSiteOrigin } from '@/utilities/siteOrigin'
 import { rawD1, runChanges, SQL } from './db'
 
 type Engine = { findGlobal: (a: unknown) => Promise<Record<string, unknown>> }
@@ -32,7 +33,9 @@ export async function runAbandonedCartReminders(engine: Engine, now = new Date()
   const secret = process.env.ENGAGE_SECRET
   if (!secret) return { sent: 0 }
   const site = (await engine.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: true }).catch((): Record<string, unknown> => ({}))) as { siteName?: string }
-  const baseUrl = (process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
+  // Recovery and unsubscribe links must be absolute; with no SITE_URL the reminders wait until it is set.
+  const baseUrl = configuredSiteOrigin()
+  if (!baseUrl) return { sent: 0 }
   const d1 = await rawD1()
   const since = new Date(now.getTime() - 14 * 24 * 3_600_000).toISOString()
   const rows = (

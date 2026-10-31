@@ -1,5 +1,5 @@
 import { pickEnum, safeClassList, safeCssId } from './sanitize'
-import { BACKGROUND_TYPES, BORDER_STYLES, type Breakpoint, type DesignV2, type Dimensions, type Length, type Rs, type Shadow } from './types'
+import { BACKGROUND_TYPES, BORDER_STYLES, UNITS, type Breakpoint, type DesignV2, type Dimensions, type Length, type Rs, type Shadow, type Unit } from './types'
 
 /**
  * Converts a v1 flat design (BlockStyle in src/lib/blockStyle.ts) to v2.
@@ -42,26 +42,43 @@ function shadowFromPreset(preset: 'sm' | 'md' | 'lg'): Shadow {
   }
 }
 
-/** Maps v1 spacing fields into spacing.padding / spacing.margin. */
+/**
+ * Maps v1 spacing fields into spacing.padding / spacing.margin.
+ *
+ * v1 writes desktop padding and margin in `paddingUnit` / `marginUnit` (any
+ * valid length unit, default px); the mobile padding fields are always px.
+ * The unit is carried over so the rendered value is the same.
+ */
 function mapSpacing(raw: Record<string, unknown>, used: Set<string>, out: DesignV2): void {
   const padding: Dimensions = {}
   const margin: Dimensions = {}
-  const sides: Array<[string, Dimensions, 'top' | 'bottom', Breakpoint]> = [
-    ['paddingTop', padding, 'top', 'desktop'],
-    ['paddingBottom', padding, 'bottom', 'desktop'],
-    ['paddingTopMobile', padding, 'top', 'mobile'],
-    ['paddingBottomMobile', padding, 'bottom', 'mobile'],
-    ['marginTop', margin, 'top', 'desktop'],
-    ['marginBottom', margin, 'bottom', 'desktop'],
+  const padUnit = lengthUnitOf(raw.paddingUnit)
+  const marginUnit = lengthUnitOf(raw.marginUnit)
+  if (raw.paddingUnit !== undefined) used.add('paddingUnit')
+  if (raw.marginUnit !== undefined) used.add('marginUnit')
+  const sides: Array<[string, Dimensions, 'top' | 'right' | 'bottom' | 'left', Breakpoint, Unit]> = [
+    ['paddingTop', padding, 'top', 'desktop', padUnit],
+    ['paddingBottom', padding, 'bottom', 'desktop', padUnit],
+    ['paddingLeft', padding, 'left', 'desktop', padUnit],
+    ['paddingRight', padding, 'right', 'desktop', padUnit],
+    ['paddingTopMobile', padding, 'top', 'mobile', 'px'],
+    ['paddingBottomMobile', padding, 'bottom', 'mobile', 'px'],
+    ['marginTop', margin, 'top', 'desktop', marginUnit],
+    ['marginBottom', margin, 'bottom', 'desktop', marginUnit],
   ]
-  for (const [key, dims, side, device] of sides) {
+  for (const [key, dims, side, device, unit] of sides) {
     const value = raw[key]
     if (!isNum(value)) continue
     used.add(key)
-    setSide(dims, side, device, px(value))
+    setSide(dims, side, device, { value, unit })
   }
   if (Object.keys(padding).length > 0) out.spacing = { ...out.spacing, padding }
   if (Object.keys(margin).length > 0) out.spacing = { ...out.spacing, margin }
+}
+
+/** v1 length unit, or px when the stored unit is missing or not one v1 knows (as v1 rendering did). */
+function lengthUnitOf(raw: unknown): Unit {
+  return typeof raw === 'string' && (UNITS as readonly string[]).includes(raw) ? (raw as Unit) : 'px'
 }
 
 /** Maps v1 background fields. Gradient and overlay values are kept even when the type is different, as v1 did. */

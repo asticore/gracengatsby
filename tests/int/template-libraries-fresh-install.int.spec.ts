@@ -11,7 +11,7 @@ import { consoleLogger } from '@/localapi/logger'
 import { runInternalMigrate, type InternalMigrateResult } from '@/migrations/runInternalMigrate'
 import { templateLibrariesGenerated } from '@/cms/db/schema/templateLibraries'
 
-const MIGRATION = '20270119_100000_template_libraries'
+const MIGRATION = '20270125_100000_template_libraries'
 
 describe('template libraries - fresh install on an empty D1', () => {
   let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ D1: D1Database }>>>

@@ -209,6 +209,14 @@ export interface User {
   updatedAt: string;
   createdAt: string;
   email: string;
+  /**
+   * Public author name shown on blog posts. Optional. Never use an email address. Unused while authors are switched off in Blog settings.
+   */
+  displayName?: string | null;
+  /**
+   * Author archive address: /blog/author/<slug>. Auto-fills from the display name. Unused while authors or author archives are switched off in Blog settings.
+   */
+  slug?: string | null;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
   salt?: string | null;
@@ -1778,6 +1786,12 @@ export interface Post {
         id?: string | null;
       }[]
     | null;
+  tags?:
+    | {
+        name?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   featuredImage?: (number | null) | Media;
   /**
    * Shown on the blog archive card.
@@ -3153,6 +3167,8 @@ export interface UsersSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   email?: T;
+  displayName?: T;
+  slug?: T;
   resetPasswordToken?: T;
   resetPasswordExpiration?: T;
   salt?: T;
@@ -3534,6 +3550,12 @@ export interface PostsSelect<T extends boolean = true> {
   publishedDate?: T;
   author?: T;
   categories?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
+  tags?:
     | T
     | {
         name?: T;

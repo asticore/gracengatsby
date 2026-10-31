@@ -465,7 +465,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       ((await proxy.env.D1.prepare(`PRAGMA table_info(\`${t}\`)`).all()).results as { name: string }[]).map((r) => r.name)
     expect(createdTables.has('ai_builder_usage')).toBe(true)
     expect(await cols('ai_builder_usage')).toEqual(
-      expect.arrayContaining(['id', 'created_at', 'user_id', 'provider', 'model', 'mode', 'input_tokens', 'output_tokens', 'est_cost_micro', 'ok']),
+      expect.arrayContaining(['id', 'created_at', 'user_id', 'provider', 'model', 'mode', 'input_tokens', 'output_tokens', 'est_cost_micro', 'ok', 'estimated']),
     )
     expect(await cols('eg_integrations')).toEqual(expect.arrayContaining(['ai_claude_model', 'ai_openai_model', 'ai_monthly_cap_usd']))
   })
@@ -852,7 +852,6 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
   it('password groups migration is registered before organizations and is safe to run twice, keeping existing rows', async () => {
     const { migrations } = await import('@/migrations/index')
     expect(migrations.map((x) => x.name).slice(-15)).toEqual([
-      '20261128_100000_admin_ui_language',
       '20261129_100000_interface_overrides',
       '20261130_100000_domain_settings',
       '20261130_110000_admin_path',
@@ -867,6 +866,7 @@ describe('Fresh install schema coverage - all drizzle tables created and columns
       '20270103_100000_tracking_value_source',
       '20270110_100000_api_endpoints',
       '20270117_100000_webhooks',
+      '20270118_100000_ai_usage_estimated',
     ])
     const mod = await import('@/migrations/20261123_100000_password_groups')
     const { drizzle } = await import('drizzle-orm/d1')

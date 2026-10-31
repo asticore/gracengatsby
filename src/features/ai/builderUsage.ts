@@ -37,7 +37,7 @@ export type UsageSummary = {
 }
 
 const CREATE_TABLE =
-  'CREATE TABLE IF NOT EXISTS ai_builder_usage (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, created_at TEXT NOT NULL, user_id TEXT, provider TEXT NOT NULL, model TEXT NOT NULL, mode TEXT NOT NULL, input_tokens INTEGER DEFAULT 0 NOT NULL, output_tokens INTEGER DEFAULT 0 NOT NULL, est_cost_micro INTEGER DEFAULT 0 NOT NULL, ok INTEGER DEFAULT 1 NOT NULL)'
+  'CREATE TABLE IF NOT EXISTS ai_builder_usage (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, created_at TEXT NOT NULL, user_id TEXT, provider TEXT NOT NULL, model TEXT NOT NULL, mode TEXT NOT NULL, input_tokens INTEGER DEFAULT 0 NOT NULL, output_tokens INTEGER DEFAULT 0 NOT NULL, est_cost_micro INTEGER DEFAULT 0 NOT NULL, ok INTEGER DEFAULT 1 NOT NULL, estimated INTEGER DEFAULT 0 NOT NULL)'
 
 async function defaultD1(): Promise<UsageD1> {
   const { rawD1 } = await import('@/features/ecommerce/server/db')
@@ -53,17 +53,44 @@ export function monthStart(now: Date): { iso: string; label: string } {
   return { iso: `${label}-01T00:00:00.000Z`, label }
 }
 
+/**
+ * Tables created before the `estimated` column (migration 20270118) get it here too, once per process,
+ * so a usage row is never lost while the migration is still pending.
+ */
+let estimatedColumnChecked = false
+async function ensureEstimatedColumn(db: UsageD1): Promise<void> {
+  if (estimatedColumnChecked) return
+  try {
+    await db.prepare('ALTER TABLE ai_builder_usage ADD COLUMN estimated INTEGER DEFAULT 0 NOT NULL').bind().run()
+  } catch {
+    // Already there (or the table is missing, which CREATE_TABLE handles next time).
+  }
+  estimatedColumnChecked = true
+}
+
 /** Saves one call. Never throws: a failed usage write must not fail the request. */
 export async function recordUsage(row: UsageRow, options: { d1?: UsageD1; now?: Date } = {}): Promise<void> {
   try {
     const db = options.d1 ?? (await defaultD1())
     await db.prepare(CREATE_TABLE).bind().run()
+    await ensureEstimatedColumn(db)
     const cost = estimateCostMicro(row.provider, row.model, row.inputTokens, row.outputTokens)
     await db
       .prepare(
-        'INSERT INTO ai_builder_usage (created_at, user_id, provider, model, mode, input_tokens, output_tokens, est_cost_micro, ok) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)',
+        'INSERT INTO ai_builder_usage (created_at, user_id, provider, model, mode, input_tokens, output_tokens, est_cost_micro, ok, estimated) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)',
       )
-      .bind((options.now ?? new Date()).toISOString(), row.userId, row.provider, row.model, row.mode, row.inputTokens, row.outputTokens, cost, row.ok ? 1 : 0)
+      .bind(
+        (options.now ?? new Date()).toISOString(),
+        row.userId,
+        row.provider,
+        row.model,
+        row.mode,
+        row.inputTokens,
+        row.outputTokens,
+        cost,
+        row.ok ? 1 : 0,
+        row.estimated ? 1 : 0,
+      )
       .run()
   } catch {
     // Spend tracking is best effort.

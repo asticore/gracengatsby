@@ -1,0 +1,172 @@
+/* Write with AI (blog builder): the launch button and the guided dialog. */
+
+.blog-ai__launch {
+  margin: 0 0 1rem;
+}
+
+.blog-ai__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.45);
+  overflow-y: auto;
+}
+
+.blog-ai__dialog {
+  width: min(720px, 100%);
+  margin: 4vh 0;
+  padding: 20px;
+  border-radius: 8px;
+  background: var(--theme-bg, #ffffff);
+  color: var(--theme-text, #1f2937);
+  border: 1px solid var(--theme-border-color, #d0d5dd);
+  box-sizing: border-box;
+}
+
+.blog-ai__dialog h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.blog-ai__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.blog-ai__step,
+.blog-ai__usage,
+.blog-ai__hint,
+.blog-ai__intro {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.blog-ai__error {
+  margin: 8px 0;
+  color: #b42318;
+}
+
+.blog-ai__busy {
+  margin: 8px 0;
+  font-style: italic;
+}
+
+.blog-ai__form {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  border: 0;
+  padding: 0;
+}
+
+.blog-ai__form legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.blog-ai__field {
+  display: grid;
+  gap: 4px;
+}
+
+.blog-ai__field small {
+  opacity: 0.8;
+}
+
+.blog-ai__field input,
+.blog-ai__field textarea,
+.blog-ai__field select,
+.blog-ai__outline input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--theme-border-color, #d0d5dd);
+  border-radius: 6px;
+  background: var(--theme-input-bg, #ffffff);
+  color: inherit;
+  font: inherit;
+}
+
+.blog-ai__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.blog-ai__choice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.blog-ai__outline {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+}
+
+.blog-ai__outline-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.blog-ai__section {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--theme-border-color, #d0d5dd);
+}
+
+.blog-ai__section h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.blog-ai__section textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  padding: 8px;
+  border: 1px solid var(--theme-border-color, #d0d5dd);
+  border-radius: 6px;
+  background: var(--theme-input-bg, #ffffff);
+  color: inherit;
+  font: inherit;
+}
+
+.blog-ai__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.blog-ai__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .blog-ai__outline-row {
+    grid-template-columns: 1fr;
+  }
+
+  .blog-ai__dialog {
+    padding: 14px;
+  }
+}

@@ -43,7 +43,7 @@ describe('design grouped migration - pure conversion', () => {
     expect(grouped.schemaVersion).toBe(2)
     expect(designHook({ value: TYPED_V2 })).toEqual(TYPED_V2)
     const columnsField = (SectionBlock.fields as unknown as Array<{ name: string; hooks: { beforeChange: Hook[] } }>).find((f) => f.name === 'columns')
-    const tree = [{ _id: 'c1', design: V1_COLUMN, blocks: [] }]
+    const tree: Array<{ _id: string; design: Record<string, unknown>; blocks: unknown[] }> = [{ _id: 'c1', design: V1_COLUMN, blocks: [] }]
     const out = columnsField!.hooks.beforeChange[0]({ value: tree }) as Array<{ design: Record<string, unknown> }>
     expect(out[0].design.schemaVersion).toBe(2)
   })

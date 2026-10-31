@@ -3080,6 +3080,15 @@ const nl: UiDictionary = {
   "audit.noMatch": "Geen gebeurtenissen gevonden.",
   "audit.loadFailed": "Het auditlogboek kon nu niet worden geladen.",
   "pagespeed.worstNone": "Er zijn nog geen pagina's getest. Open een pagina en gebruik de PageSpeed-kaart om een test uit te voeren.",
+  "approval.nothingWaiting": "Er wacht niets op beoordeling.",
+  "approval.awaitingTitle": "Wacht op beoordeling",
+  "approval.col.title": "Titel",
+  "approval.col.type": "Type",
+  "approval.col.sentBy": "Verzonden door",
+  "approval.col.waiting": "Wachttijd",
+  "apiKeys.owner": "Eigenaar",
+  "emailTesting.title": "E-mailtest",
+  "emailTesting.back": "Terug naar Communicatie",
 }
 
 export default nl

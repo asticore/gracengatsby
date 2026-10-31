@@ -3128,6 +3128,15 @@ export const UI_STRING_SOURCE = {
   "audit.noMatch": "No events match.",
   "audit.loadFailed": "The audit log could not be loaded just now.",
   "pagespeed.worstNone": "No pages have been tested yet. Open a page and use the PageSpeed card to run a test.",
+  "approval.nothingWaiting": "Nothing is waiting for review.",
+  "approval.awaitingTitle": "Awaiting review",
+  "approval.col.title": "Title",
+  "approval.col.type": "Type",
+  "approval.col.sentBy": "Sent by",
+  "approval.col.waiting": "Waiting",
+  "apiKeys.owner": "Owner",
+  "emailTesting.title": "Email testing",
+  "emailTesting.back": "Back to Communication",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

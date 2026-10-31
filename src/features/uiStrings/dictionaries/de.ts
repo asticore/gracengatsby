@@ -3081,6 +3081,15 @@ const de: UiDictionary = {
   "audit.noMatch": "Keine Ereignisse gefunden.",
   "audit.loadFailed": "Das Prüfprotokoll konnte gerade nicht geladen werden.",
   "pagespeed.worstNone": "Noch keine Seiten getestet. Öffnen Sie eine Seite und nutzen Sie die PageSpeed-Karte, um einen Test zu starten.",
+  "approval.nothingWaiting": "Nichts wartet auf Prüfung.",
+  "approval.awaitingTitle": "Wartet auf Prüfung",
+  "approval.col.title": "Titel",
+  "approval.col.type": "Typ",
+  "approval.col.sentBy": "Gesendet von",
+  "approval.col.waiting": "Wartezeit",
+  "apiKeys.owner": "Eigentümer",
+  "emailTesting.title": "E-Mail-Test",
+  "emailTesting.back": "Zurück zu Kommunikation",
 }
 
 export default de

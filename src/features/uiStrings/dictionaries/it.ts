@@ -3080,6 +3080,15 @@ const it: UiDictionary = {
   "audit.noMatch": "Nessun evento corrisponde.",
   "audit.loadFailed": "Impossibile caricare il registro di controllo in questo momento.",
   "pagespeed.worstNone": "Nessuna pagina è ancora stata testata. Apri una pagina e usa la scheda PageSpeed per eseguire un test.",
+  "approval.nothingWaiting": "Nulla è in attesa di revisione.",
+  "approval.awaitingTitle": "In attesa di revisione",
+  "approval.col.title": "Titolo",
+  "approval.col.type": "Tipo",
+  "approval.col.sentBy": "Inviato da",
+  "approval.col.waiting": "In attesa da",
+  "apiKeys.owner": "Proprietario",
+  "emailTesting.title": "Test email",
+  "emailTesting.back": "Torna a Comunicazione",
 }
 
 export default it

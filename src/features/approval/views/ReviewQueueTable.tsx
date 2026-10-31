@@ -3,6 +3,10 @@ import React from 'react'
 import type { ReviewQueueRow } from '@/features/approval/handlers'
 import { formatRelativeTime } from '@/views/dashboard/dashboardData'
 import { APPROVAL_SINGULAR } from '@/features/approval/settings'
+import { UI_STRING_SOURCE, type UiStringKey } from '@/features/uiStrings/keys'
+
+/** English unless the caller passes its translator (server views use getAdminUi().t). */
+const englishT = (key: UiStringKey): string => UI_STRING_SOURCE[key]
 
 function formatDate(value: string | null): string {
   if (!value) return '-'
@@ -13,7 +17,7 @@ function formatDate(value: string | null): string {
 
 /** The rows of the review queue: what, who sent it, how long it has waited. Server-rendered. */
 /** Without `now` the time is shown as a date; with it, as "3 hours ago". */
-export const ReviewQueueTable: React.FC<{ rows: ReviewQueueRow[]; now?: number }> = ({ rows, now }) => {
+export const ReviewQueueTable: React.FC<{ rows: ReviewQueueRow[]; now?: number; t?: (key: UiStringKey) => string }> = ({ rows, now, t = englishT }) => {
   const headerClass =
     'whitespace-nowrap border-b border-[var(--theme-elevation-150)] px-[calc(var(--base)*0.8)] py-[calc(var(--base)*0.55)] text-left text-[calc(var(--base)*0.68)] font-semibold uppercase tracking-[0.06em] text-[var(--theme-elevation-500)]'
   const cellClass = 'border-b border-[var(--theme-elevation-100)] px-[calc(var(--base)*0.8)] py-[calc(var(--base)*0.6)] align-middle'
@@ -21,7 +25,7 @@ export const ReviewQueueTable: React.FC<{ rows: ReviewQueueRow[]; now?: number }
   if (rows.length === 0) {
     return (
       <p className="m-0 rounded-[4px] border border-dashed border-[var(--theme-elevation-200)] p-[calc(var(--base)*1.25)] text-[calc(var(--base)*0.82)] text-[var(--theme-elevation-600)]">
-        Nothing is waiting for review.
+        {t('approval.nothingWaiting')}
       </p>
     )
   }
@@ -31,10 +35,10 @@ export const ReviewQueueTable: React.FC<{ rows: ReviewQueueRow[]; now?: number }
       <table className="w-full border-collapse text-[calc(var(--base)*0.8)]">
         <thead>
           <tr>
-            <th className={headerClass} scope="col">Title</th>
-            <th className={headerClass} scope="col">Type</th>
-            <th className={headerClass} scope="col">Sent by</th>
-            <th className={headerClass} scope="col">Waiting</th>
+            <th className={headerClass} scope="col">{t('approval.col.title')}</th>
+            <th className={headerClass} scope="col">{t('approval.col.type')}</th>
+            <th className={headerClass} scope="col">{t('approval.col.sentBy')}</th>
+            <th className={headerClass} scope="col">{t('approval.col.waiting')}</th>
           </tr>
         </thead>
         <tbody>

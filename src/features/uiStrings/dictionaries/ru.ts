@@ -3080,6 +3080,15 @@ const ru: UiDictionary = {
   "audit.noMatch": "Нет подходящих событий.",
   "audit.loadFailed": "Журнал аудита сейчас не удалось загрузить.",
   "pagespeed.worstNone": "Страницы ещё не проверялись. Откройте страницу и запустите проверку в карточке PageSpeed.",
+  "approval.nothingWaiting": "Ничего не ждёт проверки.",
+  "approval.awaitingTitle": "Ожидает проверки",
+  "approval.col.title": "Заголовок",
+  "approval.col.type": "Тип",
+  "approval.col.sentBy": "Отправил",
+  "approval.col.waiting": "Ожидание",
+  "apiKeys.owner": "Владелец",
+  "emailTesting.title": "Тестирование почты",
+  "emailTesting.back": "Назад к разделу «Коммуникации»",
 }
 
 export default ru

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { usePortalText } from '@/features/accounts/components/PortalText'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import { apiKeyScopeChoicesAction, createMyApiKey, revokeApiKeyAction, type ApiKeyView } from '../actions'
 import { buildScopes, type ScopeMode } from '../scopePicker'
@@ -34,6 +35,7 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
   const [notice, setNotice] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const tx = usePortalText()
+  const adminT = useAdminT()
   const dateText = (iso: string | null): string => when(iso, tx('panel.never'), tx('panel.unknown'))
   const status = (k: ApiKeyView): string => {
     if (k.revokedAt) return tx('panel.akStatusRevoked')
@@ -196,7 +198,7 @@ export const ApiKeysPanel: React.FC<{ initial: ApiKeyView[]; showOwner?: boolean
         <table>
           <thead>
             <tr>
-              {showOwner && <th>Owner</th>}
+              {showOwner && <th>{adminT('apiKeys.owner')}</th>}
               <th>{tx('panel.akName')}</th>
               <th>{tx('panel.akKey')}</th>
               <th>{tx('panel.akScopes')}</th>

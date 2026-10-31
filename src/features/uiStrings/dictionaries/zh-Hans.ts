@@ -3079,6 +3079,15 @@ const zhHans: UiDictionary = {
   "audit.noMatch": "没有匹配的事件。",
   "audit.loadFailed": "现在无法加载审计日志。",
   "pagespeed.worstNone": "还没有测试过的页面。打开一个页面，并使用 PageSpeed 卡片运行测试。",
+  "approval.nothingWaiting": "没有等待审核的内容。",
+  "approval.awaitingTitle": "等待审核",
+  "approval.col.title": "标题",
+  "approval.col.type": "类型",
+  "approval.col.sentBy": "发送者",
+  "approval.col.waiting": "等待时间",
+  "apiKeys.owner": "所有者",
+  "emailTesting.title": "邮件测试",
+  "emailTesting.back": "返回通信设置",
 }
 
 export default zhHans

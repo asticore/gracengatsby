@@ -3080,6 +3080,15 @@ const ko: UiDictionary = {
   "audit.noMatch": "일치하는 이벤트가 없습니다.",
   "audit.loadFailed": "지금은 감사 로그를 불러올 수 없습니다.",
   "pagespeed.worstNone": "아직 테스트된 페이지가 없습니다. 페이지를 열고 PageSpeed 카드에서 테스트를 실행하세요.",
+  "approval.nothingWaiting": "검토 대기 중인 항목이 없습니다.",
+  "approval.awaitingTitle": "검토 대기 중",
+  "approval.col.title": "제목",
+  "approval.col.type": "유형",
+  "approval.col.sentBy": "보낸 사람",
+  "approval.col.waiting": "대기",
+  "apiKeys.owner": "소유자",
+  "emailTesting.title": "이메일 테스트",
+  "emailTesting.back": "커뮤니케이션으로 돌아가기",
 }
 
 export default ko

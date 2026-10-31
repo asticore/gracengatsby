@@ -3080,6 +3080,15 @@ const ja: UiDictionary = {
   "audit.noMatch": "一致するイベントはありません。",
   "audit.loadFailed": "監査ログを今は読み込めませんでした。",
   "pagespeed.worstNone": "まだテストされたページはありません。ページを開き、PageSpeed カードでテストを実行してください。",
+  "approval.nothingWaiting": "確認待ちの項目はありません。",
+  "approval.awaitingTitle": "確認待ち",
+  "approval.col.title": "タイトル",
+  "approval.col.type": "種類",
+  "approval.col.sentBy": "送信者",
+  "approval.col.waiting": "待機時間",
+  "apiKeys.owner": "所有者",
+  "emailTesting.title": "メールのテスト",
+  "emailTesting.back": "コミュニケーションに戻る",
 }
 
 export default ja

@@ -3080,6 +3080,15 @@ const ar: UiDictionary = {
   "audit.noMatch": "لا تطابق أي أحداث.",
   "audit.loadFailed": "تعذّر تحميل سجل التدقيق الآن.",
   "pagespeed.worstNone": "لم تُختبر أي صفحات بعد. افتح صفحة واستخدم بطاقة PageSpeed لإجراء اختبار.",
+  "approval.nothingWaiting": "لا يوجد شيء بانتظار المراجعة.",
+  "approval.awaitingTitle": "بانتظار المراجعة",
+  "approval.col.title": "العنوان",
+  "approval.col.type": "النوع",
+  "approval.col.sentBy": "أرسله",
+  "approval.col.waiting": "الانتظار",
+  "apiKeys.owner": "المالك",
+  "emailTesting.title": "اختبار البريد الإلكتروني",
+  "emailTesting.back": "العودة إلى الاتصالات",
 }
 
 export default ar

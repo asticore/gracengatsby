@@ -4,9 +4,11 @@ import { loadApprovalSettings } from '@/features/approval/settings'
 import { loadReviewQueue, type ReviewEngine } from '@/features/approval/handlers'
 import { viewerFromContext } from '@/features/approval/viewer'
 import { ReviewQueueTable } from './ReviewQueueTable'
+import { getAdminUi } from '@/admin/i18n/serverUi'
 
 /** The whole review queue screen at /admin/review-queue. */
 export async function ReviewQueueView() {
+  const ui = await getAdminUi()
   const context = await getAdminContext()
   const viewer = viewerFromContext(context)
   const engine = context.engine as unknown as ReviewEngine
@@ -31,7 +33,7 @@ export async function ReviewQueueView() {
           Content approval is off. Turn it on under Settings &gt; Security.
         </p>
       ) : (
-        <ReviewQueueTable rows={rows} />
+        <ReviewQueueTable rows={rows} t={ui.t} />
       )}
     </div>
   )

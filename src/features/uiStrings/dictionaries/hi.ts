@@ -3080,6 +3080,15 @@ const hi: UiDictionary = {
   "audit.noMatch": "कोई घटना मेल नहीं खाती।",
   "audit.loadFailed": "ऑडिट लॉग अभी लोड नहीं हो सका।",
   "pagespeed.worstNone": "अभी तक कोई पेज परखा नहीं गया है। कोई पेज खोलें और जाँच चलाने के लिए PageSpeed कार्ड का उपयोग करें।",
+  "approval.nothingWaiting": "समीक्षा के लिए कुछ भी प्रतीक्षा में नहीं है।",
+  "approval.awaitingTitle": "समीक्षा के लिए प्रतीक्षा में",
+  "approval.col.title": "शीर्षक",
+  "approval.col.type": "प्रकार",
+  "approval.col.sentBy": "भेजने वाला",
+  "approval.col.waiting": "प्रतीक्षा",
+  "apiKeys.owner": "स्वामी",
+  "emailTesting.title": "ईमेल परीक्षण",
+  "emailTesting.back": "संचार पर वापस",
 }
 
 export default hi

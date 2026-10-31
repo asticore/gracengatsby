@@ -26,6 +26,7 @@ import { locksField } from '../fields/locks'
 import { reviewFields } from '@/features/approval/fields'
 import { pageExcerptField, pageFeaturedImageField, trashedAtField } from '@/features/editScreens/fields'
 import { seoEditGuard, trashGuard } from '@/features/editScreens/guards'
+import { embedShortLinksBeforeChange } from '@/features/embeds/hooks'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -191,6 +192,7 @@ export const Pages: CollectionConfig = {
       trashGuard,
       seoEditGuard,
       pageSpeedBeforeChange,
+      embedShortLinksBeforeChange,
       async ({ data, req, originalDoc }) => {
         // Only one page can be the homepage - unset any previous holder.
         // One homepage per domain: only a homepage on an overlapping domain (or the shared one) is unset.

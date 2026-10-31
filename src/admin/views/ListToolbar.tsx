@@ -12,6 +12,8 @@ import { ProductsCsvActions } from '@/features/ecommerce/admin/ProductsCsvAction
 
 interface ListToolbarProps {
   collectionSlug: string
+  /** Export link for the generic CSV export: the screen's query, without paging. */
+  csvHref?: string
   state: ListState
   columns: ColumnDef[]
   visibleNames: string[]
@@ -23,6 +25,7 @@ interface ListToolbarProps {
 
 export function ListToolbar({
   collectionSlug,
+  csvHref,
   state,
   columns,
   visibleNames,
@@ -353,6 +356,11 @@ export function ListToolbar({
         <RedirectsToolbarActions />
       )}
       {collectionSlug === 'products' && <ProductsCsvActions />}
+      {csvHref && collectionSlug !== 'products' && collectionSlug !== 'redirects' && (
+        <a href={csvHref} download className="list-toolbar-btn" title={t('list.exportCsvHint')}>
+          {t('list.exportCsv')}
+        </a>
+      )}
       {collectionSlug === 'orders' && <OrdersFilterBar state={state} onChange={handleOrderFilters} />}
       {collectionSlug === 'orders' && <OrdersManifestAction />}
     </div>

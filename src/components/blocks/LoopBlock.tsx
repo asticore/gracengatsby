@@ -5,6 +5,7 @@ import { formatPriceInAUD } from '@/lib/formatCurrency'
 import { loadShopCurrency } from '@/features/ecommerce/lib/shopCurrency'
 import { buildMergeContext, resolveTagsDeep } from '@/lib/mergeTags'
 import { buildItemTagContexts } from '@/features/customFields/server'
+import { fillLoopItemTagFallbacks } from '@/features/siteTemplates/loopMergeTags'
 import type { SectionNode } from '@/lib/sectionTree'
 
 import { StyledBlock } from './StyledBlock'
@@ -105,7 +106,8 @@ export async function LoopBlock({
         )}
         <div className="be-loop-grid" style={{ ['--loop-columns' as string]: String(columnCount) }}>
           {items.map((item, index) => {
-            const context = buildMergeContext(item, collection, (amount) => formatPriceInAUD(amount, currency), tagContexts[index])
+            const base = buildMergeContext(item, collection, (amount) => formatPriceInAUD(amount, currency), tagContexts[index])
+            const context = fillLoopItemTagFallbacks(base, item)
             const resolved = resolveTagsDeep(templateBlocks, context)
 
             return (

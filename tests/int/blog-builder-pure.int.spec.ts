@@ -11,7 +11,7 @@ import { parseBlogRequest, parseKeywords } from '@/features/blogBuilder/request'
 
 const brief = {
   action: 'titles',
-  brief: { topic: 'Candle care', audience: 'New owners', tone: 'warm', length: 'short', keywords: ['wax', 'wick'], callToAction: 'Shop the range' },
+  brief: { topic: 'Candle care', audience: 'New owners', tone: 'warm' as const, length: 'short' as const, keywords: ['wax', 'wick'], callToAction: 'Shop the range' },
 }
 const outline = [
   { heading: 'Why wicks matter', notes: 'Wick size' },

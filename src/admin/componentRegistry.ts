@@ -51,7 +51,7 @@ import { MediaEditPanel } from '@/features/media/admin/MediaEditPanel'
 import { BiddersField } from '@/features/ads/admin/BiddersField'
 import { SiteFilesField } from '@/features/seo/admin/SiteFilesField'
 import { TicketTiersField } from '@/features/editScreens/admin/TicketTiersField'
-import { StartersPanel } from '@/features/siteTemplates/admin/StartersPanel'
+import { ExportTemplateLink } from '@/features/siteTemplates/admin/ExportTemplateLink'
 import { TrackingEventsListActions } from '@/features/tracking/editor/TrackingEventsListActions'
 import { ConditionsField } from '@/features/siteTemplates/admin/ConditionsField'
 import { TestConnectionField } from '@/features/socialFeeds/admin/TestConnectionField'
@@ -59,8 +59,8 @@ import { DataViewEditorField } from '@/features/dataViews/admin/DataViewEditorFi
 import { WriteWithAiPanel } from '@/features/blogBuilder/admin/WriteWithAiPanel'
 
 export const COMPONENT_REGISTRY: Record<string, ComponentType<any>> = {
-  '@/features/siteTemplates/admin/StartersPanel#StartersPanel': StartersPanel,
   '@/features/blogBuilder/admin/WriteWithAiPanel#WriteWithAiPanel': WriteWithAiPanel,
+  '@/features/siteTemplates/admin/ExportTemplateLink#ExportTemplateLink': ExportTemplateLink,
   '@/features/tracking/editor/TrackingEventsListActions#TrackingEventsListActions': TrackingEventsListActions,
   '@/features/siteTemplates/admin/ConditionsField#ConditionsField': ConditionsField,
   '@/features/socialFeeds/admin/TestConnectionField#TestConnectionField': TestConnectionField,

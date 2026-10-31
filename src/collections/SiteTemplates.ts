@@ -25,9 +25,9 @@ export const SiteTemplates: CollectionConfig = {
     description:
       'Reusable headers, footers and page layouts for posts, products, events, archives, and 404. Built from the same sections as pages.',
     components: {
-      // The list screen is the Templates hub (admin/templates); the starters panel sits on the edit screen.
+      // The list screen is the Templates hub (admin/templates), which holds the starters and the import. The edit screen only exports this one template.
       edit: {
-        beforeDocumentControls: ['@/features/siteTemplates/admin/StartersPanel#StartersPanel', '@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton', '@/fields/locks/DocumentLockControl#DocumentLockControl'],
+        beforeDocumentControls: ['@/features/siteTemplates/admin/ExportTemplateLink#ExportTemplateLink', '@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton', '@/fields/locks/DocumentLockControl#DocumentLockControl'],
       },
     },
   },

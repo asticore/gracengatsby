@@ -1,7 +1,7 @@
 // @vitest-environment node
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({ docs: [] as Array<Record<string, unknown>>, throwOnFind: false, finds: 0, byIds: [] as string[], resets: [] as Array<() => void> }))
 
@@ -55,15 +55,25 @@ const textBlock = (text: string) => ({ blockType: 'text', text })
 const tpl = (id: number, extra: Record<string, unknown> = {}) => ({ id, name: `t${id}`, kind: 'single-post', enabled: true, priority: 10, conditions: [] as unknown[], blocks: [textBlock(`T${id}`)], ...extra })
 const rule = (param: string, value: string, operator = 'equals') => ({ param, operator, value })
 
+// The first import of these modules pulls in the element renderers, which takes seconds on a cold cache. It
+// happens once in beforeAll with its own generous timeout, so no test pays for it against the 5 s test limit.
+const importModules = async () => ({
+  resolve: await import('@/features/siteTemplates/resolve'),
+  render: await import('@/features/siteTemplates/render'),
+  cond: await import('@/features/siteTemplates/conditions'),
+})
+let modules: Awaited<ReturnType<typeof importModules>> | undefined
 const load = async () => {
-  return {
-    resolve: await import('@/features/siteTemplates/resolve'),
-    render: await import('@/features/siteTemplates/render'),
-    cond: await import('@/features/siteTemplates/conditions'),
-  }
+  modules ??= await importModules()
+  return modules
 }
+const COLD_IMPORT_TIMEOUT_MS = 120_000
 const html = (node: React.ReactNode) => renderToStaticMarkup(React.createElement(React.Fragment, null, node))
 const content = React.createElement('main', null, 'PAGE')
+
+beforeAll(async () => {
+  await load()
+}, COLD_IMPORT_TIMEOUT_MS)
 
 beforeEach(() => {
   state.docs = []

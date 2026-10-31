@@ -48,7 +48,7 @@ function engine() {
 }
 
 function asAdmin(over: Record<string, unknown> = {}) {
-  const e = engine()
+  const e = engine() as ReturnType<typeof engine>
   h.getAdminContext.mockResolvedValue({
     user: { id: 3, email: 'editor@example.test' },
     isAdmin: true,
@@ -126,7 +126,7 @@ describe('admin-blog-builder route', () => {
     h.readUsageSummary.mockResolvedValue(usage({ capUsd: 5, estCostUsd: 5.2, capReached: true }))
     const response = await POST(post({ action: 'titles', brief }))
     expect(response.status).toBe(429)
-    expect((await response.json()).code).toBe('cap_reached')
+    expect(((await response.json()) as { code: string }).code).toBe('cap_reached')
     expect(h.callAiDetailed).not.toHaveBeenCalled()
   })
 
@@ -177,7 +177,7 @@ describe('admin-blog-builder route', () => {
     expect(body).toMatchObject({ ok: true, id: '9', slug: 'candle-care', status: 'draft' })
     expect(h.callAiDetailed).not.toHaveBeenCalled()
     expect(e.create).toHaveBeenCalledTimes(1)
-    const args = e.create.mock.calls[0][0] as { collection: string; draft: boolean; data: Record<string, unknown>; user: { id: number } }
+    const args = (e.create.mock.calls as unknown as Array<[unknown]>)[0][0] as { collection: string; draft: boolean; data: Record<string, unknown>; user: { id: number } }
     expect(args).toMatchObject({ collection: 'posts', draft: true, user: { id: 3 } })
     expect(args.data).toMatchObject({ title: 'Candle care', slug: 'candle-care' })
     expect(h.audit).toHaveBeenCalledWith(expect.objectContaining({ action: 'create' }), expect.anything())

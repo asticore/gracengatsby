@@ -59,6 +59,9 @@ beforeEach(() => {
   vi.mocked(sendEmail).mockClear()
 })
 
+// Absolute links need a site origin; these specs set one rather than relying on a hard-coded fallback.
+process.env.SITE_URL = 'https://example.test'
+
 describe('back-in-stock input and keys (pure)', () => {
   it('accepts a clean signup and lowercases the address', () => {
     const checked = checkSignup({ productId: '7', email: '  Ann@Example.COM ' })

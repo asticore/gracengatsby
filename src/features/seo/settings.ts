@@ -6,6 +6,7 @@ import { getEngine } from '@/lib/engine'
 import { loadSiteDetails } from '@/features/site/details'
 import type { SiteDetails } from '@/features/site/detailsModel'
 import { getFeatureFlags } from '@/utilities/features'
+import { configuredSiteOrigin, requestSiteOrigin } from '@/utilities/siteOrigin'
 
 /**
  * The per-document SEO group added by src/fields/seo.ts. Typed structurally
@@ -46,8 +47,7 @@ export type SeoContext = {
  * a static route, so the canonical origin is configuration. Set SITE_URL as a
  * Worker variable per environment.
  */
-export const getBaseUrl = (): string =>
-  (process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
+export const getBaseUrl = (): string => configuredSiteOrigin()
 
 /**
  * Reads the SEO global plus the bits of Site Settings it leans on.
@@ -62,7 +62,7 @@ export const getBaseUrl = (): string =>
 export const getSeoContext = cache(async (): Promise<SeoContext> => {
   // The origin of the host this request arrived on when it is a registered domain (features/domains); SITE_URL otherwise.
   const domain = await requestDomain()
-  const baseUrl = originFor(domain, getBaseUrl())
+  const baseUrl = originFor(domain, await requestSiteOrigin())
 
   try {
     const flags = await getFeatureFlags()

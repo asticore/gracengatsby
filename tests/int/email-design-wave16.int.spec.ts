@@ -16,6 +16,9 @@ const heading = (value: string): HeadingBlock => ({ type: 'heading', text: value
 const button = (label: string, url: string): ButtonBlock => ({ type: 'button', label, url, align: 'center' })
 const html = (blocks: EmailBlock[], vars: Record<string, string> = {}) => renderEmailHtml(blocks, brand, { vars })
 
+// Absolute links need a site origin; these specs set one rather than relying on a hard-coded fallback.
+process.env.SITE_URL = 'https://example.test'
+
 describe('escaping and tags', () => {
   it('escapes HTML in text blocks', () => {
     const out = html([text('<script>alert("x")</script> & more')])

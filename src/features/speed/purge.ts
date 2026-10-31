@@ -4,9 +4,10 @@ import { localeVariantPaths, localeVariantUrls } from '@/features/multilingual/r
 import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings'
 
 import { bumpCacheEpoch } from './epoch'
+import { requestSiteOrigin } from '@/utilities/siteOrigin'
+
 import { getSpeedSettings } from './settings'
 
-const SITE_URL = (process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/$/, '')
 
 export type PurgeResult = {
   /** False when the feature or "clear saved copies on publish" is off - nothing was attempted. */
@@ -69,9 +70,11 @@ export async function purgeCache(paths: string[] | string, options: { force?: bo
   result.ran = true
 
   const edge = await openEdgeCache()
+  // Edge keys and Cloudflare purges need absolute URLs: SITE_URL, else this request's host.
+  const SITE_URL = await requestSiteOrigin()
 
   for (const path of list) {
-    if (edge) {
+    if (edge && SITE_URL) {
       try {
         // Both spellings get stored depending on how the request arrived.
         const withSlash = path.endsWith('/') ? path : `${path}/`
@@ -96,11 +99,13 @@ export async function purgeCache(paths: string[] | string, options: { force?: bo
 
   // Cloudflare zone cache (only when a zone and token are saved in Integrations
   // and "purge on publish" is on there). Best effort, never throws.
-  const cloudflare = await purgeCloudflareByUrls(
-    list.flatMap((path) => Array.from(new Set([`${SITE_URL}${path}`, `${SITE_URL}${path.endsWith('/') ? path : `${path}/`}`]))),
-    { onPublish: !force },
-  )
-  result.errors.push(...cloudflare.errors)
+  if (SITE_URL) {
+    const cloudflare = await purgeCloudflareByUrls(
+      list.flatMap((path) => Array.from(new Set([`${SITE_URL}${path}`, `${SITE_URL}${path.endsWith('/') ? path : `${path}/`}`]))),
+      { onPublish: !force },
+    )
+    result.errors.push(...cloudflare.errors)
+  }
 
   return result
 }

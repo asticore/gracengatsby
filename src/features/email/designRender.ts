@@ -11,6 +11,7 @@ import type { EmailBlock } from './design/types'
 import { validateEmailBlocks } from './design/validate'
 import { type RenderedEmail, type TemplateValues, renderTemplate } from './renderTemplate'
 import type { EmailTemplate } from './templateDefaults'
+import { configuredSiteOrigin } from '@/utilities/siteOrigin'
 
 /** The stored design for one template, checked. Null when there is none or it is not valid. */
 export const designedBlocks = (raw: unknown): EmailBlock[] | null => {
@@ -44,8 +45,9 @@ export const storedLogo = (doc: unknown): { id: number; url: string } | null => 
   const { id, url: raw } = logo as { id?: unknown; url?: unknown }
   if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0) return null
   const url = typeof raw === 'string' ? raw : ''
-  const base = (process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
-  const absolute = url.startsWith('/') ? `${base}${url}` : url
+  // A root-relative logo is made absolute only when SITE_URL is set; otherwise it is left out.
+  const base = configuredSiteOrigin()
+  const absolute = url.startsWith('/') ? (base ? `${base}${url}` : '') : url
   return { id, url: /^https?:\/\//i.test(absolute) ? absolute : '' }
 }
 

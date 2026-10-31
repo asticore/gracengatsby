@@ -72,6 +72,9 @@ const PSI_FIXTURE = {
 const jsonResponse = (body: unknown, init?: ResponseInit) =>
   new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' }, ...init })
 
+// Absolute links need a site origin; these specs set one rather than relying on a hard-coded fallback.
+process.env.SITE_URL = 'https://example.test'
+
 describe('pagespeed scoring helpers', () => {
   it('bands scores 90+ / 50-89 / under 50 and handles never-run', () => {
     expect(scoreBand(95)).toBe('good')
@@ -317,7 +320,7 @@ describe('results store and after-publish queue (real D1)', () => {
     const params = new URL(String(fetchImpl.mock.calls[0][0])).searchParams
     expect(params.get('strategy')).toBe('mobile')
     expect(params.get('key')).toBe('KEY')
-    expect(params.get('url')).toBe('https://gracengatsby.com/blog/hello')
+    expect(params.get('url')).toBe('https://example.test/blog/hello')
     const auto = (await listHistory(db, 'posts', 7, 'mobile'))[0]
     expect(auto.source).toBe('auto')
   })

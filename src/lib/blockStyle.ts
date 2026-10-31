@@ -12,7 +12,7 @@
 import { BUILT_IN_FONTS, fontStack, sanitizeFamily } from '@/features/fonts/installed'
 import { cleanRoles, cleanUrlText, isIsoDate, rulesFromStyle } from '@/lib/visibilityRules'
 
-import { isDesignV2Raw, isGroupedDesign, readFlatDesign } from '@/lib/design/upgrade'
+import { isDesignV2Raw, readFlatDesign } from '@/lib/design/upgrade'
 import { DEFAULT_BREAKPOINTS, type SectionLayout } from '@/lib/sectionLayout'
 
 export type BackgroundType = 'none' | 'color' | 'gradient' | 'image' | 'video' | 'slideshow'
@@ -453,11 +453,10 @@ function withSafeAnchor(style: BlockStyle): BlockStyle {
 /** Narrows an unknown JSON column value to a BlockStyle without throwing. */
 export function asBlockStyle(value: unknown): BlockStyle {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return EMPTY_STYLE
-  // v2 designs with typed Rs fields are emitted by renderElement (src/lib/design/css.ts), not this wrapper.
-  if (isDesignV2Raw(value) && !isGroupedDesign(value)) return EMPTY_STYLE
   // Unified read: grouped v2 comes out as the flat v1 object it was made from (exact round trip).
   // A plain v1 value is already the flat object (the round trip is the identity), so it is used as is.
-  const style = (isGroupedDesign(value) ? readFlatDesign(value) : value) as BlockStyle
+  // A v2 value with no groups (a stray typed value) reads as {} in readFlatDesign.
+  const style = (isDesignV2Raw(value) ? readFlatDesign(value) : value) as BlockStyle
   if (Object.keys(style).length === 0) return EMPTY_STYLE
   const fx = withSafeAnchor(withSafeUnits(sanitizeRadius(sanitizeTypography(sanitizeVisibility(sanitizeFx(sanitizeSlides(sanitizeBgVideo(style))))))))
   if (style.tablet === undefined && style.mobile === undefined) return fx

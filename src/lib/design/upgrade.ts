@@ -69,8 +69,8 @@ export function isGroupedDesign(raw: unknown): boolean {
  * - v1 (no schemaVersion): upgraded, then downgraded. The round trip is exact,
  *   so the result is the stored value.
  * - v2 with groups: downgraded to the same flat v1 object.
- * - v2 with typed Rs fields and no groups: {}. Those render through the typed
- *   emitter (renderElement, designToCss), not the v1 path.
+ * - v2 with no groups (a stray typed value; no code path writes one): {}.
+ *   Nothing renders it, so it reads as an empty design.
  */
 export function readFlatDesign(raw: unknown): Record<string, unknown> {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return {}

@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 import { asBlockStyle, blockStyleClasses, blockStyleCss, blockStyleToCss, type BlockStyle } from '@/lib/blockStyle'
 import { readFlatDesign } from '@/lib/design/upgrade'
 import { upgradeV1 } from '@/lib/design/upgradeV1'
-import { withElementDesign } from '@/components/blocks/elements/renderElement'
 import { StyledBlock as StyledBlockProps } from '@/components/blocks/StyledBlock'
 import { TEMPLATE_PRESETS } from '@/views/visualEditor/templatePresets'
 
@@ -79,12 +78,6 @@ describe('render path: grouped values render as their v1 source', () => {
     const typed = { schemaVersion: 2, color: { text: { desktop: { normal: '#111' } } } }
     expect(readFlatDesign(typed)).toEqual({})
     expect(asBlockStyle(typed)).toEqual({})
-  })
-
-  it('element wrapper emits no typed CSS for a grouped value (the v1 wrapper renders it)', () => {
-    const grouped = upgradeV1({ paddingTop: 20, hover: 'lift' } as Rec)
-    const html = renderToStaticMarkup(React.createElement(React.Fragment, null, withElementDesign(React.createElement('span', null, 'x'), grouped, 'scope-x')))
-    expect(html).toBe('<span>x</span>')
   })
 
   it('StyledBlock renders a grouped value with the same markup as its v1 source', () => {

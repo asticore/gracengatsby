@@ -121,6 +121,7 @@ import * as migration_20270110_100000_api_endpoints from './20270110_100000_api_
 import * as migration_20270117_100000_webhooks from './20270117_100000_webhooks';
 import * as migration_20270118_100000_ai_usage_estimated from './20270118_100000_ai_usage_estimated';
 
+import * as migration_20270124_100000_privacy_requests from './20270124_100000_privacy_requests';
 export const migrations = [
   {
     up: migration_20250929_111647.up,
@@ -731,5 +732,10 @@ export const migrations = [
     up: migration_20270118_100000_ai_usage_estimated.up,
     down: migration_20270118_100000_ai_usage_estimated.down,
     name: '20270118_100000_ai_usage_estimated',
+  },
+  {
+    up: migration_20270124_100000_privacy_requests.up,
+    down: migration_20270124_100000_privacy_requests.down,
+    name: '20270124_100000_privacy_requests',
   },
 ];

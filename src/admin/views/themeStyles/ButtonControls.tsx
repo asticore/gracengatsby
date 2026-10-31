@@ -27,9 +27,9 @@ function ButtonCard({ button, colours, onSet, onDelete }: { button: ButtonStyle;
     <section className="ts-item" aria-label={button.name}>
       <div className="ts-item__head">
         <h3 className="ts-item__title">{button.name}</h3>
-        {onDelete && <button type="button" className="ts-btn ts-btn--danger" aria-label={`Delete ${button.name}`} onClick={onDelete}>{t('bt.lit.delete')}</button>}
+        {onDelete && <button type="button" className="ts-btn ts-btn--danger" aria-label={t('aria.delete', { name: button.name })} onClick={onDelete}>{t('bt.lit.delete')}</button>}
       </div>
-      <div className="ts-subtabs" role="tablist" aria-label={`${button.name} state`}>
+      <div className="ts-subtabs" role="tablist" aria-label={t('aria.stateOf', { name: button.name })}>
         {(['normal', 'hover'] as const).map((s) => (
           <button key={s} type="button" role="tab" aria-selected={state === s} className="ts-tab" onClick={() => setState(s)}>{s === 'normal' ? t('bt.lit.normal') : t('bt.lit.hover')}</button>
         ))}

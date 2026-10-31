@@ -93,6 +93,7 @@ function WorkflowForm({
   onDelete?: () => void
   confirmDelete?: boolean
 }) {
+  const t = useAdminT()
   const idBase = `rw-${draft.id ?? 'new'}`
   const problems = useMemo(() => validateDraft(draft, knownRoles, others), [draft, knownRoles, others])
   const [showProblems, setShowProblems] = useState(false)
@@ -159,13 +160,13 @@ function WorkflowForm({
               <div className="rw-step-head">
                 <strong>Step {index + 1}</strong>
                 <span className="rw-step-actions">
-                  <button type="button" className={styles.btnSecondary} disabled={disabled || index === 0} aria-label={`Move step ${index + 1} up`} onClick={() => onChange({ ...draft, steps: moveStep(draft.steps, index, index - 1) })}>
+                  <button type="button" className={styles.btnSecondary} disabled={disabled || index === 0} aria-label={t('aria.stepMoveUp', { n: index + 1 })} onClick={() => onChange({ ...draft, steps: moveStep(draft.steps, index, index - 1) })}>
                     Up
                   </button>
-                  <button type="button" className={styles.btnSecondary} disabled={disabled || index === draft.steps.length - 1} aria-label={`Move step ${index + 1} down`} onClick={() => onChange({ ...draft, steps: moveStep(draft.steps, index, index + 1) })}>
+                  <button type="button" className={styles.btnSecondary} disabled={disabled || index === draft.steps.length - 1} aria-label={t('aria.stepMoveDown', { n: index + 1 })} onClick={() => onChange({ ...draft, steps: moveStep(draft.steps, index, index + 1) })}>
                     Down
                   </button>
-                  <button type="button" className={styles.btnSecondary} disabled={disabled || draft.steps.length <= 1} aria-label={`Remove step ${index + 1}`} onClick={() => onChange({ ...draft, steps: draft.steps.filter((_, i) => i !== index) })}>
+                  <button type="button" className={styles.btnSecondary} disabled={disabled || draft.steps.length <= 1} aria-label={t('aria.stepRemove', { n: index + 1 })} onClick={() => onChange({ ...draft, steps: draft.steps.filter((_, i) => i !== index) })}>
                     Remove
                   </button>
                 </span>

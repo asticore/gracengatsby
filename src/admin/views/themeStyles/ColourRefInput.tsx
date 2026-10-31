@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import type { ThemeColour } from '@/features/themeStyles/types'
 
@@ -28,6 +29,7 @@ const TRANSPARENT = 'transparent'
  * swatch beside it shows the resolved colour.
  */
 export function ColourRefInput({ label, value, colours, onChange, allowEmpty, emptyLabel = 'None', allowTransparent }: Props) {
+  const tt = useAdminT()
   const id = useId()
   const isRef = value.startsWith('@') && colours.some((c) => c.id === value.slice(1))
   const isEmpty = value === ''
@@ -64,8 +66,8 @@ export function ColourRefInput({ label, value, colours, onChange, allowEmpty, em
       </div>
       {mode === CUSTOM && (
         <div className="ts-ref__row">
-          <input type="color" className="ts-color" aria-label={`${label} custom colour picker`} value={hex} onChange={(event) => onChange(event.target.value)} />
-          <input type="text" className="ts-input ts-input--mono" aria-label={`${label} custom colour value`} value={value} placeholder="#000000" onChange={(event) => onChange(event.target.value.trim())} />
+          <input type="color" className="ts-color" aria-label={tt('aria.customColourPicker', { label })} value={hex} onChange={(event) => onChange(event.target.value)} />
+          <input type="text" className="ts-input ts-input--mono" aria-label={tt('aria.customColourValue', { label })} value={value} placeholder="#000000" onChange={(event) => onChange(event.target.value.trim())} />
         </div>
       )}
     </div>

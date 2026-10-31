@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { FieldLabel, useField } from '@/engine/ui'
 import type { Field } from '@/engine'
 import { fieldLabel, fieldRequired } from './shared'
@@ -344,6 +345,7 @@ function RawJsonSubfieldInput({
  * per-row-subfield editing via local controlled inputs (RowSubfieldInput).
  */
 export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, path, readOnly }) => {
+  const t = useAdminT()
   const { value, setValue } = useField<Record<string, unknown>[]>({ path })
   const arrayValue = Array.isArray(value) ? value : []
   const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set())
@@ -432,7 +434,7 @@ export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
                     className="array-field__toggle"
                     aria-expanded={!isCollapsed}
                     aria-controls={bodyId}
-                    aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${rowTitle}`}
+                    aria-label={isCollapsed ? t('aria.expand', { name: rowTitle }) : t('aria.collapse', { name: rowTitle })}
                     onClick={() => toggleRow(rowIndex)}
                   >
                     <span aria-hidden="true">{isCollapsed ? '+' : '-'}</span> {rowTitle}
@@ -442,7 +444,7 @@ export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
                       <button
                         type="button"
                         className="array-field__btn"
-                        aria-label={`Move ${lowerSingular} ${rowIndex + 1} up`}
+                        aria-label={t('aria.moveUp', { name: `${lowerSingular} ${rowIndex + 1}` })}
                         onClick={() => moveUp(rowIndex)}
                         disabled={rowIndex === 0}
                       >
@@ -451,7 +453,7 @@ export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
                       <button
                         type="button"
                         className="array-field__btn"
-                        aria-label={`Move ${lowerSingular} ${rowIndex + 1} down`}
+                        aria-label={t('aria.moveDown', { name: `${lowerSingular} ${rowIndex + 1}` })}
                         onClick={() => moveDown(rowIndex)}
                         disabled={rowIndex === arrayValue.length - 1}
                       >
@@ -460,7 +462,7 @@ export const ArrayFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
                       <button
                         type="button"
                         className="array-field__btn array-field__btn--danger"
-                        aria-label={`Remove ${lowerSingular} ${rowIndex + 1}`}
+                        aria-label={t('aria.remove', { name: `${lowerSingular} ${rowIndex + 1}` })}
                         onClick={() => removeRow(rowIndex)}
                       >
                         Remove

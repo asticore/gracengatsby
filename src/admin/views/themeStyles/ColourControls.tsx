@@ -1,6 +1,7 @@
 'use client'
 
 import { useId } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 
 import { LIMITS, type ThemeColour } from '@/features/themeStyles/types'
 
@@ -11,6 +12,7 @@ type Props = { colours: ThemeColour[]; onChange: (colours: ThemeColour[]) => voi
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 
 function HexInput({ label, value, optional, onChange }: { label: string; value: string; optional?: boolean; onChange: (value: string) => void }) {
+  const tt = useAdminT()
   const textId = useId()
   const valid = (optional && value === '') || HEX.test(value)
   const swatch = parseHex(value) ? value : '#000000'
@@ -18,7 +20,7 @@ function HexInput({ label, value, optional, onChange }: { label: string; value: 
     <div className="ts-field">
       <label htmlFor={textId} className="ts-label">{label}</label>
       <div className="ts-inline">
-        <input type="color" className="ts-color" aria-label={`${label} picker`} value={swatch} onChange={(event) => onChange(event.target.value)} />
+        <input type="color" className="ts-color" aria-label={tt('aria.colourPicker', { label })} value={swatch} onChange={(event) => onChange(event.target.value)} />
         <input
           id={textId}
           type="text"
@@ -35,17 +37,19 @@ function HexInput({ label, value, optional, onChange }: { label: string; value: 
 }
 
 function Contrast({ value, against, label }: { value: string; against: string; label: string }) {
+  const tt = useAdminT()
   const ratio = contrastRatio(value, against)
   if (ratio === null) return null
   const pass = meetsAA(ratio)
   return (
-    <span className={`ts-badge ts-badge--${pass ? 'pass' : 'fail'}`} title={`Contrast against ${label}: ${ratio.toFixed(2)}:1`}>
+    <span className={`ts-badge ts-badge--${pass ? 'pass' : 'fail'}`} title={tt('theme.contrastAgainst', { label, ratio: ratio.toFixed(2) })}>
       {label} {ratio.toFixed(1)} {pass ? 'AA pass' : 'AA fail'}
     </span>
   )
 }
 
 export function ColourControls({ colours, onChange }: Props) {
+  const tt = useAdminT()
   const text = colours.find((c) => c.id === 'text')?.value ?? '#000000'
   const background = colours.find((c) => c.id === 'background')?.value ?? '#ffffff'
   const system = colours.filter((c) => c.system)
@@ -73,9 +77,9 @@ export function ColourControls({ colours, onChange }: Props) {
         <HexInput label={`${colour.name} dark value`} value={colour.darkValue} optional onChange={(darkValue) => patch(colour.id, { darkValue })} />
         {!colour.system && position && (
           <div className="ts-row__actions">
-            <button type="button" className="ts-btn" disabled={position.first} aria-label={`Move ${colour.name} up`} onClick={() => onChange(moveColour(colours, colour.id, -1))}>Up</button>
-            <button type="button" className="ts-btn" disabled={position.last} aria-label={`Move ${colour.name} down`} onClick={() => onChange(moveColour(colours, colour.id, 1))}>Down</button>
-            <button type="button" className="ts-btn ts-btn--danger" aria-label={`Delete ${colour.name}`} onClick={() => onChange(removeColour(colours, colour.id))}>Delete</button>
+            <button type="button" className="ts-btn" disabled={position.first} aria-label={tt('aria.moveUp', { name: colour.name })} onClick={() => onChange(moveColour(colours, colour.id, -1))}>Up</button>
+            <button type="button" className="ts-btn" disabled={position.last} aria-label={tt('aria.moveDown', { name: colour.name })} onClick={() => onChange(moveColour(colours, colour.id, 1))}>Down</button>
+            <button type="button" className="ts-btn ts-btn--danger" aria-label={tt('aria.delete', { name: colour.name })} onClick={() => onChange(removeColour(colours, colour.id))}>Delete</button>
           </div>
         )}
       </div>

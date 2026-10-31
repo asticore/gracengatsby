@@ -37,7 +37,7 @@ export function TypographyControls({ typography, colours, fonts, onChange }: Pro
           <section key={t.id} className="ts-item" aria-label={t.name}>
             <div className="ts-item__head">
               <h3 className="ts-item__title">{t.name}</h3>
-              {!t.system && <button type="button" className="ts-btn ts-btn--danger" aria-label={`Delete ${t.name}`} onClick={() => onChange(removeTypeStyle(typography, t.id))}>{tt('ty.lit.delete')}</button>}
+              {!t.system && <button type="button" className="ts-btn ts-btn--danger" aria-label={tt('aria.delete', { name: t.name })} onClick={() => onChange(removeTypeStyle(typography, t.id))}>{tt('ty.lit.delete')}</button>}
             </div>
             <div className="ts-grid">
               {!t.system && <TextField label={tt('ty.lit.name')} value={t.name} maxLength={LIMITS.name} onChange={(name) => set(t.id, { name })} />}

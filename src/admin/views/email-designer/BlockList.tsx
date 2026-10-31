@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import type { EmailBlock, EmailBlockType } from '@/features/email/design/types'
 import { BlockFields } from './BlockFields'
 import { ColumnsEditor } from './ColumnsEditor'
@@ -12,6 +13,7 @@ type Props = { blocks: EmailBlock[]; onChange: (blocks: EmailBlock[]) => void }
 
 /** The ordered blocks of one template. Each block folds open and shut; the first one starts open. */
 export function BlockList({ blocks, onChange }: Props) {
+  const tt = useAdminT()
   const [adding, setAdding] = useState<EmailBlockType>('text')
   const [open, setOpen] = useState<Record<number, boolean>>({ 0: true })
   const toggle = (index: number) => setOpen((current) => ({ ...current, [index]: !current[index] }))
@@ -30,13 +32,13 @@ export function BlockList({ blocks, onChange }: Props) {
                 <span className="ed-muted ed-block__summary">{blockSummary(block)}</span>
               </button>
               <div className="ed-actions">
-                <button type="button" className="ed-button ed-button--quiet" aria-label={`Move ${BLOCK_LABELS[block.type]} up`} disabled={index === 0} onClick={() => onChange(moveAt(blocks, index, -1))}>
+                <button type="button" className="ed-button ed-button--quiet" aria-label={tt('aria.moveUp', { name: BLOCK_LABELS[block.type] })} disabled={index === 0} onClick={() => onChange(moveAt(blocks, index, -1))}>
                   Up
                 </button>
                 <button
                   type="button"
                   className="ed-button ed-button--quiet"
-                  aria-label={`Move ${BLOCK_LABELS[block.type]} down`}
+                  aria-label={tt('aria.moveDown', { name: BLOCK_LABELS[block.type] })}
                   disabled={index === blocks.length - 1}
                   onClick={() => onChange(moveAt(blocks, index, 1))}
                 >

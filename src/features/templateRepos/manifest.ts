@@ -255,12 +255,22 @@ function checkTree(nodes: unknown, depth: number, counter: { nodes: number }): s
     if (!hasType) return 'Every item in the template needs a type.'
     const valueProblem = checkValue(node, 0)
     if (valueProblem) return valueProblem
-    for (const childKey of ['children', 'columns', 'blocks', 'elements']) {
+    for (const childKey of ['children', 'blocks', 'elements']) {
       if (node[childKey] === undefined) continue
       // Only nested node lists recurse; a "columns" count given as a number is plain data.
       if (Array.isArray(node[childKey])) {
         const problem = checkTree(node[childKey], depth + 1, counter)
         if (problem) return problem
+      }
+    }
+    // A section's columns are containers ({ width, blocks }), not nodes: their blocks are the nodes to check.
+    if (Array.isArray(node.columns)) {
+      for (const column of node.columns) {
+        if (!isPlainObject(column)) return 'A column of a section is not an object.'
+        if (Array.isArray(column.blocks)) {
+          const problem = checkTree(column.blocks, depth + 1, counter)
+          if (problem) return problem
+        }
       }
     }
   }

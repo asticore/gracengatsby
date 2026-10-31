@@ -24,13 +24,12 @@ type PageTemplateDoc = {
 }
 
 type RepoItem = {
-  repoIndex: number
-  repoLabel: string
+  libraryId: string
+  libraryLabel: string
   slug: string
   title: string
   kind: string
   category: string
-  categoryLabel?: string
   tags?: string[]
   previewUrl: string
 }
@@ -47,7 +46,7 @@ type Card = {
   /** Local templates carry their blocks; repository ones are fetched on click. */
   blocks?: () => SectionNode[]
   image?: string
-  repo?: { index: number; slug: string }
+  repo?: { libraryId: string; slug: string }
   disabled?: boolean
 }
 
@@ -137,14 +136,14 @@ export const TemplateBrowser: React.FC<{ onPickTemplate: (blocks: SectionNode[])
   // missing) or an empty list just hides the source - it is optional.
   useEffect(() => {
     let cancelled = false
-    fetch('/api/template-repos', { credentials: 'include' })
+    fetch('/api/template-libraries', { credentials: 'include' })
       .then((res) => {
         if (!res.ok) return null
         return res.json()
       })
-      .then((json: { templates?: RepoItem[] } | null) => {
-        if (cancelled || !json || !Array.isArray(json.templates)) return
-        setRepoItems(json.templates)
+      .then((json: { items?: RepoItem[] } | null) => {
+        if (cancelled || !json || !Array.isArray(json.items)) return
+        setRepoItems(json.items)
       })
       .catch((): void => {})
     return () => {
@@ -192,18 +191,18 @@ export const TemplateBrowser: React.FC<{ onPickTemplate: (blocks: SectionNode[])
       })
     }
     for (const item of repoItems) {
-      const cat = item.category || 'other'
+      const cat = item.category || 'General'
       list.push({
-        key: `repo:${item.repoIndex}:${item.slug}`,
+        key: `library:${item.libraryId}:${item.slug}`,
         origin: 'repo',
         name: item.title || item.slug,
-        description: item.repoLabel,
+        description: item.libraryLabel,
         kind: asKind(item.kind),
         category: cat,
-        categoryLabel: item.categoryLabel || CATEGORY_LABELS[cat] || cat,
+        categoryLabel: CATEGORY_LABELS[cat] || cat,
         tags: item.tags || [],
         image: item.previewUrl || undefined,
-        repo: { index: item.repoIndex, slug: item.slug },
+        repo: { libraryId: item.libraryId, slug: item.slug },
       })
     }
     return list
@@ -245,33 +244,18 @@ export const TemplateBrowser: React.FC<{ onPickTemplate: (blocks: SectionNode[])
       if (!card.repo || loadingKey) return
       setLoadingKey(card.key)
       try {
-        const res = await fetch(`/api/template-repos/template?repo=${encodeURIComponent(String(card.repo.index))}&slug=${encodeURIComponent(card.repo.slug)}`, {
+        // The server loads the item again, saves its pictures to the media gallery (reusing any already there)
+        // and returns the tree pointed at them. The browser sends only the library id and the item name.
+        const res = await fetch('/api/template-libraries/use', {
+          method: 'POST',
           credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ library: card.repo.libraryId, item: card.repo.slug }),
         })
-        const json = (await res.json().catch((): null => null)) as {
-          ok?: boolean
-          error?: string
-          template?: { tree?: unknown; assets?: unknown[] }
-          tree?: unknown
-        } | null
-        let tree = asNodes(json?.template?.tree ?? json?.tree)
+        const json = (await res.json().catch((): null => null)) as { ok?: boolean; error?: string; tree?: unknown } | null
+        const tree = asNodes(json?.tree)
         if (!res.ok || !json || json.ok === false || tree.length === 0) {
           throw new Error(json?.error || 'That template could not be loaded.')
-        }
-        // A template with pictures: the server saves them to the media library and returns the tree pointed at them.
-        if (Array.isArray(json.template?.assets) && json.template.assets.length > 0 && card.repo) {
-          const added = await fetch('/api/template-repos/assets', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ repo: card.repo.index, slug: card.repo.slug }),
-          })
-          const addedJson = (await added.json().catch((): null => null)) as { ok?: boolean; error?: string; tree?: unknown } | null
-          const addedTree = asNodes(addedJson?.tree)
-          if (!added.ok || !addedJson || addedJson.ok === false || addedTree.length === 0) {
-            throw new Error(addedJson?.error || 'The template pictures could not be added.')
-          }
-          tree = addedTree
         }
         onPickTemplate(tree)
       } catch (err) {
@@ -392,7 +376,7 @@ export const TemplateBrowser: React.FC<{ onPickTemplate: (blocks: SectionNode[])
                 <span className="ve-tpl__name">{card.name}</span>
                 <span className="ve-tpl__chips">
                   <span className="ve-tpl__chip">{card.categoryLabel}</span>
-                  {card.origin === 'repo' && <span className="ve-tpl__chip ve-tpl__chip--repo">Repository</span>}
+                  {card.origin === 'repo' && <span className="ve-tpl__chip ve-tpl__chip--repo">Library</span>}
                   {card.origin === 'mine' && <span className="ve-tpl__chip ve-tpl__chip--mine">{card.kind === 'section' ? 'Section' : 'Page'}</span>}
                 </span>
               </div>

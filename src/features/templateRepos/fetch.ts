@@ -98,8 +98,8 @@ function cacheSet(key: string, text: string, now: number): void {
 // ---- low level fetch --------------------------------------------------------
 
 type BytesResult =
-  | { ok: true; bytes: Uint8Array; contentType: string; error?: undefined }
-  | { ok: false; error: string; bytes?: undefined; contentType?: undefined }
+  | { ok: true; bytes: Uint8Array; contentType: string; error?: undefined; missing?: undefined }
+  | { ok: false; error: string; missing?: boolean; bytes?: undefined; contentType?: undefined }
 
 function statusMessage(status: number, authed: boolean): string {
   if (status === 404) {
@@ -127,7 +127,7 @@ async function fetchBytes(request: BuiltRequest, maxBytes: number, deps: FetchDe
       redirect: 'error',
       signal: controller.signal,
     })
-    if (!response.ok) return { ok: false, error: statusMessage(response.status, request.authed) }
+    if (!response.ok) return { ok: false, error: statusMessage(response.status, request.authed), missing: response.status === 404 }
     const declared = Number(response.headers.get('content-length') ?? '')
     if (Number.isFinite(declared) && declared > maxBytes) return { ok: false, error: 'That file is larger than the allowed size.' }
 
@@ -165,7 +165,10 @@ async function fetchBytes(request: BuiltRequest, maxBytes: number, deps: FetchDe
   }
 }
 
-async function fetchCachedText(repo: TemplateRepoConfig, relativePath: string, token: string | null, maxBytes: number, deps: FetchDeps): Promise<Result<string>> {
+/** Text of one repository file, cached. `missing` is true only when GitHub answered 404 (used to fall back to a legacy manifest). */
+export type TextResult = { ok: true; value: string; error?: undefined; missing?: undefined } | { ok: false; error: string; value?: undefined; missing?: boolean }
+
+export async function fetchCachedText(repo: TemplateRepoConfig, relativePath: string, token: string | null, maxBytes: number, deps: FetchDeps): Promise<TextResult> {
   const request = buildFileRequest(repo, relativePath, token)
   if (!request) return { ok: false, error: 'The repository details are not valid.' }
   const now = (deps.now ?? Date.now)()
@@ -173,7 +176,7 @@ async function fetchCachedText(repo: TemplateRepoConfig, relativePath: string, t
   const cached = deps.bypassCache ? null : cacheGet(key, now)
   if (cached !== null) return { ok: true, value: cached }
   const result = await fetchBytes(request, maxBytes, deps)
-  if (!result.ok) return { ok: false, error: result.error }
+  if (!result.ok) return { ok: false, error: result.error, missing: result.missing }
   let text: string
   try {
     text = new TextDecoder('utf-8', { fatal: true }).decode(result.bytes)

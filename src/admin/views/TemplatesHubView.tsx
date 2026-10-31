@@ -12,6 +12,8 @@ import { loadListPrefs } from '@/admin/list/listPrefs'
 import { parseListSearchParams, resolveVisibleColumns, serializeListState, type ListState } from '@/admin/list/listQuery'
 import { computeTemplateCoverage, type CoverageTemplate } from '@/features/siteTemplates/coverage'
 import { StatusSwitch } from '@/features/templatesHub/admin/StatusSwitch'
+import { TemplateLibraryPanel } from '@/features/templateLibraries/admin/TemplateLibraryPanel'
+import { TemplatesHubTabs } from '@/features/templateLibraries/admin/TemplatesHubTabs'
 import { SuggestedTemplates, type SuggestionWarning } from '@/features/templatesHub/admin/SuggestedTemplates'
 import {
   HUB_COLUMNS,
@@ -107,6 +109,21 @@ export async function TemplatesHubView({ searchParams = {} }: { searchParams?: R
 
   const canCreate = (slug: HubCollection) => Boolean(context.permissions.collections?.[slug]?.create)
   const hasAnyRows = allRows.length > 0
+  const root = await getAdminRoot()
+  const templatesHref = adminHref('/templates', root)
+
+  if (searchParams.view === 'library') {
+    return (
+      <div className="list-view">
+        <div className="list-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+          <h1>Templates</h1>
+          <AdminLink className="btn" path={libraryLink}>Template libraries</AdminLink>
+        </div>
+        <TemplatesHubTabs templatesHref={templatesHref} active="library" />
+        <TemplateLibraryPanel settingsHref={adminHref(libraryLink, root)} />
+      </div>
+    )
+  }
 
   return (
     <div className="list-view">
@@ -122,6 +139,8 @@ export async function TemplatesHubView({ searchParams = {} }: { searchParams?: R
           <AdminLink className="btn" path={libraryLink}>Template libraries</AdminLink>
         </div>
       </div>
+
+      <TemplatesHubTabs templatesHref={templatesHref} active="templates" />
 
       {siteDocs === null ? <p role="status">You do not have access to site templates, so they are not listed.</p> : null}
 

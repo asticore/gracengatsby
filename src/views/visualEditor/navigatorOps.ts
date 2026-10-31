@@ -1,3 +1,4 @@
+import { readFlatDesign } from '@/lib/design/upgrade'
 /** Pure helpers for the Navigator: hide-everywhere flag and drag/keyboard move planning. */
 import type { NodePath } from './treeOps'
 
@@ -6,13 +7,13 @@ const obj = (v: unknown): Design => (v && typeof v === 'object' && !Array.isArra
 
 /** True when the block is hidden on desktop, tablet and mobile (the per-device hide flags). */
 export function isHiddenEverywhere(design: unknown): boolean {
-  const d = obj(design)
+  const d = readFlatDesign(design)
   return Boolean(d.hideOnDesktop) && Boolean(obj(d.tablet).hide) && (Boolean(obj(d.mobile).hide) || Boolean(d.hideOnMobile))
 }
 
 /** Design with the block hidden on every device, or (when already hidden) with all hide flags cleared. */
 export function toggleHideEverywhere(design: unknown): Design {
-  const d: Design = { ...obj(design) }
+  const d: Design = { ...readFlatDesign(design) }
   const tablet: Design = { ...obj(d.tablet) }
   const mobile: Design = { ...obj(d.mobile) }
   if (isHiddenEverywhere(d)) {

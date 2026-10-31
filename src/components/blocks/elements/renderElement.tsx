@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { designToCss } from '@/lib/design/css'
-import { isDesignError, isDesignV2Raw, upgradeDesign } from '@/lib/design/upgrade'
+import { isDesignError, isDesignV2Raw, isGroupedDesign, upgradeDesign } from '@/lib/design/upgrade'
 
 import { getTemplateSlot } from '@/features/siteTemplates/slot'
 
@@ -25,7 +25,8 @@ export const renderElement = (elementType: string, props: Record<string, unknown
 
 /** Wraps rendered element content in its v2 design. Also used by the server-only site elements (Wave38Elements.tsx). */
 export const withElementDesign = (content: React.ReactNode, design?: unknown, scopeId?: string): React.ReactNode => {
-  if (design === undefined || scopeId === undefined || !isDesignV2Raw(design)) return content
+  // Grouped values are v1 styles: the block wrapper (StyledBlock, via asBlockStyle) renders them.
+  if (design === undefined || scopeId === undefined || !isDesignV2Raw(design) || isGroupedDesign(design)) return content
   const upgraded = upgradeDesign(design)
   if (isDesignError(upgraded)) return content
   const css = designToCss(upgraded, scopeId)

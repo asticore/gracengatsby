@@ -1,5 +1,6 @@
 'use client'
 
+import { readFlatDesign } from '@/lib/design/upgrade'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAdminT } from '@/admin/i18n/AdminUiProvider'
@@ -160,7 +161,7 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number, t: Tr): 
           typeLabel: t('ve.nav.column'),
           name: label || (dispMode === 'tabs' ? t('ve.nav.tabNumbered', { n: ci + 1 }) : dispMode === 'accordion' ? t('ve.nav.panelNumbered', { n: ci + 1 }) : t('ve.nav.columnNumbered', { n: ci + 1 })),
           custom: Boolean(label),
-          anchor: column.design?.anchorId || '',
+          anchor: (readFlatDesign(column.design).anchorId as string | undefined) || '',
           blockCount: (column.blocks || []).length,
           hasChildren: kids.length > 0,
           children: kids,
@@ -177,7 +178,7 @@ function buildRows(nodes: SectionNode[], base: NodePath, depth: number, t: Tr): 
       path,
       depth,
       ...info,
-      anchor: node.design?.anchorId || '',
+      anchor: (readFlatDesign(node.design).anchorId as string | undefined) || '',
       design: node.design,
       hasChildren: children.length > 0,
       children,

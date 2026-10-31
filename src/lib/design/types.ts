@@ -1,3 +1,5 @@
+import type { V1Group } from './v1Groups'
+
 /**
  * Design model v2 for visual-editor elements (Phase 1 of the visual editor plan).
  *
@@ -135,7 +137,12 @@ export type DesignV2 = {
   cssClasses?: string[]
   customCss?: string
   animation?: Animation
-  /** v1 fields with no v2 equivalent (kept, never dropped). Not rendered. */
+  /**
+   * v1 values, verbatim, grouped by V1_GROUP_OF (v1Groups.ts). Written by
+   * upgradeV1 and read back by downgradeV1, so no v1 value is lost or changed.
+   */
+  groups?: Partial<Record<V1Group, Record<string, unknown>>>
+  /** v1 keys that are not in V1_GROUP_OF (none today). Kept verbatim, never rendered as v2. */
   legacy?: Record<string, unknown>
 }
 

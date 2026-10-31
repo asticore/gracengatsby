@@ -1,23 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
 import { blockStyleClasses, blockStyleCss, blockStyleToCss, type BlockStyle } from '@/lib/blockStyle'
-import { designToCss } from '@/lib/design/css'
-import { upgradeDesign, isDesignError } from '@/lib/design/upgrade'
-import { upgradeV1 } from '@/lib/design/upgradeV1'
+import { downgradeV1, upgradeV1 } from '@/lib/design/upgradeV1'
+import { V1_GROUP_OF } from '@/lib/design/v1Groups'
 import { TEMPLATE_PRESETS } from '@/views/visualEditor/templatePresets'
 
 /**
- * Corpus guard for the v1 -> v2 design migration.
+ * Corpus gate for the unified design model.
  *
- * The corpus is every design object in the built-in template presets (the
- * starters the visual editor offers). The v1 render path (blockStyle.ts) is
- * the one that renders today, so its output is pinned as a snapshot: any change
- * to it, or to the v2 model that would change a v1 page, fails here.
- *
- * upgradeV1 is NOT yet a full mapping. Fields listed in KNOWN_UNMAPPED are
- * still rendered by v1 but land in `legacy` after upgrade, so upgrade-on-read
- * would drop them. The read path must not use upgradeV1 for v1 data until
- * that list is empty (see the report in the PR description).
+ * Every design in the template presets (the starters the visual editor offers),
+ * plus one design that sets a representative value for each group, must:
+ *  - round-trip exactly: downgradeV1(upgradeV1(d)) equals d;
+ *  - render identically: the v1 render functions give the same output for d and
+ *    for its round trip;
+ *  - keep the v1 render output unchanged (snapshot, below).
  */
 
 type Rec = Record<string, unknown>
@@ -41,45 +37,149 @@ for (const preset of TEMPLATE_PRESETS) {
   designs.forEach((design, i) => corpus.push({ slug: `${preset.slug}#${i}`, design }))
 }
 
-/** v1 keys that have a value in the corpus and that upgradeV1 does not map yet. */
-const KNOWN_UNMAPPED = [
-  'auroraBlur',
-  'auroraSize',
-  'auroraSpeed',
-  'bgEffect',
-  'bgEffectColor',
-  'bgEffectColor2',
-  'bgEffectIntensity',
-  'dividerBottom',
-  'dividerBottomAnim',
-  'dividerBottomColor',
-  'dividerBottomHeight',
-  'dividerBottomSpeed',
-  'fontSize',
-  'fontSizeUnit',
-  'gradientAngle',
-  'gradientSpeed',
-  'glass',
-  'glassBlur',
-  'glassBorder',
-  'glassOpacity',
-  'grainOpacity',
-  'grainSize',
-  'gridLineWidth',
-  'gridSize',
-  'hover',
-  'hoverLift',
-  'hoverTextColor',
-  'hoverTransitionMs',
-  'layout',
-  'overlayType',
-  'pointerFx',
-  'pointerFxStrength',
-  'reveal',
-  'revealDistance',
-  'revealDuration',
-  'spotlightColor',
-]
+/** One value for each group, including device overrides, effects, hover, dividers, and reveal. */
+const KITCHEN_SINK: BlockStyle = {
+  bgType: 'gradient',
+  bgGradientFrom: '#111827',
+  bgGradientTo: '#4f46e5',
+  bgGradientAngle: 135,
+  bgOverlay: 30,
+  overlayType: 'color',
+  overlayColor: '#000000',
+  overlayOpacity: 40,
+  overlayBlend: 'multiply',
+  noise: 20,
+  paddingTop: 80,
+  paddingBottom: 60,
+  paddingLeft: 12,
+  paddingRight: 12,
+  paddingUnit: 'px',
+  paddingTopMobile: 24,
+  paddingBottomMobile: 24,
+  marginTop: 8,
+  marginBottom: 8,
+  marginUnit: 'px',
+  borderWidth: 2,
+  borderStyle: 'solid',
+  borderColor: '#ffffff',
+  borderRadius: 12,
+  radiusTl: 4,
+  radiusLinked: false,
+  boxShadow: 'md',
+  fontFamily: 'var(--font-display)',
+  textColor: '#ffffff',
+  textAlign: 'center',
+  fontSize: 42,
+  fontSizeUnit: 'px',
+  fontWeight: 700,
+  lineHeight: 1.2,
+  letterSpacing: 1,
+  letterSpacingUnit: 'px',
+  textTransform: 'uppercase',
+  fontStyle: 'italic',
+  textDecoration: 'underline',
+  wordSpacing: 2,
+  textShadow: 'sm',
+  textFx: 'gradient',
+  textFxColor: '#f59e0b',
+  textFxColor2: '#ec4899',
+  textFxAngle: 90,
+  width: 'wide',
+  minHeight: 480,
+  minHeightUnit: 'px',
+  dividerBottom: 'wave',
+  dividerBottomColor: '#ffffff',
+  dividerBottomHeight: 60,
+  dividerBottomFlip: true,
+  dividerBottomAnim: 'drift',
+  dividerBottomSpeed: 8,
+  bgEffect: 'aurora',
+  bgEffectColor: '#22d3ee',
+  bgEffectColor2: '#a855f7',
+  bgEffectIntensity: 60,
+  auroraBlur: 40,
+  auroraSize: 50,
+  auroraSpeed: 30,
+  gradientAngle: 120,
+  gradientSpeed: 20,
+  grainOpacity: 15,
+  grainSize: 200,
+  gridSize: 40,
+  gridLineWidth: 1,
+  parallax: 'background',
+  parallaxStrength: 40,
+  kenBurns: 'zoom-in',
+  kenBurnsDuration: 20,
+  glass: true,
+  glassBlur: 12,
+  glassOpacity: 40,
+  glassBorder: 30,
+  borderFx: 'glow',
+  borderFxColor: '#38bdf8',
+  borderFxWidth: 2,
+  borderFxSpeed: 6,
+  reveal: 'fade-up',
+  revealDistance: 40,
+  revealDuration: 30,
+  revealDelay: 10,
+  revealEasing: 'ease-out',
+  pointerFx: 'tilt',
+  pointerFxStrength: 30,
+  spotlightColor: '#ffffff',
+  hover: 'lift',
+  hoverLift: 8,
+  hoverScale: 105,
+  hoverBgColor: '#1e293b',
+  hoverTextColor: '#f8fafc',
+  hoverBorderColor: '#38bdf8',
+  hoverBoxShadow: 'lg',
+  hoverBorderRadius: 16,
+  hoverTransitionMs: 300,
+  hoverOpacity: 0.9,
+  hoverTransform: 'scale',
+  focusRing: '#2563eb',
+  tfRotate: 2,
+  tfScale: 110,
+  tfTranslateX: 4,
+  tfTranslateY: -4,
+  tfSkewX: 1,
+  tfDuration: 400,
+  tfhRotate: 3,
+  tfhScale: 102,
+  position: 'relative',
+  posTop: 0,
+  zIndex: 2,
+  opacity: 90,
+  blendMode: 'screen',
+  filterBlur: 1,
+  filterBrightness: 110,
+  filterSaturate: 120,
+  layout: { display: 'tabs' } as never,
+  selfAlign: 'center',
+  selfWidth: 'custom',
+  selfWidthPercent: 60,
+  selfWidthPercentUnit: '%',
+  showFrom: '2026-01-01',
+  showUntil: '2027-01-01',
+  showAuth: 'in',
+  showRoles: 'admin',
+  showUrl: '/offer',
+  hideOnMobile: true,
+  customClass: 'hero-band',
+  anchorId: 'pricing',
+  cssClasses: 'extra-class',
+  customCss: 'selector h2 { color: #fff; }',
+  tablet: { paddingTop: 40, hide: false, textAlign: 'left' },
+  mobile: { paddingTop: 16, hide: true },
+}
+
+const corpusAndSink = [...corpus, { slug: 'kitchen-sink', design: KITCHEN_SINK }]
+
+const renderAll = (design: BlockStyle) => ({
+  inline: blockStyleToCss(design),
+  css: blockStyleCss(design, 'corpus-scope'),
+  classes: blockStyleClasses(design),
+})
 
 describe('v1 corpus from the template presets', () => {
   it('has a corpus to test against', () => {
@@ -87,76 +187,52 @@ describe('v1 corpus from the template presets', () => {
   })
 
   it('pins the v1 render output for every corpus design (snapshot)', () => {
-    const rendered = corpus.map(({ slug, design }) => ({
-      slug,
-      inline: blockStyleToCss(design),
-      css: blockStyleCss(design, 'corpus-scope'),
-      classes: blockStyleClasses(design),
-    }))
-    expect(rendered).toMatchSnapshot()
+    expect(corpus.map(({ slug, design }) => ({ slug, ...renderAll(design) }))).toMatchSnapshot()
   })
 
-  it('lists exactly the v1 keys that upgradeV1 leaves unmapped', () => {
-    const lost = new Set<string>()
-    for (const { design } of corpus) {
-      const up = upgradeV1(design as Rec)
-      for (const key of Object.keys(up.legacy ?? {})) {
-        if (design[key as keyof BlockStyle] !== undefined) lost.add(key)
-      }
-    }
-    expect([...lost].sort()).toEqual([...KNOWN_UNMAPPED].sort())
+  it('every v1 key in the kitchen sink has a group', () => {
+    for (const key of Object.keys(KITCHEN_SINK)) expect(V1_GROUP_OF).toHaveProperty([key])
   })
 
-  it('mapped spacing renders the same declarations as v1 (corpus and unit variants)', () => {
-    const SIDES = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom'] as const
-    const KEBAB: Record<string, string> = { paddingTop: 'padding-top', paddingBottom: 'padding-bottom', paddingLeft: 'padding-left', paddingRight: 'padding-right', marginTop: 'margin-top', marginBottom: 'margin-bottom' }
-    const synthetic: BlockStyle[] = [
-      { paddingTop: 2, paddingLeft: 3, paddingRight: 4, paddingUnit: 'em' },
-      { paddingBottom: 10, paddingUnit: 'vh', marginTop: 5, marginUnit: '%' },
-      { paddingLeft: 1, paddingUnit: 'nonsense' as never },
-      { marginBottom: 7, paddingRight: 0 },
-    ]
-    for (const design of [...corpus.map((c) => c.design), ...synthetic]) {
-      const v1 = blockStyleToCss(design) as Rec
-      const v1Sides: Rec = {}
-      for (const key of SIDES) if (v1[key] !== undefined) v1Sides[KEBAB[key]] = v1[key]
-      const rules = designToCss(upgradeV1(design as Rec) as never, 'eq').match(/^\[data-eid="eq"\]\{([^}]*)\}/)
-      const v2Sides: Rec = {}
-      for (const decl of (rules?.[1] ?? '').split(';')) {
-        const i = decl.indexOf(':')
-        const prop = decl.slice(0, i)
-        if (Object.values(KEBAB).includes(prop)) v2Sides[prop] = decl.slice(i + 1)
-      }
-      expect(v2Sides).toEqual(v1Sides)
+  it('round-trips every corpus design exactly (no value lost or changed)', () => {
+    for (const { design } of corpusAndSink) {
+      const round = downgradeV1(upgradeV1(design as Rec) as never)
+      expect(round).toEqual(JSON.parse(JSON.stringify(design)))
     }
   })
 
-  it('upgrade-on-read is not yet render-safe for the corpus (gate for the read-path change)', () => {
-    const affected = corpus.filter(({ design }) => Object.keys(upgradeV1(design as Rec).legacy ?? {}).some((k) => KNOWN_UNMAPPED.includes(k)))
-    expect(affected.length).toBeGreaterThan(0)
-  })
-
-  it('every corpus design upgrades to a valid v2 value that emits without throwing', () => {
-    for (const { design } of corpus) {
-      const v2 = upgradeDesign(upgradeV1(design as Rec))
-      expect(isDesignError(v2)).toBe(false)
-      expect(() => designToCss(v2 as never, 'corpus-scope')).not.toThrow()
+  it('renders every corpus design identically after a round trip', () => {
+    for (const { design } of corpusAndSink) {
+      const round = downgradeV1(upgradeV1(design as Rec) as never) as BlockStyle
+      expect(renderAll(round)).toEqual(renderAll(design))
     }
   })
 
-  it('upgradeV1 is idempotent through upgradeDesign', () => {
-    for (const { design } of corpus) {
-      const once = upgradeDesign(upgradeV1(design as Rec))
-      const twice = upgradeDesign(once)
-      expect(twice).toEqual(once)
+  it('stores no corpus value in legacy (every key has a group)', () => {
+    for (const { design } of corpusAndSink) {
+      expect(upgradeV1(design as Rec).legacy ?? {}).toEqual({})
     }
   })
 
   it('upgradeV1 never mutates the stored v1 design', () => {
-    for (const { design } of corpus) {
+    for (const { design } of corpusAndSink) {
       const before = JSON.stringify(design)
       upgradeV1(design as Rec)
       expect(JSON.stringify(design)).toBe(before)
     }
+  })
+
+  it('upgradeV1 output does not share references with the input', () => {
+    const input = { showRoles: ['admin'], tablet: { paddingTop: 3 } }
+    const out = upgradeV1(input as Rec)
+    expect(out.groups?.visibility?.showRoles).not.toBe(input.showRoles)
+    expect(out.groups?.devices?.tablet).not.toBe(input.tablet)
+  })
+
+  it('keeps a "__proto__" key from a parsed document as data, not as a prototype change', () => {
+    const parsed = JSON.parse('{"__proto__": {"polluted": true}, "paddingTop": 5}') as Rec
+    const round = downgradeV1(upgradeV1(parsed) as never) as Rec
+    expect(Object.prototype.hasOwnProperty.call(round, '__proto__')).toBe(true)
+    expect(({} as Rec).polluted).toBeUndefined()
   })
 })

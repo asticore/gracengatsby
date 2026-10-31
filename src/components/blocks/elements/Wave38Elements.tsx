@@ -10,7 +10,6 @@ import { orderBlogPosts } from '@/features/editScreens/blogOrder'
 import { getEngine } from '@/lib/engine'
 
 import { flag, linkHref, mediaOf, num, pick, str } from './elementUtil'
-import { withElementDesign } from './renderElement'
 import { LoopElement } from './Wave50Server'
 import { WAVE63_COMPONENTS } from './Wave63Server'
 import { LoopGridElement } from './LoopGridServer'
@@ -411,8 +410,7 @@ const SITE_RENDERERS: Record<string, React.ComponentType<P>> = {
  * Entry point used by BlockRenderer for the site element types. Applies the element's Design wrapper the same way
  * renderElement does for every other element.
  */
-export const SiteElement: React.FC<{ elementType: string; props: P; design?: unknown; scopeId?: string }> = ({ elementType, props, design, scopeId }) => {
+export const SiteElement: React.FC<{ elementType: string; props: P }> = ({ elementType, props }) => {
   const Renderer = SITE_RENDERERS[elementType]
-  const content = Renderer ? <Renderer {...props} /> : null
-  return <>{withElementDesign(content, design, scopeId)}</>
+  return Renderer ? <Renderer {...props} /> : null
 }

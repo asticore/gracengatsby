@@ -1,81 +1,8 @@
-// Wave 11: design model v2 (Phase 1). Pure logic only: cascade, upgrade and guards.
-// CSS emission, injection attempts and the v1 equivalence check are in design-v2-wave11-css.int.spec.ts.
+// Reading any stored design value: upgradeDesign and the guards it uses. Pure logic, no CSS.
 import { describe, expect, it } from 'vitest'
 
-import { resolveResponsive, resolveValue } from '@/lib/design/cascade'
 import { isDesignError, isDesignV2Raw, upgradeDesign } from '@/lib/design/upgrade'
-import { safeColor, safeLength, safeUrl, safeScopeId } from '@/lib/design/sanitize'
-import type { Rs, UpgradeResult, DesignV2 } from '@/lib/design/types'
-
-const rs = <T,>(desktop?: { normal?: T; hover?: T }, tablet?: { normal?: T; hover?: T }, mobile?: { normal?: T; hover?: T }): Rs<T> => ({
-  ...(desktop ? { desktop } : {}),
-  ...(tablet ? { tablet } : {}),
-  ...(mobile ? { mobile } : {}),
-})
-
-describe('cascade: resolveValue', () => {
-  it('a desktop value applies at every width', () => {
-    const r = rs({ normal: 'A' })
-    expect(resolveValue(r, 'desktop')).toBe('A')
-    expect(resolveValue(r, 'tablet')).toBe('A')
-    expect(resolveValue(r, 'mobile')).toBe('A')
-  })
-
-  it('a tablet value overrides desktop at tablet and mobile widths only', () => {
-    const r = rs({ normal: 'A' }, { normal: 'B' })
-    expect(resolveValue(r, 'desktop')).toBe('A')
-    expect(resolveValue(r, 'tablet')).toBe('B')
-    expect(resolveValue(r, 'mobile')).toBe('B')
-  })
-
-  it('a mobile value wins at mobile width and leaves tablet alone', () => {
-    const r = rs({ normal: 'A' }, { normal: 'B' }, { normal: 'C' })
-    expect(resolveValue(r, 'desktop')).toBe('A')
-    expect(resolveValue(r, 'tablet')).toBe('B')
-    expect(resolveValue(r, 'mobile')).toBe('C')
-  })
-
-  it('a missing narrower value falls back to the next wider one', () => {
-    const r = rs({ normal: 'A' }, undefined, { normal: 'C' })
-    expect(resolveValue(r, 'tablet')).toBe('A')
-    expect(resolveValue(rs(undefined, undefined, { normal: 'C' }), 'tablet')).toBeUndefined()
-  })
-
-  it('returns undefined when nothing is set, or the input is missing', () => {
-    expect(resolveValue(undefined, 'mobile')).toBeUndefined()
-    expect(resolveValue({}, 'desktop')).toBeUndefined()
-    expect(resolveValue(rs({ hover: 'H' }), 'desktop', 'normal')).toBeUndefined()
-  })
-
-  it('hover returns the hover value, and normal returns the normal value', () => {
-    const r = rs({ normal: 'N', hover: 'H' })
-    expect(resolveValue(r, 'desktop', 'normal')).toBe('N')
-    expect(resolveValue(r, 'desktop', 'hover')).toBe('H')
-  })
-
-  it('hover falls back to normal at the same device when hover is not set', () => {
-    expect(resolveValue(rs({ normal: 'N' }), 'desktop', 'hover')).toBe('N')
-  })
-
-  it('a mobile normal value beats a desktop hover value on mobile', () => {
-    const r = rs({ normal: 'N', hover: 'H' }, undefined, { normal: 'M' })
-    expect(resolveValue(r, 'mobile', 'hover')).toBe('M')
-    expect(resolveValue(r, 'desktop', 'hover')).toBe('H')
-  })
-
-  it('a tablet hover value applies at mobile width when mobile has no value of its own', () => {
-    const r = rs({ normal: 'N' }, { hover: 'T' })
-    expect(resolveValue(r, 'mobile', 'hover')).toBe('T')
-    expect(resolveValue(r, 'mobile', 'normal')).toBe('N')
-  })
-
-  it('resolveResponsive walks the same chain without states', () => {
-    const r = { desktop: 1, mobile: 3 }
-    expect(resolveResponsive(r, 'tablet')).toBe(1)
-    expect(resolveResponsive(r, 'mobile')).toBe(3)
-    expect(resolveResponsive(undefined, 'mobile')).toBeUndefined()
-  })
-})
+import type { DesignV2, UpgradeResult } from '@/lib/design/types'
 
 describe('upgradeDesign: reading any stored value', () => {
   it('null, arrays and plain values read as an empty v2 design', () => {
@@ -180,42 +107,6 @@ describe('upgradeDesign: reading any stored value', () => {
     expect(isDesignV2Raw({ paddingTop: 1 })).toBe(false)
     expect(isDesignV2Raw(null)).toBe(false)
     expect(isDesignV2Raw([{ schemaVersion: 2 }])).toBe(false)
-  })
-})
-
-describe('value guards used by the upgrade and the emitter', () => {
-  it('safeColor accepts hex, rgb(a), hsl(a) and colour words only', () => {
-    expect(safeColor('#fff')).toBe('#fff')
-    expect(safeColor('rgba(0, 0, 0, 0.5)')).toBe('rgba(0, 0, 0, 0.5)')
-    expect(safeColor('hsl(120, 50%, 40%)')).toBe('hsl(120, 50%, 40%)')
-    expect(safeColor('currentColor')).toBe('currentColor')
-    expect(safeColor('red;}body{')).toBeUndefined()
-    expect(safeColor('url(x)')).toBeUndefined()
-  })
-
-  it('safeLength accepts px, %, em, rem, vw, vh and auto, and rejects other units and bad numbers', () => {
-    for (const unit of ['px', '%', 'em', 'rem', 'vw', 'vh']) {
-      expect(safeLength({ value: 3, unit })).toEqual({ value: 3, unit })
-    }
-    expect(safeLength({ value: 'auto', unit: 'px' })).toEqual({ value: 'auto', unit: 'px' })
-    expect(safeLength({ value: 1, unit: 'pt' })).toBeUndefined()
-    expect(safeLength({ value: Number.NaN, unit: 'px' })).toBeUndefined()
-    expect(safeLength({ value: 1e9, unit: 'px' })).toBeUndefined()
-  })
-
-  it('safeUrl accepts http(s) and site-relative URLs and rejects script and protocol-relative URLs', () => {
-    expect(safeUrl('https://cdn.example.com/a.jpg')).toBe('https://cdn.example.com/a.jpg')
-    expect(safeUrl('/img/a.jpg')).toBe('/img/a.jpg')
-    expect(safeUrl('javascript:alert(1)')).toBeUndefined()
-    expect(safeUrl('//evil.example/x.jpg')).toBeUndefined()
-    expect(safeUrl('/a.jpg")')).toBeUndefined()
-  })
-
-  it('safeScopeId only allows letters, digits, underscore and hyphen', () => {
-    expect(safeScopeId('el-3')).toBe('el-3')
-    expect(safeScopeId('x"]{color:red}')).toBeUndefined()
-    expect(safeScopeId('')).toBeUndefined()
-    expect(safeScopeId(12)).toBeUndefined()
   })
 })
 

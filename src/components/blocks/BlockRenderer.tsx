@@ -158,12 +158,12 @@ export const renderBlockBody = (node: SectionNode, key: string): React.ReactNode
       }
       // Site elements read live site data on the server (Wave38Elements.tsx). The canvas never reaches this branch.
       if (SITE_ELEMENT_TYPES.has(get<string>('elementType'))) {
-        return <SiteElement elementType={get<string>('elementType')} props={get<Record<string, unknown>>('props') || {}} design={get('design')} scopeId={`el-${key}`} />
+        return <SiteElement elementType={get<string>('elementType')} props={get<Record<string, unknown>>('props') || {}} />
       }
       if (MEDIA_PROP_KEYS[get<string>('elementType')]) {
-        return <ElementWithMedia elementType={get<string>('elementType')} props={get<Record<string, unknown>>('props') || {}} design={get('design')} scopeId={`el-${key}`} />
+        return <ElementWithMedia elementType={get<string>('elementType')} props={get<Record<string, unknown>>('props') || {}} />
       }
-      return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {}, get('design'), `el-${key}`)
+      return renderElement(get<string>('elementType'), get<Record<string, unknown>>('props') || {})
 
     default:
       return null

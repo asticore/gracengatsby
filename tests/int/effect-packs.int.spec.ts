@@ -116,7 +116,7 @@ describe('effect packs', () => {
   it('renders every element in the packs', () => {
     for (const preset of PACKS) {
       for (const node of elementsOf(preset.blocks())) {
-        const html = renderToStaticMarkup(React.createElement(React.Fragment, null, renderElement(String(node.elementType), node.props as Record<string, unknown>, node.design)))
+        const html = renderToStaticMarkup(React.createElement(React.Fragment, null, renderElement(String(node.elementType), node.props as Record<string, unknown>)))
         expect(html.length, `${preset.slug}: ${String(node.elementType)}`).toBeGreaterThan(0)
       }
     }

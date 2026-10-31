@@ -10,7 +10,7 @@ import { renderElement } from './renderElement'
  * picker keeps); this looks the ids up once and hands renderElement the resolved {url, alt}. A missing or deleted
  * id is left as a number, which the renderers treat as "no image".
  */
-export const ElementWithMedia = async ({ elementType, props, design, scopeId }: { elementType: string; props: Record<string, unknown>; design?: unknown; scopeId?: string }) => {
+export const ElementWithMedia = async ({ elementType, props }: { elementType: string; props: Record<string, unknown> }) => {
   const keys = MEDIA_PROP_KEYS[elementType] || []
   const ids = collectMediaIds(props, keys)
   let resolved = props
@@ -25,5 +25,5 @@ export const ElementWithMedia = async ({ elementType, props, design, scopeId }: 
     )
     resolved = substituteMedia(props, keys, docs)
   }
-  return <>{renderElement(elementType, resolved, design, scopeId)}</>
+  return <>{renderElement(elementType, resolved)}</>
 }

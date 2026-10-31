@@ -99,7 +99,7 @@ export function treeToStaticHtml(tree: readonly SectionNode[], options: StaticHt
         let props = (block.props as Record<string, unknown>) || {}
         const mediaKeys = MEDIA_PROP_KEYS[type]
         if (mediaKeys && options.media) props = substituteMedia(props, [...mediaKeys], options.media)
-        const out = renderElement(type, props, block.design, `el-${key}`)
+        const out = renderElement(type, props)
         return out ?? skip(`${type} (no static output)`)
       }
       default:

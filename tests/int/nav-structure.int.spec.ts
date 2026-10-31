@@ -82,23 +82,14 @@ describe('navStructure', () => {
     }
   })
 
-  it('Content group should include header-footer, and redirects now live in the SEO group', () => {
+  it('Content group has no separate header-footer entry: header and footer live in the Templates hub', () => {
     const contentGroup = NAV_STRUCTURE.find((g) => g.label === 'Content')
     expect(contentGroup).toBeDefined()
 
     const slugs = contentGroup?.entities.map((e) => e.slug) || []
-    expect(slugs).toContain('header-footer')
+    expect(slugs).not.toContain('header-footer')
+    expect(slugs).toContain('templates')
     expect(slugs).not.toContain('redirects')
-  })
-
-  it('header-footer should be a view type with correct href and label', () => {
-    const contentGroup = NAV_STRUCTURE.find((g) => g.label === 'Content')
-    const headerFooterRef = contentGroup?.entities.find((e) => e.slug === 'header-footer')
-
-    expect(headerFooterRef).toBeDefined()
-    expect(headerFooterRef?.type).toBe('view')
-    expect(headerFooterRef?.href).toBe('/header-footer')
-    expect(headerFooterRef?.label).toBe('Header and footer')
   })
 
   it('the standalone results pages are no longer in the nav (their tabs live on the edit pages)', () => {
@@ -184,7 +175,6 @@ describe('navStructure', () => {
     const oldSlugs = [
       'header',
       'footer',
-      'header-footer',
       'site-settings',
       'language-settings',
       'seo-settings',

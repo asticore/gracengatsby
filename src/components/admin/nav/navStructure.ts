@@ -46,7 +46,6 @@ export const NAV_STRUCTURE: NavGroupDef[] = [
     entities: [
       { slug: 'pages', type: 'collections' },
       { slug: 'posts', type: 'collections' },
-      { slug: 'header-footer', type: 'view', href: '/header-footer', label: 'Header and footer' },
       { slug: 'faqs', type: 'collections' },
       { slug: 'events', type: 'collections' },
       { slug: 'templates', type: 'view', href: '/templates', label: 'Templates' },

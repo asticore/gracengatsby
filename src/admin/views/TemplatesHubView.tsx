@@ -29,6 +29,7 @@ import {
   type HubSourceDoc,
 } from '@/features/templatesHub/rows'
 import { ListToolbar } from './ListToolbar'
+import { HeaderFooterSettings } from './HeaderFooterView'
 
 const HUB_READ_LIMIT = 1000
 const libraryLink = '/settings/template-libraries'
@@ -137,6 +138,18 @@ export async function TemplatesHubView({ searchParams = {} }: { searchParams?: R
         </div>
         <TemplatesHubTabs templatesHref={templatesHref} active="library" />
         <TemplateLibraryPanel settingsHref={adminHref(libraryLink, root)} />
+      </div>
+    )
+  }
+
+  if (searchParams.view === 'chrome') {
+    return (
+      <div className="list-view">
+        <div className="list-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+          <h1>Templates</h1>
+        </div>
+        <TemplatesHubTabs templatesHref={templatesHref} active="chrome" />
+        <HeaderFooterSettings />
       </div>
     )
   }

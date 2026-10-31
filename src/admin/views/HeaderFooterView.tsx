@@ -8,12 +8,12 @@ import { EditForm } from './EditForm'
 import { HeaderFooterTabs } from './HeaderFooterTabs'
 
 /**
- * Combined Header and footer screen at /admin/header-footer.
- * Server component: loads both globals and renders each one's normal edit form
- * (each saves its own global independently) inside a tab shell. The old
- * /admin/globals/header and /admin/globals/footer screens are untouched.
+ * The header and footer settings (logo, menu, announcement bar, socials, layout), shown as a tab of the Templates
+ * hub (admin/templates?view=chrome). Server component: loads both globals and renders each one's normal edit form
+ * (each saves its own global independently) inside a tab shell. The header and footer templates themselves are
+ * edited in the hub's list; these globals are the settings the default header and footer and the menu use.
  */
-export async function HeaderFooterView() {
+export async function HeaderFooterSettings() {
   const context = await getAdminContext()
   const ui = await getAdminUi()
   if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
@@ -54,6 +54,14 @@ export async function HeaderFooterView() {
       headerLabel={label(headerGlobal, ui.t('mn.lit.header'))}
     />
   )
+}
+
+/**
+ * The old separate screen at /admin/header-footer. Header and footer now live in the Templates hub, under
+ * "Header and footer", so this route only redirects there (old bookmarks keep working).
+ */
+export async function HeaderFooterView() {
+  redirect(`${adminHref('/templates', await getAdminRoot())}?view=chrome`)
 }
 
 export default HeaderFooterView

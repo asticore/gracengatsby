@@ -26,6 +26,10 @@ export type LocationContext = {
   /** Site template scoping: the registered host the request arrived on (lower case), and the request's language code. */
   domain?: string | null
   language?: string | null
+  /** Site template audience: `members` for a signed-in customer, `guests` otherwise. Undefined = not known here. */
+  audience?: 'members' | 'guests' | null
+  /** Site template page scoping: the id of the published page the request is for, as a string. Undefined = not known here. */
+  pageId?: string | null
 }
 
 /** Like `includes`, but the context value may be a single string or a list; a rule matches when any equals it. */
@@ -84,6 +88,17 @@ function ruleMatches(rule: LocationRule, ctx: LocationContext): boolean {
       if (ctx.language === undefined) return false
       hit = ctx.language !== null && ctx.language !== undefined && ctx.language.toLowerCase() === rule.value.toLowerCase()
       break
+    case 'audience':
+      if (ctx.audience === undefined) return false
+      hit = rule.value === 'everyone' || ctx.audience === rule.value
+      break
+    case 'page': {
+      if (ctx.pageId === undefined) return false
+      // The value is a comma separated list of page ids (picked from the page list): any of them matches.
+      const ids = rule.value.split(',').map((id) => id.trim())
+      hit = ctx.pageId !== null && ids.includes(ctx.pageId)
+      break
+    }
     case 'productCategory':
     case 'productType':
     case 'eventType': {

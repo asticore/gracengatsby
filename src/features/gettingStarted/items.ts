@@ -26,14 +26,14 @@ export const GETTING_STARTED_ITEMS: GettingStartedItem[] = [
     category: 'Site basics',
     title: 'Header',
     help: 'Customize the navigation header in Header/Footer settings.',
-    href: '/header-footer',
+    href: '/templates?view=chrome',
   },
   {
     id: 'footer',
     category: 'Site basics',
     title: 'Footer',
     help: 'Set up links and content in the footer in Header/Footer settings.',
-    href: '/header-footer',
+    href: '/templates?view=chrome',
   },
   {
     id: 'social-links',

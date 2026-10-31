@@ -3073,7 +3073,7 @@ export const UI_STRING_SOURCE = {
   "privacy.download.body": "A JSON file with your profile, addresses, orders, bookings and form entries sent with your email. Passwords and other security secrets are never included.",
   "privacy.download.button": "Download my data",
   "privacy.delete.heading": "Request deletion",
-  "privacy.delete.body": "We email you a confirmation link first. Once you confirm, an administrator reviews the request, normally within 30 days. Order totals stay for tax records without your name, email or address.",
+  "privacy.delete.body": "We email you a confirmation link first. Once you confirm, an administrator reviews the request, normally within 30 days. Order totals stay for tax records without your name, email or address. Form and booking entries you sent are kept, and only staff with permission can see them.",
   "privacy.delete.password": "Your password",
   "privacy.delete.passwordHelp": "Needed unless you signed in within the last 15 minutes.",
   "privacy.delete.button": "Request deletion",
@@ -3104,7 +3104,7 @@ export const UI_STRING_SOURCE = {
   "privacy.admin.columns.due": "Due",
   "privacy.admin.columns.actions": "Actions",
   "privacy.admin.overdue": "overdue",
-  "privacy.admin.result": "Removed: {orders} orders anonymised, {addresses} addresses, {bookings} bookings, {formEntries} form entries, {sessions} sessions.",
+  "privacy.admin.result": "Removed: {orders} orders anonymised, {addresses} addresses, {sessions} sessions.",
   "privacy.admin.approve": "Approve",
   "privacy.admin.reject": "Reject",
   "privacy.admin.erase": "Erase data",
@@ -3112,7 +3112,7 @@ export const UI_STRING_SOURCE = {
   "privacy.admin.rejected": "Request rejected.",
   "privacy.admin.erased": "Data erased. The customer was emailed when the email could be sent.",
   "privacy.admin.rejectConfirm": "Reject this request? It cannot be reopened.",
-  "privacy.admin.eraseConfirm": "Erase this customer's account and personal details now? Order totals stay for tax records. This cannot be undone.",
+  "privacy.admin.eraseConfirm": "Erase this customer's account and personal details now? Order totals stay for tax records. Form and booking submissions are kept and visible only to staff with permission. This cannot be undone.",
 
   // Template parts (Task 2 d): the Templates hub's Where used column.
   "templates.whereUsed.none": "Not placed in any page or template",

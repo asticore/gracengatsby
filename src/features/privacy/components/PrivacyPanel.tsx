@@ -67,7 +67,7 @@ export const PrivacyPanel: React.FC<{ initial: PrivacyData }> = ({ initial }) =>
                 <td>
                   {t(PRIVACY_STATUS_LABEL_KEYS[r.status])}
                   {r.overdue ? ` (${t('privacy.admin.overdue')})` : ''}
-                  {r.result ? <div>{t('privacy.admin.result', { orders: r.result.orders ?? 0, addresses: r.result.addresses ?? 0, bookings: r.result.bookings ?? 0, formEntries: r.result.formEntries ?? 0, sessions: r.result.sessions ?? 0 })}</div> : null}
+                  {r.result ? <div>{t('privacy.admin.result', { orders: r.result.orders ?? 0, addresses: r.result.addresses ?? 0, sessions: r.result.sessions ?? 0 })}</div> : null}
                 </td>
                 <td>{r.createdAt.slice(0, 10)}</td>
                 <td>{r.status === 'done' || r.status === 'rejected' ? '-' : r.dueAt.slice(0, 10)}</td>

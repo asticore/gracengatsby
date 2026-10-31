@@ -10,7 +10,9 @@ import type { UiStringKey } from '@/features/uiStrings/keys'
  *      code, a passkey or an API key. Fields are chosen by an allow-list, and a deny-list pattern
  *      strips anything secret-looking that slips into a JSON column.
  *   2. An erasure keeps order totals (tax records) and strips who bought: name, email, address,
- *      notes and the customer link. See `anonymisedOrderPatch`.
+ *      notes and the customer link. See `anonymisedOrderPatch`. Form submissions and booking entries
+ *      are kept as they are: a form exists to keep what people send, and access to them is decided
+ *      by the permissions on those collections, not by erasure.
  */
 
 /** Days from the request to the deadline. */

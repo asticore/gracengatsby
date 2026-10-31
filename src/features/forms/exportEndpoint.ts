@@ -2,7 +2,7 @@ import type { Endpoint, EngineRequest } from '@/engine'
 
 import type { FormDoc } from './types'
 
-import { can } from '@/features/roles/permissions'
+import { can, resolveAccess } from '@/features/roles/permissions'
 
 import { buildCsv, csvFilename, type ExportRow } from './csv'
 import { FORMS_SLUG, SUBMISSIONS_SLUG } from './slugs'
@@ -12,8 +12,9 @@ import { parseSubmissionFilters, submissionsWhere } from './submissionsApi'
  * GET /api/form-submissions/export?form=<id>[&status=..&assignee=..&from=..&to=..&q=..]
  *
  * Administrators, and anyone a role has been granted "Form entries: download
- * CSV" (resource `forms.export`). The filters are the same ones the entries
- * list uses (submissionsApi.ts), so an export matches what was on screen.
+ * CSV" (resource `forms.export`) who can also read every form entry (`form-submissions`, all
+ * scope). The filters are the same ones the entries list uses (submissionsApi.ts), so an export
+ * matches what was on screen.
  * Because an export is every answer every visitor has ever given -
  * names, addresses, whatever was typed into a message box - in one file. The
  * check is explicit rather than inherited from the collection's `read` access:
@@ -42,7 +43,11 @@ export const exportEndpoint: Endpoint = {
   handler: async (req: EngineRequest): Promise<Response> => {
     const user = req.user as Parameters<typeof can>[0] & { roles?: string[] }
     const roles = user?.roles || []
-    if (!roles.includes('admin') && !(user && can(user, 'forms.export', 'read'))) {
+    // Both are needed. forms.export opens the download; form-submissions read (all scope, since an
+    // entries export cannot be limited to the user's own rows) decides whether the entries may be
+    // read at all. Without the second check, a role could export what the entries screen hides.
+    const mayExport = Boolean(user) && can(user, 'forms.export', 'read') && resolveAccess(user, 'form-submissions', 'read') === 'all'
+    if (!roles.includes('admin') && !mayExport) {
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },

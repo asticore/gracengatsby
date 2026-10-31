@@ -109,7 +109,7 @@ export async function executeErasure(args: {
   const emailed = await sendMail(
     row.email,
     'Your personal data has been deleted',
-    'We have deleted your account and the personal data we held about you, as you asked.\n\nOrder totals and tax records are kept without your name, email or address, because the law requires us to keep them.\n\nIf you have questions, reply to this email or contact the site owner.',
+    'We have deleted your account and the personal data we held about you, as you asked.\n\nOrder totals and tax records are kept without your name, email or address, because the law requires us to keep them.\n\nForm and booking entries you sent are kept, and only staff with permission can see them.\n\nIf you have questions, reply to this email or contact the site owner.',
   )
   // The request keeps only counts and dates. The address and the account link go.
   const at = args.now.toISOString()

@@ -21,6 +21,8 @@ const MAX_SELECTOR = 300
 function cleanse(input: string): string {
   let css = input.slice(0, MAX_INPUT)
   css = css.replace(/\/\*[\s\S]*?(\*\/|$)/g, '')
+  // Braces inside quoted strings (attribute values, content) are not rule boundaries, so drop them first.
+  css = css.replace(/"[^"]*"|'[^']*'/g, (quoted) => quoted.replace(/[{}]/g, ''))
   css = css.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\\<]/g, '')
   css = css.replace(/@import[^;]*;?/gi, '')
   css = css.replace(/expression\s*\(/gi, '')

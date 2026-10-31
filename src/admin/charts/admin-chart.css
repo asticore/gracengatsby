@@ -1,0 +1,25 @@
+.admin-chart__svg {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
+
+.admin-chart__bar {
+  fill: var(--admin-chart-bar, currentColor);
+}
+
+.admin-chart__axis {
+  fill: var(--admin-chart-muted, var(--theme-elevation-600, #666));
+  font-size: 10px;
+}
+
+.admin-chart__grid {
+  stroke: var(--admin-chart-line, var(--theme-elevation-150, #ddd));
+  stroke-width: 1;
+}
+
+.admin-chart__empty {
+  color: var(--admin-chart-muted, var(--theme-elevation-600, #666));
+  font-size: 0.9rem;
+  margin: 0;
+}

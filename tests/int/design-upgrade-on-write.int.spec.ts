@@ -62,3 +62,27 @@ describe('toStoredDesign (upgrade-on-write)', () => {
     expect(twice).toEqual(once)
   })
 })
+
+describe('column write path keeps the grouped shape', () => {
+  it('parseColumns and parseColumns of a section keep a grouped column design as stored', async () => {
+    const { parseColumns } = await import('@/lib/sectionTree')
+    const grouped = toStoredDesign(styled)
+    const [column] = parseColumns([{ _id: 'c1', width: 12, design: grouped, blocks: [] }])
+    expect(column.design).toEqual(grouped)
+    expect(asBlockStyle(column.design)).toEqual(asBlockStyle(styled))
+  })
+
+  it('a flat column design is still read flat', async () => {
+    const { parseColumns } = await import('@/lib/sectionTree')
+    const [column] = parseColumns([{ _id: 'c2', width: 12, design: { bgType: 'color', bgColor: '#ffffff' }, blocks: [] }])
+    expect(column.design).toEqual({ bgType: 'color', bgColor: '#ffffff' })
+  })
+
+  it('a grouped column design survives a second parse (write path round trip)', async () => {
+    const { parseColumns } = await import('@/lib/sectionTree')
+    const grouped = toStoredDesign(styled)
+    const once = parseColumns([{ _id: 'c3', width: 12, design: grouped, blocks: [] }])
+    const twice = parseColumns(JSON.parse(JSON.stringify(once)))
+    expect(twice[0].design).toEqual(grouped)
+  })
+})

@@ -970,7 +970,7 @@ export const Integrations: GlobalConfig = {
       label: 'Template repositories',
       admin: {
         description:
-          'GitHub repositories that hold ready-made pages and sections for the visual editor. Add a repository and its templates appear in the editor.',
+          'Superseded: add GitHub template libraries under Settings > Template libraries. The repositories saved here were copied there by a migration, and the visual editor no longer reads this list.',
       },
       fields: [
         {

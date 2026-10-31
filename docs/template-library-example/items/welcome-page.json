@@ -1,0 +1,36 @@
+{
+  "format": "engage-template",
+  "schemaVersion": 1,
+  "kind": "page",
+  "tree": [
+    {
+      "blockType": "section",
+      "columns": [
+        {
+          "width": 12,
+          "blocks": [
+            {
+              "blockType": "element",
+              "elementType": "heading",
+              "props": {
+                "text": "Page title",
+                "tag": "h1",
+                "align": "center"
+              }
+            },
+            {
+              "blockType": "element",
+              "elementType": "text-editor",
+              "props": {
+                "align": "left",
+                "content": "<p>Start writing here. This page was created from the example library.</p>"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": [],
+  "requires": {}
+}

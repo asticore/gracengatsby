@@ -1,0 +1,57 @@
+{
+  "format": "engage-template",
+  "schemaVersion": 1,
+  "kind": "section",
+  "tree": [
+    {
+      "blockType": "section",
+      "columns": [
+        {
+          "width": 6,
+          "blocks": [
+            {
+              "blockType": "element",
+              "elementType": "heading",
+              "props": {
+                "text": "Welcome to our studio",
+                "tag": "h2",
+                "align": "left"
+              }
+            },
+            {
+              "blockType": "element",
+              "elementType": "text-editor",
+              "props": {
+                "align": "left",
+                "content": "<p>Replace this text with a short introduction. Keep it to two or three sentences.</p>"
+              }
+            }
+          ]
+        },
+        {
+          "width": 6,
+          "blocks": [
+            {
+              "blockType": "element",
+              "elementType": "image",
+              "props": {
+                "image": {
+                  "id": 1,
+                  "alt": "A studio picture"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "1",
+      "path": "images/intro-photo.png",
+      "alt": "A studio picture"
+    }
+  ],
+  "requires": {}
+}

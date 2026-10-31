@@ -1,0 +1,31 @@
+{
+  "format": "engage-library",
+  "schemaVersion": 1,
+  "name": "Example template library",
+  "items": [
+    {
+      "slug": "intro-split",
+      "kind": "section",
+      "title": "Intro with a picture",
+      "category": "Hero",
+      "tags": [
+        "hero",
+        "picture"
+      ],
+      "preview": "previews/intro-split.png",
+      "file": "items/intro-split.json"
+    },
+    {
+      "slug": "welcome-page",
+      "kind": "page",
+      "title": "Welcome page",
+      "category": "Pages",
+      "tags": [
+        "page",
+        "intro"
+      ],
+      "preview": "previews/welcome-page.png",
+      "file": "items/welcome-page.json"
+    }
+  ]
+}

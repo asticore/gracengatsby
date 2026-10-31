@@ -38,7 +38,7 @@ export const BlocksFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field,
   if (blocks.length === 0) {
     return (
       <div className="field-type blocks">
-        <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+        <FieldLabel label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
         <div style={{ padding: '8px 0', color: '#666', fontSize: '0.95em' }}>No block types configured.</div>
       </div>
     )
@@ -96,7 +96,7 @@ export const BlocksFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field,
 
   return (
     <div className="field-type blocks">
-      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
 
       {blocksValue.length === 0 ? (
         <div style={{ padding: '8px 0', color: '#666', fontSize: '0.95em' }}>No {pluralLabel.toLowerCase()} yet.</div>

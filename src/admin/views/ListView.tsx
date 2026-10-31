@@ -326,7 +326,7 @@ export async function ListView({
 
       {/* Trash (pages, posts, events) */}
       {bulkCollection && activeTab.view === 'list' && (
-        <nav aria-label="Trash" className="es-trash-links">
+        <nav aria-label={ui.t('aria.trash')} className="es-trash-links">
           <a aria-current={!trashView ? 'true' : undefined} href={`${adminCollectionPath(collectionSlug)}`}>
             All
           </a>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useId } from 'react'
 
 import './field-help.css'
@@ -10,10 +11,11 @@ import './field-help.css'
  * meaning and unit (kg or lb, cm or in, "tax included") are one glance away without cluttering the form.
  */
 export const FieldHelp: React.FC<{ text: string }> = ({ text }) => {
+  const t = useAdminT()
   const id = useId()
   return (
     <span className="field-help">
-      <button type="button" className="field-help__btn" aria-label="What is this setting?" aria-describedby={id}>
+      <button type="button" className="field-help__btn" aria-label={t('aria.settingHelp')} aria-describedby={id}>
         ?
       </button>
       <span role="tooltip" id={id} className="field-help__tip">

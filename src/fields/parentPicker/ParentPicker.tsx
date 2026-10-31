@@ -194,7 +194,7 @@ export function ParentPicker({ field, path, readOnly }: ParentPickerProps) {
 
   return (
     <div className="field-type">
-      <FieldLabel label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <div className="parent-picker__trigger-wrapper">
         <button
           type="button"

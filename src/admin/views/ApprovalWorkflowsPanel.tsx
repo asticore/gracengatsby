@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useCallback, useMemo, useState } from 'react'
 import styles from '@/admin/admin.module.css'
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
@@ -243,6 +244,7 @@ function WorkflowForm({
  * rules the form checks are checked again on the server.
  */
 export function ApprovalWorkflowsPanel({ workflows: initial, roles, canEdit, approvalEnabled }: Props) {
+  const t = useAdminT()
   const [workflows, setWorkflows] = useState<WorkflowRecord[]>(initial)
   const [drafts, setDrafts] = useState<Record<number, WorkflowDraft>>({})
   const [creating, setCreating] = useState<WorkflowDraft | null>(null)
@@ -344,7 +346,7 @@ export function ApprovalWorkflowsPanel({ workflows: initial, roles, canEdit, app
       </div>
 
       {creating && (
-        <section className="rw-new" aria-label="New workflow">
+        <section className="rw-new" aria-label={t('aria.workflow.new')}>
           <h2>New workflow</h2>
           <WorkflowForm
             draft={creating}

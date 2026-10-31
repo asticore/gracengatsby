@@ -20,7 +20,7 @@ export const RadioFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, 
 
   return (
     <div className="field-type radio">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <div>
         {options.map((opt) => (
           <label key={opt.value} style={{ display: 'block', marginBottom: 4 }}>

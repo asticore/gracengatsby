@@ -104,7 +104,7 @@ function JsonStopgapRenderer({ field, path, readOnly }: ScalarFieldRendererProps
 
   return (
     <FieldWrapper type={field.type}>
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <textarea
         id={`field-${path}`}
         className="field-type json"

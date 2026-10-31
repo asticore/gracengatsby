@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useId, useState } from 'react'
 import { ConsentManager } from '@/features/consent/ConsentManager'
 import type { ConsentConfig } from '@/features/consent/config'
@@ -53,6 +54,7 @@ export function regionsFor(mode: ConsentConfig['mode']): Region[] {
  * clicking around here changes nothing on the site.
  */
 export const CookieConsentPreview: React.FC<{ config: ConsentConfig }> = ({ config }) => {
+  const t = useAdminT()
   const [view, setView] = useState<View>('banner')
   const [device, setDevice] = useState<Device>('desktop')
   const [theme, setTheme] = useState<Theme>('light')
@@ -128,7 +130,7 @@ export const CookieConsentPreview: React.FC<{ config: ConsentConfig }> = ({ conf
       <div
         className={`cc-frame cc-frame--${device}${view === 'dialog' ? ' cc-frame--tall' : ''}`}
         data-theme={themeForced ? config.theme : theme}
-        aria-label="Preview of the cookie banner on a sample page"
+        aria-label={t('aria.cookieBannerPreview')}
         role="group"
         aria-describedby={noteId}
       >

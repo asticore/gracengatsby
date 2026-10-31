@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { useEffect, useRef, useState } from 'react'
 
 import { CollapsibleCard } from '@/admin/components/CollapsibleCard'
@@ -30,6 +31,7 @@ const TABS: ReadonlyArray<{ key: TabKey; label: string }> = [
 
 /** The Theme styles screen (/admin/theme-styles): editor on the left, live preview on the right. */
 export function ThemeStylesClient({ initialStyles, saved, fonts }: Props) {
+  const t = useAdminT()
   const [styles, setStyles] = useState<ThemeStyles>(initialStyles)
   const [baseline, setBaseline] = useState<string>(() => JSON.stringify(initialStyles))
   const [tab, setTab] = useState<TabKey>('colours')
@@ -112,14 +114,14 @@ export function ThemeStylesClient({ initialStyles, saved, fonts }: Props) {
         <span className="ts-toolbar__spacer" />
         <button type="button" className="ts-btn" onClick={exportJson}>Export</button>
         <button type="button" className="ts-btn" onClick={() => fileRef.current?.click()}>Import</button>
-        <input ref={fileRef} type="file" accept="application/json,.json" className="ts-visually-hidden" aria-label="Import theme styles JSON file" tabIndex={-1} onChange={(event) => void importFile(event.target.files?.[0])} />
+        <input ref={fileRef} type="file" accept="application/json,.json" className="ts-visually-hidden" aria-label={t('aria.theme.importFile')} tabIndex={-1} onChange={(event) => void importFile(event.target.files?.[0])} />
         {dirty && <span className="ts-notice ts-notice--warn">Unsaved changes</span>}
       </div>
       {notice && <p role={notice.tone === 'error' ? 'alert' : 'status'} className={`ts-notice ts-notice--${notice.tone}`}>{notice.text}</p>}
 
       <div className="ts-layout">
         <div className="ts-main">
-          <div className="ts-tabs" role="tablist" aria-label="Theme style groups">
+          <div className="ts-tabs" role="tablist" aria-label={t('aria.theme.groups')}>
             {TABS.map((t) => (
               <button key={t.key} type="button" role="tab" id={`ts-tab-${t.key}`} aria-selected={tab === t.key} aria-controls="ts-panel" className="ts-tab" onClick={() => setTab(t.key)}>{t.label}</button>
             ))}
@@ -135,7 +137,7 @@ export function ThemeStylesClient({ initialStyles, saved, fonts }: Props) {
             </CollapsibleCard>
           </div>
         </div>
-        <aside className="ts-aside" aria-label="Live preview">
+        <aside className="ts-aside" aria-label={t('aria.theme.livePreview')}>
           <h2 className="ts-aside__title">Live preview</h2>
           <ThemeStylesPreview styles={styles} tab={tab} fonts={fonts} />
           <p className="ts-help">The preview shows your edits before they are saved.</p>

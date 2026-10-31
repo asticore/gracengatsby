@@ -16,7 +16,7 @@ export const DateFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ field, p
 
   return (
     <div className="field-type date">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <input
         id={`field-${path}`}
         name={path}

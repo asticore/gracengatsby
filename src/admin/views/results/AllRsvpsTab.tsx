@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useState } from 'react'
 import { AllResultsFilters, EMPTY_FILTERS, filtersToQuery, type OwnerOption, type ResultsFilterValues } from './AllResultsFilters'
@@ -14,13 +15,14 @@ type Page = PageInfo & { docs: AllRsvpRow[] }
  * with an event filter, search, a date range and a CSV of the filtered rows.
  */
 export function AllRsvpsTab({ events }: { events: OwnerOption[] }) {
+  const t = useAdminT()
   const [filters, setFilters] = useState<ResultsFilterValues>(EMPTY_FILTERS)
   const [page, setPage] = useState(1)
   const query = filtersToQuery(filters, 'event')
   const { data, error, loading } = useResultsPage<Page>(`/api/admin-event-rsvps?all=1&page=${page}${query ? `&${query}` : ''}`)
 
   return (
-    <section aria-label="All RSVPs" className="et-results">
+    <section aria-label={t('aria.allRsvps')} className="et-results">
       <AllResultsFilters
         applied={filters}
         onApply={(next) => {

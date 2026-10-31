@@ -1,3 +1,4 @@
+import { getAdminUi } from '@/admin/i18n/serverUi'
 import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React from 'react'
 import type { CollectionSlug, Engine, TypedUser } from '@/engine'
@@ -24,6 +25,7 @@ const READINESS_LABEL: Record<string, string> = {
  * Reads pass the signed-in user, so a test the user cannot read is not listed.
  */
 export async function ABResultsOverview({ engine, user }: { engine: Engine; user: TypedUser | null }): Promise<React.ReactElement> {
+  const ui = await getAdminUi()
   const { docs } = await engine
     .find({
       collection: AB_TESTS_SLUG as CollectionSlug,
@@ -46,7 +48,7 @@ export async function ABResultsOverview({ engine, user }: { engine: Engine; user
   if (rows.length === 0) return <p className="et-muted">No tests have been created yet.</p>
 
   return (
-    <section aria-label="A/B test results" className="et-results">
+    <section aria-label={ui.t('aria.abResults')} className="et-results">
       <p className="lst-overview-note">
         Visitors are counted once per test, the first time they are put into a variant. A winner is only named once the
         numbers support it; until then the leading variant is shown as a hint.

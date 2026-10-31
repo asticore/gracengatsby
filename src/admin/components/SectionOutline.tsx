@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import React, { useId } from 'react'
 import { useFormFields } from '@/engine/ui'
 import { parseColumns, type SectionColumn, type SectionNode } from '@/lib/sectionTree'
@@ -110,6 +111,7 @@ function OutlineRow({ entry }: { entry: OutlineEntry }) {
 }
 
 export function SectionOutline({ blocksField }: { blocksField: string }) {
+  const t = useAdminT()
   const raw = useFormFields(([fields]) => fields[blocksField]?.value)
   const parsed = asJson(raw)
   const blocks = Array.isArray(parsed) ? parsed.filter(isBlockLike) : []
@@ -120,7 +122,7 @@ export function SectionOutline({ blocksField }: { blocksField: string }) {
 
   const entries = buildOutline(blocks)
   return (
-    <nav className="ec-outline" aria-label="Page structure">
+    <nav className="ec-outline" aria-label={t('aria.pageStructure')}>
       <ul className="ec-outline__list">
         {entries.map((entry) => (
           <OutlineRow key={entry.id} entry={entry} />

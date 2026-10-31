@@ -1,5 +1,6 @@
 'use client'
 
+import { useAdminT } from '@/admin/i18n/AdminUiProvider'
 import { AdminLink } from '@/admin/adminRoute/AdminLink'
 import React, { useState } from 'react'
 import { EventCheckInButton } from './EventCheckIn'
@@ -14,13 +15,14 @@ type RsvpPage = PageInfo & { docs: RsvpRow[]; totalGuests: number; guestsTruncat
  * RSVPs with a link to each one's own document.
  */
 export function EventResultsTab({ eventId, capacity }: { eventId: number; capacity: number | null }) {
+  const t = useAdminT()
   const [page, setPage] = useState(1)
   const { data, error, loading } = useResultsPage<RsvpPage>(`/api/admin-event-rsvps?event=${eventId}&page=${page}`)
 
   const overCapacity = data !== null && capacity !== null && data.totalGuests > capacity
 
   return (
-    <section aria-label="RSVPs" className="et-results">
+    <section aria-label={t('aria.rsvps')} className="et-results">
       <div className="et-toolbar">
         <div className="et-stats">
           <ResultsStat label="RSVPs" value={data ? data.totalDocs.toLocaleString() : '-'} />

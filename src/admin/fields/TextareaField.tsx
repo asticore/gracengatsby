@@ -17,7 +17,7 @@ export const TextareaFieldRenderer: React.FC<ScalarFieldRendererProps> = ({ fiel
 
   return (
     <div className="field-type textarea">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <textarea
         id={`field-${path}`}
         name={path}

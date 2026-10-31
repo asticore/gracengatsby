@@ -12,6 +12,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
 import {
+  adminFieldLabel,
   adminLabel,
   translateWith,
   type AdminLabelKind,
@@ -52,6 +53,15 @@ export function useAdminLabel(): (kind: AdminLabelKind, slug: string, fallbackEn
   const { locale, dict } = useContext(AdminUiContext)
   return useMemo(
     () => (kind: AdminLabelKind, slug: string, fallbackEnglish: string) => adminLabel(kind, slug, fallbackEnglish, { locale, dict }),
+    [locale, dict],
+  )
+}
+
+/** `fieldLabel(path, name, 'Meta pixel ID')`: a field label keyed by its config path first, then its name. */
+export function useAdminFieldLabel(): (path: string | undefined, name: string, fallbackEnglish: string) => string {
+  const { locale, dict } = useContext(AdminUiContext)
+  return useMemo(
+    () => (path: string | undefined, name: string, fallbackEnglish: string) => adminFieldLabel(path, name, fallbackEnglish, { locale, dict }),
     [locale, dict],
   )
 }

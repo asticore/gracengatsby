@@ -104,7 +104,7 @@ function SingleRelationPicker({ field, path, readOnly }: ScalarFieldRendererProp
 
   return (
     <div className="field-type relationship">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       {value !== undefined && value !== null && value !== '' && (
         <div className="field-relationship-selected">
           Selected: {String(value)}{' '}
@@ -165,7 +165,7 @@ function MultiRelationPicker({ field, path, readOnly }: ScalarFieldRendererProps
 
   return (
     <div className="field-type relationship">
-      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} required={fieldRequired(field)} />
+      <FieldLabel htmlFor={`field-${path}`} label={fieldLabel(field)} name={field.name} path={path} required={fieldRequired(field)} />
       <div className="field-relationship-chips">
         {selected.map((id) => (
           <span key={String(id)} className="field-relationship-chip">

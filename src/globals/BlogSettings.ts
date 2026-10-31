@@ -2,6 +2,7 @@ import type { GlobalConfig } from '@/engine'
 
 import { isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 
 export const BlogSettings: GlobalConfig = {
   slug: 'blog-settings',
@@ -83,4 +84,7 @@ export const BlogSettings: GlobalConfig = {
       ],
     },
   ],
+  hooks: {
+    beforeChange: [embedShortLinksFor('introBlocks')],
+  },
 }

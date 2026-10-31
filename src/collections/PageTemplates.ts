@@ -2,6 +2,7 @@ import type { CollectionConfig } from '@/engine'
 
 import { roleAccess } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 import { locksField } from '../fields/locks'
 import { lockGuard } from '@/features/roles/lockGuard'
 
@@ -74,6 +75,6 @@ export const PageTemplates: CollectionConfig = {
     locksField,
   ],
   hooks: {
-    beforeChange: [lockGuard],
+    beforeChange: [lockGuard, embedShortLinksFor('blocks')],
   },
 }

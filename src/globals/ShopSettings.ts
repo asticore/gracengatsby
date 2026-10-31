@@ -2,6 +2,7 @@ import type { GlobalConfig } from '@/engine'
 
 import { isAdmin } from '../access/ecommerceAccess'
 import { pageBuilderBlocks } from '../blocks'
+import { embedShortLinksFor } from '@/features/embeds/hooks'
 import { generalGroup, giftCardsGroup, invoiceGroup, orderNumbersGroup, storefrontGroup, templatesGroup } from '../features/ecommerce/settingsFields'
 
 export const ShopSettings: GlobalConfig = {
@@ -137,4 +138,7 @@ export const ShopSettings: GlobalConfig = {
     templatesGroup,
     storefrontGroup,
   ],
+  hooks: {
+    beforeChange: [embedShortLinksFor('introBlocks')],
+  },
 }

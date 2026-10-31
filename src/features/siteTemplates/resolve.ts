@@ -5,6 +5,7 @@ import { getEngine } from '@/lib/engine'
 
 import { currentAudience, pageIdForPath } from './audience'
 import { pickSiteTemplate } from './pick'
+import { upgradeLegacyElements } from './nodes'
 import type { SiteTemplate, SiteTemplateKind, TemplateContext } from './types'
 
 /** True when a template's conditions use this param (the stored JSON names it as "param":"..."). */
@@ -81,7 +82,7 @@ export async function prepareTemplateBlocks(template: SiteTemplate): Promise<unk
   try {
     const resolved = await resolveDocumentContent('pages', template as unknown as Record<string, unknown>)
     const blocks = (resolved as { blocks?: unknown }).blocks
-    return Array.isArray(blocks) ? blocks : []
+    return Array.isArray(blocks) ? upgradeLegacyElements(blocks) : []
   } catch {
     return []
   }

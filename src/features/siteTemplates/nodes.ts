@@ -68,3 +68,24 @@ export function parseTemplatePartId(value: unknown): string | null {
   const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value
   return typeof n === 'number' && Number.isInteger(n) && n > 0 ? String(n) : null
 }
+
+/**
+ * Element types that were renamed. A template saved before the rename still names the old type, so it is
+ * upgraded when the template is prepared for rendering. `breadcrumbs` (a typed trail) becomes the Auto breadcrumbs
+ * element, which builds the trail from the page address; its old `items` and `separator` props are dropped.
+ */
+export const LEGACY_ELEMENT_TYPES: Record<string, string> = { breadcrumbs: 'auto-breadcrumbs' }
+
+/** Returns the blocks with every renamed element type upgraded, at the top level and inside sections (any depth). */
+export function upgradeLegacyElements(blocks: unknown[]): unknown[] {
+  const upgradeColumns = (columns: ReturnType<typeof parseColumns>): ReturnType<typeof parseColumns> =>
+    columns.map((column) => ({ ...column, blocks: (column.blocks || []).map(upgradeNode) as typeof column.blocks }))
+  const upgradeNode = (node: SectionNode): SectionNode => {
+    if (node.blockType === 'section') return { ...node, columns: upgradeColumns(parseColumns(node.columns)) } as SectionNode
+    if (node.blockType === 'element' && typeof node.elementType === 'string' && LEGACY_ELEMENT_TYPES[node.elementType]) {
+      return { ...node, elementType: LEGACY_ELEMENT_TYPES[node.elementType], props: {} } as SectionNode
+    }
+    return node
+  }
+  return blocks.map((raw) => (raw && typeof raw === 'object' ? upgradeNode(raw as SectionNode) : raw))
+}

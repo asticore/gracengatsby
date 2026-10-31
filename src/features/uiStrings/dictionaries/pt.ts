@@ -3071,6 +3071,12 @@ const pt: UiDictionary = {
   "privacy.admin.eraseConfirm": "Eliminar agora a conta e os dados pessoais deste cliente? Os totais das encomendas ficam para os registos fiscais. As submissões de formulários e reservas são mantidas e só são visíveis para a equipa com permissão. Não é possível anular.",
   "templates.whereUsed.none": "Não colocada em nenhuma página ou modelo",
   "templates.whereUsed.placedIn": "Colocada em {places}",
+  "formEl.newForm": "Novo formulário",
+  "formEl.chooseExisting": "Escolher um formulário existente",
+  "formEl.creating": "Criando formulário...",
+  "formEl.createFailed": "Não foi possível criar o formulário. Verifique a conexão e tente novamente.",
+  "formEl.editFields": "Desenhar os campos (abre o editor do formulário)",
+  "formEl.noFormYet": "Ainda não há formulários. Crie um novo aqui e desenhe os campos.",
 }
 
 export default pt

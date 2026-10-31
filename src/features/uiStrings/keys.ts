@@ -3117,6 +3117,13 @@ export const UI_STRING_SOURCE = {
   // Template parts (Task 2 d): the Templates hub's Where used column.
   "templates.whereUsed.none": "Not placed in any page or template",
   "templates.whereUsed.placedIn": "Placed in {places}",
+  // Form element in the visual editor: the picker on a page's form block (new form, existing form, design fields).
+  "formEl.newForm": "New form",
+  "formEl.chooseExisting": "Choose existing form",
+  "formEl.creating": "Creating form...",
+  "formEl.createFailed": "The form could not be created. Check your connection and try again.",
+  "formEl.editFields": "Design the fields (opens the form editor)",
+  "formEl.noFormYet": "No forms yet. Create a new one here and design its fields.",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

@@ -3071,6 +3071,12 @@ const ko: UiDictionary = {
   "privacy.admin.eraseConfirm": "이 고객의 계정과 개인 정보를 지금 삭제할까요? 주문 합계는 세무 기록을 위해 남습니다. 양식 및 예약 제출 내용은 보관되며, 권한이 있는 직원만 볼 수 있습니다. 이 작업은 되돌릴 수 없습니다.",
   "templates.whereUsed.none": "어떤 페이지나 템플릿에도 배치되지 않음",
   "templates.whereUsed.placedIn": "배치된 곳: {places}",
+  "formEl.newForm": "새 폼",
+  "formEl.chooseExisting": "기존 폼 선택",
+  "formEl.creating": "폼을 만드는 중...",
+  "formEl.createFailed": "폼을 만들 수 없습니다. 연결을 확인하고 다시 시도하세요.",
+  "formEl.editFields": "필드 디자인 (폼 편집기 열기)",
+  "formEl.noFormYet": "아직 폼이 없습니다. 여기서 새 폼을 만들고 필드를 디자인하세요.",
 }
 
 export default ko

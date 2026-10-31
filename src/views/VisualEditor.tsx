@@ -40,6 +40,8 @@ import { hasUnpublishedChanges as formHasUnpublishedChanges, upgradeFieldsToLayo
 import type { FormConfig } from '@/features/forms/types'
 import { FormEditorContext } from './visualEditor/formInputs'
 import { FormSettingsPanel } from './visualEditor/FormSettingsPanel'
+import { FormBlockFieldsPanel } from './visualEditor/FormBlockFieldsPanel'
+import { formEditorPath } from './visualEditor/formRelation'
 import { PageSettingsPanel } from './visualEditor/PageSettingsPanel'
 import { TranslationBar, TRANSLATION_BAR_CSS } from './visualEditor/TranslationBar'
 import { TranslateBanner, TRANSLATE_BANNER_CSS } from './visualEditor/TranslateBanner'
@@ -362,6 +364,13 @@ export const VisualEditorView: React.FC = () => {
   }, [dirty])
 
   const selectedNode = selectedPath ? getNode(blocks, selectedPath) : undefined
+  // A Form block on a page: the form it points at (id or {id}) gets its fields panel in the Settings tab.
+  const selectedFormRef = (() => {
+    if (formMode || selectedNode?.blockType !== 'form') return undefined
+    const ref = (selectedNode as { form?: unknown }).form
+    const id = ref && typeof ref === 'object' ? (ref as { id?: unknown }).id : ref
+    return (typeof id === 'number' && Number.isFinite(id)) || (typeof id === 'string' && id !== '') ? id : undefined
+  })()
   useEffect(() => {
     selectedRef.current = selectedPath
   }, [selectedPath])
@@ -1565,6 +1574,11 @@ export const VisualEditorView: React.FC = () => {
             setSelectedPath(p)
             if (p) setDockTab('settings')
           }}
+          selectedExtraPanel={
+            selectedFormRef !== undefined ? (
+              <FormBlockFieldsPanel key={String(selectedFormRef)} formId={selectedFormRef} editorHref={`${adminRoot}${formEditorPath(selectedFormRef)}`} />
+            ) : undefined
+          }
           navigatorPanel={
             <NavigatorPanel
               nodes={blocks}

@@ -1,4 +1,6 @@
 import { adminHref } from '@/features/security/adminPath'
+import { loadFormUsage, withUsageLinks } from '@/features/forms/pageUsageServer'
+import { FormUsageTable } from './FormUsage'
 import { getAdminRoot } from '@/features/security/settings'
 import { adminLabel } from '@/features/uiStrings'
 import { adminCollectionPath } from '@/admin/adminPaths'
@@ -252,6 +254,32 @@ export async function ListView({
   const hasPrevPage = effectiveState.page > 1
   const hasNextPage = effectiveState.page < totalPages
 
+  // Forms: which pages use each form, shown above the list. Every form is listed, with the pages that embed it.
+  let formUsageTable: ReactNode = null
+  if (collectionSlug === 'forms') {
+    const formDocs = await context.engine.find({ collection: 'forms', depth: 0, limit: 200, sort: 'title', user: context.user }).catch(() => ({ docs: [] as unknown[] }))
+    const forms = formDocs.docs.map((doc) => {
+      const row = doc as { id: number | string; title?: unknown; embedKey?: unknown }
+      return { id: row.id, title: String(row.title ?? `Form #${row.id}`), embedKey: typeof row.embedKey === 'string' ? row.embedKey : null }
+    })
+    const usage = await loadFormUsage(context.engine, context.user, forms)
+    const root = await getAdminRoot()
+    const statusLabels = { published: ui.t('formUsage.published'), draft: ui.t('formUsage.draft') }
+    formUsageTable = (
+      <FormUsageTable
+        rows={forms.map((form) => ({ id: String(form.id), title: form.title, pages: withUsageLinks(usage[String(form.id)] ?? [], root, statusLabels) }))}
+        strings={{
+          listTitle: ui.t('formUsage.listTitle'),
+          colForm: ui.t('formUsage.colForm'),
+          colPages: ui.t('formUsage.colPages'),
+          none: ui.t('formUsage.none'),
+          edit: ui.t('formUsage.edit'),
+          view: ui.t('formUsage.view'),
+        }}
+      />
+    )
+  }
+
   return (
     <div className="list-view">
       <div className="list-header">
@@ -264,6 +292,8 @@ export async function ListView({
       </div>
 
       {tabBar}
+
+      {formUsageTable}
 
       {/* Collection-specific panels declared as admin.components.beforeList (registry paths), e.g. site-templates Starters. */}
       {(Array.isArray(collection.admin?.components?.beforeList) ? (collection.admin.components.beforeList as string[]) : []).map((path) => {

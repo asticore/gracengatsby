@@ -195,6 +195,8 @@ export const EditorDock: React.FC<{
   selectedPath?: NodePath | null
   /** Selects a path: a block, a column, or null for the page. Used by the breadcrumb and the Checks list. */
   onSelectPath?: (path: NodePath | null) => void
+  /** Shown under the selected block's settings (a Form block lists its fields here). */
+  selectedExtraPanel?: React.ReactNode
 }> = ({
   collapsed,
   tab,
@@ -222,6 +224,7 @@ export const EditorDock: React.FC<{
   tree,
   selectedPath = null,
   onSelectPath,
+  selectedExtraPanel,
 }) => {
   const t = useAdminT()
   const [aiOpen, setAiOpen] = useState(false)
@@ -336,19 +339,22 @@ export const EditorDock: React.FC<{
         ) : columnPanel ? (
           columnPanel
         ) : selectedNode && selectedDef ? (
-          <FieldPanel
-            blockDef={selectedDef}
-            data={selectedNode}
-            onChange={onChangeSelected}
-            onClose={onCloseSelected}
-            onDelete={onDeleteSelected}
-            onDuplicate={onDuplicateSelected}
-            userPermissions={userPermissions}
-            lockUi={lockUi}
-            device={device}
-            onSelectColumn={onSelectColumn}
-            onConvertLegacy={onConvertLegacy}
-          />
+          <>
+            <FieldPanel
+              blockDef={selectedDef}
+              data={selectedNode}
+              onChange={onChangeSelected}
+              onClose={onCloseSelected}
+              onDelete={onDeleteSelected}
+              onDuplicate={onDuplicateSelected}
+              userPermissions={userPermissions}
+              lockUi={lockUi}
+              device={device}
+              onSelectColumn={onSelectColumn}
+              onConvertLegacy={onConvertLegacy}
+            />
+            {selectedExtraPanel}
+          </>
         ) : (
           <>
             {pagePanel}

@@ -23,6 +23,8 @@ import { EventResultsTab } from './results/EventResultsTab'
 import { FormResultsTab } from './results/FormResultsTab'
 import { FormLayoutSummary } from './FormLayoutSummary'
 import { summariseFormLayout } from '@/features/forms/layoutSummary'
+import { pageLiveHref, loadFormUsage, withUsageLinks } from '@/features/forms/pageUsageServer'
+import { FormPagesCard } from './FormUsage'
 
 type AdminEngine = Awaited<ReturnType<typeof getAdminContext>>['engine']
 
@@ -57,22 +59,6 @@ function resultsPanelFor(slug: string, id: number, doc: Record<string, unknown> 
   if (slug === 'forms') return <FormResultsTab formId={id} />
   if (slug === 'ab-tests') return <ABResultsTab testId={id} />
   return null
-}
-
-/** Public URL of a page: its slug under every ancestor's slug (the parent chain is the URL; see utilities/pagePaths.ts). */
-async function pageLiveHref(engine: AdminEngine, doc: Record<string, unknown>): Promise<string | undefined> {
-  if (doc.isHomepage) return '/'
-  const segments: string[] = []
-  let current: Record<string, unknown> | null = doc
-  for (let depth = 0; current && depth < 9; depth++) {
-    const slug = current.slug
-    if (typeof slug !== 'string' || !slug) return undefined
-    segments.unshift(slug)
-    const parentId = idOf(current.parent)
-    if (parentId === undefined) return `/${segments.join('/')}`
-    current = (await engine.findByID({ collection: 'pages', depth: 0, id: parentId as number, overrideAccess: true }).catch((): null => null)) as Record<string, unknown> | null
-  }
-  return undefined
 }
 
 async function liveHrefFor(engine: AdminEngine, collectionSlug: string, doc: Record<string, unknown>): Promise<string | undefined> {
@@ -211,9 +197,38 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
         })()
       : null
 
+  // Forms: the pages that put this form on them, with links to edit each page and to see it.
+  const formPagesCard =
+    collectionSlug === 'forms' && id !== undefined && docRecord
+      ? await (async () => {
+          const usage = await loadFormUsage(context.engine, context.user, [{ id, embedKey: typeof docRecord.embedKey === 'string' ? docRecord.embedKey : null }])
+          const pages = withUsageLinks(usage[String(id)] ?? [], await getAdminRoot(), { published: ui.t('formUsage.published'), draft: ui.t('formUsage.draft') })
+          return (
+            <FormPagesCard
+              pages={pages}
+              strings={{
+                title: ui.t('formUsage.title'),
+                none: ui.t('formUsage.none'),
+                hint: ui.t('formUsage.hint'),
+                count: ui.t('formUsage.count', { count: pages.length }),
+                edit: ui.t('formUsage.edit'),
+                view: ui.t('formUsage.view'),
+              }}
+            />
+          )
+        })()
+      : null
+
   const editForm = (
     <EditForm
-      beforeFields={formSummary}
+      beforeFields={
+        formSummary || formPagesCard ? (
+          <>
+            {formSummary}
+            {formPagesCard}
+          </>
+        ) : undefined
+      }
       collectionSlug={collectionSlug}
       doc={doc}
       draftsEnabled={draftsEnabled}

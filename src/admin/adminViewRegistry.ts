@@ -48,6 +48,7 @@ import { PasskeysView } from '@/admin/views/PasskeysView'
 import { ApiKeysView } from '@/admin/views/ApiKeysView'
 import { ApiBuilderView } from '@/admin/views/ApiBuilderView'
 import { WebhooksView } from '@/admin/views/WebhooksView'
+import { PrivacyView } from '@/admin/views/PrivacyView'
 import { ImpersonationView } from '@/admin/views/ImpersonationView'
 import { OrganizationsView } from '@/admin/views/OrganizationsView'
 import { PasswordGroupsView } from '@/admin/views/PasswordGroupsView'
@@ -284,6 +285,12 @@ export const CUSTOM_ADMIN_VIEWS = [
     Component: WebhooksView,
     path: '/webhooks',
     meta: { title: 'Webhooks', description: 'Send signed webhooks to other systems when content, orders, forms or accounts change, and check every delivery.' },
+  },
+  {
+    key: 'privacy',
+    Component: PrivacyView,
+    path: '/privacy',
+    meta: { title: 'Privacy requests', description: 'Customer requests to delete their data, with their 30-day deadlines. Approve or reject them, and erase the data.' },
   },
   {
     key: 'apiKeys',

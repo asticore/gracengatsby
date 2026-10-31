@@ -19,6 +19,7 @@ import { WAVE65_SERVER_COMPONENTS } from './Wave65Server'
 import { WAVE66_COMPONENTS } from './Wave66Server'
 import { WAVE67_COMPONENTS } from './Wave67Server'
 import { EMBED_CODE_COMPONENTS } from './EmbedCodeServer'
+import { TEMPLATE_PART_COMPONENTS } from './TemplatePartServer'
 import { DynamicTextElement } from './DynamicText'
 import SearchSuggest from './SearchSuggest'
 import './wave38.css'
@@ -403,6 +404,7 @@ const SITE_RENDERERS: Record<string, React.ComponentType<P>> = {
   ...WAVE66_COMPONENTS,
   ...WAVE67_COMPONENTS,
   ...EMBED_CODE_COMPONENTS,
+  ...TEMPLATE_PART_COMPONENTS,
 }
 
 /**

@@ -1215,7 +1215,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('organizations migration is registered before the later migrations and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 20].name).toBe('20261124_100000_organizations')
+    expect(migrations[migrations.length - 22].name).toBe('20261124_100000_organizations')
     const mod = await import('@/migrations/20261124_100000_organizations')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1231,7 +1231,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('translation workflow migration is registered before machine translation, adds its columns, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 19].name).toBe('20261125_100000_translation_workflow')
+    expect(migrations[migrations.length - 21].name).toBe('20261125_100000_translation_workflow')
     const mod = await import('@/migrations/20261125_100000_translation_workflow')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1254,7 +1254,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('machine translation migration is registered before auto-draft, adds its keys, settings and usage table, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 18].name).toBe('20261126_100000_machine_translation')
+    expect(migrations[migrations.length - 20].name).toBe('20261126_100000_machine_translation')
     const mod = await import('@/migrations/20261126_100000_machine_translation')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1271,7 +1271,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('admin UI language migration is registered before the interface overrides, adds the user column, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 16].name).toBe('20261128_100000_admin_ui_language')
+    expect(migrations[migrations.length - 18].name).toBe('20261128_100000_admin_ui_language')
     const mod = await import('@/migrations/20261128_100000_admin_ui_language')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1284,7 +1284,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('storefront interface overrides migration is registered before the domain settings, adds its column, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 15].name).toBe('20261129_100000_interface_overrides')
+    expect(migrations[migrations.length - 17].name).toBe('20261129_100000_interface_overrides')
     const mod = await import('@/migrations/20261129_100000_interface_overrides')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1297,7 +1297,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('domain settings migration is registered before the admin URL and content domains migrations, creates the registry tables, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 14].name).toBe('20261130_100000_domain_settings')
+    expect(migrations[migrations.length - 16].name).toBe('20261130_100000_domain_settings')
     const mod = await import('@/migrations/20261130_100000_domain_settings')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1312,7 +1312,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('admin URL migration is registered before the tracking migration, adds its column, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 13].name).toBe('20261130_110000_admin_path')
+    expect(migrations[migrations.length - 15].name).toBe('20261130_110000_admin_path')
     const mod = await import('@/migrations/20261130_110000_admin_path')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never
@@ -1325,7 +1325,7 @@ describe('runInternalMigrate - fresh install on an empty D1', () => {
 
   it('machine auto-draft migration is registered before the admin language migration, adds its switch, and is safe to run a second time', async () => {
     const { migrations } = await import('@/migrations/index')
-    expect(migrations[migrations.length - 17].name).toBe('20261127_100000_machine_autodraft')
+    expect(migrations[migrations.length - 19].name).toBe('20261127_100000_machine_autodraft')
     const mod = await import('@/migrations/20261127_100000_machine_autodraft')
     const { drizzle } = await import('drizzle-orm/d1')
     const db = drizzle(proxy.env.D1) as never

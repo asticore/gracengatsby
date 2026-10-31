@@ -8,9 +8,13 @@
 import type { ColumnDef, ListFilter } from '@/admin/list/listQuery'
 import { adminCollectionPath } from '@/admin/adminPaths'
 import { summariseConditions } from '@/features/siteTemplates/conditionsSummary'
+import { templatePartIdsIn } from '@/features/siteTemplates/nodes'
 import { KIND_LABELS, PUBLIC_PREVIEW_PATH, SITE_TEMPLATE_KINDS, type SiteTemplateKind } from '@/features/siteTemplates/kinds'
 
 export type HubCollection = 'site-templates' | 'page-templates' | 'reusable-sections'
+
+/** A page or template that places a site template with a "Template part" element (the Where used column). */
+export type UsedIn = { collection: 'pages' | HubCollection; id: number | string; name: string; href: string }
 
 /** Type values for the two non-site collections. Site templates use their kind (header, single-post, ...). */
 export const PAGE_TEMPLATE_TYPE = 'page-template'
@@ -22,6 +26,8 @@ export type HubStatus = 'on' | 'off' | 'available'
 export type HubSourceDoc = {
   id: number | string
   name?: string | null
+  /** Pages carry a title instead of a name. */
+  title?: string | null
   kind?: string | null
   enabled?: boolean | null
   priority?: number | null
@@ -47,10 +53,12 @@ export type HubRow = {
   previewHref: string | null
   /** Site templates only: the on/off switch in the list can change it. */
   toggleable: boolean
+  /** Where a "Template part" element places this template: pages and templates, empty when none. */
+  usedIn: UsedIn[]
 }
 
 export const HUB_DEFAULT_SORT = '-updatedAt'
-export const HUB_DEFAULT_COLUMNS = ['name', 'type', 'status', 'where', 'priority', 'updatedAt']
+export const HUB_DEFAULT_COLUMNS = ['name', 'type', 'status', 'where', 'whereUsed', 'priority', 'updatedAt']
 const HUB_SORT_FIELDS = ['name', 'type', 'status', 'priority', 'updatedAt'] as const
 
 const STATUS_LABELS: Record<HubStatus, string> = { on: 'On', off: 'Off', available: 'Available' }
@@ -69,11 +77,12 @@ export const HUB_COLUMNS: ColumnDef[] = [
   { name: 'type', label: 'Type', type: 'select', sortable: true, filterable: true, options: Object.entries(HUB_TYPE_LABELS).map(([value, label]) => ({ value, label })) },
   { name: 'status', label: 'Status', type: 'select', sortable: true, filterable: true, options: (['on', 'off', 'available'] as const).map((value) => ({ value, label: STATUS_LABELS[value] })) },
   { name: 'where', label: 'Where it applies', type: 'text', sortable: false, filterable: false },
+  { name: 'whereUsed', label: 'Where used', type: 'text', sortable: false, filterable: false },
   { name: 'priority', label: 'Priority', type: 'number', sortable: true, filterable: false },
   { name: 'updatedAt', label: 'Updated', type: 'date', sortable: true, filterable: false },
 ]
 
-const siteRow = (doc: HubSourceDoc, kind: SiteTemplateKind | string): HubRow => {
+const siteRow = (doc: HubSourceDoc, kind: SiteTemplateKind | string, usedIn: UsedIn[]): HubRow => {
   const enabled = doc.enabled !== false
   const slug: HubCollection = 'site-templates'
   const publicPath = PUBLIC_PREVIEW_PATH[kind as SiteTemplateKind]
@@ -93,6 +102,7 @@ const siteRow = (doc: HubSourceDoc, kind: SiteTemplateKind | string): HubRow => 
     visualHref: `/admin/visual-editor/collection/${slug}/${doc.id}`,
     previewHref: publicPath ?? null,
     toggleable: true,
+    usedIn,
   }
 }
 
@@ -114,7 +124,29 @@ const plainRow = (doc: HubSourceDoc, collection: 'page-templates' | 'reusable-se
     visualHref: `/admin/visual-editor/collection/${collection}/${doc.id}`,
     previewHref: null,
     toggleable: false,
+    usedIn: [],
   }
+}
+
+/**
+ * Which pages and templates place each site template with a "Template part" element, keyed by the site template's
+ * id. Reads only the blocks already loaded for the hub, and walks sections at any depth.
+ */
+export function partUsageIndex(sources: Array<{ collection: 'pages' | HubCollection; doc: HubSourceDoc }>): Map<string, UsedIn[]> {
+  const index = new Map<string, UsedIn[]>()
+  for (const { collection, doc } of sources) {
+    const blocks = Array.isArray(doc.blocks) ? doc.blocks : []
+    const name = (doc.name || doc.title || '').trim() || `Untitled ${doc.id}`
+    const seen = new Set<string>()
+    for (const partId of templatePartIdsIn(blocks)) {
+      if (seen.has(partId)) continue
+      seen.add(partId)
+      const list = index.get(partId) ?? []
+      list.push({ collection, id: doc.id, name, href: `${adminCollectionPath(collection)}/${doc.id}` })
+      index.set(partId, list)
+    }
+  }
+  return index
 }
 
 /** One row per template in any of the three collections. Missing lists (no access) are passed as []. */
@@ -122,9 +154,18 @@ export function buildHubRows(input: {
   siteTemplates?: HubSourceDoc[]
   pageTemplates?: HubSourceDoc[]
   reusableSections?: HubSourceDoc[]
+  /** Pages, read only to find where template parts are placed. Not listed as rows. */
+  pages?: HubSourceDoc[]
 }): HubRow[] {
+  const sites = input.siteTemplates ?? []
+  const usage = partUsageIndex([
+    ...(input.pages ?? []).map((doc) => ({ collection: 'pages' as const, doc })),
+    ...(input.pageTemplates ?? []).map((doc) => ({ collection: 'page-templates' as const, doc })),
+    ...(input.reusableSections ?? []).map((doc) => ({ collection: 'reusable-sections' as const, doc })),
+    ...sites.map((doc) => ({ collection: 'site-templates' as const, doc })),
+  ])
   return [
-    ...(input.siteTemplates ?? []).map((doc) => siteRow(doc, typeof doc.kind === 'string' ? doc.kind : '')),
+    ...sites.map((doc) => siteRow(doc, typeof doc.kind === 'string' ? doc.kind : '', usage.get(String(doc.id)) ?? [])),
     ...(input.pageTemplates ?? []).map((doc) => plainRow(doc, 'page-templates')),
     ...(input.reusableSections ?? []).map((doc) => plainRow(doc, 'reusable-sections')),
   ]

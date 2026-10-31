@@ -118,7 +118,7 @@ describe('templates hub rows', () => {
   })
 
   it('offers the column picker the same columns as the list', () => {
-    expect(HUB_COLUMNS.map((c) => c.name)).toEqual(['name', 'type', 'status', 'where', 'priority', 'updatedAt'])
+    expect(HUB_COLUMNS.map((c) => c.name)).toEqual(['name', 'type', 'status', 'where', 'whereUsed', 'priority', 'updatedAt'])
     expect(HUB_COLUMNS.filter((c) => c.filterable).map((c) => c.name)).toEqual(['type', 'status'])
   })
 })

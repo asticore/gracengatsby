@@ -8,6 +8,7 @@ import { readMultilingualSettingsFromD1 } from '@/features/multilingual/settings
 import { resolveSeo, type SeoInput } from '@/features/seo/resolve'
 import { contentTemplatesFor, type ContentType } from '@/features/seo/templates'
 import { getSeoContext } from '@/features/seo/settings'
+import { requestSiteOrigin } from '@/utilities/siteOrigin'
 import { currentPageLocale } from '@/features/seo/pageLocale'
 import { localeSeoFields, languagesMap } from '@/features/seo/localeSeo'
 import { availableLocalesForPath } from '@/features/multilingual/applyTranslations'
@@ -72,6 +73,8 @@ const resolveCanonical = (baseUrl: string, path: string | undefined, customCanon
     if (customCanonical.startsWith('http://') || customCanonical.startsWith('https://')) {
       return customCanonical
     }
+    // Relative canonicals need a site origin; without one the canonical is left out.
+    if (!baseUrl) return undefined
     // If it starts with /, resolve against baseUrl
     if (customCanonical.startsWith('/')) {
       return `${baseUrl}${customCanonical}`
@@ -80,6 +83,7 @@ const resolveCanonical = (baseUrl: string, path: string | undefined, customCanon
     return `${baseUrl}/${customCanonical}`
   }
   // Default path-based canonical
+  if (!baseUrl) return undefined
   if (!path || path === '/') return `${baseUrl}/`
   return `${baseUrl}${path}`
 }
@@ -154,7 +158,7 @@ export const buildMetadata = async (opts: {
   const noFollow = Boolean(opts.seo?.noFollow) || noIndex
 
   // An explicit canonical always wins; otherwise the path-based one when the route told us its path.
-  const baseUrl = (resolved ? context.baseUrl : process.env.SITE_URL || 'https://gracengatsby.com').replace(/\/+$/, '')
+  const baseUrl = resolved ? context.baseUrl : await requestSiteOrigin()
   // Multilingual: a self-referencing canonical for this request's language, plus hreflang alternates.
   const pageLocale = resolved && opts.path ? await currentPageLocale() : null
   // Translated slugs: this document's URL in each locale (localizedSlugs.ts); undefined keeps the source URLs.
@@ -216,6 +220,6 @@ export const buildMetadata = async (opts: {
         ? { canonical }
         : undefined,
   }
-  if (resolved) metadata.metadataBase = new URL(context.baseUrl)
+  if (resolved && context.baseUrl) metadata.metadataBase = new URL(context.baseUrl)
   return metadata
 }

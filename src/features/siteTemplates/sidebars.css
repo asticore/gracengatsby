@@ -1,0 +1,31 @@
+/* Sidebar templates (SidebarLayout). Desktop: a fixed-width column on each side. Phone: the sidebars stack under the content. */
+.eg-sidebars {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.eg-sidebars__main {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.eg-sidebar {
+  flex: 0 0 16rem;
+  width: 16rem;
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .eg-sidebars {
+    flex-direction: column;
+  }
+
+  .eg-sidebar {
+    flex-basis: auto;
+    width: 100%;
+    order: 2;
+  }
+}

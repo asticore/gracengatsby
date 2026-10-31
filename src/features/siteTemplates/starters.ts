@@ -147,6 +147,20 @@ export const STARTERS: TemplateStarter[] = [
     description: 'A short line of text above the menu.',
     blocks: () => [section([copy('Thanks for visiting.'), el('nav-menu')])],
   },
+  {
+    id: 'sidebar-left-menu',
+    kind: 'sidebar-left',
+    label: 'Menu',
+    description: 'A heading above the main menu, for a left sidebar.',
+    blocks: () => [section([heading('Menu', 'h2'), el('nav-menu')])],
+  },
+  {
+    id: 'sidebar-right-text',
+    kind: 'sidebar-right',
+    label: 'Text',
+    description: 'A heading and a short line of text, for a right sidebar.',
+    blocks: () => [section([heading('About us', 'h2'), copy('Add a short note or links here.')])],
+  },
 ]
 
 export const getStarter = (id: unknown): TemplateStarter | undefined => STARTERS.find((s) => s.id === id)

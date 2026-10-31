@@ -210,6 +210,8 @@ import { AdUnits } from '@/features/ads/collections/AdUnits'
 import { TrackingEvents } from '@/features/tracking/collections/TrackingEvents'
 import { countTrackingEvents, createTrackingEvent, deleteTrackingEvent, findTrackingEventByID, findTrackingEventsPaginated, updateTrackingEvent } from '@/cms/db/collections/tracking'
 import { AdSettings } from '@/features/ads/settings'
+import { TemplateLibraries } from '@/features/templateLibraries/settings'
+import { findTemplateLibraries, updateTemplateLibraries } from '@/cms/db/collections/templateLibraries'
 import { countAdPlacements, countAdUnits, createAdPlacement, createAdUnit, deleteAdPlacement, deleteAdUnit, findAdPlacementByID, findAdPlacementsPaginated, findAdSettings, findAdUnitByID, findAdUnitsPaginated, updateAdPlacement, updateAdSettings, updateAdUnit } from '@/cms/db/collections/ads'
 import { ReviewEvents } from '@/features/approval/collection'
 import { ApprovalWorkflows } from '@/features/approval/workflowCollection'
@@ -645,6 +647,7 @@ export const writeRegistry: {
     'language-settings': globalOps(findLanguageSettings, updateLanguageSettings),
     'seo-settings': globalOps(findSeoSettings, updateSeoSettings),
     'ad-settings': globalOps(findAdSettings as never, updateAdSettings as never),
+    'template-libraries': globalOps(findTemplateLibraries as never, updateTemplateLibraries as never),
     'speed-settings': globalOps(findSpeedSettings, updateSpeedSettings),
     'media-settings': globalOps(findMediaSettings, updateMediaSettings),
   },
@@ -745,6 +748,7 @@ export const readRegistry: ReadRegistry = {
     'speed-settings': globalReadEntry(SpeedSettings, findSpeedSettings),
     'media-settings': globalReadEntry(MediaSettings, findMediaSettings),
     'ad-settings': globalReadEntry(AdSettings, findAdSettings as never),
+    'template-libraries': globalReadEntry(TemplateLibraries, findTemplateLibraries as never),
   },
 }
 
@@ -780,4 +784,4 @@ export const versionsRegistry: Record<string, VersionsRegistryEntry> = {
 
 export const collectionConfigs = [TrackingEvents, ProductSubscriptions, Faqs, EventRSVPs, MembershipTiers, AuditLog, EmailLog, ErrorLog, Backups, Translations, FieldGroups, FormSubmissions, ABTests, Media, Memberships, PageTemplates, ReusableSections, SiteTemplates, Forms, Enrolments, Lessons, LessonProgress, Pages, Events, Courses, Posts, Users, Redirects, ShippingZones, TaxRates, Coupons, OrderRefunds, ProductAttributes, ShippingClasses, ProductReviews, StockSubscriptions, GiftCards, StoreCredits, CreditLedger, ShippingManifests, ReviewEvents, ApprovalWorkflows, Roles, AdUnits, AdPlacements, DataViews, FormDrafts]
 
-export const globalConfigs = [DomainSettings, FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings]
+export const globalConfigs = [DomainSettings, FaqSettings, BlogSettings, Integrations, PaymentSettings, ShippingSettings, FormSettings, SiteSettings, MemberSettings, EmailSettings, EmailTemplates, EmailBrand, EmailSchedule, GoogleConnection, ShopSettings, ShopExtraSettings, SiteDetails, SitePages, SecuritySettings,Header, Footer, BackupSettings, LanguageSettings, SeoSettings, SpeedSettings, MediaSettings, AdSettings, TemplateLibraries]

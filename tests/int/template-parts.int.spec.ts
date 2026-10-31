@@ -213,3 +213,17 @@ describe('sidebar layout', () => {
     expect(html.indexOf('BODY')).toBeLessThan(html.indexOf('data-sidebar="right"'))
   })
 })
+
+describe('template part picker (no free-text id)', () => {
+  it('the template part field is a select of site templates, not a number', async () => {
+    const { TEMPLATE_PART_ELEMENTS } = await import('@/lib/elements/templatePartDefs')
+    const field = TEMPLATE_PART_ELEMENTS[0].fields.find((f) => f.name === 'templateId')
+    expect(field).toMatchObject({ type: 'select', optionsUrl: '/api/admin-site-templates' })
+  })
+
+  it('a part saved with a numeric id (before the picker) still parses', () => {
+    expect(parseTemplatePartId(7)).toBe('7')
+    expect(parseTemplatePartId('7')).toBe('7')
+    expect(parseTemplatePartId('seven')).toBeNull()
+  })
+})

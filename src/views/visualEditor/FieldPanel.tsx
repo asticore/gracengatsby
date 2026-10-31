@@ -1195,7 +1195,7 @@ const FieldInput: React.FC<{ field: EditorField; value: unknown; onChange: (v: u
       return (
         <label className={`ve-field ${widthClass}`}>
           <span>{field.label}</span>
-          <select value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value || undefined)}>
+          <select value={typeof value === 'string' || typeof value === 'number' ? String(value) : ''} onChange={(e) => onChange(e.target.value || undefined)}>
             <option value="">&#8212;</option>
             {(() => {
               const list: { label: string; value: string; group?: string }[] = field.optionsUrl ? remoteOptions : field.options || []

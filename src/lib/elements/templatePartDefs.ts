@@ -14,10 +14,12 @@ export const TEMPLATE_PART_ELEMENTS: ElementDef[] = [
     fields: [
       {
         name: 'templateId',
-        label: 'Template id',
-        type: 'number',
-        width: 'half',
-        helpText: 'The number in the template\'s edit address (Templates > the template > "/site-templates/<number>"). Turned-off templates draw nothing here. Parts cannot hold other parts.',
+        label: 'Template',
+        type: 'select',
+        width: 'full',
+        optionsUrl: '/api/admin-site-templates',
+        options: [],
+        helpText: 'Pick the template from the list (Templates). Turned-off templates draw nothing here. Parts cannot hold other parts.',
       },
     ],
     defaultProps: () => ({ templateId: undefined }),

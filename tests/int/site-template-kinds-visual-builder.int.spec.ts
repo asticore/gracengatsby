@@ -51,11 +51,13 @@ describe('every site template kind opens in the visual builder', () => {
     expect(tabs).toHaveLength(1)
   })
 
-  it.each(SITE_TEMPLATE_KINDS.map((kind) => [kind] as const))('%s: Preview as has a sample only for single-item kinds', (kind) => {
+  it.each(SITE_TEMPLATE_KINDS.map((kind) => [kind] as const))('%s: Preview as has a sample for item, archive and sidebar kinds', (kind) => {
     const sample = sampleCollectionFor(kind)
     if (kind === 'single-post') expect(sample).toBe('posts')
     else if (kind === 'single-product') expect(sample).toBe('products')
     else if (kind === 'single-event') expect(sample).toBe('events')
+    else if (kind === 'archive-shop') expect(sample).toBe('products')
+    else if (['archive-blog', 'archive-category', 'archive-tag', 'archive-author', 'sidebar-left', 'sidebar-right'].includes(kind)) expect(sample).toBe('posts')
     else expect(sample).toBeNull()
   })
 })

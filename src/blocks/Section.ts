@@ -1,5 +1,7 @@
 import type { Block } from '@/engine'
 
+import { convertDesignsInTree, type ConvertCount } from '@/lib/design/storedGrouped'
+
 import { blockStyleField } from './styleField'
 
 /**
@@ -29,6 +31,10 @@ export const SectionBlock: Block = {
       admin: {
         description:
           'The columns in this section and the blocks inside each one. Build this on the drag-and-drop canvas via "Edit visually" - this raw view is an escape hatch.',
+      },
+      // Column and nested-block designs are stored grouped, the same as the block's own design.
+      hooks: {
+        beforeChange: [({ value }) => convertDesignsInTree(value, { converted: 0 } satisfies ConvertCount)],
       },
     },
     blockStyleField,

@@ -91,4 +91,21 @@ describe('style panel applied dot and per-setting reset', () => {
     render({ bgType: 'color' } as BlockStyle, () => {})
     expect(rowFor('Colour').querySelector('.ve-d51-dot')).toBeNull()
   })
+
+  it('a stored loop, a stored effect slider and a toggle show the dot, and Reset clears only that setting', () => {
+    const onChange = vi.fn()
+    render({ bgType: 'video', bgVideoLoop: false, noise: 20, textTransform: 'uppercase', borderWidth: 2 } as BlockStyle, onChange)
+    expect(rowFor('Loop').querySelector('.ve-d51-dot')).not.toBeNull()
+    expect(rowFor('Noise').querySelector('.ve-d51-dot')).not.toBeNull()
+    const toggleRow = rowFor('Transform', (r) => r.querySelector('button[aria-pressed="true"]') !== null)
+    expect(toggleRow.querySelector('.ve-d51-dot')).not.toBeNull()
+
+    act(() => {
+      rowFor('Noise').querySelector<HTMLButtonElement>('button.ve-dev__reset')!.click()
+    })
+    const next = onChange.mock.calls.at(-1)?.[0] as Record<string, unknown>
+    expect(next.noise).toBeUndefined()
+    expect(next.bgVideoLoop).toBe(false)
+    expect(next.textTransform).toBe('uppercase')
+  })
 })

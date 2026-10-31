@@ -126,7 +126,7 @@ export const FieldPanel: React.FC<{
                 columns={parseColumns(data.columns)}
                 onChange={(columns) => setField('columns', columns)}
                 design={asBlockStyle(data.design)}
-                onDesignChange={(next) => setField('design', next)}
+                onDesignChange={(next) => setField('design', toStoredDesign(next))}
                 canEditLayout={userPermissions?.canEditLayout !== false}
                 device={device}
                 onSelectColumn={onSelectColumn}

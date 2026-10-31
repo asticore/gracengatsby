@@ -87,6 +87,8 @@ export type EditFormProps = {
    * save still sends the hidden ones back unchanged. Used to split one global across tabs.
    */
   onlyFields?: string[]
+  /** Content rendered above the fields, inside the form provider (a read-only summary, for example). Not part of the saved data. */
+  beforeFields?: React.ReactNode
   /** Extra content rendered inside the form provider, after the fields (so it can read live form values). */
   afterFields?: React.ReactNode
   /** Do not render this form's own Collapse all / Expand all bar (the host page renders one). Default false. */
@@ -229,6 +231,7 @@ const PageContentCard: React.FC<{ count?: number; isNew: boolean; blocksField: s
 
 export const EditForm: React.FC<EditFormProps> = ({
   afterFields,
+  beforeFields,
   collectionSlug,
   doc,
   draftsEnabled,
@@ -311,6 +314,7 @@ export const EditForm: React.FC<EditFormProps> = ({
           <div className="document-fields">
             <div className="document-fields__edit">
               <div className={globalSlug ? 'global-edit__form' : 'collection-edit__form'}>
+                {beforeFields}
                 {flat ? (
                   sections.map((section) => <FieldRenderer key={section.key} fields={section.fields} parentPath={section.parentPath} readOnly={readOnly} />)
                 ) : (

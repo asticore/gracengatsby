@@ -3013,6 +3013,17 @@ const hi: UiDictionary = {
   "templateLibraries.itemCount": "{count} आइटम",
   "templateLibraries.guideLink": "लेखक गाइड और नमूना लाइब्रेरी",
   "templateLibraries.loadFailed": "लाइब्रेरी लोड नहीं हो सकी।",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "हेडर और फ़ुटर",
+  "siteTemplates.audienceLabel": "दर्शक",
+  "siteTemplates.audienceMembers": "लॉग-इन सदस्य",
+  "siteTemplates.audienceGuests": "अतिथि (लॉग-इन नहीं)",
+  "siteTemplates.audienceEveryone": "सभी",
+  "siteTemplates.pagesLabel": "पेज",
+  "siteTemplates.pagesHint": "कई पेज चुनने के लिए Ctrl या Cmd दबाए रखें।",
+  "siteTemplates.pagesLoading": "पेज लोड हो रहे हैं...",
+  "siteTemplates.pagesFailed": "पेज सूची लोड नहीं हो सकी।",
+  "siteTemplates.pagesNone": "अभी कोई पेज नहीं है।",
   "templateLibraries.tabTemplates": "टेम्पलेट",
   "templateLibraries.tabLibrary": "लाइब्रेरी",
   "templateLibraries.filter": "नाम या टैग से फ़िल्टर करें",
@@ -3089,6 +3100,13 @@ const hi: UiDictionary = {
   "apiKeys.owner": "स्वामी",
   "emailTesting.title": "ईमेल परीक्षण",
   "emailTesting.back": "संचार पर वापस",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'फ़ॉर्म की संरचना',
+  'formSummary.counts': 'फ़ील्ड: {fields}। चरण: {steps}। आवश्यक: {required}।',
+  'formSummary.none': 'अभी कोई फ़ील्ड नहीं है। विज़ुअल एडिटर में फ़ॉर्म बनाएँ।',
+  'formSummary.readOnly': 'यहाँ केवल पढ़ने के लिए। फ़ील्ड, चरण और संरचना विज़ुअल एडिटर में बदलें।',
+  'formSummary.unpublished': 'कार्यशील प्रति में ऐसे बदलाव हैं जो अभी प्रकाशित नहीं हुए हैं।',
+  'formSummary.listTitle': 'क्रम में फ़ील्ड',
 }
 
 export default hi

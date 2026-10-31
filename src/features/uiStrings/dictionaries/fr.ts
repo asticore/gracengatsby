@@ -3013,6 +3013,17 @@ const fr: UiDictionary = {
   "templateLibraries.itemCount": "{count} éléments",
   "templateLibraries.guideLink": "Guide auteur et bibliothèque d'exemple",
   "templateLibraries.loadFailed": "Les bibliothèques n'ont pas pu être chargées.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "En-tête et pied de page",
+  "siteTemplates.audienceLabel": "Public",
+  "siteTemplates.audienceMembers": "Membres connectés",
+  "siteTemplates.audienceGuests": "Visiteurs non connectés",
+  "siteTemplates.audienceEveryone": "Tout le monde",
+  "siteTemplates.pagesLabel": "Pages",
+  "siteTemplates.pagesHint": "Maintenez Ctrl ou Cmd pour choisir plusieurs pages.",
+  "siteTemplates.pagesLoading": "Chargement des pages...",
+  "siteTemplates.pagesFailed": "La liste des pages n'a pas pu être chargée.",
+  "siteTemplates.pagesNone": "Aucune page pour le moment.",
   "templateLibraries.tabTemplates": "Modèles",
   "templateLibraries.tabLibrary": "Bibliothèque",
   "templateLibraries.filter": "Filtrer par nom ou étiquette",
@@ -3089,6 +3100,13 @@ const fr: UiDictionary = {
   "apiKeys.owner": "Propriétaire",
   "emailTesting.title": "Test des e-mails",
   "emailTesting.back": "Retour à Communication",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Disposition du formulaire',
+  'formSummary.counts': 'Champs : {fields}. Étapes : {steps}. Obligatoires : {required}.',
+  'formSummary.none': 'Aucun champ pour l\'instant. Concevez le formulaire dans l\'éditeur visuel.',
+  'formSummary.readOnly': 'Lecture seule ici. Les champs, étapes et la disposition se modifient dans l\'éditeur visuel.',
+  'formSummary.unpublished': 'La version de travail contient des modifications non encore publiées.',
+  'formSummary.listTitle': 'Champs dans l\'ordre',
 }
 
 export default fr

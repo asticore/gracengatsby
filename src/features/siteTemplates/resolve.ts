@@ -3,8 +3,27 @@ import { cache } from 'react'
 import { resolveDocumentContent } from '@/features/customFields/server'
 import { getEngine } from '@/lib/engine'
 
+import { currentAudience, pageIdForPath } from './audience'
 import { pickSiteTemplate } from './pick'
 import type { SiteTemplate, SiteTemplateKind, TemplateContext } from './types'
+
+/** True when a template's conditions use this param (the stored JSON names it as "param":"..."). */
+const mentions = (template: SiteTemplate, param: string): boolean => JSON.stringify(template.conditions ?? null).includes(`"${param}"`)
+
+/**
+ * Fills in the visitor's audience and the request's page only when a template of this kind needs them, so a site
+ * without audience or page conditions does no extra work. A caller that already knows them passes them in.
+ */
+async function withRequestFacts(ofKind: SiteTemplate[], ctx: TemplateContext): Promise<TemplateContext> {
+  const needsAudience = ctx.audience === undefined && ofKind.some((t) => mentions(t, 'audience'))
+  const needsPage = ctx.pageId === undefined && typeof ctx.path === 'string' && ofKind.some((t) => mentions(t, 'page'))
+  if (!needsAudience && !needsPage) return ctx
+  return {
+    ...ctx,
+    ...(needsAudience ? { audience: await currentAudience() } : {}),
+    ...(needsPage ? { pageId: await pageIdForPath(ctx.path as string) } : {}),
+  }
+}
 
 /**
  * Lightweight index of every enabled template, once per request: depth 0, so relations inside blocks are
@@ -45,7 +64,12 @@ export const loadSiteTemplate = cache(async (id: number | string): Promise<SiteT
  */
 export async function resolveSiteTemplate(kind: SiteTemplateKind, ctx: TemplateContext = {}): Promise<SiteTemplate | null> {
   try {
-    const winner = pickSiteTemplate(await loadSiteTemplateIndex(), kind, ctx)
+    const index = await loadSiteTemplateIndex()
+    const scoped = await withRequestFacts(
+      index.filter((t) => t.kind === kind),
+      ctx,
+    )
+    const winner = pickSiteTemplate(index, kind, scoped)
     return winner ? await loadSiteTemplate(winner.id) : null
   } catch {
     return null

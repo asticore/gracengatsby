@@ -3013,6 +3013,17 @@ const it: UiDictionary = {
   "templateLibraries.itemCount": "{count} elementi",
   "templateLibraries.guideLink": "Guida per gli autori e libreria di esempio",
   "templateLibraries.loadFailed": "Impossibile caricare le librerie.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "Intestazione e piè di pagina",
+  "siteTemplates.audienceLabel": "Pubblico",
+  "siteTemplates.audienceMembers": "Membri connessi",
+  "siteTemplates.audienceGuests": "Ospiti (non connessi)",
+  "siteTemplates.audienceEveryone": "Tutti",
+  "siteTemplates.pagesLabel": "Pagine",
+  "siteTemplates.pagesHint": "Tieni premuto Ctrl o Cmd per sceglierne più di una.",
+  "siteTemplates.pagesLoading": "Caricamento pagine...",
+  "siteTemplates.pagesFailed": "Impossibile caricare l'elenco delle pagine.",
+  "siteTemplates.pagesNone": "Nessuna pagina ancora.",
   "templateLibraries.tabTemplates": "Modelli",
   "templateLibraries.tabLibrary": "Libreria",
   "templateLibraries.filter": "Filtra per nome o tag",
@@ -3089,6 +3100,13 @@ const it: UiDictionary = {
   "apiKeys.owner": "Proprietario",
   "emailTesting.title": "Test email",
   "emailTesting.back": "Torna a Comunicazione",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Struttura del modulo',
+  'formSummary.counts': 'Campi: {fields}. Passaggi: {steps}. Obbligatori: {required}.',
+  'formSummary.none': 'Nessun campo ancora. Progetta il modulo nell\'editor visuale.',
+  'formSummary.readOnly': 'Sola lettura qui. Campi, passaggi e struttura si modificano nell\'editor visuale.',
+  'formSummary.unpublished': 'La bozza di lavoro ha modifiche non ancora pubblicate.',
+  'formSummary.listTitle': 'Campi in ordine',
 }
 
 export default it

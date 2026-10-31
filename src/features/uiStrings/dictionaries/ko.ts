@@ -3013,6 +3013,17 @@ const ko: UiDictionary = {
   "templateLibraries.itemCount": "항목 {count}개",
   "templateLibraries.guideLink": "작성자 가이드와 예제 라이브러리",
   "templateLibraries.loadFailed": "라이브러리를 불러올 수 없습니다.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "헤더와 푸터",
+  "siteTemplates.audienceLabel": "대상",
+  "siteTemplates.audienceMembers": "로그인한 회원",
+  "siteTemplates.audienceGuests": "게스트(로그인 안 함)",
+  "siteTemplates.audienceEveryone": "모든 방문자",
+  "siteTemplates.pagesLabel": "페이지",
+  "siteTemplates.pagesHint": "Ctrl 또는 Cmd를 누른 채로 여러 페이지를 선택하세요.",
+  "siteTemplates.pagesLoading": "페이지 불러오는 중...",
+  "siteTemplates.pagesFailed": "페이지 목록을 불러올 수 없습니다.",
+  "siteTemplates.pagesNone": "아직 페이지가 없습니다.",
   "templateLibraries.tabTemplates": "템플릿",
   "templateLibraries.tabLibrary": "라이브러리",
   "templateLibraries.filter": "이름이나 태그로 거르기",
@@ -3089,6 +3100,13 @@ const ko: UiDictionary = {
   "apiKeys.owner": "소유자",
   "emailTesting.title": "이메일 테스트",
   "emailTesting.back": "커뮤니케이션으로 돌아가기",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': '양식 구성',
+  'formSummary.counts': '항목: {fields}, 단계: {steps}, 필수: {required}',
+  'formSummary.none': '아직 항목이 없습니다. 비주얼 편집기에서 양식을 만드세요.',
+  'formSummary.readOnly': '여기서는 읽기 전용입니다. 항목, 단계, 구성은 비주얼 편집기에서 바꿉니다.',
+  'formSummary.unpublished': '작업 사본에 아직 게시되지 않은 변경 사항이 있습니다.',
+  'formSummary.listTitle': '순서대로 된 항목',
 }
 
 export default ko

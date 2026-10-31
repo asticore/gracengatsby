@@ -3013,6 +3013,17 @@ const ru: UiDictionary = {
   "templateLibraries.itemCount": "{count} шт.",
   "templateLibraries.guideLink": "Руководство для авторов и пример библиотеки",
   "templateLibraries.loadFailed": "Не удалось загрузить библиотеки.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "Шапка и подвал",
+  "siteTemplates.audienceLabel": "Аудитория",
+  "siteTemplates.audienceMembers": "Вошедшие участники",
+  "siteTemplates.audienceGuests": "Гости (не вошли)",
+  "siteTemplates.audienceEveryone": "Все",
+  "siteTemplates.pagesLabel": "Страницы",
+  "siteTemplates.pagesHint": "Удерживайте Ctrl или Cmd, чтобы выбрать несколько страниц.",
+  "siteTemplates.pagesLoading": "Загрузка страниц...",
+  "siteTemplates.pagesFailed": "Не удалось загрузить список страниц.",
+  "siteTemplates.pagesNone": "Страниц пока нет.",
   "templateLibraries.tabTemplates": "Шаблоны",
   "templateLibraries.tabLibrary": "Библиотека",
   "templateLibraries.filter": "Фильтр по названию или тегу",
@@ -3089,6 +3100,13 @@ const ru: UiDictionary = {
   "apiKeys.owner": "Владелец",
   "emailTesting.title": "Тестирование почты",
   "emailTesting.back": "Назад к разделу «Коммуникации»",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Структура формы',
+  'formSummary.counts': 'Полей: {fields}. Шагов: {steps}. Обязательных: {required}.',
+  'formSummary.none': 'Полей пока нет. Создайте форму в визуальном редакторе.',
+  'formSummary.readOnly': 'Здесь только просмотр. Поля, шаги и структура меняются в визуальном редакторе.',
+  'formSummary.unpublished': 'В рабочей копии есть неопубликованные изменения.',
+  'formSummary.listTitle': 'Поля по порядку',
 }
 
 export default ru

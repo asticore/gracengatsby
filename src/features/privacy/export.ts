@@ -1,5 +1,6 @@
 import type { D1Like } from '@/features/apiKeys'
 import { buildExportDocument, type ExportInput } from './core'
+import { canSeeBookingsByEmail } from '@/features/accounts/access'
 import { asEngine, customerRecords } from './data'
 
 /** The customer's data document for the signed-in customer. The caller passes the session user only. */
@@ -14,7 +15,8 @@ export async function exportCustomerData(
     user,
     addresses: records.addresses,
     orders: records.orders,
-    bookings: records.bookings,
+    // Guest bookings are matched by address, so they are exported only once the address is verified.
+    bookings: canSeeBookingsByEmail(user) ? records.bookings : [],
     submissions: records.submissions.map((s) => ({ form: s.form, submittedAt: s.submittedAt, values: s.values })),
     requestedAt: now.toISOString(),
   }

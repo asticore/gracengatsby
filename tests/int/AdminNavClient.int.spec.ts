@@ -52,14 +52,11 @@ describe('AdminNavClient with flat rendering', () => {
     expect(actualLabels).toEqual(expectedLabels)
   })
 
-  it('Content group should contain header-footer as a regular entity', () => {
+  it('Content group has no header-footer entry (the Templates hub holds it)', () => {
     const contentGroup = NAV_STRUCTURE.find((g) => g.label === 'Content')
     const headerFooter = contentGroup?.entities.find((e) => e.slug === 'header-footer')
 
-    expect(headerFooter).toBeDefined()
-    expect(headerFooter?.type).toBe('view')
-    expect(headerFooter?.href).toBe('/header-footer')
-    expect(headerFooter?.label).toBe('Header and footer')
+    expect(headerFooter).toBeUndefined()
   })
 
   it('all groups should be rendered flat without nesting', () => {

@@ -1,6 +1,10 @@
 /**
  * Which site template applies: the pure part of the resolver (no engine, no React), so the order and the scoping
  * are unit testable. resolve.ts loads the rows and calls this.
+ *
+ * Audience (members, guests, everyone) and page (a list of page ids) are ordinary rules, so they take part in the
+ * same order: a member-only header beats the general header for a member, and an "everyone" rule does not count
+ * towards specificity (it restricts nothing).
  */
 import { matchesLocation } from '@/features/customFields/location'
 

@@ -3013,6 +3013,17 @@ const nl: UiDictionary = {
   "templateLibraries.itemCount": "{count} items",
   "templateLibraries.guideLink": "Auteursgids en voorbeeldbibliotheek",
   "templateLibraries.loadFailed": "De bibliotheken konden niet worden geladen.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "Koptekst en voettekst",
+  "siteTemplates.audienceLabel": "Doelgroep",
+  "siteTemplates.audienceMembers": "Ingelogde leden",
+  "siteTemplates.audienceGuests": "Gasten (niet ingelogd)",
+  "siteTemplates.audienceEveryone": "Iedereen",
+  "siteTemplates.pagesLabel": "Pagina's",
+  "siteTemplates.pagesHint": "Houd Ctrl of Cmd ingedrukt om meerdere pagina's te kiezen.",
+  "siteTemplates.pagesLoading": "Pagina's laden...",
+  "siteTemplates.pagesFailed": "De paginalijst kon niet worden geladen.",
+  "siteTemplates.pagesNone": "Nog geen pagina's.",
   "templateLibraries.tabTemplates": "Sjablonen",
   "templateLibraries.tabLibrary": "Bibliotheek",
   "templateLibraries.filter": "Filteren op naam of tag",
@@ -3089,6 +3100,13 @@ const nl: UiDictionary = {
   "apiKeys.owner": "Eigenaar",
   "emailTesting.title": "E-mailtest",
   "emailTesting.back": "Terug naar Communicatie",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Formulierindeling',
+  'formSummary.counts': 'Velden: {fields}. Stappen: {steps}. Verplicht: {required}.',
+  'formSummary.none': 'Nog geen velden. Ontwerp het formulier in de visuele editor.',
+  'formSummary.readOnly': 'Alleen-lezen hier. Velden, stappen en indeling wijzig je in de visuele editor.',
+  'formSummary.unpublished': 'De werkversie heeft wijzigingen die nog niet gepubliceerd zijn.',
+  'formSummary.listTitle': 'Velden in volgorde',
 }
 
 export default nl

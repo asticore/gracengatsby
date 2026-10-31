@@ -10,9 +10,9 @@ export async function GlobalEditView({ globalSlug }: { globalSlug: string }) {
   const context = await getAdminContext()
   if (!hasAdminPanelAccess(context.user)) redirect(adminHref('/login', await getAdminRoot()))
 
-  // Redirect old header/footer URLs to the new combined view
+  // Header and footer settings live in the Templates hub (its Header and footer tab), not in a global screen.
   if (globalSlug === 'header' || globalSlug === 'footer') {
-    redirect(adminHref('/header-footer', await getAdminRoot()))
+    redirect(`${adminHref('/templates', await getAdminRoot())}?view=chrome`)
   }
 
   const global = getGlobalConfig(context.engine, globalSlug)

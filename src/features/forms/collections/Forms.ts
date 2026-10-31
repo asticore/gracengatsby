@@ -139,7 +139,7 @@ export const Forms: CollectionConfig = {
     group: 'Content',
     defaultColumns: ['title', 'updatedAt'],
     description:
-      'Click "Edit visually" to build the form on the same canvas as your pages: add fields, set their widths, split it into steps, then Publish. Entries appear under Form Submissions.',
+      'Fields, steps and layout are built in the visual editor, on the same canvas as your pages. This screen holds the settings: name, status, notifications, spam checks and payment. Entries appear under Form Submissions.',
     components: {
       edit: {
         beforeDocumentControls: ['@/fields/visualEditor/OpenVisualEditorButton#OpenVisualEditorButton'],
@@ -173,8 +173,10 @@ export const Forms: CollectionConfig = {
       name: 'fields',
       type: 'array',
       labels: { singular: 'Field', plural: 'Fields' },
+      // Hidden in the admin: fields are built in the visual editor. The data stays in the form state
+      // and is sent back on every save, so no stored field is lost (see the admin summary card).
       admin: {
-        initCollapsed: true,
+        hidden: true,
         description:
           'The original flat field list. Forms built before the visual builder keep working from it; opening one in the visual editor converts it to a layout without changing it. New forms are built visually and leave this empty.',
       },

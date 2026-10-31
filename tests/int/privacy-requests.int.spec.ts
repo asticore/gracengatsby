@@ -71,6 +71,7 @@ const SECRET_FIELDS = ['passwordHash', 'salt', 'twoFactorSecret', 'twoFactorBack
 const user = {
   id: 7,
   email: 'ana@example.com',
+  emailVerifiedAt: '2026-10-01T00:00:00.000Z',
   displayName: 'Ana',
   createdAt: '2026-01-02T00:00:00.000Z',
   updatedAt: '2026-02-02T00:00:00.000Z',
@@ -187,6 +188,14 @@ describe('data export', () => {
     expect(doc.bookings).toHaveLength(1)
     expect(doc.addresses).toHaveLength(1)
     expect(JSON.stringify(doc)).not.toContain('pbkdf2$secret-hash')
+  })
+
+  it('leaves guest bookings out of the export until the customer address is verified', async () => {
+    const { engine } = fakeEngine({ orders: [], addresses: [], 'event-rsvps': [{ id: 5, name: 'Ana', email: 'ana@example.com', guestCount: 1 }] })
+    const { d1 } = fakeD1()
+    const unverified: typeof user & { emailVerifiedAt: string | null } = { ...user, emailVerifiedAt: null }
+    const doc = (await exportCustomerData(engine, d1 as never, unverified as never, new Date('2026-10-31T00:00:00.000Z'))) as { bookings: unknown[] }
+    expect(doc.bookings).toEqual([])
   })
 })
 

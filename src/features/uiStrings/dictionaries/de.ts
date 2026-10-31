@@ -3014,6 +3014,17 @@ const de: UiDictionary = {
   "templateLibraries.itemCount": "{count} Einträge",
   "templateLibraries.guideLink": "Autorenleitfaden und Beispielbibliothek",
   "templateLibraries.loadFailed": "Die Bibliotheken konnten nicht geladen werden.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "Kopf- und Fußzeile",
+  "siteTemplates.audienceLabel": "Zielgruppe",
+  "siteTemplates.audienceMembers": "Angemeldete Mitglieder",
+  "siteTemplates.audienceGuests": "Gäste (nicht angemeldet)",
+  "siteTemplates.audienceEveryone": "Alle",
+  "siteTemplates.pagesLabel": "Seiten",
+  "siteTemplates.pagesHint": "Strg oder Cmd gedrückt halten, um mehrere Seiten zu wählen.",
+  "siteTemplates.pagesLoading": "Seiten werden geladen...",
+  "siteTemplates.pagesFailed": "Die Seitenliste konnte nicht geladen werden.",
+  "siteTemplates.pagesNone": "Noch keine Seiten.",
   "templateLibraries.tabTemplates": "Vorlagen",
   "templateLibraries.tabLibrary": "Bibliothek",
   "templateLibraries.filter": "Nach Name oder Schlagwort filtern",
@@ -3090,6 +3101,13 @@ const de: UiDictionary = {
   "apiKeys.owner": "Eigentümer",
   "emailTesting.title": "E-Mail-Test",
   "emailTesting.back": "Zurück zu Kommunikation",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Formularaufbau',
+  'formSummary.counts': 'Felder: {fields}. Schritte: {steps}. Pflichtfelder: {required}.',
+  'formSummary.none': 'Noch keine Felder. Gestalten Sie das Formular im visuellen Editor.',
+  'formSummary.readOnly': 'Hier nur lesbar. Felder, Schritte und Aufbau werden im visuellen Editor geändert.',
+  'formSummary.unpublished': 'Der Arbeitsstand hat Änderungen, die noch nicht veröffentlicht sind.',
+  'formSummary.listTitle': 'Felder in Reihenfolge',
 }
 
 export default de

@@ -3013,6 +3013,17 @@ const ja: UiDictionary = {
   "templateLibraries.itemCount": "{count} 件",
   "templateLibraries.guideLink": "作成者ガイドとサンプルライブラリ",
   "templateLibraries.loadFailed": "ライブラリを読み込めませんでした。",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "ヘッダーとフッター",
+  "siteTemplates.audienceLabel": "表示対象",
+  "siteTemplates.audienceMembers": "ログイン中の会員",
+  "siteTemplates.audienceGuests": "ゲスト（未ログイン）",
+  "siteTemplates.audienceEveryone": "全員",
+  "siteTemplates.pagesLabel": "ページ",
+  "siteTemplates.pagesHint": "Ctrl または Cmd を押しながら選ぶと複数のページを選べます。",
+  "siteTemplates.pagesLoading": "ページを読み込んでいます...",
+  "siteTemplates.pagesFailed": "ページの一覧を読み込めませんでした。",
+  "siteTemplates.pagesNone": "まだページがありません。",
   "templateLibraries.tabTemplates": "テンプレート",
   "templateLibraries.tabLibrary": "ライブラリ",
   "templateLibraries.filter": "名前またはタグで絞り込む",
@@ -3089,6 +3100,13 @@ const ja: UiDictionary = {
   "apiKeys.owner": "所有者",
   "emailTesting.title": "メールのテスト",
   "emailTesting.back": "コミュニケーションに戻る",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'フォームの構成',
+  'formSummary.counts': '項目: {fields}、ステップ: {steps}、必須: {required}',
+  'formSummary.none': 'まだ項目がありません。ビジュアルエディターでフォームを作成してください。',
+  'formSummary.readOnly': 'ここでは閲覧のみです。項目、ステップ、構成はビジュアルエディターで変更します。',
+  'formSummary.unpublished': '作業中のコピーに、まだ公開されていない変更があります。',
+  'formSummary.listTitle': '項目の順序',
 }
 
 export default ja

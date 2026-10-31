@@ -3056,6 +3056,17 @@ export const UI_STRING_SOURCE = {
   "templateLibraries.itemCount": "{count} items",
   "templateLibraries.guideLink": "Author guide and example library",
   "templateLibraries.loadFailed": "The libraries could not be loaded.",
+  // Site templates: header and footer tab, audience and page conditions (added with the template conditions work).
+  "siteTemplates.tabChrome": "Header and footer",
+  "siteTemplates.audienceLabel": "Audience",
+  "siteTemplates.audienceMembers": "Logged-in members",
+  "siteTemplates.audienceGuests": "Guests (not logged in)",
+  "siteTemplates.audienceEveryone": "Everyone",
+  "siteTemplates.pagesLabel": "Pages",
+  "siteTemplates.pagesHint": "Hold Ctrl or Cmd to pick several pages.",
+  "siteTemplates.pagesLoading": "Loading pages...",
+  "siteTemplates.pagesFailed": "The page list could not be loaded.",
+  "siteTemplates.pagesNone": "No pages yet.",
   "templateLibraries.tabTemplates": "Templates",
   "templateLibraries.tabLibrary": "Library",
   "templateLibraries.filter": "Filter by name or tag",
@@ -3137,6 +3148,13 @@ export const UI_STRING_SOURCE = {
   "apiKeys.owner": "Owner",
   "emailTesting.title": "Email testing",
   "emailTesting.back": "Back to Communication",
+  // Admin Forms edit screen: read-only layout summary (fields are built in the visual editor).
+  "formSummary.title": "Form layout",
+  "formSummary.counts": "Fields: {fields}. Steps: {steps}. Required: {required}.",
+  "formSummary.none": "No fields yet. Design the form in the visual editor.",
+  "formSummary.readOnly": "Read-only here. Fields, steps and layout are changed in the visual editor.",
+  "formSummary.unpublished": "The working copy has changes that are not published yet.",
+  "formSummary.listTitle": "Fields in order",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

@@ -3012,6 +3012,17 @@ const zhHans: UiDictionary = {
   "templateLibraries.itemCount": "{count} 项",
   "templateLibraries.guideLink": "作者指南和示例模板库",
   "templateLibraries.loadFailed": "无法加载模板库。",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "页眉和页脚",
+  "siteTemplates.audienceLabel": "受众",
+  "siteTemplates.audienceMembers": "已登录会员",
+  "siteTemplates.audienceGuests": "访客（未登录）",
+  "siteTemplates.audienceEveryone": "所有人",
+  "siteTemplates.pagesLabel": "页面",
+  "siteTemplates.pagesHint": "按住 Ctrl 或 Cmd 可选择多个页面。",
+  "siteTemplates.pagesLoading": "正在加载页面...",
+  "siteTemplates.pagesFailed": "无法加载页面列表。",
+  "siteTemplates.pagesNone": "暂无页面。",
   "templateLibraries.tabTemplates": "模板",
   "templateLibraries.tabLibrary": "库",
   "templateLibraries.filter": "按名称或标签筛选",
@@ -3088,6 +3099,13 @@ const zhHans: UiDictionary = {
   "apiKeys.owner": "所有者",
   "emailTesting.title": "邮件测试",
   "emailTesting.back": "返回通信设置",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': '表单结构',
+  'formSummary.counts': '字段：{fields}。步骤：{steps}。必填：{required}。',
+  'formSummary.none': '还没有字段。请在可视化编辑器中设计表单。',
+  'formSummary.readOnly': '此处为只读。字段、步骤和结构请在可视化编辑器中修改。',
+  'formSummary.unpublished': '工作副本有尚未发布的更改。',
+  'formSummary.listTitle': '按顺序排列的字段',
 }
 
 export default zhHans

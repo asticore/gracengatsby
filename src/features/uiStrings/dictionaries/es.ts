@@ -3013,6 +3013,17 @@ const es: UiDictionary = {
   "templateLibraries.itemCount": "{count} elementos",
   "templateLibraries.guideLink": "Guía para autores y biblioteca de ejemplo",
   "templateLibraries.loadFailed": "No se pudieron cargar las bibliotecas.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "Encabezado y pie de página",
+  "siteTemplates.audienceLabel": "Público",
+  "siteTemplates.audienceMembers": "Miembros con sesión iniciada",
+  "siteTemplates.audienceGuests": "Invitados (sin sesión)",
+  "siteTemplates.audienceEveryone": "Todos",
+  "siteTemplates.pagesLabel": "Páginas",
+  "siteTemplates.pagesHint": "Mantén Ctrl o Cmd para elegir varias páginas.",
+  "siteTemplates.pagesLoading": "Cargando páginas...",
+  "siteTemplates.pagesFailed": "No se pudo cargar la lista de páginas.",
+  "siteTemplates.pagesNone": "Todavía no hay páginas.",
   "templateLibraries.tabTemplates": "Plantillas",
   "templateLibraries.tabLibrary": "Biblioteca",
   "templateLibraries.filter": "Filtrar por nombre o etiqueta",
@@ -3089,6 +3100,13 @@ const es: UiDictionary = {
   "apiKeys.owner": "Propietario",
   "emailTesting.title": "Pruebas de correo",
   "emailTesting.back": "Volver a Comunicación",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Diseño del formulario',
+  'formSummary.counts': 'Campos: {fields}. Pasos: {steps}. Obligatorios: {required}.',
+  'formSummary.none': 'Aún no hay campos. Diseñe el formulario en el editor visual.',
+  'formSummary.readOnly': 'Solo lectura aquí. Los campos, pasos y diseño se cambian en el editor visual.',
+  'formSummary.unpublished': 'La copia de trabajo tiene cambios que aún no están publicados.',
+  'formSummary.listTitle': 'Campos en orden',
 }
 
 export default es

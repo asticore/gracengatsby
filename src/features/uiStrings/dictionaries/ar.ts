@@ -3013,6 +3013,17 @@ const ar: UiDictionary = {
   "templateLibraries.itemCount": "{count} عنصر",
   "templateLibraries.guideLink": "دليل المؤلف ومكتبة نموذجية",
   "templateLibraries.loadFailed": "تعذّر تحميل المكتبات.",
+  // Site templates: header and footer tab, audience and page conditions.
+  "siteTemplates.tabChrome": "الرأس والتذييل",
+  "siteTemplates.audienceLabel": "الجمهور",
+  "siteTemplates.audienceMembers": "الأعضاء المسجلون",
+  "siteTemplates.audienceGuests": "الزوار (غير مسجلين)",
+  "siteTemplates.audienceEveryone": "الجميع",
+  "siteTemplates.pagesLabel": "الصفحات",
+  "siteTemplates.pagesHint": "اضغط Ctrl أو Cmd لاختيار أكثر من صفحة.",
+  "siteTemplates.pagesLoading": "جارٍ تحميل الصفحات...",
+  "siteTemplates.pagesFailed": "تعذّر تحميل قائمة الصفحات.",
+  "siteTemplates.pagesNone": "لا توجد صفحات بعد.",
   "templateLibraries.tabTemplates": "القوالب",
   "templateLibraries.tabLibrary": "المكتبة",
   "templateLibraries.filter": "تصفية بالاسم أو الوسم",
@@ -3089,6 +3100,13 @@ const ar: UiDictionary = {
   "apiKeys.owner": "المالك",
   "emailTesting.title": "اختبار البريد الإلكتروني",
   "emailTesting.back": "العودة إلى الاتصالات",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'تخطيط النموذج',
+  'formSummary.counts': 'الحقول: {fields}. الخطوات: {steps}. المطلوب: {required}.',
+  'formSummary.none': 'لا توجد حقول بعد. صمّم النموذج في المحرر المرئي.',
+  'formSummary.readOnly': 'للقراءة فقط هنا. تُعدَّل الحقول والخطوات والتخطيط في المحرر المرئي.',
+  'formSummary.unpublished': 'النسخة قيد العمل بها تغييرات لم تُنشر بعد.',
+  'formSummary.listTitle': 'الحقول بالترتيب',
 }
 
 export default ar

@@ -3041,6 +3041,8 @@ const nl: UiDictionary = {
   "privacy.admin.erased": "Gegevens gewist. De klant is per e-mail op de hoogte gebracht als dat kon.",
   "privacy.admin.rejectConfirm": "Dit verzoek afwijzen? Het kan niet opnieuw worden geopend.",
   "privacy.admin.eraseConfirm": "Het account en de persoonsgegevens van deze klant nu wissen? Bestelbedragen blijven bewaard voor de belastingadministratie. Dit kan niet ongedaan worden gemaakt.",
+  "templates.whereUsed.none": "Niet geplaatst op een pagina of in een sjabloon",
+  "templates.whereUsed.placedIn": "Geplaatst in {places}",
 }
 
 export default nl

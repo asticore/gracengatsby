@@ -3041,6 +3041,8 @@ const hi: UiDictionary = {
   "privacy.admin.erased": "डेटा मिटा दिया गया। ईमेल भेजना संभव होने पर ग्राहक को सूचना भेजी गई।",
   "privacy.admin.rejectConfirm": "इस अनुरोध को अस्वीकार करें? इसे फिर से नहीं खोला जा सकता।",
   "privacy.admin.eraseConfirm": "इस ग्राहक का खाता और व्यक्तिगत विवरण अभी मिटाएँ? ऑर्डर का कुल योग कर-रिकॉर्ड के लिए रहेगा। यह वापस नहीं हो सकता।",
+  "templates.whereUsed.none": "किसी पेज या टेम्पलेट में नहीं लगा है",
+  "templates.whereUsed.placedIn": "{places} में लगा है",
 }
 
 export default hi

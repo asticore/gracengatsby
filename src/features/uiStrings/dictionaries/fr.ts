@@ -3041,6 +3041,8 @@ const fr: UiDictionary = {
   "privacy.admin.erased": "Données effacées. Le client a reçu un e-mail lorsque l'envoi a été possible.",
   "privacy.admin.rejectConfirm": "Refuser cette demande ? Elle ne pourra pas être rouverte.",
   "privacy.admin.eraseConfirm": "Effacer maintenant le compte et les données personnelles de ce client ? Les totaux des commandes sont conservés pour les obligations fiscales. Action irréversible.",
+  "templates.whereUsed.none": "Non placée dans aucune page ni aucun modèle",
+  "templates.whereUsed.placedIn": "Placée dans {places}",
 }
 
 export default fr

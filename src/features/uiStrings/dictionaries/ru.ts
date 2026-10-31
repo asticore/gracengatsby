@@ -3041,6 +3041,8 @@ const ru: UiDictionary = {
   "privacy.admin.erased": "Данные удалены. Клиенту отправлено письмо, если это было возможно.",
   "privacy.admin.rejectConfirm": "Отклонить этот запрос? Его нельзя будет открыть снова.",
   "privacy.admin.eraseConfirm": "Удалить сейчас аккаунт и персональные данные этого клиента? Суммы заказов сохранятся для налоговой отчётности. Это нельзя отменить.",
+  "templates.whereUsed.none": "Не размещён ни на одной странице или в шаблоне",
+  "templates.whereUsed.placedIn": "Размещён в: {places}",
 }
 
 export default ru

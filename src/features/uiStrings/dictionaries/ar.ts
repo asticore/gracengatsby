@@ -3041,6 +3041,8 @@ const ar: UiDictionary = {
   "privacy.admin.erased": "تم مسح البيانات. أُرسل بريد إلكتروني إلى العميل حيث أمكن ذلك.",
   "privacy.admin.rejectConfirm": "هل تريد رفض هذا الطلب؟ لا يمكن إعادة فتحه.",
   "privacy.admin.eraseConfirm": "هل تريد مسح حساب هذا العميل وبياناته الشخصية الآن؟ تبقى إجماليات الطلبات لأغراض السجلات الضريبية. لا يمكن التراجع عن ذلك.",
+  "templates.whereUsed.none": "غير موضوع في أي صفحة أو قالب",
+  "templates.whereUsed.placedIn": "موضوع في {places}",
 }
 
 export default ar

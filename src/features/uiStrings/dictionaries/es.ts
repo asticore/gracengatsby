@@ -3041,6 +3041,8 @@ const es: UiDictionary = {
   "privacy.admin.erased": "Datos borrados. Se envió un correo al cliente cuando fue posible.",
   "privacy.admin.rejectConfirm": "¿Rechazar esta solicitud? No se puede volver a abrir.",
   "privacy.admin.eraseConfirm": "¿Borrar ahora la cuenta y los datos personales de este cliente? Los totales de los pedidos se conservan para los registros fiscales. No se puede deshacer.",
+  "templates.whereUsed.none": "No está colocada en ninguna página ni plantilla",
+  "templates.whereUsed.placedIn": "Colocada en {places}",
 }
 
 export default es

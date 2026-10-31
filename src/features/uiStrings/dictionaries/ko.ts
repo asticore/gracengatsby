@@ -3041,6 +3041,8 @@ const ko: UiDictionary = {
   "privacy.admin.erased": "데이터를 삭제했습니다. 이메일을 보낼 수 있었다면 고객에게 알림을 보냈습니다.",
   "privacy.admin.rejectConfirm": "이 요청을 거부하시겠습니까? 다시 열 수 없습니다.",
   "privacy.admin.eraseConfirm": "이 고객의 계정과 개인 정보를 지금 삭제하시겠습니까? 주문 합계는 세무 기록을 위해 남습니다. 되돌릴 수 없습니다.",
+  "templates.whereUsed.none": "어떤 페이지나 템플릿에도 배치되지 않음",
+  "templates.whereUsed.placedIn": "배치된 곳: {places}",
 }
 
 export default ko

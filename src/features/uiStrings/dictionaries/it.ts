@@ -3041,6 +3041,8 @@ const it: UiDictionary = {
   "privacy.admin.erased": "Dati cancellati. Al cliente è stata inviata un'email quando possibile.",
   "privacy.admin.rejectConfirm": "Rifiutare questa richiesta? Non potrà essere riaperta.",
   "privacy.admin.eraseConfirm": "Cancellare ora l'account e i dati personali di questo cliente? I totali degli ordini restano per i registri fiscali. Non è reversibile.",
+  "templates.whereUsed.none": "Non inserita in nessuna pagina o modello",
+  "templates.whereUsed.placedIn": "Inserita in {places}",
 }
 
 export default it

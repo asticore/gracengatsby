@@ -3041,6 +3041,8 @@ const ja: UiDictionary = {
   "privacy.admin.erased": "データを消去しました。メールを送信できた場合、お客様にお知らせメールを送りました。",
   "privacy.admin.rejectConfirm": "この依頼を却下しますか？ 再度開くことはできません。",
   "privacy.admin.eraseConfirm": "このお客様のアカウントと個人情報を今すぐ消去しますか？ 注文の合計金額は税務記録のため残ります。元に戻せません。",
+  "templates.whereUsed.none": "どのページやテンプレートにも配置されていません",
+  "templates.whereUsed.placedIn": "配置先: {places}",
 }
 
 export default ja

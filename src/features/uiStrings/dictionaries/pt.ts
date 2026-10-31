@@ -3041,6 +3041,8 @@ const pt: UiDictionary = {
   "privacy.admin.erased": "Dados eliminados. O cliente recebeu um e-mail quando foi possível enviá-lo.",
   "privacy.admin.rejectConfirm": "Recusar este pedido? Não pode ser reaberto.",
   "privacy.admin.eraseConfirm": "Eliminar agora a conta e os dados pessoais deste cliente? Os totais das encomendas ficam para os registos fiscais. Não pode ser desfeito.",
+  "templates.whereUsed.none": "Não colocada em nenhuma página ou modelo",
+  "templates.whereUsed.placedIn": "Colocada em {places}",
 }
 
 export default pt

@@ -3040,6 +3040,8 @@ const zhHans: UiDictionary = {
   "privacy.admin.erased": "数据已清除。如果可以发送，已向客户发送邮件。",
   "privacy.admin.rejectConfirm": "拒绝此申请？拒绝后无法重新打开。",
   "privacy.admin.eraseConfirm": "现在清除该客户的账户和个人信息吗？订单总额会为税务记录而保留。此操作无法撤销。",
+  "templates.whereUsed.none": "未放置在任何页面或模板中",
+  "templates.whereUsed.placedIn": "放置于：{places}",
 }
 
 export default zhHans

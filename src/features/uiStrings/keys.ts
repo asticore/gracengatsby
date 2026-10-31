@@ -3084,6 +3084,10 @@ export const UI_STRING_SOURCE = {
   "privacy.admin.erased": "Data erased. The customer was emailed when the email could be sent.",
   "privacy.admin.rejectConfirm": "Reject this request? It cannot be reopened.",
   "privacy.admin.eraseConfirm": "Erase this customer's account and personal details now? Order totals stay for tax records. This cannot be undone.",
+
+  // Template parts (Task 2 d): the Templates hub's Where used column.
+  "templates.whereUsed.none": "Not placed in any page or template",
+  "templates.whereUsed.placedIn": "Placed in {places}",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

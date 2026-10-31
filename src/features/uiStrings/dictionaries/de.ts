@@ -3042,6 +3042,8 @@ const de: UiDictionary = {
   "privacy.admin.erased": "Daten gelöscht. Der Kunde wurde per E-Mail benachrichtigt, sofern der Versand möglich war.",
   "privacy.admin.rejectConfirm": "Diesen Antrag ablehnen? Er kann nicht wieder geöffnet werden.",
   "privacy.admin.eraseConfirm": "Konto und persönliche Daten dieses Kunden jetzt löschen? Bestellsummen bleiben für Steuerunterlagen erhalten. Das kann nicht rückgängig gemacht werden.",
+  "templates.whereUsed.none": "In keiner Seite oder Vorlage platziert",
+  "templates.whereUsed.placedIn": "Platziert in {places}",
 }
 
 export default de

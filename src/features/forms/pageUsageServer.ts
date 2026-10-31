@@ -33,6 +33,8 @@ export async function pageLiveHref(engine: EngineLike, doc: Record<string, unkno
  * still a place the form is used. Only pages the viewer may read are scanned.
  */
 export async function loadFormUsage(engine: EngineLike, user: FindUser, forms: Array<{ id: number | string; embedKey?: string | null }>): Promise<Record<string, PageUse[]>> {
+  // The usage list is an extra on the Forms screens: if the pages cannot be read, the screen still works without it.
+  if (!engine || typeof engine.find !== 'function') return {}
   const found = await engine.find({ collection: 'pages', depth: 0, limit: 2000, user }).catch(() => ({ docs: [] as unknown[] }))
   const pages: PageUsePage[] = []
   for (const raw of found.docs) {
@@ -41,7 +43,7 @@ export async function loadFormUsage(engine: EngineLike, user: FindUser, forms: A
     if (id === undefined) continue
     const status = doc._status === 'draft' ? 'draft' : 'published'
     // The live row and the latest draft version can differ. A form used only in an unpublished draft still counts.
-    const latest = (await engine.findByID({ collection: 'pages', depth: 0, id: id as number, draft: true, overrideAccess: true }).catch((): null => null)) as Record<string, unknown> | null
+    const latest = typeof engine.findByID !== 'function' ? null : (await engine.findByID({ collection: 'pages', depth: 0, id: id as number, draft: true, overrideAccess: true }).catch((): null => null)) as Record<string, unknown> | null
     pages.push({
       id,
       title: typeof doc.title === 'string' ? doc.title : undefined,

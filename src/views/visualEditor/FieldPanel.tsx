@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import { asBlockStyle, parseOldFormat, type BlockStyle } from '@/lib/blockStyle'
 import { getElementDef } from '@/lib/elements/registry'
+import { toStoredDesign } from '@/lib/design/storeDesign'
 import { isFieldVisible } from '@/lib/elements/fieldTypes'
 import {
   COLUMN_WIDTH_OPTIONS,
@@ -157,7 +158,7 @@ export const FieldPanel: React.FC<{
             </div>
           ) : (
             <fieldset className="ve-lockset" disabled={blocked}>
-              <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', next)} device={device} />
+              <DesignPanel value={asBlockStyle(data.design)} onChange={(next: BlockStyle) => setField('design', toStoredDesign(next))} device={device} />
             </fieldset>
           )
         )}

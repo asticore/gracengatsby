@@ -293,6 +293,7 @@ export const DesignPanel: React.FC<{
           label={t('dp.field.border_width_px')}
           value={value.borderWidth}
           onChange={(v) => set('borderWidth', v)}
+          onReset={() => set('borderWidth', undefined)}
           min={0}
         />
         {Boolean(value.borderWidth) && (
@@ -300,6 +301,8 @@ export const DesignPanel: React.FC<{
             <SelectRow
               label={t('dp.field.border_style')}
               value={value.borderStyle || 'solid'}
+              applied={value.borderStyle !== undefined}
+              onReset={() => set('borderStyle', undefined)}
               options={[
                 { label: t('dp.lit.solid'), value: 'solid' },
                 { label: t('dp.lit.dashed'), value: 'dashed' },
@@ -310,12 +313,20 @@ export const DesignPanel: React.FC<{
             <ColorRow label={t('dp.field.border_colour')} value={value.borderColor} onChange={(v) => set('borderColor', v)} />
           </>
         )}
-        <NumberRow label={t('dp.field.corner_radius_px')} value={value.borderRadius} onChange={(v) => set('borderRadius', v)} min={0} />
+        <NumberRow
+          label={t('dp.field.corner_radius_px')}
+          value={value.borderRadius}
+          onChange={(v) => set('borderRadius', v)}
+          onReset={() => set('borderRadius', undefined)}
+          min={0}
+        />
         <RadiusCorners ctl={resp} linked={value.radiusLinked === true} onLinked={(b) => set('radiusLinked', b ? true : undefined)} />
         <SelectRow
           label={t('dp.field.shadow')}
           value={value.boxShadow || 'none'}
           options={BOX_SHADOW_OPTIONS}
+          applied={value.boxShadow !== undefined}
+          onReset={() => set('boxShadow', undefined)}
           onChange={(v) => set('boxShadow', v === 'none' ? undefined : (v as BlockStyle['boxShadow']))}
         />
       </Acc>
@@ -550,12 +561,33 @@ export const DeviceIcon: React.FC<{ device: EditDevice }> = ({ device }) => (
   </svg>
 )
 
-const Row: React.FC<{ label: string; help?: string; resp?: RowResp; children: React.ReactNode }> = ({ label, help, resp, children }) => {
+/**
+ * A setting row. `applied` marks a value that is set (the dot) and `onReset` clears just this
+ * setting. Responsive rows that already show an inherited-value reset keep that button instead.
+ */
+const Row: React.FC<{ label: string; help?: string; resp?: RowResp; applied?: boolean; onReset?: () => void; children: React.ReactNode }> = ({ label, help, resp, applied, onReset, children }) => {
   const t = useAdminT()
+  const showApplied = applied === true
+  const showSettingReset = showApplied && Boolean(onReset) && !resp?.overridden
   return (
   <label className="ve-row">
     <span className="ve-row__label">
       {label}
+      {showApplied && <span className="ve-d51-dot" title={t('dp.changed')} aria-label={t('dp.changed')} role="img" />}
+      {showSettingReset && (
+        <button
+          type="button"
+          className="ve-dev__reset"
+          onClick={(e) => {
+            e.preventDefault()
+            onReset?.()
+          }}
+          title={t('dp.resetDefault')}
+          aria-label={`${t('dp.resetDefault')}: ${label}`}
+        >
+          {t('dp.reset')}
+        </button>
+      )}
       {resp && (
         <span className={`ve-dev ${resp.device !== 'desktop' ? 've-dev--on' : ''}`} title={`Applies to ${DEVICE_LABEL[resp.device].toLowerCase()}`}>
           <DeviceIcon device={resp.device} />
@@ -661,9 +693,12 @@ export const NumberRow: React.FC<{
   /** Shown while empty - the inherited value on tablet / mobile. */
   placeholder?: string
   resp?: RowResp
+  /** Shows the applied dot and a per-setting reset. */
+  applied?: boolean
+  onReset?: () => void
   onChange: (v: number | undefined) => void
-}> = ({ label, value, min, max, help, placeholder, resp, onChange }) => (
-  <Row label={label} help={help} resp={resp}>
+}> = ({ label, value, min, max, help, placeholder, resp, applied, onReset, onChange }) => (
+  <Row label={label} help={help} resp={resp} applied={applied ?? typeof value === 'number'} onReset={onReset}>
     <input
       type="number"
       min={min}
@@ -681,9 +716,12 @@ export const SelectRow: React.FC<{
   options: { label: string; value: string }[]
   help?: string
   resp?: RowResp
+  /** Shows the applied dot and a per-setting reset. Callers pass it: a select's default value is not "applied". */
+  applied?: boolean
+  onReset?: () => void
   onChange: (v: string) => void
-}> = ({ label, value, options, help, resp, onChange }) => (
-  <Row label={label} help={help} resp={resp}>
+}> = ({ label, value, options, help, resp, applied, onReset, onChange }) => (
+  <Row label={label} help={help} resp={resp} applied={applied} onReset={onReset}>
     <select value={value} onChange={(e) => onChange(e.target.value)}>
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -822,6 +860,8 @@ export const RespNumber: React.FC<{ ctl: ResponsiveCtl; k: RespKey; label: strin
       max={max}
       help={help}
       resp={ctl.resp(k)}
+      applied={own !== undefined}
+      onReset={() => ctl.reset(k)}
       onChange={(v) => ctl.set(k, v)}
     />
   )
@@ -924,6 +964,8 @@ export const RespSelect: React.FC<{
       options={[{ label: first, value: '' }, ...options]}
       help={help}
       resp={ctl.resp(k)}
+      applied={typeof own === 'string' && own !== ''}
+      onReset={() => ctl.reset(k)}
       onChange={(v) => ctl.set(k, v || undefined)}
     />
   )

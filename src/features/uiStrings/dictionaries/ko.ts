@@ -3077,6 +3077,13 @@ const ko: UiDictionary = {
   "formEl.createFailed": "폼을 만들 수 없습니다. 연결을 확인하고 다시 시도하세요.",
   "formEl.editFields": "필드 디자인 (폼 편집기 열기)",
   "formEl.noFormYet": "아직 폼이 없습니다. 여기서 새 폼을 만들고 필드를 디자인하세요.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': '양식 구성',
+  'formSummary.counts': '항목: {fields}, 단계: {steps}, 필수: {required}',
+  'formSummary.none': '아직 항목이 없습니다. 비주얼 편집기에서 양식을 만드세요.',
+  'formSummary.readOnly': '여기서는 읽기 전용입니다. 항목, 단계, 구성은 비주얼 편집기에서 바꿉니다.',
+  'formSummary.unpublished': '작업 사본에 아직 게시되지 않은 변경 사항이 있습니다.',
+  'formSummary.listTitle': '순서대로 된 항목',
 }
 
 export default ko

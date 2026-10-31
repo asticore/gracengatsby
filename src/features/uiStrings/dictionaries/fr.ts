@@ -3077,6 +3077,13 @@ const fr: UiDictionary = {
   "formEl.createFailed": "Le formulaire n'a pas pu être créé. Vérifiez la connexion et réessayez.",
   "formEl.editFields": "Concevoir les champs (ouvre l'éditeur du formulaire)",
   "formEl.noFormYet": "Aucun formulaire pour l'instant. Créez-en un ici et concevez ses champs.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Disposition du formulaire',
+  'formSummary.counts': 'Champs : {fields}. Étapes : {steps}. Obligatoires : {required}.',
+  'formSummary.none': 'Aucun champ pour l\'instant. Concevez le formulaire dans l\'éditeur visuel.',
+  'formSummary.readOnly': 'Lecture seule ici. Les champs, étapes et la disposition se modifient dans l\'éditeur visuel.',
+  'formSummary.unpublished': 'La version de travail contient des modifications non encore publiées.',
+  'formSummary.listTitle': 'Champs dans l\'ordre',
 }
 
 export default fr

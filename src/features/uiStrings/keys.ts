@@ -3124,6 +3124,13 @@ export const UI_STRING_SOURCE = {
   "formEl.createFailed": "The form could not be created. Check your connection and try again.",
   "formEl.editFields": "Design the fields (opens the form editor)",
   "formEl.noFormYet": "No forms yet. Create a new one here and design its fields.",
+  // Admin Forms edit screen: read-only layout summary (fields are built in the visual editor).
+  "formSummary.title": "Form layout",
+  "formSummary.counts": "Fields: {fields}. Steps: {steps}. Required: {required}.",
+  "formSummary.none": "No fields yet. Design the form in the visual editor.",
+  "formSummary.readOnly": "Read-only here. Fields, steps and layout are changed in the visual editor.",
+  "formSummary.unpublished": "The working copy has changes that are not published yet.",
+  "formSummary.listTitle": "Fields in order",
 } as const
 
 export type UiStringKey = keyof typeof UI_STRING_SOURCE

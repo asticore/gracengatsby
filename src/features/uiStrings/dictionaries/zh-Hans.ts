@@ -3076,6 +3076,13 @@ const zhHans: UiDictionary = {
   "formEl.createFailed": "无法创建表单。请检查网络连接后重试。",
   "formEl.editFields": "设计字段（打开表单编辑器）",
   "formEl.noFormYet": "还没有表单。在这里新建一个并设计其字段。",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': '表单结构',
+  'formSummary.counts': '字段：{fields}。步骤：{steps}。必填：{required}。',
+  'formSummary.none': '还没有字段。请在可视化编辑器中设计表单。',
+  'formSummary.readOnly': '此处为只读。字段、步骤和结构请在可视化编辑器中修改。',
+  'formSummary.unpublished': '工作副本有尚未发布的更改。',
+  'formSummary.listTitle': '按顺序排列的字段',
 }
 
 export default zhHans

@@ -3077,6 +3077,13 @@ const ru: UiDictionary = {
   "formEl.createFailed": "Не удалось создать форму. Проверьте соединение и попробуйте снова.",
   "formEl.editFields": "Настроить поля (откроется редактор формы)",
   "formEl.noFormYet": "Форм пока нет. Создайте новую здесь и настройте её поля.",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'Структура формы',
+  'formSummary.counts': 'Полей: {fields}. Шагов: {steps}. Обязательных: {required}.',
+  'formSummary.none': 'Полей пока нет. Создайте форму в визуальном редакторе.',
+  'formSummary.readOnly': 'Здесь только просмотр. Поля, шаги и структура меняются в визуальном редакторе.',
+  'formSummary.unpublished': 'В рабочей копии есть неопубликованные изменения.',
+  'formSummary.listTitle': 'Поля по порядку',
 }
 
 export default ru

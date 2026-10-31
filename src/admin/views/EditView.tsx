@@ -21,6 +21,8 @@ import { resultsTabState } from './results/resultsTabs'
 import { ABResultsTab } from './results/ABResultsTab'
 import { EventResultsTab } from './results/EventResultsTab'
 import { FormResultsTab } from './results/FormResultsTab'
+import { FormLayoutSummary } from './FormLayoutSummary'
+import { summariseFormLayout } from '@/features/forms/layoutSummary'
 
 type AdminEngine = Awaited<ReturnType<typeof getAdminContext>>['engine']
 
@@ -185,8 +187,33 @@ export async function EditView({ collectionSlug, id }: { collectionSlug: string;
       ? await signInAsFor(context.engine, String(docRecord.email ?? ''))
       : null
 
+  // Forms: fields are built in the visual editor, so the admin shows a read-only summary and a button instead.
+  const formEditHref = collectionSlug === 'forms' && id !== undefined ? adminHref(`/visual-editor/collection/forms/${id}`, await getAdminRoot()) : undefined
+  const formSummary =
+    formEditHref && docRecord
+      ? (() => {
+          const summary = summariseFormLayout(docRecord as never)
+          return (
+            <FormLayoutSummary
+              editHref={formEditHref}
+              strings={{
+                title: ui.t('formSummary.title'),
+                counts: ui.t('formSummary.counts', { fields: summary.inputs, steps: summary.steps, required: summary.required }),
+                none: ui.t('formSummary.none'),
+                readOnly: ui.t('formSummary.readOnly'),
+                unpublished: ui.t('formSummary.unpublished'),
+                listTitle: ui.t('formSummary.listTitle'),
+                button: ui.t('editor.editInVisual'),
+              }}
+              summary={summary}
+            />
+          )
+        })()
+      : null
+
   const editForm = (
     <EditForm
+      beforeFields={formSummary}
       collectionSlug={collectionSlug}
       doc={doc}
       draftsEnabled={draftsEnabled}

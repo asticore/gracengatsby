@@ -3077,6 +3077,13 @@ const ja: UiDictionary = {
   "formEl.createFailed": "フォームを作成できませんでした。接続を確認して、もう一度お試しください。",
   "formEl.editFields": "項目をデザイン（フォームエディタを開きます）",
   "formEl.noFormYet": "フォームはまだありません。ここで新しく作成して項目をデザインしてください。",
+  // Admin Forms edit screen: read-only layout summary.
+  'formSummary.title': 'フォームの構成',
+  'formSummary.counts': '項目: {fields}、ステップ: {steps}、必須: {required}',
+  'formSummary.none': 'まだ項目がありません。ビジュアルエディターでフォームを作成してください。',
+  'formSummary.readOnly': 'ここでは閲覧のみです。項目、ステップ、構成はビジュアルエディターで変更します。',
+  'formSummary.unpublished': '作業中のコピーに、まだ公開されていない変更があります。',
+  'formSummary.listTitle': '項目の順序',
 }
 
 export default ja

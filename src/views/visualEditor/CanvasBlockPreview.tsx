@@ -165,6 +165,7 @@ export const CanvasBlockPreview: React.FC<{ data: Record<string, unknown> }> = (
           </div>
         )
       }
+      if (elementType === 'template-part') return <DynamicPlaceholder icon="🧩" label="Template part" data={data} detail={`Template ${String(props.templateId ?? '')}`.trim()} />
       if (elementType === 'embed-code') return <EmbedCodeCanvasCard snippet={String(props.snippet ?? '')} title={String(props.title ?? '')} />
       // Site elements read live data on the server; the canvas shows a static placeholder and never queries.
       if (SITE_ELEMENT_TYPES.has(elementType)) {

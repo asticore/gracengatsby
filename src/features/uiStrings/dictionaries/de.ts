@@ -2996,6 +2996,8 @@ const de: UiDictionary = {
   "blog.ai.topicRequired": "Gib zuerst ein Thema an.",
   "blog.ai.titleRequired": "Wähle zuerst einen Titel aus oder schreibe einen.",
   "blog.ai.busy": "Wird verarbeitet...",
+  "templates.whereUsed.none": "In keiner Seite oder Vorlage platziert",
+  "templates.whereUsed.placedIn": "Platziert in {places}",
 }
 
 export default de

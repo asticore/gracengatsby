@@ -2995,6 +2995,8 @@ const pt: UiDictionary = {
   "blog.ai.topicRequired": "Adicione um tema primeiro.",
   "blog.ai.titleRequired": "Escolha ou escreva um título primeiro.",
   "blog.ai.busy": "Trabalhando...",
+  "templates.whereUsed.none": "Não colocada em nenhuma página ou modelo",
+  "templates.whereUsed.placedIn": "Colocada em {places}",
 }
 
 export default pt

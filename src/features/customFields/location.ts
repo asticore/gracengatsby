@@ -23,6 +23,9 @@ export type LocationContext = {
   productCategory?: string | string[] | null
   productType?: string | string[] | null
   eventType?: string | string[] | null
+  /** Site template scoping: the registered host the request arrived on (lower case), and the request's language code. */
+  domain?: string | null
+  language?: string | null
 }
 
 /** Like `includes`, but the context value may be a single string or a list; a rule matches when any equals it. */
@@ -72,6 +75,14 @@ function ruleMatches(rule: LocationRule, ctx: LocationContext): boolean {
     case 'path':
       if (ctx.path === undefined) return false
       hit = ctx.path === rule.value
+      break
+    case 'domain':
+      if (ctx.domain === undefined) return false
+      hit = ctx.domain !== null && ctx.domain !== undefined && ctx.domain.toLowerCase() === rule.value.toLowerCase()
+      break
+    case 'language':
+      if (ctx.language === undefined) return false
+      hit = ctx.language !== null && ctx.language !== undefined && ctx.language.toLowerCase() === rule.value.toLowerCase()
       break
     case 'productCategory':
     case 'productType':

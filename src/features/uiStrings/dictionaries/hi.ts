@@ -2995,6 +2995,8 @@ const hi: UiDictionary = {
   "blog.ai.topicRequired": "पहले एक विषय जोड़ें।",
   "blog.ai.titleRequired": "पहले एक शीर्षक चुनें या लिखें।",
   "blog.ai.busy": "काम हो रहा है...",
+  "templates.whereUsed.none": "किसी पेज या टेम्पलेट में नहीं लगा है",
+  "templates.whereUsed.placedIn": "{places} में लगा है",
 }
 
 export default hi

@@ -2995,6 +2995,8 @@ const nl: UiDictionary = {
   "blog.ai.topicRequired": "Voeg eerst een onderwerp toe.",
   "blog.ai.titleRequired": "Kies of schrijf eerst een titel.",
   "blog.ai.busy": "Bezig...",
+  "templates.whereUsed.none": "Niet geplaatst op een pagina of in een sjabloon",
+  "templates.whereUsed.placedIn": "Geplaatst in {places}",
 }
 
 export default nl

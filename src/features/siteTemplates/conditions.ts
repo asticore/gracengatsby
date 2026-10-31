@@ -16,6 +16,16 @@ const decode = (input: unknown): unknown => {
   }
 }
 
+/**
+ * How specific a condition set is: the most rules in any one group (an AND group of three rules beats one of
+ * one). Empty conditions are 0, the fallback for their kind. Used to break ties between equal priorities.
+ */
+export function specificityOf(input: unknown): number {
+  const { groups, valid } = sanitizeConditions(input)
+  if (!valid) return 0
+  return groups.reduce((most, group) => Math.max(most, group.length), 0)
+}
+
 export type SanitizedConditions = {
   groups: LocationGroups
   /** False when anything was invalid, unknown or cut by the caps. An invalid template must never match. */

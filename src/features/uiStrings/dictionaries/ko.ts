@@ -2995,6 +2995,8 @@ const ko: UiDictionary = {
   "blog.ai.topicRequired": "먼저 주제를 입력하세요.",
   "blog.ai.titleRequired": "먼저 제목을 고르거나 입력하세요.",
   "blog.ai.busy": "처리 중...",
+  "templates.whereUsed.none": "어떤 페이지나 템플릿에도 배치되지 않음",
+  "templates.whereUsed.placedIn": "배치된 곳: {places}",
 }
 
 export default ko

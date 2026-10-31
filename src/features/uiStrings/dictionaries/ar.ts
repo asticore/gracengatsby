@@ -2995,6 +2995,8 @@ const ar: UiDictionary = {
   "blog.ai.topicRequired": "أضف موضوعًا أولًا.",
   "blog.ai.titleRequired": "اختر عنوانًا أو اكتبه أولًا.",
   "blog.ai.busy": "جارٍ العمل...",
+  "templates.whereUsed.none": "غير موضوع في أي صفحة أو قالب",
+  "templates.whereUsed.placedIn": "موضوع في {places}",
 }
 
 export default ar

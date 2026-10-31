@@ -2995,6 +2995,8 @@ const ru: UiDictionary = {
   "blog.ai.topicRequired": "Сначала добавьте тему.",
   "blog.ai.titleRequired": "Сначала выберите или напишите заголовок.",
   "blog.ai.busy": "Выполняется...",
+  "templates.whereUsed.none": "Не размещён ни на одной странице или в шаблоне",
+  "templates.whereUsed.placedIn": "Размещён в: {places}",
 }
 
 export default ru
